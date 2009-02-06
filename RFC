@@ -1,0 +1,54 @@
+
+KEY FEATURES
+
+* Schnelligkeit durch xcb, möglicherweise compositing/bufferfoo
+* Xinerama
+* Wichtige/Triviale Features werden direkt übernommen (Fenster bewegen), keine Forks/
+  Events nötig
+* Hooks werden zur Verfügung gestellt wo sinnvoll (Titel eines Fensters wird geändert,
+  neues Fenster wird erstellt). Hooks sind einfach C-Callbacks, die structs enthalten mit
+  dem Messagetype und Parametern. TODO: IPC-Mechanismus ist noch zu bestimmen (libevent
+  nutzen oder so?).
+* Mit Messages werden sinnvolle Funktionen gesteuert, zum Beispiel der Inhalt der Bars
+* Unnötige Rendervorgänge werden automagisch wegoptimiert
+* Bei neuen Screens (beamer, etc…) verhält sich i3 so wie man das möchte™
+
+FEATURES
+
+* Tags unabhängig vom Screen
+* Cursor-warp ein/ausschaltbar
+* Titlebars frei positionierbar (oben, unten, links, rechts, aus)
+* Default/Stack-Layout
+* Floating (später™)
+* Konfigurierbare Fonts
+* Message-Generator-Programm (i3_msg cursorwarp off)
+
+
+KEYBINDINGS
+
+* mod + cursor			select window
+* mod + shift + cursor		move window
+* mod + ctrl + cursor		snap window
+* mod + d/s			default/stacking
+* mod + 1|2|3|…			switch to tag <1|2|3|…>
+* mod + shift + 1|2|3|…		move window to tag …
+* mod + ctrl + 1|2|3|…		move container to tag …
+* mod + f			fullscreen
+* mod + k			kill
+* mod + return			terminal
+
+
+IMPLEMENTATIONSDETAILS
+
+* snap nach links = move links + snap rechts
+* snap nach oben = move oben + snap unten
+
+
+
+HOOKS:
+
+* TODO: API
+
+MESSAGES:
+
+* TODO: API
