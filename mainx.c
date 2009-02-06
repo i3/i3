@@ -440,6 +440,16 @@ static int handleEvent(void *ignored, xcb_connection_t *c, xcb_generic_event_t *
 {
         return format_event(e);
 }
+
+static int handle_key_press(void *ignored, xcb_connection_t *c, xcb_generic_event_t *e)
+{
+	xcb_key_press_event_t *event = e;
+	printf("oh yay!\n");
+	printf("gots press %d\n", event->detail);
+	/* TODO: try to change the window border of all windows. */
+        return format_event(e);
+}
+
 static void redrawWindow(xcb_connection_t *c, client_window_t *client)
 {
 printf("redrawing window.\n");
@@ -561,6 +571,8 @@ myfont.height = reply->font_ascent + reply->font_descent;
 	int i;
 	for(i = 2; i < 128; ++i)
 		xcb_event_set_handler(&evenths, i, handleEvent, 0);
+
+	xcb_event_set_handler(&evenths, XCB_KEY_PRESS, handle_key_press, 0);
 	for(i = 0; i < 256; ++i)
 		xcb_event_set_error_handler(&evenths, i, (xcb_generic_error_handler_t) handleEvent, 0);
 
@@ -573,6 +585,8 @@ myfont.height = reply->font_ascent + reply->font_descent;
 	xcb_property_handlers_init(&prophs, &evenths);
 	xcb_event_set_map_notify_handler(&evenths, handle_map_notify_event, &prophs);
 
+	//xcb_grab_key (xcb_connection_t *c, uint8_t owner_events, xcb_window_t grab_window, uint16_t modifiers, xcb_keycode_t key, uint8_t pointer_mode, uint8_t keyboard_mode)
+	
 
 	root = xcb_aux_get_screen(c, screens)->root;
 
@@ -581,6 +595,9 @@ myfont.height = reply->font_ascent + reply->font_descent;
 		uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE };
 		xcb_change_window_attributes(c, root, mask, values);
 	}
+
+	/* Grab 'a' */
+	xcb_grab_key(c, 0, root, 0, 38, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 
 	xcb_flush(c);
 
