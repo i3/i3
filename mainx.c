@@ -1,7 +1,10 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <xcb/xcb.h>
 
@@ -30,7 +33,7 @@ xcb_window_t root_win;
 LIST_HEAD(all_clients_head, Client) all_clients;
 
 /* _the_ table. Stores all clients. */
-Client *table[10][10];
+Container *table[10][10];
 
 int current_col = 0;
 int current_row = 0;
@@ -303,7 +306,7 @@ uint32_t get_colorpixel(xcb_connection_t *conn, xcb_window_t window, int r, int 
 
 	if (!reply) {
 		printf("color fail\n");
-		return;
+		exit(1);
 	}
 
 	uint32_t pixel = reply->pixel;
@@ -342,25 +345,46 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
         xcb_void_cookie_t textCookie = xcb_image_text_8_checked (conn, strlen (label), client->window, client->titlegc, 2, 15, label );
 }
 
+void render_container(xcb_connection_t *connection, Container *container) {
+	Client *client;
+	int values[4];
+	int mask = 	XCB_CONFIG_WINDOW_X |
+			XCB_CONFIG_WINDOW_Y |
+			XCB_CONFIG_WINDOW_WIDTH |
+			XCB_CONFIG_WINDOW_HEIGHT;
+
+	if (container->mode == MODE_DEFAULT) {
+		LIST_FOREACH(client, &(container->clients), clients) {
+			/* TODO: at the moment, every column/row is 200px. This
+			 * needs to be changed to "percentage of the screen" by
+			 * default and adjustable by the user if necessary.
+			 */
+			values[0] = container->col * 200;
+			values[1] = container->row * 200;
+			values[2] = 200;
+			values[3] = 200;
+			/* TODO: update only if necessary */
+			xcb_configure_window(connection, client->window, mask, values);
+		}
+	} else {
+		/* TODO: Implement stacking */
+	}
+}
+
 void render_layout(xcb_connection_t *conn) {
 	int cols, rows;
-	int values[4];
-	for (rows = 0; rows < 10; rows++) {
-		for (cols = 0; cols < 10; cols++) {
+
+	/* Go through the whole table and render what’s necessary */
+	for (rows = 0; rows < 10; rows++)
+		for (cols = 0; cols < 10; cols++)
 			if (table[cols][rows] != NULL) {
-				Client *current = table[cols][rows];
-				/* TODO; just update if necessary */
-				values[0] = cols * 200;
-				values[1] = rows * 200;
-				values[2] = 200;
-				values[3] = 200;
-				xcb_configure_window(conn, current->window, XCB_CONFIG_WINDOW_X |
-										XCB_CONFIG_WINDOW_Y |
-										XCB_CONFIG_WINDOW_WIDTH |
-										XCB_CONFIG_WINDOW_HEIGHT , values);
+				/* Update position of the container */
+				table[cols][rows]->row = rows;
+				table[cols][rows]->col = cols;
+
+				/* Render it */
+				render_container(conn, table[cols][rows]);
 			}
-		}
-	}
 }
 
 /*
@@ -380,13 +404,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	/* Insert into the list of all clients */
 	LIST_INSERT_HEAD(&all_clients, new, clients);
 
-	/* Insert into the table */
-	if (table[current_col][current_row] == NULL)
-		table[current_col][current_row] = new;
-	else {
-		current_row++;
-		table[current_col][current_row] = new;
-	}
+	/* Insert into the currently active container */
+	LIST_INSERT_HEAD(&(table[current_col][current_row]->clients), new, clients);
 
 	new->window = xcb_generate_id(conn);
 	new->child = child;
@@ -568,6 +587,7 @@ static int handle_motion(void *ignored, xcb_connection_t *conn, xcb_generic_even
 	//xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, myc.window, XCB_CURRENT_TIME);
 
 	}
+	/* TODO: what to return? */
 }
 
 
@@ -663,6 +683,13 @@ int main() {
 	for (i = 0; i < 10; i++)
 		for (j = 0; j < 10; j++)
 			table[i][j] = NULL;
+
+	/*
+	 * By default, the table is one row and one column big. It contains
+	 * one container in default mode in it.
+	 *
+	 */
+	table[0][0] = calloc(sizeof(Container), 1);
 
 	xcb_connection_t *c;
 	xcb_event_handlers_t evenths;
@@ -764,5 +791,6 @@ printf("could not grab pointer\n");
 
 	xcb_event_wait_for_event_loop(&evenths);
 
-
+	/* not reached */
+	return 0;
 }
