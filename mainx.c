@@ -12,19 +12,31 @@
 #include "xcb_keysyms.h"
 #include "data.h"
 
+#include "queue.h"
+
 Font myfont;
 
 static const int TOP = 20;
 static const int LEFT = 5;
 static const int BOTTOM = 5;
 static const int RIGHT = 5;
+
+/* hm, xcb_wm wants us to implement this. */
 table_t *byChild = 0;
 table_t *byParent = 0;
-	xcb_window_t root_win;
+xcb_window_t root_win;
+
+/* We have a list of Clients, called all_clients */
+LIST_HEAD(all_clients_head, Client) all_clients;
+
+/* _the_ table. Stores all clients. */
+Client *table[10][10];
+
+int current_col = 0;
+int current_row = 0;
+
 
 int globalc = 0;
-
-Client myc;
 
 
 static const char *labelError[] = {
@@ -278,32 +290,15 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *c, xcb_win
 }
 
 
-static int addClientWindow(xcb_window_t child, xcb_window_t parent, xcb_gcontext_t titlegc)
-{
-	int success;
-	client_window_t *record = malloc(sizeof(client_window_t));
-	assert(record);
-	record->child = child;
-	record->parent = parent;
-	record->name_len = 0;
-	record->name = 0;
-	record->titlegc = titlegc;
-	success = table_put(byParent, parent, record) &&
-		table_put(byChild, child, record);
-	assert(success);
-	return 1;
-}
-
 /*
  * Returns the colorpixel to use for the given RGB color code
  *
  */
-uint32_t get_colorpixel(xcb_connection_t *conn, int r, int g, int b) {
+uint32_t get_colorpixel(xcb_connection_t *conn, xcb_window_t window, int r, int g, int b) {
 	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 
 	xcb_colormap_t colormapId = xcb_generate_id(conn);
-	/* TODO: we need to get myc.window away here */
-	xcb_create_colormap(conn, XCB_COLORMAP_ALLOC_NONE, colormapId, myc.window, root_screen->root_visual);
+	xcb_create_colormap(conn, XCB_COLORMAP_ALLOC_NONE, colormapId, window, root_screen->root_visual);
 	xcb_alloc_color_reply_t *reply = xcb_alloc_color_reply(conn, xcb_alloc_color(conn, colormapId, r, g, b), NULL);
 
 	if (!reply) {
@@ -333,16 +328,39 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
 
 	values[0] = root_screen->black_pixel;
 	if (globalc++ > 1)
-		values[1] = get_colorpixel(conn, 65535, 0, 0);
-	else values[1] = get_colorpixel(conn, 0, 0, 65535);
+		values[1] = get_colorpixel(conn, client->window, 65535, 0, 0);
+	else values[1] = get_colorpixel(conn, client->window, 0, 0, 65535);
 	values[2] = font;
 
 	xcb_change_gc(conn, client->titlegc, mask, values);
 
 
 	/* TODO: utf8? */
-	char *label = "i3 rocks :>";
-        xcb_void_cookie_t textCookie = xcb_image_text_8_checked (conn, strlen (label), myc.window, myc.titlegc, 2, 15, label );
+	//char *label = "i3 rocks :>";
+	char *label;
+	asprintf(&label, "gots win %p", client->window);
+        xcb_void_cookie_t textCookie = xcb_image_text_8_checked (conn, strlen (label), client->window, client->titlegc, 2, 15, label );
+}
+
+void render_layout(xcb_connection_t *conn) {
+	int cols, rows;
+	int values[4];
+	for (rows = 0; rows < 10; rows++) {
+		for (cols = 0; cols < 10; cols++) {
+			if (table[cols][rows] != NULL) {
+				Client *current = table[cols][rows];
+				/* TODO; just update if necessary */
+				values[0] = cols * 200;
+				values[1] = rows * 200;
+				values[2] = 200;
+				values[3] = 200;
+				xcb_configure_window(conn, current->window, XCB_CONFIG_WINDOW_X |
+										XCB_CONFIG_WINDOW_Y |
+										XCB_CONFIG_WINDOW_WIDTH |
+										XCB_CONFIG_WINDOW_HEIGHT , values);
+			}
+		}
+	}
 }
 
 /*
@@ -353,12 +371,25 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 		xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
 		int16_t x, int16_t y, uint16_t width, uint16_t height)
 {
+	Client *new = malloc(sizeof(Client));
 	xcb_drawable_t drawable;
 	uint32_t mask = 0;
 	uint32_t values[3];
 	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 
-	myc.window = xcb_generate_id(conn);
+	/* Insert into the list of all clients */
+	LIST_INSERT_HEAD(&all_clients, new, clients);
+
+	/* Insert into the table */
+	if (table[current_col][current_row] == NULL)
+		table[current_col][current_row] = new;
+	else {
+		current_row++;
+		table[current_col][current_row] = new;
+	}
+
+	new->window = xcb_generate_id(conn);
+	new->child = child;
 
 	/* TODO: what do these mean? */
 	mask |= XCB_CW_BACK_PIXEL;
@@ -371,12 +402,12 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	values[2] = XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE
 		| XCB_EVENT_MASK_EXPOSURE /* | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW */;
 
-	printf("Reparenting 0x%08x under 0x%08x.\n", child, myc.window);
+	printf("Reparenting 0x%08x under 0x%08x.\n", child, new->window);
 
 	/* Yo dawg, I heard you like windows, so I create a window around your window… */
 	xcb_create_window(conn,
 			depth,
-			myc.window,
+			new->window,
 			root,
 			x,
 			y,
@@ -390,22 +421,22 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	xcb_change_save_set(conn, XCB_SET_MODE_INSERT, child);
 
 	/* Map the window on the screen (= make it visible) */
-	xcb_map_window(conn, myc.window);
+	xcb_map_window(conn, new->window);
 
 	/* Generate a graphics context for the titlebar */
-	myc.titlegc = xcb_generate_id(conn);
-	xcb_create_gc(conn, myc.titlegc, myc.window, 0, 0);
+	new->titlegc = xcb_generate_id(conn);
+	xcb_create_gc(conn, new->titlegc, new->window, 0, 0);
 
 	/* Draw decorations */
-	decorate_window(conn, &myc);
+	decorate_window(conn, new);
 
-	/* add the title context as a child for the window */
-	/* TODO: replace this, it's internal */
-	addClientWindow(child, myc.window, myc.titlegc);
+	/* Put our data structure (Client) into the table */
+	table_put(byParent, new->window, new);
+	table_put(byChild, child, new);
 
 	/* Moves the original window into the new frame we've created for it */
 	/* TODO: hmm, LEFT/TOP needs to go */
-	xcb_reparent_window(conn, child, myc.window, LEFT - 1, TOP - 1);
+	xcb_reparent_window(conn, child, new->window, LEFT - 1, TOP - 1);
 
 	/* We are interested in property changes */
 	mask = XCB_CW_EVENT_MASK;
@@ -413,27 +444,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	xcb_change_window_attributes(conn, child, mask, values);
 
 	/* TODO: At the moment, new windows just get focus */
-
-	xcb_get_input_focus_reply_t *reply = xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL);
-	if (reply) {
-		printf("got focus info\n");
-		printf("focus is at %p\n", reply->focus);
-		printf("window is at %p\n", myc.window);
-
-		free(reply);
-	}
-xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, myc.window, XCB_CURRENT_TIME);
-
-	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, myc.window, XCB_CURRENT_TIME);
-	reply = xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL);
-	if (reply) {
-		printf("got focus info\n");
-		printf("focus is at %p\n", reply->focus);
-		printf("window is at %p\n", myc.window);
-
-		free(reply);
-	}
-
+	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, new->window, XCB_CURRENT_TIME);
 	
 #if 0
 
@@ -458,6 +469,7 @@ xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, myc.window, XCB_CURRENT_TIME);
 			&myc.window);
 #endif
 
+	render_layout(conn);
 
 	xcb_flush(conn);
 }
@@ -537,7 +549,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_generic_e
 			execve("/usr/bin/xterm", argv, env);
 		}
 	} else if (event->detail == 38) {
-		xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, myc.window, XCB_CURRENT_TIME);
+		//xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, myc.window, XCB_CURRENT_TIME);
 	}
 
 	//decorate_window(c, &myc);
@@ -553,22 +565,25 @@ static int handle_motion(void *ignored, xcb_connection_t *conn, xcb_generic_even
 
 	if (event->root_x < 50) {
 		printf("setting focus\n");
-	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, myc.window, XCB_CURRENT_TIME);
+	//xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, myc.window, XCB_CURRENT_TIME);
 
 	}
 }
 
 
-static void redrawWindow(xcb_connection_t *c, client_window_t *client)
+static void redrawWindow(xcb_connection_t *c, Client *client)
 {
+#if 0
 printf("redrawing window.\n");
-	xcb_drawable_t d = { client->parent };
+	xcb_drawable_t d = { client->window };
 	if(!client->name_len)
 		return;
 	xcb_clear_area(c, 0, d, 0, 0, 0, 0);
 	xcb_image_text_8(c, client->name_len, d, client->titlegc,
 			LEFT - 1, TOP - 4, client->name);
 	xcb_flush(c);
+#endif
+	decorate_window(c, client);
 }
 
 int handle_map_notify_event(void *prophs, xcb_connection_t *c, xcb_map_notify_event_t *e)
@@ -582,7 +597,7 @@ int handle_map_notify_event(void *prophs, xcb_connection_t *c, xcb_map_notify_ev
 
 int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_event_t *e)
 {
-	client_window_t *client = table_remove(byChild, e->event);
+	Client *client = table_remove(byChild, e->event);
 	xcb_window_t root;
 	printf("UnmapNotify for 0x%08x (received from 0x%08x): ", e->window, e->event);
 	if(!client)
@@ -592,11 +607,11 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
 	}
 
 	root = xcb_setup_roots_iterator(xcb_get_setup(c)).data->root;
-	printf("child of 0x%08x.\n", client->parent);
+	printf("child of 0x%08x.\n", client->window);
 	xcb_reparent_window(c, client->child, root, 0, 0);
-	xcb_destroy_window(c, client->parent);
+	xcb_destroy_window(c, client->window);
 	xcb_flush(c);
-	table_remove(byParent, client->parent);
+	table_remove(byParent, client->window);
 	free(client);
 	return 1;
 }
@@ -606,7 +621,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
 static int handleExposeEvent(void *data, xcb_connection_t *c, xcb_expose_event_t *e)
 {
 printf("exposeevent\n");
-	client_window_t *client = table_get(byParent, e->window);
+	Client *client = table_get(byParent, e->window);
 	if(!client || e->count != 0)
 		return 1;
 	redrawWindow(c, client);
@@ -643,6 +658,12 @@ void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *proph
 }
 
 int main() {
+	LIST_INIT(&all_clients);
+	int i, j;
+	for (i = 0; i < 10; i++)
+		for (j = 0; j < 10; j++)
+			table[i][j] = NULL;
+
 	xcb_connection_t *c;
 	xcb_event_handlers_t evenths;
 	xcb_property_handlers_t prophs;
@@ -676,7 +697,6 @@ myfont.height = reply->font_ascent + reply->font_descent;
 
 
 	xcb_event_handlers_init(c, &evenths);
-	int i;
 	for(i = 2; i < 128; ++i)
 		xcb_event_set_handler(&evenths, i, handleEvent, 0);
 

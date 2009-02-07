@@ -2,6 +2,7 @@
  * This file defines all data structures used by i3
  *
  */
+#include "queue.h"
 
 /*
  * Defines a position in the table
@@ -36,4 +37,8 @@ typedef struct Client {
 	/* XCB contexts */
 	xcb_gcontext_t titlegc;
 	xcb_window_t window;
+	xcb_window_t child;
+
+	/* The following entry provides the necessary list pointers to use Client with LIST_* macros */
+	LIST_ENTRY(Client) clients;
 } Client;
