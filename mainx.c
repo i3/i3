@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include <xcb/xcb.h>
 
@@ -353,18 +354,43 @@ void render_container(xcb_connection_t *connection, Container *container) {
 			XCB_CONFIG_WINDOW_WIDTH |
 			XCB_CONFIG_WINDOW_HEIGHT;
 
+
 	if (container->mode == MODE_DEFAULT) {
+		int num_clients = 0;
+		LIST_FOREACH(client, &(container->clients), clients)
+			num_clients++;
+		printf("got %d clients in this default container.\n", num_clients);
+
+		int current_client = 0;
 		LIST_FOREACH(client, &(container->clients), clients) {
 			/* TODO: at the moment, every column/row is 200px. This
 			 * needs to be changed to "percentage of the screen" by
 			 * default and adjustable by the user if necessary.
 			 */
-			values[0] = container->col * 200;
-			values[1] = container->row * 200;
-			values[2] = 200;
-			values[3] = 200;
+			values[0] = container->col * container->width; /* x */
+			values[1] = container->row * container->height +
+				(container->height / num_clients) * current_client; /* y */
+			/* TODO: vertical default layout */
+			values[2] = container->width; /* width */
+			values[3] = container->height / num_clients; /* height */
+			printf("frame will be at %dx%d with size %dx%d\n",
+					values[0], values[1], values[2], values[3]);
+
 			/* TODO: update only if necessary */
 			xcb_configure_window(connection, client->window, mask, values);
+
+			/* The coordinates of the child are relative to its frame */
+			values[0] = 2;
+			values[1] = 20;
+			values[2] -= 2;
+			values[3] -= 20;
+			printf("child itself will be at %dx%d with size %dx%d\n",
+					values[0], values[1], values[2], values[3]);
+
+			xcb_configure_window(connection, client->child, mask, values);
+
+			decorate_window(connection, client);
+			current_client++;
 		}
 	} else {
 		/* TODO: Implement stacking */
@@ -373,6 +399,26 @@ void render_container(xcb_connection_t *connection, Container *container) {
 
 void render_layout(xcb_connection_t *conn) {
 	int cols, rows;
+	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
+	int width = root_screen->width_in_pixels;
+	int height = root_screen->height_in_pixels;
+
+	int num_cols = 0, num_rows = 0;
+	bool row_has_content;
+	for (rows = 0; rows < 10; rows++) {
+		row_has_content = false;
+		for (cols = 0; cols < 10; cols++)
+			if (table[cols][rows] != NULL) {
+				num_cols++;
+				row_has_content = true;
+			}
+		if (row_has_content)
+			num_rows++;
+	}
+
+	printf("got %d rows and %d cols\n", num_rows, num_cols);
+	printf("each of them therefore is %d px width and %d px height\n",
+			width / num_cols, height / num_rows);
 
 	/* Go through the whole table and render what’s necessary */
 	for (rows = 0; rows < 10; rows++)
@@ -381,6 +427,9 @@ void render_layout(xcb_connection_t *conn) {
 				/* Update position of the container */
 				table[cols][rows]->row = rows;
 				table[cols][rows]->col = cols;
+				table[cols][rows]->width = width / num_cols;
+				table[cols][rows]->height = height / num_rows;
+
 
 				/* Render it */
 				render_container(conn, table[cols][rows]);
@@ -395,7 +444,12 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 		xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
 		int16_t x, int16_t y, uint16_t width, uint16_t height)
 {
-	Client *new = malloc(sizeof(Client));
+
+	Client *new = table_get(byChild, child);
+	if (new == NULL) {
+		printf("oh, it's new\n");
+		new = malloc(sizeof(Client));
+	}
 	xcb_drawable_t drawable;
 	uint32_t mask = 0;
 	uint32_t values[3];
@@ -553,7 +607,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_generic_e
 	printf("gots press %d\n", event->detail);
 	printf("i'm in state %d\n", event->state);
 
-	if (event->detail == 46) {
+	if (event->detail == 28) {
 		/* 't' */
 		pid_t pid;
 		if ((pid = vfork()) == 0) {
@@ -615,8 +669,12 @@ int handle_map_notify_event(void *prophs, xcb_connection_t *c, xcb_map_notify_ev
 	return 1;
 }
 
-int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_event_t *e)
-{
+/*
+ * Our window decorations were unmapped. That means, the window will be killed now,
+ * so we better clean up before.
+ *
+ */
+int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_event_t *e) {
 	Client *client = table_remove(byChild, e->event);
 	xcb_window_t root;
 	printf("UnmapNotify for 0x%08x (received from 0x%08x): ", e->window, e->event);
@@ -626,6 +684,21 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
 		return 0;
 	}
 
+	/* TODO: make a list of containers to run through */
+	int rows, cols;
+	Client *con_client;
+	for (rows = 0; rows < 10; rows++)
+		for (cols = 0; cols < 10; cols++)
+			if (table[cols][rows] != NULL)
+				LIST_FOREACH(con_client, &(table[cols][rows]->clients), clients)
+					if (con_client == client) {
+						printf("removing from container\n");
+						LIST_REMOVE(con_client, clients);
+						break;
+					}
+
+
+
 	root = xcb_setup_roots_iterator(xcb_get_setup(c)).data->root;
 	printf("child of 0x%08x.\n", client->window);
 	xcb_reparent_window(c, client->child, root, 0, 0);
@@ -633,6 +706,9 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
 	xcb_flush(c);
 	table_remove(byParent, client->window);
 	free(client);
+
+	render_layout(c);
+
 	return 1;
 }
 
@@ -752,6 +828,8 @@ myfont.height = reply->font_ascent + reply->font_descent;
 
 	/* Grab 'a' */
 	//xcb_grab_key(c, 0, root, 0, 38, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, 0, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+
 	xcb_grab_key(c, 0, root, 0, 46, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 #if 0
    if (xcb_grab_pointer_reply(c, xcb_grab_pointer_unchecked(c, 0, root,

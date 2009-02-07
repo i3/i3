@@ -48,9 +48,13 @@ typedef struct Client {
  *
  */
 typedef struct Container {
-	/* Ensure MODE_DEFAULT maps to 0 because we use calloc for initialization later */
+	/* Position of the container inside our table */
 	int row;
 	int col;
+	/* Width/Height of the container. Changeable by the user */
+	int width;
+	int height;
+	/* Ensure MODE_DEFAULT maps to 0 because we use calloc for initialization later */
 	enum { MODE_DEFAULT = 0, MODE_STACK = 1 } mode;
 	LIST_HEAD(client_head, Client) clients;
 } Container;
