@@ -42,3 +42,11 @@ typedef struct Client {
 	/* The following entry provides the necessary list pointers to use Client with LIST_* macros */
 	LIST_ENTRY(Client) clients;
 } Client;
+
+/*
+ * A container is either in default or stacking mode. It sits inside the table.
+ *
+ */
+typedef struct Container {
+	LIST_HEAD(client_head, Client) clients;
+} Container;
