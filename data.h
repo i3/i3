@@ -31,4 +31,9 @@ typedef struct Client {
 	/* TODO: this is NOT final */
 	Cell old_position; /* if you set a client to floating and set it back to managed,
 			      it does remember its old position and *tries* to get back there */
+
+
+	/* XCB contexts */
+	xcb_gcontext_t titlegc;
+	xcb_window_t window;
 } Client;

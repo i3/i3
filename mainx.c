@@ -7,6 +7,9 @@
 
 #include "xcb_wm.h"
 #include "xcb_aux.h"
+#include "xcb_event.h"
+#include "xcb_property.h"
+#include "xcb_keysyms.h"
 #include "data.h"
 
 Font myfont;
@@ -17,6 +20,11 @@ static const int BOTTOM = 5;
 static const int RIGHT = 5;
 table_t *byChild = 0;
 table_t *byParent = 0;
+	xcb_window_t root_win;
+
+int globalc = 0;
+
+Client myc;
 
 
 static const char *labelError[] = {
@@ -286,18 +294,71 @@ static int addClientWindow(xcb_window_t child, xcb_window_t parent, xcb_gcontext
 	return 1;
 }
 
+/*
+ * Returns the colorpixel to use for the given RGB color code
+ *
+ */
+uint32_t get_colorpixel(xcb_connection_t *conn, int r, int g, int b) {
+	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
+
+	xcb_colormap_t colormapId = xcb_generate_id(conn);
+	/* TODO: we need to get myc.window away here */
+	xcb_create_colormap(conn, XCB_COLORMAP_ALLOC_NONE, colormapId, myc.window, root_screen->root_visual);
+	xcb_alloc_color_reply_t *reply = xcb_alloc_color_reply(conn, xcb_alloc_color(conn, colormapId, r, g, b), NULL);
+
+	if (!reply) {
+		printf("color fail\n");
+		return;
+	}
+
+	uint32_t pixel = reply->pixel;
+	free(reply);
+	return pixel;
+}
+
+/*
+ * (Re-)draws window decorations for a given Client
+ *
+ */
+void decorate_window(xcb_connection_t *conn, Client *client) {
+	uint32_t mask = 0;
+	uint32_t values[3];
+	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
+
+	mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
+
+	xcb_font_t font = xcb_generate_id (conn);
+	char *font_name = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1";
+        xcb_void_cookie_t fontCookie = xcb_open_font_checked (conn, font, strlen (font_name), font_name ); 
+
+	values[0] = root_screen->black_pixel;
+	if (globalc++ > 1)
+		values[1] = get_colorpixel(conn, 65535, 0, 0);
+	else values[1] = get_colorpixel(conn, 0, 0, 65535);
+	values[2] = font;
+
+	xcb_change_gc(conn, client->titlegc, mask, values);
+
+
+	/* TODO: utf8? */
+	char *label = "i3 rocks :>";
+        xcb_void_cookie_t textCookie = xcb_image_text_8_checked (conn, strlen (label), myc.window, myc.titlegc, 2, 15, label );
+}
+
+/*
+ * Let’s own this window…
+ *
+ */
 void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 		xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
 		int16_t x, int16_t y, uint16_t width, uint16_t height)
 {
-	xcb_window_t window;
 	xcb_drawable_t drawable;
 	uint32_t mask = 0;
 	uint32_t values[3];
 	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
-	xcb_gcontext_t titlegc;
 
-	window = xcb_generate_id(conn);
+	myc.window = xcb_generate_id(conn);
 
 	/* TODO: what do these mean? */
 	mask |= XCB_CW_BACK_PIXEL;
@@ -310,12 +371,12 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	values[2] = XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE
 		| XCB_EVENT_MASK_EXPOSURE /* | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW */;
 
-	printf("Reparenting 0x%08x under 0x%08x.\n", child, window);
+	printf("Reparenting 0x%08x under 0x%08x.\n", child, myc.window);
 
 	/* Yo dawg, I heard you like windows, so I create a window around your window… */
 	xcb_create_window(conn,
 			depth,
-			window,
+			myc.window,
 			root,
 			x,
 			y,
@@ -329,71 +390,74 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	xcb_change_save_set(conn, XCB_SET_MODE_INSERT, child);
 
 	/* Map the window on the screen (= make it visible) */
-	xcb_map_window(conn, window);
+	xcb_map_window(conn, myc.window);
 
-	titlegc = xcb_generate_id(conn);
+	/* Generate a graphics context for the titlebar */
+	myc.titlegc = xcb_generate_id(conn);
+	xcb_create_gc(conn, myc.titlegc, myc.window, 0, 0);
 
-	mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-#if 0
-	values[0] = root_screen->black_pixel;
-
-	values[1] = root_screen->white_pixel;
-#endif
-xcb_colormap_t colormapId = xcb_generate_id (conn);
-xcb_create_colormap (conn, XCB_COLORMAP_ALLOC_NONE, colormapId, window, root_screen->root_visual );
-xcb_alloc_color_reply_t *reply = xcb_alloc_color_reply (conn,
-                                                                xcb_alloc_color (conn,
-                                                                                 colormapId,
-                                                                                 0,
-                                                                                 0,
-                                                                                 65535),
-                                                                NULL );
-
-  if (!reply) {
-printf("color fail\n");
-    return;
-}
-
-xcb_font_t font = xcb_generate_id (conn);
-char *font_name = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1";
-        xcb_void_cookie_t fontCookie = xcb_open_font_checked (conn,
-                                                              font,
-                                                              strlen (font_name),
-                                                              font_name );
-
-
-	values[0] = root_screen->black_pixel;
-	values[1] = reply->pixel;
-	values[2] = font;
-
-	drawable = window;
-	/* Create a new graphics context */
-	xcb_create_gc(conn, titlegc, drawable, mask, values);
-
-	/* Change color to something different, just to test */
-	values[1] = root_screen->white_pixel;
-	xcb_change_gc(conn, titlegc, mask, values);
-
-/* TODO: utf8? */
-	char *label = "i3 rocks :>";
-        xcb_void_cookie_t textCookie = xcb_image_text_8_checked (conn,
-                                                                 strlen (label),
-                                                                 window,
-                                                                 titlegc,
-                                                                 2, 15,
-                                                                 label );
-
+	/* Draw decorations */
+	decorate_window(conn, &myc);
 
 	/* add the title context as a child for the window */
-	addClientWindow(child, window, titlegc);
+	/* TODO: replace this, it's internal */
+	addClientWindow(child, myc.window, myc.titlegc);
 
 	/* Moves the original window into the new frame we've created for it */
-	xcb_reparent_window(conn, child, window, LEFT - 1, TOP - 1);
+	/* TODO: hmm, LEFT/TOP needs to go */
+	xcb_reparent_window(conn, child, myc.window, LEFT - 1, TOP - 1);
 
 	/* We are interested in property changes */
 	mask = XCB_CW_EVENT_MASK;
 	values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
 	xcb_change_window_attributes(conn, child, mask, values);
+
+	/* TODO: At the moment, new windows just get focus */
+
+	xcb_get_input_focus_reply_t *reply = xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL);
+	if (reply) {
+		printf("got focus info\n");
+		printf("focus is at %p\n", reply->focus);
+		printf("window is at %p\n", myc.window);
+
+		free(reply);
+	}
+xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, myc.window, XCB_CURRENT_TIME);
+
+	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, myc.window, XCB_CURRENT_TIME);
+	reply = xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL);
+	if (reply) {
+		printf("got focus info\n");
+		printf("focus is at %p\n", reply->focus);
+		printf("window is at %p\n", myc.window);
+
+		free(reply);
+	}
+
+	
+#if 0
+
+	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(conn, 0, strlen("_NET_ACTIVE_WINDOW"), "_NET_ACTIVE_WINDOW");
+	xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, atom_cookie, NULL);
+	int atom = -1;
+	if (reply) {
+		   atom = reply->atom;
+		   printf("setting atom %d\n", atom);
+		      free(reply);
+	}
+	printf("atom = %d\n", atom);
+
+
+	        xcb_change_property(conn,
+				XCB_PROP_MODE_REPLACE,
+			root,
+			atom,
+			WINDOW,
+			32, /* format, see http://standards.freedesktop.org/wm-spec/1.3/ar01s03.html */
+			1, /* source indication? FIXME */
+			&myc.window);
+#endif
+
 
 	xcb_flush(conn);
 }
@@ -441,14 +505,59 @@ static int handleEvent(void *ignored, xcb_connection_t *c, xcb_generic_event_t *
         return format_event(e);
 }
 
-static int handle_key_press(void *ignored, xcb_connection_t *c, xcb_generic_event_t *e)
-{
-	xcb_key_press_event_t *event = e;
+/*
+ * There was a key press. We lookup the key symbol and see if there are any bindings
+ * on that. This allows to do things like binding special characters (think of ä) to
+ * functions to get one more modifier while not losing AltGr :-)
+ *
+ */
+static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_generic_event_t *e) {
+	xcb_key_press_event_t *event = (xcb_key_press_event_t*)e;
+
+
+	/* FIXME: We need to translate the keypress + state into a string (like, ä)
+	   because they do not generate keysyms (use xev and see for yourself) */
+
 	printf("oh yay!\n");
 	printf("gots press %d\n", event->detail);
-	/* TODO: try to change the window border of all windows. */
+	printf("i'm in state %d\n", event->state);
+
+	if (event->detail == 46) {
+		/* 't' */
+		pid_t pid;
+		if ((pid = vfork()) == 0) {
+			/* Child */
+			/* TODO: what environment do we need to pass? */
+			char *env[2];
+			env[0] = "DISPLAY=:1";
+			env[1] = NULL;
+			char *argv[2];
+			argv[0] = "/usr/bin/xterm";
+			argv[1] = NULL;
+			execve("/usr/bin/xterm", argv, env);
+		}
+	} else if (event->detail == 38) {
+		xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, myc.window, XCB_CURRENT_TIME);
+	}
+
+	//decorate_window(c, &myc);
+
         return format_event(e);
 }
+
+static int handle_motion(void *ignored, xcb_connection_t *conn, xcb_generic_event_t *e) {
+	xcb_motion_notify_event_t *event = (xcb_motion_notify_event_t*)e;
+
+	printf("i gots a motion: %d, %d\n", event->event_x, event->event_y);
+	printf("@root that is: %d, %d\n", event->root_x, event->root_y);
+
+	if (event->root_x < 50) {
+		printf("setting focus\n");
+	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, myc.window, XCB_CURRENT_TIME);
+
+	}
+}
+
 
 static void redrawWindow(xcb_connection_t *c, client_window_t *client)
 {
@@ -544,7 +653,6 @@ int main() {
 	memset(&evenths, 0, sizeof(xcb_event_handlers_t));
 	memset(&prophs, 0, sizeof(xcb_property_handlers_t));
 
-
 	byChild = alloc_table();
 	byParent = alloc_table();
 
@@ -573,6 +681,8 @@ myfont.height = reply->font_ascent + reply->font_descent;
 		xcb_event_set_handler(&evenths, i, handleEvent, 0);
 
 	xcb_event_set_handler(&evenths, XCB_KEY_PRESS, handle_key_press, 0);
+	xcb_event_set_handler(&evenths, XCB_MOTION_NOTIFY, handle_motion, 0);
+
 	for(i = 0; i < 256; ++i)
 		xcb_event_set_error_handler(&evenths, i, (xcb_generic_error_handler_t) handleEvent, 0);
 
@@ -585,19 +695,48 @@ myfont.height = reply->font_ascent + reply->font_descent;
 	xcb_property_handlers_init(&prophs, &evenths);
 	xcb_event_set_map_notify_handler(&evenths, handle_map_notify_event, &prophs);
 
-	//xcb_grab_key (xcb_connection_t *c, uint8_t owner_events, xcb_window_t grab_window, uint16_t modifiers, xcb_keycode_t key, uint8_t pointer_mode, uint8_t keyboard_mode)
-	
 
 	root = xcb_aux_get_screen(c, screens)->root;
+	root_win = root;
 
-	{
-		uint32_t mask = XCB_CW_EVENT_MASK;
-		uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE };
-		xcb_change_window_attributes(c, root, mask, values);
-	}
+	uint32_t mask = XCB_CW_EVENT_MASK;
+	uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE };
+	xcb_change_window_attributes(c, root, mask, values);
 
 	/* Grab 'a' */
-	xcb_grab_key(c, 0, root, 0, 38, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	//xcb_grab_key(c, 0, root, 0, 38, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, 0, 46, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+#if 0
+   if (xcb_grab_pointer_reply(c, xcb_grab_pointer_unchecked(c, 0, root,
+                                       XCB_EVENT_MASK_BUTTON_PRESS   |
+                                       XCB_EVENT_MASK_BUTTON_RELEASE |
+                                       XCB_EVENT_MASK_ENTER_WINDOW   |
+                                       XCB_EVENT_MASK_LEAVE_WINDOW   |
+                                       XCB_EVENT_MASK_POINTER_MOTION,
+                                       XCB_GRAB_MODE_ASYNC,
+                                       XCB_GRAB_MODE_ASYNC,
+                                       XCB_NONE, XCB_NONE,
+                                       XCB_CURRENT_TIME), NULL))
+printf("could not grab pointer\n");
+#endif
+
+
+
+	//xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+		/* 't' */
+		pid_t pid;
+		if ((pid = vfork()) == 0) {
+			/* Child */
+			/* TODO: what environment do we need to pass? */
+			char *env[2];
+			env[0] = "DISPLAY=:1";
+			env[1] = NULL;
+			char *argv[3];
+			argv[0] = "/usr/bin/xterm";
+			argv[1] = NULL;
+			execve("/usr/bin/xterm", argv, env);
+		}
+
 
 	xcb_flush(c);
 
