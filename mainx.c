@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #include <xcb/xcb.h>
 
@@ -29,9 +30,6 @@ static const int RIGHT = 5;
 table_t *byChild = 0;
 table_t *byParent = 0;
 xcb_window_t root_win;
-
-/* We have a list of Clients, called all_clients */
-LIST_HEAD(all_clients_head, Client) all_clients;
 
 /* _the_ table. Stores all clients. */
 Container *table[10][10];
@@ -348,8 +346,8 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
 
 void render_container(xcb_connection_t *connection, Container *container) {
 	Client *client;
-	int values[4];
-	int mask = 	XCB_CONFIG_WINDOW_X |
+	uint32_t values[4];
+	uint32_t mask = XCB_CONFIG_WINDOW_X |
 			XCB_CONFIG_WINDOW_Y |
 			XCB_CONFIG_WINDOW_WIDTH |
 			XCB_CONFIG_WINDOW_HEIGHT;
@@ -357,12 +355,12 @@ void render_container(xcb_connection_t *connection, Container *container) {
 
 	if (container->mode == MODE_DEFAULT) {
 		int num_clients = 0;
-		LIST_FOREACH(client, &(container->clients), clients)
+		CIRCLEQ_FOREACH(client, &(container->clients), clients)
 			num_clients++;
 		printf("got %d clients in this default container.\n", num_clients);
 
 		int current_client = 0;
-		LIST_FOREACH(client, &(container->clients), clients) {
+		CIRCLEQ_FOREACH(client, &(container->clients), clients) {
 			/* TODO: at the moment, every column/row is 200px. This
 			 * needs to be changed to "percentage of the screen" by
 			 * default and adjustable by the user if necessary.
@@ -430,7 +428,6 @@ void render_layout(xcb_connection_t *conn) {
 				table[cols][rows]->width = width / num_cols;
 				table[cols][rows]->height = height / num_rows;
 
-
 				/* Render it */
 				render_container(conn, table[cols][rows]);
 			}
@@ -448,18 +445,18 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	Client *new = table_get(byChild, child);
 	if (new == NULL) {
 		printf("oh, it's new\n");
-		new = malloc(sizeof(Client));
+		new = calloc(sizeof(Client), 1);
 	}
-	xcb_drawable_t drawable;
 	uint32_t mask = 0;
 	uint32_t values[3];
 	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 
-	/* Insert into the list of all clients */
-	LIST_INSERT_HEAD(&all_clients, new, clients);
-
 	/* Insert into the currently active container */
-	LIST_INSERT_HEAD(&(table[current_col][current_row]->clients), new, clients);
+	CIRCLEQ_INSERT_TAIL(&(table[current_col][current_row]->clients), new, clients);
+
+	printf("currently_focused = %p\n", new);
+	table[current_col][current_row]->currently_focused = new;
+	new->container = table[current_col][current_row];
 
 	new->window = xcb_generate_id(conn);
 	new->child = child;
@@ -520,35 +517,52 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
 	/* TODO: At the moment, new windows just get focus */
 	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, new->window, XCB_CURRENT_TIME);
-#if 0
-
-	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(conn, 0, strlen("_NET_ACTIVE_WINDOW"), "_NET_ACTIVE_WINDOW");
-	xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, atom_cookie, NULL);
-	int atom = -1;
-	if (reply) {
-		   atom = reply->atom;
-		   printf("setting atom %d\n", atom);
-		      free(reply);
-	}
-	printf("atom = %d\n", atom);
-
-
-	        xcb_change_property(conn,
-				XCB_PROP_MODE_REPLACE,
-			root,
-			atom,
-			WINDOW,
-			32, /* format, see http://standards.freedesktop.org/wm-spec/1.3/ar01s03.html */
-			1, /* source indication? FIXME */
-			&myc.window);
-#endif
 
 	render_layout(conn);
 
 	xcb_flush(conn);
 }
 
+static bool focus_window_in_container(xcb_connection_t *connection, Container *container,
+		direction_t direction) {
+	/* If this container is empty, we’re done */
+	if (container->currently_focused == NULL)
+		return false;
 
+	Client *candidad;
+	if (direction == D_UP)
+		candidad = CIRCLEQ_PREV(container->currently_focused, clients);
+	else if (direction == D_DOWN)
+		candidad = CIRCLEQ_NEXT(container->currently_focused, clients);
+
+	/* If we don’t have anything to select, we’re done */
+	if (candidad == CIRCLEQ_END(&(container->clients)))
+		return false;
+
+	/* Set focus if we could successfully move */
+	container->currently_focused = candidad;
+	xcb_set_input_focus(connection, XCB_INPUT_FOCUS_NONE, candidad->child, XCB_CURRENT_TIME);
+	xcb_flush(connection);
+
+	return true;
+}
+
+static void focus_window(xcb_connection_t *connection, direction_t direction) {
+	printf("focusing direction %d\n", direction);
+	/* TODO: for horizontal default layout, this has to be expanded to LEFT/RIGHT */
+	if (direction == D_UP || direction == D_DOWN) {
+		/* Let’s see if we can perform up/down focus in the current container */
+		Container *container = table[current_col][current_row];
+
+		/* There always is a container. If not, current_col or current_row is wrong */
+		assert(container != NULL);
+
+		if (focus_window_in_container(connection, container, direction))
+			return;
+	} else {
+		printf("direction unhandled\n");
+	}
+}
 
 
 int format_event(xcb_generic_event_t *e)
@@ -597,9 +611,7 @@ static int handleEvent(void *ignored, xcb_connection_t *c, xcb_generic_event_t *
  * functions to get one more modifier while not losing AltGr :-)
  *
  */
-static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_generic_event_t *e) {
-	xcb_key_press_event_t *event = (xcb_key_press_event_t*)e;
-
+static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
 
 	/* FIXME: We need to translate the keypress + state into a string (like, ä)
 	   because they do not generate keysyms (use xev and see for yourself) */
@@ -608,8 +620,17 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_generic_e
 	printf("gots press %d\n", event->detail);
 	printf("i'm in state %d\n", event->state);
 
-	if (event->detail == 28) {
-		/* 't' */
+	/* 30 = u
+	 * 57 = n
+	 * 27 = r
+	 * 28 = t
+	 * 40 = d
+	 *
+	 * …uhm, I should probably say that I’ve remapped my keys in hardware :)
+	 */
+	direction_t direction;
+	if (event->detail == 30) {
+		/* 'u' */
 		pid_t pid;
 		if ((pid = vfork()) == 0) {
 			/* Child */
@@ -621,14 +642,25 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_generic_e
 			argv[0] = "/usr/bin/xterm";
 			argv[1] = NULL;
 			execve("/usr/bin/xterm", argv, env);
+			/* not reached */
 		}
-	} else if (event->detail == 38) {
-		//xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, myc.window, XCB_CURRENT_TIME);
+		return 1;
+	} else if (event->detail == 57) {
+		direction = D_LEFT;
+	} else if (event->detail == 27) {
+		direction = D_DOWN;
+	} else if (event->detail == 28) {
+		direction = D_UP;
+	} else if (event->detail == 40) {
+		direction = D_RIGHT;
 	}
 
-	//decorate_window(c, &myc);
+	/* TODO: ctrl -> focus_container(conn, direction) */
+	focus_window(conn, direction);
+	/* TODO: shift -> move_current_window(conn, direction) */
+	/* TODO: shift + ctrl -> move_current_container(conn, direction) */
 
-        return format_event(e);
+        return 1;
 }
 
 /*
@@ -648,15 +680,14 @@ static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_
 		return 1;
 	}
 
+	/* Update container */
+	client->container->currently_focused = client;
+
 	/* Set focus to the entered window, and flush xcb buffer immediately */
 	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
 	xcb_flush(conn);
 
 	return 1;
-}
-
-static void redrawWindow(xcb_connection_t *c, Client *client) {
-	decorate_window(c, client);
 }
 
 int handle_map_notify_event(void *prophs, xcb_connection_t *c, xcb_map_notify_event_t *e)
@@ -689,10 +720,10 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
 	for (rows = 0; rows < 10; rows++)
 		for (cols = 0; cols < 10; cols++)
 			if (table[cols][rows] != NULL)
-				LIST_FOREACH(con_client, &(table[cols][rows]->clients), clients)
+				CIRCLEQ_FOREACH(con_client, &(table[cols][rows]->clients), clients)
 					if (con_client == client) {
 						printf("removing from container\n");
-						LIST_REMOVE(con_client, clients);
+						CIRCLEQ_REMOVE(&(table[cols][rows]->clients), con_client, clients);
 						break;
 					}
 
@@ -719,7 +750,7 @@ printf("exposeevent\n");
 	Client *client = table_get(byParent, e->window);
 	if(!client || e->count != 0)
 		return 1;
-	redrawWindow(c, client);
+	decorate_window(c, client);
 	return 1;
 }
 void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *prophs, xcb_window_t root)
@@ -753,7 +784,6 @@ void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *proph
 }
 
 int main() {
-	LIST_INIT(&all_clients);
 	int i, j;
 	for (i = 0; i < 10; i++)
 		for (j = 0; j < 10; j++)
@@ -765,6 +795,7 @@ int main() {
 	 *
 	 */
 	table[0][0] = calloc(sizeof(Container), 1);
+	CIRCLEQ_INIT(&(table[0][0]->clients));
 
 	xcb_connection_t *c;
 	xcb_event_handlers_t evenths;
@@ -802,15 +833,16 @@ myfont.height = reply->font_ascent + reply->font_descent;
 	for(i = 2; i < 128; ++i)
 		xcb_event_set_handler(&evenths, i, handleEvent, 0);
 
-	/* Key presses are pretty obvious, I think */
-	xcb_event_set_handler(&evenths, XCB_KEY_PRESS, handle_key_press, 0);
 
 	for(i = 0; i < 256; ++i)
 		xcb_event_set_error_handler(&evenths, i, (xcb_generic_error_handler_t) handleEvent, 0);
 
 	/* Expose = an Application should redraw itself. That is, we have to redraw our
-	 * contents (= Bars) */
+	 * contents (= top/bottom bar, titlebars for each window) */
 	xcb_event_set_expose_handler(&evenths, handleExposeEvent, 0);
+
+	/* Key presses are pretty obvious, I think */
+	xcb_event_set_key_press_handler(&evenths, handle_key_press, 0);
 
 	/* Enter window = user moved his mouse over the window */
 	xcb_event_set_enter_notify_handler(&evenths, handle_enter_notify, 0);
@@ -830,27 +862,14 @@ myfont.height = reply->font_ascent + reply->font_descent;
 
 	/* Grab 'a' */
 	//xcb_grab_key(c, 0, root, 0, 38, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+
+	xcb_grab_key(c, 0, root, 0, 30, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, 0, 57, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 	xcb_grab_key(c, 0, root, 0, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-
-	xcb_grab_key(c, 0, root, 0, 46, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-#if 0
-   if (xcb_grab_pointer_reply(c, xcb_grab_pointer_unchecked(c, 0, root,
-                                       XCB_EVENT_MASK_BUTTON_PRESS   |
-                                       XCB_EVENT_MASK_BUTTON_RELEASE |
-                                       XCB_EVENT_MASK_ENTER_WINDOW   |
-                                       XCB_EVENT_MASK_LEAVE_WINDOW   |
-                                       XCB_EVENT_MASK_POINTER_MOTION,
-                                       XCB_GRAB_MODE_ASYNC,
-                                       XCB_GRAB_MODE_ASYNC,
-                                       XCB_NONE, XCB_NONE,
-                                       XCB_CURRENT_TIME), NULL))
-printf("could not grab pointer\n");
-#endif
-
-
+	xcb_grab_key(c, 0, root, 0, 27, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, 0, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 
 	//xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-		/* 't' */
 		pid_t pid;
 		if ((pid = vfork()) == 0) {
 			/* Child */

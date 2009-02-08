@@ -4,14 +4,22 @@
  */
 #include "queue.h"
 
+/* Forward definitions */
+typedef struct Cell Cell;
+typedef struct Font Font;
+typedef struct Container Container;
+typedef struct Client Client;
+
+typedef enum { D_LEFT, D_RIGHT, D_UP, D_DOWN } direction_t;
+
 /*
  * Defines a position in the table
  *
  */
-typedef struct Cell {
+struct Cell {
 	int row;
 	int column;
-} Cell;
+};
 
 /*
  * We need to save the height of a font because it is required for each drawing of
@@ -19,19 +27,22 @@ typedef struct Cell {
  * Font-entry will be filled for later use.
  *
  */
-typedef struct Font {
+struct Font {
 	char *name;
 	int height;
-} Font;
+};
 
 /*
  * A client is X11-speak for a window.
  *
  */
-typedef struct Client {
+struct Client {
 	/* TODO: this is NOT final */
 	Cell old_position; /* if you set a client to floating and set it back to managed,
 			      it does remember its old position and *tries* to get back there */
+
+	/* Backpointer. A client is inside a container */
+	Container *container;
 
 
 	/* XCB contexts */
@@ -40,14 +51,17 @@ typedef struct Client {
 	xcb_window_t child;
 
 	/* The following entry provides the necessary list pointers to use Client with LIST_* macros */
-	LIST_ENTRY(Client) clients;
-} Client;
+	CIRCLEQ_ENTRY(Client) clients;
+};
 
 /*
  * A container is either in default or stacking mode. It sits inside the table.
  *
  */
-typedef struct Container {
+struct Container {
+	/* Those are speaking for themselves: */
+	Client *currently_focused;
+
 	/* Position of the container inside our table */
 	int row;
 	int col;
@@ -56,5 +70,5 @@ typedef struct Container {
 	int height;
 	/* Ensure MODE_DEFAULT maps to 0 because we use calloc for initialization later */
 	enum { MODE_DEFAULT = 0, MODE_STACK = 1 } mode;
-	LIST_HEAD(client_head, Client) clients;
-} Container;
+	CIRCLEQ_HEAD(client_head, Client) clients;
+};
