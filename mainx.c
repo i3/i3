@@ -342,7 +342,7 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
 	/* TODO: utf8? */
 	//char *label = "i3 rocks :>";
 	char *label;
-	asprintf(&label, "gots win %p", client->window);
+	asprintf(&label, "gots win %08x", client->window);
         xcb_void_cookie_t textCookie = xcb_image_text_8_checked (conn, strlen (label), client->window, client->titlegc, 2, 15, label );
 }
 
@@ -473,7 +473,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
 	mask |= XCB_CW_EVENT_MASK;
 	values[2] = XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE
-		| XCB_EVENT_MASK_EXPOSURE /* | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW */;
+		| XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_ENTER_WINDOW;
 
 	printf("Reparenting 0x%08x under 0x%08x.\n", child, new->window);
 
@@ -513,12 +513,13 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
 	/* We are interested in property changes */
 	mask = XCB_CW_EVENT_MASK;
-	values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+	values[0] = 	XCB_EVENT_MASK_PROPERTY_CHANGE |
+			XCB_EVENT_MASK_STRUCTURE_NOTIFY |
+			XCB_EVENT_MASK_ENTER_WINDOW;
 	xcb_change_window_attributes(conn, child, mask, values);
 
 	/* TODO: At the moment, new windows just get focus */
 	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, new->window, XCB_CURRENT_TIME);
-	
 #if 0
 
 	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(conn, 0, strlen("_NET_ACTIVE_WINDOW"), "_NET_ACTIVE_WINDOW");
@@ -630,33 +631,31 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_generic_e
         return format_event(e);
 }
 
-static int handle_motion(void *ignored, xcb_connection_t *conn, xcb_generic_event_t *e) {
-	xcb_motion_notify_event_t *event = (xcb_motion_notify_event_t*)e;
+/*
+ * When the user moves the mouse pointer onto a window, this callback gets called.
+ *
+ */
+static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_event_t *event) {
+	/* This was either a focus for a client’s parent (= titlebar)… */
+	Client *client = table_get(byParent, event->event);
+	/* …or the client itself */
+	if (client == NULL)
+		client = table_get(byChild, event->event);
 
-	printf("i gots a motion: %d, %d\n", event->event_x, event->event_y);
-	printf("@root that is: %d, %d\n", event->root_x, event->root_y);
-
-	if (event->root_x < 50) {
-		printf("setting focus\n");
-	//xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, myc.window, XCB_CURRENT_TIME);
-
+	/* If not, then this event is not interesting. This should not happen */
+	if (client == NULL) {
+		printf("DEBUG: Uninteresting enter_notify-event?\n");
+		return 1;
 	}
-	/* TODO: what to return? */
+
+	/* Set focus to the entered window, and flush xcb buffer immediately */
+	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
+	xcb_flush(conn);
+
+	return 1;
 }
 
-
-static void redrawWindow(xcb_connection_t *c, Client *client)
-{
-#if 0
-printf("redrawing window.\n");
-	xcb_drawable_t d = { client->window };
-	if(!client->name_len)
-		return;
-	xcb_clear_area(c, 0, d, 0, 0, 0, 0);
-	xcb_image_text_8(c, client->name_len, d, client->titlegc,
-			LEFT - 1, TOP - 4, client->name);
-	xcb_flush(c);
-#endif
+static void redrawWindow(xcb_connection_t *c, Client *client) {
 	decorate_window(c, client);
 }
 
@@ -803,8 +802,8 @@ myfont.height = reply->font_ascent + reply->font_descent;
 	for(i = 2; i < 128; ++i)
 		xcb_event_set_handler(&evenths, i, handleEvent, 0);
 
+	/* Key presses are pretty obvious, I think */
 	xcb_event_set_handler(&evenths, XCB_KEY_PRESS, handle_key_press, 0);
-	xcb_event_set_handler(&evenths, XCB_MOTION_NOTIFY, handle_motion, 0);
 
 	for(i = 0; i < 256; ++i)
 		xcb_event_set_error_handler(&evenths, i, (xcb_generic_error_handler_t) handleEvent, 0);
@@ -812,6 +811,9 @@ myfont.height = reply->font_ascent + reply->font_descent;
 	/* Expose = an Application should redraw itself. That is, we have to redraw our
 	 * contents (= Bars) */
 	xcb_event_set_expose_handler(&evenths, handleExposeEvent, 0);
+
+	/* Enter window = user moved his mouse over the window */
+	xcb_event_set_enter_notify_handler(&evenths, handle_enter_notify, 0);
 
 	xcb_event_set_unmap_notify_handler(&evenths, handle_unmap_notify_event, 0);
 
