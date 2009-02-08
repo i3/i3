@@ -431,6 +431,8 @@ void render_layout(xcb_connection_t *conn) {
 				/* Render it */
 				render_container(conn, table[cols][rows]);
 			}
+
+	xcb_flush(conn);
 }
 
 /*
@@ -559,11 +561,72 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
 
 		if (focus_window_in_container(connection, container, direction))
 			return;
+	} else if (direction == D_LEFT || direction == D_RIGHT) {
+		if (direction == D_RIGHT && table[current_col+1][current_row] != NULL)
+			current_col++;
+		else if (direction == D_LEFT && current_col > 0 && table[current_col-1][current_row] != NULL)
+			current_col--;
+		else {
+			printf("nah, not possible\n");
+			return;
+		}
+		if (table[current_col][current_row]->currently_focused != NULL) {
+			printf("updating focus\n");
+			printf("entry = %p\n", table[current_col][current_row]->currently_focused);
+			printf("child = %p\n", table[current_col][current_row]->currently_focused->child);
+
+			xcb_set_input_focus(connection, XCB_INPUT_FOCUS_NONE, table[current_col][current_row]->currently_focused->child, XCB_CURRENT_TIME);
+			xcb_flush(connection);
+		}
+
 	} else {
 		printf("direction unhandled\n");
 	}
 }
 
+static void move_current_window(xcb_connection_t *connection, direction_t direction) {
+	printf("moving window to direction %d\n", direction);
+	/* Get current window */
+	Container *container = table[current_col][current_row];
+
+	/* There has to be a container, see focus_window() */
+	assert(container != NULL);
+
+	/* If there is no window, we’re done */
+	if (container->currently_focused == NULL)
+		return;
+
+	Client *current_client = container->currently_focused;
+
+	if (direction == D_RIGHT) {
+		printf("ok, moving right\n");
+		if (table[current_col+1][current_row] == NULL) {
+			Container *new;
+			/* Create a new container */
+			new = table[current_col+1][current_row] = calloc(sizeof(Container), 1);
+			CIRCLEQ_INIT(&(new->clients));
+			/* As soon as the client is moved away, the next client in the old
+			 * container needs to get focus, if any. Therefore, we save it here. */
+			Client *to_focus = CIRCLEQ_NEXT(current_client, clients);
+			if (to_focus == CIRCLEQ_END(&(container->clients)))
+				to_focus = NULL;
+
+			/* Remove it from the old container and put it into the new one */
+			CIRCLEQ_REMOVE(&(container->clients), current_client, clients);
+			CIRCLEQ_INSERT_TAIL(&(new->clients), current_client, clients);
+
+			/* Update data structures */
+			current_client->container = new;
+			container->currently_focused = to_focus;
+			new->currently_focused = current_client;
+
+			current_col++;
+		}
+		printf("done\n");
+	}
+
+	render_layout(connection);
+}
 
 int format_event(xcb_generic_event_t *e)
 {           
@@ -653,9 +716,17 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 		direction = D_UP;
 	} else if (event->detail == 40) {
 		direction = D_RIGHT;
+	} else {
+		printf("don't want this.\n");
+		return 1;
 	}
 
 	/* TODO: ctrl -> focus_container(conn, direction) */
+	/* FIXME: actually wrong but i'm too lazy to grab my keys all the time */
+	if (event->state & XCB_MOD_MASK_CONTROL) {
+		move_current_window(conn, direction);
+	} else
+
 	focus_window(conn, direction);
 	/* TODO: shift -> move_current_window(conn, direction) */
 	/* TODO: shift + ctrl -> move_current_container(conn, direction) */
@@ -864,10 +935,10 @@ myfont.height = reply->font_ascent + reply->font_descent;
 	//xcb_grab_key(c, 0, root, 0, 38, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 
 	xcb_grab_key(c, 0, root, 0, 30, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, 0, 57, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, 0, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, 0, 27, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, 0, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 57, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 27, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 
 	//xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 		pid_t pid;
