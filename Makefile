@@ -1,6 +1,18 @@
-all:
-	gcc -Wall -gdwarf-2 -g3 -I/usr/include/xcb -c mainx.c
-	gcc -Wall -gdwarf-2 -g3 -I/usr/include/xcb -c table.c
-	gcc -Wall -gdwarf-2 -g3 -I/usr/include/xcb -c test_table.c
-	gcc -Wall -gdwarf-2 -g3 -I/usr/include/xcb -o mainx mainx.o table.o -lxcb-wm
-	gcc -Wall -gdwarf-2 -g3 -I/usr/include/xcb -o tt test_table.o table.o
+CFLAGS += -Wall
+# Extended debugging flags, macros shall be available in gcc
+CFLAGS += -gdwarf-2
+CFLAGS += -g3
+CFLAGS += -I/usr/include/xcb
+
+LDFLAGS += -lxcb-wm
+
+FILES=$(patsubst %.c,%.o,$(wildcard *.c))
+
+%.o: %.c %.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+all: ${FILES}
+	$(CC) -o mainx ${FILES} $(LDFLAGS)
+
+clean:
+	rm -f *.o

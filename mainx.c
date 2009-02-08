@@ -19,8 +19,9 @@
 
 #include "queue.h"
 #include "table.h"
+#include "font.h"
 
-Font myfont;
+Font *myfont;
 
 static const int TOP = 20;
 static const int LEFT = 5;
@@ -32,6 +33,7 @@ table_t *byChild = 0;
 table_t *byParent = 0;
 xcb_window_t root_win;
 
+char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1";
 
 
 int current_col = 0;
@@ -324,15 +326,14 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
 
 	mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
 
-	xcb_font_t font = xcb_generate_id (conn);
-	char *font_name = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1";
-        xcb_void_cookie_t fontCookie = xcb_open_font_checked (conn, font, strlen (font_name), font_name ); 
+	Font *font = load_font(conn, pattern);
 
 	values[0] = root_screen->black_pixel;
-	if (globalc++ > 1)
+	if (client->container->currently_focused == client) {
+		printf("oh, currently active = %p\n", client);
 		values[1] = get_colorpixel(conn, client->window, 65535, 0, 0);
-	else values[1] = get_colorpixel(conn, client->window, 0, 0, 65535);
-	values[2] = font;
+	}else values[1] = get_colorpixel(conn, client->window, 0, 0, 65535);
+	values[2] = font->id;
 
 	xcb_change_gc(conn, client->titlegc, mask, values);
 
@@ -341,7 +342,7 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
 	//char *label = "i3 rocks :>";
 	char *label;
 	asprintf(&label, "gots win %08x", client->window);
-        xcb_void_cookie_t textCookie = xcb_image_text_8_checked (conn, strlen (label), client->window, client->titlegc, 2, 15, label );
+        xcb_void_cookie_t textCookie = xcb_image_text_8_checked (conn, strlen (label), client->window, client->titlegc, 2, 2 + font->height, label );
 }
 
 void render_container(xcb_connection_t *connection, Container *container) {
@@ -430,8 +431,7 @@ void render_layout(xcb_connection_t *conn) {
  */
 void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 		xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
-		int16_t x, int16_t y, uint16_t width, uint16_t height)
-{
+		int16_t x, int16_t y, uint16_t width, uint16_t height) {
 
 	Client *new = table_get(byChild, child);
 	if (new == NULL) {
@@ -533,6 +533,7 @@ static bool focus_window_in_container(xcb_connection_t *connection, Container *c
 	/* Set focus if we could successfully move */
 	container->currently_focused = candidad;
 	xcb_set_input_focus(connection, XCB_INPUT_FOCUS_NONE, candidad->child, XCB_CURRENT_TIME);
+	render_layout(connection);
 	xcb_flush(connection);
 
 	return true;
@@ -562,6 +563,7 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
 		if (CUR_CELL->currently_focused != NULL) {
 			xcb_set_input_focus(connection, XCB_INPUT_FOCUS_NONE,
 					CUR_CELL->currently_focused->child, XCB_CURRENT_TIME);
+			render_layout(connection);
 			xcb_flush(connection);
 		}
 
@@ -798,8 +800,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
 
 
 
-static int handleExposeEvent(void *data, xcb_connection_t *c, xcb_expose_event_t *e)
-{
+static int handleExposeEvent(void *data, xcb_connection_t *c, xcb_expose_event_t *e) {
 printf("exposeevent\n");
 	Client *client = table_get(byParent, e->window);
 	if(!client || e->count != 0)
@@ -807,8 +808,7 @@ printf("exposeevent\n");
 	decorate_window(c, client);
 	return 1;
 }
-void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *prophs, xcb_window_t root)
-{
+void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *prophs, xcb_window_t root) {
 	xcb_query_tree_cookie_t wintree;
 	xcb_query_tree_reply_t *rep;
 	int i, len;
@@ -861,18 +861,7 @@ int main() {
 
 	/* Font loading */
 
-char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1";
-
-xcb_list_fonts_with_info_cookie_t cookie = xcb_list_fonts_with_info(c, 1, strlen(pattern), pattern);
-xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(c, cookie, NULL);
-if (!reply) {
-	printf("Could not load font\n");
-	return 1;
-}
-
-myfont.name = strdup(xcb_list_fonts_with_info_name(reply));
-myfont.height = reply->font_ascent + reply->font_descent;
-
+	myfont = load_font(c, pattern);
 
 	xcb_event_handlers_init(c, &evenths);
 	for(i = 2; i < 128; ++i)

@@ -20,11 +20,19 @@ Container ***table = NULL;
 
 struct table_dimensions_t table_dims = {0, 0};
 
+/*
+ * Initialize table
+ *
+ */
 void init_table() {
 	expand_table_cols();
 	expand_table_rows();
 }
 
+/*
+ * Add one row to the table
+ *
+ */
 void expand_table_rows() {
 	int c;
 	Container *new;
@@ -38,6 +46,10 @@ void expand_table_rows() {
 	}
 }
 
+/*
+ * Add one column to the table
+ *
+ */
 void expand_table_cols() {
 	int c;
 	Container *new;
@@ -59,4 +71,3 @@ bool cell_exists(int col, int row) {
 	return (col >= 0 && col < table_dims.x) &&
 		(row >= 0 && row < table_dims.y);
 }
-
