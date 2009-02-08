@@ -18,6 +18,7 @@
 #include "data.h"
 
 #include "queue.h"
+#include "table.h"
 
 Font myfont;
 
@@ -31,8 +32,7 @@ table_t *byChild = 0;
 table_t *byParent = 0;
 xcb_window_t root_win;
 
-/* _the_ table. Stores all clients. */
-Container *table[10][10];
+
 
 int current_col = 0;
 int current_row = 0;
@@ -401,26 +401,15 @@ void render_layout(xcb_connection_t *conn) {
 	int width = root_screen->width_in_pixels;
 	int height = root_screen->height_in_pixels;
 
-	int num_cols = 0, num_rows = 0;
-	bool row_has_content;
-	for (rows = 0; rows < 10; rows++) {
-		row_has_content = false;
-		for (cols = 0; cols < 10; cols++)
-			if (table[cols][rows] != NULL) {
-				num_cols++;
-				row_has_content = true;
-			}
-		if (row_has_content)
-			num_rows++;
-	}
+	int num_cols = table_dims.x, num_rows = table_dims.y;
 
 	printf("got %d rows and %d cols\n", num_rows, num_cols);
 	printf("each of them therefore is %d px width and %d px height\n",
 			width / num_cols, height / num_rows);
 
 	/* Go through the whole table and render what’s necessary */
-	for (rows = 0; rows < 10; rows++)
-		for (cols = 0; cols < 10; cols++)
+	for (cols = 0; cols < table_dims.x; cols++)
+		for (rows = 0; rows < table_dims.y; rows++)
 			if (table[cols][rows] != NULL) {
 				/* Update position of the container */
 				table[cols][rows]->row = rows;
@@ -454,11 +443,11 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 
 	/* Insert into the currently active container */
-	CIRCLEQ_INSERT_TAIL(&(table[current_col][current_row]->clients), new, clients);
+	CIRCLEQ_INSERT_TAIL(&(CUR_CELL->clients), new, clients);
 
 	printf("currently_focused = %p\n", new);
-	table[current_col][current_row]->currently_focused = new;
-	new->container = table[current_col][current_row];
+	CUR_CELL->currently_focused = new;
+	new->container = CUR_CELL;
 
 	new->window = xcb_generate_id(conn);
 	new->child = child;
@@ -554,7 +543,7 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
 	/* TODO: for horizontal default layout, this has to be expanded to LEFT/RIGHT */
 	if (direction == D_UP || direction == D_DOWN) {
 		/* Let’s see if we can perform up/down focus in the current container */
-		Container *container = table[current_col][current_row];
+		Container *container = CUR_CELL;
 
 		/* There always is a container. If not, current_col or current_row is wrong */
 		assert(container != NULL);
@@ -562,20 +551,17 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
 		if (focus_window_in_container(connection, container, direction))
 			return;
 	} else if (direction == D_LEFT || direction == D_RIGHT) {
-		if (direction == D_RIGHT && table[current_col+1][current_row] != NULL)
+		if (direction == D_RIGHT && cell_exists(current_col+1, current_row))
 			current_col++;
-		else if (direction == D_LEFT && current_col > 0 && table[current_col-1][current_row] != NULL)
+		else if (direction == D_LEFT && cell_exists(current_col-1, current_row))
 			current_col--;
 		else {
 			printf("nah, not possible\n");
 			return;
 		}
-		if (table[current_col][current_row]->currently_focused != NULL) {
-			printf("updating focus\n");
-			printf("entry = %p\n", table[current_col][current_row]->currently_focused);
-			printf("child = %p\n", table[current_col][current_row]->currently_focused->child);
-
-			xcb_set_input_focus(connection, XCB_INPUT_FOCUS_NONE, table[current_col][current_row]->currently_focused->child, XCB_CURRENT_TIME);
+		if (CUR_CELL->currently_focused != NULL) {
+			xcb_set_input_focus(connection, XCB_INPUT_FOCUS_NONE,
+					CUR_CELL->currently_focused->child, XCB_CURRENT_TIME);
 			xcb_flush(connection);
 		}
 
@@ -587,7 +573,7 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
 static void move_current_window(xcb_connection_t *connection, direction_t direction) {
 	printf("moving window to direction %d\n", direction);
 	/* Get current window */
-	Container *container = table[current_col][current_row];
+	Container *container = CUR_CELL;
 
 	/* There has to be a container, see focus_window() */
 	assert(container != NULL);
@@ -600,28 +586,27 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 
 	if (direction == D_RIGHT) {
 		printf("ok, moving right\n");
-		if (table[current_col+1][current_row] == NULL) {
-			Container *new;
-			/* Create a new container */
-			new = table[current_col+1][current_row] = calloc(sizeof(Container), 1);
-			CIRCLEQ_INIT(&(new->clients));
-			/* As soon as the client is moved away, the next client in the old
-			 * container needs to get focus, if any. Therefore, we save it here. */
-			Client *to_focus = CIRCLEQ_NEXT(current_client, clients);
-			if (to_focus == CIRCLEQ_END(&(container->clients)))
-				to_focus = NULL;
+		expand_table_cols();
 
-			/* Remove it from the old container and put it into the new one */
-			CIRCLEQ_REMOVE(&(container->clients), current_client, clients);
-			CIRCLEQ_INSERT_TAIL(&(new->clients), current_client, clients);
+		Container *new = table[current_col+1][current_row];
 
-			/* Update data structures */
-			current_client->container = new;
-			container->currently_focused = to_focus;
-			new->currently_focused = current_client;
+		/* As soon as the client is moved away, the next client in the old
+		 * container needs to get focus, if any. Therefore, we save it here. */
+		Client *to_focus = CIRCLEQ_NEXT(current_client, clients);
+		if (to_focus == CIRCLEQ_END(&(container->clients)))
+			to_focus = NULL;
 
-			current_col++;
-		}
+		/* Remove it from the old container and put it into the new one */
+		CIRCLEQ_REMOVE(&(container->clients), current_client, clients);
+		CIRCLEQ_INSERT_TAIL(&(new->clients), current_client, clients);
+
+		/* Update data structures */
+		current_client->container = new;
+		container->currently_focused = to_focus;
+		new->currently_focused = current_client;
+
+		current_col++;
+
 		printf("done\n");
 	}
 
@@ -785,18 +770,16 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
 		return 0;
 	}
 
-	/* TODO: make a list of containers to run through */
 	int rows, cols;
 	Client *con_client;
-	for (rows = 0; rows < 10; rows++)
-		for (cols = 0; cols < 10; cols++)
-			if (table[cols][rows] != NULL)
-				CIRCLEQ_FOREACH(con_client, &(table[cols][rows]->clients), clients)
-					if (con_client == client) {
-						printf("removing from container\n");
-						CIRCLEQ_REMOVE(&(table[cols][rows]->clients), con_client, clients);
-						break;
-					}
+	for (cols = 0; cols < table_dims.x; cols++)
+		for (rows = 0; rows < table_dims.y; rows++)
+			CIRCLEQ_FOREACH(con_client, &(table[cols][rows]->clients), clients)
+				if (con_client == client) {
+					printf("removing from container\n");
+					CIRCLEQ_REMOVE(&(table[cols][rows]->clients), con_client, clients);
+					break;
+				}
 
 
 
@@ -855,18 +838,9 @@ void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *proph
 }
 
 int main() {
-	int i, j;
-	for (i = 0; i < 10; i++)
-		for (j = 0; j < 10; j++)
-			table[i][j] = NULL;
+	int i;
 
-	/*
-	 * By default, the table is one row and one column big. It contains
-	 * one container in default mode in it.
-	 *
-	 */
-	table[0][0] = calloc(sizeof(Container), 1);
-	CIRCLEQ_INIT(&(table[0][0]->clients));
+	init_table();
 
 	xcb_connection_t *c;
 	xcb_event_handlers_t evenths;

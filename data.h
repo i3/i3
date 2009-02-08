@@ -1,3 +1,7 @@
+#include <xcb/xcb.h>
+
+#ifndef _DATA_H
+#define _DATA_H
 /*
  * This file defines all data structures used by i3
  *
@@ -10,7 +14,12 @@ typedef struct Font Font;
 typedef struct Container Container;
 typedef struct Client Client;
 
+/* Helper types */
 typedef enum { D_LEFT, D_RIGHT, D_UP, D_DOWN } direction_t;
+struct table_dimensions_t {
+	int x;
+	int y;
+};
 
 /*
  * Defines a position in the table
@@ -72,3 +81,5 @@ struct Container {
 	enum { MODE_DEFAULT = 0, MODE_STACK = 1 } mode;
 	CIRCLEQ_HEAD(client_head, Client) clients;
 };
+
+#endif
