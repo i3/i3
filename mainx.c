@@ -21,12 +21,18 @@
 #include "table.h"
 #include "font.h"
 
+#define TERMINAL "/usr/pkg/bin/urxvt"
+
 Font *myfont;
 
 static const int TOP = 20;
 static const int LEFT = 5;
 static const int BOTTOM = 5;
 static const int RIGHT = 5;
+
+/* This is the filtered environment which will be passed to opened applications.
+ * It contains DISPLAY (naturally) and locales stuff (LC_*, LANG) */
+static char **environment;
 
 /* hm, xcb_wm wants us to implement this. */
 table_t *byChild = 0;
@@ -656,6 +662,24 @@ static int handleEvent(void *ignored, xcb_connection_t *c, xcb_generic_event_t *
 }
 
 /*
+ * Starts the given application with the given args.
+ *
+ */
+static void start_application(char *path, char *args) {
+	pid_t pid;
+	if ((pid = vfork()) == 0) {
+		/* This is the child */
+		char *argv[2];
+		/* TODO: For now, we ignore args. Later on, they should be parsed
+		   correctly (like in the shell?) */
+		argv[0] = path;
+		argv[1] = NULL;
+		execve(path, argv, environment);
+		/* not reached */
+	}
+}
+
+/*
  * There was a key press. We lookup the key symbol and see if there are any bindings
  * on that. This allows to do things like binding special characters (think of ä) to
  * functions to get one more modifier while not losing AltGr :-)
@@ -681,19 +705,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 	direction_t direction;
 	if (event->detail == 30) {
 		/* 'u' */
-		pid_t pid;
-		if ((pid = vfork()) == 0) {
-			/* Child */
-			/* TODO: what environment do we need to pass? */
-			char *env[2];
-			env[0] = "DISPLAY=:1";
-			env[1] = NULL;
-			char *argv[2];
-			argv[0] = "/usr/bin/xterm";
-			argv[1] = NULL;
-			execve("/usr/bin/xterm", argv, env);
-			/* not reached */
-		}
+		start_application(TERMINAL, NULL);
 		return 1;
 	} else if (event->detail == 57) {
 		direction = D_LEFT;
@@ -837,8 +849,21 @@ void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *proph
 	free(rep);
 }
 
-int main() {
-	int i;
+int main(int argc, char *argv[], char *env[]) {
+	int i, e = 0;
+
+	for (i = 0; (env[i] != NULL); i++)
+		if (strncmp(env[i], "LC_", strlen("LC_")) == 0 ||
+			strncmp(env[i], "LANG=", strlen("LANG=")) == 0 ||
+			strncmp(env[i], "DISPLAY=", strlen("DISPLAY=")) == 0) {
+			printf("Passing environment \"%s\"\n", env[i]);
+			environment = realloc(environment, sizeof(char*) * ++e);
+			environment[e-1] = env[i];
+		}
+
+	/* environment has to be NULL-terminated */
+	environment = realloc(environment, sizeof(char*) * ++e);
+	environment[e-1] = NULL;
 
 	init_table();
 
@@ -904,19 +929,7 @@ int main() {
 	xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 
 	//xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-		pid_t pid;
-		if ((pid = vfork()) == 0) {
-			/* Child */
-			/* TODO: what environment do we need to pass? */
-			char *env[2];
-			env[0] = "DISPLAY=:1";
-			env[1] = NULL;
-			char *argv[3];
-			argv[0] = "/usr/bin/xterm";
-			argv[1] = NULL;
-			execve("/usr/bin/xterm", argv, env);
-		}
-
+	start_application(TERMINAL, NULL);
 
 	xcb_flush(c);
 
