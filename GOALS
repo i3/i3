@@ -1,0 +1,6 @@
+GOALS (these have to be fullfilled all the time):
+
+ * Do _NOT_ use autotools or a similar mechanism. Instead, document all
+   requirements properly so that packagers for every plattform can easily
+   provide users with a package. Those who build software for themselves
+   do know how to install requirements, if they are documented.
