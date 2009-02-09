@@ -59,11 +59,12 @@ struct Client {
 	/* Backpointer. A client is inside a container */
 	Container *container;
 
+	int width, height;
 
 	/* XCB contexts */
-	xcb_gcontext_t titlegc;
-	xcb_window_t window;
-	xcb_window_t child;
+	xcb_window_t frame; /* Our window: The frame around the client */
+	xcb_gcontext_t titlegc; /* The titlebar’s graphic context inside the frame */
+	xcb_window_t child; /* The client’s window */
 
 	/* The following entry provides the necessary list pointers to use Client with LIST_* macros */
 	CIRCLEQ_ENTRY(Client) clients;

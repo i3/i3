@@ -301,15 +301,29 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *c, xcb_win
 
 
 /*
- * Returns the colorpixel to use for the given RGB color code
+ * Returns the colorpixel to use for the given hex color (think of HTML).
+ *
+ * The hex_color has to start with #, for example #FF00FF.
+ *
+ * NOTE that get_colorpixel() does _NOT_ check the given color code for validity.
+ * This has to be done by the caller.
  *
  */
-uint32_t get_colorpixel(xcb_connection_t *conn, xcb_window_t window, int r, int g, int b) {
+uint32_t get_colorpixel(xcb_connection_t *conn, xcb_window_t window, char *hex) {
+	#define RGB_8_TO_16(i) (65535 * ((i) & 0xFF) / 255)
+        char strgroups[3][3] = {{hex[1], hex[2], '\0'},
+                                {hex[3], hex[4], '\0'},
+                                {hex[5], hex[6], '\0'}};
+	int rgb16[3] = {RGB_8_TO_16(strtol(strgroups[0], NULL, 16)),
+			RGB_8_TO_16(strtol(strgroups[1], NULL, 16)),
+			RGB_8_TO_16(strtol(strgroups[2], NULL, 16))};
+
 	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 
 	xcb_colormap_t colormapId = xcb_generate_id(conn);
 	xcb_create_colormap(conn, XCB_COLORMAP_ALLOC_NONE, colormapId, window, root_screen->root_visual);
-	xcb_alloc_color_reply_t *reply = xcb_alloc_color_reply(conn, xcb_alloc_color(conn, colormapId, r, g, b), NULL);
+	xcb_alloc_color_reply_t *reply = xcb_alloc_color_reply(conn,
+			xcb_alloc_color(conn, colormapId, rgb16[0], rgb16[1], rgb16[2]), NULL);
 
 	if (!reply) {
 		printf("color fail\n");
@@ -318,6 +332,7 @@ uint32_t get_colorpixel(xcb_connection_t *conn, xcb_window_t window, int r, int 
 
 	uint32_t pixel = reply->pixel;
 	free(reply);
+	xcb_free_colormap(conn, colormapId);
 	return pixel;
 }
 
@@ -329,26 +344,65 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
 	uint32_t mask = 0;
 	uint32_t values[3];
 	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
+	Font *font = load_font(conn, pattern);
+	uint32_t background_color,
+		 text_color,
+		 border_color;
 
+	if (client->container->currently_focused == client) {
+		background_color = get_colorpixel(conn, client->frame, "#285577");
+		text_color = get_colorpixel(conn, client->frame, "#ffffff");
+		border_color = get_colorpixel(conn, client->frame, "#4c7899");
+	} else {
+		background_color = get_colorpixel(conn, client->frame, "#222222");
+		text_color = get_colorpixel(conn, client->frame, "#888888");
+		border_color = get_colorpixel(conn, client->frame, "#333333");
+	}
+
+	/* Our plan is the following:
+	   - Draw a rect around the whole client in background_color
+	   - Draw two lines in a lighter color
+	   - Draw the window’s title
+
+	   Note that xcb_image_text apparently adds 1xp border around the font? Can anyone confirm this?
+	 */
+
+	/* Draw a green rectangle around the window */
+	mask = XCB_GC_FOREGROUND;
+	values[0] = background_color;
+	xcb_change_gc(conn, client->titlegc, mask, values);
+
+	xcb_rectangle_t rect = {0, 0, client->width, client->height};
+	xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &rect);
+
+	/* Draw the lines */
+	/* TODO: this needs to be more beautiful somewhen. maybe stdarg + change_gc(gc, ...) ? */
+#define DRAW_LINE(colorpixel, x, y, to_x, to_y) { \
+		uint32_t draw_values[1]; \
+		draw_values[0] = colorpixel; \
+		xcb_change_gc(conn, client->titlegc, XCB_GC_FOREGROUND, draw_values); \
+		xcb_point_t points[] = {{x, y}, {to_x, to_y}}; \
+		xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, client->frame, client->titlegc, 2, points); \
+	}
+
+	DRAW_LINE(border_color, 2, 0, client->width, 0);
+	DRAW_LINE(border_color, 2, font->height + 3, 2 + client->width, font->height + 3);
+
+	/* Draw the font */
 	mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
 
-	Font *font = load_font(conn, pattern);
-
-	values[0] = root_screen->black_pixel;
-	if (client->container->currently_focused == client) {
-		printf("oh, currently active = %p\n", client);
-		values[1] = get_colorpixel(conn, client->window, 65535, 0, 0);
-	}else values[1] = get_colorpixel(conn, client->window, 0, 0, 65535);
+	values[0] = text_color;
+	values[1] = background_color;
 	values[2] = font->id;
 
 	xcb_change_gc(conn, client->titlegc, mask, values);
 
-
 	/* TODO: utf8? */
-	//char *label = "i3 rocks :>";
 	char *label;
-	asprintf(&label, "gots win %08x", client->window);
-        xcb_void_cookie_t textCookie = xcb_image_text_8_checked (conn, strlen (label), client->window, client->titlegc, 2, 2 + font->height, label );
+	asprintf(&label, "gots win %08x", client->frame);
+        xcb_void_cookie_t text_cookie = xcb_image_text_8_checked(conn, strlen(label), client->frame,
+					client->titlegc, 3 /* X */, font->height /* Y = baseline of font */, label);
+	free(label);
 }
 
 void render_container(xcb_connection_t *connection, Container *container) {
@@ -358,7 +412,7 @@ void render_container(xcb_connection_t *connection, Container *container) {
 			XCB_CONFIG_WINDOW_Y |
 			XCB_CONFIG_WINDOW_WIDTH |
 			XCB_CONFIG_WINDOW_HEIGHT;
-
+	Font *font = load_font(connection, pattern);
 
 	if (container->mode == MODE_DEFAULT) {
 		int num_clients = 0;
@@ -381,14 +435,18 @@ void render_container(xcb_connection_t *connection, Container *container) {
 			printf("frame will be at %dx%d with size %dx%d\n",
 					values[0], values[1], values[2], values[3]);
 
-			/* TODO: update only if necessary */
-			xcb_configure_window(connection, client->window, mask, values);
+			client->width = values[2];
+			client->height = values[3];
 
-			/* The coordinates of the child are relative to its frame */
+			/* TODO: update only if necessary */
+			xcb_configure_window(connection, client->frame, mask, values);
+
+			/* The coordinates of the child are relative to its frame, we
+			 * add a border of 2 pixel to each value */
 			values[0] = 2;
-			values[1] = 20;
-			values[2] -= 2;
-			values[3] -= 20;
+			values[1] = font->height + 2 + 2;
+			values[2] -= values[0] + 2;
+			values[3] -= values[1] + 2;
 			printf("child itself will be at %dx%d with size %dx%d\n",
 					values[0], values[1], values[2], values[3]);
 
@@ -455,8 +513,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	CUR_CELL->currently_focused = new;
 	new->container = CUR_CELL;
 
-	new->window = xcb_generate_id(conn);
+	new->frame = xcb_generate_id(conn);
 	new->child = child;
+	new->width = width;
+	new->height = height;
 
 	/* TODO: what do these mean? */
 	mask |= XCB_CW_BACK_PIXEL;
@@ -469,12 +529,12 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	values[2] = XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE
 		| XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_ENTER_WINDOW;
 
-	printf("Reparenting 0x%08x under 0x%08x.\n", child, new->window);
+	printf("Reparenting 0x%08x under 0x%08x.\n", child, new->frame);
 
 	/* Yo dawg, I heard you like windows, so I create a window around your window… */
 	xcb_create_window(conn,
 			depth,
-			new->window,
+			new->frame,
 			root,
 			x,
 			y,
@@ -488,22 +548,22 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	xcb_change_save_set(conn, XCB_SET_MODE_INSERT, child);
 
 	/* Map the window on the screen (= make it visible) */
-	xcb_map_window(conn, new->window);
+	xcb_map_window(conn, new->frame);
 
 	/* Generate a graphics context for the titlebar */
 	new->titlegc = xcb_generate_id(conn);
-	xcb_create_gc(conn, new->titlegc, new->window, 0, 0);
+	xcb_create_gc(conn, new->titlegc, new->frame, 0, 0);
 
 	/* Draw decorations */
 	decorate_window(conn, new);
 
 	/* Put our data structure (Client) into the table */
-	table_put(byParent, new->window, new);
+	table_put(byParent, new->frame, new);
 	table_put(byChild, child, new);
 
 	/* Moves the original window into the new frame we've created for it */
-	/* TODO: hmm, LEFT/TOP needs to go */
-	xcb_reparent_window(conn, child, new->window, LEFT - 1, TOP - 1);
+	Font *font = load_font(conn, pattern);
+	xcb_reparent_window(conn, child, new->frame, 0, font->height);
 
 	/* We are interested in property changes */
 	mask = XCB_CW_EVENT_MASK;
@@ -513,7 +573,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	xcb_change_window_attributes(conn, child, mask, values);
 
 	/* TODO: At the moment, new windows just get focus */
-	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, new->window, XCB_CURRENT_TIME);
+	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, new->frame, XCB_CURRENT_TIME);
 
 	render_layout(conn);
 
@@ -739,7 +799,8 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
  */
 static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_event_t *event) {
 	/* This was either a focus for a client’s parent (= titlebar)… */
-	Client *client = table_get(byParent, event->event);
+	Client *client = table_get(byParent, event->event),
+	       *old_client;
 	/* …or the client itself */
 	if (client == NULL)
 		client = table_get(byChild, event->event);
@@ -751,10 +812,14 @@ static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_
 	}
 
 	/* Update container */
+	old_client = client->container->currently_focused;
 	client->container->currently_focused = client;
 
 	/* Set focus to the entered window, and flush xcb buffer immediately */
 	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
+	/* Update last/current client’s titlebar */
+	decorate_window(conn, old_client);
+	decorate_window(conn, client);
 	xcb_flush(conn);
 
 	return 1;
@@ -798,11 +863,11 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
 
 
 	root = xcb_setup_roots_iterator(xcb_get_setup(c)).data->root;
-	printf("child of 0x%08x.\n", client->window);
+	printf("child of 0x%08x.\n", client->frame);
 	xcb_reparent_window(c, client->child, root, 0, 0);
-	xcb_destroy_window(c, client->window);
+	xcb_destroy_window(c, client->frame);
 	xcb_flush(c);
-	table_remove(byParent, client->window);
+	table_remove(byParent, client->frame);
 	free(client);
 
 	render_layout(c);
