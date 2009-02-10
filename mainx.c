@@ -652,31 +652,89 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 
 	Client *current_client = container->currently_focused;
 
-	if (direction == D_RIGHT) {
-		printf("ok, moving right\n");
-		expand_table_cols();
+	Container *new;
+	int new_current_col = current_col,
+	    new_current_row = current_row;
+	/* As soon as the client is moved away, the next client in the old
+	 * container needs to get focus, if any. Therefore, we save it here. */
+	Client *to_focus = CIRCLEQ_NEXT(current_client, clients);
+	if (to_focus == CIRCLEQ_END(&(container->clients)))
+		to_focus = NULL;
 
-		Container *new = table[current_col+1][current_row];
+	switch (direction) {
+		case D_LEFT:
+			printf("moving left\n");
+			if (current_col == 0)
+				return;
 
-		/* As soon as the client is moved away, the next client in the old
-		 * container needs to get focus, if any. Therefore, we save it here. */
-		Client *to_focus = CIRCLEQ_NEXT(current_client, clients);
-		if (to_focus == CIRCLEQ_END(&(container->clients)))
-			to_focus = NULL;
+			new = table[current_col-1][current_row];
+			new_current_col--;
+			break;
+		case D_RIGHT:
+			printf("ok, moving right\n");
+			if (current_col == (table_dims.x-1)) {
+				printf("need to expand\n");
+				expand_table_cols();
+			}
 
-		/* Remove it from the old container and put it into the new one */
-		CIRCLEQ_REMOVE(&(container->clients), current_client, clients);
-		CIRCLEQ_INSERT_TAIL(&(new->clients), current_client, clients);
+			new = table[current_col+1][current_row];
+			new_current_col++;
+			break;
+		case D_UP:
+			/* TODO: impl */
+			printf("moving up\n");
+			Client *prev = CIRCLEQ_PREV(current_client, clients);
+			if (prev != CIRCLEQ_END(&(container->clients))) {
+				printf("i can do that\n");
+				/* We can move the client inside its current container */
+				CIRCLEQ_REMOVE(&(container->clients), current_client, clients);
+				CIRCLEQ_INSERT_BEFORE(&(container->clients), prev, current_client, clients);
+				render_layout(connection);
+				return;
+			}
 
-		/* Update data structures */
-		current_client->container = new;
-		container->currently_focused = to_focus;
-		new->currently_focused = current_client;
+			/* TODO: push the client into the container above */
+			return;
+		case D_DOWN:
+			printf("moving down\n");
+			Client *next = CIRCLEQ_NEXT(current_client, clients);
+			if (next != CIRCLEQ_END(&(container->clients))) {
+				printf("i can do that\n");
+				/* We can move the client inside its current container */
+				CIRCLEQ_REMOVE(&(container->clients), current_client, clients);
+				CIRCLEQ_INSERT_AFTER(&(container->clients), next, current_client, clients);
+				render_layout(connection);
+				return;
+			}
 
-		current_col++;
+			/* We need to create a new container or push the client
+			   into the container below */
+			if (current_row == (table_dims.y-1)) {
+				printf("creating a new container\n");
+				expand_table_rows();
+				new = table[current_col][current_row+1];
+				new_current_row++;
+			}
+				/* TODO: check if there is another container below and move
+				   it there */
 
-		printf("done\n");
+
+			break;
 	}
+
+	/* Remove it from the old container and put it into the new one */
+	CIRCLEQ_REMOVE(&(container->clients), current_client, clients);
+	CIRCLEQ_INSERT_TAIL(&(new->clients), current_client, clients);
+
+	/* Update data structures */
+	current_client->container = new;
+	container->currently_focused = to_focus;
+	new->currently_focused = current_client;
+
+	/* TODO: delete all empty columns/rows */
+
+	current_col = new_current_col;
+	current_row = new_current_row;
 
 	render_layout(connection);
 }
@@ -987,10 +1045,16 @@ int main(int argc, char *argv[], char *env[]) {
 	//xcb_grab_key(c, 0, root, 0, 38, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 
 	xcb_grab_key(c, 0, root, 0, 30, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, 57, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, 27, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_1, 57, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_1, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_1, 27, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_1, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 57, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 27, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+
 
 	//xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 	start_application(TERMINAL, NULL);
