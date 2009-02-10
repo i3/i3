@@ -638,10 +638,40 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
 	}
 }
 
+/*
+ * Tries to move the window inside its current container.
+ *
+ * Returns true if the window could be moved, false otherwise.
+ *
+ */
+static bool move_current_window_in_container(xcb_connection_t *connection, Client *client,
+		direction_t direction) {
+	Client *other = (direction == D_UP ? CIRCLEQ_PREV(client, clients) :
+						CIRCLEQ_NEXT(client, clients));
+
+	if (other == CIRCLEQ_END(&(client->container->clients)))
+		return false;
+
+	printf("i can do that\n");
+	/* We can move the client inside its current container */
+	CIRCLEQ_REMOVE(&(client->container->clients), client, clients);
+	if (direction == D_UP)
+		CIRCLEQ_INSERT_BEFORE(&(client->container->clients), other, client, clients);
+	else CIRCLEQ_INSERT_AFTER(&(client->container->clients), other, client, clients);
+	render_layout(connection);
+	return true;
+}
+
+/*
+ * Moves the current window to the given direction, creating a column/row if
+ * necessary
+ *
+ */
 static void move_current_window(xcb_connection_t *connection, direction_t direction) {
 	printf("moving window to direction %d\n", direction);
 	/* Get current window */
-	Container *container = CUR_CELL;
+	Container *container = CUR_CELL,
+		  *new;
 
 	/* There has to be a container, see focus_window() */
 	assert(container != NULL);
@@ -650,71 +680,41 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 	if (container->currently_focused == NULL)
 		return;
 
-	Client *current_client = container->currently_focused;
-
-	Container *new;
-	int new_current_col = current_col,
-	    new_current_row = current_row;
 	/* As soon as the client is moved away, the next client in the old
 	 * container needs to get focus, if any. Therefore, we save it here. */
+	Client *current_client = container->currently_focused;
 	Client *to_focus = CIRCLEQ_NEXT(current_client, clients);
 	if (to_focus == CIRCLEQ_END(&(container->clients)))
 		to_focus = NULL;
 
 	switch (direction) {
 		case D_LEFT:
-			printf("moving left\n");
 			if (current_col == 0)
 				return;
 
-			new = table[--new_current_col][current_row];
+			new = table[--current_col][current_row];
 			break;
 		case D_RIGHT:
-			printf("ok, moving right\n");
-			if (current_col == (table_dims.x-1)) {
-				printf("need to expand\n");
+			if (current_col == (table_dims.x-1))
 				expand_table_cols();
-			}
 
-			new = table[++new_current_col][current_row];
+			new = table[++current_col][current_row];
 			break;
 		case D_UP:
-			printf("moving up\n");
-			Client *prev = CIRCLEQ_PREV(current_client, clients);
-			if (prev != CIRCLEQ_END(&(container->clients))) {
-				printf("i can do that\n");
-				/* We can move the client inside its current container */
-				CIRCLEQ_REMOVE(&(container->clients), current_client, clients);
-				CIRCLEQ_INSERT_BEFORE(&(container->clients), prev, current_client, clients);
-				render_layout(connection);
-				return;
-			}
-
-			if (current_row == 0)
+			if (move_current_window_in_container(connection, current_client, D_UP) ||
+				current_row == 0)
 				return;
 
-			new = table[current_col][--new_current_row];
+			new = table[current_col][--current_row];
 			break;
 		case D_DOWN:
-			printf("moving down\n");
-			Client *next = CIRCLEQ_NEXT(current_client, clients);
-			if (next != CIRCLEQ_END(&(container->clients))) {
-				printf("i can do that\n");
-				/* We can move the client inside its current container */
-				CIRCLEQ_REMOVE(&(container->clients), current_client, clients);
-				CIRCLEQ_INSERT_AFTER(&(container->clients), next, current_client, clients);
-				render_layout(connection);
+			if (move_current_window_in_container(connection, current_client, D_DOWN))
 				return;
-			}
 
-			/* We need to create a new container or push the client
-			   into the container below */
-			if (current_row == (table_dims.y-1)) {
-				printf("creating a new container\n");
+			if (current_row == (table_dims.y-1))
 				expand_table_rows();
-			}
 
-			new = table[current_col][++new_current_row];
+			new = table[current_col][++current_row];
 			break;
 	}
 
@@ -728,9 +728,6 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 	new->currently_focused = current_client;
 
 	/* TODO: delete all empty columns/rows */
-
-	current_col = new_current_col;
-	current_row = new_current_row;
 
 	render_layout(connection);
 }
