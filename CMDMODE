@@ -1,0 +1,32 @@
+left := <h> | <cursor-left>
+right := <l> | <cursor-right>
+up := <j> | <cursor-up>
+down := <k> | <cursor-down>
+
+where := <left|right|up|down> | <tag>
+move := <m>
+snap := <s>
+
+Eingabe ist entweder
+
+cmd := [ <times> ] [ <move> | <snap> ] <where>
+
+oder
+
+with := { [ <times> ] <where> }+ <enter> <cmd>
+
+an jeder Stelle kann mit escape abgebrochen werden
+
+Beispiele:
+
+Fenster links neben dem aktuellen auswählen:
+h
+
+Fenster zwei links neben dem aktuellen auswählen:
+2h
+
+Fenster nach rechts verschieben:
+ml
+
+Fenster und Fenster untendrunter nach rechts verschieben:
+wk<enter>ml
