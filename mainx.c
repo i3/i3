@@ -26,8 +26,9 @@
 
 #define TERMINAL "/usr/pkg/bin/urxvt"
 
-i3Font *myfont;
 Display *xkbdpy;
+
+TAILQ_HEAD(bindings_head, Binding) bindings;
 
 static const int TOP = 20;
 static const int LEFT = 5;
@@ -798,83 +799,141 @@ static void start_application(char *path, char *args) {
 }
 
 /*
+ * Due to bindings like Mode_switch + <a>, we need to bind some keys in XCB_GRAB_MODE_SYNC.
+ * Therefore, we just replay all key presses.
+ *
+ */
+static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_event_t *event) {
+	printf("got key release, just passing\n");
+	xcb_allow_events(conn, ReplayKeyboard, event->time);
+	xcb_flush(conn);
+	return 1;
+}
+
+/*
+ * Parses a command, see file CMDMODE for more information
+ *
+ */
+static void parse_command(xcb_connection_t *conn, const char *command) {
+	printf("--- parsing command \"%s\" ---\n", command);
+	/* Hmm, just to be sure */
+	if (command[0] == '\0')
+		return;
+
+	/* Is it an <exec>? */
+	if (strncmp(command, "exec ", strlen("exec ")) == 0) {
+		printf("starting \"%s\"\n", command + strlen("exec "));
+		start_application(command+strlen("exec "), NULL);
+		return;
+	}
+
+	/* Is it a <with>? */
+	if (command[0] == 'w') {
+		/* TODO: implement */
+		printf("not yet implemented.\n");
+		return;
+	}
+
+	/* It's a normal <cmd> */
+	int times;
+	char *rest = NULL;
+	enum { ACTION_FOCUS, ACTION_MOVE, ACTION_SNAP } action = ACTION_FOCUS;
+	direction_t direction;
+	times = strtol(command, &rest, 10);
+	if (rest == NULL) {
+		printf("Invalid command: Consists only of a movement\n");
+		return;
+	}
+	if (*rest == 'm' || *rest == 's') {
+		action = (*rest == 'm' ? ACTION_MOVE : ACTION_SNAP);
+		rest++;
+	}
+
+	/* Now perform action to <where> */
+	while (*rest != '\0') {
+		/* TODO: tags */
+		if (*rest == 'h')
+			direction = D_LEFT;
+		else if (*rest == 'j')
+			direction = D_DOWN;
+		else if (*rest == 'k')
+			direction = D_UP;
+		else if (*rest == 'l')
+			direction = D_RIGHT;
+		else {
+			printf("unknown direction: %c\n", *rest);
+			return;
+		}
+
+		if (action == ACTION_FOCUS)
+			focus_window(conn, direction);
+		else if (action == ACTION_MOVE)
+			move_current_window(conn, direction);
+		else if (action == ACTION_SNAP)
+			/* TODO: implement */
+			printf("snap not yet implemented\n");
+
+		rest++;
+
+	}
+
+	printf("--- done ---\n");
+}
+
+/*
  * There was a key press. We lookup the key symbol and see if there are any bindings
  * on that. This allows to do things like binding special characters (think of ä) to
  * functions to get one more modifier while not losing AltGr :-)
+ * TODO: this description needs to be more understandable
  *
  */
 static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
-	/* FIXME: We need to translate the keypress + state into a string (like, ä)
-	   because they do not generate keysyms (use xev and see for yourself) */
-
-	printf("oh yay!\n");
-	printf("gots press %d\n", event->detail);
+	printf("Keypress %d\n", event->detail);
 
 	/* We need to get the keysym group (There are group 1 to group 4, each holding
 	   two keysyms (without shift and with shift) using Xkb because X fails to
 	   provide them reliably (it works in Xephyr, it does not in real X) */
 	XkbStateRec state;
-	if (XkbGetState(xkbdpy, XkbUseCoreKbd, &state) == Success) {
-		if (state.group+1 == 2)
-			event->state |= 0x2;
+	if (XkbGetState(xkbdpy, XkbUseCoreKbd, &state) == Success && (state.group+1) == 2)
+		event->state |= 0x2;
+
+	printf("state %d\n", event->state);
+
+	/* Find the binding */
+	Binding *bind, *best_match = TAILQ_END(&bindings);
+	TAILQ_FOREACH(bind, &bindings, bindings) {
+		if (bind->keycode == event->detail &&
+			(bind->mods & event->state) == bind->mods) {
+			if (best_match == TAILQ_END(&bindings) ||
+				bind->mods > best_match->mods)
+				best_match = bind;
+		}
 	}
-	printf("i'm in state %d\n", event->state);
 
+	if (best_match == TAILQ_END(&bindings)) {
+		printf("This key was not bound by us?! (most likely a bug)\n");
+		return 1; /* TODO: return 0? what do the codes mean? */
+	}
 
-	xcb_key_symbols_t *keysyms = xcb_key_symbols_alloc(conn);
-
-	xcb_keysym_t k0 = xcb_key_symbols_get_keysym(keysyms, event->detail, event->state);
-	if (k0 == XCB_NONE)
-		printf("couldn't get k0\n");
-
-	printf("gots keysym %d and \n", k0);
-
-
-	/* 30 = u
-	 * 57 = n
-	 * 27 = r
-	 * 28 = t
-	 * 40 = d
-	 *
-	 * …uhm, I should probably say that I’ve remapped my keys in hardware :)
-	 */
-	direction_t direction;
-	if (event->detail == 30) {
-		/* 'u' */
-		start_application(TERMINAL, NULL);
-
-		return 1;
-	} else if (event->detail == 57) {
-		direction = D_LEFT;
-	} else if (event->detail == 27) {
-		direction = D_DOWN;
-	} else if (event->detail == 28) {
-		direction = D_UP;
-	} else if (event->detail == 40) {
-		direction = D_RIGHT;
-	} else if (event->detail == 25) {
-		Container *con = CUR_CELL;
-		if (con->colspan == 1)
-			con->colspan++;
-		else con->colspan--;
-		render_layout(conn);
+	if (event->state & 0x2) {
+		printf("that's mode_switch\n");
+		parse_command(conn, best_match->command);
+		printf("ok, hiding this event.\n");
+		xcb_allow_events(conn, SyncKeyboard, event->time);
 		xcb_flush(conn);
 		return 1;
-	} else {
-		printf("don't want this.\n");
+	}
+
+	/* If this was an actively grabbed key, and we did not handle it, we need to pass it */
+	if (best_match->mods & BIND_MODE_SWITCH) {
+		printf("passing...\n");
+		xcb_allow_events(conn, ReplayKeyboard, event->time);
+		xcb_flush(conn);
 		return 1;
 	}
 
-	/* TODO: ctrl -> focus_container(conn, direction) */
-	/* FIXME: actually wrong but i'm too lazy to grab my keys all the time */
-	if (event->state & XCB_MOD_MASK_CONTROL) {
-		move_current_window(conn, direction);
-	} else if (event->state & XCB_MOD_MASK_1)
-		focus_window(conn, direction);
-	/* TODO: shift -> move_current_window(conn, direction) */
-	/* TODO: shift + ctrl -> move_current_container(conn, direction) */
-
-        return 1;
+	parse_command(conn, best_match->command);
+	return 1;
 }
 
 /*
@@ -1036,10 +1095,13 @@ int main(int argc, char *argv[], char *env[]) {
 	byChild = alloc_table();
 	byParent = alloc_table();
 
+	TAILQ_INIT(&bindings);
+
 	c = xcb_connect(NULL, &screens);
 
 	printf("x screen is %d\n", screens);
 
+	/* TODO: this has to be more beautiful somewhen */
 	int major, minor, error;
 
 	major = XkbMajorVersion;
@@ -1057,9 +1119,7 @@ int main(int argc, char *argv[], char *env[]) {
 		fprintf(stderr, "XKB not supported by X-server\n");
 		return 1;
 	}
-
-	/* Font loading */
-	myfont = load_font(c, pattern);
+	/* end of ugliness */
 
 	xcb_event_handlers_init(c, &evenths);
 	for(i = 2; i < 128; ++i)
@@ -1072,8 +1132,9 @@ int main(int argc, char *argv[], char *env[]) {
 	 * contents (= top/bottom bar, titlebars for each window) */
 	xcb_event_set_expose_handler(&evenths, handleExposeEvent, 0);
 
-	/* Key presses are pretty obvious, I think */
+	/* Key presses/releases are pretty obvious, I think */
 	xcb_event_set_key_press_handler(&evenths, handle_key_press, 0);
+	xcb_event_set_key_release_handler(&evenths, handle_key_release, 0);
 
 	/* Enter window = user moved his mouse over the window */
 	xcb_event_set_enter_notify_handler(&evenths, handle_enter_notify, 0);
@@ -1090,27 +1151,37 @@ int main(int argc, char *argv[], char *env[]) {
 	uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE };
 	xcb_change_window_attributes(c, root, mask, values);
 
-	/* Grab 'a' */
-	//xcb_grab_key(c, 0, root, 0, 38, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	#define BIND(key, modifier, cmd) { \
+		Binding *new = malloc(sizeof(Binding)); \
+		new->keycode = key; \
+		new->mods = modifier; \
+		new->command = cmd; \
+		TAILQ_INSERT_TAIL(&bindings, new, bindings); \
+	}
 
-	xcb_grab_key(c, 0, root, 0, 30, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, 0, 38, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	/* 38 = 'a' */
+	BIND(38, BIND_MODE_SWITCH, "foo");
 
+	BIND(30, 0, "exec /usr/pkg/bin/urxvt");
 
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_1, 57, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_1, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_1, 27, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_1, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	BIND(44, BIND_MOD_1, "h");
+	BIND(45, BIND_MOD_1, "j");
+	BIND(46, BIND_MOD_1, "k");
+	BIND(47, BIND_MOD_1, "l");
 
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 57, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 27, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 25, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	BIND(44, BIND_MOD_1 | BIND_CONTROL, "mh");
+	BIND(45, BIND_MOD_1 | BIND_CONTROL, "mj");
+	BIND(46, BIND_MOD_1 | BIND_CONTROL, "mk");
+	BIND(47, BIND_MOD_1 | BIND_CONTROL, "ml");
 
+	Binding *bind;
+	TAILQ_FOREACH(bind, &bindings, bindings) {
+		printf("Grabbing %d\n", bind->keycode);
+		if (bind->mods & BIND_MODE_SWITCH)
+			xcb_grab_key(c, 0, root, 0, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
+		else xcb_grab_key(c, 0, root, bind->mods, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	}
 
-
-	//xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 	start_application(TERMINAL, NULL);
 
 	xcb_flush(c);

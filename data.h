@@ -13,9 +13,23 @@ typedef struct Cell Cell;
 typedef struct Font i3Font;
 typedef struct Container Container;
 typedef struct Client Client;
+typedef struct Binding Binding;
 
 /* Helper types */
 typedef enum { D_LEFT, D_RIGHT, D_UP, D_DOWN } direction_t;
+
+enum {
+	BIND_NONE = 0,
+	BIND_MOD_1 = XCB_MOD_MASK_1,
+	BIND_MOD_2 = XCB_MOD_MASK_2,
+	BIND_MOD_3 = XCB_MOD_MASK_3,
+	BIND_MOD_4 = XCB_MOD_MASK_4,
+	BIND_MOD_5 = XCB_MOD_MASK_5,
+	BIND_SHIFT = XCB_MOD_MASK_SHIFT,
+	BIND_CONTROL = XCB_MOD_MASK_CONTROL,
+	BIND_MODE_SWITCH = (1 << 8)
+};
+
 struct table_dimensions_t {
 	int x;
 	int y;
@@ -28,6 +42,17 @@ struct table_dimensions_t {
 struct Cell {
 	int row;
 	int column;
+};
+
+struct Binding {
+	/* Keycode to bind */
+	uint32_t keycode;
+	/* Bitmask consisting of BIND_MOD_1, BIND_MODE_SWITCH, … */
+	uint32_t mods;
+	/* Command, like in command mode */
+	char *command;
+
+	TAILQ_ENTRY(Binding) bindings;
 };
 
 /*

@@ -13,7 +13,11 @@ cmd := [ <times> ] [ <move> | <snap> ] <where>
 
 oder
 
-with := { [ <times> ] <where> }+ <enter> <cmd>
+with := <w> { [ <times> ] <where> }+ <space> <cmd>
+
+oder
+
+exec := exec <path>
 
 an jeder Stelle kann mit escape abgebrochen werden
 
@@ -29,4 +33,4 @@ Fenster nach rechts verschieben:
 ml
 
 Fenster und Fenster untendrunter nach rechts verschieben:
-wk<enter>ml
+wk ml
