@@ -667,8 +667,7 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 			if (current_col == 0)
 				return;
 
-			new = table[current_col-1][current_row];
-			new_current_col--;
+			new = table[--new_current_col][current_row];
 			break;
 		case D_RIGHT:
 			printf("ok, moving right\n");
@@ -677,11 +676,9 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 				expand_table_cols();
 			}
 
-			new = table[current_col+1][current_row];
-			new_current_col++;
+			new = table[++new_current_col][current_row];
 			break;
 		case D_UP:
-			/* TODO: impl */
 			printf("moving up\n");
 			Client *prev = CIRCLEQ_PREV(current_client, clients);
 			if (prev != CIRCLEQ_END(&(container->clients))) {
@@ -693,8 +690,11 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 				return;
 			}
 
-			/* TODO: push the client into the container above */
-			return;
+			if (current_row == 0)
+				return;
+
+			new = table[current_col][--new_current_row];
+			break;
 		case D_DOWN:
 			printf("moving down\n");
 			Client *next = CIRCLEQ_NEXT(current_client, clients);
@@ -712,13 +712,9 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 			if (current_row == (table_dims.y-1)) {
 				printf("creating a new container\n");
 				expand_table_rows();
-				new = table[current_col][current_row+1];
-				new_current_row++;
 			}
-				/* TODO: check if there is another container below and move
-				   it there */
 
-
+			new = table[current_col][++new_current_row];
 			break;
 	}
 
