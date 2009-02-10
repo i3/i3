@@ -10,7 +10,7 @@
 
 /* Forward definitions */
 typedef struct Cell Cell;
-typedef struct Font Font;
+typedef struct Font i3Font;
 typedef struct Container Container;
 typedef struct Client Client;
 
@@ -77,6 +77,8 @@ struct Client {
 struct Container {
 	/* Those are speaking for themselves: */
 	Client *currently_focused;
+	int colspan;
+	int rowspan;
 
 	/* Position of the container inside our table */
 	int row;
@@ -84,6 +86,7 @@ struct Container {
 	/* Width/Height of the container. Changeable by the user */
 	int width;
 	int height;
+
 	/* Ensure MODE_DEFAULT maps to 0 because we use calloc for initialization later */
 	enum { MODE_DEFAULT = 0, MODE_STACK = 1 } mode;
 	CIRCLEQ_HEAD(client_head, Client) clients;

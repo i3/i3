@@ -29,20 +29,26 @@ void init_table() {
 	expand_table_rows();
 }
 
+static void new_container(Container **container) {
+	Container *new;
+	new = *container = calloc(sizeof(Container), 1);
+	CIRCLEQ_INIT(&(new->clients));
+	new->colspan = 1;
+	new->rowspan = 1;
+}
+
 /*
  * Add one row to the table
  *
  */
 void expand_table_rows() {
 	int c;
-	Container *new;
 
 	table_dims.y++;
 
 	for (c = 0; c < table_dims.x; c++) {
 		table[c] = realloc(table[c], sizeof(Container*) * table_dims.y);
-		new = table[c][table_dims.y-1] = calloc(sizeof(Container), 1);
-		CIRCLEQ_INIT(&(new->clients));
+		new_container(&(table[c][table_dims.y-1]));
 	}
 }
 
@@ -52,15 +58,12 @@ void expand_table_rows() {
  */
 void expand_table_cols() {
 	int c;
-	Container *new;
 
 	table_dims.x++;
 	table = realloc(table, sizeof(Container**) * table_dims.x);
 	table[table_dims.x-1] = calloc(sizeof(Container*) * table_dims.y, 1);
-	for (c = 0; c < table_dims.y; c++) {
-		new = table[table_dims.x-1][c] = calloc(sizeof(Container), 1);
-		CIRCLEQ_INIT(&(new->clients));
-	}
+	for (c = 0; c < table_dims.y; c++)
+		new_container(&(table[table_dims.x-1][c]));
 }
 
 /*

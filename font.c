@@ -20,9 +20,9 @@ void check_error(xcb_connection_t *connection, xcb_void_cookie_t cookie, char *e
 }
 
 
-Font *load_font(xcb_connection_t *c, const char *pattern) {
+i3Font *load_font(xcb_connection_t *c, const char *pattern) {
 	/* TODO: this function should be caching */
-	Font *new = malloc(sizeof(Font));
+	i3Font *new = malloc(sizeof(i3Font));
 
 	xcb_list_fonts_with_info_cookie_t cookie = xcb_list_fonts_with_info(c, 1, strlen(pattern), pattern);
 	xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(c, cookie, NULL);

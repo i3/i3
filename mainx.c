@@ -10,6 +10,9 @@
 
 #include <xcb/xcb.h>
 
+#include <X11/XKBlib.h>
+#include <X11/extensions/XKB.h>
+
 #include "xcb_wm.h"
 #include "xcb_aux.h"
 #include "xcb_event.h"
@@ -23,7 +26,8 @@
 
 #define TERMINAL "/usr/pkg/bin/urxvt"
 
-Font *myfont;
+i3Font *myfont;
+Display *xkbdpy;
 
 static const int TOP = 20;
 static const int LEFT = 5;
@@ -344,7 +348,7 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
 	uint32_t mask = 0;
 	uint32_t values[3];
 	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
-	Font *font = load_font(conn, pattern);
+	i3Font *font = load_font(conn, pattern);
 	uint32_t background_color,
 		 text_color,
 		 border_color;
@@ -412,7 +416,7 @@ void render_container(xcb_connection_t *connection, Container *container) {
 			XCB_CONFIG_WINDOW_Y |
 			XCB_CONFIG_WINDOW_WIDTH |
 			XCB_CONFIG_WINDOW_HEIGHT;
-	Font *font = load_font(connection, pattern);
+	i3Font *font = load_font(connection, pattern);
 
 	if (container->mode == MODE_DEFAULT) {
 		int num_clients = 0;
@@ -476,11 +480,14 @@ void render_layout(xcb_connection_t *conn) {
 	for (cols = 0; cols < table_dims.x; cols++)
 		for (rows = 0; rows < table_dims.y; rows++)
 			if (table[cols][rows] != NULL) {
+				Container *con = table[cols][rows];
+				printf("container has %d colspan, %d rowspan\n",
+						con->colspan, con->rowspan);
 				/* Update position of the container */
-				table[cols][rows]->row = rows;
-				table[cols][rows]->col = cols;
-				table[cols][rows]->width = width / num_cols;
-				table[cols][rows]->height = height / num_rows;
+				con->row = rows;
+				con->col = cols;
+				con->width = (width / num_cols) * con->colspan;
+				con->height = (height / num_rows) * con->rowspan;
 
 				/* Render it */
 				render_container(conn, table[cols][rows]);
@@ -562,7 +569,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	table_put(byChild, child, new);
 
 	/* Moves the original window into the new frame we've created for it */
-	Font *font = load_font(conn, pattern);
+	i3Font *font = load_font(conn, pattern);
 	xcb_reparent_window(conn, child, new->frame, 0, font->height);
 
 	/* We are interested in property changes */
@@ -797,13 +804,31 @@ static void start_application(char *path, char *args) {
  *
  */
 static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
-
 	/* FIXME: We need to translate the keypress + state into a string (like, ä)
 	   because they do not generate keysyms (use xev and see for yourself) */
 
 	printf("oh yay!\n");
 	printf("gots press %d\n", event->detail);
+
+	/* We need to get the keysym group (There are group 1 to group 4, each holding
+	   two keysyms (without shift and with shift) using Xkb because X fails to
+	   provide them reliably (it works in Xephyr, it does not in real X) */
+	XkbStateRec state;
+	if (XkbGetState(xkbdpy, XkbUseCoreKbd, &state) == Success) {
+		if (state.group+1 == 2)
+			event->state |= 0x2;
+	}
 	printf("i'm in state %d\n", event->state);
+
+
+	xcb_key_symbols_t *keysyms = xcb_key_symbols_alloc(conn);
+
+	xcb_keysym_t k0 = xcb_key_symbols_get_keysym(keysyms, event->detail, event->state);
+	if (k0 == XCB_NONE)
+		printf("couldn't get k0\n");
+
+	printf("gots keysym %d and \n", k0);
+
 
 	/* 30 = u
 	 * 57 = n
@@ -817,6 +842,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 	if (event->detail == 30) {
 		/* 'u' */
 		start_application(TERMINAL, NULL);
+
 		return 1;
 	} else if (event->detail == 57) {
 		direction = D_LEFT;
@@ -826,6 +852,14 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 		direction = D_UP;
 	} else if (event->detail == 40) {
 		direction = D_RIGHT;
+	} else if (event->detail == 25) {
+		Container *con = CUR_CELL;
+		if (con->colspan == 1)
+			con->colspan++;
+		else con->colspan--;
+		render_layout(conn);
+		xcb_flush(conn);
+		return 1;
 	} else {
 		printf("don't want this.\n");
 		return 1;
@@ -865,6 +899,9 @@ static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_
 	old_client = client->container->currently_focused;
 	client->container->currently_focused = client;
 
+	current_col = client->container->col;
+	current_row = client->container->row;
+
 	/* Set focus to the entered window, and flush xcb buffer immediately */
 	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
 	/* Update last/current client’s titlebar */
@@ -875,6 +912,7 @@ static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_
 
 	return 1;
 }
+
 
 int handle_map_notify_event(void *prophs, xcb_connection_t *c, xcb_map_notify_event_t *e)
 {
@@ -1002,6 +1040,24 @@ int main(int argc, char *argv[], char *env[]) {
 
 	printf("x screen is %d\n", screens);
 
+	int major, minor, error;
+
+	major = XkbMajorVersion;
+	minor = XkbMinorVersion;
+
+	int evBase, errBase;
+
+	if ((xkbdpy = XkbOpenDisplay(getenv("DISPLAY"), &evBase, &errBase, &major, &minor, &error)) == NULL) {
+		fprintf(stderr, "XkbOpenDisplay() failed\n");
+		return 1;
+	}
+
+	int i1;
+	if (!XkbQueryExtension(xkbdpy,&i1,&evBase,&errBase,&major,&minor)) {
+		fprintf(stderr, "XKB not supported by X-server\n");
+		return 1;
+	}
+
 	/* Font loading */
 	myfont = load_font(c, pattern);
 
@@ -1038,6 +1094,9 @@ int main(int argc, char *argv[], char *env[]) {
 	//xcb_grab_key(c, 0, root, 0, 38, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 
 	xcb_grab_key(c, 0, root, 0, 30, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, 0, 38, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+
+
 	xcb_grab_key(c, 0, root, XCB_MOD_MASK_1, 57, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 	xcb_grab_key(c, 0, root, XCB_MOD_MASK_1, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 	xcb_grab_key(c, 0, root, XCB_MOD_MASK_1, 27, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
@@ -1047,6 +1106,8 @@ int main(int argc, char *argv[], char *env[]) {
 	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 27, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL, 25, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+
 
 
 	//xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);

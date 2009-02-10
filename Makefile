@@ -7,16 +7,19 @@ CFLAGS += -g3
 CFLAGS += -I/usr/include/xcb
 CFLAGS += -I/usr/local/include/
 CFLAGS += -I/usr/local/include/xcb
+CFLAGS += -I/usr/pkg/include
 
 LDFLAGS += -lxcb-wm
-LDFLAGS += -L/usr/local/lib
+LDFLAGS += -lxcb-keysyms
+LDFLAGS += -lX11
+LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib
 ifeq ($(UNAME),NetBSD)
-LDFLAGS += -Wl,-rpath,/usr/local/lib
+LDFLAGS += -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
 endif
 
 FILES=$(patsubst %.c,%.o,$(wildcard *.c))
 
-%.o: %.c %.h
+%.o: %.c %.h data.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 all: ${FILES}
