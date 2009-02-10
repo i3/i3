@@ -784,9 +784,8 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 	/* FIXME: actually wrong but i'm too lazy to grab my keys all the time */
 	if (event->state & XCB_MOD_MASK_CONTROL) {
 		move_current_window(conn, direction);
-	} else
-
-	focus_window(conn, direction);
+	} else if (event->state & XCB_MOD_MASK_1)
+		focus_window(conn, direction);
 	/* TODO: shift -> move_current_window(conn, direction) */
 	/* TODO: shift + ctrl -> move_current_container(conn, direction) */
 
@@ -818,7 +817,8 @@ static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_
 	/* Set focus to the entered window, and flush xcb buffer immediately */
 	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
 	/* Update last/current client’s titlebar */
-	decorate_window(conn, old_client);
+	if (old_client != NULL)
+		decorate_window(conn, old_client);
 	decorate_window(conn, client);
 	xcb_flush(conn);
 
@@ -856,6 +856,8 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
 			CIRCLEQ_FOREACH(con_client, &(table[cols][rows]->clients), clients)
 				if (con_client == client) {
 					printf("removing from container\n");
+					if (client->container->currently_focused == client)
+						client->container->currently_focused = NULL;
 					CIRCLEQ_REMOVE(&(table[cols][rows]->clients), con_client, clients);
 					break;
 				}
@@ -950,13 +952,11 @@ int main(int argc, char *argv[], char *env[]) {
 	printf("x screen is %d\n", screens);
 
 	/* Font loading */
-
 	myfont = load_font(c, pattern);
 
 	xcb_event_handlers_init(c, &evenths);
 	for(i = 2; i < 128; ++i)
 		xcb_event_set_handler(&evenths, i, handleEvent, 0);
-
 
 	for(i = 0; i < 256; ++i)
 		xcb_event_set_error_handler(&evenths, i, (xcb_generic_error_handler_t) handleEvent, 0);
@@ -976,7 +976,6 @@ int main(int argc, char *argv[], char *env[]) {
 	xcb_property_handlers_init(&prophs, &evenths);
 	xcb_event_set_map_notify_handler(&evenths, handle_map_notify_event, &prophs);
 
-
 	root = xcb_aux_get_screen(c, screens)->root;
 	root_win = root;
 
@@ -988,10 +987,10 @@ int main(int argc, char *argv[], char *env[]) {
 	//xcb_grab_key(c, 0, root, 0, 38, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 
 	xcb_grab_key(c, 0, root, 0, 30, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 57, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 27, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
-	xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, 57, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, 28, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, 27, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(c, 0, root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 
 	//xcb_grab_key(c, 0, root, XCB_BUTTON_MASK_ANY, 40, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 	start_application(TERMINAL, NULL);
