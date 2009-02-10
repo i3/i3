@@ -1,0 +1,16 @@
+TODO list, in order of importance:
+
+ * colspan/rowspan (snap)
+ * freely resizable (e.g. using your mouse, for now) percentage of rows/cols
+ * fullscreen (handling of applications)
+ * fullscreen (implementing a mode, like default, stacked)
+ * tags+xinerama
+ * clean up the source code
+ * document stuff!
+ * more documentation!
+ * think of some IPC mechanism, implement it
+ * debian package
+ * initial release
+
+TODO for later™:
+ * floating
