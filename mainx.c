@@ -740,6 +740,73 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 	render_layout(connection);
 }
 
+/*
+ * "Snaps" the current container (not possible for windows, because it works at table base)
+ * to the given direction, that is, adjusts cellspan/rowspan
+ *
+ */
+static void snap_current_container(xcb_connection_t *connection, direction_t direction) {
+	printf("snapping container to direction %d\n", direction);
+
+	Container *container = CUR_CELL;
+	int i;
+
+	assert(container != NULL);
+
+	switch (direction) {
+		case D_LEFT:
+			/* Snap to the left is actually a move to the left and then a snap right */
+			move_current_window(connection, D_LEFT);
+			snap_current_container(connection, D_RIGHT);
+			return;
+		case D_RIGHT:
+			/* Check if the cell is used */
+			if (!cell_exists(container->col + 1, container->row) ||
+				table[container->col+1][container->row]->currently_focused != NULL) {
+				printf("cannot snap to right - the cell is already used\n");
+				return;
+			}
+
+			/* Check if there are other cells with rowspan, which are in our way.
+			 * If so, reduce their rowspan. */
+			for (i = container->row-1; i >= 0; i--) {
+				printf("we got cell %d, %d with rowspan %d\n",
+						container->col+1, i, table[container->col+1][i]->rowspan);
+				while ((table[container->col+1][i]->rowspan-1) >= (container->row - i))
+					table[container->col+1][i]->rowspan--;
+				printf("new rowspan = %d\n", table[container->col+1][i]->rowspan);
+			}
+
+			container->colspan++;
+			break;
+		case D_UP:
+			move_current_window(connection, D_UP);
+			snap_current_container(connection, D_DOWN);
+			return;
+		case D_DOWN:
+			printf("snapping down\n");
+			if (!cell_exists(container->col, container->row+1) ||
+				table[container->col][container->row+1]->currently_focused != NULL) {
+				printf("cannot snap down - the cell is already used\n");
+				return;
+			}
+
+			for (i = container->col-1; i >= 0; i--) {
+				printf("we got cell %d, %d with colspan %d\n",
+						i, container->row+1, table[i][container->row+1]->colspan);
+				while ((table[i][container->row+1]->colspan-1) >= (container->col - i))
+					table[i][container->row+1]->colspan--;
+				printf("new colspan = %d\n", table[i][container->row+1]->colspan);
+
+			}
+
+			container->rowspan++;
+			break;
+	}
+
+	render_layout(connection);
+}
+
 int format_event(xcb_generic_event_t *e)
 {           
     uint8_t sendEvent;
@@ -870,8 +937,7 @@ static void parse_command(xcb_connection_t *conn, const char *command) {
 		else if (action == ACTION_MOVE)
 			move_current_window(conn, direction);
 		else if (action == ACTION_SNAP)
-			/* TODO: implement */
-			printf("snap not yet implemented\n");
+			snap_current_container(conn, direction);
 
 		rest++;
 
@@ -910,9 +976,12 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 		}
 	}
 
+	/* No match? Then it was an actively grabbed key, that is with Mode_switch, and
+	   the user did not press Mode_switch, so just pass it… */
 	if (best_match == TAILQ_END(&bindings)) {
-		printf("This key was not bound by us?! (most likely a bug)\n");
-		return 1; /* TODO: return 0? what do the codes mean? */
+		xcb_allow_events(conn, ReplayKeyboard, event->time);
+		xcb_flush(conn);
+		return 1;
 	}
 
 	if (event->state & 0x2) {
@@ -920,14 +989,6 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 		parse_command(conn, best_match->command);
 		printf("ok, hiding this event.\n");
 		xcb_allow_events(conn, SyncKeyboard, event->time);
-		xcb_flush(conn);
-		return 1;
-	}
-
-	/* If this was an actively grabbed key, and we did not handle it, we need to pass it */
-	if (best_match->mods & BIND_MODE_SWITCH) {
-		printf("passing...\n");
-		xcb_allow_events(conn, ReplayKeyboard, event->time);
 		xcb_flush(conn);
 		return 1;
 	}
@@ -1169,10 +1230,15 @@ int main(int argc, char *argv[], char *env[]) {
 	BIND(46, BIND_MOD_1, "k");
 	BIND(47, BIND_MOD_1, "l");
 
-	BIND(44, BIND_MOD_1 | BIND_CONTROL, "mh");
-	BIND(45, BIND_MOD_1 | BIND_CONTROL, "mj");
-	BIND(46, BIND_MOD_1 | BIND_CONTROL, "mk");
-	BIND(47, BIND_MOD_1 | BIND_CONTROL, "ml");
+	BIND(44, BIND_MOD_1 | BIND_CONTROL, "sh");
+	BIND(45, BIND_MOD_1 | BIND_CONTROL, "sj");
+	BIND(46, BIND_MOD_1 | BIND_CONTROL, "sk");
+	BIND(47, BIND_MOD_1 | BIND_CONTROL, "sl");
+
+	BIND(44, BIND_MOD_1 | BIND_SHIFT, "mh");
+	BIND(45, BIND_MOD_1 | BIND_SHIFT, "mj");
+	BIND(46, BIND_MOD_1 | BIND_SHIFT, "mk");
+	BIND(47, BIND_MOD_1 | BIND_SHIFT, "ml");
 
 	Binding *bind;
 	TAILQ_FOREACH(bind, &bindings, bindings) {

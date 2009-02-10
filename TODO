@@ -1,6 +1,5 @@
 TODO list, in order of importance:
 
- * colspan/rowspan (snap)
  * freely resizable (e.g. using your mouse, for now) percentage of rows/cols
  * fullscreen (handling of applications)
  * fullscreen (implementing a mode, like default, stacked)
