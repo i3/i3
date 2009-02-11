@@ -348,7 +348,6 @@ uint32_t get_colorpixel(xcb_connection_t *conn, xcb_window_t window, char *hex) 
 void decorate_window(xcb_connection_t *conn, Client *client) {
 	uint32_t mask = 0;
 	uint32_t values[3];
-	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 	i3Font *font = load_font(conn, pattern);
 	uint32_t background_color,
 		 text_color,
@@ -427,6 +426,7 @@ void render_container(xcb_connection_t *connection, Container *container) {
 
 		int current_client = 0;
 		CIRCLEQ_FOREACH(client, &(container->clients), clients) {
+			/* TODO: rewrite this block so that the need to puke vanishes :) */
 			/* TODO: at the moment, every column/row is 200px. This
 			 * needs to be changed to "percentage of the screen" by
 			 * default and adjustable by the user if necessary.
@@ -434,18 +434,27 @@ void render_container(xcb_connection_t *connection, Container *container) {
 			values[0] = container->col * container->width; /* x */
 			values[1] = container->row * container->height +
 				(container->height / num_clients) * current_client; /* y */
+
+			if (client->x != values[0] || client->y != values[1]) {
+				printf("frame needs to be pushed to %dx%d\n",
+						values[0], values[1]);
+				client->x = values[0];
+				client->y = values[1];
+				xcb_configure_window(connection, client->frame,
+						XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
+			}
 			/* TODO: vertical default layout */
-			values[2] = container->width; /* width */
-			values[3] = container->height / num_clients; /* height */
-			printf("frame will be at %dx%d with size %dx%d\n",
-					values[0], values[1], values[2], values[3]);
+			values[0] = container->width; /* width */
+			values[1] = container->height / num_clients; /* height */
 
-			client->width = values[2];
-			client->height = values[3];
+			if (client->width != values[0] || client->height != values[1]) {
+				client->width = values[0];
+				client->height = values[1];
+				xcb_configure_window(connection, client->frame,
+						XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
+			}
 
-			/* TODO: update only if necessary */
-			xcb_configure_window(connection, client->frame, mask, values);
-
+			/* TODO: hmm, only do this for new wins */
 			/* The coordinates of the child are relative to its frame, we
 			 * add a border of 2 pixel to each value */
 			values[0] = 2;
@@ -512,7 +521,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	}
 	uint32_t mask = 0;
 	uint32_t values[3];
-	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 
 	/* Insert into the currently active container */
 	CIRCLEQ_INSERT_TAIL(&(CUR_CELL->clients), new, clients);
@@ -526,16 +534,16 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	new->width = width;
 	new->height = height;
 
-	/* TODO: what do these mean? */
-	mask |= XCB_CW_BACK_PIXEL;
-	values[0] = root_screen->white_pixel;
-
+	/* Don’t generate events for our new window, it should *not* be managed */
 	mask |= XCB_CW_OVERRIDE_REDIRECT;
-	values[1] = 1;
+	values[0] = 1;
 
+	/* We want to know when… */
 	mask |= XCB_CW_EVENT_MASK;
-	values[2] = XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE
-		| XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_ENTER_WINDOW;
+	values[1] = 	XCB_EVENT_MASK_BUTTON_PRESS | /* …mouse is pressed/released */
+			XCB_EVENT_MASK_BUTTON_RELEASE |
+			XCB_EVENT_MASK_EXPOSURE | /* …our window needs to be redrawn */
+			XCB_EVENT_MASK_ENTER_WINDOW /* …user moves cursor inside our window */;
 
 	printf("Reparenting 0x%08x under 0x%08x.\n", child, new->frame);
 
@@ -580,12 +588,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 			XCB_EVENT_MASK_ENTER_WINDOW;
 	xcb_change_window_attributes(conn, child, mask, values);
 
-	/* TODO: At the moment, new windows just get focus */
-	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, new->frame, XCB_CURRENT_TIME);
+	/* Focus the new window */
+	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, new->child, XCB_CURRENT_TIME);
 
 	render_layout(conn);
-
-	xcb_flush(conn);
 }
 
 static bool focus_window_in_container(xcb_connection_t *connection, Container *container,
@@ -608,7 +614,6 @@ static bool focus_window_in_container(xcb_connection_t *connection, Container *c
 	container->currently_focused = candidad;
 	xcb_set_input_focus(connection, XCB_INPUT_FOCUS_NONE, candidad->child, XCB_CURRENT_TIME);
 	render_layout(connection);
-	xcb_flush(connection);
 
 	return true;
 }
@@ -638,7 +643,6 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
 			xcb_set_input_focus(connection, XCB_INPUT_FOCUS_NONE,
 					CUR_CELL->currently_focused->child, XCB_CURRENT_TIME);
 			render_layout(connection);
-			xcb_flush(connection);
 		}
 
 	} else {
@@ -1002,6 +1006,8 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
  *
  */
 static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_event_t *event) {
+	printf("enter_notify\n");
+
 	/* This was either a focus for a client’s parent (= titlebar)… */
 	Client *client = table_get(byParent, event->event),
 	       *old_client;
@@ -1023,7 +1029,7 @@ static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_
 	current_row = client->container->row;
 
 	/* Set focus to the entered window, and flush xcb buffer immediately */
-	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
+	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, client->child, XCB_CURRENT_TIME);
 	/* Update last/current client’s titlebar */
 	if (old_client != NULL)
 		decorate_window(conn, old_client);
@@ -1032,7 +1038,6 @@ static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_
 
 	return 1;
 }
-
 
 int handle_map_notify_event(void *prophs, xcb_connection_t *c, xcb_map_notify_event_t *e)
 {

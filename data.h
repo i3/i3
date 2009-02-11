@@ -84,6 +84,7 @@ struct Client {
 	/* Backpointer. A client is inside a container */
 	Container *container;
 
+	int x, y;
 	int width, height;
 
 	/* XCB contexts */
