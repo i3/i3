@@ -87,6 +87,10 @@ struct Client {
 	int x, y;
 	int width, height;
 
+	/* Name */
+	char *name;
+	int name_len;
+
 	/* XCB contexts */
 	xcb_window_t frame; /* Our window: The frame around the client */
 	xcb_gcontext_t titlegc; /* The titlebar’s graphic context inside the frame */

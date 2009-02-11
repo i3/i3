@@ -403,7 +403,7 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
 
 	/* TODO: utf8? */
 	char *label;
-	asprintf(&label, "gots win %08x", client->frame);
+	asprintf(&label, "(%08x) %.*s", client->frame, client->name_len, client->name);
         xcb_void_cookie_t text_cookie = xcb_image_text_8_checked(conn, strlen(label), client->frame,
 					client->titlegc, 3 /* X */, font->height /* Y = baseline of font */, label);
 	free(label);
@@ -1113,7 +1113,25 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
 	return 1;
 }
 
+/*
+ * Called when a window changes its title
+ *
+ */
+static int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
+				xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
+	printf("window's name changed.\n");
+	Client *client = table_get(byChild, window);
 
+	client->name_len = xcb_get_property_value_length(prop);
+	client->name = malloc(client->name_len);
+	strncpy(client->name, xcb_get_property_value(prop), client->name_len);
+	printf("rename to \"%.*s\".\n", client->name_len, client->name);
+
+	decorate_window(conn, client);
+	xcb_flush(conn);
+
+	return 1;
+}
 
 static int handleExposeEvent(void *data, xcb_connection_t *c, xcb_expose_event_t *e) {
 printf("exposeevent\n");
@@ -1234,6 +1252,8 @@ int main(int argc, char *argv[], char *env[]) {
 
 	xcb_property_handlers_init(&prophs, &evenths);
 	xcb_event_set_map_notify_handler(&evenths, handle_map_notify_event, &prophs);
+
+	xcb_watch_wm_name(&prophs, 128, handle_windowname_change, 0);
 
 	root = xcb_aux_get_screen(c, screens)->root;
 	root_win = root;
