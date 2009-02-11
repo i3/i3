@@ -18,6 +18,7 @@
 #include "xcb_event.h"
 #include "xcb_property.h"
 #include "xcb_keysyms.h"
+#include "xcb_icccm.h"
 #include "data.h"
 
 #include "queue.h"
@@ -29,6 +30,7 @@
 Display *xkbdpy;
 
 TAILQ_HEAD(bindings_head, Binding) bindings;
+xcb_event_handlers_t evenths;
 
 static const int TOP = 20;
 static const int LEFT = 5;
@@ -593,7 +595,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
 	/* We need to grab the mouse buttons for click to focus */
 	xcb_grab_button(conn, false, child, XCB_EVENT_MASK_BUTTON_PRESS,
-			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE, XCB_BUTTON_MASK_1,
+			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE, 1 /* left mouse button */,
 			XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
 
 	/* Focus the new window */
@@ -863,14 +865,14 @@ static int handleEvent(void *ignored, xcb_connection_t *c, xcb_generic_event_t *
  * Starts the given application with the given args.
  *
  */
-static void start_application(char *path, char *args) {
+static void start_application(const char *path, const char *args) {
 	pid_t pid;
 	if ((pid = vfork()) == 0) {
 		/* This is the child */
 		char *argv[2];
 		/* TODO: For now, we ignore args. Later on, they should be parsed
 		   correctly (like in the shell?) */
-		argv[0] = path;
+		argv[0] = strdup(path);
 		argv[1] = NULL;
 		execve(path, argv, environment);
 		/* not reached */
@@ -1055,11 +1057,114 @@ static int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button
 	/* This was either a focus for a client’s parent (= titlebar)… */
 	Client *client = table_get(byChild, event->event);
 	if (client == NULL)
+		client = table_get(byParent, event->event);
+	if (client == NULL)
 		return 1;
 
-	printf("gots win %08x\n", client);
+	xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
+	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 
+	/* Set focus in any case */
 	set_focus(conn, client);
+
+	/* Let’s see if this was on the borders (= resize). If not, we’re done */
+	i3Font *font = load_font(conn, pattern);
+	printf("press button on x=%d, y=%d\n", event->event_x, event->event_y);
+	if (event->event_y <= (font->height + 2))
+		return 1;
+
+	printf("that was resize\n");
+
+	/* Open a new window, the resizebar. Grab the pointer and move the window around
+	   as the user moves the pointer. */
+
+
+	/* TODO: the whole logic is missing. this is just a proof of concept */
+	xcb_window_t grabwin = xcb_generate_id(conn);
+
+	uint32_t mask = 0;
+	uint32_t values[3];
+
+	xcb_create_window(conn,
+			0,
+			grabwin,
+			root,
+			0, /* x */
+			0, /* y */
+			root_screen->width_in_pixels, /* width */
+			root_screen->height_in_pixels, /* height */
+			/* border_width */ 0,
+			XCB_WINDOW_CLASS_INPUT_ONLY,
+			root_screen->root_visual,
+			0,
+			values);
+
+	/* Map the window on the screen (= make it visible) */
+	xcb_map_window(conn, grabwin);
+
+	xcb_window_t helpwin = xcb_generate_id(conn);
+
+	mask = XCB_CW_BACK_PIXEL;
+	values[0] = root_screen->white_pixel;
+	xcb_create_window(conn, root_screen->root_depth, helpwin, root,
+			event->root_x,
+			0,
+			5,
+			root_screen->height_in_pixels,
+			/* bordor */ 0,
+			XCB_WINDOW_CLASS_INPUT_OUTPUT,
+			root_screen->root_visual,
+			mask,
+			values);
+
+	xcb_map_window(conn, helpwin);
+	xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, helpwin);
+
+	xcb_grab_pointer(conn, false, root, XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION,
+			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, grabwin, XCB_NONE, XCB_CURRENT_TIME);
+
+	xcb_flush(conn);
+
+	xcb_generic_event_t *inside_event;
+	/* I’ve always wanted to have my own eventhandler… */
+	while ((inside_event = xcb_wait_for_event(conn))) {
+		/* Same as get_event_handler in xcb */
+		int nr = inside_event->response_type;
+		if (nr == 0) {
+			handleEvent(NULL, conn, inside_event);
+			continue;
+		}
+		assert(nr < 256);
+		nr &= XCB_EVENT_RESPONSE_TYPE_MASK;
+		assert(nr >= 2);
+
+		/* Check if we need to escape this loop… */
+		if (nr == XCB_BUTTON_RELEASE)
+			break;
+
+		switch (nr) {
+			case XCB_MOTION_NOTIFY:
+				values[0] = ((xcb_motion_notify_event_t*)inside_event)->root_x;
+				xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_X, values);
+				xcb_flush(conn);
+				break;
+			case XCB_EXPOSE:
+				/* Use original handler */
+				xcb_event_handle(&evenths, inside_event);
+				break;
+			default:
+				printf("Ignoring event of type %d\n", nr);
+				break;
+		}
+		printf("---\n");
+		free(inside_event);
+	}
+
+	xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
+	xcb_destroy_window(conn, helpwin);
+	xcb_destroy_window(conn, grabwin);
+	xcb_flush(conn);
+
 	return 1;
 }
 
@@ -1123,6 +1228,8 @@ static int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t 
 				xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
 	printf("window's name changed.\n");
 	Client *client = table_get(byChild, window);
+	if (client == NULL)
+		return 1;
 
 	client->name_len = xcb_get_property_value_length(prop);
 	client->name = malloc(client->name_len);
@@ -1191,7 +1298,6 @@ int main(int argc, char *argv[], char *env[]) {
 	init_table();
 
 	xcb_connection_t *c;
-	xcb_event_handlers_t evenths;
 	xcb_property_handlers_t prophs;
 	xcb_window_t root;
 
