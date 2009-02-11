@@ -587,8 +587,14 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	mask = XCB_CW_EVENT_MASK;
 	values[0] = 	XCB_EVENT_MASK_PROPERTY_CHANGE |
 			XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-			XCB_EVENT_MASK_ENTER_WINDOW;
+			XCB_EVENT_MASK_ENTER_WINDOW |
+			XCB_EVENT_MASK_BUTTON_PRESS;
 	xcb_change_window_attributes(conn, child, mask, values);
+
+	/* We need to grab the mouse buttons for click to focus */
+	xcb_grab_button(conn, false, child, XCB_EVENT_MASK_BUTTON_PRESS,
+			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE, XCB_BUTTON_MASK_1,
+			XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
 
 	/* Focus the new window */
 	xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, new->child, XCB_CURRENT_TIME);
@@ -1003,28 +1009,9 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 	return 1;
 }
 
-/*
- * When the user moves the mouse pointer onto a window, this callback gets called.
- *
- */
-static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_event_t *event) {
-	printf("enter_notify\n");
-
-	/* This was either a focus for a client’s parent (= titlebar)… */
-	Client *client = table_get(byParent, event->event),
-	       *old_client;
-	/* …or the client itself */
-	if (client == NULL)
-		client = table_get(byChild, event->event);
-
-	/* If not, then this event is not interesting. This should not happen */
-	if (client == NULL) {
-		printf("DEBUG: Uninteresting enter_notify-event?\n");
-		return 1;
-	}
-
+static void set_focus(xcb_connection_t *conn, Client *client) {
 	/* Update container */
-	old_client = client->container->currently_focused;
+	Client *old_client = client->container->currently_focused;
 	client->container->currently_focused = client;
 
 	current_col = client->container->col;
@@ -1037,7 +1024,40 @@ static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_
 		decorate_window(conn, old_client);
 	decorate_window(conn, client);
 	xcb_flush(conn);
+}
 
+/*
+ * When the user moves the mouse pointer onto a window, this callback gets called.
+ *
+ */
+static int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_event_t *event) {
+	printf("enter_notify\n");
+
+	/* This was either a focus for a client’s parent (= titlebar)… */
+	Client *client = table_get(byParent, event->event);
+	/* …or the client itself */
+	if (client == NULL)
+		client = table_get(byChild, event->event);
+
+	/* If not, then this event is not interesting. This should not happen */
+	if (client == NULL) {
+		printf("DEBUG: Uninteresting enter_notify-event?\n");
+		return 1;
+	}
+
+	set_focus(conn, client);
+
+	return 1;
+}
+
+static int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
+	printf("button press!\n");
+	/* This was either a focus for a client’s parent (= titlebar)… */
+	Client *client = table_get(byChild, event->event);
+
+	printf("gots win %08x\n", client);
+
+	set_focus(conn, client);
 	return 1;
 }
 
@@ -1206,6 +1226,9 @@ int main(int argc, char *argv[], char *env[]) {
 
 	/* Enter window = user moved his mouse over the window */
 	xcb_event_set_enter_notify_handler(&evenths, handle_enter_notify, 0);
+
+	/* Button press = user pushed a mouse button over one of our windows */
+	xcb_event_set_button_press_handler(&evenths, handle_button_press, 0);
 
 	xcb_event_set_unmap_notify_handler(&evenths, handle_unmap_notify_event, 0);
 
