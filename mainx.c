@@ -459,8 +459,8 @@ void render_container(xcb_connection_t *connection, Container *container) {
 			 * add a border of 2 pixel to each value */
 			values[0] = 2;
 			values[1] = font->height + 2 + 2;
-			values[2] -= values[0] + 2;
-			values[3] -= values[1] + 2;
+			values[2] = client->width - (values[0] + 2);
+			values[3] = client->height - (values[1] + 2);
 			printf("child itself will be at %dx%d with size %dx%d\n",
 					values[0], values[1], values[2], values[3]);
 
@@ -518,6 +518,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	if (new == NULL) {
 		printf("oh, it's new\n");
 		new = calloc(sizeof(Client), 1);
+		new->x = -1;
+		new->y = -1;
 	}
 	uint32_t mask = 0;
 	uint32_t values[3];
