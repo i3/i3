@@ -1054,6 +1054,8 @@ static int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button
 	printf("button press!\n");
 	/* This was either a focus for a client’s parent (= titlebar)… */
 	Client *client = table_get(byChild, event->event);
+	if (client == NULL)
+		return 1;
 
 	printf("gots win %08x\n", client);
 
