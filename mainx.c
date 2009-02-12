@@ -25,7 +25,7 @@
 #include "table.h"
 #include "font.h"
 
-#define TERMINAL "/usr/pkg/bin/urxvt"
+#define TERMINAL "/usr/bin/urxvt"
 
 Display *xkbdpy;
 
@@ -723,6 +723,7 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 			new = table[++current_col][current_row];
 			break;
 		case D_UP:
+			/* TODO: if we’re at the up-most position, move the rest of the table down */
 			if (move_current_window_in_container(connection, current_client, D_UP) ||
 				current_row == 0)
 				return;
@@ -980,6 +981,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 	printf("state %d\n", event->state);
 
 	/* Find the binding */
+	/* TODO: event->state durch eine bitmask filtern und dann direkt vergleichen */
 	Binding *bind, *best_match = TAILQ_END(&bindings);
 	TAILQ_FOREACH(bind, &bindings, bindings) {
 		if (bind->keycode == event->detail &&
@@ -1194,6 +1196,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
 
 	int rows, cols;
 	Client *con_client;
+	/* TODO: clear this up */
 	for (cols = 0; cols < table_dims.x; cols++)
 		for (rows = 0; rows < table_dims.y; rows++)
 			CIRCLEQ_FOREACH(con_client, &(table[cols][rows]->clients), clients)
@@ -1381,7 +1384,7 @@ int main(int argc, char *argv[], char *env[]) {
 	/* 38 = 'a' */
 	BIND(38, BIND_MODE_SWITCH, "foo");
 
-	BIND(30, 0, "exec /usr/pkg/bin/urxvt");
+	BIND(30, 0, "exec /usr/bin/urxvt");
 
 	BIND(44, BIND_MOD_1, "h");
 	BIND(45, BIND_MOD_1, "j");

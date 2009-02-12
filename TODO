@@ -3,13 +3,15 @@ TODO list, in order of importance:
  * freely resizable (e.g. using your mouse, for now) percentage of rows/cols
  * fullscreen (handling of applications)
  * fullscreen (implementing a mode, like default, stacked)
- * tags+xinerama
+ * workspaces+xinerama
  * clean up the source code
  * document stuff!
  * more documentation!
- * think of some IPC mechanism, implement it
  * debian package
  * initial release
 
 TODO for later™:
+ * think of some IPC mechanism, implement it
+ * a command for toggling layouts
+ * a command for toggling workspaces
  * floating
