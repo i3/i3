@@ -4,9 +4,8 @@ CFLAGS += -Wall
 # Extended debugging flags, macros shall be available in gcc
 CFLAGS += -gdwarf-2
 CFLAGS += -g3
-#CFLAGS += -I/usr/include/xcb
+CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include/
-#CFLAGS += -I/usr/local/include/xcb
 CFLAGS += -I/usr/pkg/include
 
 LDFLAGS += -lxcb-wm
@@ -18,13 +17,16 @@ ifeq ($(UNAME),NetBSD)
 LDFLAGS += -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
 endif
 
-FILES=$(patsubst %.c,%.o,$(wildcard *.c))
+FILES=$(patsubst %.c,%.o,$(wildcard src/*.c))
 
-%.o: %.c %.h data.h
+src/%.o: src/%.c include/%.h include/data.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 all: ${FILES}
-	$(CC) -o mainx ${FILES} $(LDFLAGS)
+	$(CC) -o i3 ${FILES} $(LDFLAGS)
 
 clean:
-	rm -f *.o
+	rm -f src/*.o
+
+distclean: clean
+	rm -f i3
