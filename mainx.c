@@ -19,6 +19,7 @@
 #include "xcb_property.h"
 #include "xcb_keysyms.h"
 #include "xcb_icccm.h"
+#include "xinerama.h"
 #include "data.h"
 
 #include "queue.h"
@@ -47,6 +48,7 @@ table_t *byParent = 0;
 xcb_window_t root_win;
 
 char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1";
+int num_screens = 0;
 
 
 int current_col = 0;
@@ -433,9 +435,9 @@ void render_container(xcb_connection_t *connection, Container *container) {
 			 * needs to be changed to "percentage of the screen" by
 			 * default and adjustable by the user if necessary.
 			 */
-			values[0] = container->col * container->width; /* x */
-			values[1] = container->row * container->height +
-				(container->height / num_clients) * current_client; /* y */
+			values[0] = container->x + (container->col * container->width); /* x */
+			values[1] = container->y + (container->row * container->height +
+				(container->height / num_clients) * current_client); /* y */
 
 			if (client->x != values[0] || client->y != values[1]) {
 				printf("frame needs to be pushed to %dx%d\n",
@@ -478,29 +480,35 @@ void render_container(xcb_connection_t *connection, Container *container) {
 
 void render_layout(xcb_connection_t *conn) {
 	int cols, rows;
-	xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
-	int width = root_screen->width_in_pixels;
-	int height = root_screen->height_in_pixels;
+	int screen;
+	for (screen = 0; screen < num_screens; screen++) {
+		printf("Rendering screen %d\n", screen);
+		/* TODO: get the workspace which is active on the screen */
+		int width = workspaces[screen].width;
+		int height = workspaces[screen].height;
 
-	printf("got %d rows and %d cols\n", c_ws->rows, c_ws->cols);
-	printf("each of them therefore is %d px width and %d px height\n",
-			width / c_ws->cols, height / c_ws->rows);
+		printf("got %d rows and %d cols\n", c_ws->rows, c_ws->cols);
+		printf("each of them therefore is %d px width and %d px height\n",
+				width / c_ws->cols, height / c_ws->rows);
 
-	/* Go through the whole table and render what’s necessary */
-	for (cols = 0; cols < c_ws->cols; cols++)
-		for (rows = 0; rows < c_ws->rows; rows++) {
-			Container *con = CUR_TABLE[cols][rows];
-			printf("container has %d colspan, %d rowspan\n",
-					con->colspan, con->rowspan);
-			/* Update position of the container */
-			con->row = rows;
-			con->col = cols;
-			con->width = (width / c_ws->cols) * con->colspan;
-			con->height = (height / c_ws->rows) * con->rowspan;
+		/* Go through the whole table and render what’s necessary */
+		for (cols = 0; cols < c_ws->cols; cols++)
+			for (rows = 0; rows < c_ws->rows; rows++) {
+				Container *con = CUR_TABLE[cols][rows];
+				printf("container has %d colspan, %d rowspan\n",
+						con->colspan, con->rowspan);
+				/* Update position of the container */
+				con->row = rows;
+				con->col = cols;
+				con->x = workspaces[screen].x;
+				con->y = workspaces[screen].y;
+				con->width = (width / c_ws->cols) * con->colspan;
+				con->height = (height / c_ws->rows) * con->rowspan;
 
-			/* Render it */
-			render_container(conn, CUR_TABLE[cols][rows]);
-		}
+				/* Render it */
+				render_container(conn, CUR_TABLE[cols][rows]);
+			}
+	}
 
 	xcb_flush(conn);
 }
@@ -1287,6 +1295,7 @@ static int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t 
 	return 1;
 }
 
+
 static int handleExposeEvent(void *data, xcb_connection_t *c, xcb_expose_event_t *e) {
 printf("exposeevent\n");
 	Client *client = table_get(byParent, e->window);
@@ -1322,6 +1331,44 @@ void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *proph
 		manage_window(prophs, c, children[i], wa);
 	}
 	free(rep);
+}
+
+static void initialize_xinerama(xcb_connection_t *conn) {
+	xcb_xinerama_query_screens_reply_t *reply;
+	xcb_xinerama_screen_info_t *screen_info;
+	int screen;
+
+	if (!xcb_get_extension_data(conn, &xcb_xinerama_id)->present) {
+		printf("Xinerama extension not found, disabling.\n");
+		return;
+	}
+
+	if (!xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL)->state) {
+		printf("Xinerama is not active (in your X-Server), disabling.\n");
+		return;
+	}
+
+
+	reply = xcb_xinerama_query_screens_reply(conn, xcb_xinerama_query_screens_unchecked(conn), NULL);
+	/* TODO: error check */
+	screen_info = xcb_xinerama_query_screens_screen_info(reply);
+
+	num_screens = xcb_xinerama_query_screens_screen_info_length(reply);
+
+	/* Just go through each workspace and associate as many screens as we can. */
+	for (screen = 0; screen < num_screens; screen++) {
+		workspaces[screen].x = screen_info[screen].x_org;
+		workspaces[screen].y = screen_info[screen].y_org;
+		workspaces[screen].width = screen_info[screen].width;
+		workspaces[screen].height = screen_info[screen].height;
+		workspaces[screen].screen_num = screen;
+
+		printf("found Xinerama screen: %d x %d at %d x %d\n",
+				screen_info[screen].width, screen_info[screen].height,
+				screen_info[screen].x_org, screen_info[screen].y_org);
+	}
+
+	free(screen_info);
 }
 
 int main(int argc, char *argv[], char *env[]) {
@@ -1461,6 +1508,10 @@ int main(int argc, char *argv[], char *env[]) {
 			xcb_grab_key(c, 0, root, 0, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
 		else xcb_grab_key(c, 0, root, bind->mods, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
 	}
+
+	/* check for Xinerama */
+	printf("Checking for Xinerama...\n");
+	initialize_xinerama(c);
 
 	start_application(TERMINAL, NULL);
 

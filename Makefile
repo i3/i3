@@ -11,6 +11,7 @@ CFLAGS += -I/usr/pkg/include
 
 LDFLAGS += -lxcb-wm
 LDFLAGS += -lxcb-keysyms
+LDFLAGS += -lxcb-xinerama
 LDFLAGS += -lX11
 LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib
 ifeq ($(UNAME),NetBSD)

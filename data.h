@@ -36,6 +36,7 @@ struct Workspace {
 	int y;
 	int width;
 	int height;
+	int screen_num;
 	int num;
 
 	/* table dimensions */
@@ -129,6 +130,9 @@ struct Container {
 	/* Position of the container inside our table */
 	int row;
 	int col;
+	/* Xinerama: X/Y of the container */
+	int x;
+	int y;
 	/* Width/Height of the container. Changeable by the user */
 	int width;
 	int height;
