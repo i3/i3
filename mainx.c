@@ -897,7 +897,9 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
 	/* Store current_row/current_col */
 	c_ws->current_row = current_row;
 	c_ws->current_col = current_col;
-	xcb_grab_server(conn);
+
+	/* TODO: does grabbing the server actually bring us any (speed)advantages? */
+	//xcb_grab_server(conn);
 
 	/* Unmap all clients */
 	for (cols = 0; cols < c_ws->cols; cols++)
@@ -911,7 +913,6 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
 	current_col = c_ws->current_col;
 	printf("new current row = %d, current col = %d\n", current_row, current_col);
 
-
 	/* Map all clients on the new workspace */
 	for (cols = 0; cols < c_ws->cols; cols++)
 		for (rows = 0; rows < c_ws->rows; rows++) {
@@ -919,7 +920,12 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
 				xcb_map_window(conn, client->frame);
 		}
 
-	xcb_ungrab_server(conn);
+	/* Restore focus on the new workspace */
+	if (CUR_CELL->currently_focused != NULL)
+		xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, CUR_CELL->currently_focused->child, XCB_CURRENT_TIME);
+	else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, root_win, XCB_CURRENT_TIME);
+
+	//xcb_ungrab_server(conn);
 
 	render_layout(conn);
 }
@@ -1439,6 +1445,14 @@ int main(int argc, char *argv[], char *env[]) {
 
 	BIND(10, BIND_MOD_1 , "1");
 	BIND(11, BIND_MOD_1 , "2");
+	BIND(12, BIND_MOD_1 , "3");
+	BIND(13, BIND_MOD_1 , "4");
+	BIND(14, BIND_MOD_1 , "5");
+	BIND(15, BIND_MOD_1 , "6");
+	BIND(16, BIND_MOD_1 , "7");
+	BIND(17, BIND_MOD_1 , "8");
+	BIND(18, BIND_MOD_1 , "9");
+	BIND(19, BIND_MOD_1 , "0");
 
 	Binding *bind;
 	TAILQ_FOREACH(bind, &bindings, bindings) {
