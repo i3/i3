@@ -14,19 +14,24 @@
 #include "data.h"
 #include "table.h"
 
-/* This is a two-dimensional dynamic array of Container-pointers. I’ve always wanted
- * to be a three-star programmer :) */
-Container ***table = NULL;
-
-struct table_dimensions_t table_dims = {0, 0};
+int current_workspace = 0;
+Workspace workspaces[10];
+/* Convenience pointer to the current workspace */
+Workspace *c_ws = &workspaces[0];
 
 /*
  * Initialize table
  *
  */
 void init_table() {
-	expand_table_cols();
-	expand_table_rows();
+	int i;
+	printf("sizof(workspaces) = %d\n", sizeof(workspaces));
+	memset(workspaces, 0, sizeof(workspaces));
+
+	for (i = 0; i < 10; i++) {
+		expand_table_cols(&(workspaces[i]));
+		expand_table_rows(&(workspaces[i]));
+	}
 }
 
 static void new_container(Container **container) {
@@ -41,14 +46,14 @@ static void new_container(Container **container) {
  * Add one row to the table
  *
  */
-void expand_table_rows() {
+void expand_table_rows(Workspace *workspace) {
 	int c;
 
-	table_dims.y++;
+	workspace->rows++;
 
-	for (c = 0; c < table_dims.x; c++) {
-		table[c] = realloc(table[c], sizeof(Container*) * table_dims.y);
-		new_container(&(table[c][table_dims.y-1]));
+	for (c = 0; c < workspace->cols; c++) {
+		workspace->table[c] = realloc(workspace->table[c], sizeof(Container*) * workspace->rows);
+		new_container(&(workspace->table[c][workspace->rows-1]));
 	}
 }
 
@@ -56,14 +61,15 @@ void expand_table_rows() {
  * Add one column to the table
  *
  */
-void expand_table_cols() {
+void expand_table_cols(Workspace *workspace) {
 	int c;
 
-	table_dims.x++;
-	table = realloc(table, sizeof(Container**) * table_dims.x);
-	table[table_dims.x-1] = calloc(sizeof(Container*) * table_dims.y, 1);
-	for (c = 0; c < table_dims.y; c++)
-		new_container(&(table[table_dims.x-1][c]));
+	workspace->cols++;
+
+	workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
+	workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
+	for (c = 0; c < workspace->rows; c++)
+		new_container(&(workspace->table[workspace->cols-1][c]));
 }
 
 /*
@@ -71,6 +77,6 @@ void expand_table_cols() {
  *
  */
 bool cell_exists(int col, int row) {
-	return (col >= 0 && col < table_dims.x) &&
-		(row >= 0 && row < table_dims.y);
+	return (col >= 0 && col < c_ws->rows) &&
+		(row >= 0 && row < c_ws->cols);
 }

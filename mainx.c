@@ -25,7 +25,7 @@
 #include "table.h"
 #include "font.h"
 
-#define TERMINAL "/usr/bin/urxvt"
+#define TERMINAL "/usr/pkg/bin/urxvt"
 
 Display *xkbdpy;
 
@@ -482,28 +482,25 @@ void render_layout(xcb_connection_t *conn) {
 	int width = root_screen->width_in_pixels;
 	int height = root_screen->height_in_pixels;
 
-	int num_cols = table_dims.x, num_rows = table_dims.y;
-
-	printf("got %d rows and %d cols\n", num_rows, num_cols);
+	printf("got %d rows and %d cols\n", c_ws->rows, c_ws->cols);
 	printf("each of them therefore is %d px width and %d px height\n",
-			width / num_cols, height / num_rows);
+			width / c_ws->cols, height / c_ws->rows);
 
 	/* Go through the whole table and render what’s necessary */
-	for (cols = 0; cols < table_dims.x; cols++)
-		for (rows = 0; rows < table_dims.y; rows++)
-			if (table[cols][rows] != NULL) {
-				Container *con = table[cols][rows];
-				printf("container has %d colspan, %d rowspan\n",
-						con->colspan, con->rowspan);
-				/* Update position of the container */
-				con->row = rows;
-				con->col = cols;
-				con->width = (width / num_cols) * con->colspan;
-				con->height = (height / num_rows) * con->rowspan;
+	for (cols = 0; cols < c_ws->cols; cols++)
+		for (rows = 0; rows < c_ws->rows; rows++) {
+			Container *con = CUR_TABLE[cols][rows];
+			printf("container has %d colspan, %d rowspan\n",
+					con->colspan, con->rowspan);
+			/* Update position of the container */
+			con->row = rows;
+			con->col = cols;
+			con->width = (width / c_ws->cols) * con->colspan;
+			con->height = (height / c_ws->rows) * con->rowspan;
 
-				/* Render it */
-				render_container(conn, table[cols][rows]);
-			}
+			/* Render it */
+			render_container(conn, CUR_TABLE[cols][rows]);
+		}
 
 	xcb_flush(conn);
 }
@@ -714,13 +711,13 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 			if (current_col == 0)
 				return;
 
-			new = table[--current_col][current_row];
+			new = CUR_TABLE[--current_col][current_row];
 			break;
 		case D_RIGHT:
-			if (current_col == (table_dims.x-1))
-				expand_table_cols();
+			if (current_col == (c_ws->cols-1))
+				expand_table_cols(c_ws);
 
-			new = table[++current_col][current_row];
+			new = CUR_TABLE[++current_col][current_row];
 			break;
 		case D_UP:
 			/* TODO: if we’re at the up-most position, move the rest of the table down */
@@ -728,16 +725,16 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 				current_row == 0)
 				return;
 
-			new = table[current_col][--current_row];
+			new = CUR_TABLE[current_col][--current_row];
 			break;
 		case D_DOWN:
 			if (move_current_window_in_container(connection, current_client, D_DOWN))
 				return;
 
-			if (current_row == (table_dims.y-1))
-				expand_table_rows();
+			if (current_row == (c_ws->rows-1))
+				expand_table_rows(c_ws);
 
-			new = table[current_col][++current_row];
+			new = CUR_TABLE[current_col][++current_row];
 			break;
 	}
 
@@ -777,7 +774,7 @@ static void snap_current_container(xcb_connection_t *connection, direction_t dir
 		case D_RIGHT:
 			/* Check if the cell is used */
 			if (!cell_exists(container->col + 1, container->row) ||
-				table[container->col+1][container->row]->currently_focused != NULL) {
+				CUR_TABLE[container->col+1][container->row]->currently_focused != NULL) {
 				printf("cannot snap to right - the cell is already used\n");
 				return;
 			}
@@ -786,10 +783,10 @@ static void snap_current_container(xcb_connection_t *connection, direction_t dir
 			 * If so, reduce their rowspan. */
 			for (i = container->row-1; i >= 0; i--) {
 				printf("we got cell %d, %d with rowspan %d\n",
-						container->col+1, i, table[container->col+1][i]->rowspan);
-				while ((table[container->col+1][i]->rowspan-1) >= (container->row - i))
-					table[container->col+1][i]->rowspan--;
-				printf("new rowspan = %d\n", table[container->col+1][i]->rowspan);
+						container->col+1, i, CUR_TABLE[container->col+1][i]->rowspan);
+				while ((CUR_TABLE[container->col+1][i]->rowspan-1) >= (container->row - i))
+					CUR_TABLE[container->col+1][i]->rowspan--;
+				printf("new rowspan = %d\n", CUR_TABLE[container->col+1][i]->rowspan);
 			}
 
 			container->colspan++;
@@ -801,17 +798,17 @@ static void snap_current_container(xcb_connection_t *connection, direction_t dir
 		case D_DOWN:
 			printf("snapping down\n");
 			if (!cell_exists(container->col, container->row+1) ||
-				table[container->col][container->row+1]->currently_focused != NULL) {
+				CUR_TABLE[container->col][container->row+1]->currently_focused != NULL) {
 				printf("cannot snap down - the cell is already used\n");
 				return;
 			}
 
 			for (i = container->col-1; i >= 0; i--) {
 				printf("we got cell %d, %d with colspan %d\n",
-						i, container->row+1, table[i][container->row+1]->colspan);
-				while ((table[i][container->row+1]->colspan-1) >= (container->col - i))
-					table[i][container->row+1]->colspan--;
-				printf("new colspan = %d\n", table[i][container->row+1]->colspan);
+						i, container->row+1, CUR_TABLE[i][container->row+1]->colspan);
+				while ((CUR_TABLE[i][container->row+1]->colspan-1) >= (container->col - i))
+					CUR_TABLE[i][container->row+1]->colspan--;
+				printf("new colspan = %d\n", CUR_TABLE[i][container->row+1]->colspan);
 
 			}
 
@@ -892,6 +889,41 @@ static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_rel
 	return 1;
 }
 
+static void show_workspace(xcb_connection_t *conn, int workspace) {
+	int cols, rows;
+	Client *client;
+	printf("show_workspace(%d)\n", workspace);
+
+	/* Store current_row/current_col */
+	c_ws->current_row = current_row;
+	c_ws->current_col = current_col;
+	xcb_grab_server(conn);
+
+	/* Unmap all clients */
+	for (cols = 0; cols < c_ws->cols; cols++)
+		for (rows = 0; rows < c_ws->rows; rows++) {
+			CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
+				xcb_unmap_window(conn, client->frame);
+		}
+
+	c_ws = &workspaces[workspace-1];
+	current_row = c_ws->current_row;
+	current_col = c_ws->current_col;
+	printf("new current row = %d, current col = %d\n", current_row, current_col);
+
+
+	/* Map all clients on the new workspace */
+	for (cols = 0; cols < c_ws->cols; cols++)
+		for (rows = 0; rows < c_ws->rows; rows++) {
+			CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
+				xcb_map_window(conn, client->frame);
+		}
+
+	xcb_ungrab_server(conn);
+
+	render_layout(conn);
+}
+
 /*
  * Parses a command, see file CMDMODE for more information
  *
@@ -931,9 +963,14 @@ static void parse_command(xcb_connection_t *conn, const char *command) {
 		rest++;
 	}
 
+	if (*rest == '\0') {
+		/* No rest? This was a tag number, not a times specification */
+		show_workspace(conn, times);
+		return;
+	}
+
 	/* Now perform action to <where> */
 	while (*rest != '\0') {
-		/* TODO: tags */
 		if (*rest == 'h')
 			direction = D_LEFT;
 		else if (*rest == 'j')
@@ -955,7 +992,6 @@ static void parse_command(xcb_connection_t *conn, const char *command) {
 			snap_current_container(conn, direction);
 
 		rest++;
-
 	}
 
 	printf("--- done ---\n");
@@ -1197,14 +1233,14 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
 	int rows, cols;
 	Client *con_client;
 	/* TODO: clear this up */
-	for (cols = 0; cols < table_dims.x; cols++)
-		for (rows = 0; rows < table_dims.y; rows++)
-			CIRCLEQ_FOREACH(con_client, &(table[cols][rows]->clients), clients)
+	for (cols = 0; cols < c_ws->cols; cols++)
+		for (rows = 0; rows < c_ws->rows; rows++)
+			CIRCLEQ_FOREACH(con_client, &(CUR_TABLE[cols][rows]->clients), clients)
 				if (con_client == client) {
 					printf("removing from container\n");
 					if (client->container->currently_focused == client)
 						client->container->currently_focused = NULL;
-					CIRCLEQ_REMOVE(&(table[cols][rows]->clients), con_client, clients);
+					CIRCLEQ_REMOVE(&(CUR_TABLE[cols][rows]->clients), con_client, clients);
 					break;
 				}
 
@@ -1384,7 +1420,7 @@ int main(int argc, char *argv[], char *env[]) {
 	/* 38 = 'a' */
 	BIND(38, BIND_MODE_SWITCH, "foo");
 
-	BIND(30, 0, "exec /usr/bin/urxvt");
+	BIND(30, 0, "exec /usr/pkg/bin/urxvt");
 
 	BIND(44, BIND_MOD_1, "h");
 	BIND(45, BIND_MOD_1, "j");
@@ -1400,6 +1436,9 @@ int main(int argc, char *argv[], char *env[]) {
 	BIND(45, BIND_MOD_1 | BIND_SHIFT, "mj");
 	BIND(46, BIND_MOD_1 | BIND_SHIFT, "mk");
 	BIND(47, BIND_MOD_1 | BIND_SHIFT, "ml");
+
+	BIND(10, BIND_MOD_1 , "1");
+	BIND(11, BIND_MOD_1 , "2");
 
 	Binding *bind;
 	TAILQ_FOREACH(bind, &bindings, bindings) {

@@ -14,6 +14,7 @@ typedef struct Font i3Font;
 typedef struct Container Container;
 typedef struct Client Client;
 typedef struct Binding Binding;
+typedef struct Workspace Workspace;
 
 /* Helper types */
 typedef enum { D_LEFT, D_RIGHT, D_UP, D_DOWN } direction_t;
@@ -30,9 +31,24 @@ enum {
 	BIND_MODE_SWITCH = (1 << 8)
 };
 
-struct table_dimensions_t {
+struct Workspace {
 	int x;
 	int y;
+	int width;
+	int height;
+	int num;
+
+	/* table dimensions */
+	int cols;
+	int rows;
+
+	/* These are stored here just while this workspace is _not_ shown (see show_workspace()) */
+	int current_row;
+	int current_col;
+
+	/* This is a two-dimensional dynamic array of Container-pointers. I’ve always wanted
+	 * to be a three-star programmer :) */
+	Container ***table;
 };
 
 /*

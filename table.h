@@ -4,14 +4,15 @@
 #ifndef _TABLE_H
 #define _TABLE_H
 
-#define CUR_CELL (table[current_col][current_row])
+#define CUR_TABLE (c_ws->table)
+#define CUR_CELL (CUR_TABLE[current_col][current_row])
 
-extern Container ***table;
-extern struct table_dimensions_t table_dims;
+extern Workspace *c_ws;
+extern Workspace workspaces[10];
 
 void init_table();
-void expand_table_rows();
-void expand_table_cols();
+void expand_table_rows(Workspace *workspace);
+void expand_table_cols(Workspace *workspace);
 bool cell_exists(int col, int row);
 
 #endif
