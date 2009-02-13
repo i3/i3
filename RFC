@@ -27,23 +27,13 @@ FEATURES
 
 KEYBINDINGS
 
-* mod + cursor			select window
-* mod + shift + cursor		move window
-* mod + ctrl + cursor		snap window
-* mod + d/s			default/stacking
-* mod + 1|2|3|…			switch to tag <1|2|3|…>
-* mod + shift + 1|2|3|…		move window to tag …
-* mod + ctrl + 1|2|3|…		move container to tag …
-* mod + f			fullscreen
-* mod + k			kill
-* mod + return			terminal
+Siehe Datei CMDMODE
 
 
 IMPLEMENTATIONSDETAILS
 
 * snap nach links = move links + snap rechts
 * snap nach oben = move oben + snap unten
-
 
 
 HOOKS:
