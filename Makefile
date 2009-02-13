@@ -4,9 +4,9 @@ CFLAGS += -Wall
 # Extended debugging flags, macros shall be available in gcc
 CFLAGS += -gdwarf-2
 CFLAGS += -g3
-CFLAGS += -I/usr/include/xcb
+#CFLAGS += -I/usr/include/xcb
 CFLAGS += -I/usr/local/include/
-CFLAGS += -I/usr/local/include/xcb
+#CFLAGS += -I/usr/local/include/xcb
 CFLAGS += -I/usr/pkg/include
 
 LDFLAGS += -lxcb-wm

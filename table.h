@@ -9,6 +9,8 @@
 
 extern Workspace *c_ws;
 extern Workspace workspaces[10];
+extern int current_col;
+extern int current_row;
 
 void init_table();
 void expand_table_rows(Workspace *workspace);

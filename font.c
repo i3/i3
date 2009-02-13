@@ -8,17 +8,7 @@
 #include <xcb/xcb.h>
 
 #include "data.h"
-
-/* TODO: This is just here to be somewhere. Move it somewhere else. */
-void check_error(xcb_connection_t *connection, xcb_void_cookie_t cookie, char *errMessage) {
-	xcb_generic_error_t *error = xcb_request_check (connection, cookie);
-	if (error != NULL) {
-		fprintf(stderr, "ERROR: %s : %d\n", errMessage , error->error_code);
-		xcb_disconnect(connection);
-		exit(-1);
-	}
-}
-
+#include "util.h"
 
 i3Font *load_font(xcb_connection_t *c, const char *pattern) {
 	/* TODO: this function should be caching */

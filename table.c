@@ -18,6 +18,8 @@ int current_workspace = 0;
 Workspace workspaces[10];
 /* Convenience pointer to the current workspace */
 Workspace *c_ws = &workspaces[0];
+int current_col = 0;
+int current_row = 0;
 
 /*
  * Initialize table
@@ -25,7 +27,6 @@ Workspace *c_ws = &workspaces[0];
  */
 void init_table() {
 	int i;
-	printf("sizof(workspaces) = %d\n", sizeof(workspaces));
 	memset(workspaces, 0, sizeof(workspaces));
 
 	for (i = 0; i < 10; i++) {
