@@ -37,11 +37,6 @@ Display *xkbdpy;
 TAILQ_HEAD(bindings_head, Binding) bindings;
 xcb_event_handlers_t evenths;
 
-static const int TOP = 20;
-static const int LEFT = 5;
-static const int BOTTOM = 5;
-static const int RIGHT = 5;
-
 /* hm, xcb_wm wants us to implement this. */
 table_t *byChild = 0;
 table_t *byParent = 0;
@@ -106,7 +101,10 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *c, xcb_win
 }
 
 /*
- * Let’s own this window…
+ * reparent_window() gets called when a new window was opened and becomes a child of the root
+ * window, or it gets called by us when we manage the already existing windows at startup.
+ *
+ * Essentially, this is the point, where we take over control.
  *
  */
 void reparent_window(xcb_connection_t *conn, xcb_window_t child,
@@ -115,8 +113,11 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
 	Client *new = table_get(byChild, child);
 	if (new == NULL) {
+		/* TODO: When does this happen for existing clients? Is that a bug? */
 		printf("oh, it's new\n");
 		new = calloc(sizeof(Client), 1);
+		/* We initialize x and y with the invalid coordinates -1 so that they will
+		   get updated at the next render_layout() at any case */
 		new->x = -1;
 		new->y = -1;
 	}
@@ -126,7 +127,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	/* Insert into the currently active container */
 	CIRCLEQ_INSERT_TAIL(&(CUR_CELL->clients), new, clients);
 
-	printf("currently_focused = %p\n", new);
+	/* Update the data structures */
 	CUR_CELL->currently_focused = new;
 	new->container = CUR_CELL;
 
@@ -141,12 +142,14 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
 	/* We want to know when… */
 	mask |= XCB_CW_EVENT_MASK;
-	values[1] = 	XCB_EVENT_MASK_BUTTON_PRESS | /* …mouse is pressed/released */
+	values[1] = 	XCB_EVENT_MASK_BUTTON_PRESS | 	/* …mouse is pressed/released */
 			XCB_EVENT_MASK_BUTTON_RELEASE |
-			XCB_EVENT_MASK_EXPOSURE | /* …our window needs to be redrawn */
-			XCB_EVENT_MASK_ENTER_WINDOW /* …user moves cursor inside our window */;
+			XCB_EVENT_MASK_EXPOSURE | 	/* …our window needs to be redrawn */
+			XCB_EVENT_MASK_ENTER_WINDOW; 	/* …user moves cursor inside our window */
 
 	printf("Reparenting 0x%08x under 0x%08x.\n", child, new->frame);
+
+	i3Font *font = load_font(conn, pattern);
 
 	/* Yo dawg, I heard you like windows, so I create a window around your window… */
 	xcb_create_window(conn,
@@ -155,9 +158,9 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 			root,
 			x,
 			y,
-			width + LEFT + RIGHT,
-			height + TOP + BOTTOM,
-			/* border_width */ 0,
+			width + 2 + 2, 			/* 2 px border at each side */
+			height + 2 + 2 + font->height, 	/* 2 px border plus font’s height */
+			0, 				/* border_width = 0, we draw our own borders */
 			XCB_WINDOW_CLASS_INPUT_OUTPUT,
 			visual,
 			mask,
@@ -171,15 +174,11 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 	new->titlegc = xcb_generate_id(conn);
 	xcb_create_gc(conn, new->titlegc, new->frame, 0, 0);
 
-	/* Draw decorations */
-	decorate_window(conn, new);
-
 	/* Put our data structure (Client) into the table */
 	table_put(byParent, new->frame, new);
 	table_put(byChild, child, new);
 
 	/* Moves the original window into the new frame we've created for it */
-	i3Font *font = load_font(conn, pattern);
 	xcb_reparent_window(conn, child, new->frame, 0, font->height);
 
 	/* We are interested in property changes */
@@ -192,7 +191,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
 	/* We need to grab the mouse buttons for click to focus */
 	xcb_grab_button(conn, false, child, XCB_EVENT_MASK_BUTTON_PRESS,
-			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE, 1 /* left mouse button */,
+			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
+			1 /* left mouse button */,
 			XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
 
 	/* Focus the new window */

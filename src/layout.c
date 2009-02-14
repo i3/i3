@@ -81,13 +81,8 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
 	free(label);
 }
 
-void render_container(xcb_connection_t *connection, Container *container) {
+static void render_container(xcb_connection_t *connection, Container *container) {
 	Client *client;
-	uint32_t values[4];
-	uint32_t mask = XCB_CONFIG_WINDOW_X |
-			XCB_CONFIG_WINDOW_Y |
-			XCB_CONFIG_WINDOW_WIDTH |
-			XCB_CONFIG_WINDOW_HEIGHT;
 	i3Font *font = load_font(connection, pattern);
 
 	if (container->mode == MODE_DEFAULT) {
@@ -98,45 +93,47 @@ void render_container(xcb_connection_t *connection, Container *container) {
 
 		int current_client = 0;
 		CIRCLEQ_FOREACH(client, &(container->clients), clients) {
-			/* TODO: rewrite this block so that the need to puke vanishes :) */
-			/* TODO: at the moment, every column/row is 200px. This
+			/* TODO: at the moment, every column/row is screen / num_cols. This
 			 * needs to be changed to "percentage of the screen" by
 			 * default and adjustable by the user if necessary.
 			 */
-			values[0] = container->x + (container->col * container->width); /* x */
-			values[1] = container->y + (container->row * container->height +
-				(container->height / num_clients) * current_client); /* y */
 
-			if (client->x != values[0] || client->y != values[1]) {
-				printf("frame needs to be pushed to %dx%d\n",
-						values[0], values[1]);
-				client->x = values[0];
-				client->y = values[1];
+                        /* Check if we changed client->x or client->y by updating it…
+                         * Note the bitwise OR instead of logical OR to force evaluation of both statements */
+			if ((client->x != (client->x = container->x + (container->col * container->width))) |
+                            (client->y != (client->y = container->y + (container->row * container->height +
+                                          (container->height / num_clients) * current_client)))) {
+				printf("frame needs to be pushed to %dx%d\n", client->x, client->y);
+				/* Note: We can use a pointer to client->x like an array of uint32_ts
+				   because it is followed by client->y by definition */
 				xcb_configure_window(connection, client->frame,
-						XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
+						XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, &(client->x));
 			}
+
 			/* TODO: vertical default layout */
-			values[0] = container->width; /* width */
-			values[1] = container->height / num_clients; /* height */
-
-			if (client->width != values[0] || client->height != values[1]) {
-				client->width = values[0];
-				client->height = values[1];
+			if ((client->width != (client->width = container->width)) |
+                            (client->height != (client->height = container->height / num_clients))) {
 				xcb_configure_window(connection, client->frame,
-						XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
+						XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                                                &(client->width));
+
+				/* Adjust the position of the child inside its frame.
+				 * The coordinates of the child are relative to its frame, we
+				 * add a border of 2 pixel to each value */
+                                uint32_t mask = XCB_CONFIG_WINDOW_X |
+                                                XCB_CONFIG_WINDOW_Y |
+                                                XCB_CONFIG_WINDOW_WIDTH |
+                                                XCB_CONFIG_WINDOW_HEIGHT;
+                                uint32_t values[4] = {2,                                              /* x */
+                                                      font->height + 2 + 2,                           /* y */
+                                                      client->width - (2 + 2),                        /* width */
+                                                      client->height - ((font->height + 2 + 2) + 2)}; /* height */
+
+				printf("child itself will be at %dx%d with size %dx%d\n",
+						values[0], values[1], values[2], values[3]);
+
+				xcb_configure_window(connection, client->child, mask, values);
 			}
-
-			/* TODO: hmm, only do this for new wins */
-			/* The coordinates of the child are relative to its frame, we
-			 * add a border of 2 pixel to each value */
-			values[0] = 2;
-			values[1] = font->height + 2 + 2;
-			values[2] = client->width - (values[0] + 2);
-			values[3] = client->height - (values[1] + 2);
-			printf("child itself will be at %dx%d with size %dx%d\n",
-					values[0], values[1], values[2], values[3]);
-
-			xcb_configure_window(connection, client->child, mask, values);
 
 			decorate_window(connection, client);
 			current_client++;

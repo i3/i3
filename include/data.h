@@ -101,8 +101,8 @@ struct Client {
 	/* Backpointer. A client is inside a container */
 	Container *container;
 
-	int x, y;
-	int width, height;
+	uint32_t x, y;
+	uint32_t width, height;
 
 	/* Name */
 	char *name;
