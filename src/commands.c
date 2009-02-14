@@ -287,7 +287,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 	/* Is it an <exec>? */
 	if (strncmp(command, "exec ", strlen("exec ")) == 0) {
 		printf("starting \"%s\"\n", command + strlen("exec "));
-		start_application(command+strlen("exec "), NULL);
+		start_application(command+strlen("exec "));
 		return;
 	}
 

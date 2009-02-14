@@ -12,7 +12,6 @@ extern Display *xkbdpy;
 extern TAILQ_HEAD(bindings_head, Binding) bindings;
 extern xcb_event_handlers_t evenths;
 extern char *pattern;
-extern char **environment;
 extern int num_screens;
 
 #endif

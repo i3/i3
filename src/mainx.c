@@ -42,10 +42,6 @@ static const int LEFT = 5;
 static const int BOTTOM = 5;
 static const int RIGHT = 5;
 
-/* This is the filtered environment which will be passed to opened applications.
- * It contains DISPLAY (naturally) and locales stuff (LC_*, LANG) */
-char **environment;
-
 /* hm, xcb_wm wants us to implement this. */
 table_t *byChild = 0;
 table_t *byParent = 0;
@@ -273,28 +269,13 @@ static void initialize_xinerama(xcb_connection_t *conn) {
 }
 
 int main(int argc, char *argv[], char *env[]) {
-	int i, e = 0;
-
-	for (i = 0; (env[i] != NULL); i++)
-		if (strncmp(env[i], "LC_", strlen("LC_")) == 0 ||
-			strncmp(env[i], "LANG=", strlen("LANG=")) == 0 ||
-			strncmp(env[i], "DISPLAY=", strlen("DISPLAY=")) == 0) {
-			printf("Passing environment \"%s\"\n", env[i]);
-			environment = realloc(environment, sizeof(char*) * ++e);
-			environment[e-1] = env[i];
-		}
-
-	/* environment has to be NULL-terminated */
-	environment = realloc(environment, sizeof(char*) * ++e);
-	environment[e-1] = NULL;
-
-	init_table();
-
+	int i, screens;
 	xcb_connection_t *c;
 	xcb_property_handlers_t prophs;
 	xcb_window_t root;
 
-	int screens;
+	/* Initialize the table data structures for each workspace */
+	init_table();
 
 	memset(&evenths, 0, sizeof(xcb_event_handlers_t));
 	memset(&prophs, 0, sizeof(xcb_property_handlers_t));
@@ -305,8 +286,6 @@ int main(int argc, char *argv[], char *env[]) {
 	TAILQ_INIT(&bindings);
 
 	c = xcb_connect(NULL, &screens);
-
-	printf("x screen is %d\n", screens);
 
 	/* TODO: this has to be more beautiful somewhen */
 	int major, minor, error;
@@ -414,7 +393,7 @@ int main(int argc, char *argv[], char *env[]) {
 	printf("Checking for Xinerama...\n");
 	initialize_xinerama(c);
 
-	start_application(TERMINAL, NULL);
+	start_application(TERMINAL);
 
 	xcb_flush(c);
 
