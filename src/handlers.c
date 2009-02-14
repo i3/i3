@@ -24,6 +24,7 @@
 #include "commands.h"
 #include "data.h"
 #include "font.h"
+#include "xcb.h"
 
 static void set_focus(xcb_connection_t *conn, Client *client) {
         /* Update container */
@@ -42,6 +43,41 @@ static void set_focus(xcb_connection_t *conn, Client *client) {
         xcb_flush(conn);
 }
 
+static void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
+        c_ws->fullscreen_client = (client->fullscreen ? NULL : client);
+
+        client->fullscreen = !client->fullscreen;
+
+        if (client->fullscreen) {
+                printf("Entering fullscreen mode...\n");
+                Workspace *workspace = client->container->workspace;
+                /* We just entered fullscreen mode, let’s configure the window */
+                 uint32_t mask = XCB_CONFIG_WINDOW_X |
+                                 XCB_CONFIG_WINDOW_Y |
+                                 XCB_CONFIG_WINDOW_WIDTH |
+                                 XCB_CONFIG_WINDOW_HEIGHT;
+                uint32_t values[4] = {workspace->x,
+                                      workspace->y,
+                                      workspace->width,
+                                      workspace->height};
+
+                printf("child itself will be at %dx%d with size %dx%d\n",
+                                values[0], values[1], values[2], values[3]);
+
+                /* Raise the window */
+                xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, client->frame);
+
+                xcb_configure_window(conn, client->frame, mask, values);
+                xcb_configure_window(conn, client->child, mask, values);
+
+                xcb_flush(conn);
+        } else {
+                printf("left fullscreen\n");
+                client->force_reconfigure = true;
+                /* We left fullscreen mode, redraw the layout */
+                render_layout(conn);
+        }
+}
 
 /*
  * Due to bindings like Mode_switch + <a>, we need to bind some keys in XCB_GRAB_MODE_SYNC.
@@ -333,4 +369,34 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                 return 1;
         decorate_window(conn, client);
         return 1;
+}
+
+/*
+ * Handle client messages (EWMH)
+ *
+ */
+int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message_event_t *event) {
+        printf("client_message\n");
+
+        if (event->type == atoms[_NET_WM_STATE]) {
+                if (event->format != 32 || event->data.data32[1] != atoms[_NET_WM_STATE_FULLSCREEN])
+                        return 0;
+
+                printf("fullscreen\n");
+
+                Client *client = table_get(byChild, event->window);
+                if (client == NULL)
+                        return 0;
+
+                /* Check if the fullscreen state should be toggled… */
+                if ((client->fullscreen &&
+                     (event->data.data32[0] == _NET_WM_STATE_REMOVE ||
+                      event->data.data32[0] == _NET_WM_STATE_TOGGLE)) ||
+                    (!client->fullscreen &&
+                     (event->data.data32[0] == _NET_WM_STATE_ADD ||
+                      event->data.data32[0] == _NET_WM_STATE_TOGGLE)))
+                        toggle_fullscreen(conn, client);
+        } else {
+                printf("unhandled clientmessage\n");
+        }
 }

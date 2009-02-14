@@ -110,7 +110,8 @@ static void render_container(xcb_connection_t *connection, Container *container)
 
                         /* Check if we changed client->x or client->y by updating it…
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
-                        if ((client->x != (client->x = container->x + (container->col * container->width))) |
+                        if (client->force_reconfigure |
+                            (client->x != (client->x = container->x + (container->col * container->width))) |
                             (client->y != (client->y = container->y + (container->row * container->height +
                                           (container->height / num_clients) * current_client)))) {
                                 printf("frame needs to be pushed to %dx%d\n", client->x, client->y);
@@ -121,7 +122,8 @@ static void render_container(xcb_connection_t *connection, Container *container)
                         }
 
                         /* TODO: vertical default layout */
-                        if ((client->width != (client->width = container->width)) |
+                        if (client->force_reconfigure |
+                            (client->width != (client->width = container->width)) |
                             (client->height != (client->height = container->height / num_clients))) {
                                 xcb_configure_window(connection, client->frame,
                                                 XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
@@ -139,11 +141,14 @@ static void render_container(xcb_connection_t *connection, Container *container)
                                                       client->width - (2 + 2),                        /* width */
                                                       client->height - ((font->height + 2 + 2) + 2)}; /* height */
 
-                                printf("child itself will be at %dx%d with size %dx%d\n",
+                                printf("fullscreen frame/child will be at %dx%d with size %dx%d\n",
                                                 values[0], values[1], values[2], values[3]);
 
                                 xcb_configure_window(connection, client->child, mask, values);
                         }
+
+                        if (client->force_reconfigure)
+                                client->force_reconfigure = false;
 
                         current_client++;
                 }
@@ -157,6 +162,9 @@ void render_layout(xcb_connection_t *conn) {
         int screen;
         for (screen = 0; screen < num_screens; screen++) {
                 printf("Rendering screen %d\n", screen);
+                if (workspaces[screen].fullscreen_client != NULL)
+                        /* This is easy: A client has entered fullscreen mode, so we don’t render at all */
+                        continue;
                 /* TODO: get the workspace which is active on the screen */
                 int width = workspaces[screen].width;
                 int height = workspaces[screen].height;

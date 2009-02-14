@@ -9,6 +9,7 @@
  *
  */
 #include <xcb/xcb.h>
+#include <stdbool.h>
 
 #ifndef _DATA_H
 #define _DATA_H
@@ -56,6 +57,8 @@ struct Workspace {
         /* These are stored here just while this workspace is _not_ shown (see show_workspace()) */
         int current_row;
         int current_col;
+
+        Client *fullscreen_client;
 
         /* This is a two-dimensional dynamic array of Container-pointers. I’ve always wanted
          * to be a three-star programmer :) */
@@ -118,6 +121,14 @@ struct Client {
         char *name;
         int name_len;
 
+        /* fullscreen is pretty obvious */
+        bool fullscreen;
+
+        /* After leaving fullscreen mode, a client needs to be reconfigured (configuration =
+           setting X, Y, width and height). By setting the force_reconfigure flag, render_layout()
+           will reconfigure the client. */
+        bool force_reconfigure;
+
         /* XCB contexts */
         xcb_window_t frame; /* Our window: The frame around the client */
         xcb_gcontext_t titlegc; /* The titlebar’s graphic context inside the frame */
@@ -146,6 +157,9 @@ struct Container {
         /* Width/Height of the container. Changeable by the user */
         int width;
         int height;
+
+        /* Backpointer to the workspace this container is in */
+        Workspace *workspace;
 
         /* Ensure MODE_DEFAULT maps to 0 because we use calloc for initialization later */
         enum { MODE_DEFAULT = 0, MODE_STACK = 1 } mode;

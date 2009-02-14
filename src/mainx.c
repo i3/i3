@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <limits.h>
 
 #include <xcb/xcb.h>
 
@@ -39,6 +40,7 @@
 #include "debug.h"
 #include "handlers.h"
 #include "util.h"
+#include "xcb.h"
 
 #define TERMINAL "/usr/pkg/bin/urxvt"
 
@@ -51,6 +53,8 @@ xcb_event_handlers_t evenths;
 table_t *byChild = 0;
 table_t *byParent = 0;
 xcb_window_t root_win;
+xcb_atom_t atoms[6];
+
 
 char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1";
 int num_screens = 0;
@@ -344,6 +348,8 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_property_handlers_init(&prophs, &evenths);
         xcb_event_set_map_notify_handler(&evenths, handle_map_notify_event, &prophs);
 
+        xcb_event_set_client_message_handler(&evenths, handle_client_message, 0);
+
         xcb_watch_wm_name(&prophs, 128, handle_windowname_change, 0);
 
         root = xcb_aux_get_screen(c, screens)->root;
@@ -352,6 +358,31 @@ int main(int argc, char *argv[], char *env[]) {
         uint32_t mask = XCB_CW_EVENT_MASK;
         uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE };
         xcb_change_window_attributes(c, root, mask, values);
+
+        /* Setup NetWM atoms */
+        /* TODO: needs cleanup, needs more xcb (asynchronous), needs more error checking */
+#define GET_ATOM(name) { \
+        xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(c, xcb_intern_atom(c, 0, strlen(#name), #name), NULL); \
+        if (!reply) { \
+                printf("Could not get atom " #name "\n"); \
+                exit(-1); \
+        } \
+        atoms[name] = reply->atom; \
+        free(reply); \
+}
+
+        GET_ATOM(_NET_SUPPORTED);
+        GET_ATOM(_NET_WM_STATE_FULLSCREEN);
+        GET_ATOM(_NET_SUPPORTING_WM_CHECK);
+        GET_ATOM(_NET_WM_NAME);
+        GET_ATOM(UTF8_STRING);
+        GET_ATOM(_NET_WM_STATE);
+
+        check_error(c, xcb_change_property_checked(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED], ATOM, 32, 5, atoms), "Could not set _NET_SUPPORTED");
+
+        xcb_change_property(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTING_WM_CHECK], WINDOW, 32, 1, &root);
+
+        xcb_change_property(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_WM_NAME] , atoms[UTF8_STRING], 8, strlen("i3"), "i3");
 
         #define BIND(key, modifier, cmd) { \
                 Binding *new = malloc(sizeof(Binding)); \
