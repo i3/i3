@@ -1,4 +1,14 @@
 /*
+ * vim:ts=8:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ *
+ * (c) 2009 Michael Stapelberg and contributors
+ *
+ * See file LICENSE for license information.
+ *
+ */
+/*
  * This file provides functions for easier accessing of _the_ table
  *
  */
@@ -26,21 +36,21 @@ int current_row = 0;
  *
  */
 void init_table() {
-	int i;
-	memset(workspaces, 0, sizeof(workspaces));
+        int i;
+        memset(workspaces, 0, sizeof(workspaces));
 
-	for (i = 0; i < 10; i++) {
-		expand_table_cols(&(workspaces[i]));
-		expand_table_rows(&(workspaces[i]));
-	}
+        for (i = 0; i < 10; i++) {
+                expand_table_cols(&(workspaces[i]));
+                expand_table_rows(&(workspaces[i]));
+        }
 }
 
 static void new_container(Container **container) {
-	Container *new;
-	new = *container = calloc(sizeof(Container), 1);
-	CIRCLEQ_INIT(&(new->clients));
-	new->colspan = 1;
-	new->rowspan = 1;
+        Container *new;
+        new = *container = calloc(sizeof(Container), 1);
+        CIRCLEQ_INIT(&(new->clients));
+        new->colspan = 1;
+        new->rowspan = 1;
 }
 
 /*
@@ -48,14 +58,14 @@ static void new_container(Container **container) {
  *
  */
 void expand_table_rows(Workspace *workspace) {
-	int c;
+        int c;
 
-	workspace->rows++;
+        workspace->rows++;
 
-	for (c = 0; c < workspace->cols; c++) {
-		workspace->table[c] = realloc(workspace->table[c], sizeof(Container*) * workspace->rows);
-		new_container(&(workspace->table[c][workspace->rows-1]));
-	}
+        for (c = 0; c < workspace->cols; c++) {
+                workspace->table[c] = realloc(workspace->table[c], sizeof(Container*) * workspace->rows);
+                new_container(&(workspace->table[c][workspace->rows-1]));
+        }
 }
 
 /*
@@ -63,14 +73,14 @@ void expand_table_rows(Workspace *workspace) {
  *
  */
 void expand_table_cols(Workspace *workspace) {
-	int c;
+        int c;
 
-	workspace->cols++;
+        workspace->cols++;
 
-	workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
-	workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
-	for (c = 0; c < workspace->rows; c++)
-		new_container(&(workspace->table[workspace->cols-1][c]));
+        workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
+        workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
+        for (c = 0; c < workspace->rows; c++)
+                new_container(&(workspace->table[workspace->cols-1][c]));
 }
 
 /*
@@ -78,6 +88,6 @@ void expand_table_cols(Workspace *workspace) {
  *
  */
 bool cell_exists(int col, int row) {
-	return (col >= 0 && col < c_ws->rows) &&
-		(row >= 0 && row < c_ws->cols);
+        return (col >= 0 && col < c_ws->rows) &&
+                (row >= 0 && row < c_ws->cols);
 }

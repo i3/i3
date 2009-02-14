@@ -1,3 +1,13 @@
+/*
+ * vim:ts=8:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ *
+ * (c) 2009 Michael Stapelberg and contributors
+ *
+ * See file LICENSE for license information.
+ *
+ */
 #ifndef _DEBUG_H
 #define _DEBUG_H
 

@@ -1,3 +1,13 @@
+/*
+ * vim:ts=8:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ *
+ * (c) 2009 Michael Stapelberg and contributors
+ *
+ * See file LICENSE for license information.
+ *
+ */
 #include <xcb/xcb.h>
 #include <xcb/xcb_event.h>
 

@@ -1,3 +1,13 @@
+/*
+ * vim:ts=8:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ *
+ * (c) 2009 Michael Stapelberg and contributors
+ *
+ * See file LICENSE for license information.
+ *
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,23 +27,23 @@
  *
  */
 void start_application(const char *command) {
-	if (fork() == 0) {
-		/* Child process */
-		if (fork() == 0) {
-			/* Stores the path of the shell */
-			static const char *shell = NULL;
+        if (fork() == 0) {
+                /* Child process */
+                if (fork() == 0) {
+                        /* Stores the path of the shell */
+                        static const char *shell = NULL;
 
-			if (shell == NULL)
-				if ((shell = getenv("SHELL")) == NULL)
-					shell = "/bin/sh";
+                        if (shell == NULL)
+                                if ((shell = getenv("SHELL")) == NULL)
+                                        shell = "/bin/sh";
 
-			/* This is the child */
-			execl(shell, shell, "-c", command, NULL);
-			/* not reached */
-		}
-		exit(0);
-	}
-	wait(0);
+                        /* This is the child */
+                        execl(shell, shell, "-c", command, NULL);
+                        /* not reached */
+                }
+                exit(0);
+        }
+        wait(0);
 }
 
 /*
@@ -42,10 +52,10 @@ void start_application(const char *command) {
  *
  */
 void check_error(xcb_connection_t *connection, xcb_void_cookie_t cookie, char *err_message) {
-	xcb_generic_error_t *error = xcb_request_check(connection, cookie);
-	if (error != NULL) {
-		fprintf(stderr, "ERROR: %s : %d\n", err_message , error->error_code);
-		xcb_disconnect(connection);
-		exit(-1);
-	}
+        xcb_generic_error_t *error = xcb_request_check(connection, cookie);
+        if (error != NULL) {
+                fprintf(stderr, "ERROR: %s : %d\n", err_message , error->error_code);
+                xcb_disconnect(connection);
+                exit(-1);
+        }
 }
