@@ -44,13 +44,14 @@ static void set_focus(xcb_connection_t *conn, Client *client) {
 }
 
 static void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
-        c_ws->fullscreen_client = (client->fullscreen ? NULL : client);
+        Workspace *workspace = client->container->workspace;
+
+        workspace->fullscreen_client = (client->fullscreen ? NULL : client);
 
         client->fullscreen = !client->fullscreen;
 
         if (client->fullscreen) {
                 printf("Entering fullscreen mode...\n");
-                Workspace *workspace = client->container->workspace;
                 /* We just entered fullscreen mode, let’s configure the window */
                  uint32_t mask = XCB_CONFIG_WINDOW_X |
                                  XCB_CONFIG_WINDOW_Y |
@@ -398,5 +399,8 @@ int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message
                         toggle_fullscreen(conn, client);
         } else {
                 printf("unhandled clientmessage\n");
+                return 0;
         }
+
+        return 1;
 }
