@@ -396,6 +396,8 @@ int main(int argc, char *argv[], char *env[]) {
 
         BIND(30, 0, "exec /usr/pkg/bin/urxvt");
 
+        BIND(41, BIND_MOD_1, "f");
+
         BIND(44, BIND_MOD_1, "h");
         BIND(45, BIND_MOD_1, "j");
         BIND(46, BIND_MOD_1, "k");

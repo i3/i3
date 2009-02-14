@@ -25,60 +25,7 @@
 #include "data.h"
 #include "font.h"
 #include "xcb.h"
-
-static void set_focus(xcb_connection_t *conn, Client *client) {
-        /* Update container */
-        Client *old_client = client->container->currently_focused;
-        client->container->currently_focused = client;
-
-        current_col = client->container->col;
-        current_row = client->container->row;
-
-        /* Set focus to the entered window, and flush xcb buffer immediately */
-        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, client->child, XCB_CURRENT_TIME);
-        /* Update last/current client’s titlebar */
-        if (old_client != NULL)
-                decorate_window(conn, old_client);
-        decorate_window(conn, client);
-        xcb_flush(conn);
-}
-
-static void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
-        Workspace *workspace = client->container->workspace;
-
-        workspace->fullscreen_client = (client->fullscreen ? NULL : client);
-
-        client->fullscreen = !client->fullscreen;
-
-        if (client->fullscreen) {
-                printf("Entering fullscreen mode...\n");
-                /* We just entered fullscreen mode, let’s configure the window */
-                 uint32_t mask = XCB_CONFIG_WINDOW_X |
-                                 XCB_CONFIG_WINDOW_Y |
-                                 XCB_CONFIG_WINDOW_WIDTH |
-                                 XCB_CONFIG_WINDOW_HEIGHT;
-                uint32_t values[4] = {workspace->x,
-                                      workspace->y,
-                                      workspace->width,
-                                      workspace->height};
-
-                printf("child itself will be at %dx%d with size %dx%d\n",
-                                values[0], values[1], values[2], values[3]);
-
-                /* Raise the window */
-                xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, client->frame);
-
-                xcb_configure_window(conn, client->frame, mask, values);
-                xcb_configure_window(conn, client->child, mask, values);
-
-                xcb_flush(conn);
-        } else {
-                printf("left fullscreen\n");
-                client->force_reconfigure = true;
-                /* We left fullscreen mode, redraw the layout */
-                render_layout(conn);
-        }
-}
+#include "util.h"
 
 /*
  * Due to bindings like Mode_switch + <a>, we need to bind some keys in XCB_GRAB_MODE_SYNC.

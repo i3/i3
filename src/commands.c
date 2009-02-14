@@ -301,6 +301,14 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
+        /* Is it 'f' for fullscreen? */
+        if (command[0] == 'f') {
+                if (CUR_CELL->currently_focused == NULL)
+                        return;
+                toggle_fullscreen(conn, CUR_CELL->currently_focused);
+                return;
+        }
+
         /* Is it a <with>? */
         if (command[0] == 'w') {
                 /* TODO: implement */
@@ -315,7 +323,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         direction_t direction;
         times = strtol(command, &rest, 10);
         if (rest == NULL) {
-                printf("Invalid command: Consists only of a movement\n");
+                printf("Invalid command (\"%s\")\n", command);
                 return;
         }
         if (*rest == 'm' || *rest == 's') {

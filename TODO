@@ -2,7 +2,6 @@ TODO list, in order of importance:
 
  * freely resizable (e.g. using your mouse, for now) percentage of rows/cols
  * fullscreen (handling of applications, mplayer, firefox, xpdf, wmctrl)
- * fullscreen (implementing a mode, like default, stacked)
  * xinerama
  * document stuff!
  * more documentation!
