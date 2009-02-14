@@ -129,6 +129,10 @@ struct Client {
            will reconfigure the client. */
         bool force_reconfigure;
 
+        /* When reparenting a window, an unmap-notify is sent. As we delete windows when they’re
+           unmapped, we need to ignore that one. Therefore, this flag is set when reparenting. */
+        bool awaiting_useless_unmap;
+
         /* XCB contexts */
         xcb_window_t frame; /* Our window: The frame around the client */
         xcb_gcontext_t titlegc; /* The titlebar’s graphic context inside the frame */

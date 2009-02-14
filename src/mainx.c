@@ -49,9 +49,6 @@ Display *xkbdpy;
 TAILQ_HEAD(bindings_head, Binding) bindings;
 xcb_event_handlers_t evenths;
 
-/* hm, xcb_wm wants us to implement this. */
-table_t *byChild = 0;
-table_t *byParent = 0;
 xcb_window_t root_win;
 xcb_atom_t atoms[6];
 
@@ -194,15 +191,17 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         table_put(byChild, child, new);
 
         /* Moves the original window into the new frame we've created for it */
-        xcb_reparent_window(conn, child, new->frame, 0, font->height);
+        new->awaiting_useless_unmap = true;
+        cookie = xcb_reparent_window_checked(conn, child, new->frame, 0, font->height);
+        check_error(conn, cookie, "Could not reparent window");
 
         /* We are interested in property changes */
         mask = XCB_CW_EVENT_MASK;
         values[0] =     XCB_EVENT_MASK_PROPERTY_CHANGE |
                         XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-                        XCB_EVENT_MASK_ENTER_WINDOW |
-                        XCB_EVENT_MASK_BUTTON_PRESS;
-        xcb_change_window_attributes(conn, child, mask, values);
+                        XCB_EVENT_MASK_ENTER_WINDOW;
+        cookie = xcb_change_window_attributes_checked(conn, child, mask, values);
+        check_error(conn, cookie, "Could not change window attributes");
 
         /* We need to grab the mouse buttons for click to focus */
         xcb_grab_button(conn, false, child, XCB_EVENT_MASK_BUTTON_PRESS,
