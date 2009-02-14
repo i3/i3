@@ -145,7 +145,6 @@ static void render_container(xcb_connection_t *connection, Container *container)
                                 xcb_configure_window(connection, client->child, mask, values);
                         }
 
-                        decorate_window(connection, client);
                         current_client++;
                 }
         } else {

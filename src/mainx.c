@@ -162,7 +162,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         i3Font *font = load_font(conn, pattern);
 
         /* Yo dawg, I heard you like windows, so I create a window around your window… */
-        xcb_create_window(conn,
+        xcb_void_cookie_t cookie = xcb_create_window_checked(conn,
                         depth,
                         new->frame,
                         root,
@@ -172,9 +172,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         height + 2 + 2 + font->height,  /* 2 px border plus font’s height */
                         0,                              /* border_width = 0, we draw our own borders */
                         XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                        visual,
+                        XCB_WINDOW_CLASS_COPY_FROM_PARENT,
                         mask,
                         values);
+        check_error(conn, cookie, "Could not create frame");
         xcb_change_save_set(conn, XCB_SET_MODE_INSERT, child);
 
         /* Map the window on the screen (= make it visible) */
