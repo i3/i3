@@ -1,7 +1,6 @@
 TODO list, in order of importance:
 
  * freely resizable (e.g. using your mouse, for now) percentage of rows/cols
- * fullscreen (handling of applications, mplayer, firefox, xpdf, wmctrl)
  * xinerama
  * document stuff!
  * more documentation!
@@ -13,3 +12,4 @@ TODO for later™:
  * a command for toggling layouts
  * a command for toggling workspaces
  * floating
+ * do something about xpdf, it doesn’t use _NET_WM_STATE_FULLSCREEN (but size hints?)
