@@ -33,20 +33,23 @@ i3Font *load_font(xcb_connection_t *connection, const char *pattern) {
                         return font;
 
         i3Font *new = smalloc(sizeof(i3Font));
+        xcb_void_cookie_t font_cookie;
+        xcb_list_fonts_with_info_cookie_t info_cookie;
 
         /* Send all our requests first */
         new->id = xcb_generate_id(connection);
-        xcb_void_cookie_t font_cookie = xcb_open_font_checked(connection, new->id, strlen(pattern), pattern);
-        xcb_list_fonts_with_info_cookie_t cookie = xcb_list_fonts_with_info(connection, 1, strlen(pattern), pattern);
+        font_cookie = xcb_open_font_checked(connection, new->id, strlen(pattern), pattern);
+        info_cookie = xcb_list_fonts_with_info(connection, 1, strlen(pattern), pattern);
 
         check_error(connection, font_cookie, "Could not open font");
+        check_error(connection, info_cookie, "Could not get font information");
 
         /* Get information (height/name) for this font */
         xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(connection, cookie, NULL);
         exit_if_null(reply, "Could not load font \"%s\"\n", pattern);
 
         if (asprintf(&(new->name), "%.*s", xcb_list_fonts_with_info_name_length(reply),
-                        xcb_list_fonts_with_info_name(reply)) == -1)
+                                           xcb_list_fonts_with_info_name(reply)) == -1)
                 die("asprintf() failed\n");
         new->pattern = sstrdup(pattern);
         new->height = reply->font_ascent + reply->font_descent;
