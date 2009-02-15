@@ -47,7 +47,7 @@
 
 Display *xkbdpy;
 
-TAILQ_HEAD(bindings_head, Binding) bindings;
+TAILQ_HEAD(bindings_head, Binding) bindings = TAILQ_HEAD_INITIALIZER(bindings);
 xcb_event_handlers_t evenths;
 
 xcb_window_t root_win;
@@ -263,8 +263,6 @@ int main(int argc, char *argv[], char *env[]) {
 
         byChild = alloc_table();
         byParent = alloc_table();
-
-        TAILQ_INIT(&bindings);
 
         c = xcb_connect(NULL, &screens);
 
