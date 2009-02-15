@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <stdarg.h>
 
 #include "i3.h"
 #include "data.h"
@@ -25,6 +26,55 @@ int min(int a, int b) {
 
 int max(int a, int b) {
         return (a > b ? a : b);
+}
+
+/*
+ * Checks if pointer is NULL and exits the whole program, printing a message to stdout
+ * before with the given format (see printf())
+ *
+ */
+void exit_if_null(void *pointer, char *fmt, ...) {
+        va_list args;
+
+        if (pointer != NULL)
+                return;
+
+        va_start(args, fmt);
+        vfprintf(stderr, fmt, args);
+        va_end(args);
+
+        exit(EXIT_FAILURE);
+}
+
+/*
+ * Prints the message (see printf()) to stderr, then exits the program.
+ *
+ */
+void die(char *fmt, ...) {
+        va_list args;
+
+        va_start(args, fmt);
+        vfprintf(stderr, fmt, args);
+        va_end(args);
+
+        exit(EXIT_FAILURE);
+}
+
+/*
+ * The s* functions (safe) are wrappers around malloc, strdup, …, which exits if one of
+ * the called functions returns NULL, meaning that there is no more memory available
+ *
+ */
+void *smalloc(size_t size) {
+        void *result = malloc(size);
+        exit_if_null(result, "Too less memory for malloc(%d)\n", size);
+        return result;
+}
+
+char *sstrdup(const char *str) {
+        char *result = strdup(str);
+        exit_if_null(result, "Too less memory for strdup()\n");
+        return result;
 }
 
 /*

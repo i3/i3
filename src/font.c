@@ -3,13 +3,11 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
- */
-/*
- * Handles font loading
+ * font.c: Handles font loading (with caching, with height information)
  *
  */
 #include <string.h>
@@ -27,32 +25,30 @@ TAILQ_HEAD(cached_fonts_head, Font) cached_fonts = TAILQ_HEAD_INITIALIZER(cached
  * maintains a cache.
  *
  */
-i3Font *load_font(xcb_connection_t *c, const char *pattern) {
+i3Font *load_font(xcb_connection_t *connection, const char *pattern) {
         /* Check if we got the font cached */
         i3Font *font;
         TAILQ_FOREACH(font, &cached_fonts, fonts)
                 if (strcmp(font->pattern, pattern) == 0)
                         return font;
 
-        i3Font *new = malloc(sizeof(i3Font));
+        i3Font *new = smalloc(sizeof(i3Font));
 
         /* Send all our requests first */
-        new->id = xcb_generate_id(c);
-        xcb_void_cookie_t font_cookie = xcb_open_font_checked(c, new->id, strlen(pattern), pattern);
-        xcb_list_fonts_with_info_cookie_t cookie = xcb_list_fonts_with_info(c, 1, strlen(pattern), pattern);
+        new->id = xcb_generate_id(connection);
+        xcb_void_cookie_t font_cookie = xcb_open_font_checked(connection, new->id, strlen(pattern), pattern);
+        xcb_list_fonts_with_info_cookie_t cookie = xcb_list_fonts_with_info(connection, 1, strlen(pattern), pattern);
 
-        check_error(c, font_cookie, "Could not open font");
+        check_error(connection, font_cookie, "Could not open font");
 
         /* Get information (height/name) for this font */
-        xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(c, cookie, NULL);
-        if (reply == NULL) {
-                printf("Could not load font\n");
-                exit(1);
-        }
+        xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(connection, cookie, NULL);
+        exit_if_null(reply, "Could not load font \"%s\"\n", pattern);
 
-        asprintf(&(new->name), "%.*s", xcb_list_fonts_with_info_name_length(reply),
-                        xcb_list_fonts_with_info_name(reply));
-        new->pattern = strdup(pattern);
+        if (asprintf(&(new->name), "%.*s", xcb_list_fonts_with_info_name_length(reply),
+                        xcb_list_fonts_with_info_name(reply)) == -1)
+                die("asprintf() failed\n");
+        new->pattern = sstrdup(pattern);
         new->height = reply->font_ascent + reply->font_descent;
 
         /* Insert into cache */
