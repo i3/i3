@@ -42,10 +42,9 @@ i3Font *load_font(xcb_connection_t *connection, const char *pattern) {
         info_cookie = xcb_list_fonts_with_info(connection, 1, strlen(pattern), pattern);
 
         check_error(connection, font_cookie, "Could not open font");
-        check_error(connection, info_cookie, "Could not get font information");
 
         /* Get information (height/name) for this font */
-        xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(connection, cookie, NULL);
+        xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(connection, info_cookie, NULL);
         exit_if_null(reply, "Could not load font \"%s\"\n", pattern);
 
         if (asprintf(&(new->name), "%.*s", xcb_list_fonts_with_info_name_length(reply),

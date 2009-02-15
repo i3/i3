@@ -21,6 +21,7 @@
 #include "data.h"
 #include "table.h"
 #include "layout.h"
+#include "util.h"
 
 int min(int a, int b) {
         return (a < b ? a : b);
@@ -28,24 +29,6 @@ int min(int a, int b) {
 
 int max(int a, int b) {
         return (a > b ? a : b);
-}
-
-/*
- * Checks if pointer is NULL and exits the whole program, printing a message to stdout
- * before with the given format (see printf())
- *
- */
-void exit_if_null(void *pointer, char *fmt, ...) {
-        va_list args;
-
-        if (pointer != NULL)
-                return;
-
-        va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
-        va_end(args);
-
-        exit(EXIT_FAILURE);
 }
 
 /*

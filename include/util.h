@@ -15,9 +15,10 @@
 #ifndef _UTIL_H
 #define _UTIL_H
 
+#define exit_if_null(pointer, ...) { if (pointer == NULL) die(__VA_ARGS__); }
+
 int min(int a, int b);
 int max(int a, int b);
-void exit_if_null(void *pointer, char *fmt, ...);
 void die(char *fmt, ...);
 void *smalloc(size_t size);
 char *sstrdup(const char *str);
