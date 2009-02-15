@@ -3,15 +3,16 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
+ *
+ * debug.c: Contains debugging functions, especially FormatEvent, which prints unhandled events.
+ *          This code is from xcb-util.
  *
  */
 #include <stdio.h>
 #include <xcb/xcb.h>
-
-/* Debug functions here, especially the FormatEvent-stuff, which prints unhandled events */
 
 static const char *labelError[] = {
     "Success",

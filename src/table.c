@@ -3,13 +3,12 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
- */
-/*
- * This file provides functions for easier accessing of _the_ table
+ * table.c: Functions/macros for easy modifying/accessing of _the_ table (defining our
+ *          layout).
  *
  */
 #include <stdio.h>

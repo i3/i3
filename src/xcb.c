@@ -3,9 +3,11 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
+ *
+ * xcb.c: Helper functions for easier usage of XCB
  *
  */
 #include <stdint.h>
@@ -13,7 +15,7 @@
 #include <stdlib.h>
 
 #include <xcb/xcb.h>
-/* All the helper functions needed for efficiently using XCB */
+
 #include "util.h"
 
 /*
