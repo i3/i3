@@ -1,0 +1,86 @@
+i3(1)
+=====
+Michael Stapelberg <michael+i3@stapelberg.de>
+v3.alpha, February 2009
+
+== NAME
+
+i3 - an improved dynamic, tiling window manager
+
+== SYNOPSIS
+
+i3
+
+== DESCRIPTION
+
+=== INTRODUCTION
+
+TODO: write an introduction
+
+=== TERMINOLOGY
+
+Client::
+A client is X11-speak for a window.
+
+Table::
+Your workspace is managed using a table. You can move windows around and create new columns
+(move a client to the right) or rows (move it to the bottom) implicitly.
++
+By "snapping" a client in a specific direction, you increase its colspan/rowspan.
+
+Container::
+A container contains a variable number of clients. Each cell of the table is a container.
++
+Containers can be used in various modes. The default mode is called "default" and just
+resizes each client equally so that it fits. The stacking mode is currently not implemented.
+
+Workspace::
+A workspace is a set of clients (technically speaking, it’s just a table). Other window
+managers call this "Virtual Desktops".
++
+In i3, each workspace is assigned to a specific virtual screen. By default, screen 1
+has workspace 1, screen 2 has workspace 2 and so on… However, when you create a new
+workspace (by simply switching to it), it’ll be assigned the screen you are currently
+on.
+
+Virtual Screen::
+Using Xinerama, you can have an X11 screen spanning multiple real monitors. Furthermore,
+you can set them up in cloning mode or with positions (monitor 1 is left of monitor 2).
++
+A virtual screen is the result of your Xinerama setup. For example, if you have attached
+two real monitors (let’s say your laptop screen and a beamer) and enabled cloning, i3
+will use one virtual screen with the size of the smallest screen you have attached (so
+that you can see all your windows on each screen all the time).
+If you have two monitors attached, one configured to be left of the other, i3 will use
+two virtual screens.
+
+== KEYBINDINGS
+
+h/j/k/l::
+Direction keys (left, down, up, right)
+
+Mod1+<direction>::
+Focus window in <direction>.
+
+Mod1+Shift+<direction>::
+Move window to <direction>.
+
+Mod1+Ctrl+<direction>::
+Snap window to <direction>.
+
+Mod1+<number>::
+Switch to workspace <number>.
+
+== TODO
+
+There is lots of stuff left to do. This release is to be considered as a technology preview.
+Here is an overwiew of the most important points:
+
+ * IPC
+ * a command for toggling layouts/workspaces
+ * floating
+ * do something about applications which don’t use _NET_WM_STATE_FULLSCREEN (like xpdf)
+
+== AUTHOR
+
+Michael Stapelberg and contributors
