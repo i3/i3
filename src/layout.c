@@ -159,8 +159,8 @@ static void render_container(xcb_connection_t *connection, Container *container)
 }
 
 void render_layout(xcb_connection_t *connection) {
-        int cols, rows;
         i3Screen *screen;
+
         TAILQ_FOREACH(screen, &virtual_screens, screens) {
                 /* r_ws (rendering workspace) is just a shortcut to the Workspace being currently rendered */
                 Workspace *r_ws = &(workspaces[screen->current_workspace]);
@@ -177,8 +177,8 @@ void render_layout(xcb_connection_t *connection) {
                                 width / r_ws->cols, height / r_ws->rows);
 
                 /* Go through the whole table and render what’s necessary */
-                for (cols = 0; cols < r_ws->cols; cols++)
-                        for (rows = 0; rows < r_ws->rows; rows++) {
+                for (int cols = 0; cols < r_ws->cols; cols++)
+                        for (int rows = 0; rows < r_ws->rows; rows++) {
                                 Container *container = r_ws->table[cols][rows];
                                 printf("container has %d colspan, %d rowspan\n",
                                                 container->colspan, container->rowspan);

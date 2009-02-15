@@ -78,7 +78,6 @@ static void disable_xinerama(xcb_connection_t *connection) {
 void initialize_xinerama(xcb_connection_t *conn) {
         xcb_xinerama_query_screens_reply_t *reply;
         xcb_xinerama_screen_info_t *screen_info;
-        int screen;
 
         if (!xcb_get_extension_data(conn, &xcb_xinerama_id)->present) {
                 printf("Xinerama extension not found, disabling.\n");
@@ -101,7 +100,7 @@ void initialize_xinerama(xcb_connection_t *conn) {
         num_screens = xcb_xinerama_query_screens_screen_info_length(reply);
 
         /* Just go through each workspace and associate as many screens as we can. */
-        for (screen = 0; screen < num_screens; screen++) {
+        for (int screen = 0; screen < num_screens; screen++) {
                 i3Screen *s = get_screen_at(screen_info[screen].x_org, screen_info[screen].y_org);
                 if (s!= NULL) {
                         /* This screen already exists. We use the littlest screen so that the user

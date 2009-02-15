@@ -182,7 +182,6 @@ static void snap_current_container(xcb_connection_t *connection, direction_t dir
         printf("snapping container to direction %d\n", direction);
 
         Container *container = CUR_CELL;
-        int i;
 
         assert(container != NULL);
 
@@ -202,7 +201,7 @@ static void snap_current_container(xcb_connection_t *connection, direction_t dir
 
                         /* Check if there are other cells with rowspan, which are in our way.
                          * If so, reduce their rowspan. */
-                        for (i = container->row-1; i >= 0; i--) {
+                        for (int i = container->row-1; i >= 0; i--) {
                                 printf("we got cell %d, %d with rowspan %d\n",
                                                 container->col+1, i, CUR_TABLE[container->col+1][i]->rowspan);
                                 while ((CUR_TABLE[container->col+1][i]->rowspan-1) >= (container->row - i))
@@ -224,7 +223,7 @@ static void snap_current_container(xcb_connection_t *connection, direction_t dir
                                 return;
                         }
 
-                        for (i = container->col-1; i >= 0; i--) {
+                        for (int i = container->col-1; i >= 0; i--) {
                                 printf("we got cell %d, %d with colspan %d\n",
                                                 i, container->row+1, CUR_TABLE[i][container->row+1]->colspan);
                                 while ((CUR_TABLE[i][container->row+1]->colspan-1) >= (container->col - i))
@@ -241,7 +240,6 @@ static void snap_current_container(xcb_connection_t *connection, direction_t dir
 }
 
 static void show_workspace(xcb_connection_t *conn, int workspace) {
-        int cols, rows;
         Client *client;
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */
@@ -286,11 +284,10 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
         //xcb_grab_server(conn);
 
         /* Unmap all clients of the current workspace */
-        for (cols = 0; cols < c_ws->cols; cols++)
-                for (rows = 0; rows < c_ws->rows; rows++) {
+        for (int cols = 0; cols < c_ws->cols; cols++)
+                for (int rows = 0; rows < c_ws->rows; rows++)
                         CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
                                 xcb_unmap_window(conn, client->frame);
-                }
 
         c_ws = &workspaces[workspace-1];
         current_row = c_ws->current_row;
@@ -298,11 +295,10 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
         printf("new current row = %d, current col = %d\n", current_row, current_col);
 
         /* Map all clients on the new workspace */
-        for (cols = 0; cols < c_ws->cols; cols++)
-                for (rows = 0; rows < c_ws->rows; rows++) {
+        for (int cols = 0; cols < c_ws->cols; cols++)
+                for (int rows = 0; rows < c_ws->rows; rows++)
                         CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
                                 xcb_map_window(conn, client->frame);
-                }
 
         /* Restore focus on the new workspace */
         if (CUR_CELL->currently_focused != NULL)

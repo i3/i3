@@ -1,6 +1,7 @@
 UNAME=$(shell uname)
 DEBUG=1
 
+CFLAGS += -std=c99
 CFLAGS += -Wall
 CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include

@@ -36,10 +36,9 @@ int current_row = 0;
  *
  */
 void init_table() {
-        int i;
         memset(workspaces, 0, sizeof(workspaces));
 
-        for (i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++) {
                 workspaces[i].screen = NULL;
                 expand_table_cols(&(workspaces[i]));
                 expand_table_rows(&(workspaces[i]));
@@ -60,11 +59,9 @@ static void new_container(Workspace *workspace, Container **container) {
  *
  */
 void expand_table_rows(Workspace *workspace) {
-        int c;
-
         workspace->rows++;
 
-        for (c = 0; c < workspace->cols; c++) {
+        for (int c = 0; c < workspace->cols; c++) {
                 workspace->table[c] = realloc(workspace->table[c], sizeof(Container*) * workspace->rows);
                 new_container(workspace, &(workspace->table[c][workspace->rows-1]));
         }
@@ -75,13 +72,11 @@ void expand_table_rows(Workspace *workspace) {
  *
  */
 void expand_table_cols(Workspace *workspace) {
-        int c;
-
         workspace->cols++;
 
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
         workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
-        for (c = 0; c < workspace->rows; c++)
+        for (int c = 0; c < workspace->rows; c++)
                 new_container(workspace, &(workspace->table[workspace->cols-1][c]));
 }
 
