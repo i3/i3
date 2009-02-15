@@ -19,6 +19,7 @@
 #include "xcb.h"
 #include "table.h"
 #include "util.h"
+#include "xinerama.h"
 
 /* All functions handling layout/drawing of window decorations */
 
@@ -57,7 +58,7 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
         values[0] = background_color;
         xcb_change_gc(conn, client->titlegc, mask, values);
 
-        xcb_rectangle_t rect = {0, 0, client->width, client->height};
+        xcb_rectangle_t rect = {0, 0, client->rect.width, client->rect.height};
         xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &rect);
 
         /* Draw the lines */
@@ -70,8 +71,8 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
                 xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, client->frame, client->titlegc, 2, points); \
         }
 
-        DRAW_LINE(border_color, 2, 0, client->width, 0);
-        DRAW_LINE(border_color, 2, font->height + 3, 2 + client->width, font->height + 3);
+        DRAW_LINE(border_color, 2, 0, client->rect.width, 0);
+        DRAW_LINE(border_color, 2, font->height + 3, 2 + client->rect.width, font->height + 3);
 
         /* Draw the font */
         mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
@@ -111,23 +112,23 @@ static void render_container(xcb_connection_t *connection, Container *container)
                         /* Check if we changed client->x or client->y by updating it…
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |
-                            (client->x != (client->x = container->x + (container->col * container->width))) |
-                            (client->y != (client->y = container->y + (container->row * container->height +
+                            (client->rect.x != (client->rect.x = container->x + (container->col * container->width))) |
+                            (client->rect.y != (client->rect.y = container->y + (container->row * container->height +
                                           (container->height / num_clients) * current_client)))) {
-                                printf("frame needs to be pushed to %dx%d\n", client->x, client->y);
+                                printf("frame needs to be pushed to %dx%d\n", client->rect.x, client->rect.y);
                                 /* Note: We can use a pointer to client->x like an array of uint32_ts
                                    because it is followed by client->y by definition */
                                 xcb_configure_window(connection, client->frame,
-                                                XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, &(client->x));
+                                                XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, &(client->rect.x));
                         }
 
                         /* TODO: vertical default layout */
                         if (client->force_reconfigure |
-                            (client->width != (client->width = container->width)) |
-                            (client->height != (client->height = container->height / num_clients))) {
+                            (client->rect.width != (client->rect.width = container->width)) |
+                            (client->rect.height != (client->rect.height = container->height / num_clients))) {
                                 xcb_configure_window(connection, client->frame,
                                                 XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                                                &(client->width));
+                                                &(client->rect.width));
 
                                 /* Adjust the position of the child inside its frame.
                                  * The coordinates of the child are relative to its frame, we
@@ -136,12 +137,12 @@ static void render_container(xcb_connection_t *connection, Container *container)
                                                 XCB_CONFIG_WINDOW_Y |
                                                 XCB_CONFIG_WINDOW_WIDTH |
                                                 XCB_CONFIG_WINDOW_HEIGHT;
-                                uint32_t values[4] = {2,                                              /* x */
-                                                      font->height + 2 + 2,                           /* y */
-                                                      client->width - (2 + 2),                        /* width */
-                                                      client->height - ((font->height + 2 + 2) + 2)}; /* height */
+                                uint32_t values[4] = {2,                                                   /* x */
+                                                      font->height + 2 + 2,                                /* y */
+                                                      client->rect.width - (2 + 2),                        /* width */
+                                                      client->rect.height - ((font->height + 2 + 2) + 2)}; /* height */
 
-                                printf("fullscreen frame/child will be at %dx%d with size %dx%d\n",
+                                printf("child will be at %dx%d with size %dx%d\n",
                                                 values[0], values[1], values[2], values[3]);
 
                                 xcb_configure_window(connection, client->child, mask, values);
@@ -157,40 +158,42 @@ static void render_container(xcb_connection_t *connection, Container *container)
         }
 }
 
-void render_layout(xcb_connection_t *conn) {
+void render_layout(xcb_connection_t *connection) {
         int cols, rows;
-        int screen;
-        for (screen = 0; screen < num_screens; screen++) {
-                printf("Rendering screen %d\n", screen);
-                if (workspaces[screen].fullscreen_client != NULL)
+        i3Screen *screen;
+        TAILQ_FOREACH(screen, &virtual_screens, screens) {
+                /* r_ws (rendering workspace) is just a shortcut to the Workspace being currently rendered */
+                Workspace *r_ws = &(workspaces[screen->current_workspace]);
+
+                printf("Rendering screen %d\n", screen->num);
+                if (r_ws->fullscreen_client != NULL)
                         /* This is easy: A client has entered fullscreen mode, so we don’t render at all */
                         continue;
-                /* TODO: get the workspace which is active on the screen */
-                int width = workspaces[screen].width;
-                int height = workspaces[screen].height;
+                int width = r_ws->rect.width;
+                int height = r_ws->rect.height;
 
-                printf("got %d rows and %d cols\n", c_ws->rows, c_ws->cols);
+                printf("got %d rows and %d cols\n", r_ws->rows, r_ws->cols);
                 printf("each of them therefore is %d px width and %d px height\n",
-                                width / c_ws->cols, height / c_ws->rows);
+                                width / r_ws->cols, height / r_ws->rows);
 
                 /* Go through the whole table and render what’s necessary */
-                for (cols = 0; cols < c_ws->cols; cols++)
-                        for (rows = 0; rows < c_ws->rows; rows++) {
-                                Container *con = CUR_TABLE[cols][rows];
+                for (cols = 0; cols < r_ws->cols; cols++)
+                        for (rows = 0; rows < r_ws->rows; rows++) {
+                                Container *container = r_ws->table[cols][rows];
                                 printf("container has %d colspan, %d rowspan\n",
-                                                con->colspan, con->rowspan);
+                                                container->colspan, container->rowspan);
                                 /* Update position of the container */
-                                con->row = rows;
-                                con->col = cols;
-                                con->x = workspaces[screen].x;
-                                con->y = workspaces[screen].y;
-                                con->width = (width / c_ws->cols) * con->colspan;
-                                con->height = (height / c_ws->rows) * con->rowspan;
+                                container->row = rows;
+                                container->col = cols;
+                                container->x = r_ws->rect.x;
+                                container->y = r_ws->rect.y;
+                                container->width = (width / r_ws->cols) * container->colspan;
+                                container->height = (height / r_ws->rows) * container->rowspan;
 
                                 /* Render it */
-                                render_container(conn, CUR_TABLE[cols][rows]);
+                                render_container(connection, container);
                         }
         }
 
-        xcb_flush(conn);
+        xcb_flush(connection);
 }

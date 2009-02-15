@@ -9,6 +9,7 @@
  *
  */
 #include <stdbool.h>
+
 #include "data.h"
 
 #ifndef _TABLE_H

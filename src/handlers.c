@@ -26,6 +26,7 @@
 #include "font.h"
 #include "xcb.h"
 #include "util.h"
+#include "xinerama.h"
 
 /*
  * Due to bindings like Mode_switch + <a>, we need to bind some keys in XCB_GRAB_MODE_SYNC.
@@ -105,9 +106,16 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
         if (client == NULL)
                 client = table_get(byChild, event->event);
 
-        /* If not, then this event is not interesting. This should not happen */
+        /* If not, then the user moved his cursor to the root window. In that case, we adjust c_ws */
         if (client == NULL) {
-                printf("DEBUG: Uninteresting enter_notify-event?\n");
+                printf("Getting screen at %d x %d\n", event->root_x, event->root_y);
+                i3Screen *screen = get_screen_containing(event->root_x, event->root_y);
+                if (screen == NULL) {
+                        printf("ERROR: No such screen\n");
+                        return 0;
+                }
+                c_ws = &workspaces[screen->current_workspace];
+                printf("We're now on virtual screen number %d\n", screen->num);
                 return 1;
         }
 

@@ -26,6 +26,8 @@ typedef struct Container Container;
 typedef struct Client Client;
 typedef struct Binding Binding;
 typedef struct Workspace Workspace;
+typedef struct Rect Rect;
+typedef struct Screen i3Screen;
 
 /* Helper types */
 typedef enum { D_LEFT, D_RIGHT, D_UP, D_DOWN } direction_t;
@@ -42,13 +44,14 @@ enum {
         BIND_MODE_SWITCH = (1 << 8)
 };
 
+struct Rect {
+        uint32_t x, y;
+        uint32_t width, height;
+};
+
 struct Workspace {
-        int x;
-        int y;
-        int width;
-        int height;
-        int screen_num;
-        int num;
+        /* x, y, width, height */
+        Rect rect;
 
         /* table dimensions */
         int cols;
@@ -59,6 +62,9 @@ struct Workspace {
         int current_col;
 
         Client *fullscreen_client;
+
+        /* Backpointer to the screen this workspace is on */
+        i3Screen *screen;
 
         /* This is a two-dimensional dynamic array of Container-pointers. I’ve always wanted
          * to be a three-star programmer :) */
@@ -114,8 +120,8 @@ struct Client {
         /* Backpointer. A client is inside a container */
         Container *container;
 
-        uint32_t x, y;
-        uint32_t width, height;
+        /* x, y, width, height */
+        Rect rect;
 
         /* Name */
         char *name;
@@ -168,6 +174,19 @@ struct Container {
         /* Ensure MODE_DEFAULT maps to 0 because we use calloc for initialization later */
         enum { MODE_DEFAULT = 0, MODE_STACK = 1 } mode;
         CIRCLEQ_HEAD(client_head, Client) clients;
+};
+
+struct Screen {
+        /* Virtual screen number */
+        int num;
+
+        /* Current workspace selected on this virtual screen */
+        int current_workspace;
+
+        /* x, y, width, height */
+        Rect rect;
+
+        TAILQ_ENTRY(Screen) screens;
 };
 
 #endif

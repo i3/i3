@@ -19,6 +19,14 @@
 #include "table.h"
 #include "layout.h"
 
+int min(int a, int b) {
+        return (a < b ? a : b);
+}
+
+int max(int a, int b) {
+        return (a > b ? a : b);
+}
+
 /*
  * Starts the given application by passing it through a shell. We use double fork
  * to avoid zombie processes. As the started application’s parent exits (immediately),
@@ -70,6 +78,12 @@ void check_error(xcb_connection_t *connection, xcb_void_cookie_t cookie, char *e
  *
  */
 void set_focus(xcb_connection_t *conn, Client *client) {
+        /* TODO: check if the focus needs to be changed at all */
+        /* Store current_row/current_col */
+        c_ws->current_row = current_row;
+        c_ws->current_col = current_col;
+        c_ws = client->container->workspace;
+
         /* Update container */
         Client *old_client = client->container->currently_focused;
         client->container->currently_focused = client;
@@ -78,12 +92,24 @@ void set_focus(xcb_connection_t *conn, Client *client) {
         current_row = client->container->row;
 
         /* Set focus to the entered window, and flush xcb buffer immediately */
-        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, client->child, XCB_CURRENT_TIME);
+        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
+        //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);
         /* Update last/current client’s titlebar */
         if (old_client != NULL)
                 decorate_window(conn, old_client);
         decorate_window(conn, client);
         xcb_flush(conn);
+}
+
+/*
+ * Warps the pointer into the given client (in the middle of it, to be specific), therefore
+ * selecting it
+ *
+ */
+void warp_pointer_into(xcb_connection_t *connection, Client *client) {
+        int mid_x = client->rect.width / 2,
+            mid_y = client->rect.height / 2;
+        xcb_warp_pointer(connection, XCB_NONE, client->child, 0, 0, 0, 0, mid_x, mid_y);
 }
 
 /*
@@ -106,10 +132,10 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                                  XCB_CONFIG_WINDOW_Y |
                                  XCB_CONFIG_WINDOW_WIDTH |
                                  XCB_CONFIG_WINDOW_HEIGHT;
-                uint32_t values[4] = {workspace->x,
-                                      workspace->y,
-                                      workspace->width,
-                                      workspace->height};
+                uint32_t values[4] = {workspace->rect.x,
+                                      workspace->rect.y,
+                                      workspace->rect.width,
+                                      workspace->rect.height};
 
                 printf("child itself will be at %dx%d with size %dx%d\n",
                                 values[0], values[1], values[2], values[3]);

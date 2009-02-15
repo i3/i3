@@ -29,20 +29,19 @@ static bool focus_window_in_container(xcb_connection_t *connection, Container *c
         if (container->currently_focused == NULL)
                 return false;
 
-        Client *candidad;
+        Client *candidad = NULL;
         if (direction == D_UP)
                 candidad = CIRCLEQ_PREV(container->currently_focused, clients);
         else if (direction == D_DOWN)
                 candidad = CIRCLEQ_NEXT(container->currently_focused, clients);
+        else printf("Direction not implemented!\n");
 
         /* If we don’t have anything to select, we’re done */
         if (candidad == CIRCLEQ_END(&(container->clients)))
                 return false;
 
         /* Set focus if we could successfully move */
-        container->currently_focused = candidad;
-        xcb_set_input_focus(connection, XCB_INPUT_FOCUS_NONE, candidad->child, XCB_CURRENT_TIME);
-        render_layout(connection);
+        set_focus(connection, candidad);
 
         return true;
 }
@@ -69,7 +68,7 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
                         return;
                 }
                 if (CUR_CELL->currently_focused != NULL) {
-                        xcb_set_input_focus(connection, XCB_INPUT_FOCUS_NONE,
+                        xcb_set_input_focus(connection, XCB_INPUT_FOCUS_POINTER_ROOT,
                                         CUR_CELL->currently_focused->child, XCB_CURRENT_TIME);
                         render_layout(connection);
                 }
@@ -112,7 +111,7 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
         printf("moving window to direction %d\n", direction);
         /* Get current window */
         Container *container = CUR_CELL,
-                  *new;
+                  *new = NULL;
 
         /* There has to be a container, see focus_window() */
         assert(container != NULL);
@@ -244,18 +243,49 @@ static void snap_current_container(xcb_connection_t *connection, direction_t dir
 static void show_workspace(xcb_connection_t *conn, int workspace) {
         int cols, rows;
         Client *client;
-        printf("show_workspace(%d)\n", workspace);
-
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
+        /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */
+        Workspace *t_ws = &(workspaces[workspace-1]);
+
+        printf("show_workspace(%d)\n", workspace);
 
         /* Store current_row/current_col */
         c_ws->current_row = current_row;
         c_ws->current_col = current_col;
 
+        /* Check if the workspace has not been used yet */
+        if (t_ws->screen == NULL) {
+                printf("initializing new workspace, setting num to %d\n", workspace);
+                t_ws->screen = c_ws->screen;
+                /* Copy the dimensions from the virtual screen */
+		memcpy(&(t_ws->rect), &(t_ws->screen->rect), sizeof(Rect));
+        }
+
+        if (c_ws->screen != t_ws->screen) {
+                /* We need to switch to the other screen first */
+                printf("Just moving over to other screen.\n");
+                c_ws = &(workspaces[t_ws->screen->current_workspace]);
+                current_col = c_ws->current_col;
+                current_row = c_ws->current_row;
+                if (CUR_CELL->currently_focused != NULL)
+                        warp_pointer_into(conn, CUR_CELL->currently_focused);
+                else {
+                        Rect *dims = &(c_ws->screen->rect);
+                        xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0,
+                                         dims->x + (dims->width / 2), dims->y + (dims->height / 2));
+                }
+        }
+
+        /* Check if we need to change something or if we’re already there */
+        if (c_ws->screen->current_workspace == (workspace-1))
+                return;
+
+        t_ws->screen->current_workspace = workspace-1;
+
         /* TODO: does grabbing the server actually bring us any (speed)advantages? */
         //xcb_grab_server(conn);
 
-        /* Unmap all clients */
+        /* Unmap all clients of the current workspace */
         for (cols = 0; cols < c_ws->cols; cols++)
                 for (rows = 0; rows < c_ws->rows; rows++) {
                         CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
@@ -276,8 +306,8 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
 
         /* Restore focus on the new workspace */
         if (CUR_CELL->currently_focused != NULL)
-                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, CUR_CELL->currently_focused->child, XCB_CURRENT_TIME);
-        else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, root, XCB_CURRENT_TIME);
+                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, CUR_CELL->currently_focused->child, XCB_CURRENT_TIME);
+        else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
 
         //xcb_ungrab_server(conn);
 

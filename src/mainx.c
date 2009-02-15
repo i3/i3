@@ -41,6 +41,7 @@
 #include "handlers.h"
 #include "util.h"
 #include "xcb.h"
+#include "xinerama.h"
 
 #define TERMINAL "/usr/pkg/bin/urxvt"
 
@@ -129,8 +130,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 new = calloc(sizeof(Client), 1);
                 /* We initialize x and y with the invalid coordinates -1 so that they will
                    get updated at the next render_layout() at any case */
-                new->x = -1;
-                new->y = -1;
+                new->rect.x = -1;
+                new->rect.y = -1;
         }
         uint32_t mask = 0;
         uint32_t values[3];
@@ -144,8 +145,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         new->frame = xcb_generate_id(conn);
         new->child = child;
-        new->width = width;
-        new->height = height;
+        new->rect.width = width;
+        new->rect.height = height;
 
         /* Don’t generate events for our new window, it should *not* be managed */
         mask |= XCB_CW_OVERRIDE_REDIRECT;
@@ -162,6 +163,9 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         i3Font *font = load_font(conn, pattern);
 
+        height = min(height, c_ws->rect.y + c_ws->rect.height);
+        width = min(width, c_ws->rect.x + c_ws->rect.width);
+
         /* Yo dawg, I heard you like windows, so I create a window around your window… */
         xcb_void_cookie_t cookie = xcb_create_window_checked(conn,
                         depth,
@@ -176,6 +180,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         XCB_WINDOW_CLASS_COPY_FROM_PARENT,
                         mask,
                         values);
+        printf("x = %d, y = %d, width = %d, height = %d\n", x, y, width, height);
         check_error(conn, cookie, "Could not create frame");
         xcb_change_save_set(conn, XCB_SET_MODE_INSERT, child);
 
@@ -210,7 +215,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
 
         /* Focus the new window */
-        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, new->child, XCB_CURRENT_TIME);
+        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
 
         render_layout(conn);
 }
@@ -242,44 +247,6 @@ void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *proph
                 manage_window(prophs, c, children[i], wa);
         }
         free(rep);
-}
-
-static void initialize_xinerama(xcb_connection_t *conn) {
-        xcb_xinerama_query_screens_reply_t *reply;
-        xcb_xinerama_screen_info_t *screen_info;
-        int screen;
-
-        if (!xcb_get_extension_data(conn, &xcb_xinerama_id)->present) {
-                printf("Xinerama extension not found, disabling.\n");
-                return;
-        }
-
-        if (!xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL)->state) {
-                printf("Xinerama is not active (in your X-Server), disabling.\n");
-                return;
-        }
-
-
-        reply = xcb_xinerama_query_screens_reply(conn, xcb_xinerama_query_screens_unchecked(conn), NULL);
-        /* TODO: error check */
-        screen_info = xcb_xinerama_query_screens_screen_info(reply);
-
-        num_screens = xcb_xinerama_query_screens_screen_info_length(reply);
-
-        /* Just go through each workspace and associate as many screens as we can. */
-        for (screen = 0; screen < num_screens; screen++) {
-                workspaces[screen].x = screen_info[screen].x_org;
-                workspaces[screen].y = screen_info[screen].y_org;
-                workspaces[screen].width = screen_info[screen].width;
-                workspaces[screen].height = screen_info[screen].height;
-                workspaces[screen].screen_num = screen;
-
-                printf("found Xinerama screen: %d x %d at %d x %d\n",
-                                screen_info[screen].width, screen_info[screen].height,
-                                screen_info[screen].x_org, screen_info[screen].y_org);
-        }
-
-        free(screen_info);
 }
 
 int main(int argc, char *argv[], char *env[]) {
@@ -355,7 +322,7 @@ int main(int argc, char *argv[], char *env[]) {
         root_win = root;
 
         uint32_t mask = XCB_CW_EVENT_MASK;
-        uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE };
+        uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW};
         xcb_change_window_attributes(c, root, mask, values);
 
         /* Setup NetWM atoms */
@@ -441,6 +408,24 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_flush(c);
 
         manage_existing_windows(c, &prophs, root);
+
+        /* Get pointer position to see on which screen we’re starting */
+        xcb_query_pointer_cookie_t pointer_cookie = xcb_query_pointer(c, root);
+        xcb_query_pointer_reply_t *reply = xcb_query_pointer_reply(c, pointer_cookie, NULL);
+        if (reply == NULL) {
+                printf("Could not get pointer position\n");
+                return 1;
+        }
+
+        i3Screen *screen = get_screen_containing(reply->root_x, reply->root_y);
+        if (screen == NULL) {
+                printf("ERROR: No such screen\n");
+                return 0;
+        }
+        if (screen->current_workspace != 0) {
+                printf("Ok, I need to go to the other workspace\n");
+                c_ws = &workspaces[screen->current_workspace];
+        }
 
         xcb_event_wait_for_event_loop(&evenths);
 

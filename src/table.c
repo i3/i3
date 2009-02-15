@@ -40,6 +40,7 @@ void init_table() {
         memset(workspaces, 0, sizeof(workspaces));
 
         for (i = 0; i < 10; i++) {
+                workspaces[i].screen = NULL;
                 expand_table_cols(&(workspaces[i]));
                 expand_table_rows(&(workspaces[i]));
         }
