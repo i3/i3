@@ -128,8 +128,11 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         printf("button press!\n");
         /* This was either a focus for a client’s parent (= titlebar)… */
         Client *client = table_get(byChild, event->event);
-        if (client == NULL)
+        bool border_click = false;
+        if (client == NULL) {
                 client = table_get(byParent, event->event);
+                border_click = true;
+        }
         if (client == NULL)
                 return 1;
 
@@ -140,56 +143,57 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         set_focus(conn, client);
 
         /* Let’s see if this was on the borders (= resize). If not, we’re done */
-        i3Font *font = load_font(conn, pattern);
         printf("press button on x=%d, y=%d\n", event->event_x, event->event_y);
-        if (event->event_y <= (font->height + 2))
-                return 1;
 
-        printf("that was resize\n");
+        Container *con = client->container,
+                  *first = NULL,
+                  *second = NULL;
+
+        printf("event->event_x = %d, client->rect.width = %d\n", event->event_x, client->rect.width);
+
+        if (!border_click) {
+                printf("client. done.\n");
+                return 1;
+        }
+
+        if (event->event_y < 2) {
+                /* This was a press on the top border */
+                if (con->row == 0)
+                        return 1;
+                return 0; /* TODO: impl */
+                //neighbor_con = this_con->workspace->table[this_con->col][this_con->row-1];
+        } else if (event->event_y >= (client->rect.height - 2)) {
+                /* …bottom border */
+                if (con->row == (con->workspace->rows-1))
+                        return 1;
+                return 0; /* TODO; impl */
+                //neighbor_con = this_con->workspace->table[this_con->col][this_con->row+1];
+        } else if (event->event_x < 2) {
+                /* …left border */
+                if (con->col == 0)
+                        return 1;
+                first = con->workspace->table[con->col-1][con->row];
+                second = con;
+        } else if (event->event_x > 2) {
+                /* …right border */
+                if (con->col == (con->workspace->cols-1))
+                        return 1;
+                first = con;
+                second = con->workspace->table[con->col+1][con->row];
+        }
 
         /* Open a new window, the resizebar. Grab the pointer and move the window around
            as the user moves the pointer. */
+        Rect grabrect = {0, 0, root_screen->width_in_pixels, root_screen->height_in_pixels};
+        xcb_window_t grabwin = create_window(conn, grabrect, XCB_WINDOW_CLASS_INPUT_ONLY, 0, NULL);
 
+        Rect helprect = {event->root_x, 0, 2, root_screen->height_in_pixels /* this has to be the cell’s height */};
+        xcb_window_t helpwin = create_window(conn, helprect, XCB_WINDOW_CLASS_INPUT_OUTPUT, 0, NULL);
 
-        /* TODO: the whole logic is missing. this is just a proof of concept */
-        xcb_window_t grabwin = xcb_generate_id(conn);
+        uint32_t values[1] = {get_colorpixel(conn, helpwin, "#4c7899")};
+        xcb_void_cookie_t cookie = xcb_change_window_attributes_checked(conn, helpwin, XCB_CW_BACK_PIXEL, values);
+        check_error(conn, cookie, "Could not change window attributes (background color)");
 
-        uint32_t mask = 0;
-        uint32_t values[3];
-
-        xcb_create_window(conn,
-                        0,
-                        grabwin,
-                        root,
-                        0, /* x */
-                        0, /* y */
-                        root_screen->width_in_pixels, /* width */
-                        root_screen->height_in_pixels, /* height */
-                        /* border_width */ 0,
-                        XCB_WINDOW_CLASS_INPUT_ONLY,
-                        root_screen->root_visual,
-                        0,
-                        values);
-
-        /* Map the window on the screen (= make it visible) */
-        xcb_map_window(conn, grabwin);
-
-        xcb_window_t helpwin = xcb_generate_id(conn);
-
-        mask = XCB_CW_BACK_PIXEL;
-        values[0] = root_screen->white_pixel;
-        xcb_create_window(conn, root_screen->root_depth, helpwin, root,
-                        event->root_x,
-                        0,
-                        5,
-                        root_screen->height_in_pixels,
-                        /* bordor */ 0,
-                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                        root_screen->root_visual,
-                        mask,
-                        values);
-
-        xcb_map_window(conn, helpwin);
         xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, helpwin);
 
         xcb_grab_pointer(conn, false, root, XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION,
@@ -203,7 +207,9 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 /* Same as get_event_handler in xcb */
                 int nr = inside_event->response_type;
                 if (nr == 0) {
+                        /* An error occured */
                         handle_event(NULL, conn, inside_event);
+                        free(inside_event);
                         continue;
                 }
                 assert(nr < 256);
@@ -236,6 +242,21 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         xcb_destroy_window(conn, helpwin);
         xcb_destroy_window(conn, grabwin);
         xcb_flush(conn);
+
+        Workspace *ws = con->workspace;
+
+        printf("Resize was from X = %d to X = %d\n", event->root_x, values[0]);
+
+        /* Convert 0 (for default width_factor) to actual numbers */
+        if (first->width_factor == 0)
+                first->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
+        if (second->width_factor == 0)
+                second->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
+
+        first->width_factor *= (float)(first->width + (values[0] - event->root_x)) / first->width;
+        second->width_factor *= (float)(second->width - (values[0] - event->root_x)) / second->width;
+
+        render_layout(conn);
 
         return 1;
 }

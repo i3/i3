@@ -24,5 +24,6 @@ enum { _NET_SUPPORTED = 0,
 };
 
 uint32_t get_colorpixel(xcb_connection_t *conn, xcb_window_t window, char *hex);
+xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class, uint32_t mask, uint32_t *values);
 
 #endif

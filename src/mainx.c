@@ -162,30 +162,18 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         printf("Reparenting 0x%08x under 0x%08x.\n", child, new->frame);
 
         i3Font *font = load_font(conn, pattern);
-
-        height = min(height, c_ws->rect.y + c_ws->rect.height);
         width = min(width, c_ws->rect.x + c_ws->rect.width);
+        height = min(height, c_ws->rect.y + c_ws->rect.height);
+
+        Rect framerect = {x, y,
+                          width + 2 + 2,                  /* 2 px border at each side */
+                          height + 2 + 2 + font->height}; /* 2 px border plus font’s height */
 
         /* Yo dawg, I heard you like windows, so I create a window around your window… */
-        xcb_void_cookie_t cookie = xcb_create_window_checked(conn,
-                        depth,
-                        new->frame,
-                        root,
-                        x,
-                        y,
-                        width + 2 + 2,                  /* 2 px border at each side */
-                        height + 2 + 2 + font->height,  /* 2 px border plus font’s height */
-                        0,                              /* border_width = 0, we draw our own borders */
-                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                        XCB_WINDOW_CLASS_COPY_FROM_PARENT,
-                        mask,
-                        values);
-        printf("x = %d, y = %d, width = %d, height = %d\n", x, y, width, height);
-        check_error(conn, cookie, "Could not create frame");
-        xcb_change_save_set(conn, XCB_SET_MODE_INSERT, child);
+        new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, mask, values);
 
-        /* Map the window on the screen (= make it visible) */
-        xcb_map_window(conn, new->frame);
+        /* TODO: document */
+        xcb_change_save_set(conn, XCB_SET_MODE_INSERT, child);
 
         /* Generate a graphics context for the titlebar */
         new->titlegc = xcb_generate_id(conn);
@@ -197,7 +185,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         /* Moves the original window into the new frame we've created for it */
         new->awaiting_useless_unmap = true;
-        cookie = xcb_reparent_window_checked(conn, child, new->frame, 0, font->height);
+        xcb_void_cookie_t cookie = xcb_reparent_window_checked(conn, child, new->frame, 0, font->height);
         check_error(conn, cookie, "Could not reparent window");
 
         /* We are interested in property changes */

@@ -56,3 +56,29 @@ uint32_t get_colorpixel(xcb_connection_t *conn, xcb_window_t window, char *hex) 
         xcb_free_colormap(conn, colormap_id);
         return pixel;
 }
+
+xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class, uint32_t mask, uint32_t *values) {
+        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
+        xcb_window_t result = xcb_generate_id(conn);
+        xcb_void_cookie_t cookie;
+
+        /* If the window class is XCB_WINDOW_CLASS_INPUT_ONLY, depth has to be 0 */
+        uint16_t depth = (window_class == XCB_WINDOW_CLASS_INPUT_ONLY ? 0 : XCB_COPY_FROM_PARENT);
+
+        cookie = xcb_create_window_checked(conn,
+                                           depth,
+                                           result, /* the window id */
+                                           root, /* parent == root */
+                                           dims.x, dims.y, dims.width, dims.height, /* dimensions */
+                                           0, /* border = 0, we draw our own */
+                                           window_class,
+                                           XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
+                                           mask,
+                                           values);
+        check_error(conn, cookie, "Could not create window");
+
+        /* Map the window (= make it visible) */
+        xcb_map_window(conn, result);
+
+        return result;
+}

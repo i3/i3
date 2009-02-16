@@ -169,6 +169,8 @@ struct Container {
         /* Width/Height of the container. Changeable by the user */
         int width;
         int height;
+        float width_factor;
+        float height_factor;
 
         /* Backpointer to the workspace this container is in */
         Workspace *workspace;

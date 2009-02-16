@@ -7,6 +7,8 @@
  *
  * See file LICENSE for license information.
  *
+ * layout.c: Functions handling layout/drawing of window decorations
+ *
  */
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -21,7 +23,42 @@
 #include "util.h"
 #include "xinerama.h"
 
-/* All functions handling layout/drawing of window decorations */
+/*
+ * For resizing containers (= cells), we need to know the space which is unoccupied by "default"
+ * windows. The resized containers will be rendered relatively to this space, meaning that newly
+ * created columns/rows after a container was resized will start with their normal size.
+ *
+ */
+Rect get_unoccupied_space(Workspace *workspace) {
+        printf("getting unoccupied space\n");
+        float default_factor_w = ((float)workspace->rect.width / (float)workspace->cols) / (float)workspace->rect.width;
+        float default_factor_h = (workspace->rect.height / workspace->rows) / workspace->rect.height;
+        Rect result = {0, 0, workspace->rect.width, workspace->rect.height};
+
+        printf("default factor is %f and %f\n", default_factor_w, default_factor_h);
+        printf("start w = %d, h = %d\n", result.width, result.height);
+        /* TODO: colspan/rowspan*/
+
+        for (int cols = 0; cols < workspace->cols; cols++)
+                for (int rows = 0; rows < workspace->rows; rows++) {
+                        printf("oh hai. wf[%d][%d] = %f\n", cols, rows, workspace->table[cols][rows]->width_factor);
+                        if (workspace->table[cols][rows]->width_factor == 0)
+                                result.width -= workspace->rect.width * default_factor_w;
+                        if (workspace->table[cols][rows]->height_factor == 0)
+                                result.height -= workspace->rect.height * default_factor_h;
+                }
+
+        /* If every container is using the default factor, we have the whole space available */
+        if (result.width == 0)
+                result.width = workspace->rect.width;
+
+        if (result.height == 0)
+                result.height = workspace->rect.height;
+
+        printf("unoccupied x = %d, unoccupied y = %d\n", result.width, result.height);
+
+        return result;
+}
 
 /*
  * (Re-)draws window decorations for a given Client
@@ -112,9 +149,9 @@ static void render_container(xcb_connection_t *connection, Container *container)
                         /* Check if we changed client->x or client->y by updating it…
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |
-                            (client->rect.x != (client->rect.x = container->x + (container->col * container->width))) |
-                            (client->rect.y != (client->rect.y = container->y + (container->row * container->height +
-                                          (container->height / num_clients) * current_client)))) {
+                            (client->rect.x != (client->rect.x = container->x)) |
+                            (client->rect.y != (client->rect.y = container->y +
+                                          (container->height / num_clients) * current_client))) {
                                 printf("frame needs to be pushed to %dx%d\n", client->rect.x, client->rect.y);
                                 /* Note: We can use a pointer to client->x like an array of uint32_ts
                                    because it is followed by client->y by definition */
@@ -126,6 +163,7 @@ static void render_container(xcb_connection_t *connection, Container *container)
                         if (client->force_reconfigure |
                             (client->rect.width != (client->rect.width = container->width)) |
                             (client->rect.height != (client->rect.height = container->height / num_clients))) {
+                                printf("resizing client to %d x %d\n", client->rect.width, client->rect.height);
                                 xcb_configure_window(connection, client->frame,
                                                 XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                                                 &(client->rect.width));
@@ -171,10 +209,15 @@ void render_layout(xcb_connection_t *connection) {
                         continue;
                 int width = r_ws->rect.width;
                 int height = r_ws->rect.height;
+                int x = r_ws->rect.x;
+                int y = r_ws->rect.y;
 
                 printf("got %d rows and %d cols\n", r_ws->rows, r_ws->cols);
                 printf("each of them therefore is %d px width and %d px height\n",
                                 width / r_ws->cols, height / r_ws->rows);
+
+                Rect space = get_unoccupied_space(r_ws);
+                printf("got %d / %d unoc space\n", space.width, space.height);
 
                 /* Go through the whole table and render what’s necessary */
                 for (int cols = 0; cols < r_ws->cols; cols++)
@@ -182,16 +225,21 @@ void render_layout(xcb_connection_t *connection) {
                                 Container *container = r_ws->table[cols][rows];
                                 printf("container has %d colspan, %d rowspan\n",
                                                 container->colspan, container->rowspan);
+                                printf("container at %d, %d\n", x, y);
                                 /* Update position of the container */
                                 container->row = rows;
                                 container->col = cols;
-                                container->x = r_ws->rect.x;
-                                container->y = r_ws->rect.y;
-                                container->width = (width / r_ws->cols) * container->colspan;
+                                container->x = x;
+                                container->y = y;
+                                if (container->width_factor == 0)
+                                        container->width = (width / r_ws->cols) * container->colspan;
+                                else container->width = space.width * container->width_factor;
                                 container->height = (height / r_ws->rows) * container->rowspan;
 
                                 /* Render it */
                                 render_container(connection, container);
+
+                                x += container->width;
                         }
         }
 
