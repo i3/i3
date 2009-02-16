@@ -10,7 +10,6 @@
  * layout.c: Functions handling layout/drawing of window decorations
  *
  */
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

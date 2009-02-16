@@ -16,6 +16,10 @@ CFLAGS += -I/usr/pkg/include
 LDFLAGS += -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
 endif
 
+ifeq ($(UNAME),Linux)
+CFLAGS += -D_GNU_SOURCE
+endif
+
 ifeq ($(DEBUG),1)
 # Extended debugging flags, macros shall be available in gcc
 CFLAGS += -gdwarf-2
