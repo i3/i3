@@ -171,7 +171,9 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         /* Yo dawg, I heard you like windows, so I create a window around your window… */
         new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, mask, values);
 
-        /* TODO: document */
+        /* Put the client inside the save set. Upon termination (whether killed or normal exit
+           does not matter) of the window manager, these clients will be correctly reparented
+           to their most closest living ancestor (= cleanup) */
         xcb_change_save_set(conn, XCB_SET_MODE_INSERT, child);
 
         /* Generate a graphics context for the titlebar */
