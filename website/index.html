@@ -1,0 +1,131 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf8">
+<style type="text/css">
+body {
+	text-align: justify;
+	max-width: 800px;
+}
+
+li {
+	margin-bottom: 10px;
+}
+</style>
+</head>
+<body>
+
+<h1>i3 - an improved dynamic tiling window manager</h1>
+
+<p>
+  i3 was created because wmii, our favorite window manager at the time, didn’t
+  provide some features we wanted (Xinerama done right), had some bugs, didn’t
+  progress since quite some time and wasn’t easy to hack at all (source code
+  comments/documentation completely lacking).
+</p>
+
+<p>
+  Please be aware that i3 is primarily targeted at computer geeks.
+</p>
+
+<h2>Goals</h2>
+
+<p>
+  Based upon the experiences we made when wanting to hack/fix wmii, we agreed
+  upon the following goals for i3:
+</p>
+
+<ol>
+  <li>
+    Write well readable, well <strong>documented</strong> code. Create additional
+    documentation on how to extend i3 by explaining its internal workings.
+    <br>
+    This includes being modifyable by people who do know how to program but who are
+    not necessarily familiar with all of X11’s internals. That is, document why
+    things happen and when they happen so that the user gets a picture of the whole
+    process a Window Manager is responsible of by just reading the source code.
+  </li>
+  <li>
+    Use xcb as far as possible (it does not provide functions for some features
+    yet, like XKB) instead of Xlib. xcb has a much cleaner API and should be faster
+    in quite a lot of situations.
+  </li>
+  <li>
+    Implement Xinerama correctly, that is by assigning each workspace to a
+    virtual screen. Especially make sure that attaching and detaching new monitors
+    like beamers works during operation and does the right thing.
+  </li>
+  <li>
+    Use the metaphor of a table for abstraction. You can create horizontal and
+    vertical columns (in wmii, you can only create vertical columns). See the documentation
+    for more information on how this works, it really is an important principle in i3.
+    (TODO: documentation :-))
+  </li>
+  <li>
+    Implement a command mode, like in vim. You can easily combine multiple
+    actions (like focusing, moving, snapping) by using the command mode.
+  </li>
+  <li>
+    Implement XRandR support for flipping monitors.
+  </li>
+  <li>
+    Do <strong>not</strong> use programs such as autoconf/automake for configuration and
+    creating unreadable/broken makefiles. Instead, use a clean makefile which automatically
+    enables/disables features for specific platforms. Also, document the dependencies
+    properly, so that package maintainers have an easy job packaging i3.
+  </li>
+  <li>
+    Provide hooks/callbacks for other programs to integrate. Using this mechanism, one
+    can easily extend i3 in whatever language, without ever touching the C code. Also,
+    to communicate with a running i3 instance, messages can be sent.
+    <br>
+    This approach should be more lightweight than wmii’s usage of the 9P filesystem.
+    Furthermore, core functionality does not depend on a separate program, so that i3
+    runs faster, especially when your system is under load.
+  </li>
+  <li>
+    Be UTF-8 clean.
+  </li>
+  <li>
+    The usual elitism amongst minimal window managers: Don’t be bloated, don’t be fancy
+    (simple borders are the most decoration we want to have), don’t add support for Xft
+    and blurred fonts.
+    <br>
+    However, we do not enforce unnecessary limits such as a maximum amount of source lines
+    of code. If it needs to be a bit bigger, it will be.
+  </li>
+</ol>
+
+<h3>Special Features</h3>
+
+<ul>
+  <li>
+    We can bind on Mode_switch (Alt Gr). Other window managers fail to do that because
+    of an X11-bug, which causes the modifier state to not be correctly set in KeyPress-
+    events. We use XKB for making sure to get the correct state.
+  </li>
+</ul>
+
+<h2>Development</h2>
+
+<p>
+  i3 is currently developed at http://code.stapelberg.de/git. Checkouts of the master
+  branch are intended to be stable and working all the time. Integration of new features
+  happens in a separate branch.
+</p>
+
+<h2>License</h2>
+
+<p>
+  i3 is BSD-licensed (TODO: exact license text)
+</p>
+
+<h2>Contact</h2>
+
+<p>
+  Contact us at irc://irc.twice-irc.de/i3 (or, #i3 on irc.twice-irc.de, for those without
+  proper URL handling setup). Feel free to ask questions, please don’t ask to ask and please
+  think before you ask :-).
+</p>
+
+</body>
+</html>
