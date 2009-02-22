@@ -1,5 +1,6 @@
 UNAME=$(shell uname)
 DEBUG=1
+INSTALL=install
 
 CFLAGS += -std=c99
 CFLAGS += -Wall
@@ -36,6 +37,10 @@ src/%.o: src/%.c ${HEADERS}
 
 all: ${FILES}
 	$(CC) -o i3 ${FILES} $(LDFLAGS)
+
+install: all
+	$(INSTALL) -d -m 0755 $(DESTDIR)/usr/bin
+	$(INSTALL) -m 0755 i3 $(DESTDIR)/usr/bin/
 
 clean:
 	rm -f src/*.o
