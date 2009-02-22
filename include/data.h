@@ -63,6 +63,9 @@ struct Workspace {
 
         Client *fullscreen_client;
 
+        /* Contains all clients with _NET_WM_WINDOW_TYPE == _NET_WM_WINDOW_TYPE_DOCK */
+        SLIST_HEAD(dock_clients_head, Client) dock_clients;
+
         /* Backpointer to the screen this workspace is on */
         i3Screen *screen;
 
@@ -125,12 +128,22 @@ struct Client {
         /* x, y, width, height */
         Rect rect;
 
+        /* Height which was determined by reading the _NET_WM_STRUT_PARTIAL top/bottom of the screen
+           reservation */
+        int desired_height;
+
         /* Name */
         char *name;
         int name_len;
 
         /* fullscreen is pretty obvious */
         bool fullscreen;
+
+        enum { TITLEBAR_TOP = 0, TITLEBAR_LEFT, TITLEBAR_RIGHT, TITLEBAR_BOTTOM, TITLEBAR_OFF } titlebar_position;
+
+        /* If a client is set as a dock, it is placed at the very bottom of the screen and its
+           requested size is used */
+        bool dock;
 
         /* After leaving fullscreen mode, a client needs to be reconfigured (configuration =
            setting X, Y, width and height). By setting the force_reconfigure flag, render_layout()
@@ -148,6 +161,7 @@ struct Client {
 
         /* The following entry provides the necessary list pointers to use Client with LIST_* macros */
         CIRCLEQ_ENTRY(Client) clients;
+        SLIST_ENTRY(Client) dock_clients;
 };
 
 /*

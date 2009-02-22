@@ -128,18 +128,73 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
         free(label);
 }
 
+/*
+ * Pushes the client’s x and y coordinates to X11
+ *
+ */
+static void reposition_client(xcb_connection_t *connection, Client *client) {
+        printf("frame needs to be pushed to %dx%d\n", client->rect.x, client->rect.y);
+        /* Note: We can use a pointer to client->x like an array of uint32_ts
+           because it is followed by client->y by definition */
+        xcb_configure_window(connection, client->frame,
+                        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, &(client->rect.x));
+}
+
+/*
+ * Pushes the client’s width/height to X11 and resizes the child window
+ *
+ */
+static void resize_client(xcb_connection_t *connection, Client *client) {
+        i3Font *font = load_font(connection, pattern);
+
+        printf("resizing client to %d x %d\n", client->rect.width, client->rect.height);
+        xcb_configure_window(connection, client->frame,
+                        XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                        &(client->rect.width));
+
+        /* Adjust the position of the child inside its frame.
+         * The coordinates of the child are relative to its frame, we
+         * add a border of 2 pixel to each value */
+        uint32_t mask = XCB_CONFIG_WINDOW_X |
+                        XCB_CONFIG_WINDOW_Y |
+                        XCB_CONFIG_WINDOW_WIDTH |
+                        XCB_CONFIG_WINDOW_HEIGHT;
+        Rect rect;
+        if (client->titlebar_position == TITLEBAR_OFF) {
+                rect.x = 0;
+                rect.y = 0;
+                rect.width = client->rect.width;
+                rect.height = client->rect.height;
+        } else {
+                rect.x = 2;
+                rect.y = font->height + 2 + 2;
+                rect.width = client->rect.width - (2 + 2);
+                rect.height = client->rect.height - ((font->height + 2 + 2) + 2);
+        }
+
+        printf("child will be at %dx%d with size %dx%d\n", rect.x, rect.y, rect.width, rect.height);
+
+        xcb_configure_window(connection, client->child, mask, &(rect.x));
+}
+
 static void render_container(xcb_connection_t *connection, Container *container) {
         Client *client;
-        i3Font *font = load_font(connection, pattern);
 
         if (container->mode == MODE_DEFAULT) {
                 int num_clients = 0;
                 CIRCLEQ_FOREACH(client, &(container->clients), clients)
-                        num_clients++;
+                        if (!client->dock)
+                                num_clients++;
                 printf("got %d clients in this default container.\n", num_clients);
 
                 int current_client = 0;
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
+                        /* TODO: currently, clients are assigned to the current container.
+                           Therefore, we need to skip them here. Does anything harmful happen
+                           if clients *do not* have a container. Is this the more desired
+                           situation? Let’s find out… */
+                        if (client->dock)
+                                continue;
                         /* TODO: at the moment, every column/row is screen / num_cols. This
                          * needs to be changed to "percentage of the screen" by
                          * default and adjustable by the user if necessary.
@@ -151,38 +206,14 @@ static void render_container(xcb_connection_t *connection, Container *container)
                             (client->rect.x != (client->rect.x = container->x)) |
                             (client->rect.y != (client->rect.y = container->y +
                                           (container->height / num_clients) * current_client))) {
-                                printf("frame needs to be pushed to %dx%d\n", client->rect.x, client->rect.y);
-                                /* Note: We can use a pointer to client->x like an array of uint32_ts
-                                   because it is followed by client->y by definition */
-                                xcb_configure_window(connection, client->frame,
-                                                XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, &(client->rect.x));
+                                reposition_client(connection, client);
                         }
 
                         /* TODO: vertical default layout */
                         if (client->force_reconfigure |
                             (client->rect.width != (client->rect.width = container->width)) |
                             (client->rect.height != (client->rect.height = container->height / num_clients))) {
-                                printf("resizing client to %d x %d\n", client->rect.width, client->rect.height);
-                                xcb_configure_window(connection, client->frame,
-                                                XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                                                &(client->rect.width));
-
-                                /* Adjust the position of the child inside its frame.
-                                 * The coordinates of the child are relative to its frame, we
-                                 * add a border of 2 pixel to each value */
-                                uint32_t mask = XCB_CONFIG_WINDOW_X |
-                                                XCB_CONFIG_WINDOW_Y |
-                                                XCB_CONFIG_WINDOW_WIDTH |
-                                                XCB_CONFIG_WINDOW_HEIGHT;
-                                uint32_t values[4] = {2,                                                   /* x */
-                                                      font->height + 2 + 2,                                /* y */
-                                                      client->rect.width - (2 + 2),                        /* width */
-                                                      client->rect.height - ((font->height + 2 + 2) + 2)}; /* height */
-
-                                printf("child will be at %dx%d with size %dx%d\n",
-                                                values[0], values[1], values[2], values[3]);
-
-                                xcb_configure_window(connection, client->child, mask, values);
+                                resize_client(connection, client);
                         }
 
                         if (client->force_reconfigure)
@@ -192,6 +223,24 @@ static void render_container(xcb_connection_t *connection, Container *container)
                 }
         } else {
                 /* TODO: Implement stacking */
+        }
+}
+
+static void render_bars(xcb_connection_t *connection, Workspace *r_ws, int width, int height) {
+        Client *client;
+        SLIST_FOREACH(client, &(r_ws->dock_clients), dock_clients) {
+                if (client->force_reconfigure |
+                    (client->rect.x != (client->rect.x = 0)) |
+                    (client->rect.y != (client->rect.y = height)))
+                        reposition_client(connection, client);
+
+                if (client->force_reconfigure |
+                    (client->rect.width != (client->rect.width = width)) |
+                    (client->rect.height != (client->rect.height = client->desired_height)))
+                        resize_client(connection, client);
+
+                client->force_reconfigure = false;
+                height += client->desired_height;
         }
 }
 
@@ -206,10 +255,18 @@ void render_layout(xcb_connection_t *connection) {
                 if (r_ws->fullscreen_client != NULL)
                         /* This is easy: A client has entered fullscreen mode, so we don’t render at all */
                         continue;
+
                 int width = r_ws->rect.width;
                 int height = r_ws->rect.height;
                 int x = r_ws->rect.x;
                 int y = r_ws->rect.y;
+
+                Client *client;
+                SLIST_FOREACH(client, &(r_ws->dock_clients), dock_clients) {
+                        printf("got dock client: %p\n", client);
+                        printf("it wants to be this height: %d\n", client->desired_height);
+                        height -= client->desired_height;
+                }
 
                 printf("got %d rows and %d cols\n", r_ws->rows, r_ws->cols);
                 printf("each of them therefore is %d px width and %d px height\n",
@@ -240,6 +297,8 @@ void render_layout(xcb_connection_t *connection) {
 
                                 x += container->width;
                         }
+
+                render_bars(connection, r_ws, width, height);
         }
 
         xcb_flush(connection);

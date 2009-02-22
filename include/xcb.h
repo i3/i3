@@ -16,11 +16,15 @@
 #define _NET_WM_STATE_TOGGLE 2
 
 enum { _NET_SUPPORTED = 0,
-        _NET_SUPPORTING_WM_CHECK = 1,
-        _NET_WM_NAME = 2,
-        _NET_WM_STATE_FULLSCREEN = 3,
-        _NET_WM_STATE = 4,
-        UTF8_STRING = 5
+        _NET_SUPPORTING_WM_CHECK,
+        _NET_WM_NAME,
+        _NET_WM_STATE_FULLSCREEN,
+        _NET_WM_STATE,
+        _NET_WM_WINDOW_TYPE,
+        _NET_WM_WINDOW_TYPE_DOCK,
+        _NET_WM_DESKTOP,
+        _NET_WM_STRUT_PARTIAL,
+        UTF8_STRING
 };
 
 uint32_t get_colorpixel(xcb_connection_t *conn, xcb_window_t window, char *hex);

@@ -50,7 +50,7 @@ TAILQ_HEAD(bindings_head, Binding) bindings = TAILQ_HEAD_INITIALIZER(bindings);
 xcb_event_handlers_t evenths;
 
 xcb_window_t root_win;
-xcb_atom_t atoms[6];
+xcb_atom_t atoms[9];
 
 
 char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1";
@@ -121,6 +121,12 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *c, xcb_win
 void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
                 int16_t x, int16_t y, uint16_t width, uint16_t height) {
+
+        xcb_get_property_cookie_t wm_type_cookie, strut_cookie;
+
+        /* Place requests for propertys ASAP */
+        wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
+        strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
 
         Client *new = table_get(byChild, child);
         if (new == NULL) {
@@ -205,6 +211,32 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         /* Focus the new window */
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
+
+        /* Get _NET_WM_WINDOW_TYPE (to see if it’s a dock) */
+        xcb_atom_t *atom;
+        xcb_get_property_reply_t *preply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
+        if (preply != NULL && preply->value_len > 0 && (atom = xcb_get_property_value(preply))) {
+                for (int i = 0; i < xcb_get_property_value_length(preply); i++)
+                        if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]) {
+                                printf("Window is a dock.\n");
+                                new->dock = true;
+                                new->titlebar_position = TITLEBAR_OFF;
+                                new->force_reconfigure = true;
+                                SLIST_INSERT_HEAD(&(new->container->workspace->dock_clients), new, dock_clients);
+                        }
+        }
+
+        /* Get _NET_WM_STRUT_PARTIAL to determine the client’s requested height */
+        uint32_t *strut;
+        preply = xcb_get_property_reply(conn, strut_cookie, NULL);
+        if (preply != NULL && preply->value_len > 0 && (strut = xcb_get_property_value(preply))) {
+                /* We only use a subset of the provided values, namely the reserved space at the top/bottom
+                   of the screen. This is because the only possibility for bars is at to be at the top/bottom
+                   with maximum horizontal size.
+                   TODO: bars at the top */
+                new->desired_height = strut[3];
+                printf("the client wants to be %d pixels height\n", new->desired_height);
+        }
 
         render_layout(conn);
 }
@@ -328,10 +360,17 @@ int main(int argc, char *argv[], char *env[]) {
         GET_ATOM(_NET_WM_STATE_FULLSCREEN);
         GET_ATOM(_NET_SUPPORTING_WM_CHECK);
         GET_ATOM(_NET_WM_NAME);
-        GET_ATOM(UTF8_STRING);
         GET_ATOM(_NET_WM_STATE);
+        GET_ATOM(_NET_WM_WINDOW_TYPE);
+        GET_ATOM(_NET_WM_DESKTOP);
+        GET_ATOM(_NET_WM_WINDOW_TYPE_DOCK);
+        GET_ATOM(_NET_WM_STRUT_PARTIAL);
+        GET_ATOM(UTF8_STRING);
 
-        check_error(c, xcb_change_property_checked(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED], ATOM, 32, 5, atoms), "Could not set _NET_SUPPORTED");
+        xcb_property_set_handler(&prophs, atoms[_NET_WM_WINDOW_TYPE], UINT_MAX, window_type_handler, NULL);
+        /* TODO: In order to comply with EWMH, we have to watch _NET_WM_STRUT_PARTIAL */
+
+        check_error(c, xcb_change_property_checked(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED], ATOM, 32, 7, atoms), "Could not set _NET_SUPPORTED");
 
         xcb_change_property(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTING_WM_CHECK], WINDOW, 32, 1, &root);
 
