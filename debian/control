@@ -1,0 +1,15 @@
+Source: i3
+Section: utils
+Priority: optional
+Maintainer: Michael Stapelberg <michael+i3@stapelberg.de>
+Build-Depends: debhelper (>= 5), libxcb-wm0-dev (>= 0.3.3),  libxcb-aux0-dev (>= 0.3.3)
+Standards-Version: 3.8.0
+Homepage: http://i3.zekjur.net/
+
+Package: i3
+Architecture: any
+Priority: optional
+Section: utils
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: an improved dynamic tiling window manager
+ TODO
