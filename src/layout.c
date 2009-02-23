@@ -52,6 +52,31 @@ int get_unoccupied_x(Workspace *workspace, int row) {
         return unoccupied;
 }
 
+/* See get_unoccupied_x() */
+int get_unoccupied_y(Workspace *workspace, int col) {
+        int unoccupied = workspace->rect.height;
+        float default_factor = ((float)workspace->rect.height / workspace->rows) / workspace->rect.height;
+
+        printf("get_unoccupied_y(), starting with %d, default_factor = %f\n", unoccupied, default_factor);
+
+        for (int rows = 0; rows < workspace->rows;) {
+                Container *con = workspace->table[col][rows];
+                printf("oh hai. wf[%d][%d] = %f\n", col, rows, con->height_factor);
+                printf("rowspan = %d\n", con->rowspan);
+                if (con->height_factor == 0)
+                        unoccupied -= workspace->rect.height * default_factor * con->rowspan;
+                rows += con->rowspan;
+        }
+
+        /* TODO: Check (as soon as the whole implementation is done) if this case does ever occur,
+           because this function only gets called when at least one client was resized */
+        if (unoccupied == 0)
+                unoccupied = workspace->rect.height;
+
+        printf("unoccupied space: %d\n", unoccupied);
+        return unoccupied;
+}
+
 /*
  * (Re-)draws window decorations for a given Client
  *
@@ -188,10 +213,6 @@ static void render_container(xcb_connection_t *connection, Container *container)
                            situation? Let’s find out… */
                         if (client->dock)
                                 continue;
-                        /* TODO: at the moment, every column/row is screen / num_cols. This
-                         * needs to be changed to "percentage of the screen" by
-                         * default and adjustable by the user if necessary.
-                         */
 
                         /* Check if we changed client->x or client->y by updating it…
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
@@ -279,11 +300,16 @@ void render_layout(xcb_connection_t *connection) {
                                 container->col = cols;
                                 container->x = xoffset[rows];
                                 container->y = yoffset[cols];
+
                                 if (container->width_factor == 0)
                                         container->width = (width / r_ws->cols);
                                 else container->width = get_unoccupied_x(r_ws, rows) * container->width_factor;
                                 container->width *= container->colspan;
-                                container->height = (height / r_ws->rows) * container->rowspan;
+
+                                if (container->height_factor == 0)
+                                        container->height = (height / r_ws->rows);
+                                else container->height = get_unoccupied_y(r_ws, cols) * container->height_factor;
+                                container->height *= container->rowspan;
 
                                 /* Render it */
                                 render_container(connection, container);

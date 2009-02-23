@@ -139,6 +139,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         Container *con = client->container,
                   *first = NULL,
                   *second = NULL;
+        enum { O_HORIZONTAL, O_VERTICAL } orientation = O_VERTICAL;
 
         printf("event->event_x = %d, client->rect.width = %d\n", event->event_x, client->rect.width);
 
@@ -151,14 +152,16 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 /* This was a press on the top border */
                 if (con->row == 0)
                         return 1;
-                return 0; /* TODO: impl */
-                //neighbor_con = this_con->workspace->table[this_con->col][this_con->row-1];
+                first = con->workspace->table[con->col][con->row-1];
+                second = con;
+                orientation = O_HORIZONTAL;
         } else if (event->event_y >= (client->rect.height - 2)) {
                 /* …bottom border */
                 if (con->row == (con->workspace->rows-1))
                         return 1;
-                return 0; /* TODO; impl */
-                //neighbor_con = this_con->workspace->table[this_con->col][this_con->row+1];
+                first = con;
+                second = con->workspace->table[con->col][con->row+1];
+                orientation = O_HORIZONTAL;
         } else if (event->event_x < 2) {
                 /* …left border */
                 if (con->col == 0)
@@ -178,7 +181,18 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         Rect grabrect = {0, 0, root_screen->width_in_pixels, root_screen->height_in_pixels};
         xcb_window_t grabwin = create_window(conn, grabrect, XCB_WINDOW_CLASS_INPUT_ONLY, 0, NULL);
 
-        Rect helprect = {event->root_x, 0, 2, root_screen->height_in_pixels /* this has to be the cell’s height */};
+        Rect helprect;
+        if (orientation == O_VERTICAL) {
+                helprect.x = event->root_x;
+                helprect.y = 0;
+                helprect.width = 2;
+                helprect.height = root_screen->height_in_pixels; /* this has to be the cell’s height */
+        } else {
+                helprect.x = 0;
+                helprect.y = event->root_y;
+                helprect.width = root_screen->width_in_pixels; /* this has to be the cell’s width*/
+                helprect.height = 2;
+        }
         xcb_window_t helpwin = create_window(conn, helprect, XCB_WINDOW_CLASS_INPUT_OUTPUT, 0, NULL);
 
         uint32_t values[1] = {get_colorpixel(conn, helpwin, "#4c7899")};
@@ -213,8 +227,14 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
 
                 switch (nr) {
                         case XCB_MOTION_NOTIFY:
-                                values[0] = ((xcb_motion_notify_event_t*)inside_event)->root_x;
-                                xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_X, values);
+                                if (orientation == O_VERTICAL) {
+                                        values[0] = ((xcb_motion_notify_event_t*)inside_event)->root_x;
+                                        xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_X, values);
+                                } else {
+                                        values[0] = ((xcb_motion_notify_event_t*)inside_event)->root_y;
+                                        xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_Y, values);
+                                }
+
                                 xcb_flush(conn);
                                 break;
                         case XCB_EXPOSE:
@@ -225,7 +245,6 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                                 printf("Ignoring event of type %d\n", nr);
                                 break;
                 }
-                printf("---\n");
                 free(inside_event);
         }
 
@@ -235,17 +254,29 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         xcb_flush(conn);
 
         Workspace *ws = con->workspace;
+        if (orientation == O_VERTICAL) {
+                printf("Resize was from X = %d to X = %d\n", event->root_x, values[0]);
 
-        printf("Resize was from X = %d to X = %d\n", event->root_x, values[0]);
+                /* Convert 0 (for default width_factor) to actual numbers */
+                if (first->width_factor == 0)
+                        first->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
+                if (second->width_factor == 0)
+                        second->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
 
-        /* Convert 0 (for default width_factor) to actual numbers */
-        if (first->width_factor == 0)
-                first->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
-        if (second->width_factor == 0)
-                second->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
+                first->width_factor *= (float)(first->width + (values[0] - event->root_x)) / first->width;
+                second->width_factor *= (float)(second->width - (values[0] - event->root_x)) / second->width;
+        } else {
+                printf("Resize was from Y = %d to Y = %d\n", event->root_y, values[0]);
 
-        first->width_factor *= (float)(first->width + (values[0] - event->root_x)) / first->width;
-        second->width_factor *= (float)(second->width - (values[0] - event->root_x)) / second->width;
+                /* Convert 0 (for default height_factor) to actual numbers */
+                if (first->height_factor == 0)
+                        first->height_factor = ((float)ws->rect.height / ws->rows) / ws->rect.height;
+                if (second->height_factor == 0)
+                        second->height_factor = ((float)ws->rect.height / ws->rows) / ws->rect.height;
+
+                first->height_factor *= (float)(first->height + (values[0] - event->root_y)) / first->height;
+                second->height_factor *= (float)(second->height - (values[0] - event->root_y)) / second->height;
+        }
 
         render_layout(conn);
 
