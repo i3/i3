@@ -47,6 +47,8 @@ Rect get_unoccupied_space(Workspace *workspace) {
                                 result.height -= workspace->rect.height * default_factor_h;
                 }
 
+        printf("gots %d, %d\n", result.width, result.height);
+
         /* If every container is using the default factor, we have the whole space available */
         if (result.width == 0)
                 result.width = workspace->rect.width;
@@ -258,8 +260,6 @@ void render_layout(xcb_connection_t *connection) {
 
                 int width = r_ws->rect.width;
                 int height = r_ws->rect.height;
-                int x = r_ws->rect.x;
-                int y = r_ws->rect.y;
 
                 Client *client;
                 SLIST_FOREACH(client, &(r_ws->dock_clients), dock_clients) {
@@ -275,18 +275,26 @@ void render_layout(xcb_connection_t *connection) {
                 Rect space = get_unoccupied_space(r_ws);
                 printf("got %d / %d unoc space\n", space.width, space.height);
 
+                int xoffset[r_ws->rows];
+                int yoffset[r_ws->cols];
+                /* Initialize offsets */
+                for (int cols = 0; cols < r_ws->cols; cols++)
+                        yoffset[cols] = r_ws->rect.y;
+                for (int rows = 0; rows < r_ws->rows; rows++)
+                        xoffset[rows] = r_ws->rect.x;
+
                 /* Go through the whole table and render what’s necessary */
                 for (int cols = 0; cols < r_ws->cols; cols++)
                         for (int rows = 0; rows < r_ws->rows; rows++) {
                                 Container *container = r_ws->table[cols][rows];
-                                printf("container has %d colspan, %d rowspan\n",
+                                printf("\n========\ncontainer has %d colspan, %d rowspan\n",
                                                 container->colspan, container->rowspan);
-                                printf("container at %d, %d\n", x, y);
+                                printf("container at %d, %d\n", xoffset[rows], yoffset[cols]);
                                 /* Update position of the container */
                                 container->row = rows;
                                 container->col = cols;
-                                container->x = x;
-                                container->y = y;
+                                container->x = xoffset[rows];
+                                container->y = yoffset[cols];
                                 if (container->width_factor == 0)
                                         container->width = (width / r_ws->cols) * container->colspan;
                                 else container->width = space.width * container->width_factor;
@@ -295,7 +303,9 @@ void render_layout(xcb_connection_t *connection) {
                                 /* Render it */
                                 render_container(connection, container);
 
-                                x += container->width;
+                                xoffset[rows] += container->width;
+                                yoffset[cols] += container->height;
+                                printf("==========\n");
                         }
 
                 render_bars(connection, r_ws, width, height);

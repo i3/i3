@@ -16,6 +16,11 @@
 #define _UTIL_H
 
 #define exit_if_null(pointer, ...) { if (pointer == NULL) die(__VA_ARGS__); }
+#define CIRCLEQ_NEXT_OR_NULL(head, elm, field) (CIRCLEQ_NEXT(elm, field) != CIRCLEQ_END(head) ? \
+                                                CIRCLEQ_NEXT(elm, field) : NULL)
+#define CIRCLEQ_PREV_OR_NULL(head, elm, field) (CIRCLEQ_PREV(elm, field) != CIRCLEQ_END(head) ? \
+                                                CIRCLEQ_PREV(elm, field) : NULL)
+
 
 int min(int a, int b);
 int max(int a, int b);

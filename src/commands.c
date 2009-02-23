@@ -58,6 +58,11 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
 
                 if (focus_window_in_container(connection, container, direction))
                         return;
+
+                if (direction == D_DOWN && cell_exists(current_col, current_row+1))
+                        current_row++;
+                else if (direction == D_UP && cell_exists(current_col, current_row-1))
+                        current_row--;
         } else if (direction == D_LEFT || direction == D_RIGHT) {
                 if (direction == D_RIGHT && cell_exists(current_col+1, current_row))
                         current_col++;
@@ -67,15 +72,13 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
                         printf("nah, not possible\n");
                         return;
                 }
-                if (CUR_CELL->currently_focused != NULL) {
-                        xcb_set_input_focus(connection, XCB_INPUT_FOCUS_POINTER_ROOT,
-                                        CUR_CELL->currently_focused->child, XCB_CURRENT_TIME);
-                        render_layout(connection);
-                }
-
         } else {
                 printf("direction unhandled\n");
+                return;
         }
+
+        if (CUR_CELL->currently_focused != NULL)
+                set_focus(connection, CUR_CELL->currently_focused);
 }
 
 /*
@@ -108,7 +111,8 @@ static bool move_current_window_in_container(xcb_connection_t *connection, Clien
  *
  */
 static void move_current_window(xcb_connection_t *connection, direction_t direction) {
-        printf("moving window to direction %d\n", direction);
+        printf("moving window to direction %s\n", (direction == D_UP ? "up" : (direction == D_DOWN ? "down" :
+                                        (direction == D_LEFT ? "left" : "right"))));
         /* Get current window */
         Container *container = CUR_CELL,
                   *new = NULL;
@@ -116,16 +120,17 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
         /* There has to be a container, see focus_window() */
         assert(container != NULL);
 
-        /* If there is no window, we’re done */
-        if (container->currently_focused == NULL)
+        /* If there is no window or the dock window is focused, we’re done */
+        if (container->currently_focused == NULL ||
+            container->currently_focused->dock)
                 return;
 
         /* As soon as the client is moved away, the next client in the old
          * container needs to get focus, if any. Therefore, we save it here. */
         Client *current_client = container->currently_focused;
-        Client *to_focus = CIRCLEQ_NEXT(current_client, clients);
-        if (to_focus == CIRCLEQ_END(&(container->clients)))
-                to_focus = NULL;
+        Client *to_focus = CIRCLEQ_NEXT_OR_NULL(&(container->clients), current_client, clients);
+        if (to_focus == NULL)
+                to_focus = CIRCLEQ_PREV_OR_NULL(&(container->clients), current_client, clients);
 
         switch (direction) {
                 case D_LEFT:
@@ -169,8 +174,9 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
         new->currently_focused = current_client;
 
         /* TODO: delete all empty columns/rows */
-
         render_layout(connection);
+
+        set_focus(connection, current_client);
 }
 
 /*

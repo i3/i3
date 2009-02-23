@@ -383,4 +383,5 @@ int window_type_handler(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         /* TODO: Implement this one. To do this, implement a little test program which sleep(1)s
          before changing this property. */
         printf("_NET_WM_WINDOW_TYPE changed, this is not yet implemented.\n");
+        return 0;
 }

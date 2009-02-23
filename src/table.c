@@ -85,6 +85,6 @@ void expand_table_cols(Workspace *workspace) {
  *
  */
 bool cell_exists(int col, int row) {
-        return (col >= 0 && col < c_ws->rows) &&
-                (row >= 0 && row < c_ws->cols);
+        return (col >= 0 && col < c_ws->cols) &&
+                (row >= 0 && row < c_ws->rows);
 }
