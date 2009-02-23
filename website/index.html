@@ -1,6 +1,9 @@
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf8">
+<title>i3 - an improved dynamic tiling window manager</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <style type="text/css">
 body {
 	text-align: justify;
@@ -18,9 +21,11 @@ li {
 
 <p>
   i3 was created because wmii, our favorite window manager at the time, didn’t
-  provide some features we wanted (Xinerama done right), had some bugs, didn’t
-  progress since quite some time and wasn’t easy to hack at all (source code
-  comments/documentation completely lacking).
+  provide some features we wanted (Xinerama done right, for example), had some
+  bugs, didn’t progress since quite some time and wasn’t easy to hack at all
+  (source code comments/documentation completely lacking). Still, we think the
+  wmii developers and contributors did a great job. Thank you for inspiring us
+  to create i3.
 </p>
 
 <p>
@@ -38,7 +43,7 @@ li {
   <li>
     Write well readable, well <strong>documented</strong> code. Create additional
     documentation on how to extend i3 by explaining its internal workings.
-    <br>
+    <br />
     This includes being modifyable by people who do know how to program but who are
     not necessarily familiar with all of X11’s internals. That is, document why
     things happen and when they happen so that the user gets a picture of the whole
@@ -77,7 +82,7 @@ li {
     Provide hooks/callbacks for other programs to integrate. Using this mechanism, one
     can easily extend i3 in whatever language, without ever touching the C code. Also,
     to communicate with a running i3 instance, messages can be sent.
-    <br>
+    <br />
     This approach should be more lightweight than wmii’s usage of the 9P filesystem.
     Furthermore, core functionality does not depend on a separate program, so that i3
     runs faster, especially when your system is under load.
@@ -89,7 +94,7 @@ li {
     The usual elitism amongst minimal window managers: Don’t be bloated, don’t be fancy
     (simple borders are the most decoration we want to have), don’t add support for Xft
     and blurred fonts.
-    <br>
+    <br />
     However, we do not enforce unnecessary limits such as a maximum amount of source lines
     of code. If it needs to be a bit bigger, it will be.
   </li>
@@ -108,24 +113,51 @@ li {
 <h2>Development</h2>
 
 <p>
-  i3 is currently developed at http://code.stapelberg.de/git. Checkouts of the master
-  branch are intended to be stable and working all the time. Integration of new features
-  happens in a separate branch.
-</p>
-
-<h2>License</h2>
-
-<p>
-  i3 is BSD-licensed (TODO: exact license text)
+  i3 is currently developed at <a href="http://code.stapelberg.de/git/i3" title="cgit">
+  http://code.stapelberg.de/git/i3</a>. Checkouts of the master branch are intended to
+  be stable and working all the time. Integration of new features happens in a separate branch.
 </p>
 
 <h2>Contact</h2>
 
 <p>
-  Contact us at irc://irc.twice-irc.de/i3 (or, #i3 on irc.twice-irc.de, for those without
-  proper URL handling setup). Feel free to ask questions, please don’t ask to ask and please
+  Contact us at <a href="irc://irc.twice-irc.de/i3" title="#i3 on irc.twice-irc.de">
+  irc://irc.twice-irc.de/i3</a> (or, #i3 on irc.twice-irc.de, for those without proper URL
+  handling setup). Feel free to ask questions, please don’t ask to ask and please
   think before you ask :-).
 </p>
+
+<h2>License</h2>
+
+<pre>
+Copyright © 2009, Michael Stapelberg
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+
+    * Neither the name of Michael Stapelberg nor the
+      names of contributors may be used to endorse or promote products
+      derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY Michael Stapelberg ''AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL Michael Stapelberg BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+</pre>
 
 </body>
 </html>
