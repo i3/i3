@@ -30,6 +30,7 @@ char *sstrdup(const char *str);
 void start_application(const char *command);
 void check_error(xcb_connection_t *connection, xcb_void_cookie_t cookie, char *err_message);
 void set_focus(xcb_connection_t *conn, Client *client);
+void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode);
 void warp_pointer_into(xcb_connection_t *connection, Client *client);
 void toggle_fullscreen(xcb_connection_t *conn, Client *client);
 

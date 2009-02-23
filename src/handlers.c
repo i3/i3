@@ -89,7 +89,7 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
  *
  */
 int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_event_t *event) {
-        printf("enter_notify\n");
+        printf("enter_notify for %08x\n", event->event);
 
         /* This was either a focus for a client’s parent (= titlebar)… */
         Client *client = table_get(byParent, event->event);
@@ -109,6 +109,10 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
                 printf("We're now on virtual screen number %d\n", screen->num);
                 return 1;
         }
+
+        /* When in stacking, enter notifications are ignored. Focus will be changed via keyboard only. */
+        if (client->container->mode == MODE_STACK)
+                return 1;
 
         set_focus(conn, client);
 
@@ -354,7 +358,7 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         strncpy(client->name, xcb_get_property_value(prop), client->name_len);
         printf("rename to \"%.*s\".\n", client->name_len, client->name);
 
-        decorate_window(conn, client);
+        decorate_window(conn, client, client->frame, client->titlegc, 0);
         xcb_flush(conn);
 
         return 1;
@@ -365,11 +369,28 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
  *
  */
 int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *e) {
-        Client *client = table_get(byParent, e->window);
-        if(!client || e->count != 0)
+        printf("got expose_event\n");
+        /* e->count is the number of minimum remaining expose events for this window, so we
+           skip all events but the last one */
+        if (e->count != 0)
                 return 1;
+
+        Client *client = table_get(byParent, e->window);
+        if (client == NULL) {
+                /* There was no client in the table, so this is probably an expose event for
+                   one of our stack_windows. */
+                struct Stack_Window *stack_win;
+                SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
+                        if (stack_win->window == e->window) {
+                                render_container(conn, stack_win->container);
+                                return 1;
+                        }
+                return 1;
+        }
+
         printf("handle_expose_event()\n");
-        decorate_window(conn, client);
+        if (client->container->mode != MODE_STACK)
+                decorate_window(conn, client, client->frame, client->titlegc, 0);
         return 1;
 }
 

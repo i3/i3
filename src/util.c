@@ -23,6 +23,7 @@
 #include "table.h"
 #include "layout.h"
 #include "util.h"
+#include "xcb.h"
 
 int min(int a, int b) {
         return (a < b ? a : b);
@@ -138,9 +139,72 @@ void set_focus(xcb_connection_t *conn, Client *client) {
         //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);
         /* Update last/current client’s titlebar */
         if (old_client != NULL)
-                decorate_window(conn, old_client);
-        decorate_window(conn, client);
+                decorate_window(conn, old_client, old_client->frame, old_client->titlegc, 0);
+        decorate_window(conn, client, client->frame, client->titlegc, 0);
+
+        /* If we’re in stacking mode, we render the container to update changes in the title
+           bars and to raise the focused client */
+        if (client->container->mode == MODE_STACK)
+                render_container(conn, client->container);
+
         xcb_flush(conn);
+}
+
+/*
+ * Switches the layout of the given container taking care of the necessary house-keeping
+ *
+ */
+void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) {
+        if (mode == MODE_STACK) {
+                /* When entering stacking mode, we need to open a window on which we can draw the
+                   title bars of the clients */
+                Rect rect = {container->x, container->y, container->width, 15 /* TODO: exact */ };
+
+                /* Don’t generate events for our new window, it should *not* be managed */
+                uint32_t mask = 0;
+                uint32_t values[2];
+
+                mask |= XCB_CW_OVERRIDE_REDIRECT;
+                values[0] = 1;
+
+                /* We want to know when… */
+                mask |= XCB_CW_EVENT_MASK;
+                values[1] =     XCB_EVENT_MASK_BUTTON_PRESS |   /* …mouse is pressed */
+                                XCB_EVENT_MASK_EXPOSURE;        /* …our window needs to be redrawn */
+
+                struct Stack_Window *stack_win = &(container->stack_win);
+                stack_win->window = create_window(conn, rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, mask, values);
+
+                /* Generate a graphics context for the titlebar */
+                stack_win->gc = xcb_generate_id(conn);
+                xcb_create_gc(conn, stack_win->gc, stack_win->window, 0, 0);
+
+                stack_win->container = container;
+
+                SLIST_INSERT_HEAD(&stack_wins, stack_win, stack_windows);
+        } else {
+                if (container->mode == MODE_STACK) {
+                        /* When going out of stacking mode, we need to close the window */
+                        struct Stack_Window *stack_win = &(container->stack_win);
+
+                        SLIST_REMOVE(&stack_wins, stack_win, Stack_Window, stack_windows);
+
+                        xcb_free_gc(conn, stack_win->gc);
+                        xcb_destroy_window(conn, stack_win->window);
+
+                        stack_win->width = -1;
+                        stack_win->height = -1;
+                }
+        }
+        container->mode = mode;
+
+        /* Force reconfiguration of each client */
+        Client *client;
+
+        CIRCLEQ_FOREACH(client, &(container->clients), clients)
+                client->force_reconfigure = true;
+
+        render_layout(conn);
 }
 
 /*

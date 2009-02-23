@@ -343,6 +343,13 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
+        /* Is it just 's' for stacking or 'd' for default? */
+        if ((command[0] == 's' || command[0] == 'd') && (command[1] == '\0')) {
+                printf("Switching mode for current container\n");
+                switch_layout_mode(conn, CUR_CELL, (command[0] == 's' ? MODE_STACK : MODE_DEFAULT));
+                return;
+        }
+
         /* Is it a <with>? */
         if (command[0] == 'w') {
                 /* TODO: implement */

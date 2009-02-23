@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <xcb/xcb.h>
+#include <assert.h>
 
 #include "font.h"
 #include "i3.h"
@@ -81,9 +82,7 @@ int get_unoccupied_y(Workspace *workspace, int col) {
  * (Re-)draws window decorations for a given Client
  *
  */
-void decorate_window(xcb_connection_t *conn, Client *client) {
-        uint32_t mask = 0;
-        uint32_t values[3];
+void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t drawable, xcb_gcontext_t gc, int offset) {
         i3Font *font = load_font(conn, pattern);
         uint32_t background_color,
                  text_color,
@@ -107,45 +106,31 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
            - Draw a rect around the whole client in background_color
            - Draw two lines in a lighter color
            - Draw the window’s title
-
-           Note that xcb_image_text apparently adds 1xp border around the font? Can anyone confirm this?
          */
 
         /* Draw a green rectangle around the window */
-        mask = XCB_GC_FOREGROUND;
-        values[0] = background_color;
-        xcb_change_gc(conn, client->titlegc, mask, values);
+        xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, background_color);
+        printf("drawing at offset %d\n", offset);
 
-        xcb_rectangle_t rect = {0, 0, client->rect.width, client->rect.height};
-        xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &rect);
+        xcb_rectangle_t rect = {0, offset, client->rect.width, offset + client->rect.height};
+        xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
 
         /* Draw the lines */
-        /* TODO: this needs to be more beautiful somewhen. maybe stdarg + change_gc(gc, ...) ? */
-#define DRAW_LINE(colorpixel, x, y, to_x, to_y) { \
-                uint32_t draw_values[1]; \
-                draw_values[0] = colorpixel; \
-                xcb_change_gc(conn, client->titlegc, XCB_GC_FOREGROUND, draw_values); \
-                xcb_point_t points[] = {{x, y}, {to_x, to_y}}; \
-                xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, client->frame, client->titlegc, 2, points); \
-        }
-
-        DRAW_LINE(border_color, 2, 0, client->rect.width, 0);
-        DRAW_LINE(border_color, 2, font->height + 3, 2 + client->rect.width, font->height + 3);
+        xcb_draw_line(conn, drawable, gc, border_color, 2, offset, client->rect.width, offset);
+        xcb_draw_line(conn, drawable, gc, border_color, 2, offset + font->height + 3,
+                      2 + client->rect.width, offset + font->height + 3);
 
         /* Draw the font */
-        mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-
-        values[0] = text_color;
-        values[1] = background_color;
-        values[2] = font->id;
-
-        xcb_change_gc(conn, client->titlegc, mask, values);
+        uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
+        uint32_t values[] = { text_color, background_color, font->id };
+        xcb_change_gc(conn, gc, mask, values);
 
         /* TODO: utf8? */
         char *label;
         asprintf(&label, "(%08x) %.*s", client->frame, client->name_len, client->name);
-        xcb_void_cookie_t text_cookie = xcb_image_text_8_checked(conn, strlen(label), client->frame,
-                                        client->titlegc, 3 /* X */, font->height /* Y = baseline of font */, label);
+        printf("label is %s\n", label);
+        xcb_void_cookie_t text_cookie = xcb_image_text_8_checked(conn, strlen(label), drawable,
+                                        gc, 3 /* X */, offset + font->height /* Y = baseline of font */, label);
         check_error(conn, text_cookie, "Could not draw client's title");
         free(label);
 }
@@ -169,7 +154,7 @@ static void reposition_client(xcb_connection_t *connection, Client *client) {
 static void resize_client(xcb_connection_t *connection, Client *client) {
         i3Font *font = load_font(connection, pattern);
 
-        printf("resizing client to %d x %d\n", client->rect.width, client->rect.height);
+        printf("resizing client \"%s\" to %d x %d\n", client->name, client->rect.width, client->rect.height);
         xcb_configure_window(connection, client->frame,
                         XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                         &(client->rect.width));
@@ -182,7 +167,8 @@ static void resize_client(xcb_connection_t *connection, Client *client) {
                         XCB_CONFIG_WINDOW_WIDTH |
                         XCB_CONFIG_WINDOW_HEIGHT;
         Rect rect;
-        if (client->titlebar_position == TITLEBAR_OFF) {
+        if (client->titlebar_position == TITLEBAR_OFF ||
+            client->container->mode == MODE_STACK) {
                 rect.x = 0;
                 rect.y = 0;
                 rect.width = client->rect.width;
@@ -199,17 +185,23 @@ static void resize_client(xcb_connection_t *connection, Client *client) {
         xcb_configure_window(connection, client->child, mask, &(rect.x));
 }
 
-static void render_container(xcb_connection_t *connection, Container *container) {
+/*
+ * Renders the given container. Is called by render_layout() or individually (for example
+ * when focus changes in a stacking container)
+ *
+ */
+void render_container(xcb_connection_t *connection, Container *container) {
         Client *client;
+        int num_clients = 0, current_client = 0;
+
+        if (container->currently_focused == NULL)
+                return;
+
+        CIRCLEQ_FOREACH(client, &(container->clients), clients)
+                num_clients++;
 
         if (container->mode == MODE_DEFAULT) {
-                int num_clients = 0;
-                CIRCLEQ_FOREACH(client, &(container->clients), clients)
-                        if (!client->dock)
-                                num_clients++;
                 printf("got %d clients in this default container.\n", num_clients);
-
-                int current_client = 0;
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* Check if we changed client->x or client->y by updating it.
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
@@ -233,7 +225,42 @@ static void render_container(xcb_connection_t *connection, Container *container)
                         current_client++;
                 }
         } else {
-                /* TODO: Implement stacking */
+                i3Font *font = load_font(connection, pattern);
+                int decoration_height = (font->height + 2 + 2);
+                struct Stack_Window *stack_win = &(container->stack_win);
+
+                /* Check if we need to reconfigure our stack title window */
+                if ((stack_win->width != (stack_win->width = container->width)) |
+                    (stack_win->height != (stack_win->height = decoration_height * num_clients)))
+                        xcb_configure_window(connection, stack_win->window,
+                                XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, &(stack_win->width));
+
+                /* All clients are repositioned */
+                CIRCLEQ_FOREACH(client, &(container->clients), clients) {
+                        /* Check if we changed client->x or client->y by updating it.
+                         * Note the bitwise OR instead of logical OR to force evaluation of both statements */
+                        if (client->force_reconfigure |
+                            (client->rect.x != (client->rect.x = container->x)) |
+                            (client->rect.y != (client->rect.y = container->y + (decoration_height * num_clients))))
+                                reposition_client(connection, client);
+
+                        if (client->force_reconfigure |
+                            (client->rect.width != (client->rect.width = container->width)) |
+                            (client->rect.height !=
+                             (client->rect.height = container->height - (decoration_height * num_clients))))
+                                resize_client(connection, client);
+
+                        client->force_reconfigure = false;
+
+                        decorate_window(connection, client, stack_win->window, stack_win->gc,
+                                        current_client * decoration_height);
+                        current_client++;
+                }
+
+                /* Raise the focused window */
+                uint32_t values[] = { XCB_STACK_MODE_ABOVE };
+                xcb_configure_window(connection, container->currently_focused->frame,
+                                     XCB_CONFIG_WINDOW_STACK_MODE, values);
         }
 }
 
@@ -308,7 +335,7 @@ void render_layout(xcb_connection_t *connection) {
                                 else container->height = get_unoccupied_y(r_ws, cols) * container->height_factor;
                                 container->height *= container->rowspan;
 
-                                /* Render it */
+                                /* Render the container if it is not empty */
                                 render_container(connection, container);
 
                                 xoffset[rows] += container->width;

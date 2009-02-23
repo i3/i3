@@ -82,3 +82,22 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
 
         return result;
 }
+
+/*
+ * Changes a single value in the graphic context (so one doesn’t have to define an array of values)
+ *
+ */
+void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t mask, uint32_t value) {
+        xcb_change_gc(conn, gc, mask, &value);
+}
+
+/*
+ * Draws a line from x,y to to_x,to_y using the given color
+ *
+ */
+void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
+                   uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t to_x, uint32_t to_y) {
+        xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, colorpixel);
+        xcb_point_t points[] = {{x, y}, {to_x, to_y}};
+        xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, drawable, gc, 2, points);
+}

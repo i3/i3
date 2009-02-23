@@ -47,11 +47,11 @@
 Display *xkbdpy;
 
 TAILQ_HEAD(bindings_head, Binding) bindings = TAILQ_HEAD_INITIALIZER(bindings);
+SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins = SLIST_HEAD_INITIALIZER(stack_wins);
 xcb_event_handlers_t evenths;
 
 xcb_window_t root_win;
 xcb_atom_t atoms[9];
-
 
 char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1";
 int num_screens = 0;
@@ -392,6 +392,9 @@ int main(int argc, char *argv[], char *env[]) {
         BIND(30, 0, "exec /usr/pkg/bin/urxvt");
 
         BIND(41, BIND_MOD_1, "f");
+
+        BIND(43, BIND_MOD_1, "s");
+        BIND(26, BIND_MOD_1, "d");
 
         BIND(44, BIND_MOD_1, "h");
         BIND(45, BIND_MOD_1, "j");

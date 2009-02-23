@@ -165,6 +165,21 @@ struct Client {
 };
 
 /*
+ * Contains data for the windows needed to draw the titlebars on in stacking mode
+ *
+ */
+struct Stack_Window {
+        xcb_window_t window;
+        xcb_gcontext_t gc;
+        uint32_t width, height;
+
+        /* Backpointer to the container this stack window is in */
+        Container *container;
+
+        SLIST_ENTRY(Stack_Window) stack_windows;
+};
+
+/*
  * A container is either in default or stacking mode. It sits inside the table.
  *
  */
@@ -185,6 +200,9 @@ struct Container {
         int height;
         float width_factor;
         float height_factor;
+
+        /* When in stacking mode, we draw the titlebars of each client onto a separate window */
+        struct Stack_Window stack_win;
 
         /* Backpointer to the workspace this container is in */
         Workspace *workspace;
