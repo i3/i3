@@ -3,6 +3,7 @@ DEBUG=1
 INSTALL=install
 
 CFLAGS += -std=c99
+CFLAGS += -pipe
 CFLAGS += -Wall
 CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include
