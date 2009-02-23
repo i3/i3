@@ -141,9 +141,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         uint32_t mask = 0;
         uint32_t values[3];
 
-        /* Insert into the currently active container */
-        CIRCLEQ_INSERT_TAIL(&(CUR_CELL->clients), new, clients);
-
         /* Update the data structures */
         CUR_CELL->currently_focused = new;
         new->container = CUR_CELL;
@@ -222,7 +219,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                                 new->dock = true;
                                 new->titlebar_position = TITLEBAR_OFF;
                                 new->force_reconfigure = true;
-                                SLIST_INSERT_HEAD(&(new->container->workspace->dock_clients), new, dock_clients);
+                                new->container = NULL;
+                                SLIST_INSERT_HEAD(&(c_ws->dock_clients), new, dock_clients);
                         }
         }
 
@@ -237,6 +235,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 new->desired_height = strut[3];
                 printf("the client wants to be %d pixels height\n", new->desired_height);
         }
+
+        /* Insert into the currently active container, if it’s not a dock window */
+        if (!new->dock)
+                CIRCLEQ_INSERT_TAIL(&(CUR_CELL->clients), new, clients);
 
         render_layout(conn);
 }

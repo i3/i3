@@ -89,6 +89,10 @@ void decorate_window(xcb_connection_t *conn, Client *client) {
                  text_color,
                  border_color;
 
+        /* Clients without a container (docks) won’t get decorated */
+        if (client->container == NULL)
+                return;
+
         if (client->container->currently_focused == client) {
                 background_color = get_colorpixel(conn, client->frame, "#285577");
                 text_color = get_colorpixel(conn, client->frame, "#ffffff");
@@ -207,13 +211,6 @@ static void render_container(xcb_connection_t *connection, Container *container)
 
                 int current_client = 0;
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
-                        /* TODO: currently, clients are assigned to the current container.
-                           Therefore, we need to skip them here. Does anything harmful happen
-                           if clients *do not* have a container. Is this the more desired
-                           situation? Let’s find out… */
-                        if (client->dock)
-                                continue;
-
                         /* Check if we changed client->x or client->y by updating it…
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |

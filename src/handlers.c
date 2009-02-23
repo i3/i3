@@ -141,6 +141,11 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                   *second = NULL;
         enum { O_HORIZONTAL, O_VERTICAL } orientation = O_VERTICAL;
 
+        if (con == NULL) {
+                printf("dock. done.\n");
+                return 1;
+        }
+
         printf("event->event_x = %d, client->rect.width = %d\n", event->event_x, client->rect.width);
 
         if (!border_click) {
@@ -310,15 +315,16 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
         client = table_remove(byChild, e->window);
 
         printf("UnmapNotify for 0x%08x (received from 0x%08x): ", e->window, e->event);
-        if(client == NULL) {
+        if (client == NULL) {
                 printf("not a managed window. Ignoring.\n");
                 return 0;
         }
 
-
-        if (client->container->currently_focused == client)
-                client->container->currently_focused = NULL;
-        CIRCLEQ_REMOVE(&(client->container->clients), client, clients);
+        if (client->container != NULL) {
+                if (client->container->currently_focused == client)
+                        client->container->currently_focused = NULL;
+                CIRCLEQ_REMOVE(&(client->container->clients), client, clients);
+        }
 
         printf("child of 0x%08x.\n", client->frame);
         xcb_reparent_window(c, client->child, root, 0, 0);

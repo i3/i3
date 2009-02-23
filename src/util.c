@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <stdarg.h>
+#include <assert.h>
 
 #include "i3.h"
 #include "data.h"
@@ -113,6 +114,12 @@ void check_error(xcb_connection_t *connection, xcb_void_cookie_t cookie, char *e
  *
  */
 void set_focus(xcb_connection_t *conn, Client *client) {
+        /* The dock window cannot be focused */
+        /* TODO: does this play well with dzen2’s popup menus? or do we just need to set the input
+           focus but not update our internal structures? */
+        if (client->dock)
+                return;
+
         /* TODO: check if the focus needs to be changed at all */
         /* Store current_row/current_col */
         c_ws->current_row = current_row;
@@ -154,6 +161,9 @@ void warp_pointer_into(xcb_connection_t *connection, Client *client) {
  *
  */
 void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
+        /* clients without a container (docks) cannot be focused */
+        assert(client->container != NULL);
+
         Workspace *workspace = client->container->workspace;
 
         workspace->fullscreen_client = (client->fullscreen ? NULL : client);

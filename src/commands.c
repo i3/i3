@@ -89,6 +89,8 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
  */
 static bool move_current_window_in_container(xcb_connection_t *connection, Client *client,
                 direction_t direction) {
+        assert(client->container != NULL);
+
         Client *other = (direction == D_UP ? CIRCLEQ_PREV(client, clients) :
                                                 CIRCLEQ_NEXT(client, clients));
 
