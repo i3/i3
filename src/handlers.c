@@ -337,10 +337,10 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
  *
  */
 int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *e) {
-        printf("handle_expose_event()\n");
         Client *client = table_get(byParent, e->window);
         if(!client || e->count != 0)
                 return 1;
+        printf("handle_expose_event()\n");
         decorate_window(conn, client);
         return 1;
 }

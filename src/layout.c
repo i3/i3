@@ -22,13 +22,29 @@
 #include "util.h"
 #include "xinerama.h"
 
+int get_unoccupied_x(Workspace *workspace, int row) {
+        int unoccupied = workspace->rect.width;
+        float default_factor_w = ((float)workspace->rect.width / (float)workspace->cols) / (float)workspace->rect.width;
+
+        printf("get_unoccupied_x(), starting with %d\n", unoccupied);
+
+        for (int cols = 0; cols < workspace->cols; cols++) {
+                printf("oh hai. wf[%d][%d] = %f\n", cols, row, workspace->table[cols][row]->width_factor);
+                if (workspace->table[cols][row]->width_factor == 0)
+                        unoccupied -= workspace->rect.width * default_factor_w;
+        }
+
+        printf("gots %d\n", unoccupied);
+        return unoccupied;
+}
+
 /*
  * For resizing containers (= cells), we need to know the space which is unoccupied by "default"
  * windows. The resized containers will be rendered relatively to this space, meaning that newly
  * created columns/rows after a container was resized will start with their normal size.
  *
  */
-Rect get_unoccupied_space(Workspace *workspace) {
+Rect get_unoccupied_space(Workspace *workspace, int col, int row) {
         printf("getting unoccupied space\n");
         float default_factor_w = ((float)workspace->rect.width / (float)workspace->cols) / (float)workspace->rect.width;
         float default_factor_h = (workspace->rect.height / workspace->rows) / workspace->rect.height;
@@ -272,9 +288,6 @@ void render_layout(xcb_connection_t *connection) {
                 printf("each of them therefore is %d px width and %d px height\n",
                                 width / r_ws->cols, height / r_ws->rows);
 
-                Rect space = get_unoccupied_space(r_ws);
-                printf("got %d / %d unoc space\n", space.width, space.height);
-
                 int xoffset[r_ws->rows];
                 int yoffset[r_ws->cols];
                 /* Initialize offsets */
@@ -297,7 +310,7 @@ void render_layout(xcb_connection_t *connection) {
                                 container->y = yoffset[cols];
                                 if (container->width_factor == 0)
                                         container->width = (width / r_ws->cols) * container->colspan;
-                                else container->width = space.width * container->width_factor;
+                                else container->width = get_unoccupied_x(r_ws, rows) * container->width_factor;
                                 container->height = (height / r_ws->rows) * container->rowspan;
 
                                 /* Render it */
