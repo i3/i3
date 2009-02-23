@@ -41,10 +41,8 @@ int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_ev
 }
 
 /*
- * There was a key press. We lookup the key symbol and see if there are any bindings
- * on that. This allows to do things like binding special characters (think of ä) to
- * functions to get one more modifier while not losing AltGr :-)
- * TODO: this description needs to be more understandable
+ * There was a key press. We compare this key code with our bindings table and pass
+ * the bound action to parse_command().
  *
  */
 int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
@@ -59,36 +57,29 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
 
         printf("state %d\n", event->state);
 
+        /* Remove the numlock bit, all other bits are modifiers we can bind to */
+        uint16_t state_filtered = event->state & ~XCB_MOD_MASK_LOCK;
+
         /* Find the binding */
-        /* TODO: event->state durch eine bitmask filtern und dann direkt vergleichen */
-        Binding *bind, *best_match = TAILQ_END(&bindings);
-        TAILQ_FOREACH(bind, &bindings, bindings) {
-                if (bind->keycode == event->detail &&
-                        (bind->mods & event->state) == bind->mods) {
-                        if (best_match == TAILQ_END(&bindings) ||
-                                bind->mods > best_match->mods)
-                                best_match = bind;
-                }
-        }
+        Binding *bind;
+        TAILQ_FOREACH(bind, &bindings, bindings)
+                if (bind->keycode == event->detail && bind->mods == state_filtered)
+                        break;
 
         /* No match? Then it was an actively grabbed key, that is with Mode_switch, and
            the user did not press Mode_switch, so just pass it… */
-        if (best_match == TAILQ_END(&bindings)) {
+        if (bind == TAILQ_END(&bindings)) {
                 xcb_allow_events(conn, ReplayKeyboard, event->time);
                 xcb_flush(conn);
                 return 1;
         }
 
+        parse_command(conn, bind->command);
         if (event->state & 0x2) {
-                printf("that's mode_switch\n");
-                parse_command(conn, best_match->command);
-                printf("ok, hiding this event.\n");
+                printf("Mode_switch -> allow_events(SyncKeyboard)\n");
                 xcb_allow_events(conn, SyncKeyboard, event->time);
                 xcb_flush(conn);
-                return 1;
         }
-
-        parse_command(conn, best_match->command);
         return 1;
 }
 

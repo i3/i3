@@ -252,16 +252,12 @@ void render_layout(xcb_connection_t *connection) {
                 int width = r_ws->rect.width;
                 int height = r_ws->rect.height;
 
+                /* Reserve space for dock clients */
                 Client *client;
-                SLIST_FOREACH(client, &(r_ws->dock_clients), dock_clients) {
-                        printf("got dock client: %p\n", client);
-                        printf("it wants to be this height: %d\n", client->desired_height);
+                SLIST_FOREACH(client, &(r_ws->dock_clients), dock_clients)
                         height -= client->desired_height;
-                }
 
                 printf("got %d rows and %d cols\n", r_ws->rows, r_ws->cols);
-                printf("each of them therefore is %d px width and %d px height\n",
-                                width / r_ws->cols, height / r_ws->rows);
 
                 int xoffset[r_ws->rows];
                 int yoffset[r_ws->cols];
