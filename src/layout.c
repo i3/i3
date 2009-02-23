@@ -22,59 +22,34 @@
 #include "util.h"
 #include "xinerama.h"
 
-int get_unoccupied_x(Workspace *workspace, int row) {
-        int unoccupied = workspace->rect.width;
-        float default_factor_w = ((float)workspace->rect.width / (float)workspace->cols) / (float)workspace->rect.width;
-
-        printf("get_unoccupied_x(), starting with %d\n", unoccupied);
-
-        for (int cols = 0; cols < workspace->cols; cols++) {
-                printf("oh hai. wf[%d][%d] = %f\n", cols, row, workspace->table[cols][row]->width_factor);
-                if (workspace->table[cols][row]->width_factor == 0)
-                        unoccupied -= workspace->rect.width * default_factor_w;
-        }
-
-        printf("gots %d\n", unoccupied);
-        return unoccupied;
-}
-
 /*
- * For resizing containers (= cells), we need to know the space which is unoccupied by "default"
- * windows. The resized containers will be rendered relatively to this space, meaning that newly
- * created columns/rows after a container was resized will start with their normal size.
+ * Gets the unoccupied space (= space which is available for windows which were resized by the user)
+ * for the given row. This is necessary to render both, customly resized windows and never touched
+ * windows correctly, meaning that the aspect ratio will be maintained when opening new windows.
  *
  */
-Rect get_unoccupied_space(Workspace *workspace, int col, int row) {
-        printf("getting unoccupied space\n");
-        float default_factor_w = ((float)workspace->rect.width / (float)workspace->cols) / (float)workspace->rect.width;
-        float default_factor_h = (workspace->rect.height / workspace->rows) / workspace->rect.height;
-        Rect result = {0, 0, workspace->rect.width, workspace->rect.height};
+int get_unoccupied_x(Workspace *workspace, int row) {
+        int unoccupied = workspace->rect.width;
+        float default_factor = ((float)workspace->rect.width / workspace->cols) / workspace->rect.width;
 
-        printf("default factor is %f and %f\n", default_factor_w, default_factor_h);
-        printf("start w = %d, h = %d\n", result.width, result.height);
-        /* TODO: colspan/rowspan*/
+        printf("get_unoccupied_x(), starting with %d, default_factor = %f\n", unoccupied, default_factor);
 
-        for (int cols = 0; cols < workspace->cols; cols++)
-                for (int rows = 0; rows < workspace->rows; rows++) {
-                        printf("oh hai. wf[%d][%d] = %f\n", cols, rows, workspace->table[cols][rows]->width_factor);
-                        if (workspace->table[cols][rows]->width_factor == 0)
-                                result.width -= workspace->rect.width * default_factor_w;
-                        if (workspace->table[cols][rows]->height_factor == 0)
-                                result.height -= workspace->rect.height * default_factor_h;
-                }
+        for (int cols = 0; cols < workspace->cols;) {
+                Container *con = workspace->table[cols][row];
+                printf("oh hai. wf[%d][%d] = %f\n", cols, row, con->width_factor);
+                printf("colspan = %d\n", con->colspan);
+                if (con->width_factor == 0)
+                        unoccupied -= workspace->rect.width * default_factor * con->colspan;
+                cols += con->colspan;
+        }
 
-        printf("gots %d, %d\n", result.width, result.height);
+        /* TODO: Check (as soon as the whole implementation is done) if this case does ever occur,
+           because this function only gets called when at least one client was resized */
+        if (unoccupied == 0)
+                unoccupied = workspace->rect.width;
 
-        /* If every container is using the default factor, we have the whole space available */
-        if (result.width == 0)
-                result.width = workspace->rect.width;
-
-        if (result.height == 0)
-                result.height = workspace->rect.height;
-
-        printf("unoccupied x = %d, unoccupied y = %d\n", result.width, result.height);
-
-        return result;
+        printf("unoccupied space: %d\n", unoccupied);
+        return unoccupied;
 }
 
 /*
@@ -309,8 +284,9 @@ void render_layout(xcb_connection_t *connection) {
                                 container->x = xoffset[rows];
                                 container->y = yoffset[cols];
                                 if (container->width_factor == 0)
-                                        container->width = (width / r_ws->cols) * container->colspan;
+                                        container->width = (width / r_ws->cols);
                                 else container->width = get_unoccupied_x(r_ws, rows) * container->width_factor;
+                                container->width *= container->colspan;
                                 container->height = (height / r_ws->rows) * container->rowspan;
 
                                 /* Render it */
