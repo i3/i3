@@ -226,7 +226,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 nr &= XCB_EVENT_RESPONSE_TYPE_MASK;
                 assert(nr >= 2);
 
-                /* Check if we need to escape this loop… */
+                /* Check if we need to escape this loop */
                 if (nr == XCB_BUTTON_RELEASE)
                         break;
 
@@ -390,7 +390,7 @@ int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message
                 if (client == NULL)
                         return 0;
 
-                /* Check if the fullscreen state should be toggled… */
+                /* Check if the fullscreen state should be toggled */
                 if ((client->fullscreen &&
                      (event->data.data32[0] == _NET_WM_STATE_REMOVE ||
                       event->data.data32[0] == _NET_WM_STATE_TOGGLE)) ||

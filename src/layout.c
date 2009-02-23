@@ -211,7 +211,7 @@ static void render_container(xcb_connection_t *connection, Container *container)
 
                 int current_client = 0;
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
-                        /* Check if we changed client->x or client->y by updating it…
+                        /* Check if we changed client->x or client->y by updating it.
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |
                             (client->rect.x != (client->rect.x = container->x)) |
