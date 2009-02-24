@@ -204,7 +204,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         }
         xcb_window_t helpwin = create_window(conn, helprect, XCB_WINDOW_CLASS_INPUT_OUTPUT, 0, NULL);
 
-        uint32_t values[1] = {get_colorpixel(conn, helpwin, "#4c7899")};
+        uint32_t values[1] = {get_colorpixel(conn, NULL, helpwin, "#4c7899")};
         xcb_void_cookie_t cookie = xcb_change_window_attributes_checked(conn, helpwin, XCB_CW_BACK_PIXEL, values);
         check_error(conn, cookie, "Could not change window attributes (background color)");
 

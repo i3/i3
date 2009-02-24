@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <xcb/xcb.h>
 
@@ -23,12 +24,20 @@
  *
  * The hex_color has to start with #, for example #FF00FF.
  *
+ * The client argument is optional. If it is given, the colorpixel will be cached.
+ *
  * NOTE that get_colorpixel() does _NOT_ check the given color code for validity.
  * This has to be done by the caller.
  *
  */
-uint32_t get_colorpixel(xcb_connection_t *conn, xcb_window_t window, char *hex) {
-        /* TODO: We need to store the colorpixels per child to remove these unnecessary requests every time */
+uint32_t get_colorpixel(xcb_connection_t *conn, Client *client, xcb_window_t window, char *hex) {
+        /* Lookup this colorpixel in the cache if a client was specified */
+        if (client != NULL) {
+                struct Colorpixel *pixel;
+                SLIST_FOREACH(pixel, &(client->colorpixels), colorpixels)
+                        if (strcmp(pixel->hex, hex) == 0)
+                                return pixel->pixel;
+        }
         #define RGB_8_TO_16(i) (65535 * ((i) & 0xFF) / 255)
         char strgroups[3][3] = {{hex[1], hex[2], '\0'},
                                 {hex[3], hex[4], '\0'},
@@ -54,6 +63,16 @@ uint32_t get_colorpixel(xcb_connection_t *conn, xcb_window_t window, char *hex) 
         uint32_t pixel = reply->pixel;
         free(reply);
         xcb_free_colormap(conn, colormap_id);
+
+        /* Store the result in the cache if a client was specified */
+        if (client != NULL) {
+                struct Colorpixel *cache_pixel = scalloc(sizeof(struct Colorpixel));
+                cache_pixel->hex = sstrdup(hex);
+                cache_pixel->pixel = pixel;
+
+                SLIST_INSERT_HEAD(&(client->colorpixels), cache_pixel, colorpixels);
+        }
+
         return pixel;
 }
 

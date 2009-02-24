@@ -37,17 +37,13 @@ int get_unoccupied_x(Workspace *workspace, int row) {
 
         for (int cols = 0; cols < workspace->cols;) {
                 Container *con = workspace->table[cols][row];
-                printf("oh hai. wf[%d][%d] = %f\n", cols, row, con->width_factor);
-                printf("colspan = %d\n", con->colspan);
+                printf("width_factor[%d][%d] = %f, colspan = %d\n", cols, row, con->width_factor, con->colspan);
                 if (con->width_factor == 0)
                         unoccupied -= workspace->rect.width * default_factor * con->colspan;
                 cols += con->colspan;
         }
 
-        /* TODO: Check (as soon as the whole implementation is done) if this case does ever occur,
-           because this function only gets called when at least one client was resized */
-        if (unoccupied == 0)
-                unoccupied = workspace->rect.width;
+        assert(unoccupied != 0);
 
         printf("unoccupied space: %d\n", unoccupied);
         return unoccupied;
@@ -62,24 +58,21 @@ int get_unoccupied_y(Workspace *workspace, int col) {
 
         for (int rows = 0; rows < workspace->rows;) {
                 Container *con = workspace->table[col][rows];
-                printf("oh hai. wf[%d][%d] = %f\n", col, rows, con->height_factor);
-                printf("rowspan = %d\n", con->rowspan);
+                printf("height_factor[%d][%d] = %f, rowspan %d\n", col, rows, con->height_factor, con->rowspan);
                 if (con->height_factor == 0)
                         unoccupied -= workspace->rect.height * default_factor * con->rowspan;
                 rows += con->rowspan;
         }
 
-        /* TODO: Check (as soon as the whole implementation is done) if this case does ever occur,
-           because this function only gets called when at least one client was resized */
-        if (unoccupied == 0)
-                unoccupied = workspace->rect.height;
+        assert(unoccupied != 0);
 
         printf("unoccupied space: %d\n", unoccupied);
         return unoccupied;
 }
 
 /*
- * (Re-)draws window decorations for a given Client
+ * (Re-)draws window decorations for a given Client onto the given drawable/graphic context.
+ * When in stacking mode, the window decorations are drawn onto an own window.
  *
  */
 void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t drawable, xcb_gcontext_t gc, int offset) {
@@ -93,13 +86,13 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 return;
 
         if (client->container->currently_focused == client) {
-                background_color = get_colorpixel(conn, client->frame, "#285577");
-                text_color = get_colorpixel(conn, client->frame, "#ffffff");
-                border_color = get_colorpixel(conn, client->frame, "#4c7899");
+                background_color = get_colorpixel(conn, client, client->frame, "#285577");
+                text_color = get_colorpixel(conn, client, client->frame, "#ffffff");
+                border_color = get_colorpixel(conn, client, client->frame, "#4c7899");
         } else {
-                background_color = get_colorpixel(conn, client->frame, "#222222");
-                text_color = get_colorpixel(conn, client->frame, "#888888");
-                border_color = get_colorpixel(conn, client->frame, "#333333");
+                background_color = get_colorpixel(conn, client, client->frame, "#222222");
+                text_color = get_colorpixel(conn, client, client->frame, "#888888");
+                border_color = get_colorpixel(conn, client, client->frame, "#333333");
         }
 
         /* Our plan is the following:
@@ -110,7 +103,6 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
 
         /* Draw a green rectangle around the window */
         xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, background_color);
-        printf("drawing at offset %d\n", offset);
 
         xcb_rectangle_t rect = {0, offset, client->rect.width, offset + client->rect.height};
         xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
@@ -128,7 +120,6 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         /* TODO: utf8? */
         char *label;
         asprintf(&label, "(%08x) %.*s", client->frame, client->name_len, client->name);
-        printf("label is %s\n", label);
         xcb_void_cookie_t text_cookie = xcb_image_text_8_checked(conn, strlen(label), drawable,
                                         gc, 3 /* X */, offset + font->height /* Y = baseline of font */, label);
         check_error(conn, text_cookie, "Could not draw client's title");

@@ -27,7 +27,7 @@ enum { _NET_SUPPORTED = 0,
         UTF8_STRING
 };
 
-uint32_t get_colorpixel(xcb_connection_t *conn, xcb_window_t window, char *hex);
+uint32_t get_colorpixel(xcb_connection_t *conn, Client *client, xcb_window_t window, char *hex);
 xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class, uint32_t mask, uint32_t *values);
 void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t mask, uint32_t value);
 void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,

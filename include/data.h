@@ -7,17 +7,39 @@
  *
  * See file LICENSE for license information.
  *
+ * include/data.h: This file defines all data structures used by i3
+ *
  */
 #include <xcb/xcb.h>
 #include <stdbool.h>
 
 #ifndef _DATA_H
 #define _DATA_H
+#include "queue.h"
+
 /*
- * This file defines all data structures used by i3
+ * To get the big concept: There are helper structures like struct Colorpixel or
+ * struct Stack_Window. Everything which is also defined as type (see forward definitions)
+ * is considered to be a major structure, thus important.
+ *
+ * Let’s start from the biggest to the smallest:
+ * - An i3Screen is a virtual screen (Xinerama). This can be a single one, though two monitors
+ *   might be connected, if you’re running clone mode. There can also be multiple of them.
+ *
+ * - Each i3Screen contains Workspaces. The concept is known from various other window managers.
+ *   Basically, a workspace is a specific set of windows, usually grouped thematically (irc,
+ *   www, work, …). You can switch between these.
+ *
+ * - Each Workspace has a table, which is our layout abstraction. You manage your windows
+ *   by moving them around in your table. It grows as necessary.
+ *
+ * - Each cell of the table has a container, which can be in default or stacking mode. In default
+ *   mode, each client is given equally much space in the container. In stacking mode, only one
+ *   client is shown at a time, but all the titlebars are rendered at the top.
+ *
+ * - Inside the container are clients, which is X11-speak for a window.
  *
  */
-#include "queue.h"
 
 /* Forward definitions */
 typedef struct Cell Cell;
@@ -29,18 +51,20 @@ typedef struct Workspace Workspace;
 typedef struct Rect Rect;
 typedef struct Screen i3Screen;
 
-/* Helper types */
+/******************************************************************************
+ * Helper types
+ *****************************************************************************/
 typedef enum { D_LEFT, D_RIGHT, D_UP, D_DOWN } direction_t;
 
 enum {
         BIND_NONE = 0,
-        BIND_MOD_1 = XCB_MOD_MASK_1,
-        BIND_MOD_2 = XCB_MOD_MASK_2,
-        BIND_MOD_3 = XCB_MOD_MASK_3,
-        BIND_MOD_4 = XCB_MOD_MASK_4,
-        BIND_MOD_5 = XCB_MOD_MASK_5,
-        BIND_SHIFT = XCB_MOD_MASK_SHIFT,
-        BIND_CONTROL = XCB_MOD_MASK_CONTROL,
+        BIND_SHIFT = XCB_MOD_MASK_SHIFT,        /* (1 << 0) */
+        BIND_CONTROL = XCB_MOD_MASK_CONTROL,    /* (1 << 2) */
+        BIND_MOD_1 = XCB_MOD_MASK_1,            /* (1 << 3) */
+        BIND_MOD_2 = XCB_MOD_MASK_2,            /* (1 << 4) */
+        BIND_MOD_3 = XCB_MOD_MASK_3,            /* (1 << 5) */
+        BIND_MOD_4 = XCB_MOD_MASK_4,            /* (1 << 6) */
+        BIND_MOD_5 = XCB_MOD_MASK_5,            /* (1 << 7) */
         BIND_MODE_SWITCH = (1 << 8)
 };
 
@@ -49,6 +73,53 @@ struct Rect {
         uint32_t width, height;
 };
 
+/*
+ * Defines a position in the table
+ *
+ */
+struct Cell {
+        int row;
+        int column;
+};
+
+/*
+ * Used for the cache of colorpixels.
+ *
+ */
+struct Colorpixel {
+        uint32_t pixel;
+
+        char *hex;
+
+        SLIST_ENTRY(Colorpixel) colorpixels;
+};
+
+/*
+ * Contains data for the windows needed to draw the titlebars on in stacking mode
+ *
+ */
+struct Stack_Window {
+        xcb_window_t window;
+        xcb_gcontext_t gc;
+        uint32_t width, height;
+
+        /* Backpointer to the container this stack window is in */
+        Container *container;
+
+        SLIST_ENTRY(Stack_Window) stack_windows;
+};
+
+
+/******************************************************************************
+ * Major types
+ *****************************************************************************/
+
+/*
+ * The concept of Workspaces is known from various other window managers. Basically,
+ * a workspace is a specific set of windows, usually grouped thematically (irc,
+ * www, work, …). You can switch between these.
+ *
+ */
 struct Workspace {
         /* x, y, width, height */
         Rect rect;
@@ -75,14 +146,10 @@ struct Workspace {
 };
 
 /*
- * Defines a position in the table
+ * Holds a keybinding, consisting of a keycode combined with modifiers and the command
+ * which is executed as soon as the key is pressed (see src/command.c)
  *
  */
-struct Cell {
-        int row;
-        int column;
-};
-
 struct Binding {
         /* Keycode to bind */
         uint32_t keycode;
@@ -118,9 +185,9 @@ struct Font {
  *
  */
 struct Client {
-        /* TODO: this is NOT final */
-        Cell old_position; /* if you set a client to floating and set it back to managed,
-                              it does remember its old position and *tries* to get back there */
+        /* if you set a client to floating and set it back to managed, it does remember its old
+           position and *tries* to get back there */
+        Cell old_position;
 
         /* Backpointer. A client is inside a container */
         Container *container;
@@ -155,9 +222,12 @@ struct Client {
         bool awaiting_useless_unmap;
 
         /* XCB contexts */
-        xcb_window_t frame; /* Our window: The frame around the client */
-        xcb_gcontext_t titlegc; /* The titlebar’s graphic context inside the frame */
-        xcb_window_t child; /* The client’s window */
+        xcb_window_t frame;             /* Our window: The frame around the client */
+        xcb_gcontext_t titlegc;         /* The titlebar’s graphic context inside the frame */
+        xcb_window_t child;             /* The client’s window */
+
+        /* Cache of colorpixels for this client */
+        SLIST_HEAD(colorpixel_head, Colorpixel) colorpixels;
 
         /* The following entry provides the necessary list pointers to use Client with LIST_* macros */
         CIRCLEQ_ENTRY(Client) clients;
@@ -165,22 +235,7 @@ struct Client {
 };
 
 /*
- * Contains data for the windows needed to draw the titlebars on in stacking mode
- *
- */
-struct Stack_Window {
-        xcb_window_t window;
-        xcb_gcontext_t gc;
-        uint32_t width, height;
-
-        /* Backpointer to the container this stack window is in */
-        Container *container;
-
-        SLIST_ENTRY(Stack_Window) stack_windows;
-};
-
-/*
- * A container is either in default or stacking mode. It sits inside the table.
+ * A container is either in default or stacking mode. It sits inside each cell of the table.
  *
  */
 struct Container {
@@ -212,6 +267,11 @@ struct Container {
         CIRCLEQ_HEAD(client_head, Client) clients;
 };
 
+/*
+ * This is a virtual screen (Xinerama). This can be a single one, though two monitors
+ * might be connected, if you’re running clone mode. There can also be multiple of them.
+ *
+ */
 struct Screen {
         /* Virtual screen number */
         int num;

@@ -58,6 +58,12 @@ void *smalloc(size_t size) {
         return result;
 }
 
+void *scalloc(size_t size) {
+        void *result = calloc(size, 1);
+        exit_if_null(result, "Too less memory for calloc(%d)\n", size);
+        return result;
+}
+
 char *sstrdup(const char *str) {
         char *result = strdup(str);
         exit_if_null(result, "Too less memory for strdup()\n");
@@ -157,13 +163,14 @@ void set_focus(xcb_connection_t *conn, Client *client) {
 void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) {
         if (mode == MODE_STACK) {
                 /* When entering stacking mode, we need to open a window on which we can draw the
-                   title bars of the clients */
-                Rect rect = {container->x, container->y, container->width, 15 /* TODO: exact */ };
+                   title bars of the clients, it has height 1 because we don’t bother here with
+                   calculating the correct height - it will be adjusted when rendering anyways. */
+                Rect rect = {container->x, container->y, container->width, 1 };
 
-                /* Don’t generate events for our new window, it should *not* be managed */
                 uint32_t mask = 0;
                 uint32_t values[2];
 
+                /* Don’t generate events for our new window, it should *not* be managed */
                 mask |= XCB_CW_OVERRIDE_REDIRECT;
                 values[0] = 1;
 
@@ -250,14 +257,15 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                                 values[0], values[1], values[2], values[3]);
 
                 /* Raise the window */
-                xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, client->frame);
+                values[0] = XCB_STACK_MODE_ABOVE;
+                xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
 
                 xcb_configure_window(conn, client->frame, mask, values);
                 xcb_configure_window(conn, client->child, mask, values);
 
                 xcb_flush(conn);
         } else {
-                printf("left fullscreen\n");
+                printf("leaving fullscreen mode\n");
                 /* Because the coordinates of the window haven’t changed, it would not be
                    re-configured if we don’t set the following flag */
                 client->force_reconfigure = true;
