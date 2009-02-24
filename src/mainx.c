@@ -473,7 +473,7 @@ int main(int argc, char *argv[], char *env[]) {
 
         /* Get pointer position to see on which screen we’re starting */
         xcb_query_pointer_reply_t *reply;
-        if ((reply = xcb_query_pointer(c, xcb_query_pointer(c, root), NULL)) == NULL) {
+        if ((reply = xcb_query_pointer_reply(c, xcb_query_pointer(c, root), NULL)) == NULL) {
                 printf("Could not get pointer position\n");
                 return 1;
         }
