@@ -80,11 +80,84 @@ void expand_table_cols(Workspace *workspace) {
                 new_container(workspace, &(workspace->table[workspace->cols-1][c]));
 }
 
+static void shrink_table_cols(Workspace *workspace) {
+        workspace->cols--;
+        free(workspace->table[workspace->cols]);
+        workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
+}
+
+static void shrink_table_rows(Workspace *workspace) {
+        workspace->rows--;
+        for (int cols = 0; cols < workspace->cols; cols++)
+                workspace->table[cols] = realloc(workspace->table[cols], sizeof(Container*) * workspace->rows);
+}
+
+
 /*
  * Performs simple bounds checking for the given column/row
  *
  */
 bool cell_exists(int col, int row) {
         return (col >= 0 && col < c_ws->cols) &&
-                (row >= 0 && row < c_ws->rows);
+               (row >= 0 && row < c_ws->rows);
+}
+
+static void move_columns_from(Workspace *workspace, int cols) {
+        for (; cols < workspace->cols; cols++)
+                for (int rows = 0; rows < workspace->rows; rows++) {
+                        free(workspace->table[cols-1][rows]);
+
+                        printf("moving cols = %d to cols -1 = %d\n", cols, cols-1);
+                        workspace->table[cols-1][rows] = workspace->table[cols][rows];
+                        workspace->table[cols][rows] = NULL;
+                }
+}
+
+static void move_rows_from(Workspace *workspace, int rows) {
+        for (; rows < workspace->rows; rows++)
+                for (int cols = 0; cols < workspace->cols; cols++) {
+                        free(workspace->table[cols][rows-1]);
+
+                        printf("moving rows = %d to rows -1 = %d\n", rows, rows - 1);
+                        workspace->table[cols][rows-1] = workspace->table[cols][rows];
+                        workspace->table[cols][rows] = NULL;
+                }
+}
+
+/*
+ * Shrinks the table by "compacting" it, that is, removing completely empty rows/columns
+ *
+ */
+void cleanup_table(Workspace *workspace) {
+        /* Check for empty columns */
+        for (int cols = 0; cols < workspace->cols;) {
+                bool completely_empty = true;
+                for (int rows = 0; rows < workspace->rows; rows++)
+                        if (workspace->table[cols][rows]->currently_focused != NULL) {
+                                completely_empty = false;
+                                break;
+                        }
+                if (completely_empty && cols > 0) {
+                        printf("Removing completely empty column %d\n", cols);
+                        if (cols < (workspace->cols - 1))
+                                move_columns_from(workspace, cols+1);
+                        shrink_table_cols(workspace);
+                } else cols++;
+        }
+
+        /* Check for empty rows */
+        for (int rows = 0; rows < workspace->rows;) {
+                bool completely_empty = true;
+                for (int cols = 0; cols < workspace->cols; cols++)
+                        if (workspace->table[cols][rows]->currently_focused != NULL) {
+                                completely_empty = false;
+                                break;
+                        }
+                if (completely_empty && rows > 0) {
+                        printf("Removing completely empty row %d\n", rows);
+                        if (rows < (workspace->rows - 1))
+                                move_rows_from(workspace, rows+1);
+                        shrink_table_rows(workspace);
+                } else rows++;
+        }
 }

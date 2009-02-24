@@ -27,5 +27,6 @@ void init_table();
 void expand_table_rows(Workspace *workspace);
 void expand_table_cols(Workspace *workspace);
 bool cell_exists(int col, int row);
+void cleanup_table(Workspace *workspace);
 
 #endif
