@@ -18,12 +18,14 @@
 #ifndef _I3_H
 #define _I3_H
 
+#define NUM_ATOMS 9
+
 extern Display *xkbdpy;
 extern TAILQ_HEAD(bindings_head, Binding) bindings;
 extern SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins;
 extern xcb_event_handlers_t evenths;
 extern char *pattern;
 extern int num_screens;
-extern xcb_atom_t atoms[9];
+extern xcb_atom_t atoms[NUM_ATOMS];
 
 #endif

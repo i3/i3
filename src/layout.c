@@ -154,7 +154,7 @@ static void reposition_client(xcb_connection_t *connection, Client *client) {
 static void resize_client(xcb_connection_t *connection, Client *client) {
         i3Font *font = load_font(connection, pattern);
 
-        printf("resizing client \"%s\" to %d x %d\n", client->name, client->rect.width, client->rect.height);
+        printf("resizing client to %d x %d\n", client->rect.width, client->rect.height);
         xcb_configure_window(connection, client->frame,
                         XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                         &(client->rect.width));

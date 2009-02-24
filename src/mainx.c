@@ -41,74 +41,77 @@
 #include "util.h"
 #include "xcb.h"
 #include "xinerama.h"
+#include "i3.h"
 
 #define TERMINAL "/usr/pkg/bin/urxvt"
 
+/* This is our connection to X11 for use with XKB */
 Display *xkbdpy;
 
-TAILQ_HEAD(bindings_head, Binding) bindings = TAILQ_HEAD_INITIALIZER(bindings);
-SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins = SLIST_HEAD_INITIALIZER(stack_wins);
-xcb_event_handlers_t evenths;
+/* The list of key bindings */
+struct bindings_head bindings = TAILQ_HEAD_INITIALIZER(bindings);
 
-xcb_window_t root_win;
-xcb_atom_t atoms[9];
+/* This is a list of Stack_Windows, global, for easier/faster access on expose events */
+struct stack_wins_head stack_wins = SLIST_HEAD_INITIALIZER(stack_wins);
+
+/* The event handlers need to be global because they are accessed by our custom event handler
+   in handle_button_press(), needed for graphical resizing */
+xcb_event_handlers_t evenths;
+xcb_atom_t atoms[NUM_ATOMS];
 
 char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1";
 int num_screens = 0;
 
 /*
- *
- * TODO: what exactly does this, what happens if we leave stuff out?
+ * Do some sanity checks and then reparent the window.
  *
  */
-void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *c, xcb_window_t window, window_attributes_t wa)
-{
+void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *c, xcb_window_t window, window_attributes_t wa) {
         printf("managing window.\n");
         xcb_drawable_t d = { window };
         xcb_get_geometry_cookie_t geomc;
         xcb_get_geometry_reply_t *geom;
         xcb_get_window_attributes_reply_t *attr = 0;
-        if(wa.tag == TAG_COOKIE)
-        {
-                attr = xcb_get_window_attributes_reply(c, wa.u.cookie, 0);
-                if(!attr)
+
+        if (wa.tag == TAG_COOKIE) {
+                /* Check if the window is mapped (it could be not mapped when intializing and
+                   calling manage_window() for every window) */
+                if ((attr = xcb_get_window_attributes_reply(c, wa.u.cookie, 0)) == NULL)
                         return;
-                if(attr->map_state != XCB_MAP_STATE_VIEWABLE)
-                {
-                        printf("Window 0x%08x is not mapped. Ignoring.\n", window);
-                        free(attr);
-                        return;
-                }
+
+                if (attr->map_state != XCB_MAP_STATE_VIEWABLE)
+                        goto out;
+
                 wa.tag = TAG_VALUE;
                 wa.u.override_redirect = attr->override_redirect;
         }
-        if(!wa.u.override_redirect && table_get(byChild, window))
-        {
-                printf("Window 0x%08x already managed. Ignoring.\n", window);
-                free(attr);
-                return;
-        }
-        if(wa.u.override_redirect)
-        {
-                printf("Window 0x%08x has override-redirect set. Ignoring.\n", window);
-                free(attr);
-                return;
-        }
+
+        /* Check if the window is already managed */
+        if (!wa.u.override_redirect && table_get(byChild, window))
+                goto out;
+
+        /* Don’t manage clients with the override_redirect flag */
+        if (wa.u.override_redirect)
+                goto out;
+
+        /* Get the initial geometry (position, size, …) */
         geomc = xcb_get_geometry(c, d);
-        if(!attr)
-        {
+        if (!attr) {
                 wa.tag = TAG_COOKIE;
                 wa.u.cookie = xcb_get_window_attributes(c, window);
                 attr = xcb_get_window_attributes_reply(c, wa.u.cookie, 0);
         }
         geom = xcb_get_geometry_reply(c, geomc, 0);
-        if(attr && geom)
-        {
-                reparent_window(c, window, attr->visual, geom->root, geom->depth, geom->x, geom->y, geom->width, geom->height);
+        if (attr && geom) {
+                reparent_window(c, window, attr->visual, geom->root, geom->depth,
+                                geom->x, geom->y, geom->width, geom->height);
                 xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
         }
-        free(attr);
+
         free(geom);
+out:
+        free(attr);
+        return;
 }
 
 /*
@@ -124,7 +127,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         xcb_get_property_cookie_t wm_type_cookie, strut_cookie;
 
-        /* Place requests for propertys ASAP */
+        /* Place requests for properties ASAP */
         wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
         strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
 
@@ -133,10 +136,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 /* TODO: When does this happen for existing clients? Is that a bug? */
                 printf("oh, it's new\n");
                 new = calloc(sizeof(Client), 1);
-                /* We initialize x and y with the invalid coordinates -1 so that they will
-                   get updated at the next render_layout() at any case */
-                new->rect.x = -1;
-                new->rect.y = -1;
+                new->force_reconfigure = true;
         }
         uint32_t mask = 0;
         uint32_t values[3];
@@ -243,33 +243,35 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         render_layout(conn);
 }
 
+/*
+ * Go through all existing windows (if the window manager is restarted) and manage them
+ *
+ */
 void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *prophs, xcb_window_t root) {
-        xcb_query_tree_cookie_t wintree;
-        xcb_query_tree_reply_t *rep;
+        xcb_query_tree_reply_t *reply;
         int i, len;
         xcb_window_t *children;
         xcb_get_window_attributes_cookie_t *cookies;
 
-        wintree = xcb_query_tree(c, root);
-        rep = xcb_query_tree_reply(c, wintree, 0);
-        if(!rep)
+        /* Get the tree of windows whose parent is the root window (= all) */
+        if ((reply = xcb_query_tree_reply(c, xcb_query_tree(c, root), 0)) == NULL)
                 return;
-        len = xcb_query_tree_children_length(rep);
-        cookies = malloc(len * sizeof(*cookies));
-        if(!cookies)
-        {
-                free(rep);
-                return;
-        }
-        children = xcb_query_tree_children(rep);
+
+        len = xcb_query_tree_children_length(reply);
+        cookies = smalloc(len * sizeof(*cookies));
+
+        /* Request the window attributes for every window */
+        children = xcb_query_tree_children(reply);
         for(i = 0; i < len; ++i)
                 cookies[i] = xcb_get_window_attributes(c, children[i]);
-        for(i = 0; i < len; ++i)
-        {
+
+        /* Call manage_window with the attributes for every window */
+        for(i = 0; i < len; ++i) {
                 window_attributes_t wa = { TAG_COOKIE, { cookies[i] } };
                 manage_window(prophs, c, children[i], wa);
         }
-        free(rep);
+
+        free(reply);
 }
 
 int main(int argc, char *argv[], char *env[]) {
@@ -277,6 +279,7 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_connection_t *c;
         xcb_property_handlers_t prophs;
         xcb_window_t root;
+        xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
 
         /* Initialize the table data structures for each workspace */
         init_table();
@@ -288,6 +291,20 @@ int main(int argc, char *argv[], char *env[]) {
         byParent = alloc_table();
 
         c = xcb_connect(NULL, &screens);
+
+        /* Place requests for the atoms we need as soon as possible */
+        #define REQUEST_ATOM(name) atom_cookies[name] = xcb_intern_atom(c, 0, strlen(#name), #name);
+
+        REQUEST_ATOM(_NET_SUPPORTED);
+        REQUEST_ATOM(_NET_WM_STATE_FULLSCREEN);
+        REQUEST_ATOM(_NET_SUPPORTING_WM_CHECK);
+        REQUEST_ATOM(_NET_WM_NAME);
+        REQUEST_ATOM(_NET_WM_STATE);
+        REQUEST_ATOM(_NET_WM_WINDOW_TYPE);
+        REQUEST_ATOM(_NET_WM_DESKTOP);
+        REQUEST_ATOM(_NET_WM_WINDOW_TYPE_DOCK);
+        REQUEST_ATOM(_NET_WM_STRUT_PARTIAL);
+        REQUEST_ATOM(UTF8_STRING);
 
         /* TODO: this has to be more beautiful somewhen */
         int major, minor, error;
@@ -310,14 +327,15 @@ int main(int argc, char *argv[], char *env[]) {
         /* end of ugliness */
 
         xcb_event_handlers_init(c, &evenths);
-        for(i = 2; i < 128; ++i)
+
+        /* DEBUG: Trap all events and print them */
+        for (i = 2; i < 128; ++i)
                 xcb_event_set_handler(&evenths, i, handle_event, 0);
 
-        for(i = 0; i < 256; ++i)
+        for (i = 0; i < 256; ++i)
                 xcb_event_set_error_handler(&evenths, i, (xcb_generic_error_handler_t)handle_event, 0);
 
-        /* Expose = an Application should redraw itself. That is, we have to redraw our
-         * contents (= top/bottom bar, titlebars for each window) */
+        /* Expose = an Application should redraw itself, in this case it’s our titlebars. */
         xcb_event_set_expose_handler(&evenths, handle_expose_event, 0);
 
         /* Key presses/releases are pretty obvious, I think */
@@ -330,33 +348,42 @@ int main(int argc, char *argv[], char *env[]) {
         /* Button press = user pushed a mouse button over one of our windows */
         xcb_event_set_button_press_handler(&evenths, handle_button_press, 0);
 
-        xcb_event_set_unmap_notify_handler(&evenths, handle_unmap_notify_event, 0);
-
-        xcb_property_handlers_init(&prophs, &evenths);
+        /* Map notify = there is a new window */
         xcb_event_set_map_notify_handler(&evenths, handle_map_notify_event, &prophs);
 
+        /* Unmap notify = window disappeared. When sent from a client, we don’t manage
+           it any longer. Usually, the client destroys the window shortly afterwards. */
+        xcb_event_set_unmap_notify_handler(&evenths, handle_unmap_notify_event, 0);
+
+        /* Client message = client changed its properties (EWMH) */
+        /* TODO: can’t we do this via property handlers? */
         xcb_event_set_client_message_handler(&evenths, handle_client_message, 0);
 
+        /* Initialize the property handlers */
+        xcb_property_handlers_init(&prophs, &evenths);
+
+        /* Watch the WM_NAME (= title of the window) property */
         xcb_watch_wm_name(&prophs, 128, handle_windowname_change, 0);
 
+        /* Get the root window and set the event mask */
         root = xcb_aux_get_screen(c, screens)->root;
-        root_win = root;
 
         uint32_t mask = XCB_CW_EVENT_MASK;
-        uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW};
+        uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
+                              XCB_EVENT_MASK_PROPERTY_CHANGE |
+                              XCB_EVENT_MASK_ENTER_WINDOW };
         xcb_change_window_attributes(c, root, mask, values);
 
         /* Setup NetWM atoms */
-        /* TODO: needs cleanup, needs more xcb (asynchronous), needs more error checking */
-#define GET_ATOM(name) { \
-        xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(c, xcb_intern_atom(c, 0, strlen(#name), #name), NULL); \
-        if (!reply) { \
-                printf("Could not get atom " #name "\n"); \
-                exit(-1); \
-        } \
-        atoms[name] = reply->atom; \
-        free(reply); \
-}
+        #define GET_ATOM(name) { \
+                xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(c, atom_cookies[name], NULL); \
+                if (!reply) { \
+                        printf("Could not get atom " #name "\n"); \
+                        exit(-1); \
+                } \
+                atoms[name] = reply->atom; \
+                free(reply); \
+        }
 
         GET_ATOM(_NET_SUPPORTED);
         GET_ATOM(_NET_WM_STATE_FULLSCREEN);
@@ -372,11 +399,13 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_property_set_handler(&prophs, atoms[_NET_WM_WINDOW_TYPE], UINT_MAX, window_type_handler, NULL);
         /* TODO: In order to comply with EWMH, we have to watch _NET_WM_STRUT_PARTIAL */
 
-        check_error(c, xcb_change_property_checked(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED], ATOM, 32, 7, atoms), "Could not set _NET_SUPPORTED");
+        /* Set up the atoms we support */
+        check_error(c, xcb_change_property_checked(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED],
+                       ATOM, 32, 7, atoms), "Could not set _NET_SUPPORTED");
 
+        /* Set up the window manager’s name */
         xcb_change_property(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTING_WM_CHECK], WINDOW, 32, 1, &root);
-
-        xcb_change_property(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_WM_NAME] , atoms[UTF8_STRING], 8, strlen("i3"), "i3");
+        xcb_change_property(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_WM_NAME], atoms[UTF8_STRING], 8, strlen("i3"), "i3");
 
         #define BIND(key, modifier, cmd) { \
                 Binding *new = malloc(sizeof(Binding)); \
@@ -422,6 +451,7 @@ int main(int argc, char *argv[], char *env[]) {
         BIND(18, BIND_MOD_1 , "9");
         BIND(19, BIND_MOD_1 , "0");
 
+        /* Grab the bound keys */
         Binding *bind;
         TAILQ_FOREACH(bind, &bindings, bindings) {
                 printf("Grabbing %d\n", bind->keycode);
@@ -434,6 +464,7 @@ int main(int argc, char *argv[], char *env[]) {
         printf("Checking for Xinerama...\n");
         initialize_xinerama(c);
 
+        /* DEBUG: Start a terminal */
         start_application(TERMINAL);
 
         xcb_flush(c);
@@ -441,9 +472,8 @@ int main(int argc, char *argv[], char *env[]) {
         manage_existing_windows(c, &prophs, root);
 
         /* Get pointer position to see on which screen we’re starting */
-        xcb_query_pointer_cookie_t pointer_cookie = xcb_query_pointer(c, root);
-        xcb_query_pointer_reply_t *reply = xcb_query_pointer_reply(c, pointer_cookie, NULL);
-        if (reply == NULL) {
+        xcb_query_pointer_reply_t *reply;
+        if ((reply = xcb_query_pointer(c, xcb_query_pointer(c, root), NULL)) == NULL) {
                 printf("Could not get pointer position\n");
                 return 1;
         }
@@ -458,6 +488,7 @@ int main(int argc, char *argv[], char *env[]) {
                 c_ws = &workspaces[screen->current_workspace];
         }
 
+        /* Enter xcb’s event handler */
         xcb_event_wait_for_event_loop(&evenths);
 
         /* not reached */

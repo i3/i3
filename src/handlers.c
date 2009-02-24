@@ -292,6 +292,10 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         return 1;
 }
 
+/*
+ * A new window appeared on the screen (=was mapped), so let’s manage it.
+ *
+ */
 int handle_map_notify_event(void *prophs, xcb_connection_t *conn, xcb_map_notify_event_t *event) {
         window_attributes_t wa = { TAG_VALUE };
         wa.u.override_redirect = event->override_redirect;
