@@ -16,6 +16,7 @@
 #include <xcb/xcb.h>
 #include <assert.h>
 
+#include "config.h"
 #include "font.h"
 #include "i3.h"
 #include "xcb.h"
@@ -76,7 +77,7 @@ int get_unoccupied_y(Workspace *workspace, int col) {
  *
  */
 void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t drawable, xcb_gcontext_t gc, int offset) {
-        i3Font *font = load_font(conn, pattern);
+        i3Font *font = load_font(conn, config.font);
         uint32_t background_color,
                  text_color,
                  border_color;
@@ -143,7 +144,7 @@ static void reposition_client(xcb_connection_t *connection, Client *client) {
  *
  */
 static void resize_client(xcb_connection_t *connection, Client *client) {
-        i3Font *font = load_font(connection, pattern);
+        i3Font *font = load_font(connection, config.font);
 
         printf("resizing client to %d x %d\n", client->rect.width, client->rect.height);
         xcb_configure_window(connection, client->frame,
@@ -216,7 +217,7 @@ void render_container(xcb_connection_t *connection, Container *container) {
                         current_client++;
                 }
         } else {
-                i3Font *font = load_font(connection, pattern);
+                i3Font *font = load_font(connection, config.font);
                 int decoration_height = (font->height + 2 + 2);
                 struct Stack_Window *stack_win = &(container->stack_win);
 

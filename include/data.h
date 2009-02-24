@@ -60,11 +60,11 @@ enum {
         BIND_NONE = 0,
         BIND_SHIFT = XCB_MOD_MASK_SHIFT,        /* (1 << 0) */
         BIND_CONTROL = XCB_MOD_MASK_CONTROL,    /* (1 << 2) */
-        BIND_MOD_1 = XCB_MOD_MASK_1,            /* (1 << 3) */
-        BIND_MOD_2 = XCB_MOD_MASK_2,            /* (1 << 4) */
-        BIND_MOD_3 = XCB_MOD_MASK_3,            /* (1 << 5) */
-        BIND_MOD_4 = XCB_MOD_MASK_4,            /* (1 << 6) */
-        BIND_MOD_5 = XCB_MOD_MASK_5,            /* (1 << 7) */
+        BIND_MOD1 = XCB_MOD_MASK_1,             /* (1 << 3) */
+        BIND_MOD2 = XCB_MOD_MASK_2,             /* (1 << 4) */
+        BIND_MOD3 = XCB_MOD_MASK_3,             /* (1 << 5) */
+        BIND_MOD4 = XCB_MOD_MASK_4,             /* (1 << 6) */
+        BIND_MOD5 = XCB_MOD_MASK_5,             /* (1 << 7) */
         BIND_MODE_SWITCH = (1 << 8)
 };
 

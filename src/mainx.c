@@ -32,6 +32,7 @@
 #include <xcb/xinerama.h>
 #include "data.h"
 
+#include "config.h"
 #include "queue.h"
 #include "table.h"
 #include "font.h"
@@ -42,8 +43,6 @@
 #include "xcb.h"
 #include "xinerama.h"
 #include "i3.h"
-
-#define TERMINAL "/usr/pkg/bin/urxvt"
 
 /* This is our connection to X11 for use with XKB */
 Display *xkbdpy;
@@ -59,7 +58,6 @@ struct stack_wins_head stack_wins = SLIST_HEAD_INITIALIZER(stack_wins);
 xcb_event_handlers_t evenths;
 xcb_atom_t atoms[NUM_ATOMS];
 
-char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1";
 int num_screens = 0;
 
 /*
@@ -163,7 +161,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         printf("Reparenting 0x%08x under 0x%08x.\n", child, new->frame);
 
-        i3Font *font = load_font(conn, pattern);
+        i3Font *font = load_font(conn, config.font);
         width = min(width, c_ws->rect.x + c_ws->rect.width);
         height = min(height, c_ws->rect.y + c_ws->rect.height);
 
@@ -290,6 +288,8 @@ int main(int argc, char *argv[], char *env[]) {
         byChild = alloc_table();
         byParent = alloc_table();
 
+        load_configuration("i3.config");
+
         c = xcb_connect(NULL, &screens);
 
         /* Place requests for the atoms we need as soon as possible */
@@ -407,50 +407,6 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_change_property(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTING_WM_CHECK], WINDOW, 32, 1, &root);
         xcb_change_property(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_WM_NAME], atoms[UTF8_STRING], 8, strlen("i3"), "i3");
 
-        #define BIND(key, modifier, cmd) { \
-                Binding *new = malloc(sizeof(Binding)); \
-                new->keycode = key; \
-                new->mods = modifier; \
-                new->command = cmd; \
-                TAILQ_INSERT_TAIL(&bindings, new, bindings); \
-        }
-
-        /* 38 = 'a' */
-        BIND(38, BIND_MODE_SWITCH, "foo");
-
-        BIND(30, 0, "exec /usr/pkg/bin/urxvt");
-
-        BIND(41, BIND_MOD_1, "f");
-
-        BIND(43, BIND_MOD_1, "s");
-        BIND(26, BIND_MOD_1, "d");
-
-        BIND(44, BIND_MOD_1, "h");
-        BIND(45, BIND_MOD_1, "j");
-        BIND(46, BIND_MOD_1, "k");
-        BIND(47, BIND_MOD_1, "l");
-
-        BIND(44, BIND_MOD_1 | BIND_CONTROL, "sh");
-        BIND(45, BIND_MOD_1 | BIND_CONTROL, "sj");
-        BIND(46, BIND_MOD_1 | BIND_CONTROL, "sk");
-        BIND(47, BIND_MOD_1 | BIND_CONTROL, "sl");
-
-        BIND(44, BIND_MOD_1 | BIND_SHIFT, "mh");
-        BIND(45, BIND_MOD_1 | BIND_SHIFT, "mj");
-        BIND(46, BIND_MOD_1 | BIND_SHIFT, "mk");
-        BIND(47, BIND_MOD_1 | BIND_SHIFT, "ml");
-
-        BIND(10, BIND_MOD_1 , "1");
-        BIND(11, BIND_MOD_1 , "2");
-        BIND(12, BIND_MOD_1 , "3");
-        BIND(13, BIND_MOD_1 , "4");
-        BIND(14, BIND_MOD_1 , "5");
-        BIND(15, BIND_MOD_1 , "6");
-        BIND(16, BIND_MOD_1 , "7");
-        BIND(17, BIND_MOD_1 , "8");
-        BIND(18, BIND_MOD_1 , "9");
-        BIND(19, BIND_MOD_1 , "0");
-
         /* Grab the bound keys */
         Binding *bind;
         TAILQ_FOREACH(bind, &bindings, bindings) {
@@ -465,7 +421,7 @@ int main(int argc, char *argv[], char *env[]) {
         initialize_xinerama(c);
 
         /* DEBUG: Start a terminal */
-        start_application(TERMINAL);
+        start_application(config.terminal);
 
         xcb_flush(c);
 
