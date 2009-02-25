@@ -200,7 +200,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         /* We need to grab the mouse buttons for click to focus */
         xcb_grab_button(conn, false, child, XCB_EVENT_MASK_BUTTON_PRESS,
-                        XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
+                        XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
                         1 /* left mouse button */,
                         XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
 

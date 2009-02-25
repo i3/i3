@@ -147,6 +147,8 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
 
         if (con == NULL) {
                 printf("dock. done.\n");
+                xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
+                xcb_flush(conn);
                 return 1;
         }
 
@@ -154,6 +156,8 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
 
         if (!border_click) {
                 printf("client. done.\n");
+                xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
+                xcb_flush(conn);
                 return 1;
         }
 
