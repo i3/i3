@@ -9,7 +9,7 @@ CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include
 
 LDFLAGS += -lxcb-wm
-LDFLAGS += -lxcb-keysyms
+#LDFLAGS += -lxcb-keysyms
 LDFLAGS += -lxcb-xinerama
 LDFLAGS += -lX11
 LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib

@@ -18,6 +18,7 @@ build:
 
 	# Add here commands to compile the package.
 	$(MAKE)
+	$(MAKE) -C man
 
 	touch $@
 
@@ -39,6 +40,8 @@ install: build
 
 	# Add here commands to install the package into debian/wiipdf
 	$(MAKE) DESTDIR=$(CURDIR)/debian/i3/ install
+	mkdir -p $(CURDIR)/debian/i3/usr/share/man/man1
+	cp man/i3.1 $(CURDIR)/debian/i3/usr/share/man/man1
 
 
 # Build architecture-independent files here.
@@ -65,7 +68,7 @@ binary-arch: build install
 #	dh_installinfo
 	dh_installman
 	dh_link
-	dh_strip
+#	dh_strip
 	dh_compress
 	dh_fixperms
 #	dh_perl

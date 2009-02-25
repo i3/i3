@@ -2,7 +2,7 @@ Source: i3
 Section: utils
 Priority: optional
 Maintainer: Michael Stapelberg <michael+i3@stapelberg.de>
-Build-Depends: debhelper (>= 5), libxcb-wm0-dev (>= 0.3.3),  libxcb-aux0-dev (>= 0.3.3)
+Build-Depends: debhelper (>= 5), libxcb-wm0-dev (>= 0.3.3), libxcb-aux0-dev (>= 0.3.3), asciidoc
 Standards-Version: 3.8.0
 Homepage: http://i3.zekjur.net/
 
@@ -12,4 +12,12 @@ Priority: optional
 Section: utils
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: an improved dynamic tiling window manager
- TODO
+ Key features of i3 are correct implementation of Xinerama (workspaces are
+ assigned to virtual screens, i3 does the right thing when attaching new
+ monitors), XrandR support (not done yet), horizontal and vertical columns
+ (think of a table) in tiling. Also, special focus is on writing clean,
+ readable and well documented code. i3 uses xcb for asynchronous
+ communication with X11, and has several measures to be very fast.
+ .
+ Please be aware i3 is primarily targeted at advanced users and developers
+ and that you’re currently trying an alpha version (which may contain bugs).
