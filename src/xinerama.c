@@ -132,5 +132,5 @@ void initialize_xinerama(xcb_connection_t *conn) {
                                 s->rect.x, s->rect.y, s->rect.width, s->rect.height);
         }
 
-        free(screen_info);
+        free(reply);
 }
