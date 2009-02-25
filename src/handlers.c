@@ -335,7 +335,8 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
                 if (client->container->currently_focused == client)
                         client->container->currently_focused = to_focus;
                 CIRCLEQ_REMOVE(&(client->container->clients), client, clients);
-                set_focus(c, to_focus);
+                if (to_focus != NULL)
+                        set_focus(c, to_focus);
         }
 
         printf("child of 0x%08x.\n", client->frame);
