@@ -329,9 +329,13 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
         }
 
         if (client->container != NULL) {
+                Client *to_focus = CIRCLEQ_NEXT_OR_NULL(&(client->container->clients), client, clients);
+                if (to_focus == NULL)
+                        to_focus = CIRCLEQ_PREV_OR_NULL(&(client->container->clients), client, clients);
                 if (client->container->currently_focused == client)
-                        client->container->currently_focused = NULL;
+                        client->container->currently_focused = to_focus;
                 CIRCLEQ_REMOVE(&(client->container->clients), client, clients);
+                set_focus(c, to_focus);
         }
 
         printf("child of 0x%08x.\n", client->frame);
@@ -339,6 +343,9 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
         xcb_destroy_window(c, client->frame);
         xcb_flush(c);
         table_remove(byParent, client->frame);
+
+        cleanup_table(client->container->workspace);
+
         free(client);
 
         render_layout(c);
