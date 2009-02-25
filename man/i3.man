@@ -15,7 +15,24 @@ i3
 
 === INTRODUCTION
 
-TODO: write an introduction
+i3 was created because wmii, our favorite window manager at the time, didn’t
+provide some features we wanted (Xinerama done right, for example), had some
+bugs, didn’t progress since quite some time and wasn’t easy to hack at all
+(source code comments/documentation completely lacking). Still, we think the
+wmii developers and contributors did a great job. Thank you for inspiring us to
+create i3.
+
+Please be aware that i3 is primarily targeted at advanced users and developers.
+
+=== ABOUT THIS RELEASE
+
+What you are using is i3.alpha. That means, it is a preview release, not yet fully
+stable, may still contain bugs and the implementation of several behaviour is
+subject to change. However, it should provide you with a pretty good picture of
+how i3 will look in subsequent releases.
+
+Please, use i3 and report all the bugs/problems you encounter by sending an
+email to <michael+i3 at stapelberg.de>
 
 === TERMINOLOGY
 
@@ -56,6 +73,8 @@ two virtual screens.
 
 == KEYBINDINGS
 
+Here is a short overview of the default keybindings:
+
 h/j/k/l::
 Direction keys (left, down, up, right)
 
@@ -65,11 +84,91 @@ Focus window in <direction>.
 Mod1+Shift+<direction>::
 Move window to <direction>.
 
-Mod1+Ctrl+<direction>::
+Mod1+Control+<direction>::
 Snap window to <direction>.
 
 Mod1+<number>::
 Switch to workspace <number>.
+
+Mod1+f::
+Toggle fullscreen mode.
+
+Mod1+s::
+Enable stacking layout for the current container.
+
+Mod1+d::
+Enable default layout for the current container.
+
+== FILES
+
+=== i3.config
+
+When starting, i3 looks for i3.config in the current working directory and loads the
+configuration. At the moment, you can specify only the path to your favorite terminal
+emulator, the font and keybindings.
+
+At the moment, you have to bind to keycodes (find them out via xev(1)).
+
+.Sample configuration
+-------------------------------------------------------------
+terminal /usr/pkg/bin/urxvt
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1
+
+# Fullscreen
+bind Mod1+41 f
+# Stacking
+bind Mod1+43 s
+# Default
+bind Mod1+26 d
+# Focus
+bind Mod1+44 h
+bind Mod1+45 j
+bind Mod1+46 k
+bind Mod1+47 l
+# Snap
+bind Mod1+Control+44 sh
+bind Mod1+Control+45 sj
+bind Mod1+Control+46 sk
+bind Mod1+Control+47 sl
+# Move
+bind Mod1+Shift+44 mh
+bind Mod1+Shift+45 mj
+bind Mod1+Shift+46 mk
+bind Mod1+Shift+47 ml
+# Workspaces
+bind Mod1+10 1
+...
+-------------------------------------------------------------
+
+=== ~/.xsession
+
+This file is where you should configure your locales and start i3. It is run by
+your login manager (xdm, slim, gdm, …) as soon as you login.
+
+.Sample xsession
+-------------------------------------------------------------
+# Disable DPMS turning off the screen
+xset dpms force on
+xset s off
+# Disable bell
+xset -b
+
+# Enforce correct locales from the beginning
+unset LC_COLLATE
+export LC_CTYPE=de_DE.UTF-8
+export LC_TIME=de_DE.ISO8859-15
+export LC_NUMERIC=de_DE.ISO8859-15
+export LC_MONETARY=de_DE.ISO8859-15
+export LC_MESSAGES=C
+export LC_PAPER=de_DE.ISO8859-15
+export LC_NAME=de_DE.ISO8859-15
+export LC_ADDRESS=de_DE.ISO8859-15
+export LC_TELEPHONE=de_DE.ISO8859-15
+export LC_MEASUREMENT=de_DE.ISO8859-15
+export LC_IDENTIFICATION=de_DE.ISO8859-15
+
+exec /usr/bin/i3
+-------------------------------------------------------------
 
 == TODO
 
