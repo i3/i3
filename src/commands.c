@@ -298,6 +298,12 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
                         CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
                                 xcb_unmap_window(conn, client->frame);
 
+        /* Unmap the stack windows on the current workspace, if any */
+        struct Stack_Window *stack_win;
+        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
+                if (stack_win->container->workspace == c_ws)
+                        xcb_unmap_window(conn, stack_win->window);
+
         c_ws = &workspaces[workspace-1];
         current_row = c_ws->current_row;
         current_col = c_ws->current_col;
@@ -308,6 +314,11 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
                 for (int rows = 0; rows < c_ws->rows; rows++)
                         CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
                                 xcb_map_window(conn, client->frame);
+
+        /* Map all stack windows, if any */
+        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
+                if (stack_win->container->workspace == c_ws)
+                        xcb_map_window(conn, stack_win->window);
 
         /* Restore focus on the new workspace */
         if (CUR_CELL->currently_focused != NULL)
