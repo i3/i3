@@ -114,6 +114,16 @@ At the moment, you have to bind to keycodes (find them out via xev(1)).
 terminal /usr/pkg/bin/urxvt
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1
 
+# Beamer on/off
+bind Mod1+73 exec /home/michael/toggle_beamer.sh
+
+# Screen locking
+bind Mod1+68 exec /usr/bin/slock
+
+# Brightness
+bind Mod1+97 exec sudo sh -c "echo up > /proc/acpi/ibm/brightness"
+bind Mod1+103 exec sudo sh -c "echo down > /proc/acpi/ibm/brightness"
+
 # Fullscreen
 bind Mod1+41 f
 # Stacking
