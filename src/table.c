@@ -160,4 +160,11 @@ void cleanup_table(Workspace *workspace) {
                         shrink_table_rows(workspace);
                 } else rows++;
         }
+
+        /* Boundary checking for current_col and current_row */
+        if (current_col >= c_ws->cols)
+                current_col = c_ws->cols-1;
+
+        if (current_row >= c_ws->rows)
+                current_row = c_ws->rows-1;
 }
