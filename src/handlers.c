@@ -336,9 +336,19 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
                 Client *to_focus = CIRCLEQ_NEXT_OR_NULL(&(client->container->clients), client, clients);
                 if (to_focus == NULL)
                         to_focus = CIRCLEQ_PREV_OR_NULL(&(client->container->clients), client, clients);
+
+                /* Set focus in data structure to the next/previous window, if any (else NULL) */
                 if (client->container->currently_focused == client)
                         client->container->currently_focused = to_focus;
+
+                /* If this was the fullscreen client, we need to unset it */
+                if (client->container->workspace->fullscreen_client == client)
+                        client->container->workspace->fullscreen_client = NULL;
+
+                /* Remove the client from the list of clients */
                 CIRCLEQ_REMOVE(&(client->container->clients), client, clients);
+
+                /* Actually set focus, if there is a window which should get it */
                 if (to_focus != NULL)
                         set_focus(c, to_focus);
         }
