@@ -44,6 +44,9 @@
 #include "xinerama.h"
 #include "i3.h"
 
+/* This is the path to i3, copied from argv[0] when starting up */
+char *application_path;
+
 /* This is our connection to X11 for use with XKB */
 Display *xkbdpy;
 
@@ -278,6 +281,8 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_property_handlers_t prophs;
         xcb_window_t root;
         xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
+
+        application_path = sstrdup(argv[0]);
 
         /* Initialize the table data structures for each workspace */
         init_table();

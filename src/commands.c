@@ -347,6 +347,13 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
+        /* Is it <restart>? */
+        if (strncmp(command, "restart", strlen("restart")) == 0) {
+                printf("restarting \"%s\"...\n", application_path);
+                execl(application_path, application_path, NULL);
+                /* not reached */
+        }
+
         /* Is it 'f' for fullscreen? */
         if (command[0] == 'f') {
                 if (CUR_CELL->currently_focused == NULL)

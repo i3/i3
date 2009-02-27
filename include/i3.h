@@ -20,6 +20,7 @@
 
 #define NUM_ATOMS 9
 
+extern char *application_path;
 extern Display *xkbdpy;
 extern TAILQ_HEAD(bindings_head, Binding) bindings;
 extern SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins;
