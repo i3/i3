@@ -228,9 +228,13 @@ void render_container(xcb_connection_t *connection, Container *container) {
 
                 /* Check if we need to reconfigure our stack title window */
                 if ((stack_win->width != (stack_win->width = container->width)) |
-                    (stack_win->height != (stack_win->height = decoration_height * num_clients)))
+                    (stack_win->height != (stack_win->height = decoration_height * num_clients))) {
                         xcb_configure_window(connection, stack_win->window,
                                 XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, &(stack_win->width));
+
+                        uint32_t values[] = { XCB_STACK_MODE_ABOVE };
+                        xcb_configure_window(connection, stack_win->window, XCB_CONFIG_WINDOW_STACK_MODE, values);
+                }
 
                 /* Reconfigure the currently focused client, if necessary. It is the only visible one */
                 client = container->currently_focused;
