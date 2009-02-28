@@ -204,12 +204,17 @@ void render_container(xcb_connection_t *connection, Container *container) {
                                 reposition_client(connection, client);
                         }
 
+                        printf("before client->rect.width = %d, client->rect.height = %d\n", client->rect.width,
+                                        client->rect.height);
                         /* TODO: vertical default layout */
                         if (client->force_reconfigure |
                             (client->rect.width != (client->rect.width = container->width)) |
                             (client->rect.height != (client->rect.height = container->height / num_clients))) {
                                 resize_client(connection, client);
-                        }
+                        } else printf("no reconfigure necessary\n");
+                        printf("after client->rect.width = %d, client->rect.height = %d\n", client->rect.width,
+                                        client->rect.height);
+
 
                         if (client->force_reconfigure)
                                 client->force_reconfigure = false;
