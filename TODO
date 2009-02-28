@@ -1,5 +1,8 @@
 TODO list, in order of importance:
 
+ * Implement moving windows to other workspaces (see src/command.c)
+ * When at the edge of a screen and wanting to change into the direction of the edge,
+   i3 should switch to the next screen (if any) in this direction.
  * document stuff!
  * more documentation!
  * debian package

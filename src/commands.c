@@ -386,15 +386,16 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 printf("Invalid command (\"%s\")\n", command);
                 return;
         }
-        if (*rest == 'm' || *rest == 's') {
-                action = (*rest == 'm' ? ACTION_MOVE : ACTION_SNAP);
-                rest++;
-        }
 
         if (*rest == '\0') {
                 /* No rest? This was a tag number, not a times specification */
                 show_workspace(conn, times);
                 return;
+        }
+
+        if (*rest == 'm' || *rest == 's') {
+                action = (*rest == 'm' ? ACTION_MOVE : ACTION_SNAP);
+                rest++;
         }
 
         /* Now perform action to <where> */
