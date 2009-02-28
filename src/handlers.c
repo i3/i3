@@ -385,7 +385,9 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         strncpy(client->name, xcb_get_property_value(prop), client->name_len);
         printf("rename to \"%.*s\".\n", client->name_len, client->name);
 
-        decorate_window(conn, client, client->frame, client->titlegc, 0);
+        if (client->container->mode == MODE_STACK)
+                render_container(conn, client->container);
+        else decorate_window(conn, client, client->frame, client->titlegc, 0);
         xcb_flush(conn);
 
         return 1;
