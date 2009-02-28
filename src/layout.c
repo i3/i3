@@ -232,27 +232,31 @@ void render_container(xcb_connection_t *connection, Container *container) {
                         xcb_configure_window(connection, stack_win->window,
                                 XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, &(stack_win->width));
 
-                /* All clients are repositioned */
-                CIRCLEQ_FOREACH(client, &(container->clients), clients) {
-                        /* Check if we changed client->x or client->y by updating it.
-                         * Note the bitwise OR instead of logical OR to force evaluation of both statements */
-                        if (client->force_reconfigure |
-                            (client->rect.x != (client->rect.x = container->x)) |
-                            (client->rect.y != (client->rect.y = container->y + (decoration_height * num_clients))))
-                                reposition_client(connection, client);
+                /* Reconfigure the currently focused client, if necessary. It is the only visible one */
+                client = container->currently_focused;
 
-                        if (client->force_reconfigure |
-                            (client->rect.width != (client->rect.width = container->width)) |
-                            (client->rect.height !=
-                             (client->rect.height = container->height - (decoration_height * num_clients))))
-                                resize_client(connection, client);
+                /* Check if we changed client->x or client->y by updating it.
+                 * Note the bitwise OR instead of logical OR to force evaluation of both statements */
+                if (client->force_reconfigure |
+                    (client->rect.x != (client->rect.x = container->x)) |
+                    (client->rect.y != (client->rect.y = container->y + (decoration_height * num_clients))))
+                        reposition_client(connection, client);
 
-                        client->force_reconfigure = false;
+                if (client->force_reconfigure |
+                    (client->rect.width != (client->rect.width = container->width)) |
+                    (client->rect.height !=
+                     (client->rect.height = container->height - (decoration_height * num_clients))))
+                        resize_client(connection, client);
 
+                client->force_reconfigure = false;
+
+                uint32_t values[] = { XCB_STACK_MODE_ABOVE };
+                xcb_configure_window(connection, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
+
+                /* Render the decorations of all clients */
+                CIRCLEQ_FOREACH(client, &(container->clients), clients)
                         decorate_window(connection, client, stack_win->window, stack_win->gc,
-                                        current_client * decoration_height);
-                        current_client++;
-                }
+                                        current_client++ * decoration_height);
         }
 }
 

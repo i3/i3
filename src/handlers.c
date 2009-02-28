@@ -110,11 +110,6 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
                 return 1;
         }
 
-        /* When in stacking, enter notifications on the parent are ignored. Focus will be changed via keyboard only. */
-        if (client->container->mode == MODE_STACK &&
-            client == table_get(byParent, event->event))
-                return 1;
-
         set_focus(conn, client);
 
         return 1;
