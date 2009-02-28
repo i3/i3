@@ -87,12 +87,12 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *c, xcb_win
                 wa.u.override_redirect = attr->override_redirect;
         }
 
-        /* Check if the window is already managed */
-        if (!wa.u.override_redirect && table_get(byChild, window))
-                goto out;
-
         /* Don’t manage clients with the override_redirect flag */
         if (wa.u.override_redirect)
+                goto out;
+
+        /* Check if the window is already managed */
+        if (table_get(byChild, window))
                 goto out;
 
         /* Get the initial geometry (position, size, …) */
@@ -133,12 +133,13 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
 
         Client *new = table_get(byChild, child);
-        if (new == NULL) {
-                /* TODO: When does this happen for existing clients? Is that a bug? */
-                printf("oh, it's new\n");
-                new = calloc(sizeof(Client), 1);
-                new->force_reconfigure = true;
-        }
+
+        /* Events for already managed windows should already be filtered in manage_window() */
+        assert(new == NULL);
+
+        printf("reparenting new client\n");
+        new = calloc(sizeof(Client), 1);
+        new->force_reconfigure = true;
         uint32_t mask = 0;
         uint32_t values[3];
 
@@ -369,6 +370,10 @@ int main(int argc, char *argv[], char *env[]) {
         /* Unmap notify = window disappeared. When sent from a client, we don’t manage
            it any longer. Usually, the client destroys the window shortly afterwards. */
         xcb_event_set_unmap_notify_handler(&evenths, handle_unmap_notify_event, 0);
+
+        /* Configure notify = window’s configuration (geometry, stacking, …). We only need
+           it to set up ignore the following enter_notify events */
+        xcb_event_set_configure_notify_handler(&evenths, handle_configure_event, 0);
 
         /* Client message = client changed its properties (EWMH) */
         /* TODO: can’t we do this via property handlers? */

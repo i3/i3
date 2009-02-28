@@ -322,7 +322,7 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
 
         /* Restore focus on the new workspace */
         if (CUR_CELL->currently_focused != NULL)
-                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, CUR_CELL->currently_focused->child, XCB_CURRENT_TIME);
+                set_focus(conn, CUR_CELL->currently_focused);
         else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
 
         //xcb_ungrab_server(conn);

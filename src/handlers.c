@@ -28,6 +28,11 @@
 #include "util.h"
 #include "xinerama.h"
 
+/* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
+   since it’d trigger an infinite loop of switching between the different windows when
+   changing workspaces */
+int ignore_notify_event = -1;
+
 /*
  * Due to bindings like Mode_switch + <a>, we need to bind some keys in XCB_GRAB_MODE_SYNC.
  * Therefore, we just replay all key presses.
@@ -89,7 +94,13 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
  *
  */
 int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_event_t *event) {
-        printf("enter_notify for %08x\n", event->event);
+        printf("enter_notify for %08x, serial %d\n", event->event, event->sequence);
+        /* Some events are not interesting, because they were not generated actively by the
+           user, but be reconfiguration of windows */
+        if (event->sequence == ignore_notify_event) {
+                printf("Ignoring, because of previous map\n");
+                return 1;
+        }
 
         /* This was either a focus for a client’s parent (= titlebar)… */
         Client *client = table_get(byParent, event->event);
@@ -299,8 +310,20 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
 int handle_map_notify_event(void *prophs, xcb_connection_t *conn, xcb_map_notify_event_t *event) {
         window_attributes_t wa = { TAG_VALUE };
         wa.u.override_redirect = event->override_redirect;
-        printf("MapNotify for 0x%08x.\n", event->window);
+        printf("MapNotify for 0x%08x, serial is %d.\n", event->window, event->sequence);
+        ignore_notify_event = event->sequence;
         manage_window(prophs, conn, event->window, wa);
+        return 1;
+}
+
+/*
+ * Configuration notifies are only handled because we need to set up ignore for the following
+ * enter notify events
+ *
+ */
+int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event) {
+        printf("handle_configure_event\n");
+        ignore_notify_event = event->sequence;
         return 1;
 }
 
@@ -311,6 +334,8 @@ int handle_map_notify_event(void *prophs, xcb_connection_t *conn, xcb_map_notify
  */
 int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_event_t *e) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(c)).data->root;
+
+        ignore_notify_event = e->sequence;
 
         Client *client = table_get(byChild, e->window);
         /* First, we need to check if the client is awaiting an unmap-request which

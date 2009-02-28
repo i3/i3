@@ -140,18 +140,21 @@ void set_focus(xcb_connection_t *conn, Client *client) {
         current_col = client->container->col;
         current_row = client->container->row;
 
+        printf("set_focus(frame %08x, child %08x)\n", client->frame, client->child);
         /* Set focus to the entered window, and flush xcb buffer immediately */
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
         //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);
-        /* Update last/current client’s titlebar */
-        if (old_client != NULL)
-                decorate_window(conn, old_client, old_client->frame, old_client->titlegc, 0);
-        decorate_window(conn, client, client->frame, client->titlegc, 0);
 
         /* If we’re in stacking mode, we render the container to update changes in the title
            bars and to raise the focused client */
         if (client->container->mode == MODE_STACK)
                 render_container(conn, client->container);
+        else {
+                /* Update last/current client’s titlebar */
+                if (old_client != NULL)
+                        decorate_window(conn, old_client, old_client->frame, old_client->titlegc, 0);
+                decorate_window(conn, client, client->frame, client->titlegc, 0);
+        }
 
         xcb_flush(conn);
 }
