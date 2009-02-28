@@ -282,7 +282,8 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_window_t root;
         xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
 
-        if (!isatty(stdout))
+        /* Disable output buffering to make redirects in .xsession actually useful for debugging */
+        if (!isatty(fileno(stdout)))
                 setbuf(stdout, NULL);
 
         application_path = sstrdup(argv[0]);
