@@ -359,7 +359,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
         xcb_flush(c);
         table_remove(byParent, client->frame);
 
-        cleanup_table(client->container->workspace);
+        cleanup_table(c, client->container->workspace);
 
         free(client);
 

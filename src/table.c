@@ -22,6 +22,7 @@
 
 #include "data.h"
 #include "table.h"
+#include "util.h"
 
 int current_workspace = 0;
 Workspace workspaces[10];
@@ -128,7 +129,7 @@ static void move_rows_from(Workspace *workspace, int rows) {
  * Shrinks the table by "compacting" it, that is, removing completely empty rows/columns
  *
  */
-void cleanup_table(Workspace *workspace) {
+void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
         /* Check for empty columns */
         for (int cols = 0; cols < workspace->cols;) {
                 bool completely_empty = true;
@@ -167,4 +168,7 @@ void cleanup_table(Workspace *workspace) {
 
         if (current_row >= c_ws->rows)
                 current_row = c_ws->rows-1;
+
+        if (CUR_CELL->currently_focused != NULL)
+                set_focus(conn, CUR_CELL->currently_focused);
 }

@@ -176,7 +176,7 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
         new->currently_focused = current_client;
 
         /* delete all empty columns/rows */
-        cleanup_table(container->workspace);
+        cleanup_table(connection, container->workspace);
         render_layout(connection);
 
         set_focus(connection, current_client);
