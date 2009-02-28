@@ -193,23 +193,25 @@ void render_container(xcb_connection_t *connection, Container *container) {
                 num_clients++;
 
         if (container->mode == MODE_DEFAULT) {
+                /* This macro copies the old value of the given variable, changes the variable to contain
+                   th new one and returns true if it changed */
+                #define HAS_CHANGED(value, new) (old_value = value, old_value != (value = new))
+
                 printf("got %d clients in this default container.\n", num_clients);
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* Check if we changed client->x or client->y by updating it.
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
+                        int old_value;
                         if (client->force_reconfigure |
-                            (client->rect.x != (client->rect.x = container->x)) |
-                            (client->rect.y != (client->rect.y = container->y +
-                                          (container->height / num_clients) * current_client))) {
+                            HAS_CHANGED(client->rect.x, container->x) |
+                            HAS_CHANGED(client->rect.y, container->y +
+                                        (container->height / num_clients) * current_client))
                                 reposition_client(connection, client);
-                        }
 
-                        printf("before client->rect.width = %d, client->rect.height = %d\n", client->rect.width,
-                                        client->rect.height);
                         /* TODO: vertical default layout */
                         if (client->force_reconfigure |
-                            (client->rect.width != (client->rect.width = container->width)) |
-                            (client->rect.height != (client->rect.height = container->height / num_clients))) {
+                            HAS_CHANGED(client->rect.width, container->width) |
+                            HAS_CHANGED(client->rect.height, container->height / num_clients)) {
                                 resize_client(connection, client);
                         } else printf("no reconfigure necessary\n");
                         printf("after client->rect.width = %d, client->rect.height = %d\n", client->rect.width,
