@@ -256,12 +256,16 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                 printf("child itself will be at %dx%d with size %dx%d\n",
                                 values[0], values[1], values[2], values[3]);
 
+                xcb_configure_window(conn, client->frame, mask, values);
+
+                /* Child’s coordinates are relative to the parent (=frame) */
+                values[0] = 0;
+                values[1] = 0;
+                xcb_configure_window(conn, client->child, mask, values);
+
                 /* Raise the window */
                 values[0] = XCB_STACK_MODE_ABOVE;
                 xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
-
-                xcb_configure_window(conn, client->frame, mask, values);
-                xcb_configure_window(conn, client->child, mask, values);
 
                 xcb_flush(conn);
         } else {
