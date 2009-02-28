@@ -221,6 +221,11 @@ void render_container(xcb_connection_t *connection, Container *container) {
                 int decoration_height = (font->height + 2 + 2);
                 struct Stack_Window *stack_win = &(container->stack_win);
 
+                /* Check if we need to remap our stack title window, it gets unmapped when the container
+                   is empty in src/handlers.c:unmap_notify() */
+                if (stack_win->height == 0)
+                        xcb_map_window(connection, stack_win->window);
+
                 /* Check if we need to reconfigure our stack title window */
                 if ((stack_win->width != (stack_win->width = container->width)) |
                     (stack_win->height != (stack_win->height = decoration_height * num_clients)))

@@ -334,20 +334,34 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
         }
 
         if (client->container != NULL) {
-                Client *to_focus = CIRCLEQ_NEXT_OR_NULL(&(client->container->clients), client, clients);
-                if (to_focus == NULL)
-                        to_focus = CIRCLEQ_PREV_OR_NULL(&(client->container->clients), client, clients);
+                Client *to_focus = NULL;
+                Container *con = client->container;
 
-                /* Set focus in data structure to the next/previous window, if any (else NULL) */
-                if (client->container->currently_focused == client)
-                        client->container->currently_focused = to_focus;
+                /* If the client which is being unmapped was the currently active, we need to find
+                   the next possible window to focus in this container */
+                if (con->currently_focused == client) {
+                        to_focus = CIRCLEQ_NEXT_OR_NULL(&(con->clients), client, clients);
+                        if (to_focus == NULL)
+                                to_focus = CIRCLEQ_PREV_OR_NULL(&(con->clients), client, clients);
+
+                        /* Set focus in data structure to the next/previous window, if any (else NULL) */
+                        con->currently_focused = to_focus;
+                }
 
                 /* If this was the fullscreen client, we need to unset it */
-                if (client->container->workspace->fullscreen_client == client)
-                        client->container->workspace->fullscreen_client = NULL;
+                if (con->workspace->fullscreen_client == client)
+                        con->workspace->fullscreen_client = NULL;
+
+                /* If the container will be empty now and is in stacking mode, we need to
+                   correctly resize the stack_win */
+                if (con->currently_focused == NULL && con->mode == MODE_STACK) {
+                        struct Stack_Window *stack_win = &(con->stack_win);
+                        stack_win->height = 0;
+                        xcb_unmap_window(c, stack_win->window);
+                }
 
                 /* Remove the client from the list of clients */
-                CIRCLEQ_REMOVE(&(client->container->clients), client, clients);
+                CIRCLEQ_REMOVE(&(con->clients), client, clients);
 
                 /* Actually set focus, if there is a window which should get it */
                 if (to_focus != NULL)
