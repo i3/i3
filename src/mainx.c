@@ -119,7 +119,7 @@ out:
  * reparent_window() gets called when a new window was opened and becomes a child of the root
  * window, or it gets called by us when we manage the already existing windows at startup.
  *
- * Essentially, this is the point, where we take over control.
+ * Essentially, this is the point where we take over control.
  *
  */
 void reparent_window(xcb_connection_t *conn, xcb_window_t child,
@@ -143,6 +143,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         uint32_t values[3];
 
         /* Update the data structures */
+        Client *old_focused = CUR_CELL->currently_focused;
         CUR_CELL->currently_focused = new;
         new->container = CUR_CELL;
 
@@ -238,8 +239,13 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         }
 
         /* Insert into the currently active container, if it’s not a dock window */
-        if (!new->dock)
-                CIRCLEQ_INSERT_TAIL(&(CUR_CELL->clients), new, clients);
+        if (!new->dock) {
+                /* Insert after the old active client, if existing. If it does not exist, the
+                   container is empty and it does not matter, where we insert it */
+                if (old_focused != NULL)
+                        CIRCLEQ_INSERT_AFTER(&(CUR_CELL->clients), old_focused, new, clients);
+                else CIRCLEQ_INSERT_TAIL(&(CUR_CELL->clients), new, clients);
+        }
 
         render_layout(conn);
 }
