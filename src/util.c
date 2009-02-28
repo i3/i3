@@ -149,9 +149,13 @@ void set_focus(xcb_connection_t *conn, Client *client) {
         decorate_window(conn, client, client->frame, client->titlegc, 0);
 
         /* If we’re in stacking mode, we render the container to update changes in the title
-           bars and to raise the focused client */
-        if (client->container->mode == MODE_STACK)
+           bars and raise the focused client */
+        if (client->container->mode == MODE_STACK) {
                 render_container(conn, client->container);
+                uint32_t values[] = { XCB_STACK_MODE_ABOVE };
+                xcb_configure_window(conn, client->frame,
+                                     XCB_CONFIG_WINDOW_STACK_MODE, values);
+        }
 
         xcb_flush(conn);
 }
@@ -189,6 +193,11 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
                 stack_win->container = container;
 
                 SLIST_INSERT_HEAD(&stack_wins, stack_win, stack_windows);
+                /* Raise the focused window */
+                values[0] = XCB_STACK_MODE_ABOVE;
+                xcb_configure_window(conn, container->currently_focused->frame,
+                                     XCB_CONFIG_WINDOW_STACK_MODE, values);
+
         } else {
                 if (container->mode == MODE_STACK) {
                         /* When going out of stacking mode, we need to close the window */

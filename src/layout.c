@@ -253,11 +253,6 @@ void render_container(xcb_connection_t *connection, Container *container) {
                                         current_client * decoration_height);
                         current_client++;
                 }
-
-                /* Raise the focused window */
-                uint32_t values[] = { XCB_STACK_MODE_ABOVE };
-                xcb_configure_window(connection, container->currently_focused->frame,
-                                     XCB_CONFIG_WINDOW_STACK_MODE, values);
         }
 }
 

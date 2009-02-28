@@ -282,6 +282,9 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_window_t root;
         xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
 
+        if (!isatty(stdout))
+                setbuf(stdout, NULL);
+
         application_path = sstrdup(argv[0]);
 
         /* Initialize the table data structures for each workspace */
