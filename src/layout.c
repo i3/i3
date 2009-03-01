@@ -108,7 +108,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
            - Draw the window’s title
          */
 
-        /* Draw a green rectangle around the window */
+        /* Draw a rectangle in background color around the window */
         xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, background_color);
 
         xcb_rectangle_t rect = {0, offset, client->rect.width, offset + client->rect.height};
@@ -165,17 +165,26 @@ static void resize_client(xcb_connection_t *connection, Client *client) {
                         XCB_CONFIG_WINDOW_WIDTH |
                         XCB_CONFIG_WINDOW_HEIGHT;
         Rect rect;
-        if (client->titlebar_position == TITLEBAR_OFF ||
-            client->container->mode == MODE_STACK) {
-                rect.x = 0;
-                rect.y = 0;
-                rect.width = client->rect.width;
-                rect.height = client->rect.height;
-        } else {
-                rect.x = 2;
-                rect.y = font->height + 2 + 2;
-                rect.width = client->rect.width - (2 + 2);
-                rect.height = client->rect.height - ((font->height + 2 + 2) + 2);
+        switch (client->container->mode) {
+                case MODE_STACK:
+                        rect.x = 2;
+                        rect.y = 0;
+                        rect.width = client->rect.width - (2 + 2);
+                        rect.height = client->rect.height - 2;
+                        break;
+                default:
+                        if (client->titlebar_position == TITLEBAR_OFF) {
+                                rect.x = 0;
+                                rect.y = 0;
+                                rect.width = client->rect.width;
+                                rect.height = client->rect.height;
+                        } else {
+                                rect.x = 2;
+                                rect.y = font->height + 2 + 2;
+                                rect.width = client->rect.width - (2 + 2);
+                                rect.height = client->rect.height - ((font->height + 2 + 2) + 2);
+                        }
+                        break;
         }
 
         printf("child will be at %dx%d with size %dx%d\n", rect.x, rect.y, rect.width, rect.height);

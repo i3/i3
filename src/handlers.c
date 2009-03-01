@@ -454,6 +454,15 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
         printf("handle_expose_event()\n");
         if (client->container->mode != MODE_STACK)
                 decorate_window(conn, client, client->frame, client->titlegc, 0);
+        else {
+                xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND,
+                        get_colorpixel(conn, client, client->frame, "#285577"));
+
+                xcb_rectangle_t rect = {0, 0, client->rect.width, client->rect.height};
+                xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &rect);
+
+                xcb_flush(conn);
+        }
         return 1;
 }
 
