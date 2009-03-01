@@ -128,7 +128,7 @@ struct Workspace {
         int cols;
         int rows;
 
-        /* These are stored here just while this workspace is _not_ shown (see show_workspace()) */
+        /* These are stored here only while this workspace is _not_ shown (see show_workspace()) */
         int current_row;
         int current_col;
 
@@ -162,9 +162,9 @@ struct Binding {
 };
 
 /*
- * We need to save the height of a font because it is required for each drawing of
- * text but relatively hard to get. As soon as a new font needs to be loaded, a
- * Font-entry will be filled for later use.
+ * Data structure for cached font information:
+ * - font id in X11 (load it once)
+ * - font height (multiple calls needed to get it)
  *
  */
 struct Font {
@@ -206,6 +206,7 @@ struct Client {
         /* fullscreen is pretty obvious */
         bool fullscreen;
 
+        /* Ensure TITLEBAR_TOP maps to 0 because we use calloc for initialization later */
         enum { TITLEBAR_TOP = 0, TITLEBAR_LEFT, TITLEBAR_RIGHT, TITLEBAR_BOTTOM, TITLEBAR_OFF } titlebar_position;
 
         /* If a client is set as a dock, it is placed at the very bottom of the screen and its
@@ -227,6 +228,8 @@ struct Client {
         xcb_window_t child;             /* The client’s window */
 
         /* Cache of colorpixels for this client */
+        /* TODO: Couldn’t we move them outside here, as they should only depend on the
+           root window? */
         SLIST_HEAD(colorpixel_head, Colorpixel) colorpixels;
 
         /* The following entry provides the necessary list pointers to use Client with LIST_* macros */
@@ -253,6 +256,9 @@ struct Container {
         /* Width/Height of the container. Changeable by the user */
         int width;
         int height;
+        /* width_factor and height_factor contain the amount of space (percentage) a window
+           has of all the space which is available for resized windows. This ensures that
+           non-resized windows (newly opened, for example) have the same size as always */
         float width_factor;
         float height_factor;
 
@@ -263,7 +269,7 @@ struct Container {
         Workspace *workspace;
 
         /* Ensure MODE_DEFAULT maps to 0 because we use calloc for initialization later */
-        enum { MODE_DEFAULT = 0, MODE_STACK = 1 } mode;
+        enum { MODE_DEFAULT = 0, MODE_STACK } mode;
         CIRCLEQ_HEAD(client_head, Client) clients;
 };
 

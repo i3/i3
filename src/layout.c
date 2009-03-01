@@ -28,7 +28,7 @@
    th new one and returns true if it changed */
 #define HAS_CHANGED(value, new) (old_value = value, old_value != (value = new))
 
-int old_value;
+static int old_value;
 
 /*
  * Gets the unoccupied space (= space which is available for windows which were resized by the user)
