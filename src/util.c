@@ -165,6 +165,10 @@ void set_focus(xcb_connection_t *conn, Client *client) {
  */
 void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) {
         if (mode == MODE_STACK) {
+                /* When we’re already in stacking mode, nothing has to be done */
+                if (container->mode == MODE_STACK)
+                        return;
+
                 /* When entering stacking mode, we need to open a window on which we can draw the
                    title bars of the clients, it has height 1 because we don’t bother here with
                    calculating the correct height - it will be adjusted when rendering anyways. */
