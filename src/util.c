@@ -274,13 +274,14 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                 values[0] = XCB_STACK_MODE_ABOVE;
                 xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
 
-                xcb_flush(conn);
         } else {
                 printf("leaving fullscreen mode\n");
                 /* Because the coordinates of the window haven’t changed, it would not be
                    re-configured if we don’t set the following flag */
                 client->force_reconfigure = true;
-                /* We left fullscreen mode, redraw the layout */
-                render_layout(conn);
+                /* We left fullscreen mode, redraw the container */
+                render_container(conn, client->container);
         }
+
+        xcb_flush(conn);
 }

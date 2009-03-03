@@ -331,7 +331,7 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
                 return 1;
         }
 
-        if (client->container->workspace->fullscreen_client == client) {
+        if (client->fullscreen) {
                 printf("client in fullscreen, not touching\n");
                 return 1;
         }
@@ -393,7 +393,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *c, xcb_unmap_notify_
                 }
 
                 /* If this was the fullscreen client, we need to unset it */
-                if (con->workspace->fullscreen_client == client)
+                if (client->fullscreen)
                         con->workspace->fullscreen_client = NULL;
 
                 /* If the container will be empty now and is in stacking mode, we need to
