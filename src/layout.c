@@ -309,8 +309,10 @@ void render_container(xcb_connection_t *connection, Container *container) {
 
                 client->force_reconfigure = false;
 
-                uint32_t values[] = { XCB_STACK_MODE_ABOVE };
-                xcb_configure_window(connection, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
+                if (container->workspace->fullscreen_client == NULL) {
+                        uint32_t values[] = { XCB_STACK_MODE_ABOVE };
+                        xcb_configure_window(connection, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
+                }
 
                 /* Render the decorations of all clients */
                 CIRCLEQ_FOREACH(client, &(container->clients), clients)
