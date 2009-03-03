@@ -26,10 +26,14 @@
 #include "layout.h"
 
 /* This macro copies the old value of the given variable, changes the variable to contain
-   th new one and returns true if it changed */
-#define HAS_CHANGED(value, new) (old_value = value, old_value != (value = new))
+   the new one and returns true if it changed.
+   Note that when combining multiple HAS_CHANGED statements, you need to use different variables.
+   If someone by chance knows why this is necessary (order of expressions in gcc?) and/or can
+   come up with a fix, please mail me. */
+#define HAS_CHANGED(temp, value, new) (temp = value, temp != (value = new))
 
-static int old_value;
+static int old_value_1;
+static int old_value_2;
 
 /*
  * Gets the unoccupied space (= space which is available for windows which were resized by the user)
@@ -253,15 +257,15 @@ void render_container(xcb_connection_t *connection, Container *container) {
                         /* Check if we changed client->x or client->y by updating it.
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |
-                            HAS_CHANGED(client->rect.x, container->x) |
-                            HAS_CHANGED(client->rect.y, container->y +
+                            HAS_CHANGED(old_value_1, client->rect.x, container->x) |
+                            HAS_CHANGED(old_value_2, client->rect.y, container->y +
                                         (container->height / num_clients) * current_client))
                                 reposition_client(connection, client);
 
                         /* TODO: vertical default layout */
                         if (client->force_reconfigure |
-                            HAS_CHANGED(client->rect.width, container->width) |
-                            HAS_CHANGED(client->rect.height, container->height / num_clients))
+                            HAS_CHANGED(old_value_1, client->rect.width, container->width) |
+                            HAS_CHANGED(old_value_2, client->rect.height, container->height / num_clients))
                                 resize_client(connection, client);
 
                         client->force_reconfigure = false;
@@ -279,8 +283,8 @@ void render_container(xcb_connection_t *connection, Container *container) {
                         xcb_map_window(connection, stack_win->window);
 
                 /* Check if we need to reconfigure our stack title window */
-                if (HAS_CHANGED(stack_win->width, container->width) |
-                    HAS_CHANGED(stack_win->height, decoration_height * num_clients)) {
+                if (HAS_CHANGED(old_value_1, stack_win->width, container->width) |
+                    HAS_CHANGED(old_value_2, stack_win->height, decoration_height * num_clients)) {
                         xcb_configure_window(connection, stack_win->window,
                                 XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, &(stack_win->width));
 
@@ -294,13 +298,13 @@ void render_container(xcb_connection_t *connection, Container *container) {
                 /* Check if we changed client->x or client->y by updating it.
                  * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                 if (client->force_reconfigure |
-                    HAS_CHANGED(client->rect.x, container->x) |
-                    HAS_CHANGED(client->rect.y, container->y + (decoration_height * num_clients)))
+                    HAS_CHANGED(old_value_1, client->rect.x, container->x) |
+                    HAS_CHANGED(old_value_2, client->rect.y, container->y + (decoration_height * num_clients)))
                         reposition_client(connection, client);
 
                 if (client->force_reconfigure |
-                    HAS_CHANGED(client->rect.width, container->width) |
-                    HAS_CHANGED(client->rect.height, container->height - (decoration_height * num_clients)))
+                    HAS_CHANGED(old_value_1, client->rect.width, container->width) |
+                    HAS_CHANGED(old_value_2, client->rect.height, container->height - (decoration_height * num_clients)))
                         resize_client(connection, client);
 
                 client->force_reconfigure = false;
@@ -319,13 +323,13 @@ static void render_bars(xcb_connection_t *connection, Workspace *r_ws, int width
         Client *client;
         SLIST_FOREACH(client, &(r_ws->dock_clients), dock_clients) {
                 if (client->force_reconfigure |
-                    HAS_CHANGED(client->rect.x, 0) |
-                    HAS_CHANGED(client->rect.y, height))
+                    HAS_CHANGED(old_value_1, client->rect.x, 0) |
+                    HAS_CHANGED(old_value_2, client->rect.y, height))
                         reposition_client(connection, client);
 
                 if (client->force_reconfigure |
-                    HAS_CHANGED(client->rect.width, width) |
-                    HAS_CHANGED(client->rect.height, client->desired_height))
+                    HAS_CHANGED(old_value_1, client->rect.width, width) |
+                    HAS_CHANGED(old_value_2, client->rect.height, client->desired_height))
                         resize_client(connection, client);
 
                 client->force_reconfigure = false;

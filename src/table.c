@@ -110,6 +110,7 @@ static void move_columns_from(Workspace *workspace, int cols) {
 
                         printf("moving cols = %d to cols -1 = %d\n", cols, cols-1);
                         workspace->table[cols-1][rows] = workspace->table[cols][rows];
+                        workspace->table[cols-1][rows]->col--;
                         workspace->table[cols][rows] = NULL;
                 }
 }
@@ -121,6 +122,7 @@ static void move_rows_from(Workspace *workspace, int rows) {
 
                         printf("moving rows = %d to rows -1 = %d\n", rows, rows - 1);
                         workspace->table[cols][rows-1] = workspace->table[cols][rows];
+                        workspace->table[cols][rows-1]->row--;
                         workspace->table[cols][rows] = NULL;
                 }
 }
@@ -130,35 +132,43 @@ static void move_rows_from(Workspace *workspace, int rows) {
  *
  */
 void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
-        /* Check for empty columns */
-        for (int cols = 0; cols < workspace->cols;) {
+        printf("cleanup_table()\n");
+
+        /* Check for empty columns if we got more than one column */
+        for (int cols = 0; (workspace->cols > 1) && (cols < workspace->cols);) {
                 bool completely_empty = true;
                 for (int rows = 0; rows < workspace->rows; rows++)
                         if (workspace->table[cols][rows]->currently_focused != NULL) {
                                 completely_empty = false;
                                 break;
                         }
-                if (completely_empty && cols > 0) {
+                if (completely_empty) {
                         printf("Removing completely empty column %d\n", cols);
                         if (cols < (workspace->cols - 1))
                                 move_columns_from(workspace, cols+1);
                         shrink_table_cols(workspace);
+
+                        if (workspace->current_col >= workspace->cols)
+                                workspace->current_col = workspace->cols - 1;
                 } else cols++;
         }
 
-        /* Check for empty rows */
-        for (int rows = 0; rows < workspace->rows;) {
+        /* Check for empty rows if we got more than one row*/
+        for (int rows = 0; (workspace->rows > 1) && (rows < workspace->rows);) {
                 bool completely_empty = true;
                 for (int cols = 0; cols < workspace->cols; cols++)
                         if (workspace->table[cols][rows]->currently_focused != NULL) {
                                 completely_empty = false;
                                 break;
                         }
-                if (completely_empty && rows > 0) {
+                if (completely_empty) {
                         printf("Removing completely empty row %d\n", rows);
                         if (rows < (workspace->rows - 1))
                                 move_rows_from(workspace, rows+1);
                         shrink_table_rows(workspace);
+
+                        if (workspace->current_row >= workspace->rows)
+                                workspace->current_row = workspace->rows - 1;
                 } else rows++;
         }
 
