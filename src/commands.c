@@ -48,6 +48,10 @@ static bool focus_window_in_container(xcb_connection_t *connection, Container *c
 
 static void focus_window(xcb_connection_t *connection, direction_t direction) {
         printf("focusing direction %d\n", direction);
+
+        int new_row = current_row,
+            new_col = current_col;
+
         /* TODO: for horizontal default layout, this has to be expanded to LEFT/RIGHT */
         if (direction == D_UP || direction == D_DOWN) {
                 /* Let’s see if we can perform up/down focus in the current container */
@@ -60,14 +64,14 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
                         return;
 
                 if (direction == D_DOWN && cell_exists(current_col, current_row+1))
-                        current_row++;
+                        new_row++;
                 else if (direction == D_UP && cell_exists(current_col, current_row-1))
-                        current_row--;
+                        new_row--;
         } else if (direction == D_LEFT || direction == D_RIGHT) {
                 if (direction == D_RIGHT && cell_exists(current_col+1, current_row))
-                        current_col++;
+                        new_col++;
                 else if (direction == D_LEFT && cell_exists(current_col-1, current_row))
-                        current_col--;
+                        new_col--;
                 else {
                         printf("nah, not possible\n");
                         return;
@@ -77,8 +81,8 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
                 return;
         }
 
-        if (CUR_CELL->currently_focused != NULL)
-                set_focus(connection, CUR_CELL->currently_focused);
+        if (c_ws->table[new_col][new_row]->currently_focused != NULL)
+                set_focus(connection, c_ws->table[new_col][new_row]->currently_focused);
 }
 
 /*

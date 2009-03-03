@@ -127,6 +127,9 @@ void set_focus(xcb_connection_t *conn, Client *client) {
         if (client->dock)
                 return;
 
+        /* Store the old client */
+        Client *old_client = CUR_CELL->currently_focused;
+
         /* TODO: check if the focus needs to be changed at all */
         /* Store current_row/current_col */
         c_ws->current_row = current_row;
@@ -134,7 +137,6 @@ void set_focus(xcb_connection_t *conn, Client *client) {
         c_ws = client->container->workspace;
 
         /* Update container */
-        Client *old_client = client->container->currently_focused;
         client->container->currently_focused = client;
 
         current_col = client->container->col;
@@ -145,18 +147,13 @@ void set_focus(xcb_connection_t *conn, Client *client) {
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
         //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);
 
-        /* If we’re in stacking mode, we render the container to update changes in the title
+        /* If we’re in stacking mode, this renders the container to update changes in the title
            bars and to raise the focused client */
-        if (client->container->mode == MODE_STACK)
-                render_container(conn, client->container);
-        else {
-                /* Update last/current client’s titlebar */
-                if (old_client != NULL)
-                        decorate_window(conn, old_client, old_client->frame, old_client->titlegc, 0);
-                decorate_window(conn, client, client->frame, client->titlegc, 0);
-        }
+        if (old_client != NULL)
+                redecorate_window(conn, old_client);
 
-        xcb_flush(conn);
+        /* redecorate_window flushes, so we don’t need to */
+        redecorate_window(conn, client);
 }
 
 /*

@@ -23,6 +23,7 @@
 #include "table.h"
 #include "util.h"
 #include "xinerama.h"
+#include "layout.h"
 
 /* This macro copies the old value of the given variable, changes the variable to contain
    th new one and returns true if it changed */
@@ -78,6 +79,20 @@ int get_unoccupied_y(Workspace *workspace, int col) {
 }
 
 /*
+ * Redecorates the given client correctly by checking if it’s in a stacking container and
+ * re-rendering the stack window or just calling decorate_window if it’s not in a stacking
+ * container.
+ *
+ */
+void redecorate_window(xcb_connection_t *conn, Client *client) {
+        if (client->container->mode == MODE_STACK) {
+                render_container(conn, client->container);
+                xcb_flush(conn);
+        } else decorate_window(conn, client, client->frame, client->titlegc, 0);
+}
+
+
+/*
  * (Re-)draws window decorations for a given Client onto the given drawable/graphic context.
  * When in stacking mode, the window decorations are drawn onto an own window.
  *
@@ -93,7 +108,12 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 return;
 
         if (client->container->currently_focused == client) {
-                background_color = get_colorpixel(conn, client, client->frame, "#285577");
+                /* Distinguish if the window is currently focused… */
+                if (CUR_CELL->currently_focused == client)
+                        background_color = get_colorpixel(conn, client, client->frame, "#285577");
+                /* …or if it is the focused window in a not focused container */
+                else background_color = get_colorpixel(conn, client, client->frame, "#555555");
+
                 text_color = get_colorpixel(conn, client, client->frame, "#ffffff");
                 border_color = get_colorpixel(conn, client, client->frame, "#4c7899");
         } else {
