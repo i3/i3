@@ -322,9 +322,18 @@ int handle_map_notify_event(void *prophs, xcb_connection_t *conn, xcb_map_notify
  *
  */
 int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event) {
+        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
+
         printf("handle_configure_event\n");
-        ignore_notify_event = event->sequence;
         printf("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
+        if (event->event == root) {
+                printf("reconfigure of the root window, need to xinerama\n");
+                xinerama_requery_screens(conn);
+                return 1;
+        }
+
+        ignore_notify_event = event->sequence;
+
         Client *client = table_get(byChild, event->window);
         if (client == NULL) {
                 printf("client not managed, ignoring\n");

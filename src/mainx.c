@@ -390,6 +390,9 @@ int main(int argc, char *argv[], char *env[]) {
 
         uint32_t mask = XCB_CW_EVENT_MASK;
         uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
+                              XCB_EVENT_MASK_STRUCTURE_NOTIFY |         /* when the user adds a screen (e.g. video
+                                                                           projector), the root window gets a
+                                                                           ConfigureNotify */
                               XCB_EVENT_MASK_PROPERTY_CHANGE |
                               XCB_EVENT_MASK_ENTER_WINDOW };
         xcb_change_window_attributes(c, root, mask, values);
@@ -456,7 +459,7 @@ int main(int argc, char *argv[], char *env[]) {
 
         i3Screen *screen = get_screen_containing(reply->root_x, reply->root_y);
         if (screen == NULL) {
-                printf("ERROR: No such screen\n");
+                printf("ERROR: No screen at %d x %d\n", reply->root_x, reply->root_y);
                 return 0;
         }
         if (screen->current_workspace != 0) {

@@ -29,19 +29,19 @@ static bool focus_window_in_container(xcb_connection_t *connection, Container *c
         if (container->currently_focused == NULL)
                 return false;
 
-        Client *candidad = NULL;
+        Client *candidate = NULL;
         if (direction == D_UP)
-                candidad = CIRCLEQ_PREV(container->currently_focused, clients);
+                candidate = CIRCLEQ_PREV(container->currently_focused, clients);
         else if (direction == D_DOWN)
-                candidad = CIRCLEQ_NEXT(container->currently_focused, clients);
+                candidate = CIRCLEQ_NEXT(container->currently_focused, clients);
         else printf("Direction not implemented!\n");
 
         /* If we don’t have anything to select, we’re done */
-        if (candidad == CIRCLEQ_END(&(container->clients)))
+        if (candidate == CIRCLEQ_END(&(container->clients)))
                 return false;
 
         /* Set focus if we could successfully move */
-        set_focus(connection, candidad);
+        set_focus(connection, candidate);
 
         return true;
 }
@@ -96,7 +96,7 @@ static bool move_current_window_in_container(xcb_connection_t *connection, Clien
         assert(client->container != NULL);
 
         Client *other = (direction == D_UP ? CIRCLEQ_PREV(client, clients) :
-                                                CIRCLEQ_NEXT(client, clients));
+                                             CIRCLEQ_NEXT(client, clients));
 
         if (other == CIRCLEQ_END(&(client->container->clients)))
                 return false;

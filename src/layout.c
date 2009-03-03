@@ -342,7 +342,7 @@ static void render_bars(xcb_connection_t *connection, Workspace *r_ws, int width
 void render_layout(xcb_connection_t *connection) {
         i3Screen *screen;
 
-        TAILQ_FOREACH(screen, &virtual_screens, screens) {
+        TAILQ_FOREACH(screen, virtual_screens, screens) {
                 /* r_ws (rendering workspace) is just a shortcut to the Workspace being currently rendered */
                 Workspace *r_ws = &(workspaces[screen->current_workspace]);
 
