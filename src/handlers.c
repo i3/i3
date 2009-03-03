@@ -324,6 +324,30 @@ int handle_map_notify_event(void *prophs, xcb_connection_t *conn, xcb_map_notify
 int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event) {
         printf("handle_configure_event\n");
         ignore_notify_event = event->sequence;
+        printf("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
+        Client *client = table_get(byChild, event->window);
+        if (client == NULL) {
+                printf("client not managed, ignoring\n");
+                return 1;
+        }
+
+        if (client->container->workspace->fullscreen_client == client) {
+                printf("client in fullscreen, not touching\n");
+                return 1;
+        }
+
+        /* Let’s see if the application has changed size/position on its own *sigh*… */
+        if ((event->x != client->child_rect.x) ||
+            (event->y != client->child_rect.y) ||
+            (event->width != client->child_rect.width) ||
+            (event->height != client->child_rect.height)) {
+                /* Who is your window manager? Who’s that, huh? I AM YOUR WINDOW MANAGER! */
+                printf("Application wanted to resize itself. Fixed that.\n");
+                client->force_reconfigure = true;
+                render_container(conn, client->container);
+                xcb_flush(conn);
+        }
+
         return 1;
 }
 

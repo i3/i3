@@ -164,32 +164,52 @@ static void resize_client(xcb_connection_t *connection, Client *client) {
                         XCB_CONFIG_WINDOW_Y |
                         XCB_CONFIG_WINDOW_WIDTH |
                         XCB_CONFIG_WINDOW_HEIGHT;
-        Rect rect;
+        Rect *rect = &(client->child_rect);
         switch (client->container->mode) {
                 case MODE_STACK:
-                        rect.x = 2;
-                        rect.y = 0;
-                        rect.width = client->rect.width - (2 + 2);
-                        rect.height = client->rect.height - 2;
+                        rect->x = 2;
+                        rect->y = 0;
+                        rect->width = client->rect.width - (2 + 2);
+                        rect->height = client->rect.height - 2;
                         break;
                 default:
                         if (client->titlebar_position == TITLEBAR_OFF) {
-                                rect.x = 0;
-                                rect.y = 0;
-                                rect.width = client->rect.width;
-                                rect.height = client->rect.height;
+                                rect->x = 0;
+                                rect->y = 0;
+                                rect->width = client->rect.width;
+                                rect->height = client->rect.height;
                         } else {
-                                rect.x = 2;
-                                rect.y = font->height + 2 + 2;
-                                rect.width = client->rect.width - (2 + 2);
-                                rect.height = client->rect.height - ((font->height + 2 + 2) + 2);
+                                rect->x = 2;
+                                rect->y = font->height + 2 + 2;
+                                rect->width = client->rect.width - (2 + 2);
+                                rect->height = client->rect.height - ((font->height + 2 + 2) + 2);
                         }
                         break;
         }
 
-        printf("child will be at %dx%d with size %dx%d\n", rect.x, rect.y, rect.width, rect.height);
+        printf("child will be at %dx%d with size %dx%d\n", rect->x, rect->y, rect->width, rect->height);
 
-        xcb_configure_window(connection, client->child, mask, &(rect.x));
+        xcb_configure_window(connection, client->child, mask, &(rect->x));
+
+        /* After configuring a child window we need to fake a configure_notify_event according
+           to ICCCM 4.2.3. This seems rather broken, especially since X sends exactly the same
+           configure_notify_event automatically according to xtrace. Anyone knows details? */
+        xcb_configure_notify_event_t event;
+
+        event.event = client->child;
+        event.window = client->child;
+        event.response_type = XCB_CONFIGURE_NOTIFY;
+
+        event.x = rect->x;
+        event.y = rect->y;
+        event.width = rect->width;
+        event.height = rect->height;
+
+        event.border_width = 0;
+        event.above_sibling = XCB_NONE;
+        event.override_redirect = false;
+
+        xcb_send_event(connection, false, client->child, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (char*)&event);
 }
 
 /*
@@ -221,15 +241,10 @@ void render_container(xcb_connection_t *connection, Container *container) {
                         /* TODO: vertical default layout */
                         if (client->force_reconfigure |
                             HAS_CHANGED(client->rect.width, container->width) |
-                            HAS_CHANGED(client->rect.height, container->height / num_clients)) {
+                            HAS_CHANGED(client->rect.height, container->height / num_clients))
                                 resize_client(connection, client);
-                        } else printf("no reconfigure necessary\n");
-                        printf("after client->rect.width = %d, client->rect.height = %d\n", client->rect.width,
-                                        client->rect.height);
 
-
-                        if (client->force_reconfigure)
-                                client->force_reconfigure = false;
+                        client->force_reconfigure = false;
 
                         current_client++;
                 }

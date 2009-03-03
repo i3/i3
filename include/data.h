@@ -192,8 +192,10 @@ struct Client {
         /* Backpointer. A client is inside a container */
         Container *container;
 
-        /* x, y, width, height */
+        /* x, y, width, height of the frame */
         Rect rect;
+        /* x, y, width, height of the child (relative to its frame) */
+        Rect child_rect;
 
         /* Height which was determined by reading the _NET_WM_STRUT_PARTIAL top/bottom of the screen
            reservation */
