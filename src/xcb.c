@@ -27,7 +27,7 @@ TAILQ_HEAD(cached_fonts_head, Font) cached_fonts = TAILQ_HEAD_INITIALIZER(cached
  * maintains a cache.
  *
  */
-i3Font *load_font(xcb_connection_t *connection, const char *pattern) {
+i3Font *load_font(xcb_connection_t *conn, const char *pattern) {
         /* Check if we got the font cached */
         i3Font *font;
         TAILQ_FOREACH(font, &cached_fonts, fonts)
@@ -39,14 +39,14 @@ i3Font *load_font(xcb_connection_t *connection, const char *pattern) {
         xcb_list_fonts_with_info_cookie_t info_cookie;
 
         /* Send all our requests first */
-        new->id = xcb_generate_id(connection);
-        font_cookie = xcb_open_font_checked(connection, new->id, strlen(pattern), pattern);
-        info_cookie = xcb_list_fonts_with_info(connection, 1, strlen(pattern), pattern);
+        new->id = xcb_generate_id(conn);
+        font_cookie = xcb_open_font_checked(conn, new->id, strlen(pattern), pattern);
+        info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
 
-        check_error(connection, font_cookie, "Could not open font");
+        check_error(conn, font_cookie, "Could not open font");
 
         /* Get information (height/name) for this font */
-        xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(connection, info_cookie, NULL);
+        xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(conn, info_cookie, NULL);
         exit_if_null(reply, "Could not load font \"%s\"\n", pattern);
 
         if (asprintf(&(new->name), "%.*s", xcb_list_fonts_with_info_name_length(reply),
@@ -187,9 +187,9 @@ void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext
  * Draws a rectangle from x,y with width,height using the given color
  *
  */
-void xcb_draw_rect(xcb_connection_t *connection, xcb_drawable_t drawable, xcb_gcontext_t gc,
+void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
-        xcb_change_gc_single(connection, gc, XCB_GC_FOREGROUND, colorpixel);
+        xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, colorpixel);
         xcb_rectangle_t rect = {x, y, width, height};
-        xcb_poly_fill_rectangle(connection, drawable, gc, 1, &rect);
+        xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
 }

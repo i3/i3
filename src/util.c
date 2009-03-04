@@ -105,11 +105,11 @@ void start_application(const char *command) {
  * was an error.
  *
  */
-void check_error(xcb_connection_t *connection, xcb_void_cookie_t cookie, char *err_message) {
-        xcb_generic_error_t *error = xcb_request_check(connection, cookie);
+void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_message) {
+        xcb_generic_error_t *error = xcb_request_check(conn, cookie);
         if (error != NULL) {
                 fprintf(stderr, "ERROR: %s : %d\n", err_message , error->error_code);
-                xcb_disconnect(connection);
+                xcb_disconnect(conn);
                 exit(-1);
         }
 }
@@ -223,10 +223,10 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
  * selecting it
  *
  */
-void warp_pointer_into(xcb_connection_t *connection, Client *client) {
+void warp_pointer_into(xcb_connection_t *conn, Client *client) {
         int mid_x = client->rect.width / 2,
             mid_y = client->rect.height / 2;
-        xcb_warp_pointer(connection, XCB_NONE, client->child, 0, 0, 0, 0, mid_x, mid_y);
+        xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, mid_x, mid_y);
 }
 
 /*

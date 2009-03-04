@@ -66,7 +66,7 @@ int num_screens = 0;
  * Do some sanity checks and then reparent the window.
  *
  */
-void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *c, xcb_window_t window, window_attributes_t wa) {
+void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn, xcb_window_t window, window_attributes_t wa) {
         printf("managing window.\n");
         xcb_drawable_t d = { window };
         xcb_get_geometry_cookie_t geomc;
@@ -76,7 +76,7 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *c, xcb_win
         if (wa.tag == TAG_COOKIE) {
                 /* Check if the window is mapped (it could be not mapped when intializing and
                    calling manage_window() for every window) */
-                if ((attr = xcb_get_window_attributes_reply(c, wa.u.cookie, 0)) == NULL)
+                if ((attr = xcb_get_window_attributes_reply(conn, wa.u.cookie, 0)) == NULL)
                         return;
 
                 if (attr->map_state != XCB_MAP_STATE_VIEWABLE)
@@ -95,15 +95,15 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *c, xcb_win
                 goto out;
 
         /* Get the initial geometry (position, size, …) */
-        geomc = xcb_get_geometry(c, d);
+        geomc = xcb_get_geometry(conn, d);
         if (!attr) {
                 wa.tag = TAG_COOKIE;
-                wa.u.cookie = xcb_get_window_attributes(c, window);
-                attr = xcb_get_window_attributes_reply(c, wa.u.cookie, 0);
+                wa.u.cookie = xcb_get_window_attributes(conn, window);
+                attr = xcb_get_window_attributes_reply(conn, wa.u.cookie, 0);
         }
-        geom = xcb_get_geometry_reply(c, geomc, 0);
+        geom = xcb_get_geometry_reply(conn, geomc, 0);
         if (attr && geom) {
-                reparent_window(c, window, attr->visual, geom->root, geom->depth,
+                reparent_window(conn, window, attr->visual, geom->root, geom->depth,
                                 geom->x, geom->y, geom->width, geom->height);
                 xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
         }
@@ -254,14 +254,14 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
  * Go through all existing windows (if the window manager is restarted) and manage them
  *
  */
-void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *prophs, xcb_window_t root) {
+void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *prophs, xcb_window_t root) {
         xcb_query_tree_reply_t *reply;
         int i, len;
         xcb_window_t *children;
         xcb_get_window_attributes_cookie_t *cookies;
 
         /* Get the tree of windows whose parent is the root window (= all) */
-        if ((reply = xcb_query_tree_reply(c, xcb_query_tree(c, root), 0)) == NULL)
+        if ((reply = xcb_query_tree_reply(conn, xcb_query_tree(conn, root), 0)) == NULL)
                 return;
 
         len = xcb_query_tree_children_length(reply);
@@ -270,12 +270,12 @@ void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *proph
         /* Request the window attributes for every window */
         children = xcb_query_tree_children(reply);
         for(i = 0; i < len; ++i)
-                cookies[i] = xcb_get_window_attributes(c, children[i]);
+                cookies[i] = xcb_get_window_attributes(conn, children[i]);
 
         /* Call manage_window with the attributes for every window */
         for(i = 0; i < len; ++i) {
                 window_attributes_t wa = { TAG_COOKIE, { cookies[i] } };
-                manage_window(prophs, c, children[i], wa);
+                manage_window(prophs, conn, children[i], wa);
         }
 
         free(reply);
@@ -283,7 +283,7 @@ void manage_existing_windows(xcb_connection_t *c, xcb_property_handlers_t *proph
 
 int main(int argc, char *argv[], char *env[]) {
         int i, screens;
-        xcb_connection_t *c;
+        xcb_connection_t *conn;
         xcb_property_handlers_t prophs;
         xcb_window_t root;
         xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
@@ -305,10 +305,10 @@ int main(int argc, char *argv[], char *env[]) {
 
         load_configuration(NULL);
 
-        c = xcb_connect(NULL, &screens);
+        conn = xcb_connect(NULL, &screens);
 
         /* Place requests for the atoms we need as soon as possible */
-        #define REQUEST_ATOM(name) atom_cookies[name] = xcb_intern_atom(c, 0, strlen(#name), #name);
+        #define REQUEST_ATOM(name) atom_cookies[name] = xcb_intern_atom(conn, 0, strlen(#name), #name);
 
         REQUEST_ATOM(_NET_SUPPORTED);
         REQUEST_ATOM(_NET_WM_STATE_FULLSCREEN);
@@ -341,7 +341,7 @@ int main(int argc, char *argv[], char *env[]) {
         }
         /* end of ugliness */
 
-        xcb_event_handlers_init(c, &evenths);
+        xcb_event_handlers_init(conn, &evenths);
 
         /* DEBUG: Trap all events and print them */
         for (i = 2; i < 128; ++i)
@@ -385,7 +385,7 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_watch_wm_name(&prophs, 128, handle_windowname_change, 0);
 
         /* Get the root window and set the event mask */
-        root = xcb_aux_get_screen(c, screens)->root;
+        root = xcb_aux_get_screen(conn, screens)->root;
 
         uint32_t mask = XCB_CW_EVENT_MASK;
         uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
@@ -394,11 +394,11 @@ int main(int argc, char *argv[], char *env[]) {
                                                                            ConfigureNotify */
                               XCB_EVENT_MASK_PROPERTY_CHANGE |
                               XCB_EVENT_MASK_ENTER_WINDOW };
-        xcb_change_window_attributes(c, root, mask, values);
+        xcb_change_window_attributes(conn, root, mask, values);
 
         /* Setup NetWM atoms */
         #define GET_ATOM(name) { \
-                xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(c, atom_cookies[name], NULL); \
+                xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, atom_cookies[name], NULL); \
                 if (!reply) { \
                         printf("Could not get atom " #name "\n"); \
                         exit(-1); \
@@ -422,36 +422,36 @@ int main(int argc, char *argv[], char *env[]) {
         /* TODO: In order to comply with EWMH, we have to watch _NET_WM_STRUT_PARTIAL */
 
         /* Set up the atoms we support */
-        check_error(c, xcb_change_property_checked(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED],
+        check_error(conn, xcb_change_property_checked(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED],
                        ATOM, 32, 7, atoms), "Could not set _NET_SUPPORTED");
 
         /* Set up the window manager’s name */
-        xcb_change_property(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTING_WM_CHECK], WINDOW, 32, 1, &root);
-        xcb_change_property(c, XCB_PROP_MODE_REPLACE, root, atoms[_NET_WM_NAME], atoms[UTF8_STRING], 8, strlen("i3"), "i3");
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTING_WM_CHECK], WINDOW, 32, 1, &root);
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_WM_NAME], atoms[UTF8_STRING], 8, strlen("i3"), "i3");
 
         /* Grab the bound keys */
         Binding *bind;
         TAILQ_FOREACH(bind, &bindings, bindings) {
                 printf("Grabbing %d\n", bind->keycode);
                 if (bind->mods & BIND_MODE_SWITCH)
-                        xcb_grab_key(c, 0, root, 0, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
-                else xcb_grab_key(c, 0, root, bind->mods, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+                        xcb_grab_key(conn, 0, root, 0, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
+                else xcb_grab_key(conn, 0, root, bind->mods, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
         }
 
         /* check for Xinerama */
         printf("Checking for Xinerama...\n");
-        initialize_xinerama(c);
+        initialize_xinerama(conn);
 
         /* DEBUG: Start a terminal */
         start_application(config.terminal);
 
-        xcb_flush(c);
+        xcb_flush(conn);
 
-        manage_existing_windows(c, &prophs, root);
+        manage_existing_windows(conn, &prophs, root);
 
         /* Get pointer position to see on which screen we’re starting */
         xcb_query_pointer_reply_t *reply;
-        if ((reply = xcb_query_pointer_reply(c, xcb_query_pointer(c, root), NULL)) == NULL) {
+        if ((reply = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, root), NULL)) == NULL) {
                 printf("Could not get pointer position\n");
                 return 1;
         }

@@ -24,7 +24,7 @@
 #include "i3.h"
 #include "xinerama.h"
 
-static bool focus_window_in_container(xcb_connection_t *connection, Container *container,
+static bool focus_window_in_container(xcb_connection_t *conn, Container *container,
                 direction_t direction) {
         /* If this container is empty, we’re done */
         if (container->currently_focused == NULL)
@@ -42,12 +42,12 @@ static bool focus_window_in_container(xcb_connection_t *connection, Container *c
                 return false;
 
         /* Set focus if we could successfully move */
-        set_focus(connection, candidate);
+        set_focus(conn, candidate);
 
         return true;
 }
 
-static void focus_window(xcb_connection_t *connection, direction_t direction) {
+static void focus_window(xcb_connection_t *conn, direction_t direction) {
         printf("focusing direction %d\n", direction);
 
         int new_row = current_row,
@@ -62,7 +62,7 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
         /* TODO: for horizontal default layout, this has to be expanded to LEFT/RIGHT */
         if (direction == D_UP || direction == D_DOWN) {
                 /* Let’s see if we can perform up/down focus in the current container */
-                if (focus_window_in_container(connection, container, direction))
+                if (focus_window_in_container(conn, container, direction))
                         return;
 
                 if (direction == D_DOWN && cell_exists(current_col, current_row+1))
@@ -114,7 +114,7 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
         }
 
         if (t_ws->table[new_col][new_row]->currently_focused != NULL)
-                set_focus(connection, t_ws->table[new_col][new_row]->currently_focused);
+                set_focus(conn, t_ws->table[new_col][new_row]->currently_focused);
 }
 
 /*
@@ -123,7 +123,7 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
  * Returns true if the window could be moved, false otherwise.
  *
  */
-static bool move_current_window_in_container(xcb_connection_t *connection, Client *client,
+static bool move_current_window_in_container(xcb_connection_t *conn, Client *client,
                 direction_t direction) {
         assert(client->container != NULL);
 
@@ -139,7 +139,7 @@ static bool move_current_window_in_container(xcb_connection_t *connection, Clien
         if (direction == D_UP)
                 CIRCLEQ_INSERT_BEFORE(&(client->container->clients), other, client, clients);
         else CIRCLEQ_INSERT_AFTER(&(client->container->clients), other, client, clients);
-        render_layout(connection);
+        render_layout(conn);
         return true;
 }
 
@@ -148,7 +148,7 @@ static bool move_current_window_in_container(xcb_connection_t *connection, Clien
  * necessary
  *
  */
-static void move_current_window(xcb_connection_t *connection, direction_t direction) {
+static void move_current_window(xcb_connection_t *conn, direction_t direction) {
         printf("moving window to direction %s\n", (direction == D_UP ? "up" : (direction == D_DOWN ? "down" :
                                         (direction == D_LEFT ? "left" : "right"))));
         /* Get current window */
@@ -186,14 +186,14 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
                         break;
                 case D_UP:
                         /* TODO: if we’re at the up-most position, move the rest of the table down */
-                        if (move_current_window_in_container(connection, current_client, D_UP) ||
+                        if (move_current_window_in_container(conn, current_client, D_UP) ||
                                 current_row == 0)
                                 return;
 
                         new = CUR_TABLE[current_col][--current_row];
                         break;
                 case D_DOWN:
-                        if (move_current_window_in_container(connection, current_client, D_DOWN))
+                        if (move_current_window_in_container(conn, current_client, D_DOWN))
                                 return;
 
                         if (current_row == (c_ws->rows-1))
@@ -213,10 +213,10 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
         new->currently_focused = current_client;
 
         /* delete all empty columns/rows */
-        cleanup_table(connection, container->workspace);
-        render_layout(connection);
+        cleanup_table(conn, container->workspace);
+        render_layout(conn);
 
-        set_focus(connection, current_client);
+        set_focus(conn, current_client);
 }
 
 /*
@@ -224,7 +224,7 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
  * to the given direction, that is, adjusts cellspan/rowspan
  *
  */
-static void snap_current_container(xcb_connection_t *connection, direction_t direction) {
+static void snap_current_container(xcb_connection_t *conn, direction_t direction) {
         printf("snapping container to direction %d\n", direction);
 
         Container *container = CUR_CELL;
@@ -234,8 +234,8 @@ static void snap_current_container(xcb_connection_t *connection, direction_t dir
         switch (direction) {
                 case D_LEFT:
                         /* Snap to the left is actually a move to the left and then a snap right */
-                        move_current_window(connection, D_LEFT);
-                        snap_current_container(connection, D_RIGHT);
+                        move_current_window(conn, D_LEFT);
+                        snap_current_container(conn, D_RIGHT);
                         return;
                 case D_RIGHT:
                         /* Check if the cell is used */
@@ -258,8 +258,8 @@ static void snap_current_container(xcb_connection_t *connection, direction_t dir
                         container->colspan++;
                         break;
                 case D_UP:
-                        move_current_window(connection, D_UP);
-                        snap_current_container(connection, D_DOWN);
+                        move_current_window(conn, D_UP);
+                        snap_current_container(conn, D_DOWN);
                         return;
                 case D_DOWN:
                         printf("snapping down\n");
@@ -282,14 +282,14 @@ static void snap_current_container(xcb_connection_t *connection, direction_t dir
                         break;
         }
 
-        render_layout(connection);
+        render_layout(conn);
 }
 
 /*
  * Moves the currently selected window to the given workspace
  *
  */
-static void move_current_window_to_workspace(xcb_connection_t *connection, int workspace) {
+static void move_current_window_to_workspace(xcb_connection_t *conn, int workspace) {
         printf("Moving current window to workspace %d\n", workspace);
 
         Container *container = CUR_CELL;
@@ -330,13 +330,13 @@ static void move_current_window_to_workspace(xcb_connection_t *connection, int w
         /* If we’re moving it to an invisible screen, we need to unmap it */
         if (to_container->workspace->screen->current_workspace != to_container->workspace->num) {
                 printf("This workspace is not visible, unmapping\n");
-                xcb_unmap_window(connection, current_client->frame);
+                xcb_unmap_window(conn, current_client->frame);
         }
 
         /* delete all empty columns/rows */
-        cleanup_table(connection, container->workspace);
+        cleanup_table(conn, container->workspace);
 
-        render_layout(connection);
+        render_layout(conn);
 }
 
 static void show_workspace(xcb_connection_t *conn, int workspace) {

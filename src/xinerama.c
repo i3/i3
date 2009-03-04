@@ -66,8 +66,8 @@ i3Screen *get_screen_containing(int x, int y) {
  * Fills virtual_screens with exactly one screen with width/height of the whole X server.
  *
  */
-static void disable_xinerama(xcb_connection_t *connection) {
-        xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(connection)).data;
+static void disable_xinerama(xcb_connection_t *conn) {
+        xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 
         i3Screen *s = calloc(sizeof(i3Screen), 1);
 
@@ -86,11 +86,11 @@ static void disable_xinerama(xcb_connection_t *connection) {
  * Xinerama screen which are configured in clone mode) in the given screenlist
  *
  */
-static void query_screens(xcb_connection_t *connection, struct screens_head *screenlist) {
+static void query_screens(xcb_connection_t *conn, struct screens_head *screenlist) {
         xcb_xinerama_query_screens_reply_t *reply;
         xcb_xinerama_screen_info_t *screen_info;
 
-        reply = xcb_xinerama_query_screens_reply(connection, xcb_xinerama_query_screens_unchecked(connection), NULL);
+        reply = xcb_xinerama_query_screens_reply(conn, xcb_xinerama_query_screens_unchecked(conn), NULL);
         if (!reply) {
                 printf("Couldn't get Xinerama screens\n");
                 return;
@@ -127,8 +127,8 @@ static void query_screens(xcb_connection_t *connection, struct screens_head *scr
         free(reply);
 }
 
-static void initialize_screen(xcb_connection_t *connection, i3Screen *screen, Workspace *workspace) {
-        i3Font *font = load_font(connection, config.font);
+static void initialize_screen(xcb_connection_t *conn, i3Screen *screen, Workspace *workspace) {
+        i3Font *font = load_font(conn, config.font);
 
         workspace->screen = screen;
         screen->current_workspace = workspace->num;
@@ -140,9 +140,9 @@ static void initialize_screen(xcb_connection_t *connection, i3Screen *screen, Wo
                          font->height + 6};
         uint32_t mask = XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
         uint32_t values[] = {1, XCB_EVENT_MASK_EXPOSURE};
-        screen->bar = create_window(connection, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
-        screen->bargc = xcb_generate_id(connection);
-        xcb_create_gc(connection, screen->bargc, screen->bar, 0, 0);
+        screen->bar = create_window(conn, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
+        screen->bargc = xcb_generate_id(conn);
+        xcb_create_gc(conn, screen->bargc, screen->bar, 0, 0);
 
         /* Copy dimensions */
         memcpy(&(workspace->rect), &(screen->rect), sizeof(Rect));
@@ -155,30 +155,30 @@ static void initialize_screen(xcb_connection_t *connection, i3Screen *screen, Wo
  * information to setup workspaces for each screen.
  *
  */
-void initialize_xinerama(xcb_connection_t *connection) {
+void initialize_xinerama(xcb_connection_t *conn) {
         virtual_screens = scalloc(sizeof(struct screens_head));
         TAILQ_INIT(virtual_screens);
 
-        if (!xcb_get_extension_data(connection, &xcb_xinerama_id)->present) {
+        if (!xcb_get_extension_data(conn, &xcb_xinerama_id)->present) {
                 printf("Xinerama extension not found, disabling.\n");
-                disable_xinerama(connection);
+                disable_xinerama(conn);
                 return;
         }
 
-        if (!xcb_xinerama_is_active_reply(connection, xcb_xinerama_is_active(connection), NULL)->state) {
+        if (!xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL)->state) {
                 printf("Xinerama is not active (in your X-Server), disabling.\n");
-                disable_xinerama(connection);
+                disable_xinerama(conn);
                 return;
         }
 
-        query_screens(connection, virtual_screens);
+        query_screens(conn, virtual_screens);
 
         i3Screen *s;
         num_screens = 0;
         /* Just go through each workspace and associate as many screens as we can. */
         TAILQ_FOREACH(s, virtual_screens, screens) {
                 s->num = num_screens;
-                initialize_screen(connection, s, &(workspaces[num_screens]));
+                initialize_screen(conn, s, &(workspaces[num_screens]));
                 num_screens++;
         }
 }
@@ -188,7 +188,7 @@ void initialize_xinerama(xcb_connection_t *connection) {
  * number/position of the Xinerama screens could have changed.
  *
  */
-void xinerama_requery_screens(xcb_connection_t *connection) {
+void xinerama_requery_screens(xcb_connection_t *conn) {
         /* POSSIBLE PROBLEM: Is the order of the Xinerama screens always constant? That is, can
            it change when I move the --right-of video projector to --left-of? */
 
@@ -201,7 +201,7 @@ void xinerama_requery_screens(xcb_connection_t *connection) {
         struct screens_head *new_screens = scalloc(sizeof(struct screens_head));
         TAILQ_INIT(new_screens);
 
-        query_screens(connection, new_screens);
+        query_screens(conn, new_screens);
 
         i3Screen *first = TAILQ_FIRST(new_screens),
                  *screen;
@@ -233,7 +233,7 @@ void xinerama_requery_screens(xcb_connection_t *connection) {
                         for (int c = 0; c < 10; c++)
                                 if (workspaces[c].screen == NULL) {
                                         printf("fix: initializing new workspace, setting num to %d\n", c);
-                                        initialize_screen(connection, screen, &(workspaces[c]));
+                                        initialize_screen(conn, screen, &(workspaces[c]));
                                         break;
                                 }
                 }
@@ -245,7 +245,7 @@ void xinerama_requery_screens(xcb_connection_t *connection) {
                 if ((workspaces[c].screen != NULL) &&
                     (workspaces[c].screen->num >= num_screens)) {
                         printf("Closing bar window\n");
-                        xcb_destroy_window(connection, workspaces[c].screen->bar);
+                        xcb_destroy_window(conn, workspaces[c].screen->bar);
 
                         printf("Workspace %d's screen out of bounds, assigning to first screen\n", c+1);
                         workspaces[c].screen = first;
@@ -263,5 +263,5 @@ void xinerama_requery_screens(xcb_connection_t *connection) {
 
         printf("Current workspace is now: %d\n", first->current_workspace);
 
-        render_layout(connection);
+        render_layout(conn);
 }
