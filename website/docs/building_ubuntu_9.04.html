@@ -1,0 +1,127 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>i3 - an improved dynamic tiling window manager</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+body {
+	text-align: justify;
+	max-width: 800px;
+}
+
+li {
+	margin-bottom: 10px;
+}
+</style>
+</head>
+<body>
+
+<h1>Howto build i3 on Ubuntu 9.04 for the amd64 architecture</h1>
+
+<p>
+  Due to Ubuntu 9.04’s lack of recent libxcb* packages, we cannot simply provide a debian
+  package. The following howto will explain how to build one for yourself after downloading
+  the necessary libxcb* packages from Debian.
+</p>
+
+<p>
+  Clone the i3 repository
+</p>
+
+<pre>
+$ git clone http://code.stapelberg.de/git/i3
+</pre>
+
+<p>
+  The Ubuntu repositories do not contain the required versions of several packages. Hence we need
+  to get them from Debian. Create a new directory for the .debs
+</p>
+
+<pre>
+$ mkdir deb &amp;&amp; cd deb
+</pre>
+
+<p>
+  …and download the files
+</p>
+
+<pre>
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-wm0-dev_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-aux0-dev_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-wm0_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-atom1-dev_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-event1-dev_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-property1-dev_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-icccm1-dev_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-wm0_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-atom1_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-icccm1_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-property1_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-event1_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-aux0_0.3.3-2+b1_amd64.deb"
+</pre>
+
+<p>
+  We install these:
+</p>
+
+<pre>
+$ sudo dpkg -i *.deb
+</pre>
+
+<p>
+  then change into the i3 directory and build the package:
+</p>
+
+<pre>
+$ cd ../i3
+$ dpkg-buildpackage
+</pre>
+
+<p>
+  and install it
+</p>
+
+<pre>
+$ sudo dpkg -i ../i3_1.0-1_amd64.deb
+</pre>
+
+<p>
+  What remains is to configure i3. Create the default directory for i3’s config and copy the default config to it
+</p>
+
+<pre>
+$ mkdir ~/.i3
+$ cp /etc/i3/config ~/.i3/config
+</pre>
+
+<p>
+Lastly, we need to set up i3 as default window manager. Create a new file ~/.xinitrc
+</p>
+
+<pre>
+$ vim ~/.xinitrc
+</pre>
+
+<p>
+  and enter the following lines:
+</p>
+
+<pre>
+#!/bin/sh
+xsetroot -solid black 
+exec /usr/bin/i3
+</pre>
+
+<p>
+  Close vim and create a link to ~/.xinitrc and link it to ~/.Xsession:
+</p>
+
+<pre>
+$ ln -s ~/.xinitrc ~/.Xsession
+</pre>
+
+<p>
+  You are done. When you are in the login screen, select "Sessions", and switch to "Default" or "Xsession" to start i3.
+</p>
