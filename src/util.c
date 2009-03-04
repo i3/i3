@@ -149,7 +149,7 @@ void set_focus(xcb_connection_t *conn, Client *client) {
 
         /* If we’re in stacking mode, this renders the container to update changes in the title
            bars and to raise the focused client */
-        if (old_client != NULL)
+        if ((old_client != NULL) && (old_client != client))
                 redecorate_window(conn, old_client);
 
         /* redecorate_window flushes, so we don’t need to */
