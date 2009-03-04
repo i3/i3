@@ -9,7 +9,7 @@ i3 - an improved dynamic, tiling window manager
 
 == SYNOPSIS
 
-i3
+i3 [-c configfile]
 
 == DESCRIPTION
 
@@ -101,11 +101,12 @@ Enable default layout for the current container.
 
 == FILES
 
-=== i3.config
+=== ~/.i3/config
 
-When starting, i3 looks for i3.config in the current working directory and loads the
-configuration. At the moment, you can specify only the path to your favorite terminal
-emulator, the font and keybindings.
+When starting, i3 looks for ~/.i3/config and loads the configuration. If ~/.i3/config is not found,
+i3 tries /etc/i3/config. You can specify a custom path using the -c option.
+
+At the moment, you can specify only the path to your favorite terminal emulator, the font and keybindings.
 
 At the moment, you have to bind to keycodes (find them out via xev(1)).
 
@@ -182,7 +183,12 @@ export LC_TELEPHONE=de_DE.ISO8859-15
 export LC_MEASUREMENT=de_DE.ISO8859-15
 export LC_IDENTIFICATION=de_DE.ISO8859-15
 
-exec /usr/bin/i3
+# Enable core dumps in case something goes wrong
+ulimit -c unlimited
+
+# Start i3 and log to ~/.i3/logfile
+echo "Starting at $(date)" >> ~/.i3/logfile
+exec /usr/bin/i3 >> ~/.i3/logfile
 -------------------------------------------------------------
 
 == TODO
@@ -191,7 +197,6 @@ There is lots of stuff left to do. This release is to be considered as a technol
 Here is an overwiew of the most important points:
 
  * IPC
- * a command for toggling layouts/workspaces
  * floating
  * do something about applications which don’t use _NET_WM_STATE_FULLSCREEN (like xpdf)
 

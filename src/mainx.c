@@ -18,11 +18,10 @@
 #include <assert.h>
 #include <limits.h>
 
-#include <xcb/xcb.h>
-
 #include <X11/XKBlib.h>
 #include <X11/extensions/XKB.h>
 
+#include <xcb/xcb.h>
 #include <xcb/xcb_wm.h>
 #include <xcb/xcb_aux.h>
 #include <xcb/xcb_event.h>
@@ -30,18 +29,18 @@
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xinerama.h>
-#include "data.h"
 
 #include "config.h"
-#include "queue.h"
-#include "table.h"
-#include "layout.h"
+#include "data.h"
 #include "debug.h"
 #include "handlers.h"
+#include "i3.h"
+#include "layout.h"
+#include "queue.h"
+#include "table.h"
 #include "util.h"
 #include "xcb.h"
 #include "xinerama.h"
-#include "i3.h"
 
 /* This is the path to i3, copied from argv[0] when starting up */
 char *application_path;
@@ -282,7 +281,8 @@ void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *pr
 }
 
 int main(int argc, char *argv[], char *env[]) {
-        int i, screens;
+        int i, screens, opt;
+        char *override_configpath = NULL;
         xcb_connection_t *conn;
         xcb_property_handlers_t prophs;
         xcb_window_t root;
@@ -294,6 +294,17 @@ int main(int argc, char *argv[], char *env[]) {
 
         application_path = sstrdup(argv[0]);
 
+        while ((opt = getopt(argc, argv, "c:")) != -1) {
+                switch (opt) {
+                        case 'c':
+                                override_configpath = sstrdup(optarg);
+                                break;
+                        default:
+                                fprintf(stderr, "Usage: %s [-c configfile]\n", argv[0]);
+                                exit(EXIT_FAILURE);
+                }
+        }
+
         /* Initialize the table data structures for each workspace */
         init_table();
 
@@ -303,7 +314,7 @@ int main(int argc, char *argv[], char *env[]) {
         byChild = alloc_table();
         byParent = alloc_table();
 
-        load_configuration(NULL);
+        load_configuration(override_configpath);
 
         conn = xcb_connect(NULL, &screens);
 
