@@ -30,24 +30,26 @@ static bool focus_window_in_container(xcb_connection_t *conn, Container *contain
         if (container->currently_focused == NULL)
                 return false;
 
+        /* Get the previous/next client or wrap around */
         Client *candidate = NULL;
-        if (direction == D_UP)
-                candidate = CIRCLEQ_PREV(container->currently_focused, clients);
-        else if (direction == D_DOWN)
-                candidate = CIRCLEQ_NEXT(container->currently_focused, clients);
-        else printf("Direction not implemented!\n");
+        if (direction == D_UP) {
+                if ((candidate = CIRCLEQ_PREV_OR_NULL(&(container->clients), container->currently_focused, clients)) == NULL)
+                        candidate = CIRCLEQ_LAST(&(container->clients));
+        }
+        else if (direction == D_DOWN) {
+                if ((candidate = CIRCLEQ_NEXT_OR_NULL(&(container->clients), container->currently_focused, clients)) == NULL)
+                        candidate = CIRCLEQ_FIRST(&(container->clients));
+        } else printf("Direction not implemented!\n");
 
-        /* If we don’t have anything to select, we’re done */
-        if (candidate == CIRCLEQ_END(&(container->clients)))
-                return false;
-
-        /* Set focus if we could successfully move */
+        /* Set focus */
         set_focus(conn, candidate);
 
         return true;
 }
 
-static void focus_window(xcb_connection_t *conn, direction_t direction) {
+typedef enum { THING_WINDOW, THING_CONTAINER } thing_t;
+
+static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t thing) {
         printf("focusing direction %d\n", direction);
 
         int new_row = current_row,
@@ -61,9 +63,10 @@ static void focus_window(xcb_connection_t *conn, direction_t direction) {
 
         /* TODO: for horizontal default layout, this has to be expanded to LEFT/RIGHT */
         if (direction == D_UP || direction == D_DOWN) {
-                /* Let’s see if we can perform up/down focus in the current container */
-                if (focus_window_in_container(conn, container, direction))
-                        return;
+                if (thing == THING_WINDOW)
+                        /* Let’s see if we can perform up/down focus in the current container */
+                        if (focus_window_in_container(conn, container, direction))
+                                return;
 
                 if (direction == D_DOWN && cell_exists(current_col, current_row+1))
                         new_row++;
@@ -467,11 +470,19 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
+        enum { WITH_WINDOW, WITH_CONTAINER } with = WITH_WINDOW;
+
         /* Is it a <with>? */
         if (command[0] == 'w') {
+                command++;
                 /* TODO: implement */
-                printf("not yet implemented.\n");
-                return;
+                if (command[0] == 'c') {
+                        with = WITH_CONTAINER;
+                        command++;
+                } else {
+                        printf("not yet implemented.\n");
+                        return;
+                }
         }
 
         /* It's a normal <cmd> */
@@ -522,8 +533,9 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         return;
                 }
 
-                if (action == ACTION_FOCUS)
-                        focus_window(conn, direction);
+                if (action == ACTION_FOCUS) {
+                        focus_thing(conn, direction, (with == WITH_WINDOW ? THING_WINDOW : THING_CONTAINER));
+                }
                 else if (action == ACTION_MOVE)
                         move_current_window(conn, direction);
                 else if (action == ACTION_SNAP)
