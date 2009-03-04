@@ -133,7 +133,10 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         /* Draw a rectangle in background color around the window */
         xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, background_color);
 
-        xcb_rectangle_t rect = {0, offset, client->rect.width, offset + client->rect.height};
+        /* We need to use the container’s width because it is the more recent value - when
+           in stacking mode, clients get reconfigured only on demand (the not active client
+           is not reconfigured), so the client’s rect.width would be wrong */
+        xcb_rectangle_t rect = {0, offset, client->container->width, offset + client->rect.height};
         xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
 
         /* Draw the lines */
@@ -282,11 +285,11 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 /* Check if we need to reconfigure our stack title window */
                 if (HAS_CHANGED(old_value_1, stack_win->width, container->width) |
                     HAS_CHANGED(old_value_2, stack_win->height, decoration_height * num_clients)) {
-                        xcb_configure_window(conn, stack_win->window,
-                                XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, &(stack_win->width));
+                        uint32_t values[] = { stack_win->width, stack_win->height, XCB_STACK_MODE_ABOVE };
 
-                        uint32_t values[] = { XCB_STACK_MODE_ABOVE };
-                        xcb_configure_window(conn, stack_win->window, XCB_CONFIG_WINDOW_STACK_MODE, values);
+                        xcb_configure_window(conn, stack_win->window,
+                                XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_STACK_MODE,
+                                values);
                 }
 
                 /* Reconfigure the currently focused client, if necessary. It is the only visible one */
