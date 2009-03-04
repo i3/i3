@@ -206,7 +206,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 first = con;
                 second = con->workspace->table[con->col][con->row+1];
                 orientation = O_HORIZONTAL;
-        } else if (event->event_x < 2) {
+        } else if (event->event_x <= 2) {
                 /* …left border */
                 if (con->col == 0)
                         return 1;
