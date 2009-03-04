@@ -320,12 +320,12 @@ void render_container(xcb_connection_t *connection, Container *container) {
         }
 }
 
-static void render_bars(xcb_connection_t *connection, Workspace *r_ws, int width, int height) {
+static void render_bars(xcb_connection_t *connection, Workspace *r_ws, int width, int *height) {
         Client *client;
         SLIST_FOREACH(client, &(r_ws->dock_clients), dock_clients) {
                 if (client->force_reconfigure |
                     HAS_CHANGED(old_value_1, client->rect.x, 0) |
-                    HAS_CHANGED(old_value_2, client->rect.y, height))
+                    HAS_CHANGED(old_value_2, client->rect.y, *height))
                         reposition_client(connection, client);
 
                 if (client->force_reconfigure |
@@ -334,12 +334,66 @@ static void render_bars(xcb_connection_t *connection, Workspace *r_ws, int width
                         resize_client(connection, client);
 
                 client->force_reconfigure = false;
-                height += client->desired_height;
+                *height += client->desired_height;
         }
+}
+
+static void render_internal_bar(xcb_connection_t *connection, Workspace *r_ws, int width, int height) {
+        printf("Rendering internal bar\n");
+        i3Font *font = load_font(connection, config.font);
+        i3Screen *screen = r_ws->screen;
+        enum { SET_NORMAL = 0, SET_FOCUSED = 1 };
+        uint32_t background_color[2],
+                 text_color[2],
+                 border_color[2],
+                 black;
+        char label[3];
+
+        black = get_colorpixel(connection, NULL, screen->bar, "#000000");
+
+        background_color[SET_NORMAL] = get_colorpixel(connection, NULL, screen->bar, "#222222");
+        text_color[SET_NORMAL] = get_colorpixel(connection, NULL, screen->bar, "#888888");
+        border_color[SET_NORMAL] = get_colorpixel(connection, NULL, screen->bar, "#333333");
+
+        background_color[SET_FOCUSED] = get_colorpixel(connection, NULL, screen->bar, "#285577");
+        text_color[SET_FOCUSED] = get_colorpixel(connection, NULL, screen->bar, "#ffffff");
+        border_color[SET_FOCUSED] = get_colorpixel(connection, NULL, screen->bar, "#4c7899");
+
+        /* Fill the whole bar in black */
+        xcb_change_gc_single(connection, screen->bargc, XCB_GC_FOREGROUND, black);
+        xcb_rectangle_t rect = {0, 0, width, height};
+        xcb_poly_fill_rectangle(connection, screen->bar, screen->bargc, 1, &rect);
+
+        /* Set font */
+        xcb_change_gc_single(connection, screen->bargc, XCB_GC_FONT, font->id);
+
+        int drawn = 0;
+        for (int c = 0; c < 10; c++) {
+                if (workspaces[c].screen == screen) {
+                        int set = (screen->current_workspace == c ? SET_FOCUSED : SET_NORMAL);
+
+                        xcb_draw_rect(connection, screen->bar, screen->bargc, border_color[set],
+                                      drawn * height, 1, height - 2, height - 2);
+                        xcb_draw_rect(connection, screen->bar, screen->bargc, background_color[set],
+                                      drawn * height + 1, 2, height - 4, height - 4);
+
+                        snprintf(label, sizeof(label), "%d", c+1);
+                        xcb_change_gc_single(connection, screen->bargc, XCB_GC_FOREGROUND, text_color[set]);
+                        xcb_change_gc_single(connection, screen->bargc, XCB_GC_BACKGROUND, background_color[set]);
+                        xcb_void_cookie_t text_cookie = xcb_image_text_8_checked(connection, strlen(label), screen->bar,
+                                                        screen->bargc, drawn * height + 5 /* X */,
+                                                        font->height + 1 /* Y = baseline of font */, label);
+                        check_error(connection, text_cookie, "Could not draw workspace title");
+                        drawn++;
+                }
+        }
+
+        printf("done rendering internal\n");
 }
 
 void render_layout(xcb_connection_t *connection) {
         i3Screen *screen;
+        i3Font *font = load_font(connection, config.font);
 
         TAILQ_FOREACH(screen, virtual_screens, screens) {
                 /* r_ws (rendering workspace) is just a shortcut to the Workspace being currently rendered */
@@ -357,6 +411,9 @@ void render_layout(xcb_connection_t *connection) {
                 Client *client;
                 SLIST_FOREACH(client, &(r_ws->dock_clients), dock_clients)
                         height -= client->desired_height;
+
+                /* Space for the internal bar */
+                height -= (font->height + 6);
 
                 printf("got %d rows and %d cols\n", r_ws->rows, r_ws->cols);
 
@@ -399,7 +456,8 @@ void render_layout(xcb_connection_t *connection) {
                                 printf("==========\n");
                         }
 
-                render_bars(connection, r_ws, width, height);
+                render_bars(connection, r_ws, width, &height);
+                render_internal_bar(connection, r_ws, width, 18);
         }
 
         xcb_flush(connection);

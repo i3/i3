@@ -293,6 +293,10 @@ struct Screen {
         /* x, y, width, height */
         Rect rect;
 
+        /* The bar window */
+        xcb_window_t bar;
+        xcb_gcontext_t bargc;
+
         TAILQ_ENTRY(Screen) screens;
 };
 

@@ -76,6 +76,11 @@ uint32_t get_colorpixel(xcb_connection_t *conn, Client *client, xcb_window_t win
         return pixel;
 }
 
+/*
+ * Convenience wrapper around xcb_create_window which takes care of depth, generating an ID and checking
+ * for errors.
+ *
+ */
 xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class, uint32_t mask, uint32_t *values) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         xcb_window_t result = xcb_generate_id(conn);
@@ -119,4 +124,15 @@ void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext
         xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, colorpixel);
         xcb_point_t points[] = {{x, y}, {to_x, to_y}};
         xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, drawable, gc, 2, points);
+}
+
+/*
+ * Draws a rectangle from x,y with width,height using the given color
+ *
+ */
+void xcb_draw_rect(xcb_connection_t *connection, xcb_drawable_t drawable, xcb_gcontext_t gc,
+                   uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+        xcb_change_gc_single(connection, gc, XCB_GC_FOREGROUND, colorpixel);
+        xcb_rectangle_t rect = {x, y, width, height};
+        xcb_poly_fill_rectangle(connection, drawable, gc, 1, &rect);
 }

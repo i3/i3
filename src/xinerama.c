@@ -23,6 +23,9 @@
 #include "util.h"
 #include "xinerama.h"
 #include "layout.h"
+#include "xcb.h"
+#include "font.h"
+#include "config.h"
 
 /* This TAILQ of i3Screens stores the virtual screens, used for handling overlapping screens
  * (xrandr --same-as) */
@@ -125,6 +128,29 @@ static void query_screens(xcb_connection_t *connection, struct screens_head *scr
         free(reply);
 }
 
+static void initialize_screen(xcb_connection_t *connection, i3Screen *screen, Workspace *workspace) {
+        i3Font *font = load_font(connection, config.font);
+
+        workspace->screen = screen;
+        screen->current_workspace = workspace->num;
+
+        /* Create a bar for each screen */
+        Rect bar_rect = {screen->rect.x,
+                         screen->rect.height - (font->height + 6),
+                         screen->rect.x + screen->rect.width,
+                         font->height + 6};
+        uint32_t mask = XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
+        uint32_t values[] = {1, XCB_EVENT_MASK_EXPOSURE};
+        screen->bar = create_window(connection, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, mask, values);
+        screen->bargc = xcb_generate_id(connection);
+        xcb_create_gc(connection, screen->bargc, screen->bar, 0, 0);
+
+        /* Copy dimensions */
+        memcpy(&(workspace->rect), &(screen->rect), sizeof(Rect));
+        printf("that is virtual screen at %d x %d with %d x %d\n",
+                        screen->rect.x, screen->rect.y, screen->rect.width, screen->rect.height);
+}
+
 /*
  * We have just established a connection to the X server and need the initial Xinerama
  * information to setup workspaces for each screen.
@@ -153,11 +179,8 @@ void initialize_xinerama(xcb_connection_t *connection) {
         /* Just go through each workspace and associate as many screens as we can. */
         TAILQ_FOREACH(s, virtual_screens, screens) {
                 s->num = num_screens;
-                s->current_workspace = num_screens;
-                workspaces[num_screens].screen = s;
-                memcpy(&(workspaces[num_screens++].rect), &(s->rect), sizeof(Rect));
-                printf("that is virtual screen at %d x %d with %d x %d\n",
-                                s->rect.x, s->rect.y, s->rect.width, s->rect.height);
+                initialize_screen(connection, s, &(workspaces[num_screens]));
+                num_screens++;
         }
 }
 
@@ -198,6 +221,10 @@ void xinerama_requery_screens(xcb_connection_t *connection) {
                                 if (screen->current_workspace == -1)
                                         screen->current_workspace = c;
 
+                                /* Re-use the old bar window */
+                                screen->bar = workspaces[c].screen->bar;
+                                screen->bargc = workspaces[c].screen->bargc;
+
                                 /* Update the dimensions */
                                 memcpy(&(workspaces[c].rect), &(screen->rect), sizeof(Rect));
                                 workspaces[c].screen = screen;
@@ -207,10 +234,7 @@ void xinerama_requery_screens(xcb_connection_t *connection) {
                         for (int c = 0; c < 10; c++)
                                 if (workspaces[c].screen == NULL) {
                                         printf("fix: initializing new workspace, setting num to %d\n", c);
-                                        workspaces[c].screen = screen;
-                                        screen->current_workspace = c;
-                                        /* Copy the dimensions from the virtual screen */
-                                        memcpy(&(workspaces[c].rect), &(screen->rect), sizeof(Rect));
+                                        initialize_screen(connection, screen, &(workspaces[c]));
                                         break;
                                 }
                 }
@@ -221,6 +245,9 @@ void xinerama_requery_screens(xcb_connection_t *connection) {
         for (int c = 0; c < 10; c++)
                 if ((workspaces[c].screen != NULL) &&
                     (workspaces[c].screen->num >= num_screens)) {
+                        printf("Closing bar window\n");
+                        xcb_destroy_window(connection, workspaces[c].screen->bar);
+
                         printf("Workspace %d's screen out of bounds, assigning to first screen\n", c+1);
                         workspaces[c].screen = first;
                         memcpy(&(workspaces[c].rect), &(first->rect), sizeof(Rect));

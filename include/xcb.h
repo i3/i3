@@ -32,5 +32,7 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class
 void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t mask, uint32_t value);
 void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t to_x, uint32_t to_y);
+void xcb_draw_rect(xcb_connection_t *connection, xcb_drawable_t drawable, xcb_gcontext_t gc,
+                   uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 
 #endif
