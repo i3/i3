@@ -338,6 +338,7 @@ int handle_map_notify_event(void *prophs, xcb_connection_t *conn, xcb_map_notify
         window_attributes_t wa = { TAG_VALUE };
         wa.u.override_redirect = event->override_redirect;
         printf("MapNotify for 0x%08x, serial is %d.\n", event->window, event->sequence);
+        printf("setting ignore_notify_event = %d\n", event->sequence);
         ignore_notify_event = event->sequence;
         manage_window(prophs, conn, event->window, wa);
         return 1;
@@ -353,13 +354,15 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
 
         printf("handle_configure_event\n");
         printf("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
+        printf("sequence = %d\n", event->sequence);
+
+        ignore_notify_event = event->sequence;
+
         if (event->event == root) {
                 printf("reconfigure of the root window, need to xinerama\n");
                 xinerama_requery_screens(conn);
                 return 1;
         }
-
-        ignore_notify_event = event->sequence;
 
         Client *client = table_get(byChild, event->window);
         if (client == NULL) {
@@ -394,6 +397,8 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
  */
 int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_notify_event_t *event) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
+
+        printf("setting ignore_notify_event = %d\n", event->sequence);
 
         ignore_notify_event = event->sequence;
 

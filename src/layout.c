@@ -304,29 +304,30 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 /* Reconfigure the currently focused client, if necessary. It is the only visible one */
                 client = container->currently_focused;
 
-                /* Check if we changed client->x or client->y by updating it.
-                 * Note the bitwise OR instead of logical OR to force evaluation of both statements */
-                if (client->force_reconfigure |
-                    HAS_CHANGED(old_value_1, client->rect.x, container->x) |
-                    HAS_CHANGED(old_value_2, client->rect.y, container->y + (decoration_height * num_clients)))
-                        reposition_client(conn, client);
-
-                if (client->force_reconfigure |
-                    HAS_CHANGED(old_value_1, client->rect.width, container->width) |
-                    HAS_CHANGED(old_value_2, client->rect.height, container->height - (decoration_height * num_clients)))
-                        resize_client(conn, client);
-
-                client->force_reconfigure = false;
-
                 if (container->workspace->fullscreen_client == NULL) {
                         uint32_t values[] = { XCB_STACK_MODE_ABOVE };
                         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
                 }
 
                 /* Render the decorations of all clients */
-                CIRCLEQ_FOREACH(client, &(container->clients), clients)
+                CIRCLEQ_FOREACH(client, &(container->clients), clients) {
+                        /* Check if we changed client->x or client->y by updating it.
+                         * Note the bitwise OR instead of logical OR to force evaluation of both statements */
+                        if (client->force_reconfigure |
+                            HAS_CHANGED(old_value_1, client->rect.x, container->x) |
+                            HAS_CHANGED(old_value_2, client->rect.y, container->y + (decoration_height * num_clients)))
+                                reposition_client(conn, client);
+
+                        if (client->force_reconfigure |
+                            HAS_CHANGED(old_value_1, client->rect.width, container->width) |
+                            HAS_CHANGED(old_value_2, client->rect.height, container->height - (decoration_height * num_clients)))
+                                resize_client(conn, client);
+
+                        client->force_reconfigure = false;
+
                         decorate_window(conn, client, stack_win->window, stack_win->gc,
                                         current_client++ * decoration_height);
+                }
         }
 }
 
