@@ -22,6 +22,7 @@
 #include "table.h"
 #include "layout.h"
 #include "i3.h"
+#include "xinerama.h"
 
 static bool focus_window_in_container(xcb_connection_t *connection, Container *container,
                 direction_t direction) {
@@ -52,14 +53,15 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
         int new_row = current_row,
             new_col = current_col;
 
+        Container *container = CUR_CELL;
+        Workspace *t_ws = c_ws;
+
+        /* There always is a container. If not, current_col or current_row is wrong */
+        assert(container != NULL);
+
         /* TODO: for horizontal default layout, this has to be expanded to LEFT/RIGHT */
         if (direction == D_UP || direction == D_DOWN) {
                 /* Let’s see if we can perform up/down focus in the current container */
-                Container *container = CUR_CELL;
-
-                /* There always is a container. If not, current_col or current_row is wrong */
-                assert(container != NULL);
-
                 if (focus_window_in_container(connection, container, direction))
                         return;
 
@@ -67,22 +69,52 @@ static void focus_window(xcb_connection_t *connection, direction_t direction) {
                         new_row++;
                 else if (direction == D_UP && cell_exists(current_col, current_row-1))
                         new_row--;
+                else {
+                        /* Let’s see if there is a screen down/up there to which we can switch */
+                        printf("container is at %d with height %d\n", container->y, container->height);
+                        i3Screen *screen;
+                        int destination_y = (direction == D_UP ? (container->y - 1) : (container->y + container->height + 1));
+                        if ((screen = get_screen_containing(container->x, destination_y)) == NULL) {
+                                printf("Not possible, no screen found.\n");
+                                return;
+                        }
+                        t_ws = &(workspaces[screen->current_workspace]);
+                        new_row = (direction == D_UP ? (t_ws->rows - 1) : 0);
+                        /* Bounds checking */
+                        if (new_col >= t_ws->cols)
+                                new_col = (t_ws->cols - 1);
+                        if (new_row >= t_ws->rows)
+                                new_row = (t_ws->rows - 1);
+                }
         } else if (direction == D_LEFT || direction == D_RIGHT) {
                 if (direction == D_RIGHT && cell_exists(current_col+1, current_row))
                         new_col++;
                 else if (direction == D_LEFT && cell_exists(current_col-1, current_row))
                         new_col--;
                 else {
-                        printf("nah, not possible\n");
-                        return;
+                        /* Let’s see if there is a screen left/right here to which we can switch */
+                        printf("container is at %d with width %d\n", container->x, container->width);
+                        i3Screen *screen;
+                        int destination_x = (direction == D_LEFT ? (container->x - 1) : (container->x + container->width + 1));
+                        if ((screen = get_screen_containing(destination_x, container->y)) == NULL) {
+                                printf("Not possible, no screen found.\n");
+                                return;
+                        }
+                        t_ws = &(workspaces[screen->current_workspace]);
+                        new_col = (direction == D_LEFT ? (t_ws->cols - 1) : 0);
+                        /* Bounds checking */
+                        if (new_col >= t_ws->cols)
+                                new_col = (t_ws->cols - 1);
+                        if (new_row >= t_ws->rows)
+                                new_row = (t_ws->rows - 1);
                 }
         } else {
                 printf("direction unhandled\n");
                 return;
         }
 
-        if (c_ws->table[new_col][new_row]->currently_focused != NULL)
-                set_focus(connection, c_ws->table[new_col][new_row]->currently_focused);
+        if (t_ws->table[new_col][new_row]->currently_focused != NULL)
+                set_focus(connection, t_ws->table[new_col][new_row]->currently_focused);
 }
 
 /*
