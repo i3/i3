@@ -23,6 +23,7 @@
 #include "data.h"
 #include "table.h"
 #include "util.h"
+#include "i3.h"
 
 int current_workspace = 0;
 Workspace workspaces[10];
@@ -106,7 +107,7 @@ bool cell_exists(int col, int row) {
                (row >= 0 && row < c_ws->rows);
 }
 
-static void move_columns_from(Workspace *workspace, int cols) {
+static void move_columns_from(xcb_connection_t *conn, Workspace *workspace, int cols) {
         for (; cols < workspace->cols; cols++)
                 for (int rows = 0; rows < workspace->rows; rows++) {
                         Container *old_container = workspace->table[cols-1][rows],
@@ -116,6 +117,13 @@ static void move_columns_from(Workspace *workspace, int cols) {
                         Client *client;
                         CIRCLEQ_FOREACH(client, &(old_container->clients), clients)
                                 client->container = new_container;
+
+                        struct Stack_Window *stack_win;
+                        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
+                                if (stack_win == &(old_container->stack_win)) {
+                                        xcb_destroy_window(conn, stack_win->window);
+                                        SLIST_REMOVE(&stack_wins, stack_win, Stack_Window, stack_windows);
+                                }
 
                         free(old_container);
 
@@ -129,7 +137,7 @@ static void move_columns_from(Workspace *workspace, int cols) {
                 }
 }
 
-static void move_rows_from(Workspace *workspace, int rows) {
+static void move_rows_from(xcb_connection_t *conn, Workspace *workspace, int rows) {
         for (; rows < workspace->rows; rows++)
                 for (int cols = 0; cols < workspace->cols; cols++) {
                         Container *old_container = workspace->table[cols][rows-1],
@@ -139,6 +147,13 @@ static void move_rows_from(Workspace *workspace, int rows) {
                         Client *client;
                         CIRCLEQ_FOREACH(client, &(old_container->clients), clients)
                                 client->container = new_container;
+
+                        struct Stack_Window *stack_win;
+                        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
+                                if (stack_win == &(old_container->stack_win)) {
+                                        xcb_destroy_window(conn, stack_win->window);
+                                        SLIST_REMOVE(&stack_wins, stack_win, Stack_Window, stack_windows);
+                                }
 
                         free(old_container);
 
@@ -168,7 +183,7 @@ void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
                 if (completely_empty) {
                         printf("Removing completely empty column %d\n", cols);
                         if (cols < (workspace->cols - 1))
-                                move_columns_from(workspace, cols+1);
+                                move_columns_from(conn, workspace, cols+1);
                         shrink_table_cols(workspace);
 
                         if (workspace->current_col >= workspace->cols)
@@ -187,7 +202,7 @@ void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
                 if (completely_empty) {
                         printf("Removing completely empty row %d\n", rows);
                         if (rows < (workspace->rows - 1))
-                                move_rows_from(workspace, rows+1);
+                                move_rows_from(conn, workspace, rows+1);
                         shrink_table_rows(workspace);
 
                         if (workspace->current_row >= workspace->rows)
