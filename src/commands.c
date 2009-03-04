@@ -384,10 +384,17 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
         //xcb_grab_server(conn);
 
         /* Unmap all clients of the current workspace */
+        int unmapped_clients = 0;
         for (int cols = 0; cols < c_ws->cols; cols++)
                 for (int rows = 0; rows < c_ws->rows; rows++)
-                        CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
+                        CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients) {
                                 xcb_unmap_window(conn, client->frame);
+                                unmapped_clients++;
+                        }
+
+        /* If we did not unmap any clients, the workspace is empty and we can destroy it */
+        if (unmapped_clients == 0)
+                c_ws->screen = NULL;
 
         /* Unmap the stack windows on the current workspace, if any */
         struct Stack_Window *stack_win;
