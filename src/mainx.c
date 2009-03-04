@@ -174,7 +174,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                           height + 2 + 2 + font->height}; /* 2 px border plus font’s height */
 
         /* Yo dawg, I heard you like windows, so I create a window around your window… */
-        new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, mask, values);
+        new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
 
         /* Put the client inside the save set. Upon termination (whether killed or normal exit
            does not matter) of the window manager, these clients will be correctly reparented

@@ -223,7 +223,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         /* Open a new window, the resizebar. Grab the pointer and move the window around
            as the user moves the pointer. */
         Rect grabrect = {0, 0, root_screen->width_in_pixels, root_screen->height_in_pixels};
-        xcb_window_t grabwin = create_window(conn, grabrect, XCB_WINDOW_CLASS_INPUT_ONLY, 0, NULL);
+        xcb_window_t grabwin = create_window(conn, grabrect, XCB_WINDOW_CLASS_INPUT_ONLY, -1, 0, NULL);
 
         Rect helprect;
         if (orientation == O_VERTICAL) {
@@ -234,10 +234,13 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         } else {
                 helprect.x = 0;
                 helprect.y = event->root_y;
-                helprect.width = root_screen->width_in_pixels; /* this has to be the cell’s width*/
+                helprect.width = root_screen->width_in_pixels; /* this has to be the cell’s width */
                 helprect.height = 2;
         }
-        xcb_window_t helpwin = create_window(conn, helprect, XCB_WINDOW_CLASS_INPUT_OUTPUT, 0, NULL);
+        xcb_window_t helpwin = create_window(conn, helprect, XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                                             (orientation == O_VERTICAL ?
+                                              XCB_CURSOR_SB_V_DOUBLE_ARROW :
+                                              XCB_CURSOR_SB_H_DOUBLE_ARROW), 0, NULL);
 
         uint32_t values[1] = {get_colorpixel(conn, NULL, helpwin, "#4c7899")};
         xcb_void_cookie_t cookie = xcb_change_window_attributes_checked(conn, helpwin, XCB_CW_BACK_PIXEL, values);

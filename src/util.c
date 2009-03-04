@@ -184,7 +184,7 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
                                 XCB_EVENT_MASK_EXPOSURE;        /* …our window needs to be redrawn */
 
                 struct Stack_Window *stack_win = &(container->stack_win);
-                stack_win->window = create_window(conn, rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, mask, values);
+                stack_win->window = create_window(conn, rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
 
                 /* Generate a graphics context for the titlebar */
                 stack_win->gc = xcb_generate_id(conn);

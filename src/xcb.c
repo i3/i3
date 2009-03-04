@@ -18,6 +18,7 @@
 #include <xcb/xcb.h>
 
 #include "util.h"
+#include "xcb.h"
 
 TAILQ_HEAD(cached_fonts_head, Font) cached_fonts = TAILQ_HEAD_INITIALIZER(cached_fonts);
 
@@ -122,13 +123,23 @@ uint32_t get_colorpixel(xcb_connection_t *conn, Client *client, xcb_window_t win
  * for errors.
  *
  */
-xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class, uint32_t mask, uint32_t *values) {
+xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class, uint16_t cursor,
+                           uint32_t mask, uint32_t *values) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         xcb_window_t result = xcb_generate_id(conn);
+        xcb_cursor_t cursor_id = xcb_generate_id(conn);
         xcb_void_cookie_t cookie;
 
         /* If the window class is XCB_WINDOW_CLASS_INPUT_ONLY, depth has to be 0 */
         uint16_t depth = (window_class == XCB_WINDOW_CLASS_INPUT_ONLY ? 0 : XCB_COPY_FROM_PARENT);
+
+        /* Use the default cursor (left pointer) */
+        if (cursor > -1) {
+                i3Font *cursor_font = load_font(conn, "cursor");
+                xcb_create_glyph_cursor(conn, cursor_id, cursor_font->id, cursor_font->id,
+                                XCB_CURSOR_LEFT_PTR, XCB_CURSOR_LEFT_PTR + 1,
+                                0, 0, 0, 65535, 65535, 65535);
+        }
 
         cookie = xcb_create_window_checked(conn,
                                            depth,
@@ -141,6 +152,11 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
                                            mask,
                                            values);
         check_error(conn, cookie, "Could not create window");
+
+        if (cursor > -1) {
+                cookie = xcb_change_window_attributes_checked(conn, result, XCB_CW_CURSOR, &cursor_id);
+                check_error(conn, cookie, "Could not change window attributes");
+        }
 
         /* Map the window (= make it visible) */
         xcb_map_window(conn, result);

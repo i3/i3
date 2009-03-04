@@ -140,7 +140,7 @@ static void initialize_screen(xcb_connection_t *connection, i3Screen *screen, Wo
                          font->height + 6};
         uint32_t mask = XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
         uint32_t values[] = {1, XCB_EVENT_MASK_EXPOSURE};
-        screen->bar = create_window(connection, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, mask, values);
+        screen->bar = create_window(connection, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
         screen->bargc = xcb_generate_id(connection);
         xcb_create_gc(connection, screen->bargc, screen->bar, 0, 0);
 
