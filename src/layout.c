@@ -95,7 +95,6 @@ void redecorate_window(xcb_connection_t *conn, Client *client) {
         } else decorate_window(conn, client, client->frame, client->titlegc, 0);
 }
 
-
 /*
  * (Re-)draws window decorations for a given Client onto the given drawable/graphic context.
  * When in stacking mode, the window decorations are drawn onto an own window.
@@ -150,7 +149,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
 
         /* TODO: utf8? */
         char *label;
-        asprintf(&label, "(%08x) %.*s", client->frame, client->name_len, client->name);
+        asprintf(&label, "%.*s", client->name_len, client->name);
         xcb_void_cookie_t text_cookie = xcb_image_text_8_checked(conn, strlen(label), drawable,
                                         gc, 3 /* X */, offset + font->height /* Y = baseline of font */, label);
         check_error(conn, text_cookie, "Could not draw client's title");
