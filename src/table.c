@@ -118,12 +118,8 @@ static void move_columns_from(xcb_connection_t *conn, Workspace *workspace, int 
                         CIRCLEQ_FOREACH(client, &(old_container->clients), clients)
                                 client->container = new_container;
 
-                        struct Stack_Window *stack_win;
-                        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
-                                if (stack_win == &(old_container->stack_win)) {
-                                        xcb_destroy_window(conn, stack_win->window);
-                                        SLIST_REMOVE(&stack_wins, stack_win, Stack_Window, stack_windows);
-                                }
+                        if (old_container->mode == MODE_STACK)
+                                leave_stack_mode(conn, old_container);
 
                         free(old_container);
 
@@ -148,12 +144,8 @@ static void move_rows_from(xcb_connection_t *conn, Workspace *workspace, int row
                         CIRCLEQ_FOREACH(client, &(old_container->clients), clients)
                                 client->container = new_container;
 
-                        struct Stack_Window *stack_win;
-                        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
-                                if (stack_win == &(old_container->stack_win)) {
-                                        xcb_destroy_window(conn, stack_win->window);
-                                        SLIST_REMOVE(&stack_wins, stack_win, Stack_Window, stack_windows);
-                                }
+                        if (old_container->mode == MODE_STACK)
+                                leave_stack_mode(conn, old_container);
 
                         free(old_container);
 

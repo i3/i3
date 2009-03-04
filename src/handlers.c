@@ -436,7 +436,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                    correctly resize the stack_win */
                 if (con->currently_focused == NULL && con->mode == MODE_STACK) {
                         struct Stack_Window *stack_win = &(con->stack_win);
-                        stack_win->height = 0;
+                        stack_win->rect.height = 0;
                         xcb_unmap_window(conn, stack_win->window);
                 }
 

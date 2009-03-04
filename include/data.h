@@ -101,7 +101,7 @@ struct Colorpixel {
 struct Stack_Window {
         xcb_window_t window;
         xcb_gcontext_t gc;
-        uint32_t width, height;
+        Rect rect;
 
         /* Backpointer to the container this stack window is in */
         Container *container;

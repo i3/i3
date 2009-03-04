@@ -157,6 +157,24 @@ void set_focus(xcb_connection_t *conn, Client *client) {
 }
 
 /*
+ * Called when the user switches to another mode or when the container is
+ * destroyed and thus needs to be cleaned up.
+ *
+ */
+void leave_stack_mode(xcb_connection_t *conn, Container *container) {
+        /* When going out of stacking mode, we need to close the window */
+        struct Stack_Window *stack_win = &(container->stack_win);
+
+        SLIST_REMOVE(&stack_wins, stack_win, Stack_Window, stack_windows);
+
+        xcb_free_gc(conn, stack_win->gc);
+        xcb_destroy_window(conn, stack_win->window);
+
+        stack_win->rect.width = -1;
+        stack_win->rect.height = -1;
+}
+
+/*
  * Switches the layout of the given container taking care of the necessary house-keeping
  *
  */
@@ -194,18 +212,8 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
 
                 SLIST_INSERT_HEAD(&stack_wins, stack_win, stack_windows);
         } else {
-                if (container->mode == MODE_STACK) {
-                        /* When going out of stacking mode, we need to close the window */
-                        struct Stack_Window *stack_win = &(container->stack_win);
-
-                        SLIST_REMOVE(&stack_wins, stack_win, Stack_Window, stack_windows);
-
-                        xcb_free_gc(conn, stack_win->gc);
-                        xcb_destroy_window(conn, stack_win->window);
-
-                        stack_win->width = -1;
-                        stack_win->height = -1;
-                }
+                if (container->mode == MODE_STACK)
+                        leave_stack_mode(conn, container);
         }
         container->mode = mode;
 

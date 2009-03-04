@@ -33,6 +33,8 @@
 
 static int old_value_1;
 static int old_value_2;
+static int old_value_3;
+static int old_value_4;
 
 /*
  * Gets the unoccupied space (= space which is available for windows which were resized by the user)
@@ -279,17 +281,24 @@ void render_container(xcb_connection_t *conn, Container *container) {
 
                 /* Check if we need to remap our stack title window, it gets unmapped when the container
                    is empty in src/handlers.c:unmap_notify() */
-                if (stack_win->height == 0)
+                if (stack_win->rect.height == 0)
                         xcb_map_window(conn, stack_win->window);
 
                 /* Check if we need to reconfigure our stack title window */
-                if (HAS_CHANGED(old_value_1, stack_win->width, container->width) |
-                    HAS_CHANGED(old_value_2, stack_win->height, decoration_height * num_clients)) {
-                        uint32_t values[] = { stack_win->width, stack_win->height, XCB_STACK_MODE_ABOVE };
+                if (HAS_CHANGED(old_value_1, stack_win->rect.x, container->x) |
+                    HAS_CHANGED(old_value_2, stack_win->rect.y, container->y) |
+                    HAS_CHANGED(old_value_3, stack_win->rect.width, container->width) |
+                    HAS_CHANGED(old_value_4, stack_win->rect.height, decoration_height * num_clients)) {
+
+                        uint32_t values[] = { stack_win->rect.x, stack_win->rect.y,
+                                              stack_win->rect.width, stack_win->rect.height,
+                                              XCB_STACK_MODE_ABOVE };
 
                         xcb_configure_window(conn, stack_win->window,
-                                XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_STACK_MODE,
-                                values);
+                                             XCB_CONFIG_WINDOW_X     | XCB_CONFIG_WINDOW_Y      |
+                                             XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
+                                             XCB_CONFIG_WINDOW_STACK_MODE,
+                                             values);
                 }
 
                 /* Reconfigure the currently focused client, if necessary. It is the only visible one */
