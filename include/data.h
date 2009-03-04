@@ -121,6 +121,9 @@ struct Stack_Window {
  *
  */
 struct Workspace {
+        /* Number of this workspace, starting from 0 */
+        int num;
+
         /* x, y, width, height */
         Rect rect;
 

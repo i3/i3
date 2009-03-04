@@ -40,6 +40,7 @@ void init_table() {
 
         for (int i = 0; i < 10; i++) {
                 workspaces[i].screen = NULL;
+                workspaces[i].num = i;
                 SLIST_INIT(&(workspaces[i].dock_clients));
                 expand_table_cols(&(workspaces[i]));
                 expand_table_rows(&(workspaces[i]));

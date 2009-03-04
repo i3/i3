@@ -140,6 +140,7 @@ static void move_current_window(xcb_connection_t *connection, direction_t direct
 
         switch (direction) {
                 case D_LEFT:
+                        /* TODO: If we’re at the left-most position, move the rest of the table right */
                         if (current_col == 0)
                                 return;
 
@@ -252,6 +253,60 @@ static void snap_current_container(xcb_connection_t *connection, direction_t dir
         render_layout(connection);
 }
 
+/*
+ * Moves the currently selected window to the given workspace
+ *
+ */
+static void move_current_window_to_workspace(xcb_connection_t *connection, int workspace) {
+        printf("Moving current window to workspace %d\n", workspace);
+
+        Container *container = CUR_CELL;
+
+        assert(container != NULL);
+
+        /* t_ws (to workspace) is just a container pointer to the workspace we’re switching to */
+        Workspace *t_ws = &(workspaces[workspace-1]);
+
+        Client *current_client = container->currently_focused;
+        if (current_client == NULL) {
+                printf("No currently focused client in current container.\n");
+                return;
+        }
+        Client *to_focus = CIRCLEQ_NEXT_OR_NULL(&(container->clients), current_client, clients);
+        if (to_focus == NULL)
+                to_focus = CIRCLEQ_PREV_OR_NULL(&(container->clients), current_client, clients);
+
+        if (t_ws->screen == NULL) {
+                printf("initializing new workspace, setting num to %d\n", workspace-1);
+                t_ws->screen = container->workspace->screen;
+                /* Copy the dimensions from the virtual screen */
+		memcpy(&(t_ws->rect), &(container->workspace->screen->rect), sizeof(Rect));
+        }
+
+        Container *to_container = t_ws->table[t_ws->current_col][t_ws->current_row];
+
+        assert(to_container != NULL);
+
+        CIRCLEQ_REMOVE(&(container->clients), current_client, clients);
+        CIRCLEQ_INSERT_TAIL(&(to_container->clients), current_client, clients);
+        printf("Moved.\n");
+
+        current_client->container = to_container;
+        container->currently_focused = to_focus;
+        to_container->currently_focused = current_client;
+
+        /* If we’re moving it to an invisible screen, we need to unmap it */
+        if (to_container->workspace->screen->current_workspace != to_container->workspace->num) {
+                printf("This workspace is not visible, unmapping\n");
+                xcb_unmap_window(connection, current_client->frame);
+        }
+
+        /* delete all empty columns/rows */
+        cleanup_table(connection, container->workspace);
+
+        render_layout(connection);
+}
+
 static void show_workspace(xcb_connection_t *conn, int workspace) {
         Client *client;
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
@@ -274,7 +329,7 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
 
         if (c_ws->screen != t_ws->screen) {
                 /* We need to switch to the other screen first */
-                printf("Just moving over to other screen.\n");
+                printf("moving over to other screen.\n");
                 c_ws = &(workspaces[t_ws->screen->current_workspace]);
                 current_col = c_ws->current_col;
                 current_row = c_ws->current_row;
@@ -381,11 +436,10 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         }
 
         /* It's a normal <cmd> */
-        int times;
         char *rest = NULL;
         enum { ACTION_FOCUS, ACTION_MOVE, ACTION_SNAP } action = ACTION_FOCUS;
         direction_t direction;
-        times = strtol(command, &rest, 10);
+        int times = strtol(command, &rest, 10);
         if (rest == NULL) {
                 printf("Invalid command (\"%s\")\n", command);
                 return;
@@ -400,6 +454,18 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         if (*rest == 'm' || *rest == 's') {
                 action = (*rest == 'm' ? ACTION_MOVE : ACTION_SNAP);
                 rest++;
+        }
+
+        int workspace = strtol(rest, &rest, 10);
+
+        if (rest == NULL) {
+                printf("Invalid command (\"%s\")\n", command);
+                return;
+        }
+
+        if (*rest == '\0') {
+                move_current_window_to_workspace(conn, workspace);
+                return;
         }
 
         /* Now perform action to <where> */

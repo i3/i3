@@ -147,6 +147,11 @@ bind Mod1+Shift+46 mk
 bind Mod1+Shift+47 ml
 # Workspaces
 bind Mod1+10 1
+bind Mod1+11 2
+...
+# Move to Workspace
+bind Mod1+Shift+10 1
+bind Mod1+Shift+11 2
 ...
 -------------------------------------------------------------
 
