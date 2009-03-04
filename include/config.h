@@ -9,6 +9,6 @@ struct Config {
 	const char *font;
 };
 
-void load_configuration(const char *configfile);
+void load_configuration(const char *override_configfile);
 
 #endif

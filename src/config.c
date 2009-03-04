@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+#include <glob.h>
 
 #include "i3.h"
 #include "util.h"
@@ -20,10 +21,27 @@
 Config config;
 
 /*
- * Reads the configuration from the given file
+ * This function resolves ~ in pathnames.
  *
  */
-void load_configuration(const char *configfile) {
+static char *glob_path(const char *path) {
+	static glob_t globbuf;
+	if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0)
+		die("glob() failed");
+	char *result = sstrdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
+	globfree(&globbuf);
+	return result;
+}
+
+
+/*
+ * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
+ *
+ * If you specify override_configpath, only this path is used to look for a
+ * configuration file.
+ *
+ */
+void load_configuration(const char *override_configpath) {
 #define OPTION_STRING(name) \
         if (strcasecmp(key, #name) == 0) { \
                 config.name = sstrdup(value); \
@@ -37,14 +55,18 @@ void load_configuration(const char *configfile) {
         /* Clear the old config or initialize the data structure */
         memset(&config, 0, sizeof(config));
 
-        /* check if the file exists */
-        struct stat buf;
-        if (stat(configfile, &buf) < 0)
-                return;
-
-        FILE *handle = fopen(configfile, "r");
-        if (handle == NULL)
-                die("Could not open configfile\n");
+        FILE *handle;
+        if (override_configpath != NULL) {
+                if ((handle = fopen(override_configpath, "r")) == NULL)
+                        die("Could not open configfile \"%s\".\n", override_configpath);
+        } else {
+                /* We first check for ~/.i3/config, then for /etc/i3/config */
+                char *globbed = glob_path("~/.i3/config");
+                if ((handle = fopen(globbed, "r")) == NULL)
+                        if ((handle = fopen("/etc/i3/config", "r")) == NULL)
+                                die("Neither \"%s\" nor /etc/i3/config could be opened\n", globbed);
+                free(globbed);
+        }
         char key[512], value[512], buffer[1026];
 
         while (!feof(handle)) {

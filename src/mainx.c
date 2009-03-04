@@ -304,7 +304,7 @@ int main(int argc, char *argv[], char *env[]) {
         byChild = alloc_table();
         byParent = alloc_table();
 
-        load_configuration("i3.config");
+        load_configuration(NULL);
 
         c = xcb_connect(NULL, &screens);
 
