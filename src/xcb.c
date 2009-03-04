@@ -123,7 +123,7 @@ uint32_t get_colorpixel(xcb_connection_t *conn, Client *client, xcb_window_t win
  * for errors.
  *
  */
-xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class, uint16_t cursor,
+xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class, int cursor,
                            uint32_t mask, uint32_t *values) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         xcb_window_t result = xcb_generate_id(conn);
