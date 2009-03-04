@@ -107,11 +107,22 @@ bool cell_exists(int col, int row) {
 static void move_columns_from(Workspace *workspace, int cols) {
         for (; cols < workspace->cols; cols++)
                 for (int rows = 0; rows < workspace->rows; rows++) {
-                        free(workspace->table[cols-1][rows]);
+                        Container *old_container = workspace->table[cols-1][rows],
+                                  *new_container = workspace->table[cols][rows];
+
+                        /* Fix the container backpointer for all clients */
+                        Client *client;
+                        CIRCLEQ_FOREACH(client, &(old_container->clients), clients)
+                                client->container = new_container;
+
+                        free(old_container);
 
                         printf("moving cols = %d to cols -1 = %d\n", cols, cols-1);
-                        workspace->table[cols-1][rows] = workspace->table[cols][rows];
-                        workspace->table[cols-1][rows]->col--;
+                        workspace->table[cols-1][rows] = new_container;
+
+                        new_container->row = rows;
+                        new_container->col = cols-1;
+
                         workspace->table[cols][rows] = NULL;
                 }
 }
@@ -119,11 +130,20 @@ static void move_columns_from(Workspace *workspace, int cols) {
 static void move_rows_from(Workspace *workspace, int rows) {
         for (; rows < workspace->rows; rows++)
                 for (int cols = 0; cols < workspace->cols; cols++) {
-                        free(workspace->table[cols][rows-1]);
+                        Container *old_container = workspace->table[cols][rows-1],
+                                  *new_container = workspace->table[cols][rows];
+
+                        /* Fix the container backpointer for all clients */
+                        Client *client;
+                        CIRCLEQ_FOREACH(client, &(old_container->clients), clients)
+                                client->container = new_container;
+
+                        free(old_container);
 
                         printf("moving rows = %d to rows -1 = %d\n", rows, rows - 1);
-                        workspace->table[cols][rows-1] = workspace->table[cols][rows];
-                        workspace->table[cols][rows-1]->row--;
+                        workspace->table[cols][rows-1] = new_container;
+                        new_container->row = rows-1;
+                        new_container->col = cols;
                         workspace->table[cols][rows] = NULL;
                 }
 }
