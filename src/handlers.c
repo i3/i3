@@ -27,6 +27,7 @@
 #include "xcb.h"
 #include "util.h"
 #include "xinerama.h"
+#include "config.h"
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -135,8 +136,32 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 client = table_get(byParent, event->event);
                 border_click = true;
         }
-        if (client == NULL)
+        if (client == NULL) {
+                /* The client was neither on a client’s titlebar nor on a client itself, maybe on a stack_window? */
+                struct Stack_Window *stack_win;
+                SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
+                        if (stack_win->window == event->event) {
+                                /* A stack window was clicked. We calculate the destination client by
+                                   dividing the Y position of the event through the height of a window
+                                   decoration and then set the focus to this client. */
+                                i3Font *font = load_font(conn, config.font);
+                                int decoration_height = (font->height + 2 + 2);
+                                int destination = (event->event_y / decoration_height),
+                                    c = 0;
+                                Client *client;
+
+                                printf("Click on stack_win for client %d\n", destination);
+                                CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
+                                        if (c++ == destination) {
+                                                set_focus(conn, client);
+                                                return 1;
+                                        }
+
+                                return 1;
+                        }
+
                 return 1;
+        }
 
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
