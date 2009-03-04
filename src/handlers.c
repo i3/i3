@@ -23,7 +23,6 @@
 #include "layout.h"
 #include "commands.h"
 #include "data.h"
-#include "font.h"
 #include "xcb.h"
 #include "util.h"
 #include "xinerama.h"

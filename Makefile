@@ -5,6 +5,7 @@ INSTALL=install
 CFLAGS += -std=c99
 CFLAGS += -pipe
 CFLAGS += -Wall
+CFLAGS += -Wunused
 CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include
 

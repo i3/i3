@@ -24,7 +24,6 @@
 #include "xinerama.h"
 #include "layout.h"
 #include "xcb.h"
-#include "font.h"
 #include "config.h"
 
 /* This TAILQ of i3Screens stores the virtual screens, used for handling overlapping screens

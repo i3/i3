@@ -35,7 +35,6 @@
 #include "config.h"
 #include "queue.h"
 #include "table.h"
-#include "font.h"
 #include "layout.h"
 #include "debug.h"
 #include "handlers.h"

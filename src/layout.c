@@ -17,7 +17,6 @@
 #include <assert.h>
 
 #include "config.h"
-#include "font.h"
 #include "i3.h"
 #include "xcb.h"
 #include "table.h"

@@ -11,6 +11,8 @@
 #ifndef _XCB_H
 #define _XCB_H
 
+#include "data.h"
+
 #define _NET_WM_STATE_REMOVE 0
 #define _NET_WM_STATE_ADD 1
 #define _NET_WM_STATE_TOGGLE 2
@@ -27,6 +29,7 @@ enum { _NET_SUPPORTED = 0,
         UTF8_STRING
 };
 
+i3Font *load_font(xcb_connection_t *connection, const char *pattern);
 uint32_t get_colorpixel(xcb_connection_t *conn, Client *client, xcb_window_t window, char *hex);
 xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class, uint32_t mask, uint32_t *values);
 void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t mask, uint32_t value);
