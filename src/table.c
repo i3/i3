@@ -47,12 +47,14 @@ void init_table() {
         }
 }
 
-static void new_container(Workspace *workspace, Container **container) {
+static void new_container(Workspace *workspace, Container **container, int col, int row) {
         Container *new;
         new = *container = calloc(sizeof(Container), 1);
         CIRCLEQ_INIT(&(new->clients));
         new->colspan = 1;
         new->rowspan = 1;
+        new->col = col;
+        new->row = row;
         new->workspace = workspace;
 }
 
@@ -65,7 +67,7 @@ void expand_table_rows(Workspace *workspace) {
 
         for (int c = 0; c < workspace->cols; c++) {
                 workspace->table[c] = realloc(workspace->table[c], sizeof(Container*) * workspace->rows);
-                new_container(workspace, &(workspace->table[c][workspace->rows-1]));
+                new_container(workspace, &(workspace->table[c][workspace->rows-1]), c, workspace->rows-1);
         }
 }
 
@@ -79,7 +81,7 @@ void expand_table_cols(Workspace *workspace) {
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
         workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
         for (int c = 0; c < workspace->rows; c++)
-                new_container(workspace, &(workspace->table[workspace->cols-1][c]));
+                new_container(workspace, &(workspace->table[workspace->cols-1][c]), workspace->cols-1, c);
 }
 
 static void shrink_table_cols(Workspace *workspace) {
