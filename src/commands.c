@@ -41,6 +41,10 @@ static bool focus_window_in_container(xcb_connection_t *conn, Container *contain
                         candidate = CIRCLEQ_FIRST(&(container->clients));
         } else printf("Direction not implemented!\n");
 
+        /* If we could not switch, the container contains exactly one client. We return false */
+        if (candidate == container->currently_focused)
+                return false;
+
         /* Set focus */
         set_focus(conn, candidate);
 
