@@ -446,8 +446,16 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 printf("Removing from focus stack\n");
                 SLIST_REMOVE(&(con->workspace->focus_stack), client, Client, focus_clients);
 
-                /* Remove from currently_focused */
+                /* Set currently_focused to the next client which will get focus in this
+                   particular container. This does not necessarily correspond with the client
+                   that will be focused next */
                 con->currently_focused = NULL;
+                Client *focus_client;
+                SLIST_FOREACH(focus_client, &(con->workspace->focus_stack), focus_clients)
+                        if (focus_client->container == con) {
+                                con->currently_focused = focus_client;
+                                break;
+                        }
 
                 /* Actually set focus, if there is a window which should get it */
                 if (!SLIST_EMPTY(&(con->workspace->focus_stack)))
