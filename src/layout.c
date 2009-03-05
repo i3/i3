@@ -24,17 +24,16 @@
 #include "xinerama.h"
 #include "layout.h"
 
-/* This macro copies the old value of the given variable, changes the variable to contain
-   the new one and returns true if it changed.
-   Note that when combining multiple HAS_CHANGED statements, you need to use different variables.
-   If someone by chance knows why this is necessary (order of expressions in gcc?) and/or can
-   come up with a fix, please mail me. */
-#define HAS_CHANGED(temp, value, new) (temp = value, temp != (value = new))
+/*
+ * Updates *destination with new_value and returns true if it was changed or false
+ * if it was the same
+ *
+ */
+static bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
+        int old_value = *destination;
 
-static int old_value_1;
-static int old_value_2;
-static int old_value_3;
-static int old_value_4;
+        return ((*destination = new_value) != old_value);
+}
 
 /*
  * Gets the unoccupied space (= space which is available for windows which were resized by the user)
@@ -257,15 +256,15 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         /* Check if we changed client->x or client->y by updating it.
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |
-                            HAS_CHANGED(old_value_1, client->rect.x, container->x) |
-                            HAS_CHANGED(old_value_2, client->rect.y, container->y +
+                            update_if_necessary(&(client->rect.x), container->x) |
+                            update_if_necessary(&(client->rect.y), container->y +
                                         (container->height / num_clients) * current_client))
                                 reposition_client(conn, client);
 
                         /* TODO: vertical default layout */
                         if (client->force_reconfigure |
-                            HAS_CHANGED(old_value_1, client->rect.width, container->width) |
-                            HAS_CHANGED(old_value_2, client->rect.height, container->height / num_clients))
+                            update_if_necessary(&(client->rect.width), container->width) |
+                            update_if_necessary(&(client->rect.height), container->height / num_clients))
                                 resize_client(conn, client);
 
                         client->force_reconfigure = false;
@@ -283,10 +282,10 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         xcb_map_window(conn, stack_win->window);
 
                 /* Check if we need to reconfigure our stack title window */
-                if (HAS_CHANGED(old_value_1, stack_win->rect.x, container->x) |
-                    HAS_CHANGED(old_value_2, stack_win->rect.y, container->y) |
-                    HAS_CHANGED(old_value_3, stack_win->rect.width, container->width) |
-                    HAS_CHANGED(old_value_4, stack_win->rect.height, decoration_height * num_clients)) {
+                if (update_if_necessary(&(stack_win->rect.x), container->x) |
+                    update_if_necessary(&(stack_win->rect.y), container->y) |
+                    update_if_necessary(&(stack_win->rect.width), container->width) |
+                    update_if_necessary(&(stack_win->rect.height), decoration_height * num_clients)) {
 
                         uint32_t values[] = { stack_win->rect.x, stack_win->rect.y,
                                               stack_win->rect.width, stack_win->rect.height,
@@ -312,13 +311,13 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         /* Check if we changed client->x or client->y by updating it.
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |
-                            HAS_CHANGED(old_value_1, client->rect.x, container->x) |
-                            HAS_CHANGED(old_value_2, client->rect.y, container->y + (decoration_height * num_clients)))
+                            update_if_necessary(&(client->rect.x), container->x) |
+                            update_if_necessary(&(client->rect.y), container->y + (decoration_height * num_clients)))
                                 reposition_client(conn, client);
 
                         if (client->force_reconfigure |
-                            HAS_CHANGED(old_value_1, client->rect.width, container->width) |
-                            HAS_CHANGED(old_value_2, client->rect.height, container->height - (decoration_height * num_clients)))
+                            update_if_necessary(&(client->rect.width), container->width) |
+                            update_if_necessary(&(client->rect.height), container->height - (decoration_height * num_clients)))
                                 resize_client(conn, client);
 
                         client->force_reconfigure = false;
@@ -333,13 +332,13 @@ static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int 
         Client *client;
         SLIST_FOREACH(client, &(r_ws->dock_clients), dock_clients) {
                 if (client->force_reconfigure |
-                    HAS_CHANGED(old_value_1, client->rect.x, 0) |
-                    HAS_CHANGED(old_value_2, client->rect.y, *height))
+                    update_if_necessary(&(client->rect.x), 0) |
+                    update_if_necessary(&(client->rect.y), *height))
                         reposition_client(conn, client);
 
                 if (client->force_reconfigure |
-                    HAS_CHANGED(old_value_1, client->rect.width, width) |
-                    HAS_CHANGED(old_value_2, client->rect.height, client->desired_height))
+                    update_if_necessary(&(client->rect.width), width) |
+                    update_if_necessary(&(client->rect.height), client->desired_height))
                         resize_client(conn, client);
 
                 client->force_reconfigure = false;
