@@ -435,6 +435,7 @@ void render_layout(xcb_connection_t *conn) {
                 for (int cols = 0; cols < r_ws->cols; cols++)
                         for (int rows = 0; rows < r_ws->rows; rows++) {
                                 Container *container = r_ws->table[cols][rows];
+                                int single_width, single_height;
                                 printf("\n========\ncontainer has %d colspan, %d rowspan\n",
                                                 container->colspan, container->rowspan);
                                 printf("container at %d, %d\n", xoffset[rows], yoffset[cols]);
@@ -447,18 +448,20 @@ void render_layout(xcb_connection_t *conn) {
                                 if (container->width_factor == 0)
                                         container->width = (width / r_ws->cols);
                                 else container->width = get_unoccupied_x(r_ws, rows) * container->width_factor;
+                                single_width = container->width;
                                 container->width *= container->colspan;
 
                                 if (container->height_factor == 0)
                                         container->height = (height / r_ws->rows);
                                 else container->height = get_unoccupied_y(r_ws, cols) * container->height_factor;
+                                single_height = container->height;
                                 container->height *= container->rowspan;
 
                                 /* Render the container if it is not empty */
                                 render_container(conn, container);
 
-                                xoffset[rows] += container->width;
-                                yoffset[cols] += container->height;
+                                xoffset[rows] += single_width;
+                                yoffset[cols] += single_height;
                                 printf("==========\n");
                         }
 

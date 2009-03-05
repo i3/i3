@@ -30,5 +30,8 @@ void expand_table_rows(Workspace *workspace);
 void expand_table_cols(Workspace *workspace);
 bool cell_exists(int col, int row);
 void cleanup_table(xcb_connection_t *conn, Workspace *workspace);
+void fix_colrowspan(xcb_connection_t *conn, Workspace *workspace);
+void dump_table(xcb_connection_t *conn, Workspace *workspace);
+
 
 #endif

@@ -154,6 +154,24 @@ static void move_rows_from(xcb_connection_t *conn, Workspace *workspace, int row
                 }
 }
 
+void dump_table(xcb_connection_t *conn, Workspace *workspace) {
+        printf("dump_table()\n");
+        for (int cols = 0; cols < workspace->cols; cols++) {
+                for (int rows = 0; rows < workspace->rows; rows++) {
+                        Container *con = workspace->table[cols][rows];
+                        printf("----\n");
+                        printf("at col=%d, row=%d\n", cols, rows);
+                        printf("currently_focused = %p\n", con->currently_focused);
+                        Client *loop;
+                        CIRCLEQ_FOREACH(loop, &(con->clients), clients) {
+                                printf("got client %08x / %s\n", loop->child, loop->name);
+                        }
+                        printf("----\n");
+                }
+        }
+        printf("done\n");
+}
+
 /*
  * Shrinks the table by "compacting" it, that is, removing completely empty rows/columns
  *
@@ -208,4 +226,31 @@ void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
 
         if (CUR_CELL->currently_focused != NULL)
                 set_focus(conn, CUR_CELL->currently_focused);
+}
+
+/*
+ * Fixes col/rowspan (makes sure there are no overlapping windows)
+ *
+ */
+void fix_colrowspan(xcb_connection_t *conn, Workspace *workspace) {
+        printf("Fixing col/rowspan\n");
+
+        for (int cols = 0; cols < workspace->cols; cols++)
+                for (int rows = 0; rows < workspace->rows; rows++) {
+                        Container *con = workspace->table[cols][rows];
+                        if (con->colspan > 1) {
+                                printf("gots one with colspan %d\n", con->colspan);
+                                while (con->colspan > 1 &&
+                                       workspace->table[cols + (con->colspan - 1)][rows]->currently_focused != NULL)
+                                        con->colspan--;
+                                printf("fixed it to %d\n", con->colspan);
+                        }
+                        if (con->rowspan > 1) {
+                                printf("gots one with rowspan %d\n", con->rowspan);
+                                while (con->rowspan > 1 &&
+                                       workspace->table[cols][rows + (con->rowspan - 1)]->currently_focused != NULL)
+                                        con->rowspan--;
+                                printf("fixed it to %d\n", con->rowspan);
+                        }
+                }
 }

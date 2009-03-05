@@ -138,6 +138,7 @@ static bool move_current_window_in_container(xcb_connection_t *conn, Client *cli
 
         printf("i can do that\n");
         /* We can move the client inside its current container */
+        /* TODO: needs wrapping */
         CIRCLEQ_REMOVE(&(client->container->clients), client, clients);
         if (direction == D_UP)
                 CIRCLEQ_INSERT_BEFORE(&(client->container->clients), other, client, clients);
@@ -217,6 +218,10 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
 
         /* delete all empty columns/rows */
         cleanup_table(conn, container->workspace);
+
+        /* Fix colspan/rowspan if it’d overlap */
+        fix_colrowspan(conn, container->workspace);
+
         render_layout(conn);
 
         set_focus(conn, current_client);
@@ -237,6 +242,12 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
         switch (direction) {
                 case D_LEFT:
                         /* Snap to the left is actually a move to the left and then a snap right */
+                        if (!cell_exists(container->col - 1, container->row) ||
+                                CUR_TABLE[container->col-1][container->row]->currently_focused != NULL) {
+                                printf("cannot snap to right - the cell is already used\n");
+                                return;
+                        }
+
                         move_current_window(conn, D_LEFT);
                         snap_current_container(conn, D_RIGHT);
                         return;
