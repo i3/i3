@@ -501,7 +501,6 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
  *
  */
 int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *event) {
-        printf("got expose_event\n");
         /* event->count is the number of minimum remaining expose events for this window, so we
            skip all events but the last one */
         if (event->count != 0)

@@ -154,9 +154,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         /* TODO: utf8? */
         char *label;
         asprintf(&label, "%.*s", client->name_len, client->name);
-        xcb_void_cookie_t text_cookie = xcb_image_text_8_checked(conn, strlen(label), drawable,
-                                        gc, 3 /* X */, offset + font->height /* Y = baseline of font */, label);
-        check_error(conn, text_cookie, "Could not draw client's title");
+        xcb_image_text_8(conn, strlen(label), drawable, gc, 3 /* X */, offset + font->height /* Y = baseline of font */, label);
         free(label);
 }
 
@@ -391,10 +389,8 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
                         snprintf(label, sizeof(label), "%d", c+1);
                         xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, text_color[set]);
                         xcb_change_gc_single(conn, screen->bargc, XCB_GC_BACKGROUND, background_color[set]);
-                        xcb_void_cookie_t text_cookie = xcb_image_text_8_checked(conn, strlen(label), screen->bar,
-                                                        screen->bargc, drawn * height + 5 /* X */,
+                        xcb_image_text_8(conn, strlen(label), screen->bar, screen->bargc, drawn * height + 5 /* X */,
                                                         font->height + 1 /* Y = baseline of font */, label);
-                        check_error(conn, text_cookie, "Could not draw workspace title");
                         drawn++;
                 }
         }
