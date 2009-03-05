@@ -244,17 +244,18 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                         /* Snap to the left is actually a move to the left and then a snap right */
                         if (!cell_exists(container->col - 1, container->row) ||
                                 CUR_TABLE[container->col-1][container->row]->currently_focused != NULL) {
-                                printf("cannot snap to right - the cell is already used\n");
+                                printf("cannot snap to left - the cell is already used\n");
                                 return;
                         }
 
                         move_current_window(conn, D_LEFT);
                         snap_current_container(conn, D_RIGHT);
                         return;
-                case D_RIGHT:
+                case D_RIGHT: {
                         /* Check if the cell is used */
-                        if (!cell_exists(container->col + 1, container->row) ||
-                                CUR_TABLE[container->col+1][container->row]->currently_focused != NULL) {
+                        int new_col = container->col + container->colspan;
+                        if (!cell_exists(new_col, container->row) ||
+                                CUR_TABLE[new_col][container->row]->currently_focused != NULL) {
                                 printf("cannot snap to right - the cell is already used\n");
                                 return;
                         }
@@ -263,37 +264,46 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                          * If so, reduce their rowspan. */
                         for (int i = container->row-1; i >= 0; i--) {
                                 printf("we got cell %d, %d with rowspan %d\n",
-                                                container->col+1, i, CUR_TABLE[container->col+1][i]->rowspan);
-                                while ((CUR_TABLE[container->col+1][i]->rowspan-1) >= (container->row - i))
-                                        CUR_TABLE[container->col+1][i]->rowspan--;
-                                printf("new rowspan = %d\n", CUR_TABLE[container->col+1][i]->rowspan);
+                                                new_col, i, CUR_TABLE[new_col][i]->rowspan);
+                                while ((CUR_TABLE[new_col][i]->rowspan-1) >= (container->row - i))
+                                        CUR_TABLE[new_col][i]->rowspan--;
+                                printf("new rowspan = %d\n", CUR_TABLE[new_col][i]->rowspan);
                         }
 
                         container->colspan++;
                         break;
+                }
                 case D_UP:
+                        if (!cell_exists(container->col, container->row - 1) ||
+                                CUR_TABLE[container->col][container->row-1]->currently_focused != NULL) {
+                                printf("cannot snap to top - the cell is already used\n");
+                                return;
+                        }
+
                         move_current_window(conn, D_UP);
                         snap_current_container(conn, D_DOWN);
                         return;
-                case D_DOWN:
+                case D_DOWN: {
                         printf("snapping down\n");
-                        if (!cell_exists(container->col, container->row+1) ||
-                                CUR_TABLE[container->col][container->row+1]->currently_focused != NULL) {
+                        int new_row = container->row + container->rowspan;
+                        if (!cell_exists(container->col, new_row) ||
+                                CUR_TABLE[container->col][new_row]->currently_focused != NULL) {
                                 printf("cannot snap down - the cell is already used\n");
                                 return;
                         }
 
                         for (int i = container->col-1; i >= 0; i--) {
                                 printf("we got cell %d, %d with colspan %d\n",
-                                                i, container->row+1, CUR_TABLE[i][container->row+1]->colspan);
-                                while ((CUR_TABLE[i][container->row+1]->colspan-1) >= (container->col - i))
-                                        CUR_TABLE[i][container->row+1]->colspan--;
-                                printf("new colspan = %d\n", CUR_TABLE[i][container->row+1]->colspan);
+                                                i, new_row, CUR_TABLE[i][new_row]->colspan);
+                                while ((CUR_TABLE[i][new_row]->colspan-1) >= (container->col - i))
+                                        CUR_TABLE[i][new_row]->colspan--;
+                                printf("new colspan = %d\n", CUR_TABLE[i][new_row]->colspan);
 
                         }
 
                         container->rowspan++;
                         break;
+                }
         }
 
         render_layout(conn);
