@@ -360,7 +360,10 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
 
         if (event->event == root) {
                 printf("reconfigure of the root window, need to xinerama\n");
-                xinerama_requery_screens(conn);
+                /* FIXME: Somehow, this is occuring too often. Therefore, we check for 0/0,
+                   but is there a better way? */
+                if (event->x == 0 && event->y == 0)
+                        xinerama_requery_screens(conn);
                 return 1;
         }
 
