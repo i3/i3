@@ -242,7 +242,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                                               XCB_CURSOR_SB_V_DOUBLE_ARROW :
                                               XCB_CURSOR_SB_H_DOUBLE_ARROW), 0, NULL);
 
-        uint32_t values[1] = {get_colorpixel(conn, NULL, helpwin, "#4c7899")};
+        uint32_t values[1] = {get_colorpixel(conn, "#4c7899")};
         xcb_void_cookie_t cookie = xcb_change_window_attributes_checked(conn, helpwin, XCB_CW_BACK_PIXEL, values);
         check_error(conn, cookie, "Could not change window attributes (background color)");
 
@@ -421,15 +421,6 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 return 0;
         }
 
-        /* Free the client’s colorpixel cache */
-        struct Colorpixel *colorpixel;
-        while (!SLIST_EMPTY(&(client->colorpixels))) {
-                colorpixel = SLIST_FIRST(&(client->colorpixels));
-                SLIST_REMOVE_HEAD(&(client->colorpixels), colorpixels);
-                free(colorpixel->hex);
-                free(colorpixel);
-        }
-
         if (client->name != NULL)
                 free(client->name);
 
@@ -534,7 +525,7 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                 decorate_window(conn, client, client->frame, client->titlegc, 0);
         else {
                 xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND,
-                        get_colorpixel(conn, client, client->frame, "#285577"));
+                        get_colorpixel(conn, "#285577"));
 
                 xcb_rectangle_t rect = {0, 0, client->rect.width, client->rect.height};
                 xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &rect);

@@ -236,11 +236,6 @@ struct Client {
         xcb_gcontext_t titlegc;         /* The titlebar’s graphic context inside the frame */
         xcb_window_t child;             /* The client’s window */
 
-        /* Cache of colorpixels for this client */
-        /* TODO: Couldn’t we move them outside here, as they should only depend on the
-           root window? */
-        SLIST_HEAD(colorpixel_head, Colorpixel) colorpixels;
-
         /* The following entry provides the necessary list pointers to use Client with LIST_* macros */
         CIRCLEQ_ENTRY(Client) clients;
         SLIST_ENTRY(Client) dock_clients;

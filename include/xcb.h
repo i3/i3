@@ -35,7 +35,7 @@ enum { _NET_SUPPORTED = 0,
 };
 
 i3Font *load_font(xcb_connection_t *conn, const char *pattern);
-uint32_t get_colorpixel(xcb_connection_t *conn, Client *client, xcb_window_t window, char *hex);
+uint32_t get_colorpixel(xcb_connection_t *conn, char *hex);
 xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class, int cursor,
                            uint32_t mask, uint32_t *values);
 void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t mask, uint32_t value);

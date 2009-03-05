@@ -21,6 +21,7 @@
 #include "xcb.h"
 
 TAILQ_HEAD(cached_fonts_head, Font) cached_fonts = TAILQ_HEAD_INITIALIZER(cached_fonts);
+SLIST_HEAD(colorpixel_head, Colorpixel) colorpixels;
 
 /*
  * Loads a font for usage, getting its height. This function is used very often, so it
@@ -66,20 +67,17 @@ i3Font *load_font(xcb_connection_t *conn, const char *pattern) {
  *
  * The hex_color has to start with #, for example #FF00FF.
  *
- * The client argument is optional. If it is given, the colorpixel will be cached.
- *
  * NOTE that get_colorpixel() does _NOT_ check the given color code for validity.
  * This has to be done by the caller.
  *
  */
-uint32_t get_colorpixel(xcb_connection_t *conn, Client *client, xcb_window_t window, char *hex) {
-        /* Lookup this colorpixel in the cache if a client was specified */
-        if (client != NULL) {
-                struct Colorpixel *pixel;
-                SLIST_FOREACH(pixel, &(client->colorpixels), colorpixels)
-                        if (strcmp(pixel->hex, hex) == 0)
-                                return pixel->pixel;
-        }
+uint32_t get_colorpixel(xcb_connection_t *conn, char *hex) {
+        /* Lookup this colorpixel in the cache */
+        struct Colorpixel *colorpixel;
+        SLIST_FOREACH(colorpixel, &(colorpixels), colorpixels)
+                if (strcmp(colorpixel->hex, hex) == 0)
+                        return colorpixel->pixel;
+
         #define RGB_8_TO_16(i) (65535 * ((i) & 0xFF) / 255)
         char strgroups[3][3] = {{hex[1], hex[2], '\0'},
                                 {hex[3], hex[4], '\0'},
@@ -89,13 +87,10 @@ uint32_t get_colorpixel(xcb_connection_t *conn, Client *client, xcb_window_t win
                         RGB_8_TO_16(strtol(strgroups[2], NULL, 16))};
 
         xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
-
-        xcb_colormap_t colormap_id = xcb_generate_id(conn);
-        xcb_void_cookie_t cookie = xcb_create_colormap_checked(conn, XCB_COLORMAP_ALLOC_NONE,
-                                   colormap_id, window, root_screen->root_visual);
-        check_error(conn, cookie, "Could not create colormap");
-        xcb_alloc_color_reply_t *reply = xcb_alloc_color_reply(conn,
-                        xcb_alloc_color(conn, colormap_id, rgb16[0], rgb16[1], rgb16[2]), NULL);
+        xcb_alloc_color_reply_t *reply;
+        
+        reply = xcb_alloc_color_reply(conn, xcb_alloc_color(conn, root_screen->default_colormap,
+                                                            rgb16[0], rgb16[1], rgb16[2]), NULL);
 
         if (!reply) {
                 printf("Could not allocate color\n");
@@ -104,16 +99,13 @@ uint32_t get_colorpixel(xcb_connection_t *conn, Client *client, xcb_window_t win
 
         uint32_t pixel = reply->pixel;
         free(reply);
-        xcb_free_colormap(conn, colormap_id);
 
-        /* Store the result in the cache if a client was specified */
-        if (client != NULL) {
-                struct Colorpixel *cache_pixel = scalloc(sizeof(struct Colorpixel));
-                cache_pixel->hex = sstrdup(hex);
-                cache_pixel->pixel = pixel;
+        /* Store the result in the cache */
+        struct Colorpixel *cache_pixel = scalloc(sizeof(struct Colorpixel));
+        cache_pixel->hex = sstrdup(hex);
+        cache_pixel->pixel = pixel;
 
-                SLIST_INSERT_HEAD(&(client->colorpixels), cache_pixel, colorpixels);
-        }
+        SLIST_INSERT_HEAD(&(colorpixels), cache_pixel, colorpixels);
 
         return pixel;
 }

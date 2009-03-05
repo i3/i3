@@ -114,16 +114,16 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         if (client->container->currently_focused == client) {
                 /* Distinguish if the window is currently focused… */
                 if (CUR_CELL->currently_focused == client)
-                        background_color = get_colorpixel(conn, client, client->frame, "#285577");
+                        background_color = get_colorpixel(conn, "#285577");
                 /* …or if it is the focused window in a not focused container */
-                else background_color = get_colorpixel(conn, client, client->frame, "#555555");
+                else background_color = get_colorpixel(conn, "#555555");
 
-                text_color = get_colorpixel(conn, client, client->frame, "#ffffff");
-                border_color = get_colorpixel(conn, client, client->frame, "#4c7899");
+                text_color = get_colorpixel(conn, "#ffffff");
+                border_color = get_colorpixel(conn, "#4c7899");
         } else {
-                background_color = get_colorpixel(conn, client, client->frame, "#222222");
-                text_color = get_colorpixel(conn, client, client->frame, "#888888");
-                border_color = get_colorpixel(conn, client, client->frame, "#333333");
+                background_color = get_colorpixel(conn, "#222222");
+                text_color = get_colorpixel(conn, "#888888");
+                border_color = get_colorpixel(conn, "#333333");
         }
 
         /* Our plan is the following:
@@ -360,15 +360,15 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
                  black;
         char label[3];
 
-        black = get_colorpixel(conn, NULL, screen->bar, "#000000");
+        black = get_colorpixel(conn, "#000000");
 
-        background_color[SET_NORMAL] = get_colorpixel(conn, NULL, screen->bar, "#222222");
-        text_color[SET_NORMAL] = get_colorpixel(conn, NULL, screen->bar, "#888888");
-        border_color[SET_NORMAL] = get_colorpixel(conn, NULL, screen->bar, "#333333");
+        background_color[SET_NORMAL] = get_colorpixel(conn, "#222222");
+        text_color[SET_NORMAL] = get_colorpixel(conn, "#888888");
+        border_color[SET_NORMAL] = get_colorpixel(conn, "#333333");
 
-        background_color[SET_FOCUSED] = get_colorpixel(conn, NULL, screen->bar, "#285577");
-        text_color[SET_FOCUSED] = get_colorpixel(conn, NULL, screen->bar, "#ffffff");
-        border_color[SET_FOCUSED] = get_colorpixel(conn, NULL, screen->bar, "#4c7899");
+        background_color[SET_FOCUSED] = get_colorpixel(conn, "#285577");
+        text_color[SET_FOCUSED] = get_colorpixel(conn, "#ffffff");
+        border_color[SET_FOCUSED] = get_colorpixel(conn, "#4c7899");
 
         /* Fill the whole bar in black */
         xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, black);
