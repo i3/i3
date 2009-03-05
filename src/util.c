@@ -142,7 +142,7 @@ void set_focus(xcb_connection_t *conn, Client *client) {
         current_col = client->container->col;
         current_row = client->container->row;
 
-        printf("set_focus(frame %08x, child %08x)\n", client->frame, client->child);
+        printf("set_focus(frame %08x, child %08x, name %s)\n", client->frame, client->child, client->name);
         /* Set focus to the entered window, and flush xcb buffer immediately */
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
         //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);

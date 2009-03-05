@@ -89,10 +89,10 @@ int get_unoccupied_y(Workspace *workspace, int col) {
  *
  */
 void redecorate_window(xcb_connection_t *conn, Client *client) {
-        if (client->container->mode == MODE_STACK) {
+        if (client->container->mode == MODE_STACK)
                 render_container(conn, client->container);
-                xcb_flush(conn);
-        } else decorate_window(conn, client, client->frame, client->titlegc, 0);
+        else decorate_window(conn, client, client->frame, client->titlegc, 0);
+        xcb_flush(conn);
 }
 
 /*
@@ -431,6 +431,7 @@ void render_layout(xcb_connection_t *conn) {
                 for (int rows = 0; rows < r_ws->rows; rows++)
                         xoffset[rows] = r_ws->rect.x;
 
+                dump_table(conn, r_ws);
                 /* Go through the whole table and render what’s necessary */
                 for (int cols = 0; cols < r_ws->cols; cols++)
                         for (int rows = 0; rows < r_ws->rows; rows++) {
