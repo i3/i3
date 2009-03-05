@@ -419,19 +419,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         }
 
         if (client->container != NULL) {
-                Client *to_focus = NULL;
                 Container *con = client->container;
-
-                /* If the client which is being unmapped was the currently active, we need to find
-                   the next possible window to focus in this container */
-                if (con->currently_focused == client) {
-                        to_focus = CIRCLEQ_NEXT_OR_NULL(&(con->clients), client, clients);
-                        if (to_focus == NULL)
-                                to_focus = CIRCLEQ_PREV_OR_NULL(&(con->clients), client, clients);
-
-                        /* Set focus in data structure to the next/previous window, if any (else NULL) */
-                        con->currently_focused = to_focus;
-                }
 
                 /* If this was the fullscreen client, we need to unset it */
                 if (client->fullscreen)
@@ -439,7 +427,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 
                 /* If the container will be empty now and is in stacking mode, we need to
                    correctly resize the stack_win */
-                if (con->currently_focused == NULL && con->mode == MODE_STACK) {
+                if (CIRCLEQ_EMPTY(&(con->clients)) && con->mode == MODE_STACK) {
                         struct Stack_Window *stack_win = &(con->stack_win);
                         stack_win->rect.height = 0;
                         xcb_unmap_window(conn, stack_win->window);
@@ -448,9 +436,16 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 /* Remove the client from the list of clients */
                 CIRCLEQ_REMOVE(&(con->clients), client, clients);
 
+                /* Remove from the focus stack */
+                printf("Removing from focus stack\n");
+                SLIST_REMOVE(&(con->workspace->focus_stack), client, Client, focus_clients);
+
+                /* Remove from currently_focused */
+                con->currently_focused = NULL;
+
                 /* Actually set focus, if there is a window which should get it */
-                if (to_focus != NULL)
-                        set_focus(conn, to_focus);
+                if (!SLIST_EMPTY(&(con->workspace->focus_stack)))
+                        set_focus(conn, SLIST_FIRST(&(con->workspace->focus_stack)));
         }
 
         printf("child of 0x%08x.\n", client->frame);

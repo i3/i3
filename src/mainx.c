@@ -244,6 +244,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 if (old_focused != NULL)
                         CIRCLEQ_INSERT_AFTER(&(CUR_CELL->clients), old_focused, new, clients);
                 else CIRCLEQ_INSERT_TAIL(&(CUR_CELL->clients), new, clients);
+
+                SLIST_INSERT_HEAD(&(new->container->workspace->focus_stack), new, focus_clients);
         }
 
         render_layout(conn);

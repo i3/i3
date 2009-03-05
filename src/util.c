@@ -152,6 +152,9 @@ void set_focus(xcb_connection_t *conn, Client *client) {
         if ((old_client != NULL) && (old_client != client))
                 redecorate_window(conn, old_client);
 
+        SLIST_REMOVE(&(client->container->workspace->focus_stack), client, Client, focus_clients);
+        SLIST_INSERT_HEAD(&(client->container->workspace->focus_stack), client, focus_clients);
+
         /* redecorate_window flushes, so we don’t need to */
         redecorate_window(conn, client);
 }

@@ -140,6 +140,10 @@ struct Workspace {
         /* Contains all clients with _NET_WM_WINDOW_TYPE == _NET_WM_WINDOW_TYPE_DOCK */
         SLIST_HEAD(dock_clients_head, Client) dock_clients;
 
+        /* The focus stack contains the clients in the correct order of focus so that
+           the focus can be reverted correctly when a client is closed */
+        SLIST_HEAD(focus_stack_head, Client) focus_stack;
+
         /* Backpointer to the screen this workspace is on */
         i3Screen *screen;
 
@@ -240,6 +244,7 @@ struct Client {
         /* The following entry provides the necessary list pointers to use Client with LIST_* macros */
         CIRCLEQ_ENTRY(Client) clients;
         SLIST_ENTRY(Client) dock_clients;
+        SLIST_ENTRY(Client) focus_clients;
 };
 
 /*

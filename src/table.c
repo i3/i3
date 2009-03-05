@@ -108,52 +108,49 @@ bool cell_exists(int col, int row) {
 }
 
 static void move_columns_from(xcb_connection_t *conn, Workspace *workspace, int cols) {
+        printf("firstly freeing \n");
+
+        /* Clean up the column to be freed */
+        for (int rows = 0; rows < workspace->rows; rows++) {
+                Container *old_container = workspace->table[cols-1][rows];
+
+                if (old_container->mode == MODE_STACK)
+                        leave_stack_mode(conn, old_container);
+
+                free(old_container);
+        }
+
         for (; cols < workspace->cols; cols++)
                 for (int rows = 0; rows < workspace->rows; rows++) {
-                        Container *old_container = workspace->table[cols-1][rows],
-                                  *new_container = workspace->table[cols][rows];
-
-                        /* Fix the container backpointer for all clients */
-                        Client *client;
-                        CIRCLEQ_FOREACH(client, &(old_container->clients), clients)
-                                client->container = new_container;
-
-                        if (old_container->mode == MODE_STACK)
-                                leave_stack_mode(conn, old_container);
-
-                        free(old_container);
+                        printf("at col = %d, row = %d\n", cols, rows);
+                        Container *new_container = workspace->table[cols][rows];
 
                         printf("moving cols = %d to cols -1 = %d\n", cols, cols-1);
                         workspace->table[cols-1][rows] = new_container;
 
                         new_container->row = rows;
                         new_container->col = cols-1;
-
-                        workspace->table[cols][rows] = NULL;
                 }
 }
 
 static void move_rows_from(xcb_connection_t *conn, Workspace *workspace, int rows) {
+        for (int cols = 0; cols < workspace->cols; cols++) {
+                Container *old_container = workspace->table[cols][rows-1];
+
+                if (old_container->mode == MODE_STACK)
+                        leave_stack_mode(conn, old_container);
+
+                free(old_container);
+        }
         for (; rows < workspace->rows; rows++)
                 for (int cols = 0; cols < workspace->cols; cols++) {
-                        Container *old_container = workspace->table[cols][rows-1],
-                                  *new_container = workspace->table[cols][rows];
-
-                        /* Fix the container backpointer for all clients */
-                        Client *client;
-                        CIRCLEQ_FOREACH(client, &(old_container->clients), clients)
-                                client->container = new_container;
-
-                        if (old_container->mode == MODE_STACK)
-                                leave_stack_mode(conn, old_container);
-
-                        free(old_container);
+                        Container *new_container = workspace->table[cols][rows];
 
                         printf("moving rows = %d to rows -1 = %d\n", rows, rows - 1);
                         workspace->table[cols][rows-1] = new_container;
+
                         new_container->row = rows-1;
                         new_container->col = cols;
-                        workspace->table[cols][rows] = NULL;
                 }
 }
 
