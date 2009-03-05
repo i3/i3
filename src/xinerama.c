@@ -165,11 +165,17 @@ void initialize_xinerama(xcb_connection_t *conn) {
                 return;
         }
 
-        if (!xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL)->state) {
+        xcb_xinerama_is_active_reply_t *reply;
+        reply = xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL);
+
+        if (!reply->state) {
                 printf("Xinerama is not active (in your X-Server), disabling.\n");
+                free(reply);
                 disable_xinerama(conn);
                 return;
         }
+
+        free(reply);
 
         query_screens(conn, virtual_screens);
 
@@ -253,7 +259,8 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                 }
 
         /* Free the old list */
-        TAILQ_FOREACH(screen, virtual_screens, screens) {
+        while (!TAILQ_EMPTY(virtual_screens)) {
+                screen = TAILQ_FIRST(virtual_screens);
                 TAILQ_REMOVE(virtual_screens, screen, screens);
                 free(screen);
         }

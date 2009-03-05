@@ -323,7 +323,10 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         assert(to_container != NULL);
 
         CIRCLEQ_REMOVE(&(container->clients), current_client, clients);
+        SLIST_REMOVE(&(container->workspace->focus_stack), current_client, Client, focus_clients);
+
         CIRCLEQ_INSERT_TAIL(&(to_container->clients), current_client, clients);
+        SLIST_INSERT_HEAD(&(to_container->workspace->focus_stack), current_client, focus_clients);
         printf("Moved.\n");
 
         current_client->container = to_container;

@@ -280,6 +280,7 @@ void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *pr
         }
 
         free(reply);
+        free(cookies);
 }
 
 int main(int argc, char *argv[], char *env[]) {
