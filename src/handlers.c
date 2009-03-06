@@ -681,6 +681,8 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
 
         client->force_reconfigure = true;
 
-        if (client->container != NULL)
+        if (client->container != NULL) {
                 render_container(conn, client->container);
+                xcb_flush(conn);
+        }
 }
