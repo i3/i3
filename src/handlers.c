@@ -615,7 +615,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         Client *client = table_get(byChild, window);
         if (client == NULL) {
                 LOG("No such client\n");
-                return;
+                return 1;
         }
         xcb_size_hints_t size_hints;
 
@@ -630,7 +630,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
             (size_hints.min_aspect_num <= 0) ||
             (size_hints.min_aspect_den <= 0)) {
                 LOG("No aspect ratio set, ignoring\n");
-                return;
+                return 1;
         }
 
         LOG("window is %08x / %s\n", client->child, client->name);
@@ -668,7 +668,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
 
         /* Sanity checks, this is user-input, in a way */
         if (max_aspect <= 0 || min_aspect <= 0 || height == 0 || (width / height) <= 0)
-                return;
+                return 1;
 
         /* Check if we need to set proportional_* variables using the correct ratio */
         if ((width / height) < min_aspect) {
@@ -677,7 +677,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         } else if ((width / height) > max_aspect) {
                 client->proportional_width = width;
                 client->proportional_height = width / max_aspect;
-        } else return;
+        } else return 1;
 
         client->force_reconfigure = true;
 
