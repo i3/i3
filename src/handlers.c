@@ -515,6 +515,7 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
            skip all events but the last one */
         if (event->count != 0)
                 return 1;
+        LOG("window = %08x\n", event->window);
 
         Client *client = table_get(byParent, event->window);
         if (client == NULL) {
@@ -529,7 +530,7 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                 return 1;
         }
 
-        LOG("handle_expose_event()\n");
+        LOG("got client %s\n", client->name);
         if (client->container->mode != MODE_STACK)
                 decorate_window(conn, client, client->frame, client->titlegc, 0);
         else {
@@ -555,9 +556,8 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                 xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
                 xcb_rectangle_t crect = {2, 0, client->rect.width - (2 + 2), client->rect.height - 2};
                 xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
-
-                xcb_flush(conn);
         }
+        xcb_flush(conn);
         return 1;
 }
 
