@@ -44,7 +44,7 @@ install: all
 	$(INSTALL) -d -m 0755 $(DESTDIR)/usr/bin
 	$(INSTALL) -d -m 0755 $(DESTDIR)/etc/i3
 	$(INSTALL) -m 0755 i3 $(DESTDIR)/usr/bin/
-	$(INSTALL) -m 0644 i3.config $(DESTDIR)/etc/i3/config
+	test -e $(DESTDIR)/etc/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)/etc/i3/config
 
 clean:
 	rm -f src/*.o
