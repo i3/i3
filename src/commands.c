@@ -217,7 +217,7 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
         }
 
         /* Remove it from the old container and put it into the new one */
-        CIRCLEQ_REMOVE(&(container->clients), current_client, clients);
+        remove_client_from_container(conn, current_client, container);
         CIRCLEQ_INSERT_TAIL(&(new->clients), current_client, clients);
 
         /* Update data structures */

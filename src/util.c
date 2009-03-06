@@ -136,6 +136,23 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_mes
 }
 
 /*
+ * Removes the given client from the container, either because it will be inserted into another
+ * one or because it was unmapped
+ *
+ */
+void remove_client_from_container(xcb_connection_t *conn, Client *client, Container *container) {
+        CIRCLEQ_REMOVE(&(container->clients), client, clients);
+
+        /* If the container will be empty now and is in stacking mode, we need to
+           unmap the stack_win */
+        if (CIRCLEQ_EMPTY(&(container->clients)) && container->mode == MODE_STACK) {
+                struct Stack_Window *stack_win = &(container->stack_win);
+                stack_win->rect.height = 0;
+                xcb_unmap_window(conn, stack_win->window);
+        }
+}
+
+/*
  * Sets the given client as focused by updating the data structures correctly,
  * updating the X input focus and finally re-decorating both windows (to signalize
  * the user the new focus situation)

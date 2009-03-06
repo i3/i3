@@ -433,16 +433,8 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 if (client->fullscreen)
                         con->workspace->fullscreen_client = NULL;
 
-                /* If the container will be empty now and is in stacking mode, we need to
-                   correctly resize the stack_win */
-                if (CIRCLEQ_EMPTY(&(con->clients)) && con->mode == MODE_STACK) {
-                        struct Stack_Window *stack_win = &(con->stack_win);
-                        stack_win->rect.height = 0;
-                        xcb_unmap_window(conn, stack_win->window);
-                }
-
                 /* Remove the client from the list of clients */
-                CIRCLEQ_REMOVE(&(con->clients), client, clients);
+                remove_client_from_container(conn, client, con);
 
                 /* Remove from the focus stack */
                 LOG("Removing from focus stack\n");
