@@ -40,7 +40,7 @@ int ignore_notify_event = -1;
  *
  */
 int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_event_t *event) {
-        printf("got key release, just passing\n");
+        LOG("got key release, just passing\n");
         xcb_allow_events(conn, XCB_ALLOW_REPLAY_KEYBOARD, event->time);
         xcb_flush(conn);
         return 1;
@@ -52,7 +52,7 @@ int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_ev
  *
  */
 int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
-        printf("Keypress %d\n", event->detail);
+        LOG("Keypress %d\n", event->detail);
 
         /* We need to get the keysym group (There are group 1 to group 4, each holding
            two keysyms (without shift and with shift) using Xkb because X fails to
@@ -61,7 +61,7 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
         if (XkbGetState(xkbdpy, XkbUseCoreKbd, &state) == Success && (state.group+1) == 2)
                 event->state |= 0x2;
 
-        printf("state %d\n", event->state);
+        LOG("state %d\n", event->state);
 
         /* Remove the numlock bit, all other bits are modifiers we can bind to */
         uint16_t state_filtered = event->state & ~XCB_MOD_MASK_LOCK;
@@ -82,7 +82,7 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
 
         parse_command(conn, bind->command);
         if (event->state & 0x2) {
-                printf("Mode_switch -> allow_events(SyncKeyboard)\n");
+                LOG("Mode_switch -> allow_events(SyncKeyboard)\n");
                 xcb_allow_events(conn, SyncKeyboard, event->time);
                 xcb_flush(conn);
         }
@@ -95,11 +95,11 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
  *
  */
 int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_event_t *event) {
-        printf("enter_notify for %08x, serial %d\n", event->event, event->sequence);
+        LOG("enter_notify for %08x, serial %d\n", event->event, event->sequence);
         /* Some events are not interesting, because they were not generated actively by the
            user, but be reconfiguration of windows */
         if (event->sequence == ignore_notify_event) {
-                printf("Ignoring, because of previous map\n");
+                LOG("Ignoring, because of previous map\n");
                 return 1;
         }
 
@@ -111,14 +111,14 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
 
         /* If not, then the user moved his cursor to the root window. In that case, we adjust c_ws */
         if (client == NULL) {
-                printf("Getting screen at %d x %d\n", event->root_x, event->root_y);
+                LOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
                 i3Screen *screen = get_screen_containing(event->root_x, event->root_y);
                 if (screen == NULL) {
-                        printf("ERROR: No such screen\n");
+                        LOG("ERROR: No such screen\n");
                         return 0;
                 }
                 c_ws = &workspaces[screen->current_workspace];
-                printf("We're now on virtual screen number %d\n", screen->num);
+                LOG("We're now on virtual screen number %d\n", screen->num);
                 return 1;
         }
 
@@ -128,7 +128,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
 }
 
 int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
-        printf("button press!\n");
+        LOG("button press!\n");
         /* This was either a focus for a client’s parent (= titlebar)… */
         Client *client = table_get(byChild, event->event);
         bool border_click = false;
@@ -150,7 +150,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                                     c = 0;
                                 Client *client;
 
-                                printf("Click on stack_win for client %d\n", destination);
+                                LOG("Click on stack_win for client %d\n", destination);
                                 CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
                                         if (c++ == destination) {
                                                 set_focus(conn, client);
@@ -170,7 +170,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         set_focus(conn, client);
 
         /* Let’s see if this was on the borders (= resize). If not, we’re done */
-        printf("press button on x=%d, y=%d\n", event->event_x, event->event_y);
+        LOG("press button on x=%d, y=%d\n", event->event_x, event->event_y);
 
         Container *con = client->container,
                   *first = NULL,
@@ -178,16 +178,16 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         enum { O_HORIZONTAL, O_VERTICAL } orientation = O_VERTICAL;
 
         if (con == NULL) {
-                printf("dock. done.\n");
+                LOG("dock. done.\n");
                 xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
                 xcb_flush(conn);
                 return 1;
         }
 
-        printf("event->event_x = %d, client->rect.width = %d\n", event->event_x, client->rect.width);
+        LOG("event->event_x = %d, client->rect.width = %d\n", event->event_x, client->rect.width);
 
         if (!border_click) {
-                printf("client. done.\n");
+                LOG("client. done.\n");
                 xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
                 xcb_flush(conn);
                 return 1;
@@ -290,7 +290,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                                 xcb_event_handle(&evenths, inside_event);
                                 break;
                         default:
-                                printf("Ignoring event of type %d\n", nr);
+                                LOG("Ignoring event of type %d\n", nr);
                                 break;
                 }
                 free(inside_event);
@@ -303,7 +303,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
 
         Workspace *ws = con->workspace;
         if (orientation == O_VERTICAL) {
-                printf("Resize was from X = %d to X = %d\n", event->root_x, values[0]);
+                LOG("Resize was from X = %d to X = %d\n", event->root_x, values[0]);
 
                 /* Convert 0 (for default width_factor) to actual numbers */
                 if (first->width_factor == 0)
@@ -314,7 +314,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 first->width_factor *= (float)(first->width + (values[0] - event->root_x)) / first->width;
                 second->width_factor *= (float)(second->width - (values[0] - event->root_x)) / second->width;
         } else {
-                printf("Resize was from Y = %d to Y = %d\n", event->root_y, values[0]);
+                LOG("Resize was from Y = %d to Y = %d\n", event->root_y, values[0]);
 
                 /* Convert 0 (for default height_factor) to actual numbers */
                 if (first->height_factor == 0)
@@ -338,8 +338,8 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
 int handle_map_notify_event(void *prophs, xcb_connection_t *conn, xcb_map_notify_event_t *event) {
         window_attributes_t wa = { TAG_VALUE };
         wa.u.override_redirect = event->override_redirect;
-        printf("MapNotify for 0x%08x, serial is %d.\n", event->window, event->sequence);
-        printf("setting ignore_notify_event = %d\n", event->sequence);
+        LOG("MapNotify for 0x%08x, serial is %d.\n", event->window, event->sequence);
+        LOG("setting ignore_notify_event = %d\n", event->sequence);
         ignore_notify_event = event->sequence;
         manage_window(prophs, conn, event->window, wa);
         return 1;
@@ -353,15 +353,15 @@ int handle_map_notify_event(void *prophs, xcb_connection_t *conn, xcb_map_notify
 int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
 
-        printf("handle_configure_event\n");
-        printf("event->type = %d, \n", event->response_type);
-        printf("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
-        printf("sequence = %d\n", event->sequence);
+        LOG("handle_configure_event\n");
+        LOG("event->type = %d, \n", event->response_type);
+        LOG("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
+        LOG("sequence = %d\n", event->sequence);
 
         ignore_notify_event = event->sequence;
 
         if (event->event == root) {
-                printf("reconfigure of the root window, need to xinerama\n");
+                LOG("reconfigure of the root window, need to xinerama\n");
                 /* FIXME: Somehow, this is occuring too often. Therefore, we check for 0/0,
                    but is there a better way? */
                 if (event->x == 0 && event->y == 0)
@@ -371,12 +371,12 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
 
         Client *client = table_get(byChild, event->window);
         if (client == NULL) {
-                printf("client not managed, ignoring\n");
+                LOG("client not managed, ignoring\n");
                 return 1;
         }
 
         if (client->fullscreen) {
-                printf("client in fullscreen, not touching\n");
+                LOG("client in fullscreen, not touching\n");
                 return 1;
         }
 
@@ -386,7 +386,7 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
             (event->width != client->child_rect.width) ||
             (event->height != client->child_rect.height)) {
                 /* Who is your window manager? Who’s that, huh? I AM YOUR WINDOW MANAGER! */
-                printf("Application wanted to resize itself. Fixed that.\n");
+                LOG("Application wanted to resize itself. Fixed that.\n");
                 client->force_reconfigure = true;
                 render_container(conn, client->container);
                 xcb_flush(conn);
@@ -403,7 +403,7 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
 int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_notify_event_t *event) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
 
-        printf("setting ignore_notify_event = %d\n", event->sequence);
+        LOG("setting ignore_notify_event = %d\n", event->sequence);
 
         ignore_notify_event = event->sequence;
 
@@ -411,15 +411,15 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         /* First, we need to check if the client is awaiting an unmap-request which
            was generated by us reparenting the window. In that case, we just ignore it. */
         if (client != NULL && client->awaiting_useless_unmap) {
-                printf("Dropping this unmap request, it was generated by reparenting\n");
+                LOG("Dropping this unmap request, it was generated by reparenting\n");
                 client->awaiting_useless_unmap = false;
                 return 1;
         }
         client = table_remove(byChild, event->window);
 
-        printf("UnmapNotify for 0x%08x (received from 0x%08x): ", event->window, event->event);
+        LOG("UnmapNotify for 0x%08x (received from 0x%08x): ", event->window, event->event);
         if (client == NULL) {
-                printf("not a managed window. Ignoring.\n");
+                LOG("not a managed window. Ignoring.\n");
                 return 0;
         }
 
@@ -445,7 +445,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 CIRCLEQ_REMOVE(&(con->clients), client, clients);
 
                 /* Remove from the focus stack */
-                printf("Removing from focus stack\n");
+                LOG("Removing from focus stack\n");
                 SLIST_REMOVE(&(con->workspace->focus_stack), client, Client, focus_clients);
 
                 /* Set currently_focused to the next client which will get focus in this
@@ -464,7 +464,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                         set_focus(conn, SLIST_FIRST(&(con->workspace->focus_stack)));
         }
 
-        printf("child of 0x%08x.\n", client->frame);
+        LOG("child of 0x%08x.\n", client->frame);
         xcb_reparent_window(conn, client->child, root, 0, 0);
         xcb_destroy_window(conn, client->frame);
         xcb_flush(conn);
@@ -485,7 +485,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
  */
 int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
                                 xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
-        printf("window's name changed.\n");
+        LOG("window's name changed.\n");
         Client *client = table_get(byChild, window);
         if (client == NULL)
                 return 1;
@@ -496,7 +496,7 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         client->name_len = xcb_get_property_value_length(prop);
         client->name = smalloc(client->name_len);
         strncpy(client->name, xcb_get_property_value(prop), client->name_len);
-        printf("rename to \"%.*s\".\n", client->name_len, client->name);
+        LOG("rename to \"%.*s\".\n", client->name_len, client->name);
 
         if (client->container->mode == MODE_STACK)
                 render_container(conn, client->container);
@@ -529,7 +529,7 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                 return 1;
         }
 
-        printf("handle_expose_event()\n");
+        LOG("handle_expose_event()\n");
         if (client->container->mode != MODE_STACK)
                 decorate_window(conn, client, client->frame, client->titlegc, 0);
         else {
@@ -566,13 +566,13 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
  *
  */
 int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message_event_t *event) {
-        printf("client_message\n");
+        LOG("client_message\n");
 
         if (event->type == atoms[_NET_WM_STATE]) {
                 if (event->format != 32 || event->data.data32[1] != atoms[_NET_WM_STATE_FULLSCREEN])
                         return 0;
 
-                printf("fullscreen\n");
+                LOG("fullscreen\n");
 
                 Client *client = table_get(byChild, event->window);
                 if (client == NULL)
@@ -587,7 +587,7 @@ int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message
                       event->data.data32[0] == _NET_WM_STATE_TOGGLE)))
                         toggle_fullscreen(conn, client);
         } else {
-                printf("unhandled clientmessage\n");
+                LOG("unhandled clientmessage\n");
                 return 0;
         }
 
@@ -598,7 +598,7 @@ int window_type_handler(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
                         xcb_atom_t atom, xcb_get_property_reply_t *property) {
         /* TODO: Implement this one. To do this, implement a little test program which sleep(1)s
          before changing this property. */
-        printf("_NET_WM_WINDOW_TYPE changed, this is not yet implemented.\n");
+        LOG("_NET_WM_WINDOW_TYPE changed, this is not yet implemented.\n");
         return 0;
 }
 
@@ -611,10 +611,10 @@ int window_type_handler(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
  */
 int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t name, xcb_get_property_reply_t *reply) {
-        printf("handle_normal_hints\n");
+        LOG("handle_normal_hints\n");
         Client *client = table_get(byChild, window);
         if (client == NULL) {
-                printf("No such client\n");
+                LOG("No such client\n");
                 return;
         }
         xcb_size_hints_t size_hints;
@@ -629,11 +629,11 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         if (!(size_hints.flags & XCB_SIZE_HINT_P_ASPECT) ||
             (size_hints.min_aspect_num <= 0) ||
             (size_hints.min_aspect_den <= 0)) {
-                printf("No aspect ratio set, ignoring\n");
+                LOG("No aspect ratio set, ignoring\n");
                 return;
         }
 
-        printf("window is %08x / %s\n", client->child, client->name);
+        LOG("window is %08x / %s\n", client->child, client->name);
 
         int base_width = 0, base_height = 0,
             min_width = 0, min_height = 0;
@@ -663,8 +663,8 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         double min_aspect = (double)size_hints.min_aspect_num / size_hints.min_aspect_den;
         double max_aspect = (double)size_hints.max_aspect_num / size_hints.min_aspect_den;
 
-        printf("min_aspect = %f, max_aspect = %f\n", min_aspect, max_aspect);
-        printf("width = %f, height = %f\n", width, height);
+        LOG("min_aspect = %f, max_aspect = %f\n", min_aspect, max_aspect);
+        LOG("width = %f, height = %f\n", width, height);
 
         /* Sanity checks, this is user-input, in a way */
         if (max_aspect <= 0 || min_aspect <= 0 || height == 0 || (width / height) <= 0)

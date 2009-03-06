@@ -20,10 +20,14 @@
                                                 CIRCLEQ_NEXT(elm, field) : NULL)
 #define CIRCLEQ_PREV_OR_NULL(head, elm, field) (CIRCLEQ_PREV(elm, field) != CIRCLEQ_END(head) ? \
                                                 CIRCLEQ_PREV(elm, field) : NULL)
+/* ##__VA_ARGS__ means: leave out __VA_ARGS__ completely if it is empty, that is,
+   delete the preceding comma */
+#define LOG(fmt, ...) slog("%s:%d - " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
 
 
 int min(int a, int b);
 int max(int a, int b);
+void slog(char *fmt, ...);
 void die(char *fmt, ...);
 void *smalloc(size_t size);
 void *scalloc(size_t size);

@@ -34,6 +34,27 @@ int max(int a, int b) {
 }
 
 /*
+ * Logs the given message to stdout while prefixing the current time to it.
+ * This is to be called by LOG() which includes filename/linenumber
+ *
+ */
+void slog(char *fmt, ...) {
+        va_list args;
+        char timebuf[64];
+
+        va_start(args, fmt);
+        /* Get current time */
+        time_t t = time(NULL);
+        /* Convert time to local time (determined by the locale) */
+        struct tm *tmp = localtime(&t);
+        /* Generate time prefix */
+        strftime(timebuf, sizeof(timebuf), "%x %X - ", tmp);
+        printf("%s", timebuf);
+        vprintf(fmt, args);
+        va_end(args);
+}
+
+/*
  * Prints the message (see printf()) to stderr, then exits the program.
  *
  */
@@ -142,7 +163,7 @@ void set_focus(xcb_connection_t *conn, Client *client) {
         current_col = client->container->col;
         current_row = client->container->row;
 
-        printf("set_focus(frame %08x, child %08x, name %s)\n", client->frame, client->child, client->name);
+        LOG("set_focus(frame %08x, child %08x, name %s)\n", client->frame, client->child, client->name);
         /* Set focus to the entered window, and flush xcb buffer immediately */
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
         //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);
@@ -257,7 +278,7 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
         client->fullscreen = !client->fullscreen;
 
         if (client->fullscreen) {
-                printf("Entering fullscreen mode...\n");
+                LOG("Entering fullscreen mode...\n");
                 /* We just entered fullscreen mode, let’s configure the window */
                  uint32_t mask = XCB_CONFIG_WINDOW_X |
                                  XCB_CONFIG_WINDOW_Y |
@@ -268,7 +289,7 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                                       workspace->rect.width,
                                       workspace->rect.height};
 
-                printf("child itself will be at %dx%d with size %dx%d\n",
+                LOG("child itself will be at %dx%d with size %dx%d\n",
                                 values[0], values[1], values[2], values[3]);
 
                 xcb_configure_window(conn, client->frame, mask, values);
@@ -283,7 +304,7 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                 xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
 
         } else {
-                printf("leaving fullscreen mode\n");
+                LOG("leaving fullscreen mode\n");
                 /* Because the coordinates of the window haven’t changed, it would not be
                    re-configured if we don’t set the following flag */
                 client->force_reconfigure = true;

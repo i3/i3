@@ -39,7 +39,7 @@ static bool focus_window_in_container(xcb_connection_t *conn, Container *contain
         else if (direction == D_DOWN) {
                 if ((candidate = CIRCLEQ_NEXT_OR_NULL(&(container->clients), container->currently_focused, clients)) == NULL)
                         candidate = CIRCLEQ_FIRST(&(container->clients));
-        } else printf("Direction not implemented!\n");
+        } else LOG("Direction not implemented!\n");
 
         /* If we could not switch, the container contains exactly one client. We return false */
         if (candidate == container->currently_focused)
@@ -54,7 +54,7 @@ static bool focus_window_in_container(xcb_connection_t *conn, Container *contain
 typedef enum { THING_WINDOW, THING_CONTAINER } thing_t;
 
 static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t thing) {
-        printf("focusing direction %d\n", direction);
+        LOG("focusing direction %d\n", direction);
 
         int new_row = current_row,
             new_col = current_col;
@@ -78,11 +78,11 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         new_row--;
                 else {
                         /* Let’s see if there is a screen down/up there to which we can switch */
-                        printf("container is at %d with height %d\n", container->y, container->height);
+                        LOG("container is at %d with height %d\n", container->y, container->height);
                         i3Screen *screen;
                         int destination_y = (direction == D_UP ? (container->y - 1) : (container->y + container->height + 1));
                         if ((screen = get_screen_containing(container->x, destination_y)) == NULL) {
-                                printf("Not possible, no screen found.\n");
+                                LOG("Not possible, no screen found.\n");
                                 return;
                         }
                         t_ws = &(workspaces[screen->current_workspace]);
@@ -100,11 +100,11 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         new_col--;
                 else {
                         /* Let’s see if there is a screen left/right here to which we can switch */
-                        printf("container is at %d with width %d\n", container->x, container->width);
+                        LOG("container is at %d with width %d\n", container->x, container->width);
                         i3Screen *screen;
                         int destination_x = (direction == D_LEFT ? (container->x - 1) : (container->x + container->width + 1));
                         if ((screen = get_screen_containing(destination_x, container->y)) == NULL) {
-                                printf("Not possible, no screen found.\n");
+                                LOG("Not possible, no screen found.\n");
                                 return;
                         }
                         t_ws = &(workspaces[screen->current_workspace]);
@@ -116,7 +116,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                                 new_row = (t_ws->rows - 1);
                 }
         } else {
-                printf("direction unhandled\n");
+                LOG("direction unhandled\n");
                 return;
         }
 
@@ -140,7 +140,7 @@ static bool move_current_window_in_container(xcb_connection_t *conn, Client *cli
         if (other == CIRCLEQ_END(&(client->container->clients)))
                 return false;
 
-        printf("i can do that\n");
+        LOG("i can do that\n");
         /* We can move the client inside its current container */
         /* TODO: needs wrapping */
         CIRCLEQ_REMOVE(&(client->container->clients), client, clients);
@@ -157,7 +157,7 @@ static bool move_current_window_in_container(xcb_connection_t *conn, Client *cli
  *
  */
 static void move_current_window(xcb_connection_t *conn, direction_t direction) {
-        printf("moving window to direction %s\n", (direction == D_UP ? "up" : (direction == D_DOWN ? "down" :
+        LOG("moving window to direction %s\n", (direction == D_UP ? "up" : (direction == D_DOWN ? "down" :
                                         (direction == D_LEFT ? "left" : "right"))));
         /* Get current window */
         Container *container = CUR_CELL,
@@ -237,7 +237,7 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
  *
  */
 static void snap_current_container(xcb_connection_t *conn, direction_t direction) {
-        printf("snapping container to direction %d\n", direction);
+        LOG("snapping container to direction %d\n", direction);
 
         Container *container = CUR_CELL;
 
@@ -248,7 +248,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                         /* Snap to the left is actually a move to the left and then a snap right */
                         if (!cell_exists(container->col - 1, container->row) ||
                                 CUR_TABLE[container->col-1][container->row]->currently_focused != NULL) {
-                                printf("cannot snap to left - the cell is already used\n");
+                                LOG("cannot snap to left - the cell is already used\n");
                                 return;
                         }
 
@@ -260,18 +260,18 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                         int new_col = container->col + container->colspan;
                         if (!cell_exists(new_col, container->row) ||
                                 CUR_TABLE[new_col][container->row]->currently_focused != NULL) {
-                                printf("cannot snap to right - the cell is already used\n");
+                                LOG("cannot snap to right - the cell is already used\n");
                                 return;
                         }
 
                         /* Check if there are other cells with rowspan, which are in our way.
                          * If so, reduce their rowspan. */
                         for (int i = container->row-1; i >= 0; i--) {
-                                printf("we got cell %d, %d with rowspan %d\n",
+                                LOG("we got cell %d, %d with rowspan %d\n",
                                                 new_col, i, CUR_TABLE[new_col][i]->rowspan);
                                 while ((CUR_TABLE[new_col][i]->rowspan-1) >= (container->row - i))
                                         CUR_TABLE[new_col][i]->rowspan--;
-                                printf("new rowspan = %d\n", CUR_TABLE[new_col][i]->rowspan);
+                                LOG("new rowspan = %d\n", CUR_TABLE[new_col][i]->rowspan);
                         }
 
                         container->colspan++;
@@ -280,7 +280,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                 case D_UP:
                         if (!cell_exists(container->col, container->row - 1) ||
                                 CUR_TABLE[container->col][container->row-1]->currently_focused != NULL) {
-                                printf("cannot snap to top - the cell is already used\n");
+                                LOG("cannot snap to top - the cell is already used\n");
                                 return;
                         }
 
@@ -288,20 +288,20 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                         snap_current_container(conn, D_DOWN);
                         return;
                 case D_DOWN: {
-                        printf("snapping down\n");
+                        LOG("snapping down\n");
                         int new_row = container->row + container->rowspan;
                         if (!cell_exists(container->col, new_row) ||
                                 CUR_TABLE[container->col][new_row]->currently_focused != NULL) {
-                                printf("cannot snap down - the cell is already used\n");
+                                LOG("cannot snap down - the cell is already used\n");
                                 return;
                         }
 
                         for (int i = container->col-1; i >= 0; i--) {
-                                printf("we got cell %d, %d with colspan %d\n",
+                                LOG("we got cell %d, %d with colspan %d\n",
                                                 i, new_row, CUR_TABLE[i][new_row]->colspan);
                                 while ((CUR_TABLE[i][new_row]->colspan-1) >= (container->col - i))
                                         CUR_TABLE[i][new_row]->colspan--;
-                                printf("new colspan = %d\n", CUR_TABLE[i][new_row]->colspan);
+                                LOG("new colspan = %d\n", CUR_TABLE[i][new_row]->colspan);
 
                         }
 
@@ -318,7 +318,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
  *
  */
 static void move_current_window_to_workspace(xcb_connection_t *conn, int workspace) {
-        printf("Moving current window to workspace %d\n", workspace);
+        LOG("Moving current window to workspace %d\n", workspace);
 
         Container *container = CUR_CELL;
 
@@ -329,7 +329,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
 
         Client *current_client = container->currently_focused;
         if (current_client == NULL) {
-                printf("No currently focused client in current container.\n");
+                LOG("No currently focused client in current container.\n");
                 return;
         }
         Client *to_focus = CIRCLEQ_NEXT_OR_NULL(&(container->clients), current_client, clients);
@@ -337,7 +337,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
                 to_focus = CIRCLEQ_PREV_OR_NULL(&(container->clients), current_client, clients);
 
         if (t_ws->screen == NULL) {
-                printf("initializing new workspace, setting num to %d\n", workspace-1);
+                LOG("initializing new workspace, setting num to %d\n", workspace-1);
                 t_ws->screen = container->workspace->screen;
                 /* Copy the dimensions from the virtual screen */
 		memcpy(&(t_ws->rect), &(container->workspace->screen->rect), sizeof(Rect));
@@ -352,7 +352,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
 
         CIRCLEQ_INSERT_TAIL(&(to_container->clients), current_client, clients);
         SLIST_INSERT_HEAD(&(to_container->workspace->focus_stack), current_client, focus_clients);
-        printf("Moved.\n");
+        LOG("Moved.\n");
 
         current_client->container = to_container;
         container->currently_focused = to_focus;
@@ -360,7 +360,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
 
         /* If we’re moving it to an invisible screen, we need to unmap it */
         if (to_container->workspace->screen->current_workspace != to_container->workspace->num) {
-                printf("This workspace is not visible, unmapping\n");
+                LOG("This workspace is not visible, unmapping\n");
                 xcb_unmap_window(conn, current_client->frame);
         }
 
@@ -376,7 +376,7 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
         /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */
         Workspace *t_ws = &(workspaces[workspace-1]);
 
-        printf("show_workspace(%d)\n", workspace);
+        LOG("show_workspace(%d)\n", workspace);
 
         /* Store current_row/current_col */
         c_ws->current_row = current_row;
@@ -384,7 +384,7 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
 
         /* Check if the workspace has not been used yet */
         if (t_ws->screen == NULL) {
-                printf("initializing new workspace, setting num to %d\n", workspace);
+                LOG("initializing new workspace, setting num to %d\n", workspace);
                 t_ws->screen = c_ws->screen;
                 /* Copy the dimensions from the virtual screen */
 		memcpy(&(t_ws->rect), &(t_ws->screen->rect), sizeof(Rect));
@@ -392,7 +392,7 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
 
         if (c_ws->screen != t_ws->screen) {
                 /* We need to switch to the other screen first */
-                printf("moving over to other screen.\n");
+                LOG("moving over to other screen.\n");
                 c_ws = &(workspaces[t_ws->screen->current_workspace]);
                 current_col = c_ws->current_col;
                 current_row = c_ws->current_row;
@@ -436,7 +436,7 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
         c_ws = &workspaces[workspace-1];
         current_row = c_ws->current_row;
         current_col = c_ws->current_col;
-        printf("new current row = %d, current col = %d\n", current_row, current_col);
+        LOG("new current row = %d, current col = %d\n", current_row, current_col);
 
         /* Map all clients on the new workspace */
         for (int cols = 0; cols < c_ws->cols; cols++)
@@ -464,21 +464,21 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
  *
  */
 void parse_command(xcb_connection_t *conn, const char *command) {
-        printf("--- parsing command \"%s\" ---\n", command);
+        LOG("--- parsing command \"%s\" ---\n", command);
         /* Hmm, just to be sure */
         if (command[0] == '\0')
                 return;
 
         /* Is it an <exec>? */
         if (strncmp(command, "exec ", strlen("exec ")) == 0) {
-                printf("starting \"%s\"\n", command + strlen("exec "));
+                LOG("starting \"%s\"\n", command + strlen("exec "));
                 start_application(command+strlen("exec "));
                 return;
         }
 
         /* Is it <restart>? */
         if (strncmp(command, "restart", strlen("restart")) == 0) {
-                printf("restarting \"%s\"...\n", application_path);
+                LOG("restarting \"%s\"...\n", application_path);
                 execl(application_path, application_path, NULL);
                 /* not reached */
         }
@@ -493,7 +493,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         /* Is it just 's' for stacking or 'd' for default? */
         if ((command[0] == 's' || command[0] == 'd') && (command[1] == '\0')) {
-                printf("Switching mode for current container\n");
+                LOG("Switching mode for current container\n");
                 switch_layout_mode(conn, CUR_CELL, (command[0] == 's' ? MODE_STACK : MODE_DEFAULT));
                 return;
         }
@@ -508,7 +508,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         with = WITH_CONTAINER;
                         command++;
                 } else {
-                        printf("not yet implemented.\n");
+                        LOG("not yet implemented.\n");
                         return;
                 }
         }
@@ -519,7 +519,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         direction_t direction;
         int times = strtol(command, &rest, 10);
         if (rest == NULL) {
-                printf("Invalid command (\"%s\")\n", command);
+                LOG("Invalid command (\"%s\")\n", command);
                 return;
         }
 
@@ -537,7 +537,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         int workspace = strtol(rest, &rest, 10);
 
         if (rest == NULL) {
-                printf("Invalid command (\"%s\")\n", command);
+                LOG("Invalid command (\"%s\")\n", command);
                 return;
         }
 
@@ -557,7 +557,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 else if (*rest == 'l')
                         direction = D_RIGHT;
                 else {
-                        printf("unknown direction: %c\n", *rest);
+                        LOG("unknown direction: %c\n", *rest);
                         return;
                 }
 
@@ -572,5 +572,5 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 rest++;
         }
 
-        printf("--- done ---\n");
+        LOG("--- done ---\n");
 }

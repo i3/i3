@@ -66,7 +66,7 @@ int num_screens = 0;
  *
  */
 void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn, xcb_window_t window, window_attributes_t wa) {
-        printf("managing window.\n");
+        LOG("managing window.\n");
         xcb_drawable_t d = { window };
         xcb_get_geometry_cookie_t geomc;
         xcb_get_geometry_reply_t *geom;
@@ -135,7 +135,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         /* Events for already managed windows should already be filtered in manage_window() */
         assert(new == NULL);
 
-        printf("reparenting new client\n");
+        LOG("reparenting new client\n");
         new = calloc(sizeof(Client), 1);
         new->force_reconfigure = true;
         uint32_t mask = 0;
@@ -162,7 +162,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         XCB_EVENT_MASK_EXPOSURE |       /* …our window needs to be redrawn */
                         XCB_EVENT_MASK_ENTER_WINDOW;    /* …user moves cursor inside our window */
 
-        printf("Reparenting 0x%08x under 0x%08x.\n", child, new->frame);
+        LOG("Reparenting 0x%08x under 0x%08x.\n", child, new->frame);
 
         i3Font *font = load_font(conn, config.font);
         width = min(width, c_ws->rect.x + c_ws->rect.width);
@@ -216,7 +216,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         if (preply != NULL && preply->value_len > 0 && (atom = xcb_get_property_value(preply))) {
                 for (int i = 0; i < xcb_get_property_value_length(preply); i++)
                         if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]) {
-                                printf("Window is a dock.\n");
+                                LOG("Window is a dock.\n");
                                 new->dock = true;
                                 new->titlebar_position = TITLEBAR_OFF;
                                 new->force_reconfigure = true;
@@ -234,7 +234,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                    with maximum horizontal size.
                    TODO: bars at the top */
                 new->desired_height = strut[3];
-                printf("the client wants to be %d pixels height\n", new->desired_height);
+                LOG("the client wants to be %d pixels height\n", new->desired_height);
         }
 
         /* Insert into the currently active container, if it’s not a dock window */
@@ -449,14 +449,14 @@ int main(int argc, char *argv[], char *env[]) {
         /* Grab the bound keys */
         Binding *bind;
         TAILQ_FOREACH(bind, &bindings, bindings) {
-                printf("Grabbing %d\n", bind->keycode);
+                LOG("Grabbing %d\n", bind->keycode);
                 if (bind->mods & BIND_MODE_SWITCH)
                         xcb_grab_key(conn, 0, root, 0, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
                 else xcb_grab_key(conn, 0, root, bind->mods, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
         }
 
         /* check for Xinerama */
-        printf("Checking for Xinerama...\n");
+        LOG("Checking for Xinerama...\n");
         initialize_xinerama(conn);
 
         /* DEBUG: Start a terminal */
@@ -469,7 +469,7 @@ int main(int argc, char *argv[], char *env[]) {
         /* Get pointer position to see on which screen we’re starting */
         xcb_query_pointer_reply_t *reply;
         if ((reply = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, root), NULL)) == NULL) {
-                printf("Could not get pointer position\n");
+                LOG("Could not get pointer position\n");
                 return 1;
         }
 
@@ -479,7 +479,7 @@ int main(int argc, char *argv[], char *env[]) {
                 return 0;
         }
         if (screen->current_workspace != 0) {
-                printf("Ok, I need to go to the other workspace\n");
+                LOG("Ok, I need to go to the other workspace\n");
                 c_ws = &workspaces[screen->current_workspace];
         }
 

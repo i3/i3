@@ -115,7 +115,7 @@ void load_configuration(const char *override_configpath) {
                         if (!rest || *rest != ' ')
                                 die("Invalid binding\n");
                         rest++;
-                        printf("keycode = %d, modifiers = %d, command = *%s*\n", keycode, modifiers, rest);
+                        LOG("keycode = %d, modifiers = %d, command = *%s*\n", keycode, modifiers, rest);
                         Binding *new = smalloc(sizeof(Binding));
                         new->keycode = keycode;
                         new->mods = modifiers;

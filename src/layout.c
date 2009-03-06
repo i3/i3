@@ -45,11 +45,11 @@ int get_unoccupied_x(Workspace *workspace, int row) {
         int unoccupied = workspace->rect.width;
         float default_factor = ((float)workspace->rect.width / workspace->cols) / workspace->rect.width;
 
-        printf("get_unoccupied_x(), starting with %d, default_factor = %f\n", unoccupied, default_factor);
+        LOG("get_unoccupied_x(), starting with %d, default_factor = %f\n", unoccupied, default_factor);
 
         for (int cols = 0; cols < workspace->cols;) {
                 Container *con = workspace->table[cols][row];
-                printf("width_factor[%d][%d] = %f, colspan = %d\n", cols, row, con->width_factor, con->colspan);
+                LOG("width_factor[%d][%d] = %f, colspan = %d\n", cols, row, con->width_factor, con->colspan);
                 if (con->width_factor == 0)
                         unoccupied -= workspace->rect.width * default_factor * con->colspan;
                 cols += con->colspan;
@@ -57,7 +57,7 @@ int get_unoccupied_x(Workspace *workspace, int row) {
 
         assert(unoccupied != 0);
 
-        printf("unoccupied space: %d\n", unoccupied);
+        LOG("unoccupied space: %d\n", unoccupied);
         return unoccupied;
 }
 
@@ -66,11 +66,11 @@ int get_unoccupied_y(Workspace *workspace, int col) {
         int unoccupied = workspace->rect.height;
         float default_factor = ((float)workspace->rect.height / workspace->rows) / workspace->rect.height;
 
-        printf("get_unoccupied_y(), starting with %d, default_factor = %f\n", unoccupied, default_factor);
+        LOG("get_unoccupied_y(), starting with %d, default_factor = %f\n", unoccupied, default_factor);
 
         for (int rows = 0; rows < workspace->rows;) {
                 Container *con = workspace->table[col][rows];
-                printf("height_factor[%d][%d] = %f, rowspan %d\n", col, rows, con->height_factor, con->rowspan);
+                LOG("height_factor[%d][%d] = %f, rowspan %d\n", col, rows, con->height_factor, con->rowspan);
                 if (con->height_factor == 0)
                         unoccupied -= workspace->rect.height * default_factor * con->rowspan;
                 rows += con->rowspan;
@@ -78,7 +78,7 @@ int get_unoccupied_y(Workspace *workspace, int col) {
 
         assert(unoccupied != 0);
 
-        printf("unoccupied space: %d\n", unoccupied);
+        LOG("unoccupied space: %d\n", unoccupied);
         return unoccupied;
 }
 
@@ -179,7 +179,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
  *
  */
 static void reposition_client(xcb_connection_t *conn, Client *client) {
-        printf("frame needs to be pushed to %dx%d\n", client->rect.x, client->rect.y);
+        LOG("frame needs to be pushed to %dx%d\n", client->rect.x, client->rect.y);
         /* Note: We can use a pointer to client->x like an array of uint32_ts
            because it is followed by client->y by definition */
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, &(client->rect.x));
@@ -192,7 +192,7 @@ static void reposition_client(xcb_connection_t *conn, Client *client) {
 static void resize_client(xcb_connection_t *conn, Client *client) {
         i3Font *font = load_font(conn, config.font);
 
-        printf("resizing client to %d x %d\n", client->rect.width, client->rect.height);
+        LOG("resizing client to %d x %d\n", client->rect.width, client->rect.height);
         xcb_configure_window(conn, client->frame,
                         XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                         &(client->rect.width));
@@ -230,7 +230,7 @@ static void resize_client(xcb_connection_t *conn, Client *client) {
         /* Obey the ratio, if any */
         if (client->proportional_height != 0 &&
             client->proportional_width != 0) {
-                printf("proportional height = %d, width = %d\n", client->proportional_height, client->proportional_width);
+                LOG("proportional height = %d, width = %d\n", client->proportional_height, client->proportional_width);
                 double new_height = rect->height + 1;
                 int new_width = rect->width;
 
@@ -246,10 +246,10 @@ static void resize_client(xcb_connection_t *conn, Client *client) {
 
                 rect->height = new_height;
                 rect->width = new_width;
-                printf("new_height = %f, new_width = %d\n", new_height, new_width);
+                LOG("new_height = %f, new_width = %d\n", new_height, new_width);
         }
 
-        printf("child will be at %dx%d with size %dx%d\n", rect->x, rect->y, rect->width, rect->height);
+        LOG("child will be at %dx%d with size %dx%d\n", rect->x, rect->y, rect->width, rect->height);
 
         xcb_configure_window(conn, client->child, mask, &(rect->x));
 
@@ -290,7 +290,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 num_clients++;
 
         if (container->mode == MODE_DEFAULT) {
-                printf("got %d clients in this default container.\n", num_clients);
+                LOG("got %d clients in this default container.\n", num_clients);
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* Check if we changed client->x or client->y by updating it.
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
@@ -386,7 +386,7 @@ static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int 
 }
 
 static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int width, int height) {
-        printf("Rendering internal bar\n");
+        LOG("Rendering internal bar\n");
         i3Font *font = load_font(conn, config.font);
         i3Screen *screen = r_ws->screen;
         enum { SET_NORMAL = 0, SET_FOCUSED = 1 };
@@ -433,7 +433,7 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
                 }
         }
 
-        printf("done rendering internal\n");
+        LOG("done rendering internal\n");
 }
 
 void render_layout(xcb_connection_t *conn) {
@@ -444,7 +444,7 @@ void render_layout(xcb_connection_t *conn) {
                 /* r_ws (rendering workspace) is just a shortcut to the Workspace being currently rendered */
                 Workspace *r_ws = &(workspaces[screen->current_workspace]);
 
-                printf("Rendering screen %d\n", screen->num);
+                LOG("Rendering screen %d\n", screen->num);
                 if (r_ws->fullscreen_client != NULL)
                         /* This is easy: A client has entered fullscreen mode, so we don’t render at all */
                         continue;
@@ -460,7 +460,7 @@ void render_layout(xcb_connection_t *conn) {
                 /* Space for the internal bar */
                 height -= (font->height + 6);
 
-                printf("got %d rows and %d cols\n", r_ws->rows, r_ws->cols);
+                LOG("got %d rows and %d cols\n", r_ws->rows, r_ws->cols);
 
                 int xoffset[r_ws->rows];
                 int yoffset[r_ws->cols];
@@ -476,9 +476,11 @@ void render_layout(xcb_connection_t *conn) {
                         for (int rows = 0; rows < r_ws->rows; rows++) {
                                 Container *container = r_ws->table[cols][rows];
                                 int single_width, single_height;
-                                printf("\n========\ncontainer has %d colspan, %d rowspan\n",
+                                LOG("\n");
+                                LOG("========\n");
+                                LOG("container has %d colspan, %d rowspan\n",
                                                 container->colspan, container->rowspan);
-                                printf("container at %d, %d\n", xoffset[rows], yoffset[cols]);
+                                LOG("container at %d, %d\n", xoffset[rows], yoffset[cols]);
                                 /* Update position of the container */
                                 container->row = rows;
                                 container->col = cols;
@@ -502,7 +504,7 @@ void render_layout(xcb_connection_t *conn) {
 
                                 xoffset[rows] += single_width;
                                 yoffset[cols] += single_height;
-                                printf("==========\n");
+                                LOG("==========\n");
                         }
 
                 render_bars(conn, r_ws, width, &height);
