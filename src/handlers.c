@@ -456,12 +456,9 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 SLIST_FOREACH(focus_client, &(con->workspace->focus_stack), focus_clients)
                         if (focus_client->container == con) {
                                 con->currently_focused = focus_client;
+                                set_focus(conn, focus_client);
                                 break;
                         }
-
-                /* Actually set focus, if there is a window which should get it */
-                if (!SLIST_EMPTY(&(con->workspace->focus_stack)))
-                        set_focus(conn, SLIST_FIRST(&(con->workspace->focus_stack)));
         }
 
         LOG("child of 0x%08x.\n", client->frame);
