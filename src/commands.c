@@ -65,6 +65,11 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
         /* There always is a container. If not, current_col or current_row is wrong */
         assert(container != NULL);
 
+        if (container->workspace->fullscreen_client != NULL) {
+                LOG("You're in fullscreen mode. Won't switch focus\n");
+                return;
+        }
+
         /* TODO: for horizontal default layout, this has to be expanded to LEFT/RIGHT */
         if (direction == D_UP || direction == D_DOWN) {
                 if (thing == THING_WINDOW)
