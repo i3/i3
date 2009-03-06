@@ -89,9 +89,12 @@ int get_unoccupied_y(Workspace *workspace, int col) {
  *
  */
 void redecorate_window(xcb_connection_t *conn, Client *client) {
-        if (client->container->mode == MODE_STACK)
+        if (client->container->mode == MODE_STACK) {
                 render_container(conn, client->container);
-        else decorate_window(conn, client, client->frame, client->titlegc, 0);
+                /* We clear the frame to generate exposure events, because the color used
+                   in drawing may be different */
+                xcb_clear_area(conn, true, client->frame, 0, 0, client->rect.width, client->rect.height);
+        } else decorate_window(conn, client, client->frame, client->titlegc, 0);
         xcb_flush(conn);
 }
 
@@ -102,6 +105,7 @@ void redecorate_window(xcb_connection_t *conn, Client *client) {
  */
 void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t drawable, xcb_gcontext_t gc, int offset) {
         i3Font *font = load_font(conn, config.font);
+        int decoration_height = font->height + 2 + 2;
         uint32_t background_color,
                  text_color,
                  border_color;
@@ -134,11 +138,24 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         /* Draw a rectangle in background color around the window */
         xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, background_color);
 
-        /* We need to use the container’s width because it is the more recent value - when
-           in stacking mode, clients get reconfigured only on demand (the not active client
-           is not reconfigured), so the client’s rect.width would be wrong */
-        xcb_rectangle_t rect = {0, offset, client->container->width, offset + client->rect.height};
-        xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
+        /* In stacking mode, we only render the rect for this specific decoration */
+        if (client->container->mode == MODE_STACK) {
+                xcb_rectangle_t rect = {0, offset, client->container->width, offset + decoration_height };
+                xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
+        } else {
+                /* We need to use the container’s width because it is the more recent value - when
+                   in stacking mode, clients get reconfigured only on demand (the not active client
+                   is not reconfigured), so the client’s rect.width would be wrong */
+                xcb_rectangle_t rect = {0, 0, client->container->width, client->rect.height};
+                xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
+
+                /* Draw the inner background to have a black frame around clients (such as mplayer)
+                   which cannot be resized exactly in our frames and therefore are centered */
+                xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+                xcb_rectangle_t crect = {2, decoration_height,
+                                         client->rect.width - (2 + 2), client->rect.height - 2 - decoration_height};
+                xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
+        }
 
         /* Draw the lines */
         xcb_draw_line(conn, drawable, gc, border_color, 2, offset, client->rect.width, offset);
@@ -208,6 +225,28 @@ static void resize_client(xcb_connection_t *conn, Client *client) {
                                 rect->height = client->rect.height - ((font->height + 2 + 2) + 2);
                         }
                         break;
+        }
+
+        /* Obey the ratio, if any */
+        if (client->proportional_height != 0 &&
+            client->proportional_width != 0) {
+                printf("proportional height = %d, width = %d\n", client->proportional_height, client->proportional_width);
+                double new_height = rect->height + 1;
+                int new_width = rect->width;
+
+                while (new_height > rect->height) {
+                        new_height = ((double)client->proportional_height / client->proportional_width) * new_width;
+
+                        if (new_height > rect->height)
+                                new_width--;
+                }
+                /* Center the window */
+                rect->y += (rect->height / 2) - (new_height / 2);
+                rect->x += (rect->width / 2) - (new_width / 2);
+
+                rect->height = new_height;
+                rect->width = new_width;
+                printf("new_height = %f, new_width = %d\n", new_height, new_width);
         }
 
         printf("child will be at %dx%d with size %dx%d\n", rect->x, rect->y, rect->width, rect->height);

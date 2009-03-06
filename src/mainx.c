@@ -398,6 +398,9 @@ int main(int argc, char *argv[], char *env[]) {
         /* Watch the WM_NAME (= title of the window) property */
         xcb_watch_wm_name(&prophs, 128, handle_windowname_change, 0);
 
+        /* Watch size hints (to obey correct aspect ratio) */
+        xcb_property_set_handler(&prophs, WM_NORMAL_HINTS, UINT_MAX, handle_normal_hints, NULL);
+
         /* Get the root window and set the event mask */
         root = xcb_aux_get_screen(conn, screens)->root;
 

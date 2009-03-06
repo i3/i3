@@ -15,6 +15,7 @@
 #include <xcb/xcb.h>
 
 #include <xcb/xcb_wm.h>
+#include <xcb/xcb_icccm.h>
 #include <X11/XKBlib.h>
 
 #include "i3.h"
@@ -353,6 +354,7 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
 
         printf("handle_configure_event\n");
+        printf("event->type = %d, \n", event->response_type);
         printf("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
         printf("sequence = %d\n", event->sequence);
 
@@ -531,11 +533,28 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
         if (client->container->mode != MODE_STACK)
                 decorate_window(conn, client, client->frame, client->titlegc, 0);
         else {
-                xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND,
-                        get_colorpixel(conn, "#285577"));
+                uint32_t background_color;
+                /* Distinguish if the window is currently focused… */
+                if (CUR_CELL->currently_focused == client)
+                        background_color = get_colorpixel(conn, "#285577");
+                /* …or if it is the focused window in a not focused container */
+                else background_color = get_colorpixel(conn, "#555555");
 
-                xcb_rectangle_t rect = {0, 0, client->rect.width, client->rect.height};
-                xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &rect);
+                /* Set foreground color to current focused color, line width to 2 */
+                uint32_t values[] = {background_color, 2};
+                xcb_change_gc(conn, client->titlegc, XCB_GC_FOREGROUND | XCB_GC_LINE_WIDTH, values);
+
+                /* Draw the border, the ±1 is for line width = 2 */
+                xcb_point_t points[] = {{1, 0},                                           /* left upper edge */
+                                        {1, client->rect.height-1},                       /* left bottom edge */
+                                        {client->rect.width-1, client->rect.height-1},    /* right bottom edge */
+                                        {client->rect.width-1, 0}};                       /* right upper edge */
+                xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, client->frame, client->titlegc, 4, points);
+
+                /* Draw a black background */
+                xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+                xcb_rectangle_t crect = {2, 0, client->rect.width - (2 + 2), client->rect.height - 2};
+                xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
 
                 xcb_flush(conn);
         }
@@ -581,4 +600,87 @@ int window_type_handler(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
          before changing this property. */
         printf("_NET_WM_WINDOW_TYPE changed, this is not yet implemented.\n");
         return 0;
+}
+
+/*
+ * Handles the size hints set by a window, but currently only the part necessary for displaying
+ * clients proportionally inside their frames (mplayer for example)
+ *
+ * See ICCCM 4.1.2.3 for more details
+ *
+ */
+int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                        xcb_atom_t name, xcb_get_property_reply_t *reply) {
+        printf("handle_normal_hints\n");
+        Client *client = table_get(byChild, window);
+        if (client == NULL) {
+                printf("No such client\n");
+                return;
+        }
+        xcb_size_hints_t size_hints;
+
+        /* If the hints were already in this event, use them, if not, request them */
+        if (reply != NULL)
+                xcb_get_wm_size_hints_from_reply(&size_hints, reply);
+        else
+                xcb_get_wm_normal_hints_reply(conn, xcb_get_wm_normal_hints_unchecked(conn, client->child), &size_hints, NULL);
+
+        /* If no aspect ratio was set or if it was invalid, we ignore the hints */
+        if (!(size_hints.flags & XCB_SIZE_HINT_P_ASPECT) ||
+            (size_hints.min_aspect_num <= 0) ||
+            (size_hints.min_aspect_den <= 0)) {
+                printf("No aspect ratio set, ignoring\n");
+                return;
+        }
+
+        printf("window is %08x / %s\n", client->child, client->name);
+
+        int base_width = 0, base_height = 0,
+            min_width = 0, min_height = 0;
+
+        /* base_width/height are the desired size of the window.
+           We check if either the program-specified size or the program-specified
+           min-size is available */
+        if (size_hints.flags & XCB_SIZE_HINT_P_SIZE) {
+                base_width = size_hints.base_width;
+                base_height = size_hints.base_height;
+        } else if (size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE) {
+                base_width = size_hints.min_width;
+                base_height = size_hints.min_height;
+        }
+
+        if (size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE) {
+                min_width = size_hints.min_width;
+                min_height = size_hints.min_height;
+        } else if (size_hints.flags & XCB_SIZE_HINT_P_SIZE) {
+                min_width = size_hints.base_width;
+                min_height = size_hints.base_height;
+        }
+
+        double width = client->rect.width - base_width;
+        double height = client->rect.height - base_height;
+        /* Convert numerator/denominator to a double */
+        double min_aspect = (double)size_hints.min_aspect_num / size_hints.min_aspect_den;
+        double max_aspect = (double)size_hints.max_aspect_num / size_hints.min_aspect_den;
+
+        printf("min_aspect = %f, max_aspect = %f\n", min_aspect, max_aspect);
+        printf("width = %f, height = %f\n", width, height);
+
+        /* Sanity checks, this is user-input, in a way */
+        if (max_aspect <= 0 || min_aspect <= 0 || height == 0 || (width / height) <= 0)
+                return;
+
+        /* Check if we need to set proportional_* variables using the correct ratio */
+        if ((width / height) < min_aspect) {
+                client->proportional_width = width;
+                client->proportional_height = width / min_aspect;
+        } else if ((width / height) > max_aspect) {
+                client->proportional_width = width;
+                client->proportional_height = width / max_aspect;
+        } else return;
+
+        client->force_reconfigure = true;
+
+        if (client->container != NULL)
+                render_container(conn, client->container);
 }

@@ -204,6 +204,11 @@ struct Client {
         /* x, y, width, height of the child (relative to its frame) */
         Rect child_rect;
 
+        /* contains the size calculated from the hints set by the window or 0 if the client
+           did not send any hints */
+        int proportional_height;
+        int proportional_width;
+
         /* Height which was determined by reading the _NET_WM_STRUT_PARTIAL top/bottom of the screen
            reservation */
         int desired_height;
