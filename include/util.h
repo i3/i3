@@ -22,7 +22,7 @@
                                                 CIRCLEQ_PREV(elm, field) : NULL)
 /* ##__VA_ARGS__ means: leave out __VA_ARGS__ completely if it is empty, that is,
    delete the preceding comma */
-#define LOG(fmt, ...) slog("%s:%d - " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG(fmt, ...) slog("%s:%s:%d - " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 
 int min(int a, int b);
