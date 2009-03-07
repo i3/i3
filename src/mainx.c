@@ -475,9 +475,6 @@ int main(int argc, char *argv[], char *env[]) {
         LOG("Checking for Xinerama...\n");
         initialize_xinerama(conn);
 
-        /* DEBUG: Start a terminal */
-        start_application(config.terminal);
-
         xcb_flush(conn);
 
         manage_existing_windows(conn, &prophs, root);
