@@ -1,7 +1,7 @@
 i3(1)
 =====
 Michael Stapelberg <michael+i3@stapelberg.de>
-v3.alpha, February 2009
+v3.alpha, March 2009
 
 == NAME
 
@@ -112,8 +112,8 @@ At the moment, you have to bind to keycodes (find them out via xev(1)).
 
 .Sample configuration
 -------------------------------------------------------------
-terminal /usr/pkg/bin/urxvt
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso8859-1
+terminal /usr/bin/urxvt
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # Beamer on/off
 bind Mod1+73 exec /home/michael/toggle_beamer.sh
