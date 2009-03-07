@@ -26,8 +26,8 @@ In the case of i3, the tasks (and order of them) are the following:
 . Iterate through all existing windows (if the window manager is not started as the first
   client of X) and manage them (= reparent them, create window decorations)
 . When new windows are created, manage them
-. Handle the client’s _WM_STATE property, but only the _WM_STATE_FULLSCREEN
-. Handle the client’s WM_NAME property
+. Handle the client’s `_WM_STATE` property, but only the `_WM_STATE_FULLSCREEN`
+. Handle the client’s `WM_NAME` property
 . Handle the client’s size hints to display them proportionally
 . Handle enter notifications (focus follows mouse)
 . Handle button (as in mouse buttons) presses for focus/raise on click
@@ -78,32 +78,59 @@ src/xinerama.c::
 
 == Data structures
 
-See include/data.h for documented data structures.
+See include/data.h for documented data structures. The most important ones are explained
+right here.
+
+TODO: We need a slick graphic here
 
 === Virtual screens
 
-A virtual screen (type i3Screen) is generated from the connected screens obtained
+A virtual screen (type `i3Screen`) is generated from the connected screens obtained
 through Xinerama. The difference to the raw Xinerama monitors as seen when using xrandr(1)
 is that it falls back to the lowest common resolution of the logical screens.
 
 For example, if your notebook has 1280x800 and you connect a video projector with
-1024x768, set up in clone mode (xrandr --output VGA --mode 1024x768 --same-as LVDS),
+1024x768, set up in clone mode (xrandr \--output VGA \--mode 1024x768 \--same-as LVDS),
 i3 will have one virtual screen.
 
-However, if you configure it using xrandr --output VGA --mode 1024x768 --right-of LVDS,
+However, if you configure it using xrandr \--output VGA \--mode 1024x768 \--right-of LVDS,
 i3 will generate two virtual screens. For each virtual screen, a new workspace will be
 assigned. New workspaces are created on the screen you are currently on.
+
+=== Workspace
+
+A workspace is identified by its number. Basically, you could think of workspaces
+as different desks in your bureau, if you like the desktop methaphor. They just contain
+different sets of windows and are completely separate of each other. Other window
+managers also call this ``Virtual desktops''.
+
+=== The layout table
+
+Each workspace has a table, which is just a two-dimensional dynamic array containing
+Containers (see below). This table grows and shrinks as you need it (by moving windows
+to the right you can create a new column in the table, by moving them to the bottom
+you create a new row).
+
+=== Container
+
+A container is the content of a table’s cell. It holds an arbitrary amount of windows
+and has a specific layout (default layout or stack layout). Containers can consume
+multiple table cells by modifying their colspan/rowspan attribute.
+
+=== Client
+
+A client is x11-speak for a window.
 
 == List/queue macros
 
 i3 makes heavy use of the list macros defined in BSD operating systems. To ensure
 that the operating system on which i3 is compiled has all the awaited features,
-i3 comes with include/queue.h. On BSD systems, you can use man queue(3). On Linux,
+i3 comes with `include/queue.h`. On BSD systems, you can use man `queue(3)`. On Linux,
 you have to use google.
 
-The lists used are SLISTs (single linked lists) and CIRCLEQ (circular queues).
-Usually, only forward traversal is necessary, so an SLIST works fine. However,
-for the windows inside a container, a CIRCLEQ is necessary to go from the currently
+The lists used are `SLIST` (single linked lists) and `CIRCLEQ` (circular queues).
+Usually, only forward traversal is necessary, so an `SLIST` works fine. However,
+for the windows inside a container, a `CIRCLEQ` is necessary to go from the currently
 selected window to the window above/below.
 
 == Naming conventions
@@ -111,12 +138,12 @@ selected window to the window above/below.
 There is a row of standard variables used in many events. The following names should be
 chosen for those:
 
- * "conn" is the xcb_connection_t
- * "event" is the event of the particular type
- * "container" names a container
- * "client" names a client, for example when using a CIRCLEQ_FOREACH
+ * ``conn'' is the xcb_connection_t
+ * ``event'' is the event of the particular type
+ * ``container'' names a container
+ * ``client'' names a client, for example when using a `CIRCLEQ_FOREACH`
 
-== Startup (src/mainx.c)
+== Startup (src/mainx.c, main())
 
  * Establish the xcb connection
  * Check for XKB extension on the separate X connection
@@ -157,7 +184,7 @@ The bound command is parsed directly in command mode.
 
 == Manage windows (src/mainx.c, manage_window() and reparent_window())
 
-manage_window() does some checks to decide whether the window should be managed at all:
+`manage_window()` does some checks to decide whether the window should be managed at all:
 
  * Windows have to be mapped, that is, visible on screen
  * The override_redirect must not be set. Windows with override_redirect shall not be
@@ -170,23 +197,23 @@ Reparenting means that for each window which is reparented, a new window, slight
 than the original one, is created. The original window is then reparented to the bigger one
 (called "frame").
 
-After reparenting, the window type (_NET_WM_WINDOW_TYPE) is checked to see whether this
-window is a dock (_NET_WM_WINDOW_TYPE_DOCK), like dzen2 for example. Docks are handled
+After reparenting, the window type (`_NET_WM_WINDOW_TYPE`) is checked to see whether this
+window is a dock (`_NET_WM_WINDOW_TYPE_DOCK`), like dzen2 for example. Docks are handled
 differently, they don’t have decorations and are not assigned to a specific container.
 Instead, they are positioned at the bottom of the screen. To get the height which needsd
-to be reserved for the window, the _NET_WM_STRUT_PARTIAL property is used.
+to be reserved for the window, the `_NET_WM_STRUT_PARTIAL` property is used.
 
 == What happens when an application is started?
 
 i3 does not care for applications. All it notices is when new windows are mapped (see
-src/handlers.c, handle_map_notify_event()). The window is then reparented (see section
+`src/handlers.c`, `handle_map_notify_event()`). The window is then reparented (see section
 "Manage windows").
 
-After reparenting the window, render_layout() is called which renders the internal
+After reparenting the window, `render_layout()` is called which renders the internal
 layout table. The window was placed in the currently focused container and
 therefore the new window and the old windows (if any) need te be moved/resized
 so that the currently active layout (default mode/stacking mode) is rendered
-correctly. To move/resize windows, a window is "configured" in X11-speak.
+correctly. To move/resize windows, a window is ``configured'' in X11-speak.
 
 Some applications, such as MPlayer obivously assume the window manager is stupid
 and therefore configure their windows by themselves. This generates an event called
@@ -194,7 +221,7 @@ configurenotify. i3 handles these events and pushes the window back to its posit
 
 == _NET_WM_STATE
 
-Only the _NET_WM_STATE_FULLSCREEN atom is handled. It calls toggle_fullscreen() for the
+Only the _NET_WM_STATE_FULLSCREEN atom is handled. It calls ``toggle_fullscreen()'' for the
 specific client which just configures the client to use the whole screen on which it
 currently is. Also, it is set as fullscreen_client for the i3Screen.
 
@@ -205,7 +232,9 @@ is re-rendered.
 
 == Size hints
 
-== Rendering
+TODO
+
+== Rendering (src/layout.c, render_layout() and render_container())
 
 There are two entry points to rendering: render_layout() and render_container(). The
 former one renders all virtual screens, the currently active workspace of each virtual
@@ -244,6 +273,12 @@ this window is the currently focused one or the last focused one in a not focuse
 or not focused at all) forming the background. Afterwards, two lighter lines are drawn
 and the last step is drawing the window’s title (see WM_NAME) onto it.
 
+=== Fullscreen windows
+
+For fullscreen windows, the `rect` (x, y, width, height) is not changed to allow the client
+to easily go back to its previous position. Instead, fullscreen windows are skipped
+when rendering.
+
 === Resizing containers
 
 By clicking and dragging the border of a container, you can resize it freely.
@@ -256,11 +291,11 @@ Like in vim, you can control i3 using commands. They are intended to be a powerf
 alternative to lots of shortcuts, because they can be combined. There are a few special
 commands, which are the following:
 
-exec::
-Starts the given command by passing it to /bin/sh.
+exec <command>::
+Starts the given command by passing it to `/bin/sh`.
 
 restart::
-Restarts i3 by executing argv[0] (the path with which you started i3) without forking.
+Restarts i3 by executing `argv[0]` (the path with which you started i3) without forking.
 
 w::
 "With". This is used to select a bunch of windows. Currently, only selecting the whole
@@ -273,3 +308,9 @@ The other commands are to be combined with a direction. The directions are h, j,
 like in vim (h = left, j = down, k = up, l = right). When you just specify the direction
 keys, i3 will move the focus in that direction. You can provide "m" or "s" before the
 direction to move a window respectively or snap.
+
+== Gotchas
+
+* Forgetting to call `xcb_flush(conn);` after sending a request. This usually leads to
+  code which looks like it works fine but which does not work under certain conditions.
+
