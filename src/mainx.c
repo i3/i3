@@ -17,6 +17,7 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <limits.h>
+#include <locale.h>
 
 #include <X11/XKBlib.h>
 #include <X11/extensions/XKB.h>
@@ -307,6 +308,8 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_property_handlers_t prophs;
         xcb_window_t root;
         xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
+
+        setlocale(LC_ALL, "");
 
         /* Disable output buffering to make redirects in .xsession actually useful for debugging */
         if (!isatty(fileno(stdout)))

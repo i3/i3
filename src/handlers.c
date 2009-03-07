@@ -486,10 +486,8 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         if (client->name != NULL)
                 free(client->name);
 
-        client->name_len = xcb_get_property_value_length(prop);
-        client->name = smalloc(client->name_len);
-        strncpy(client->name, xcb_get_property_value(prop), client->name_len);
-        LOG("rename to \"%.*s\".\n", client->name_len, client->name);
+        asprintf(&(client->name), "%.*s", xcb_get_property_value_length(prop), xcb_get_property_value(prop));
+        LOG("rename to \"%s\".\n", client->name);
 
         if (client->container->mode == MODE_STACK)
                 render_container(conn, client->container);

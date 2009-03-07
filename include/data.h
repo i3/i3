@@ -213,9 +213,8 @@ struct Client {
            reservation */
         int desired_height;
 
-        /* Name */
+        /* Name (= window title) */
         char *name;
-        int name_len;
 
         /* fullscreen is pretty obvious */
         bool fullscreen;

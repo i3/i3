@@ -167,11 +167,11 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         uint32_t values[] = { text_color, background_color, font->id };
         xcb_change_gc(conn, gc, mask, values);
 
-        /* TODO: utf8? */
-        char *label;
-        asprintf(&label, "%.*s", client->name_len, client->name);
-        xcb_image_text_8(conn, strlen(label), drawable, gc, 3 /* X */, offset + font->height /* Y = baseline of font */, label);
-        free(label);
+        int real_strlen;
+        char *ucs2_label = convert_utf8_to_ucs2(client->name, &real_strlen);
+        xcb_image_text_16(conn, real_strlen, drawable, gc, 3 /* X */,
+                          offset + font->height /* Y = baseline of font */, (xcb_char2b_t*)ucs2_label);
+        free(ucs2_label);
 }
 
 /*
