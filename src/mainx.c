@@ -143,7 +143,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         /* Update the data structures */
         Client *old_focused = CUR_CELL->currently_focused;
-        CUR_CELL->currently_focused = new;
+
         new->container = CUR_CELL;
 
         new->frame = xcb_generate_id(conn);
@@ -184,14 +184,15 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         new->titlegc = xcb_generate_id(conn);
         xcb_create_gc(conn, new->titlegc, new->frame, 0, 0);
 
-        /* Put our data structure (Client) into the table */
-        table_put(byParent, new->frame, new);
-        table_put(byChild, child, new);
-
         /* Moves the original window into the new frame we've created for it */
         new->awaiting_useless_unmap = true;
         xcb_void_cookie_t cookie = xcb_reparent_window_checked(conn, child, new->frame, 0, font->height);
-        check_error(conn, cookie, "Could not reparent window");
+        if (xcb_request_check(conn, cookie) != NULL) {
+                LOG("Could not reparent the window, aborting\n");
+                xcb_destroy_window(conn, new->frame);
+                free(new);
+                return;
+        }
 
         /* We are interested in property changes */
         mask = XCB_CW_EVENT_MASK;
@@ -199,7 +200,18 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         XCB_EVENT_MASK_STRUCTURE_NOTIFY |
                         XCB_EVENT_MASK_ENTER_WINDOW;
         cookie = xcb_change_window_attributes_checked(conn, child, mask, values);
-        check_error(conn, cookie, "Could not change window attributes");
+        if (xcb_request_check(conn, cookie) != NULL) {
+                LOG("Could not change window attributes, aborting\n");
+                xcb_destroy_window(conn, new->frame);
+                free(new);
+                return;
+        }
+
+        CUR_CELL->currently_focused = new;
+
+        /* Put our data structure (Client) into the table */
+        table_put(byParent, new->frame, new);
+        table_put(byChild, child, new);
 
         /* We need to grab the mouse buttons for click to focus */
         xcb_grab_button(conn, false, child, XCB_EVENT_MASK_BUTTON_PRESS,
@@ -441,7 +453,6 @@ int main(int argc, char *argv[], char *env[]) {
         /* Set up the atoms we support */
         check_error(conn, xcb_change_property_checked(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED],
                        ATOM, 32, 7, atoms), "Could not set _NET_SUPPORTED");
-
         /* Set up the window manager’s name */
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTING_WM_CHECK], WINDOW, 32, 1, &root);
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_WM_NAME], atoms[UTF8_STRING], 8, strlen("i3"), "i3");

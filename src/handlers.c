@@ -475,6 +475,10 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
                                 xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
         LOG("window's name changed.\n");
+        if (prop == NULL) {
+                LOG("prop == NULL\n");
+                return 1;
+        }
         Client *client = table_get(byChild, window);
         if (client == NULL)
                 return 1;
