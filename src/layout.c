@@ -292,6 +292,12 @@ void render_container(xcb_connection_t *conn, Container *container) {
         if (container->mode == MODE_DEFAULT) {
                 LOG("got %d clients in this default container.\n", num_clients);
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
+                        /* If the client is in fullscreen mode, it does not get reconfigured */
+                        if (container->workspace->fullscreen_client == client) {
+                                current_client++;
+                                continue;
+                        }
+
                         /* Check if we changed client->x or client->y by updating it.
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |
@@ -326,15 +332,30 @@ void render_container(xcb_connection_t *conn, Container *container) {
                     update_if_necessary(&(stack_win->rect.width), container->width) |
                     update_if_necessary(&(stack_win->rect.height), decoration_height * num_clients)) {
 
+                        /* Configuration can happen in two slightly different ways:
+
+                           If there is no client in fullscreen mode, 5 parameters are passed
+                           (x, y, width, height, stack mode is set to above which means top-most position).
+
+                           If there is a fullscreen client, the fourth parameter is set to to the
+                           fullscreen window as sibling and the stack mode is set to below, which means
+                           that the stack_window will be placed just below the sibling, that is, under
+                           the fullscreen window.
+                         */
                         uint32_t values[] = { stack_win->rect.x, stack_win->rect.y,
                                               stack_win->rect.width, stack_win->rect.height,
-                                              XCB_STACK_MODE_ABOVE };
+                                              XCB_STACK_MODE_ABOVE, XCB_STACK_MODE_BELOW };
+                        uint32_t mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                                        XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
+                                        XCB_CONFIG_WINDOW_STACK_MODE;
 
-                        xcb_configure_window(conn, stack_win->window,
-                                             XCB_CONFIG_WINDOW_X     | XCB_CONFIG_WINDOW_Y      |
-                                             XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
-                                             XCB_CONFIG_WINDOW_STACK_MODE,
-                                             values);
+                        /* If there is no fullscreen client, we raise the stack window */
+                        if (container->workspace->fullscreen_client != NULL) {
+                                mask |= XCB_CONFIG_WINDOW_SIBLING;
+                                values[4] = container->workspace->fullscreen_client->frame;
+                        }
+
+                        xcb_configure_window(conn, stack_win->window, mask, values);
                 }
 
                 /* Reconfigure the currently focused client, if necessary. It is the only visible one */
@@ -347,6 +368,12 @@ void render_container(xcb_connection_t *conn, Container *container) {
 
                 /* Render the decorations of all clients */
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
+                        /* If the client is in fullscreen mode, it does not get reconfigured */
+                        if (container->workspace->fullscreen_client == client) {
+                                current_client++;
+                                continue;
+                        }
+
                         /* Check if we changed client->x or client->y by updating it.
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |
@@ -445,9 +472,6 @@ void render_layout(xcb_connection_t *conn) {
                 Workspace *r_ws = &(workspaces[screen->current_workspace]);
 
                 LOG("Rendering screen %d\n", screen->num);
-                if (r_ws->fullscreen_client != NULL)
-                        /* This is easy: A client has entered fullscreen mode, so we don’t render at all */
-                        continue;
 
                 int width = r_ws->rect.width;
                 int height = r_ws->rect.height;

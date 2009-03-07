@@ -207,8 +207,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 return;
         }
 
-        CUR_CELL->currently_focused = new;
-
         /* Put our data structure (Client) into the table */
         table_put(byParent, new->frame, new);
         table_put(byChild, child, new);
@@ -219,8 +217,15 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         1 /* left mouse button */,
                         XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
 
-        /* Focus the new window */
-        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
+        /* Focus the new window if we’re not in fullscreen mode */
+        if (CUR_CELL->workspace->fullscreen_client == NULL) {
+                CUR_CELL->currently_focused = new;
+                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
+        } else {
+                /* If we are in fullscreen, we should lower the window to not be annoying */
+                uint32_t values[] = { XCB_STACK_MODE_BELOW };
+                xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
+        }
 
         /* Get _NET_WM_WINDOW_TYPE (to see if it’s a dock) */
         xcb_atom_t *atom;
