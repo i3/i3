@@ -38,6 +38,65 @@ Restart the window manager
 
 In the following chapters, each of these tasks and their implementation details will be discussed.
 
+=== Tiling window managers
+
+Traditionally, there are two approaches to managing windows: The most common one nowadays is
+floating, which means the user can freely move/resize the windows. The other approach is called
+tiling, which means that your window manager distributing windows to use as much space as
+possible while not overlapping.
+
+The idea behind tiling is that you should not need to waste your time moving/resizing windows
+while you usually want to get some work done. After all, most users sooner or later tend to
+lay out their windows in a way which corresponds to tiling or stacking mode in i3. Therefore,
+why not let i3 do this for you? Certainly, it’s faster than you could ever do it.
+
+The problem with most tiling window managers is that they are too unflexible. In my opinion, a
+window manager is just another tool, and similar to vim which can edit all kinds of text files
+(like source code, HTML, …) and is not limited to a specific file type, a window manager should
+not limit itself to a certain layout (like dwm, awesome, …) but provide mechanisms for you to
+easily create the layout you need at the moment.
+
+=== The layout table
+
+To accomplish flexible layouts, we decided to simply use a table. The table grows and shrinks
+as you need it. Each cell holds a container which then holds windows (see picture below). You
+can use different layouts for each container (default layout and stacking layout).
+
+So, when you open a terminal and immediately open another one, they reside in the same container,
+in default layout. The layout table has exactly one column, one row and therefore one cell.
+When you move one of the terminals to the right, the table needs to grow. It will be expanded
+to two columns and one row. This enables you to have different layouts for each container.
+The table then looks like this:
+
+[width="15%",cols="^,^"]
+|========
+| T1 | T2
+|========
+
+When moving terminal 2 to the bottom, the table will be expanded again.
+
+[width="15%",cols="^,^"]
+|========
+| T1 |
+|    | T2
+|========
+
+You can really think of the layout table like a traditional HTML table, if you’ve ever
+designed one. Especially col- and rowspan work equally. Below you see an example of
+colspan=2 for the first container (which has T1 as window).
+
+[width="15%",cols="^asciidoc"]
+|========
+| T1
+|
+[cols="^,^",frame="none"]
+!========
+! T2 ! T3
+!========
+|========
+
+Furthermore, you can freely resize table cells.
+
 == Files
 
 include/data.h::
