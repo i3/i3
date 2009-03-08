@@ -15,8 +15,8 @@ LDFLAGS += -lxcb-xinerama
 LDFLAGS += -lX11
 LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib
 ifeq ($(UNAME),NetBSD)
-CFLAGS += -I/usr/pkg/include
-LDFLAGS += -liconv -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
+CFLAGS += -idirafter /usr/pkg/include
+LDFLAGS += -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
 endif
 
 ifeq ($(UNAME),Linux)
