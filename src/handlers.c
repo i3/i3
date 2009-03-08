@@ -176,6 +176,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                   *first = NULL,
                   *second = NULL;
         enum { O_HORIZONTAL, O_VERTICAL } orientation = O_VERTICAL;
+        int new_position;
 
         if (con == NULL) {
                 LOG("dock. done.\n");
@@ -232,11 +233,13 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 helprect.y = 0;
                 helprect.width = 2;
                 helprect.height = root_screen->height_in_pixels; /* this has to be the cell’s height */
+                new_position = event->root_x;
         } else {
                 helprect.x = 0;
                 helprect.y = event->root_y;
                 helprect.width = root_screen->width_in_pixels; /* this has to be the cell’s width */
                 helprect.height = 2;
+                new_position = event->root_y;
         }
         xcb_window_t helpwin = create_window(conn, helprect, XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                              (orientation == O_VERTICAL ?
@@ -276,10 +279,10 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 switch (nr) {
                         case XCB_MOTION_NOTIFY:
                                 if (orientation == O_VERTICAL) {
-                                        values[0] = ((xcb_motion_notify_event_t*)inside_event)->root_x;
+                                        values[0] = new_position = ((xcb_motion_notify_event_t*)inside_event)->root_x;
                                         xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_X, values);
                                 } else {
-                                        values[0] = ((xcb_motion_notify_event_t*)inside_event)->root_y;
+                                        values[0] = new_position = ((xcb_motion_notify_event_t*)inside_event)->root_y;
                                         xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_Y, values);
                                 }
 
@@ -303,7 +306,11 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
 
         Workspace *ws = con->workspace;
         if (orientation == O_VERTICAL) {
-                LOG("Resize was from X = %d to X = %d\n", event->root_x, values[0]);
+                LOG("Resize was from X = %d to X = %d\n", event->root_x, new_position);
+                if (event->root_x == new_position) {
+                        LOG("Nothing changed, not updating anything\n");
+                        return 1;
+                }
 
                 /* Convert 0 (for default width_factor) to actual numbers */
                 if (first->width_factor == 0)
@@ -311,10 +318,14 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 if (second->width_factor == 0)
                         second->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
 
-                first->width_factor *= (float)(first->width + (values[0] - event->root_x)) / first->width;
-                second->width_factor *= (float)(second->width - (values[0] - event->root_x)) / second->width;
+                first->width_factor *= (float)(first->width + (new_position - event->root_x)) / first->width;
+                second->width_factor *= (float)(second->width - (new_position - event->root_x)) / second->width;
         } else {
-                LOG("Resize was from Y = %d to Y = %d\n", event->root_y, values[0]);
+                LOG("Resize was from Y = %d to Y = %d\n", event->root_y, new_position);
+                if (event->root_y == new_position) {
+                        LOG("Nothing changed, not updating anything\n");
+                        return 1;
+                }
 
                 /* Convert 0 (for default height_factor) to actual numbers */
                 if (first->height_factor == 0)
@@ -322,8 +333,8 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 if (second->height_factor == 0)
                         second->height_factor = ((float)ws->rect.height / ws->rows) / ws->rect.height;
 
-                first->height_factor *= (float)(first->height + (values[0] - event->root_y)) / first->height;
-                second->height_factor *= (float)(second->height - (values[0] - event->root_y)) / second->height;
+                first->height_factor *= (float)(first->height + (new_position - event->root_y)) / first->height;
+                second->height_factor *= (float)(second->height - (new_position - event->root_y)) / second->height;
         }
 
         render_layout(conn);
