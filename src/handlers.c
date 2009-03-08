@@ -483,10 +483,11 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         if (client == NULL)
                 return 1;
 
-        if (client->name != NULL)
-                free(client->name);
-
+        /* Save the old pointer to make the update atomar */
+        char *old_name = client->name;
         asprintf(&(client->name), "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop));
+        if (old_name != NULL)
+                free(old_name);
         LOG("rename to \"%s\".\n", client->name);
 
         if (client->container->mode == MODE_STACK)
