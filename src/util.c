@@ -145,7 +145,7 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_mes
  * returned. It has to be freed when done.
  *
  */
-char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
+char *convert_utf8_to_ucs2(const char *input, int *real_strlen) {
 	size_t input_size = strlen(input) + 1;
 	/* UCS-2 consumes exactly two bytes for each glyph */
 	int buffer_size = input_size * 2;

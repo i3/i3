@@ -16,7 +16,7 @@ LDFLAGS += -lX11
 LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib
 ifeq ($(UNAME),NetBSD)
 CFLAGS += -I/usr/pkg/include
-LDFLAGS += -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
+LDFLAGS += -liconv -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
 endif
 
 ifeq ($(UNAME),Linux)
