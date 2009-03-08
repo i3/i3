@@ -162,16 +162,19 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         xcb_draw_line(conn, drawable, gc, border_color, 2, offset + font->height + 3,
                       2 + client->rect.width, offset + font->height + 3);
 
-        /* Draw the font */
-        uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-        uint32_t values[] = { text_color, background_color, font->id };
-        xcb_change_gc(conn, gc, mask, values);
+        /* If the client has a title, we draw it */
+        if (client->name != NULL) {
+                /* Draw the font */
+                uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
+                uint32_t values[] = { text_color, background_color, font->id };
+                xcb_change_gc(conn, gc, mask, values);
 
-        int real_strlen;
-        char *ucs2_label = convert_utf8_to_ucs2(client->name, &real_strlen);
-        xcb_image_text_16(conn, real_strlen, drawable, gc, 3 /* X */,
-                          offset + font->height /* Y = baseline of font */, (xcb_char2b_t*)ucs2_label);
-        free(ucs2_label);
+                int real_strlen;
+                char *ucs2_label = convert_utf8_to_ucs2(client->name, &real_strlen);
+                xcb_image_text_16(conn, real_strlen, drawable, gc, 3 /* X */,
+                                  offset + font->height /* Y = baseline of font */, (xcb_char2b_t*)ucs2_label);
+                free(ucs2_label);
+        }
 }
 
 /*

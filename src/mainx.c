@@ -105,7 +105,7 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn, xcb_
         if (attr && geom) {
                 reparent_window(conn, window, attr->visual, geom->root, geom->depth,
                                 geom->x, geom->y, geom->width, geom->height);
-                xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
+                xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[_NET_WM_NAME]);
         }
 
         free(geom);
@@ -415,9 +415,6 @@ int main(int argc, char *argv[], char *env[]) {
         /* Initialize the property handlers */
         xcb_property_handlers_init(&prophs, &evenths);
 
-        /* Watch the WM_NAME (= title of the window) property */
-        xcb_watch_wm_name(&prophs, 128, handle_windowname_change, 0);
-
         /* Watch size hints (to obey correct aspect ratio) */
         xcb_property_set_handler(&prophs, WM_NORMAL_HINTS, UINT_MAX, handle_normal_hints, NULL);
 
@@ -457,6 +454,9 @@ int main(int argc, char *argv[], char *env[]) {
 
         xcb_property_set_handler(&prophs, atoms[_NET_WM_WINDOW_TYPE], UINT_MAX, window_type_handler, NULL);
         /* TODO: In order to comply with EWMH, we have to watch _NET_WM_STRUT_PARTIAL */
+
+        /* Watch _NET_WM_NAME (= title of the window in UTF-8) property */
+        xcb_property_set_handler(&prophs, atoms[_NET_WM_NAME], 128, handle_windowname_change, NULL);
 
         /* Set up the atoms we support */
         check_error(conn, xcb_change_property_checked(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED],
