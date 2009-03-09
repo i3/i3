@@ -502,8 +502,13 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         char *ucs2_name = convert_utf8_to_ucs2(new_name, &new_len);
         free(new_name);
 
-        /* Check if they are the same and don’t update if so */
-        if (new_len == client->name_len && client->name != NULL && strcmp(client->name, new_name) == 0) {
+        /* Check if they are the same and don’t update if so.
+           Note the use of new_len * 2 to check all bytes as each glyph takes 2 bytes.
+           Also note the use of memcmp() instead of strncmp() because the latter stops on nullbytes,
+           but UCS-2 uses nullbytes to fill up glyphs which only use one byte. */
+        if ((new_len == client->name_len) &&
+            (client->name != NULL) &&
+            (memcmp(client->name, ucs2_name, new_len * 2) == 0)) {
                 LOG("Name did not change, not updating\n");
                 free(ucs2_name);
                 return;
