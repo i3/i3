@@ -15,7 +15,6 @@
 #include <X11/keysym.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <X11/extensions/dpms.h>
 
 #if HAVE_BSD_AUTH
 #include <login_cap.h>
@@ -94,9 +93,12 @@ main(int argc, char **argv) {
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
 
+	if (fork() != 0)
+		return 0;
+
 	/* init */
 	wa.override_redirect = 1;
-	wa.background_pixel = BlackPixel(dpy, screen);
+	wa.background_pixel = WhitePixel(dpy, screen);
 	w = XCreateWindow(dpy, root, 0, 0, DisplayWidth(dpy, screen), DisplayHeight(dpy, screen),
 			0, DefaultDepth(dpy, screen), CopyFromParent,
 			DefaultVisual(dpy, screen), CWOverrideRedirect | CWBackPixel, &wa);
@@ -125,10 +127,6 @@ main(int argc, char **argv) {
 
 	/* main event loop */
 	while(running && !XNextEvent(dpy, &ev)) {
-		if(len == 0 && DPMSCapable(dpy)) {
-			DPMSEnable(dpy);
-			DPMSForceLevel(dpy, DPMSModeOff);
-		}
 		if(ev.type == KeyPress) {
 			buf[0] = 0;
 			num = XLookupString(&ev.xkey, buf, sizeof buf, &ksym, 0);
