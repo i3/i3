@@ -109,6 +109,12 @@ struct Stack_Window {
         SLIST_ENTRY(Stack_Window) stack_windows;
 };
 
+struct Ignore_Event {
+        int sequence;
+        time_t added;
+
+        SLIST_ENTRY(Ignore_Event) ignore_events;
+};
 
 /******************************************************************************
  * Major types

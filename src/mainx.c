@@ -131,6 +131,9 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
         strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
 
+        /* Map the window first to avoid flickering */
+        xcb_map_window(conn, child);
+
         Client *new = table_get(byChild, child);
 
         /* Events for already managed windows should already be filtered in manage_window() */
@@ -158,10 +161,11 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         /* We want to know when… */
         mask |= XCB_CW_EVENT_MASK;
-        values[1] =     XCB_EVENT_MASK_BUTTON_PRESS |   /* …mouse is pressed/released */
+        values[1] =     XCB_EVENT_MASK_BUTTON_PRESS |           /* …mouse is pressed/released */
                         XCB_EVENT_MASK_BUTTON_RELEASE |
-                        XCB_EVENT_MASK_EXPOSURE |       /* …our window needs to be redrawn */
-                        XCB_EVENT_MASK_ENTER_WINDOW;    /* …user moves cursor inside our window */
+                        XCB_EVENT_MASK_EXPOSURE |               /* …our window needs to be redrawn */
+                        XCB_EVENT_MASK_ENTER_WINDOW |           /* …user moves cursor inside our window */
+                        XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT;   /* …the application tries to resize itself */
 
         LOG("Reparenting 0x%08x under 0x%08x.\n", child, new->frame);
 
@@ -385,32 +389,39 @@ int main(int argc, char *argv[], char *env[]) {
                 xcb_event_set_error_handler(&evenths, i, (xcb_generic_error_handler_t)handle_event, 0);
 
         /* Expose = an Application should redraw itself, in this case it’s our titlebars. */
-        xcb_event_set_expose_handler(&evenths, handle_expose_event, 0);
+        xcb_event_set_expose_handler(&evenths, handle_expose_event, NULL);
 
         /* Key presses/releases are pretty obvious, I think */
-        xcb_event_set_key_press_handler(&evenths, handle_key_press, 0);
-        xcb_event_set_key_release_handler(&evenths, handle_key_release, 0);
+        xcb_event_set_key_press_handler(&evenths, handle_key_press, NULL);
+        xcb_event_set_key_release_handler(&evenths, handle_key_release, NULL);
 
         /* Enter window = user moved his mouse over the window */
-        xcb_event_set_enter_notify_handler(&evenths, handle_enter_notify, 0);
+        xcb_event_set_enter_notify_handler(&evenths, handle_enter_notify, NULL);
 
         /* Button press = user pushed a mouse button over one of our windows */
-        xcb_event_set_button_press_handler(&evenths, handle_button_press, 0);
+        xcb_event_set_button_press_handler(&evenths, handle_button_press, NULL);
 
         /* Map notify = there is a new window */
-        xcb_event_set_map_notify_handler(&evenths, handle_map_notify_event, &prophs);
+        xcb_event_set_map_request_handler(&evenths, handle_map_request, &prophs);
 
         /* Unmap notify = window disappeared. When sent from a client, we don’t manage
            it any longer. Usually, the client destroys the window shortly afterwards. */
-        xcb_event_set_unmap_notify_handler(&evenths, handle_unmap_notify_event, 0);
+        xcb_event_set_unmap_notify_handler(&evenths, handle_unmap_notify_event, NULL);
+
+        /* Destroy notify is a step further than unmap notify. We handle it to make sure
+           that windows whose unmap notify was falsely ignored will get deleted properly */
+        xcb_event_set_destroy_notify_handler(&evenths, handle_destroy_notify_event, NULL);
 
         /* Configure notify = window’s configuration (geometry, stacking, …). We only need
            it to set up ignore the following enter_notify events */
-        xcb_event_set_configure_notify_handler(&evenths, handle_configure_event, 0);
+        xcb_event_set_configure_notify_handler(&evenths, handle_configure_event, NULL);
+
+        /* Configure request = window tried to change size on its own */
+        xcb_event_set_configure_request_handler(&evenths, handle_configure_request, NULL);
 
         /* Client message = client changed its properties (EWMH) */
         /* TODO: can’t we do this via property handlers? */
-        xcb_event_set_client_message_handler(&evenths, handle_client_message, 0);
+        xcb_event_set_client_message_handler(&evenths, handle_client_message, NULL);
 
         /* Initialize the property handlers */
         xcb_property_handlers_init(&prophs, &evenths);
@@ -422,7 +433,7 @@ int main(int argc, char *argv[], char *env[]) {
         root = xcb_aux_get_screen(conn, screens)->root;
 
         uint32_t mask = XCB_CW_EVENT_MASK;
-        uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
+        uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
                               XCB_EVENT_MASK_STRUCTURE_NOTIFY |         /* when the user adds a screen (e.g. video
                                                                            projector), the root window gets a
                                                                            ConfigureNotify */

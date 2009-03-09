@@ -12,10 +12,12 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include <xcb/xcb.h>
+#include <time.h>
 
+#include <xcb/xcb.h>
 #include <xcb/xcb_wm.h>
 #include <xcb/xcb_icccm.h>
+
 #include <X11/XKBlib.h>
 
 #include "i3.h"
@@ -28,11 +30,41 @@
 #include "util.h"
 #include "xinerama.h"
 #include "config.h"
+#include "queue.h"
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
    changing workspaces */
-int ignore_notify_event = -1;
+SLIST_HEAD(ignore_head, Ignore_Event) ignore_events;
+
+static void add_ignore_event(const int sequence) {
+        struct Ignore_Event *event = smalloc(sizeof(struct Ignore_Event));
+
+        event->sequence = sequence;
+        event->added = time(NULL);
+
+        LOG("Adding sequence %d to ignorelist\n", sequence);
+
+        SLIST_INSERT_HEAD(&ignore_events, event, ignore_events);
+}
+
+/*
+ * Checks if the given sequence is ignored and returns true if so.
+ *
+ */
+static bool event_is_ignored(const int sequence) {
+        struct Ignore_Event *event;
+        /* TODO: cleanup this list */
+        SLIST_FOREACH(event, &ignore_events, ignore_events) {
+                if (event->sequence == sequence) {
+                        LOG("Ignoring event (sequence %d)\n", sequence);
+                        SLIST_REMOVE(&ignore_events, event, Ignore_Event, ignore_events);
+                        return true;
+                }
+        }
+
+        return false;
+}
 
 /*
  * Due to bindings like Mode_switch + <a>, we need to bind some keys in XCB_GRAB_MODE_SYNC.
@@ -95,13 +127,11 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
  *
  */
 int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_event_t *event) {
-        LOG("enter_notify for %08x, serial %d\n", event->event, event->sequence);
+        LOG("enter_notify for %08x, mode = %d, detail %d, serial %d\n", event->event, event->mode, event->detail, event->sequence);
         /* Some events are not interesting, because they were not generated actively by the
            user, but be reconfiguration of windows */
-        if (event->sequence == ignore_notify_event) {
-                LOG("Ignoring, because of previous map\n");
+        if (event_is_ignored(event->sequence))
                 return 1;
-        }
 
         /* This was either a focus for a client’s parent (= titlebar)… */
         Client *client = table_get(byParent, event->event);
@@ -119,6 +149,13 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
                 }
                 c_ws = &workspaces[screen->current_workspace];
                 LOG("We're now on virtual screen number %d\n", screen->num);
+                return 1;
+        }
+
+        /* Do plausibility checks: This event may be useless for us if it occurs on a window
+           which is in a stacked container but not the focused one */
+        if (client->container->mode == MODE_STACK && client->container->currently_focused != client) {
+                LOG("Plausibility check says: no\n");
                 return 1;
         }
 
@@ -353,13 +390,64 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
  * A new window appeared on the screen (=was mapped), so let’s manage it.
  *
  */
-int handle_map_notify_event(void *prophs, xcb_connection_t *conn, xcb_map_notify_event_t *event) {
+int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_event_t *event) {
+        xcb_get_window_attributes_cookie_t cookie;
+        xcb_get_window_attributes_reply_t *reply;
+
+        cookie = xcb_get_window_attributes_unchecked(conn, event->window);
+
+        if ((reply = xcb_get_window_attributes_reply(conn, cookie, NULL)) == NULL) {
+                LOG("Could not get window attributes\n");
+                return -1;
+        }
+
         window_attributes_t wa = { TAG_VALUE };
-        wa.u.override_redirect = event->override_redirect;
-        LOG("MapNotify for 0x%08x, serial is %d.\n", event->window, event->sequence);
-        LOG("setting ignore_notify_event = %d\n", event->sequence);
-        ignore_notify_event = event->sequence;
+        LOG("override_redirect = %d\n", reply->override_redirect);
+        wa.u.override_redirect = reply->override_redirect;
+        LOG("window = 0x%08x, serial is %d.\n", event->window, event->sequence);
+        add_ignore_event(event->sequence);
         manage_window(prophs, conn, event->window, wa);
+        return 1;
+}
+
+/*
+ * Configure requests are received when the application wants to resize windows on their own.
+ *
+ * We generate a synthethic configure notify event to signalize the client its "new" position.
+ *
+ */
+int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure_request_event_t *event) {
+        LOG("configure-request, serial %d\n", event->sequence);
+        LOG("event->window = %08x\n", event->window);
+        LOG("application wants to be at %dx%d with %dx%d\n", event->x, event->y, event->width, event->height);
+
+        Client *client = table_get(byChild, event->window);
+        if (client == NULL) {
+                LOG("No such client\n");
+                return 1;
+        }
+
+        xcb_configure_notify_event_t generated_event;
+
+        generated_event.event = client->child;
+        generated_event.window = client->child;
+        generated_event.response_type = XCB_CONFIGURE_NOTIFY;
+
+        generated_event.x = client->child_rect.x;
+        generated_event.y = client->child_rect.y;
+        generated_event.width = client->child_rect.width;
+        generated_event.height = client->child_rect.height;
+
+        generated_event.border_width = 0;
+        generated_event.above_sibling = XCB_NONE;
+        generated_event.override_redirect = false;
+
+        xcb_send_event(conn, false, client->child, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (char*)&generated_event);
+        xcb_flush(conn);
+
+        LOG("Told the client to stay at %dx%d with size %dx%d\n",
+            client->child_rect.x, client->child_rect.y, client->child_rect.width, client->child_rect.height);
+
         return 1;
 }
 
@@ -371,12 +459,10 @@ int handle_map_notify_event(void *prophs, xcb_connection_t *conn, xcb_map_notify
 int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
 
-        LOG("handle_configure_event\n");
+        LOG("handle_configure_event for window %08x\n", event->window);
         LOG("event->type = %d, \n", event->response_type);
         LOG("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
-        LOG("sequence = %d\n", event->sequence);
-
-        ignore_notify_event = event->sequence;
+        add_ignore_event(event->sequence);
 
         if (event->event == root) {
                 LOG("reconfigure of the root window, need to xinerama\n");
@@ -385,29 +471,6 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
                 if (event->x == 0 && event->y == 0)
                         xinerama_requery_screens(conn);
                 return 1;
-        }
-
-        Client *client = table_get(byChild, event->window);
-        if (client == NULL) {
-                LOG("client not managed, ignoring\n");
-                return 1;
-        }
-
-        if (client->fullscreen) {
-                LOG("client in fullscreen, not touching\n");
-                return 1;
-        }
-
-        /* Let’s see if the application has changed size/position on its own *sigh*… */
-        if ((event->x != client->child_rect.x) ||
-            (event->y != client->child_rect.y) ||
-            (event->width != client->child_rect.width) ||
-            (event->height != client->child_rect.height)) {
-                /* Who is your window manager? Who’s that, huh? I AM YOUR WINDOW MANAGER! */
-                LOG("Application wanted to resize itself. Fixed that.\n");
-                client->force_reconfigure = true;
-                render_container(conn, client->container);
-                xcb_flush(conn);
         }
 
         return 1;
@@ -421,9 +484,7 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
 int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_notify_event_t *event) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
 
-        LOG("setting ignore_notify_event = %d\n", event->sequence);
-
-        ignore_notify_event = event->sequence;
+        add_ignore_event(event->sequence);
 
         Client *client = table_get(byChild, event->window);
         /* First, we need to check if the client is awaiting an unmap-request which
@@ -433,13 +494,15 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 client->awaiting_useless_unmap = false;
                 return 1;
         }
-        client = table_remove(byChild, event->window);
 
-        LOG("UnmapNotify for 0x%08x (received from 0x%08x): ", event->window, event->event);
+        LOG("event->window = %08x, event->event = %08x\n", event->window, event->event);
+        LOG("UnmapNotify for 0x%08x (received from 0x%08x)\n", event->window, event->event);
         if (client == NULL) {
                 LOG("not a managed window. Ignoring.\n");
                 return 0;
         }
+
+        client = table_remove(byChild, event->window);
 
         if (client->name != NULL)
                 free(client->name);
@@ -485,6 +548,20 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 }
 
 /*
+ * This handler makes sure that windows are closed correctly as we drop the first unmap event we
+ * get because they are sometimes generated by remapping.
+ *
+ * FIXME: Rather than providing this event, I’d rather know why some applications need to have
+ * unmap events ignored (like VLC’s open dialog, just open it two times) while others don’t (GIMP).
+ * For now, just make it work.
+ *
+ */
+int handle_destroy_notify_event(void *data, xcb_connection_t *conn, xcb_destroy_notify_event_t *event) {
+        LOG("Destroynotify, faking unmapnotify\n");
+        return handle_unmap_notify_event(data, conn, event);
+}
+
+/*
  * Called when a window changes its title
  *
  */
@@ -505,6 +582,7 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop));
         /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
         char *ucs2_name = convert_utf8_to_ucs2(new_name, &new_len);
+        LOG("Name should change to \"%s\"\n", new_name);
         free(new_name);
 
         /* Check if they are the same and don’t update if so.
@@ -525,7 +603,6 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
 
         if (old_name != NULL)
                 free(old_name);
-        LOG("rename to \"%s\".\n", client->name);
 
         if (client->container->mode == MODE_STACK)
                 render_container(conn, client->container);
