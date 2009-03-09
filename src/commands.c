@@ -87,16 +87,12 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         i3Screen *screen;
                         int destination_y = (direction == D_UP ? (container->y - 1) : (container->y + container->height + 1));
                         if ((screen = get_screen_containing(container->x, destination_y)) == NULL) {
-                                LOG("Not possible, no screen found.\n");
-                                return;
+                                LOG("Wrapping screen around vertically\n");
+                                /* No screen found? Then wrap */
+                                screen = get_screen_most((direction == D_UP ? D_DOWN : D_UP));
                         }
                         t_ws = &(workspaces[screen->current_workspace]);
                         new_row = (direction == D_UP ? (t_ws->rows - 1) : 0);
-                        /* Bounds checking */
-                        if (new_col >= t_ws->cols)
-                                new_col = (t_ws->cols - 1);
-                        if (new_row >= t_ws->rows)
-                                new_row = (t_ws->rows - 1);
                 }
         } else if (direction == D_LEFT || direction == D_RIGHT) {
                 if (direction == D_RIGHT && cell_exists(current_col+1, current_row))
@@ -109,21 +105,22 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         i3Screen *screen;
                         int destination_x = (direction == D_LEFT ? (container->x - 1) : (container->x + container->width + 1));
                         if ((screen = get_screen_containing(destination_x, container->y)) == NULL) {
-                                LOG("Not possible, no screen found.\n");
-                                return;
+                                LOG("Wrapping screen around horizontally\n");
+                                screen = get_screen_most((direction == D_LEFT ? D_RIGHT : D_LEFT));
                         }
                         t_ws = &(workspaces[screen->current_workspace]);
                         new_col = (direction == D_LEFT ? (t_ws->cols - 1) : 0);
-                        /* Bounds checking */
-                        if (new_col >= t_ws->cols)
-                                new_col = (t_ws->cols - 1);
-                        if (new_row >= t_ws->rows)
-                                new_row = (t_ws->rows - 1);
                 }
         } else {
                 LOG("direction unhandled\n");
                 return;
         }
+
+        /* Bounds checking */
+        if (new_col >= t_ws->cols)
+                new_col = (t_ws->cols - 1);
+        if (new_row >= t_ws->rows)
+                new_row = (t_ws->rows - 1);
 
         if (t_ws->table[new_col][new_row]->currently_focused != NULL)
                 set_focus(conn, t_ws->table[new_col][new_row]->currently_focused);

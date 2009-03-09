@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xinerama.h>
@@ -60,6 +61,43 @@ i3Screen *get_screen_containing(int x, int y) {
         }
 
         return NULL;
+}
+
+/*
+ * Gets the screen which is the last one in the given direction, for example the screen
+ * on the most bottom when direction == D_DOWN, the screen most right when direction == D_RIGHT
+ * and so on.
+ *
+ * This function always returns a screen.
+ *
+ */
+i3Screen *get_screen_most(direction_t direction) {
+        i3Screen *screen, *candidate = NULL;
+        int position = 0;
+        TAILQ_FOREACH(screen, virtual_screens, screens) {
+                /* Repeated calls of WIN determine the winner of the comparison */
+                #define WIN(variable, condition) \
+                        if (variable condition) { \
+                                candidate = screen; \
+                                position = variable; \
+                        } \
+                        break;
+
+                switch (direction) {
+                        case D_UP:
+                                WIN(screen->rect.y, <= position);
+                        case D_DOWN:
+                                WIN(screen->rect.y, >= position);
+                        case D_LEFT:
+                                WIN(screen->rect.x, <= position);
+                        case D_RIGHT:
+                                WIN(screen->rect.x, >= position);
+                }
+        }
+
+        assert(candidate != NULL);
+
+        return candidate;
 }
 
 /*

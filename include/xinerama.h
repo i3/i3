@@ -20,5 +20,6 @@ void initialize_xinerama(xcb_connection_t *conn);
 void xinerama_requery_screens(xcb_connection_t *conn);
 i3Screen *get_screen_at(int x, int y, struct screens_head *screenlist);
 i3Screen *get_screen_containing(int x, int y);
+i3Screen *get_screen_most(direction_t direction);
 
 #endif
