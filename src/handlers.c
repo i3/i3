@@ -503,7 +503,7 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         free(new_name);
 
         /* Check if they are the same and don’t update if so */
-        if (new_len == client->name_len && strcmp(client->name, new_name) == 0) {
+        if (new_len == client->name_len && client->name != NULL && strcmp(client->name, new_name) == 0) {
                 LOG("Name did not change, not updating\n");
                 free(ucs2_name);
                 return;
