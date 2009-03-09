@@ -516,7 +516,7 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
             (memcmp(client->name, ucs2_name, new_len * 2) == 0)) {
                 LOG("Name did not change, not updating\n");
                 free(ucs2_name);
-                return;
+                return 1;
         }
 
         char *old_name = client->name;
