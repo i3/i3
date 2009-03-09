@@ -495,8 +495,24 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
                 return 1;
 
         /* Save the old pointer to make the update atomic */
+        char *new_name;
+        int new_len;
+        asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop));
+        /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
+        char *ucs2_name = convert_utf8_to_ucs2(new_name, &new_len);
+        free(new_name);
+
+        /* Check if they are the same and don’t update if so */
+        if (new_len == client->name_len && strcmp(client->name, new_name) == 0) {
+                LOG("Name did not change, not updating\n");
+                free(ucs2_name);
+                return;
+        }
+
         char *old_name = client->name;
-        asprintf(&(client->name), "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop));
+        client->name = ucs2_name;
+        client->name_len = new_len;
+
         if (old_name != NULL)
                 free(old_name);
         LOG("rename to \"%s\".\n", client->name);

@@ -215,6 +215,7 @@ struct Client {
 
         /* Name (= window title) */
         char *name;
+        int name_len;
 
         /* fullscreen is pretty obvious */
         bool fullscreen;
