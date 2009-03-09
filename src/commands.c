@@ -144,7 +144,6 @@ static bool move_current_window_in_container(xcb_connection_t *conn, Client *cli
 
         LOG("i can do that\n");
         /* We can move the client inside its current container */
-        /* TODO: needs wrapping */
         CIRCLEQ_REMOVE(&(client->container->clients), client, clients);
         if (direction == D_UP)
                 CIRCLEQ_INSERT_BEFORE(&(client->container->clients), other, client, clients);
@@ -222,11 +221,13 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
         container->currently_focused = to_focus;
         new->currently_focused = current_client;
 
+        Workspace *workspace = container->workspace;
+
         /* delete all empty columns/rows */
-        cleanup_table(conn, container->workspace);
+        cleanup_table(conn, workspace);
 
         /* Fix colspan/rowspan if it’d overlap */
-        fix_colrowspan(conn, container->workspace);
+        fix_colrowspan(conn, workspace);
 
         render_layout(conn);
 

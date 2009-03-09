@@ -85,12 +85,16 @@ void expand_table_cols(Workspace *workspace) {
                 new_container(workspace, &(workspace->table[workspace->cols-1][c]), workspace->cols-1, c);
 }
 
+/*
+ * Shrinks the table by one column.
+ *
+ * The containers themselves are freed in move_columns_from() or move_rows_from(). Therefore, this
+ * function may only be called from move_*() or after making sure that the containers are freed
+ * properly.
+ *
+ */
 static void shrink_table_cols(Workspace *workspace) {
         workspace->cols--;
-
-        /* Free the containers */
-        for (int rows = 0; rows < workspace->rows; rows++)
-                free(workspace->table[workspace->cols][rows]);
 
         /* Free the container-pointers */
         free(workspace->table[workspace->cols]);
@@ -99,12 +103,14 @@ static void shrink_table_cols(Workspace *workspace) {
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
 }
 
+/*
+ * See shrink_table_cols()
+ *
+ */
 static void shrink_table_rows(Workspace *workspace) {
         workspace->rows--;
-        for (int cols = 0; cols < workspace->cols; cols++) {
-                free(workspace->table[cols][workspace->rows]);
+        for (int cols = 0; cols < workspace->cols; cols++)
                 workspace->table[cols] = realloc(workspace->table[cols], sizeof(Container*) * workspace->rows);
-        }
 }
 
 
@@ -117,18 +123,21 @@ bool cell_exists(int col, int row) {
                (row >= 0 && row < c_ws->rows);
 }
 
+static void free_container(xcb_connection_t *conn, Workspace *workspace, int col, int row) {
+        Container *old_container = workspace->table[col][row];
+
+        if (old_container->mode == MODE_STACK)
+                leave_stack_mode(conn, old_container);
+
+        free(old_container);
+}
+
 static void move_columns_from(xcb_connection_t *conn, Workspace *workspace, int cols) {
         LOG("firstly freeing \n");
 
-        /* Clean up the column to be freed */
-        for (int rows = 0; rows < workspace->rows; rows++) {
-                Container *old_container = workspace->table[cols-1][rows];
-
-                if (old_container->mode == MODE_STACK)
-                        leave_stack_mode(conn, old_container);
-
-                free(old_container);
-        }
+        /* Free the columns which are cleaned up */
+        for (int rows = 0; rows < workspace->rows; rows++)
+                free_container(conn, workspace, cols-1, rows);
 
         for (; cols < workspace->cols; cols++)
                 for (int rows = 0; rows < workspace->rows; rows++) {
@@ -144,14 +153,9 @@ static void move_columns_from(xcb_connection_t *conn, Workspace *workspace, int 
 }
 
 static void move_rows_from(xcb_connection_t *conn, Workspace *workspace, int rows) {
-        for (int cols = 0; cols < workspace->cols; cols++) {
-                Container *old_container = workspace->table[cols][rows-1];
+        for (int cols = 0; cols < workspace->cols; cols++)
+                free_container(conn, workspace, cols, rows-1);
 
-                if (old_container->mode == MODE_STACK)
-                        leave_stack_mode(conn, old_container);
-
-                free(old_container);
-        }
         for (; rows < workspace->rows; rows++)
                 for (int cols = 0; cols < workspace->cols; cols++) {
                         Container *new_container = workspace->table[cols][rows];
@@ -201,6 +205,10 @@ void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
                         LOG("Removing completely empty column %d\n", cols);
                         if (cols < (workspace->cols - 1))
                                 move_columns_from(conn, workspace, cols+1);
+                        else {
+                                for (int rows = 0; rows < workspace->rows; rows++)
+                                        free_container(conn, workspace, cols, rows);
+                        }
                         shrink_table_cols(workspace);
 
                         if (workspace->current_col >= workspace->cols)
@@ -208,9 +216,10 @@ void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
                 } else cols++;
         }
 
-        /* Check for empty rows if we got more than one row*/
+        /* Check for empty rows if we got more than one row */
         for (int rows = 0; (workspace->rows > 1) && (rows < workspace->rows);) {
                 bool completely_empty = true;
+                LOG("Checking row %d\n", rows);
                 for (int cols = 0; cols < workspace->cols; cols++)
                         if (workspace->table[cols][rows]->currently_focused != NULL) {
                                 completely_empty = false;
@@ -220,6 +229,10 @@ void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
                         LOG("Removing completely empty row %d\n", rows);
                         if (rows < (workspace->rows - 1))
                                 move_rows_from(conn, workspace, rows+1);
+                        else {
+                                for (int cols = 0; cols < workspace->cols; cols++)
+                                        free_container(conn, workspace, cols, rows);
+                        }
                         shrink_table_rows(workspace);
 
                         if (workspace->current_row >= workspace->rows)
