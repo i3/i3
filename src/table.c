@@ -87,14 +87,24 @@ void expand_table_cols(Workspace *workspace) {
 
 static void shrink_table_cols(Workspace *workspace) {
         workspace->cols--;
+
+        /* Free the containers */
+        for (int rows = 0; rows < workspace->rows; rows++)
+                free(workspace->table[workspace->cols][rows]);
+
+        /* Free the container-pointers */
         free(workspace->table[workspace->cols]);
+
+        /* Re-allocate the table */
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
 }
 
 static void shrink_table_rows(Workspace *workspace) {
         workspace->rows--;
-        for (int cols = 0; cols < workspace->cols; cols++)
+        for (int cols = 0; cols < workspace->cols; cols++) {
+                free(workspace->table[cols][workspace->rows]);
                 workspace->table[cols] = realloc(workspace->table[cols], sizeof(Container*) * workspace->rows);
+        }
 }
 
 
