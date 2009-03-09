@@ -549,6 +549,14 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                                 render_container(conn, stack_win->container);
                                 return 1;
                         }
+
+                /* …or one of the bars? */
+                i3Screen *screen;
+                TAILQ_FOREACH(screen, virtual_screens, screens) {
+                        if (screen->bar == event->window) {
+                                render_layout(conn);
+                        }
+                }
                 return 1;
         }
 

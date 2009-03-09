@@ -532,7 +532,7 @@ void render_layout(xcb_connection_t *conn) {
                         }
 
                 render_bars(conn, r_ws, width, &height);
-                render_internal_bar(conn, r_ws, width, 18);
+                render_internal_bar(conn, r_ws, width, font->height + 6);
         }
 
         xcb_flush(conn);
