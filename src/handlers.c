@@ -222,10 +222,16 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 second = con->workspace->table[con->col+1][con->row];
         }
 
+        uint32_t mask = 0;
+        uint32_t values[2];
+
+        mask = XCB_CW_OVERRIDE_REDIRECT;
+        values[0] = 1;
+
         /* Open a new window, the resizebar. Grab the pointer and move the window around
            as the user moves the pointer. */
         Rect grabrect = {0, 0, root_screen->width_in_pixels, root_screen->height_in_pixels};
-        xcb_window_t grabwin = create_window(conn, grabrect, XCB_WINDOW_CLASS_INPUT_ONLY, -1, 0, NULL);
+        xcb_window_t grabwin = create_window(conn, grabrect, XCB_WINDOW_CLASS_INPUT_ONLY, -1, mask, values);
 
         Rect helprect;
         if (orientation == O_VERTICAL) {
@@ -241,14 +247,17 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 helprect.height = 2;
                 new_position = event->root_y;
         }
+
+        mask = XCB_CW_BACK_PIXEL;
+        values[0] = get_colorpixel(conn, "#4c7899");
+
+        mask |= XCB_CW_OVERRIDE_REDIRECT;
+        values[1] = 1;
+
         xcb_window_t helpwin = create_window(conn, helprect, XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                              (orientation == O_VERTICAL ?
                                               XCB_CURSOR_SB_V_DOUBLE_ARROW :
-                                              XCB_CURSOR_SB_H_DOUBLE_ARROW), 0, NULL);
-
-        uint32_t values[1] = {get_colorpixel(conn, "#4c7899")};
-        xcb_void_cookie_t cookie = xcb_change_window_attributes_checked(conn, helpwin, XCB_CW_BACK_PIXEL, values);
-        check_error(conn, cookie, "Could not change window attributes (background color)");
+                                              XCB_CURSOR_SB_H_DOUBLE_ARROW), mask, values);
 
         xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, helpwin);
 
@@ -288,12 +297,10 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
 
                                 xcb_flush(conn);
                                 break;
-                        case XCB_EXPOSE:
+                        default:
+                                LOG("Passing to original handler\n");
                                 /* Use original handler */
                                 xcb_event_handle(&evenths, inside_event);
-                                break;
-                        default:
-                                LOG("Ignoring event of type %d\n", nr);
                                 break;
                 }
                 free(inside_event);
