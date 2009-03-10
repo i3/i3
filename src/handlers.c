@@ -558,7 +558,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
  */
 int handle_destroy_notify_event(void *data, xcb_connection_t *conn, xcb_destroy_notify_event_t *event) {
         LOG("Destroynotify, faking unmapnotify\n");
-        return handle_unmap_notify_event(data, conn, event);
+        return handle_unmap_notify_event(data, conn, (xcb_unmap_notify_event_t*)event);
 }
 
 /*
