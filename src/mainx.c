@@ -126,13 +126,22 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 int16_t x, int16_t y, uint16_t width, uint16_t height) {
 
         xcb_get_property_cookie_t wm_type_cookie, strut_cookie;
+        uint32_t mask = 0;
+        uint32_t values[3];
+
+        /* We are interested in property changes */
+        mask = XCB_CW_EVENT_MASK;
+        values[0] =     XCB_EVENT_MASK_PROPERTY_CHANGE |
+                        XCB_EVENT_MASK_STRUCTURE_NOTIFY |
+                        XCB_EVENT_MASK_ENTER_WINDOW;
+        xcb_change_window_attributes(conn, child, mask, values);
+
+        /* Map the window first to avoid flickering */
+        xcb_map_window(conn, child);
 
         /* Place requests for properties ASAP */
         wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
         strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
-
-        /* Map the window first to avoid flickering */
-        xcb_map_window(conn, child);
 
         Client *new = table_get(byChild, child);
 
@@ -142,18 +151,19 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         LOG("reparenting new client\n");
         new = calloc(sizeof(Client), 1);
         new->force_reconfigure = true;
-        uint32_t mask = 0;
-        uint32_t values[3];
 
         /* Update the data structures */
         Client *old_focused = CUR_CELL->currently_focused;
 
         new->container = CUR_CELL;
+        new->workspace = new->container->workspace;
 
         new->frame = xcb_generate_id(conn);
         new->child = child;
         new->rect.width = width;
         new->rect.height = height;
+
+        mask = 0;
 
         /* Don’t generate events for our new window, it should *not* be managed */
         mask |= XCB_CW_OVERRIDE_REDIRECT;
@@ -199,19 +209,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 return;
         }
 
-        /* We are interested in property changes */
-        mask = XCB_CW_EVENT_MASK;
-        values[0] =     XCB_EVENT_MASK_PROPERTY_CHANGE |
-                        XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-                        XCB_EVENT_MASK_ENTER_WINDOW;
-        cookie = xcb_change_window_attributes_checked(conn, child, mask, values);
-        if (xcb_request_check(conn, cookie) != NULL) {
-                LOG("Could not change window attributes, aborting\n");
-                xcb_destroy_window(conn, new->frame);
-                free(new);
-                return;
-        }
-
         /* Put our data structure (Client) into the table */
         table_put(byParent, new->frame, new);
         table_put(byChild, child, new);
@@ -221,16 +218,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
                         1 /* left mouse button */,
                         XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
-
-        /* Focus the new window if we’re not in fullscreen mode */
-        if (CUR_CELL->workspace->fullscreen_client == NULL) {
-                CUR_CELL->currently_focused = new;
-                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
-        } else {
-                /* If we are in fullscreen, we should lower the window to not be annoying */
-                uint32_t values[] = { XCB_STACK_MODE_BELOW };
-                xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
-        }
 
         /* Get _NET_WM_WINDOW_TYPE (to see if it’s a dock) */
         xcb_atom_t *atom;
@@ -247,23 +234,44 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         }
         }
 
-        /* Get _NET_WM_STRUT_PARTIAL to determine the client’s requested height */
-        uint32_t *strut;
-        preply = xcb_get_property_reply(conn, strut_cookie, NULL);
-        if (preply != NULL && preply->value_len > 0 && (strut = xcb_get_property_value(preply))) {
-                /* We only use a subset of the provided values, namely the reserved space at the top/bottom
-                   of the screen. This is because the only possibility for bars is at to be at the top/bottom
-                   with maximum horizontal size.
-                   TODO: bars at the top */
-                new->desired_height = strut[3];
-                LOG("the client wants to be %d pixels height\n", new->desired_height);
+        if (new->dock) {
+                /* Get _NET_WM_STRUT_PARTIAL to determine the client’s requested height */
+                uint32_t *strut;
+                preply = xcb_get_property_reply(conn, strut_cookie, NULL);
+                if (preply != NULL && preply->value_len > 0 && (strut = xcb_get_property_value(preply))) {
+                        /* We only use a subset of the provided values, namely the reserved space at the top/bottom
+                           of the screen. This is because the only possibility for bars is at to be at the top/bottom
+                           with maximum horizontal size.
+                           TODO: bars at the top */
+                        new->desired_height = strut[3];
+                        if (new->desired_height == 0) {
+                                LOG("Client wanted to be 0 pixels high, using the window's height (%d)\n", height);
+                                new->desired_height = height;
+                        }
+                        LOG("the client wants to be %d pixels high\n", new->desired_height);
+                } else {
+                        LOG("The client didn't specify space to reserve at the screen edge, using its height (%d)\n", height);
+                        new->desired_height = height;
+                }
+        }
+
+        /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
+        if (CUR_CELL->workspace->fullscreen_client == NULL) {
+                if (!new->dock) {
+                        CUR_CELL->currently_focused = new;
+                        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
+                }
+        } else {
+                /* If we are in fullscreen, we should lower the window to not be annoying */
+                uint32_t values[] = { XCB_STACK_MODE_BELOW };
+                xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
         }
 
         /* Insert into the currently active container, if it’s not a dock window */
         if (!new->dock) {
                 /* Insert after the old active client, if existing. If it does not exist, the
                    container is empty and it does not matter, where we insert it */
-                if (old_focused != NULL)
+                if (old_focused != NULL && !old_focused->dock)
                         CIRCLEQ_INSERT_AFTER(&(CUR_CELL->clients), old_focused, new, clients);
                 else CIRCLEQ_INSERT_TAIL(&(CUR_CELL->clients), new, clients);
 
@@ -407,10 +415,6 @@ int main(int argc, char *argv[], char *env[]) {
         /* Unmap notify = window disappeared. When sent from a client, we don’t manage
            it any longer. Usually, the client destroys the window shortly afterwards. */
         xcb_event_set_unmap_notify_handler(&evenths, handle_unmap_notify_event, NULL);
-
-        /* Destroy notify is a step further than unmap notify. We handle it to make sure
-           that windows whose unmap notify was falsely ignored will get deleted properly */
-        xcb_event_set_destroy_notify_handler(&evenths, handle_destroy_notify_event, NULL);
 
         /* Configure notify = window’s configuration (geometry, stacking, …). We only need
            it to set up ignore the following enter_notify events */

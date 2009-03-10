@@ -18,7 +18,6 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
 int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_event_t *event);
 int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event);
 int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure_request_event_t *event);
-int handle_destroy_notify_event(void *data, xcb_connection_t *conn, xcb_destroy_notify_event_t *event);
 int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_notify_event_t *event);
 int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
                                 xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop);

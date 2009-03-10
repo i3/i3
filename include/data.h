@@ -204,6 +204,8 @@ struct Client {
 
         /* Backpointer. A client is inside a container */
         Container *container;
+        /* Because dock clients don’t have a container, we have this workspace-backpointer */
+        Workspace *workspace;
 
         /* x, y, width, height of the frame */
         Rect rect;

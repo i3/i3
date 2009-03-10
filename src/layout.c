@@ -179,7 +179,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
  *
  */
 static void reposition_client(xcb_connection_t *conn, Client *client) {
-        LOG("frame needs to be pushed to %dx%d\n", client->rect.x, client->rect.y);
+        LOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
         /* Note: We can use a pointer to client->x like an array of uint32_ts
            because it is followed by client->y by definition */
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, &(client->rect.x));
@@ -192,7 +192,7 @@ static void reposition_client(xcb_connection_t *conn, Client *client) {
 static void resize_client(xcb_connection_t *conn, Client *client) {
         i3Font *font = load_font(conn, config.font);
 
-        LOG("resizing client to %d x %d\n", client->rect.width, client->rect.height);
+        LOG("resizing client 0x%08x to %d x %d\n", client->frame, client->rect.width, client->rect.height);
         xcb_configure_window(conn, client->frame,
                         XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                         &(client->rect.width));
@@ -205,7 +205,7 @@ static void resize_client(xcb_connection_t *conn, Client *client) {
                         XCB_CONFIG_WINDOW_WIDTH |
                         XCB_CONFIG_WINDOW_HEIGHT;
         Rect *rect = &(client->child_rect);
-        switch (client->container->mode) {
+        switch ((client->container != NULL ? client->container->mode : MODE_DEFAULT)) {
                 case MODE_STACK:
                         rect->x = 2;
                         rect->y = 0;
@@ -397,6 +397,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
 static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int *height) {
         Client *client;
         SLIST_FOREACH(client, &(r_ws->dock_clients), dock_clients) {
+                LOG("client is at %d, should be at %d\n", client->rect.y, *height);
                 if (client->force_reconfigure |
                     update_if_necessary(&(client->rect.x), 0) |
                     update_if_necessary(&(client->rect.y), *height))

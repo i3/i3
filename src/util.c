@@ -233,7 +233,7 @@ void set_focus(xcb_connection_t *conn, Client *client) {
 
         /* If we’re in stacking mode, this renders the container to update changes in the title
            bars and to raise the focused client */
-        if ((old_client != NULL) && (old_client != client))
+        if ((old_client != NULL) && (old_client != client) && !old_client->dock)
                 redecorate_window(conn, old_client);
 
         SLIST_REMOVE(&(client->container->workspace->focus_stack), client, Client, focus_clients);
