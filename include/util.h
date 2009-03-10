@@ -20,6 +20,10 @@
                                                 CIRCLEQ_NEXT(elm, field) : NULL)
 #define CIRCLEQ_PREV_OR_NULL(head, elm, field) (CIRCLEQ_PREV(elm, field) != CIRCLEQ_END(head) ? \
                                                 CIRCLEQ_PREV(elm, field) : NULL)
+#define FOR_TABLE(workspace) \
+                        for (int cols = 0; cols < workspace->cols; cols++) \
+                                for (int rows = 0; rows < workspace->rows; rows++)
+
 /* ##__VA_ARGS__ means: leave out __VA_ARGS__ completely if it is empty, that is,
    delete the preceding comma */
 #define LOG(fmt, ...) slog("%s:%s:%d - " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)

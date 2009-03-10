@@ -417,14 +417,15 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
         /* TODO: does grabbing the server actually bring us any (speed)advantages? */
         //xcb_grab_server(conn);
 
+        ignore_enter_notify_forall(conn, c_ws, true);
+
         /* Unmap all clients of the current workspace */
         int unmapped_clients = 0;
-        for (int cols = 0; cols < c_ws->cols; cols++)
-                for (int rows = 0; rows < c_ws->rows; rows++)
-                        CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients) {
-                                xcb_unmap_window(conn, client->frame);
-                                unmapped_clients++;
-                        }
+        FOR_TABLE(c_ws)
+                CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients) {
+                        xcb_unmap_window(conn, client->frame);
+                        unmapped_clients++;
+                }
 
         /* If we did not unmap any clients, the workspace is empty and we can destroy it */
         if (unmapped_clients == 0)
@@ -436,21 +437,26 @@ static void show_workspace(xcb_connection_t *conn, int workspace) {
                 if (stack_win->container->workspace == c_ws)
                         xcb_unmap_window(conn, stack_win->window);
 
+        ignore_enter_notify_forall(conn, c_ws, false);
+
         c_ws = &workspaces[workspace-1];
         current_row = c_ws->current_row;
         current_col = c_ws->current_col;
         LOG("new current row = %d, current col = %d\n", current_row, current_col);
 
+        ignore_enter_notify_forall(conn, c_ws, true);
+
         /* Map all clients on the new workspace */
-        for (int cols = 0; cols < c_ws->cols; cols++)
-                for (int rows = 0; rows < c_ws->rows; rows++)
-                        CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
-                                xcb_map_window(conn, client->frame);
+        FOR_TABLE(c_ws)
+                CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
+                        xcb_map_window(conn, client->frame);
 
         /* Map all stack windows, if any */
         SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
                 if (stack_win->container->workspace == c_ws)
                         xcb_map_window(conn, stack_win->window);
+
+        ignore_enter_notify_forall(conn, c_ws, false);
 
         /* Restore focus on the new workspace */
         if (CUR_CELL->currently_focused != NULL)

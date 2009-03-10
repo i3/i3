@@ -464,6 +464,34 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
         LOG("done rendering internal\n");
 }
 
+/*
+ * Modifies the event mask of all clients on the given workspace to either ignore or to handle
+ * enter notifies. It is handy to ignore notifies because they will be sent when a window is mapped
+ * under the cursor, thus when the user didn’t enter the window actively at all.
+ *
+ */
+void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bool ignore_enter_notify) {
+        Client *client;
+        uint32_t values[1];
+
+        LOG("Ignore enter_notify = %d\n", ignore_enter_notify);
+
+        FOR_TABLE(workspace)
+                CIRCLEQ_FOREACH(client, &(workspace->table[cols][rows]->clients), clients) {
+                        /* Change event mask for the decorations */
+                        values[0] = FRAME_EVENT_MASK;
+                        if (ignore_enter_notify)
+                                values[0] &= ~(XCB_EVENT_MASK_ENTER_WINDOW);
+                        xcb_change_window_attributes(conn, client->frame, XCB_CW_EVENT_MASK, values);
+
+                        /* Change event mask for the child itself */
+                        values[0] = CHILD_EVENT_MASK;
+                        if (ignore_enter_notify)
+                                values[0] &= ~(XCB_EVENT_MASK_ENTER_WINDOW);
+                        xcb_change_window_attributes(conn, client->child, XCB_CW_EVENT_MASK, values);
+                }
+}
+
 void render_layout(xcb_connection_t *conn) {
         i3Screen *screen;
         i3Font *font = load_font(conn, config.font);
@@ -496,41 +524,45 @@ void render_layout(xcb_connection_t *conn) {
                         xoffset[rows] = r_ws->rect.x;
 
                 dump_table(conn, r_ws);
+
+                ignore_enter_notify_forall(conn, r_ws, true);
+
                 /* Go through the whole table and render what’s necessary */
-                for (int cols = 0; cols < r_ws->cols; cols++)
-                        for (int rows = 0; rows < r_ws->rows; rows++) {
-                                Container *container = r_ws->table[cols][rows];
-                                int single_width, single_height;
-                                LOG("\n");
-                                LOG("========\n");
-                                LOG("container has %d colspan, %d rowspan\n",
-                                                container->colspan, container->rowspan);
-                                LOG("container at %d, %d\n", xoffset[rows], yoffset[cols]);
-                                /* Update position of the container */
-                                container->row = rows;
-                                container->col = cols;
-                                container->x = xoffset[rows];
-                                container->y = yoffset[cols];
+                FOR_TABLE(r_ws) {
+                        Container *container = r_ws->table[cols][rows];
+                        int single_width, single_height;
+                        LOG("\n");
+                        LOG("========\n");
+                        LOG("container has %d colspan, %d rowspan\n",
+                                        container->colspan, container->rowspan);
+                        LOG("container at %d, %d\n", xoffset[rows], yoffset[cols]);
+                        /* Update position of the container */
+                        container->row = rows;
+                        container->col = cols;
+                        container->x = xoffset[rows];
+                        container->y = yoffset[cols];
 
-                                if (container->width_factor == 0)
-                                        container->width = (width / r_ws->cols);
-                                else container->width = get_unoccupied_x(r_ws, rows) * container->width_factor;
-                                single_width = container->width;
-                                container->width *= container->colspan;
+                        if (container->width_factor == 0)
+                                container->width = (width / r_ws->cols);
+                        else container->width = get_unoccupied_x(r_ws, rows) * container->width_factor;
+                        single_width = container->width;
+                        container->width *= container->colspan;
 
-                                if (container->height_factor == 0)
-                                        container->height = (height / r_ws->rows);
-                                else container->height = get_unoccupied_y(r_ws, cols) * container->height_factor;
-                                single_height = container->height;
-                                container->height *= container->rowspan;
+                        if (container->height_factor == 0)
+                                container->height = (height / r_ws->rows);
+                        else container->height = get_unoccupied_y(r_ws, cols) * container->height_factor;
+                        single_height = container->height;
+                        container->height *= container->rowspan;
 
-                                /* Render the container if it is not empty */
-                                render_container(conn, container);
+                        /* Render the container if it is not empty */
+                        render_container(conn, container);
 
-                                xoffset[rows] += single_width;
-                                yoffset[cols] += single_height;
-                                LOG("==========\n");
-                        }
+                        xoffset[rows] += single_width;
+                        yoffset[cols] += single_height;
+                        LOG("==========\n");
+                }
+
+                ignore_enter_notify_forall(conn, r_ws, false);
 
                 render_bars(conn, r_ws, width, &height);
                 render_internal_bar(conn, r_ws, width, font->height + 6);

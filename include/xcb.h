@@ -22,6 +22,21 @@
 #define XCB_CURSOR_SB_H_DOUBLE_ARROW 108
 #define XCB_CURSOR_SB_V_DOUBLE_ARROW 116
 
+/* The event masks are defined here because we don’t only set them once but we need to set slight
+   variations of them (without XCB_EVENT_MASK_ENTER_WINDOW while rendering the layout) */
+/* The XCB_CW_EVENT_MASK for the child (= real window) */
+#define CHILD_EVENT_MASK (XCB_EVENT_MASK_PROPERTY_CHANGE | \
+                          XCB_EVENT_MASK_STRUCTURE_NOTIFY | \
+                          XCB_EVENT_MASK_ENTER_WINDOW)
+
+/* The XCB_CW_EVENT_MASK for its frame */
+#define FRAME_EVENT_MASK (XCB_EVENT_MASK_BUTTON_PRESS |          /* …mouse is pressed/released */ \
+                          XCB_EVENT_MASK_BUTTON_RELEASE | \
+                          XCB_EVENT_MASK_EXPOSURE |              /* …our window needs to be redrawn */ \
+                          XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | /* …user moves cursor inside our window */ \
+                          XCB_EVENT_MASK_ENTER_WINDOW)           /* …the application tries to resize itself */
+
+
 enum { _NET_SUPPORTED = 0,
         _NET_SUPPORTING_WM_CHECK,
         _NET_WM_NAME,

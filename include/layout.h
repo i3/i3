@@ -17,6 +17,7 @@ Rect get_unoccupied_space(Workspace *workspace);
 void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t drawable, xcb_gcontext_t gc, int offset);
 void redecorate_window(xcb_connection_t *conn, Client *client);
 void render_container(xcb_connection_t *conn, Container *container);
+void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bool ignore_enter_notify);
 void render_layout(xcb_connection_t *conn);
 
 #endif

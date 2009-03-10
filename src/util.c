@@ -371,8 +371,8 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                 /* Because the coordinates of the window haven’t changed, it would not be
                    re-configured if we don’t set the following flag */
                 client->force_reconfigure = true;
-                /* We left fullscreen mode, redraw the container */
-                render_container(conn, client->container);
+                /* We left fullscreen mode, redraw the whole layout to ensure enternotify events are disabled */
+                render_layout(conn);
         }
 
         xcb_flush(conn);

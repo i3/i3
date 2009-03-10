@@ -170,18 +170,16 @@ static void move_rows_from(xcb_connection_t *conn, Workspace *workspace, int row
 
 void dump_table(xcb_connection_t *conn, Workspace *workspace) {
         LOG("dump_table()\n");
-        for (int cols = 0; cols < workspace->cols; cols++) {
-                for (int rows = 0; rows < workspace->rows; rows++) {
-                        Container *con = workspace->table[cols][rows];
-                        LOG("----\n");
-                        LOG("at col=%d, row=%d\n", cols, rows);
-                        LOG("currently_focused = %p\n", con->currently_focused);
-                        Client *loop;
-                        CIRCLEQ_FOREACH(loop, &(con->clients), clients) {
-                                LOG("got client %08x / %s\n", loop->child, loop->name);
-                        }
-                        LOG("----\n");
+        FOR_TABLE(workspace) {
+                Container *con = workspace->table[cols][rows];
+                LOG("----\n");
+                LOG("at col=%d, row=%d\n", cols, rows);
+                LOG("currently_focused = %p\n", con->currently_focused);
+                Client *loop;
+                CIRCLEQ_FOREACH(loop, &(con->clients), clients) {
+                        LOG("got client %08x / %s\n", loop->child, loop->name);
                 }
+                LOG("----\n");
         }
         LOG("done\n");
 }
@@ -258,22 +256,21 @@ void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
 void fix_colrowspan(xcb_connection_t *conn, Workspace *workspace) {
         LOG("Fixing col/rowspan\n");
 
-        for (int cols = 0; cols < workspace->cols; cols++)
-                for (int rows = 0; rows < workspace->rows; rows++) {
-                        Container *con = workspace->table[cols][rows];
-                        if (con->colspan > 1) {
-                                LOG("gots one with colspan %d\n", con->colspan);
-                                while (con->colspan > 1 &&
-                                       workspace->table[cols + (con->colspan - 1)][rows]->currently_focused != NULL)
-                                        con->colspan--;
-                                LOG("fixed it to %d\n", con->colspan);
-                        }
-                        if (con->rowspan > 1) {
-                                LOG("gots one with rowspan %d\n", con->rowspan);
-                                while (con->rowspan > 1 &&
-                                       workspace->table[cols][rows + (con->rowspan - 1)]->currently_focused != NULL)
-                                        con->rowspan--;
-                                LOG("fixed it to %d\n", con->rowspan);
-                        }
+        FOR_TABLE(workspace) {
+                Container *con = workspace->table[cols][rows];
+                if (con->colspan > 1) {
+                        LOG("gots one with colspan %d\n", con->colspan);
+                        while (con->colspan > 1 &&
+                               workspace->table[cols + (con->colspan - 1)][rows]->currently_focused != NULL)
+                                con->colspan--;
+                        LOG("fixed it to %d\n", con->colspan);
                 }
+                if (con->rowspan > 1) {
+                        LOG("gots one with rowspan %d\n", con->rowspan);
+                        while (con->rowspan > 1 &&
+                               workspace->table[cols][rows + (con->rowspan - 1)]->currently_focused != NULL)
+                                con->rowspan--;
+                        LOG("fixed it to %d\n", con->rowspan);
+                }
+        }
 }

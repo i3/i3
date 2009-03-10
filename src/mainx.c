@@ -131,9 +131,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         /* We are interested in property changes */
         mask = XCB_CW_EVENT_MASK;
-        values[0] =     XCB_EVENT_MASK_PROPERTY_CHANGE |
-                        XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-                        XCB_EVENT_MASK_ENTER_WINDOW;
+        values[0] = CHILD_EVENT_MASK;
         xcb_change_window_attributes(conn, child, mask, values);
 
         /* Map the window first to avoid flickering */
@@ -171,11 +169,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         /* We want to know when… */
         mask |= XCB_CW_EVENT_MASK;
-        values[1] =     XCB_EVENT_MASK_BUTTON_PRESS |           /* …mouse is pressed/released */
-                        XCB_EVENT_MASK_BUTTON_RELEASE |
-                        XCB_EVENT_MASK_EXPOSURE |               /* …our window needs to be redrawn */
-                        XCB_EVENT_MASK_ENTER_WINDOW |           /* …user moves cursor inside our window */
-                        XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT;   /* …the application tries to resize itself */
+        values[1] = FRAME_EVENT_MASK;
 
         LOG("Reparenting 0x%08x under 0x%08x.\n", child, new->frame);
 
