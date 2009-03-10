@@ -128,6 +128,10 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
  */
 int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_event_t *event) {
         LOG("enter_notify for %08x, mode = %d, detail %d, serial %d\n", event->event, event->mode, event->detail, event->sequence);
+        if (event->mode != XCB_NOTIFY_MODE_NORMAL) {
+                LOG("This was not a normal notify, ignoring\n");
+                return 1;
+        }
         /* Some events are not interesting, because they were not generated actively by the
            user, but be reconfiguration of windows */
         if (event_is_ignored(event->sequence))
