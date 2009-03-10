@@ -171,9 +171,9 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
 	/* Convert our text */
 	int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
         if (rc == (size_t)-1) {
-		fprintf(stderr, "Converting to UCS-2 failed\n");
-                perror("erron\n");
-		exit(1);
+                perror("Converting to UCS-2 failed");
+		*real_strlen = 0;
+                return NULL;
 	}
 
 	*real_strlen = ((buffer_size - output_size) / 2) - 1;
@@ -230,6 +230,17 @@ void set_focus(xcb_connection_t *conn, Client *client) {
         /* Set focus to the entered window, and flush xcb buffer immediately */
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
         //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);
+
+        /* Get the client which was last focused in this particular container, it may be a different
+           one than old_client */
+        Client *last_container_client;
+        SLIST_FOREACH(last_container_client, &(c_ws->focus_stack), focus_clients)
+                if (last_container_client->container == client->container) {
+                        /* But if it is the same one as old_client, we save us the unnecessary redecorate */
+                        if (last_container_client != old_client)
+                                redecorate_window(conn, last_container_client);
+                        break;
+                }
 
         /* If we’re in stacking mode, this renders the container to update changes in the title
            bars and to raise the focused client */
