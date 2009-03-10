@@ -148,8 +148,6 @@ main(int argc, char **argv) {
 #else
 				running = strcmp(crypt(passwd, pws), pws);
 #endif
-				if (running != 0)
-					XBell(dpy, 100);
 				len = 0;
 				break;
 			case XK_Escape:
