@@ -237,6 +237,13 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 return 1;
         }
 
+        /* Don’t handle events inside the titlebar, only borders are interesting */
+        i3Font *font = load_font(conn, config.font);
+        if (event->event_y >= 2 && event->event_y <= (font->height + 2 + 2)) {
+                LOG("click on titlebar\n");
+                return 1;
+        }
+
         if (event->event_y < 2) {
                 /* This was a press on the top border */
                 if (con->row == 0)
