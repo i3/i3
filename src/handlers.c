@@ -723,7 +723,7 @@ int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message
         return 1;
 }
 
-int window_type_handler(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t atom, xcb_get_property_reply_t *property) {
         /* TODO: Implement this one. To do this, implement a little test program which sleep(1)s
          before changing this property. */

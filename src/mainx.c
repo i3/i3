@@ -417,8 +417,8 @@ int main(int argc, char *argv[], char *env[]) {
         /* Configure request = window tried to change size on its own */
         xcb_event_set_configure_request_handler(&evenths, handle_configure_request, NULL);
 
-        /* Client message = client changed its properties (EWMH) */
-        /* TODO: can’t we do this via property handlers? */
+        /* Client message are sent to the root window. The only interesting client message
+           for us is _NET_WM_STATE, we honour _NET_WM_STATE_FULLSCREEN */
         xcb_event_set_client_message_handler(&evenths, handle_client_message, NULL);
 
         /* Initialize the property handlers */
@@ -461,7 +461,7 @@ int main(int argc, char *argv[], char *env[]) {
         GET_ATOM(_NET_WM_STRUT_PARTIAL);
         GET_ATOM(UTF8_STRING);
 
-        xcb_property_set_handler(&prophs, atoms[_NET_WM_WINDOW_TYPE], UINT_MAX, window_type_handler, NULL);
+        xcb_property_set_handler(&prophs, atoms[_NET_WM_WINDOW_TYPE], UINT_MAX, handle_window_type, NULL);
         /* TODO: In order to comply with EWMH, we have to watch _NET_WM_STRUT_PARTIAL */
 
         /* Watch _NET_WM_NAME (= title of the window in UTF-8) property */

@@ -20,10 +20,11 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
 int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure_request_event_t *event);
 int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_notify_event_t *event);
 int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
-                                xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop);
+                             xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop);
 int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *event);
 int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message_event_t *event);
-int window_type_handler(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *property);
+int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                       xcb_atom_t atom, xcb_get_property_reply_t *property);
 int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t name, xcb_get_property_reply_t *reply);
 
