@@ -73,6 +73,27 @@ void expand_table_rows(Workspace *workspace) {
 }
 
 /*
+ * Adds one row at the head of the table
+ *
+ */
+void expand_table_rows_at_head(Workspace *workspace) {
+        workspace->rows++;
+
+        for (int cols = 0; cols < workspace->cols; cols++)
+                workspace->table[cols] = realloc(workspace->table[cols], sizeof(Container*) * workspace->rows);
+
+        /* Move the other rows */
+        for (int cols = 0; cols < workspace->cols; cols++)
+                for (int rows = workspace->rows - 1; rows > 0; rows--) {
+                        LOG("Moving row %d to %d\n", rows-1, rows);
+                        workspace->table[cols][rows] = workspace->table[cols][rows-1];
+                        workspace->table[cols][rows]->row = rows;
+                }
+        for (int cols = 0; cols < workspace->cols; cols++)
+                new_container(workspace, &(workspace->table[cols][0]), cols, 0);
+}
+
+/*
  * Add one column to the table
  *
  */

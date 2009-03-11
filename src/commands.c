@@ -153,13 +153,13 @@ static bool move_current_window_in_container(xcb_connection_t *conn, Client *cli
 }
 
 /*
- * Moves the current window to the given direction, creating a column/row if
- * necessary
+ * Moves the current window or whole container to the given direction, creating a column/row if
+ * necessary.
  *
  */
 static void move_current_window(xcb_connection_t *conn, direction_t direction) {
         LOG("moving window to direction %s\n", (direction == D_UP ? "up" : (direction == D_DOWN ? "down" :
-                                        (direction == D_LEFT ? "left" : "right"))));
+                                            (direction == D_LEFT ? "left" : "right"))));
         /* Get current window */
         Container *container = CUR_CELL,
                   *new = NULL;
@@ -184,10 +184,9 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
                         /* If we’re at the left-most position, move the rest of the table right */
                         if (current_col == 0) {
                                 expand_table_cols_at_head(c_ws);
-                                new = CUR_TABLE[current_col][current_row];
+                                new = CUR_CELL;
                         } else
                                 new = CUR_TABLE[--current_col][current_row];
-
                         break;
                 case D_RIGHT:
                         if (current_col == (c_ws->cols-1))
@@ -196,12 +195,15 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
                         new = CUR_TABLE[++current_col][current_row];
                         break;
                 case D_UP:
-                        /* TODO: if we’re at the up-most position, move the rest of the table down */
-                        if (move_current_window_in_container(conn, current_client, D_UP) ||
-                                current_row == 0)
+                        if (move_current_window_in_container(conn, current_client, D_UP))
                                 return;
 
-                        new = CUR_TABLE[current_col][--current_row];
+                        /* if we’re at the up-most position, move the rest of the table down */
+                        if (current_row == 0) {
+                                expand_table_rows_at_head(c_ws);
+                                new = CUR_CELL;
+                        } else
+                                new = CUR_TABLE[current_col][--current_row];
                         break;
                 case D_DOWN:
                         if (move_current_window_in_container(conn, current_client, D_DOWN))
@@ -234,6 +236,76 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
         render_layout(conn);
 
         set_focus(conn, current_client);
+}
+
+static void move_current_container(xcb_connection_t *conn, direction_t direction) {
+        LOG("moving container to direction %s\n", (direction == D_UP ? "up" : (direction == D_DOWN ? "down" :
+                                            (direction == D_LEFT ? "left" : "right"))));
+        /* Get current window */
+        Container *container = CUR_CELL,
+                  *new = NULL;
+
+        Container **old = &CUR_CELL;
+
+        /* There has to be a container, see focus_window() */
+        assert(container != NULL);
+
+        switch (direction) {
+                case D_LEFT:
+                        /* If we’re at the left-most position, move the rest of the table right */
+                        if (current_col == 0) {
+                                expand_table_cols_at_head(c_ws);
+                                new = CUR_CELL;
+                                old = &CUR_TABLE[current_col+1][current_row];
+                        } else
+                                new = CUR_TABLE[--current_col][current_row];
+                        break;
+                case D_RIGHT:
+                        if (current_col == (c_ws->cols-1))
+                                expand_table_cols(c_ws);
+
+                        new = CUR_TABLE[++current_col][current_row];
+                        break;
+                case D_UP:
+                        /* if we’re at the up-most position, move the rest of the table down */
+                        if (current_row == 0) {
+                                expand_table_rows_at_head(c_ws);
+                                new = CUR_CELL;
+                                old = &CUR_TABLE[current_col][current_row+1];
+                        } else
+                                new = CUR_TABLE[current_col][--current_row];
+                        break;
+                case D_DOWN:
+                        if (current_row == (c_ws->rows-1))
+                                expand_table_rows(c_ws);
+
+                        new = CUR_TABLE[current_col][++current_row];
+                        break;
+        }
+
+        LOG("old = %d,%d and new = %d,%d\n", container->col, container->row, new->col, new->row);
+
+        /* Swap the containers */
+        int col = new->col;
+        int row = new->row;
+
+        *old = new;
+        new->col = container->col;
+        new->row = container->row;
+
+        CUR_CELL = container;
+        container->col = col;
+        container->row = row;
+
+        Workspace *workspace = container->workspace;
+
+        /* delete all empty columns/rows */
+        cleanup_table(conn, workspace);
+
+        /* Fix colspan/rowspan if it’d overlap */
+        fix_colrowspan(conn, workspace);
+
+        render_layout(conn);
 }
 
 /*
@@ -572,11 +644,13 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         return;
                 }
 
-                if (action == ACTION_FOCUS) {
+                if (action == ACTION_FOCUS)
                         focus_thing(conn, direction, (with == WITH_WINDOW ? THING_WINDOW : THING_CONTAINER));
+                else if (action == ACTION_MOVE) {
+                        if (with == WITH_WINDOW)
+                                move_current_window(conn, direction);
+                        else move_current_container(conn, direction);
                 }
-                else if (action == ACTION_MOVE)
-                        move_current_window(conn, direction);
                 else if (action == ACTION_SNAP)
                         snap_current_container(conn, direction);
 

@@ -27,6 +27,7 @@ extern int current_row;
 
 void init_table();
 void expand_table_rows(Workspace *workspace);
+void expand_table_rows_at_head(Workspace *workspace);
 void expand_table_cols(Workspace *workspace);
 void expand_table_cols_at_head(Workspace *workspace);
 bool cell_exists(int col, int row);
