@@ -181,11 +181,13 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
 
         switch (direction) {
                 case D_LEFT:
-                        /* TODO: If we’re at the left-most position, move the rest of the table right */
-                        if (current_col == 0)
-                                return;
+                        /* If we’re at the left-most position, move the rest of the table right */
+                        if (current_col == 0) {
+                                expand_table_cols_at_head(c_ws);
+                                new = CUR_TABLE[current_col][current_row];
+                        } else
+                                new = CUR_TABLE[--current_col][current_row];
 
-                        new = CUR_TABLE[--current_col][current_row];
                         break;
                 case D_RIGHT:
                         if (current_col == (c_ws->cols-1))

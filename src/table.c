@@ -86,6 +86,28 @@ void expand_table_cols(Workspace *workspace) {
 }
 
 /*
+ * Inserts one column at the table’s head
+ *
+ */
+void expand_table_cols_at_head(Workspace *workspace) {
+        workspace->cols++;
+
+        workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
+        workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
+
+        /* Move the other columns */
+        for (int rows = 0; rows < workspace->rows; rows++)
+                for (int cols = workspace->cols - 1; cols > 0; cols--) {
+                        LOG("Moving col %d to %d\n", cols-1, cols);
+                        workspace->table[cols][rows] = workspace->table[cols-1][rows];
+                        workspace->table[cols][rows]->col = cols;
+                }
+
+        for (int rows = 0; rows < workspace->rows; rows++)
+                new_container(workspace, &(workspace->table[0][rows]), 0, rows);
+}
+
+/*
  * Shrinks the table by one column.
  *
  * The containers themselves are freed in move_columns_from() or move_rows_from(). Therefore, this
