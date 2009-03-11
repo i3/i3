@@ -1,4 +1,4 @@
-Source: i3
+Source: i3-wm
 Section: utils
 Priority: optional
 Maintainer: Michael Stapelberg <michael+i3@stapelberg.de>
@@ -9,7 +9,18 @@ Homepage: http://i3.zekjur.net/
 Package: i3
 Architecture: any
 Priority: optional
-Section: utils
+Section: x11
+Depends: i3-wm
+Recommends: i3lock, dwm-tools
+Description: meta package (i3 window manager, i3lock (screen locker), dwm-tools)
+ This meta-package installs the i3 window manager (i3-wm), the i3lock screen
+ locker (slightly improved version of slock) and dwm-tools which contains dmenu.
+ These are all the tools you need to use the i3 window manager efficiently.
+
+Package: i3-wm
+Architecture: any
+Priority: optional
+Section: x11
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: an improved dynamic tiling window manager
  Key features of i3 are correct implementation of Xinerama (workspaces are
