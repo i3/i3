@@ -35,7 +35,7 @@
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
    changing workspaces */
-SLIST_HEAD(ignore_head, Ignore_Event) ignore_events;
+static SLIST_HEAD(ignore_head, Ignore_Event) ignore_events;
 
 static void add_ignore_event(const int sequence) {
         struct Ignore_Event *event = smalloc(sizeof(struct Ignore_Event));
@@ -54,7 +54,17 @@ static void add_ignore_event(const int sequence) {
  */
 static bool event_is_ignored(const int sequence) {
         struct Ignore_Event *event;
-        /* TODO: cleanup this list */
+        time_t now = time(NULL);
+        for (event = SLIST_FIRST(&ignore_events); event != SLIST_END(&ignore_events);) {
+                if ((now - event->added) > 5) {
+                        LOG("Entry is older than five seconds, cleaning up\n");
+                        struct Ignore_Event *save = event;
+                        event = SLIST_NEXT(event, ignore_events);
+                        SLIST_REMOVE(&ignore_events, save, Ignore_Event, ignore_events);
+                        free(save);
+                } else event = SLIST_NEXT(event, ignore_events);
+        }
+
         SLIST_FOREACH(event, &ignore_events, ignore_events) {
                 if (event->sequence == sequence) {
                         LOG("Ignoring event (sequence %d)\n", sequence);
