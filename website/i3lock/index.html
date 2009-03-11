@@ -1,0 +1,83 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>i3lock — a slightly improved version of slock</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+body {
+	text-align: justify;
+	max-width: 800px;
+}
+
+li {
+	margin-bottom: 10px;
+}
+</style>
+</head>
+<body>
+
+<h1>i3lock — a slightly improved version of slock</h1>
+
+<p>
+  i3lock improves slock by making it fork() and therefore combinable with
+  commands to suspend your computer. Additionally, instead of turning off
+  your screen via DPMS and/or displaying a black screen, i3lock displays a
+  white screen so you can see if your computer failed to resume from suspend
+  or if your screen is just locked. Also, when entering a wrong password,
+  i3lock does not call XBell(). This is important because i3lock/slock think
+  you’ve entered a password when resuming from suspend, at least sometimes.
+</p>
+
+<h2>Releases</h2>
+
+<ul>
+  <li><a href="/i3lock/i3lock-0.9.tar.gz">i3lock-0.9.tar.gz</a></li>
+</ul>
+
+<h2>Development</h2>
+
+<p>
+  i3lock is currently developed at <a href="http://code.stapelberg.de/git/i3lock" title="cgit">
+  http://code.stapelberg.de/git/i3lock</a>. Checkouts of the master branch are intended to
+  be stable and working all the time. Integration of new features happens in a separate branch.
+</p>
+
+<h2>Contact</h2>
+
+<p>
+  Contact us at <a href="irc://irc.twice-irc.de/i3" title="#i3 on irc.twice-irc.de">
+  irc://irc.twice-irc.de/i3</a> (or, #i3 on irc.twice-irc.de, for those without proper URL
+  handling setup). Feel free to ask questions, please don’t ask to ask and please
+  think before you ask :-).
+</p>
+
+<h2>License</h2>
+
+<pre>
+MIT/X Consortium License
+
+© 2006-2008 Anselm R Garbe <garbeam at gmail dot com>
+© 2009 Michael Stapelberg <michael+i3lock at stapelberg dot de>
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+</pre>
+
+</body>
+</html>
