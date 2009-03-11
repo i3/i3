@@ -1,6 +1,7 @@
 UNAME=$(shell uname)
 DEBUG=1
 INSTALL=install
+MAKE=make
 
 CFLAGS += -std=c99
 CFLAGS += -pipe
@@ -39,12 +40,16 @@ src/%.o: src/%.c ${HEADERS}
 
 all: ${FILES}
 	$(CC) -o i3 ${FILES} $(LDFLAGS)
+	$(MAKE) -C src/i3lock
+	$(MAKE) -C src/i3menu
 
 install: all
 	$(INSTALL) -d -m 0755 $(DESTDIR)/usr/bin
 	$(INSTALL) -d -m 0755 $(DESTDIR)/etc/i3
 	$(INSTALL) -m 0755 i3 $(DESTDIR)/usr/bin/
 	test -e $(DESTDIR)/etc/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)/etc/i3/config
+	$(MAKE) -C src/i3lock install
+	$(MAKE) -C src/i3menu install
 
 clean:
 	rm -f src/*.o
