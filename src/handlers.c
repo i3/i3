@@ -584,8 +584,8 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
                                 xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
         LOG("window's name changed.\n");
-        if (prop == NULL) {
-                LOG("prop == NULL\n");
+        if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+                LOG("_NET_WM_NAME not specified, not changing\n");
                 return 1;
         }
         Client *client = table_get(byChild, window);
@@ -616,6 +616,66 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         char *old_name = client->name;
         client->name = ucs2_name;
         client->name_len = new_len;
+
+        if (old_name != NULL)
+                free(old_name);
+
+        /* If the client is a dock window, we don’t need to render anything */
+        if (client->dock)
+                return 1;
+
+        if (client->container->mode == MODE_STACK)
+                render_container(conn, client->container);
+        else decorate_window(conn, client, client->frame, client->titlegc, 0);
+        xcb_flush(conn);
+
+        return 1;
+}
+
+/*
+ * We handle legacy window names (titles) which are in COMPOUND_TEXT encoding. However, we
+ * just pass them along, so when containing non-ASCII characters, those will be rendering
+ * incorrectly. In order to correctly render unicode window titles in i3, an application
+ * has to set _NET_WM_NAME, which is in UTF-8 encoding.
+ *
+ * On every update, a message is put out to the user, so he may improve the situation and
+ * update applications which display filenames in their title to correctly use
+ * _NET_WM_NAME and therefore support unicode.
+ *
+ */
+int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t state,
+                                xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
+        LOG("window's name changed (legacy).\n");
+        if (prop == NULL) {
+                LOG("prop == NULL\n");
+                return 1;
+        }
+        Client *client = table_get(byChild, window);
+        if (client == NULL)
+                return 1;
+
+        /* Save the old pointer to make the update atomic */
+        char *new_name;
+        int new_len;
+        asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop));
+        /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
+        LOG("Name should change to \"%s\"\n", new_name);
+
+        /* Check if they are the same and don’t update if so. */
+        if (client->name != NULL &&
+            strlen(new_name) == strlen(client->name) &&
+            strcmp(client->name, new_name) == 0) {
+                LOG("Name did not change, not updating\n");
+                free(new_name);
+                return 1;
+        }
+
+        LOG("Using legacy window title. Note that in order to get Unicode window titles in i3,"
+            "the application has to set _NET_WM_NAME which is in UTF-8 encoding.\n");
+
+        char *old_name = client->name;
+        client->name = new_name;
+        client->name_len = -1;
 
         if (old_name != NULL)
                 free(old_name);

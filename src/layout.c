@@ -169,8 +169,15 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 uint32_t values[] = { text_color, background_color, font->id };
                 xcb_change_gc(conn, gc, mask, values);
 
-                xcb_image_text_16(conn, client->name_len, drawable, gc, 3 /* X */,
-                                  offset + font->height /* Y = baseline of font */, (xcb_char2b_t*)client->name);
+                /* name_len == -1 means this is a legacy application which does not specify _NET_WM_NAME,
+                   and we don’t handle the old window name (COMPOUND_TEXT) but only _NET_WM_NAME, which
+                   is UTF-8 */
+                if (client->name_len == -1)
+                        xcb_image_text_8(conn, strlen(client->name), drawable, gc, 3 /* X */,
+                                         offset + font->height /* Y = baseline of font */, client->name);
+                else
+                        xcb_image_text_16(conn, client->name_len, drawable, gc, 3 /* X */,
+                                          offset + font->height /* Y = baseline of font */, (xcb_char2b_t*)client->name);
         }
 }
 

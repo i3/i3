@@ -223,6 +223,10 @@ struct Client {
 
         /* Name (= window title) */
         char *name;
+        /* name_len stores the real string length (glyphs) of the window title if the client uses
+           _NET_WM_NAME. Otherwise, it is set to -1 to indicate that name should be just passed
+           to X as 8-bit string and therefore will not be rendered correctly. This behaviour is
+           to support legacy applications which do not set _NET_WM_NAME */
         int name_len;
 
         /* fullscreen is pretty obvious */
