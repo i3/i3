@@ -1,0 +1,143 @@
+%
+% © 2009 Michael Stapelberg
+%
+% 2009-03-12
+%
+\documentclass[mode=print,paper=screen,style=jefka]{powerdot}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{ngerman}
+\usepackage{url}
+\usepackage{listings}
+\newcommand{\bs}{\textbackslash}
+\pdsetup{palette=white}
+\lstnewenvironment{code}{%
+	\lstset{frame=single, basicstyle=\footnotesize\ttfamily}
+}{}
+\title{i3 - an improved dynamic tiling window manager}
+\author{sECuRE beim NoName e.V.\\
+~\\
+powered by \LaTeX, of course}
+\begin{document}
+\maketitle
+
+%\begin{slide}{Inhalt}
+%\begin{list}{$\bullet$}{\itemsep=1em}
+%	\item Bevor es losgeht
+%	\item Wie man korrekt kompiliert (Symbols)
+%	\item Grundwissen gdb
+%	\item Wenn es knallt (Core dumps)
+%	\item (Conditional) Breakpoints/Watchpoints
+%	\item Abkürzungen
+%	\item Macros
+%\end{list}
+%\end{slide}
+
+\begin{slide}{Geschichte}
+\begin{list}{$\bullet$}{\itemsep=1em}
+	\item<1-> „All window managers suck, this one just sucks less”?
+	\item<2-> Desktop environment vs. window manager (GNOME, KDE, Xfce, …)
+	\item<3-> Stacking (e17, fluxbox, IceWM, fvwm, …) vs Tiling (dwm, wmii, xmonad, …)
+	\item<4-> dwm, awesome, xmonad, …: statisches Layout
+	\item<5-> wmii, ion: dynamisches layout
+	\item<6-> Problem an ion: tuomov (Lizenz, Kommunikation), Config, Look and feel
+	\item<7-> Probleme an wmii: Xinerama-support, Xlib, undokumentierter code, nur Spalten, keine Reihen, Kleinigkeiten (titellose Fenster)
+\end{list}
+\end{slide}
+
+\begin{slide}{Screenshots!}
+\centering
+Drücken Sie Mod1+2 um diese Demo zu starten.
+\end{slide}
+
+\begin{slide}{Merkmale}
+\begin{list}{$\bullet$}{\itemsep=1em}
+	\item<1-> gut lesbarer, dokumentierter Code. Dokumentation.
+	\item<2-> XCB anstelle von Xlib
+	\item<3-> Xinerama done right™
+	\item<4-> Spalten und Zeilen
+	\item<5-> command-mode, wie in vim
+	\item<6-> UTF-8 clean
+	\item<7-> kein Antialiasing, schlank und schnell bleiben
+\end{list}
+\end{slide}
+
+\begin{slide}{Was genau macht ein WM?}
+\begin{list}{$\bullet$}{\itemsep=1em}
+	\item<1-> Neue Fenster positionieren
+	\item<2-> Titelleisten malen (reparenting)
+	\item<3-> Den Fokus verwalten
+	\item<4-> Mit Hints umgehen (Fullscreen, Dock, …)
+\end{list}
+\end{slide}
+
+\begin{slide}{Was an X toll ist}
+\begin{list}{$\bullet$}{\itemsep=1em}
+	\item<1-> Man hat an Window Manager gedacht (Mac OS X *hust*)
+	\item<2-> Netzwerk-transparent (debugging, xtrace)
+	\item<3-> Das Protokoll ist gut designed (Extensions möglich, simpel)
+\end{list}
+\end{slide}
+
+\begin{slide}{Was an X nicht so toll ist}
+\begin{list}{$\bullet$}{\itemsep=1em}
+	\item<1-> Einige race conditions vorhanden
+	\item<2-> Man kann nicht fein genug angeben, welche Events man gerne hätte
+	\item<3-> Xlib ist ziemlich eklig, aber es gibt ja xcb
+	\item<4-> Bugs: Keyboard state wird nicht richtig übermittelt
+	\item<5-> Ich empfehle auch: „Why X is not our ideal window system” \url{http://www.std.org/~msm/common/WhyX.pdf}
+\end{list}
+\end{slide}
+
+\begin{slide}{XCB}
+\begin{list}{$\bullet$}{\itemsep=1em}
+	\item \url{http://xcb.freedesktop.org/}
+	\item<1-> „X-protocol C-language Binding”
+	\item<2-> Klein, wartbar (aus einer Protokollbeschreibung auto-generiert)
+	\item<3-> Sinnvoll benannte Funktionsnamen und Datentypen
+	\item<4-> Threadsafe (nicht dass wir das bräuchten, aber…)
+	\item<5-> Nutzt die Asynchronität von X aus
+	\item<6-> Dokumentation? Ne, das ist was für Anfänger.
+	\item<7-> xcb-util: XCB noch mal ein bisschen gekapselt, nützliche Funktionen abstrahiert
+\end{list}
+\end{slide}
+
+\begin{slide}{Xft}
+\begin{list}{$\bullet$}{\itemsep=1em}
+	\item<1-> „X FreeType”, library um antialiased fonts zu benutzen
+	\item<2-> Benutzt man am besten mit Pango (rendert fonts) und Cairo
+	\item<3-> Keine Möglichkeit, pixel fonts zu benutzen („x core fonts”)
+	\item<4-> Was macht man (urxvt) also? Beide APIs benutzen, fallback fonts
+	\item<5-> Was machen wir (i3)? misc-fixed-*-iso10646!\\
+		ISO 10646 = Universal Character Set, selbe Zeichen wie Unicode
+	\item<6-> Fontconfig/xft soll wohl x core fonts ablösen :-(
+\end{list}
+\end{slide}
+
+\begin{slide}{Ein paar Zahlen}
+\begin{list}{$\bullet$}{\itemsep=1em}
+	\item<1-> 6118 Zeilen Code, Dokumentation, Website, READMEs
+	\item<2-> \~{} 2800 Zeilen Sourcecode
+	\item<3-> 73 KB groß (ohne debug symbols)
+\end{list}
+\end{slide}
+
+\begin{slide}{Benutzen}
+\begin{list}{$\bullet$}{\itemsep=1em}
+	\item git clone \url{git://code.stapelberg.de/i3}
+	\item Debian: cd i3; dpkg-buildpackage; sudo dpkg -i ../i3-wm*deb
+	\item non-Debian: cd i3; cat DEPENDS; make; sudo make install
+	\item in \~{}/.xsession: exec /usr/bin/i3
+	\item Siehe manpage i3(1)
+\end{list}
+\end{slide}
+
+\begin{slide}{Mehr infos}
+\begin{list}{$\bullet$}{\itemsep=1em}
+	\item git-webinterface: \url{http://code.stapelberg.de/git/i3}
+	\item Website: \url{http://i3.zekjur.net}
+	\item IRC: \#i3 auf irc.twice-irc.de
+\end{list}
+\end{slide}
+
+\end{document}
