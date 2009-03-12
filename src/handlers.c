@@ -616,6 +616,7 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         char *old_name = client->name;
         client->name = ucs2_name;
         client->name_len = new_len;
+        client->uses_net_wm_name = true;
 
         if (old_name != NULL)
                 free(old_name);
@@ -646,13 +647,18 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
 int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t state,
                                 xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
         LOG("window's name changed (legacy).\n");
-        if (prop == NULL) {
+        if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
                 LOG("prop == NULL\n");
                 return 1;
         }
         Client *client = table_get(byChild, window);
         if (client == NULL)
                 return 1;
+
+        if (client->uses_net_wm_name) {
+                LOG("This client is capable of _NET_WM_NAME, ignoring legacy name\n");
+                return 1;
+        }
 
         /* Save the old pointer to make the update atomic */
         char *new_name;

@@ -228,6 +228,9 @@ struct Client {
            to X as 8-bit string and therefore will not be rendered correctly. This behaviour is
            to support legacy applications which do not set _NET_WM_NAME */
         int name_len;
+        /* This will be set to true as soon as the first _NET_WM_NAME comes in. If set to true,
+           legacy window names are ignored. */
+        bool uses_net_wm_name;
 
         /* fullscreen is pretty obvious */
         bool fullscreen;
