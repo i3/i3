@@ -23,9 +23,11 @@
 \lstnewenvironment{code}{%
 	\lstset{frame=single, basicstyle=\footnotesize\ttfamily, language=C, showstringspaces=false,%
 		style=colors, numbers=left, morekeywords={xcb_get_window_attributes_cookie_t, xcb_map_request_event_t,%
-		xcb_connection_t, xcb_get_window_attributes_reply_t, window_attributes_t},%
+		xcb_connection_t, xcb_get_window_attributes_reply_t, window_attributes_t, xcb_intern_atom_cookie_t,%
+		xcb_intern_atom_reply_t, xcb_atom_t},%
 		moreemph={xcb_get_window_attributes_reply, xcb_get_window_attributes_unchecked, manage_window,%
-		add_ignore_event}}
+		add_ignore_event, xcb_intern_atom, xcb_intern_atom_reply, fprintf, printf, free, load_configuration,%
+		XInternAtom, exit, strlen}}
 }{}
 \title{i3 - an improved dynamic tiling window manager}
 \author{sECuRE beim NoName e.V.\\
@@ -138,6 +140,46 @@ int handle_map_request(void *prophs, xcb_connection_t *conn,
 	\item<6-> Dokumentation? Ne, das ist was für Anfänger.
 	\item<7-> xcb-util: XCB noch mal ein bisschen gekapselt, nützliche Funktionen abstrahiert
 \end{list}
+\end{slide}
+
+\begin{slide}[method=direct]{Xlib-Beispielcode}
+\begin{code}
+  char *names[10] = {"_NET_SUPPORTED", "_NET_WM_STATE",
+  "_NET_WM_STATE_FULLSCREEN", "_NET_WM_NAME" /* ... */};
+  Atom atoms[10];
+
+  /* Get atoms */
+  for (int i = 0; i < 10; i++) {
+    atoms[i] = XInternAtom(display, names[i], 0);
+  }
+\end{code}
+\end{slide}
+
+\begin{slide}[method=direct]{XCB-Beispielcode}
+\begin{code}
+char *names[10] = {"_NET_SUPPORTED", "_NET_WM_STATE",
+  "_NET_WM_STATE_FULLSCREEN", "_NET_WM_NAME" /* ... */};
+xcb_intern_atom_cookie_t cookies[10];
+
+/* Place requests for atoms as soon as possible */
+for (int c = 0; c < 10; c++)
+  xcb_intern_atom(connection, 0, strlen(names[c]), names[c]);
+
+/* Do other stuff here */
+load_configuration();
+
+/* Get atoms */
+for (int c = 0; c < 10; c++) {
+  xcb_intern_atom_reply_t *reply =
+    xcb_intern_atom_reply(connection, cookies[c], NULL);
+  if (!reply) {
+    fprintf(stderr, "Could not get atom\n");
+    exit(-1);
+  }
+  printf("atom has ID %d\n", reply->atom);
+  free(reply);
+}
+\end{code}
 \end{slide}
 
 \begin{slide}{Xft}
