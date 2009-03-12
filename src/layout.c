@@ -263,22 +263,7 @@ static void resize_client(xcb_connection_t *conn, Client *client) {
         /* After configuring a child window we need to fake a configure_notify_event according
            to ICCCM 4.2.3. This seems rather broken, especially since X sends exactly the same
            configure_notify_event automatically according to xtrace. Anyone knows details? */
-        xcb_configure_notify_event_t event;
-
-        event.event = client->child;
-        event.window = client->child;
-        event.response_type = XCB_CONFIGURE_NOTIFY;
-
-        event.x = rect->x;
-        event.y = rect->y;
-        event.width = rect->width;
-        event.height = rect->height;
-
-        event.border_width = 0;
-        event.above_sibling = XCB_NONE;
-        event.override_redirect = false;
-
-        xcb_send_event(conn, false, client->child, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (char*)&event);
+        fake_configure_notify(conn, rect, client->child);
 }
 
 /*

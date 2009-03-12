@@ -58,5 +58,6 @@ void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t to_x, uint32_t to_y);
 void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window);
 
 #endif

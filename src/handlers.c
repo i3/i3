@@ -447,27 +447,13 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
 
         Client *client = table_get(byChild, event->window);
         if (client == NULL) {
-                LOG("No such client\n");
+                LOG("This client is not mapped, so we don't care and just tell the client that he will get its size\n");
+                Rect rect = {event->x, event->y, event->width, event->height};
+                fake_configure_notify(conn, rect, event->window);
                 return 1;
         }
 
-        xcb_configure_notify_event_t generated_event;
-
-        generated_event.event = client->child;
-        generated_event.window = client->child;
-        generated_event.response_type = XCB_CONFIGURE_NOTIFY;
-
-        generated_event.x = client->child_rect.x;
-        generated_event.y = client->child_rect.y;
-        generated_event.width = client->child_rect.width;
-        generated_event.height = client->child_rect.height;
-
-        generated_event.border_width = 0;
-        generated_event.above_sibling = XCB_NONE;
-        generated_event.override_redirect = false;
-
-        xcb_send_event(conn, false, client->child, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (char*)&generated_event);
-        xcb_flush(conn);
+        fake_configure_notify(conn, client->child_rect, client->child);
 
         LOG("Told the client to stay at %dx%d with size %dx%d\n",
             client->child_rect.x, client->child_rect.y, client->child_rect.width, client->child_rect.height);
