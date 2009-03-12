@@ -11,8 +11,21 @@
 \usepackage{listings}
 \newcommand{\bs}{\textbackslash}
 \pdsetup{palette=white}
+\definecolor{darkblue}{rgb}{0,0,.6}
+\definecolor{darkred}{rgb}{.6,0,0}
+\definecolor{darkgreen}{rgb}{0,.6,0}
+\definecolor{darkgray}{gray}{.3}
+\definecolor{lightblue}{rgb}{0.97,0.99,1}
+
+\lstloadlanguages{C}
+\lstdefinestyle{colors}{keywordstyle={\bf\color{darkblue}}, commentstyle={\em\color{magenta}}, stringstyle={\color{darkred}},%
+			emphstyle={\color{darkgray}}}
 \lstnewenvironment{code}{%
-	\lstset{frame=single, basicstyle=\footnotesize\ttfamily}
+	\lstset{frame=single, basicstyle=\footnotesize\ttfamily, language=C, showstringspaces=false,%
+		style=colors, numbers=left, morekeywords={xcb_get_window_attributes_cookie_t, xcb_map_request_event_t,%
+		xcb_connection_t, xcb_get_window_attributes_reply_t, window_attributes_t},%
+		moreemph={xcb_get_window_attributes_reply, xcb_get_window_attributes_unchecked, manage_window,%
+		add_ignore_event}}
 }{}
 \title{i3 - an improved dynamic tiling window manager}
 \author{sECuRE beim NoName e.V.\\
@@ -20,18 +33,6 @@
 powered by \LaTeX, of course}
 \begin{document}
 \maketitle
-
-%\begin{slide}{Inhalt}
-%\begin{list}{$\bullet$}{\itemsep=1em}
-%	\item Bevor es losgeht
-%	\item Wie man korrekt kompiliert (Symbols)
-%	\item Grundwissen gdb
-%	\item Wenn es knallt (Core dumps)
-%	\item (Conditional) Breakpoints/Watchpoints
-%	\item Abkürzungen
-%	\item Macros
-%\end{list}
-%\end{slide}
 
 \begin{slide}{Geschichte}
 \begin{list}{$\bullet$}{\itemsep=1em}
@@ -62,12 +63,22 @@ Drücken Sie Mod1+2 um diese Demo zu starten.
 \end{list}
 \end{slide}
 
+\begin{slide}{Typische Kommunikation mit X}
+\begin{list}{$\bullet$}{\itemsep=1em}
+	\item<1-> Verbindung aufbauen
+	\item<2-> Requests über die Leitung schicken (Fenster erzeugen)
+	\item<3-> Eventloop starten, reagieren (Fenster zeichnen, Eingaben, …)
+\end{list}
+\end{slide}
+
 \begin{slide}{Was genau macht ein WM?}
 \begin{list}{$\bullet$}{\itemsep=1em}
-	\item<1-> Neue Fenster positionieren
-	\item<2-> Titelleisten malen (reparenting)
-	\item<3-> Den Fokus verwalten
-	\item<4-> Mit Hints umgehen (Fullscreen, Dock, …)
+	\item<1-> Events umlenken
+	\item<2-> Neue Fenster anzeigen/positionieren (MapRequest)
+	\item<3-> Titelleisten malen (reparenting)
+	\item<4-> Den Fokus verwalten
+	\item<5-> Mit Hints umgehen (Fenstertitel, Fullscreen, Dock, …)
+	\item<6-> Auf Benutzereingaben reagieren
 \end{list}
 \end{slide}
 
@@ -77,6 +88,33 @@ Drücken Sie Mod1+2 um diese Demo zu starten.
 	\item<2-> Netzwerk-transparent (debugging, xtrace)
 	\item<3-> Das Protokoll ist gut designed (Extensions möglich, simpel)
 \end{list}
+\end{slide}
+
+\begin{slide}[method=direct]{Protokoll, Beispielcode}
+\begin{code}
+int handle_map_request(void *prophs, xcb_connection_t *conn,
+		       xcb_map_request_event_t *event) {
+  xcb_get_window_attributes_cookie_t cookie;
+  xcb_get_window_attributes_reply_t *reply;
+
+  cookie = xcb_get_window_attributes_unchecked(conn, event->window);
+
+  if ((reply = xcb_get_window_attributes_reply(conn, cookie, NULL))
+      == NULL) {
+          LOG("Could not get window attributes\n");
+          return -1;
+  }
+
+  window_attributes_t wa = { TAG_VALUE };
+  wa.u.override_redirect = reply->override_redirect;
+
+  add_ignore_event(event->sequence);
+
+  manage_window(prophs, conn, event->window, wa);
+
+  return 1;
+}
+\end{code}
 \end{slide}
 
 \begin{slide}{Was an X nicht so toll ist}
