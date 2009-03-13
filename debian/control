@@ -2,7 +2,7 @@ Source: i3-wm
 Section: utils
 Priority: optional
 Maintainer: Michael Stapelberg <michael+i3@stapelberg.de>
-Build-Depends: debhelper (>= 5), libx11-dev, libxcb-wm0-dev (>= 0.3.3), libxcb-aux0-dev (>= 0.3.3), asciidoc
+Build-Depends: debhelper (>= 5), libx11-dev, libxcb-wm0-dev (>= 0.3.3), libxcb-aux0-dev (>= 0.3.3), libxcb-keysyms0-dev (>= 0.3.3), libxcb-xinerama0-dev (>= 1.1), asciidoc, xmlto
 Standards-Version: 3.8.0
 Homepage: http://i3.zekjur.net/
 
@@ -31,4 +31,4 @@ Description: an improved dynamic tiling window manager
  communication with X11, and has several measures to be very fast.
  .
  Please be aware i3 is primarily targeted at advanced users and developers
- and that you’re currently trying an alpha version (which may contain bugs).
+ and that you're currently trying an alpha version (which may contain bugs).
