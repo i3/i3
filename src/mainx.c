@@ -126,7 +126,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
                 int16_t x, int16_t y, uint16_t width, uint16_t height) {
 
-        xcb_get_property_cookie_t wm_type_cookie, strut_cookie;
+        xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie;
         uint32_t mask = 0;
         uint32_t values[3];
 
@@ -141,6 +141,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         /* Place requests for properties ASAP */
         wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
         strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
+        state_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STATE], UINT32_MAX);
 
         Client *new = table_get(byChild, child);
 
@@ -272,6 +273,20 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
                 SLIST_INSERT_HEAD(&(new->container->workspace->focus_stack), new, focus_clients);
         }
+
+        /* Check if the window already got the fullscreen hint set */
+        xcb_atom_t *state;
+        if ((preply = xcb_get_property_reply(conn, state_cookie, NULL)) != NULL &&
+            (state = xcb_get_property_value(preply)) != NULL)
+                /* Check all set _NET_WM_STATEs */
+                for (int i = 0; i < xcb_get_property_value_length(preply); i++)
+                        if (state[i] == atoms[_NET_WM_STATE_FULLSCREEN]) {
+                                /* If the window got the fullscreen state, we just toggle fullscreen
+                                   and don’t event bother to redraw the layout – that would not change
+                                   anything anyways */
+                                toggle_fullscreen(conn, new);
+                                return;
+                        }
 
         render_layout(conn);
 }
