@@ -115,11 +115,20 @@ At the moment, you have to bind to keycodes (find them out via xev(1)).
 terminal /usr/bin/urxvt
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
+# Start terminal (Mod1+Enter)
+bind Mod1+36 exec /usr/bin/urxvt
+
+# Start dmenu (Mod1+v)
+bind Mod1+55 exec /usr/bin/dmenu_run
+
 # Beamer on/off
 bind Mod1+73 exec /home/michael/toggle_beamer.sh
 
 # Screen locking
-bind Mod1+68 exec /usr/bin/slock
+bind Mod1+68 exec /usr/bin/i3lock
+
+# Restart i3 inplace
+bind Mod1+Shift+27 restart
 
 # Brightness
 bind Mod1+97 exec sudo sh -c "echo up > /proc/acpi/ibm/brightness"
@@ -131,25 +140,42 @@ bind Mod1+41 f
 bind Mod1+43 s
 # Default
 bind Mod1+26 d
-# Focus
+
+# Focus (Mod1+j/k/l/;)
 bind Mod1+44 h
 bind Mod1+45 j
 bind Mod1+46 k
 bind Mod1+47 l
-# Snap
+
+# Focus Container (Mod3+j/k/l/;)
+bind Mod3+44 wch
+bind Mod3+45 wcj
+bind Mod3+46 wck
+bind Mod3+47 wcl
+
+# Snap (Mod1+Control+j/k/l/;)
 bind Mod1+Control+44 sh
 bind Mod1+Control+45 sj
 bind Mod1+Control+46 sk
 bind Mod1+Control+47 sl
-# Move
+
+# Move (Mod1+Shift+j/k/l/;)
 bind Mod1+Shift+44 mh
 bind Mod1+Shift+45 mj
 bind Mod1+Shift+46 mk
 bind Mod1+Shift+47 ml
+
+# Move Container (Mod3+Shift+j/k/l/;)
+bind Mod3+Shift+44 wcmh
+bind Mod3+Shift+45 wcmj
+bind Mod3+Shift+46 wcmk
+bind Mod3+Shift+47 wcml
+
 # Workspaces
 bind Mod1+10 1
 bind Mod1+11 2
 ...
+
 # Move to Workspace
 bind Mod1+Shift+10 1
 bind Mod1+Shift+11 2
