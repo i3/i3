@@ -560,14 +560,27 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         }
 
         /* Is it an <exit>? */
-        if (STARTS_WITH(command, "exit"))
-                exit(0);
+        if (STARTS_WITH(command, "exit")) {
+                LOG("User issued exit-command, exiting without error.\n");
+                exit(EXIT_SUCCESS);
+        }
 
         /* Is it <restart>? Then restart in place. */
         if (STARTS_WITH(command, "restart")) {
                 LOG("restarting \"%s\"...\n", application_path);
                 execl(application_path, application_path, NULL);
                 /* not reached */
+        }
+
+        if (STARTS_WITH(command, "kill")) {
+                if (CUR_CELL->currently_focused == NULL) {
+                        LOG("There is no window to kill\n");
+                        return;
+                }
+
+                LOG("Killing current window\n");
+                kill_window(conn, CUR_CELL->currently_focused);
+                return;
         }
 
         /* Is it 'f' for fullscreen? */

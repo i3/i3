@@ -375,6 +375,8 @@ int main(int argc, char *argv[], char *env[]) {
         REQUEST_ATOM(_NET_WM_DESKTOP);
         REQUEST_ATOM(_NET_WM_WINDOW_TYPE_DOCK);
         REQUEST_ATOM(_NET_WM_STRUT_PARTIAL);
+        REQUEST_ATOM(WM_PROTOCOLS);
+        REQUEST_ATOM(WM_DELETE_WINDOW);
         REQUEST_ATOM(UTF8_STRING);
 
         /* TODO: this has to be more beautiful somewhen */
@@ -475,6 +477,8 @@ int main(int argc, char *argv[], char *env[]) {
         GET_ATOM(_NET_WM_DESKTOP);
         GET_ATOM(_NET_WM_WINDOW_TYPE_DOCK);
         GET_ATOM(_NET_WM_STRUT_PARTIAL);
+        GET_ATOM(WM_PROTOCOLS);
+        GET_ATOM(WM_DELETE_WINDOW);
         GET_ATOM(UTF8_STRING);
 
         xcb_property_set_handler(&prophs, atoms[_NET_WM_WINDOW_TYPE], UINT_MAX, handle_window_type, NULL);

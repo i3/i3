@@ -108,6 +108,9 @@ Enable stacking layout for the current container.
 Mod1+d::
 Enable default layout for the current container.
 
+Mod1+Shift+q::
+Kills the current client.
+
 Mod1+Shift+r::
 Restarts i3 in place (without losing any windows, but the layout).
 
@@ -135,6 +138,9 @@ bind Mod1+36 exec /usr/bin/urxvt
 
 # Start dmenu (Mod1+v)
 bind Mod1+55 exec /usr/bin/dmenu_run
+
+# Kill current client (Mod1+Shift+q)
+bind Mod1+Shift+24 kill
 
 # Beamer on/off
 bind Mod1+73 exec /home/michael/toggle_beamer.sh

@@ -18,7 +18,7 @@
 #ifndef _I3_H
 #define _I3_H
 
-#define NUM_ATOMS 10
+#define NUM_ATOMS 12
 
 extern char *application_path;
 extern Display *xkbdpy;

@@ -17,7 +17,7 @@ with := <w> { [ <times> ] <where> }+ <space> <cmd>
 
 oder
 
-special := [ exec <path> | exit | restart ]
+special := [ exec <path> | kill | exit | restart ]
 
 an jeder Stelle kann mit escape abgebrochen werden
 

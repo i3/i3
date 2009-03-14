@@ -46,6 +46,8 @@ enum { _NET_SUPPORTED = 0,
         _NET_WM_WINDOW_TYPE_DOCK,
         _NET_WM_DESKTOP,
         _NET_WM_STRUT_PARTIAL,
+        WM_PROTOCOLS,
+        WM_DELETE_WINDOW,
         UTF8_STRING
 };
 

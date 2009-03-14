@@ -19,6 +19,8 @@
 #include <assert.h>
 #include <iconv.h>
 
+#include <xcb/xcb_icccm.h>
+
 #include "i3.h"
 #include "data.h"
 #include "table.h"
@@ -389,5 +391,56 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                 render_layout(conn);
         }
 
+        xcb_flush(conn);
+}
+
+/*
+ * Returns true if the client supports the given protocol atom (like WM_DELETE_WINDOW)
+ *
+ */
+static bool client_supports_protocol(xcb_connection_t *conn, Client *client, xcb_atom_t atom) {
+        xcb_get_property_cookie_t cookie;
+        xcb_get_wm_protocols_reply_t protocols;
+        bool result = false;
+
+        cookie = xcb_get_wm_protocols_unchecked(conn, client->child, atoms[WM_PROTOCOLS]);
+        if (xcb_get_wm_protocols_reply(conn, cookie, &protocols, NULL) != 1)
+                return false;
+
+        /* Check if the client’s protocols have the requested atom set */
+        for (uint32_t i = 0; i < protocols.atoms_len; i++)
+                if (protocols.atoms[i] == atom)
+                        result = true;
+
+        xcb_get_wm_protocols_reply_wipe(&protocols);
+
+        return result;
+}
+
+/*
+ * Kills the given window using WM_DELETE_WINDOW or xcb_kill_window
+ *
+ */
+void kill_window(xcb_connection_t *conn, Client *window) {
+        /* If the client does not support WM_DELETE_WINDOW, we kill it the hard way */
+        if (!client_supports_protocol(conn, window, atoms[WM_DELETE_WINDOW])) {
+                LOG("Killing window the hard way\n");
+                xcb_kill_client(conn, window->child);
+                return;
+        }
+
+        xcb_client_message_event_t ev;
+
+        memset(&ev, 0, sizeof(xcb_client_message_event_t));
+
+        ev.response_type = XCB_CLIENT_MESSAGE;
+        ev.window = window->child;
+        ev.type = atoms[WM_PROTOCOLS];
+        ev.format = 32;
+        ev.data.data32[0] = atoms[WM_DELETE_WINDOW];
+        ev.data.data32[1] = XCB_CURRENT_TIME;
+
+        LOG("Sending WM_DELETE to the client\n");
+        xcb_send_event(conn, false, window->child, XCB_EVENT_MASK_NO_EVENT, (char*)&ev);
         xcb_flush(conn);
 }

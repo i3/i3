@@ -46,5 +46,6 @@ void leave_stack_mode(xcb_connection_t *conn, Container *container);
 void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode);
 void warp_pointer_into(xcb_connection_t *conn, Client *client);
 void toggle_fullscreen(xcb_connection_t *conn, Client *client);
+void kill_window(xcb_connection_t *conn, Client *window);
 
 #endif
