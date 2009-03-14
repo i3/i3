@@ -455,9 +455,6 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
 
         fake_configure_notify(conn, client->child_rect, client->child);
 
-        LOG("Told the client to stay at %dx%d with size %dx%d\n",
-            client->child_rect.x, client->child_rect.y, client->child_rect.width, client->child_rect.height);
-
         return 1;
 }
 

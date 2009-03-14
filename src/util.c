@@ -377,6 +377,9 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                 values[0] = XCB_STACK_MODE_ABOVE;
                 xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
 
+                Rect child_rect = workspace->rect;
+                child_rect.x = child_rect.y = 0;
+                fake_configure_notify(conn, child_rect, client->child);
         } else {
                 LOG("leaving fullscreen mode\n");
                 /* Because the coordinates of the window haven’t changed, it would not be
