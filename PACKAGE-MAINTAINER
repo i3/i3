@@ -1,0 +1,26 @@
+Dear package maintainer,
+
+thanks for packaging i3. By doing so, you are improving your distribution and i3 in general.
+
+Please read the file DEPENDS now, so you know which libraries are necessary and where to
+get them from if your distribution does not already have packages for them.
+
+Please make sure the manpage for i3 will be properly created and installed in your package.
+On debian, this looks like this:
+
+	# Compilation
+	$(MAKE)
+	$(MAKE) -C man
+
+	# Installation
+	$(MAKE) DESTDIR=$(CURDIR)/debian/i3-wm/ install
+	mkdir -p $(CURDIR)/debian/i3-wm/usr/share/man/man1
+	cp man/i3.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
+
+If you got any questions, ideas, hints, problems or whatever, please do not
+hesitate to contact me. I will help you out. Just drop me an E-Mail (find the address at
+http://michael.stapelberg.de/Kontakt, scroll down to bottom), contact me using the same
+address in jabber or ask on our IRC channel (#i3 on irc.twice-irc.de).
+
+Thanks again for your efforts,
+Michael
