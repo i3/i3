@@ -552,15 +552,19 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         if (command[0] == '\0')
                 return;
 
-        /* Is it an <exec>? */
-        if (strncmp(command, "exec ", strlen("exec ")) == 0) {
+        /* Is it an <exec>? Then execute the given command. */
+        if (STARTS_WITH(command, "exec ")) {
                 LOG("starting \"%s\"\n", command + strlen("exec "));
                 start_application(command+strlen("exec "));
                 return;
         }
 
-        /* Is it <restart>? */
-        if (strncmp(command, "restart", strlen("restart")) == 0) {
+        /* Is it an <exit>? */
+        if (STARTS_WITH(command, "exit"))
+                exit(0);
+
+        /* Is it <restart>? Then restart in place. */
+        if (STARTS_WITH(command, "restart")) {
                 LOG("restarting \"%s\"...\n", application_path);
                 execl(application_path, application_path, NULL);
                 /* not reached */

@@ -108,6 +108,12 @@ Enable stacking layout for the current container.
 Mod1+d::
 Enable default layout for the current container.
 
+Mod1+Shift+r::
+Restarts i3 in place (without losing any windows, but the layout).
+
+Mod1+Shift+e::
+Exits i3.
+
 == FILES
 
 === ~/.i3/config
@@ -136,8 +142,11 @@ bind Mod1+73 exec /home/michael/toggle_beamer.sh
 # Screen locking
 bind Mod1+68 exec /usr/bin/i3lock
 
-# Restart i3 inplace
+# Restart i3 inplace (Mod1+Shift+r)
 bind Mod1+Shift+27 restart
+
+# Exit i3 (Mod1+Shift+e)
+bind Mod1+Shift+26 exit
 
 # Brightness
 bind Mod1+97 exec sudo sh -c "echo up > /proc/acpi/ibm/brightness"
