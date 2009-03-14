@@ -75,20 +75,29 @@ two virtual screens.
 
 Here is a short overview of the default keybindings:
 
-h/j/k/l::
-Direction keys (left, down, up, right)
+j/k/l/;::
+Direction keys (left, down, up, right). They are on your homerow (see the mark on your "j" key).
 
 Mod1+<direction>::
 Focus window in <direction>.
 
+Mod3+<direction>::
+Focus container in <direction>.
+
 Mod1+Shift+<direction>::
 Move window to <direction>.
 
+Mod3+Shift+<direction>::
+Move container to <direction>.
+
 Mod1+Control+<direction>::
-Snap window to <direction>.
+Snap container to <direction>.
 
 Mod1+<number>::
 Switch to workspace <number>.
+
+Mod1+Shift+<number>::
+Move window to workspace <number>.
 
 Mod1+f::
 Toggle fullscreen mode.
