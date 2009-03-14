@@ -60,6 +60,8 @@ $ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-icccm1_0.3.3
 $ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-property1_0.3.3-2+b1_amd64.deb"
 $ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-event1_0.3.3-2+b1_amd64.deb"
 $ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-aux0_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-keysyms0_0.3.3-2+b1_amd64.deb"
+$ wget "http://ftp.de.debian.org/debian/pool/main/x/xcb-util/libxcb-keysyms0-dev_0.3.3-2+b1_amd64.deb"
 </pre>
 
 <p>
@@ -84,6 +86,7 @@ $ dpkg-buildpackage
 </p>
 
 <pre>
+$ sudo dpkg -i ../i3-wm_1.0-1_amd64.deb
 $ sudo dpkg -i ../i3_1.0-1_amd64.deb
 </pre>
 
