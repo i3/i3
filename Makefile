@@ -10,6 +10,7 @@ CFLAGS += -Wunused
 CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include
 
+LDFLAGS += -lm
 LDFLAGS += -lxcb-wm
 #LDFLAGS += -lxcb-keysyms
 LDFLAGS += -lxcb-xinerama

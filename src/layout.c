@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <xcb/xcb.h>
 #include <assert.h>
+#include <math.h>
 
 #include "config.h"
 #include "i3.h"
@@ -248,8 +249,8 @@ static void resize_client(xcb_connection_t *conn, Client *client) {
                                 new_width--;
                 }
                 /* Center the window */
-                rect->y += (rect->height / 2) - (new_height / 2);
-                rect->x += (rect->width / 2) - (new_width / 2);
+                rect->y += ceil(rect->height / 2) - floor(new_height / 2);
+                rect->x += ceil(rect->width / 2) - floor(new_width / 2);
 
                 rect->height = new_height;
                 rect->width = new_width;
