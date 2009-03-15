@@ -325,6 +325,13 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 second = con->workspace->table[con->col+1][con->row];
         }
 
+        /* FIXME: horizontal resizing causes empty spaces to exist */
+        if (orientation == O_HORIZONTAL) {
+                LOG("Sorry, horizontal resizing is not yet activated due to creating layout bugs."
+                    "If you are brave, enable the code for yourself and try fixing it.\n");
+                return 1;
+        }
+
         uint32_t mask = 0;
         uint32_t values[2];
 
