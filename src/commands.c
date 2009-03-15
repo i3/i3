@@ -474,6 +474,10 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
         if (c_ws->screen != t_ws->screen) {
                 /* We need to switch to the other screen first */
                 LOG("moving over to other screen.\n");
+
+                /* Store the old client */
+                Client *old_client = CUR_CELL->currently_focused;
+
                 c_ws = &(workspaces[t_ws->screen->current_workspace]);
                 current_col = c_ws->current_col;
                 current_row = c_ws->current_row;
@@ -484,6 +488,11 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
                         xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0,
                                          dims->x + (dims->width / 2), dims->y + (dims->height / 2));
                 }
+
+                /* Re-decorate the old client, it’s not focused anymore */
+                if ((old_client != NULL) && !old_client->dock)
+                        redecorate_window(conn, old_client);
+                else xcb_flush(conn);
         }
 
         /* Check if we need to change something or if we’re already there */
