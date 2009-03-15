@@ -340,16 +340,21 @@ int main(int argc, char *argv[], char *env[]) {
 
         application_path = sstrdup(argv[0]);
 
-        while ((opt = getopt(argc, argv, "c:")) != -1) {
+        while ((opt = getopt(argc, argv, "c:v")) != -1) {
                 switch (opt) {
                         case 'c':
                                 override_configpath = sstrdup(optarg);
                                 break;
+                        case 'v':
+                                printf("i3 version " I3_VERSION " © 2009 Michael Stapelberg and contributors\n");
+                                exit(EXIT_SUCCESS);
                         default:
                                 fprintf(stderr, "Usage: %s [-c configfile]\n", argv[0]);
                                 exit(EXIT_FAILURE);
                 }
         }
+
+        LOG("i3 version " I3_VERSION " starting\n");
 
         /* Initialize the table data structures for each workspace */
         init_table();
