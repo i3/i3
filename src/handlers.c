@@ -577,7 +577,9 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 SLIST_FOREACH(focus_client, &(con->workspace->focus_stack), focus_clients)
                         if (focus_client->container == con) {
                                 con->currently_focused = focus_client;
-                                set_focus(conn, focus_client);
+                                /* Only if this is the active container, we need to really change focus */
+                                if (con == CUR_CELL)
+                                        set_focus(conn, focus_client);
                                 break;
                         }
         }
