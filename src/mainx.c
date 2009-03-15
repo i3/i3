@@ -106,6 +106,7 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn, xcb_
                 reparent_window(conn, window, attr->visual, geom->root, geom->depth,
                                 geom->x, geom->y, geom->width, geom->height);
                 xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
+                xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NORMAL_HINTS);
                 xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[_NET_WM_NAME]);
         }
 
