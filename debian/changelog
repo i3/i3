@@ -1,5 +1,5 @@
-i3-wm (1.0-1) unstable; urgency=low
+i3-wm (3.a-1) unstable; urgency=low
 
   * First release
 
- -- Michael Stapelberg <michael+i3@stapelberg.de>  Wed, 11 Mar 2009 23:24:01 +0100
+ -- Michael Stapelberg <michael+i3@stapelberg.de>  Sun, 15 Mar 2009 23:28:45 +0100
