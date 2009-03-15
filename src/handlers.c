@@ -180,6 +180,63 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
         return 1;
 }
 
+/*
+ * Checks if the button press was on a stack window, handles focus setting and returns true
+ * if so, or false otherwise.
+ *
+ */
+static bool button_press_stackwin(xcb_connection_t *conn, xcb_button_press_event_t *event) {
+        struct Stack_Window *stack_win;
+        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
+                if (stack_win->window == event->event) {
+                        /* A stack window was clicked. We calculate the destination client by
+                           dividing the Y position of the event through the height of a window
+                           decoration and then set the focus to this client. */
+                        i3Font *font = load_font(conn, config.font);
+                        int decoration_height = (font->height + 2 + 2);
+                        int destination = (event->event_y / decoration_height),
+                            c = 0;
+                        Client *client;
+
+                        LOG("Click on stack_win for client %d\n", destination);
+                        CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
+                                if (c++ == destination) {
+                                        set_focus(conn, client);
+                                        return true;
+                                }
+
+                        return true;
+                }
+
+        return false;
+}
+
+/*
+ * Checks if the button press was on a bar, switches to the workspace and returns true
+ * if so, or false otherwise.
+ *
+ */
+static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *event) {
+        i3Screen *screen;
+        TAILQ_FOREACH(screen, virtual_screens, screens)
+                if (screen->bar == event->event) {
+                        LOG("Click on a bar\n");
+                        i3Font *font = load_font(conn, config.font);
+                        int workspace = event->event_x / (font->height + 6),
+                            c = 0;
+                        /* Because workspaces can be on different screens, we need to loop
+                           through all of them and decide to count it based on its ->screen */
+                        for (int i = 0; i < 10; i++)
+                                if ((workspaces[i].screen == screen) && (c++ == workspace)) {
+                                        show_workspace(conn, i+1);
+                                        return true;
+                                }
+                        return true;
+                }
+
+        return false;
+}
+
 int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
         LOG("button press!\n");
         /* This was either a focus for a client’s parent (= titlebar)… */
@@ -191,28 +248,14 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         }
         if (client == NULL) {
                 /* The client was neither on a client’s titlebar nor on a client itself, maybe on a stack_window? */
-                struct Stack_Window *stack_win;
-                SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
-                        if (stack_win->window == event->event) {
-                                /* A stack window was clicked. We calculate the destination client by
-                                   dividing the Y position of the event through the height of a window
-                                   decoration and then set the focus to this client. */
-                                i3Font *font = load_font(conn, config.font);
-                                int decoration_height = (font->height + 2 + 2);
-                                int destination = (event->event_y / decoration_height),
-                                    c = 0;
-                                Client *client;
+                if (button_press_stackwin(conn, event))
+                        return 1;
 
-                                LOG("Click on stack_win for client %d\n", destination);
-                                CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
-                                        if (c++ == destination) {
-                                                set_focus(conn, client);
-                                                return 1;
-                                        }
+                /* Or on a bar? */
+                if (button_press_bar(conn, event))
+                        return 1;
 
-                                return 1;
-                        }
-
+                LOG("Could not handle this button press\n");
                 return 1;
         }
 

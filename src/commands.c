@@ -447,7 +447,11 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         render_layout(conn);
 }
 
-static void show_workspace(xcb_connection_t *conn, int workspace) {
+/*
+ * Switches to the given workspace
+ *
+ */
+void show_workspace(xcb_connection_t *conn, int workspace) {
         Client *client;
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */

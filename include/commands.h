@@ -13,6 +13,7 @@
 #ifndef _COMMANDS_H
 #define _COMMANDS_H
 
+void show_workspace(xcb_connection_t *conn, int workspace);
 void parse_command(xcb_connection_t *conn, const char *command);
 
 #endif
