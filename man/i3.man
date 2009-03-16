@@ -49,7 +49,7 @@ Container::
 A container contains a variable number of clients. Each cell of the table is a container.
 +
 Containers can be used in various modes. The default mode is called "default" and just
-resizes each client equally so that it fits. The stacking mode is currently not implemented.
+resizes each client equally so that it fits.
 
 Workspace::
 A workspace is a set of clients (technically speaking, it’s just a table). Other window
@@ -65,7 +65,7 @@ Using Xinerama, you can have an X11 screen spanning multiple real monitors. Furt
 you can set them up in cloning mode or with positions (monitor 1 is left of monitor 2).
 +
 A virtual screen is the result of your Xinerama setup. For example, if you have attached
-two real monitors (let’s say your laptop screen and a beamer) and enabled cloning, i3
+two real monitors (let’s say your laptop screen and a video projector) and enabled cloning, i3
 will use one virtual screen with the size of the smallest screen you have attached (so
 that you can see all your windows on each screen all the time).
 If you have two monitors attached, one configured to be left of the other, i3 will use
