@@ -69,6 +69,7 @@ static bool event_is_ignored(const int sequence) {
                 if (event->sequence == sequence) {
                         LOG("Ignoring event (sequence %d)\n", sequence);
                         SLIST_REMOVE(&ignore_events, event, Ignore_Event, ignore_events);
+                        free(event);
                         return true;
                 }
         }
