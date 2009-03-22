@@ -7,20 +7,20 @@
       <priority>0.8</priority>
    </url>
    <url>
-      <loc>http://i3.zekjur.net/downloads</loc>
+      <loc>http://i3.zekjur.net/downloads/</loc>
       <changefreq>daily</changefreq>
    </url>
    <url>
-      <loc>http://i3.zekjur.net/screenshots</loc>
+      <loc>http://i3.zekjur.net/screenshots/</loc>
       <changefreq>daily</changefreq>
       <priority>0.8</priority>
    </url>
    <url>
-      <loc>http://i3.zekjur.net/contact</loc>
+      <loc>http://i3.zekjur.net/contact/</loc>
       <changefreq>weekly</changefreq>
    </url>
    <url>
-      <loc>http://i3.zekjur.net/docs</loc>
+      <loc>http://i3.zekjur.net/docs/</loc>
       <changefreq>daily</changefreq>
    </url>
 </urlset>
