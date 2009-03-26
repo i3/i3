@@ -154,6 +154,17 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
         if (client == NULL)
                 client = table_get(byChild, event->event);
 
+        /* Check for stack windows */
+        if (client == NULL) {
+                struct Stack_Window *stack_win;
+                SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
+                        if (stack_win->window == event->event) {
+                                client = stack_win->container->currently_focused;
+                                break;
+                        }
+        }
+
+
         /* If not, then the user moved his cursor to the root window. In that case, we adjust c_ws */
         if (client == NULL) {
                 LOG("Getting screen at %d x %d\n", event->root_x, event->root_y);

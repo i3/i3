@@ -298,7 +298,8 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
 
                 /* We want to know when… */
                 mask |= XCB_CW_EVENT_MASK;
-                values[1] =     XCB_EVENT_MASK_BUTTON_PRESS |   /* …mouse is pressed */
+                values[1] =     XCB_EVENT_MASK_ENTER_WINDOW |   /* …mouse is moved into our window */
+                                XCB_EVENT_MASK_BUTTON_PRESS |   /* …mouse is pressed */
                                 XCB_EVENT_MASK_EXPOSURE;        /* …our window needs to be redrawn */
 
                 struct Stack_Window *stack_win = &(container->stack_win);
