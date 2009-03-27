@@ -16,12 +16,14 @@
 #include <string.h>
 
 #include <xcb/xcb.h>
+#include <xcb/xcb_keysyms.h>
 
 #include "util.h"
 #include "xcb.h"
 
 TAILQ_HEAD(cached_fonts_head, Font) cached_fonts = TAILQ_HEAD_INITIALIZER(cached_fonts);
 SLIST_HEAD(colorpixel_head, Colorpixel) colorpixels;
+unsigned int xcb_numlock_mask;
 
 /*
  * Loads a font for usage, getting its height. This function is used very often, so it
@@ -208,4 +210,49 @@ void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window) 
         xcb_flush(conn);
 
         LOG("Told the client it is at %dx%d with %dx%d\n", r.x, r.y, r.width, r.height);
+}
+
+/*
+ * Finds out which modifier mask is the one for numlock, as the user may change this.
+ *
+ */
+void xcb_get_numlock_mask(xcb_connection_t *conn) {
+        xcb_key_symbols_t *keysyms;
+        xcb_get_modifier_mapping_cookie_t cookie;
+        xcb_get_modifier_mapping_reply_t *reply;
+        xcb_keycode_t *modmap, numlock;
+        int mask, i;
+        const int masks[8] = { XCB_MOD_MASK_SHIFT,
+                               XCB_MOD_MASK_LOCK,
+                               XCB_MOD_MASK_CONTROL,
+                               XCB_MOD_MASK_1,
+                               XCB_MOD_MASK_2,
+                               XCB_MOD_MASK_3,
+                               XCB_MOD_MASK_4,
+                               XCB_MOD_MASK_5 };
+
+        /* Request the modifier map */
+        cookie = xcb_get_modifier_mapping_unchecked(conn);
+
+        /* Get the keysymbols */
+        keysyms = xcb_key_symbols_alloc(conn);
+
+        if ((reply = xcb_get_modifier_mapping_reply(conn, cookie, NULL)) == NULL) {
+                xcb_key_symbols_free(keysyms);
+                return;
+        }
+
+        modmap = xcb_get_modifier_mapping_keycodes(reply);
+
+        /* Get the keycode for numlock */
+        numlock = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
+
+        /* Check all modifiers (Mod1-Mod5, Shift, Control, Lock) */
+        for (mask = 0; mask < sizeof(masks); mask++)
+                for (i = 0; i < reply->keycodes_per_modifier; i++)
+                        if (modmap[(mask * reply->keycodes_per_modifier) + i] == numlock)
+                                xcb_numlock_mask = masks[mask];
+
+        xcb_key_symbols_free(keysyms);
+        free(reply);
 }

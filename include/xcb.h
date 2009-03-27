@@ -22,6 +22,9 @@
 #define XCB_CURSOR_SB_H_DOUBLE_ARROW 108
 #define XCB_CURSOR_SB_V_DOUBLE_ARROW 116
 
+/* from X11/keysymdef.h */
+#define XCB_NUM_LOCK                    0xff7f
+
 /* The event masks are defined here because we don’t only set them once but we need to set slight
    variations of them (without XCB_EVENT_MASK_ENTER_WINDOW while rendering the layout) */
 /* The XCB_CW_EVENT_MASK for the child (= real window) */
@@ -51,6 +54,8 @@ enum { _NET_SUPPORTED = 0,
         UTF8_STRING
 };
 
+extern unsigned int xcb_numlock_mask;
+
 i3Font *load_font(xcb_connection_t *conn, const char *pattern);
 uint32_t get_colorpixel(xcb_connection_t *conn, char *hex);
 xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class, int cursor,
@@ -61,5 +66,6 @@ void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext
 void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window);
+void xcb_get_numlock_mask(xcb_connection_t *conn);
 
 #endif

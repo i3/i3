@@ -503,13 +503,22 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTING_WM_CHECK], WINDOW, 32, 1, &root);
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_WM_NAME], atoms[UTF8_STRING], 8, strlen("i3"), "i3");
 
+        xcb_get_numlock_mask(conn);
+
         /* Grab the bound keys */
         Binding *bind;
         TAILQ_FOREACH(bind, &bindings, bindings) {
                 LOG("Grabbing %d\n", bind->keycode);
                 if (bind->mods & BIND_MODE_SWITCH)
                         xcb_grab_key(conn, 0, root, 0, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
-                else xcb_grab_key(conn, 0, root, bind->mods, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+                else {
+                        /* Grab the key in all combinations */
+                        #define GRAB_KEY(modifier) xcb_grab_key(conn, 0, root, modifier, bind->keycode, \
+                                                                XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC)
+                        GRAB_KEY(bind->mods);
+                        GRAB_KEY(bind->mods | xcb_numlock_mask);
+                        GRAB_KEY(bind->mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
+                }
         }
 
         /* check for Xinerama */

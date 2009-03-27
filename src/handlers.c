@@ -107,7 +107,7 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
         LOG("state %d\n", event->state);
 
         /* Remove the numlock bit, all other bits are modifiers we can bind to */
-        uint16_t state_filtered = event->state & ~XCB_MOD_MASK_LOCK;
+        uint16_t state_filtered = event->state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK);
 
         /* Find the binding */
         Binding *bind;
