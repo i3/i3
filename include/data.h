@@ -48,6 +48,7 @@ typedef struct Font i3Font;
 typedef struct Container Container;
 typedef struct Client Client;
 typedef struct Binding Binding;
+typedef struct Autostart Autostart;
 typedef struct Workspace Workspace;
 typedef struct Rect Rect;
 typedef struct Screen i3Screen;
@@ -189,6 +190,16 @@ struct Binding {
         char *command;
 
         TAILQ_ENTRY(Binding) bindings;
+};
+
+/*
+ * Holds a command specified by an exec-line in the config (see src/config.c)
+ *
+ */
+struct Autostart {
+        /* Command, like in command mode */
+        char *command;
+        TAILQ_ENTRY(Autostart) autostarts;
 };
 
 /*

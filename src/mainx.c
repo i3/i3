@@ -52,6 +52,9 @@ Display *xkbdpy;
 /* The list of key bindings */
 struct bindings_head bindings = TAILQ_HEAD_INITIALIZER(bindings);
 
+/* The list of exec-lines */
+struct autostarts_head autostarts = TAILQ_HEAD_INITIALIZER(autostarts);
+
 /* This is a list of Stack_Windows, global, for easier/faster access on expose events */
 struct stack_wins_head stack_wins = SLIST_HEAD_INITIALIZER(stack_wins);
 
@@ -525,6 +528,13 @@ int main(int argc, char *argv[], char *env[]) {
                         GRAB_KEY(bind->mods | xcb_numlock_mask);
                         GRAB_KEY(bind->mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
                 }
+        }
+
+        /* Autostarting exec-lines */
+        Autostart *exec;
+        TAILQ_FOREACH(exec, &autostarts, autostarts) {
+                LOG("auto-starting %s\n", exec->command);
+                start_application(exec->command);
         }
 
         /* check for Xinerama */

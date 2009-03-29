@@ -85,6 +85,15 @@ void load_configuration(const char *override_configpath) {
                 OPTION_STRING(terminal);
                 OPTION_STRING(font);
 
+                /* exec-lines (autostart) */
+                if (strcasecmp(key, "exec") == 0) {
+                        Autostart *new = smalloc(sizeof(Autostart));
+                        new->command = sstrdup(value);
+                        TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
+                        continue;
+                }
+
+                /* key bindings */
                 if (strcasecmp(key, "bind") == 0) {
                         #define CHECK_MODIFIER(name) \
                                 if (strncasecmp(walk, #name, strlen(#name)) == 0) { \
