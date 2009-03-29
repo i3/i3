@@ -10,10 +10,10 @@ Package: i3
 Architecture: any
 Priority: optional
 Section: x11
-Depends: i3-wm
+Depends: i3-wm, ${misc:Depends}
 Recommends: i3lock, dwm-tools
-Description: meta package (i3 window manager, i3lock (screen locker), dwm-tools)
- This meta-package installs the i3 window manager (i3-wm), the i3lock screen
+Description: metapackage (i3 window manager, i3lock (screen locker), dwm-tools)
+ This metapackage installs the i3 window manager (i3-wm), the i3lock screen
  locker (slightly improved version of slock) and dwm-tools which contains dmenu.
  These are all the tools you need to use the i3 window manager efficiently.
 
