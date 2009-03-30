@@ -249,6 +249,9 @@ struct Client {
            legacy window names are ignored. */
         bool uses_net_wm_name;
 
+        /* Holds the WM_CLASS, useful for matching the client in commands */
+        char *window_class;
+
         /* fullscreen is pretty obvious */
         bool fullscreen;
 

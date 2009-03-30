@@ -105,6 +105,7 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn, xcb_
         if (attr && geom) {
                 reparent_window(conn, window, attr->visual, geom->root, geom->depth,
                                 geom->x, geom->y, geom->width, geom->height);
+                xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_CLASS);
                 xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
                 xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NORMAL_HINTS);
                 xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[_NET_WM_NAME]);
@@ -497,6 +498,9 @@ int main(int argc, char *argv[], char *env[]) {
 
         /* Watch WM_NAME (= title of the window in compound text) property for legacy applications */
         xcb_watch_wm_name(&prophs, 128, handle_windowname_change_legacy, NULL);
+
+        /* Watch WM_CLASS (= class of the window) */
+        xcb_property_set_handler(&prophs, WM_CLASS, 128, handle_windowclass_change, NULL);
 
         /* Set up the atoms we support */
         check_error(conn, xcb_change_property_checked(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED],

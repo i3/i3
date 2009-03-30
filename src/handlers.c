@@ -744,8 +744,7 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         client->name_len = new_len;
         client->uses_net_wm_name = true;
 
-        if (old_name != NULL)
-                free(old_name);
+        FREE(old_name);
 
         /* If the client is a dock window, we don’t need to render anything */
         if (client->dock)
@@ -823,6 +822,35 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
                 render_container(conn, client->container);
         else decorate_window(conn, client, client->frame, client->titlegc, 0);
         xcb_flush(conn);
+
+        return 1;
+}
+
+/*
+ * Updates the client’s WM_CLASS property
+ *
+ */
+int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
+                             xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
+        LOG("window class changed\n");
+        if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+                LOG("prop == NULL\n");
+                return 1;
+        }
+        Client *client = table_get(byChild, window);
+        if (client == NULL)
+                return 1;
+        char *new_class;
+        if (asprintf(&new_class, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop)) == -1) {
+                perror("Could not get window class");
+                LOG("Could not get window class\n");
+                return 1;
+        }
+
+        LOG("changed to %s\n", new_class);
+        char *old_class = client->window_class;
+        client->window_class = new_class;
+        FREE(old_class);
 
         return 1;
 }

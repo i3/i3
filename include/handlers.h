@@ -85,7 +85,15 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
  *
  */
 int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t state,
-                                xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop);
+                                    xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop);
+
+/**
+ * Store the window classes for jumping to them later.
+ *
+ */
+int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
+                              xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop);
+
 
 /**
  * Expose event means we should redraw our windows (= title bar)
