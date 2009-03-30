@@ -17,6 +17,10 @@ with := <w> { [ <times> ] <where> }+ <space> <cmd>
 
 oder
 
+jump := <workspace> [ <column> <row> ]
+
+oder
+
 special := [ exec <path> | kill | exit | restart ]
 
 an jeder Stelle kann mit escape abgebrochen werden

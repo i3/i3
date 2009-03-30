@@ -595,7 +595,7 @@ static void jump_to_container(xcb_connection_t *conn, const char* arg_str) {
         int ws, row, col;
         int result;
 
-        result = sscanf(arg_str, "%d %d %d", &ws, &row, &col);
+        result = sscanf(arg_str, "%d %d %d", &ws, &col, &row);
         LOG("Jump called with %d parameters (\"%s\")\n", result, arg_str);
 
         /* No match? Either no arguments were specified, or no numbers */
@@ -616,7 +616,7 @@ static void jump_to_container(xcb_connection_t *conn, const char* arg_str) {
         if (col >= c_ws->cols)
                 col = c_ws->cols - 1;
 
-        LOG("Jumping to row %d, col %d\n", row, col);
+        LOG("Jumping to row %d, col %d\n", col, row);
         if (c_ws->table[col][row]->currently_focused != NULL)
                 set_focus(conn, c_ws->table[col][row]->currently_focused);
 }
