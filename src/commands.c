@@ -589,31 +589,34 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
  * Jump directly to the specified workspace, row and col.
  * Great for reaching windows that you always keep in the
  * same spot (hello irssi, I'm looking at you)
+ *
  */
 static void jump_to_container(xcb_connection_t *conn, const char* arg_str) {
-        int ws,row,col;
+        int ws, row, col;
         int result;
 
-        result = sscanf(arg_str, "%i %i %i", &ws, &row, &col);
-        LOG("Jump called with parameters '%s', which parses as %i numbers\n", arg_str, result);
+        result = sscanf(arg_str, "%d %d %d", &ws, &row, &col);
+        LOG("Jump called with %d parameters (\"%s\")\n", result, arg_str);
 
-        /* No match? (This is technically a syntax error, but who cares.) */
-        if(result < 1)
-          return;
+        /* No match? Either no arguments were specified, or no numbers */
+        if (result < 1) {
+                LOG("At least one valid argument required\n");
+                return;
+        }
 
         /* Move to the target workspace */
         show_workspace(conn, ws);
 
-        if(result < 3)
-          return;
+        if (result < 3)
+                return;
 
         /* Move to row/col */
-        if(row >= c_ws->rows)
-          row = c_ws->rows - 1;
-        if(col >= c_ws->cols)
-          col = c_ws->cols - 1;
+        if (row >= c_ws->rows)
+                row = c_ws->rows - 1;
+        if (col >= c_ws->cols)
+                col = c_ws->cols - 1;
 
-        LOG("Jumping to row %i, col %i\n", row, col);
+        LOG("Jumping to row %d, col %d\n", row, col);
         if (c_ws->table[col][row]->currently_focused != NULL)
                 set_focus(conn, c_ws->table[col][row]->currently_focused);
 }
@@ -661,7 +664,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         /* Is it a jump to a specified workspae,row,col? */
         if (STARTS_WITH(command, "jump ")) {
-                jump_to_container(conn, command+strlen("jump "));
+                jump_to_container(conn, command + strlen("jump "));
                 return;
         }
 
