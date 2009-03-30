@@ -206,14 +206,14 @@ void initialize_xinerama(xcb_connection_t *conn) {
         xcb_xinerama_is_active_reply_t *reply;
         reply = xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL);
 
-        if (!reply->state) {
+        if (reply == NULL || !reply->state) {
                 LOG("Xinerama is not active (in your X-Server), disabling.\n");
-                free(reply);
+                FREE(reply);
                 disable_xinerama(conn);
                 return;
         }
 
-        free(reply);
+        FREE(reply);
 
         query_screens(conn, virtual_screens);
 

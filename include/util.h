@@ -24,6 +24,13 @@
 #define FOR_TABLE(workspace) \
                         for (int cols = 0; cols < workspace->cols; cols++) \
                                 for (int rows = 0; rows < workspace->rows; rows++)
+#define FREE(pointer) do { \
+        if (pointer == NULL) { \
+                free(pointer); \
+                pointer = NULL; \
+        } \
+} \
+while (0)
 
 /* ##__VA_ARGS__ means: leave out __VA_ARGS__ completely if it is empty, that is,
    delete the preceding comma */
