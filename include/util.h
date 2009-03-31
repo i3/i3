@@ -22,8 +22,8 @@
 #define CIRCLEQ_PREV_OR_NULL(head, elm, field) (CIRCLEQ_PREV(elm, field) != CIRCLEQ_END(head) ? \
                                                 CIRCLEQ_PREV(elm, field) : NULL)
 #define FOR_TABLE(workspace) \
-                        for (int cols = 0; cols < workspace->cols; cols++) \
-                                for (int rows = 0; rows < workspace->rows; rows++)
+                        for (int cols = 0; cols < (workspace)->cols; cols++) \
+                                for (int rows = 0; rows < (workspace)->rows; rows++)
 #define FREE(pointer) do { \
         if (pointer == NULL) { \
                 free(pointer); \

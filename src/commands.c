@@ -586,17 +586,92 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
 }
 
 /*
- * Jump directly to the specified workspace, row and col.
- * Great for reaching windows that you always keep in the
- * same spot (hello irssi, I'm looking at you)
+ * Checks if the given window class and title match the given client
+ * Window title is passed as "normal" string and as UCS-2 converted string for
+ * matching _NET_WM_NAME capable clients as well as those using legacy hints.
  *
  */
-static void jump_to_container(xcb_connection_t *conn, const char* arg_str) {
+static bool client_matches_class_name(Client *client, char *to_class, char *to_title,
+                                      char *to_title_ucs, int to_title_ucs_len) {
+        /* Check if the given class is part of the window class */
+        if (strcasestr(client->window_class, to_class) == NULL)
+                return false;
+
+        /* If no title was given, we’re done */
+        if (to_title == NULL)
+                return true;
+
+        if (client->name_len > -1) {
+                /* UCS-2 converted window titles */
+                if (memmem(client->name, (client->name_len * 2), to_title_ucs, (to_title_ucs_len * 2)) == NULL)
+                        return false;
+        } else {
+                /* Legacy hints */
+                if (strcasestr(client->name, to_title) == NULL)
+                        return false;
+        }
+
+        return true;
+}
+
+/*
+ * Jumps to the given window class / title.
+ * Title is matched using strstr, that is, matches if it appears anywhere
+ * in the string. Regular expressions seem to be a bit overkill here. However,
+ * if we need them for something else somewhen, we may introduce them here, too.
+ *
+ */
+static void jump_to_window(xcb_connection_t *conn, const char *arguments) {
+        char *to_class, *to_title, *to_title_ucs = NULL;
+        int to_title_ucs_len;
+
+        /* The first character is a quote, this was checked before */
+        to_class = sstrdup(arguments+1);
+        /* The last character is a quote, we just set it to NULL */
+        to_class[strlen(to_class)-1] = '\0';
+
+        /* If a title was specified, split both strings at the slash */
+        if ((to_title = strstr(to_class, "/")) != NULL) {
+                *(to_title++) = '\0';
+                /* Convert to UCS-2 */
+                to_title_ucs = convert_utf8_to_ucs2(to_title, &to_title_ucs_len);
+        }
+
+        LOG("Should jump to class \"%s\" / title \"%s\"\n", to_class, to_title);
+        for (int workspace = 0; workspace < 10; workspace++) {
+                if (workspaces[workspace].screen == NULL)
+                        continue;
+
+                FOR_TABLE(&(workspaces[workspace])) {
+                        Container *con = workspaces[workspace].table[cols][rows];
+                        Client *client;
+
+                        CIRCLEQ_FOREACH(client, &(con->clients), clients) {
+                                LOG("Checking client with class=%s, name=%s\n", client->window_class, client->name);
+                                if (client_matches_class_name(client, to_class, to_title, to_title_ucs, to_title_ucs_len)) {
+                                        set_focus(conn, client);
+                                        goto done;
+                                }
+                        }
+                }
+        }
+
+done:
+        free(to_class);
+        FREE(to_title_ucs);
+}
+
+/*
+ * Jump directly to the specified workspace, row and col.
+ * Great for reaching windows that you always keep in the same spot (hello irssi, I'm looking at you)
+ *
+ */
+static void jump_to_container(xcb_connection_t *conn, const char *arguments) {
         int ws, row, col;
         int result;
 
-        result = sscanf(arg_str, "%d %d %d", &ws, &col, &row);
-        LOG("Jump called with %d parameters (\"%s\")\n", result, arg_str);
+        result = sscanf(arguments, "%d %d %d", &ws, &col, &row);
+        LOG("Jump called with %d parameters (\"%s\")\n", result, arguments);
 
         /* No match? Either no arguments were specified, or no numbers */
         if (result < 1) {
@@ -664,7 +739,10 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         /* Is it a jump to a specified workspae,row,col? */
         if (STARTS_WITH(command, "jump ")) {
-                jump_to_container(conn, command + strlen("jump "));
+                const char *arguments = command + strlen("jump ");
+                if (arguments[0] == '"')
+                        jump_to_window(conn, arguments);
+                else jump_to_container(conn, arguments);
                 return;
         }
 

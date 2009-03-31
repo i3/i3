@@ -17,7 +17,7 @@ with := <w> { [ <times> ] <where> }+ <space> <cmd>
 
 oder
 
-jump := <workspace> [ <column> <row> ]
+jump := [ "<window class>[/<window title>]" | <workspace> [ <column> <row> ] ]
 
 oder
 
