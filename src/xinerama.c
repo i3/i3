@@ -208,14 +208,11 @@ void initialize_xinerama(xcb_connection_t *conn) {
 
         if (reply == NULL || !reply->state) {
                 LOG("Xinerama is not active (in your X-Server), disabling.\n");
-                FREE(reply);
                 disable_xinerama(conn);
-                return;
-        }
+        } else
+                query_screens(conn, virtual_screens);
 
         FREE(reply);
-
-        query_screens(conn, virtual_screens);
 
         i3Screen *s;
         num_screens = 0;
