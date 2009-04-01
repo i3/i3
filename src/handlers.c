@@ -187,7 +187,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
                 return 1;
         }
 
-        set_focus(conn, client);
+        set_focus(conn, client, false);
 
         return 1;
 }
@@ -223,7 +223,7 @@ static bool button_press_stackwin(xcb_connection_t *conn, xcb_button_press_event
                 LOG("Click on stack_win for client %d\n", destination);
                 CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
                         if (c++ == destination) {
-                                set_focus(conn, client);
+                                set_focus(conn, client, true);
                                 return true;
                         }
 
@@ -297,7 +297,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 
         /* Set focus in any case */
-        set_focus(conn, client);
+        set_focus(conn, client, true);
 
         /* Let’s see if this was on the borders (= resize). If not, we’re done */
         LOG("press button on x=%d, y=%d\n", event->event_x, event->event_y);
@@ -616,7 +616,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                                 con->currently_focused = focus_client;
                                 /* Only if this is the active container, we need to really change focus */
                                 if (con == CUR_CELL)
-                                        set_focus(conn, focus_client);
+                                        set_focus(conn, focus_client, false);
                                 break;
                         }
         }

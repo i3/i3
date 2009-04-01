@@ -289,7 +289,7 @@ void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
                 current_row = c_ws->rows-1;
 
         if (CUR_CELL->currently_focused != NULL)
-                set_focus(conn, CUR_CELL->currently_focused);
+                set_focus(conn, CUR_CELL->currently_focused, true);
 }
 
 /*

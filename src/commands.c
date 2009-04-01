@@ -45,7 +45,7 @@ bool focus_window_in_container(xcb_connection_t *conn, Container *container, dir
                 return false;
 
         /* Set focus */
-        set_focus(conn, candidate);
+        set_focus(conn, candidate, true);
 
         return true;
 }
@@ -122,7 +122,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                 new_row = (t_ws->rows - 1);
 
         if (t_ws->table[new_col][new_row]->currently_focused != NULL)
-                set_focus(conn, t_ws->table[new_col][new_row]->currently_focused);
+                set_focus(conn, t_ws->table[new_col][new_row]->currently_focused, true);
 }
 
 /*
@@ -235,7 +235,7 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
 
         render_layout(conn);
 
-        set_focus(conn, current_client);
+        set_focus(conn, current_client, true);
 }
 
 static void move_current_container(xcb_connection_t *conn, direction_t direction) {
@@ -546,7 +546,7 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
 
         /* Restore focus on the new workspace */
         if (CUR_CELL->currently_focused != NULL)
-                set_focus(conn, CUR_CELL->currently_focused);
+                set_focus(conn, CUR_CELL->currently_focused, true);
         else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
 
         //xcb_ungrab_server(conn);

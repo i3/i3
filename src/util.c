@@ -208,7 +208,7 @@ void remove_client_from_container(xcb_connection_t *conn, Client *client, Contai
  * the user the new focus situation)
  *
  */
-void set_focus(xcb_connection_t *conn, Client *client) {
+void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         /* The dock window cannot be focused, but enter notifies are still handled correctly */
         if (client->dock)
                 return;
@@ -216,7 +216,12 @@ void set_focus(xcb_connection_t *conn, Client *client) {
         /* Store the old client */
         Client *old_client = CUR_CELL->currently_focused;
 
-        /* TODO: check if the focus needs to be changed at all */
+        /* Check if the focus needs to be changed at all */
+        if (!set_anyways && (old_client == client)) {
+                LOG("old_client == client, not changing focus\n");
+                return;
+        }
+
         /* Store current_row/current_col */
         c_ws->current_row = current_row;
         c_ws->current_col = current_col;
