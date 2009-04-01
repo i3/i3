@@ -24,8 +24,7 @@
 #include "i3.h"
 #include "xinerama.h"
 
-static bool focus_window_in_container(xcb_connection_t *conn, Container *container,
-                direction_t direction) {
+bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction) {
         /* If this container is empty, we’re done */
         if (container->currently_focused == NULL)
                 return false;

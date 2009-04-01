@@ -199,26 +199,36 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
  */
 static bool button_press_stackwin(xcb_connection_t *conn, xcb_button_press_event_t *event) {
         struct Stack_Window *stack_win;
-        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
-                if (stack_win->window == event->event) {
-                        /* A stack window was clicked. We calculate the destination client by
-                           dividing the Y position of the event through the height of a window
-                           decoration and then set the focus to this client. */
-                        i3Font *font = load_font(conn, config.font);
-                        int decoration_height = (font->height + 2 + 2);
-                        int destination = (event->event_y / decoration_height),
-                            c = 0;
-                        Client *client;
+        SLIST_FOREACH(stack_win, &stack_wins, stack_windows) {
+                if (stack_win->window != event->event)
+                        continue;
 
-                        LOG("Click on stack_win for client %d\n", destination);
-                        CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
-                                if (c++ == destination) {
-                                        set_focus(conn, client);
-                                        return true;
-                                }
-
+                /* A stack window was clicked, we check if it was button4 or button5
+                   which are scroll up / scroll down. */
+                if (event->detail == XCB_BUTTON_INDEX_4 || event->detail == XCB_BUTTON_INDEX_5) {
+                        direction_t direction = (event->detail == XCB_BUTTON_INDEX_4 ? D_UP : D_DOWN);
+                        focus_window_in_container(conn, CUR_CELL, direction);
                         return true;
                 }
+
+                /* It was no scrolling, so we calculate the destination client by
+                   dividing the Y position of the event through the height of a window
+                   decoration and then set the focus to this client. */
+                i3Font *font = load_font(conn, config.font);
+                int decoration_height = (font->height + 2 + 2);
+                int destination = (event->event_y / decoration_height),
+                    c = 0;
+                Client *client;
+
+                LOG("Click on stack_win for client %d\n", destination);
+                CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
+                        if (c++ == destination) {
+                                set_focus(conn, client);
+                                return true;
+                        }
+
+                return true;
+        }
 
         return false;
 }
@@ -230,21 +240,33 @@ static bool button_press_stackwin(xcb_connection_t *conn, xcb_button_press_event
  */
 static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *event) {
         i3Screen *screen;
-        TAILQ_FOREACH(screen, virtual_screens, screens)
-                if (screen->bar == event->event) {
-                        LOG("Click on a bar\n");
-                        i3Font *font = load_font(conn, config.font);
-                        int workspace = event->event_x / (font->height + 6),
-                            c = 0;
-                        /* Because workspaces can be on different screens, we need to loop
-                           through all of them and decide to count it based on its ->screen */
-                        for (int i = 0; i < 10; i++)
-                                if ((workspaces[i].screen == screen) && (c++ == workspace)) {
-                                        show_workspace(conn, i+1);
-                                        return true;
-                                }
+        TAILQ_FOREACH(screen, virtual_screens, screens) {
+                if (screen->bar != event->event)
+                        continue;
+
+                LOG("Click on a bar\n");
+
+                /* Check if the button was one of button4 or button5 (scroll up / scroll down) */
+                if (event->detail == XCB_BUTTON_INDEX_4 || event->detail == XCB_BUTTON_INDEX_5) {
+                        int dest_workspace = (event->detail == XCB_BUTTON_INDEX_4 ?
+                                              c_ws->num - 1 :
+                                              c_ws->num + 1);
+                        if ((dest_workspace >= 0) && (dest_workspace < 10))
+                                show_workspace(conn, dest_workspace+1);
                         return true;
                 }
+                i3Font *font = load_font(conn, config.font);
+                int workspace = event->event_x / (font->height + 6),
+                    c = 0;
+                /* Because workspaces can be on different screens, we need to loop
+                   through all of them and decide to count it based on its ->screen */
+                for (int i = 0; i < 10; i++)
+                        if ((workspaces[i].screen == screen) && (c++ == workspace)) {
+                                show_workspace(conn, i+1);
+                                return true;
+                        }
+                return true;
+        }
 
         return false;
 }
