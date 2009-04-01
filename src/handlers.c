@@ -586,10 +586,6 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 /* Remove the client from the list of clients */
                 remove_client_from_container(conn, client, con);
 
-                /* Remove from the focus stack */
-                LOG("Removing from focus stack\n");
-                SLIST_REMOVE(&(con->workspace->focus_stack), client, Client, focus_clients);
-
                 /* Set focus to the last focused client in this container */
                 con->currently_focused = NULL;
                 Client *focus_client;

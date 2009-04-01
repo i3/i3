@@ -191,6 +191,8 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
 void remove_client_from_container(xcb_connection_t *conn, Client *client, Container *container) {
         CIRCLEQ_REMOVE(&(container->clients), client, clients);
 
+        SLIST_REMOVE(&(container->workspace->focus_stack), client, Client, focus_clients);
+
         /* If the container will be empty now and is in stacking mode, we need to
            unmap the stack_win */
         if (CIRCLEQ_EMPTY(&(container->clients)) && container->mode == MODE_STACK) {
