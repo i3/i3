@@ -207,9 +207,7 @@ void remove_client_from_container(xcb_connection_t *conn, Client *client, Contai
  *
  */
 void set_focus(xcb_connection_t *conn, Client *client) {
-        /* The dock window cannot be focused */
-        /* TODO: does this play well with dzen2’s popup menus? or do we just need to set the input
-           focus but not update our internal structures? */
+        /* The dock window cannot be focused, but enter notifies are still handled correctly */
         if (client->dock)
                 return;
 
