@@ -485,6 +485,14 @@ void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bo
                 }
 }
 
+/*
+ * Renders the whole layout, that is: Go through each screen, each workspace, each container
+ * and render each client. This also renders the bars.
+ *
+ * If you don’t need to render *everything*, you should call render_container on the container
+ * you want to refresh.
+ *
+ */
 void render_layout(xcb_connection_t *conn) {
         i3Screen *screen;
         i3Font *font = load_font(conn, config.font);

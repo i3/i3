@@ -9,6 +9,13 @@ struct Config {
 	const char *font;
 };
 
+/**
+ * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
+ *
+ * If you specify override_configpath, only this path is used to look for a
+ * configuration file.
+ *
+ */
 void load_configuration(const char *override_configfile);
 
 #endif

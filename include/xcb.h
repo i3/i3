@@ -56,16 +56,64 @@ enum { _NET_SUPPORTED = 0,
 
 extern unsigned int xcb_numlock_mask;
 
+/**
+ * Loads a font for usage, getting its height. This function is used very often, so it
+ * maintains a cache.
+ *
+ */
 i3Font *load_font(xcb_connection_t *conn, const char *pattern);
+
+/**
+ * Returns the colorpixel to use for the given hex color (think of HTML).
+ *
+ * The hex_color has to start with #, for example #FF00FF.
+ *
+ * NOTE that get_colorpixel() does _NOT_ check the given color code for validity.
+ * This has to be done by the caller.
+ *
+ */
 uint32_t get_colorpixel(xcb_connection_t *conn, char *hex);
+
+/**
+ * Convenience wrapper around xcb_create_window which takes care of depth, generating an ID and checking
+ * for errors.
+ *
+ */
 xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class, int cursor,
                            uint32_t mask, uint32_t *values);
+
+/**
+ * Changes a single value in the graphic context (so one doesn’t have to define an array of values)
+ *
+ */
 void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t mask, uint32_t value);
+
+/**
+ * Draws a line from x,y to to_x,to_y using the given color
+ *
+ */
 void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t to_x, uint32_t to_y);
+
+/**
+ * Draws a rectangle from x,y with width,height using the given color
+ *
+ */
 void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+
+/**
+ * Generates a configure_notify event and sends it to the given window
+ * Applications need this to think they’ve configured themselves correctly.
+ * The truth is, however, that we will manage them.
+ *
+ */
 void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window);
+
+/**
+ * Finds out which modifier mask is the one for numlock, as the user may change this.
+ *
+ */
 void xcb_get_numlock_mask(xcb_connection_t *conn);
 
 #endif

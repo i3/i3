@@ -39,20 +39,116 @@ while (0)
 
 int min(int a, int b);
 int max(int a, int b);
+
+/**
+ * Logs the given message to stdout while prefixing the current time to it.
+ * This is to be called by LOG() which includes filename/linenumber
+ *
+ */
 void slog(char *fmt, ...);
+
+/**
+ * Prints the message (see printf()) to stderr, then exits the program.
+ *
+ */
 void die(char *fmt, ...);
+
+/**
+ * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that there
+ * is no more memory available)
+ *
+ */
 void *smalloc(size_t size);
+
+/**
+ * Safe-wrapper around calloc which exits if malloc returns NULL (meaning that there
+ * is no more memory available)
+ *
+ */
 void *scalloc(size_t size);
+
+/**
+ * Safe-wrapper around strdup which exits if malloc returns NULL (meaning that there
+ * is no more memory available)
+ *
+ */
 char *sstrdup(const char *str);
+
+/**
+ * Starts the given application by passing it through a shell. We use double fork
+ * to avoid zombie processes. As the started application’s parent exits (immediately),
+ * the application is reparented to init (process-id 1), which correctly handles
+ * childs, so we don’t have to do it :-).
+ *
+ * The shell is determined by looking for the SHELL environment variable. If it
+ * does not exist, /bin/sh is used.
+ *
+ */
 void start_application(const char *command);
+
+/**
+ * Checks a generic cookie for errors and quits with the given message if there
+ * was an error.
+ *
+ */
 void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_message);
+
+/**
+ * Converts the given string to UCS-2 big endian for use with
+ * xcb_image_text_16(). The amount of real glyphs is stored in real_strlen,
+ * a buffer containing the UCS-2 encoded string (16 bit per glyph) is
+ * returned. It has to be freed when done.
+ *
+ */
 char *convert_utf8_to_ucs2(char *input, int *real_strlen);
+
+/**
+ * Removes the given client from the container, either because it will be inserted into another
+ * one or because it was unmapped
+ *
+ */
 void remove_client_from_container(xcb_connection_t *conn, Client *client, Container *container);
+
+/**
+ * Sets the given client as focused by updating the data structures correctly,
+ * updating the X input focus and finally re-decorating both windows (to signalize
+ * the user the new focus situation)
+ *
+ */
 void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways);
+
+/**
+ * Called when the user switches to another mode or when the container is
+ * destroyed and thus needs to be cleaned up.
+ *
+ */
 void leave_stack_mode(xcb_connection_t *conn, Container *container);
+
+/**
+ * Switches the layout of the given container taking care of the necessary house-keeping
+ *
+ */
 void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode);
+
+/**
+ * Warps the pointer into the given client (in the middle of it, to be specific), therefore
+ * selecting it
+ *
+ */
 void warp_pointer_into(xcb_connection_t *conn, Client *client);
+
+/**
+ * Toggles fullscreen mode for the given client. It updates the data structures and
+ * reconfigures (= resizes/moves) the client and its frame to the full size of the
+ * screen. When leaving fullscreen, re-rendering the layout is forced.
+ *
+ */
 void toggle_fullscreen(xcb_connection_t *conn, Client *client);
+
+/**
+ * Kills the given window using WM_DELETE_WINDOW or xcb_kill_window
+ *
+ */
 void kill_window(xcb_connection_t *conn, Client *window);
 
 #endif

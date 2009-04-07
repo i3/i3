@@ -211,6 +211,10 @@ static void move_rows_from(xcb_connection_t *conn, Workspace *workspace, int row
                 }
 }
 
+/*
+ * Prints the table’s contents in human-readable form for debugging
+ *
+ */
 void dump_table(xcb_connection_t *conn, Workspace *workspace) {
         LOG("dump_table()\n");
         FOR_TABLE(workspace) {
