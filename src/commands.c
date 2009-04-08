@@ -505,8 +505,11 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
         }
 
         /* Check if we need to change something or if we’re already there */
-        if (c_ws->screen->current_workspace == (workspace-1))
+        if (c_ws->screen->current_workspace == (workspace-1)) {
+                if (CUR_CELL->currently_focused != NULL)
+                        set_focus(conn, CUR_CELL->currently_focused, true);
                 return;
+        }
 
         t_ws->screen->current_workspace = workspace-1;
 
