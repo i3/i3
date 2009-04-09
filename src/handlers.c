@@ -643,7 +643,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                         break;
                 }
 
-        if (workspace_empty)
+        if (workspace_empty && (c_ws != client->workspace))
                 client->workspace->screen = NULL;
 
         free(client);
