@@ -173,7 +173,11 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
                         LOG("ERROR: No such screen\n");
                         return 0;
                 }
+                c_ws->current_row = current_row;
+                c_ws->current_col = current_col;
                 c_ws = &workspaces[screen->current_workspace];
+                current_row = c_ws->current_row;
+                current_col = c_ws->current_col;
                 LOG("We're now on virtual screen number %d\n", screen->num);
                 return 1;
         }
