@@ -462,6 +462,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
  */
 void show_workspace(xcb_connection_t *conn, int workspace) {
         Client *client;
+        bool need_warp = false;
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */
         Workspace *t_ws = &(workspaces[workspace-1]);
@@ -491,7 +492,7 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
                 current_col = c_ws->current_col;
                 current_row = c_ws->current_row;
                 if (CUR_CELL->currently_focused != NULL)
-                        warp_pointer_into(conn, CUR_CELL->currently_focused);
+                        need_warp = true;
                 else {
                         Rect *dims = &(c_ws->screen->rect);
                         xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0,
@@ -558,9 +559,11 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
         ignore_enter_notify_forall(conn, c_ws, false);
 
         /* Restore focus on the new workspace */
-        if (CUR_CELL->currently_focused != NULL)
+        if (CUR_CELL->currently_focused != NULL) {
                 set_focus(conn, CUR_CELL->currently_focused, true);
-        else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
+                if (need_warp)
+                        warp_pointer_into(conn, CUR_CELL->currently_focused);
+        } else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
 
         //xcb_ungrab_server(conn);
 
