@@ -623,7 +623,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 
         if (client->dock) {
                 LOG("Removing from dock clients\n");
-                SLIST_REMOVE(&(client->workspace->dock_clients), client, Client, dock_clients);
+                SLIST_REMOVE(&(client->workspace->screen->dock_clients), client, Client, dock_clients);
         }
 
         LOG("child of 0x%08x.\n", client->frame);

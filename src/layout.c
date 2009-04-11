@@ -389,7 +389,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
 
 static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int *height) {
         Client *client;
-        SLIST_FOREACH(client, &(r_ws->dock_clients), dock_clients) {
+        SLIST_FOREACH(client, &(r_ws->screen->dock_clients), dock_clients) {
                 LOG("client is at %d, should be at %d\n", client->rect.y, *height);
                 if (client->force_reconfigure |
                     update_if_necessary(&(client->rect.x), 0) |
@@ -510,7 +510,7 @@ void render_layout(xcb_connection_t *conn) {
 
                 /* Reserve space for dock clients */
                 Client *client;
-                SLIST_FOREACH(client, &(r_ws->dock_clients), dock_clients)
+                SLIST_FOREACH(client, &(screen->dock_clients), dock_clients)
                         height -= client->desired_height;
 
                 /* Space for the internal bar */

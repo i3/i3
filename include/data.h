@@ -143,9 +143,6 @@ struct Workspace {
 
         Client *fullscreen_client;
 
-        /* Contains all clients with _NET_WM_WINDOW_TYPE == _NET_WM_WINDOW_TYPE_DOCK */
-        SLIST_HEAD(dock_clients_head, Client) dock_clients;
-
         /* The focus stack contains the clients in the correct order of focus so that
            the focus can be reverted correctly when a client is closed */
         SLIST_HEAD(focus_stack_head, Client) focus_stack;
@@ -316,6 +313,9 @@ struct Screen {
         /* The bar window */
         xcb_window_t bar;
         xcb_gcontext_t bargc;
+
+        /* Contains all clients with _NET_WM_WINDOW_TYPE == _NET_WM_WINDOW_TYPE_DOCK */
+        SLIST_HEAD(dock_clients_head, Client) dock_clients;
 
         TAILQ_ENTRY(Screen) screens;
 };

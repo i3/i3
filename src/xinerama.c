@@ -182,6 +182,8 @@ static void initialize_screen(xcb_connection_t *conn, i3Screen *screen, Workspac
         screen->bargc = xcb_generate_id(conn);
         xcb_create_gc(conn, screen->bargc, screen->bar, 0, 0);
 
+        SLIST_INIT(&(screen->dock_clients));
+
         /* Copy dimensions */
         memcpy(&(workspace->rect), &(screen->rect), sizeof(Rect));
         LOG("that is virtual screen at %d x %d with %d x %d\n",
@@ -264,6 +266,9 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                                 /* Re-use the old bar window */
                                 screen->bar = workspaces[c].screen->bar;
                                 screen->bargc = workspaces[c].screen->bargc;
+
+                                /* Copy the list head for the dock clients */
+                                screen->dock_clients = workspaces[c].screen->dock_clients;
 
                                 /* Update the dimensions */
                                 memcpy(&(workspaces[c].rect), &(screen->rect), sizeof(Rect));

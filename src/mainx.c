@@ -227,7 +227,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                                 new->titlebar_position = TITLEBAR_OFF;
                                 new->force_reconfigure = true;
                                 new->container = NULL;
-                                SLIST_INSERT_HEAD(&(c_ws->dock_clients), new, dock_clients);
+                                SLIST_INSERT_HEAD(&(c_ws->screen->dock_clients), new, dock_clients);
                         }
         }
 
