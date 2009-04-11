@@ -58,6 +58,7 @@ all: ${FILES}
 	$(CC) -o i3 ${FILES} $(LDFLAGS)
 
 install: all
+	echo "INSTALL"
 	$(INSTALL) -d -m 0755 $(DESTDIR)/usr/bin
 	$(INSTALL) -d -m 0755 $(DESTDIR)/etc/i3
 	$(INSTALL) -m 0755 i3 $(DESTDIR)/usr/bin/
