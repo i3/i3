@@ -213,6 +213,22 @@ void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window) 
 }
 
 /*
+ * Generates a configure_notify_event with absolute coordinates (relative to the X root
+ * window, not to the client’s frame) for the given client.
+ *
+ */
+void fake_absolute_configure_notify(xcb_connection_t *conn, Client *client) {
+        Rect absolute;
+
+        absolute.x = client->rect.x;
+        absolute.y = client->rect.y;
+        absolute.width = client->rect.width - client->child_rect.x;
+        absolute.height = client->rect.height - client->child_rect.y;
+
+        fake_configure_notify(conn, absolute, client->child);
+}
+
+/*
  * Finds out which modifier mask is the one for numlock, as the user may change this.
  *
  */

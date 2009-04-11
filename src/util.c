@@ -396,7 +396,7 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
 
                 Rect child_rect = workspace->rect;
                 child_rect.x = child_rect.y = 0;
-                fake_configure_notify(conn, child_rect, client->child);
+                fake_absolute_configure_notify(conn, client);
         } else {
                 LOG("leaving fullscreen mode\n");
                 /* Because the coordinates of the window haven’t changed, it would not be

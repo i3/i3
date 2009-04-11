@@ -542,7 +542,7 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
                 return 1;
         }
 
-        fake_configure_notify(conn, client->child_rect, client->child);
+        fake_absolute_configure_notify(conn, client);
 
         return 1;
 }
