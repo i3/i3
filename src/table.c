@@ -296,7 +296,7 @@ void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
 }
 
 /*
- * Fixes col/rowspan (makes sure there are no overlapping windows)
+ * Fixes col/rowspan (makes sure there are no overlapping windows, obeys borders).
  *
  */
 void fix_colrowspan(xcb_connection_t *conn, Workspace *workspace) {
@@ -305,16 +305,18 @@ void fix_colrowspan(xcb_connection_t *conn, Workspace *workspace) {
         FOR_TABLE(workspace) {
                 Container *con = workspace->table[cols][rows];
                 if (con->colspan > 1) {
-                        LOG("gots one with colspan %d\n", con->colspan);
+                        LOG("gots one with colspan %d (at %d c, %d r)\n", con->colspan, cols, rows);
                         while (con->colspan > 1 &&
-                               workspace->table[cols + (con->colspan - 1)][rows]->currently_focused != NULL)
+                               (!cell_exists(cols + (con->colspan-1), rows) ||
+                                workspace->table[cols + (con->colspan - 1)][rows]->currently_focused != NULL))
                                 con->colspan--;
                         LOG("fixed it to %d\n", con->colspan);
                 }
                 if (con->rowspan > 1) {
-                        LOG("gots one with rowspan %d\n", con->rowspan);
+                        LOG("gots one with rowspan %d (at %d c, %d r)\n", con->rowspan, cols, rows);
                         while (con->rowspan > 1 &&
-                               workspace->table[cols][rows + (con->rowspan - 1)]->currently_focused != NULL)
+                               (!cell_exists(cols, rows + (con->rowspan - 1)) ||
+                                workspace->table[cols][rows + (con->rowspan - 1)]->currently_focused != NULL))
                                 con->rowspan--;
                         LOG("fixed it to %d\n", con->rowspan);
                 }
