@@ -95,7 +95,7 @@ uint32_t get_colorpixel(xcb_connection_t *conn, char *hex) {
                                                             rgb16[0], rgb16[1], rgb16[2]), NULL);
 
         if (!reply) {
-                printf("Could not allocate color\n");
+                LOG("Could not allocate color\n");
                 exit(1);
         }
 

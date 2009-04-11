@@ -614,16 +614,11 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 remove_client_from_container(conn, client, con);
 
                 /* Set focus to the last focused client in this container */
-                con->currently_focused = NULL;
-                Client *focus_client;
-                SLIST_FOREACH(focus_client, &(con->workspace->focus_stack), focus_clients)
-                        if (focus_client->container == con) {
-                                con->currently_focused = focus_client;
-                                /* Only if this is the active container, we need to really change focus */
-                                if (con == CUR_CELL)
-                                        set_focus(conn, focus_client, false);
-                                break;
-                        }
+                con->currently_focused = get_last_focused_client(conn, con, NULL);
+
+                /* Only if this is the active container, we need to really change focus */
+                if ((con->currently_focused != NULL) && (con == CUR_CELL))
+                        set_focus(conn, con->currently_focused, false);
         }
 
         if (client->dock) {

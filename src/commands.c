@@ -174,13 +174,7 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
         /* As soon as the client is moved away, the last focused client in the old
          * container needs to get focus, if any. Therefore, we save it here. */
         Client *current_client = container->currently_focused;
-        Client *to_focus = NULL, *client_loop;
-
-        SLIST_FOREACH(client_loop, &(container->workspace->focus_stack), focus_clients)
-                if ((client_loop->container == container) && (client_loop != current_client)) {
-                        to_focus = client_loop;
-                        break;
-                }
+        Client *to_focus = get_last_focused_client(conn, container, current_client);
 
         if (to_focus == NULL) {
                 to_focus = CIRCLEQ_NEXT_OR_NULL(&(container->clients), current_client, clients);

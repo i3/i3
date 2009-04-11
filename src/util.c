@@ -151,7 +151,6 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
 	size_t input_size = strlen(input) + 1;
 	/* UCS-2 consumes exactly two bytes for each glyph */
 	int buffer_size = input_size * 2;
-	printf("reserving %d bytes\n", buffer_size);
 
 	char *buffer = smalloc(buffer_size);
 	size_t output_size = buffer_size;
@@ -203,6 +202,19 @@ void remove_client_from_container(xcb_connection_t *conn, Client *client, Contai
 }
 
 /*
+ * Returns the client which comes next in focus stack (= was selected before) for
+ * the given container, optionally excluding the given client.
+ *
+ */
+Client *get_last_focused_client(xcb_connection_t *conn, Container *container, Client *exclude) {
+        Client *current;
+        SLIST_FOREACH(current, &(container->workspace->focus_stack), focus_clients)
+                if ((current->container == container) && ((exclude == NULL) || (current != exclude)))
+                        return current;
+        return NULL;
+}
+
+/*
  * Sets the given client as focused by updating the data structures correctly,
  * updating the X input focus and finally re-decorating both windows (to signalize
  * the user the new focus situation)
@@ -240,14 +252,11 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
 
         /* Get the client which was last focused in this particular container, it may be a different
            one than old_client */
-        Client *last_container_client;
-        SLIST_FOREACH(last_container_client, &(c_ws->focus_stack), focus_clients)
-                if (last_container_client->container == client->container) {
-                        /* But if it is the same one as old_client, we save us the unnecessary redecorate */
-                        if (last_container_client != old_client)
-                                redecorate_window(conn, last_container_client);
-                        break;
-                }
+        Client *last_focused = get_last_focused_client(conn, client->container, NULL);
+
+        /* If it is the same one as old_client, we save us the unnecessary redecorate */
+        if ((last_focused != NULL) && (last_focused != old_client))
+                redecorate_window(conn, last_focused);
 
         /* If we’re in stacking mode, this renders the container to update changes in the title
            bars and to raise the focused client */

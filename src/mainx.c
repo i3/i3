@@ -467,7 +467,7 @@ int main(int argc, char *argv[], char *env[]) {
         #define GET_ATOM(name) { \
                 xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, atom_cookies[name], NULL); \
                 if (!reply) { \
-                        printf("Could not get atom " #name "\n"); \
+                        LOG("Could not get atom " #name "\n"); \
                         exit(-1); \
                 } \
                 atoms[name] = reply->atom; \
@@ -538,7 +538,7 @@ int main(int argc, char *argv[], char *env[]) {
 
         i3Screen *screen = get_screen_containing(reply->root_x, reply->root_y);
         if (screen == NULL) {
-                printf("ERROR: No screen at %d x %d\n", reply->root_x, reply->root_y);
+                LOG("ERROR: No screen at %d x %d\n", reply->root_x, reply->root_y);
                 return 0;
         }
         if (screen->current_workspace != 0) {

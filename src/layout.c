@@ -402,6 +402,7 @@ static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int 
                         resize_client(conn, client);
 
                 client->force_reconfigure = false;
+                LOG("desired_height = %d\n", client->desired_height);
                 *height += client->desired_height;
         }
 }
@@ -437,21 +438,22 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
 
         int drawn = 0;
         for (int c = 0; c < 10; c++) {
-                if (workspaces[c].screen == screen) {
-                        int set = (screen->current_workspace == c ? SET_FOCUSED : SET_NORMAL);
+                if (workspaces[c].screen != screen)
+                        continue;
 
-                        xcb_draw_rect(conn, screen->bar, screen->bargc, border_color[set],
-                                      drawn * height, 1, height - 2, height - 2);
-                        xcb_draw_rect(conn, screen->bar, screen->bargc, background_color[set],
-                                      drawn * height + 1, 2, height - 4, height - 4);
+                int set = (screen->current_workspace == c ? SET_FOCUSED : SET_NORMAL);
 
-                        snprintf(label, sizeof(label), "%d", c+1);
-                        xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, text_color[set]);
-                        xcb_change_gc_single(conn, screen->bargc, XCB_GC_BACKGROUND, background_color[set]);
-                        xcb_image_text_8(conn, strlen(label), screen->bar, screen->bargc, drawn * height + 5 /* X */,
-                                                        font->height + 1 /* Y = baseline of font */, label);
-                        drawn++;
-                }
+                xcb_draw_rect(conn, screen->bar, screen->bargc, border_color[set],
+                              drawn * height, 1, height - 2, height - 2);
+                xcb_draw_rect(conn, screen->bar, screen->bargc, background_color[set],
+                              drawn * height + 1, 2, height - 4, height - 4);
+
+                snprintf(label, sizeof(label), "%d", c+1);
+                xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, text_color[set]);
+                xcb_change_gc_single(conn, screen->bargc, XCB_GC_BACKGROUND, background_color[set]);
+                xcb_image_text_8(conn, strlen(label), screen->bar, screen->bargc, drawn * height + 5 /* X */,
+                                                font->height + 1 /* Y = baseline of font */, label);
+                drawn++;
         }
 
         LOG("done rendering internal\n");

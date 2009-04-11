@@ -110,6 +110,13 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen);
 void remove_client_from_container(xcb_connection_t *conn, Client *client, Container *container);
 
 /**
+ * Returns the client which comes next in focus stack (= was selected before) for
+ * the given container, optionally excluding the given client.
+ *
+ */
+Client *get_last_focused_client(xcb_connection_t *conn, Container *container, Client *exclude);
+
+/**
  * Sets the given client as focused by updating the data structures correctly,
  * updating the X input focus and finally re-decorating both windows (to signalize
  * the user the new focus situation)
