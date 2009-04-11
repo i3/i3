@@ -252,11 +252,12 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
 
                 /* Check if the button was one of button4 or button5 (scroll up / scroll down) */
                 if (event->detail == XCB_BUTTON_INDEX_4 || event->detail == XCB_BUTTON_INDEX_5) {
-                        int dest_workspace = (event->detail == XCB_BUTTON_INDEX_4 ?
-                                              c_ws->num - 1 :
-                                              c_ws->num + 1);
-                        if ((dest_workspace >= 0) && (dest_workspace < 10))
-                                show_workspace(conn, dest_workspace+1);
+                        int add = (event->detail == XCB_BUTTON_INDEX_4 ? -1 : 1);
+                        for (int i = c_ws->num + add; (i >= 0) && (i < 10); i += add)
+                                if (workspaces[i].screen == screen) {
+                                        show_workspace(conn, i+1);
+                                        return true;
+                                }
                         return true;
                 }
                 i3Font *font = load_font(conn, config.font);
