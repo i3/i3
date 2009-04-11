@@ -645,7 +645,14 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                         break;
                 }
 
-        if (workspace_empty && (c_ws != client->workspace))
+        i3Screen *screen;
+        TAILQ_FOREACH(screen, virtual_screens, screens)
+                if (screen->current_workspace == client->workspace->num) {
+                        workspace_empty = false;
+                        break;
+                }
+
+        if (workspace_empty)
                 client->workspace->screen = NULL;
 
         free(client);
@@ -799,11 +806,9 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
 
                 /* …or one of the bars? */
                 i3Screen *screen;
-                TAILQ_FOREACH(screen, virtual_screens, screens) {
-                        if (screen->bar == event->window) {
+                TAILQ_FOREACH(screen, virtual_screens, screens)
+                        if (screen->bar == event->window)
                                 render_layout(conn);
-                        }
-                }
                 return 1;
         }
 
