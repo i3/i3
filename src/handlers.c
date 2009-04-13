@@ -632,10 +632,10 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         xcb_flush(conn);
         table_remove(byParent, client->frame);
 
-        if (client->container != NULL)
+        if (client->container != NULL) {
                 cleanup_table(conn, client->container->workspace);
-
-        fix_colrowspan(conn, client->container->workspace);
+                fix_colrowspan(conn, client->container->workspace);
+        }
 
         /* Let’s see how many clients there are left on the workspace to delete it if it’s empty */
         bool workspace_empty = true;
