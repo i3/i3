@@ -1,3 +1,32 @@
+i3-wm (3.a-bf1-1) unstable; urgency=low
+
+  * Bugfix: When entering a stack window with the mouse, set focus to the
+    active client in the container the stack window belongs to.
+  * Bugfix: Correctly filter out the numlock bit. This fixes i3 not reacting
+    to any keybindings after pressing numlock once.
+  * Bugfix: Don't crash when Xinerama is disabled.
+  * Bugfix: Correctly remove client from container when moving to another
+    workspace.
+  * Bugfix: Set focus to the client which was previously focused instead of
+    the next client in container when moving windows out of a container.
+  * Bugfix: Correctly set focus when switching between screens.
+  * Bugfix: Don't crash anymore moving focus to another screen under the
+    following conditions: The screen you switch to has a lower number of cells
+    and/or rows than the current one, you switch focus using your mouse, you
+    previously were in a column/row which is not available on the destination
+    screen.
+  * Bugfix: When switching screens, warp the pointer to the correct
+    destination window.
+  * Bugfix: Store dock clients per screen, not per workspace.
+  * Bugfix: Perform bounds checking for snapped containers.
+  * Bugfix: Send clients their absolute position/size (on the root window) in
+    generated configure events. This fixes problems with xfontsel, xmaple,
+    etc.
+  * Implement scrolling on stack windows and on the bottom bar.
+  * Create i3-wm-dbg with debug symbols
+
+ -- Michael Stapelberg <michael+i3@stapelberg.de>
+
 i3-wm (3.a-1) unstable; urgency=low
 
   * First release (Closes: #521709)
