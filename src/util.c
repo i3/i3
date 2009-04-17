@@ -364,11 +364,13 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
 
         Workspace *workspace = client->container->workspace;
 
-        workspace->fullscreen_client = (client->fullscreen ? NULL : client);
-
-        client->fullscreen = !client->fullscreen;
-
-        if (client->fullscreen) {
+        if (!client->fullscreen) {
+                if (workspace->fullscreen_client != NULL) {
+                        LOG("Not entering fullscreen mode, there already is a fullscreen client.\n");
+                        return;
+                }
+                client->fullscreen = true;
+                workspace->fullscreen_client = client;
                 LOG("Entering fullscreen mode...\n");
                 /* We just entered fullscreen mode, let’s configure the window */
                  uint32_t mask = XCB_CONFIG_WINDOW_X |
@@ -399,6 +401,8 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                 fake_configure_notify(conn, child_rect, client->child);
         } else {
                 LOG("leaving fullscreen mode\n");
+                client->fullscreen = false;
+                workspace->fullscreen_client = NULL;
                 /* Because the coordinates of the window haven’t changed, it would not be
                    re-configured if we don’t set the following flag */
                 client->force_reconfigure = true;

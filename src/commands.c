@@ -422,6 +422,13 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
                 t_ws->screen = container->workspace->screen;
                 /* Copy the dimensions from the virtual screen */
 		memcpy(&(t_ws->rect), &(container->workspace->screen->rect), sizeof(Rect));
+        } else {
+                /* Check if there is already a fullscreen client on the destination workspace and
+                 * stop moving if so. */
+                if (current_client->fullscreen && (t_ws->fullscreen_client != NULL)) {
+                        LOG("Not moving: Fullscreen client already existing on destination workspace.\n");
+                        return;
+                }
         }
 
         Container *to_container = t_ws->table[t_ws->current_col][t_ws->current_row];
@@ -429,9 +436,13 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         assert(to_container != NULL);
 
         remove_client_from_container(conn, current_client, container);
+        if (container->workspace->fullscreen_client == current_client)
+                container->workspace->fullscreen_client = NULL;
 
         CIRCLEQ_INSERT_TAIL(&(to_container->clients), current_client, clients);
         SLIST_INSERT_HEAD(&(to_container->workspace->focus_stack), current_client, focus_clients);
+        if (current_client->fullscreen)
+                t_ws->fullscreen_client = current_client;
         LOG("Moved.\n");
 
         current_client->container = to_container;
