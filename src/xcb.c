@@ -223,7 +223,7 @@ void fake_absolute_configure_notify(xcb_connection_t *conn, Client *client) {
         absolute.x = client->rect.x;
         absolute.y = client->rect.y;
         absolute.width = client->rect.width - (2 * client->child_rect.x);
-        absolute.height = client->rect.height - (2 * client->child_rect.y);
+        absolute.height = client->rect.height - client->child_rect.y - 1;
 
         fake_configure_notify(conn, absolute, client->child);
 }
