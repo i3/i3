@@ -84,7 +84,7 @@ dist: clean
 	[ ! -f i3-${VERSION} ] || rm -rf i3-${VERSION}
 	[ ! -e i3-${VERSION}.tar.bz2 ] || rm i3-${VERSION}.tar.bz2
 	mkdir i3-${VERSION}
-	cp DEPENDS GOALS LICENSE PACKAGE-MAINTAINER TODO i3.config i3-${VERSION}
+	cp DEPENDS GOALS LICENSE PACKAGE-MAINTAINER TODO i3.config i3.desktop pseudo-doc.doxygen i3-${VERSION}
 	cp -r src include docs man i3-${VERSION}
 	sed -e 's/^GIT_VERSION=\(.*\)/GIT_VERSION=${GIT_VERSION}/g;s/^VERSION=\(.*\)/VERSION=${VERSION}/g' Makefile > i3-${VERSION}/Makefile
 	tar cf i3-${VERSION}.tar i3-${VERSION}
