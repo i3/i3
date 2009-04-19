@@ -11,6 +11,7 @@
  *
  */
 #include <xcb/xcb.h>
+#include <xcb/xcb_atom.h>
 #include <stdbool.h>
 
 #ifndef _DATA_H
@@ -115,6 +116,25 @@ struct Ignore_Event {
 
         SLIST_ENTRY(Ignore_Event) ignore_events;
 };
+
+/*
+ * Emulates the behaviour of tables of libxcb-wm, which in libxcb 0.3.4 suddenly vanished.
+ *
+ */
+struct keyvalue_element {
+        uint32_t key;
+        void *value;
+
+        TAILQ_ENTRY(keyvalue_element) elements;
+};
+
+typedef struct {
+        enum xcb_atom_fast_tag_t tag;
+        union {
+                xcb_get_window_attributes_cookie_t cookie;
+                uint8_t override_redirect;
+        } u;
+} window_attributes_t;
 
 /******************************************************************************
  * Major types

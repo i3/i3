@@ -29,6 +29,8 @@
 #include "xcb.h"
 
 static iconv_t conversion_descriptor = 0;
+struct keyvalue_table_head by_parent = TAILQ_HEAD_INITIALIZER(by_parent);
+struct keyvalue_table_head by_child = TAILQ_HEAD_INITIALIZER(by_child);
 
 int min(int a, int b) {
         return (a < b ? a : b);
@@ -94,6 +96,44 @@ char *sstrdup(const char *str) {
         char *result = strdup(str);
         exit_if_null(result, "Too less memory for strdup()\n");
         return result;
+}
+
+/*
+ * The table_* functions emulate the behaviour of libxcb-wm, which in libxcb 0.3.4 suddenly
+ * vanished. Great.
+ *
+ */
+bool table_put(struct keyvalue_table_head *head, uint32_t key, void *value) {
+        struct keyvalue_element *element = scalloc(sizeof(struct keyvalue_element));
+        element->key = key;
+        element->value = value;
+
+        TAILQ_INSERT_TAIL(head, element, elements);
+        return true;
+}
+
+void *table_remove(struct keyvalue_table_head *head, uint32_t key) {
+        struct keyvalue_element *element;
+
+        TAILQ_FOREACH(element, head, elements)
+                if (element->key == key) {
+                        void *value = element->value;
+                        TAILQ_REMOVE(head, element, elements);
+                        free(element);
+                        return value;
+                }
+
+        return NULL;
+}
+
+void *table_get(struct keyvalue_table_head *head, uint32_t key) {
+        struct keyvalue_element *element;
+
+        TAILQ_FOREACH(element, head, elements)
+                if (element->key == key)
+                        return element->value;
+
+        return NULL;
 }
 
 /*

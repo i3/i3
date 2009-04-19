@@ -23,7 +23,7 @@
 #include <X11/extensions/XKB.h>
 
 #include <xcb/xcb.h>
-#include <xcb/xcb_wm.h>
+#include <xcb/xcb_atom.h>
 #include <xcb/xcb_aux.h>
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_property.h>
@@ -91,7 +91,7 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn, xcb_
                 goto out;
 
         /* Check if the window is already managed */
-        if (table_get(byChild, window))
+        if (table_get(&by_child, window))
                 goto out;
 
         /* Get the initial geometry (position, size, …) */
@@ -124,8 +124,8 @@ out:
  *
  */
 void reparent_window(xcb_connection_t *conn, xcb_window_t child,
-                xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
-                int16_t x, int16_t y, uint16_t width, uint16_t height) {
+                     xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
+                     int16_t x, int16_t y, uint16_t width, uint16_t height) {
 
         xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie;
         uint32_t mask = 0;
@@ -144,7 +144,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
         state_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STATE], UINT32_MAX);
 
-        Client *new = table_get(byChild, child);
+        Client *new = table_get(&by_child, child);
 
         /* Events for already managed windows should already be filtered in manage_window() */
         assert(new == NULL);
@@ -207,8 +207,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         }
 
         /* Put our data structure (Client) into the table */
-        table_put(byParent, new->frame, new);
-        table_put(byChild, child, new);
+        table_put(&by_parent, new->frame, new);
+        table_put(&by_child, child, new);
 
         /* We need to grab the mouse buttons for click to focus */
         xcb_grab_button(conn, false, child, XCB_EVENT_MASK_BUTTON_PRESS,
@@ -361,9 +361,6 @@ int main(int argc, char *argv[], char *env[]) {
 
         memset(&evenths, 0, sizeof(xcb_event_handlers_t));
         memset(&prophs, 0, sizeof(xcb_property_handlers_t));
-
-        byChild = alloc_table();
-        byParent = alloc_table();
 
         load_configuration(override_configpath);
 

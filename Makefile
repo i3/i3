@@ -14,8 +14,12 @@ CFLAGS += -I/usr/local/include
 CFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
 
 LDFLAGS += -lm
-LDFLAGS += -lxcb-wm
+LDFLAGS += -lxcb-event
+LDFLAGS += -lxcb-property
 LDFLAGS += -lxcb-keysyms
+LDFLAGS += -lxcb-atom
+LDFLAGS += -lxcb-aux
+LDFLAGS += -lxcb-icccm
 LDFLAGS += -lxcb-xinerama
 LDFLAGS += -lX11
 LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib
