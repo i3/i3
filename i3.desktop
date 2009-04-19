@@ -1,0 +1,6 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=i3
+Comment=improved dynamic tiling window manager
+Exec=i3
+Type=XSession

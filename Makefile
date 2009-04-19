@@ -75,8 +75,10 @@ install: all
 	echo "INSTALL"
 	$(INSTALL) -d -m 0755 $(DESTDIR)/usr/bin
 	$(INSTALL) -d -m 0755 $(DESTDIR)/etc/i3
+	$(INSTALL) -d -m 0755 $(DESTDIR)/usr/share/xsessions
 	$(INSTALL) -m 0755 i3 $(DESTDIR)/usr/bin/
 	test -e $(DESTDIR)/etc/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)/etc/i3/config
+	$(INSTALL) -m 0644 i3.desktop $(DESTDIR)/usr/share/xsessions/
 
 dist: clean
 	[ ! -f i3-${VERSION} ] || rm -rf i3-${VERSION}
