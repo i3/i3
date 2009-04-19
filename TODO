@@ -1,16 +1,7 @@
-TODO list, in order of importance:
 
- * Implement moving windows to other workspaces (see src/command.c)
- * When at the edge of a screen and wanting to change into the direction of the edge,
-   i3 should switch to the next screen (if any) in this direction.
- * document stuff!
- * more documentation!
- * debian package
- * initial release
+Please see http://i3.zekjur.net/ for our bugtracker.
 
-TODO for later™:
- * think of some IPC mechanism, implement it
- * a command for toggling layouts
- * a command for toggling workspaces
- * floating
- * do something about xpdf, it doesn’t use _NET_WM_STATE_FULLSCREEN (but size hints?)
+Some old notes, just to not lose them:
+ * was passiert, wenn zwei fenster fullscreen wollen auf dem selben workspace?
+ * OpenOffice
+ * funktioniert xinerama etc. mit --below? insbesondere das fokus-verschieben in andere screens
