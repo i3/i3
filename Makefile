@@ -26,6 +26,10 @@ CFLAGS += -idirafter /usr/pkg/include
 LDFLAGS += -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
 endif
 
+ifeq ($(UNAME),FreeBSD)
+LDFLAGS += -liconv
+endif
+
 ifeq ($(UNAME),Linux)
 CFLAGS += -D_GNU_SOURCE
 endif
