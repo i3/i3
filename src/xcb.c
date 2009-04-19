@@ -236,7 +236,7 @@ void xcb_get_numlock_mask(xcb_connection_t *conn) {
         xcb_key_symbols_t *keysyms;
         xcb_get_modifier_mapping_cookie_t cookie;
         xcb_get_modifier_mapping_reply_t *reply;
-        xcb_keycode_t *modmap, numlock;
+        xcb_keycode_t *modmap;
         int mask, i;
         const int masks[8] = { XCB_MOD_MASK_SHIFT,
                                XCB_MOD_MASK_LOCK,
@@ -261,7 +261,13 @@ void xcb_get_numlock_mask(xcb_connection_t *conn) {
         modmap = xcb_get_modifier_mapping_keycodes(reply);
 
         /* Get the keycode for numlock */
-        numlock = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
+#ifdef OLD_XCB_KEYSYMS_API
+        xcb_keysym_t numlock = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
+#else
+        /* For now, we only use the first keysymbol. */
+        xcb_keysym_t *numlock_syms = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
+        xcb_keysym_t numlock = *numlock_syms;
+#endif
 
         /* Check all modifiers (Mod1-Mod5, Shift, Control, Lock) */
         for (mask = 0; mask < sizeof(masks); mask++)

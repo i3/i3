@@ -13,6 +13,12 @@ CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include
 CFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
 
+ifeq ($(shell pkg-config --exact-version=0.3.3 xcb-keysyms && echo 1),1)
+# xcb-keysyms fixed API from 0.3.3 to 0.3.4, so for some months, we will
+# have this here. Distributions should upgrade their libxcb in the meantime.
+CFLAGS += -DOLD_XCB_KEYSYMS_API
+endif
+
 LDFLAGS += -lm
 LDFLAGS += -lxcb-event
 LDFLAGS += -lxcb-property
