@@ -747,7 +747,11 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
 
         /* Save the old pointer to make the update atomic */
         char *new_name;
-        asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop));
+        if (asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop)) == -1) {
+                perror("Could not get old name");
+                LOG("Could not get old name\n");
+                return 1;
+        }
         /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
         LOG("Name should change to \"%s\"\n", new_name);
 
