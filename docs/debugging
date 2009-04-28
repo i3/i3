@@ -13,13 +13,13 @@ further help, do not hesitate to contact us!
 == Enabling logging
 
 i3 spits out much information onto stdout. To have a clearly defined place where logfiles
-will be saved, you should redirect stdout in xsession. While you’re at it, putting each
-run of i3 in a separate logfile with date/time in it is a good idea to not get confused
-about the different logfiles later on.
+will be saved, you should redirect stdout and stderr in xsession. While you’re at it,
+putting each run of i3 in a separate logfile with date/time in it is a good idea to not
+get confused about the different logfiles later on.
 
----------------------------------------------------------------
-exec /usr/bin/i3 >/home/michael/i3/i3log-$(date +'%F-%k-%M-%S')
----------------------------------------------------------------
+--------------------------------------------------------------------
+exec /usr/bin/i3 >/home/michael/i3/i3log-$(date +'%F-%k-%M-%S') 2>&1
+--------------------------------------------------------------------
 
 == Enabling coredumps
 
