@@ -1,7 +1,8 @@
 Source: i3-wm
 Section: utils
 Priority: optional
-Maintainer: Michael Stapelberg <michael+i3@stapelberg.de>
+Maintainer: Michael Stapelberg <michael@stapelberg.de>
+DM-Upload-Allowed: yes
 Build-Depends: debhelper (>= 5), libx11-dev, libxcb-aux0-dev (>= 0.3.3), libxcb-keysyms0-dev (>= 0.3.3), libxcb-xinerama0-dev (>= 1.1), libxcb-event1-dev (>= 0.3.3), libxcb-property1-dev (>= 0.3.3), libxcb-atom1-dev (>= 0.3.3), libxcb-icccm1-dev (>= 0.3.3), asciidoc, xmlto, docbook-xml, pkg-config
 Standards-Version: 3.8.0
 Homepage: http://i3.zekjur.net/
