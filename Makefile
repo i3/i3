@@ -13,6 +13,16 @@ CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include
 CFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
 
+# Check if pkg-config is installed, because without pkg-config, the following
+# check for the version of libxcb cannot be done.
+ifeq ($(shell which pkg-config 2>&- 1>2 || echo 1),1)
+$(error "pkg-config was not found")
+endif
+
+ifeq ($(shell pkg-config --exists xcb-keysyms || echo 1),1)
+$(error "pkg-config could not find xcb-keysyms.pc")
+endif
+
 ifeq ($(shell pkg-config --exact-version=0.3.3 xcb-keysyms && echo 1),1)
 # xcb-keysyms fixed API from 0.3.3 to 0.3.4, so for some months, we will
 # have this here. Distributions should upgrade their libxcb in the meantime.
