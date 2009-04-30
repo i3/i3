@@ -2,7 +2,7 @@
 all: hacking-howto.html debugging.html
 
 hacking-howto.html: hacking-howto
-	asciidoc -n $<
+	asciidoc -a toc -n $<
 
 debugging.html: debugging
 	asciidoc -n $<
