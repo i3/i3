@@ -1,7 +1,7 @@
 i3(1)
 =====
 Michael Stapelberg <michael+i3@stapelberg.de>
-v3.alpha, March 2009
+v3.alpha-bf1, March 2009
 
 == NAME
 
@@ -23,16 +23,6 @@ wmii developers and contributors did a great job. Thank you for inspiring us to
 create i3.
 
 Please be aware that i3 is primarily targeted at advanced users and developers.
-
-=== ABOUT THIS RELEASE
-
-What you are using is i3.alpha. That means, it is a preview release, not yet fully
-stable, may still contain bugs and the implementation of several behaviour is
-subject to change. However, it should provide you with a pretty good picture of
-how i3 will look in subsequent releases.
-
-Please, use i3 and report all the bugs/problems you encounter by sending an
-email to <michael+i3 at stapelberg.de>
 
 === TERMINOLOGY
 
@@ -243,12 +233,8 @@ exec /usr/bin/i3 >> ~/.i3/logfile
 
 == TODO
 
-There is lots of stuff left to do. This release is to be considered as a technology preview.
-Here is an overwiew of the most important points:
-
- * IPC
- * floating
- * do something about applications which don’t use _NET_WM_STATE_FULLSCREEN (like xpdf)
+There is still lot of work to do. Please check our bugtracker for up-to-date information
+about tasks which are still not finished.
 
 == AUTHOR
 
