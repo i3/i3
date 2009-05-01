@@ -44,7 +44,7 @@
 #include "xinerama.h"
 
 /* This is the path to i3, copied from argv[0] when starting up */
-char *application_path;
+char **start_argv;
 
 /* This is our connection to X11 for use with XKB */
 Display *xkbdpy;
@@ -338,7 +338,7 @@ int main(int argc, char *argv[], char *env[]) {
         if (!isatty(fileno(stdout)))
                 setbuf(stdout, NULL);
 
-        application_path = sstrdup(argv[0]);
+        start_argv = argv;
 
         while ((opt = getopt(argc, argv, "c:v")) != -1) {
                 switch (opt) {

@@ -22,7 +22,7 @@
 
 #define NUM_ATOMS 12
 
-extern char *application_path;
+extern char **start_argv;
 extern Display *xkbdpy;
 extern TAILQ_HEAD(bindings_head, Binding) bindings;
 extern SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins;

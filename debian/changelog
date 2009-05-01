@@ -24,6 +24,7 @@ i3-wm (3.a-bf1-1) unstable; urgency=low
     etc.
   * Bugfix: Correctly update state when moving fullscreen windows across
     workspaces.
+  * Bugfix: Correctly restart i3 when not using its absolute path
   * Implement scrolling on stack windows and on the bottom bar.
   * Create i3-wm-dbg with debug symbols
   * Don't rely on libxcb-wm any longer, as it got removed in libxcb 0.3.4.

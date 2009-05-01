@@ -607,8 +607,8 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         /* Is it <restart>? Then restart in place. */
         if (STARTS_WITH(command, "restart")) {
-                LOG("restarting \"%s\"...\n", application_path);
-                execl(application_path, application_path, NULL);
+                LOG("restarting \"%s\"...\n", start_argv[0]);
+                execvp(start_argv[0], start_argv);
                 /* not reached */
         }
 
