@@ -20,7 +20,7 @@
 #ifndef _I3_H
 #define _I3_H
 
-#define NUM_ATOMS 12
+#define NUM_ATOMS 13
 
 extern char **start_argv;
 extern Display *xkbdpy;

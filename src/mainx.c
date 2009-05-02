@@ -187,6 +187,9 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         /* Yo dawg, I heard you like windows, so I create a window around your window… */
         new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
 
+        long data[] = { XCB_WM_STATE_NORMAL, XCB_NONE };
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, new->child, atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+
         /* Put the client inside the save set. Upon termination (whether killed or normal exit
            does not matter) of the window manager, these clients will be correctly reparented
            to their most closest living ancestor (= cleanup) */
@@ -381,6 +384,7 @@ int main(int argc, char *argv[], char *env[]) {
         REQUEST_ATOM(WM_PROTOCOLS);
         REQUEST_ATOM(WM_DELETE_WINDOW);
         REQUEST_ATOM(UTF8_STRING);
+        REQUEST_ATOM(WM_STATE);
 
         /* TODO: this has to be more beautiful somewhen */
         int major, minor, error;
@@ -483,6 +487,7 @@ int main(int argc, char *argv[], char *env[]) {
         GET_ATOM(WM_PROTOCOLS);
         GET_ATOM(WM_DELETE_WINDOW);
         GET_ATOM(UTF8_STRING);
+        GET_ATOM(WM_STATE);
 
         xcb_property_set_handler(&prophs, atoms[_NET_WM_WINDOW_TYPE], UINT_MAX, handle_window_type, NULL);
         /* TODO: In order to comply with EWMH, we have to watch _NET_WM_STRUT_PARTIAL */

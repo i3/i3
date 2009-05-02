@@ -36,8 +36,9 @@
 #define FRAME_EVENT_MASK (XCB_EVENT_MASK_BUTTON_PRESS |          /* …mouse is pressed/released */ \
                           XCB_EVENT_MASK_BUTTON_RELEASE | \
                           XCB_EVENT_MASK_EXPOSURE |              /* …our window needs to be redrawn */ \
-                          XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | /* …user moves cursor inside our window */ \
-                          XCB_EVENT_MASK_ENTER_WINDOW)           /* …the application tries to resize itself */
+                          XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | /* …the application tries to resize itself */ \
+                          XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |   /* …subwindows get notifies */ \
+                          XCB_EVENT_MASK_ENTER_WINDOW)           /* …user moves cursor inside our window */
 
 
 enum { _NET_SUPPORTED = 0,
@@ -51,7 +52,8 @@ enum { _NET_SUPPORTED = 0,
         _NET_WM_STRUT_PARTIAL,
         WM_PROTOCOLS,
         WM_DELETE_WINDOW,
-        UTF8_STRING
+        UTF8_STRING,
+        WM_STATE
 };
 
 extern unsigned int xcb_numlock_mask;
