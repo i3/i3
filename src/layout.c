@@ -354,11 +354,6 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 /* Reconfigure the currently focused client, if necessary. It is the only visible one */
                 client = container->currently_focused;
 
-                if (container->workspace->fullscreen_client == NULL) {
-                        uint32_t values[] = { XCB_STACK_MODE_ABOVE };
-                        xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
-                }
-
                 /* Render the decorations of all clients */
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* If the client is in fullscreen mode, it does not get reconfigured */

@@ -294,6 +294,13 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
            one than old_client */
         Client *last_focused = get_last_focused_client(conn, client->container, NULL);
 
+        /* In stacking containers, raise the client in respect to the one which was focused before */
+        if (client->container->mode == MODE_STACK && last_focused != NULL) {
+                LOG("raising\n");
+                uint32_t values[] = { last_focused->frame, XCB_STACK_MODE_ABOVE };
+                xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+        }
+
         /* If it is the same one as old_client, we save us the unnecessary redecorate */
         if ((last_focused != NULL) && (last_focused != old_client))
                 redecorate_window(conn, last_focused);
