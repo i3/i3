@@ -15,7 +15,7 @@ CFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
 
 # Check if pkg-config is installed, because without pkg-config, the following
 # check for the version of libxcb cannot be done.
-ifeq ($(shell which pkg-config 2>&- 1>2 || echo 1),1)
+ifeq ($(shell which pkg-config 2>/dev/null 1>/dev/null || echo 1),1)
 $(error "pkg-config was not found")
 endif
 
