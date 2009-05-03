@@ -33,8 +33,7 @@ Description: an improved dynamic tiling window manager
  readable and well documented code. i3 uses xcb for asynchronous
  communication with X11, and has several measures to be very fast.
  .
- Please be aware i3 is primarily targeted at advanced users and developers
- and that you're currently trying an alpha version (which may contain bugs).
+ Please be aware i3 is primarily targeted at advanced users and developers.
 
 Package: i3-wm-dbg
 Architecture: any
