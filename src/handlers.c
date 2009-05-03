@@ -468,14 +468,45 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                         return 1;
                 }
 
+                /* Save the old unoccupied space to re-evaluate the other containers (not first or second) later */
+                int old_unoccupied_x = get_unoccupied_x(ws, first->row);
+
                 /* Convert 0 (for default width_factor) to actual numbers */
                 if (first->width_factor == 0)
                         first->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
+                else first->width_factor = ((first->width_factor * old_unoccupied_x) / ws->rect.width);
+
                 if (second->width_factor == 0)
                         second->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
+                else second->width_factor = ((second->width_factor * old_unoccupied_x) / ws->rect.width);
+
+                LOG("\n\n\n");
+
+                LOG("old_unoccupied_x = %d\n", old_unoccupied_x);
+
+                LOG("Old first->width_factor = %f\n", first->width_factor);
+                LOG("Old second->width_factor = %f\n", second->width_factor);
 
                 first->width_factor *= (float)(first->width + (new_position - event->root_x)) / first->width;
                 second->width_factor *= (float)(second->width - (new_position - event->root_x)) / second->width;
+
+                LOG("new unoccupied_x = %d\n", get_unoccupied_x(ws, first->row));
+                LOG("old_unoccupied_x = %d\n", old_unoccupied_x);
+
+                for (int col = 0; col < ws->cols; col++) {
+                        Container *con = ws->table[col][first->row];
+                        if (con == first || con == second)
+                                continue;
+
+                        LOG("Updating other container (current width_factor = %f)\n", con->width_factor);
+                        con->width_factor = ((con->width_factor * old_unoccupied_x) / get_unoccupied_x(ws, first->row));
+                        LOG("to %f\n", con->width_factor);
+                }
+
+                LOG("New first->width_factor = %f\n", first->width_factor);
+                LOG("New second->width_factor = %f\n", second->width_factor);
+
+                LOG("\n\n\n");
         } else {
                 LOG("Resize was from Y = %d to Y = %d\n", event->root_y, new_position);
                 if (event->root_y == new_position) {

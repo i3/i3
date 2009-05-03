@@ -171,6 +171,25 @@ static void free_container(xcb_connection_t *conn, Workspace *workspace, int col
         if (old_container->mode == MODE_STACK)
                 leave_stack_mode(conn, old_container);
 
+        /* We need to distribute the space which will now be freed to other containers */
+        if (old_container->width_factor > 0) {
+                Container *dest_container = NULL;
+                /* Check if we got a container to the left… */
+                if (col > 0)
+                        dest_container = workspace->table[col-1][row];
+                /* …or to the right */
+                else if ((col+1) < workspace->cols)
+                        dest_container = workspace->table[col+1][row];
+
+                if (dest_container != NULL) {
+                        if (dest_container->width_factor == 0)
+                                dest_container->width_factor = ((float)workspace->rect.width / workspace->cols) / workspace->rect.width;
+                        LOG("dest_container->width_factor = %f\n", dest_container->width_factor);
+                        dest_container->width_factor += old_container->width_factor;
+                        LOG("afterwards it's %f\n", dest_container->width_factor);
+                }
+        }
+
         free(old_container);
 }
 

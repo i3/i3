@@ -51,12 +51,12 @@ int get_unoccupied_x(Workspace *workspace, int row) {
         for (int cols = 0; cols < workspace->cols;) {
                 Container *con = workspace->table[cols][row];
                 LOG("width_factor[%d][%d] = %f, colspan = %d\n", cols, row, con->width_factor, con->colspan);
-                if (con->width_factor == 0)
+                if (con->width_factor == 0) {
+                        LOG("- %d * %f * %d = %f\n", workspace->rect.width, default_factor, con->colspan, workspace->rect.width * default_factor * con->colspan);
                         unoccupied -= workspace->rect.width * default_factor * con->colspan;
+                }
                 cols += con->colspan;
         }
-
-        assert(unoccupied != 0);
 
         LOG("unoccupied space: %d\n", unoccupied);
         return unoccupied;
@@ -76,8 +76,6 @@ int get_unoccupied_y(Workspace *workspace, int col) {
                         unoccupied -= workspace->rect.height * default_factor * con->rowspan;
                 rows += con->rowspan;
         }
-
-        assert(unoccupied != 0);
 
         LOG("unoccupied space: %d\n", unoccupied);
         return unoccupied;
