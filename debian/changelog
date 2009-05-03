@@ -29,6 +29,8 @@ i3-wm (3.a-bf1-1) unstable; urgency=low
   * Bugfix: Don't hide non-managed windows (libnotify-popups for example)
     when raising clients in stacked containers.
   * Bugfix: Correctly restore focus when leaving fullscreen mode
+  * Bugfix: Re-distribute free space when closing customly resized containers,
+    re-evaluate for other containers
   * Implement scrolling on stack windows and on the bottom bar.
   * Create i3-wm-dbg with debug symbols
   * Don't rely on libxcb-wm any longer, as it got removed in libxcb 0.3.4.
