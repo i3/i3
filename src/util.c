@@ -295,8 +295,12 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         Client *last_focused = get_last_focused_client(conn, client->container, NULL);
 
         /* In stacking containers, raise the client in respect to the one which was focused before */
-        if (client->container->mode == MODE_STACK && last_focused != NULL) {
-                LOG("raising\n");
+        if (client->container->mode == MODE_STACK) {
+                /* We need to get the client again, this time excluding the current client, because
+                 * we might have just gone into stacking mode and need to raise */
+                Client *last_focused = get_last_focused_client(conn, client->container, client);
+
+                LOG("raising above frame %p / child %p\n", last_focused->frame, last_focused->child);
                 uint32_t values[] = { last_focused->frame, XCB_STACK_MODE_ABOVE };
                 xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
         }
@@ -386,6 +390,9 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
                 client->force_reconfigure = true;
 
         render_layout(conn);
+
+        if (container->currently_focused != NULL)
+                set_focus(conn, container->currently_focused, true);
 }
 
 /*
