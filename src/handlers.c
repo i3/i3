@@ -589,6 +589,9 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
         LOG("handle_configure_event for window %08x\n", event->window);
         LOG("event->type = %d, \n", event->response_type);
         LOG("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
+
+        /* We ignore this sequence twice because events for child and frame should be ignored */
+        add_ignore_event(event->sequence);
         add_ignore_event(event->sequence);
 
         if (event->event == root) {

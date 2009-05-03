@@ -221,7 +221,10 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
 
         /* Remove it from the old container and put it into the new one */
         remove_client_from_container(conn, current_client, container);
-        CIRCLEQ_INSERT_TAIL(&(new->clients), current_client, clients);
+
+        if (new->currently_focused != NULL)
+                CIRCLEQ_INSERT_AFTER(&(new->clients), new->currently_focused, current_client, clients);
+        else CIRCLEQ_INSERT_TAIL(&(new->clients), current_client, clients);
         SLIST_INSERT_HEAD(&(new->workspace->focus_stack), current_client, focus_clients);
 
         /* Update data structures */
