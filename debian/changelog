@@ -1,3 +1,10 @@
+i3-wm (3.a-bf2-1) unstable; urgency=low
+
+  * Bugfix: Don't crash when setting focus
+  * Bugfix: Reconfigure bar window when changing resolutions
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Sun, 03 May 2009 23:02:24 +0200
+
 i3-wm (3.a-bf1-1) unstable; urgency=low
 
   * Bugfix: When entering a stack window with the mouse, set focus to the
