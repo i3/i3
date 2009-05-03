@@ -300,9 +300,11 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
                  * we might have just gone into stacking mode and need to raise */
                 Client *last_focused = get_last_focused_client(conn, client->container, client);
 
-                LOG("raising above frame %p / child %p\n", last_focused->frame, last_focused->child);
-                uint32_t values[] = { last_focused->frame, XCB_STACK_MODE_ABOVE };
-                xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+                if (last_focused != NULL) {
+                        LOG("raising above frame %p / child %p\n", last_focused->frame, last_focused->child);
+                        uint32_t values[] = { last_focused->frame, XCB_STACK_MODE_ABOVE };
+                        xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+                }
         }
 
         /* If it is the same one as old_client, we save us the unnecessary redecorate */
