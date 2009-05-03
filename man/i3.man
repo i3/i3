@@ -1,7 +1,7 @@
 i3(1)
 =====
 Michael Stapelberg <michael+i3@stapelberg.de>
-v3.alpha-bf1, March 2009
+v3.alpha-bf1, May 2009
 
 == NAME
 
@@ -92,10 +92,10 @@ Move window to workspace <number>.
 Mod1+f::
 Toggle fullscreen mode.
 
-Mod1+s::
+Mod1+h::
 Enable stacking layout for the current container.
 
-Mod1+d::
+Mod1+e::
 Enable default layout for the current container.
 
 Mod1+Shift+q::
@@ -148,11 +148,13 @@ bind Mod1+Shift+26 exit
 bind Mod1+97 exec sudo sh -c "echo up > /proc/acpi/ibm/brightness"
 bind Mod1+103 exec sudo sh -c "echo down > /proc/acpi/ibm/brightness"
 
-# Fullscreen
+# Fullscreen (Mod1+f)
 bind Mod1+41 f
-# Stacking
+
+# Stacking (Mod1+h)
 bind Mod1+43 s
-# Default
+
+# Default (Mod1+e)
 bind Mod1+26 d
 
 # Focus (Mod1+j/k/l/;)
