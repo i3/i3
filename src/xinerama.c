@@ -163,6 +163,11 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
         }
 
         free(reply);
+
+        if (num_screens == 0) {
+                LOG("No screens found. This is weird.\n");
+                exit(1);
+        }
 }
 
 static void initialize_screen(xcb_connection_t *conn, i3Screen *screen, Workspace *workspace) {
@@ -232,6 +237,8 @@ void initialize_xinerama(xcb_connection_t *conn) {
  *
  */
 void xinerama_requery_screens(xcb_connection_t *conn) {
+        i3Font *font = load_font(conn, config.font);
+
         /* POSSIBLE PROBLEM: Is the order of the Xinerama screens always constant? That is, can
            it change when I move the --right-of video projector to --left-of? */
 
@@ -266,6 +273,16 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                                 /* Re-use the old bar window */
                                 screen->bar = workspaces[c].screen->bar;
                                 screen->bargc = workspaces[c].screen->bargc;
+
+                                Rect bar_rect = {screen->rect.x,
+                                                 screen->rect.height - (font->height + 6),
+                                                 screen->rect.x + screen->rect.width,
+                                                 font->height + 6};
+
+                                xcb_configure_window(conn, screen->bar, XCB_CONFIG_WINDOW_X |
+                                                                        XCB_CONFIG_WINDOW_Y |
+                                                                        XCB_CONFIG_WINDOW_WIDTH |
+                                                                        XCB_CONFIG_WINDOW_HEIGHT, &(bar_rect.x));
 
                                 /* Copy the list head for the dock clients */
                                 screen->dock_clients = workspaces[c].screen->dock_clients;
