@@ -26,6 +26,9 @@ i3-wm (3.a-bf1-1) unstable; urgency=low
     workspaces.
   * Bugfix: Correctly restart i3 when not using its absolute path
   * Bugfix: Drag & Drop in GTK applications works now
+  * Bugfix: Don't hide non-managed windows (libnotify-popups for example)
+    when raising clients in stacked containers.
+  * Bugfix: Correctly restore focus when leaving fullscreen mode
   * Implement scrolling on stack windows and on the bottom bar.
   * Create i3-wm-dbg with debug symbols
   * Don't rely on libxcb-wm any longer, as it got removed in libxcb 0.3.4.

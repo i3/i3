@@ -595,6 +595,13 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         LOG("UnmapNotify for 0x%08x (received from 0x%08x)\n", event->window, event->event);
         if (client == NULL) {
                 LOG("not a managed window. Ignoring.\n");
+
+                /* This was most likely the destroyed frame of a client which is
+                 * currently being unmapped, so we add this sequence (again!) to
+                 * the ignore list (enter_notify events will get sent for both,
+                 * the child and its frame). */
+                add_ignore_event(event->sequence);
+
                 return 0;
         }
 
@@ -617,8 +624,8 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 con->currently_focused = get_last_focused_client(conn, con, NULL);
 
                 /* Only if this is the active container, we need to really change focus */
-                if ((con->currently_focused != NULL) && (con == CUR_CELL))
-                        set_focus(conn, con->currently_focused, false);
+                if ((con->currently_focused != NULL) && ((con == CUR_CELL) || client->fullscreen))
+                        set_focus(conn, con->currently_focused, true);
         }
 
         if (client->dock) {
