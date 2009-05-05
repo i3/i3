@@ -648,10 +648,11 @@ static void jump_to_window(xcb_connection_t *conn, const char *arguments) {
 
                         CIRCLEQ_FOREACH(client, &(con->clients), clients) {
                                 LOG("Checking client with class=%s, name=%s\n", client->window_class, client->name);
-                                if (client_matches_class_name(client, to_class, to_title, to_title_ucs, to_title_ucs_len)) {
-                                        set_focus(conn, client);
-                                        goto done;
-                                }
+                                if (!client_matches_class_name(client, to_class, to_title, to_title_ucs, to_title_ucs_len))
+                                        continue;
+
+                                set_focus(conn, client, true);
+                                goto done;
                         }
                 }
         }
@@ -695,7 +696,37 @@ static void jump_to_container(xcb_connection_t *conn, const char *arguments) {
 
         LOG("Jumping to col %d, row %d\n", col, row);
         if (c_ws->table[col][row]->currently_focused != NULL)
-                set_focus(conn, c_ws->table[col][row]->currently_focused);
+                set_focus(conn, c_ws->table[col][row]->currently_focused, true);
+}
+
+/*
+ * Travels the focus stack by the given number of times (or once, if no argument
+ * was specified). That is, selects the window you were in before you focused
+ * the current window.
+ *
+ */
+static void travel_focus_stack(xcb_connection_t *conn, const char *arguments) {
+        /* Start count at -1 to always skip the first element */
+        int times, count = -1;
+        Client *current;
+
+        if (sscanf(arguments, "%u", &times) != 1) {
+                LOG("No or invalid argument given (\"%s\"), using default of 1 times\n", arguments);
+                times = 1;
+        }
+
+        Workspace *ws = CUR_CELL->workspace;
+
+        SLIST_FOREACH(current, &(ws->focus_stack), focus_clients) {
+                if (++count < times) {
+                        LOG("Skipping\n");
+                        continue;
+                }
+
+                LOG("Focussing\n");
+                set_focus(conn, current, true);
+                break;
+        }
 }
 
 /*
@@ -739,12 +770,19 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
-        /* Is it a jump to a specified workspae,row,col? */
+        /* Is it a jump to a specified workspae, row, col? */
         if (STARTS_WITH(command, "jump ")) {
                 const char *arguments = command + strlen("jump ");
                 if (arguments[0] == '"')
                         jump_to_window(conn, arguments);
                 else jump_to_container(conn, arguments);
+                return;
+        }
+
+        /* Should we travel the focus stack? */
+        if (STARTS_WITH(command, "focus")) {
+                const char *arguments = command + strlen("focus");
+                travel_focus_stack(conn, arguments);
                 return;
         }
 

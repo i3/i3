@@ -837,7 +837,7 @@ int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
                 LOG("prop == NULL\n");
                 return 1;
         }
-        Client *client = table_get(byChild, window);
+        Client *client = table_get(&by_child, window);
         if (client == NULL)
                 return 1;
         char *new_class;
