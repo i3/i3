@@ -1,3 +1,11 @@
+i3-wm (3.b-1) unstable; urgency=low
+
+  * Implement jumping to other windows by specifying their position or
+    window class/title
+  * Implement jumping back by using the focus stack
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Tue, 05 May 2009 17:29:07 +0200
+
 i3-wm (3.a-bf2-1) unstable; urgency=low
 
   * Bugfix: Don't crash when setting focus
