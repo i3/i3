@@ -685,13 +685,15 @@ static void jump_to_container(xcb_connection_t *conn, const char *arguments) {
         if (result < 3)
                 return;
 
+        LOG("Boundary-checking col %d, row %d... (max cols %d, max rows %d)\n", col, row, c_ws->cols, c_ws->rows);
+
         /* Move to row/col */
         if (row >= c_ws->rows)
                 row = c_ws->rows - 1;
         if (col >= c_ws->cols)
                 col = c_ws->cols - 1;
 
-        LOG("Jumping to row %d, col %d\n", col, row);
+        LOG("Jumping to col %d, row %d\n", col, row);
         if (c_ws->table[col][row]->currently_focused != NULL)
                 set_focus(conn, c_ws->table[col][row]->currently_focused);
 }
