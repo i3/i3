@@ -57,7 +57,6 @@ static bool event_is_ignored(const int sequence) {
         time_t now = time(NULL);
         for (event = SLIST_FIRST(&ignore_events); event != SLIST_END(&ignore_events);) {
                 if ((now - event->added) > 5) {
-                        LOG("Entry is older than five seconds, cleaning up\n");
                         struct Ignore_Event *save = event;
                         event = SLIST_NEXT(event, ignore_events);
                         SLIST_REMOVE(&ignore_events, save, Ignore_Event, ignore_events);
@@ -472,23 +471,41 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 int old_unoccupied_x = get_unoccupied_x(ws, first->row);
 
                 /* Convert 0 (for default width_factor) to actual numbers */
-                if (first->width_factor == 0)
-                        first->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
-                else first->width_factor = ((first->width_factor * old_unoccupied_x) / ws->rect.width);
 
-                if (second->width_factor == 0)
-                        second->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
-                else second->width_factor = ((second->width_factor * old_unoccupied_x) / ws->rect.width);
 
                 LOG("\n\n\n");
 
                 LOG("old_unoccupied_x = %d\n", old_unoccupied_x);
 
-                LOG("Old first->width_factor = %f\n", first->width_factor);
-                LOG("Old second->width_factor = %f\n", second->width_factor);
+                LOG("Updating first\n");
 
-                first->width_factor *= (float)(first->width + (new_position - event->root_x)) / first->width;
-                second->width_factor *= (float)(second->width - (new_position - event->root_x)) / second->width;
+                /* Set the new width factor on all clients in the column of the first container */
+                for (int row = 0; row < ws->rows; row++) {
+                        Container *con = ws->table[first->col][row];
+
+                        if (con->width_factor == 0)
+                                con->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
+                        else con->width_factor = ((con->width_factor * old_unoccupied_x) / ws->rect.width);
+
+                        LOG("Old con(%d,%d)->width_factor = %f\n", first->col, row, con->width_factor);
+                        con->width_factor *= (float)(con->width + (new_position - event->root_x)) / con->width;
+                        LOG("New con(%d,%d)->width_factor = %f\n", first->col, row, con->width_factor);
+                }
+                LOG("Updating second\n");
+
+                /* Set the new width factor on all clients in the column of the second container */
+                for (int row = 0; row < ws->rows; row++) {
+                        Container *con = ws->table[second->col][row];
+
+                        if (con->width_factor == 0)
+                                con->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
+                        else con->width_factor = ((con->width_factor * old_unoccupied_x) / ws->rect.width);
+
+
+                        LOG("Old con(%d,%d)->width_factor = %f\n", second->col, row, con->width_factor);
+                        con->width_factor *= (float)(con->width - (new_position - event->root_x)) / con->width;
+                        LOG("New con(%d,%d)->width_factor = %f\n", second->col, row, con->width_factor);
+                }
 
                 LOG("new unoccupied_x = %d\n", get_unoccupied_x(ws, first->row));
                 LOG("old_unoccupied_x = %d\n", old_unoccupied_x);
