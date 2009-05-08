@@ -3,7 +3,7 @@ Section: utils
 Priority: optional
 Maintainer: Michael Stapelberg <michael@stapelberg.de>
 DM-Upload-Allowed: yes
-Build-Depends: debhelper (>= 5), libx11-dev, libxcb-aux0-dev (>= 0.3.3), libxcb-keysyms0-dev (>= 0.3.3), libxcb-xinerama0-dev (>= 1.1), libxcb-event1-dev (>= 0.3.3), libxcb-property1-dev (>= 0.3.3), libxcb-atom1-dev (>= 0.3.3), libxcb-icccm1-dev (>= 0.3.3), asciidoc, xmlto, docbook-xml, pkg-config
+Build-Depends: debhelper (>= 5), libx11-dev, libxcb-aux0-dev (>= 0.3.3), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-event1-dev (>= 0.3.3), libxcb-property1-dev (>= 0.3.3), libxcb-atom1-dev (>= 0.3.3), libxcb-icccm1-dev (>= 0.3.3), asciidoc, xmlto, docbook-xml, pkg-config
 Standards-Version: 3.8.0
 Homepage: http://i3.zekjur.net/
 
@@ -39,7 +39,7 @@ Package: i3-wm-dbg
 Architecture: any
 Priority: optional
 Section: x11
-Depends: i3-wm (=${Source-Version})
+Depends: i3-wm (=${binary:Version})
 Description: Debugging symbols for the i3 window manager
  Debugging symbols for the i3 window manager. Please install this to produce
  useful backtraces before creating new tickets.
