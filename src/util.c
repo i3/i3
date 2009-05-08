@@ -295,7 +295,7 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         Client *last_focused = get_last_focused_client(conn, client->container, NULL);
 
         /* In stacking containers, raise the client in respect to the one which was focused before */
-        if (client->container->mode == MODE_STACK) {
+        if (client->container->mode == MODE_STACK && client->container->workspace->fullscreen_client == NULL) {
                 /* We need to get the client again, this time excluding the current client, because
                  * we might have just gone into stacking mode and need to raise */
                 Client *last_focused = get_last_focused_client(conn, client->container, client);
