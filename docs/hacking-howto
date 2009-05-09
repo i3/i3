@@ -125,6 +125,9 @@ Renders your layout (screens, workspaces, containers)
 src/mainx.c::
 Initializes the window manager
 
+src/resize.c::
+Contains the functions to resize columns/rows in the table.
+
 src/table.c::
 Manages the most important internal data structure, the design table.
 

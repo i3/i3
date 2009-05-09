@@ -24,6 +24,7 @@
 #include "table.h"
 #include "util.h"
 #include "i3.h"
+#include "layout.h"
 
 int current_workspace = 0;
 Workspace workspaces[10];
@@ -65,6 +66,9 @@ static void new_container(Workspace *workspace, Container **container, int col, 
 void expand_table_rows(Workspace *workspace) {
         workspace->rows++;
 
+        workspace->height_factor = realloc(workspace->height_factor, sizeof(float) * workspace->rows);
+        workspace->height_factor[workspace->rows-1] = 0;
+
         for (int c = 0; c < workspace->cols; c++) {
                 workspace->table[c] = realloc(workspace->table[c], sizeof(Container*) * workspace->rows);
                 new_container(workspace, &(workspace->table[c][workspace->rows-1]), c, workspace->rows-1);
@@ -78,6 +82,16 @@ void expand_table_rows(Workspace *workspace) {
 void expand_table_rows_at_head(Workspace *workspace) {
         workspace->rows++;
 
+        workspace->height_factor = realloc(workspace->height_factor, sizeof(float) * workspace->rows);
+
+        LOG("rows = %d\n", workspace->rows);
+        for (int rows = (workspace->rows - 1); rows >= 1; rows--) {
+                LOG("Moving height_factor %d (%f) to %d\n", rows-1, workspace->height_factor[rows-1], rows);
+                workspace->height_factor[rows] = workspace->height_factor[rows-1];
+        }
+
+        workspace->height_factor[0] = 0;
+
         for (int cols = 0; cols < workspace->cols; cols++)
                 workspace->table[cols] = realloc(workspace->table[cols], sizeof(Container*) * workspace->rows);
 
@@ -88,6 +102,7 @@ void expand_table_rows_at_head(Workspace *workspace) {
                         workspace->table[cols][rows] = workspace->table[cols][rows-1];
                         workspace->table[cols][rows]->row = rows;
                 }
+
         for (int cols = 0; cols < workspace->cols; cols++)
                 new_container(workspace, &(workspace->table[cols][0]), cols, 0);
 }
@@ -98,6 +113,9 @@ void expand_table_rows_at_head(Workspace *workspace) {
  */
 void expand_table_cols(Workspace *workspace) {
         workspace->cols++;
+
+        workspace->width_factor = realloc(workspace->width_factor, sizeof(float) * workspace->cols);
+        workspace->width_factor[workspace->cols-1] = 0;
 
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
         workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
@@ -111,6 +129,16 @@ void expand_table_cols(Workspace *workspace) {
  */
 void expand_table_cols_at_head(Workspace *workspace) {
         workspace->cols++;
+
+        workspace->width_factor = realloc(workspace->width_factor, sizeof(float) * workspace->cols);
+
+        LOG("cols = %d\n", workspace->cols);
+        for (int cols = (workspace->cols - 1); cols >= 1; cols--) {
+                LOG("Moving width_factor %d (%f) to %d\n", cols-1, workspace->width_factor[cols-1], cols);
+                workspace->width_factor[cols] = workspace->width_factor[cols-1];
+        }
+
+        workspace->width_factor[0] = 0;
 
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
         workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
@@ -136,13 +164,32 @@ void expand_table_cols_at_head(Workspace *workspace) {
  *
  */
 static void shrink_table_cols(Workspace *workspace) {
+        float free_space = workspace->width_factor[workspace->cols-1];
+
         workspace->cols--;
+
+        /* Shrink the width_factor array */
+        workspace->width_factor = realloc(workspace->width_factor, sizeof(float) * workspace->cols);
 
         /* Free the container-pointers */
         free(workspace->table[workspace->cols]);
 
         /* Re-allocate the table */
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
+
+        /* Distribute the free space */
+        if (free_space == 0)
+                return;
+
+        for (int cols = (workspace->cols-1); cols >= 0; cols--) {
+                if (workspace->width_factor[cols] == 0)
+                        continue;
+
+                LOG("Added free space (%f) to %d (had %f)\n", free_space, cols,
+                                workspace->width_factor[cols]);
+                workspace->width_factor[cols] += free_space;
+                break;
+        }
 }
 
 /*
@@ -170,25 +217,6 @@ static void free_container(xcb_connection_t *conn, Workspace *workspace, int col
 
         if (old_container->mode == MODE_STACK)
                 leave_stack_mode(conn, old_container);
-
-        /* We need to distribute the space which will now be freed to other containers */
-        if (old_container->width_factor > 0) {
-                Container *dest_container = NULL;
-                /* Check if we got a container to the left… */
-                if (col > 0)
-                        dest_container = workspace->table[col-1][row];
-                /* …or to the right */
-                else if ((col+1) < workspace->cols)
-                        dest_container = workspace->table[col+1][row];
-
-                if (dest_container != NULL) {
-                        if (dest_container->width_factor == 0)
-                                dest_container->width_factor = ((float)workspace->rect.width / workspace->cols) / workspace->rect.width;
-                        LOG("dest_container->width_factor = %f\n", dest_container->width_factor);
-                        dest_container->width_factor += old_container->width_factor;
-                        LOG("afterwards it's %f\n", dest_container->width_factor);
-                }
-        }
 
         free(old_container);
 }

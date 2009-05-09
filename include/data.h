@@ -174,6 +174,12 @@ struct Workspace {
         /* This is a two-dimensional dynamic array of Container-pointers. I’ve always wanted
          * to be a three-star programmer :) */
         Container ***table;
+
+        /* width_factor and height_factor contain the amount of space (percentage) a column/row
+           has of all the space which is available for resized windows. This ensures that
+           non-resized windows (newly opened, for example) have the same size as always */
+        float *width_factor;
+        float *height_factor;
 };
 
 /*
@@ -312,11 +318,6 @@ struct Container {
         /* Width/Height of the container. Changeable by the user */
         int width;
         int height;
-        /* width_factor and height_factor contain the amount of space (percentage) a window
-           has of all the space which is available for resized windows. This ensures that
-           non-resized windows (newly opened, for example) have the same size as always */
-        float width_factor;
-        float height_factor;
 
         /* When in stacking mode, we draw the titlebars of each client onto a separate window */
         struct Stack_Window stack_win;
