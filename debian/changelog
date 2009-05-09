@@ -1,10 +1,15 @@
 i3-wm (3.b-1) unstable; urgency=low
 
+  * Bugfix: Correctly handle col-/rowspanned containers when setting focus
+  * Bugfix: Force reconfiguration of all windows on workspaces which are
+    re-assigned because a screen was detached
+  * Bugfix: Several bugs in resizing table columns fixed
   * Implement jumping to other windows by specifying their position or
     window class/title
   * Implement jumping back by using the focus stack
+  * Implement autostart (exec-command in configuration file)
 
- -- Michael Stapelberg <michael@stapelberg.de>  Tue, 05 May 2009 17:29:07 +0200
+ -- Michael Stapelberg <michael@stapelberg.de>  Sat, 09 May 2009 20:17:58 +0200
 
 i3-wm (3.a-bf2-1) unstable; urgency=low
 
