@@ -509,7 +509,7 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
         /* Go through the whole table and render what’s necessary */
         FOR_TABLE(r_ws) {
                 Container *container = r_ws->table[cols][rows];
-                int single_width, single_height;
+                int single_width = -1, single_height;
                 LOG("\n");
                 LOG("========\n");
                 LOG("container has %d colspan, %d rowspan\n",
@@ -526,8 +526,10 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
                         if (r_ws->width_factor[cols+c] == 0)
                                 container->width += (width / r_ws->cols);
                         else container->width += get_unoccupied_x(r_ws) * r_ws->width_factor[cols+c];
+
+                        if (single_width == -1)
+                                single_width = container->width;
                 }
-                single_width = container->width;
 
                 //if (container->height_factor == 0)
                         container->height = (height / r_ws->rows);
