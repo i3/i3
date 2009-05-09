@@ -37,9 +37,9 @@ Description: an improved dynamic tiling window manager
 
 Package: i3-wm-dbg
 Architecture: any
-Priority: optional
-Section: x11
-Depends: i3-wm (=${binary:Version})
+Priority: extra
+Section: debug
+Depends: i3-wm (=${binary:Version}), ${misc:Depends}
 Description: Debugging symbols for the i3 window manager
  Debugging symbols for the i3 window manager. Please install this to produce
  useful backtraces before creating new tickets.
