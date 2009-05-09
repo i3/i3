@@ -38,7 +38,7 @@ install: build
 	dh_clean -k 
 	dh_installdirs
 
-	# Add here commands to install the package into debian/wiipdf
+	# Add here commands to install the package into debian/i3-wm
 	$(MAKE) DESTDIR=$(CURDIR)/debian/i3-wm/ install
 	mkdir -p $(CURDIR)/debian/i3-wm/usr/share/man/man1
 	cp man/i3.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
