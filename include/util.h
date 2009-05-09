@@ -138,6 +138,17 @@ void remove_client_from_container(xcb_connection_t *conn, Client *client, Contai
 Client *get_last_focused_client(xcb_connection_t *conn, Container *container, Client *exclude);
 
 /**
+ * Unmaps all clients (and stack windows) of the given workspace.
+ *
+ * This needs to be called separately when temporarily rendering
+ * a workspace which is not the active workspace to force
+ * reconfiguration of all clients, like in src/xinerama.c when
+ * re-assigning a workspace to another screen.
+ *
+ */
+void unmap_workspace(xcb_connection_t *conn, Workspace *u_ws);
+
+/**
  * Sets the given client as focused by updating the data structures correctly,
  * updating the X input focus and finally re-decorating both windows (to signalize
  * the user the new focus situation)
