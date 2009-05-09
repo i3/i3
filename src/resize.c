@@ -30,7 +30,7 @@
  * the table column/row.
  *
  */
-int resize_graphical_handler(xcb_connection_t *conn, Container *first, Container *second,
+int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, int second,
                              resize_orientation_t orientation, xcb_button_press_event_t *event) {
         int new_position;
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
@@ -132,7 +132,6 @@ int resize_graphical_handler(xcb_connection_t *conn, Container *first, Container
         xcb_destroy_window(conn, grabwin);
         xcb_flush(conn);
 
-        Workspace *ws = first->workspace;
         if (orientation == O_VERTICAL) {
                 LOG("Resize was from X = %d to X = %d\n", event->root_x, new_position);
                 if (event->root_x == new_position) {
@@ -150,10 +149,10 @@ int resize_graphical_handler(xcb_connection_t *conn, Container *first, Container
                 if (old_unoccupied_x == 0)
                         old_unoccupied_x = ws->rect.width;
 
-                if (ws->width_factor[first->col] == 0)
+                if (ws->width_factor[first] == 0)
                         new_unoccupied_x += default_width;
 
-                if (ws->width_factor[second->col] == 0)
+                if (ws->width_factor[second] == 0)
                         new_unoccupied_x += default_width;
 
                 LOG("\n\n\n");
@@ -173,24 +172,26 @@ int resize_graphical_handler(xcb_connection_t *conn, Container *first, Container
 
                 LOG("old_unoccupied_x = %d\n", old_unoccupied_x);
 
-                LOG("Updating first (before = %f)\n", ws->width_factor[first->col]);
+                LOG("Updating first (before = %f)\n", ws->width_factor[first]);
                 /* Convert 0 (for default width_factor) to actual numbers */
-                if (ws->width_factor[first->col] == 0)
-                        ws->width_factor[first->col] = ((float)ws->rect.width / ws->cols) / new_unoccupied_x;
+                if (ws->width_factor[first] == 0)
+                        ws->width_factor[first] = ((float)ws->rect.width / ws->cols) / new_unoccupied_x;
 
-                LOG("middle = %f\n", ws->width_factor[first->col]);
-                LOG("first->width = %d, new_position = %d, event->root_x = %d\n", first->width, new_position, event->root_x);
-                ws->width_factor[first->col] *= (float)(first->width + (new_position - event->root_x)) / first->width;
-                LOG("-> %f\n", ws->width_factor[first->col]);
+                LOG("middle = %f\n", ws->width_factor[first]);
+                int old_width = ws->width_factor[first] * old_unoccupied_x;
+                LOG("first->width = %d, new_position = %d, event->root_x = %d\n", old_width, new_position, event->root_x);
+                ws->width_factor[first] *= (float)(old_width + (new_position - event->root_x)) / old_width;
+                LOG("-> %f\n", ws->width_factor[first]);
 
 
-                LOG("Updating second (before = %f)\n", ws->width_factor[second->col]);
-                if (ws->width_factor[second->col] == 0)
-                        ws->width_factor[second->col] = ((float)ws->rect.width / ws->cols) / new_unoccupied_x;
-                LOG("middle = %f\n", ws->width_factor[second->col]);
-                LOG("second->width = %d, new_position = %d, event->root_x = %d\n", second->width, new_position, event->root_x);
-                ws->width_factor[second->col] *= (float)(second->width - (new_position - event->root_x)) / second->width;
-                LOG("-> %f\n", ws->width_factor[second->col]);
+                LOG("Updating second (before = %f)\n", ws->width_factor[second]);
+                if (ws->width_factor[second] == 0)
+                        ws->width_factor[second] = ((float)ws->rect.width / ws->cols) / new_unoccupied_x;
+                LOG("middle = %f\n", ws->width_factor[second]);
+                old_width = ws->width_factor[second] * old_unoccupied_x;
+                LOG("second->width = %d, new_position = %d, event->root_x = %d\n", old_width, new_position, event->root_x);
+                ws->width_factor[second] *= (float)(old_width - (new_position - event->root_x)) / old_width;
+                LOG("-> %f\n", ws->width_factor[second]);
 
                 LOG("new unoccupied_x = %d\n", get_unoccupied_x(ws));
 

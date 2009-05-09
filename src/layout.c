@@ -520,12 +520,14 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
                 container->col = cols;
                 container->x = xoffset[rows];
                 container->y = yoffset[cols];
+                container->width = 0;
 
-                if (r_ws->width_factor[cols] == 0)
-                        container->width = (width / r_ws->cols);
-                else container->width = get_unoccupied_x(r_ws) * r_ws->width_factor[cols];
+                for (int c = 0; c < container->colspan; c++) {
+                        if (r_ws->width_factor[cols+c] == 0)
+                                container->width += (width / r_ws->cols);
+                        else container->width += get_unoccupied_x(r_ws) * r_ws->width_factor[cols+c];
+                }
                 single_width = container->width;
-                container->width *= container->colspan;
 
                 //if (container->height_factor == 0)
                         container->height = (height / r_ws->rows);

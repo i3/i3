@@ -304,9 +304,8 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         /* Let’s see if this was on the borders (= resize). If not, we’re done */
         LOG("press button on x=%d, y=%d\n", event->event_x, event->event_y);
         resize_orientation_t orientation = O_VERTICAL;
-        Container *con = client->container,
-                  *first = NULL,
-                  *second = NULL;
+        Container *con = client->container;
+        int first, second;
 
         if (con == NULL) {
                 LOG("dock. done.\n");
@@ -335,31 +334,38 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 /* This was a press on the top border */
                 if (con->row == 0)
                         return 1;
-                first = con->workspace->table[con->col][con->row-1];
-                second = con;
+                first = con->row - 1;
+                second = con->row;
                 orientation = O_HORIZONTAL;
         } else if (event->event_y >= (client->rect.height - 2)) {
                 /* …bottom border */
-                if (con->row == (con->workspace->rows-1))
+                first = con->row + (con->rowspan - 1);
+                if (!cell_exists(con->col, first) ||
+                    (first == (con->workspace->rows-1)))
                         return 1;
-                first = con;
-                second = con->workspace->table[con->col][con->row+1];
+
+                second = first + 1;
                 orientation = O_HORIZONTAL;
         } else if (event->event_x <= 2) {
                 /* …left border */
                 if (con->col == 0)
                         return 1;
-                first = con->workspace->table[con->col-1][con->row];
-                second = con;
+
+                first = con->col - 1;
+                second = con->col;
         } else if (event->event_x > 2) {
                 /* …right border */
-                if (con->col == (con->workspace->cols-1))
+                first = con->col + (con->colspan - 1);
+                LOG("column %d\n", first);
+
+                if (!cell_exists(first, con->row) ||
+                    (first == (con->workspace->cols-1)))
                         return 1;
-                first = con;
-                second = con->workspace->table[con->col+1][con->row];
+
+                second = first + 1;
         }
 
-        return resize_graphical_handler(conn, first, second, orientation, event);
+        return resize_graphical_handler(conn, con->workspace, first, second, orientation, event);
 }
 
 /*
