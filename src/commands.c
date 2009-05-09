@@ -77,10 +77,20 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                                 return;
 
                 if (direction == D_DOWN && cell_exists(current_col, current_row+1))
-                        new_row++;
-                else if (direction == D_UP && cell_exists(current_col, current_row-1))
+                        new_row = current_row + t_ws->table[current_col][current_row]->rowspan;
+                else if (direction == D_UP && cell_exists(current_col, current_row-1)) {
+                        /* Set new_row as a sane default, but it may get overwritten in a second */
                         new_row--;
-                else {
+
+                        /* Search from the top to correctly handle rowspanned containers */
+                        for (int rows = 0; rows < current_row; rows += t_ws->table[current_col][rows]->rowspan) {
+                                if (new_row > (rows + (t_ws->table[current_col][rows]->rowspan - 1)))
+                                        continue;
+
+                                new_row = rows;
+                                break;
+                        }
+                } else {
                         /* Let’s see if there is a screen down/up there to which we can switch */
                         LOG("container is at %d with height %d\n", container->y, container->height);
                         i3Screen *screen;
@@ -95,10 +105,20 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                 }
         } else if (direction == D_LEFT || direction == D_RIGHT) {
                 if (direction == D_RIGHT && cell_exists(current_col+1, current_row))
-                        new_col++;
-                else if (direction == D_LEFT && cell_exists(current_col-1, current_row))
+                        new_col = current_col + t_ws->table[current_col][current_row]->colspan;
+                else if (direction == D_LEFT && cell_exists(current_col-1, current_row)) {
+                        /* Set new_col as a sane default, but it may get overwritten in a second */
                         new_col--;
-                else {
+
+                        /* Search from the left to correctly handle colspanned containers */
+                        for (int cols = 0; cols < current_col; cols += t_ws->table[cols][current_row]->colspan) {
+                                if (new_col > (cols + (t_ws->table[cols][current_row]->colspan - 1)))
+                                        continue;
+
+                                new_col = cols;
+                                break;
+                        }
+                } else {
                         /* Let’s see if there is a screen left/right here to which we can switch */
                         LOG("container is at %d with width %d\n", container->x, container->width);
                         i3Screen *screen;
