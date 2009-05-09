@@ -8,10 +8,10 @@
  * See file LICENSE for license information.
  *
  */
-#include <xcb/xcb.h>
-
 #ifndef _COMMANDS_H
 #define _COMMANDS_H
+
+#include <xcb/xcb.h>
 
 bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction);
 

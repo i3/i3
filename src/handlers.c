@@ -31,6 +31,7 @@
 #include "xinerama.h"
 #include "config.h"
 #include "queue.h"
+#include "resize.h"
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -297,20 +298,15 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 return 1;
         }
 
-        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
-        xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
-
         /* Set focus in any case */
         set_focus(conn, client, true);
 
         /* Let’s see if this was on the borders (= resize). If not, we’re done */
         LOG("press button on x=%d, y=%d\n", event->event_x, event->event_y);
-
+        resize_orientation_t orientation = O_VERTICAL;
         Container *con = client->container,
                   *first = NULL,
                   *second = NULL;
-        enum { O_HORIZONTAL, O_VERTICAL } orientation = O_VERTICAL;
-        int new_position;
 
         if (con == NULL) {
                 LOG("dock. done.\n");
@@ -363,187 +359,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 second = con->workspace->table[con->col+1][con->row];
         }
 
-        /* FIXME: horizontal resizing causes empty spaces to exist */
-        if (orientation == O_HORIZONTAL) {
-                LOG("Sorry, horizontal resizing is not yet activated due to creating layout bugs."
-                    "If you are brave, enable the code for yourself and try fixing it.\n");
-                return 1;
-        }
-
-        uint32_t mask = 0;
-        uint32_t values[2];
-
-        mask = XCB_CW_OVERRIDE_REDIRECT;
-        values[0] = 1;
-
-        /* Open a new window, the resizebar. Grab the pointer and move the window around
-           as the user moves the pointer. */
-        Rect grabrect = {0, 0, root_screen->width_in_pixels, root_screen->height_in_pixels};
-        xcb_window_t grabwin = create_window(conn, grabrect, XCB_WINDOW_CLASS_INPUT_ONLY, -1, mask, values);
-
-        Rect helprect;
-        if (orientation == O_VERTICAL) {
-                helprect.x = event->root_x;
-                helprect.y = 0;
-                helprect.width = 2;
-                helprect.height = root_screen->height_in_pixels; /* this has to be the cell’s height */
-                new_position = event->root_x;
-        } else {
-                helprect.x = 0;
-                helprect.y = event->root_y;
-                helprect.width = root_screen->width_in_pixels; /* this has to be the cell’s width */
-                helprect.height = 2;
-                new_position = event->root_y;
-        }
-
-        mask = XCB_CW_BACK_PIXEL;
-        values[0] = get_colorpixel(conn, "#4c7899");
-
-        mask |= XCB_CW_OVERRIDE_REDIRECT;
-        values[1] = 1;
-
-        xcb_window_t helpwin = create_window(conn, helprect, XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                             (orientation == O_VERTICAL ?
-                                              XCB_CURSOR_SB_V_DOUBLE_ARROW :
-                                              XCB_CURSOR_SB_H_DOUBLE_ARROW), mask, values);
-
-        xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, helpwin);
-
-        xcb_grab_pointer(conn, false, root, XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION,
-                        XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, grabwin, XCB_NONE, XCB_CURRENT_TIME);
-
-        xcb_flush(conn);
-
-        xcb_generic_event_t *inside_event;
-        /* I’ve always wanted to have my own eventhandler… */
-        while ((inside_event = xcb_wait_for_event(conn))) {
-                /* Same as get_event_handler in xcb */
-                int nr = inside_event->response_type;
-                if (nr == 0) {
-                        /* An error occured */
-                        handle_event(NULL, conn, inside_event);
-                        free(inside_event);
-                        continue;
-                }
-                assert(nr < 256);
-                nr &= XCB_EVENT_RESPONSE_TYPE_MASK;
-                assert(nr >= 2);
-
-                /* Check if we need to escape this loop */
-                if (nr == XCB_BUTTON_RELEASE)
-                        break;
-
-                switch (nr) {
-                        case XCB_MOTION_NOTIFY:
-                                if (orientation == O_VERTICAL) {
-                                        values[0] = new_position = ((xcb_motion_notify_event_t*)inside_event)->root_x;
-                                        xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_X, values);
-                                } else {
-                                        values[0] = new_position = ((xcb_motion_notify_event_t*)inside_event)->root_y;
-                                        xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_Y, values);
-                                }
-
-                                xcb_flush(conn);
-                                break;
-                        default:
-                                LOG("Passing to original handler\n");
-                                /* Use original handler */
-                                xcb_event_handle(&evenths, inside_event);
-                                break;
-                }
-                free(inside_event);
-        }
-
-        xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
-        xcb_destroy_window(conn, helpwin);
-        xcb_destroy_window(conn, grabwin);
-        xcb_flush(conn);
-
-        Workspace *ws = con->workspace;
-        if (orientation == O_VERTICAL) {
-                LOG("Resize was from X = %d to X = %d\n", event->root_x, new_position);
-                if (event->root_x == new_position) {
-                        LOG("Nothing changed, not updating anything\n");
-                        return 1;
-                }
-
-                /* Save the old unoccupied space to re-evaluate the other containers (not first or second) later */
-                int old_unoccupied_x = get_unoccupied_x(ws, first->row);
-
-                /* Convert 0 (for default width_factor) to actual numbers */
-
-
-                LOG("\n\n\n");
-
-                LOG("old_unoccupied_x = %d\n", old_unoccupied_x);
-
-                LOG("Updating first\n");
-
-                /* Set the new width factor on all clients in the column of the first container */
-                for (int row = 0; row < ws->rows; row++) {
-                        Container *con = ws->table[first->col][row];
-
-                        if (con->width_factor == 0)
-                                con->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
-                        else con->width_factor = ((con->width_factor * old_unoccupied_x) / ws->rect.width);
-
-                        LOG("Old con(%d,%d)->width_factor = %f\n", first->col, row, con->width_factor);
-                        con->width_factor *= (float)(con->width + (new_position - event->root_x)) / con->width;
-                        LOG("New con(%d,%d)->width_factor = %f\n", first->col, row, con->width_factor);
-                }
-                LOG("Updating second\n");
-
-                /* Set the new width factor on all clients in the column of the second container */
-                for (int row = 0; row < ws->rows; row++) {
-                        Container *con = ws->table[second->col][row];
-
-                        if (con->width_factor == 0)
-                                con->width_factor = ((float)ws->rect.width / ws->cols) / ws->rect.width;
-                        else con->width_factor = ((con->width_factor * old_unoccupied_x) / ws->rect.width);
-
-
-                        LOG("Old con(%d,%d)->width_factor = %f\n", second->col, row, con->width_factor);
-                        con->width_factor *= (float)(con->width - (new_position - event->root_x)) / con->width;
-                        LOG("New con(%d,%d)->width_factor = %f\n", second->col, row, con->width_factor);
-                }
-
-                LOG("new unoccupied_x = %d\n", get_unoccupied_x(ws, first->row));
-                LOG("old_unoccupied_x = %d\n", old_unoccupied_x);
-
-                for (int col = 0; col < ws->cols; col++) {
-                        Container *con = ws->table[col][first->row];
-                        if (con == first || con == second)
-                                continue;
-
-                        LOG("Updating other container (current width_factor = %f)\n", con->width_factor);
-                        con->width_factor = ((con->width_factor * old_unoccupied_x) / get_unoccupied_x(ws, first->row));
-                        LOG("to %f\n", con->width_factor);
-                }
-
-                LOG("New first->width_factor = %f\n", first->width_factor);
-                LOG("New second->width_factor = %f\n", second->width_factor);
-
-                LOG("\n\n\n");
-        } else {
-                LOG("Resize was from Y = %d to Y = %d\n", event->root_y, new_position);
-                if (event->root_y == new_position) {
-                        LOG("Nothing changed, not updating anything\n");
-                        return 1;
-                }
-
-                /* Convert 0 (for default height_factor) to actual numbers */
-                if (first->height_factor == 0)
-                        first->height_factor = ((float)ws->rect.height / ws->rows) / ws->rect.height;
-                if (second->height_factor == 0)
-                        second->height_factor = ((float)ws->rect.height / ws->rows) / ws->rect.height;
-
-                first->height_factor *= (float)(first->height + (new_position - event->root_y)) / first->height;
-                second->height_factor *= (float)(second->height - (new_position - event->root_y)) / second->height;
-        }
-
-        render_layout(conn);
-
-        return 1;
+        return resize_graphical_handler(conn, first, second, orientation, event);
 }
 
 /*

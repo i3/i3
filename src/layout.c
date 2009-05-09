@@ -31,7 +31,7 @@
  *
  */
 static bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
-        int old_value = *destination;
+        uint32_t old_value = *destination;
 
         return ((*destination = new_value) != old_value);
 }
@@ -42,20 +42,17 @@ static bool update_if_necessary(uint32_t *destination, const uint32_t new_value)
  * windows correctly, meaning that the aspect ratio will be maintained when opening new windows.
  *
  */
-int get_unoccupied_x(Workspace *workspace, int row) {
+int get_unoccupied_x(Workspace *workspace) {
         int unoccupied = workspace->rect.width;
         float default_factor = ((float)workspace->rect.width / workspace->cols) / workspace->rect.width;
 
         LOG("get_unoccupied_x(), starting with %d, default_factor = %f\n", unoccupied, default_factor);
 
-        for (int cols = 0; cols < workspace->cols;) {
-                Container *con = workspace->table[cols][row];
-                LOG("width_factor[%d][%d] = %f, colspan = %d\n", cols, row, con->width_factor, con->colspan);
-                if (con->width_factor == 0) {
-                        LOG("- %d * %f * %d = %f\n", workspace->rect.width, default_factor, con->colspan, workspace->rect.width * default_factor * con->colspan);
-                        unoccupied -= workspace->rect.width * default_factor * con->colspan;
-                }
-                cols += con->colspan;
+        for (int cols = 0; cols < workspace->cols; cols++) {
+                LOG("width_factor[%d] = %f\n", cols, workspace->width_factor[cols]);
+
+                if (workspace->width_factor[cols] == 0)
+                        unoccupied -= workspace->rect.width * default_factor;
         }
 
         LOG("unoccupied space: %d\n", unoccupied);
@@ -69,12 +66,10 @@ int get_unoccupied_y(Workspace *workspace, int col) {
 
         LOG("get_unoccupied_y(), starting with %d, default_factor = %f\n", unoccupied, default_factor);
 
-        for (int rows = 0; rows < workspace->rows;) {
-                Container *con = workspace->table[col][rows];
-                LOG("height_factor[%d][%d] = %f, rowspan %d\n", col, rows, con->height_factor, con->rowspan);
-                if (con->height_factor == 0)
-                        unoccupied -= workspace->rect.height * default_factor * con->rowspan;
-                rows += con->rowspan;
+        for (int rows = 0; rows < workspace->rows; rows++) {
+                LOG("height_factor[%d] = %f\n", rows, workspace->height_factor[rows]);
+                if (workspace->height_factor[rows] == 0)
+                        unoccupied -= workspace->rect.height * default_factor;
         }
 
         LOG("unoccupied space: %d\n", unoccupied);
@@ -526,15 +521,15 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
                 container->x = xoffset[rows];
                 container->y = yoffset[cols];
 
-                if (container->width_factor == 0)
+                if (r_ws->width_factor[cols] == 0)
                         container->width = (width / r_ws->cols);
-                else container->width = get_unoccupied_x(r_ws, rows) * container->width_factor;
+                else container->width = get_unoccupied_x(r_ws) * r_ws->width_factor[cols];
                 single_width = container->width;
                 container->width *= container->colspan;
 
-                if (container->height_factor == 0)
+                //if (container->height_factor == 0)
                         container->height = (height / r_ws->rows);
-                else container->height = get_unoccupied_y(r_ws, cols) * container->height_factor;
+                //else container->height = get_unoccupied_y(r_ws, cols) * container->height_factor;
                 single_height = container->height;
                 container->height *= container->rowspan;
 

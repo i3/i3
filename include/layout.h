@@ -15,11 +15,11 @@
 
 /**
  * Gets the unoccupied space (= space which is available for windows which were resized by the user)
- * for the given row. This is necessary to render both, customly resized windows and never touched
+ * This is necessary to render both, customly resized windows and never touched
  * windows correctly, meaning that the aspect ratio will be maintained when opening new windows.
  *
  */
-int get_unoccupied_x(Workspace *workspace, int row);
+int get_unoccupied_x(Workspace *workspace);
 
 /**
  * (Re-)draws window decorations for a given Client onto the given drawable/graphic context.
