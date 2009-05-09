@@ -304,16 +304,36 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
         }
 
         /* Check for workspaces which are out of bounds */
-        for (int c = 0; c < 10; c++)
-                if ((workspaces[c].screen != NULL) &&
-                    (workspaces[c].screen->num >= num_screens)) {
-                        LOG("Closing bar window\n");
-                        xcb_destroy_window(conn, workspaces[c].screen->bar);
+        for (int c = 0; c < 10; c++) {
+                if ((workspaces[c].screen == NULL) || (workspaces[c].screen->num < num_screens))
+                        continue;
 
-                        LOG("Workspace %d's screen out of bounds, assigning to first screen\n", c+1);
-                        workspaces[c].screen = first;
-                        memcpy(&(workspaces[c].rect), &(first->rect), sizeof(Rect));
-                }
+                /* f_ws is a shortcut to the workspace to fix */
+                Workspace *f_ws = &(workspaces[c]);
+                Client *client;
+
+                LOG("Closing bar window\n");
+                xcb_destroy_window(conn, f_ws->screen->bar);
+
+                LOG("Workspace %d's screen out of bounds, assigning to first screen\n", c+1);
+                f_ws->screen = first;
+                memcpy(&(f_ws->rect), &(first->rect), sizeof(Rect));
+
+                /* Force reconfiguration for each client on that workspace */
+                FOR_TABLE(f_ws)
+                        CIRCLEQ_FOREACH(client, &(f_ws->table[cols][rows]->clients), clients)
+                                client->force_reconfigure = true;
+
+                /* Render the workspace to reconfigure the clients. However, they will be visible now, so… */
+                render_workspace(conn, first, f_ws);
+
+                /* …unless we want to see them at the moment, we should hide that workspace */
+                if (first->current_workspace == c)
+                        continue;
+
+                unmap_workspace(conn, f_ws);
+        }
+        xcb_flush(conn);
 
         /* Free the old list */
         while (!TAILQ_EMPTY(virtual_screens)) {

@@ -52,6 +52,12 @@ void render_container(xcb_connection_t *conn, Container *container);
 void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bool ignore_enter_notify);
 
 /**
+ * Renders the given workspace on the given screen
+ *
+ */
+void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws);
+
+/**
  * Renders the whole layout, that is: Go through each screen, each workspace, each container
  * and render each client. This also renders the bars.
  *

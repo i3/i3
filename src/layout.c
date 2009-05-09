@@ -481,6 +481,78 @@ void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bo
 }
 
 /*
+ * Renders the given workspace on the given screen
+ *
+ */
+void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws) {
+        i3Font *font = load_font(conn, config.font);
+        int width = r_ws->rect.width;
+        int height = r_ws->rect.height;
+
+        /* Reserve space for dock clients */
+        Client *client;
+        SLIST_FOREACH(client, &(screen->dock_clients), dock_clients)
+                height -= client->desired_height;
+
+        /* Space for the internal bar */
+        height -= (font->height + 6);
+
+        LOG("got %d rows and %d cols\n", r_ws->rows, r_ws->cols);
+
+        int xoffset[r_ws->rows];
+        int yoffset[r_ws->cols];
+        /* Initialize offsets */
+        for (int cols = 0; cols < r_ws->cols; cols++)
+                yoffset[cols] = r_ws->rect.y;
+        for (int rows = 0; rows < r_ws->rows; rows++)
+                xoffset[rows] = r_ws->rect.x;
+
+        dump_table(conn, r_ws);
+
+        ignore_enter_notify_forall(conn, r_ws, true);
+
+        /* Go through the whole table and render what’s necessary */
+        FOR_TABLE(r_ws) {
+                Container *container = r_ws->table[cols][rows];
+                int single_width, single_height;
+                LOG("\n");
+                LOG("========\n");
+                LOG("container has %d colspan, %d rowspan\n",
+                                container->colspan, container->rowspan);
+                LOG("container at %d, %d\n", xoffset[rows], yoffset[cols]);
+                /* Update position of the container */
+                container->row = rows;
+                container->col = cols;
+                container->x = xoffset[rows];
+                container->y = yoffset[cols];
+
+                if (container->width_factor == 0)
+                        container->width = (width / r_ws->cols);
+                else container->width = get_unoccupied_x(r_ws, rows) * container->width_factor;
+                single_width = container->width;
+                container->width *= container->colspan;
+
+                if (container->height_factor == 0)
+                        container->height = (height / r_ws->rows);
+                else container->height = get_unoccupied_y(r_ws, cols) * container->height_factor;
+                single_height = container->height;
+                container->height *= container->rowspan;
+
+                /* Render the container if it is not empty */
+                render_container(conn, container);
+
+                xoffset[rows] += single_width;
+                yoffset[cols] += single_height;
+                LOG("==========\n");
+        }
+
+        ignore_enter_notify_forall(conn, r_ws, false);
+
+        render_bars(conn, r_ws, width, &height);
+        render_internal_bar(conn, r_ws, width, font->height + 6);
+}
+
+/*
  * Renders the whole layout, that is: Go through each screen, each workspace, each container
  * and render each client. This also renders the bars.
  *
@@ -490,78 +562,10 @@ void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bo
  */
 void render_layout(xcb_connection_t *conn) {
         i3Screen *screen;
-        i3Font *font = load_font(conn, config.font);
 
         TAILQ_FOREACH(screen, virtual_screens, screens) {
-                /* r_ws (rendering workspace) is just a shortcut to the Workspace being currently rendered */
-                Workspace *r_ws = &(workspaces[screen->current_workspace]);
-
                 LOG("Rendering screen %d\n", screen->num);
-
-                int width = r_ws->rect.width;
-                int height = r_ws->rect.height;
-
-                /* Reserve space for dock clients */
-                Client *client;
-                SLIST_FOREACH(client, &(screen->dock_clients), dock_clients)
-                        height -= client->desired_height;
-
-                /* Space for the internal bar */
-                height -= (font->height + 6);
-
-                LOG("got %d rows and %d cols\n", r_ws->rows, r_ws->cols);
-
-                int xoffset[r_ws->rows];
-                int yoffset[r_ws->cols];
-                /* Initialize offsets */
-                for (int cols = 0; cols < r_ws->cols; cols++)
-                        yoffset[cols] = r_ws->rect.y;
-                for (int rows = 0; rows < r_ws->rows; rows++)
-                        xoffset[rows] = r_ws->rect.x;
-
-                dump_table(conn, r_ws);
-
-                ignore_enter_notify_forall(conn, r_ws, true);
-
-                /* Go through the whole table and render what’s necessary */
-                FOR_TABLE(r_ws) {
-                        Container *container = r_ws->table[cols][rows];
-                        int single_width, single_height;
-                        LOG("\n");
-                        LOG("========\n");
-                        LOG("container has %d colspan, %d rowspan\n",
-                                        container->colspan, container->rowspan);
-                        LOG("container at %d, %d\n", xoffset[rows], yoffset[cols]);
-                        /* Update position of the container */
-                        container->row = rows;
-                        container->col = cols;
-                        container->x = xoffset[rows];
-                        container->y = yoffset[cols];
-
-                        if (container->width_factor == 0)
-                                container->width = (width / r_ws->cols);
-                        else container->width = get_unoccupied_x(r_ws, rows) * container->width_factor;
-                        single_width = container->width;
-                        container->width *= container->colspan;
-
-                        if (container->height_factor == 0)
-                                container->height = (height / r_ws->rows);
-                        else container->height = get_unoccupied_y(r_ws, cols) * container->height_factor;
-                        single_height = container->height;
-                        container->height *= container->rowspan;
-
-                        /* Render the container if it is not empty */
-                        render_container(conn, container);
-
-                        xoffset[rows] += single_width;
-                        yoffset[cols] += single_height;
-                        LOG("==========\n");
-                }
-
-                ignore_enter_notify_forall(conn, r_ws, false);
-
-                render_bars(conn, r_ws, width, &height);
-                render_internal_bar(conn, r_ws, width, font->height + 6);
+                render_workspace(conn, screen, &(workspaces[screen->current_workspace]));
         }
 
         xcb_flush(conn);

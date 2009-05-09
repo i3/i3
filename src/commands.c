@@ -527,30 +527,8 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
 
         t_ws->screen->current_workspace = workspace-1;
 
-        /* TODO: does grabbing the server actually bring us any (speed)advantages? */
-        //xcb_grab_server(conn);
-
-        ignore_enter_notify_forall(conn, c_ws, true);
-
         /* Unmap all clients of the current workspace */
-        int unmapped_clients = 0;
-        FOR_TABLE(c_ws)
-                CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients) {
-                        xcb_unmap_window(conn, client->frame);
-                        unmapped_clients++;
-                }
-
-        /* If we did not unmap any clients, the workspace is empty and we can destroy it */
-        if (unmapped_clients == 0)
-                c_ws->screen = NULL;
-
-        /* Unmap the stack windows on the current workspace, if any */
-        struct Stack_Window *stack_win;
-        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
-                if (stack_win->container->workspace == c_ws)
-                        xcb_unmap_window(conn, stack_win->window);
-
-        ignore_enter_notify_forall(conn, c_ws, false);
+        unmap_workspace(conn, c_ws);
 
         c_ws = &workspaces[workspace-1];
         current_row = c_ws->current_row;
@@ -565,6 +543,7 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
                         xcb_map_window(conn, client->frame);
 
         /* Map all stack windows, if any */
+        struct Stack_Window *stack_win;
         SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
                 if (stack_win->container->workspace == c_ws)
                         xcb_map_window(conn, stack_win->window);
@@ -579,8 +558,6 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
                         xcb_flush(conn);
                 }
         } else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
-
-        //xcb_ungrab_server(conn);
 
         render_layout(conn);
 }

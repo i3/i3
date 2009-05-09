@@ -255,6 +255,42 @@ Client *get_last_focused_client(xcb_connection_t *conn, Container *container, Cl
 }
 
 /*
+ * Unmaps all clients (and stack windows) of the given workspace.
+ *
+ * This needs to be called separately when temporarily rendering
+ * a workspace which is not the active workspace to force
+ * reconfiguration of all clients, like in src/xinerama.c when
+ * re-assigning a workspace to another screen.
+ *
+ */
+void unmap_workspace(xcb_connection_t *conn, Workspace *u_ws) {
+        Client *client;
+        struct Stack_Window *stack_win;
+
+        /* Ignore notify events because they would cause focus to be changed */
+        ignore_enter_notify_forall(conn, u_ws, true);
+
+        /* Unmap all clients of the current workspace */
+        int unmapped_clients = 0;
+        FOR_TABLE(u_ws)
+                CIRCLEQ_FOREACH(client, &(u_ws->table[cols][rows]->clients), clients) {
+                        xcb_unmap_window(conn, client->frame);
+                        unmapped_clients++;
+                }
+
+        /* If we did not unmap any clients, the workspace is empty and we can destroy it */
+        if (unmapped_clients == 0)
+                u_ws->screen = NULL;
+
+        /* Unmap the stack windows on the current workspace, if any */
+        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
+                if (stack_win->container->workspace == u_ws)
+                        xcb_unmap_window(conn, stack_win->window);
+
+        ignore_enter_notify_forall(conn, u_ws, false);
+}
+
+/*
  * Sets the given client as focused by updating the data structures correctly,
  * updating the X input focus and finally re-decorating both windows (to signalize
  * the user the new focus situation)
