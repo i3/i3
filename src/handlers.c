@@ -33,6 +33,7 @@
 #include "queue.h"
 #include "resize.h"
 #include "client.h"
+#include "manage.h"
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
