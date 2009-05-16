@@ -23,6 +23,7 @@
 #include "layout.h"
 #include "i3.h"
 #include "xinerama.h"
+#include "client.h"
 
 bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction) {
         /* If this container is empty, we’re done */
@@ -240,7 +241,7 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
         }
 
         /* Remove it from the old container and put it into the new one */
-        remove_client_from_container(conn, current_client, container);
+        client_remove_from_container(conn, current_client, container);
 
         if (new->currently_focused != NULL)
                 CIRCLEQ_INSERT_AFTER(&(new->clients), new->currently_focused, current_client, clients);
@@ -458,7 +459,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
 
         assert(to_container != NULL);
 
-        remove_client_from_container(conn, current_client, container);
+        client_remove_from_container(conn, current_client, container);
         if (container->workspace->fullscreen_client == current_client)
                 container->workspace->fullscreen_client = NULL;
 
@@ -538,7 +539,7 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
                 if (CUR_CELL->currently_focused != NULL) {
                         set_focus(conn, CUR_CELL->currently_focused, true);
                         if (need_warp) {
-                                warp_pointer_into(conn, CUR_CELL->currently_focused);
+                                client_warp_pointer_into(conn, CUR_CELL->currently_focused);
                                 xcb_flush(conn);
                         }
                 }
@@ -574,41 +575,12 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
         if (CUR_CELL->currently_focused != NULL) {
                 set_focus(conn, CUR_CELL->currently_focused, true);
                 if (need_warp) {
-                        warp_pointer_into(conn, CUR_CELL->currently_focused);
+                        client_warp_pointer_into(conn, CUR_CELL->currently_focused);
                         xcb_flush(conn);
                 }
         } else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
 
         render_layout(conn);
-}
-
-/*
- * Checks if the given window class and title match the given client
- * Window title is passed as "normal" string and as UCS-2 converted string for
- * matching _NET_WM_NAME capable clients as well as those using legacy hints.
- *
- */
-static bool client_matches_class_name(Client *client, char *to_class, char *to_title,
-                                      char *to_title_ucs, int to_title_ucs_len) {
-        /* Check if the given class is part of the window class */
-        if (strcasestr(client->window_class, to_class) == NULL)
-                return false;
-
-        /* If no title was given, we’re done */
-        if (to_title == NULL)
-                return true;
-
-        if (client->name_len > -1) {
-                /* UCS-2 converted window titles */
-                if (memmem(client->name, (client->name_len * 2), to_title_ucs, (to_title_ucs_len * 2)) == NULL)
-                        return false;
-        } else {
-                /* Legacy hints */
-                if (strcasestr(client->name, to_title) == NULL)
-                        return false;
-        }
-
-        return true;
 }
 
 /*
@@ -619,44 +591,22 @@ static bool client_matches_class_name(Client *client, char *to_class, char *to_t
  *
  */
 static void jump_to_window(xcb_connection_t *conn, const char *arguments) {
-        char *to_class, *to_title, *to_title_ucs = NULL;
-        int to_title_ucs_len;
+        char *classtitle;
+        Client *client;
 
         /* The first character is a quote, this was checked before */
-        to_class = sstrdup(arguments+1);
+        classtitle = sstrdup(arguments+1);
         /* The last character is a quote, we just set it to NULL */
-        to_class[strlen(to_class)-1] = '\0';
+        classtitle[strlen(classtitle)-1] = '\0';
 
-        /* If a title was specified, split both strings at the slash */
-        if ((to_title = strstr(to_class, "/")) != NULL) {
-                *(to_title++) = '\0';
-                /* Convert to UCS-2 */
-                to_title_ucs = convert_utf8_to_ucs2(to_title, &to_title_ucs_len);
+        if ((client = get_matching_client(conn, classtitle, NULL)) == NULL) {
+                free(classtitle);
+                LOG("No matching client found.\n");
+                return;
         }
 
-        LOG("Should jump to class \"%s\" / title \"%s\"\n", to_class, to_title);
-        for (int workspace = 0; workspace < 10; workspace++) {
-                if (workspaces[workspace].screen == NULL)
-                        continue;
-
-                FOR_TABLE(&(workspaces[workspace])) {
-                        Container *con = workspaces[workspace].table[cols][rows];
-                        Client *client;
-
-                        CIRCLEQ_FOREACH(client, &(con->clients), clients) {
-                                LOG("Checking client with class=%s, name=%s\n", client->window_class, client->name);
-                                if (!client_matches_class_name(client, to_class, to_title, to_title_ucs, to_title_ucs_len))
-                                        continue;
-
-                                set_focus(conn, client, true);
-                                goto done;
-                        }
-                }
-        }
-
-done:
-        free(to_class);
-        FREE(to_title_ucs);
+        free(classtitle);
+        set_focus(conn, client, true);
 }
 
 /*
@@ -763,7 +713,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 }
 
                 LOG("Killing current window\n");
-                kill_window(conn, CUR_CELL->currently_focused);
+                client_kill(conn, CUR_CELL->currently_focused);
                 return;
         }
 

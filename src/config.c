@@ -87,7 +87,7 @@ void load_configuration(const char *override_configpath) {
 
                 /* exec-lines (autostart) */
                 if (strcasecmp(key, "exec") == 0) {
-                        Autostart *new = smalloc(sizeof(Autostart));
+                        struct Autostart *new = smalloc(sizeof(struct Autostart));
                         new->command = sstrdup(value);
                         TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
                         continue;
@@ -130,6 +130,44 @@ void load_configuration(const char *override_configpath) {
                         new->mods = modifiers;
                         new->command = sstrdup(rest);
                         TAILQ_INSERT_TAIL(&bindings, new, bindings);
+                        continue;
+                }
+
+                /* assign window class[/window title] → workspace */
+                if (strcasecmp(key, "assign") == 0) {
+                        LOG("assign: \"%s\"\n", value);
+                        char *class_title = sstrdup(value);
+                        char *target;
+
+                        /* If the window class/title is quoted we skip quotes */
+                        if (class_title[0] == '"') {
+                                class_title++;
+                                char *end = strchr(class_title, '"');
+                                if (end == NULL)
+                                        die("Malformatted assignment, couldn't find finishing quote\n");
+                                *end = '\0';
+                        } else {
+                                /* If it is not quoted, we terminate it at the first space */
+                                char *end = strchr(class_title, ' ');
+                                if (end == NULL)
+                                        die("Malformed assignment, couldn't find terminating space\n");
+                                *end = '\0';
+                        }
+
+                        /* The target is the last argument separated by a space */
+                        if ((target = strrchr(value, ' ')) == NULL)
+                                die("Malformed assignment, couldn't find target\n");
+                        target++;
+
+                        if (atoi(target) < 1 || atoi(target) > 10)
+                                die("Malformed assignment, invalid workspace number\n");
+
+                        LOG("assignment parsed: \"%s\" to \"%s\"\n", class_title, target);
+
+                        struct Assignment *new = smalloc(sizeof(struct Assignment));
+                        new->windowclass_title = class_title;
+                        new->workspace = atoi(target);
+                        TAILQ_INSERT_TAIL(&assignments, new, assignments);
                         continue;
                 }
 

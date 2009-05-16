@@ -1,5 +1,5 @@
 
-all: hacking-howto.html debugging.html
+all: hacking-howto.html debugging.html userguide.html
 
 hacking-howto.html: hacking-howto
 	asciidoc -a toc -n $<
@@ -7,6 +7,8 @@ hacking-howto.html: hacking-howto
 debugging.html: debugging
 	asciidoc -n $<
 
+userguide.html: userguide
+	asciidoc -a toc -n $<
 
 clean:
 	rm -f */*.{aux,log,toc,bm,pdf,dvi}

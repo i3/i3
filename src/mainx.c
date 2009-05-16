@@ -55,6 +55,9 @@ struct bindings_head bindings = TAILQ_HEAD_INITIALIZER(bindings);
 /* The list of exec-lines */
 struct autostarts_head autostarts = TAILQ_HEAD_INITIALIZER(autostarts);
 
+/* The list of assignments */
+struct assignments_head assignments = TAILQ_HEAD_INITIALIZER(assignments);
+
 /* This is a list of Stack_Windows, global, for easier/faster access on expose events */
 struct stack_wins_head stack_wins = SLIST_HEAD_INITIALIZER(stack_wins);
 
@@ -102,17 +105,21 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn, xcb_
         if (!attr) {
                 wa.tag = TAG_COOKIE;
                 wa.u.cookie = xcb_get_window_attributes(conn, window);
-                attr = xcb_get_window_attributes_reply(conn, wa.u.cookie, 0);
+                if ((attr = xcb_get_window_attributes_reply(conn, wa.u.cookie, 0)) == NULL)
+                        return;
         }
-        geom = xcb_get_geometry_reply(conn, geomc, 0);
-        if (attr && geom) {
-                reparent_window(conn, window, attr->visual, geom->root, geom->depth,
-                                geom->x, geom->y, geom->width, geom->height);
-                xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_CLASS);
-                xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
-                xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NORMAL_HINTS);
-                xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[_NET_WM_NAME]);
-        }
+        if ((geom = xcb_get_geometry_reply(conn, geomc, 0)) == NULL)
+                goto out;
+
+        /* Reparent the window and add it to our list of managed windows */
+        reparent_window(conn, window, attr->visual, geom->root, geom->depth,
+                        geom->x, geom->y, geom->width, geom->height);
+
+        /* Generate callback events for every property we watch */
+        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_CLASS);
+        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
+        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NORMAL_HINTS);
+        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[_NET_WM_NAME]);
 
         free(geom);
 out:
@@ -131,7 +138,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                      xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
                      int16_t x, int16_t y, uint16_t width, uint16_t height) {
 
-        xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie;
+        xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
+                                  utf8_title_cookie, title_cookie, class_cookie;
         uint32_t mask = 0;
         uint32_t values[3];
 
@@ -147,6 +155,9 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
         strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
         state_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STATE], UINT32_MAX);
+        utf8_title_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_NAME], 128);
+        title_cookie = xcb_get_any_property_unchecked(conn, false, child, WM_NAME, 128);
+        class_cookie  = xcb_get_any_property_unchecked(conn, false, child, WM_CLASS, 128);
 
         Client *new = table_get(&by_child, child);
 
@@ -191,6 +202,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         /* Yo dawg, I heard you like windows, so I create a window around your window… */
         new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
 
+        /* Set WM_STATE_NORMAL because GTK applications don’t want to drag & drop if we don’t.
+         * Also, xprop(1) needs that to work. */
         long data[] = { XCB_WM_STATE_NORMAL, XCB_NONE };
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, new->child, atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
 
@@ -227,15 +240,16 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         xcb_atom_t *atom;
         xcb_get_property_reply_t *preply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
         if (preply != NULL && preply->value_len > 0 && (atom = xcb_get_property_value(preply))) {
-                for (int i = 0; i < xcb_get_property_value_length(preply); i++)
-                        if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]) {
-                                LOG("Window is a dock.\n");
-                                new->dock = true;
-                                new->titlebar_position = TITLEBAR_OFF;
-                                new->force_reconfigure = true;
-                                new->container = NULL;
-                                SLIST_INSERT_HEAD(&(c_ws->screen->dock_clients), new, dock_clients);
-                        }
+                for (int i = 0; i < xcb_get_property_value_length(preply); i++) {
+                        if (atom[i] != atoms[_NET_WM_WINDOW_TYPE_DOCK])
+                                continue;
+                        LOG("Window is a dock.\n");
+                        new->dock = true;
+                        new->titlebar_position = TITLEBAR_OFF;
+                        new->force_reconfigure = true;
+                        new->container = NULL;
+                        SLIST_INSERT_HEAD(&(c_ws->screen->dock_clients), new, dock_clients);
+                }
         }
 
         if (new->dock) {
@@ -257,18 +271,65 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         LOG("The client didn't specify space to reserve at the screen edge, using its height (%d)\n", height);
                         new->desired_height = height;
                 }
+        } else {
+                /* If it’s not a dock, we can check on which workspace we should put it. */
+
+                /* Firstly, we need to get the window’s class / title. We asked for the properties at the
+                 * top of this function, get them now and pass them to our callback function for window class / title
+                 * changes. It is important that the client was already inserted into the by_child table,
+                 * because the callbacks won’t work otherwise. */
+                preply = xcb_get_property_reply(conn, utf8_title_cookie, NULL);
+                handle_windowname_change(NULL, conn, 0, new->child, atoms[_NET_WM_NAME], preply);
+
+                preply = xcb_get_property_reply(conn, title_cookie, NULL);
+                handle_windowname_change_legacy(NULL, conn, 0, new->child, WM_NAME, preply);
+
+                preply = xcb_get_property_reply(conn, class_cookie, NULL);
+                handle_windowclass_change(NULL, conn, 0, new->child, WM_CLASS, preply);
+
+                LOG("DEBUG: should have all infos now\n");
+                struct Assignment *assign;
+                TAILQ_FOREACH(assign, &assignments, assignments) {
+                        if (get_matching_client(conn, assign->windowclass_title, new) == NULL)
+                                continue;
+
+                        LOG("Assignment \"%s\" matches, so putting it on workspace %d\n",
+                            assign->windowclass_title, assign->workspace);
+
+                        if (c_ws->screen->current_workspace == (assign->workspace-1)) {
+                                LOG("We are already there, no need to do anything\n");
+                                break;
+                        }
+
+                        LOG("Changin container/workspace and unmapping the client\n");
+                        Workspace *t_ws = &(workspaces[assign->workspace-1]);
+                        if (t_ws->screen == NULL) {
+                                LOG("initializing new workspace, setting num to %d\n", assign->workspace);
+                                t_ws->screen = c_ws->screen;
+                                /* Copy the dimensions from the virtual screen */
+                                memcpy(&(t_ws->rect), &(t_ws->screen->rect), sizeof(Rect));
+                        }
+
+                        new->container = t_ws->table[t_ws->current_col][t_ws->current_row];
+                        new->workspace = t_ws;
+                        xcb_unmap_window(conn, new->frame);
+                        break;
+                }
         }
 
-        /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
-        if (CUR_CELL->workspace->fullscreen_client == NULL) {
-                if (!new->dock) {
-                        CUR_CELL->currently_focused = new;
-                        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
+        if (CUR_CELL->workspace->fullscreen_client != NULL) {
+                if (new->container == CUR_CELL) {
+                        /* If we are in fullscreen, we should lower the window to not be annoying */
+                        uint32_t values[] = { XCB_STACK_MODE_BELOW };
+                        xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
                 }
-        } else {
-                /* If we are in fullscreen, we should lower the window to not be annoying */
-                uint32_t values[] = { XCB_STACK_MODE_BELOW };
-                xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
+        } else if (!new->dock) {
+                /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
+                if (new->container->workspace->fullscreen_client == NULL) {
+                        new->container->currently_focused = new;
+                        if (new->container == CUR_CELL)
+                                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
+                }
         }
 
         /* Insert into the currently active container, if it’s not a dock window */
@@ -276,8 +337,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 /* Insert after the old active client, if existing. If it does not exist, the
                    container is empty and it does not matter, where we insert it */
                 if (old_focused != NULL && !old_focused->dock)
-                        CIRCLEQ_INSERT_AFTER(&(CUR_CELL->clients), old_focused, new, clients);
-                else CIRCLEQ_INSERT_TAIL(&(CUR_CELL->clients), new, clients);
+                        CIRCLEQ_INSERT_AFTER(&(new->container->clients), old_focused, new, clients);
+                else CIRCLEQ_INSERT_TAIL(&(new->container->clients), new, clients);
 
                 SLIST_INSERT_HEAD(&(new->container->workspace->focus_stack), new, focus_clients);
         }
@@ -287,14 +348,15 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         if ((preply = xcb_get_property_reply(conn, state_cookie, NULL)) != NULL &&
             (state = xcb_get_property_value(preply)) != NULL)
                 /* Check all set _NET_WM_STATEs */
-                for (int i = 0; i < xcb_get_property_value_length(preply); i++)
-                        if (state[i] == atoms[_NET_WM_STATE_FULLSCREEN]) {
-                                /* If the window got the fullscreen state, we just toggle fullscreen
-                                   and don’t event bother to redraw the layout – that would not change
-                                   anything anyways */
-                                toggle_fullscreen(conn, new);
-                                return;
-                        }
+                for (int i = 0; i < xcb_get_property_value_length(preply); i++) {
+                        if (state[i] != atoms[_NET_WM_STATE_FULLSCREEN])
+                                continue;
+                        /* If the window got the fullscreen state, we just toggle fullscreen
+                           and don’t event bother to redraw the layout – that would not change
+                           anything anyways */
+                        toggle_fullscreen(conn, new);
+                        return;
+                }
 
         render_layout(conn);
 }
@@ -531,7 +593,7 @@ int main(int argc, char *argv[], char *env[]) {
         }
 
         /* Autostarting exec-lines */
-        Autostart *exec;
+        struct Autostart *exec;
         TAILQ_FOREACH(exec, &autostarts, autostarts) {
                 LOG("auto-starting %s\n", exec->command);
                 start_application(exec->command);

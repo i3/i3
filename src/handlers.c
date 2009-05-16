@@ -32,6 +32,7 @@
 #include "config.h"
 #include "queue.h"
 #include "resize.h"
+#include "client.h"
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -501,7 +502,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                         con->workspace->fullscreen_client = NULL;
 
                 /* Remove the client from the list of clients */
-                remove_client_from_container(conn, client, con);
+                client_remove_from_container(conn, client, con);
 
                 /* Set focus to the last focused client in this container */
                 con->currently_focused = get_last_focused_client(conn, con, NULL);

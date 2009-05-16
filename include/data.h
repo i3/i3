@@ -48,7 +48,6 @@ typedef struct Font i3Font;
 typedef struct Container Container;
 typedef struct Client Client;
 typedef struct Binding Binding;
-typedef struct Autostart Autostart;
 typedef struct Workspace Workspace;
 typedef struct Rect Rect;
 typedef struct Screen i3Screen;
@@ -206,6 +205,17 @@ struct Autostart {
         /* Command, like in command mode */
         char *command;
         TAILQ_ENTRY(Autostart) autostarts;
+};
+
+/*
+ * Holds an assignment for a given window class/title to a specific workspace
+ * (see src/config.c)
+ *
+ */
+struct Assignment {
+        char *windowclass_title;
+        int workspace;
+        TAILQ_ENTRY(Assignment) assignments;
 };
 
 /*

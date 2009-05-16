@@ -27,6 +27,7 @@
 #include "layout.h"
 #include "util.h"
 #include "xcb.h"
+#include "client.h"
 
 static iconv_t conversion_descriptor = 0;
 struct keyvalue_table_head by_parent = TAILQ_HEAD_INITIALIZER(by_parent);
@@ -225,25 +226,6 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
 }
 
 /*
- * Removes the given client from the container, either because it will be inserted into another
- * one or because it was unmapped
- *
- */
-void remove_client_from_container(xcb_connection_t *conn, Client *client, Container *container) {
-        CIRCLEQ_REMOVE(&(container->clients), client, clients);
-
-        SLIST_REMOVE(&(container->workspace->focus_stack), client, Client, focus_clients);
-
-        /* If the container will be empty now and is in stacking mode, we need to
-           unmap the stack_win */
-        if (CIRCLEQ_EMPTY(&(container->clients)) && container->mode == MODE_STACK) {
-                struct Stack_Window *stack_win = &(container->stack_win);
-                stack_win->rect.height = 0;
-                xcb_unmap_window(conn, stack_win->window);
-        }
-}
-
-/*
  * Returns the client which comes next in focus stack (= was selected before) for
  * the given container, optionally excluding the given client.
  *
@@ -436,17 +418,6 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
 }
 
 /*
- * Warps the pointer into the given client (in the middle of it, to be specific), therefore
- * selecting it
- *
- */
-void warp_pointer_into(xcb_connection_t *conn, Client *client) {
-        int mid_x = client->rect.width / 2,
-            mid_y = client->rect.height / 2;
-        xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, mid_x, mid_y);
-}
-
-/*
  * Toggles fullscreen mode for the given client. It updates the data structures and
  * reconfigures (= resizes/moves) the client and its frame to the full size of the
  * screen. When leaving fullscreen, re-rendering the layout is forced.
@@ -508,52 +479,55 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
 }
 
 /*
- * Returns true if the client supports the given protocol atom (like WM_DELETE_WINDOW)
+ * Gets the first matching client for the given window class/window title.
+ * If the paramater specific is set to a specific client, only this one
+ * will be checked.
  *
  */
-static bool client_supports_protocol(xcb_connection_t *conn, Client *client, xcb_atom_t atom) {
-        xcb_get_property_cookie_t cookie;
-        xcb_get_wm_protocols_reply_t protocols;
-        bool result = false;
+Client *get_matching_client(xcb_connection_t *conn, const char *window_classtitle,
+                            Client *specific) {
+        char *to_class, *to_title, *to_title_ucs = NULL;
+        int to_title_ucs_len;
+        Client *matching = NULL;
 
-        cookie = xcb_get_wm_protocols_unchecked(conn, client->child, atoms[WM_PROTOCOLS]);
-        if (xcb_get_wm_protocols_reply(conn, cookie, &protocols, NULL) != 1)
-                return false;
+        to_class = sstrdup(window_classtitle);
 
-        /* Check if the client’s protocols have the requested atom set */
-        for (uint32_t i = 0; i < protocols.atoms_len; i++)
-                if (protocols.atoms[i] == atom)
-                        result = true;
-
-        xcb_get_wm_protocols_reply_wipe(&protocols);
-
-        return result;
-}
-
-/*
- * Kills the given window using WM_DELETE_WINDOW or xcb_kill_window
- *
- */
-void kill_window(xcb_connection_t *conn, Client *window) {
-        /* If the client does not support WM_DELETE_WINDOW, we kill it the hard way */
-        if (!client_supports_protocol(conn, window, atoms[WM_DELETE_WINDOW])) {
-                LOG("Killing window the hard way\n");
-                xcb_kill_client(conn, window->child);
-                return;
+        /* If a title was specified, split both strings at the slash */
+        if ((to_title = strstr(to_class, "/")) != NULL) {
+                *(to_title++) = '\0';
+                /* Convert to UCS-2 */
+                to_title_ucs = convert_utf8_to_ucs2(to_title, &to_title_ucs_len);
         }
 
-        xcb_client_message_event_t ev;
+        /* If we were given a specific client we only check if that one matches */
+        if (specific != NULL) {
+                if (client_matches_class_name(specific, to_class, to_title, to_title_ucs, to_title_ucs_len))
+                        matching = specific;
+                goto done;
+        }
 
-        memset(&ev, 0, sizeof(xcb_client_message_event_t));
+        LOG("Getting clients for class \"%s\" / title \"%s\"\n", to_class, to_title);
+        for (int workspace = 0; workspace < 10; workspace++) {
+                if (workspaces[workspace].screen == NULL)
+                        continue;
 
-        ev.response_type = XCB_CLIENT_MESSAGE;
-        ev.window = window->child;
-        ev.type = atoms[WM_PROTOCOLS];
-        ev.format = 32;
-        ev.data.data32[0] = atoms[WM_DELETE_WINDOW];
-        ev.data.data32[1] = XCB_CURRENT_TIME;
+                FOR_TABLE(&(workspaces[workspace])) {
+                        Container *con = workspaces[workspace].table[cols][rows];
+                        Client *client;
 
-        LOG("Sending WM_DELETE to the client\n");
-        xcb_send_event(conn, false, window->child, XCB_EVENT_MASK_NO_EVENT, (char*)&ev);
-        xcb_flush(conn);
+                        CIRCLEQ_FOREACH(client, &(con->clients), clients) {
+                                LOG("Checking client with class=%s, name=%s\n", client->window_class, client->name);
+                                if (!client_matches_class_name(client, to_class, to_title, to_title_ucs, to_title_ucs_len))
+                                        continue;
+
+                                matching = client;
+                                goto done;
+                        }
+                }
+        }
+
+done:
+        free(to_class);
+        FREE(to_title_ucs);
+        return matching;
 }
