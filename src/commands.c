@@ -547,11 +547,12 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
         }
 
         t_ws->screen->current_workspace = workspace-1;
-
-        /* Unmap all clients of the current workspace */
-        unmap_workspace(conn, c_ws);
-
+        Workspace *old_workspace = c_ws;
         c_ws = &workspaces[workspace-1];
+
+        /* Unmap all clients of the old workspace */
+        unmap_workspace(conn, old_workspace);
+
         current_row = c_ws->current_row;
         current_col = c_ws->current_col;
         LOG("new current row = %d, current col = %d\n", current_row, current_col);

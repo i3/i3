@@ -263,8 +263,18 @@ void unmap_workspace(xcb_connection_t *conn, Workspace *u_ws) {
                 }
 
         /* If we did not unmap any clients, the workspace is empty and we can destroy it */
-        if (unmapped_clients == 0)
+        if (unmapped_clients == 0) {
+                /* Re-assign the workspace of all dock clients which use this workspace */
+                Client *dock;
+                SLIST_FOREACH(dock, &(u_ws->screen->dock_clients), dock_clients) {
+                        if (dock->workspace != u_ws)
+                                continue;
+
+                        LOG("Re-assigning dock client to c_ws (%p)\n", c_ws);
+                        dock->workspace = c_ws;
+                }
                 u_ws->screen = NULL;
+        }
 
         /* Unmap the stack windows on the current workspace, if any */
         SLIST_FOREACH(stack_win, &stack_wins, stack_windows)

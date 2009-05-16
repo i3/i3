@@ -145,7 +145,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
                 return 1;
         }
         /* Some events are not interesting, because they were not generated actively by the
-           user, but be reconfiguration of windows */
+           user, but by reconfiguration of windows */
         if (event_is_ignored(event->sequence))
                 return 1;
 
@@ -189,6 +189,14 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
             client->container->mode == MODE_STACK &&
             client->container->currently_focused != client) {
                 LOG("Plausibility check says: no\n");
+                return 1;
+        }
+
+        if (client->container->workspace != c_ws) {
+                /* This can happen when a client gets assigned to a different workspace than
+                 * the current one (see src/mainx.c:reparent_window). Shortly after it was created,
+                 * an enter_notify will follow. */
+                LOG("enter_notify for a client on a different workspace, ignoring\n");
                 return 1;
         }
 
