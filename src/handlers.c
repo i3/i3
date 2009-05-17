@@ -193,7 +193,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
                 return 1;
         }
 
-        if (client->container->workspace != c_ws) {
+        if (client->container != NULL && client->container->workspace != c_ws) {
                 /* This can happen when a client gets assigned to a different workspace than
                  * the current one (see src/mainx.c:reparent_window). Shortly after it was created,
                  * an enter_notify will follow. */
