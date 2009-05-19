@@ -109,6 +109,10 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
         /* Remove the numlock bit, all other bits are modifiers we can bind to */
         uint16_t state_filtered = event->state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK);
 
+        /* Only use the lower 8 bits of the state (modifier masks) so that mouse
+         * button masks are filtered out */
+        state_filtered &= 0xFF;
+
         /* Find the binding */
         Binding *bind;
         TAILQ_FOREACH(bind, &bindings, bindings)
