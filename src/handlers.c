@@ -97,23 +97,24 @@ int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_ev
  *
  */
 int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
-        LOG("Keypress %d\n", event->detail);
+        LOG("Keypress %d, state raw = %d\n", event->detail, event->state);
+
+        /* Remove the numlock bit, all other bits are modifiers we can bind to */
+        uint16_t state_filtered = event->state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK);
+        LOG("(removed numlock, state = %d)\n", state_filtered);
+        /* Only use the lower 8 bits of the state (modifier masks) so that mouse
+         * button masks are filtered out */
+        state_filtered &= 0xFF;
+        LOG("(removed upper 8 bits, state = %d)\n", state_filtered);
 
         /* We need to get the keysym group (There are group 1 to group 4, each holding
            two keysyms (without shift and with shift) using Xkb because X fails to
            provide them reliably (it works in Xephyr, it does not in real X) */
         XkbStateRec state;
         if (XkbGetState(xkbdpy, XkbUseCoreKbd, &state) == Success && (state.group+1) == 2)
-                event->state |= 0x2;
+                state_filtered |= BIND_MODE_SWITCH;
 
-        LOG("state %d\n", event->state);
-
-        /* Remove the numlock bit, all other bits are modifiers we can bind to */
-        uint16_t state_filtered = event->state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK);
-
-        /* Only use the lower 8 bits of the state (modifier masks) so that mouse
-         * button masks are filtered out */
-        state_filtered &= 0xFF;
+        LOG("(checked mode_switch, state %d)\n", state_filtered);
 
         /* Find the binding */
         Binding *bind;
@@ -130,7 +131,7 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
         }
 
         parse_command(conn, bind->command);
-        if (event->state & 0x2) {
+        if (state_filtered & BIND_MODE_SWITCH) {
                 LOG("Mode_switch -> allow_events(SyncKeyboard)\n");
                 xcb_allow_events(conn, SyncKeyboard, event->time);
                 xcb_flush(conn);
