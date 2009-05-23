@@ -27,6 +27,7 @@
 #include "handlers.h"
 #include "layout.h"
 #include "manage.h"
+#include "floating.h"
 
 /*
  * Go through all existing windows (if the window manager is restarted) and manage them
@@ -333,6 +334,18 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 else CIRCLEQ_INSERT_TAIL(&(new->container->clients), new, clients);
 
                 SLIST_INSERT_HEAD(&(new->container->workspace->focus_stack), new, focus_clients);
+
+                /* Ensure that it is below all floating clients */
+                Client *first_floating;
+                SLIST_FOREACH(first_floating, &(new->container->workspace->focus_stack), focus_clients)
+                        if (first_floating->floating)
+                                break;
+
+                if (first_floating != SLIST_END(&(new->container->workspace->focus_stack))) {
+                        LOG("Setting below floating\n");
+                        uint32_t values[] = { first_floating->frame, XCB_STACK_MODE_BELOW };
+                        xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+                }
         }
 
         /* Check if the window already got the fullscreen hint set */

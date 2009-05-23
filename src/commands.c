@@ -24,6 +24,7 @@
 #include "i3.h"
 #include "xinerama.h"
 #include "client.h"
+#include "floating.h"
 
 bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction) {
         /* If this container is empty, we’re done */
@@ -418,6 +419,49 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
         render_layout(conn);
 }
 
+static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *client, int workspace) {
+        /* t_ws (to workspace) is just a container pointer to the workspace we’re switching to */
+        Workspace *t_ws = &(workspaces[workspace-1]);
+
+        LOG("moving floating\n");
+
+        if (t_ws->screen == NULL) {
+                LOG("initializing new workspace, setting num to %d\n", workspace-1);
+                t_ws->screen = c_ws->screen;
+                /* Copy the dimensions from the virtual screen */
+		memcpy(&(t_ws->rect), &(t_ws->screen->rect), sizeof(Rect));
+        } else {
+                /* Check if there is already a fullscreen client on the destination workspace and
+                 * stop moving if so. */
+                if (client->fullscreen && (t_ws->fullscreen_client != NULL)) {
+                        LOG("Not moving: Fullscreen client already existing on destination workspace.\n");
+                        return;
+                }
+        }
+
+        /* Remove from focus stack */
+        SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
+
+        if (client->workspace->fullscreen_client == client)
+                client->workspace->fullscreen_client = NULL;
+
+        /* Insert into destination focus stack */
+        client->workspace = t_ws;
+        SLIST_INSERT_HEAD(&(t_ws->focus_stack), client, focus_clients);
+        if (client->fullscreen)
+                t_ws->fullscreen_client = client;
+
+        /* If we’re moving it to an invisible screen, we need to unmap it */
+        if (t_ws->screen->current_workspace != t_ws->num) {
+                LOG("This workspace is not visible, unmapping\n");
+                xcb_unmap_window(conn, client->frame);
+        }
+
+        LOG("done\n");
+
+        render_layout(conn);
+}
+
 /*
  * Moves the currently selected window to the given workspace
  *
@@ -463,7 +507,9 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         if (container->workspace->fullscreen_client == current_client)
                 container->workspace->fullscreen_client = NULL;
 
+        /* TODO: insert it to the correct position */
         CIRCLEQ_INSERT_TAIL(&(to_container->clients), current_client, clients);
+
         SLIST_INSERT_HEAD(&(to_container->workspace->focus_stack), current_client, focus_clients);
         if (current_client->fullscreen)
                 t_ws->fullscreen_client = current_client;
@@ -563,6 +609,14 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
         FOR_TABLE(c_ws)
                 CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
                         xcb_map_window(conn, client->frame);
+
+        /* Map all floating clients */
+        SLIST_FOREACH(client, &(c_ws->focus_stack), focus_clients) {
+                if (!client->floating)
+                        continue;
+
+                xcb_map_window(conn, client->frame);
+        }
 
         /* Map all stack windows, if any */
         struct Stack_Window *stack_win;
@@ -683,6 +737,12 @@ static void travel_focus_stack(xcb_connection_t *conn, const char *arguments) {
  */
 void parse_command(xcb_connection_t *conn, const char *command) {
         LOG("--- parsing command \"%s\" ---\n", command);
+        /* Get the first client from focus stack because floating clients are not
+         * in any container, therefore CUR_CELL is not appropriate. */
+        Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
+        if (last_focused == SLIST_END(&(c_ws->focus_stack)))
+                last_focused = NULL;
+
         /* Hmm, just to be sure */
         if (command[0] == '\0')
                 return;
@@ -708,17 +768,17 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         }
 
         if (STARTS_WITH(command, "kill")) {
-                if (CUR_CELL->currently_focused == NULL) {
+                if (last_focused == NULL) {
                         LOG("There is no window to kill\n");
                         return;
                 }
 
                 LOG("Killing current window\n");
-                client_kill(conn, CUR_CELL->currently_focused);
+                client_kill(conn, last_focused);
                 return;
         }
 
-        /* Is it a jump to a specified workspae, row, col? */
+        /* Is it a jump to a specified workspace, row, col? */
         if (STARTS_WITH(command, "jump ")) {
                 const char *arguments = command + strlen("jump ");
                 if (arguments[0] == '"')
@@ -736,16 +796,31 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         /* Is it 'f' for fullscreen? */
         if (command[0] == 'f') {
-                if (CUR_CELL->currently_focused == NULL)
+                if (last_focused == NULL)
                         return;
-                toggle_fullscreen(conn, CUR_CELL->currently_focused);
+                toggle_fullscreen(conn, last_focused);
                 return;
         }
 
         /* Is it just 's' for stacking or 'd' for default? */
         if ((command[0] == 's' || command[0] == 'd') && (command[1] == '\0')) {
+                if (last_focused->floating) {
+                        LOG("not switching, this is a floating client\n");
+                        return;
+                }
                 LOG("Switching mode for current container\n");
                 switch_layout_mode(conn, CUR_CELL, (command[0] == 's' ? MODE_STACK : MODE_DEFAULT));
+                return;
+        }
+
+        /* Is it 't' for toggle tiling/floating? */
+        if (command[0] == 't') {
+                if (last_focused == NULL) {
+                        LOG("Cannot toggle tiling/floating: workspace empty\n");
+                        return;
+                }
+
+                toggle_floating_mode(conn, last_focused);
                 return;
         }
 
@@ -764,7 +839,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 }
         }
 
-        /* It's a normal <cmd> */
+        /* It’s a normal <cmd> */
         char *rest = NULL;
         enum { ACTION_FOCUS, ACTION_MOVE, ACTION_SNAP } action = ACTION_FOCUS;
         direction_t direction;
@@ -793,7 +868,14 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         }
 
         if (*rest == '\0') {
-                move_current_window_to_workspace(conn, workspace);
+                if (last_focused->floating)
+                        move_floating_window_to_workspace(conn, last_focused, workspace);
+                else move_current_window_to_workspace(conn, workspace);
+                return;
+        }
+
+        if (last_focused->floating) {
+                LOG("Not performing because this is a floating window\n");
                 return;
         }
 

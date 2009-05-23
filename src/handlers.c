@@ -34,6 +34,7 @@
 #include "resize.h"
 #include "client.h"
 #include "manage.h"
+#include "floating.h"
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -322,7 +323,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         Container *con = client->container;
         int first, second;
 
-        if (con == NULL) {
+        if (client->dock) {
                 LOG("dock. done.\n");
                 xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
                 xcb_flush(conn);
@@ -334,6 +335,9 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         if (!border_click) {
                 LOG("client. done.\n");
                 xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
+                /* Floating clients should be raised on click */
+                if (client->floating)
+                        xcb_raise_window(conn, client->frame);
                 xcb_flush(conn);
                 return 1;
         }
@@ -342,8 +346,21 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         i3Font *font = load_font(conn, config.font);
         if (event->event_y >= 2 && event->event_y <= (font->height + 2 + 2)) {
                 LOG("click on titlebar\n");
+
+                /* Floating clients can be dragged by grabbing their titlebar */
+                if (client->floating) {
+                        /* Firstly, we raise it. Maybe the user just wanted to raise it without grabbing */
+                        uint32_t values[] = { XCB_STACK_MODE_ABOVE };
+                        xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
+                        xcb_flush(conn);
+
+                        floating_drag_window(conn, client, event);
+                }
                 return 1;
         }
+
+        if (client->floating)
+                return floating_border_click(conn, client, event);
 
         if (event->event_y < 2) {
                 /* This was a press on the top border */
@@ -508,6 +525,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         if (client->name != NULL)
                 free(client->name);
 
+        /* Clients without a container are either floating or dock windows */
         if (client->container != NULL) {
                 Container *con = client->container;
 
@@ -524,6 +542,8 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 /* Only if this is the active container, we need to really change focus */
                 if ((con->currently_focused != NULL) && ((con == CUR_CELL) || client->fullscreen))
                         set_focus(conn, con->currently_focused, true);
+        } else if (client->floating) {
+                SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
         }
 
         if (client->dock) {
@@ -543,13 +563,10 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         }
 
         /* Let’s see how many clients there are left on the workspace to delete it if it’s empty */
-        bool workspace_empty = true;
-        FOR_TABLE(client->workspace)
-                if (!CIRCLEQ_EMPTY(&(client->workspace->table[cols][rows]->clients))) {
-                        workspace_empty = false;
-                        break;
-                }
+        bool workspace_empty = SLIST_EMPTY(&(client->workspace->focus_stack));
+        Client *to_focus = (!workspace_empty ? SLIST_FIRST(&(client->workspace->focus_stack)) : NULL);
 
+        /* If this workspace is currently active, we don’t delete it */
         i3Screen *screen;
         TAILQ_FOREACH(screen, virtual_screens, screens)
                 if (screen->current_workspace == client->workspace->num) {
@@ -563,6 +580,10 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         free(client);
 
         render_layout(conn);
+
+        /* Ensure the focus is set to the next client in the focus stack */
+        if (to_focus != NULL)
+                set_focus(conn, to_focus, true);
 
         return 1;
 }
@@ -755,7 +776,7 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                 return 1;
         }
 
-        if (client->container->mode != MODE_STACK)
+        if (client->container == NULL || client->container->mode != MODE_STACK)
                 decorate_window(conn, client, client->frame, client->titlegc, 0);
         else {
                 uint32_t background_color;

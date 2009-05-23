@@ -278,3 +278,12 @@ void xcb_get_numlock_mask(xcb_connection_t *conn) {
         xcb_key_symbols_free(keysyms);
         free(reply);
 }
+
+/*
+ * Raises the given window (typically client->frame) above all other windows
+ *
+ */
+void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
+        uint32_t values[] = { XCB_STACK_MODE_ABOVE };
+        xcb_configure_window(conn, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
+}

@@ -83,7 +83,7 @@ int get_unoccupied_y(Workspace *workspace, int col) {
  *
  */
 void redecorate_window(xcb_connection_t *conn, Client *client) {
-        if (client->container->mode == MODE_STACK) {
+        if (client->container != NULL && client->container->mode == MODE_STACK) {
                 render_container(conn, client->container);
                 /* We clear the frame to generate exposure events, because the color used
                    in drawing may be different */
@@ -105,12 +105,13 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                  border_color;
 
         /* Clients without a container (docks) won’t get decorated */
-        if (client->container == NULL)
+        if (client->dock)
                 return;
 
-        if (client->container->currently_focused == client) {
+        LOG("redecorating child %08x\n", client->child);
+        if (client->floating || client->container->currently_focused == client) {
                 /* Distinguish if the window is currently focused… */
-                if (CUR_CELL->currently_focused == client)
+                if (client->floating || CUR_CELL->currently_focused == client)
                         background_color = get_colorpixel(conn, "#285577");
                 /* …or if it is the focused window in a not focused container */
                 else background_color = get_colorpixel(conn, "#555555");
@@ -133,14 +134,14 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, background_color);
 
         /* In stacking mode, we only render the rect for this specific decoration */
-        if (client->container->mode == MODE_STACK) {
-                xcb_rectangle_t rect = {0, offset, client->container->width, offset + decoration_height };
-                xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
-        } else {
+        if (client->container != NULL && client->container->mode == MODE_STACK) {
                 /* We need to use the container’s width because it is the more recent value - when
                    in stacking mode, clients get reconfigured only on demand (the not active client
                    is not reconfigured), so the client’s rect.width would be wrong */
-                xcb_rectangle_t rect = {0, 0, client->container->width, client->rect.height};
+                xcb_rectangle_t rect = {0, offset, client->container->width, offset + decoration_height };
+                xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
+        } else {
+                xcb_rectangle_t rect = {0, 0, client->rect.width, client->rect.height};
                 xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
 
                 /* Draw the inner background to have a black frame around clients (such as mplayer)
@@ -179,7 +180,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
  * Pushes the client’s x and y coordinates to X11
  *
  */
-static void reposition_client(xcb_connection_t *conn, Client *client) {
+void reposition_client(xcb_connection_t *conn, Client *client) {
         LOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
         /* Note: We can use a pointer to client->x like an array of uint32_ts
            because it is followed by client->y by definition */
@@ -190,7 +191,7 @@ static void reposition_client(xcb_connection_t *conn, Client *client) {
  * Pushes the client’s width/height to X11 and resizes the child window
  *
  */
-static void resize_client(xcb_connection_t *conn, Client *client) {
+void resize_client(xcb_connection_t *conn, Client *client) {
         i3Font *font = load_font(conn, config.font);
 
         LOG("resizing client 0x%08x to %d x %d\n", client->frame, client->rect.width, client->rect.height);

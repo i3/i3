@@ -37,6 +37,18 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
 void redecorate_window(xcb_connection_t *conn, Client *client);
 
 /**
+ * Pushes the client’s x and y coordinates to X11
+ *
+ */
+void reposition_client(xcb_connection_t *conn, Client *client);
+
+/**
+ * Pushes the client’s width/height to X11 and resizes the child window
+ *
+ */
+void resize_client(xcb_connection_t *conn, Client *client);
+
+/**
  * Renders the given container. Is called by render_layout() or individually (for example
  * when focus changes in a stacking container)
  *

@@ -253,6 +253,8 @@ struct Client {
 
         /* x, y, width, height of the frame */
         Rect rect;
+        /* Position in floating mode and in tiling mode are saved separately */
+        Rect floating_rect;
         /* x, y, width, height of the child (relative to its frame) */
         Rect child_rect;
 
@@ -281,6 +283,9 @@ struct Client {
 
         /* fullscreen is pretty obvious */
         bool fullscreen;
+
+        /* floating? (= not in tiling layout) */
+        bool floating;
 
         /* Ensure TITLEBAR_TOP maps to 0 because we use calloc for initialization later */
         enum { TITLEBAR_TOP = 0, TITLEBAR_LEFT, TITLEBAR_RIGHT, TITLEBAR_BOTTOM, TITLEBAR_OFF } titlebar_position;
