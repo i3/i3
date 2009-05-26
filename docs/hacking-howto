@@ -107,23 +107,35 @@ Contains forward definitions for all public functions, aswell as doxygen-compati
 comments (so if you want to get a bit more of the big picture, either browse all
 header files or use doxygen if you prefer that).
 
+src/client.c::
+Contains all functions which are specific to a certain client (make it
+fullscreen, see if its class/name matches a pattern, kill it, …).
+
 src/commands.c::
-Parsing commands
+Parsing commands and actually execute them (focussing, moving, …).
 
 src/config.c::
-Parses the configuration file
+Parses the configuration file.
 
 src/debug.c::
-Contains debugging functions to print unhandled X events
+Contains debugging functions to print unhandled X events.
+
+src/floating.c::
+Contains functions for floating mode (mostly resizing/dragging).
 
 src/handlers.c::
-Contains all handlers for all kind of X events
+Contains all handlers for all kind of X events (new window title, new hints,
+unmapping, key presses, button presses, …).
 
 src/layout.c::
-Renders your layout (screens, workspaces, containers)
+Renders your layout (screens, workspaces, containers).
 
 src/mainx.c::
-Initializes the window manager
+Initializes the window manager.
+
+src/manage.c::
+Looks at existing or new windows and decides whether to manage them. If so, it
+reparents the window and inserts it into our data structures.
 
 src/resize.c::
 Contains the functions to resize columns/rows in the table.
