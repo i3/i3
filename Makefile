@@ -1,7 +1,6 @@
 UNAME=$(shell uname)
 DEBUG=1
 INSTALL=install
-MAKE=make
 GIT_VERSION=$(shell git describe --tags --always)
 VERSION=$(shell git describe --tags --abbrev=0)
 
