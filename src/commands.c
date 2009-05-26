@@ -732,6 +732,29 @@ static void travel_focus_stack(xcb_connection_t *conn, const char *arguments) {
 }
 
 /*
+ * Goes through the list of arguments (for exec()) and checks if the given argument
+ * is present. If not, it copies the arguments (because we cannot realloc it) and
+ * appends the given argument.
+ *
+ */
+static char **append_argument(char **original, char *argument) {
+        int num_args;
+        for (num_args = 0; original[num_args] != NULL; num_args++) {
+                LOG("original argument: \"%s\"\n", original[num_args]);
+                /* If the argument is already present we return the original pointer */
+                if (strcmp(original[num_args], argument) == 0)
+                        return original;
+        }
+        /* Copy the original array */
+        char **result = smalloc((num_args+2) * sizeof(char*));
+        memcpy(result, original, num_args * sizeof(char*));
+        result[num_args] = argument;
+        result[num_args+1] = NULL;
+
+        return result;
+}
+
+/*
  * Parses a command, see file CMDMODE for more information
  *
  */
@@ -763,6 +786,9 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         /* Is it <restart>? Then restart in place. */
         if (STARTS_WITH(command, "restart")) {
                 LOG("restarting \"%s\"...\n", start_argv[0]);
+                /* make sure -a is in the argument list or append it */
+                start_argv = append_argument(start_argv, "-a");
+
                 execvp(start_argv[0], start_argv);
                 /* not reached */
         }

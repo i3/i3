@@ -72,6 +72,7 @@ int num_screens = 0;
 int main(int argc, char *argv[], char *env[]) {
         int i, screens, opt;
         char *override_configpath = NULL;
+        bool autostart = true;
         xcb_connection_t *conn;
         xcb_property_handlers_t prophs;
         xcb_window_t root;
@@ -85,8 +86,12 @@ int main(int argc, char *argv[], char *env[]) {
 
         start_argv = argv;
 
-        while ((opt = getopt(argc, argv, "c:v")) != -1) {
+        while ((opt = getopt(argc, argv, "c:va")) != -1) {
                 switch (opt) {
+                        case 'a':
+                                LOG("Autostart disabled using -a\n");
+                                autostart = false;
+                                break;
                         case 'c':
                                 override_configpath = sstrdup(optarg);
                                 break;
@@ -270,9 +275,11 @@ int main(int argc, char *argv[], char *env[]) {
 
         /* Autostarting exec-lines */
         struct Autostart *exec;
-        TAILQ_FOREACH(exec, &autostarts, autostarts) {
-                LOG("auto-starting %s\n", exec->command);
-                start_application(exec->command);
+        if (autostart) {
+                TAILQ_FOREACH(exec, &autostarts, autostarts) {
+                        LOG("auto-starting %s\n", exec->command);
+                        start_application(exec->command);
+                }
         }
 
         /* check for Xinerama */

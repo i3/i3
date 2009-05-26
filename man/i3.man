@@ -1,7 +1,7 @@
 i3(1)
 =====
 Michael Stapelberg <michael+i3@stapelberg.de>
-v3.alpha-bf1, May 2009
+v3.beta, May 2009
 
 == NAME
 
@@ -9,7 +9,15 @@ i3 - an improved dynamic, tiling window manager
 
 == SYNOPSIS
 
-i3 [-c configfile]
+i3 [-c configfile] [-a]
+
+== OPTIONS
+
+-c::
+Specifies an alternate configuration file path
+
+-a::
+Disables autostart.
 
 == DESCRIPTION
 
