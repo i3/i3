@@ -262,7 +262,8 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
         /* Fix colspan/rowspan if it’d overlap */
         fix_colrowspan(conn, workspace);
 
-        render_layout(conn);
+        render_workspace(conn, workspace->screen, workspace);
+        xcb_flush(conn);
 
         set_focus(conn, current_client, true);
 }
@@ -847,6 +848,14 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 }
 
                 toggle_floating_mode(conn, last_focused);
+                /* delete all empty columns/rows */
+                cleanup_table(conn, last_focused->workspace);
+
+                /* Fix colspan/rowspan if it’d overlap */
+                fix_colrowspan(conn, last_focused->workspace);
+
+                render_workspace(conn, last_focused->workspace->screen, last_focused->workspace);
+                xcb_flush(conn);
                 return;
         }
 
