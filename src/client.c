@@ -12,6 +12,7 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
@@ -21,6 +22,7 @@
 #include "xcb.h"
 #include "util.h"
 #include "queue.h"
+#include "layout.h"
 
 /*
  * Removes the given client from the container, either because it will be inserted into another
@@ -130,4 +132,74 @@ bool client_matches_class_name(Client *client, char *to_class, char *to_title,
         }
 
         return true;
+}
+
+/*
+ * Toggles fullscreen mode for the given client. It updates the data structures and
+ * reconfigures (= resizes/moves) the client and its frame to the full size of the
+ * screen. When leaving fullscreen, re-rendering the layout is forced.
+ *
+ */
+void client_toggle_fullscreen(xcb_connection_t *conn, Client *client) {
+        /* dock clients cannot enter fullscreen mode */
+        assert(!client->dock);
+
+        Workspace *workspace = client->workspace;
+
+        if (!client->fullscreen) {
+                if (workspace->fullscreen_client != NULL) {
+                        LOG("Not entering fullscreen mode, there already is a fullscreen client.\n");
+                        return;
+                }
+                client->fullscreen = true;
+                workspace->fullscreen_client = client;
+                LOG("Entering fullscreen mode...\n");
+                /* We just entered fullscreen mode, let’s configure the window */
+                uint32_t mask = XCB_CONFIG_WINDOW_X |
+                                XCB_CONFIG_WINDOW_Y |
+                                XCB_CONFIG_WINDOW_WIDTH |
+                                XCB_CONFIG_WINDOW_HEIGHT;
+                uint32_t values[4] = {workspace->rect.x,
+                                      workspace->rect.y,
+                                      workspace->rect.width,
+                                      workspace->rect.height};
+
+                LOG("child itself will be at %dx%d with size %dx%d\n",
+                                values[0], values[1], values[2], values[3]);
+
+                xcb_configure_window(conn, client->frame, mask, values);
+
+                /* Child’s coordinates are relative to the parent (=frame) */
+                values[0] = 0;
+                values[1] = 0;
+                xcb_configure_window(conn, client->child, mask, values);
+
+                /* Raise the window */
+                values[0] = XCB_STACK_MODE_ABOVE;
+                xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
+
+                Rect child_rect = workspace->rect;
+                child_rect.x = child_rect.y = 0;
+                fake_configure_notify(conn, child_rect, client->child);
+        } else {
+                LOG("leaving fullscreen mode\n");
+                client->fullscreen = false;
+                workspace->fullscreen_client = NULL;
+                if (client->floating) {
+                        /* For floating clients it’s enough if we just reconfigure that window (in fact,
+                         * re-rendering the layout will not update the client.) */
+                        reposition_client(conn, client);
+                        resize_client(conn, client);
+                        /* redecorate_window flushes */
+                        redecorate_window(conn, client);
+                } else {
+                        /* Because the coordinates of the window haven’t changed, it would not be
+                           re-configured if we don’t set the following flag */
+                        client->force_reconfigure = true;
+                        /* We left fullscreen mode, redraw the whole layout to ensure enternotify events are disabled */
+                        render_layout(conn);
+                }
+        }
+
+        xcb_flush(conn);
 }

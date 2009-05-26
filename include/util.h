@@ -163,14 +163,6 @@ void leave_stack_mode(xcb_connection_t *conn, Container *container);
 void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode);
 
 /**
- * Toggles fullscreen mode for the given client. It updates the data structures and
- * reconfigures (= resizes/moves) the client and its frame to the full size of the
- * screen. When leaving fullscreen, re-rendering the layout is forced.
- *
- */
-void toggle_fullscreen(xcb_connection_t *conn, Client *client);
-
-/**
  * Gets the first matching client for the given window class/window title.
  * If the paramater specific is set to a specific client, only this one
  * will be checked.

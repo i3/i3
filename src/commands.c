@@ -798,7 +798,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         if (command[0] == 'f') {
                 if (last_focused == NULL)
                         return;
-                toggle_fullscreen(conn, last_focused);
+                client_toggle_fullscreen(conn, last_focused);
                 return;
         }
 

@@ -830,7 +830,7 @@ int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message
                     (!client->fullscreen &&
                      (event->data.data32[0] == _NET_WM_STATE_ADD ||
                       event->data.data32[0] == _NET_WM_STATE_TOGGLE)))
-                        toggle_fullscreen(conn, client);
+                        client_toggle_fullscreen(conn, client);
         } else {
                 LOG("unhandled clientmessage\n");
                 return 0;

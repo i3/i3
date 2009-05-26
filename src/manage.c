@@ -28,6 +28,7 @@
 #include "layout.h"
 #include "manage.h"
 #include "floating.h"
+#include "client.h"
 
 /*
  * Go through all existing windows (if the window manager is restarted) and manage them
@@ -359,7 +360,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         /* If the window got the fullscreen state, we just toggle fullscreen
                            and don’t event bother to redraw the layout – that would not change
                            anything anyways */
-                        toggle_fullscreen(conn, new);
+                        client_toggle_fullscreen(conn, new);
                         return;
                 }
 
