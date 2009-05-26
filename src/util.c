@@ -447,10 +447,10 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
  *
  */
 void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
-        /* clients without a container (docks) cannot be focused */
-        assert(client->container != NULL);
+        /* dock clients cannot enter fullscreen mode */
+        assert(!client->dock);
 
-        Workspace *workspace = client->container->workspace;
+        Workspace *workspace = client->workspace;
 
         if (!client->fullscreen) {
                 if (workspace->fullscreen_client != NULL) {
@@ -461,10 +461,10 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                 workspace->fullscreen_client = client;
                 LOG("Entering fullscreen mode...\n");
                 /* We just entered fullscreen mode, let’s configure the window */
-                 uint32_t mask = XCB_CONFIG_WINDOW_X |
-                                 XCB_CONFIG_WINDOW_Y |
-                                 XCB_CONFIG_WINDOW_WIDTH |
-                                 XCB_CONFIG_WINDOW_HEIGHT;
+                uint32_t mask = XCB_CONFIG_WINDOW_X |
+                                XCB_CONFIG_WINDOW_Y |
+                                XCB_CONFIG_WINDOW_WIDTH |
+                                XCB_CONFIG_WINDOW_HEIGHT;
                 uint32_t values[4] = {workspace->rect.x,
                                       workspace->rect.y,
                                       workspace->rect.width,
@@ -491,11 +491,20 @@ void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                 LOG("leaving fullscreen mode\n");
                 client->fullscreen = false;
                 workspace->fullscreen_client = NULL;
-                /* Because the coordinates of the window haven’t changed, it would not be
-                   re-configured if we don’t set the following flag */
-                client->force_reconfigure = true;
-                /* We left fullscreen mode, redraw the whole layout to ensure enternotify events are disabled */
-                render_layout(conn);
+                if (client->floating) {
+                        /* For floating clients it’s enough if we just reconfigure that window (in fact,
+                         * re-rendering the layout will not update the client.) */
+                        reposition_client(conn, client);
+                        resize_client(conn, client);
+                        /* redecorate_window flushes */
+                        redecorate_window(conn, client);
+                } else {
+                        /* Because the coordinates of the window haven’t changed, it would not be
+                           re-configured if we don’t set the following flag */
+                        client->force_reconfigure = true;
+                        /* We left fullscreen mode, redraw the whole layout to ensure enternotify events are disabled */
+                        render_layout(conn);
+                }
         }
 
         xcb_flush(conn);

@@ -635,7 +635,7 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         if (client->dock)
                 return 1;
 
-        if (client->container->mode == MODE_STACK)
+        if (client->container != NULL && client->container->mode == MODE_STACK)
                 render_container(conn, client->container);
         else decorate_window(conn, client, client->frame, client->titlegc, 0);
         xcb_flush(conn);
@@ -703,7 +703,7 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
         if (client->dock)
                 return 1;
 
-        if (client->container->mode == MODE_STACK)
+        if (client->container != NULL && client->container->mode == MODE_STACK)
                 render_container(conn, client->container);
         else decorate_window(conn, client, client->frame, client->titlegc, 0);
         xcb_flush(conn);
