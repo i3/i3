@@ -144,7 +144,7 @@ void load_configuration(const char *override_configpath) {
                                 class_title++;
                                 char *end = strchr(class_title, '"');
                                 if (end == NULL)
-                                        die("Malformatted assignment, couldn't find finishing quote\n");
+                                        die("Malformed assignment, couldn't find terminating quote\n");
                                 *end = '\0';
                         } else {
                                 /* If it is not quoted, we terminate it at the first space */

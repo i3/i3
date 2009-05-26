@@ -3,21 +3,23 @@ i3 User’s Guide
 Michael Stapelberg <michael+i3@stapelberg.de>
 May 2009
 
-This document contains all information you need to configuring and using the i3 window
-manager. If it does not, please contact me on IRC, Jabber or E-Mail and I’ll help you out.
+This document contains all information you need to configuring and using the i3
+window manager. If it does not, please contact me on IRC, Jabber or E-Mail and
+I’ll help you out.
 
 == Configuring i3
 
 TODO: document the other options, implement variables before
 
 terminal::
-	Specifies the terminal emulator program you prefer. It will be started by default when
-	you press Mod1+Enter, but you can overwrite this. Refer to it as +$terminal+ to keep things
-	modular.
+	Specifies the terminal emulator program you prefer. It will be started
+	by default when you press Mod1+Enter, but you can overwrite this. Refer
+	to it as +$terminal+ to keep things modular.
 font::
-	Specifies the default font you want i3 to use. Use an X core font descriptor here, like
-	+-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1+. You can use +xfontsel(1)+
-	to pick one.
+	Specifies the default font you want i3 to use. Use an X core font
+	descriptor here, like
+	+-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1+. You can
+	use +xfontsel(1)+ to pick one.
 
 === Keyboard bindings
 
@@ -37,13 +39,27 @@ bind Mod1+41 f
 bind Mod1+Shift+27 restart
 --------------------------------
 
+Available Modifiers:
+
+Mod1-Mod5, Shift, Control::
+Standard modifiers, see +xmodmap(1)+
+
+Mode_switch::
+Unlike other window managers, i3 can use Mode_switch as a modifier. This allows
+you to remap capslock (for example) to Mode_switch and use it for both: typing
+umlauts or special characters 'and' having some comfortably reachable key
+bindings. For example, when typing, capslock+1 or capslock+2 for switching
+workspaces is totally convenient. Try it :-).
+
 === Automatically putting clients on specific workspaces
 
-It is recommended that you match on window classes whereever possible because some applications
-first create their window and then care about setting the correct title. Firefox with Vimperator
-comes to mind, as the window starts up being named Firefox and only when Vimperator is loaded,
-the title changes. As i3 will get the title as soon as the application maps the window (mapping
-means actually displaying it on the screen), you’d need to have to match on Firefox in this case.
+It is recommended that you match on window classes whereever possible because
+some applications first create their window and then care about setting the
+correct title. Firefox with Vimperator comes to mind, as the window starts up
+being named Firefox and only when Vimperator is loaded, the title changes. As
+i3 will get the title as soon as the application maps the window (mapping means
+actually displaying it on the screen), you’d need to have to match on Firefox
+in this case.
 
 *Syntax*:
 ----------------------------------------------------
