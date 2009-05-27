@@ -249,6 +249,7 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
 
         /* Update data structures */
         current_client->container = new;
+        current_client->workspace = new->workspace;
         container->currently_focused = to_focus;
         new->currently_focused = current_client;
 
@@ -469,6 +470,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         LOG("Moved.\n");
 
         current_client->container = to_container;
+        current_client->workspace = to_container->workspace;
         container->currently_focused = to_focus;
         to_container->currently_focused = current_client;
 
