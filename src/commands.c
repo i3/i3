@@ -831,7 +831,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         /* Is it just 's' for stacking or 'd' for default? */
         if ((command[0] == 's' || command[0] == 'd') && (command[1] == '\0')) {
-                if (last_focused->floating) {
+                if (last_focused == NULL || last_focused->floating) {
                         LOG("not switching, this is a floating client\n");
                         return;
                 }
@@ -903,14 +903,14 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         }
 
         if (*rest == '\0') {
-                if (last_focused->floating)
+                if (last_focused != NULL && last_focused->floating)
                         move_floating_window_to_workspace(conn, last_focused, workspace);
                 else move_current_window_to_workspace(conn, workspace);
                 return;
         }
 
-        if (last_focused->floating) {
-                LOG("Not performing because this is a floating window\n");
+        if (last_focused == NULL || last_focused->floating) {
+                LOG("Not performing (null or floating) \n");
                 return;
         }
 
