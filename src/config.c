@@ -52,6 +52,21 @@ void load_configuration(const char *override_configpath) {
         if (config.name == NULL) \
                 die("You did not specify required configuration option " #name "\n");
 
+#define OPTION_COLOR(opt, name) \
+        if (strcasecmp(key, opt) == 0) { \
+                config.name = sstrdup(value); \
+                continue; \
+        }
+
+#define VERIFY_COLOR(name, def) \
+        if (config.name == NULL) { \
+                config.name = (char *)malloc(7); \
+                memset(config.name, 0, 7); \
+        } \
+        if ((strlen(config.name) != 7) || (config.name[0] != '#')) { \
+                strncpy(config.name, def, 7); \
+        }
+
         /* Clear the old config or initialize the data structure */
         memset(&config, 0, sizeof(config));
 
@@ -84,6 +99,34 @@ void load_configuration(const char *override_configpath) {
 
                 OPTION_STRING(terminal);
                 OPTION_STRING(font);
+
+                /* Colors */
+                OPTION_COLOR("client.focused.background.active",
+                                client_focused_background_active);
+                OPTION_COLOR("client.focused.background.inactive",
+                                client_focused_background_inactive);
+                OPTION_COLOR("client.focused.text", 
+                                client_focused_text);
+                OPTION_COLOR("client.focused.border", 
+                                client_focused_border);
+                OPTION_COLOR("client.unfocused.background",
+                                client_unfocused_background);
+                OPTION_COLOR("client.unfocused.text",
+                                client_unfocused_text);
+                OPTION_COLOR("client.unfocused.border",
+                                client_unfocused_border);
+                OPTION_COLOR("bar.focused.background",
+                                bar_focused_background);
+                OPTION_COLOR("bar.focused.text",
+                                bar_focused_text);
+                OPTION_COLOR("bar.focused.border",
+                                bar_focused_border);
+                OPTION_COLOR("bar.unfocused.background",
+                                bar_unfocused_background);
+                OPTION_COLOR("bar.unfocused.text",
+                                bar_unfocused_text);
+                OPTION_COLOR("bar.unfocused.border",
+                                bar_unfocused_border);
 
                 /* exec-lines (autostart) */
                 if (strcasecmp(key, "exec") == 0) {
@@ -176,8 +219,22 @@ void load_configuration(const char *override_configpath) {
         }
         fclose(handle);
 
+        VERIFY_COLOR(client_focused_background_active, "#285577");
+        VERIFY_COLOR(client_focused_background_inactive, "#555555");
+        VERIFY_COLOR(client_focused_text, "#ffffff");
+        VERIFY_COLOR(client_focused_border, "#4c7899");
+        VERIFY_COLOR(client_unfocused_background,"#222222");
+        VERIFY_COLOR(client_unfocused_text, "#888888");
+        VERIFY_COLOR(client_unfocused_border, "#333333");
+        VERIFY_COLOR(bar_focused_background, "#285577");
+        VERIFY_COLOR(bar_focused_text, "#ffffff");
+        VERIFY_COLOR(bar_focused_border, "#4c7899");
+        VERIFY_COLOR(bar_unfocused_background, "#222222");
+        VERIFY_COLOR(bar_unfocused_text, "#888888");
+        VERIFY_COLOR(bar_unfocused_border, "#333333");
+
         REQUIRED_OPTION(terminal);
         REQUIRED_OPTION(font);
-
+ 
         return;
 }
