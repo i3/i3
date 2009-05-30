@@ -25,12 +25,12 @@ Config config;
  *
  */
 static char *glob_path(const char *path) {
-	static glob_t globbuf;
-	if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0)
-		die("glob() failed");
-	char *result = sstrdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
-	globfree(&globbuf);
-	return result;
+        static glob_t globbuf;
+        if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0)
+                die("glob() failed");
+        char *result = sstrdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
+        globfree(&globbuf);
+        return result;
 }
 
 
