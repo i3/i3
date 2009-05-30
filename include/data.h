@@ -242,6 +242,10 @@ struct Font {
  *
  */
 struct Client {
+        /* initialized will be set to true if the client was fully initialized by
+         * manage_window() and all functions can be used normally */
+        bool initialized;
+
         /* if you set a client to floating and set it back to managed, it does remember its old
            position and *tries* to get back there */
         Cell old_position;
@@ -284,8 +288,11 @@ struct Client {
         /* fullscreen is pretty obvious */
         bool fullscreen;
 
-        /* floating? (= not in tiling layout) */
-        bool floating;
+        /* floating? (= not in tiling layout) This cannot be simply a bool because we want to keep track
+         * of whether the status was set by the application (by setting WM_CLASS to tools for example) or
+         * by the user. The user’s choice overwrites automatic mode, of course. The order of the values
+         * is important because we check with >= FLOATING_AUTO_ON if a client is floating. */
+        enum { FLOATING_AUTO_OFF = 0, FLOATING_USER_OFF = 1, FLOATING_AUTO_ON = 2, FLOATING_USER_ON = 3 } floating;
 
         /* Ensure TITLEBAR_TOP maps to 0 because we use calloc for initialization later */
         enum { TITLEBAR_TOP = 0, TITLEBAR_LEFT, TITLEBAR_RIGHT, TITLEBAR_BOTTOM, TITLEBAR_OFF } titlebar_position;

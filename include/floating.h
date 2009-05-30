@@ -16,8 +16,11 @@
  * Correctly takes care of the position/size (separately stored for tiling/floating mode)
  * and repositions/resizes/redecorates the client.
  *
+ * If the automatic flag is set to true, this was an automatic update by a change of the
+ * window class from the application which can be overwritten by the user.
+ *
  */
-void toggle_floating_mode(xcb_connection_t *conn, Client *client);
+void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic);
 
 /**
  * Called whenever the user clicks on a border (not the titlebar!) of a floating window.

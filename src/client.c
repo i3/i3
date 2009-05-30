@@ -186,7 +186,7 @@ void client_toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                 LOG("leaving fullscreen mode\n");
                 client->fullscreen = false;
                 workspace->fullscreen_client = NULL;
-                if (client->floating) {
+                if (client->floating >= FLOATING_AUTO_ON) {
                         /* For floating clients it’s enough if we just reconfigure that window (in fact,
                          * re-rendering the layout will not update the client.) */
                         reposition_client(conn, client);

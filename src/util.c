@@ -264,7 +264,7 @@ void unmap_workspace(xcb_connection_t *conn, Workspace *u_ws) {
 
         /* To find floating clients, we traverse the focus stack */
         SLIST_FOREACH(client, &(u_ws->focus_stack), focus_clients) {
-                if (!client->floating)
+                if (client->floating <= FLOATING_USER_OFF)
                         continue;
 
                 xcb_unmap_window(conn, client->frame);

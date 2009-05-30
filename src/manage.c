@@ -339,7 +339,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 /* Ensure that it is below all floating clients */
                 Client *first_floating;
                 SLIST_FOREACH(first_floating, &(new->container->workspace->focus_stack), focus_clients)
-                        if (first_floating->floating)
+                        if (first_floating->floating >= FLOATING_AUTO_ON)
                                 break;
 
                 if (first_floating != SLIST_END(&(new->container->workspace->focus_stack))) {
@@ -348,6 +348,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
                 }
         }
+
+        new->initialized = true;
 
         /* Check if the window already got the fullscreen hint set */
         xcb_atom_t *state;

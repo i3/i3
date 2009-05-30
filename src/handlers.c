@@ -336,7 +336,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 LOG("client. done.\n");
                 xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
                 /* Floating clients should be raised on click */
-                if (client->floating)
+                if (client->floating >= FLOATING_AUTO_ON)
                         xcb_raise_window(conn, client->frame);
                 xcb_flush(conn);
                 return 1;
@@ -348,7 +348,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 LOG("click on titlebar\n");
 
                 /* Floating clients can be dragged by grabbing their titlebar */
-                if (client->floating) {
+                if (client->floating >= FLOATING_AUTO_ON) {
                         /* Firstly, we raise it. Maybe the user just wanted to raise it without grabbing */
                         uint32_t values[] = { XCB_STACK_MODE_ABOVE };
                         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
@@ -359,7 +359,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 return 1;
         }
 
-        if (client->floating)
+        if (client->floating >= FLOATING_AUTO_ON)
                 return floating_border_click(conn, client, event);
 
         if (event->event_y < 2) {
@@ -542,7 +542,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 /* Only if this is the active container, we need to really change focus */
                 if ((con->currently_focused != NULL) && ((con == CUR_CELL) || client->fullscreen))
                         set_focus(conn, con->currently_focused, true);
-        } else if (client->floating) {
+        } else if (client->floating >= FLOATING_AUTO_ON) {
                 SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
         }
 
@@ -736,6 +736,17 @@ int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
         char *old_class = client->window_class;
         client->window_class = new_class;
         FREE(old_class);
+
+        if (!client->initialized) {
+                LOG("Client is not yet initialized, not putting it to floating\n");
+                return 1;
+        }
+
+        if (strcmp(new_class, "tools") == 0) {
+                LOG("tool window, should we put it floating?\n");
+                if (client->floating == FLOATING_AUTO_OFF)
+                        toggle_floating_mode(conn, client, true);
+        }
 
         return 1;
 }

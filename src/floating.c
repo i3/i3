@@ -39,15 +39,18 @@ static void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_pres
  * Correctly takes care of the position/size (separately stored for tiling/floating mode)
  * and repositions/resizes/redecorates the client.
  *
+ * If the automatic flag is set to true, this was an automatic update by a change of the
+ * window class from the application which can be overwritten by the user.
+ *
  */
-void toggle_floating_mode(xcb_connection_t *conn, Client *client) {
+void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic) {
         Container *con = client->container;
 
         if (con == NULL) {
                 LOG("This client is already in floating (container == NULL), re-inserting\n");
                 Client *next_tiling;
                 SLIST_FOREACH(next_tiling, &(client->workspace->focus_stack), focus_clients)
-                        if (!next_tiling->floating)
+                        if (next_tiling->floating <= FLOATING_USER_OFF)
                                 break;
                 /* If there are no tiling clients on this workspace, there can only be one
                  * container: the first one */
@@ -60,7 +63,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client) {
                 /* Preserve position/size */
                 memcpy(&(client->floating_rect), &(client->rect), sizeof(Rect));
 
-                client->floating = false;
+                client->floating = FLOATING_USER_OFF;
                 client->container = con;
 
                 if (old_focused != NULL && !old_focused->dock)
@@ -88,7 +91,9 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client) {
                 con->currently_focused = get_last_focused_client(conn, con, NULL);
         }
 
-        client->floating = true;
+        if (automatic)
+                client->floating = FLOATING_AUTO_ON;
+        else client->floating = FLOATING_USER_ON;
 
         /* Initialize the floating position from the position in tiling mode, if this
          * client never was floating (width == 0) */
