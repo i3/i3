@@ -52,23 +52,44 @@ void load_configuration(const char *override_configpath) {
         if (config.name == NULL) \
                 die("You did not specify required configuration option " #name "\n");
 
-#define OPTION_COLOR(opt, name) \
+#define OPTION_COLORTRIPLE(opt, name) \
         if (strcasecmp(key, opt) == 0) { \
-                config.name = sstrdup(value); \
+                struct Colortriple buffer; \
+                memset(&buffer, 0, sizeof(struct Colortriple)); \
+                buffer.border[0] = buffer.background[0] = buffer.text[0] = '#'; \
+                if (sscanf(value, "#%06[0-9a-fA-F] #%06[0-9a-fA-F] #%06[0-9a-fA-F]", \
+                    buffer.border + 1, buffer.background + 1, buffer.text + 1) != 3 || \
+                    strlen(buffer.border) != 7 || \
+                    strlen(buffer.background) != 7 || \
+                    strlen(buffer.text) != 7) \
+                        die("invalid color code line: %s\n", value); \
+                memcpy(&config.name, &buffer, sizeof(struct Colortriple)); \
                 continue; \
-        }
-
-#define VERIFY_COLOR(name, def) \
-        if (config.name == NULL) { \
-                config.name = (char *)malloc(7); \
-                memset(config.name, 0, 7); \
-        } \
-        if ((strlen(config.name) != 7) || (config.name[0] != '#')) { \
-                strncpy(config.name, def, 7); \
         }
 
         /* Clear the old config or initialize the data structure */
         memset(&config, 0, sizeof(config));
+
+        /* Initialize default colors */
+        strcpy(config.client.focused.border, "#4c7899");
+        strcpy(config.client.focused.background, "#285577");
+        strcpy(config.client.focused.text, "#ffffff");
+
+        strcpy(config.client.focused_inactive.border, "#4c7899");
+        strcpy(config.client.focused_inactive.background, "#555555");
+        strcpy(config.client.focused_inactive.text, "#ffffff");
+
+        strcpy(config.client.unfocused.border, "#333333");
+        strcpy(config.client.unfocused.background, "#222222");
+        strcpy(config.client.unfocused.text, "#888888");
+
+        strcpy(config.bar.focused.border, "#4c7899");
+        strcpy(config.bar.focused.background, "#285577");
+        strcpy(config.bar.focused.text, "#ffffff");
+
+        strcpy(config.bar.unfocused.border, "#333333");
+        strcpy(config.bar.unfocused.background, "#222222");
+        strcpy(config.bar.unfocused.text, "#888888");
 
         FILE *handle;
         if (override_configpath != NULL) {
@@ -101,32 +122,12 @@ void load_configuration(const char *override_configpath) {
                 OPTION_STRING(font);
 
                 /* Colors */
-                OPTION_COLOR("client.focused.background.active",
-                                client_focused_background_active);
-                OPTION_COLOR("client.focused.background.inactive",
-                                client_focused_background_inactive);
-                OPTION_COLOR("client.focused.text", 
-                                client_focused_text);
-                OPTION_COLOR("client.focused.border", 
-                                client_focused_border);
-                OPTION_COLOR("client.unfocused.background",
-                                client_unfocused_background);
-                OPTION_COLOR("client.unfocused.text",
-                                client_unfocused_text);
-                OPTION_COLOR("client.unfocused.border",
-                                client_unfocused_border);
-                OPTION_COLOR("bar.focused.background",
-                                bar_focused_background);
-                OPTION_COLOR("bar.focused.text",
-                                bar_focused_text);
-                OPTION_COLOR("bar.focused.border",
-                                bar_focused_border);
-                OPTION_COLOR("bar.unfocused.background",
-                                bar_unfocused_background);
-                OPTION_COLOR("bar.unfocused.text",
-                                bar_unfocused_text);
-                OPTION_COLOR("bar.unfocused.border",
-                                bar_unfocused_border);
+                OPTION_COLORTRIPLE("client.focused", client.focused);
+                OPTION_COLORTRIPLE("client.focused_inactive", client.focused_inactive);
+                OPTION_COLORTRIPLE("client.unfocused", client.unfocused);
+                OPTION_COLORTRIPLE("client.focused", client.focused);
+                OPTION_COLORTRIPLE("bar.focused", bar.focused);
+                OPTION_COLORTRIPLE("bar.unfocused", bar.unfocused);
 
                 /* exec-lines (autostart) */
                 if (strcasecmp(key, "exec") == 0) {
@@ -214,24 +215,9 @@ void load_configuration(const char *override_configpath) {
                         continue;
                 }
 
-                fprintf(stderr, "Unknown configfile option: %s\n", key);
-                exit(1);
+                die("Unknown configfile option: %s\n", key);
         }
         fclose(handle);
-
-        VERIFY_COLOR(client_focused_background_active, "#285577");
-        VERIFY_COLOR(client_focused_background_inactive, "#555555");
-        VERIFY_COLOR(client_focused_text, "#ffffff");
-        VERIFY_COLOR(client_focused_border, "#4c7899");
-        VERIFY_COLOR(client_unfocused_background,"#222222");
-        VERIFY_COLOR(client_unfocused_text, "#888888");
-        VERIFY_COLOR(client_unfocused_border, "#333333");
-        VERIFY_COLOR(bar_focused_background, "#285577");
-        VERIFY_COLOR(bar_focused_text, "#ffffff");
-        VERIFY_COLOR(bar_focused_border, "#4c7899");
-        VERIFY_COLOR(bar_unfocused_background, "#222222");
-        VERIFY_COLOR(bar_unfocused_text, "#888888");
-        VERIFY_COLOR(bar_unfocused_border, "#333333");
 
         REQUIRED_OPTION(terminal);
         REQUIRED_OPTION(font);
