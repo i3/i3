@@ -585,13 +585,15 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
 
         /* Check if we need to change something or if we’re already there */
         if (c_ws->screen->current_workspace == (workspace-1)) {
-                if (CUR_CELL->currently_focused != NULL) {
-                        set_focus(conn, CUR_CELL->currently_focused, true);
+                Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
+                if (last_focused != SLIST_END(&(c_ws->focus_stack))) {
+                        set_focus(conn, last_focused, true);
                         if (need_warp) {
-                                client_warp_pointer_into(conn, CUR_CELL->currently_focused);
+                                client_warp_pointer_into(conn, last_focused);
                                 xcb_flush(conn);
                         }
                 }
+
                 return;
         }
 
@@ -630,10 +632,11 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
         ignore_enter_notify_forall(conn, c_ws, false);
 
         /* Restore focus on the new workspace */
-        if (CUR_CELL->currently_focused != NULL) {
-                set_focus(conn, CUR_CELL->currently_focused, true);
+        Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
+        if (last_focused != SLIST_END(&(c_ws->focus_stack))) {
+                set_focus(conn, last_focused, true);
                 if (need_warp) {
-                        client_warp_pointer_into(conn, CUR_CELL->currently_focused);
+                        client_warp_pointer_into(conn, last_focused);
                         xcb_flush(conn);
                 }
         } else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
