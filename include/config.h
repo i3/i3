@@ -1,3 +1,17 @@
+/*
+ * vim:ts=8:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ *
+ * (c) 2009 Michael Stapelberg and contributors
+ *
+ * See file LICENSE for license information.
+ *
+ * include/config.h: Contains all structs/variables for
+ * the configurable part of i3
+ *
+ */
+
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
@@ -5,25 +19,25 @@ typedef struct Config Config;
 extern Config config;
 
 struct Colortriple {
-	char border[8];
-	char background[8];
-	char text[8];
+        char border[8];
+        char background[8];
+        char text[8];
 };
 
 struct Config {
-	const char *terminal;
-	const char *font;
+        const char *terminal;
+        const char *font;
 
-	/* Color codes are stored here */
-	struct config_client {
-		struct Colortriple focused;
-		struct Colortriple focused_inactive;
-		struct Colortriple unfocused;
-	} client;
-	struct config_bar {
-		struct Colortriple focused;
-		struct Colortriple unfocused;
-	} bar;
+        /* Color codes are stored here */
+        struct config_client {
+                struct Colortriple focused;
+                struct Colortriple focused_inactive;
+                struct Colortriple unfocused;
+        } client;
+        struct config_bar {
+                struct Colortriple focused;
+                struct Colortriple unfocused;
+        } bar;
 };
 
 /**
