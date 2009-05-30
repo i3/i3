@@ -182,7 +182,10 @@ static void drag_window_callback(xcb_connection_t *conn, Client *client, border_
         client->rect.x = old_rect->x + (new_x - event->root_x);
         client->rect.y = old_rect->y + (new_y - event->root_y);
         reposition_client(conn, client);
-        xcb_flush(conn);
+        /* Because reposition_client does not send a faked configure event (only resize does),
+         * we need to initiate that on our own */
+        fake_absolute_configure_notify(conn, client);
+        /* fake_absolute_configure_notify flushes */
 }
 
 /*
