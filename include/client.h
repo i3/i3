@@ -20,7 +20,7 @@
  * one or because it was unmapped
  *
  */
-void client_remove_from_container(xcb_connection_t *conn, Client *client, Container *container);
+void client_remove_from_container(xcb_connection_t *conn, Client *client, Container *container, bool remove_from_focusstack);
 
 /**
  * Warps the pointer into the given client (in the middle of it, to be specific), therefore

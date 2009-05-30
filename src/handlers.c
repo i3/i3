@@ -534,7 +534,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                         con->workspace->fullscreen_client = NULL;
 
                 /* Remove the client from the list of clients */
-                client_remove_from_container(conn, client, con);
+                client_remove_from_container(conn, client, con, true);
 
                 /* Set focus to the last focused client in this container */
                 con->currently_focused = get_last_focused_client(conn, con, NULL);

@@ -23,6 +23,7 @@
 #include "xcb.h"
 #include "debug.h"
 #include "layout.h"
+#include "client.h"
 
 /* On which border was the dragging initiated? */
 typedef enum { BORDER_LEFT, BORDER_RIGHT, BORDER_TOP, BORDER_BOTTOM} border_t;
@@ -78,7 +79,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client) {
         LOG("Entering floating for client %08x\n", client->child);
 
         /* Remove the client of its container */
-        CIRCLEQ_REMOVE(&(con->clients), client, clients);
+        client_remove_from_container(conn, client, con, false);
         client->container = NULL;
 
         if (con->currently_focused == client) {

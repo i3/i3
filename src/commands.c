@@ -242,7 +242,7 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
         }
 
         /* Remove it from the old container and put it into the new one */
-        client_remove_from_container(conn, current_client, container);
+        client_remove_from_container(conn, current_client, container, true);
 
         if (new->currently_focused != NULL)
                 CIRCLEQ_INSERT_AFTER(&(new->clients), new->currently_focused, current_client, clients);
@@ -505,7 +505,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
 
         assert(to_container != NULL);
 
-        client_remove_from_container(conn, current_client, container);
+        client_remove_from_container(conn, current_client, container, true);
         if (container->workspace->fullscreen_client == current_client)
                 container->workspace->fullscreen_client = NULL;
 

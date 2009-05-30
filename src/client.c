@@ -29,10 +29,11 @@
  * one or because it was unmapped
  *
  */
-void client_remove_from_container(xcb_connection_t *conn, Client *client, Container *container) {
+void client_remove_from_container(xcb_connection_t *conn, Client *client, Container *container, bool remove_from_focusstack) {
         CIRCLEQ_REMOVE(&(container->clients), client, clients);
 
-        SLIST_REMOVE(&(container->workspace->focus_stack), client, Client, focus_clients);
+        if (remove_from_focusstack)
+                SLIST_REMOVE(&(container->workspace->focus_stack), client, Client, focus_clients);
 
         /* If the container will be empty now and is in stacking mode, we need to
            unmap the stack_win */
