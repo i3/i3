@@ -125,7 +125,6 @@ void load_configuration(const char *override_configpath) {
                 OPTION_COLORTRIPLE("client.focused", client.focused);
                 OPTION_COLORTRIPLE("client.focused_inactive", client.focused_inactive);
                 OPTION_COLORTRIPLE("client.unfocused", client.unfocused);
-                OPTION_COLORTRIPLE("client.focused", client.focused);
                 OPTION_COLORTRIPLE("bar.focused", bar.focused);
                 OPTION_COLORTRIPLE("bar.unfocused", bar.unfocused);
 
