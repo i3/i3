@@ -15,6 +15,8 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#include "queue.h"
+
 typedef struct Config Config;
 extern Config config;
 
@@ -22,6 +24,13 @@ struct Colortriple {
         uint32_t border;
         uint32_t background;
         uint32_t text;
+};
+
+struct Variable {
+        char *key;
+        char *value;
+
+        SLIST_ENTRY(Variable) variables;
 };
 
 struct Config {

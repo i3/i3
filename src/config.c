@@ -34,6 +34,28 @@ static char *glob_path(const char *path) {
         return result;
 }
 
+/*
+ * This function does a very simple replacement of each instance of key with value.
+ *
+ */
+static void replace_variable(char *buffer, const char *key, const char *value) {
+        char *pos;
+        /* To prevent endless recursions when the user makes an error configuring,
+         * we stop after 100 replacements. That should be vastly more than enough. */
+        int c = 0;
+        LOG("Replacing %s with %s\n", key, value);
+        while ((pos = strcasestr(buffer, key)) != NULL && c++ < 100) {
+                LOG("replacing variable %s in \"%s\" with \"%s\"\n", key, buffer, value);
+                char *rest = pos + strlen(key);
+                *pos = '\0';
+                char *replaced;
+                asprintf(&replaced, "%s%s%s", buffer, value, rest);
+                /* Hm, this is a bit ugly, but sizeof(buffer) = 4, as it’s just a pointer.
+                 * So we need to hard-code the dimensions here. */
+                strncpy(buffer, replaced, 1026);
+                free(replaced);
+        }
+}
 
 /*
  * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
@@ -43,6 +65,8 @@ static char *glob_path(const char *path) {
  *
  */
 void load_configuration(xcb_connection_t *conn, const char *override_configpath) {
+        SLIST_HEAD(variables_head, Variable) variables;
+
 #define OPTION_STRING(name) \
         if (strcasecmp(key, #name) == 0) { \
                 config.name = sstrdup(value); \
@@ -74,6 +98,8 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath)
 
         /* Clear the old config or initialize the data structure */
         memset(&config, 0, sizeof(config));
+
+        SLIST_INIT(&variables);
 
         /* Initialize default colors */
         config.client.focused.border = get_colorpixel(conn, "#4c7899");
@@ -117,6 +143,14 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath)
                                 break;
                         die("Could not read configuration file\n");
                 }
+
+                if (config.terminal != NULL)
+                        replace_variable(buffer, "$terminal", config.terminal);
+
+                /* Replace all custom variables */
+                struct Variable *current;
+                SLIST_FOREACH(current, &variables, variables)
+                        replace_variable(buffer, current->key, current->value);
 
                 /* sscanf implicitly strips whitespace. Also, we skip comments and empty lines. */
                 if (sscanf(buffer, "%s %[^\n]", key, value) < 1 ||
@@ -216,6 +250,26 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath)
                         new->windowclass_title = class_title;
                         new->workspace = atoi(target);
                         TAILQ_INSERT_TAIL(&assignments, new, assignments);
+                        continue;
+                }
+
+                /* set a custom variable */
+                if (strcasecmp(key, "set") == 0) {
+                        if (value[0] != '$')
+                                die("Malformed variable assignment, name has to start with $\n");
+
+                        /* get key/value for this variable */
+                        char *v_key = value, *v_value;
+                        if ((v_value = strstr(value, " ")) == NULL)
+                                die("Malformed variable assignment, need a value\n");
+
+                        *(v_value++) = '\0';
+
+                        struct Variable *new = scalloc(sizeof(struct Variable));
+                        new->key = sstrdup(v_key);
+                        new->value = sstrdup(v_value);
+                        SLIST_INSERT_HEAD(&variables, new, variables);
+                        LOG("Got new variable %s = %s\n", v_key, v_value);
                         continue;
                 }
 
