@@ -793,9 +793,9 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                 uint32_t background_color;
                 /* Distinguish if the window is currently focused… */
                 if (CUR_CELL->currently_focused == client)
-                        background_color = get_colorpixel(conn, config.client.focused.background);
+                        background_color = config.client.focused.background;
                 /* …or if it is the focused window in a not focused container */
-                else background_color = get_colorpixel(conn, config.client.focused_inactive.background);
+                else background_color = config.client.focused_inactive.background;
 
                 /* Set foreground color to current focused color, line width to 2 */
                 uint32_t values[] = {background_color, 2};

@@ -112,9 +112,9 @@ int main(int argc, char *argv[], char *env[]) {
         memset(&evenths, 0, sizeof(xcb_event_handlers_t));
         memset(&prophs, 0, sizeof(xcb_property_handlers_t));
 
-        load_configuration(override_configpath);
-
         conn = xcb_connect(NULL, &screens);
+
+        load_configuration(conn, override_configpath);
 
         /* Place requests for the atoms we need as soon as possible */
         #define REQUEST_ATOM(name) atom_cookies[name] = xcb_intern_atom(conn, 0, strlen(#name), #name);

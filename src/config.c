@@ -17,6 +17,7 @@
 #include "i3.h"
 #include "util.h"
 #include "config.h"
+#include "xcb.h"
 
 Config config;
 
@@ -41,7 +42,7 @@ static char *glob_path(const char *path) {
  * configuration file.
  *
  */
-void load_configuration(const char *override_configpath) {
+void load_configuration(xcb_connection_t *conn, const char *override_configpath) {
 #define OPTION_STRING(name) \
         if (strcasecmp(key, #name) == 0) { \
                 config.name = sstrdup(value); \
@@ -54,16 +55,20 @@ void load_configuration(const char *override_configpath) {
 
 #define OPTION_COLORTRIPLE(opt, name) \
         if (strcasecmp(key, opt) == 0) { \
-                struct Colortriple buffer; \
-                memset(&buffer, 0, sizeof(struct Colortriple)); \
-                buffer.border[0] = buffer.background[0] = buffer.text[0] = '#'; \
+                char border[8], background[8], text[8]; \
+                memset(border, 0, sizeof(border)); \
+                memset(background, 0, sizeof(background)); \
+                memset(text, 0, sizeof(text)); \
+                border[0] = background[0] = text[0] = '#'; \
                 if (sscanf(value, "#%06[0-9a-fA-F] #%06[0-9a-fA-F] #%06[0-9a-fA-F]", \
-                    buffer.border + 1, buffer.background + 1, buffer.text + 1) != 3 || \
-                    strlen(buffer.border) != 7 || \
-                    strlen(buffer.background) != 7 || \
-                    strlen(buffer.text) != 7) \
+                    border + 1, background + 1, text + 1) != 3 || \
+                    strlen(border) != 7 || \
+                    strlen(background) != 7 || \
+                    strlen(text) != 7) \
                         die("invalid color code line: %s\n", value); \
-                memcpy(&config.name, &buffer, sizeof(struct Colortriple)); \
+                config.name.border = get_colorpixel(conn, border); \
+                config.name.background = get_colorpixel(conn, background); \
+                config.name.text = get_colorpixel(conn, text); \
                 continue; \
         }
 
@@ -71,25 +76,25 @@ void load_configuration(const char *override_configpath) {
         memset(&config, 0, sizeof(config));
 
         /* Initialize default colors */
-        strcpy(config.client.focused.border, "#4c7899");
-        strcpy(config.client.focused.background, "#285577");
-        strcpy(config.client.focused.text, "#ffffff");
+        config.client.focused.border = get_colorpixel(conn, "#4c7899");
+        config.client.focused.background = get_colorpixel(conn, "#285577");
+        config.client.focused.text = get_colorpixel(conn, "#ffffff");
 
-        strcpy(config.client.focused_inactive.border, "#4c7899");
-        strcpy(config.client.focused_inactive.background, "#555555");
-        strcpy(config.client.focused_inactive.text, "#ffffff");
+        config.client.focused_inactive.border = get_colorpixel(conn, "#4c7899");
+        config.client.focused_inactive.background = get_colorpixel(conn, "#555555");
+        config.client.focused_inactive.text = get_colorpixel(conn, "#ffffff");
 
-        strcpy(config.client.unfocused.border, "#333333");
-        strcpy(config.client.unfocused.background, "#222222");
-        strcpy(config.client.unfocused.text, "#888888");
+        config.client.unfocused.border = get_colorpixel(conn, "#333333");
+        config.client.unfocused.background = get_colorpixel(conn, "#222222");
+        config.client.unfocused.text = get_colorpixel(conn, "#888888");
 
-        strcpy(config.bar.focused.border, "#4c7899");
-        strcpy(config.bar.focused.background, "#285577");
-        strcpy(config.bar.focused.text, "#ffffff");
+        config.bar.focused.border = get_colorpixel(conn, "#4c7899");
+        config.bar.focused.background = get_colorpixel(conn, "#285577");
+        config.bar.focused.text = get_colorpixel(conn, "#ffffff");
 
-        strcpy(config.bar.unfocused.border, "#333333");
-        strcpy(config.bar.unfocused.background, "#222222");
-        strcpy(config.bar.unfocused.text, "#888888");
+        config.bar.unfocused.border = get_colorpixel(conn, "#333333");
+        config.bar.unfocused.background = get_colorpixel(conn, "#222222");
+        config.bar.unfocused.text = get_colorpixel(conn, "#888888");
 
         FILE *handle;
         if (override_configpath != NULL) {

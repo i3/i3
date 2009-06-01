@@ -100,9 +100,7 @@ void redecorate_window(xcb_connection_t *conn, Client *client) {
 void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t drawable, xcb_gcontext_t gc, int offset) {
         i3Font *font = load_font(conn, config.font);
         int decoration_height = font->height + 2 + 2;
-        uint32_t background_color,
-                 text_color,
-                 border_color;
+        struct Colortriple *color;
 
         /* Clients without a container (docks) won’t get decorated */
         if (client->dock)
@@ -112,26 +110,19 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         if (client->floating >= FLOATING_AUTO_ON || client->container->currently_focused == client) {
                 /* Distinguish if the window is currently focused… */
                 if (client->floating >= FLOATING_AUTO_ON || CUR_CELL->currently_focused == client)
-                        background_color = get_colorpixel(conn, config.client.focused.background);
+                        color = &(config.client.focused);
                 /* …or if it is the focused window in a not focused container */
-                else background_color = get_colorpixel(conn, config.client.focused_inactive.background);
-
-                text_color = get_colorpixel(conn, config.client.focused.text);
-                border_color = get_colorpixel(conn, config.client.focused.border);
-        } else {
-                background_color = get_colorpixel(conn, config.client.unfocused.background);
-                text_color = get_colorpixel(conn, config.client.unfocused.text);
-                border_color = get_colorpixel(conn, config.client.unfocused.border);
-        }
+                else color = &(config.client.focused_inactive);
+        } else color = &(config.client.unfocused);
 
         /* Our plan is the following:
-           - Draw a rect around the whole client in background_color
+           - Draw a rect around the whole client in color->background
            - Draw two lines in a lighter color
            - Draw the window’s title
          */
 
         /* Draw a rectangle in background color around the window */
-        xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, background_color);
+        xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, color->background);
 
         /* In stacking mode, we only render the rect for this specific decoration */
         if (client->container != NULL && client->container->mode == MODE_STACK) {
@@ -153,15 +144,15 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         }
 
         /* Draw the lines */
-        xcb_draw_line(conn, drawable, gc, border_color, 0, offset, client->rect.width, offset);
-        xcb_draw_line(conn, drawable, gc, border_color, 2, offset + font->height + 3,
+        xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
+        xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
                       client->rect.width - 4, offset + font->height + 3);
 
         /* If the client has a title, we draw it */
         if (client->name != NULL) {
                 /* Draw the font */
                 uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-                uint32_t values[] = { text_color, background_color, font->id };
+                uint32_t values[] = { color->text, color->background, font->id };
                 xcb_change_gc(conn, gc, mask, values);
 
                 /* name_len == -1 means this is a legacy application which does not specify _NET_WM_NAME,
@@ -401,24 +392,10 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
         i3Font *font = load_font(conn, config.font);
         i3Screen *screen = r_ws->screen;
         enum { SET_NORMAL = 0, SET_FOCUSED = 1 };
-        uint32_t background_color[2],
-                 text_color[2],
-                 border_color[2],
-                 black;
         char label[3];
 
-        black = get_colorpixel(conn, "#000000");
-
-        background_color[SET_NORMAL] = get_colorpixel(conn, config.bar.unfocused.background);
-        text_color[SET_NORMAL] = get_colorpixel(conn, config.bar.unfocused.text);
-        border_color[SET_NORMAL] = get_colorpixel(conn, config.bar.unfocused.border);
-
-        background_color[SET_FOCUSED] = get_colorpixel(conn, config.bar.focused.background);
-        text_color[SET_FOCUSED] = get_colorpixel(conn, config.bar.focused.text);
-        border_color[SET_FOCUSED] = get_colorpixel(conn, config.bar.focused.border);
-
         /* Fill the whole bar in black */
-        xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, black);
+        xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
         xcb_rectangle_t rect = {0, 0, width, height};
         xcb_poly_fill_rectangle(conn, screen->bar, screen->bargc, 1, &rect);
 
@@ -430,16 +407,17 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
                 if (workspaces[c].screen != screen)
                         continue;
 
-                int set = (screen->current_workspace == c ? SET_FOCUSED : SET_NORMAL);
+                struct Colortriple *color = (screen->current_workspace == c ? &(config.bar.focused) :
+                                             &(config.bar.unfocused));
 
-                xcb_draw_rect(conn, screen->bar, screen->bargc, border_color[set],
+                xcb_draw_rect(conn, screen->bar, screen->bargc, color->border,
                               drawn * height, 1, height - 2, height - 2);
-                xcb_draw_rect(conn, screen->bar, screen->bargc, background_color[set],
+                xcb_draw_rect(conn, screen->bar, screen->bargc, color->background,
                               drawn * height + 1, 2, height - 4, height - 4);
 
                 snprintf(label, sizeof(label), "%d", c+1);
-                xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, text_color[set]);
-                xcb_change_gc_single(conn, screen->bargc, XCB_GC_BACKGROUND, background_color[set]);
+                xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, color->text);
+                xcb_change_gc_single(conn, screen->bargc, XCB_GC_BACKGROUND, color->background);
                 xcb_image_text_8(conn, strlen(label), screen->bar, screen->bargc, drawn * height + 5 /* X */,
                                                 font->height + 1 /* Y = baseline of font */, label);
                 drawn++;

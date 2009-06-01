@@ -19,9 +19,9 @@ typedef struct Config Config;
 extern Config config;
 
 struct Colortriple {
-        char border[8];
-        char background[8];
-        char text[8];
+        uint32_t border;
+        uint32_t background;
+        uint32_t text;
 };
 
 struct Config {
@@ -47,6 +47,6 @@ struct Config {
  * configuration file.
  *
  */
-void load_configuration(const char *override_configfile);
+void load_configuration(xcb_connection_t *conn, const char *override_configfile);
 
 #endif
