@@ -1,15 +1,164 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael+i3@stapelberg.de>
-May 2009
+June 2009
 
 This document contains all information you need to configuring and using the i3
 window manager. If it does not, please contact me on IRC, Jabber or E-Mail and
 I’ll help you out.
 
+== Using i3
+
+=== Creating terminals and moving around
+
+A very basic operation is to create a new terminal. By default, the keybinding
+for that is Mod1+Enter, that is Alt+Enter in the default configuration. By
+pressing Mod1+Enter, a new terminal will be created and it will fill the whole
+space which is available on your screen.
+
+image:single_terminal.png[Single terminal]
+
+It is important to keep in mind that i3 uses a table to manage your windows. At
+the moment, you have exactly one column and one row which leaves you with one
+cell. In this cell, there is a container in which your newly opened terminal is.
+
+If you now open another terminal, you still have only one cell. However, the
+container has both of your terminals.
+
+image:two_terminals.png[Two terminals]
+
+To move the focus between the two terminals, you use the direction keys which
+you may know from the editor +vi+. However, in i3, your homerow is used for
+these keys (in +vi+, the keys are shifted to the left by one for compatibility
+with most keyboard layouts). Therefore, +Mod1+J+ is left, +Mod1+K+ is down, +Mod1+L+
+is up and `Mod1+;` is right. So, to switch between the terminals, use +Mod1+K+ or
++Mod1+L+.
+
+To create a new row/column, you can simply move a terminal (or any other window)
+to the direction you want to expand your table. So, let’s expand the table to
+the right by pressing `Mod1+Shift+;`.
+
+image:two_columns.png[Two columns]
+
+=== Changing mode of containers
+
+A container can be in two modes at the moment (more to be implemented later):
++default+ or +stacking+. In default mode, clients are sized so that every client
+gets an equal amount of space of the container. In stacking mode, only one
+focused client of the container is displayed and you get a list of windows
+at the top of the container.
+
+To switch the mode, press +Mod1+h+ for stacking and +Mod1+e+ for default.
+
+=== Toggling fullscreen mode for a window
+
+To display a window fullscreen or to go out of fullscreen mode again, press
++Mod1+f+.
+
+=== Opening other applications
+
+Aside from opening applicatios from a terminal, you can also use the handy
++dmenu+ which is opened by pressing +Mod1+v+ by default. Just type the name
+(or a part of it) of the application which you want to open. It has to be in
+your +$PATH+ for that to work.
+
+Furthermore, if you have applications you open very frequently, you can also
+create a keybinding for it. See the section "Configuring i3" for details.
+
+=== Closing windows
+
+If an application does not provide a mechanism to close (most applications
+provide a menu, the escape key or a shortcut like +Control+W+ to close), you
+can press +Mod1+Shift+q+ to kill a window. For applications which support
+the WM_DELETE protocol, this will correctly close the application (saving
+any modifications or doing other cleanup). If the application doesn’t support
+it, your X server will kill the window and the behaviour depends on the
+application.
+
+=== Using workspaces
+
+Workspaces are an easy way to group a set of windows. By default, you are on
+the first workspace, as the bar on the bottom left indicates. To switch to
+another workspace, press +Mod1+num+ where +num+ is the number of the workspace
+you want to use. If the workspace does not exist yet, it will be created.
+
+A common paradigm is to put the web browser on one workspace, communication
+applications (+mutt+, +irssi+, ...) on another one and the ones with which you
+work on the third one. Of course, there is no need to follow this approach.
+
+If you have multiple screens, a workspace will be created on each screen. If
+you open a new workspace, it will be bound to the screen you created it on.
+When you switch to a workspace on another screen, i3 will set focus to this
+screen.
+
+=== Moving windows to workspaces
+
+To move a window to another workspace, simply press +Mod1+Shift+num+ where
++num+ is (like when switching workspaces) the number of the target workspace.
+Similarly to switching workspaces, the target workspace will be created if
+it does not yet exist.
+
+=== Resizing columns
+
+To resize columns just grab the border between the two columns and move it to
+the wanted size.
+
+A command for doing this via keyboard will be implemented soon.
+
+=== Restarting i3 inplace
+
+To restart i3 inplace (and thus get it into a clean state if it has a bug, to
+reload your configuration or even to upgrade to a newer version of i3) you
+can use +Mod1+Shift+r+. Be aware, though, that this kills your current layout
+and all the windows you have opened will be put in a default container in only
+one cell. This will be implemented in a later version.
+
+=== Exiting i3
+
+To cleanly exit i3 without killing your X server, you can use +Mod1+Shift+e+.
+
+=== Snapping
+
+Snapping is a mechanism to increase/decrease the colspan/rowspan of a container.
+Colspan/rowspan is the amount of columns/rows a specific cell of the table
+consumes. This is easier explained by giving an example, so take the following
+layout:
+
+image:snapping.png[Snapping example]
+
+To use the full size of your screen, you can now snap container 3 downwards
+by pressing +Mod1+Control+k+.
+
+=== Floating
+
+Floating is the opposite of tiling mode. The position and size of a window
+are then not managed by i3, but by you. Using this mode violates the tiling
+paradigm but can be useful for some corner cases like "Save as" dialog
+windows or toolbar windows (GIMP or similar).
+
+You can enable floating for a window by pressing +Mod1+Shift+Space+. By
+dragging the window’s titlebar with your mouse, you can move the window
+around. By grabbing the borders and moving them you can resize the window.
+
+Bindings for doing this with your keyboard will follow.
+
+Floating clients are always on top of tiling clients.
+
 == Configuring i3
 
-TODO: document the other options, implement variables before
+This is where the real fun begins ;-). Most things are very dependant on your
+ideal working environment, so we can’t make reasonable defaults for them.
+
+While not using a programming language for the configuration, i3 stays
+quite flexible regarding to the things you usually want your window manager
+to do.
+
+For example, you can configure bindings to jump to specific windows,
+you can set specific applications to start on a specific workspace, you can
+automatically start applications, you can change the colors of i3 or bind
+your keys to do useful stuff.
+
+TODO: implement variables
 
 terminal::
 	Specifies the terminal emulator program you prefer. It will be started
@@ -23,7 +172,11 @@ font::
 
 === Keyboard bindings
 
-TODO
+You can use each command (see below) using keyboard bindings. At the moment,
+keyboard bindings require you to specify the keycode (38) of the key, not its key
+symbol ("a"). This has some advantages (keybindings make sense regardless of
+the layout you type) and some disadvantages (hard to remember, you have to look
+them up every time).
 
 *Syntax*:
 --------------------------------
@@ -73,3 +226,87 @@ assign urxvt → 2
 assign "urxvt" → 2
 assign "urxvt/VIM" → 3
 ----------------------
+
+=== Automatically starting applications on startup
+
+By using the +exec+ keyword outside a keybinding, you can configure which
+commands will be performed by i3 on the first start (not when reloading inplace
+however). The commands will be run in order.
+
+*Syntax*:
+------------
+exec command
+------------
+
+*Examples*:
+--------------------------------
+exec sudo i3status | dzen2 -dock
+--------------------------------
+
+=== Jumping to specific windows
+
+Especially when in a multi-monitor environment, you want to quickly jump to a specific
+window, for example while currently working on workspace 3 you may want to jump to
+your mailclient to mail your boss that you’ve achieved some important goal. Instead
+of figuring out how to navigate to your mailclient, it would be more convenient to
+have a shortcut.
+
+*Syntax*:
+----------------------------------------------------
+jump ["]window class[/window title]["]
+jump workspace [ column row ]
+----------------------------------------------------
+
+You can either use the same matching algorithm as in the +assign+ command (see above)
+or you can specify the position of the client if you always use the same layout.
+
+*Examples*:
+--------------------------------------
+# Get me to the next open VIM instance
+bind Mod1+38 jump "urxvt/VIM"
+--------------------------------------
+
+=== Traveling the focus stack
+
+This mechanism can be thought of as the opposite of the +jump+ command. It travels
+the focus stack and jumps to the window you focused before.
+
+*Syntax*:
+--------------
+focus [number]
+--------------
+
+Where +number+ by default is 1 meaning that the next client in the focus stack will
+be selected.
+
+=== Changing colors
+
+You can change all colors which i3 uses to draw the window decorations and the
+bottom bar.
+
+*Syntax*:
+--------------------------------------------
+colorclass border background text
+--------------------------------------------
+
+Where colorclass can be one of:
+
+client.focused::
+	A client which currently has the focus.
+client.focused_inactive::
+	A client which is the focused one of its container, but it does not have
+	the focus at the moment.
+client.unfocused::
+	A client which is not the focused one of its container.
+bar.focused::
+	The current workspace in the bottom bar.
+bar.unfocused::
+	All other workspaces in the bottom bar.
+
+Colors are in HTML hex format, see below.
+
+*Examples*:
+--------------------------------------
+# class        border  backgr. text
+client.focused #2F343A #900000 #FFFFFF
+--------------------------------------
