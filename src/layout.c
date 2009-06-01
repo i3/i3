@@ -146,7 +146,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         /* Draw the lines */
         xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
         xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
-                      client->rect.width - 4, offset + font->height + 3);
+                      client->rect.width - 3, offset + font->height + 3);
 
         /* If the client has a title, we draw it */
         if (client->name != NULL) {
