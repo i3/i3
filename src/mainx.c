@@ -343,14 +343,14 @@ int main(int argc, char *argv[], char *env[]) {
         if (loop == NULL)
                 die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
 
-        ev_io xcb_watcher;
-        ev_io_init(&xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
+        struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
+        ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
 
         /* Call the handler to work all events which arrived before the libev-stuff was set up */
-        xcb_got_event(NULL, &xcb_watcher, 0);
+        xcb_got_event(NULL, xcb_watcher, 0);
 
         /* Enter the libev eventloop */
-        ev_io_start(loop, &xcb_watcher);
+        ev_io_start(loop, xcb_watcher);
         ev_loop(loop, 0);
 
         /* not reached */
