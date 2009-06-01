@@ -31,6 +31,8 @@
 #include <xcb/xcb_icccm.h>
 #include <xcb/xinerama.h>
 
+#include <ev.h>
+
 #include "config.h"
 #include "data.h"
 #include "debug.h"
@@ -68,6 +70,34 @@ xcb_event_handlers_t evenths;
 xcb_atom_t atoms[NUM_ATOMS];
 
 int num_screens = 0;
+
+/*
+ * Callback for activity on the connection to the X server
+ *
+ */
+static void xcb_got_event(EV_P_ struct ev_io *w, int revents) {
+        xcb_generic_event_t *event;
+
+        /* When an event is available… */
+        while ((event = xcb_poll_for_event(evenths.c)) != NULL) {
+                /* …we handle all events in a row: */
+                do {
+                        xcb_event_handle(&evenths, event);
+                        xcb_aux_sync(evenths.c);
+                        free(event);
+                } while ((event = xcb_poll_for_event(evenths.c)));
+
+                /* Make sure all replies are handled/discarded */
+                xcb_aux_sync(evenths.c);
+
+                /* Afterwards, there may be new events available which would
+                 * not trigger the select() (libev) immediately, so we check
+                 * again (and don’t bail out of the loop). */
+        }
+
+        /* Make sure all replies are handled/discarded */
+        xcb_aux_sync(evenths.c);
+}
 
 int main(int argc, char *argv[], char *env[]) {
         int i, screens, opt;
@@ -307,8 +337,21 @@ int main(int argc, char *argv[], char *env[]) {
                 c_ws = &workspaces[screen->current_workspace];
         }
 
-        /* Enter xcb’s event handler */
-        xcb_event_wait_for_event_loop(&evenths);
+
+        /* Initialize event loop using libev */
+        struct ev_loop *loop = ev_default_loop(0);
+        if (loop == NULL)
+                die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
+
+        ev_io xcb_watcher;
+        ev_io_init(&xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
+
+        /* Call the handler to work all events which arrived before the libev-stuff was set up */
+        xcb_got_event(NULL, &xcb_watcher, 0);
+
+        /* Enter the libev eventloop */
+        ev_io_start(loop, &xcb_watcher);
+        ev_loop(loop, 0);
 
         /* not reached */
         return 0;

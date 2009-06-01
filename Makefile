@@ -37,6 +37,7 @@ LDFLAGS += -lxcb-aux
 LDFLAGS += -lxcb-icccm
 LDFLAGS += -lxcb-xinerama
 LDFLAGS += -lX11
+LDFLAGS += -lev
 LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib
 
 ifeq ($(UNAME),NetBSD)
