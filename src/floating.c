@@ -96,13 +96,22 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
         else client->floating = FLOATING_USER_ON;
 
         /* Initialize the floating position from the position in tiling mode, if this
-         * client never was floating (width == 0) */
-        if (client->floating_rect.width == 0) {
-                memcpy(&(client->floating_rect), &(client->rect), sizeof(Rect));
-                LOG("(%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
+         * client never was floating (x == -1) */
+        if (client->floating_rect.x == -1) {
+                /* Copy over the position */
+                client->floating_rect.x = client->rect.x;
+                client->floating_rect.y = client->rect.y;
+
+                /* Copy the size the other direction */
+                client->rect.width = client->floating_rect.width;
+                client->rect.height = client->floating_rect.height;
+
+                LOG("copying size from tiling (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
                                 client->floating_rect.width, client->floating_rect.height);
         } else {
                 /* If the client was already in floating before we restore the old position / size */
+                LOG("using: (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
+                        client->floating_rect.width, client->floating_rect.height);
                 memcpy(&(client->rect), &(client->floating_rect), sizeof(Rect));
         }
 

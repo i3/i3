@@ -159,6 +159,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         assert(new == NULL);
 
         LOG("reparenting new client\n");
+        LOG("x = %d, y = %d, width = %d, height = %d\n", x, y, width, height);
         new = calloc(sizeof(Client), 1);
         new->force_reconfigure = true;
 
@@ -172,6 +173,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         new->child = child;
         new->rect.width = width;
         new->rect.height = height;
+        /* Pre-initialize the values for floating */
+        new->floating_rect.x = -1;
+        new->floating_rect.width = width;
+        new->floating_rect.height = height;
 
         mask = 0;
 

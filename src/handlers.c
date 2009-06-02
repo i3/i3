@@ -874,6 +874,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
                 return 1;
         }
         xcb_size_hints_t size_hints;
+        LOG("client is %08x / child %08x\n", client->frame, client->child);
 
         /* If the hints were already in this event, use them, if not, request them */
         if (reply != NULL)
