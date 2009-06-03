@@ -294,6 +294,7 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
 
 int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
         LOG("button press!\n");
+        LOG("state = %d\n", event->state);
         /* This was either a focus for a client’s parent (= titlebar)… */
         Client *client = table_get(&by_child, event->event);
         bool border_click = false;
@@ -301,6 +302,19 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 client = table_get(&by_parent, event->event);
                 border_click = true;
         }
+        /* See if this was a click with Mod1. If so, we need to move around
+         * the client if it was floating. if not, we just process as usual. */
+        if ((event->state & XCB_MOD_MASK_1) != 0) {
+                if (client == NULL) {
+                        LOG("Not handling, Mod1 was pressed and no client found\n");
+                        return 1;
+                }
+                if (client->floating) {
+                        floating_drag_window(conn, client, event);
+                        return 1;
+                }
+        }
+
         if (client == NULL) {
                 /* The client was neither on a client’s titlebar nor on a client itself, maybe on a stack_window? */
                 if (button_press_stackwin(conn, event))
