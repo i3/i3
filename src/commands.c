@@ -890,7 +890,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         }
 
         if (*rest == '\0') {
-                /* No rest? This was a tag number, not a times specification */
+                /* No rest? This was a workspace number, not a times specification */
                 show_workspace(conn, times);
                 return;
         }

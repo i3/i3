@@ -578,25 +578,30 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 
         /* Let’s see how many clients there are left on the workspace to delete it if it’s empty */
         bool workspace_empty = SLIST_EMPTY(&(client->workspace->focus_stack));
+        bool workspace_active = false;
         Client *to_focus = (!workspace_empty ? SLIST_FIRST(&(client->workspace->focus_stack)) : NULL);
 
         /* If this workspace is currently active, we don’t delete it */
         i3Screen *screen;
         TAILQ_FOREACH(screen, virtual_screens, screens)
                 if (screen->current_workspace == client->workspace->num) {
+                        workspace_active = true;
                         workspace_empty = false;
                         break;
                 }
 
-        if (workspace_empty)
+        if (workspace_empty) {
+                LOG("setting ws to NULL for workspace %d (%p)\n", client->workspace->num,
+                                client->workspace);
                 client->workspace->screen = NULL;
+        }
 
         free(client);
 
         render_layout(conn);
 
         /* Ensure the focus is set to the next client in the focus stack */
-        if (to_focus != NULL)
+        if (workspace_active && to_focus != NULL)
                 set_focus(conn, to_focus, true);
 
         return 1;
