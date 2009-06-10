@@ -451,7 +451,7 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
 Client *get_matching_client(xcb_connection_t *conn, const char *window_classtitle,
                             Client *specific) {
         char *to_class, *to_title, *to_title_ucs = NULL;
-        int to_title_ucs_len;
+        int to_title_ucs_len = 0;
         Client *matching = NULL;
 
         to_class = sstrdup(window_classtitle);

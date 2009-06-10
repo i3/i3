@@ -239,6 +239,9 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
 
                         new = CUR_TABLE[current_col][++current_row];
                         break;
+                /* To make static analyzers happy: */
+                default:
+                        return;
         }
 
         /* Remove it from the old container and put it into the new one */
@@ -312,6 +315,9 @@ static void move_current_container(xcb_connection_t *conn, direction_t direction
 
                         new = CUR_TABLE[current_col][++current_row];
                         break;
+                /* To make static analyzers happy: */
+                default:
+                        return;
         }
 
         LOG("old = %d,%d and new = %d,%d\n", container->col, container->row, new->col, new->row);
@@ -416,6 +422,9 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                         container->rowspan++;
                         break;
                 }
+                /* To make static analyzers happy: */
+                default:
+                        return;
         }
 
         render_layout(conn);

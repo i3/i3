@@ -911,8 +911,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
 
         LOG("window is %08x / %s\n", client->child, client->name);
 
-        int base_width = 0, base_height = 0,
-            min_width = 0, min_height = 0;
+        int base_width = 0, base_height = 0;
 
         /* base_width/height are the desired size of the window.
            We check if either the program-specified size or the program-specified
@@ -923,14 +922,6 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         } else if (size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE) {
                 base_width = size_hints.min_width;
                 base_height = size_hints.min_height;
-        }
-
-        if (size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE) {
-                min_width = size_hints.min_width;
-                min_height = size_hints.min_height;
-        } else if (size_hints.flags & XCB_SIZE_HINT_P_SIZE) {
-                min_width = size_hints.base_width;
-                min_height = size_hints.base_height;
         }
 
         double width = client->rect.width - base_width;
