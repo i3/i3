@@ -279,6 +279,15 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath)
 
         REQUIRED_OPTION(terminal);
         REQUIRED_OPTION(font);
+
+
+        while (!SLIST_EMPTY(&variables)) {
+                struct Variable *v = SLIST_FIRST(&variables);
+                SLIST_REMOVE_HEAD(&variables, variables);
+                free(v->key);
+                free(v->value);
+                free(v);
+        }
  
         return;
 }
