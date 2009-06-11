@@ -267,10 +267,11 @@ void xcb_get_numlock_mask(xcb_connection_t *conn) {
         /* For now, we only use the first keysymbol. */
         xcb_keycode_t *numlock_syms = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
         xcb_keycode_t numlock = *numlock_syms;
+        free(numlock_syms);
 #endif
 
         /* Check all modifiers (Mod1-Mod5, Shift, Control, Lock) */
-        for (mask = 0; mask < sizeof(masks); mask++)
+        for (mask = 0; mask < 8; mask++)
                 for (i = 0; i < reply->keycodes_per_modifier; i++)
                         if (modmap[(mask * reply->keycodes_per_modifier) + i] == numlock)
                                 xcb_numlock_mask = masks[mask];
