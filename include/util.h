@@ -54,7 +54,7 @@ void slog(char *fmt, ...);
  * Prints the message (see printf()) to stderr, then exits the program.
  *
  */
-void die(char *fmt, ...);
+void die(char *fmt, ...) __attribute__((__noreturn__));
 
 /**
  * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that there
