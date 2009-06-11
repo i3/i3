@@ -144,6 +144,9 @@ int main(int argc, char *argv[], char *env[]) {
 
         conn = xcb_connect(NULL, &screens);
 
+        if (xcb_connection_has_error(conn))
+                die("Cannot open display\n");
+
         load_configuration(conn, override_configpath);
 
         /* Place requests for the atoms we need as soon as possible */
