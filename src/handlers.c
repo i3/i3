@@ -453,8 +453,27 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
         Client *client = table_get(&by_child, event->window);
         if (client == NULL) {
                 LOG("This client is not mapped, so we don't care and just tell the client that he will get its size\n");
-                Rect rect = {event->x, event->y, event->width, event->height};
-                fake_configure_notify(conn, rect, event->window);
+                uint32_t mask = 0;
+                uint32_t values[7];
+                int c = 0;
+#define COPY_MASK_MEMBER(mask_member, event_member) do { \
+                if (event->value_mask & mask_member) { \
+                        mask |= mask_member; \
+                        values[c++] = event->event_member; \
+                } \
+} while (0)
+
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_X, x);
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_Y, y);
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_WIDTH, width);
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_HEIGHT, height);
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_BORDER_WIDTH, border_width);
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_SIBLING, sibling);
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_STACK_MODE, stack_mode);
+
+                xcb_configure_window(conn, event->window, mask, values);
+                xcb_flush(conn);
+
                 return 1;
         }
 
