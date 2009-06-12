@@ -18,6 +18,7 @@
 #include <xcb/xcb_event.h>
 
 #include "i3.h"
+#include "config.h"
 #include "data.h"
 #include "util.h"
 #include "xcb.h"
@@ -45,6 +46,7 @@ static void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_pres
  */
 void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic) {
         Container *con = client->container;
+        i3Font *font = load_font(conn, config.font);
 
         if (con == NULL) {
                 LOG("This client is already in floating (container == NULL), re-inserting\n");
@@ -103,8 +105,11 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                 client->floating_rect.y = client->rect.y;
 
                 /* Copy the size the other direction */
-                client->rect.width = client->floating_rect.width;
-                client->rect.height = client->floating_rect.height;
+                client->child_rect.width = client->floating_rect.width;
+                client->child_rect.height = client->floating_rect.height;
+
+                client->rect.width = client->child_rect.width + 2 + 2;
+                client->rect.height = client->child_rect.height + (font->height + 2 + 2) + 2;
 
                 LOG("copying size from tiling (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
                                 client->floating_rect.width, client->floating_rect.height);
