@@ -761,8 +761,8 @@ int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
                 return 1;
         }
 
-        if (strcmp(new_class, "tools") == 0) {
-                LOG("tool window, should we put it floating?\n");
+        if (strcmp(new_class, "tools") == 0 || strcmp(new_class, "Dialog") == 0) {
+                LOG("tool/dialog window, should we put it floating?\n");
                 if (client->floating == FLOATING_AUTO_OFF)
                         toggle_floating_mode(conn, client, true);
         }
@@ -901,6 +901,11 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         else
                 xcb_get_wm_normal_hints_reply(conn, xcb_get_wm_normal_hints_unchecked(conn, client->child), &size_hints, NULL);
 
+        if ((size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE)) {
+                LOG("min size set\n");
+                LOG("gots min_width = %d, min_height = %d\n", size_hints.min_width, size_hints.min_height);
+        }
+
         /* If no aspect ratio was set or if it was invalid, we ignore the hints */
         if (!(size_hints.flags & XCB_SIZE_HINT_P_ASPECT) ||
             (size_hints.min_aspect_num <= 0) ||
@@ -951,6 +956,45 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         if (client->container != NULL) {
                 render_container(conn, client->container);
                 xcb_flush(conn);
+        }
+
+        return 1;
+}
+
+/*
+ * Handles the transient for hints set by a window, signalizing that this window is a popup window
+ * for some other window.
+ *
+ * See ICCCM 4.1.2.6 for more details
+ *
+ */
+int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                         xcb_atom_t name, xcb_get_property_reply_t *reply) {
+        LOG("Transient hint!\n");
+        Client *client = table_get(&by_child, window);
+        if (client == NULL) {
+                LOG("No such client\n");
+                return 1;
+        }
+
+        xcb_window_t transient_for;
+
+        if (reply != NULL) {
+                if (!xcb_get_wm_transient_for_from_reply(&transient_for, reply)) {
+                        LOG("Not transient for any window\n");
+                        return 1;
+                }
+        } else {
+                if (!xcb_get_wm_transient_for_reply(conn, xcb_get_wm_transient_for_unchecked(conn, window),
+                                                    &transient_for, NULL)) {
+                        LOG("Not transient for any window\n");
+                        return 1;
+                }
+        }
+
+        if (client->floating == FLOATING_AUTO_OFF) {
+                LOG("This is a popup window, putting into floating\n");
+                toggle_floating_mode(conn, client, true);
         }
 
         return 1;

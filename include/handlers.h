@@ -124,4 +124,14 @@ int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_wi
 int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t name, xcb_get_property_reply_t *reply);
 
+/**
+ * Handles the transient for hints set by a window, signalizing that this window is a popup window
+ * for some other window.
+ *
+ * See ICCCM 4.1.2.6 for more details
+ *
+ */
+int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                         xcb_atom_t name, xcb_get_property_reply_t *reply);
+
 #endif

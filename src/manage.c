@@ -113,6 +113,7 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn, xcb_
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_CLASS);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NORMAL_HINTS);
+        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_TRANSIENT_FOR);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[_NET_WM_NAME]);
 
         free(geom);
@@ -168,6 +169,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         new->container = CUR_CELL;
         new->workspace = new->container->workspace;
+
+        /* Minimum useful size for managed windows is 75x50 (primarily affects floating) */
+        width = max(width, 75);
+        height = max(height, 50);
 
         new->frame = xcb_generate_id(conn);
         new->child = child;
@@ -243,16 +248,19 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         xcb_atom_t *atom;
         xcb_get_property_reply_t *preply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
         if (preply != NULL && preply->value_len > 0 && (atom = xcb_get_property_value(preply))) {
-                for (int i = 0; i < xcb_get_property_value_length(preply); i++) {
-                        if (atom[i] != atoms[_NET_WM_WINDOW_TYPE_DOCK])
-                                continue;
-                        LOG("Window is a dock.\n");
-                        new->dock = true;
-                        new->titlebar_position = TITLEBAR_OFF;
-                        new->force_reconfigure = true;
-                        new->container = NULL;
-                        SLIST_INSERT_HEAD(&(c_ws->screen->dock_clients), new, dock_clients);
-                }
+                for (int i = 0; i < xcb_get_property_value_length(preply); i++)
+                        if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]) {
+                                LOG("Window is a dock.\n");
+                                new->dock = true;
+                                new->titlebar_position = TITLEBAR_OFF;
+                                new->force_reconfigure = true;
+                                new->container = NULL;
+                                SLIST_INSERT_HEAD(&(c_ws->screen->dock_clients), new, dock_clients);
+                        } else if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DIALOG]) {
+                                /* Set the dialog window to automatically floating, will be used below */
+                                new->floating = FLOATING_AUTO_ON;
+                                LOG("dialog window, automatically floating\n");
+                        }
         }
 
         if (new->dock) {
@@ -336,7 +344,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         }
 
         /* Insert into the currently active container, if it’s not a dock window */
-        if (!new->dock) {
+        if (!new->dock && new->floating <= FLOATING_USER_OFF) {
                 /* Insert after the old active client, if existing. If it does not exist, the
                    container is empty and it does not matter, where we insert it */
                 if (old_focused != NULL && !old_focused->dock)
@@ -356,6 +364,17 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         uint32_t values[] = { first_floating->frame, XCB_STACK_MODE_BELOW };
                         xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
                 }
+        }
+
+        if (new->floating >= FLOATING_AUTO_ON) {
+                new->floating_rect.x = new->rect.x;
+                new->floating_rect.y = new->rect.y;
+                LOG("copying size from tiling (%d, %d) size (%d, %d)\n",
+                                new->floating_rect.x, new->floating_rect.y,
+                                new->floating_rect.width, new->floating_rect.height);
+
+                /* Make sure it is on top of the other windows */
+                xcb_raise_window(conn, new->frame);
         }
 
         new->initialized = true;

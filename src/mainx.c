@@ -275,6 +275,9 @@ int main(int argc, char *argv[], char *env[]) {
         /* Watch _NET_WM_NAME (= title of the window in UTF-8) property */
         xcb_property_set_handler(&prophs, atoms[_NET_WM_NAME], 128, handle_windowname_change, NULL);
 
+        /* Watch WM_TRANSIENT_FOR property (to which client this popup window belongs) */
+        xcb_property_set_handler(&prophs, WM_TRANSIENT_FOR, UINT_MAX, handle_transient_for, NULL);
+
         /* Watch WM_NAME (= title of the window in compound text) property for legacy applications */
         xcb_watch_wm_name(&prophs, 128, handle_windowname_change_legacy, NULL);
 
