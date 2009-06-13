@@ -113,7 +113,7 @@ To restart i3 inplace (and thus get it into a clean state if it has a bug, to
 reload your configuration or even to upgrade to a newer version of i3) you
 can use +Mod1+Shift+r+. Be aware, though, that this kills your current layout
 and all the windows you have opened will be put in a default container in only
-one cell. This will be implemented in a later version.
+one cell. Saving the layout will be implemented in a later version.
 
 === Exiting i3
 
@@ -129,7 +129,7 @@ layout:
 image:snapping.png[Snapping example]
 
 To use the full size of your screen, you can now snap container 3 downwards
-by pressing +Mod1+Control+k+.
+by pressing +Mod1+Control+k+ (or snap container 2 rightwards).
 
 === Floating
 
