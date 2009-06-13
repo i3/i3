@@ -160,6 +160,7 @@ int main(int argc, char *argv[], char *env[]) {
         REQUEST_ATOM(_NET_WM_WINDOW_TYPE);
         REQUEST_ATOM(_NET_WM_DESKTOP);
         REQUEST_ATOM(_NET_WM_WINDOW_TYPE_DOCK);
+        REQUEST_ATOM(_NET_WM_WINDOW_TYPE_DIALOG);
         REQUEST_ATOM(_NET_WM_STRUT_PARTIAL);
         REQUEST_ATOM(WM_PROTOCOLS);
         REQUEST_ATOM(WM_DELETE_WINDOW);
@@ -263,6 +264,7 @@ int main(int argc, char *argv[], char *env[]) {
         GET_ATOM(_NET_WM_WINDOW_TYPE);
         GET_ATOM(_NET_WM_DESKTOP);
         GET_ATOM(_NET_WM_WINDOW_TYPE_DOCK);
+        GET_ATOM(_NET_WM_WINDOW_TYPE_DIALOG);
         GET_ATOM(_NET_WM_STRUT_PARTIAL);
         GET_ATOM(WM_PROTOCOLS);
         GET_ATOM(WM_DELETE_WINDOW);
