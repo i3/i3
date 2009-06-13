@@ -369,6 +369,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         }
 
         if (new->floating >= FLOATING_AUTO_ON) {
+                SLIST_INSERT_HEAD(&(new->workspace->focus_stack), new, focus_clients);
+
                 new->floating_rect.x = new->rect.x;
                 new->floating_rect.y = new->rect.y;
                 LOG("copying size from tiling (%d, %d) size (%d, %d)\n",
