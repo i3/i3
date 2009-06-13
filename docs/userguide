@@ -7,6 +7,8 @@ This document contains all information you need to configuring and using the i3
 window manager. If it does not, please contact me on IRC, Jabber or E-Mail and
 I’ll help you out.
 
+For a complete listing of the default keybindings, please see the manpage.
+
 == Using i3
 
 === Creating terminals and moving around
@@ -158,8 +160,6 @@ you can set specific applications to start on a specific workspace, you can
 automatically start applications, you can change the colors of i3 or bind
 your keys to do useful stuff.
 
-TODO: implement variables
-
 terminal::
 	Specifies the terminal emulator program you prefer. It will be started
 	by default when you press Mod1+Enter, but you can overwrite this. Refer
@@ -203,6 +203,29 @@ you to remap capslock (for example) to Mode_switch and use it for both: typing
 umlauts or special characters 'and' having some comfortably reachable key
 bindings. For example, when typing, capslock+1 or capslock+2 for switching
 workspaces is totally convenient. Try it :-).
+
+=== Variables
+
+As you learned in the previous section about keyboard bindings, you will have
+to configure lots of bindings containing modifier keys. If you want to save
+yourself some typing and have the possibility to change the modifier you want
+to use later, variables can be handy.
+
+*Syntax*:
+--------------
+set name value
+--------------
+
+*Examples*:
+------------------------
+set $m Mod1
+bind $m+Shift+27 restart
+------------------------
+
+Variables are directly replaced in the file when parsing, there is no fancy
+handling and there are absolutely no plans to change this. If you need a more
+dynamic configuration, you should create a little script, like when configuring
+wmii.
 
 === Automatically putting clients on specific workspaces
 
