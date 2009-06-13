@@ -340,7 +340,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         } else if (!new->dock) {
                 /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
                 if (new->container->workspace->fullscreen_client == NULL) {
-                        new->container->currently_focused = new;
+                        if (new->floating <= FLOATING_USER_OFF)
+                                new->container->currently_focused = new;
                         if (new->container == CUR_CELL)
                                 xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
                 }
@@ -371,6 +372,11 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         if (new->floating >= FLOATING_AUTO_ON) {
                 SLIST_INSERT_HEAD(&(new->workspace->focus_stack), new, focus_clients);
+
+                /* Add the client to the list of floating clients for its workspace */
+                TAILQ_INSERT_TAIL(&(new->workspace->floating_clients), new, floating_clients);
+
+                new->container = NULL;
 
                 new->floating_rect.x = new->rect.x;
                 new->floating_rect.y = new->rect.y;

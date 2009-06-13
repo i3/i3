@@ -37,4 +37,13 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
  */
 void floating_drag_window(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event);
 
+/**
+ * Changes focus in the given direction for floating clients.
+ *
+ * Changing to the left/right means going to the previous/next floating client,
+ * changing to top/bottom means cycling through the Z-index.
+ *
+ */
+void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused, direction_t direction);
+
 #endif

@@ -923,8 +923,13 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
-        if (last_focused == NULL || last_focused->floating >= FLOATING_AUTO_ON) {
-                LOG("Not performing (null or floating) \n");
+        if (last_focused == NULL) {
+                LOG("Not performing (null) \n");
+                return;
+        }
+
+        if (last_focused->floating >= FLOATING_AUTO_ON && action != ACTION_FOCUS) {
+                LOG("Not performing (floating)\n");
                 return;
         }
 
@@ -943,9 +948,11 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         return;
                 }
 
-                if (action == ACTION_FOCUS)
-                        focus_thing(conn, direction, (with == WITH_WINDOW ? THING_WINDOW : THING_CONTAINER));
-                else if (action == ACTION_MOVE) {
+                if (action == ACTION_FOCUS) {
+                        if (last_focused->floating >= FLOATING_AUTO_ON)
+                                floating_focus_direction(conn, last_focused, direction);
+                        else focus_thing(conn, direction, (with == WITH_WINDOW ? THING_WINDOW : THING_CONTAINER));
+                } else if (action == ACTION_MOVE) {
                         if (with == WITH_WINDOW)
                                 move_current_window(conn, direction);
                         else move_current_container(conn, direction);

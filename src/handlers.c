@@ -584,6 +584,11 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 SLIST_REMOVE(&(client->workspace->screen->dock_clients), client, Client, dock_clients);
         }
 
+        if (client->floating) {
+                LOG("Removing from floating clients\n");
+                TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
+        }
+
         LOG("child of 0x%08x.\n", client->frame);
         xcb_reparent_window(conn, client->child, root, 0, 0);
         xcb_destroy_window(conn, client->frame);

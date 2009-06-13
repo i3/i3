@@ -56,9 +56,12 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                                 break;
                 /* If there are no tiling clients on this workspace, there can only be one
                  * container: the first one */
-                if (next_tiling == SLIST_END(&(client->workspace->focus_stack)))
+                if (next_tiling == TAILQ_END(&(client->workspace->focus_stack)))
                         con = client->workspace->table[0][0];
                 else con = next_tiling->container;
+
+                /* Remove the client from the list of floating clients */
+                TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
 
                 LOG("destination container = %p\n", con);
                 Client *old_focused = con->currently_focused;
@@ -86,6 +89,9 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
         /* Remove the client of its container */
         client_remove_from_container(conn, client, con, false);
         client->container = NULL;
+
+        /* Add the client to the list of floating clients for its workspace */
+        TAILQ_INSERT_TAIL(&(client->workspace->floating_clients), client, floating_clients);
 
         if (con->currently_focused == client) {
                 LOG("Need to re-adjust currently_focused\n");
@@ -288,3 +294,27 @@ static void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_pres
         xcb_flush(conn);
 }
 
+/*
+ * Changes focus in the given direction for floating clients.
+ *
+ * Changing to the left/right means going to the previous/next floating client,
+ * changing to top/bottom means cycling through the Z-index.
+ *
+ */
+void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused, direction_t direction) {
+        LOG("floating focus\n");
+
+        if (direction == D_LEFT || direction == D_RIGHT) {
+                /* Go to the next/previous floating client */
+                Client *client;
+
+                while ((client = (direction == D_LEFT ? TAILQ_PREV(currently_focused, floating_clients_head, floating_clients) :
+                                                        TAILQ_NEXT(currently_focused, floating_clients))) !=
+                       TAILQ_END(&(currently_focused->workspace->floating_clients))) {
+                        if (!client->floating)
+                                continue;
+                        set_focus(conn, client, true);
+                        return;
+                }
+        }
+}

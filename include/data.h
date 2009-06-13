@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -167,6 +167,10 @@ struct Workspace {
            the focus can be reverted correctly when a client is closed */
         SLIST_HEAD(focus_stack_head, Client) focus_stack;
 
+        /* This tail queue contains the floating clients in order of when they were first
+         * set to floating (new floating clients are just appended) */
+        TAILQ_HEAD(floating_clients_head, Client) floating_clients;
+
         /* Backpointer to the screen this workspace is on */
         i3Screen *screen;
 
@@ -319,6 +323,7 @@ struct Client {
         CIRCLEQ_ENTRY(Client) clients;
         SLIST_ENTRY(Client) dock_clients;
         SLIST_ENTRY(Client) focus_clients;
+        TAILQ_ENTRY(Client) floating_clients;
 };
 
 /*
