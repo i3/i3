@@ -137,6 +137,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                                   utf8_title_cookie, title_cookie, class_cookie;
         uint32_t mask = 0;
         uint32_t values[3];
+        uint16_t original_height = height;
 
         /* We are interested in property changes */
         mask = XCB_CW_EVENT_MASK;
@@ -276,13 +277,13 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                            TODO: bars at the top */
                         new->desired_height = strut[3];
                         if (new->desired_height == 0) {
-                                LOG("Client wanted to be 0 pixels high, using the window's height (%d)\n", height);
-                                new->desired_height = height;
+                                LOG("Client wanted to be 0 pixels high, using the window's height (%d)\n", original_height);
+                                new->desired_height = original_height;
                         }
                         LOG("the client wants to be %d pixels high\n", new->desired_height);
                 } else {
-                        LOG("The client didn't specify space to reserve at the screen edge, using its height (%d)\n", height);
-                        new->desired_height = height;
+                        LOG("The client didn't specify space to reserve at the screen edge, using its height (%d)\n", original_height);
+                        new->desired_height = original_height;
                 }
         } else {
                 /* If it’s not a dock, we can check on which workspace we should put it. */
