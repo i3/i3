@@ -115,7 +115,7 @@ void client_kill(xcb_connection_t *conn, Client *window) {
 bool client_matches_class_name(Client *client, char *to_class, char *to_title,
                                char *to_title_ucs, int to_title_ucs_len) {
         /* Check if the given class is part of the window class */
-        if (strcasestr(client->window_class, to_class) == NULL)
+        if (client->window_class == NULL || strcasestr(client->window_class, to_class) == NULL)
                 return false;
 
         /* If no title was given, we’re done */
@@ -124,11 +124,11 @@ bool client_matches_class_name(Client *client, char *to_class, char *to_title,
 
         if (client->name_len > -1) {
                 /* UCS-2 converted window titles */
-                if (memmem(client->name, (client->name_len * 2), to_title_ucs, (to_title_ucs_len * 2)) == NULL)
+                if (client->name == NULL || memmem(client->name, (client->name_len * 2), to_title_ucs, (to_title_ucs_len * 2)) == NULL)
                         return false;
         } else {
                 /* Legacy hints */
-                if (strcasestr(client->name, to_title) == NULL)
+                if (client->name == NULL || strcasestr(client->name, to_title) == NULL)
                         return false;
         }
 
