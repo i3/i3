@@ -364,8 +364,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 /* Floating clients can be dragged by grabbing their titlebar */
                 if (client->floating >= FLOATING_AUTO_ON) {
                         /* Firstly, we raise it. Maybe the user just wanted to raise it without grabbing */
-                        uint32_t values[] = { XCB_STACK_MODE_ABOVE };
-                        xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
+                        xcb_raise_window(conn, client->frame);
                         xcb_flush(conn);
 
                         floating_drag_window(conn, client, event);

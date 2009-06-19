@@ -399,7 +399,7 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
                 /* When entering stacking mode, we need to open a window on which we can draw the
                    title bars of the clients, it has height 1 because we don’t bother here with
                    calculating the correct height - it will be adjusted when rendering anyways. */
-                Rect rect = {container->x, container->y, container->width, 1 };
+                Rect rect = {container->x, container->y, container->width, 1};
 
                 uint32_t mask = 0;
                 uint32_t values[2];
@@ -438,8 +438,31 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
 
         render_layout(conn);
 
-        if (container->currently_focused != NULL)
+        if (container->currently_focused != NULL) {
+                /* We need to make sure that this client is above *each* of the
+                 * other clients in this container */
+                Client *last_focused = get_last_focused_client(conn, container, container->currently_focused);
+
+                CIRCLEQ_FOREACH(client, &(container->clients), clients) {
+                        if (client == container->currently_focused || client == last_focused)
+                                continue;
+
+                        LOG("setting %08x below %08x / %08x\n", client->frame, container->currently_focused->frame);
+                        uint32_t values[] = { container->currently_focused->frame, XCB_STACK_MODE_BELOW };
+                        xcb_configure_window(conn, client->frame,
+                                             XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+                }
+
+                if (last_focused != NULL) {
+                        LOG("Putting last_focused directly underneath the currently focused\n");
+                        uint32_t values[] = { container->currently_focused->frame, XCB_STACK_MODE_BELOW };
+                        xcb_configure_window(conn, last_focused->frame,
+                                             XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+                }
+
+
                 set_focus(conn, container->currently_focused, true);
+        }
 }
 
 /*
