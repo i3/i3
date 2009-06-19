@@ -223,6 +223,9 @@ struct Autostart {
  */
 struct Assignment {
         char *windowclass_title;
+        /* floating is true if this was an assignment to the special workspace "~".
+         * Matching clients will be put into floating mode automatically. */
+        bool floating;
         int workspace;
         TAILQ_ENTRY(Assignment) assignments;
 };

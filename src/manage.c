@@ -315,6 +315,12 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         if (get_matching_client(conn, assign->windowclass_title, new) == NULL)
                                 continue;
 
+                        if (assign->floating) {
+                                new->floating = FLOATING_AUTO_ON;
+                                LOG("Assignment matches, putting client into floating mode\n");
+                                break;
+                        }
+
                         LOG("Assignment \"%s\" matches, so putting it on workspace %d\n",
                             assign->windowclass_title, assign->workspace);
 

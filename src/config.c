@@ -241,14 +241,16 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath)
                                 die("Malformed assignment, couldn't find target\n");
                         target++;
 
-                        if (atoi(target) < 1 || atoi(target) > 10)
+                        if (*target != '~' && (atoi(target) < 1 || atoi(target) > 10))
                                 die("Malformed assignment, invalid workspace number\n");
 
                         LOG("assignment parsed: \"%s\" to \"%s\"\n", class_title, target);
 
-                        struct Assignment *new = smalloc(sizeof(struct Assignment));
+                        struct Assignment *new = scalloc(sizeof(struct Assignment));
                         new->windowclass_title = class_title;
-                        new->workspace = atoi(target);
+                        if (*target == '~')
+                                new->floating = true;
+                        else new->workspace = atoi(target);
                         TAILQ_INSERT_TAIL(&assignments, new, assignments);
                         continue;
                 }
