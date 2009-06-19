@@ -391,6 +391,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
                 /* Make sure it is on top of the other windows */
                 xcb_raise_window(conn, new->frame);
+                reposition_client(conn, new);
+                resize_client(conn, new);
+                /* redecorate_window flushes */
+                redecorate_window(conn, new);
         }
 
         new->initialized = true;

@@ -110,7 +110,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                 client->floating_rect.x = client->rect.x;
                 client->floating_rect.y = client->rect.y;
 
-                /* Copy the size the other direction */
+                /* Copy size the other direction */
                 client->child_rect.width = client->floating_rect.width;
                 client->child_rect.height = client->floating_rect.height;
 
