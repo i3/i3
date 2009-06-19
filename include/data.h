@@ -163,6 +163,8 @@ struct Workspace {
 
         /* Should clients on this workspace be automatically floating? */
         bool auto_float;
+        /* Are the floating clients on this workspace currently hidden? */
+        bool floating_hidden;
 
         Client *fullscreen_client;
 

@@ -355,3 +355,31 @@ void floating_move(xcb_connection_t *conn, Client *currently_focused, direction_
         fake_absolute_configure_notify(conn, currently_focused);
         /* fake_absolute_configure_notify flushes */
 }
+
+/*
+ * Hides all floating clients (or show them if they are currently hidden) on
+ * the specified workspace.
+ *
+ */
+void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace) {
+        Client *client;
+
+        workspace->floating_hidden = !workspace->floating_hidden;
+        LOG("floating_hidden is now: %d\n", workspace->floating_hidden);
+        TAILQ_FOREACH(client, &(workspace->floating_clients), floating_clients) {
+                if (workspace->floating_hidden)
+                        xcb_unmap_window(conn, client->frame);
+                else xcb_map_window(conn, client->frame);
+        }
+
+        /* If we just unmapped all floating windows we should ensure that the focus
+         * is set correctly, that ist, to the first non-floating client in stack */
+        if (workspace->floating_hidden)
+                SLIST_FOREACH(client, &(workspace->focus_stack), focus_clients)
+                        if (client->floating <= FLOATING_USER_OFF) {
+                                set_focus(conn, client, true);
+                                return;
+                        }
+
+        xcb_flush(conn);
+}

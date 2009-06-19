@@ -52,4 +52,11 @@ void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused,
  */
 void floating_move(xcb_connection_t *conn, Client *currently_focused, direction_t direction);
 
+/**
+ * Hides all floating clients (or show them if they are currently hidden) on
+ * the specified workspace.
+ *
+ */
+void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace);
+
 #endif

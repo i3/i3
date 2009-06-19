@@ -625,12 +625,9 @@ void show_workspace(xcb_connection_t *conn, int workspace) {
                         xcb_map_window(conn, client->frame);
 
         /* Map all floating clients */
-        SLIST_FOREACH(client, &(c_ws->focus_stack), focus_clients) {
-                if (client->floating <= FLOATING_USER_OFF)
-                        continue;
-
-                xcb_map_window(conn, client->frame);
-        }
+        if (!c_ws->floating_hidden)
+                TAILQ_FOREACH(client, &(c_ws->floating_clients), floating_clients)
+                        xcb_map_window(conn, client->frame);
 
         /* Map all stack windows, if any */
         struct Stack_Window *stack_win;
@@ -851,6 +848,12 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 }
                 LOG("Switching mode for current container\n");
                 switch_layout_mode(conn, CUR_CELL, (command[0] == 's' ? MODE_STACK : MODE_DEFAULT));
+                return;
+        }
+
+        if (command[0] == 'H') {
+                LOG("Hiding all floating windows\n");
+                floating_toggle_hide(conn, c_ws);
                 return;
         }
 
