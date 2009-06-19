@@ -259,7 +259,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                                 SLIST_INSERT_HEAD(&(c_ws->screen->dock_clients), new, dock_clients);
                                 /* If it’s a dock we can’t make it float, so we break */
                                 break;
-                        } else if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DIALOG]) {
+                        } else if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DIALOG] ||
+                                   atom[i] == atoms[_NET_WM_WINDOW_TYPE_UTILITY] ||
+                                   atom[i] == atoms[_NET_WM_WINDOW_TYPE_TOOLBAR] ||
+                                   atom[i] == atoms[_NET_WM_WINDOW_TYPE_SPLASH]) {
                                 /* Set the dialog window to automatically floating, will be used below */
                                 new->floating = FLOATING_AUTO_ON;
                                 LOG("dialog window, automatically floating\n");

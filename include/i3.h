@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -20,7 +20,7 @@
 #ifndef _I3_H
 #define _I3_H
 
-#define NUM_ATOMS 14
+#define NUM_ATOMS 17
 
 extern char **start_argv;
 extern Display *xkbdpy;

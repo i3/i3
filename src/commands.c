@@ -924,7 +924,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         }
 
         if (last_focused == NULL) {
-                LOG("Not performing (null) \n");
+                LOG("Not performing (no window found)\n");
                 return;
         }
 
