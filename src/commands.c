@@ -361,7 +361,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                 case D_LEFT:
                         /* Snap to the left is actually a move to the left and then a snap right */
                         if (!cell_exists(container->col - 1, container->row) ||
-                                CUR_TABLE[container->col-1][container->row]->currently_focused != NULL) {
+                            CUR_TABLE[container->col-1][container->row]->currently_focused != NULL) {
                                 LOG("cannot snap to left - the cell is already used\n");
                                 return;
                         }
@@ -372,11 +372,12 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                 case D_RIGHT: {
                         /* Check if the cell is used */
                         int new_col = container->col + container->colspan;
-                        if (!cell_exists(new_col, container->row) ||
-                                CUR_TABLE[new_col][container->row]->currently_focused != NULL) {
-                                LOG("cannot snap to right - the cell is already used\n");
-                                return;
-                        }
+                        for (int i = 0; i < container->rowspan; i++)
+                                if (!cell_exists(new_col, container->row + i) ||
+                                    CUR_TABLE[new_col][container->row + i]->currently_focused != NULL) {
+                                        LOG("cannot snap to right - the cell is already used\n");
+                                        return;
+                                }
 
                         /* Check if there are other cells with rowspan, which are in our way.
                          * If so, reduce their rowspan. */
@@ -393,7 +394,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                 }
                 case D_UP:
                         if (!cell_exists(container->col, container->row - 1) ||
-                                CUR_TABLE[container->col][container->row-1]->currently_focused != NULL) {
+                            CUR_TABLE[container->col][container->row-1]->currently_focused != NULL) {
                                 LOG("cannot snap to top - the cell is already used\n");
                                 return;
                         }
@@ -404,11 +405,12 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                 case D_DOWN: {
                         LOG("snapping down\n");
                         int new_row = container->row + container->rowspan;
-                        if (!cell_exists(container->col, new_row) ||
-                                CUR_TABLE[container->col][new_row]->currently_focused != NULL) {
-                                LOG("cannot snap down - the cell is already used\n");
-                                return;
-                        }
+                        for (int i = 0; i < container->colspan; i++)
+                                if (!cell_exists(container->col + i, new_row) ||
+                                    CUR_TABLE[container->col + i][new_row]->currently_focused != NULL) {
+                                        LOG("cannot snap down - the cell is already used\n");
+                                        return;
+                                }
 
                         for (int i = container->col-1; i >= 0; i--) {
                                 LOG("we got cell %d, %d with colspan %d\n",
