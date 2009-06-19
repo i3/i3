@@ -23,6 +23,7 @@
 #include "util.h"
 #include "queue.h"
 #include "layout.h"
+#include "client.h"
 
 /*
  * Removes the given client from the container, either because it will be inserted into another
@@ -194,6 +195,8 @@ void client_toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                         /* redecorate_window flushes */
                         redecorate_window(conn, client);
                 } else {
+                        client_set_below_floating(conn, client);
+
                         /* Because the coordinates of the window haven’t changed, it would not be
                            re-configured if we don’t set the following flag */
                         client->force_reconfigure = true;
@@ -203,4 +206,20 @@ void client_toggle_fullscreen(xcb_connection_t *conn, Client *client) {
         }
 
         xcb_flush(conn);
+}
+
+/*
+ * Sets the position of the given client in the X stack to the highest (tiling layer is always
+ * on the same position, so this doesn’t matter) below the first floating client, so that
+ * floating windows are always on top.
+ *
+ */
+void client_set_below_floating(xcb_connection_t *conn, Client *client) {
+        /* Ensure that it is below all floating clients */
+        Client *first_floating = TAILQ_FIRST(&(client->workspace->floating_clients));
+        if (first_floating != TAILQ_END(&(client->workspace->floating_clients))) {
+                LOG("Setting below floating\n");
+                uint32_t values[] = { first_floating->frame, XCB_STACK_MODE_BELOW };
+                xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+        }
 }

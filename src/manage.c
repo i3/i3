@@ -373,13 +373,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
                 SLIST_INSERT_HEAD(&(new->container->workspace->focus_stack), new, focus_clients);
 
-                /* Ensure that it is below all floating clients */
-                Client *first_floating = TAILQ_FIRST(&(new->workspace->floating_clients));
-                if (first_floating != TAILQ_END(&(new->workspace->floating_clients))) {
-                        LOG("Setting below floating\n");
-                        uint32_t values[] = { first_floating->frame, XCB_STACK_MODE_BELOW };
-                        xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
-                }
+                client_set_below_floating(conn, new);
         }
 
         if (new->floating >= FLOATING_AUTO_ON) {

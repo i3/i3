@@ -78,13 +78,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                 LOG("Re-inserted the client into the matrix.\n");
                 con->currently_focused = client;
 
-                /* Ensure that it is below all floating clients */
-                Client *first_floating = TAILQ_FIRST(&(client->workspace->floating_clients));
-                if (first_floating != TAILQ_END(&(client->workspace->floating_clients))) {
-                        LOG("Setting below floating\n");
-                        uint32_t values[] = { first_floating->frame, XCB_STACK_MODE_BELOW };
-                        xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
-                }
+                client_set_below_floating(conn, client);
 
                 render_container(conn, con);
                 xcb_flush(conn);

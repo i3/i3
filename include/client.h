@@ -52,4 +52,12 @@ bool client_matches_class_name(Client *client, char *to_class, char *to_title,
  */
 void client_toggle_fullscreen(xcb_connection_t *conn, Client *client);
 
+/**
+ * Sets the position of the given client in the X stack to the highest (tiling layer is always
+ * on the same position, so this doesn’t matter) below the first floating client, so that
+ * floating windows are always on top.
+ *
+ */
+void client_set_below_floating(xcb_connection_t *conn, Client *client);
+
 #endif
