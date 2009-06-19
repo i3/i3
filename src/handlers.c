@@ -309,7 +309,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                         LOG("Not handling, Mod1 was pressed and no client found\n");
                         return 1;
                 }
-                if (client->floating) {
+                if (client->floating >= FLOATING_AUTO_ON) {
                         floating_drag_window(conn, client, event);
                         return 1;
                 }
