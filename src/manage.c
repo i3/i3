@@ -265,8 +265,13 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                                    atom[i] == atoms[_NET_WM_WINDOW_TYPE_SPLASH]) {
                                 /* Set the dialog window to automatically floating, will be used below */
                                 new->floating = FLOATING_AUTO_ON;
-                                LOG("dialog window, automatically floating\n");
+                                LOG("dialog/utility/toolbar/splash window, automatically floating\n");
                         }
+        }
+
+        if (new->workspace->auto_float) {
+                new->floating = FLOATING_AUTO_ON;
+                LOG("workspace is in autofloat mode, setting floating\n");
         }
 
         if (new->dock) {

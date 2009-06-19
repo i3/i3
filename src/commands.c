@@ -854,8 +854,31 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
+        enum { WITH_WINDOW, WITH_CONTAINER, WITH_WORKSPACE } with = WITH_WINDOW;
+
+        /* Is it a <with>? */
+        if (command[0] == 'w') {
+                command++;
+                /* TODO: implement */
+                if (command[0] == 'c') {
+                        with = WITH_CONTAINER;
+                        command++;
+                } else if (command[0] == 'w') {
+                        with = WITH_WORKSPACE;
+                        command++;
+                } else {
+                        LOG("not yet implemented.\n");
+                        return;
+                }
+        }
+
         /* Is it 't' for toggle tiling/floating? */
         if (command[0] == 't') {
+                if (with == WITH_WORKSPACE) {
+                        c_ws->auto_float = !c_ws->auto_float;
+                        LOG("autofloat is now %d\n", c_ws->auto_float);
+                        return;
+                }
                 if (last_focused == NULL) {
                         LOG("Cannot toggle tiling/floating: workspace empty\n");
                         return;
@@ -871,21 +894,6 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 render_workspace(conn, last_focused->workspace->screen, last_focused->workspace);
                 xcb_flush(conn);
                 return;
-        }
-
-        enum { WITH_WINDOW, WITH_CONTAINER } with = WITH_WINDOW;
-
-        /* Is it a <with>? */
-        if (command[0] == 'w') {
-                command++;
-                /* TODO: implement */
-                if (command[0] == 'c') {
-                        with = WITH_CONTAINER;
-                        command++;
-                } else {
-                        LOG("not yet implemented.\n");
-                        return;
-                }
         }
 
         /* It’s a normal <cmd> */

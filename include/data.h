@@ -161,6 +161,9 @@ struct Workspace {
         int current_row;
         int current_col;
 
+        /* Should clients on this workspace be automatically floating? */
+        bool auto_float;
+
         Client *fullscreen_client;
 
         /* The focus stack contains the clients in the correct order of focus so that
