@@ -46,4 +46,10 @@ void floating_drag_window(xcb_connection_t *conn, Client *client, xcb_button_pre
  */
 void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused, direction_t direction);
 
+/**
+ * Moves the client 10px to the specified direction.
+ *
+ */
+void floating_move(xcb_connection_t *conn, Client *currently_focused, direction_t direction);
+
 #endif

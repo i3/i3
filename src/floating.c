@@ -318,3 +318,40 @@ void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused,
                 }
         }
 }
+
+/*
+ * Moves the client 10px to the specified direction.
+ *
+ */
+void floating_move(xcb_connection_t *conn, Client *currently_focused, direction_t direction) {
+        LOG("floating move\n");
+
+        switch (direction) {
+                case D_LEFT:
+                        if (currently_focused->rect.x < 10)
+                                return;
+                        currently_focused->rect.x -= 10;
+                        break;
+                case D_RIGHT:
+                        currently_focused->rect.x += 10;
+                        break;
+                case D_UP:
+                        if (currently_focused->rect.y < 10)
+                                return;
+                        currently_focused->rect.y -= 10;
+                        break;
+                case D_DOWN:
+                        currently_focused->rect.y += 10;
+                        break;
+                /* to make static analyzers happy */
+                default:
+                        break;
+        }
+
+        reposition_client(conn, currently_focused);
+
+        /* Because reposition_client does not send a faked configure event (only resize does),
+         * we need to initiate that on our own */
+        fake_absolute_configure_notify(conn, currently_focused);
+        /* fake_absolute_configure_notify flushes */
+}
