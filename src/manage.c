@@ -386,9 +386,13 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
                 new->floating_rect.x = new->rect.x = x;
                 new->floating_rect.y = new->rect.y = y;
-                LOG("copying size from tiling (%d, %d) size (%d, %d)\n",
+                new->rect.width = new->floating_rect.width + 2 + 2;
+                new->rect.height = new->floating_rect.height + (font->height + 2 + 2) + 2;
+                LOG("copying floating_rect from tiling (%d, %d) size (%d, %d)\n",
                                 new->floating_rect.x, new->floating_rect.y,
                                 new->floating_rect.width, new->floating_rect.height);
+                LOG("outer rect (%d, %d) size (%d, %d)\n",
+                                new->rect.x, new->rect.y, new->rect.width, new->rect.height);
 
                 /* Make sure it is on top of the other windows */
                 xcb_raise_window(conn, new->frame);
