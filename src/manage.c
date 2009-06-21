@@ -356,7 +356,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         } else if (!new->dock) {
                 /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
                 if (new->container->workspace->fullscreen_client == NULL) {
-                        if (new->floating <= FLOATING_USER_OFF)
+                        if (!client_is_floating(new))
                                 new->container->currently_focused = new;
                         if (new->container == CUR_CELL)
                                 xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
@@ -364,7 +364,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         }
 
         /* Insert into the currently active container, if it’s not a dock window */
-        if (!new->dock && new->floating <= FLOATING_USER_OFF) {
+        if (!new->dock && !client_is_floating(new)) {
                 /* Insert after the old active client, if existing. If it does not exist, the
                    container is empty and it does not matter, where we insert it */
                 if (old_focused != NULL && !old_focused->dock)
@@ -376,7 +376,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 client_set_below_floating(conn, new);
         }
 
-        if (new->floating >= FLOATING_AUTO_ON) {
+        if (client_is_floating(new)) {
                 SLIST_INSERT_HEAD(&(new->workspace->focus_stack), new, focus_clients);
 
                 /* Add the client to the list of floating clients for its workspace */

@@ -60,4 +60,12 @@ void client_toggle_fullscreen(xcb_connection_t *conn, Client *client);
  */
 void client_set_below_floating(xcb_connection_t *conn, Client *client);
 
+/**
+ * Returns true if the client is floating. Makes the code more beatiful, as floating
+ * is not simply a boolean, but also saves whether the user selected the current state
+ * or whether it was automatically set.
+ *
+ */
+bool client_is_floating(Client *client);
+
 #endif

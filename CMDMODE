@@ -16,10 +16,13 @@ snap  := <s>
 cmd     := [ <times> ] [ <move> | <snap> ] <where>
 with    := <w> { [ <times> ] <where> }+ <space> <cmd>
 jump    := [ "<window class>[/<window title>]" | <workspace> [ <column> <row> ] ]
-focus   := focus [ <times> ]
+focus   := focus [ <times> | floating | tiling | ft ]
 (travels the focus stack backwards the given amount of times (by default 1), so
  it selects the window which had the focus before you focused the current one when
- specifying "focus 1")
+ specifying "focus 1".
+ The special values 'floating' (select the next floating window), 'tiling'
+ (select the next tiling window), 'ft' (if the current window is floating,
+ select the next tiling window and vice-versa) are also valid)
 special := [ exec <path> | kill | exit | restart ]
 
 input := [ <cmd> | <with> | <jump> | <focus> | <special> ]

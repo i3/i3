@@ -24,6 +24,7 @@
 #include "util.h"
 #include "xinerama.h"
 #include "layout.h"
+#include "client.h"
 
 /*
  * Updates *destination with new_value and returns true if it was changed or false
@@ -107,9 +108,9 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 return;
 
         LOG("redecorating child %08x\n", client->child);
-        if (client->floating >= FLOATING_AUTO_ON || client->container->currently_focused == client) {
+        if (client_is_floating(client) || client->container->currently_focused == client) {
                 /* Distinguish if the window is currently focused… */
-                if (client->floating >= FLOATING_AUTO_ON || CUR_CELL->currently_focused == client)
+                if (client_is_floating(client) || CUR_CELL->currently_focused == client)
                         color = &(config.client.focused);
                 /* …or if it is the focused window in a not focused container */
                 else color = &(config.client.focused_inactive);

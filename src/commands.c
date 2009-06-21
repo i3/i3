@@ -720,29 +720,56 @@ static void jump_to_container(xcb_connection_t *conn, const char *arguments) {
  * was specified). That is, selects the window you were in before you focused
  * the current window.
  *
+ * The special values 'floating' (select the next floating window), 'tiling'
+ * (select the next tiling window), 'ft' (if the current window is floating,
+ * select the next tiling window and vice-versa) are also valid
+ *
  */
 static void travel_focus_stack(xcb_connection_t *conn, const char *arguments) {
         /* Start count at -1 to always skip the first element */
         int times, count = -1;
         Client *current;
+        bool floating_criteria;
 
-        if (sscanf(arguments, "%u", &times) != 1) {
-                LOG("No or invalid argument given (\"%s\"), using default of 1 times\n", arguments);
-                times = 1;
-        }
-
-        Workspace *ws = CUR_CELL->workspace;
-
-        SLIST_FOREACH(current, &(ws->focus_stack), focus_clients) {
-                if (++count < times) {
-                        LOG("Skipping\n");
-                        continue;
+        /* Either it’s one of the special values… */
+        if (strcasecmp(arguments, "floating") == 0) {
+                floating_criteria = true;
+        } else if (strcasecmp(arguments, "tiling") == 0) {
+                floating_criteria = false;
+        } else if (strcasecmp(arguments, "ft") == 0) {
+                Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
+                if (last_focused == SLIST_END(&(c_ws->focus_stack))) {
+                        LOG("Cannot select the next floating/tiling client because there is no client at all\n");
+                        return;
                 }
 
-                LOG("Focussing\n");
-                set_focus(conn, current, true);
-                break;
+                floating_criteria = !client_is_floating(last_focused);
+        } else {
+                /* …or a number was specified */
+                if (sscanf(arguments, "%u", &times) != 1) {
+                        LOG("No or invalid argument given (\"%s\"), using default of 1 times\n", arguments);
+                        times = 1;
+                }
+
+                SLIST_FOREACH(current, &(CUR_CELL->workspace->focus_stack), focus_clients) {
+                        if (++count < times) {
+                                LOG("Skipping\n");
+                                continue;
+                        }
+
+                        LOG("Focussing\n");
+                        set_focus(conn, current, true);
+                        break;
+                }
+                return;
         }
+
+        /* Select the next client matching the criteria parsed above */
+        SLIST_FOREACH(current, &(CUR_CELL->workspace->focus_stack), focus_clients)
+                if (client_is_floating(current) == floating_criteria) {
+                        set_focus(conn, current, true);
+                        break;
+                }
 }
 
 /*
@@ -829,7 +856,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         /* Should we travel the focus stack? */
         if (STARTS_WITH(command, "focus")) {
-                const char *arguments = command + strlen("focus");
+                const char *arguments = command + strlen("focus ");
                 travel_focus_stack(conn, arguments);
                 return;
         }
@@ -844,7 +871,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         /* Is it just 's' for stacking or 'd' for default? */
         if ((command[0] == 's' || command[0] == 'd') && (command[1] == '\0')) {
-                if (last_focused == NULL || last_focused->floating >= FLOATING_AUTO_ON) {
+                if (last_focused == NULL || client_is_floating(last_focused)) {
                         LOG("not switching, this is a floating client\n");
                         return;
                 }
@@ -930,7 +957,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         }
 
         if (*rest == '\0') {
-                if (last_focused != NULL && last_focused->floating >= FLOATING_AUTO_ON)
+                if (last_focused != NULL && client_is_floating(last_focused))
                         move_floating_window_to_workspace(conn, last_focused, workspace);
                 else move_current_window_to_workspace(conn, workspace);
                 return;
@@ -941,8 +968,8 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
-        if (last_focused->floating >= FLOATING_AUTO_ON &&
-           (action != ACTION_FOCUS && action != ACTION_MOVE)) {
+        if (client_is_floating(last_focused) &&
+            (action != ACTION_FOCUS && action != ACTION_MOVE)) {
                 LOG("Not performing (floating)\n");
                 return;
         }
@@ -964,7 +991,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 rest++;
 
                 if (action == ACTION_FOCUS) {
-                        if (last_focused->floating >= FLOATING_AUTO_ON) {
+                        if (client_is_floating(last_focused)) {
                                 floating_focus_direction(conn, last_focused, direction);
                                 continue;
                         }
@@ -973,7 +1000,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 }
 
                 if (action == ACTION_MOVE) {
-                        if (last_focused->floating >= FLOATING_AUTO_ON) {
+                        if (client_is_floating(last_focused)) {
                                 floating_move(conn, last_focused, direction);
                                 continue;
                         }

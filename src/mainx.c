@@ -375,6 +375,9 @@ int main(int argc, char *argv[], char *env[]) {
                 c_ws = &workspaces[screen->current_workspace];
         }
 
+        /* Handle the events which arrived until now */
+        xcb_check_cb(NULL, NULL, 0);
+
         /* Ungrab the server to receive events and enter libev’s eventloop */
         xcb_ungrab_server(conn);
         ev_loop(loop, 0);

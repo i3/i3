@@ -300,11 +300,21 @@ the focus stack and jumps to the window you focused before.
 
 *Syntax*:
 --------------
-focus [number]
+focus [number] | floating | tilling | ft
 --------------
 
 Where +number+ by default is 1 meaning that the next client in the focus stack will
 be selected.
+
+The special values have the following meaning:
+
+floating::
+	The next floating window is selected.
+tiling::
+	The next tiling window is selected.
+ft::
+	If the current window is floating, the next tiling window will be selected
+	and vice-versa.
 
 === Changing colors
 

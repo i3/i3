@@ -309,7 +309,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                         LOG("Not handling, Mod1 was pressed and no client found\n");
                         return 1;
                 }
-                if (client->floating >= FLOATING_AUTO_ON) {
+                if (client_is_floating(client)) {
                         floating_drag_window(conn, client, event);
                         return 1;
                 }
@@ -350,7 +350,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 LOG("client. done.\n");
                 xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
                 /* Floating clients should be raised on click */
-                if (client->floating >= FLOATING_AUTO_ON)
+                if (client_is_floating(client))
                         xcb_raise_window(conn, client->frame);
                 xcb_flush(conn);
                 return 1;
@@ -362,7 +362,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 LOG("click on titlebar\n");
 
                 /* Floating clients can be dragged by grabbing their titlebar */
-                if (client->floating >= FLOATING_AUTO_ON) {
+                if (client_is_floating(client)) {
                         /* Firstly, we raise it. Maybe the user just wanted to raise it without grabbing */
                         xcb_raise_window(conn, client->frame);
                         xcb_flush(conn);
@@ -372,7 +372,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 return 1;
         }
 
-        if (client->floating >= FLOATING_AUTO_ON)
+        if (client_is_floating(client))
                 return floating_border_click(conn, client, event);
 
         if (event->event_y < 2) {
@@ -477,7 +477,7 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
         }
 
         /* Floating clients can be reconfigured */
-        if (client->floating >= FLOATING_AUTO_ON) {
+        if (client_is_floating(client)) {
                 i3Font *font = load_font(conn, config.font);
 
                 if (event->value_mask & XCB_CONFIG_WINDOW_X)
@@ -598,7 +598,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 /* Only if this is the active container, we need to really change focus */
                 if ((con->currently_focused != NULL) && ((con == CUR_CELL) || client->fullscreen))
                         set_focus(conn, con->currently_focused, true);
-        } else if (client->floating >= FLOATING_AUTO_ON) {
+        } else if (client_is_floating(client)) {
                 SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
         }
 

@@ -187,7 +187,7 @@ void client_toggle_fullscreen(xcb_connection_t *conn, Client *client) {
                 LOG("leaving fullscreen mode\n");
                 client->fullscreen = false;
                 workspace->fullscreen_client = NULL;
-                if (client->floating >= FLOATING_AUTO_ON) {
+                if (client_is_floating(client)) {
                         /* For floating clients it’s enough if we just reconfigure that window (in fact,
                          * re-rendering the layout will not update the client.) */
                         reposition_client(conn, client);
@@ -222,4 +222,14 @@ void client_set_below_floating(xcb_connection_t *conn, Client *client) {
                 uint32_t values[] = { first_floating->frame, XCB_STACK_MODE_BELOW };
                 xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
         }
+}
+
+/*
+ * Returns true if the client is floating. Makes the code more beatiful, as floating
+ * is not simply a boolean, but also saves whether the user selected the current state
+ * or whether it was automatically set.
+ *
+ */
+bool client_is_floating(Client *client) {
+        return (client->floating >= FLOATING_AUTO_ON);
 }

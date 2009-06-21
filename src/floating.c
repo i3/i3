@@ -52,7 +52,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                 LOG("This client is already in floating (container == NULL), re-inserting\n");
                 Client *next_tiling;
                 SLIST_FOREACH(next_tiling, &(client->workspace->focus_stack), focus_clients)
-                        if (next_tiling->floating <= FLOATING_USER_OFF)
+                        if (!client_is_floating(next_tiling))
                                 break;
                 /* If there are no tiling clients on this workspace, there can only be one
                  * container: the first one */
@@ -386,11 +386,12 @@ void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace) {
         /* If we just unmapped all floating windows we should ensure that the focus
          * is set correctly, that ist, to the first non-floating client in stack */
         if (workspace->floating_hidden)
-                SLIST_FOREACH(client, &(workspace->focus_stack), focus_clients)
-                        if (client->floating <= FLOATING_USER_OFF) {
-                                set_focus(conn, client, true);
-                                return;
-                        }
+                SLIST_FOREACH(client, &(workspace->focus_stack), focus_clients) {
+                        if (client_is_floating(client))
+                                continue;
+                        set_focus(conn, client, true);
+                        return;
+                }
 
         xcb_flush(conn);
 }

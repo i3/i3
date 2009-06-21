@@ -106,6 +106,12 @@ Enable stacking layout for the current container.
 Mod1+e::
 Enable default layout for the current container.
 
+Mod1+Shift+Space::
+Toggle tiling/floating for the current window.
+
+Mod1+t::
+Select the first tiling window if the current window is floating and vice-versa.
+
 Mod1+Shift+q::
 Kills the current client.
 
@@ -164,6 +170,13 @@ bind Mod1+43 s
 
 # Default (Mod1+e)
 bind Mod1+26 d
+
+# Toggle tiling/floating of the current window (Mod1+Shift+Space)
+bind Mod1+Shift+65 t
+
+# Go into the tiling layer / floating layer, depending on whether
+# the current window is tiling / floating (Mod1+t)
+bind Mod1+28 focus ft
 
 # Focus (Mod1+j/k/l/;)
 bind Mod1+44 h
