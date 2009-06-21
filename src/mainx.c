@@ -72,31 +72,34 @@ xcb_atom_t atoms[NUM_ATOMS];
 int num_screens = 0;
 
 /*
- * Callback for activity on the connection to the X server
+ * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
+ * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop
  *
  */
 static void xcb_got_event(EV_P_ struct ev_io *w, int revents) {
+        /* empty, because xcb_prepare_cb and xcb_check_cb are used */
+}
+
+/*
+ * Flush before blocking (and waiting for new events)
+ *
+ */
+static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
+        xcb_flush(evenths.c);
+}
+
+/*
+ * Instead of polling the X connection socket we leave this to
+ * xcb_poll_for_event() which knows better than we can ever know.
+ *
+ */
+static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
         xcb_generic_event_t *event;
 
-        /* When an event is available… */
         while ((event = xcb_poll_for_event(evenths.c)) != NULL) {
-                /* …we handle all events in a row: */
-                do {
-                        xcb_event_handle(&evenths, event);
-                        xcb_aux_sync(evenths.c);
-                        free(event);
-                } while ((event = xcb_poll_for_event(evenths.c)));
-
-                /* Make sure all replies are handled/discarded */
-                xcb_aux_sync(evenths.c);
-
-                /* Afterwards, there may be new events available which would
-                 * not trigger the select() (libev) immediately, so we check
-                 * again (and don’t bail out of the loop). */
+                xcb_event_handle(&evenths, event);
+                free(event);
         }
-
-        /* Make sure all replies are handled/discarded */
-        xcb_aux_sync(evenths.c);
 }
 
 int main(int argc, char *argv[], char *env[]) {
@@ -189,6 +192,27 @@ int main(int argc, char *argv[], char *env[]) {
                 return 1;
         }
         /* end of ugliness */
+
+        /* Initialize event loop using libev */
+        struct ev_loop *loop = ev_default_loop(0);
+        if (loop == NULL)
+                die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
+
+        struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
+        struct ev_check *xcb_check = scalloc(sizeof(struct ev_check));
+        struct ev_prepare *xcb_prepare = scalloc(sizeof(struct ev_prepare));
+
+        ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
+        ev_io_start(loop, xcb_watcher);
+
+        ev_check_init(xcb_check, xcb_check_cb);
+        ev_check_start(loop, xcb_check);
+
+        ev_prepare_init(xcb_prepare, xcb_prepare_cb);
+        ev_prepare_start(loop, xcb_prepare);
+
+        /* Grab the server to delay any events until we enter the eventloop */
+        xcb_grab_server(conn);
 
         xcb_event_handlers_init(conn, &evenths);
 
@@ -351,20 +375,8 @@ int main(int argc, char *argv[], char *env[]) {
                 c_ws = &workspaces[screen->current_workspace];
         }
 
-
-        /* Initialize event loop using libev */
-        struct ev_loop *loop = ev_default_loop(0);
-        if (loop == NULL)
-                die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
-
-        struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
-        ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
-
-        /* Call the handler to work all events which arrived before the libev-stuff was set up */
-        xcb_got_event(NULL, xcb_watcher, 0);
-
-        /* Enter the libev eventloop */
-        ev_io_start(loop, xcb_watcher);
+        /* Ungrab the server to receive events and enter libev’s eventloop */
+        xcb_ungrab_server(conn);
         ev_loop(loop, 0);
 
         /* not reached */
