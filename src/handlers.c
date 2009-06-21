@@ -476,6 +476,30 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
                 return 1;
         }
 
+        /* Floating clients can be reconfigured */
+        if (client->floating >= FLOATING_AUTO_ON) {
+                i3Font *font = load_font(conn, config.font);
+
+                if (event->value_mask & XCB_CONFIG_WINDOW_X)
+                        client->rect.x = event->x;
+                if (event->value_mask & XCB_CONFIG_WINDOW_Y)
+                        client->rect.y = event->y;
+                if (event->value_mask & XCB_CONFIG_WINDOW_WIDTH)
+                        client->rect.width = event->width + 2 + 2;
+                if (event->value_mask & XCB_CONFIG_WINDOW_HEIGHT)
+                        client->rect.height = event->height + (font->height + 2 + 2) + 2;
+
+                LOG("Accepted new position/size for floating client: (%d, %d) size %d x %d\n",
+                    client->rect.x, client->rect.y, client->rect.width, client->rect.height);
+
+                /* Push the new position/size to X11 */
+                reposition_client(conn, client);
+                resize_client(conn, client);
+                xcb_flush(conn);
+
+                return 1;
+        }
+
         if (client->fullscreen) {
                 LOG("Client is in fullscreen mode\n");
 
