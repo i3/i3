@@ -254,42 +254,53 @@ static void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_pres
         /* Go into our own event loop */
         xcb_flush(conn);
 
-        xcb_generic_event_t *inside_event;
+        xcb_generic_event_t *inside_event, *last_motion_notify = NULL;
         /* I’ve always wanted to have my own eventhandler… */
         while ((inside_event = xcb_wait_for_event(conn))) {
-                /* Same as get_event_handler in xcb */
-                int nr = inside_event->response_type;
-                if (nr == 0) {
-                        /* An error occured */
-                        handle_event(NULL, conn, inside_event);
-                        free(inside_event);
+                /* We now handle all events we can get using xcb_poll_for_event */
+                do {
+                        /* Same as get_event_handler in xcb */
+                        int nr = inside_event->response_type;
+                        if (nr == 0) {
+                                /* An error occured */
+                                handle_event(NULL, conn, inside_event);
+                                free(inside_event);
+                                continue;
+                        }
+                        assert(nr < 256);
+                        nr &= XCB_EVENT_RESPONSE_TYPE_MASK;
+                        assert(nr >= 2);
+
+                        switch (nr) {
+                                case XCB_BUTTON_RELEASE:
+                                        goto done;
+
+                                case XCB_MOTION_NOTIFY:
+                                        /* motion_notify events are saved for later */
+                                        FREE(last_motion_notify);
+                                        last_motion_notify = inside_event;
+
+                                        break;
+                                default:
+                                        LOG("Passing to original handler\n");
+                                        /* Use original handler */
+                                        xcb_event_handle(&evenths, inside_event);
+                                        break;
+                        }
+                        if (last_motion_notify != inside_event)
+                                free(inside_event);
+                } while ((inside_event = xcb_poll_for_event(conn)) != NULL);
+
+                if (last_motion_notify == NULL)
                         continue;
-                }
-                assert(nr < 256);
-                nr &= XCB_EVENT_RESPONSE_TYPE_MASK;
-                assert(nr >= 2);
 
-                /* Check if we need to escape this loop */
-                if (nr == XCB_BUTTON_RELEASE)
-                        break;
+                new_x = ((xcb_motion_notify_event_t*)last_motion_notify)->root_x;
+                new_y = ((xcb_motion_notify_event_t*)last_motion_notify)->root_y;
 
-                switch (nr) {
-                        case XCB_MOTION_NOTIFY:
-                                new_x = ((xcb_motion_notify_event_t*)inside_event)->root_x;
-                                new_y = ((xcb_motion_notify_event_t*)inside_event)->root_y;
-
-                                callback(&old_rect, new_x, new_y);
-
-                                break;
-                        default:
-                                LOG("Passing to original handler\n");
-                                /* Use original handler */
-                                xcb_event_handle(&evenths, inside_event);
-                                break;
-                }
-                free(inside_event);
+                callback(&old_rect, new_x, new_y);
+                FREE(last_motion_notify);
         }
-
+done:
         xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
         xcb_flush(conn);
 }
