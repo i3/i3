@@ -384,8 +384,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
                 new->container = NULL;
 
-                new->floating_rect.x = new->rect.x;
-                new->floating_rect.y = new->rect.y;
+                new->floating_rect.x = new->rect.x = x;
+                new->floating_rect.y = new->rect.y = y;
                 LOG("copying size from tiling (%d, %d) size (%d, %d)\n",
                                 new->floating_rect.x, new->floating_rect.y,
                                 new->floating_rect.width, new->floating_rect.height);
