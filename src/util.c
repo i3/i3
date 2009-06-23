@@ -319,6 +319,9 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         c_ws->current_row = current_row;
         c_ws->current_col = current_col;
         c_ws = client->workspace;
+        /* Load current_col/current_row if we switch to a client without a container */
+        current_col = c_ws->current_col;
+        current_row = c_ws->current_row;
 
         /* Update container */
         if (client->container != NULL) {
