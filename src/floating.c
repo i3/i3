@@ -155,23 +155,44 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
 
         void resize_callback(Rect *old_rect, uint32_t new_x, uint32_t new_y) {
                 switch (border) {
-                        case BORDER_RIGHT:
-                                client->rect.width = old_rect->width + (new_x - event->root_x);
+                        case BORDER_RIGHT: {
+                                int new_width = old_rect->width + (new_x - event->root_x);
+                                if ((new_width < 0) ||
+                                    (new_width < 50 && client->rect.width >= new_width))
+                                        return;
+                                client->rect.width = new_width;
                                 break;
+                        }
 
-                        case BORDER_BOTTOM:
+                        case BORDER_BOTTOM: {
+                                int new_height = old_rect->height + (new_y - event->root_y);
+                                if ((new_height < 0) ||
+                                    (new_height < 20 && client->rect.height >= new_height))
+                                        return;
                                 client->rect.height = old_rect->height + (new_y - event->root_y);
                                 break;
+                        }
 
-                        case BORDER_TOP:
+                        case BORDER_TOP: {
+                                int new_height = old_rect->height + (event->root_y - new_y);
+                                if ((new_height < 0) ||
+                                    (new_height < 20 && client->rect.height >= new_height))
+                                        return;
+
                                 client->rect.y = old_rect->y + (new_y - event->root_y);
-                                client->rect.height = old_rect->height + (event->root_y - new_y);
+                                client->rect.height = new_height;
                                 break;
+                        }
 
-                        case BORDER_LEFT:
+                        case BORDER_LEFT: {
+                                int new_width = old_rect->width + (event->root_x - new_x);
+                                if ((new_width < 0) ||
+                                    (new_width < 50 && client->rect.width >= new_width))
+                                        return;
                                 client->rect.x = old_rect->x + (new_x - event->root_x);
-                                client->rect.width = old_rect->width + (event->root_x - new_x);
+                                client->rect.width = new_width;
                                 break;
+                        }
                 }
 
                 /* Push the new position/size to X11 */
