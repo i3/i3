@@ -452,15 +452,17 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
                 }
         }
 
-        /* Remove from focus stack */
+        /* Remove from focus stack and list of floating clients */
         SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
+        TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
 
         if (client->workspace->fullscreen_client == client)
                 client->workspace->fullscreen_client = NULL;
 
-        /* Insert into destination focus stack */
+        /* Insert into destination focus stack and list of floating clients */
         client->workspace = t_ws;
         SLIST_INSERT_HEAD(&(t_ws->focus_stack), client, focus_clients);
+        TAILQ_INSERT_TAIL(&(t_ws->floating_clients), client, floating_clients);
         if (client->fullscreen)
                 t_ws->fullscreen_client = client;
 
