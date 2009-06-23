@@ -434,7 +434,8 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
 
 static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *client, int workspace) {
         /* t_ws (to workspace) is just a container pointer to the workspace we’re switching to */
-        Workspace *t_ws = &(workspaces[workspace-1]);
+        Workspace *t_ws = &(workspaces[workspace-1]),
+                  *old_ws = client->workspace;
 
         LOG("moving floating\n");
 
@@ -470,6 +471,19 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
         if (t_ws->screen->current_workspace != t_ws->num) {
                 LOG("This workspace is not visible, unmapping\n");
                 xcb_unmap_window(conn, client->frame);
+        } else {
+                /* If this is not the case, we move the window to a workspace
+                 * which is on another screen, so we also need to adjust its
+                 * coordinates. */
+                LOG("before x = %d, y = %d\n", client->rect.x, client->rect.y);
+                uint32_t relative_x = client->rect.x - old_ws->rect.x,
+                         relative_y = client->rect.y - old_ws->rect.y;
+                LOG("rel_x = %d, rel_y = %d\n", relative_x, relative_y);
+                client->rect.x = t_ws->rect.x + relative_x;
+                client->rect.y = t_ws->rect.y + relative_y;
+                LOG("after x = %d, y = %d\n", client->rect.x, client->rect.y);
+                reposition_client(conn, client);
+                xcb_flush(conn);
         }
 
         LOG("done\n");
