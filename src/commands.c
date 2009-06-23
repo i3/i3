@@ -489,6 +489,8 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
         LOG("done\n");
 
         render_layout(conn);
+
+        set_focus(conn, client, true);
 }
 
 /*
