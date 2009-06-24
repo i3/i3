@@ -11,6 +11,12 @@
 #ifndef _FLOATING_H
 #define _FLOATING_H
 
+/** Callback for dragging */
+typedef void(*callback_t)(Rect*, uint32_t, uint32_t);
+
+/** On which border was the dragging initiated? */
+typedef enum { BORDER_LEFT, BORDER_RIGHT, BORDER_TOP, BORDER_BOTTOM} border_t;
+
 /**
  * Enters floating mode for the given client.
  * Correctly takes care of the position/size (separately stored for tiling/floating mode)
@@ -66,5 +72,16 @@ void floating_move(xcb_connection_t *conn, Client *currently_focused, direction_
  *
  */
 void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace);
+
+/**
+ * This function grabs your pointer and lets you drag stuff around (borders).
+ * Every time you move your mouse, an XCB_MOTION_NOTIFY event will be received
+ * and the given callback will be called with the parameters specified (client,
+ * border on which the click originally was), the original rect of the client,
+ * the event and the new coordinates (x, y).
+ *
+ */
+void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event,
+                  xcb_window_t confine_to, border_t border, callback_t callback);
 
 #endif

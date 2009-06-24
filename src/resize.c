@@ -26,6 +26,7 @@
 #include "layout.h"
 #include "xinerama.h"
 #include "config.h"
+#include "floating.h"
 
 /*
  * Renders the resize window between the first/second container and resizes
@@ -35,7 +36,6 @@
 int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, int second,
                              resize_orientation_t orientation, xcb_button_press_event_t *event) {
         int new_position;
-        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
         i3Screen *screen = get_screen_containing(event->root_x, event->root_y);
         if (screen == NULL) {
@@ -91,59 +91,32 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
 
         xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, helpwin);
 
-        xcb_grab_pointer(conn, false, root, XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION,
-                        XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, grabwin, XCB_NONE, XCB_CURRENT_TIME);
-
         xcb_flush(conn);
 
-        xcb_generic_event_t *inside_event;
-        /* I’ve always wanted to have my own eventhandler… */
-        while ((inside_event = xcb_wait_for_event(conn))) {
-                /* Same as get_event_handler in xcb */
-                int nr = inside_event->response_type;
-                if (nr == 0) {
-                        /* An error occured */
-                        handle_event(NULL, conn, inside_event);
-                        free(inside_event);
-                        continue;
+        void resize_callback(Rect *old_rect, uint32_t new_x, uint32_t new_y) {
+                LOG("new x = %d, y = %d\n", new_x, new_y);
+                if (orientation == O_VERTICAL) {
+                        /* Check if the new coordinates are within screen boundaries */
+                        if (new_x > (screen->rect.x + screen->rect.width) ||
+                            new_x < screen->rect.x)
+                                return;
+
+                        values[0] = new_position = new_x;
+                        xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_X, values);
+                } else {
+                        if (new_y > (screen->rect.y + screen->rect.height) ||
+                            new_y < screen->rect.y)
+                                return;
+
+                        values[0] = new_position = new_y;
+                        xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_Y, values);
                 }
-                assert(nr < 256);
-                nr &= XCB_EVENT_RESPONSE_TYPE_MASK;
-                assert(nr >= 2);
 
-                /* Check if we need to escape this loop */
-                if (nr == XCB_BUTTON_RELEASE)
-                        break;
-
-                switch (nr) {
-                        case XCB_MOTION_NOTIFY: {
-                                xcb_motion_notify_event_t *motion_event = (xcb_motion_notify_event_t*)inside_event;
-                                if (orientation == O_VERTICAL) {
-                                        if (motion_event->root_x < (screen->rect.x + screen->rect.width) &&
-                                            motion_event->root_x > screen->rect.x) {
-                                                values[0] = new_position = ((xcb_motion_notify_event_t*)inside_event)->root_x;
-                                                xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_X, values);
-                                        } else {
-                                                LOG("Ignoring new position\n");
-                                        }
-                                } else {
-                                        values[0] = new_position = ((xcb_motion_notify_event_t*)inside_event)->root_y;
-                                        xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_Y, values);
-                                }
-
-                                xcb_flush(conn);
-                                break;
-                        }
-                        default:
-                                LOG("Passing to original handler\n");
-                                /* Use original handler */
-                                xcb_event_handle(&evenths, inside_event);
-                                break;
-                }
-                free(inside_event);
+                xcb_flush(conn);
         }
 
-        xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
+        drag_pointer(conn, NULL, event, grabwin, BORDER_TOP, resize_callback);
+
         xcb_destroy_window(conn, helpwin);
         xcb_destroy_window(conn, grabwin);
         xcb_flush(conn);

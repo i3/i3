@@ -25,15 +25,7 @@
 #include "debug.h"
 #include "layout.h"
 #include "client.h"
-
-/* On which border was the dragging initiated? */
-typedef enum { BORDER_LEFT, BORDER_RIGHT, BORDER_TOP, BORDER_BOTTOM} border_t;
-/* Callback for dragging */
-typedef void(*callback_t)(Rect*, uint32_t, uint32_t);
-
-/* Forward definitions */
-static void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event,
-                         border_t border, callback_t callback);
+#include "floating.h"
 
 /*
  * Toggles floating mode for the given client.
@@ -238,7 +230,7 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
 
         LOG("border = %d\n", border);
 
-        drag_pointer(conn, client, event, border, resize_callback);
+        drag_pointer(conn, client, event, XCB_NONE, border, resize_callback);
 
         return 1;
 }
@@ -264,7 +256,7 @@ void floating_drag_window(xcb_connection_t *conn, Client *client, xcb_button_pre
         }
 
 
-        drag_pointer(conn, client, event, BORDER_TOP /* irrelevant */, drag_window_callback);
+        drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback);
 }
 
 /*
@@ -275,12 +267,13 @@ void floating_drag_window(xcb_connection_t *conn, Client *client, xcb_button_pre
  * the event and the new coordinates (x, y).
  *
  */
-static void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event,
-                         border_t border, callback_t callback) {
+void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event,
+                  xcb_window_t confine_to, border_t border, callback_t callback) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         uint32_t new_x, new_y;
         Rect old_rect;
-        memcpy(&old_rect, &(client->rect), sizeof(Rect));
+        if (client != NULL)
+                memcpy(&old_rect, &(client->rect), sizeof(Rect));
 
         /* Grab the pointer */
         /* TODO: returncode */
@@ -290,7 +283,7 @@ static void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_pres
                         XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION, /* which events to let through */
                         XCB_GRAB_MODE_ASYNC, /* pointer events should continue as normal */
                         XCB_GRAB_MODE_ASYNC, /* keyboard mode */
-                        XCB_NONE,            /* confine_to = in which window should the cursor stay */
+                        confine_to,          /* confine_to = in which window should the cursor stay */
                         XCB_NONE,            /* don’t display a special cursor */
                         XCB_CURRENT_TIME);
 
