@@ -100,6 +100,31 @@ i3Screen *get_screen_most(direction_t direction) {
         return candidate;
 }
 
+static void initialize_screen(xcb_connection_t *conn, i3Screen *screen, Workspace *workspace) {
+        i3Font *font = load_font(conn, config.font);
+
+        workspace->screen = screen;
+        screen->current_workspace = workspace->num;
+
+        /* Create a bar for each screen */
+        Rect bar_rect = {screen->rect.x,
+                         screen->rect.height - (font->height + 6),
+                         screen->rect.x + screen->rect.width,
+                         font->height + 6};
+        uint32_t mask = XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
+        uint32_t values[] = {1, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS};
+        screen->bar = create_window(conn, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
+        screen->bargc = xcb_generate_id(conn);
+        xcb_create_gc(conn, screen->bargc, screen->bar, 0, 0);
+
+        SLIST_INIT(&(screen->dock_clients));
+
+        /* Copy dimensions */
+        memcpy(&(workspace->rect), &(screen->rect), sizeof(Rect));
+        LOG("that is virtual screen at %d x %d with %d x %d\n",
+                        screen->rect.x, screen->rect.y, screen->rect.width, screen->rect.height);
+}
+
 /*
  * Fills virtual_screens with exactly one screen with width/height of the whole X server.
  *
@@ -113,6 +138,10 @@ static void disable_xinerama(xcb_connection_t *conn) {
         s->rect.y = 0;
         s->rect.width = root_screen->width_in_pixels;
         s->rect.height = root_screen->height_in_pixels;
+
+        num_screens = 1;
+        s->num = 0;
+        initialize_screen(conn, s, &(workspaces[0]));
 
         TAILQ_INSERT_TAIL(virtual_screens, s, screens);
 
@@ -168,31 +197,6 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
                 LOG("No screens found. This is weird.\n");
                 exit(1);
         }
-}
-
-static void initialize_screen(xcb_connection_t *conn, i3Screen *screen, Workspace *workspace) {
-        i3Font *font = load_font(conn, config.font);
-
-        workspace->screen = screen;
-        screen->current_workspace = workspace->num;
-
-        /* Create a bar for each screen */
-        Rect bar_rect = {screen->rect.x,
-                         screen->rect.height - (font->height + 6),
-                         screen->rect.x + screen->rect.width,
-                         font->height + 6};
-        uint32_t mask = XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
-        uint32_t values[] = {1, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS};
-        screen->bar = create_window(conn, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
-        screen->bargc = xcb_generate_id(conn);
-        xcb_create_gc(conn, screen->bargc, screen->bar, 0, 0);
-
-        SLIST_INIT(&(screen->dock_clients));
-
-        /* Copy dimensions */
-        memcpy(&(workspace->rect), &(screen->rect), sizeof(Rect));
-        LOG("that is virtual screen at %d x %d with %d x %d\n",
-                        screen->rect.x, screen->rect.y, screen->rect.width, screen->rect.height);
 }
 
 /*
