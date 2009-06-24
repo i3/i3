@@ -578,9 +578,6 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 
         client = table_remove(&by_child, event->window);
 
-        if (client->name != NULL)
-                free(client->name);
-
         /* Clients without a container are either floating or dock windows */
         if (client->container != NULL) {
                 Container *con = client->container;
@@ -644,6 +641,8 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 client->workspace->screen = NULL;
         }
 
+        FREE(client->window_class);
+        FREE(client->name);
         free(client);
 
         render_layout(conn);

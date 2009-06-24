@@ -188,6 +188,11 @@ void reposition_client(xcb_connection_t *conn, Client *client) {
         if (client->workspace->screen == (screen = get_screen_containing(client->rect.x, client->rect.y)))
                 return;
 
+        if (screen == NULL) {
+                LOG("Boundary checking disabled, no screen found for (%d, %d)\n", client->rect.x, client->rect.y);
+                return;
+        }
+
         LOG("Client is on workspace %p with screen %p\n", client->workspace, client->workspace->screen);
         LOG("but screen at %d, %d is %p\n", client->rect.x, client->rect.y, screen);
         floating_assign_to_workspace(client, &workspaces[screen->current_workspace]);
