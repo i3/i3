@@ -97,15 +97,15 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
                 LOG("new x = %d, y = %d\n", new_x, new_y);
                 if (orientation == O_VERTICAL) {
                         /* Check if the new coordinates are within screen boundaries */
-                        if (new_x > (screen->rect.x + screen->rect.width) ||
-                            new_x < screen->rect.x)
+                        if (new_x > (screen->rect.x + screen->rect.width - 25) ||
+                            new_x < (screen->rect.x + 25))
                                 return;
 
                         values[0] = new_position = new_x;
                         xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_X, values);
                 } else {
-                        if (new_y > (screen->rect.y + screen->rect.height) ||
-                            new_y < screen->rect.y)
+                        if (new_y > (screen->rect.y + screen->rect.height - 25) ||
+                            new_y < (screen->rect.y + 25))
                                 return;
 
                         values[0] = new_position = new_y;
