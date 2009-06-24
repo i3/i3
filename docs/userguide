@@ -25,7 +25,9 @@ the moment, you have exactly one column and one row which leaves you with one
 cell. In this cell, there is a container in which your newly opened terminal is.
 
 If you now open another terminal, you still have only one cell. However, the
-container has both of your terminals.
+container has both of your terminals. So, a container is just a group of clients
+with a specific layout. You can resize containers as they directly resemble
+columns/rows of the layout table.
 
 image:two_terminals.png[Two terminals]
 
