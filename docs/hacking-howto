@@ -225,7 +225,7 @@ chosen for those:
  * ``conn'' is the xcb_connection_t
  * ``event'' is the event of the particular type
  * ``container'' names a container
- * ``client'' names a client, for example when using a `CIRCLEQ_FOREACH`
+ * ``client'' names a client, for example when using a +CIRCLEQ_FOREACH+
 
 == Startup (src/mainx.c, main())
 
@@ -373,9 +373,26 @@ when rendering.
 
 === Resizing containers
 
-By clicking and dragging the border of a container, you can resize it freely.
+By clicking and dragging the border of a container, you can resize the whole column
+(respectively row) which this container is in. This is necessary to keep the table
+layout working and consistent.
 
-TODO
+Currently, only vertical resizing is implemented.
+
+The resizing works similarly to the resizing of floating windows or movement of floating
+windows:
+
+* A new, invisible window with the size of the root window is created (+grabwin+)
+* Another window, 2px width and as high as your screen (or vice versa for horizontal
+  resizing) is created. Its background color is the border color and it is only
+  there to signalize the user how big the container will be (it creates the impression
+  of dragging the border out of the container).
+* The +drag_pointer+ function of +src/floating.c+ is called to grab the pointer and
+  enter an own event loop which will pass all events (expose events) but motion notify
+  events. This function then calls the specified callback (+resize_callback+) which
+  does some boundary checking and moves the helper window. As soon as the mouse
+  button is released, this loop will be terminated.
+* The new width_factor for each involved column (respectively row) will be calculated.
 
 == User commands / commandmode (src/commands.c)
 
@@ -408,7 +425,8 @@ direction to move a window respectively or snap.
 
 == Using git / sending patches
 
-For a short introduction into using git, see TODO.
+For a short introduction into using git, see http://www.spheredev.org/wiki/Git_for_the_lazy
+or, for more documentation, see http://git-scm.com/documentation
 
 When you want to send a patch because you fixed a bug or implemented a cool feature (please
 talk to us before working on features to see whether they are maybe already implemented, not
