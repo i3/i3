@@ -105,6 +105,19 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         t_ws = &(workspaces[screen->current_workspace]);
                         new_row = (direction == D_UP ? (t_ws->rows - 1) : 0);
                 }
+
+                LOG("new_col = %d, new_row = %d\n", new_col, new_row);
+                if (t_ws->table[new_col][new_row]->currently_focused == NULL) {
+                        LOG("Cell empty, checking for colspanned client above...\n");
+                        for (int cols = 0; cols < new_col; cols += t_ws->table[cols][new_row]->colspan) {
+                                if (new_col > (cols + (t_ws->table[cols][new_row]->colspan - 1)))
+                                        continue;
+
+                                new_col = cols;
+                                break;
+                        }
+                        LOG("Fixed it to new col %d\n", new_col);
+                }
         } else if (direction == D_LEFT || direction == D_RIGHT) {
                 if (direction == D_RIGHT && cell_exists(current_col+1, current_row))
                         new_col = current_col + t_ws->table[current_col][current_row]->colspan;
@@ -131,6 +144,19 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         }
                         t_ws = &(workspaces[screen->current_workspace]);
                         new_col = (direction == D_LEFT ? (t_ws->cols - 1) : 0);
+                }
+
+                LOG("new_col = %d, new_row = %d\n", new_col, new_row);
+                if (t_ws->table[new_col][new_row]->currently_focused == NULL) {
+                        LOG("Cell empty, checking for rowspanned client above...\n");
+                        for (int rows = 0; rows < new_row; rows += t_ws->table[new_col][rows]->rowspan) {
+                                if (new_row > (rows + (t_ws->table[new_col][rows]->rowspan - 1)))
+                                        continue;
+
+                                new_row = rows;
+                                break;
+                        }
+                        LOG("Fixed it to new row %d\n", new_row);
                 }
         } else {
                 LOG("direction unhandled\n");
