@@ -302,9 +302,11 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 client = table_get(&by_parent, event->event);
                 border_click = true;
         }
-        /* See if this was a click with Mod1. If so, we need to move around
-         * the client if it was floating. if not, we just process as usual. */
-        if ((event->state & XCB_MOD_MASK_1) != 0) {
+        /* See if this was a click with the configured modifier. If so, we need
+         * to move around the client if it was floating. if not, we just process
+         * as usual. */
+        if (config.floating_modifier != 0 &&
+            (event->state & config.floating_modifier) != 0) {
                 if (client == NULL) {
                         LOG("Not handling, Mod1 was pressed and no client found\n");
                         return 1;

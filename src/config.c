@@ -215,6 +215,30 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath)
                         continue;
                 }
 
+                if (strcasecmp(key, "floating_modifier") == 0) {
+                        char *walk = value;
+                        uint32_t modifiers = 0;
+
+                        while (*walk != '\0') {
+                                /* Need to check for Mod1-5, Ctrl, Shift, Mode_switch */
+                                CHECK_MODIFIER(SHIFT);
+                                CHECK_MODIFIER(CONTROL);
+                                CHECK_MODIFIER(MODE_SWITCH);
+                                CHECK_MODIFIER(MOD1);
+                                CHECK_MODIFIER(MOD2);
+                                CHECK_MODIFIER(MOD3);
+                                CHECK_MODIFIER(MOD4);
+                                CHECK_MODIFIER(MOD5);
+
+                                /* No modifier found? Then we’re done with this step */
+                                break;
+                        }
+
+                        LOG("Floating modifiers = %d\n", modifiers);
+                        config.floating_modifier = modifiers;
+                        continue;
+                }
+
                 /* assign window class[/window title] → workspace */
                 if (strcasecmp(key, "assign") == 0) {
                         LOG("assign: \"%s\"\n", value);

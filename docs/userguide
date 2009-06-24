@@ -206,6 +206,26 @@ umlauts or special characters 'and' having some comfortably reachable key
 bindings. For example, when typing, capslock+1 or capslock+2 for switching
 workspaces is totally convenient. Try it :-).
 
+=== The floating modifier
+
+To move floating windows with your mouse, you can either grab their titlebar
+or configure the so called floating modifier which you can then press and
+click anywhere in the window itself. The most common setup is to configure
+it as the same one you use for managing windows (Mod1 for example). Afterwards,
+you can press Mod1, click into a window using your left mouse button and drag
+it to the position you want it at.
+
+*Syntax*:
+--------------------------------
+floating_modifier <Modifiers>
+--------------------------------
+
+*Examples*:
+--------------------------------
+floating_modifier Mod1
+--------------------------------
+
+
 === Variables
 
 As you learned in the previous section about keyboard bindings, you will have

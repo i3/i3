@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -36,6 +36,10 @@ struct Variable {
 struct Config {
         const char *terminal;
         const char *font;
+
+        /** The modifier which needs to be pressed in combination with your mouse
+         * buttons to do things with floating windows (move, resize) */
+        uint32_t floating_modifier;
 
         /* Color codes are stored here */
         struct config_client {
