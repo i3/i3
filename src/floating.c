@@ -140,6 +140,28 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
         xcb_flush(conn);
 }
 
+/*
+ * Removes the floating client from its workspace and attaches it to the new workspace.
+ * This is centralized here because it may happen if you move it via keyboard and
+ * if you move it using your mouse.
+ *
+ */
+void floating_assign_to_workspace(Client *client, Workspace *new_workspace) {
+        /* Remove from focus stack and list of floating clients */
+        SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
+        TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
+
+        if (client->workspace->fullscreen_client == client)
+                client->workspace->fullscreen_client = NULL;
+
+        /* Insert into destination focus stack and list of floating clients */
+        client->workspace = new_workspace;
+        SLIST_INSERT_HEAD(&(client->workspace->focus_stack), client, focus_clients);
+        TAILQ_INSERT_TAIL(&(client->workspace->floating_clients), client, floating_clients);
+        if (client->fullscreen)
+                client->workspace->fullscreen_client = client;
+
+}
 
 /*
  * Called whenever the user clicks on a border (not the titlebar!) of a floating window.

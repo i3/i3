@@ -25,6 +25,7 @@
 #include "xinerama.h"
 #include "layout.h"
 #include "client.h"
+#include "floating.h"
 
 /*
  * Updates *destination with new_value and returns true if it was changed or false
@@ -173,10 +174,24 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
  *
  */
 void reposition_client(xcb_connection_t *conn, Client *client) {
+        i3Screen *screen;
+
         LOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
         /* Note: We can use a pointer to client->x like an array of uint32_ts
            because it is followed by client->y by definition */
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, &(client->rect.x));
+
+        if (!client_is_floating(client))
+                return;
+
+        /* If the client is floating, we need to check if we moved it to a different workspace */
+        if (client->workspace->screen == (screen = get_screen_containing(client->rect.x, client->rect.y)))
+                return;
+
+        LOG("Client is on workspace %p with screen %p\n", client->workspace, client->workspace->screen);
+        LOG("but screen at %d, %d is %p\n", client->rect.x, client->rect.y, screen);
+        floating_assign_to_workspace(client, &workspaces[screen->current_workspace]);
+        LOG("fixed that\n");
 }
 
 /*

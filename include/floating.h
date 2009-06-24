@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -21,6 +21,14 @@
  *
  */
 void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic);
+
+/**
+ * Removes the floating client from its workspace and attaches it to the new workspace.
+ * This is centralized here because it may happen if you move it via keyboard and
+ * if you move it using your mouse.
+ *
+ */
+void floating_assign_to_workspace(Client *client, Workspace *new_workspace);
 
 /**
  * Called whenever the user clicks on a border (not the titlebar!) of a floating window.
