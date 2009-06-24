@@ -24,6 +24,8 @@
 #include "xcb.h"
 #include "debug.h"
 #include "layout.h"
+#include "xinerama.h"
+#include "config.h"
 
 /*
  * Renders the resize window between the first/second container and resizes
@@ -35,6 +37,13 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
         int new_position;
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
+        i3Screen *screen = get_screen_containing(event->root_x, event->root_y);
+        if (screen == NULL) {
+                LOG("BUG: No screen found at this position (%d, %d)\n", event->root_x, event->root_y);
+                return 1;
+        }
+
+        LOG("Screen dimensions: (%d, %d) %d x %d\n", screen->rect.x, screen->rect.y, screen->rect.width, screen->rect.height);
 
         /* FIXME: horizontal resizing causes empty spaces to exist */
         if (orientation == O_HORIZONTAL) {
@@ -57,9 +66,9 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
         Rect helprect;
         if (orientation == O_VERTICAL) {
                 helprect.x = event->root_x;
-                helprect.y = 0;
+                helprect.y = screen->rect.y;
                 helprect.width = 2;
-                helprect.height = root_screen->height_in_pixels;
+                helprect.height = screen->rect.height;
                 new_position = event->root_x;
         } else {
                 helprect.x = 0;
@@ -70,7 +79,7 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
         }
 
         mask = XCB_CW_BACK_PIXEL;
-        values[0] = get_colorpixel(conn, "#4c7899");
+        values[0] = config.client.focused.border;
 
         mask |= XCB_CW_OVERRIDE_REDIRECT;
         values[1] = 1;
@@ -107,10 +116,16 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
                         break;
 
                 switch (nr) {
-                        case XCB_MOTION_NOTIFY:
+                        case XCB_MOTION_NOTIFY: {
+                                xcb_motion_notify_event_t *motion_event = (xcb_motion_notify_event_t*)inside_event;
                                 if (orientation == O_VERTICAL) {
-                                        values[0] = new_position = ((xcb_motion_notify_event_t*)inside_event)->root_x;
-                                        xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_X, values);
+                                        if (motion_event->root_x < (screen->rect.x + screen->rect.width) &&
+                                            motion_event->root_x > screen->rect.x) {
+                                                values[0] = new_position = ((xcb_motion_notify_event_t*)inside_event)->root_x;
+                                                xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_X, values);
+                                        } else {
+                                                LOG("Ignoring new position\n");
+                                        }
                                 } else {
                                         values[0] = new_position = ((xcb_motion_notify_event_t*)inside_event)->root_y;
                                         xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_Y, values);
@@ -118,6 +133,7 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
 
                                 xcb_flush(conn);
                                 break;
+                        }
                         default:
                                 LOG("Passing to original handler\n");
                                 /* Use original handler */
