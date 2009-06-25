@@ -25,6 +25,7 @@
 #include "xinerama.h"
 #include "client.h"
 #include "floating.h"
+#include "xcb.h"
 
 bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction) {
         /* If this container is empty, we’re done */
@@ -559,8 +560,6 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         CIRCLEQ_INSERT_TAIL(&(to_container->clients), current_client, clients);
 
         SLIST_INSERT_HEAD(&(to_container->workspace->focus_stack), current_client, focus_clients);
-        if (current_client->fullscreen)
-                t_ws->fullscreen_client = current_client;
         LOG("Moved.\n");
 
         current_client->container = to_container;
@@ -568,16 +567,26 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         container->currently_focused = to_focus;
         to_container->currently_focused = current_client;
 
+        bool target_invisible = (to_container->workspace->screen->current_workspace != to_container->workspace->num);
+
         /* If we’re moving it to an invisible screen, we need to unmap it */
-        if (to_container->workspace->screen->current_workspace != to_container->workspace->num) {
+        if (target_invisible) {
                 LOG("This workspace is not visible, unmapping\n");
                 xcb_unmap_window(conn, current_client->frame);
+        } else {
+                if (current_client->fullscreen) {
+                        LOG("Calling client_enter_fullscreen again\n");
+                        client_enter_fullscreen(conn, current_client);
+                }
         }
 
         /* delete all empty columns/rows */
         cleanup_table(conn, container->workspace);
 
         render_layout(conn);
+
+        if (!target_invisible)
+                set_focus(conn, current_client, true);
 }
 
 /*

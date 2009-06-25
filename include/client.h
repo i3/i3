@@ -45,6 +45,13 @@ bool client_matches_class_name(Client *client, char *to_class, char *to_title,
                                char *to_title_ucs, int to_title_ucs_len);
 
 /**
+ * Enters fullscreen mode for the given client. This is called by toggle_fullscreen
+ * and when moving a fullscreen client to another screen.
+ *
+ */
+void client_enter_fullscreen(xcb_connection_t *conn, Client *client);
+
+/**
  * Toggles fullscreen mode for the given client. It updates the data structures and
  * reconfigures (= resizes/moves) the client and its frame to the full size of the
  * screen. When leaving fullscreen, re-rendering the layout is forced.
