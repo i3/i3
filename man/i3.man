@@ -246,6 +246,9 @@ export LC_TELEPHONE=de_DE.UTF-8
 export LC_MEASUREMENT=de_DE.UTF-8
 export LC_IDENTIFICATION=de_DE.UTF-8
 
+# Set background color
+xsetroot -solid "#333333"
+
 # Enable core dumps in case something goes wrong
 ulimit -c unlimited
 
