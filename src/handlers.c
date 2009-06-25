@@ -598,17 +598,14 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 if ((con->currently_focused != NULL) && ((con == CUR_CELL) || client->fullscreen))
                         set_focus(conn, con->currently_focused, true);
         } else if (client_is_floating(client)) {
+                LOG("Removing from floating clients\n");
+                TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
                 SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
         }
 
         if (client->dock) {
                 LOG("Removing from dock clients\n");
                 SLIST_REMOVE(&(client->workspace->screen->dock_clients), client, Client, dock_clients);
-        }
-
-        if (client->floating) {
-                LOG("Removing from floating clients\n");
-                TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
         }
 
         LOG("child of 0x%08x.\n", client->frame);

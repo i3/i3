@@ -481,8 +481,10 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
 
         floating_assign_to_workspace(client, t_ws);
 
+        bool target_invisible = t_ws->screen->current_workspace != t_ws->num;
+
         /* If we’re moving it to an invisible screen, we need to unmap it */
-        if (t_ws->screen->current_workspace != t_ws->num) {
+        if (target_invisible) {
                 LOG("This workspace is not visible, unmapping\n");
                 xcb_unmap_window(conn, client->frame);
         } else {
@@ -504,7 +506,8 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
 
         render_layout(conn);
 
-        set_focus(conn, client, true);
+        if (!target_invisible)
+                set_focus(conn, client, true);
 }
 
 /*

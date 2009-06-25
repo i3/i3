@@ -258,6 +258,7 @@ void unmap_workspace(xcb_connection_t *conn, Workspace *u_ws) {
         int unmapped_clients = 0;
         FOR_TABLE(u_ws)
                 CIRCLEQ_FOREACH(client, &(u_ws->table[cols][rows]->clients), clients) {
+                        LOG("unmapping normal client %p / %p / %p\n", client, client->frame, client->child);
                         xcb_unmap_window(conn, client->frame);
                         unmapped_clients++;
                 }
@@ -266,6 +267,8 @@ void unmap_workspace(xcb_connection_t *conn, Workspace *u_ws) {
         SLIST_FOREACH(client, &(u_ws->focus_stack), focus_clients) {
                 if (!client_is_floating(client))
                         continue;
+
+                LOG("unmapping floating client %p / %p / %p\n", client, client->frame, client->child);
 
                 xcb_unmap_window(conn, client->frame);
                 unmapped_clients++;
