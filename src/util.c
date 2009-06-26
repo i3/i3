@@ -27,6 +27,7 @@
 #include "layout.h"
 #include "util.h"
 #include "xcb.h"
+#include "client.h"
 
 static iconv_t conversion_descriptor = 0;
 struct keyvalue_table_head by_parent = TAILQ_HEAD_INITIALIZER(by_parent);
@@ -213,32 +214,15 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
 	int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
         if (rc == (size_t)-1) {
                 perror("Converting to UCS-2 failed");
-		*real_strlen = 0;
+                if (real_strlen != NULL)
+		        *real_strlen = 0;
                 return NULL;
 	}
 
-	*real_strlen = ((buffer_size - output_size) / 2) - 1;
+        if (real_strlen != NULL)
+	        *real_strlen = ((buffer_size - output_size) / 2) - 1;
 
 	return buffer;
-}
-
-/*
- * Removes the given client from the container, either because it will be inserted into another
- * one or because it was unmapped
- *
- */
-void remove_client_from_container(xcb_connection_t *conn, Client *client, Container *container) {
-        CIRCLEQ_REMOVE(&(container->clients), client, clients);
-
-        SLIST_REMOVE(&(container->workspace->focus_stack), client, Client, focus_clients);
-
-        /* If the container will be empty now and is in stacking mode, we need to
-           unmap the stack_win */
-        if (CIRCLEQ_EMPTY(&(container->clients)) && container->mode == MODE_STACK) {
-                struct Stack_Window *stack_win = &(container->stack_win);
-                stack_win->rect.height = 0;
-                xcb_unmap_window(conn, stack_win->window);
-        }
 }
 
 /*
@@ -270,19 +254,43 @@ void unmap_workspace(xcb_connection_t *conn, Workspace *u_ws) {
         /* Ignore notify events because they would cause focus to be changed */
         ignore_enter_notify_forall(conn, u_ws, true);
 
-        /* Unmap all clients of the current workspace */
+        /* Unmap all clients of the given workspace */
         int unmapped_clients = 0;
         FOR_TABLE(u_ws)
                 CIRCLEQ_FOREACH(client, &(u_ws->table[cols][rows]->clients), clients) {
+                        LOG("unmapping normal client %p / %p / %p\n", client, client->frame, client->child);
                         xcb_unmap_window(conn, client->frame);
                         unmapped_clients++;
                 }
 
-        /* If we did not unmap any clients, the workspace is empty and we can destroy it */
-        if (unmapped_clients == 0)
-                u_ws->screen = NULL;
+        /* To find floating clients, we traverse the focus stack */
+        SLIST_FOREACH(client, &(u_ws->focus_stack), focus_clients) {
+                if (!client_is_floating(client))
+                        continue;
 
-        /* Unmap the stack windows on the current workspace, if any */
+                LOG("unmapping floating client %p / %p / %p\n", client, client->frame, client->child);
+
+                xcb_unmap_window(conn, client->frame);
+                unmapped_clients++;
+        }
+
+        /* If we did not unmap any clients, the workspace is empty and we can destroy it, at least
+         * if it is not the current workspace. */
+        if (unmapped_clients == 0 && u_ws != c_ws) {
+                /* Re-assign the workspace of all dock clients which use this workspace */
+                Client *dock;
+                LOG("workspace %p is empty\n", u_ws);
+                SLIST_FOREACH(dock, &(u_ws->screen->dock_clients), dock_clients) {
+                        if (dock->workspace != u_ws)
+                                continue;
+
+                        LOG("Re-assigning dock client to c_ws (%p)\n", c_ws);
+                        dock->workspace = c_ws;
+                }
+                u_ws->screen = NULL;
+        }
+
+        /* Unmap the stack windows on the given workspace, if any */
         SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
                 if (stack_win->container->workspace == u_ws)
                         xcb_unmap_window(conn, stack_win->window);
@@ -302,7 +310,7 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
                 return;
 
         /* Store the old client */
-        Client *old_client = CUR_CELL->currently_focused;
+        Client *old_client = SLIST_FIRST(&(c_ws->focus_stack));
 
         /* Check if the focus needs to be changed at all */
         if (!set_anyways && (old_client == client)) {
@@ -313,47 +321,54 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         /* Store current_row/current_col */
         c_ws->current_row = current_row;
         c_ws->current_col = current_col;
-        c_ws = client->container->workspace;
+        c_ws = client->workspace;
+        /* Load current_col/current_row if we switch to a client without a container */
+        current_col = c_ws->current_col;
+        current_row = c_ws->current_row;
 
         /* Update container */
-        client->container->currently_focused = client;
+        if (client->container != NULL) {
+                client->container->currently_focused = client;
 
-        current_col = client->container->col;
-        current_row = client->container->row;
+                current_col = client->container->col;
+                current_row = client->container->row;
+        }
 
         LOG("set_focus(frame %08x, child %08x, name %s)\n", client->frame, client->child, client->name);
         /* Set focus to the entered window, and flush xcb buffer immediately */
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
         //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);
 
-        /* Get the client which was last focused in this particular container, it may be a different
-           one than old_client */
-        Client *last_focused = get_last_focused_client(conn, client->container, NULL);
+        if (client->container != NULL) {
+                /* Get the client which was last focused in this particular container, it may be a different
+                   one than old_client */
+                Client *last_focused = get_last_focused_client(conn, client->container, NULL);
 
-        /* In stacking containers, raise the client in respect to the one which was focused before */
-        if (client->container->mode == MODE_STACK && client->container->workspace->fullscreen_client == NULL) {
-                /* We need to get the client again, this time excluding the current client, because
-                 * we might have just gone into stacking mode and need to raise */
-                Client *last_focused = get_last_focused_client(conn, client->container, client);
+                /* In stacking containers, raise the client in respect to the one which was focused before */
+                if (client->container->mode == MODE_STACK && client->container->workspace->fullscreen_client == NULL) {
+                        /* We need to get the client again, this time excluding the current client, because
+                         * we might have just gone into stacking mode and need to raise */
+                        Client *last_focused = get_last_focused_client(conn, client->container, client);
 
-                if (last_focused != NULL) {
-                        LOG("raising above frame %p / child %p\n", last_focused->frame, last_focused->child);
-                        uint32_t values[] = { last_focused->frame, XCB_STACK_MODE_ABOVE };
-                        xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+                        if (last_focused != NULL) {
+                                LOG("raising above frame %p / child %p\n", last_focused->frame, last_focused->child);
+                                uint32_t values[] = { last_focused->frame, XCB_STACK_MODE_ABOVE };
+                                xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+                        }
                 }
-        }
 
-        /* If it is the same one as old_client, we save us the unnecessary redecorate */
-        if ((last_focused != NULL) && (last_focused != old_client))
-                redecorate_window(conn, last_focused);
+                /* If it is the same one as old_client, we save us the unnecessary redecorate */
+                if ((last_focused != NULL) && (last_focused != old_client))
+                        redecorate_window(conn, last_focused);
+        }
 
         /* If we’re in stacking mode, this renders the container to update changes in the title
            bars and to raise the focused client */
         if ((old_client != NULL) && (old_client != client) && !old_client->dock)
                 redecorate_window(conn, old_client);
 
-        SLIST_REMOVE(&(client->container->workspace->focus_stack), client, Client, focus_clients);
-        SLIST_INSERT_HEAD(&(client->container->workspace->focus_stack), client, focus_clients);
+        SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
+        SLIST_INSERT_HEAD(&(client->workspace->focus_stack), client, focus_clients);
 
         /* redecorate_window flushes, so we don’t need to */
         redecorate_window(conn, client);
@@ -390,7 +405,7 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
                 /* When entering stacking mode, we need to open a window on which we can draw the
                    title bars of the clients, it has height 1 because we don’t bother here with
                    calculating the correct height - it will be adjusted when rendering anyways. */
-                Rect rect = {container->x, container->y, container->width, 1 };
+                Rect rect = {container->x, container->y, container->width, 1};
 
                 uint32_t mask = 0;
                 uint32_t values[2];
@@ -429,129 +444,79 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
 
         render_layout(conn);
 
-        if (container->currently_focused != NULL)
-                set_focus(conn, container->currently_focused, true);
-}
+        if (container->currently_focused != NULL) {
+                /* We need to make sure that this client is above *each* of the
+                 * other clients in this container */
+                Client *last_focused = get_last_focused_client(conn, container, container->currently_focused);
 
-/*
- * Warps the pointer into the given client (in the middle of it, to be specific), therefore
- * selecting it
- *
- */
-void warp_pointer_into(xcb_connection_t *conn, Client *client) {
-        int mid_x = client->rect.width / 2,
-            mid_y = client->rect.height / 2;
-        xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, mid_x, mid_y);
-}
+                CIRCLEQ_FOREACH(client, &(container->clients), clients) {
+                        if (client == container->currently_focused || client == last_focused)
+                                continue;
 
-/*
- * Toggles fullscreen mode for the given client. It updates the data structures and
- * reconfigures (= resizes/moves) the client and its frame to the full size of the
- * screen. When leaving fullscreen, re-rendering the layout is forced.
- *
- */
-void toggle_fullscreen(xcb_connection_t *conn, Client *client) {
-        /* clients without a container (docks) cannot be focused */
-        assert(client->container != NULL);
-
-        Workspace *workspace = client->container->workspace;
-
-        if (!client->fullscreen) {
-                if (workspace->fullscreen_client != NULL) {
-                        LOG("Not entering fullscreen mode, there already is a fullscreen client.\n");
-                        return;
+                        LOG("setting %08x below %08x / %08x\n", client->frame, container->currently_focused->frame);
+                        uint32_t values[] = { container->currently_focused->frame, XCB_STACK_MODE_BELOW };
+                        xcb_configure_window(conn, client->frame,
+                                             XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
                 }
-                client->fullscreen = true;
-                workspace->fullscreen_client = client;
-                LOG("Entering fullscreen mode...\n");
-                /* We just entered fullscreen mode, let’s configure the window */
-                 uint32_t mask = XCB_CONFIG_WINDOW_X |
-                                 XCB_CONFIG_WINDOW_Y |
-                                 XCB_CONFIG_WINDOW_WIDTH |
-                                 XCB_CONFIG_WINDOW_HEIGHT;
-                uint32_t values[4] = {workspace->rect.x,
-                                      workspace->rect.y,
-                                      workspace->rect.width,
-                                      workspace->rect.height};
 
-                LOG("child itself will be at %dx%d with size %dx%d\n",
-                                values[0], values[1], values[2], values[3]);
+                if (last_focused != NULL) {
+                        LOG("Putting last_focused directly underneath the currently focused\n");
+                        uint32_t values[] = { container->currently_focused->frame, XCB_STACK_MODE_BELOW };
+                        xcb_configure_window(conn, last_focused->frame,
+                                             XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+                }
 
-                xcb_configure_window(conn, client->frame, mask, values);
 
-                /* Child’s coordinates are relative to the parent (=frame) */
-                values[0] = 0;
-                values[1] = 0;
-                xcb_configure_window(conn, client->child, mask, values);
-
-                /* Raise the window */
-                values[0] = XCB_STACK_MODE_ABOVE;
-                xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
-
-                Rect child_rect = workspace->rect;
-                child_rect.x = child_rect.y = 0;
-                fake_configure_notify(conn, child_rect, client->child);
-        } else {
-                LOG("leaving fullscreen mode\n");
-                client->fullscreen = false;
-                workspace->fullscreen_client = NULL;
-                /* Because the coordinates of the window haven’t changed, it would not be
-                   re-configured if we don’t set the following flag */
-                client->force_reconfigure = true;
-                /* We left fullscreen mode, redraw the whole layout to ensure enternotify events are disabled */
-                render_layout(conn);
+                set_focus(conn, container->currently_focused, true);
         }
-
-        xcb_flush(conn);
 }
 
 /*
- * Returns true if the client supports the given protocol atom (like WM_DELETE_WINDOW)
+ * Gets the first matching client for the given window class/window title.
+ * If the paramater specific is set to a specific client, only this one
+ * will be checked.
  *
  */
-static bool client_supports_protocol(xcb_connection_t *conn, Client *client, xcb_atom_t atom) {
-        xcb_get_property_cookie_t cookie;
-        xcb_get_wm_protocols_reply_t protocols;
-        bool result = false;
+Client *get_matching_client(xcb_connection_t *conn, const char *window_classtitle,
+                            Client *specific) {
+        char *to_class, *to_title, *to_title_ucs = NULL;
+        int to_title_ucs_len = 0;
+        Client *matching = NULL;
 
-        cookie = xcb_get_wm_protocols_unchecked(conn, client->child, atoms[WM_PROTOCOLS]);
-        if (xcb_get_wm_protocols_reply(conn, cookie, &protocols, NULL) != 1)
-                return false;
+        to_class = sstrdup(window_classtitle);
 
-        /* Check if the client’s protocols have the requested atom set */
-        for (uint32_t i = 0; i < protocols.atoms_len; i++)
-                if (protocols.atoms[i] == atom)
-                        result = true;
-
-        xcb_get_wm_protocols_reply_wipe(&protocols);
-
-        return result;
-}
-
-/*
- * Kills the given window using WM_DELETE_WINDOW or xcb_kill_window
- *
- */
-void kill_window(xcb_connection_t *conn, Client *window) {
-        /* If the client does not support WM_DELETE_WINDOW, we kill it the hard way */
-        if (!client_supports_protocol(conn, window, atoms[WM_DELETE_WINDOW])) {
-                LOG("Killing window the hard way\n");
-                xcb_kill_client(conn, window->child);
-                return;
+        /* If a title was specified, split both strings at the slash */
+        if ((to_title = strstr(to_class, "/")) != NULL) {
+                *(to_title++) = '\0';
+                /* Convert to UCS-2 */
+                to_title_ucs = convert_utf8_to_ucs2(to_title, &to_title_ucs_len);
         }
 
-        xcb_client_message_event_t ev;
+        /* If we were given a specific client we only check if that one matches */
+        if (specific != NULL) {
+                if (client_matches_class_name(specific, to_class, to_title, to_title_ucs, to_title_ucs_len))
+                        matching = specific;
+                goto done;
+        }
 
-        memset(&ev, 0, sizeof(xcb_client_message_event_t));
+        LOG("Getting clients for class \"%s\" / title \"%s\"\n", to_class, to_title);
+        for (int workspace = 0; workspace < 10; workspace++) {
+                if (workspaces[workspace].screen == NULL)
+                        continue;
 
-        ev.response_type = XCB_CLIENT_MESSAGE;
-        ev.window = window->child;
-        ev.type = atoms[WM_PROTOCOLS];
-        ev.format = 32;
-        ev.data.data32[0] = atoms[WM_DELETE_WINDOW];
-        ev.data.data32[1] = XCB_CURRENT_TIME;
+                Client *client;
+                SLIST_FOREACH(client, &(workspaces[workspace].focus_stack), focus_clients) {
+                        LOG("Checking client with class=%s, name=%s\n", client->window_class, client->name);
+                        if (!client_matches_class_name(client, to_class, to_title, to_title_ucs, to_title_ucs_len))
+                                continue;
 
-        LOG("Sending WM_DELETE to the client\n");
-        xcb_send_event(conn, false, window->child, XCB_EVENT_MASK_NO_EVENT, (char*)&ev);
-        xcb_flush(conn);
+                        matching = client;
+                        goto done;
+                }
+        }
+
+done:
+        free(to_class);
+        FREE(to_title_ucs);
+        return matching;
 }

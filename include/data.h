@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -161,11 +161,20 @@ struct Workspace {
         int current_row;
         int current_col;
 
+        /* Should clients on this workspace be automatically floating? */
+        bool auto_float;
+        /* Are the floating clients on this workspace currently hidden? */
+        bool floating_hidden;
+
         Client *fullscreen_client;
 
         /* The focus stack contains the clients in the correct order of focus so that
            the focus can be reverted correctly when a client is closed */
         SLIST_HEAD(focus_stack_head, Client) focus_stack;
+
+        /* This tail queue contains the floating clients in order of when they were first
+         * set to floating (new floating clients are just appended) */
+        TAILQ_HEAD(floating_clients_head, Client) floating_clients;
 
         /* Backpointer to the screen this workspace is on */
         i3Screen *screen;
@@ -198,6 +207,30 @@ struct Binding {
 };
 
 /*
+ * Holds a command specified by an exec-line in the config (see src/config.c)
+ *
+ */
+struct Autostart {
+        /* Command, like in command mode */
+        char *command;
+        TAILQ_ENTRY(Autostart) autostarts;
+};
+
+/*
+ * Holds an assignment for a given window class/title to a specific workspace
+ * (see src/config.c)
+ *
+ */
+struct Assignment {
+        char *windowclass_title;
+        /* floating is true if this was an assignment to the special workspace "~".
+         * Matching clients will be put into floating mode automatically. */
+        bool floating;
+        int workspace;
+        TAILQ_ENTRY(Assignment) assignments;
+};
+
+/*
  * Data structure for cached font information:
  * - font id in X11 (load it once)
  * - font height (multiple calls needed to get it)
@@ -221,6 +254,10 @@ struct Font {
  *
  */
 struct Client {
+        /* initialized will be set to true if the client was fully initialized by
+         * manage_window() and all functions can be used normally */
+        bool initialized;
+
         /* if you set a client to floating and set it back to managed, it does remember its old
            position and *tries* to get back there */
         Cell old_position;
@@ -232,6 +269,8 @@ struct Client {
 
         /* x, y, width, height of the frame */
         Rect rect;
+        /* Position in floating mode and in tiling mode are saved separately */
+        Rect floating_rect;
         /* x, y, width, height of the child (relative to its frame) */
         Rect child_rect;
 
@@ -255,8 +294,17 @@ struct Client {
            legacy window names are ignored. */
         bool uses_net_wm_name;
 
+        /* Holds the WM_CLASS, useful for matching the client in commands */
+        char *window_class;
+
         /* fullscreen is pretty obvious */
         bool fullscreen;
+
+        /* floating? (= not in tiling layout) This cannot be simply a bool because we want to keep track
+         * of whether the status was set by the application (by setting WM_CLASS to tools for example) or
+         * by the user. The user’s choice overwrites automatic mode, of course. The order of the values
+         * is important because we check with >= FLOATING_AUTO_ON if a client is floating. */
+        enum { FLOATING_AUTO_OFF = 0, FLOATING_USER_OFF = 1, FLOATING_AUTO_ON = 2, FLOATING_USER_ON = 3 } floating;
 
         /* Ensure TITLEBAR_TOP maps to 0 because we use calloc for initialization later */
         enum { TITLEBAR_TOP = 0, TITLEBAR_LEFT, TITLEBAR_RIGHT, TITLEBAR_BOTTOM, TITLEBAR_OFF } titlebar_position;
@@ -283,6 +331,7 @@ struct Client {
         CIRCLEQ_ENTRY(Client) clients;
         SLIST_ENTRY(Client) dock_clients;
         SLIST_ENTRY(Client) focus_clients;
+        TAILQ_ENTRY(Client) floating_clients;
 };
 
 /*

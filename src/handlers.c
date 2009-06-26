@@ -32,6 +32,9 @@
 #include "config.h"
 #include "queue.h"
 #include "resize.h"
+#include "client.h"
+#include "manage.h"
+#include "floating.h"
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -149,7 +152,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
                 return 1;
         }
         /* Some events are not interesting, because they were not generated actively by the
-           user, but be reconfiguration of windows */
+           user, but by reconfiguration of windows */
         if (event_is_ignored(event->sequence))
                 return 1;
 
@@ -193,6 +196,14 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
             client->container->mode == MODE_STACK &&
             client->container->currently_focused != client) {
                 LOG("Plausibility check says: no\n");
+                return 1;
+        }
+
+        if (client->workspace != c_ws && client->workspace->screen == c_ws->screen) {
+                /* This can happen when a client gets assigned to a different workspace than
+                 * the current one (see src/mainx.c:reparent_window). Shortly after it was created,
+                 * an enter_notify will follow. */
+                LOG("enter_notify for a client on a different workspace but the same screen, ignoring\n");
                 return 1;
         }
 
@@ -283,6 +294,7 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
 
 int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
         LOG("button press!\n");
+        LOG("state = %d\n", event->state);
         /* This was either a focus for a client’s parent (= titlebar)… */
         Client *client = table_get(&by_child, event->event);
         bool border_click = false;
@@ -290,6 +302,21 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 client = table_get(&by_parent, event->event);
                 border_click = true;
         }
+        /* See if this was a click with the configured modifier. If so, we need
+         * to move around the client if it was floating. if not, we just process
+         * as usual. */
+        if (config.floating_modifier != 0 &&
+            (event->state & config.floating_modifier) != 0) {
+                if (client == NULL) {
+                        LOG("Not handling, Mod1 was pressed and no client found\n");
+                        return 1;
+                }
+                if (client_is_floating(client)) {
+                        floating_drag_window(conn, client, event);
+                        return 1;
+                }
+        }
+
         if (client == NULL) {
                 /* The client was neither on a client’s titlebar nor on a client itself, maybe on a stack_window? */
                 if (button_press_stackwin(conn, event))
@@ -312,7 +339,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         Container *con = client->container;
         int first, second;
 
-        if (con == NULL) {
+        if (client->dock) {
                 LOG("dock. done.\n");
                 xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
                 xcb_flush(conn);
@@ -324,6 +351,9 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         if (!border_click) {
                 LOG("client. done.\n");
                 xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
+                /* Floating clients should be raised on click */
+                if (client_is_floating(client))
+                        xcb_raise_window(conn, client->frame);
                 xcb_flush(conn);
                 return 1;
         }
@@ -332,8 +362,20 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         i3Font *font = load_font(conn, config.font);
         if (event->event_y >= 2 && event->event_y <= (font->height + 2 + 2)) {
                 LOG("click on titlebar\n");
+
+                /* Floating clients can be dragged by grabbing their titlebar */
+                if (client_is_floating(client)) {
+                        /* Firstly, we raise it. Maybe the user just wanted to raise it without grabbing */
+                        xcb_raise_window(conn, client->frame);
+                        xcb_flush(conn);
+
+                        floating_drag_window(conn, client, event);
+                }
                 return 1;
         }
+
+        if (client_is_floating(client))
+                return floating_border_click(conn, client, event);
 
         if (event->event_y < 2) {
                 /* This was a press on the top border */
@@ -412,8 +454,61 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
         Client *client = table_get(&by_child, event->window);
         if (client == NULL) {
                 LOG("This client is not mapped, so we don't care and just tell the client that he will get its size\n");
-                Rect rect = {event->x, event->y, event->width, event->height};
-                fake_configure_notify(conn, rect, event->window);
+                uint32_t mask = 0;
+                uint32_t values[7];
+                int c = 0;
+#define COPY_MASK_MEMBER(mask_member, event_member) do { \
+                if (event->value_mask & mask_member) { \
+                        mask |= mask_member; \
+                        values[c++] = event->event_member; \
+                } \
+} while (0)
+
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_X, x);
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_Y, y);
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_WIDTH, width);
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_HEIGHT, height);
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_BORDER_WIDTH, border_width);
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_SIBLING, sibling);
+                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_STACK_MODE, stack_mode);
+
+                xcb_configure_window(conn, event->window, mask, values);
+                xcb_flush(conn);
+
+                return 1;
+        }
+
+        /* Floating clients can be reconfigured */
+        if (client_is_floating(client)) {
+                i3Font *font = load_font(conn, config.font);
+
+                if (event->value_mask & XCB_CONFIG_WINDOW_X)
+                        client->rect.x = event->x;
+                if (event->value_mask & XCB_CONFIG_WINDOW_Y)
+                        client->rect.y = event->y;
+                if (event->value_mask & XCB_CONFIG_WINDOW_WIDTH)
+                        client->rect.width = event->width + 2 + 2;
+                if (event->value_mask & XCB_CONFIG_WINDOW_HEIGHT)
+                        client->rect.height = event->height + (font->height + 2 + 2) + 2;
+
+                LOG("Accepted new position/size for floating client: (%d, %d) size %d x %d\n",
+                    client->rect.x, client->rect.y, client->rect.width, client->rect.height);
+
+                /* Push the new position/size to X11 */
+                reposition_client(conn, client);
+                resize_client(conn, client);
+                xcb_flush(conn);
+
+                return 1;
+        }
+
+        if (client->fullscreen) {
+                LOG("Client is in fullscreen mode\n");
+
+                Rect child_rect = client->container->workspace->rect;
+                child_rect.x = child_rect.y = 0;
+                fake_configure_notify(conn, child_rect, client->child);
+
                 return 1;
         }
 
@@ -495,18 +590,16 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 
         client = table_remove(&by_child, event->window);
 
-        if (client->name != NULL)
-                free(client->name);
+        /* If this was the fullscreen client, we need to unset it */
+        if (client->fullscreen)
+                client->workspace->fullscreen_client = NULL;
 
+        /* Clients without a container are either floating or dock windows */
         if (client->container != NULL) {
                 Container *con = client->container;
 
-                /* If this was the fullscreen client, we need to unset it */
-                if (client->fullscreen)
-                        con->workspace->fullscreen_client = NULL;
-
                 /* Remove the client from the list of clients */
-                remove_client_from_container(conn, client, con);
+                client_remove_from_container(conn, client, con, true);
 
                 /* Set focus to the last focused client in this container */
                 con->currently_focused = get_last_focused_client(conn, con, NULL);
@@ -514,6 +607,10 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 /* Only if this is the active container, we need to really change focus */
                 if ((con->currently_focused != NULL) && ((con == CUR_CELL) || client->fullscreen))
                         set_focus(conn, con->currently_focused, true);
+        } else if (client_is_floating(client)) {
+                LOG("Removing from floating clients\n");
+                TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
+                SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
         }
 
         if (client->dock) {
@@ -528,31 +625,40 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         table_remove(&by_parent, client->frame);
 
         if (client->container != NULL) {
-                cleanup_table(conn, client->container->workspace);
-                fix_colrowspan(conn, client->container->workspace);
+                Workspace *workspace = client->container->workspace;
+                cleanup_table(conn, workspace);
+                fix_colrowspan(conn, workspace);
         }
 
         /* Let’s see how many clients there are left on the workspace to delete it if it’s empty */
-        bool workspace_empty = true;
-        FOR_TABLE(client->workspace)
-                if (!CIRCLEQ_EMPTY(&(client->workspace->table[cols][rows]->clients))) {
-                        workspace_empty = false;
-                        break;
-                }
+        bool workspace_empty = SLIST_EMPTY(&(client->workspace->focus_stack));
+        bool workspace_active = false;
+        Client *to_focus = (!workspace_empty ? SLIST_FIRST(&(client->workspace->focus_stack)) : NULL);
 
+        /* If this workspace is currently active, we don’t delete it */
         i3Screen *screen;
         TAILQ_FOREACH(screen, virtual_screens, screens)
                 if (screen->current_workspace == client->workspace->num) {
+                        workspace_active = true;
                         workspace_empty = false;
                         break;
                 }
 
-        if (workspace_empty)
+        if (workspace_empty) {
+                LOG("setting ws to NULL for workspace %d (%p)\n", client->workspace->num,
+                                client->workspace);
                 client->workspace->screen = NULL;
+        }
 
+        FREE(client->window_class);
+        FREE(client->name);
         free(client);
 
         render_layout(conn);
+
+        /* Ensure the focus is set to the next client in the focus stack */
+        if (workspace_active && to_focus != NULL)
+                set_focus(conn, to_focus, true);
 
         return 1;
 }
@@ -598,14 +704,13 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         client->name_len = new_len;
         client->uses_net_wm_name = true;
 
-        if (old_name != NULL)
-                free(old_name);
+        FREE(old_name);
 
         /* If the client is a dock window, we don’t need to render anything */
         if (client->dock)
                 return 1;
 
-        if (client->container->mode == MODE_STACK)
+        if (client->container != NULL && client->container->mode == MODE_STACK)
                 render_container(conn, client->container);
         else decorate_window(conn, client, client->frame, client->titlegc, 0);
         xcb_flush(conn);
@@ -673,10 +778,50 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
         if (client->dock)
                 return 1;
 
-        if (client->container->mode == MODE_STACK)
+        if (client->container != NULL && client->container->mode == MODE_STACK)
                 render_container(conn, client->container);
         else decorate_window(conn, client, client->frame, client->titlegc, 0);
         xcb_flush(conn);
+
+        return 1;
+}
+
+/*
+ * Updates the client’s WM_CLASS property
+ *
+ */
+int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
+                             xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
+        LOG("window class changed\n");
+        if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+                LOG("prop == NULL\n");
+                return 1;
+        }
+        Client *client = table_get(&by_child, window);
+        if (client == NULL)
+                return 1;
+        char *new_class;
+        if (asprintf(&new_class, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop)) == -1) {
+                perror("Could not get window class");
+                LOG("Could not get window class\n");
+                return 1;
+        }
+
+        LOG("changed to %s\n", new_class);
+        char *old_class = client->window_class;
+        client->window_class = new_class;
+        FREE(old_class);
+
+        if (!client->initialized) {
+                LOG("Client is not yet initialized, not putting it to floating\n");
+                return 1;
+        }
+
+        if (strcmp(new_class, "tools") == 0 || strcmp(new_class, "Dialog") == 0) {
+                LOG("tool/dialog window, should we put it floating?\n");
+                if (client->floating == FLOATING_AUTO_OFF)
+                        toggle_floating_mode(conn, client, true);
+        }
 
         return 1;
 }
@@ -717,15 +862,15 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                 return 1;
         }
 
-        if (client->container->mode != MODE_STACK)
+        if (client->container == NULL || client->container->mode != MODE_STACK)
                 decorate_window(conn, client, client->frame, client->titlegc, 0);
         else {
                 uint32_t background_color;
                 /* Distinguish if the window is currently focused… */
                 if (CUR_CELL->currently_focused == client)
-                        background_color = get_colorpixel(conn, "#285577");
+                        background_color = config.client.focused.background;
                 /* …or if it is the focused window in a not focused container */
-                else background_color = get_colorpixel(conn, "#555555");
+                else background_color = config.client.focused_inactive.background;
 
                 /* Set foreground color to current focused color, line width to 2 */
                 uint32_t values[] = {background_color, 2};
@@ -771,7 +916,7 @@ int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message
                     (!client->fullscreen &&
                      (event->data.data32[0] == _NET_WM_STATE_ADD ||
                       event->data.data32[0] == _NET_WM_STATE_TOGGLE)))
-                        toggle_fullscreen(conn, client);
+                        client_toggle_fullscreen(conn, client);
         } else {
                 LOG("unhandled clientmessage\n");
                 return 0;
@@ -804,12 +949,18 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
                 return 1;
         }
         xcb_size_hints_t size_hints;
+        LOG("client is %08x / child %08x\n", client->frame, client->child);
 
         /* If the hints were already in this event, use them, if not, request them */
         if (reply != NULL)
                 xcb_get_wm_size_hints_from_reply(&size_hints, reply);
         else
                 xcb_get_wm_normal_hints_reply(conn, xcb_get_wm_normal_hints_unchecked(conn, client->child), &size_hints, NULL);
+
+        if ((size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE)) {
+                LOG("min size set\n");
+                LOG("gots min_width = %d, min_height = %d\n", size_hints.min_width, size_hints.min_height);
+        }
 
         /* If no aspect ratio was set or if it was invalid, we ignore the hints */
         if (!(size_hints.flags & XCB_SIZE_HINT_P_ASPECT) ||
@@ -821,8 +972,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
 
         LOG("window is %08x / %s\n", client->child, client->name);
 
-        int base_width = 0, base_height = 0,
-            min_width = 0, min_height = 0;
+        int base_width = 0, base_height = 0;
 
         /* base_width/height are the desired size of the window.
            We check if either the program-specified size or the program-specified
@@ -833,14 +983,6 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         } else if (size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE) {
                 base_width = size_hints.min_width;
                 base_height = size_hints.min_height;
-        }
-
-        if (size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE) {
-                min_width = size_hints.min_width;
-                min_height = size_hints.min_height;
-        } else if (size_hints.flags & XCB_SIZE_HINT_P_SIZE) {
-                min_width = size_hints.base_width;
-                min_height = size_hints.base_height;
         }
 
         double width = client->rect.width - base_width;
@@ -870,6 +1012,45 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         if (client->container != NULL) {
                 render_container(conn, client->container);
                 xcb_flush(conn);
+        }
+
+        return 1;
+}
+
+/*
+ * Handles the transient for hints set by a window, signalizing that this window is a popup window
+ * for some other window.
+ *
+ * See ICCCM 4.1.2.6 for more details
+ *
+ */
+int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                         xcb_atom_t name, xcb_get_property_reply_t *reply) {
+        LOG("Transient hint!\n");
+        Client *client = table_get(&by_child, window);
+        if (client == NULL) {
+                LOG("No such client\n");
+                return 1;
+        }
+
+        xcb_window_t transient_for;
+
+        if (reply != NULL) {
+                if (!xcb_get_wm_transient_for_from_reply(&transient_for, reply)) {
+                        LOG("Not transient for any window\n");
+                        return 1;
+                }
+        } else {
+                if (!xcb_get_wm_transient_for_reply(conn, xcb_get_wm_transient_for_unchecked(conn, window),
+                                                    &transient_for, NULL)) {
+                        LOG("Not transient for any window\n");
+                        return 1;
+                }
+        }
+
+        if (client->floating == FLOATING_AUTO_OFF) {
+                LOG("This is a popup window, putting into floating\n");
+                toggle_floating_mode(conn, client, true);
         }
 
         return 1;

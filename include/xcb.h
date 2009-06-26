@@ -49,6 +49,10 @@ enum { _NET_SUPPORTED = 0,
         _NET_WM_STATE,
         _NET_WM_WINDOW_TYPE,
         _NET_WM_WINDOW_TYPE_DOCK,
+        _NET_WM_WINDOW_TYPE_DIALOG,
+        _NET_WM_WINDOW_TYPE_UTILITY,
+        _NET_WM_WINDOW_TYPE_TOOLBAR,
+        _NET_WM_WINDOW_TYPE_SPLASH,
         _NET_WM_DESKTOP,
         _NET_WM_STRUT_PARTIAL,
         WM_PROTOCOLS,
@@ -125,5 +129,11 @@ void fake_absolute_configure_notify(xcb_connection_t *conn, Client *client);
  *
  */
 void xcb_get_numlock_mask(xcb_connection_t *conn);
+
+/**
+ * Raises the given window (typically client->frame) above all other windows
+ *
+ */
+void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window);
 
 #endif

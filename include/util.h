@@ -25,7 +25,7 @@
                         for (int cols = 0; cols < (workspace)->cols; cols++) \
                                 for (int rows = 0; rows < (workspace)->rows; rows++)
 #define FREE(pointer) do { \
-        if (pointer == NULL) { \
+        if (pointer != NULL) { \
                 free(pointer); \
                 pointer = NULL; \
         } \
@@ -54,7 +54,7 @@ void slog(char *fmt, ...);
  * Prints the message (see printf()) to stderr, then exits the program.
  *
  */
-void die(char *fmt, ...);
+void die(char *fmt, ...) __attribute__((__noreturn__));
 
 /**
  * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that there
@@ -124,18 +124,22 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_mes
 char *convert_utf8_to_ucs2(char *input, int *real_strlen);
 
 /**
- * Removes the given client from the container, either because it will be inserted into another
- * one or because it was unmapped
- *
- */
-void remove_client_from_container(xcb_connection_t *conn, Client *client, Container *container);
-
-/**
  * Returns the client which comes next in focus stack (= was selected before) for
  * the given container, optionally excluding the given client.
  *
  */
 Client *get_last_focused_client(xcb_connection_t *conn, Container *container, Client *exclude);
+
+/**
+ * Unmaps all clients (and stack windows) of the given workspace.
+ *
+ * This needs to be called separately when temporarily rendering
+ * a workspace which is not the active workspace to force
+ * reconfiguration of all clients, like in src/xinerama.c when
+ * re-assigning a workspace to another screen.
+ *
+ */
+void unmap_workspace(xcb_connection_t *conn, Workspace *u_ws);
 
 /**
  * Unmaps all clients (and stack windows) of the given workspace.
@@ -170,24 +174,12 @@ void leave_stack_mode(xcb_connection_t *conn, Container *container);
 void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode);
 
 /**
- * Warps the pointer into the given client (in the middle of it, to be specific), therefore
- * selecting it
+ * Gets the first matching client for the given window class/window title.
+ * If the paramater specific is set to a specific client, only this one
+ * will be checked.
  *
  */
-void warp_pointer_into(xcb_connection_t *conn, Client *client);
-
-/**
- * Toggles fullscreen mode for the given client. It updates the data structures and
- * reconfigures (= resizes/moves) the client and its frame to the full size of the
- * screen. When leaving fullscreen, re-rendering the layout is forced.
- *
- */
-void toggle_fullscreen(xcb_connection_t *conn, Client *client);
-
-/**
- * Kills the given window using WM_DELETE_WINDOW or xcb_kill_window
- *
- */
-void kill_window(xcb_connection_t *conn, Client *window);
+Client *get_matching_client(xcb_connection_t *conn, const char *window_classtitle,
+                            Client *specific);
 
 #endif

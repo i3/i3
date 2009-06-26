@@ -1,3 +1,30 @@
+i3-wm (3.b-1) unstable; urgency=low
+
+  * Bugfix: Correctly handle col-/rowspanned containers when setting focus.
+  * Bugfix: Correctly handle col-/rowspanned containers when snapping.
+  * Bugfix: Force reconfiguration of all windows on workspaces which are
+    re-assigned because a screen was detached.
+  * Bugfix: Several bugs in resizing table columns fixed.
+  * Bugfix: Resizing should now work correctly in all cases.
+  * Bugfix: Correctly re-assign dock windows when workspace is destroyed.
+  * Bugfix: Correctly handle Mode_switch modifier.
+  * Bugfix: Don't raise clients in fullscreen mode.
+  * Bugfix: Re-assign dock windows to different workspaces when a workspace
+    is detached.
+  * Bugfix: Fix crash because of workspace-pointer which did not get updated
+  * Bugfix: Correctly initialize screen when Xinerama is disabled.
+  * Bugfix: Fullscreen window movement and focus problems fixed
+  * Implement jumping to other windows by specifying their position or
+    window class/title.
+  * Implement jumping back by using the focus stack.
+  * Implement autostart (exec-command in configuration file).
+  * Implement floating.
+  * Implement automatically assigning clients on specific workspaces.
+  * Implement variables in configfile.
+  * Colors are now configurable.
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Fri, 26 Jun 2009 04:42:23 +0200
+
 i3-wm (3.a-bf2-1) unstable; urgency=low
 
   * Bugfix: Don't crash when setting focus

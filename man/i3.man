@@ -1,7 +1,7 @@
 i3(1)
 =====
 Michael Stapelberg <michael+i3@stapelberg.de>
-v3.alpha-bf1, May 2009
+v3.beta, May 2009
 
 == NAME
 
@@ -9,7 +9,15 @@ i3 - an improved dynamic, tiling window manager
 
 == SYNOPSIS
 
-i3 [-c configfile]
+i3 [-c configfile] [-a]
+
+== OPTIONS
+
+-c::
+Specifies an alternate configuration file path
+
+-a::
+Disables autostart.
 
 == DESCRIPTION
 
@@ -98,8 +106,17 @@ Enable stacking layout for the current container.
 Mod1+e::
 Enable default layout for the current container.
 
+Mod1+Shift+Space::
+Toggle tiling/floating for the current window.
+
+Mod1+t::
+Select the first tiling window if the current window is floating and vice-versa.
+
 Mod1+Shift+q::
-Kills the current client.
+Kills the current window. This is equivalent to "clicking on the close button", meaning a polite
+request to the application to close this window. For example, Firefox will save its session
+upon such a request. If the application does not support that, the window will be killed and
+it depends on the application what happens.
 
 Mod1+Shift+r::
 Restarts i3 in place (without losing any windows, but the layout).
@@ -156,6 +173,13 @@ bind Mod1+43 s
 
 # Default (Mod1+e)
 bind Mod1+26 d
+
+# Toggle tiling/floating of the current window (Mod1+Shift+Space)
+bind Mod1+Shift+65 t
+
+# Go into the tiling layer / floating layer, depending on whether
+# the current window is tiling / floating (Mod1+t)
+bind Mod1+28 focus ft
 
 # Focus (Mod1+j/k/l/;)
 bind Mod1+44 h
@@ -225,6 +249,9 @@ export LC_TELEPHONE=de_DE.UTF-8
 export LC_MEASUREMENT=de_DE.UTF-8
 export LC_IDENTIFICATION=de_DE.UTF-8
 
+# Set background color
+xsetroot -solid "#333333"
+
 # Enable core dumps in case something goes wrong
 ulimit -c unlimited
 
@@ -237,6 +264,14 @@ exec /usr/bin/i3 >> ~/.i3/logfile
 
 There is still lot of work to do. Please check our bugtracker for up-to-date information
 about tasks which are still not finished.
+
+== SEE ALSO
+
+You should have a copy of the userguide (featuring nice screenshots/graphics which is why this
+is not integrated into this manpage), the debugging guide and the "how to hack" guide. If you
+are building from source, run +make -C docs+.
+
+You can also access these documents online at http://i3.zekjur.net/
 
 == AUTHOR
 

@@ -22,7 +22,6 @@
 #include "xcb.h"
 
 TAILQ_HEAD(cached_fonts_head, Font) cached_fonts = TAILQ_HEAD_INITIALIZER(cached_fonts);
-SLIST_HEAD(colorpixel_head, Colorpixel) colorpixels;
 unsigned int xcb_numlock_mask;
 
 /*
@@ -74,42 +73,14 @@ i3Font *load_font(xcb_connection_t *conn, const char *pattern) {
  *
  */
 uint32_t get_colorpixel(xcb_connection_t *conn, char *hex) {
-        /* Lookup this colorpixel in the cache */
-        struct Colorpixel *colorpixel;
-        SLIST_FOREACH(colorpixel, &(colorpixels), colorpixels)
-                if (strcmp(colorpixel->hex, hex) == 0)
-                        return colorpixel->pixel;
-
-        #define RGB_8_TO_16(i) (65535 * ((i) & 0xFF) / 255)
         char strgroups[3][3] = {{hex[1], hex[2], '\0'},
                                 {hex[3], hex[4], '\0'},
                                 {hex[5], hex[6], '\0'}};
-        int rgb16[3] = {RGB_8_TO_16(strtol(strgroups[0], NULL, 16)),
-                        RGB_8_TO_16(strtol(strgroups[1], NULL, 16)),
-                        RGB_8_TO_16(strtol(strgroups[2], NULL, 16))};
+        uint32_t rgb16[3] = {(strtol(strgroups[0], NULL, 16)),
+                             (strtol(strgroups[1], NULL, 16)),
+                             (strtol(strgroups[2], NULL, 16))};
 
-        xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
-        xcb_alloc_color_reply_t *reply;
-        
-        reply = xcb_alloc_color_reply(conn, xcb_alloc_color(conn, root_screen->default_colormap,
-                                                            rgb16[0], rgb16[1], rgb16[2]), NULL);
-
-        if (!reply) {
-                LOG("Could not allocate color\n");
-                exit(1);
-        }
-
-        uint32_t pixel = reply->pixel;
-        free(reply);
-
-        /* Store the result in the cache */
-        struct Colorpixel *cache_pixel = scalloc(sizeof(struct Colorpixel));
-        cache_pixel->hex = sstrdup(hex);
-        cache_pixel->pixel = pixel;
-
-        SLIST_INSERT_HEAD(&(colorpixels), cache_pixel, colorpixels);
-
-        return pixel;
+        return (rgb16[0] << 16) + (rgb16[1] << 8) + rgb16[2];
 }
 
 /*
@@ -267,14 +238,24 @@ void xcb_get_numlock_mask(xcb_connection_t *conn) {
         /* For now, we only use the first keysymbol. */
         xcb_keycode_t *numlock_syms = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
         xcb_keycode_t numlock = *numlock_syms;
+        free(numlock_syms);
 #endif
 
         /* Check all modifiers (Mod1-Mod5, Shift, Control, Lock) */
-        for (mask = 0; mask < sizeof(masks); mask++)
+        for (mask = 0; mask < 8; mask++)
                 for (i = 0; i < reply->keycodes_per_modifier; i++)
                         if (modmap[(mask * reply->keycodes_per_modifier) + i] == numlock)
                                 xcb_numlock_mask = masks[mask];
 
         xcb_key_symbols_free(keysyms);
         free(reply);
+}
+
+/*
+ * Raises the given window (typically client->frame) above all other windows
+ *
+ */
+void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
+        uint32_t values[] = { XCB_STACK_MODE_ABOVE };
+        xcb_configure_window(conn, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
 }

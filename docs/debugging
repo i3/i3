@@ -84,35 +84,9 @@ gdb $(which i3) core.i3.3849
 
 Then, generate a backtrace using:
 
----------
-backtrace
----------
-
-Also, getting an overview of the local variables might help:
------------
-info locals
------------
-
-If your backtrace looks like this:
----------------------------------------------------------------------------------------------------
-(gdb) backtrace
-#0  0x041b1a01 in vfprintf () from /lib/libc.so.6
-#1  0x041b2f80 in vprintf () from /lib/libc.so.6
-#2  0x080555de in slog (fmt=0x8059ba0 "%s:%s:%d - Name should change to \"%s\"\n") at src/util.c:60
-#3  0x0804fa73 in handle_windowname_change_legacy (data=0x0, conn=0x42da908,
-                  state=0 '\0', window=8389918, atom=39, prop=0x4303f90) at src/handlers.c:752
-#4  0x0406cace in ?? () from /usr/lib/libxcb-property.so.1
-#5  0x00000000 in ?? ()
----------------------------------------------------------------------------------------------------
-
-you need to find the first frame which actually belongs to i3 code. You can easily spot them, as
-their filename starts with src/ and has a line number. In this case, frame 2 would be the correct
-frame, so before getting the local variables, switch to frame 2:
-
------------
-frame 2
-info locals
------------
+--------------
+backtrace full
+--------------
 
 == Sending bugreports/debugging on IRC
 

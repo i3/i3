@@ -1,26 +1,28 @@
 Source: i3-wm
 Section: utils
-Priority: optional
+Priority: extra
 Maintainer: Michael Stapelberg <michael@stapelberg.de>
 DM-Upload-Allowed: yes
-Build-Depends: debhelper (>= 5), libx11-dev, libxcb-aux0-dev (>= 0.3.3), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-event1-dev (>= 0.3.3), libxcb-property1-dev (>= 0.3.3), libxcb-atom1-dev (>= 0.3.3), libxcb-icccm1-dev (>= 0.3.3), asciidoc (>= 8.4.4-1), xmlto, docbook-xml, pkg-config
-Standards-Version: 3.8.0
+Build-Depends: debhelper (>= 5), libx11-dev, libxcb-aux0-dev (>= 0.3.3), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-event1-dev (>= 0.3.3), libxcb-property1-dev (>= 0.3.3), libxcb-atom1-dev (>= 0.3.3), libxcb-icccm1-dev (>= 0.3.3), asciidoc (>= 8.4.4-1), xmlto, docbook-xml, pkg-config, libev-dev
+Standards-Version: 3.8.2
 Homepage: http://i3.zekjur.net/
 
 Package: i3
 Architecture: any
-Priority: optional
+Priority: extra
 Section: x11
 Depends: i3-wm, ${misc:Depends}
-Recommends: i3lock, dwm-tools
-Description: metapackage (i3 window manager, i3lock (screen locker), dwm-tools)
+Recommends: i3lock, dwm-tools, i3status
+Description: metapackage (i3 window manager, screen locker, menu, statusbar)
  This metapackage installs the i3 window manager (i3-wm), the i3lock screen
- locker (slightly improved version of slock) and dwm-tools which contains dmenu.
- These are all the tools you need to use the i3 window manager efficiently.
+ locker (slightly improved version of slock), dwm-tools which contains dmenu
+ and i3status, which displays useful information about your system in
+ combination with dzen2. These are all the tools you need to use the i3 window
+ manager efficiently.
 
 Package: i3-wm
 Architecture: any
-Priority: optional
+Priority: extra
 Section: x11
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Provides: x-window-manager

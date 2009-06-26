@@ -24,6 +24,8 @@
 #include "util.h"
 #include "xinerama.h"
 #include "layout.h"
+#include "client.h"
+#include "floating.h"
 
 /*
  * Updates *destination with new_value and returns true if it was changed or false
@@ -83,7 +85,7 @@ int get_unoccupied_y(Workspace *workspace, int col) {
  *
  */
 void redecorate_window(xcb_connection_t *conn, Client *client) {
-        if (client->container->mode == MODE_STACK) {
+        if (client->container != NULL && client->container->mode == MODE_STACK) {
                 render_container(conn, client->container);
                 /* We clear the frame to generate exposure events, because the color used
                    in drawing may be different */
@@ -100,47 +102,39 @@ void redecorate_window(xcb_connection_t *conn, Client *client) {
 void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t drawable, xcb_gcontext_t gc, int offset) {
         i3Font *font = load_font(conn, config.font);
         int decoration_height = font->height + 2 + 2;
-        uint32_t background_color,
-                 text_color,
-                 border_color;
+        struct Colortriple *color;
 
         /* Clients without a container (docks) won’t get decorated */
-        if (client->container == NULL)
+        if (client->dock)
                 return;
 
-        if (client->container->currently_focused == client) {
+        LOG("redecorating child %08x\n", client->child);
+        if (client_is_floating(client) || client->container->currently_focused == client) {
                 /* Distinguish if the window is currently focused… */
-                if (CUR_CELL->currently_focused == client)
-                        background_color = get_colorpixel(conn, "#285577");
+                if (client_is_floating(client) || CUR_CELL->currently_focused == client)
+                        color = &(config.client.focused);
                 /* …or if it is the focused window in a not focused container */
-                else background_color = get_colorpixel(conn, "#555555");
-
-                text_color = get_colorpixel(conn, "#ffffff");
-                border_color = get_colorpixel(conn, "#4c7899");
-        } else {
-                background_color = get_colorpixel(conn, "#222222");
-                text_color = get_colorpixel(conn, "#888888");
-                border_color = get_colorpixel(conn, "#333333");
-        }
+                else color = &(config.client.focused_inactive);
+        } else color = &(config.client.unfocused);
 
         /* Our plan is the following:
-           - Draw a rect around the whole client in background_color
+           - Draw a rect around the whole client in color->background
            - Draw two lines in a lighter color
            - Draw the window’s title
          */
 
         /* Draw a rectangle in background color around the window */
-        xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, background_color);
+        xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, color->background);
 
         /* In stacking mode, we only render the rect for this specific decoration */
-        if (client->container->mode == MODE_STACK) {
-                xcb_rectangle_t rect = {0, offset, client->container->width, offset + decoration_height };
-                xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
-        } else {
+        if (client->container != NULL && client->container->mode == MODE_STACK) {
                 /* We need to use the container’s width because it is the more recent value - when
                    in stacking mode, clients get reconfigured only on demand (the not active client
                    is not reconfigured), so the client’s rect.width would be wrong */
-                xcb_rectangle_t rect = {0, 0, client->container->width, client->rect.height};
+                xcb_rectangle_t rect = {0, offset, client->container->width, offset + decoration_height };
+                xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
+        } else {
+                xcb_rectangle_t rect = {0, 0, client->rect.width, client->rect.height};
                 xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
 
                 /* Draw the inner background to have a black frame around clients (such as mplayer)
@@ -152,15 +146,15 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         }
 
         /* Draw the lines */
-        xcb_draw_line(conn, drawable, gc, border_color, 2, offset, client->rect.width, offset);
-        xcb_draw_line(conn, drawable, gc, border_color, 2, offset + font->height + 3,
-                      2 + client->rect.width, offset + font->height + 3);
+        xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
+        xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
+                      client->rect.width - 3, offset + font->height + 3);
 
         /* If the client has a title, we draw it */
         if (client->name != NULL) {
                 /* Draw the font */
                 uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-                uint32_t values[] = { text_color, background_color, font->id };
+                uint32_t values[] = { color->text, color->background, font->id };
                 xcb_change_gc(conn, gc, mask, values);
 
                 /* name_len == -1 means this is a legacy application which does not specify _NET_WM_NAME,
@@ -179,18 +173,37 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
  * Pushes the client’s x and y coordinates to X11
  *
  */
-static void reposition_client(xcb_connection_t *conn, Client *client) {
+void reposition_client(xcb_connection_t *conn, Client *client) {
+        i3Screen *screen;
+
         LOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
         /* Note: We can use a pointer to client->x like an array of uint32_ts
            because it is followed by client->y by definition */
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, &(client->rect.x));
+
+        if (!client_is_floating(client))
+                return;
+
+        /* If the client is floating, we need to check if we moved it to a different workspace */
+        if (client->workspace->screen == (screen = get_screen_containing(client->rect.x, client->rect.y)))
+                return;
+
+        if (screen == NULL) {
+                LOG("Boundary checking disabled, no screen found for (%d, %d)\n", client->rect.x, client->rect.y);
+                return;
+        }
+
+        LOG("Client is on workspace %p with screen %p\n", client->workspace, client->workspace->screen);
+        LOG("but screen at %d, %d is %p\n", client->rect.x, client->rect.y, screen);
+        floating_assign_to_workspace(client, &workspaces[screen->current_workspace]);
+        LOG("fixed that\n");
 }
 
 /*
  * Pushes the client’s width/height to X11 and resizes the child window
  *
  */
-static void resize_client(xcb_connection_t *conn, Client *client) {
+void resize_client(xcb_connection_t *conn, Client *client) {
         i3Font *font = load_font(conn, config.font);
 
         LOG("resizing client 0x%08x to %d x %d\n", client->frame, client->rect.width, client->rect.height);
@@ -335,17 +348,19 @@ void render_container(xcb_connection_t *conn, Container *container) {
                                         XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
                                         XCB_CONFIG_WINDOW_STACK_MODE;
 
-                        /* If there is no fullscreen client, we raise the stack window */
-                        if (container->workspace->fullscreen_client != NULL) {
+                        /* Raise the stack window, but keep it below the first floating client
+                         * and below the fullscreen client (if any) */
+                        Client *first_floating = TAILQ_FIRST(&(container->workspace->floating_clients));
+                        if (first_floating != TAILQ_END(&(container->workspace->floating_clients))) {
+                                mask |= XCB_CONFIG_WINDOW_SIBLING;
+                                values[4] = first_floating->frame;
+                        } else if (container->workspace->fullscreen_client != NULL) {
                                 mask |= XCB_CONFIG_WINDOW_SIBLING;
                                 values[4] = container->workspace->fullscreen_client->frame;
                         }
 
                         xcb_configure_window(conn, stack_win->window, mask, values);
                 }
-
-                /* Reconfigure the currently focused client, if necessary. It is the only visible one */
-                client = container->currently_focused;
 
                 /* Render the decorations of all clients */
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
@@ -400,24 +415,10 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
         i3Font *font = load_font(conn, config.font);
         i3Screen *screen = r_ws->screen;
         enum { SET_NORMAL = 0, SET_FOCUSED = 1 };
-        uint32_t background_color[2],
-                 text_color[2],
-                 border_color[2],
-                 black;
         char label[3];
 
-        black = get_colorpixel(conn, "#000000");
-
-        background_color[SET_NORMAL] = get_colorpixel(conn, "#222222");
-        text_color[SET_NORMAL] = get_colorpixel(conn, "#888888");
-        border_color[SET_NORMAL] = get_colorpixel(conn, "#333333");
-
-        background_color[SET_FOCUSED] = get_colorpixel(conn, "#285577");
-        text_color[SET_FOCUSED] = get_colorpixel(conn, "#ffffff");
-        border_color[SET_FOCUSED] = get_colorpixel(conn, "#4c7899");
-
         /* Fill the whole bar in black */
-        xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, black);
+        xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
         xcb_rectangle_t rect = {0, 0, width, height};
         xcb_poly_fill_rectangle(conn, screen->bar, screen->bargc, 1, &rect);
 
@@ -429,16 +430,17 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
                 if (workspaces[c].screen != screen)
                         continue;
 
-                int set = (screen->current_workspace == c ? SET_FOCUSED : SET_NORMAL);
+                struct Colortriple *color = (screen->current_workspace == c ? &(config.bar.focused) :
+                                             &(config.bar.unfocused));
 
-                xcb_draw_rect(conn, screen->bar, screen->bargc, border_color[set],
+                xcb_draw_rect(conn, screen->bar, screen->bargc, color->border,
                               drawn * height, 1, height - 2, height - 2);
-                xcb_draw_rect(conn, screen->bar, screen->bargc, background_color[set],
+                xcb_draw_rect(conn, screen->bar, screen->bargc, color->background,
                               drawn * height + 1, 2, height - 4, height - 4);
 
                 snprintf(label, sizeof(label), "%d", c+1);
-                xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, text_color[set]);
-                xcb_change_gc_single(conn, screen->bargc, XCB_GC_BACKGROUND, background_color[set]);
+                xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, color->text);
+                xcb_change_gc_single(conn, screen->bargc, XCB_GC_BACKGROUND, color->background);
                 xcb_image_text_8(conn, strlen(label), screen->bar, screen->bargc, drawn * height + 5 /* X */,
                                                 font->height + 1 /* Y = baseline of font */, label);
                 drawn++;

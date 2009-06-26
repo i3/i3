@@ -1,36 +1,44 @@
-left := <h> | <cursor-left>
+---------------------
+- Command mode
+---------------------
+
+This is the grammar for the command mode (your configuration file uses these commands, too).
+
+left  := <h> | <cursor-left>
 right := <l> | <cursor-right>
-up := <j> | <cursor-up>
-down := <k> | <cursor-down>
+up    := <j> | <cursor-up>
+down  := <k> | <cursor-down>
 
 where := <left|right|up|down> | <tag>
-move := <m>
-snap := <s>
+move  := <m>
+snap  := <s>
 
-Eingabe ist entweder
-
-cmd := [ <times> ] [ <move> | <snap> ] <where>
-
-oder
-
-with := <w> { [ <times> ] <where> }+ <space> <cmd>
-
-oder
-
+cmd     := [ <times> ] [ <move> | <snap> ] <where>
+with    := <w> { [ <times> ] <where> }+ <space> <cmd>
+jump    := [ "<window class>[/<window title>]" | <workspace> [ <column> <row> ] ]
+focus   := focus [ <times> | floating | tiling | ft ]
+(travels the focus stack backwards the given amount of times (by default 1), so
+ it selects the window which had the focus before you focused the current one when
+ specifying "focus 1".
+ The special values 'floating' (select the next floating window), 'tiling'
+ (select the next tiling window), 'ft' (if the current window is floating,
+ select the next tiling window and vice-versa) are also valid)
 special := [ exec <path> | kill | exit | restart ]
 
-an jeder Stelle kann mit escape abgebrochen werden
+input := [ <cmd> | <with> | <jump> | <focus> | <special> ]
 
-Beispiele:
+you can cancel command mode by pressing escape anytime.
 
-Fenster links neben dem aktuellen auswählen:
+Some examples:
+
+Select the window on the left:
 h
 
-Fenster zwei links neben dem aktuellen auswählen:
+Select the window two places on the left:
 2h
 
-Fenster nach rechts verschieben:
+Move window to the right:
 ml
 
-Fenster und Fenster untendrunter nach rechts verschieben:
+Move window and window on the bottom to the right:
 wk ml

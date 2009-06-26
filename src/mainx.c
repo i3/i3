@@ -31,6 +31,8 @@
 #include <xcb/xcb_icccm.h>
 #include <xcb/xinerama.h>
 
+#include <ev.h>
+
 #include "config.h"
 #include "data.h"
 #include "debug.h"
@@ -42,6 +44,7 @@
 #include "util.h"
 #include "xcb.h"
 #include "xinerama.h"
+#include "manage.h"
 
 /* This is the path to i3, copied from argv[0] when starting up */
 char **start_argv;
@@ -51,6 +54,12 @@ Display *xkbdpy;
 
 /* The list of key bindings */
 struct bindings_head bindings = TAILQ_HEAD_INITIALIZER(bindings);
+
+/* The list of exec-lines */
+struct autostarts_head autostarts = TAILQ_HEAD_INITIALIZER(autostarts);
+
+/* The list of assignments */
+struct assignments_head assignments = TAILQ_HEAD_INITIALIZER(assignments);
 
 /* This is a list of Stack_Windows, global, for easier/faster access on expose events */
 struct stack_wins_head stack_wins = SLIST_HEAD_INITIALIZER(stack_wins);
@@ -63,273 +72,40 @@ xcb_atom_t atoms[NUM_ATOMS];
 int num_screens = 0;
 
 /*
- * Do some sanity checks and then reparent the window.
+ * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
+ * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop
  *
  */
-void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn, xcb_window_t window, window_attributes_t wa) {
-        LOG("managing window.\n");
-        xcb_drawable_t d = { window };
-        xcb_get_geometry_cookie_t geomc;
-        xcb_get_geometry_reply_t *geom;
-        xcb_get_window_attributes_reply_t *attr = 0;
-
-        if (wa.tag == TAG_COOKIE) {
-                /* Check if the window is mapped (it could be not mapped when intializing and
-                   calling manage_window() for every window) */
-                if ((attr = xcb_get_window_attributes_reply(conn, wa.u.cookie, 0)) == NULL)
-                        return;
-
-                if (attr->map_state != XCB_MAP_STATE_VIEWABLE)
-                        goto out;
-
-                wa.tag = TAG_VALUE;
-                wa.u.override_redirect = attr->override_redirect;
-        }
-
-        /* Don’t manage clients with the override_redirect flag */
-        if (wa.u.override_redirect)
-                goto out;
-
-        /* Check if the window is already managed */
-        if (table_get(&by_child, window))
-                goto out;
-
-        /* Get the initial geometry (position, size, …) */
-        geomc = xcb_get_geometry(conn, d);
-        if (!attr) {
-                wa.tag = TAG_COOKIE;
-                wa.u.cookie = xcb_get_window_attributes(conn, window);
-                attr = xcb_get_window_attributes_reply(conn, wa.u.cookie, 0);
-        }
-        geom = xcb_get_geometry_reply(conn, geomc, 0);
-        if (attr && geom) {
-                reparent_window(conn, window, attr->visual, geom->root, geom->depth,
-                                geom->x, geom->y, geom->width, geom->height);
-                xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
-                xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NORMAL_HINTS);
-                xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[_NET_WM_NAME]);
-        }
-
-        free(geom);
-out:
-        free(attr);
-        return;
+static void xcb_got_event(EV_P_ struct ev_io *w, int revents) {
+        /* empty, because xcb_prepare_cb and xcb_check_cb are used */
 }
 
 /*
- * reparent_window() gets called when a new window was opened and becomes a child of the root
- * window, or it gets called by us when we manage the already existing windows at startup.
- *
- * Essentially, this is the point where we take over control.
+ * Flush before blocking (and waiting for new events)
  *
  */
-void reparent_window(xcb_connection_t *conn, xcb_window_t child,
-                     xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
-                     int16_t x, int16_t y, uint16_t width, uint16_t height) {
-
-        xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie;
-        uint32_t mask = 0;
-        uint32_t values[3];
-
-        /* We are interested in property changes */
-        mask = XCB_CW_EVENT_MASK;
-        values[0] = CHILD_EVENT_MASK;
-        xcb_change_window_attributes(conn, child, mask, values);
-
-        /* Map the window first to avoid flickering */
-        xcb_map_window(conn, child);
-
-        /* Place requests for properties ASAP */
-        wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
-        strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
-        state_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STATE], UINT32_MAX);
-
-        Client *new = table_get(&by_child, child);
-
-        /* Events for already managed windows should already be filtered in manage_window() */
-        assert(new == NULL);
-
-        LOG("reparenting new client\n");
-        new = calloc(sizeof(Client), 1);
-        new->force_reconfigure = true;
-
-        /* Update the data structures */
-        Client *old_focused = CUR_CELL->currently_focused;
-
-        new->container = CUR_CELL;
-        new->workspace = new->container->workspace;
-
-        new->frame = xcb_generate_id(conn);
-        new->child = child;
-        new->rect.width = width;
-        new->rect.height = height;
-
-        mask = 0;
-
-        /* Don’t generate events for our new window, it should *not* be managed */
-        mask |= XCB_CW_OVERRIDE_REDIRECT;
-        values[0] = 1;
-
-        /* We want to know when… */
-        mask |= XCB_CW_EVENT_MASK;
-        values[1] = FRAME_EVENT_MASK;
-
-        LOG("Reparenting 0x%08x under 0x%08x.\n", child, new->frame);
-
-        i3Font *font = load_font(conn, config.font);
-        width = min(width, c_ws->rect.x + c_ws->rect.width);
-        height = min(height, c_ws->rect.y + c_ws->rect.height);
-
-        Rect framerect = {x, y,
-                          width + 2 + 2,                  /* 2 px border at each side */
-                          height + 2 + 2 + font->height}; /* 2 px border plus font’s height */
-
-        /* Yo dawg, I heard you like windows, so I create a window around your window… */
-        new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
-
-        long data[] = { XCB_WM_STATE_NORMAL, XCB_NONE };
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, new->child, atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
-
-        /* Put the client inside the save set. Upon termination (whether killed or normal exit
-           does not matter) of the window manager, these clients will be correctly reparented
-           to their most closest living ancestor (= cleanup) */
-        xcb_change_save_set(conn, XCB_SET_MODE_INSERT, child);
-
-        /* Generate a graphics context for the titlebar */
-        new->titlegc = xcb_generate_id(conn);
-        xcb_create_gc(conn, new->titlegc, new->frame, 0, 0);
-
-        /* Moves the original window into the new frame we've created for it */
-        new->awaiting_useless_unmap = true;
-        xcb_void_cookie_t cookie = xcb_reparent_window_checked(conn, child, new->frame, 0, font->height);
-        if (xcb_request_check(conn, cookie) != NULL) {
-                LOG("Could not reparent the window, aborting\n");
-                xcb_destroy_window(conn, new->frame);
-                free(new);
-                return;
-        }
-
-        /* Put our data structure (Client) into the table */
-        table_put(&by_parent, new->frame, new);
-        table_put(&by_child, child, new);
-
-        /* We need to grab the mouse buttons for click to focus */
-        xcb_grab_button(conn, false, child, XCB_EVENT_MASK_BUTTON_PRESS,
-                        XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                        1 /* left mouse button */,
-                        XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
-
-        /* Get _NET_WM_WINDOW_TYPE (to see if it’s a dock) */
-        xcb_atom_t *atom;
-        xcb_get_property_reply_t *preply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
-        if (preply != NULL && preply->value_len > 0 && (atom = xcb_get_property_value(preply))) {
-                for (int i = 0; i < xcb_get_property_value_length(preply); i++)
-                        if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]) {
-                                LOG("Window is a dock.\n");
-                                new->dock = true;
-                                new->titlebar_position = TITLEBAR_OFF;
-                                new->force_reconfigure = true;
-                                new->container = NULL;
-                                SLIST_INSERT_HEAD(&(c_ws->screen->dock_clients), new, dock_clients);
-                        }
-        }
-
-        if (new->dock) {
-                /* Get _NET_WM_STRUT_PARTIAL to determine the client’s requested height */
-                uint32_t *strut;
-                preply = xcb_get_property_reply(conn, strut_cookie, NULL);
-                if (preply != NULL && preply->value_len > 0 && (strut = xcb_get_property_value(preply))) {
-                        /* We only use a subset of the provided values, namely the reserved space at the top/bottom
-                           of the screen. This is because the only possibility for bars is at to be at the top/bottom
-                           with maximum horizontal size.
-                           TODO: bars at the top */
-                        new->desired_height = strut[3];
-                        if (new->desired_height == 0) {
-                                LOG("Client wanted to be 0 pixels high, using the window's height (%d)\n", height);
-                                new->desired_height = height;
-                        }
-                        LOG("the client wants to be %d pixels high\n", new->desired_height);
-                } else {
-                        LOG("The client didn't specify space to reserve at the screen edge, using its height (%d)\n", height);
-                        new->desired_height = height;
-                }
-        }
-
-        /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
-        if (CUR_CELL->workspace->fullscreen_client == NULL) {
-                if (!new->dock) {
-                        CUR_CELL->currently_focused = new;
-                        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
-                }
-        } else {
-                /* If we are in fullscreen, we should lower the window to not be annoying */
-                uint32_t values[] = { XCB_STACK_MODE_BELOW };
-                xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
-        }
-
-        /* Insert into the currently active container, if it’s not a dock window */
-        if (!new->dock) {
-                /* Insert after the old active client, if existing. If it does not exist, the
-                   container is empty and it does not matter, where we insert it */
-                if (old_focused != NULL && !old_focused->dock)
-                        CIRCLEQ_INSERT_AFTER(&(CUR_CELL->clients), old_focused, new, clients);
-                else CIRCLEQ_INSERT_TAIL(&(CUR_CELL->clients), new, clients);
-
-                SLIST_INSERT_HEAD(&(new->container->workspace->focus_stack), new, focus_clients);
-        }
-
-        /* Check if the window already got the fullscreen hint set */
-        xcb_atom_t *state;
-        if ((preply = xcb_get_property_reply(conn, state_cookie, NULL)) != NULL &&
-            (state = xcb_get_property_value(preply)) != NULL)
-                /* Check all set _NET_WM_STATEs */
-                for (int i = 0; i < xcb_get_property_value_length(preply); i++)
-                        if (state[i] == atoms[_NET_WM_STATE_FULLSCREEN]) {
-                                /* If the window got the fullscreen state, we just toggle fullscreen
-                                   and don’t event bother to redraw the layout – that would not change
-                                   anything anyways */
-                                toggle_fullscreen(conn, new);
-                                return;
-                        }
-
-        render_layout(conn);
+static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
+        xcb_flush(evenths.c);
 }
 
 /*
- * Go through all existing windows (if the window manager is restarted) and manage them
+ * Instead of polling the X connection socket we leave this to
+ * xcb_poll_for_event() which knows better than we can ever know.
  *
  */
-void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *prophs, xcb_window_t root) {
-        xcb_query_tree_reply_t *reply;
-        int i, len;
-        xcb_window_t *children;
-        xcb_get_window_attributes_cookie_t *cookies;
+static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
+        xcb_generic_event_t *event;
 
-        /* Get the tree of windows whose parent is the root window (= all) */
-        if ((reply = xcb_query_tree_reply(conn, xcb_query_tree(conn, root), 0)) == NULL)
-                return;
-
-        len = xcb_query_tree_children_length(reply);
-        cookies = smalloc(len * sizeof(*cookies));
-
-        /* Request the window attributes for every window */
-        children = xcb_query_tree_children(reply);
-        for(i = 0; i < len; ++i)
-                cookies[i] = xcb_get_window_attributes(conn, children[i]);
-
-        /* Call manage_window with the attributes for every window */
-        for(i = 0; i < len; ++i) {
-                window_attributes_t wa = { TAG_COOKIE, { cookies[i] } };
-                manage_window(prophs, conn, children[i], wa);
+        while ((event = xcb_poll_for_event(evenths.c)) != NULL) {
+                xcb_event_handle(&evenths, event);
+                free(event);
         }
-
-        free(reply);
-        free(cookies);
 }
 
 int main(int argc, char *argv[], char *env[]) {
         int i, screens, opt;
         char *override_configpath = NULL;
+        bool autostart = true;
         xcb_connection_t *conn;
         xcb_property_handlers_t prophs;
         xcb_window_t root;
@@ -343,8 +119,12 @@ int main(int argc, char *argv[], char *env[]) {
 
         start_argv = argv;
 
-        while ((opt = getopt(argc, argv, "c:v")) != -1) {
+        while ((opt = getopt(argc, argv, "c:va")) != -1) {
                 switch (opt) {
+                        case 'a':
+                                LOG("Autostart disabled using -a\n");
+                                autostart = false;
+                                break;
                         case 'c':
                                 override_configpath = sstrdup(optarg);
                                 break;
@@ -365,9 +145,12 @@ int main(int argc, char *argv[], char *env[]) {
         memset(&evenths, 0, sizeof(xcb_event_handlers_t));
         memset(&prophs, 0, sizeof(xcb_property_handlers_t));
 
-        load_configuration(override_configpath);
-
         conn = xcb_connect(NULL, &screens);
+
+        if (xcb_connection_has_error(conn))
+                die("Cannot open display\n");
+
+        load_configuration(conn, override_configpath);
 
         /* Place requests for the atoms we need as soon as possible */
         #define REQUEST_ATOM(name) atom_cookies[name] = xcb_intern_atom(conn, 0, strlen(#name), #name);
@@ -380,6 +163,10 @@ int main(int argc, char *argv[], char *env[]) {
         REQUEST_ATOM(_NET_WM_WINDOW_TYPE);
         REQUEST_ATOM(_NET_WM_DESKTOP);
         REQUEST_ATOM(_NET_WM_WINDOW_TYPE_DOCK);
+        REQUEST_ATOM(_NET_WM_WINDOW_TYPE_DIALOG);
+        REQUEST_ATOM(_NET_WM_WINDOW_TYPE_UTILITY);
+        REQUEST_ATOM(_NET_WM_WINDOW_TYPE_TOOLBAR);
+        REQUEST_ATOM(_NET_WM_WINDOW_TYPE_SPLASH);
         REQUEST_ATOM(_NET_WM_STRUT_PARTIAL);
         REQUEST_ATOM(WM_PROTOCOLS);
         REQUEST_ATOM(WM_DELETE_WINDOW);
@@ -405,6 +192,27 @@ int main(int argc, char *argv[], char *env[]) {
                 return 1;
         }
         /* end of ugliness */
+
+        /* Initialize event loop using libev */
+        struct ev_loop *loop = ev_default_loop(0);
+        if (loop == NULL)
+                die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
+
+        struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
+        struct ev_check *xcb_check = scalloc(sizeof(struct ev_check));
+        struct ev_prepare *xcb_prepare = scalloc(sizeof(struct ev_prepare));
+
+        ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
+        ev_io_start(loop, xcb_watcher);
+
+        ev_check_init(xcb_check, xcb_check_cb);
+        ev_check_start(loop, xcb_check);
+
+        ev_prepare_init(xcb_prepare, xcb_prepare_cb);
+        ev_prepare_start(loop, xcb_prepare);
+
+        /* Grab the server to delay any events until we enter the eventloop */
+        xcb_grab_server(conn);
 
         xcb_event_handlers_init(conn, &evenths);
 
@@ -483,6 +291,10 @@ int main(int argc, char *argv[], char *env[]) {
         GET_ATOM(_NET_WM_WINDOW_TYPE);
         GET_ATOM(_NET_WM_DESKTOP);
         GET_ATOM(_NET_WM_WINDOW_TYPE_DOCK);
+        GET_ATOM(_NET_WM_WINDOW_TYPE_DIALOG);
+        GET_ATOM(_NET_WM_WINDOW_TYPE_UTILITY);
+        GET_ATOM(_NET_WM_WINDOW_TYPE_TOOLBAR);
+        GET_ATOM(_NET_WM_WINDOW_TYPE_SPLASH);
         GET_ATOM(_NET_WM_STRUT_PARTIAL);
         GET_ATOM(WM_PROTOCOLS);
         GET_ATOM(WM_DELETE_WINDOW);
@@ -495,8 +307,14 @@ int main(int argc, char *argv[], char *env[]) {
         /* Watch _NET_WM_NAME (= title of the window in UTF-8) property */
         xcb_property_set_handler(&prophs, atoms[_NET_WM_NAME], 128, handle_windowname_change, NULL);
 
+        /* Watch WM_TRANSIENT_FOR property (to which client this popup window belongs) */
+        xcb_property_set_handler(&prophs, WM_TRANSIENT_FOR, UINT_MAX, handle_transient_for, NULL);
+
         /* Watch WM_NAME (= title of the window in compound text) property for legacy applications */
         xcb_watch_wm_name(&prophs, 128, handle_windowname_change_legacy, NULL);
+
+        /* Watch WM_CLASS (= class of the window) */
+        xcb_property_set_handler(&prophs, WM_CLASS, 128, handle_windowclass_change, NULL);
 
         /* Set up the atoms we support */
         check_error(conn, xcb_change_property_checked(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED],
@@ -520,6 +338,15 @@ int main(int argc, char *argv[], char *env[]) {
                         GRAB_KEY(bind->mods);
                         GRAB_KEY(bind->mods | xcb_numlock_mask);
                         GRAB_KEY(bind->mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
+                }
+        }
+
+        /* Autostarting exec-lines */
+        struct Autostart *exec;
+        if (autostart) {
+                TAILQ_FOREACH(exec, &autostarts, autostarts) {
+                        LOG("auto-starting %s\n", exec->command);
+                        start_application(exec->command);
                 }
         }
 
@@ -548,8 +375,12 @@ int main(int argc, char *argv[], char *env[]) {
                 c_ws = &workspaces[screen->current_workspace];
         }
 
-        /* Enter xcb’s event handler */
-        xcb_event_wait_for_event_loop(&evenths);
+        /* Handle the events which arrived until now */
+        xcb_check_cb(NULL, NULL, 0);
+
+        /* Ungrab the server to receive events and enter libev’s eventloop */
+        xcb_ungrab_server(conn);
+        ev_loop(loop, 0);
 
         /* not reached */
         return 0;

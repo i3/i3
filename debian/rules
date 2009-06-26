@@ -19,6 +19,7 @@ build:
 	# Add here commands to compile the package.
 	$(MAKE)
 	$(MAKE) -C man
+	$(MAKE) -C docs
 
 	touch $@
 
