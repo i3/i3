@@ -221,7 +221,7 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
                 border = BORDER_BOTTOM;
         else if (event->event_x <= 2)
                 border = BORDER_LEFT;
-        else if (event->event_x > 2)
+        else if (event->event_x >= (client->rect.width - 2))
                 border = BORDER_RIGHT;
         else {
                 LOG("Not on any border, not doing anything.\n");
