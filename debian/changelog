@@ -12,6 +12,8 @@ i3-wm (3.b-1) unstable; urgency=low
   * Bugfix: Re-assign dock windows to different workspaces when a workspace
     is detached.
   * Bugfix: Fix crash because of workspace-pointer which did not get updated
+  * Bugfix: Correctly initialize screen when Xinerama is disabled.
+  * Bugfix: Fullscreen window movement and focus problems fixed
   * Implement jumping to other windows by specifying their position or
     window class/title.
   * Implement jumping back by using the focus stack.
@@ -21,7 +23,7 @@ i3-wm (3.b-1) unstable; urgency=low
   * Implement variables in configfile.
   * Colors are now configurable.
 
- -- Michael Stapelberg <michael@stapelberg.de>  Sun, 21 Jun 2009 16:39:35 +0200
+ -- Michael Stapelberg <michael@stapelberg.de>  Fri, 26 Jun 2009 04:42:23 +0200
 
 i3-wm (3.a-bf2-1) unstable; urgency=low
 

@@ -37,6 +37,8 @@ A list of changes follows:
   * Bugfix: Re-assign dock windows to different workspaces when a workspace
     is detached.
   * Bugfix: Fix crash because of workspace-pointer which did not get updated
+  * Bugfix: Correctly initialize screen when Xinerama is disabled.
+  * Bugfix: Fullscreen window movement and focus problems fixed
   * Implement jumping to other windows by specifying their position or
     window class/title.
   * Implement jumping back by using the focus stack.
