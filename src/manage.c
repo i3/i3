@@ -371,7 +371,9 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         CIRCLEQ_INSERT_AFTER(&(new->container->clients), old_focused, new, clients);
                 else CIRCLEQ_INSERT_TAIL(&(new->container->clients), new, clients);
 
-                SLIST_INSERT_HEAD(&(new->container->workspace->focus_stack), new, focus_clients);
+                if (new->container->workspace->fullscreen_client != NULL)
+                        SLIST_INSERT_AFTER(new->container->workspace->fullscreen_client, new, focus_clients);
+                else SLIST_INSERT_HEAD(&(new->container->workspace->focus_stack), new, focus_clients);
 
                 client_set_below_floating(conn, new);
         }
