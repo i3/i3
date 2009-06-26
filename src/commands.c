@@ -975,7 +975,11 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 fix_colrowspan(conn, last_focused->workspace);
 
                 render_workspace(conn, last_focused->workspace->screen, last_focused->workspace);
-                xcb_flush(conn);
+
+                /* Re-focus the client because cleanup_table sets the focus to the last
+                 * focused client inside a container only. */
+                set_focus(conn, last_focused, true);
+
                 return;
         }
 
