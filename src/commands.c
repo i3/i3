@@ -60,9 +60,16 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
 
         int new_row = current_row,
             new_col = current_col;
-
         Container *container = CUR_CELL;
         Workspace *t_ws = c_ws;
+
+        /* Makes sure new_col and new_row are within bounds of the new workspace */
+        void check_colrow_boundaries() {
+                if (new_col >= t_ws->cols)
+                        new_col = (t_ws->cols - 1);
+                if (new_row >= t_ws->rows)
+                        new_row = (t_ws->rows - 1);
+        }
 
         /* There always is a container. If not, current_col or current_row is wrong */
         assert(container != NULL);
@@ -107,6 +114,8 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         new_row = (direction == D_UP ? (t_ws->rows - 1) : 0);
                 }
 
+                check_colrow_boundaries();
+
                 LOG("new_col = %d, new_row = %d\n", new_col, new_row);
                 if (t_ws->table[new_col][new_row]->currently_focused == NULL) {
                         LOG("Cell empty, checking for colspanned client above...\n");
@@ -147,6 +156,8 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         new_col = (direction == D_LEFT ? (t_ws->cols - 1) : 0);
                 }
 
+                check_colrow_boundaries();
+
                 LOG("new_col = %d, new_row = %d\n", new_col, new_row);
                 if (t_ws->table[new_col][new_row]->currently_focused == NULL) {
                         LOG("Cell empty, checking for rowspanned client above...\n");
@@ -164,11 +175,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                 return;
         }
 
-        /* Bounds checking */
-        if (new_col >= t_ws->cols)
-                new_col = (t_ws->cols - 1);
-        if (new_row >= t_ws->rows)
-                new_row = (t_ws->rows - 1);
+        check_colrow_boundaries();
 
         if (t_ws->table[new_col][new_row]->currently_focused != NULL)
                 set_focus(conn, t_ws->table[new_col][new_row]->currently_focused, true);
