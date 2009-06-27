@@ -478,6 +478,16 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
                 return 1;
         }
 
+        if (client->fullscreen) {
+                LOG("Client is in fullscreen mode\n");
+
+                Rect child_rect = client->container->workspace->rect;
+                child_rect.x = child_rect.y = 0;
+                fake_configure_notify(conn, child_rect, client->child);
+
+                return 1;
+        }
+
         /* Floating clients can be reconfigured */
         if (client_is_floating(client)) {
                 i3Font *font = load_font(conn, config.font);
@@ -498,16 +508,6 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
                 reposition_client(conn, client);
                 resize_client(conn, client);
                 xcb_flush(conn);
-
-                return 1;
-        }
-
-        if (client->fullscreen) {
-                LOG("Client is in fullscreen mode\n");
-
-                Rect child_rect = client->container->workspace->rect;
-                child_rect.x = child_rect.y = 0;
-                fake_configure_notify(conn, child_rect, client->child);
 
                 return 1;
         }
