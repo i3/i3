@@ -481,7 +481,7 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
         if (client->fullscreen) {
                 LOG("Client is in fullscreen mode\n");
 
-                Rect child_rect = client->container->workspace->rect;
+                Rect child_rect = client->workspace->rect;
                 child_rect.x = child_rect.y = 0;
                 fake_configure_notify(conn, child_rect, client->child);
 
