@@ -83,19 +83,19 @@ void die(char *fmt, ...) {
  */
 void *smalloc(size_t size) {
         void *result = malloc(size);
-        exit_if_null(result, "Too less memory for malloc(%d)\n", size);
+        exit_if_null(result, "Error: out of memory (malloc(%d))\n", size);
         return result;
 }
 
 void *scalloc(size_t size) {
         void *result = calloc(size, 1);
-        exit_if_null(result, "Too less memory for calloc(%d)\n", size);
+        exit_if_null(result, "Error: out of memory (calloc(%d))\n", size);
         return result;
 }
 
 char *sstrdup(const char *str) {
         char *result = strdup(str);
-        exit_if_null(result, "Too less memory for strdup()\n");
+        exit_if_null(result, "Error: out of memory (strdup())\n");
         return result;
 }
 
