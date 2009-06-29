@@ -53,10 +53,8 @@ void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *pr
                 cookies[i] = xcb_get_window_attributes(conn, children[i]);
 
         /* Call manage_window with the attributes for every window */
-        for(i = 0; i < len; ++i) {
-                window_attributes_t wa = { TAG_COOKIE, { cookies[i] } };
-                manage_window(prophs, conn, children[i], wa);
-        }
+        for(i = 0; i < len; ++i)
+                manage_window(prophs, conn, children[i], cookies[i], true);
 
         free(reply);
         free(cookies);
@@ -66,42 +64,40 @@ void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *pr
  * Do some sanity checks and then reparent the window.
  *
  */
-void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn, xcb_window_t window, window_attributes_t wa) {
+void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
+                   xcb_window_t window, xcb_get_window_attributes_cookie_t cookie,
+                   bool needs_to_be_mapped) {
         LOG("managing window.\n");
         xcb_drawable_t d = { window };
         xcb_get_geometry_cookie_t geomc;
         xcb_get_geometry_reply_t *geom;
         xcb_get_window_attributes_reply_t *attr = 0;
 
-        if (wa.tag == TAG_COOKIE) {
-                /* Check if the window is mapped (it could be not mapped when intializing and
-                   calling manage_window() for every window) */
-                if ((attr = xcb_get_window_attributes_reply(conn, wa.u.cookie, 0)) == NULL)
-                        return;
+        geomc = xcb_get_geometry(conn, d);
 
-                if (attr->map_state != XCB_MAP_STATE_VIEWABLE)
-                        goto out;
+        /* Check if the window is mapped (it could be not mapped when intializing and
+           calling manage_window() for every window) */
+        if ((attr = xcb_get_window_attributes_reply(conn, cookie, 0)) == NULL) {
+                LOG("Could not get attributes\n");
+                return;
+        }
 
-                wa.tag = TAG_VALUE;
-                wa.u.override_redirect = attr->override_redirect;
+        if (attr->map_state != XCB_MAP_STATE_VIEWABLE) {
+                LOG("Window not mapped, not managing\n");
+                goto out;
         }
 
         /* Don’t manage clients with the override_redirect flag */
-        if (wa.u.override_redirect)
+        if (attr->override_redirect) {
+                LOG("override_redirect set, not managing\n");
                 goto out;
+        }
 
         /* Check if the window is already managed */
         if (table_get(&by_child, window))
                 goto out;
 
         /* Get the initial geometry (position, size, …) */
-        geomc = xcb_get_geometry(conn, d);
-        if (!attr) {
-                wa.tag = TAG_COOKIE;
-                wa.u.cookie = xcb_get_window_attributes(conn, window);
-                if ((attr = xcb_get_window_attributes_reply(conn, wa.u.cookie, 0)) == NULL)
-                        return;
-        }
         if ((geom = xcb_get_geometry_reply(conn, geomc, 0)) == NULL)
                 goto out;
 

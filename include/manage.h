@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -28,7 +28,9 @@ void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t
  *
  */
 void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
-                   xcb_window_t window, window_attributes_t wa);
+                   xcb_window_t window,
+                   xcb_get_window_attributes_cookie_t cookie,
+                   bool needs_to_be_mapped);
 
 /**
  * reparent_window() gets called when a new window was opened and becomes a

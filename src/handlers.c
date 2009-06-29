@@ -421,22 +421,13 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
  */
 int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_event_t *event) {
         xcb_get_window_attributes_cookie_t cookie;
-        xcb_get_window_attributes_reply_t *reply;
 
         cookie = xcb_get_window_attributes_unchecked(conn, event->window);
 
-        if ((reply = xcb_get_window_attributes_reply(conn, cookie, NULL)) == NULL) {
-                LOG("Could not get window attributes\n");
-                return -1;
-        }
-
-        window_attributes_t wa = { TAG_VALUE };
-        LOG("override_redirect = %d\n", reply->override_redirect);
-        wa.u.override_redirect = reply->override_redirect;
         LOG("window = 0x%08x, serial is %d.\n", event->window, event->sequence);
         add_ignore_event(event->sequence);
 
-        manage_window(prophs, conn, event->window, wa);
+        manage_window(prophs, conn, event->window, cookie, false);
         return 1;
 }
 

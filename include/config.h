@@ -12,8 +12,6 @@
  *
  */
 
-/* FIXME: this file lacks documentation */
-
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
@@ -22,12 +20,22 @@
 typedef struct Config Config;
 extern Config config;
 
+/**
+ * Part of the struct Config. It makes sense to group colors for background,
+ * border and text as every element in i3 has them (window decorations, bar).
+ *
+ */
 struct Colortriple {
         uint32_t border;
         uint32_t background;
         uint32_t text;
 };
 
+/**
+ * Holds a user-assigned variable for parsing the configuration file. The key
+ * is replaced by value in every following line of the file.
+ *
+ */
 struct Variable {
         char *key;
         char *value;
@@ -35,6 +43,11 @@ struct Variable {
         SLIST_ENTRY(Variable) variables;
 };
 
+/**
+ * Holds part of the configuration (the part which is not already in dedicated
+ * structures in include/data.h).
+ *
+ */
 struct Config {
         const char *terminal;
         const char *font;

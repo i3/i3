@@ -74,7 +74,7 @@ enum {
 };
 
 /**
- * FIXME: needs to be documented
+ * Stores a rectangle, for example the size of a window, the child window etc.
  *
  */
 struct Rect {
@@ -134,18 +134,6 @@ struct keyvalue_element {
         void *value;
         TAILQ_ENTRY(keyvalue_element) elements;
 };
-
-/**
- * FIXME: needs documentation.
- *
- */
-typedef struct {
-        enum xcb_atom_fast_tag_t tag;
-        union {
-                xcb_get_window_attributes_cookie_t cookie;
-                uint8_t override_redirect;
-        } u;
-} window_attributes_t;
 
 /******************************************************************************
  * Major types
@@ -247,7 +235,7 @@ struct Assignment {
          * workspace "~".  Matching clients will be put into floating mode
          * automatically. */
         bool floating;
-        /** FIXME: needs documentation */
+        /** The number of the workspace to assign to. */
         int workspace;
         TAILQ_ENTRY(Assignment) assignments;
 };
