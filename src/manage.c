@@ -82,7 +82,7 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
                 return;
         }
 
-        if (attr->map_state != XCB_MAP_STATE_VIEWABLE) {
+        if (needs_to_be_mapped && attr->map_state != XCB_MAP_STATE_VIEWABLE) {
                 LOG("Window not mapped, not managing\n");
                 goto out;
         }
