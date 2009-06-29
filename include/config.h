@@ -12,6 +12,8 @@
  *
  */
 
+/* FIXME: this file lacks documentation */
+
 #ifndef _CONFIG_H
 #define _CONFIG_H
 

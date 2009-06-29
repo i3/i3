@@ -32,8 +32,8 @@
 } \
 while (0)
 
-/* ##__VA_ARGS__ means: leave out __VA_ARGS__ completely if it is empty, that is,
-   delete the preceding comma */
+/** ##__VA_ARGS__ means: leave out __VA_ARGS__ completely if it is empty, that
+   is, delete the preceding comma */
 #define LOG(fmt, ...) slog("%s:%s:%d - " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 TAILQ_HEAD(keyvalue_table_head, keyvalue_element);
@@ -57,22 +57,22 @@ void slog(char *fmt, ...);
 void die(char *fmt, ...) __attribute__((__noreturn__));
 
 /**
- * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that there
- * is no more memory available)
+ * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that
+ * there is no more memory available)
  *
  */
 void *smalloc(size_t size);
 
 /**
- * Safe-wrapper around calloc which exits if malloc returns NULL (meaning that there
- * is no more memory available)
+ * Safe-wrapper around calloc which exits if malloc returns NULL (meaning that
+ * there is no more memory available)
  *
  */
 void *scalloc(size_t size);
 
 /**
- * Safe-wrapper around strdup which exits if malloc returns NULL (meaning that there
- * is no more memory available)
+ * Safe-wrapper around strdup which exits if malloc returns NULL (meaning that
+ * there is no more memory available)
  *
  */
 char *sstrdup(const char *str);
@@ -84,40 +84,43 @@ char *sstrdup(const char *str);
 bool table_put(struct keyvalue_table_head *head, uint32_t key, void *value);
 
 /**
- * Removes the element from the given keyvalue-table with the given key and returns its value;
+ * Removes the element from the given keyvalue-table with the given key and
+ * returns its value;
  *
  */
 void *table_remove(struct keyvalue_table_head *head, uint32_t key);
 
 /**
- * Returns the value of the element of the given keyvalue-table with the given key.
+ * Returns the value of the element of the given keyvalue-table with the given
+ * key.
  *
  */
 void *table_get(struct keyvalue_table_head *head, uint32_t key);
 
 /**
- * Starts the given application by passing it through a shell. We use double fork
- * to avoid zombie processes. As the started application’s parent exits (immediately),
- * the application is reparented to init (process-id 1), which correctly handles
- * childs, so we don’t have to do it :-).
+ * Starts the given application by passing it through a shell. We use double
+ * fork to avoid zombie processes. As the started application’s parent exits
+ * (immediately), the application is reparented to init (process-id 1), which
+ * correctly handles childs, so we don’t have to do it :-).
  *
- * The shell is determined by looking for the SHELL environment variable. If it
- * does not exist, /bin/sh is used.
+ * The shell is determined by looking for the SHELL environment variable. If
+ * it does not exist, /bin/sh is used.
  *
  */
 void start_application(const char *command);
 
 /**
- * Checks a generic cookie for errors and quits with the given message if there
- * was an error.
+ * Checks a generic cookie for errors and quits with the given message if
+ * there was an error.
  *
  */
-void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_message);
+void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie,
+                 char *err_message);
 
 /**
  * Converts the given string to UCS-2 big endian for use with
- * xcb_image_text_16(). The amount of real glyphs is stored in real_strlen,
- * a buffer containing the UCS-2 encoded string (16 bit per glyph) is
+ * xcb_image_text_16(). The amount of real glyphs is stored in real_strlen, a
+ * buffer containing the UCS-2 encoded string (16 bit per glyph) is
  * returned. It has to be freed when done.
  *
  */
@@ -128,15 +131,15 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen);
  * the given container, optionally excluding the given client.
  *
  */
-Client *get_last_focused_client(xcb_connection_t *conn, Container *container, Client *exclude);
+Client *get_last_focused_client(xcb_connection_t *conn, Container *container,
+                                Client *exclude);
 
 /**
  * Unmaps all clients (and stack windows) of the given workspace.
  *
- * This needs to be called separately when temporarily rendering
- * a workspace which is not the active workspace to force
- * reconfiguration of all clients, like in src/xinerama.c when
- * re-assigning a workspace to another screen.
+ * This needs to be called separately when temporarily rendering a workspace
+ * which is not the active workspace to force reconfiguration of all clients,
+ * like in src/xinerama.c when re-assigning a workspace to another screen.
  *
  */
 void unmap_workspace(xcb_connection_t *conn, Workspace *u_ws);
@@ -154,8 +157,8 @@ void unmap_workspace(xcb_connection_t *conn, Workspace *u_ws);
 
 /**
  * Sets the given client as focused by updating the data structures correctly,
- * updating the X input focus and finally re-decorating both windows (to signalize
- * the user the new focus situation)
+ * updating the X input focus and finally re-decorating both windows (to
+ * signalize the user the new focus situation)
  *
  */
 void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways);
@@ -168,7 +171,8 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways);
 void leave_stack_mode(xcb_connection_t *conn, Container *container);
 
 /**
- * Switches the layout of the given container taking care of the necessary house-keeping
+ * Switches the layout of the given container taking care of the necessary
+ * house-keeping
  *
  */
 void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode);
@@ -179,7 +183,7 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode);
  * will be checked.
  *
  */
-Client *get_matching_client(xcb_connection_t *conn, const char *window_classtitle,
-                            Client *specific);
+Client *get_matching_client(xcb_connection_t *conn,
+                            const char *window_classtitle, Client *specific);
 
 #endif

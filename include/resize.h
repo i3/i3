@@ -21,7 +21,8 @@ typedef enum { O_HORIZONTAL, O_VERTICAL } resize_orientation_t;
  * the table column/row.
  *
  */
-int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, int second,
-                             resize_orientation_t orientation, xcb_button_press_event_t *event);
+int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first,
+                             int second, resize_orientation_t orientation,
+                             xcb_button_press_event_t *event);
 
 #endif

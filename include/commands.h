@@ -13,7 +13,8 @@
 
 #include <xcb/xcb.h>
 
-bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction);
+bool focus_window_in_container(xcb_connection_t *conn, Container *container,
+                               direction_t direction);
 
 /** Switches to the given workspace */
 void show_workspace(xcb_connection_t *conn, int workspace);
