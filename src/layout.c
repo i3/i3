@@ -362,6 +362,9 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         xcb_configure_window(conn, stack_win->window, mask, values);
                 }
 
+                /* Prepare the pixmap for usage */
+                cached_pixmap_prepare(conn, &(stack_win->pixmap));
+
                 /* Render the decorations of all clients */
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* If the client is in fullscreen mode, it does not get reconfigured */
@@ -384,9 +387,12 @@ void render_container(xcb_connection_t *conn, Container *container) {
 
                         client->force_reconfigure = false;
 
-                        decorate_window(conn, client, stack_win->window, stack_win->gc,
+                        decorate_window(conn, client, stack_win->pixmap.id, stack_win->pixmap.gc,
                                         current_client++ * decoration_height);
                 }
+
+                xcb_copy_area(conn, stack_win->pixmap.id, stack_win->window, stack_win->pixmap.gc,
+                              0, 0, 0, 0, stack_win->rect.width, stack_win->rect.height);
         }
 }
 

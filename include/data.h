@@ -101,6 +101,22 @@ struct Colorpixel {
         SLIST_ENTRY(Colorpixel) colorpixels;
 };
 
+struct Cached_Pixmap {
+        xcb_pixmap_t id;
+
+        /* We’re going to paint on it, so a graphics context will be needed */
+        xcb_gcontext_t gc;
+
+        /* The rect with which the pixmap was created */
+        Rect rect;
+
+        /* The rect of the object to which this pixmap belongs. Necessary to
+         * find out when we need to re-create the pixmap. */
+        Rect *referred_rect;
+
+        xcb_drawable_t referred_drawable;
+};
+
 /**
  * Contains data for the windows needed to draw the titlebars on in stacking
  * mode
@@ -108,7 +124,7 @@ struct Colorpixel {
  */
 struct Stack_Window {
         xcb_window_t window;
-        xcb_gcontext_t gc;
+        struct Cached_Pixmap pixmap;
         Rect rect;
 
         /** Backpointer to the container this stack window is in */

@@ -143,4 +143,13 @@ void xcb_get_numlock_mask(xcb_connection_t *conn);
  */
 void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window);
 
+/**
+ *
+ * Prepares the given Cached_Pixmap for usage (checks whether the size of the
+ * object this pixmap is related to (e.g. a window) has changed and re-creates
+ * the pixmap if so).
+ *
+ */
+void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap);
+
 #endif

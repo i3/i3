@@ -71,6 +71,9 @@ xcb_atom_t atoms[NUM_ATOMS];
 
 int num_screens = 0;
 
+/* The depth of the root screen (used e.g. for creating new pixmaps later) */
+uint8_t root_depth;
+
 /*
  * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
  * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop
@@ -261,7 +264,9 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_property_set_handler(&prophs, WM_NORMAL_HINTS, UINT_MAX, handle_normal_hints, NULL);
 
         /* Get the root window and set the event mask */
-        root = xcb_aux_get_screen(conn, screens)->root;
+        xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
+        root = root_screen->root;
+        root_depth = root_screen->root_depth;
 
         uint32_t mask = XCB_CW_EVENT_MASK;
         uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |

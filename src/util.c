@@ -385,7 +385,8 @@ void leave_stack_mode(xcb_connection_t *conn, Container *container) {
 
         SLIST_REMOVE(&stack_wins, stack_win, Stack_Window, stack_windows);
 
-        xcb_free_gc(conn, stack_win->gc);
+        xcb_free_gc(conn, stack_win->pixmap.gc);
+        xcb_free_pixmap(conn, stack_win->pixmap.id);
         xcb_destroy_window(conn, stack_win->window);
 
         stack_win->rect.width = -1;
@@ -423,9 +424,11 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
                 struct Stack_Window *stack_win = &(container->stack_win);
                 stack_win->window = create_window(conn, rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
 
-                /* Generate a graphics context for the titlebar */
-                stack_win->gc = xcb_generate_id(conn);
-                xcb_create_gc(conn, stack_win->gc, stack_win->window, 0, 0);
+                /* Initialize the entry for our cached pixmap. It will be
+                 * created as soon as it’s needed (see cached_pixmap_prepare). */
+                memset(&(stack_win->pixmap), 0, sizeof(struct Cached_Pixmap));
+                stack_win->pixmap.referred_rect = &stack_win->rect;
+                stack_win->pixmap.referred_drawable = stack_win->window;
 
                 stack_win->container = container;
 
