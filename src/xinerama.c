@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <time.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xinerama.h>
@@ -156,46 +157,55 @@ static void disable_xinerama(xcb_connection_t *conn) {
 static void query_screens(xcb_connection_t *conn, struct screens_head *screenlist) {
         xcb_xinerama_query_screens_reply_t *reply;
         xcb_xinerama_screen_info_t *screen_info;
+        time_t before_trying = time(NULL);
 
-        reply = xcb_xinerama_query_screens_reply(conn, xcb_xinerama_query_screens_unchecked(conn), NULL);
-        if (!reply) {
-                LOG("Couldn't get Xinerama screens\n");
-                return;
-        }
-        screen_info = xcb_xinerama_query_screens_screen_info(reply);
-        int screens = xcb_xinerama_query_screens_screen_info_length(reply);
-        num_screens = 0;
+        /* Try repeatedly to find screens (there might be short timeframes in
+         * which the X server does not return any screens, such as when rotating
+         * screens), but not longer than 5 seconds (strictly speaking, only four
+         * seconds of trying are guaranteed due to the 1-second-resolution) */
+        while ((time(NULL) - before_trying) < 5) {
+                reply = xcb_xinerama_query_screens_reply(conn, xcb_xinerama_query_screens_unchecked(conn), NULL);
+                if (!reply) {
+                        LOG("Couldn't get Xinerama screens\n");
+                        return;
+                }
+                screen_info = xcb_xinerama_query_screens_screen_info(reply);
+                int screens = xcb_xinerama_query_screens_screen_info_length(reply);
+                num_screens = 0;
 
-        for (int screen = 0; screen < screens; screen++) {
-                i3Screen *s = get_screen_at(screen_info[screen].x_org, screen_info[screen].y_org, screenlist);
-                if (s!= NULL) {
-                        /* This screen already exists. We use the littlest screen so that the user
-                           can always see the complete workspace */
-                        s->rect.width = min(s->rect.width, screen_info[screen].width);
-                        s->rect.height = min(s->rect.height, screen_info[screen].height);
-                } else {
-                        s = calloc(sizeof(i3Screen), 1);
-                        s->rect.x = screen_info[screen].x_org;
-                        s->rect.y = screen_info[screen].y_org;
-                        s->rect.width = screen_info[screen].width;
-                        s->rect.height = screen_info[screen].height;
-                        /* We always treat the screen at 0x0 as the primary screen */
-                        if (s->rect.x == 0 && s->rect.y == 0)
-                                TAILQ_INSERT_HEAD(screenlist, s, screens);
-                        else TAILQ_INSERT_TAIL(screenlist, s, screens);
-                        num_screens++;
+                for (int screen = 0; screen < screens; screen++) {
+                        i3Screen *s = get_screen_at(screen_info[screen].x_org, screen_info[screen].y_org, screenlist);
+                        if (s!= NULL) {
+                                /* This screen already exists. We use the littlest screen so that the user
+                                   can always see the complete workspace */
+                                s->rect.width = min(s->rect.width, screen_info[screen].width);
+                                s->rect.height = min(s->rect.height, screen_info[screen].height);
+                        } else {
+                                s = calloc(sizeof(i3Screen), 1);
+                                s->rect.x = screen_info[screen].x_org;
+                                s->rect.y = screen_info[screen].y_org;
+                                s->rect.width = screen_info[screen].width;
+                                s->rect.height = screen_info[screen].height;
+                                /* We always treat the screen at 0x0 as the primary screen */
+                                if (s->rect.x == 0 && s->rect.y == 0)
+                                        TAILQ_INSERT_HEAD(screenlist, s, screens);
+                                else TAILQ_INSERT_TAIL(screenlist, s, screens);
+                                num_screens++;
+                        }
+
+                        LOG("found Xinerama screen: %d x %d at %d x %d\n",
+                                        screen_info[screen].width, screen_info[screen].height,
+                                        screen_info[screen].x_org, screen_info[screen].y_org);
                 }
 
-                LOG("found Xinerama screen: %d x %d at %d x %d\n",
-                                screen_info[screen].width, screen_info[screen].height,
-                                screen_info[screen].x_org, screen_info[screen].y_org);
-        }
+                free(reply);
 
-        free(reply);
+                if (num_screens == 0) {
+                        LOG("No screens found. This is weird. Trying again...\n");
+                        continue;
+                }
 
-        if (num_screens == 0) {
-                LOG("No screens found. This is weird.\n");
-                exit(1);
+                break;
         }
 }
 
