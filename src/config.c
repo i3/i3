@@ -260,6 +260,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath)
                                 *end = '\0';
                         }
 
+                        /* Strip trailing whitespace */
+                        while (strlen(value) > 0 && value[strlen(value)-1] == ' ')
+                                value[strlen(value)-1] = '\0';
+
                         /* The target is the last argument separated by a space */
                         if ((target = strrchr(value, ' ')) == NULL)
                                 die("Malformed assignment, couldn't find target\n");
