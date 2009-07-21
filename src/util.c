@@ -367,6 +367,22 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         if ((old_client != NULL) && (old_client != client) && !old_client->dock)
                 redecorate_window(conn, old_client);
 
+        /* If the last client was a floating client, we need to go to the next
+         * tiling client in stack and re-decorate it. */
+        if (client_is_floating(old_client)) {
+                LOG("Coming from floating client, searching next tiling...\n");
+                Client *current;
+                SLIST_FOREACH(current, &(client->workspace->focus_stack), focus_clients) {
+                        if (client_is_floating(current))
+                                continue;
+
+                        LOG("Found window: %p / child %p\n", current->frame, current->child);
+                        redecorate_window(conn, current);
+                        break;
+                }
+
+        }
+
         SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
         SLIST_INSERT_HEAD(&(client->workspace->focus_stack), client, focus_clients);
 
