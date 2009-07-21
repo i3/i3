@@ -250,7 +250,12 @@ struct Assignment {
         /** floating is true if this was an assignment to the special
          * workspace "~".  Matching clients will be put into floating mode
          * automatically. */
-        bool floating;
+        enum {
+                ASSIGN_FLOATING_NO,   /* don’t float, but put on a workspace */
+                ASSIGN_FLOATING_ONLY, /* float, but don’t assign on a workspace */
+                ASSIGN_FLOATING       /* float and put on a workspace */
+        } floating;
+
         /** The number of the workspace to assign to. */
         int workspace;
         TAILQ_ENTRY(Assignment) assignments;

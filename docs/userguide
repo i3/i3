@@ -259,13 +259,14 @@ i3 will get the title as soon as the application maps the window (mapping means
 actually displaying it on the screen), you’d need to have to match on Firefox
 in this case.
 
-You can use the special workspace +~+ to specify that matching clients should
-be put into floating mode.
+You can prefix or suffix workspaces with a +~+ to specify that matching clients
+should be put into floating mode. If you specify only a +~+, the client will
+not be put onto any workspace, but will be set floating on the current one.
 
 *Syntax*:
-----------------------------------------------------
-assign ["]window class[/window title]["] [→] workspace
-----------------------------------------------------
+------------------------------------------------------------
+assign ["]window class[/window title]["] [→] [~ | workspace]
+------------------------------------------------------------
 
 *Examples*:
 ----------------------
@@ -273,7 +274,8 @@ assign urxvt 2
 assign urxvt → 2
 assign "urxvt" → 2
 assign "urxvt/VIM" → 3
-assign "gecko" → ~
+assign "gecko" → ~4
+assign "xv/MPlayer" → ~
 ----------------------
 
 === Automatically starting applications on startup
