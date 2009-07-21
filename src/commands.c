@@ -845,6 +845,31 @@ static char **append_argument(char **original, char *argument) {
 
         return result;
 }
+/* 
+ * switch to next or previous existing workspace
+ */
+static void next_previous_workspace(xcb_connection_t *conn, int direction) {
+	Workspace *t_ws;
+	int i;
+	if (direction == 'n') {
+		if (c_ws->num == 9) 
+			return;
+		for ( i = c_ws->num + 1; i <= 9; i++) {
+			t_ws = &(workspaces[i]);
+			if (t_ws->screen != NULL) break;
+		}
+	} else if (direction == 'p' ) {
+		if (c_ws->num == 0) 
+			return;
+		for (i = c_ws->num - 1; i >= 0 ; i--) {
+			t_ws = &(workspaces[i]);
+			if (t_ws->screen != NULL) break;
+		}
+	}
+       if (t_ws->screen != NULL)
+               show_workspace(conn,i+1);
+}
+
 
 /*
  * Parses a command, see file CMDMODE for more information
@@ -982,7 +1007,14 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
                 return;
         }
+	/* Is it 'n' for next workspace (nw) */
+	if (command[0] == 'n' && command[1] == 'w') {
+               next_previous_workspace(conn, command[0]);
+	}
 
+        if (command[0] == 'p' && command[1] == 'w') {
+               next_previous_workspace(conn, command[0]);
+	}
         /* It’s a normal <cmd> */
         char *rest = NULL;
         enum { ACTION_FOCUS, ACTION_MOVE, ACTION_SNAP } action = ACTION_FOCUS;
