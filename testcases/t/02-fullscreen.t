@@ -6,7 +6,7 @@ use X11::XCB qw(:all);
 
 # We use relatively long sleeps (1/4 second) to make sure the window manager
 # reacted.
-use Time::HiRes qw(usleep);
+use Time::HiRes qw(sleep);
 
 BEGIN {
 	use_ok('X11::XCB::Window');
@@ -30,17 +30,17 @@ is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
 $window->create;
 $window->map;
 
-usleep(0.25);
+sleep(0.25);
 
 my $new_rect = $window->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned");
 $original_rect = $new_rect;
 
-usleep(0.25);
+sleep(0.25);
 
 $window->fullscreen(1);
 
-usleep(0.25);
+sleep(0.25);
 
 $new_rect = $window->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned after fullscreen");
