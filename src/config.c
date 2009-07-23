@@ -57,6 +57,36 @@ static void replace_variable(char *buffer, const char *key, const char *value) {
         }
 }
 
+/* UnGrab the bound keys */
+
+void ungrab_all_keys(xcb_connection_t *conn) {
+        Binding *bind;
+        TAILQ_FOREACH(bind, &bindings, bindings) {
+                LOG("UnGrabbing %d\n", bind->keycode);
+                #define UNGRAB_KEY(modifier) xcb_ungrab_key(conn,bind->keycode,root,modifier);
+                UNGRAB_KEY(bind->keycode);
+        }
+}
+
+/* Grab the bound keys */
+void grab_all_keys(xcb_connection_t *conn) {
+        Binding *bind;
+        TAILQ_FOREACH(bind, &bindings, bindings) {
+                LOG("Grabbing %d\n", bind->keycode);
+                if ( bind->mods & BIND_MODE_SWITCH ) 
+                        xcb_grab_key(conn, 0, root, 0, bind->keycode, 
+                                XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
+                else {
+                        /* Grab the key in all combinations */
+                        #define GRAB_KEY(modifier) xcb_grab_key(conn, 0, root, modifier, bind->keycode, \
+                                                                XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC)
+                        GRAB_KEY(bind->mods);
+                        GRAB_KEY(bind->mods | xcb_numlock_mask);
+                        GRAB_KEY(bind->mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
+                }
+        }
+}
+
 /*
  * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
  *
@@ -64,7 +94,28 @@ static void replace_variable(char *buffer, const char *key, const char *value) {
  * configuration file.
  *
  */
-void load_configuration(xcb_connection_t *conn, const char *override_configpath) {
+void load_configuration(xcb_connection_t *conn, const char *override_configpath,bool reload) {
+
+        if(reload) {
+                /* First ungrab the keys */
+                ungrab_all_keys(conn);
+                /* clean up lists */
+                Binding *bind;
+                TAILQ_FOREACH(bind,&bindings,bindings) {
+                       TAILQ_REMOVE(&bindings,bind,bindings); 
+                       free(bind->command);
+                       free(bind);
+                }
+
+                struct Assignment *assign;
+                TAILQ_FOREACH(assign,&assignments,assignments) {
+                        TAILQ_REMOVE(&assignments,assign,assignments);
+                                free(assign->windowclass_title);
+                                free(assign)
+                }
+        }
+
+
         SLIST_HEAD(variables_head, Variable) variables;
 
 #define OPTION_STRING(name) \
@@ -321,6 +372,9 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath)
 
                 die("Unknown configfile option: %s\n", key);
         }
+        /* now grab all keys again */
+        if(reload)
+            grab_all_keys(conn);
         fclose(handle);
 
         REQUIRED_OPTION(terminal);

@@ -69,6 +69,7 @@ struct stack_wins_head stack_wins = SLIST_HEAD_INITIALIZER(stack_wins);
 xcb_event_handlers_t evenths;
 xcb_atom_t atoms[NUM_ATOMS];
 
+xcb_window_t root;
 int num_screens = 0;
 
 /* The depth of the root screen (used e.g. for creating new pixmaps later) */
@@ -111,7 +112,6 @@ int main(int argc, char *argv[], char *env[]) {
         bool autostart = true;
         xcb_connection_t *conn;
         xcb_property_handlers_t prophs;
-        xcb_window_t root;
         xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
 
         setlocale(LC_ALL, "");
@@ -153,7 +153,7 @@ int main(int argc, char *argv[], char *env[]) {
         if (xcb_connection_has_error(conn))
                 die("Cannot open display\n");
 
-        load_configuration(conn, override_configpath);
+        load_configuration(conn, override_configpath,false);
 
         /* Place requests for the atoms we need as soon as possible */
         #define REQUEST_ATOM(name) atom_cookies[name] = xcb_intern_atom(conn, 0, strlen(#name), #name);
@@ -330,21 +330,7 @@ int main(int argc, char *argv[], char *env[]) {
 
         xcb_get_numlock_mask(conn);
 
-        /* Grab the bound keys */
-        Binding *bind;
-        TAILQ_FOREACH(bind, &bindings, bindings) {
-                LOG("Grabbing %d\n", bind->keycode);
-                if (bind->mods & BIND_MODE_SWITCH)
-                        xcb_grab_key(conn, 0, root, 0, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
-                else {
-                        /* Grab the key in all combinations */
-                        #define GRAB_KEY(modifier) xcb_grab_key(conn, 0, root, modifier, bind->keycode, \
-                                                                XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC)
-                        GRAB_KEY(bind->mods);
-                        GRAB_KEY(bind->mods | xcb_numlock_mask);
-                        GRAB_KEY(bind->mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
-                }
-        }
+        grab_all_keys(conn);
 
         /* Autostarting exec-lines */
         struct Autostart *exec;

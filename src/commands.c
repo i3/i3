@@ -26,6 +26,7 @@
 #include "client.h"
 #include "floating.h"
 #include "xcb.h"
+#include "config.h"
 
 bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction) {
         /* If this container is empty, we’re done */
@@ -905,6 +906,12 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         if (STARTS_WITH(command, "exit")) {
                 LOG("User issued exit-command, exiting without error.\n");
                 exit(EXIT_SUCCESS);
+        }
+
+        /* Is it <reload */
+        if (STARTS_WITH(command, "reload")) {
+            load_configuration(conn,NULL,true);
+            return;
         }
 
         /* Is it <restart>? Then restart in place. */

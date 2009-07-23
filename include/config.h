@@ -15,6 +15,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#include <stdbool.h>
 #include "queue.h"
 
 typedef struct Config Config;
@@ -75,6 +76,7 @@ struct Config {
  * configuration file.
  *
  */
-void load_configuration(xcb_connection_t *conn, const char *override_configfile);
+void load_configuration(xcb_connection_t *conn, const char *override_configfile, bool reload);
+void grab_all_keys(xcb_connection_t *conn);
 
 #endif
