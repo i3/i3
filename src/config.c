@@ -57,24 +57,28 @@ static void replace_variable(char *buffer, const char *key, const char *value) {
         }
 }
 
-/* UnGrab the bound keys */
-
+/*
+ * Ungrab the bound keys
+ *
+ */
 void ungrab_all_keys(xcb_connection_t *conn) {
         Binding *bind;
         TAILQ_FOREACH(bind, &bindings, bindings) {
-                LOG("UnGrabbing %d\n", bind->keycode);
-                #define UNGRAB_KEY(modifier) xcb_ungrab_key(conn,bind->keycode,root,modifier);
-                UNGRAB_KEY(bind->keycode);
+                LOG("Ungrabbing %d\n", bind->keycode);
+                xcb_ungrab_key(conn, bind->keycode, root, bind->keycode);
         }
 }
 
-/* Grab the bound keys */
+/*
+ * Grab the bound keys (tell X to send us keypress events for those keycodes)
+ *
+ */
 void grab_all_keys(xcb_connection_t *conn) {
         Binding *bind;
         TAILQ_FOREACH(bind, &bindings, bindings) {
                 LOG("Grabbing %d\n", bind->keycode);
-                if ( bind->mods & BIND_MODE_SWITCH ) 
-                        xcb_grab_key(conn, 0, root, 0, bind->keycode, 
+                if ((bind->mods & BIND_MODE_SWITCH) != 0)
+                        xcb_grab_key(conn, 0, root, 0, bind->keycode,
                                 XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
                 else {
                         /* Grab the key in all combinations */
@@ -94,27 +98,28 @@ void grab_all_keys(xcb_connection_t *conn) {
  * configuration file.
  *
  */
-void load_configuration(xcb_connection_t *conn, const char *override_configpath,bool reload) {
-
-        if(reload) {
+void load_configuration(xcb_connection_t *conn, const char *override_configpath, bool reload) {
+        if (reload) {
                 /* First ungrab the keys */
                 ungrab_all_keys(conn);
-                /* clean up lists */
+
+                /* Clear the old binding and assignment lists */
                 Binding *bind;
-                TAILQ_FOREACH(bind,&bindings,bindings) {
-                       TAILQ_REMOVE(&bindings,bind,bindings); 
-                       free(bind->command);
-                       free(bind);
+                while (!TAILQ_EMPTY(&bindings)) {
+                        bind = TAILQ_FIRST(&bindings);
+                        TAILQ_REMOVE(&bindings, bind, bindings);
+                        FREE(bind->command);
+                        FREE(bind);
                 }
 
                 struct Assignment *assign;
-                TAILQ_FOREACH(assign,&assignments,assignments) {
-                        TAILQ_REMOVE(&assignments,assign,assignments);
-                                free(assign->windowclass_title);
-                                free(assign)
+                while (!TAILQ_EMPTY(&assignments)) {
+                        assign = TAILQ_FIRST(&assignments);
+                        FREE(assign->windowclass_title);
+                        TAILQ_REMOVE(&assignments, assign, assignments);
+                        FREE(assign);
                 }
         }
-
 
         SLIST_HEAD(variables_head, Variable) variables;
 
@@ -293,23 +298,22 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 /* assign window class[/window title] → workspace */
                 if (strcasecmp(key, "assign") == 0) {
                         LOG("assign: \"%s\"\n", value);
-                        char *class_title = sstrdup(value);
+                        char *class_title;
                         char *target;
+                        char *end;
 
                         /* If the window class/title is quoted we skip quotes */
-                        if (class_title[0] == '"') {
-                                class_title++;
-                                char *end = strchr(class_title, '"');
-                                if (end == NULL)
-                                        die("Malformed assignment, couldn't find terminating quote\n");
-                                *end = '\0';
+                        if (value[0] == '"') {
+                                class_title = sstrdup(value+1);
+                                end = strchr(class_title, '"');
                         } else {
+                                class_title = sstrdup(value);
                                 /* If it is not quoted, we terminate it at the first space */
-                                char *end = strchr(class_title, ' ');
-                                if (end == NULL)
-                                        die("Malformed assignment, couldn't find terminating space\n");
-                                *end = '\0';
+                                end = strchr(class_title, ' ');
                         }
+                        if (end == NULL)
+                                die("Malformed assignment, couldn't find terminating quote\n");
+                        *end = '\0';
 
                         /* Strip trailing whitespace */
                         while (strlen(value) > 0 && value[strlen(value)-1] == ' ')
@@ -317,7 +321,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
                         /* The target is the last argument separated by a space */
                         if ((target = strrchr(value, ' ')) == NULL)
-                                die("Malformed assignment, couldn't find target\n");
+                                die("Malformed assignment, couldn't find target (\"%s\")\n", value);
                         target++;
 
                         if (strchr(target, '~') == NULL && (atoi(target) < 1 || atoi(target) > 10))
@@ -373,13 +377,12 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 die("Unknown configfile option: %s\n", key);
         }
         /* now grab all keys again */
-        if(reload)
-            grab_all_keys(conn);
+        if (reload)
+                grab_all_keys(conn);
         fclose(handle);
 
         REQUIRED_OPTION(terminal);
         REQUIRED_OPTION(font);
-
 
         while (!SLIST_EMPTY(&variables)) {
                 struct Variable *v = SLIST_FIRST(&variables);

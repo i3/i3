@@ -153,7 +153,7 @@ int main(int argc, char *argv[], char *env[]) {
         if (xcb_connection_has_error(conn))
                 die("Cannot open display\n");
 
-        load_configuration(conn, override_configpath,false);
+        load_configuration(conn, override_configpath, false);
 
         /* Place requests for the atoms we need as soon as possible */
         #define REQUEST_ATOM(name) atom_cookies[name] = xcb_intern_atom(conn, 0, strlen(#name), #name);

@@ -908,10 +908,10 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 exit(EXIT_SUCCESS);
         }
 
-        /* Is it <reload */
+        /* Is it a <reload>? */
         if (STARTS_WITH(command, "reload")) {
-            load_configuration(conn,NULL,true);
-            return;
+                load_configuration(conn, NULL, true);
+                return;
         }
 
         /* Is it <restart>? Then restart in place. */
