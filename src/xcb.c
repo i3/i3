@@ -292,3 +292,69 @@ void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap)
 
         xcb_create_gc(conn, pixmap->gc, pixmap->id, 0, 0);
 }
+
+/*
+ * Returns the xcb_charinfo_t for the given character (specified by row and
+ * column in the lookup table) if existing, otherwise the minimum bounds.
+ *
+ */
+static xcb_charinfo_t *get_charinfo(int col, int row, xcb_query_font_reply_t *font_info,
+                                    xcb_charinfo_t *table, bool dont_fallback) {
+        xcb_charinfo_t *result;
+
+        /* Bounds checking */
+        if (row < font_info->min_byte1 || row > font_info->max_byte1 ||
+            col < font_info->min_char_or_byte2 || col > font_info->max_char_or_byte2)
+                return NULL;
+
+        /* If we don’t have a table to lookup the infos per character, return the
+         * minimum bounds */
+        if (table == NULL)
+                return &font_info->min_bounds;
+
+        result = &table[((row - font_info->min_byte1) *
+                         (font_info->max_char_or_byte2 - font_info->min_char_or_byte2 + 1)) +
+                        (col - font_info->min_char_or_byte2)];
+
+        /* If the character has an entry in the table, return it */
+        if (result->character_width != 0 ||
+            (result->right_side_bearing |
+             result->left_side_bearing |
+             result->ascent |
+             result->descent) != 0)
+                return result;
+
+        /* Otherwise, get the default character and return its charinfo */
+        if (dont_fallback)
+                return NULL;
+
+        return get_charinfo((font_info->default_char >> 8),
+                            (font_info->default_char & 0xFF),
+                            font_info,
+                            table,
+                            true);
+}
+
+/*
+ * Calculate the width of the given text (16-bit characters, UCS) with given
+ * real length (amount of glyphs) using the given font.
+ *
+ */
+int predict_text_width(xcb_connection_t *conn, char *font_pattern, char *text, int length) {
+        xcb_query_font_reply_t *font_info;
+        xcb_charinfo_t *table;
+        int i, width;
+        i3Font *font = load_font(conn, font_pattern);
+
+        font_info = xcb_query_font_reply(conn, xcb_query_font_unchecked(conn, font->id), NULL);
+        table = xcb_query_font_char_infos(font_info);
+
+        for (i = 0; i < 2 * length; i += 2) {
+                xcb_charinfo_t *info = get_charinfo(text[i+1], text[i], font_info, table, false);
+                if (info == NULL)
+                        continue;
+                width += info->character_width;
+        }
+
+        return width;
+}
