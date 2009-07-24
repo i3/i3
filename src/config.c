@@ -18,6 +18,7 @@
 #include "util.h"
 #include "config.h"
 #include "xcb.h"
+#include "table.h"
 
 Config config;
 
@@ -292,6 +293,37 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
                         LOG("Floating modifiers = %d\n", modifiers);
                         config.floating_modifier = modifiers;
+                        continue;
+                }
+
+                /* name "workspace number" "name of the workspace" */
+                if (strcasecmp(key, "name") == 0) {
+                        LOG("name workspace: %s\n",value);
+                        char *ws_str = sstrdup(value);
+                        char *end = strchr(ws_str, ' ');
+                        if (end == NULL)
+                            die("Malformed name, couln't find terminating space\n");
+                        *end='\0';
+
+                        /* Strip trailing whitespace */
+                        while (strlen(value) > 0 && value[strlen(value)-1] == ' ')
+                            value[strlen(value)-1] = '\0';
+
+                        int ws_num=atoi(ws_str);
+
+                        if ( ws_num < 1 || ws_num > 10 )
+                            die("Malformed name, invalid workspace Number\n");
+
+                        /* find the name */
+                        char *name= value;
+                        name += strlen(ws_str) + 1;
+
+                        /* if no name reinitialize the name to NULL for reload */
+                        if (name == '\0') {
+                            workspaces[ws_num - 1].name=NULL;
+                            continue;
+                        }
+                        workspaces[ws_num - 1].name=sstrdup(name);
                         continue;
                 }
 

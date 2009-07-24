@@ -165,6 +165,9 @@ struct Workspace {
         /** Number of this workspace, starting from 0 */
         int num;
 
+        /** Name of the workspave */
+        char *name;
+
         /** x, y, width, height */
         Rect rect;
 
