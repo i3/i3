@@ -152,4 +152,12 @@ void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window);
  */
 void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap);
 
+/**
+ * Calculate the width of the given text (16-bit characters, UCS) with given
+ * real length (amount of glyphs) using the given font.
+ *
+ */
+int predict_text_width(xcb_connection_t *conn, char *font_pattern, char *text,
+                       int length);
+
 #endif
