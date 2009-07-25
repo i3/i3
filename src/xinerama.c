@@ -114,7 +114,7 @@ static void initialize_screen(xcb_connection_t *conn, i3Screen *screen, Workspac
                          font->height + 6};
         uint32_t mask = XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
         uint32_t values[] = {1, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS};
-        screen->bar = create_window(conn, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
+        screen->bar = create_window(conn, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, true, mask, values);
         screen->bargc = xcb_generate_id(conn);
         xcb_create_gc(conn, screen->bargc, screen->bar, 0, 0);
 

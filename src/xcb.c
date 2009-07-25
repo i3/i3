@@ -90,7 +90,7 @@ uint32_t get_colorpixel(xcb_connection_t *conn, char *hex) {
  *
  */
 xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class, int cursor,
-                           uint32_t mask, uint32_t *values) {
+                           bool map, uint32_t mask, uint32_t *values) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         xcb_window_t result = xcb_generate_id(conn);
         xcb_cursor_t cursor_id = xcb_generate_id(conn);
@@ -121,7 +121,8 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
                 xcb_change_window_attributes(conn, result, XCB_CW_CURSOR, &cursor_id);
 
         /* Map the window (= make it visible) */
-        xcb_map_window(conn, result);
+        if (map)
+                xcb_map_window(conn, result);
 
         return result;
 }

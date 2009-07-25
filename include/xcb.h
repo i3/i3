@@ -89,7 +89,7 @@ uint32_t get_colorpixel(xcb_connection_t *conn, char *hex);
  *
  */
 xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class,
-                           int cursor, uint32_t mask, uint32_t *values);
+                           int cursor, bool map, uint32_t mask, uint32_t *values);
 
 /**
  * Changes a single value in the graphic context (so one doesn’t have to

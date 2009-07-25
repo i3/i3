@@ -282,9 +282,6 @@ void render_container(xcb_connection_t *conn, Container *container) {
         Client *client;
         int num_clients = 0, current_client = 0;
 
-        if (container->currently_focused == NULL)
-                return;
-
         CIRCLEQ_FOREACH(client, &(container->clients), clients)
                 num_clients++;
 

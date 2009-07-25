@@ -140,9 +140,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         values[0] = CHILD_EVENT_MASK;
         xcb_change_window_attributes(conn, child, mask, values);
 
-        /* Map the window first to avoid flickering */
-        xcb_map_window(conn, child);
-
         /* Place requests for properties ASAP */
         wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
         strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
@@ -201,7 +198,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                           height + 2 + 2 + font->height}; /* 2 px border plus font’s height */
 
         /* Yo dawg, I heard you like windows, so I create a window around your window… */
-        new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
+        new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, false, mask, values);
 
         /* Set WM_STATE_NORMAL because GTK applications don’t want to drag & drop if we don’t.
          * Also, xprop(1) needs that to work. */
@@ -351,14 +348,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         uint32_t values[] = { XCB_STACK_MODE_BELOW };
                         xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
                 }
-        } else if (!new->dock) {
-                /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
-                if (new->container->workspace->fullscreen_client == NULL) {
-                        if (!client_is_floating(new))
-                                new->container->currently_focused = new;
-                        if (new->container == CUR_CELL)
-                                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
-                }
         }
 
         /* Insert into the currently active container, if it’s not a dock window */
@@ -420,4 +409,19 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 }
 
         render_layout(conn);
+
+        /* Map the window first to avoid flickering */
+        xcb_map_window(conn, new->frame);
+        xcb_map_window(conn, child);
+        if (CUR_CELL->workspace->fullscreen_client == NULL && !new->dock) {
+                /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
+                if (new->container->workspace->fullscreen_client == NULL) {
+                        if (!client_is_floating(new))
+                                new->container->currently_focused = new;
+                        if (new->container == CUR_CELL)
+                                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
+                }
+        }
+
+        xcb_flush(conn);
 }
