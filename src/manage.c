@@ -415,10 +415,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         xcb_map_window(conn, child);
         if (CUR_CELL->workspace->fullscreen_client == NULL && !new->dock) {
                 /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
-                if (new->container->workspace->fullscreen_client == NULL) {
+                if (new->workspace->fullscreen_client == NULL) {
                         if (!client_is_floating(new))
                                 new->container->currently_focused = new;
-                        if (new->container == CUR_CELL)
+                        if (new->container == CUR_CELL || client_is_floating(new))
                                 xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
                 }
         }
