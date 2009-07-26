@@ -134,6 +134,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         uint32_t mask = 0;
         uint32_t values[3];
         uint16_t original_height = height;
+        bool map_frame = true;
 
         /* We are interested in property changes */
         mask = XCB_CW_EVENT_MASK;
@@ -337,7 +338,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         new->workspace = t_ws;
                         old_focused = new->container->currently_focused;
 
-                        xcb_unmap_window(conn, new->frame);
+                        map_frame = false;
                         break;
                 }
         }
@@ -411,8 +412,9 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         render_layout(conn);
 
         /* Map the window first to avoid flickering */
-        xcb_map_window(conn, new->frame);
         xcb_map_window(conn, child);
+        if (map_frame)
+                xcb_map_window(conn, new->frame);
         if (CUR_CELL->workspace->fullscreen_client == NULL && !new->dock) {
                 /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
                 if (new->workspace->fullscreen_client == NULL) {
