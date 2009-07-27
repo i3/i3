@@ -369,7 +369,7 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
 
         /* If the last client was a floating client, we need to go to the next
          * tiling client in stack and re-decorate it. */
-        if (client_is_floating(old_client)) {
+        if (old_client != NULL && client_is_floating(old_client)) {
                 LOG("Coming from floating client, searching next tiling...\n");
                 Client *current;
                 SLIST_FOREACH(current, &(client->workspace->focus_stack), focus_clients) {
