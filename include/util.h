@@ -9,12 +9,14 @@
  *
  */
 #include <xcb/xcb.h>
+#include <err.h>
 
 #include "data.h"
 
 #ifndef _UTIL_H
 #define _UTIL_H
 
+#define die(...) errx(EXIT_FAILURE, __VA_ARGS__);
 #define exit_if_null(pointer, ...) { if (pointer == NULL) die(__VA_ARGS__); }
 #define STARTS_WITH(string, needle) (strncasecmp(string, needle, strlen(needle)) == 0)
 #define CIRCLEQ_NEXT_OR_NULL(head, elm, field) (CIRCLEQ_NEXT(elm, field) != CIRCLEQ_END(head) ? \
@@ -49,12 +51,6 @@ int max(int a, int b);
  *
  */
 void slog(char *fmt, ...);
-
-/**
- * Prints the message (see printf()) to stderr, then exits the program.
- *
- */
-void die(char *fmt, ...) __attribute__((__noreturn__));
 
 /**
  * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that

@@ -63,33 +63,19 @@ void slog(char *fmt, ...) {
 }
 
 /*
- * Prints the message (see printf()) to stderr, then exits the program.
- *
- */
-void die(char *fmt, ...) {
-        va_list args;
-
-        va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
-        va_end(args);
-
-        exit(EXIT_FAILURE);
-}
-
-/*
  * The s* functions (safe) are wrappers around malloc, strdup, …, which exits if one of
  * the called functions returns NULL, meaning that there is no more memory available
  *
  */
 void *smalloc(size_t size) {
         void *result = malloc(size);
-        exit_if_null(result, "Error: out of memory (malloc(%d))\n", size);
+        exit_if_null(result, "Error: out of memory (malloc(%zd))\n", size);
         return result;
 }
 
 void *scalloc(size_t size) {
         void *result = calloc(size, 1);
-        exit_if_null(result, "Error: out of memory (calloc(%d))\n", size);
+        exit_if_null(result, "Error: out of memory (calloc(%zd))\n", size);
         return result;
 }
 
