@@ -22,6 +22,7 @@
 
 #define NUM_ATOMS 17
 
+extern xcb_connection_t *global_conn;
 extern char **start_argv;
 extern Display *xkbdpy;
 extern TAILQ_HEAD(bindings_head, Binding) bindings;

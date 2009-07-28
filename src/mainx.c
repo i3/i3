@@ -45,6 +45,9 @@
 #include "xcb.h"
 #include "xinerama.h"
 #include "manage.h"
+#include "ipc.h"
+
+xcb_connection_t *global_conn;
 
 /* This is the path to i3, copied from argv[0] when starting up */
 char **start_argv;
@@ -148,7 +151,7 @@ int main(int argc, char *argv[], char *env[]) {
         memset(&evenths, 0, sizeof(xcb_event_handlers_t));
         memset(&prophs, 0, sizeof(xcb_property_handlers_t));
 
-        conn = xcb_connect(NULL, &screens);
+        conn = global_conn = xcb_connect(NULL, &screens);
 
         if (xcb_connection_has_error(conn))
                 die("Cannot open display\n");
@@ -364,6 +367,16 @@ int main(int argc, char *argv[], char *env[]) {
         if (screen->current_workspace != 0) {
                 LOG("Ok, I need to go to the other workspace\n");
                 c_ws = &workspaces[screen->current_workspace];
+        }
+
+        /* Create the UNIX domain socket for IPC */
+        int ipc_socket = ipc_create_socket("/tmp/i3.s");
+        if (ipc_socket == -1) {
+                LOG("Could not create the IPC socket, IPC disabled\n");
+        } else {
+                struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
+                ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
+                ev_io_start(loop, ipc_io);
         }
 
         /* Handle the events which arrived until now */
