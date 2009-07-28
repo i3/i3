@@ -370,13 +370,15 @@ int main(int argc, char *argv[], char *env[]) {
         }
 
         /* Create the UNIX domain socket for IPC */
-        int ipc_socket = ipc_create_socket("/tmp/i3.s");
-        if (ipc_socket == -1) {
-                LOG("Could not create the IPC socket, IPC disabled\n");
-        } else {
-                struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
-                ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
-                ev_io_start(loop, ipc_io);
+        if (config.ipc_socket_path != NULL) {
+                int ipc_socket = ipc_create_socket(config.ipc_socket_path);
+                if (ipc_socket == -1) {
+                        LOG("Could not create the IPC socket, IPC disabled\n");
+                } else {
+                        struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
+                        ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
+                        ev_io_start(loop, ipc_io);
+                }
         }
 
         /* Handle the events which arrived until now */

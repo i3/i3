@@ -26,7 +26,7 @@ install: all
 	$(INSTALL) -m 0755 i3 $(DESTDIR)/usr/bin/
 	test -e $(DESTDIR)/etc/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)/etc/i3/config
 	$(INSTALL) -m 0644 i3.desktop $(DESTDIR)/usr/share/xsessions/
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg
+	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg install
 
 dist: clean
 	[ ! -d i3-${VERSION} ] || rm -rf i3-${VERSION}

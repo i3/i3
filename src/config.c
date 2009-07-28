@@ -408,6 +408,11 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         continue;
                 }
 
+                if (strcasecmp(key, "ipc-socket") == 0) {
+                        config.ipc_socket_path = sstrdup(value);
+                        continue;
+                }
+
                 die("Unknown configfile option: %s\n", key);
         }
         /* now grab all keys again */
