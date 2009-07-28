@@ -27,6 +27,11 @@
 #include <stdint.h>
 #include <getopt.h>
 
+/*
+ * Formats a message (payload) of the given size and type and sends it to i3 via
+ * the given socket file descriptor.
+ *
+ */
 static void ipc_send_message(int sockfd, uint32_t message_size,
                              uint32_t message_type, uint8_t *payload) {
         int buffer_size = strlen("i3-ipc") + sizeof(uint32_t) + sizeof(uint32_t) + message_size;
@@ -90,12 +95,15 @@ int main(int argc, char *argv[]) {
         }
 
         int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
+        if (sockfd == -1)
+                err(EXIT_FAILURE, "Could not create socket");
+
         struct sockaddr_un addr;
         memset(&addr, 0, sizeof(struct sockaddr_un));
         addr.sun_family = AF_LOCAL;
         strcpy(addr.sun_path, socket_path);
         if (connect(sockfd, &addr, sizeof(struct sockaddr_un)) < 0)
-                err(-1, "Could not connect to i3");
+                err(EXIT_FAILURE, "Could not connect to i3");
 
         ipc_send_message(sockfd, strlen(argv[optind]), 0, (uint8_t*)argv[optind]);
 
