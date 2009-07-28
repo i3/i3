@@ -19,6 +19,7 @@
 #include "config.h"
 #include "xcb.h"
 #include "table.h"
+#include "workspace.h"
 
 Config config;
 
@@ -302,28 +303,29 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         char *ws_str = sstrdup(value);
                         char *end = strchr(ws_str, ' ');
                         if (end == NULL)
-                            die("Malformed name, couln't find terminating space\n");
-                        *end='\0';
+                                die("Malformed name, couln't find terminating space\n");
+                        *end = '\0';
 
                         /* Strip trailing whitespace */
                         while (strlen(value) > 0 && value[strlen(value)-1] == ' ')
-                            value[strlen(value)-1] = '\0';
+                                value[strlen(value)-1] = '\0';
 
-                        int ws_num=atoi(ws_str);
+                        int ws_num = atoi(ws_str);
 
-                        if ( ws_num < 1 || ws_num > 10 )
-                            die("Malformed name, invalid workspace Number\n");
+                        if (ws_num < 1 || ws_num > 10)
+                                die("Malformed name, invalid workspace number\n");
 
                         /* find the name */
-                        char *name= value;
+                        char *name = value;
                         name += strlen(ws_str) + 1;
 
-                        /* if no name reinitialize the name to NULL for reload */
                         if (name == '\0') {
-                            workspaces[ws_num - 1].name=NULL;
-                            continue;
+                                free(ws_str);
+                                continue;
                         }
-                        workspaces[ws_num - 1].name=sstrdup(name);
+
+                        workspace_set_name(&(workspaces[ws_num - 1]), name);
+                        free(ws_str);
                         continue;
                 }
 
@@ -422,6 +424,14 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 free(v->key);
                 free(v->value);
                 free(v);
+        }
+
+        /* Set an empty name for every workspace which got no name */
+        for (int i = 0; i < 10; i++) {
+                if (workspaces[i].name != NULL)
+                        continue;
+
+                workspace_set_name(&(workspaces[i]), NULL);
         }
  
         return;

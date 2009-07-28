@@ -341,10 +341,10 @@ static xcb_charinfo_t *get_charinfo(int col, int row, xcb_query_font_reply_t *fo
  * real length (amount of glyphs) using the given font.
  *
  */
-int predict_text_width(xcb_connection_t *conn, char *font_pattern, char *text, int length) {
+int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *text, int length) {
         xcb_query_font_reply_t *font_info;
         xcb_charinfo_t *table;
-        int i, width;
+        int i, width = 0;
         i3Font *font = load_font(conn, font_pattern);
 
         font_info = xcb_query_font_reply(conn, xcb_query_font_unchecked(conn, font->id), NULL);

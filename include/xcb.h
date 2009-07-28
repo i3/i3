@@ -157,7 +157,7 @@ void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap)
  * real length (amount of glyphs) using the given font.
  *
  */
-int predict_text_width(xcb_connection_t *conn, char *font_pattern, char *text,
+int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *text,
                        int length);
 
 #endif

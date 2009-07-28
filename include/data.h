@@ -165,8 +165,11 @@ struct Workspace {
         /** Number of this workspace, starting from 0 */
         int num;
 
-        /** Name of the workspave */
+        /** Name of the workspace (in UCS-2) */
         char *name;
+
+        /** Length of the workspace’s name (in glyphs) */
+        int name_len;
 
         /** x, y, width, height */
         Rect rect;
