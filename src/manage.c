@@ -342,7 +342,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         new->workspace = t_ws;
                         old_focused = new->container->currently_focused;
 
-                        xcb_unmap_window(conn, new->frame);
+                        if (t_ws->screen->current_workspace != t_ws->num)
+                                xcb_unmap_window(conn, new->frame);
                         break;
                 }
         }
