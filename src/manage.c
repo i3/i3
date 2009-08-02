@@ -29,6 +29,7 @@
 #include "manage.h"
 #include "floating.h"
 #include "client.h"
+#include "workspace.h"
 
 /*
  * Go through all existing windows (if the window manager is restarted) and manage them
@@ -325,7 +326,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                                 break;
                         }
 
-                        LOG("Changin container/workspace and unmapping the client\n");
+                        LOG("Changing container/workspace and unmapping the client\n");
                         Workspace *t_ws = &(workspaces[assign->workspace-1]);
                         if (t_ws->screen == NULL) {
                                 LOG("initializing new workspace, setting num to %d\n", assign->workspace);
@@ -338,7 +339,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         new->workspace = t_ws;
                         old_focused = new->container->currently_focused;
 
-                        map_frame = false;
+                        map_frame = workspace_is_visible(t_ws);
                         break;
                 }
         }

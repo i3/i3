@@ -24,4 +24,12 @@
  */
 void workspace_set_name(Workspace *ws, const char *name);
 
+/**
+ * Returns true if the workspace is currently visible. Especially important for
+ * multi-monitor environments, as they can have multiple currenlty active
+ * workspaces.
+ *
+ */
+bool workspace_is_visible(Workspace *ws);
+
 #endif

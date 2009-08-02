@@ -27,6 +27,7 @@
 #include "floating.h"
 #include "xcb.h"
 #include "config.h"
+#include "workspace.h"
 
 bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction) {
         /* If this container is empty, we’re done */
@@ -490,10 +491,8 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
 
         floating_assign_to_workspace(client, t_ws);
 
-        bool target_invisible = t_ws->screen->current_workspace != t_ws->num;
-
         /* If we’re moving it to an invisible screen, we need to unmap it */
-        if (target_invisible) {
+        if (!workspace_is_visible(t_ws)) {
                 LOG("This workspace is not visible, unmapping\n");
                 xcb_unmap_window(conn, client->frame);
         } else {
@@ -515,7 +514,7 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
 
         render_layout(conn);
 
-        if (!target_invisible)
+        if (workspace_is_visible(t_ws))
                 set_focus(conn, client, true);
 }
 
@@ -575,10 +574,8 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         container->currently_focused = to_focus;
         to_container->currently_focused = current_client;
 
-        bool target_invisible = (to_container->workspace->screen->current_workspace != to_container->workspace->num);
-
         /* If we’re moving it to an invisible screen, we need to unmap it */
-        if (target_invisible) {
+        if (!workspace_is_visible(to_container->workspace)) {
                 LOG("This workspace is not visible, unmapping\n");
                 xcb_unmap_window(conn, current_client->frame);
         } else {
@@ -593,7 +590,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
 
         render_layout(conn);
 
-        if (!target_invisible)
+        if (workspace_is_visible(to_container->workspace))
                 set_focus(conn, current_client, true);
 }
 
