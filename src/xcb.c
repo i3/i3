@@ -357,5 +357,7 @@ int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *t
                 width += info->character_width;
         }
 
+        free(font_info);
+
         return width;
 }

@@ -16,6 +16,9 @@
 
 #include "util.h"
 #include "data.h"
+#include "i3.h"
+#include "config.h"
+#include "xcb.h"
 
 /*
  * Sets the name (or just its number) for the given workspace. This has to
@@ -38,6 +41,7 @@ void workspace_set_name(Workspace *ws, const char *name) {
         FREE(ws->name);
 
         ws->name = convert_utf8_to_ucs2(label, &(ws->name_len));
+        ws->text_width = predict_text_width(global_conn, config.font, ws->name, ws->name_len);
 
         free(label);
 }

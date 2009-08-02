@@ -436,21 +436,18 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
                                              &(config.bar.unfocused));
                 Workspace *ws = &workspaces[c];
 
-                /* Calculate the length of a string in a given font */
-                int text_width = predict_text_width(conn, config.font, ws->name, ws->name_len);
-
                 /* Draw the outer rect */
                 xcb_draw_rect(conn, screen->bar, screen->bargc, color->border,
                               drawn,              /* x */
                               1,                  /* y */
-                              text_width + 5 + 5, /* width = text width + 5 px left + 5px right */
+                              ws->text_width + 5 + 5, /* width = text width + 5 px left + 5px right */
                               height - 2          /* height = max. height - 1 px upper and 1 px bottom border */);
 
                 /* Draw the background of this rect */
                 xcb_draw_rect(conn, screen->bar, screen->bargc, color->background,
                               drawn + 1,
                               2,
-                              text_width + 4 + 4,
+                              ws->text_width + 4 + 4,
                               height - 4);
 
                 xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, color->text);
@@ -458,7 +455,7 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
                 xcb_image_text_16(conn, ws->name_len, screen->bar, screen->bargc, drawn + 5 /* X */,
                                   font->height + 1 /* Y = baseline of font */,
                                   (xcb_char2b_t*)ws->name);
-                drawn += text_width + 12;
+                drawn += ws->text_width + 12;
         }
 
         LOG("done rendering internal\n");

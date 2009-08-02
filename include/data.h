@@ -171,6 +171,9 @@ struct Workspace {
         /** Length of the workspace’s name (in glyphs) */
         int name_len;
 
+        /** Width of the workspace’s name (in pixels) rendered in config.font */
+        int text_width;
+
         /** x, y, width, height */
         Rect rect;
 
