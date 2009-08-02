@@ -308,7 +308,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         if (config.floating_modifier != 0 &&
             (event->state & config.floating_modifier) != 0) {
                 if (client == NULL) {
-                        LOG("Not handling, Mod1 was pressed and no client found\n");
+                        LOG("Not handling, floating_modifier was pressed and no client found\n");
                         return 1;
                 }
                 if (client_is_floating(client)) {
