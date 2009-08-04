@@ -276,16 +276,22 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
                                 }
                         return true;
                 }
-                i3Font *font = load_font(conn, config.font);
-                int workspace = event->event_x / (font->height + 6),
-                    c = 0;
+                int drawn = 0;
                 /* Because workspaces can be on different screens, we need to loop
                    through all of them and decide to count it based on its ->screen */
-                for (int i = 0; i < 10; i++)
-                        if ((workspaces[i].screen == screen) && (c++ == workspace)) {
+                for (int i = 0; i < 10; i++) {
+                        if (workspaces[i].screen != screen)
+                                continue;
+                        LOG("Checking if click was on workspace %d with drawn = %d, tw = %d\n",
+                                        i, drawn, workspaces[i].text_width);
+                        if (event->event_x > (drawn + 1) &&
+                            event->event_x <= (drawn + 1 + workspaces[i].text_width + 5 + 5)) {
                                 show_workspace(conn, i+1);
                                 return true;
                         }
+
+                        drawn += workspaces[i].text_width + 5 + 5 + 2;
+                }
                 return true;
         }
 
