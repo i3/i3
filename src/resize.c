@@ -43,6 +43,8 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
                 return 1;
         }
 
+        LOG("event->event_x = %d, event->root_x = %d\n", event->event_x, event->root_x);
+
         LOG("Screen dimensions: (%d, %d) %d x %d\n", screen->rect.x, screen->rect.y, screen->rect.width, screen->rect.height);
 
         /* FIXME: horizontal resizing causes empty spaces to exist */

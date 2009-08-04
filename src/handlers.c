@@ -354,6 +354,18 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
 
         LOG("event->event_x = %d, client->rect.width = %d\n", event->event_x, client->rect.width);
 
+        /* Some clients (xfontsel for example) seem to pass clicks on their
+         * window to the parent window, thus we receive an event here which in
+         * reality is a border_click. Check for the position and fix state. */
+        if (border_click &&
+            event->event_x >= client->child_rect.x &&
+            event->event_x <= (client->child_rect.x + client->child_rect.width) &&
+            event->event_y >= client->child_rect.y &&
+            event->event_y <= (client->child_rect.y + client->child_rect.height)) {
+                LOG("Fixing border_click = false because of click in child\n");
+                border_click = false;
+        }
+
         if (!border_click) {
                 LOG("client. done.\n");
                 xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
