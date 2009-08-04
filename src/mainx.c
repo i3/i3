@@ -178,6 +178,7 @@ int main(int argc, char *argv[], char *env[]) {
         REQUEST_ATOM(WM_DELETE_WINDOW);
         REQUEST_ATOM(UTF8_STRING);
         REQUEST_ATOM(WM_STATE);
+        REQUEST_ATOM(WM_CLIENT_LEADER);
 
         /* TODO: this has to be more beautiful somewhen */
         int major, minor, error;
@@ -308,6 +309,7 @@ int main(int argc, char *argv[], char *env[]) {
         GET_ATOM(WM_DELETE_WINDOW);
         GET_ATOM(UTF8_STRING);
         GET_ATOM(WM_STATE);
+        GET_ATOM(WM_CLIENT_LEADER);
 
         xcb_property_set_handler(&prophs, atoms[_NET_WM_WINDOW_TYPE], UINT_MAX, handle_window_type, NULL);
         /* TODO: In order to comply with EWMH, we have to watch _NET_WM_STRUT_PARTIAL */
@@ -323,6 +325,9 @@ int main(int argc, char *argv[], char *env[]) {
 
         /* Watch WM_CLASS (= class of the window) */
         xcb_property_set_handler(&prophs, WM_CLASS, 128, handle_windowclass_change, NULL);
+
+        /* Watch WM_CLIENT_LEADER (= logical parent window for toolbars etc.) */
+        xcb_property_set_handler(&prophs, atoms[WM_CLIENT_LEADER], UINT_MAX, handle_clientleader_change, NULL);
 
         /* Set up the atoms we support */
         check_error(conn, xcb_change_property_checked(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED],

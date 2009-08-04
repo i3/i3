@@ -60,7 +60,8 @@ enum { _NET_SUPPORTED = 0,
         WM_PROTOCOLS,
         WM_DELETE_WINDOW,
         UTF8_STRING,
-        WM_STATE
+        WM_STATE,
+        WM_CLIENT_LEADER
 };
 
 extern unsigned int xcb_numlock_mask;

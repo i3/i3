@@ -20,7 +20,7 @@
 #ifndef _I3_H
 #define _I3_H
 
-#define NUM_ATOMS 17
+#define NUM_ATOMS 18
 
 extern xcb_connection_t *global_conn;
 extern char **start_argv;

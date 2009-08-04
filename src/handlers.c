@@ -1064,3 +1064,31 @@ int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_
 
         return 1;
 }
+
+/*
+ * Handles changes of the WM_CLIENT_LEADER atom which specifies if this is a
+ * toolwindow (or similar) and to which window it belongs (logical parent).
+ *
+ */
+int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                        xcb_atom_t name, xcb_get_property_reply_t *prop) {
+        LOG("client leader changed\n");
+        if (prop == NULL) {
+                prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
+                                        false, window, WM_CLIENT_LEADER, WINDOW, 0, 32), NULL);
+        }
+
+        Client *client = table_get(&by_child, window);
+        if (client == NULL)
+                return 1;
+
+        xcb_window_t *leader = xcb_get_property_value(prop);
+        if (leader == NULL)
+                return 1;
+
+        LOG("changed to %08x\n", *leader);
+
+        client->leader = *leader;
+
+        return 1;
+}
