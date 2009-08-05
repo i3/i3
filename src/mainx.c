@@ -257,6 +257,10 @@ int main(int argc, char *argv[], char *env[]) {
         /* Configure request = window tried to change size on its own */
         xcb_event_set_configure_request_handler(&evenths, handle_configure_request, NULL);
 
+        /* Motion notify = user moved his cursor (over the root window and may
+         * cross virtual screen boundaries doing that) */
+        xcb_event_set_motion_notify_handler(&evenths, handle_motion_notify, NULL);
+
         /* Client message are sent to the root window. The only interesting client message
            for us is _NET_WM_STATE, we honour _NET_WM_STATE_FULLSCREEN */
         xcb_event_set_client_message_handler(&evenths, handle_client_message, NULL);
@@ -277,6 +281,7 @@ int main(int argc, char *argv[], char *env[]) {
                               XCB_EVENT_MASK_STRUCTURE_NOTIFY |         /* when the user adds a screen (e.g. video
                                                                            projector), the root window gets a
                                                                            ConfigureNotify */
+                              XCB_EVENT_MASK_POINTER_MOTION |
                               XCB_EVENT_MASK_PROPERTY_CHANGE |
                               XCB_EVENT_MASK_ENTER_WINDOW };
         xcb_change_window_attributes(conn, root, mask, values);

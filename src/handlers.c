@@ -140,6 +140,29 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
         return 1;
 }
 
+/*
+ * Called with coordinates of an enter_notify event or motion_notify event
+ * to check if the user crossed virtual screen boundaries and adjust the
+ * current workspace, if so.
+ *
+ */
+static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
+        i3Screen *screen;
+
+        if ((screen = get_screen_containing(x, y)) == NULL) {
+                LOG("ERROR: No such screen\n");
+                return;
+        }
+        if (screen == c_ws->screen)
+                return;
+
+        c_ws->current_row = current_row;
+        c_ws->current_col = current_col;
+        c_ws = &workspaces[screen->current_workspace];
+        current_row = c_ws->current_row;
+        current_col = c_ws->current_col;
+        LOG("We're now on virtual screen number %d\n", screen->num);
+}
 
 /*
  * When the user moves the mouse pointer onto a window, this callback gets called.
@@ -176,17 +199,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
         /* If not, then the user moved his cursor to the root window. In that case, we adjust c_ws */
         if (client == NULL) {
                 LOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
-                i3Screen *screen = get_screen_containing(event->root_x, event->root_y);
-                if (screen == NULL) {
-                        LOG("ERROR: No such screen\n");
-                        return 0;
-                }
-                c_ws->current_row = current_row;
-                c_ws->current_col = current_col;
-                c_ws = &workspaces[screen->current_workspace];
-                current_row = c_ws->current_row;
-                current_col = c_ws->current_col;
-                LOG("We're now on virtual screen number %d\n", screen->num);
+                check_crossing_screen_boundary(event->root_x, event->root_y);
                 return 1;
         }
 
@@ -208,6 +221,20 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
         }
 
         set_focus(conn, client, false);
+
+        return 1;
+}
+
+/*
+ * When the user moves the mouse but does not change the active window
+ * (e.g. when having no windows opened but moving mouse on the root screen
+ * and crossing virtual screen boundaries), this callback gets called.
+ *
+ */
+int handle_motion_notify(void *ignored, xcb_connection_t *conn, xcb_motion_notify_event_t *event) {
+        LOG("pointer motion notify, getting screen at %d x %d\n", event->root_x, event->root_y);
+
+        check_crossing_screen_boundary(event->root_x, event->root_y);
 
         return 1;
 }
