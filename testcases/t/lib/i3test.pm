@@ -5,6 +5,13 @@ use X11::XCB::Rect;
 use X11::XCB::Window;
 use X11::XCB qw(:all);
 
+BEGIN {
+    my $window_count = 0;
+    sub counter_window {
+        return $window_count++;
+    }
+}
+
 sub open_standard_window {
     my $original_rect = X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30);
 
@@ -15,6 +22,7 @@ sub open_standard_window {
     );
 
     $window->create;
+    $window->name('Window ' . counter_window());
     $window->map;
 
     sleep(0.25);
