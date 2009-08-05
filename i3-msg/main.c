@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
         memset(&addr, 0, sizeof(struct sockaddr_un));
         addr.sun_family = AF_LOCAL;
         strcpy(addr.sun_path, socket_path);
-        if (connect(sockfd, &addr, sizeof(struct sockaddr_un)) < 0)
+        if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0)
                 err(EXIT_FAILURE, "Could not connect to i3");
 
         ipc_send_message(sockfd, strlen(argv[optind]), 0, (uint8_t*)argv[optind]);
