@@ -6,6 +6,9 @@ use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
 use Time::HiRes qw(sleep);
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use i3test;
 
 BEGIN {
     use_ok('X11::XCB::Window');
