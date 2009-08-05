@@ -103,19 +103,27 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         i3Font *font = load_font(conn, config.font);
         int decoration_height = font->height + 2 + 2;
         struct Colortriple *color;
+        Client *last_focused;
 
         /* Clients without a container (docks) won’t get decorated */
         if (client->dock)
                 return;
 
         LOG("redecorating child %08x\n", client->child);
-        if (client_is_floating(client) || client->container->currently_focused == client) {
-                /* Distinguish if the window is currently focused… */
-                if (client_is_floating(client) || CUR_CELL->currently_focused == client)
+        last_focused = SLIST_FIRST(&(client->workspace->focus_stack));
+        if (client_is_floating(client)) {
+                if (last_focused == client)
                         color = &(config.client.focused);
-                /* …or if it is the focused window in a not focused container */
-                else color = &(config.client.focused_inactive);
-        } else color = &(config.client.unfocused);
+                else color = &(config.client.unfocused);
+        } else {
+                if (client->container->currently_focused == client) {
+                        /* Distinguish if the window is currently focused… */
+                        if (last_focused == client)
+                                color = &(config.client.focused);
+                        /* …or if it is the focused window in a not focused container */
+                        else color = &(config.client.focused_inactive);
+                } else color = &(config.client.unfocused);
+        }
 
         /* Our plan is the following:
            - Draw a rect around the whole client in color->background

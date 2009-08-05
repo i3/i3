@@ -348,11 +348,6 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
                         redecorate_window(conn, last_focused);
         }
 
-        /* If we’re in stacking mode, this renders the container to update changes in the title
-           bars and to raise the focused client */
-        if ((old_client != NULL) && (old_client != client) && !old_client->dock)
-                redecorate_window(conn, old_client);
-
         /* If the last client was a floating client, we need to go to the next
          * tiling client in stack and re-decorate it. */
         if (old_client != NULL && client_is_floating(old_client)) {
@@ -371,6 +366,11 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
 
         SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
         SLIST_INSERT_HEAD(&(client->workspace->focus_stack), client, focus_clients);
+
+        /* If we’re in stacking mode, this renders the container to update changes in the title
+           bars and to raise the focused client */
+        if ((old_client != NULL) && (old_client != client) && !old_client->dock)
+                redecorate_window(conn, old_client);
 
         /* redecorate_window flushes, so we don’t need to */
         redecorate_window(conn, client);
