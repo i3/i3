@@ -4,6 +4,7 @@ use Test::More tests => 4;
 use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
+use Time::HiRes qw(sleep);
 
 BEGIN {
 	use_ok('X11::XCB::Window');
@@ -26,6 +27,8 @@ is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
 
 $window->create;
 $window->map;
+
+sleep(0.25);
 
 my $new_rect = $window->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned");
