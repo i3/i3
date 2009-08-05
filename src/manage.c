@@ -251,6 +251,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]) {
                                 LOG("Window is a dock.\n");
                                 new->dock = true;
+                                new->borderless = true;
                                 new->titlebar_position = TITLEBAR_OFF;
                                 new->force_reconfigure = true;
                                 new->container = NULL;
