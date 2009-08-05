@@ -78,4 +78,11 @@ void client_set_below_floating(xcb_connection_t *conn, Client *client);
  */
 bool client_is_floating(Client *client);
 
+/**
+ * Change the border type for the given client to normal (n), 1px border (p) or
+ * completely borderless (b).
+ *
+ */
+void client_change_border(xcb_connection_t *conn, Client *client, char border_type);
+
 #endif

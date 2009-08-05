@@ -360,6 +360,10 @@ struct Client {
          * initialization later */
         enum { TITLEBAR_TOP = 0, TITLEBAR_LEFT, TITLEBAR_RIGHT, TITLEBAR_BOTTOM, TITLEBAR_OFF } titlebar_position;
 
+        /** Contains a bool specifying whether this window should not be drawn
+         * with the usual decorations */
+        bool borderless;
+
         /** If a client is set as a dock, it is placed at the very bottom of
          * the screen and its requested size is used */
         bool dock;

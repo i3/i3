@@ -967,6 +967,16 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
+        /* Is it 'bn' (border normal), 'bp' (border 1pixel) or 'bb' (border borderless)? */
+        if (command[0] == 'b') {
+                if (last_focused == NULL) {
+                        LOG("No window focused, cannot change border type\n");
+                        return;
+                }
+                client_change_border(conn, last_focused, command[1]);
+                return;
+        }
+
         if (command[0] == 'H') {
                 LOG("Hiding all floating windows\n");
                 floating_toggle_hide(conn, c_ws);

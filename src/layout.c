@@ -145,10 +145,12 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
         }
 
-        /* Draw the lines */
-        xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
-        xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
-                      client->rect.width - 3, offset + font->height + 3);
+        if (client->titlebar_position != TITLEBAR_OFF) {
+                /* Draw the lines */
+                xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
+                xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
+                              client->rect.width - 3, offset + font->height + 3);
+        }
 
         /* If the client has a title, we draw it */
         if (client->name != NULL) {
@@ -227,11 +229,16 @@ void resize_client(xcb_connection_t *conn, Client *client) {
                         rect->height = client->rect.height - 2;
                         break;
                 default:
-                        if (client->titlebar_position == TITLEBAR_OFF) {
+                        if (client->titlebar_position == TITLEBAR_OFF && client->borderless) {
                                 rect->x = 0;
                                 rect->y = 0;
                                 rect->width = client->rect.width;
                                 rect->height = client->rect.height;
+                        } else if (client->titlebar_position == TITLEBAR_OFF && !client->borderless) {
+                                rect->x = 1;
+                                rect->y = 1;
+                                rect->width = client->rect.width - 1 - 1;
+                                rect->height = client->rect.height - 1 - 1;
                         } else {
                                 rect->x = 2;
                                 rect->y = font->height + 2 + 2;
