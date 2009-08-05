@@ -424,7 +424,9 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
                                 XCB_EVENT_MASK_EXPOSURE;        /* …our window needs to be redrawn */
 
                 struct Stack_Window *stack_win = &(container->stack_win);
-                stack_win->window = create_window(conn, rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, true, mask, values);
+                stack_win->window = create_window(conn, rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, false, mask, values);
+
+                stack_win->rect.height = 0;
 
                 /* Initialize the entry for our cached pixmap. It will be
                  * created as soon as it’s needed (see cached_pixmap_prepare). */

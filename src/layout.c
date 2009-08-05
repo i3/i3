@@ -334,7 +334,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
 
                 /* Check if we need to remap our stack title window, it gets unmapped when the container
                    is empty in src/handlers.c:unmap_notify() */
-                if (stack_win->rect.height == 0)
+                if (stack_win->rect.height == 0 && num_clients > 0)
                         xcb_map_window(conn, stack_win->window);
 
                 /* Check if we need to reconfigure our stack title window */
