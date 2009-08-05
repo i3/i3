@@ -101,6 +101,22 @@ struct Colorpixel {
         SLIST_ENTRY(Colorpixel) colorpixels;
 };
 
+struct Cached_Pixmap {
+        xcb_pixmap_t id;
+
+        /* We’re going to paint on it, so a graphics context will be needed */
+        xcb_gcontext_t gc;
+
+        /* The rect with which the pixmap was created */
+        Rect rect;
+
+        /* The rect of the object to which this pixmap belongs. Necessary to
+         * find out when we need to re-create the pixmap. */
+        Rect *referred_rect;
+
+        xcb_drawable_t referred_drawable;
+};
+
 /**
  * Contains data for the windows needed to draw the titlebars on in stacking
  * mode
@@ -108,7 +124,7 @@ struct Colorpixel {
  */
 struct Stack_Window {
         xcb_window_t window;
-        xcb_gcontext_t gc;
+        struct Cached_Pixmap pixmap;
         Rect rect;
 
         /** Backpointer to the container this stack window is in */
@@ -148,6 +164,15 @@ struct keyvalue_element {
 struct Workspace {
         /** Number of this workspace, starting from 0 */
         int num;
+
+        /** Name of the workspace (in UCS-2) */
+        char *name;
+
+        /** Length of the workspace’s name (in glyphs) */
+        int name_len;
+
+        /** Width of the workspace’s name (in pixels) rendered in config.font */
+        int text_width;
 
         /** x, y, width, height */
         Rect rect;
@@ -234,7 +259,12 @@ struct Assignment {
         /** floating is true if this was an assignment to the special
          * workspace "~".  Matching clients will be put into floating mode
          * automatically. */
-        bool floating;
+        enum {
+                ASSIGN_FLOATING_NO,   /* don’t float, but put on a workspace */
+                ASSIGN_FLOATING_ONLY, /* float, but don’t assign on a workspace */
+                ASSIGN_FLOATING       /* float and put on a workspace */
+        } floating;
+
         /** The number of the workspace to assign to. */
         int workspace;
         TAILQ_ENTRY(Assignment) assignments;
@@ -311,6 +341,10 @@ struct Client {
         /** Holds the WM_CLASS, useful for matching the client in commands */
         char *window_class;
 
+        /** Holds the xcb_window_t (just an ID) for the leader window (logical
+         * parent for toolwindows and similar floating windows) */
+        xcb_window_t leader;
+
         /** fullscreen is pretty obvious */
         bool fullscreen;
 
@@ -325,6 +359,10 @@ struct Client {
         /** Ensure TITLEBAR_TOP maps to 0 because we use calloc for
          * initialization later */
         enum { TITLEBAR_TOP = 0, TITLEBAR_LEFT, TITLEBAR_RIGHT, TITLEBAR_BOTTOM, TITLEBAR_OFF } titlebar_position;
+
+        /** Contains a bool specifying whether this window should not be drawn
+         * with the usual decorations */
+        bool borderless;
 
         /** If a client is set as a dock, it is placed at the very bottom of
          * the screen and its requested size is used */

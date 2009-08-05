@@ -60,7 +60,8 @@ enum { _NET_SUPPORTED = 0,
         WM_PROTOCOLS,
         WM_DELETE_WINDOW,
         UTF8_STRING,
-        WM_STATE
+        WM_STATE,
+        WM_CLIENT_LEADER
 };
 
 extern unsigned int xcb_numlock_mask;
@@ -89,7 +90,7 @@ uint32_t get_colorpixel(xcb_connection_t *conn, char *hex);
  *
  */
 xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class,
-                           int cursor, uint32_t mask, uint32_t *values);
+                           int cursor, bool map, uint32_t mask, uint32_t *values);
 
 /**
  * Changes a single value in the graphic context (so one doesn’t have to
@@ -142,5 +143,22 @@ void xcb_get_numlock_mask(xcb_connection_t *conn);
  *
  */
 void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window);
+
+/**
+ *
+ * Prepares the given Cached_Pixmap for usage (checks whether the size of the
+ * object this pixmap is related to (e.g. a window) has changed and re-creates
+ * the pixmap if so).
+ *
+ */
+void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap);
+
+/**
+ * Calculate the width of the given text (16-bit characters, UCS) with given
+ * real length (amount of glyphs) using the given font.
+ *
+ */
+int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *text,
+                       int length);
 
 #endif

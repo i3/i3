@@ -276,16 +276,22 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
                                 }
                         return true;
                 }
-                i3Font *font = load_font(conn, config.font);
-                int workspace = event->event_x / (font->height + 6),
-                    c = 0;
+                int drawn = 0;
                 /* Because workspaces can be on different screens, we need to loop
                    through all of them and decide to count it based on its ->screen */
-                for (int i = 0; i < 10; i++)
-                        if ((workspaces[i].screen == screen) && (c++ == workspace)) {
+                for (int i = 0; i < 10; i++) {
+                        if (workspaces[i].screen != screen)
+                                continue;
+                        LOG("Checking if click was on workspace %d with drawn = %d, tw = %d\n",
+                                        i, drawn, workspaces[i].text_width);
+                        if (event->event_x > (drawn + 1) &&
+                            event->event_x <= (drawn + 1 + workspaces[i].text_width + 5 + 5)) {
                                 show_workspace(conn, i+1);
                                 return true;
                         }
+
+                        drawn += workspaces[i].text_width + 5 + 5 + 2;
+                }
                 return true;
         }
 
@@ -308,7 +314,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         if (config.floating_modifier != 0 &&
             (event->state & config.floating_modifier) != 0) {
                 if (client == NULL) {
-                        LOG("Not handling, Mod1 was pressed and no client found\n");
+                        LOG("Not handling, floating_modifier was pressed and no client found\n");
                         return 1;
                 }
                 if (client_is_floating(client)) {
@@ -347,6 +353,18 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         }
 
         LOG("event->event_x = %d, client->rect.width = %d\n", event->event_x, client->rect.width);
+
+        /* Some clients (xfontsel for example) seem to pass clicks on their
+         * window to the parent window, thus we receive an event here which in
+         * reality is a border_click. Check for the position and fix state. */
+        if (border_click &&
+            event->event_x >= client->child_rect.x &&
+            event->event_x <= (client->child_rect.x + client->child_rect.width) &&
+            event->event_y >= client->child_rect.y &&
+            event->event_y <= (client->child_rect.y + client->child_rect.height)) {
+                LOG("Fixing border_click = false because of click in child\n");
+                border_click = false;
+        }
 
         if (!border_click) {
                 LOG("client. done.\n");
@@ -1043,6 +1061,34 @@ int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_
                 LOG("This is a popup window, putting into floating\n");
                 toggle_floating_mode(conn, client, true);
         }
+
+        return 1;
+}
+
+/*
+ * Handles changes of the WM_CLIENT_LEADER atom which specifies if this is a
+ * toolwindow (or similar) and to which window it belongs (logical parent).
+ *
+ */
+int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                        xcb_atom_t name, xcb_get_property_reply_t *prop) {
+        LOG("client leader changed\n");
+        if (prop == NULL) {
+                prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
+                                        false, window, WM_CLIENT_LEADER, WINDOW, 0, 32), NULL);
+        }
+
+        Client *client = table_get(&by_child, window);
+        if (client == NULL)
+                return 1;
+
+        xcb_window_t *leader = xcb_get_property_value(prop);
+        if (leader == NULL)
+                return 1;
+
+        LOG("changed to %08x\n", *leader);
+
+        client->leader = *leader;
 
         return 1;
 }

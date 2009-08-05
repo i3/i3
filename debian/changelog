@@ -1,3 +1,15 @@
+i3-wm (3.c-0) unstable; urgency=low
+
+  * Implement a reload command
+  * Implement IPC via unix sockets
+  * Optimization: Render stack windows on pixmaps to reduce flickering
+  * Optimization: Directly position new windows to their final position
+  * Bugfix: Repeatedly try to find screens if none are available
+  * Bugfix: Correctly redecorate clients when changing focus
+  * Bugfix: Don’t crash when clients reconfigure themselves
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Sun, 02 Aug 2009 20:05:58 +0200
+
 i3-wm (3.b-1) unstable; urgency=low
 
   * Bugfix: Correctly handle col-/rowspanned containers when setting focus.

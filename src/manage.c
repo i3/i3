@@ -29,6 +29,7 @@
 #include "manage.h"
 #include "floating.h"
 #include "client.h"
+#include "workspace.h"
 
 /*
  * Go through all existing windows (if the window manager is restarted) and manage them
@@ -110,6 +111,7 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NORMAL_HINTS);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_TRANSIENT_FOR);
+        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[WM_CLIENT_LEADER]);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[_NET_WM_NAME]);
 
         free(geom);
@@ -130,26 +132,26 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                      int16_t x, int16_t y, uint16_t width, uint16_t height) {
 
         xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
-                                  utf8_title_cookie, title_cookie, class_cookie;
+                                  utf8_title_cookie, title_cookie,
+                                  class_cookie, leader_cookie;
         uint32_t mask = 0;
         uint32_t values[3];
         uint16_t original_height = height;
+        bool map_frame = true;
 
         /* We are interested in property changes */
         mask = XCB_CW_EVENT_MASK;
         values[0] = CHILD_EVENT_MASK;
         xcb_change_window_attributes(conn, child, mask, values);
 
-        /* Map the window first to avoid flickering */
-        xcb_map_window(conn, child);
-
         /* Place requests for properties ASAP */
         wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
         strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
         state_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STATE], UINT32_MAX);
         utf8_title_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_NAME], 128);
+        leader_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[WM_CLIENT_LEADER], UINT32_MAX);
         title_cookie = xcb_get_any_property_unchecked(conn, false, child, WM_NAME, 128);
-        class_cookie  = xcb_get_any_property_unchecked(conn, false, child, WM_CLASS, 128);
+        class_cookie = xcb_get_any_property_unchecked(conn, false, child, WM_CLASS, 128);
 
         Client *new = table_get(&by_child, child);
 
@@ -201,7 +203,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                           height + 2 + 2 + font->height}; /* 2 px border plus font’s height */
 
         /* Yo dawg, I heard you like windows, so I create a window around your window… */
-        new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
+        new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, false, mask, values);
 
         /* Set WM_STATE_NORMAL because GTK applications don’t want to drag & drop if we don’t.
          * Also, xprop(1) needs that to work. */
@@ -249,11 +251,13 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]) {
                                 LOG("Window is a dock.\n");
                                 new->dock = true;
+                                new->borderless = true;
                                 new->titlebar_position = TITLEBAR_OFF;
                                 new->force_reconfigure = true;
                                 new->container = NULL;
                                 SLIST_INSERT_HEAD(&(c_ws->screen->dock_clients), new, dock_clients);
                                 /* If it’s a dock we can’t make it float, so we break */
+                                new->floating = FLOATING_AUTO_OFF;
                                 break;
                         } else if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DIALOG] ||
                                    atom[i] == atoms[_NET_WM_WINDOW_TYPE_UTILITY] ||
@@ -263,6 +267,12 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                                 new->floating = FLOATING_AUTO_ON;
                                 LOG("dialog/utility/toolbar/splash window, automatically floating\n");
                         }
+        }
+
+        /* All clients which have a leader should be floating */
+        if (!new->dock && !client_is_floating(new) && new->leader != 0) {
+                LOG("Client has WM_CLIENT_LEADER hint set, setting floating\n");
+                new->floating = FLOATING_AUTO_ON;
         }
 
         if (new->workspace->auto_float) {
@@ -305,16 +315,21 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 preply = xcb_get_property_reply(conn, class_cookie, NULL);
                 handle_windowclass_change(NULL, conn, 0, new->child, WM_CLASS, preply);
 
+                preply = xcb_get_property_reply(conn, leader_cookie, NULL);
+                handle_clientleader_change(NULL, conn, 0, new->child, atoms[WM_CLIENT_LEADER], preply);
+
                 LOG("DEBUG: should have all infos now\n");
                 struct Assignment *assign;
                 TAILQ_FOREACH(assign, &assignments, assignments) {
                         if (get_matching_client(conn, assign->windowclass_title, new) == NULL)
                                 continue;
 
-                        if (assign->floating) {
+                        if (assign->floating == ASSIGN_FLOATING_ONLY ||
+                            assign->floating == ASSIGN_FLOATING) {
                                 new->floating = FLOATING_AUTO_ON;
                                 LOG("Assignment matches, putting client into floating mode\n");
-                                break;
+                                if (assign->floating == ASSIGN_FLOATING_ONLY)
+                                        break;
                         }
 
                         LOG("Assignment \"%s\" matches, so putting it on workspace %d\n",
@@ -325,7 +340,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                                 break;
                         }
 
-                        LOG("Changin container/workspace and unmapping the client\n");
+                        LOG("Changing container/workspace and unmapping the client\n");
                         Workspace *t_ws = &(workspaces[assign->workspace-1]);
                         if (t_ws->screen == NULL) {
                                 LOG("initializing new workspace, setting num to %d\n", assign->workspace);
@@ -338,7 +353,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         new->workspace = t_ws;
                         old_focused = new->container->currently_focused;
 
-                        xcb_unmap_window(conn, new->frame);
+                        map_frame = workspace_is_visible(t_ws);
                         break;
                 }
         }
@@ -348,14 +363,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         /* If we are in fullscreen, we should lower the window to not be annoying */
                         uint32_t values[] = { XCB_STACK_MODE_BELOW };
                         xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
-                }
-        } else if (!new->dock) {
-                /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
-                if (new->container->workspace->fullscreen_client == NULL) {
-                        if (!client_is_floating(new))
-                                new->container->currently_focused = new;
-                        if (new->container == CUR_CELL)
-                                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
                 }
         }
 
@@ -382,10 +389,27 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
                 new->container = NULL;
 
-                new->floating_rect.x = new->rect.x = x;
-                new->floating_rect.y = new->rect.y = y;
                 new->rect.width = new->floating_rect.width + 2 + 2;
                 new->rect.height = new->floating_rect.height + (font->height + 2 + 2) + 2;
+
+                /* Some clients (like GIMP’s color picker window) get mapped
+                 * to (0, 0), so we push them to a reasonable position
+                 * (centered over their leader) */
+                if (new->leader != 0 && x == 0 && y == 0) {
+                        LOG("Floating client wants to (0x0), moving it over its leader instead\n");
+                        Client *leader = table_get(&by_child, new->leader);
+                        if (leader == NULL) {
+                                LOG("leader is NULL, centering it over current workspace\n");
+
+                                x = c_ws->rect.x + (c_ws->rect.width / 2) - (new->rect.width / 2);
+                                y = c_ws->rect.y + (c_ws->rect.height / 2) - (new->rect.height / 2);
+                        } else {
+                                x = leader->rect.x + (leader->rect.width / 2) - (new->rect.width / 2);
+                                y = leader->rect.y + (leader->rect.height / 2) - (new->rect.height / 2);
+                        }
+                }
+                new->floating_rect.x = new->rect.x = x;
+                new->floating_rect.y = new->rect.y = y;
                 LOG("copying floating_rect from tiling (%d, %d) size (%d, %d)\n",
                                 new->floating_rect.x, new->floating_rect.y,
                                 new->floating_rect.width, new->floating_rect.height);
@@ -418,4 +442,20 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 }
 
         render_layout(conn);
+
+        /* Map the window first to avoid flickering */
+        xcb_map_window(conn, child);
+        if (map_frame)
+                xcb_map_window(conn, new->frame);
+        if (CUR_CELL->workspace->fullscreen_client == NULL && !new->dock) {
+                /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
+                if (new->workspace->fullscreen_client == NULL) {
+                        if (!client_is_floating(new))
+                                new->container->currently_focused = new;
+                        if (new->container == CUR_CELL || client_is_floating(new))
+                                xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
+                }
+        }
+
+        xcb_flush(conn);
 }

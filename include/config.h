@@ -15,6 +15,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#include <stdbool.h>
 #include "queue.h"
 
 typedef struct Config Config;
@@ -52,6 +53,8 @@ struct Config {
         const char *terminal;
         const char *font;
 
+        const char *ipc_socket_path;
+
         /** The modifier which needs to be pressed in combination with your mouse
          * buttons to do things with floating windows (move, resize) */
         uint32_t floating_modifier;
@@ -75,6 +78,7 @@ struct Config {
  * configuration file.
  *
  */
-void load_configuration(xcb_connection_t *conn, const char *override_configfile);
+void load_configuration(xcb_connection_t *conn, const char *override_configfile, bool reload);
+void grab_all_keys(xcb_connection_t *conn);
 
 #endif

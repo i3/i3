@@ -248,3 +248,42 @@ void client_set_below_floating(xcb_connection_t *conn, Client *client) {
 bool client_is_floating(Client *client) {
         return (client->floating >= FLOATING_AUTO_ON);
 }
+
+/*
+ * Change the border type for the given client to normal (n), 1px border (p) or
+ * completely borderless (b).
+ *
+ */
+void client_change_border(xcb_connection_t *conn, Client *client, char border_type) {
+        switch (border_type) {
+                case 'n':
+                        LOG("Changing to normal border\n");
+                        client->titlebar_position = TITLEBAR_TOP;
+                        client->borderless = false;
+                        break;
+                case 'p':
+                        LOG("Changing to 1px border\n");
+                        client->titlebar_position = TITLEBAR_OFF;
+                        client->borderless = false;
+                        break;
+                case 'b':
+                        LOG("Changing to borderless\n");
+                        client->titlebar_position = TITLEBAR_OFF;
+                        client->borderless = true;
+                        break;
+                default:
+                        LOG("Unknown border mode\n");
+                        return;
+        }
+
+        /* Ensure that the child’s position inside our window gets updated */
+        client->force_reconfigure = true;
+
+        /* For clients inside a container, we can simply render the container.
+         * If the client is floating, we need to render the whole layout */
+        if (client->container != NULL)
+                render_container(conn, client->container);
+        else render_layout(conn);
+
+        redecorate_window(conn, client);
+}

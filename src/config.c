@@ -18,6 +18,8 @@
 #include "util.h"
 #include "config.h"
 #include "xcb.h"
+#include "table.h"
+#include "workspace.h"
 
 Config config;
 
@@ -58,13 +60,69 @@ static void replace_variable(char *buffer, const char *key, const char *value) {
 }
 
 /*
+ * Ungrab the bound keys
+ *
+ */
+void ungrab_all_keys(xcb_connection_t *conn) {
+        Binding *bind;
+        TAILQ_FOREACH(bind, &bindings, bindings) {
+                LOG("Ungrabbing %d\n", bind->keycode);
+                xcb_ungrab_key(conn, bind->keycode, root, bind->keycode);
+        }
+}
+
+/*
+ * Grab the bound keys (tell X to send us keypress events for those keycodes)
+ *
+ */
+void grab_all_keys(xcb_connection_t *conn) {
+        Binding *bind;
+        TAILQ_FOREACH(bind, &bindings, bindings) {
+                LOG("Grabbing %d\n", bind->keycode);
+                if ((bind->mods & BIND_MODE_SWITCH) != 0)
+                        xcb_grab_key(conn, 0, root, 0, bind->keycode,
+                                XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
+                else {
+                        /* Grab the key in all combinations */
+                        #define GRAB_KEY(modifier) xcb_grab_key(conn, 0, root, modifier, bind->keycode, \
+                                                                XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC)
+                        GRAB_KEY(bind->mods);
+                        GRAB_KEY(bind->mods | xcb_numlock_mask);
+                        GRAB_KEY(bind->mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
+                }
+        }
+}
+
+/*
  * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
  *
  * If you specify override_configpath, only this path is used to look for a
  * configuration file.
  *
  */
-void load_configuration(xcb_connection_t *conn, const char *override_configpath) {
+void load_configuration(xcb_connection_t *conn, const char *override_configpath, bool reload) {
+        if (reload) {
+                /* First ungrab the keys */
+                ungrab_all_keys(conn);
+
+                /* Clear the old binding and assignment lists */
+                Binding *bind;
+                while (!TAILQ_EMPTY(&bindings)) {
+                        bind = TAILQ_FIRST(&bindings);
+                        TAILQ_REMOVE(&bindings, bind, bindings);
+                        FREE(bind->command);
+                        FREE(bind);
+                }
+
+                struct Assignment *assign;
+                while (!TAILQ_EMPTY(&assignments)) {
+                        assign = TAILQ_FIRST(&assignments);
+                        FREE(assign->windowclass_title);
+                        TAILQ_REMOVE(&assignments, assign, assignments);
+                        FREE(assign);
+                }
+        }
+
         SLIST_HEAD(variables_head, Variable) variables;
 
 #define OPTION_STRING(name) \
@@ -239,43 +297,94 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath)
                         continue;
                 }
 
+                /* name "workspace number" "name of the workspace" */
+                if (strcasecmp(key, "name") == 0) {
+                        LOG("name workspace: %s\n",value);
+                        char *ws_str = sstrdup(value);
+                        char *end = strchr(ws_str, ' ');
+                        if (end == NULL)
+                                die("Malformed name, couln't find terminating space\n");
+                        *end = '\0';
+
+                        /* Strip trailing whitespace */
+                        while (strlen(value) > 0 && value[strlen(value)-1] == ' ')
+                                value[strlen(value)-1] = '\0';
+
+                        int ws_num = atoi(ws_str);
+
+                        if (ws_num < 1 || ws_num > 10)
+                                die("Malformed name, invalid workspace number\n");
+
+                        /* find the name */
+                        char *name = value;
+                        name += strlen(ws_str) + 1;
+
+                        if (name == '\0') {
+                                free(ws_str);
+                                continue;
+                        }
+
+                        workspace_set_name(&(workspaces[ws_num - 1]), name);
+                        free(ws_str);
+                        continue;
+                }
+
                 /* assign window class[/window title] → workspace */
                 if (strcasecmp(key, "assign") == 0) {
                         LOG("assign: \"%s\"\n", value);
-                        char *class_title = sstrdup(value);
+                        char *class_title;
                         char *target;
+                        char *end;
 
                         /* If the window class/title is quoted we skip quotes */
-                        if (class_title[0] == '"') {
-                                class_title++;
-                                char *end = strchr(class_title, '"');
-                                if (end == NULL)
-                                        die("Malformed assignment, couldn't find terminating quote\n");
-                                *end = '\0';
+                        if (value[0] == '"') {
+                                class_title = sstrdup(value+1);
+                                end = strchr(class_title, '"');
                         } else {
+                                class_title = sstrdup(value);
                                 /* If it is not quoted, we terminate it at the first space */
-                                char *end = strchr(class_title, ' ');
-                                if (end == NULL)
-                                        die("Malformed assignment, couldn't find terminating space\n");
-                                *end = '\0';
+                                end = strchr(class_title, ' ');
                         }
+                        if (end == NULL)
+                                die("Malformed assignment, couldn't find terminating quote\n");
+                        *end = '\0';
+
+                        /* Strip trailing whitespace */
+                        while (strlen(value) > 0 && value[strlen(value)-1] == ' ')
+                                value[strlen(value)-1] = '\0';
 
                         /* The target is the last argument separated by a space */
                         if ((target = strrchr(value, ' ')) == NULL)
-                                die("Malformed assignment, couldn't find target\n");
+                                die("Malformed assignment, couldn't find target (\"%s\")\n", value);
                         target++;
 
-                        if (*target != '~' && (atoi(target) < 1 || atoi(target) > 10))
+                        if (strchr(target, '~') == NULL && (atoi(target) < 1 || atoi(target) > 10))
                                 die("Malformed assignment, invalid workspace number\n");
 
                         LOG("assignment parsed: \"%s\" to \"%s\"\n", class_title, target);
 
                         struct Assignment *new = scalloc(sizeof(struct Assignment));
                         new->windowclass_title = class_title;
-                        if (*target == '~')
-                                new->floating = true;
-                        else new->workspace = atoi(target);
+                        if (strchr(target, '~') != NULL)
+                                new->floating = ASSIGN_FLOATING_ONLY;
+
+                        while (*target == '~')
+                                target++;
+
+                        if (atoi(target) >= 1 && atoi(target) <= 10) {
+                                if (new->floating == ASSIGN_FLOATING_ONLY)
+                                        new->floating = ASSIGN_FLOATING;
+                                new->workspace = atoi(target);
+                        }
                         TAILQ_INSERT_TAIL(&assignments, new, assignments);
+
+                        LOG("Assignment loaded: \"%s\":\n", class_title);
+                        if (new->floating != ASSIGN_FLOATING_ONLY)
+                                LOG(" to workspace %d\n", new->workspace);
+
+                        if (new->floating != ASSIGN_FLOATING_NO)
+                                LOG(" will be floating\n");
+
                         continue;
                 }
 
@@ -299,13 +408,20 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath)
                         continue;
                 }
 
+                if (strcasecmp(key, "ipc-socket") == 0) {
+                        config.ipc_socket_path = sstrdup(value);
+                        continue;
+                }
+
                 die("Unknown configfile option: %s\n", key);
         }
+        /* now grab all keys again */
+        if (reload)
+                grab_all_keys(conn);
         fclose(handle);
 
         REQUIRED_OPTION(terminal);
         REQUIRED_OPTION(font);
-
 
         while (!SLIST_EMPTY(&variables)) {
                 struct Variable *v = SLIST_FIRST(&variables);
@@ -313,6 +429,14 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath)
                 free(v->key);
                 free(v->value);
                 free(v);
+        }
+
+        /* Set an empty name for every workspace which got no name */
+        for (int i = 0; i < 10; i++) {
+                if (workspaces[i].name != NULL)
+                        continue;
+
+                workspace_set_name(&(workspaces[i]), NULL);
         }
  
         return;

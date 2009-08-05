@@ -18,6 +18,7 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_keysyms.h>
 
+#include "i3.h"
 #include "util.h"
 #include "xcb.h"
 
@@ -89,7 +90,7 @@ uint32_t get_colorpixel(xcb_connection_t *conn, char *hex) {
  *
  */
 xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class, int cursor,
-                           uint32_t mask, uint32_t *values) {
+                           bool map, uint32_t mask, uint32_t *values) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         xcb_window_t result = xcb_generate_id(conn);
         xcb_cursor_t cursor_id = xcb_generate_id(conn);
@@ -120,7 +121,8 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
                 xcb_change_window_attributes(conn, result, XCB_CW_CURSOR, &cursor_id);
 
         /* Map the window (= make it visible) */
-        xcb_map_window(conn, result);
+        if (map)
+                xcb_map_window(conn, result);
 
         return result;
 }
@@ -258,4 +260,104 @@ void xcb_get_numlock_mask(xcb_connection_t *conn) {
 void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
         uint32_t values[] = { XCB_STACK_MODE_ABOVE };
         xcb_configure_window(conn, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
+}
+
+/*
+ *
+ * Prepares the given Cached_Pixmap for usage (checks whether the size of the
+ * object this pixmap is related to (e.g. a window) has changed and re-creates
+ * the pixmap if so).
+ *
+ */
+void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap) {
+        LOG("preparing pixmap\n");
+
+        /* If the Rect did not change, the pixmap does not need to be recreated */
+        if (memcmp(&(pixmap->rect), pixmap->referred_rect, sizeof(Rect)) == 0)
+                return;
+
+        memcpy(&(pixmap->rect), pixmap->referred_rect, sizeof(Rect));
+
+        if (pixmap->id == 0 || pixmap->gc == 0) {
+                LOG("Creating new pixmap...\n");
+                pixmap->id = xcb_generate_id(conn);
+                pixmap->gc = xcb_generate_id(conn);
+        } else {
+                LOG("Re-creating this pixmap...\n");
+                xcb_free_gc(conn, pixmap->gc);
+                xcb_free_pixmap(conn, pixmap->id);
+        }
+
+        xcb_create_pixmap(conn, root_depth, pixmap->id,
+                          pixmap->referred_drawable, pixmap->rect.width, pixmap->rect.height);
+
+        xcb_create_gc(conn, pixmap->gc, pixmap->id, 0, 0);
+}
+
+/*
+ * Returns the xcb_charinfo_t for the given character (specified by row and
+ * column in the lookup table) if existing, otherwise the minimum bounds.
+ *
+ */
+static xcb_charinfo_t *get_charinfo(int col, int row, xcb_query_font_reply_t *font_info,
+                                    xcb_charinfo_t *table, bool dont_fallback) {
+        xcb_charinfo_t *result;
+
+        /* Bounds checking */
+        if (row < font_info->min_byte1 || row > font_info->max_byte1 ||
+            col < font_info->min_char_or_byte2 || col > font_info->max_char_or_byte2)
+                return NULL;
+
+        /* If we don’t have a table to lookup the infos per character, return the
+         * minimum bounds */
+        if (table == NULL)
+                return &font_info->min_bounds;
+
+        result = &table[((row - font_info->min_byte1) *
+                         (font_info->max_char_or_byte2 - font_info->min_char_or_byte2 + 1)) +
+                        (col - font_info->min_char_or_byte2)];
+
+        /* If the character has an entry in the table, return it */
+        if (result->character_width != 0 ||
+            (result->right_side_bearing |
+             result->left_side_bearing |
+             result->ascent |
+             result->descent) != 0)
+                return result;
+
+        /* Otherwise, get the default character and return its charinfo */
+        if (dont_fallback)
+                return NULL;
+
+        return get_charinfo((font_info->default_char >> 8),
+                            (font_info->default_char & 0xFF),
+                            font_info,
+                            table,
+                            true);
+}
+
+/*
+ * Calculate the width of the given text (16-bit characters, UCS) with given
+ * real length (amount of glyphs) using the given font.
+ *
+ */
+int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *text, int length) {
+        xcb_query_font_reply_t *font_info;
+        xcb_charinfo_t *table;
+        int i, width = 0;
+        i3Font *font = load_font(conn, font_pattern);
+
+        font_info = xcb_query_font_reply(conn, xcb_query_font_unchecked(conn, font->id), NULL);
+        table = xcb_query_font_char_infos(font_info);
+
+        for (i = 0; i < 2 * length; i += 2) {
+                xcb_charinfo_t *info = get_charinfo(text[i+1], text[i], font_info, table, false);
+                if (info == NULL)
+                        continue;
+                width += info->character_width;
+        }
+
+        free(font_info);
+
+        return width;
 }

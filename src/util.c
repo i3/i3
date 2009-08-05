@@ -63,33 +63,19 @@ void slog(char *fmt, ...) {
 }
 
 /*
- * Prints the message (see printf()) to stderr, then exits the program.
- *
- */
-void die(char *fmt, ...) {
-        va_list args;
-
-        va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
-        va_end(args);
-
-        exit(EXIT_FAILURE);
-}
-
-/*
  * The s* functions (safe) are wrappers around malloc, strdup, …, which exits if one of
  * the called functions returns NULL, meaning that there is no more memory available
  *
  */
 void *smalloc(size_t size) {
         void *result = malloc(size);
-        exit_if_null(result, "Error: out of memory (malloc(%d))\n", size);
+        exit_if_null(result, "Error: out of memory (malloc(%zd))\n", size);
         return result;
 }
 
 void *scalloc(size_t size) {
         void *result = calloc(size, 1);
-        exit_if_null(result, "Error: out of memory (calloc(%d))\n", size);
+        exit_if_null(result, "Error: out of memory (calloc(%zd))\n", size);
         return result;
 }
 
@@ -362,13 +348,29 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
                         redecorate_window(conn, last_focused);
         }
 
+        /* If the last client was a floating client, we need to go to the next
+         * tiling client in stack and re-decorate it. */
+        if (old_client != NULL && client_is_floating(old_client)) {
+                LOG("Coming from floating client, searching next tiling...\n");
+                Client *current;
+                SLIST_FOREACH(current, &(client->workspace->focus_stack), focus_clients) {
+                        if (client_is_floating(current))
+                                continue;
+
+                        LOG("Found window: %p / child %p\n", current->frame, current->child);
+                        redecorate_window(conn, current);
+                        break;
+                }
+
+        }
+
+        SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
+        SLIST_INSERT_HEAD(&(client->workspace->focus_stack), client, focus_clients);
+
         /* If we’re in stacking mode, this renders the container to update changes in the title
            bars and to raise the focused client */
         if ((old_client != NULL) && (old_client != client) && !old_client->dock)
                 redecorate_window(conn, old_client);
-
-        SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
-        SLIST_INSERT_HEAD(&(client->workspace->focus_stack), client, focus_clients);
 
         /* redecorate_window flushes, so we don’t need to */
         redecorate_window(conn, client);
@@ -385,7 +387,8 @@ void leave_stack_mode(xcb_connection_t *conn, Container *container) {
 
         SLIST_REMOVE(&stack_wins, stack_win, Stack_Window, stack_windows);
 
-        xcb_free_gc(conn, stack_win->gc);
+        xcb_free_gc(conn, stack_win->pixmap.gc);
+        xcb_free_pixmap(conn, stack_win->pixmap.id);
         xcb_destroy_window(conn, stack_win->window);
 
         stack_win->rect.width = -1;
@@ -421,11 +424,13 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
                                 XCB_EVENT_MASK_EXPOSURE;        /* …our window needs to be redrawn */
 
                 struct Stack_Window *stack_win = &(container->stack_win);
-                stack_win->window = create_window(conn, rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
+                stack_win->window = create_window(conn, rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, true, mask, values);
 
-                /* Generate a graphics context for the titlebar */
-                stack_win->gc = xcb_generate_id(conn);
-                xcb_create_gc(conn, stack_win->gc, stack_win->window, 0, 0);
+                /* Initialize the entry for our cached pixmap. It will be
+                 * created as soon as it’s needed (see cached_pixmap_prepare). */
+                memset(&(stack_win->pixmap), 0, sizeof(struct Cached_Pixmap));
+                stack_win->pixmap.referred_rect = &stack_win->rect;
+                stack_win->pixmap.referred_drawable = stack_win->window;
 
                 stack_win->container = container;
 

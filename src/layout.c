@@ -103,19 +103,27 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         i3Font *font = load_font(conn, config.font);
         int decoration_height = font->height + 2 + 2;
         struct Colortriple *color;
+        Client *last_focused;
 
         /* Clients without a container (docks) won’t get decorated */
         if (client->dock)
                 return;
 
         LOG("redecorating child %08x\n", client->child);
-        if (client_is_floating(client) || client->container->currently_focused == client) {
-                /* Distinguish if the window is currently focused… */
-                if (client_is_floating(client) || CUR_CELL->currently_focused == client)
+        last_focused = SLIST_FIRST(&(client->workspace->focus_stack));
+        if (client_is_floating(client)) {
+                if (last_focused == client)
                         color = &(config.client.focused);
-                /* …or if it is the focused window in a not focused container */
-                else color = &(config.client.focused_inactive);
-        } else color = &(config.client.unfocused);
+                else color = &(config.client.unfocused);
+        } else {
+                if (client->container->currently_focused == client) {
+                        /* Distinguish if the window is currently focused… */
+                        if (last_focused == client)
+                                color = &(config.client.focused);
+                        /* …or if it is the focused window in a not focused container */
+                        else color = &(config.client.focused_inactive);
+                } else color = &(config.client.unfocused);
+        }
 
         /* Our plan is the following:
            - Draw a rect around the whole client in color->background
@@ -145,10 +153,12 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
         }
 
-        /* Draw the lines */
-        xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
-        xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
-                      client->rect.width - 3, offset + font->height + 3);
+        if (client->titlebar_position != TITLEBAR_OFF) {
+                /* Draw the lines */
+                xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
+                xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
+                              client->rect.width - 3, offset + font->height + 3);
+        }
 
         /* If the client has a title, we draw it */
         if (client->name != NULL) {
@@ -227,11 +237,16 @@ void resize_client(xcb_connection_t *conn, Client *client) {
                         rect->height = client->rect.height - 2;
                         break;
                 default:
-                        if (client->titlebar_position == TITLEBAR_OFF) {
+                        if (client->titlebar_position == TITLEBAR_OFF && client->borderless) {
                                 rect->x = 0;
                                 rect->y = 0;
                                 rect->width = client->rect.width;
                                 rect->height = client->rect.height;
+                        } else if (client->titlebar_position == TITLEBAR_OFF && !client->borderless) {
+                                rect->x = 1;
+                                rect->y = 1;
+                                rect->width = client->rect.width - 1 - 1;
+                                rect->height = client->rect.height - 1 - 1;
                         } else {
                                 rect->x = 2;
                                 rect->y = font->height + 2 + 2;
@@ -281,9 +296,6 @@ void resize_client(xcb_connection_t *conn, Client *client) {
 void render_container(xcb_connection_t *conn, Container *container) {
         Client *client;
         int num_clients = 0, current_client = 0;
-
-        if (container->currently_focused == NULL)
-                return;
 
         CIRCLEQ_FOREACH(client, &(container->clients), clients)
                 num_clients++;
@@ -362,6 +374,9 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         xcb_configure_window(conn, stack_win->window, mask, values);
                 }
 
+                /* Prepare the pixmap for usage */
+                cached_pixmap_prepare(conn, &(stack_win->pixmap));
+
                 /* Render the decorations of all clients */
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* If the client is in fullscreen mode, it does not get reconfigured */
@@ -384,9 +399,12 @@ void render_container(xcb_connection_t *conn, Container *container) {
 
                         client->force_reconfigure = false;
 
-                        decorate_window(conn, client, stack_win->window, stack_win->gc,
+                        decorate_window(conn, client, stack_win->pixmap.id, stack_win->pixmap.gc,
                                         current_client++ * decoration_height);
                 }
+
+                xcb_copy_area(conn, stack_win->pixmap.id, stack_win->window, stack_win->pixmap.gc,
+                              0, 0, 0, 0, stack_win->rect.width, stack_win->rect.height);
         }
 }
 
@@ -415,7 +433,6 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
         i3Font *font = load_font(conn, config.font);
         i3Screen *screen = r_ws->screen;
         enum { SET_NORMAL = 0, SET_FOCUSED = 1 };
-        char label[3];
 
         /* Fill the whole bar in black */
         xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
@@ -432,18 +449,28 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
 
                 struct Colortriple *color = (screen->current_workspace == c ? &(config.bar.focused) :
                                              &(config.bar.unfocused));
+                Workspace *ws = &workspaces[c];
 
+                /* Draw the outer rect */
                 xcb_draw_rect(conn, screen->bar, screen->bargc, color->border,
-                              drawn * height, 1, height - 2, height - 2);
-                xcb_draw_rect(conn, screen->bar, screen->bargc, color->background,
-                              drawn * height + 1, 2, height - 4, height - 4);
+                              drawn,              /* x */
+                              1,                  /* y */
+                              ws->text_width + 5 + 5, /* width = text width + 5 px left + 5px right */
+                              height - 2          /* height = max. height - 1 px upper and 1 px bottom border */);
 
-                snprintf(label, sizeof(label), "%d", c+1);
+                /* Draw the background of this rect */
+                xcb_draw_rect(conn, screen->bar, screen->bargc, color->background,
+                              drawn + 1,
+                              2,
+                              ws->text_width + 4 + 4,
+                              height - 4);
+
                 xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, color->text);
                 xcb_change_gc_single(conn, screen->bargc, XCB_GC_BACKGROUND, color->background);
-                xcb_image_text_8(conn, strlen(label), screen->bar, screen->bargc, drawn * height + 5 /* X */,
-                                                font->height + 1 /* Y = baseline of font */, label);
-                drawn++;
+                xcb_image_text_16(conn, ws->name_len, screen->bar, screen->bargc, drawn + 5 /* X */,
+                                  font->height + 1 /* Y = baseline of font */,
+                                  (xcb_char2b_t*)ws->name);
+                drawn += ws->text_width + 12;
         }
 
         LOG("done rendering internal\n");
