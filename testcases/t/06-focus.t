@@ -32,10 +32,12 @@ sleep(0.25);
 # Create two windows and make sure focus switching works
 #####################################################################
 
+# Change mode of the container to "default" for following tests
+$sock->write(i3test::format_ipc_command("d"));
+sleep(0.25);
+
 my $top = i3test::open_standard_window;
-sleep(0.25);
 my $mid = i3test::open_standard_window;
-sleep(0.25);
 my $bottom = i3test::open_standard_window;
 sleep(0.25);
 
