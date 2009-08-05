@@ -994,7 +994,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         /* Is it just 's' for stacking or 'd' for default? */
         if ((command[0] == 's' || command[0] == 'd') && (command[1] == '\0')) {
-                if (last_focused == NULL || client_is_floating(last_focused)) {
+                if (last_focused != NULL && client_is_floating(last_focused)) {
                         LOG("not switching, this is a floating client\n");
                         return;
                 }
