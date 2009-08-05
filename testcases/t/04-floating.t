@@ -40,6 +40,8 @@ ok($absolute->{height} >= 50, "i3 raised the height to 50");
 
 ok($absolute->{x} != 0 && $absolute->{y} != 0, "i3 did not map it to (0x0)");
 
+$window->unmap;
+
 $original_rect = X11::XCB::Rect->new(x => 1, y => 1, width => 80, height => 90);
 
 $window = X11::XCB::Window->new(
@@ -62,5 +64,7 @@ ok($absolute->{width} == 80, "i3 let the width at 80");
 ok($absolute->{height} == 90, "i3 let the height at 90");
 
 ok($top->{x} == 1 && $top->{y} == 1, "i3 mapped it to (1,1)");
+
+$window->unmap;
 
 diag( "Testing i3, Perl $], $^X" );
