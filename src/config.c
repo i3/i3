@@ -14,6 +14,11 @@
 #include <stdlib.h>
 #include <glob.h>
 
+/* We need Xlib for XStringToKeysym */
+#include <X11/Xlib.h>
+
+#include <xcb/xcb_keysyms.h>
+
 #include "i3.h"
 #include "util.h"
 #include "config.h"
@@ -59,15 +64,28 @@ static void replace_variable(char *buffer, const char *key, const char *value) {
         }
 }
 
-/*
- * Ungrab the bound keys
+/**
+ * Ungrabs all keys, to be called before re-grabbing the keys because of a
+ * mapping_notify event or a configuration file reload
  *
  */
 void ungrab_all_keys(xcb_connection_t *conn) {
-        Binding *bind;
-        TAILQ_FOREACH(bind, &bindings, bindings) {
-                LOG("Ungrabbing %d\n", bind->keycode);
-                xcb_ungrab_key(conn, bind->keycode, root, bind->keycode);
+        LOG("Ungrabbing all keys\n");
+        xcb_ungrab_key(conn, XCB_GRAB_ANY, root, XCB_BUTTON_MASK_ANY);
+}
+
+static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint32_t keycode) {
+        LOG("Grabbing %d\n", keycode);
+        if ((bind->mods & BIND_MODE_SWITCH) != 0)
+                xcb_grab_key(conn, 0, root, 0, keycode,
+                        XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
+        else {
+                /* Grab the key in all combinations */
+                #define GRAB_KEY(modifier) xcb_grab_key(conn, 0, root, modifier, keycode, \
+                                                        XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC)
+                GRAB_KEY(bind->mods);
+                GRAB_KEY(bind->mods | xcb_numlock_mask);
+                GRAB_KEY(bind->mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
         }
 }
 
@@ -78,18 +96,41 @@ void ungrab_all_keys(xcb_connection_t *conn) {
 void grab_all_keys(xcb_connection_t *conn) {
         Binding *bind;
         TAILQ_FOREACH(bind, &bindings, bindings) {
-                LOG("Grabbing %d\n", bind->keycode);
-                if ((bind->mods & BIND_MODE_SWITCH) != 0)
-                        xcb_grab_key(conn, 0, root, 0, bind->keycode,
-                                XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
-                else {
-                        /* Grab the key in all combinations */
-                        #define GRAB_KEY(modifier) xcb_grab_key(conn, 0, root, modifier, bind->keycode, \
-                                                                XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC)
-                        GRAB_KEY(bind->mods);
-                        GRAB_KEY(bind->mods | xcb_numlock_mask);
-                        GRAB_KEY(bind->mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
+                /* The easy case: the user specified a keycode directly. */
+                if (bind->keycode > 0) {
+                        grab_keycode_for_binding(conn, bind, bind->keycode);
+                        continue;
                 }
+
+                /* We need to translate the symbol to a keycode */
+                LOG("Translating symbol to keycode (\"%s\")\n", bind->symbol);
+                xcb_keysym_t keysym = XStringToKeysym(bind->symbol);
+                if (keysym == NoSymbol) {
+                        LOG("Could not translate string to key symbol: \"%s\"\n", bind->symbol);
+                        continue;
+                }
+
+                xcb_keycode_t *keycodes = xcb_key_symbols_get_keycode(keysyms, keysym);
+                if (keycodes == NULL) {
+                        LOG("Could not translate symbol \"%s\"\n", bind->symbol);
+                        continue;
+                }
+
+                uint32_t last_keycode;
+                bind->number_keycodes = 0;
+                for (xcb_keycode_t *walk = keycodes; *walk != 0; walk++) {
+                        /* We hope duplicate keycodes will be returned in order
+                         * and skip them */
+                        if (last_keycode == *walk)
+                                continue;
+                        grab_keycode_for_binding(conn, bind, *walk);
+                        last_keycode = *walk;
+                        bind->number_keycodes++;
+                }
+                LOG("Got %d different keycodes\n", bind->number_keycodes);
+                bind->translated_to = smalloc(bind->number_keycodes * sizeof(xcb_keycode_t));
+                memcpy(bind->translated_to, keycodes, bind->number_keycodes * sizeof(xcb_keycode_t));
+                free(keycodes);
         }
 }
 
@@ -234,7 +275,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 }
 
                 /* key bindings */
-                if (strcasecmp(key, "bind") == 0) {
+                if (strcasecmp(key, "bind") == 0 || strcasecmp(key, "bindsym") == 0) {
                         #define CHECK_MODIFIER(name) \
                                 if (strncasecmp(walk, #name, strlen(#name)) == 0) { \
                                         modifiers |= BIND_##name; \
@@ -259,14 +300,25 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                                 break;
                         }
 
-                        /* Now check for the keycode */
-                        int keycode = strtol(walk, &rest, 10);
-                        if (!rest || *rest != ' ')
-                                die("Invalid binding\n");
+                        Binding *new = scalloc(sizeof(Binding));
+
+                        /* Now check for the keycode or copy the symbol */
+                        if (strcasecmp(key, "bind") == 0) {
+                                int keycode = strtol(walk, &rest, 10);
+                                if (!rest || *rest != ' ')
+                                        die("Invalid binding (keycode)\n");
+                                new->keycode = keycode;
+                        } else {
+                                rest = walk;
+                                char *sym = rest;
+                                while (*rest != '\0' && *rest != ' ')
+                                        rest++;
+                                if (*rest != ' ')
+                                        die("Invalid binding (keysym)\n");
+                                new->symbol = strndup(sym, (rest - sym));
+                        }
                         rest++;
-                        LOG("keycode = %d, modifiers = %d, command = *%s*\n", keycode, modifiers, rest);
-                        Binding *new = smalloc(sizeof(Binding));
-                        new->keycode = keycode;
+                        LOG("keycode = %d, symbol = %s, modifiers = %d, command = *%s*\n", new->keycode, new->symbol, modifiers, rest);
                         new->mods = modifiers;
                         new->command = sstrdup(rest);
                         TAILQ_INSERT_TAIL(&bindings, new, bindings);

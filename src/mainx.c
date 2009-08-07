@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <locale.h>
+#include <fcntl.h>
 
 #include <X11/XKBlib.h>
 #include <X11/extensions/XKB.h>
@@ -54,6 +55,8 @@ char **start_argv;
 
 /* This is our connection to X11 for use with XKB */
 Display *xkbdpy;
+
+xcb_key_symbols_t *keysyms;
 
 /* The list of key bindings */
 struct bindings_head bindings = TAILQ_HEAD_INITIALIZER(bindings);
@@ -108,6 +111,34 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
                 free(event);
         }
 }
+
+/*
+ * When using xmodmap to change the keyboard mapping, this event
+ * is only sent via XKB. Therefore, we need this special handler.
+ *
+ */
+static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
+        LOG("got xkb event, yay\n");
+        XEvent ev;
+        /* When using xmodmap, every change (!) gets an own event.
+         * Therefore, we just read all events and only handle the
+         * mapping_notify once (we do not receive any other XKB
+         * events anyway). */
+        while (XPending(xkbdpy))
+                XNextEvent(xkbdpy, &ev);
+
+        xcb_key_symbols_free(keysyms);
+        keysyms = xcb_key_symbols_alloc(global_conn);
+
+        xcb_get_numlock_mask(global_conn);
+
+        ungrab_all_keys(global_conn);
+        LOG("Re-grabbing...\n");
+        grab_all_keys(global_conn);
+        LOG("Done\n");
+
+}
+
 
 int main(int argc, char *argv[], char *env[]) {
         int i, screens, opt;
@@ -193,6 +224,11 @@ int main(int argc, char *argv[], char *env[]) {
                 return 1;
         }
 
+        if (fcntl(ConnectionNumber(xkbdpy), F_SETFD, FD_CLOEXEC) == -1) {
+                fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
+                return 1;
+        }
+
         int i1;
         if (!XkbQueryExtension(xkbdpy,&i1,&evBase,&errBase,&major,&minor)) {
                 fprintf(stderr, "XKB not supported by X-server\n");
@@ -200,17 +236,29 @@ int main(int argc, char *argv[], char *env[]) {
         }
         /* end of ugliness */
 
+        if (!XkbSelectEvents(xkbdpy, XkbUseCoreKbd, XkbMapNotifyMask, XkbMapNotifyMask)) {
+                fprintf(stderr, "Could not set XKB event mask\n");
+                return 1;
+        }
+
         /* Initialize event loop using libev */
         struct ev_loop *loop = ev_default_loop(0);
         if (loop == NULL)
                 die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
 
         struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
+        struct ev_io *xkb = scalloc(sizeof(struct ev_io));
         struct ev_check *xcb_check = scalloc(sizeof(struct ev_check));
         struct ev_prepare *xcb_prepare = scalloc(sizeof(struct ev_prepare));
 
         ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
         ev_io_start(loop, xcb_watcher);
+
+        ev_io_init(xkb, xkb_got_event, ConnectionNumber(xkbdpy), EV_READ);
+        ev_io_start(loop, xkb);
+
+        /* Flush the buffer so that libev can properly get new events */
+        XFlush(xkbdpy);
 
         ev_check_init(xcb_check, xcb_check_cb);
         ev_check_start(loop, xcb_check);
@@ -260,6 +308,9 @@ int main(int argc, char *argv[], char *env[]) {
         /* Motion notify = user moved his cursor (over the root window and may
          * cross virtual screen boundaries doing that) */
         xcb_event_set_motion_notify_handler(&evenths, handle_motion_notify, NULL);
+
+        /* Mapping notify = keyboard mapping changed (Xmodmap), re-grab bindings */
+        xcb_event_set_mapping_notify_handler(&evenths, handle_mapping_notify, NULL);
 
         /* Client message are sent to the root window. The only interesting client message
            for us is _NET_WM_STATE, we honour _NET_WM_STATE_FULLSCREEN */
@@ -340,6 +391,8 @@ int main(int argc, char *argv[], char *env[]) {
         /* Set up the window manager’s name */
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTING_WM_CHECK], WINDOW, 32, 1, &root);
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_WM_NAME], atoms[UTF8_STRING], 8, strlen("i3"), "i3");
+
+        keysyms = xcb_key_symbols_alloc(conn);
 
         xcb_get_numlock_mask(conn);
 

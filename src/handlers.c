@@ -119,9 +119,24 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
 
         /* Find the binding */
         Binding *bind;
-        TAILQ_FOREACH(bind, &bindings, bindings)
-                if (bind->keycode == event->detail && bind->mods == state_filtered)
-                        break;
+        TAILQ_FOREACH(bind, &bindings, bindings) {
+                /* First compare the modifiers */
+                if (bind->mods != state_filtered)
+                        continue;
+
+                /* If a symbol was specified by the user, we need to look in
+                 * the array of translated keycodes for the event’s keycode */
+                if (bind->symbol != NULL) {
+                        if (memmem(bind->translated_to,
+                                   bind->number_keycodes * sizeof(xcb_keycode_t),
+                                   &(event->detail), sizeof(xcb_keycode_t)) != NULL)
+                                break;
+                } else {
+                        /* This case is easier: The user specified a keycode */
+                        if (bind->keycode == event->detail)
+                                break;
+                }
+        }
 
         /* No match? Then it was an actively grabbed key, that is with Mode_switch, and
            the user did not press Mode_switch, so just pass it… */
@@ -237,6 +252,30 @@ int handle_motion_notify(void *ignored, xcb_connection_t *conn, xcb_motion_notif
         check_crossing_screen_boundary(event->root_x, event->root_y);
 
         return 1;
+}
+
+/*
+ * Called when the keyboard mapping changes (for example by using Xmodmap),
+ * we need to update our key bindings then (re-translate symbols).
+ *
+ */
+int handle_mapping_notify(void *ignored, xcb_connection_t *conn, xcb_mapping_notify_event_t *event) {
+        LOG("\n\nmapping notify\n\n");
+
+        if (event->request != XCB_MAPPING_KEYBOARD &&
+            event->request != XCB_MAPPING_MODIFIER)
+                return 0;
+
+        xcb_refresh_keyboard_mapping(keysyms, event);
+
+        xcb_get_numlock_mask(conn);
+
+        ungrab_all_keys(conn);
+        LOG("Re-grabbing...\n");
+        grab_all_keys(conn);
+        LOG("Done\n");
+
+        return 0;
 }
 
 /*

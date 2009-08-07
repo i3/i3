@@ -230,12 +230,29 @@ struct Workspace {
  *
  */
 struct Binding {
+        /** Symbol the user specified in configfile, if any. This needs to be
+         * stored with the binding to be able to re-convert it into a keycode
+         * if the keyboard mapping changes (using Xmodmap for example) */
+        char *symbol;
+
+        /** Only in use if symbol != NULL. Gets set to the value to which the
+         * symbol got translated when binding. Useful for unbinding and
+         * checking which binding was used when a key press event comes in.
+         *
+         * This is an array of number_keycodes size. */
+        xcb_keycode_t *translated_to;
+
+        uint32_t number_keycodes;
+
         /** Keycode to bind */
         uint32_t keycode;
+
         /** Bitmask consisting of BIND_MOD_1, BIND_MODE_SWITCH, … */
         uint32_t mods;
+
         /** Command, like in command mode */
         char *command;
+
         TAILQ_ENTRY(Binding) bindings;
 };
 

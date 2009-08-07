@@ -79,6 +79,18 @@ struct Config {
  *
  */
 void load_configuration(xcb_connection_t *conn, const char *override_configfile, bool reload);
+
+/**
+ * Ungrabs all keys, to be called before re-grabbing the keys because of a
+ * mapping_notify event or a configuration file reload
+ *
+ */
+void ungrab_all_keys(xcb_connection_t *conn);
+
+/**
+ * Grab the bound keys (tell X to send us keypress events for those keycodes)
+ *
+ */
 void grab_all_keys(xcb_connection_t *conn);
 
 #endif
