@@ -485,8 +485,15 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
         /* Set an empty name for every workspace which got no name */
         for (int i = 0; i < 10; i++) {
-                if (workspaces[i].name != NULL)
+                Workspace *ws = &(workspaces[i]);
+                if (ws->name != NULL) {
+                        /* If the font was not specified when the workspace name
+                         * was loaded, we need to predict the text width now */
+                        if (ws->text_width == 0)
+                                ws->text_width = predict_text_width(global_conn,
+                                                config.font, ws->name, ws->name_len);
                         continue;
+                }
 
                 workspace_set_name(&(workspaces[i]), NULL);
         }
