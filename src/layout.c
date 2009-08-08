@@ -156,8 +156,11 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         if (client->titlebar_position != TITLEBAR_OFF) {
                 /* Draw the lines */
                 xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
-                xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
-                              client->rect.width - 3, offset + font->height + 3);
+                if ((client->container == NULL ||
+                    client->container->mode != MODE_STACK ||
+                    CIRCLEQ_NEXT_OR_NULL(&(client->container->clients), client, clients) == NULL))
+                        xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
+                                      client->rect.width - 3, offset + font->height + 3);
         }
 
         /* If the client has a title, we draw it */
