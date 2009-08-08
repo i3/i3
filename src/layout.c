@@ -118,7 +118,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         } else {
                 if (client->container->currently_focused == client) {
                         /* Distinguish if the window is currently focused… */
-                        if (last_focused == client)
+                        if (last_focused == client && c_ws == client->workspace)
                                 color = &(config.client.focused);
                         /* …or if it is the focused window in a not focused container */
                         else color = &(config.client.focused_inactive);
