@@ -413,8 +413,6 @@ int main(int argc, char *argv[], char *env[]) {
 
         xcb_flush(conn);
 
-        manage_existing_windows(conn, &prophs, root);
-
         /* Get pointer position to see on which screen we’re starting */
         xcb_query_pointer_reply_t *reply;
         if ((reply = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, root), NULL)) == NULL) {
@@ -427,10 +425,11 @@ int main(int argc, char *argv[], char *env[]) {
                 LOG("ERROR: No screen at %d x %d\n", reply->root_x, reply->root_y);
                 return 0;
         }
-        if (screen->current_workspace != 0) {
-                LOG("Ok, I need to go to the other workspace\n");
-                c_ws = &workspaces[screen->current_workspace];
-        }
+
+        LOG("Starting on %d\n", screen->current_workspace);
+        c_ws = &workspaces[screen->current_workspace];
+
+        manage_existing_windows(conn, &prophs, root);
 
         /* Create the UNIX domain socket for IPC */
         if (config.ipc_socket_path != NULL) {

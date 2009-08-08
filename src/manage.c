@@ -342,12 +342,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
                         LOG("Changing container/workspace and unmapping the client\n");
                         Workspace *t_ws = &(workspaces[assign->workspace-1]);
-                        if (t_ws->screen == NULL) {
-                                LOG("initializing new workspace, setting num to %d\n", assign->workspace);
-                                t_ws->screen = c_ws->screen;
-                                /* Copy the dimensions from the virtual screen */
-                                memcpy(&(t_ws->rect), &(t_ws->screen->rect), sizeof(Rect));
-                        }
+                        workspace_initialize(t_ws, c_ws->screen);
 
                         new->container = t_ws->table[t_ws->current_col][t_ws->current_row];
                         new->workspace = t_ws;
@@ -445,8 +440,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         /* Map the window first to avoid flickering */
         xcb_map_window(conn, child);
-        if (map_frame)
+        if (map_frame) {
+                LOG("Mapping client\n");
                 xcb_map_window(conn, new->frame);
+        }
         if (CUR_CELL->workspace->fullscreen_client == NULL && !new->dock) {
                 /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
                 if (new->workspace->fullscreen_client == NULL) {

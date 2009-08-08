@@ -194,6 +194,13 @@ struct Workspace {
         /** Are the floating clients on this workspace currently hidden? */
         bool floating_hidden;
 
+        /** A <screen> specifier on which this workspace would like to be (if
+         * the screen is available). screen := <number> | <position> */
+        char *preferred_screen;
+
+        /** Temporary flag needed for re-querying xinerama screens */
+        bool reassigned;
+
         /** the client who is started in fullscreen mode on this workspace,
          * NULL if there is none */
         Client *fullscreen_client;

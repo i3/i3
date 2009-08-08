@@ -349,9 +349,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         continue;
                 }
 
-                /* name "workspace number" "name of the workspace" */
-                if (strcasecmp(key, "name") == 0) {
-                        LOG("name workspace: %s\n",value);
+                /* workspace "workspace number" [screen <screen>] ["name of the workspace"]
+                 * with screen := <number> | <position>, e.g. screen 1280 or screen 1 */
+                if (strcasecmp(key, "name") == 0 || strcasecmp(key, "workspace") == 0) {
+                        LOG("workspace: %s\n",value);
                         char *ws_str = sstrdup(value);
                         char *end = strchr(ws_str, ' ');
                         if (end == NULL)
@@ -371,10 +372,29 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         char *name = value;
                         name += strlen(ws_str) + 1;
 
+                        if (strncasecmp(name, "screen ", strlen("screen ")) == 0) {
+                                char *screen = strdup(name + strlen("screen "));
+                                if ((end = strchr(screen, ' ')) != NULL)
+                                        *end = '\0';
+                                LOG("Setting preferred screen for workspace %d to \"%s\"\n", ws_num, screen);
+                                workspaces[ws_num - 1].preferred_screen = screen;
+
+                                name += strlen("screen ") + strlen(screen);
+
+                        }
+
+                        /* Strip leading whitespace */
+                        while (*name != '\0' && *name == ' ')
+                                name++;
+
+                        LOG("rest to parse = %s\n", name);
+
                         if (name == '\0') {
                                 free(ws_str);
                                 continue;
                         }
+
+                        LOG("setting name to \"%s\"\n", name);
 
                         workspace_set_name(&(workspaces[ws_num - 1]), name);
                         free(ws_str);

@@ -35,6 +35,7 @@
 #include "client.h"
 #include "manage.h"
 #include "floating.h"
+#include "workspace.h"
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -337,7 +338,7 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
                         int add = (event->detail == XCB_BUTTON_INDEX_4 ? -1 : 1);
                         for (int i = c_ws->num + add; (i >= 0) && (i < 10); i += add)
                                 if (workspaces[i].screen == screen) {
-                                        show_workspace(conn, i+1);
+                                        workspace_show(conn, i+1);
                                         return true;
                                 }
                         return true;
@@ -352,7 +353,7 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
                                         i, drawn, workspaces[i].text_width);
                         if (event->event_x > (drawn + 1) &&
                             event->event_x <= (drawn + 1 + workspaces[i].text_width + 5 + 5)) {
-                                show_workspace(conn, i+1);
+                                workspace_show(conn, i+1);
                                 return true;
                         }
 

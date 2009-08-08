@@ -113,7 +113,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                 }
 
                 LOG("Switching to ws %d\n", target->current_workspace + 1);
-                show_workspace(conn, target->current_workspace + 1);
+                workspace_show(conn, target->current_workspace + 1);
                 return;
         }
 
@@ -631,113 +631,6 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
 }
 
 /*
- * Switches to the given workspace
- *
- */
-void show_workspace(xcb_connection_t *conn, int workspace) {
-        Client *client;
-        bool need_warp = false;
-        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
-        /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */
-        Workspace *t_ws = &(workspaces[workspace-1]);
-
-        LOG("show_workspace(%d)\n", workspace);
-
-        /* Store current_row/current_col */
-        c_ws->current_row = current_row;
-        c_ws->current_col = current_col;
-
-        /* Check if the workspace has not been used yet */
-        if (t_ws->screen == NULL) {
-                LOG("initializing new workspace, setting num to %d\n", workspace);
-                t_ws->screen = c_ws->screen;
-                /* Copy the dimensions from the virtual screen */
-		memcpy(&(t_ws->rect), &(t_ws->screen->rect), sizeof(Rect));
-        }
-
-        if (c_ws->screen != t_ws->screen) {
-                /* We need to switch to the other screen first */
-                LOG("moving over to other screen.\n");
-
-                /* Store the old client */
-                Client *old_client = CUR_CELL->currently_focused;
-
-                c_ws = &(workspaces[t_ws->screen->current_workspace]);
-                current_col = c_ws->current_col;
-                current_row = c_ws->current_row;
-                if (CUR_CELL->currently_focused != NULL)
-                        need_warp = true;
-                else {
-                        Rect *dims = &(c_ws->screen->rect);
-                        xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0,
-                                         dims->x + (dims->width / 2), dims->y + (dims->height / 2));
-                }
-
-                /* Re-decorate the old client, it’s not focused anymore */
-                if ((old_client != NULL) && !old_client->dock)
-                        redecorate_window(conn, old_client);
-                else xcb_flush(conn);
-        }
-
-        /* Check if we need to change something or if we’re already there */
-        if (c_ws->screen->current_workspace == (workspace-1)) {
-                Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
-                if (last_focused != SLIST_END(&(c_ws->focus_stack))) {
-                        set_focus(conn, last_focused, true);
-                        if (need_warp) {
-                                client_warp_pointer_into(conn, last_focused);
-                                xcb_flush(conn);
-                        }
-                }
-
-                return;
-        }
-
-        t_ws->screen->current_workspace = workspace-1;
-        Workspace *old_workspace = c_ws;
-        c_ws = &workspaces[workspace-1];
-
-        /* Unmap all clients of the old workspace */
-        unmap_workspace(conn, old_workspace);
-
-        current_row = c_ws->current_row;
-        current_col = c_ws->current_col;
-        LOG("new current row = %d, current col = %d\n", current_row, current_col);
-
-        ignore_enter_notify_forall(conn, c_ws, true);
-
-        /* Map all clients on the new workspace */
-        FOR_TABLE(c_ws)
-                CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
-                        xcb_map_window(conn, client->frame);
-
-        /* Map all floating clients */
-        if (!c_ws->floating_hidden)
-                TAILQ_FOREACH(client, &(c_ws->floating_clients), floating_clients)
-                        xcb_map_window(conn, client->frame);
-
-        /* Map all stack windows, if any */
-        struct Stack_Window *stack_win;
-        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
-                if (stack_win->container->workspace == c_ws)
-                        xcb_map_window(conn, stack_win->window);
-
-        ignore_enter_notify_forall(conn, c_ws, false);
-
-        /* Restore focus on the new workspace */
-        Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
-        if (last_focused != SLIST_END(&(c_ws->focus_stack))) {
-                set_focus(conn, last_focused, true);
-                if (need_warp) {
-                        client_warp_pointer_into(conn, last_focused);
-                        xcb_flush(conn);
-                }
-        } else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
-
-        render_layout(conn);
-}
-
-/*
  * Jumps to the given window class / title.
  * Title is matched using strstr, that is, matches if it appears anywhere
  * in the string. Regular expressions seem to be a bit overkill here. However,
@@ -782,7 +675,7 @@ static void jump_to_container(xcb_connection_t *conn, const char *arguments) {
         }
 
         /* Move to the target workspace */
-        show_workspace(conn, ws);
+        workspace_show(conn, ws);
 
         if (result < 3)
                 return;
@@ -909,7 +802,7 @@ static void next_previous_workspace(xcb_connection_t *conn, int direction) {
         }
 
         if (t_ws->screen != NULL)
-                show_workspace(conn, i+1);
+                workspace_show(conn, i+1);
 }
 
 /*
@@ -1086,7 +979,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         if (*rest == '\0') {
                 /* No rest? This was a workspace number, not a times specification */
-                show_workspace(conn, times);
+                workspace_show(conn, times);
                 return;
         }
 

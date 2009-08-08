@@ -413,7 +413,7 @@ static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int 
         SLIST_FOREACH(client, &(r_ws->screen->dock_clients), dock_clients) {
                 LOG("client is at %d, should be at %d\n", client->rect.y, *height);
                 if (client->force_reconfigure |
-                    update_if_necessary(&(client->rect.x), 0) |
+                    update_if_necessary(&(client->rect.x), r_ws->rect.x) |
                     update_if_necessary(&(client->rect.y), *height))
                         reposition_client(conn, client);
 

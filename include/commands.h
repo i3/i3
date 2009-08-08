@@ -16,9 +16,6 @@
 bool focus_window_in_container(xcb_connection_t *conn, Container *container,
                                direction_t direction);
 
-/** Switches to the given workspace */
-void show_workspace(xcb_connection_t *conn, int workspace);
-
 /** Parses a command, see file CMDMODE for more information */
 void parse_command(xcb_connection_t *conn, const char *command);
 

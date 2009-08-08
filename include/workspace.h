@@ -11,6 +11,7 @@
 #include <xcb/xcb.h>
 
 #include "data.h"
+#include "xinerama.h"
 
 #ifndef _WORKSPACE_H
 #define _WORKSPACE_H
@@ -31,5 +32,37 @@ void workspace_set_name(Workspace *ws, const char *name);
  *
  */
 bool workspace_is_visible(Workspace *ws);
+
+/** Switches to the given workspace */
+void workspace_show(xcb_connection_t *conn, int workspace);
+
+/**
+ * Initializes the given workspace if it is not already initialized. The given
+ * screen is to be understood as a fallback, if the workspace itself either
+ * was not assigned to a particular screen or cannot be placed there because
+ * the screen is not attached at the moment.
+ *
+ */
+void workspace_initialize(Workspace *ws, i3Screen *screen);
+
+/**
+ * Gets the first unused workspace for the given screen, taking into account
+ * the preferred_screen setting of every workspace (workspace assignments).
+ *
+ */
+Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *screen);
+
+/**
+ * Unmaps all clients (and stack windows) of the given workspace.
+ *
+ * This needs to be called separately when temporarily rendering a workspace
+ * which is not the active workspace to force reconfiguration of all clients,
+ * like in src/xinerama.c when re-assigning a workspace to another screen.
+ *
+ */
+void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws);
+
+
+void workspace_map_clients(xcb_connection_t *conn, Workspace *ws);
 
 #endif
