@@ -213,16 +213,23 @@ void reposition_client(xcb_connection_t *conn, Client *client) {
 }
 
 /*
- * Pushes the client’s width/height to X11 and resizes the child window
+ * Pushes the client’s width/height to X11 and resizes the child window. This
+ * function also updates the client’s position, so if you work on tiling clients
+ * only, you can use this function instead of separate calls to reposition_client
+ * and resize_client to reduce flickering.
  *
  */
 void resize_client(xcb_connection_t *conn, Client *client) {
         i3Font *font = load_font(conn, config.font);
 
+        LOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
         LOG("resizing client 0x%08x to %d x %d\n", client->frame, client->rect.width, client->rect.height);
         xcb_configure_window(conn, client->frame,
-                        XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                        &(client->rect.width));
+                        XCB_CONFIG_WINDOW_X |
+                        XCB_CONFIG_WINDOW_Y |
+                        XCB_CONFIG_WINDOW_WIDTH |
+                        XCB_CONFIG_WINDOW_HEIGHT,
+                        &(client->rect.x));
 
         /* Adjust the position of the child inside its frame.
          * The coordinates of the child are relative to its frame, we
@@ -317,14 +324,12 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         if (client->force_reconfigure |
                             update_if_necessary(&(client->rect.x), container->x) |
                             update_if_necessary(&(client->rect.y), container->y +
-                                        (container->height / num_clients) * current_client))
-                                reposition_client(conn, client);
-
-                        /* TODO: vertical default layout */
-                        if (client->force_reconfigure |
+                                        (container->height / num_clients) * current_client) |
                             update_if_necessary(&(client->rect.width), container->width) |
                             update_if_necessary(&(client->rect.height), container->height / num_clients))
                                 resize_client(conn, client);
+
+                        /* TODO: vertical default layout */
 
                         client->force_reconfigure = false;
 
@@ -392,10 +397,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |
                             update_if_necessary(&(client->rect.x), container->x) |
-                            update_if_necessary(&(client->rect.y), container->y + (decoration_height * num_clients)))
-                                reposition_client(conn, client);
-
-                        if (client->force_reconfigure |
+                            update_if_necessary(&(client->rect.y), container->y + (decoration_height * num_clients)) |
                             update_if_necessary(&(client->rect.width), container->width) |
                             update_if_necessary(&(client->rect.height), container->height - (decoration_height * num_clients)))
                                 resize_client(conn, client);
