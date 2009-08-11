@@ -35,6 +35,7 @@
 #include "client.h"
 #include "manage.h"
 #include "floating.h"
+#include "workspace.h"
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -119,9 +120,24 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
 
         /* Find the binding */
         Binding *bind;
-        TAILQ_FOREACH(bind, &bindings, bindings)
-                if (bind->keycode == event->detail && bind->mods == state_filtered)
-                        break;
+        TAILQ_FOREACH(bind, &bindings, bindings) {
+                /* First compare the modifiers */
+                if (bind->mods != state_filtered)
+                        continue;
+
+                /* If a symbol was specified by the user, we need to look in
+                 * the array of translated keycodes for the event’s keycode */
+                if (bind->symbol != NULL) {
+                        if (memmem(bind->translated_to,
+                                   bind->number_keycodes * sizeof(xcb_keycode_t),
+                                   &(event->detail), sizeof(xcb_keycode_t)) != NULL)
+                                break;
+                } else {
+                        /* This case is easier: The user specified a keycode */
+                        if (bind->keycode == event->detail)
+                                break;
+                }
+        }
 
         /* No match? Then it was an actively grabbed key, that is with Mode_switch, and
            the user did not press Mode_switch, so just pass it… */
@@ -140,6 +156,29 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
         return 1;
 }
 
+/*
+ * Called with coordinates of an enter_notify event or motion_notify event
+ * to check if the user crossed virtual screen boundaries and adjust the
+ * current workspace, if so.
+ *
+ */
+static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
+        i3Screen *screen;
+
+        if ((screen = get_screen_containing(x, y)) == NULL) {
+                LOG("ERROR: No such screen\n");
+                return;
+        }
+        if (screen == c_ws->screen)
+                return;
+
+        c_ws->current_row = current_row;
+        c_ws->current_col = current_col;
+        c_ws = &workspaces[screen->current_workspace];
+        current_row = c_ws->current_row;
+        current_col = c_ws->current_col;
+        LOG("We're now on virtual screen number %d\n", screen->num);
+}
 
 /*
  * When the user moves the mouse pointer onto a window, this callback gets called.
@@ -176,17 +215,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
         /* If not, then the user moved his cursor to the root window. In that case, we adjust c_ws */
         if (client == NULL) {
                 LOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
-                i3Screen *screen = get_screen_containing(event->root_x, event->root_y);
-                if (screen == NULL) {
-                        LOG("ERROR: No such screen\n");
-                        return 0;
-                }
-                c_ws->current_row = current_row;
-                c_ws->current_col = current_col;
-                c_ws = &workspaces[screen->current_workspace];
-                current_row = c_ws->current_row;
-                current_col = c_ws->current_col;
-                LOG("We're now on virtual screen number %d\n", screen->num);
+                check_crossing_screen_boundary(event->root_x, event->root_y);
                 return 1;
         }
 
@@ -210,6 +239,44 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
         set_focus(conn, client, false);
 
         return 1;
+}
+
+/*
+ * When the user moves the mouse but does not change the active window
+ * (e.g. when having no windows opened but moving mouse on the root screen
+ * and crossing virtual screen boundaries), this callback gets called.
+ *
+ */
+int handle_motion_notify(void *ignored, xcb_connection_t *conn, xcb_motion_notify_event_t *event) {
+        LOG("pointer motion notify, getting screen at %d x %d\n", event->root_x, event->root_y);
+
+        check_crossing_screen_boundary(event->root_x, event->root_y);
+
+        return 1;
+}
+
+/*
+ * Called when the keyboard mapping changes (for example by using Xmodmap),
+ * we need to update our key bindings then (re-translate symbols).
+ *
+ */
+int handle_mapping_notify(void *ignored, xcb_connection_t *conn, xcb_mapping_notify_event_t *event) {
+        LOG("\n\nmapping notify\n\n");
+
+        if (event->request != XCB_MAPPING_KEYBOARD &&
+            event->request != XCB_MAPPING_MODIFIER)
+                return 0;
+
+        xcb_refresh_keyboard_mapping(keysyms, event);
+
+        xcb_get_numlock_mask(conn);
+
+        ungrab_all_keys(conn);
+        LOG("Re-grabbing...\n");
+        grab_all_keys(conn);
+        LOG("Done\n");
+
+        return 0;
 }
 
 /*
@@ -271,7 +338,7 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
                         int add = (event->detail == XCB_BUTTON_INDEX_4 ? -1 : 1);
                         for (int i = c_ws->num + add; (i >= 0) && (i < 10); i += add)
                                 if (workspaces[i].screen == screen) {
-                                        show_workspace(conn, i+1);
+                                        workspace_show(conn, i+1);
                                         return true;
                                 }
                         return true;
@@ -286,7 +353,7 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
                                         i, drawn, workspaces[i].text_width);
                         if (event->event_x > (drawn + 1) &&
                             event->event_x <= (drawn + 1 + workspaces[i].text_width + 5 + 5)) {
-                                show_workspace(conn, i+1);
+                                workspace_show(conn, i+1);
                                 return true;
                         }
 
@@ -629,6 +696,9 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 
         LOG("child of 0x%08x.\n", client->frame);
         xcb_reparent_window(conn, client->child, root, 0, 0);
+
+        client_unmap(conn, client);
+
         xcb_destroy_window(conn, client->frame);
         xcb_flush(conn);
         table_remove(&by_parent, client->frame);

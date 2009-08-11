@@ -118,7 +118,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         } else {
                 if (client->container->currently_focused == client) {
                         /* Distinguish if the window is currently focused… */
-                        if (last_focused == client)
+                        if (last_focused == client && c_ws == client->workspace)
                                 color = &(config.client.focused);
                         /* …or if it is the focused window in a not focused container */
                         else color = &(config.client.focused_inactive);
@@ -156,8 +156,11 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         if (client->titlebar_position != TITLEBAR_OFF) {
                 /* Draw the lines */
                 xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
-                xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
-                              client->rect.width - 3, offset + font->height + 3);
+                if ((client->container == NULL ||
+                    client->container->mode != MODE_STACK ||
+                    CIRCLEQ_NEXT_OR_NULL(&(client->container->clients), client, clients) == NULL))
+                        xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
+                                      client->rect.width - 3, offset + font->height + 3);
         }
 
         /* If the client has a title, we draw it */
@@ -210,16 +213,23 @@ void reposition_client(xcb_connection_t *conn, Client *client) {
 }
 
 /*
- * Pushes the client’s width/height to X11 and resizes the child window
+ * Pushes the client’s width/height to X11 and resizes the child window. This
+ * function also updates the client’s position, so if you work on tiling clients
+ * only, you can use this function instead of separate calls to reposition_client
+ * and resize_client to reduce flickering.
  *
  */
 void resize_client(xcb_connection_t *conn, Client *client) {
         i3Font *font = load_font(conn, config.font);
 
+        LOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
         LOG("resizing client 0x%08x to %d x %d\n", client->frame, client->rect.width, client->rect.height);
         xcb_configure_window(conn, client->frame,
-                        XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                        &(client->rect.width));
+                        XCB_CONFIG_WINDOW_X |
+                        XCB_CONFIG_WINDOW_Y |
+                        XCB_CONFIG_WINDOW_WIDTH |
+                        XCB_CONFIG_WINDOW_HEIGHT,
+                        &(client->rect.x));
 
         /* Adjust the position of the child inside its frame.
          * The coordinates of the child are relative to its frame, we
@@ -314,14 +324,12 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         if (client->force_reconfigure |
                             update_if_necessary(&(client->rect.x), container->x) |
                             update_if_necessary(&(client->rect.y), container->y +
-                                        (container->height / num_clients) * current_client))
-                                reposition_client(conn, client);
-
-                        /* TODO: vertical default layout */
-                        if (client->force_reconfigure |
+                                        (container->height / num_clients) * current_client) |
                             update_if_necessary(&(client->rect.width), container->width) |
                             update_if_necessary(&(client->rect.height), container->height / num_clients))
                                 resize_client(conn, client);
+
+                        /* TODO: vertical default layout */
 
                         client->force_reconfigure = false;
 
@@ -389,10 +397,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |
                             update_if_necessary(&(client->rect.x), container->x) |
-                            update_if_necessary(&(client->rect.y), container->y + (decoration_height * num_clients)))
-                                reposition_client(conn, client);
-
-                        if (client->force_reconfigure |
+                            update_if_necessary(&(client->rect.y), container->y + (decoration_height * num_clients)) |
                             update_if_necessary(&(client->rect.width), container->width) |
                             update_if_necessary(&(client->rect.height), container->height - (decoration_height * num_clients)))
                                 resize_client(conn, client);
@@ -413,7 +418,7 @@ static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int 
         SLIST_FOREACH(client, &(r_ws->screen->dock_clients), dock_clients) {
                 LOG("client is at %d, should be at %d\n", client->rect.y, *height);
                 if (client->force_reconfigure |
-                    update_if_necessary(&(client->rect.x), 0) |
+                    update_if_necessary(&(client->rect.x), r_ws->rect.x) |
                     update_if_necessary(&(client->rect.y), *height))
                         reposition_client(conn, client);
 

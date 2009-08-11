@@ -224,65 +224,6 @@ Client *get_last_focused_client(xcb_connection_t *conn, Container *container, Cl
         return NULL;
 }
 
-/*
- * Unmaps all clients (and stack windows) of the given workspace.
- *
- * This needs to be called separately when temporarily rendering
- * a workspace which is not the active workspace to force
- * reconfiguration of all clients, like in src/xinerama.c when
- * re-assigning a workspace to another screen.
- *
- */
-void unmap_workspace(xcb_connection_t *conn, Workspace *u_ws) {
-        Client *client;
-        struct Stack_Window *stack_win;
-
-        /* Ignore notify events because they would cause focus to be changed */
-        ignore_enter_notify_forall(conn, u_ws, true);
-
-        /* Unmap all clients of the given workspace */
-        int unmapped_clients = 0;
-        FOR_TABLE(u_ws)
-                CIRCLEQ_FOREACH(client, &(u_ws->table[cols][rows]->clients), clients) {
-                        LOG("unmapping normal client %p / %p / %p\n", client, client->frame, client->child);
-                        xcb_unmap_window(conn, client->frame);
-                        unmapped_clients++;
-                }
-
-        /* To find floating clients, we traverse the focus stack */
-        SLIST_FOREACH(client, &(u_ws->focus_stack), focus_clients) {
-                if (!client_is_floating(client))
-                        continue;
-
-                LOG("unmapping floating client %p / %p / %p\n", client, client->frame, client->child);
-
-                xcb_unmap_window(conn, client->frame);
-                unmapped_clients++;
-        }
-
-        /* If we did not unmap any clients, the workspace is empty and we can destroy it, at least
-         * if it is not the current workspace. */
-        if (unmapped_clients == 0 && u_ws != c_ws) {
-                /* Re-assign the workspace of all dock clients which use this workspace */
-                Client *dock;
-                LOG("workspace %p is empty\n", u_ws);
-                SLIST_FOREACH(dock, &(u_ws->screen->dock_clients), dock_clients) {
-                        if (dock->workspace != u_ws)
-                                continue;
-
-                        LOG("Re-assigning dock client to c_ws (%p)\n", c_ws);
-                        dock->workspace = c_ws;
-                }
-                u_ws->screen = NULL;
-        }
-
-        /* Unmap the stack windows on the given workspace, if any */
-        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
-                if (stack_win->container->workspace == u_ws)
-                        xcb_unmap_window(conn, stack_win->window);
-
-        ignore_enter_notify_forall(conn, u_ws, false);
-}
 
 /*
  * Sets the given client as focused by updating the data structures correctly,

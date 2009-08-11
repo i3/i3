@@ -46,7 +46,10 @@ void redecorate_window(xcb_connection_t *conn, Client *client);
 void reposition_client(xcb_connection_t *conn, Client *client);
 
 /**
- * Pushes the client’s width/height to X11 and resizes the child window
+ * Pushes the client’s width/height to X11 and resizes the child window. This
+ * function also updates the client’s position, so if you work on tiling clients
+ * only, you can use this function instead of separate calls to reposition_client
+ * and resize_client to reduce flickering.
  *
  */
 void resize_client(xcb_connection_t *conn, Client *client);

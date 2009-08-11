@@ -17,6 +17,13 @@ TAILQ_HEAD(screens_head, Screen);
 extern struct screens_head *virtual_screens;
 
 /**
+ * Returns true if both screen objects describe the same screen (checks their
+ * size and position).
+ *
+ */
+bool screens_are_equal(i3Screen *screen1, i3Screen *screen2);
+
+/**
  * We have just established a connection to the X server and need the initial
  * Xinerama information to setup workspaces for each screen.
  *

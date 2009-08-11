@@ -36,6 +36,23 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn,
                         xcb_enter_notify_event_t *event);
 
 /**
+ * When the user moves the mouse but does not change the active window
+ * (e.g. when having no windows opened but moving mouse on the root screen
+ * and crossing virtual screen boundaries), this callback gets called.
+ *
+ */
+int handle_motion_notify(void *ignored, xcb_connection_t *conn,
+                         xcb_motion_notify_event_t *event);
+
+/**
+ * Called when the keyboard mapping changes (for example by using Xmodmap),
+ * we need to update our key bindings then (re-translate symbols).
+ *
+ */
+int handle_mapping_notify(void *ignored, xcb_connection_t *conn,
+                          xcb_mapping_notify_event_t *event);
+
+/**
  * Checks if the button press was on a stack window, handles focus setting and
  * returns true if so, or false otherwise.
  *

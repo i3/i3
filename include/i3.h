@@ -11,6 +11,7 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_property.h>
 #include <xcb/xcb_event.h>
+#include <xcb/xcb_keysyms.h>
 
 #include <X11/XKBlib.h>
 
@@ -23,6 +24,7 @@
 #define NUM_ATOMS 18
 
 extern xcb_connection_t *global_conn;
+extern xcb_key_symbols_t *keysyms;
 extern char **start_argv;
 extern Display *xkbdpy;
 extern TAILQ_HEAD(bindings_head, Binding) bindings;
