@@ -1069,6 +1069,4 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         continue;
                 }
         }
-
-        LOG("--- done ---\n");
 }

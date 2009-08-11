@@ -109,7 +109,6 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         if (client->dock)
                 return;
 
-        LOG("redecorating child %08x\n", client->child);
         last_focused = SLIST_FIRST(&(client->workspace->focus_stack));
         if (client_is_floating(client)) {
                 if (last_focused == client)
@@ -209,7 +208,6 @@ void reposition_client(xcb_connection_t *conn, Client *client) {
         LOG("Client is on workspace %p with screen %p\n", client->workspace, client->workspace->screen);
         LOG("but screen at %d, %d is %p\n", client->rect.x, client->rect.y, screen);
         floating_assign_to_workspace(client, &workspaces[screen->current_workspace]);
-        LOG("fixed that\n");
 }
 
 /*
@@ -325,7 +323,6 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 num_clients++;
 
         if (container->mode == MODE_DEFAULT) {
-                LOG("got %d clients in this default container.\n", num_clients);
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* If the client is in fullscreen mode, it does not get reconfigured */
                         if (container->workspace->fullscreen_client == client) {
@@ -535,8 +532,6 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
         /* Space for the internal bar */
         height -= (font->height + 6);
 
-        LOG("got %d rows and %d cols\n", r_ws->rows, r_ws->cols);
-
         int xoffset[r_ws->rows];
         int yoffset[r_ws->cols];
         /* Initialize offsets */
@@ -545,19 +540,12 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
         for (int rows = 0; rows < r_ws->rows; rows++)
                 xoffset[rows] = r_ws->rect.x;
 
-        dump_table(conn, r_ws);
-
         ignore_enter_notify_forall(conn, r_ws, true);
 
         /* Go through the whole table and render what’s necessary */
         FOR_TABLE(r_ws) {
                 Container *container = r_ws->table[cols][rows];
                 int single_width = -1, single_height;
-                LOG("\n");
-                LOG("========\n");
-                LOG("container has %d colspan, %d rowspan\n",
-                                container->colspan, container->rowspan);
-                LOG("container at %d, %d\n", xoffset[rows], yoffset[cols]);
                 /* Update position of the container */
                 container->row = rows;
                 container->col = cols;
@@ -585,7 +573,6 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
 
                 xoffset[rows] += single_width;
                 yoffset[cols] += single_height;
-                LOG("==========\n");
         }
 
         ignore_enter_notify_forall(conn, r_ws, false);
@@ -605,10 +592,8 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
 void render_layout(xcb_connection_t *conn) {
         i3Screen *screen;
 
-        TAILQ_FOREACH(screen, virtual_screens, screens) {
-                LOG("Rendering screen %d\n", screen->num);
+        TAILQ_FOREACH(screen, virtual_screens, screens)
                 render_workspace(conn, screen, &(workspaces[screen->current_workspace]));
-        }
 
         xcb_flush(conn);
 }

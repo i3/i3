@@ -181,8 +181,6 @@ void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window) 
 
         xcb_send_event(conn, false, window, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (char*)&generated_event);
         xcb_flush(conn);
-
-        LOG("Told the client it is at %dx%d with %dx%d\n", r.x, r.y, r.width, r.height);
 }
 
 /*

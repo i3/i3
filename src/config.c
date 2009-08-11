@@ -50,9 +50,7 @@ static void replace_variable(char *buffer, const char *key, const char *value) {
         /* To prevent endless recursions when the user makes an error configuring,
          * we stop after 100 replacements. That should be vastly more than enough. */
         int c = 0;
-        LOG("Replacing %s with %s\n", key, value);
         while ((pos = strcasestr(buffer, key)) != NULL && c++ < 100) {
-                LOG("replacing variable %s in \"%s\" with \"%s\"\n", key, buffer, value);
                 char *rest = pos + strlen(key);
                 *pos = '\0';
                 char *replaced;
@@ -103,7 +101,6 @@ void grab_all_keys(xcb_connection_t *conn) {
                 }
 
                 /* We need to translate the symbol to a keycode */
-                LOG("Translating symbol to keycode (\"%s\")\n", bind->symbol);
                 xcb_keysym_t keysym = XStringToKeysym(bind->symbol);
                 if (keysym == NoSymbol) {
                         LOG("Could not translate string to key symbol: \"%s\"\n", bind->symbol);
@@ -127,7 +124,7 @@ void grab_all_keys(xcb_connection_t *conn) {
                         last_keycode = *walk;
                         bind->number_keycodes++;
                 }
-                LOG("Got %d different keycodes\n", bind->number_keycodes);
+                LOG("Translated symbol \"%s\" to %d keycode\n", bind->symbol, bind->number_keycodes);
                 bind->translated_to = smalloc(bind->number_keycodes * sizeof(xcb_keycode_t));
                 memcpy(bind->translated_to, keycodes, bind->number_keycodes * sizeof(xcb_keycode_t));
                 free(keycodes);

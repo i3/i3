@@ -240,10 +240,8 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         Client *old_client = SLIST_FIRST(&(c_ws->focus_stack));
 
         /* Check if the focus needs to be changed at all */
-        if (!set_anyways && (old_client == client)) {
-                LOG("old_client == client, not changing focus\n");
+        if (!set_anyways && (old_client == client))
                 return;
-        }
 
         /* Store current_row/current_col */
         c_ws->current_row = current_row;
@@ -261,7 +259,7 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
                 current_row = client->container->row;
         }
 
-        LOG("set_focus(frame %08x, child %08x, name %s)\n", client->frame, client->child, client->name);
+        CLIENT_LOG(client);
         /* Set focus to the entered window, and flush xcb buffer immediately */
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
         //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);

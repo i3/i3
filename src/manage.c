@@ -68,7 +68,6 @@ void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *pr
 void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
                    xcb_window_t window, xcb_get_window_attributes_cookie_t cookie,
                    bool needs_to_be_mapped) {
-        LOG("managing window.\n");
         xcb_drawable_t d = { window };
         xcb_get_geometry_cookie_t geomc;
         xcb_get_geometry_reply_t *geom;
@@ -83,16 +82,12 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
                 return;
         }
 
-        if (needs_to_be_mapped && attr->map_state != XCB_MAP_STATE_VIEWABLE) {
-                LOG("Window not mapped, not managing\n");
+        if (needs_to_be_mapped && attr->map_state != XCB_MAP_STATE_VIEWABLE)
                 goto out;
-        }
 
         /* Don’t manage clients with the override_redirect flag */
-        if (attr->override_redirect) {
-                LOG("override_redirect set, not managing\n");
+        if (attr->override_redirect)
                 goto out;
-        }
 
         /* Check if the window is already managed */
         if (table_get(&by_child, window))
@@ -158,7 +153,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         /* Events for already managed windows should already be filtered in manage_window() */
         assert(new == NULL);
 
-        LOG("reparenting new client\n");
+        LOG("Reparenting window 0x%08x\n", child);
         LOG("x = %d, y = %d, width = %d, height = %d\n", x, y, width, height);
         new = calloc(sizeof(Client), 1);
         new->force_reconfigure = true;
@@ -193,8 +188,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         /* We want to know when… */
         mask |= XCB_CW_EVENT_MASK;
         values[1] = FRAME_EVENT_MASK;
-
-        LOG("Reparenting 0x%08x under 0x%08x.\n", child, new->frame);
 
         i3Font *font = load_font(conn, config.font);
         width = min(width, c_ws->rect.x + c_ws->rect.width);
@@ -315,7 +308,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 preply = xcb_get_property_reply(conn, leader_cookie, NULL);
                 handle_clientleader_change(NULL, conn, 0, new->child, atoms[WM_CLIENT_LEADER], preply);
 
-                LOG("DEBUG: should have all infos now\n");
                 struct Assignment *assign;
                 TAILQ_FOREACH(assign, &assignments, assignments) {
                         if (get_matching_client(conn, assign->windowclass_title, new) == NULL)
@@ -437,10 +429,9 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         /* Map the window first to avoid flickering */
         xcb_map_window(conn, child);
-        if (map_frame) {
-                LOG("Mapping client\n");
+        if (map_frame)
                 client_map(conn, new);
-        }
+
         if (CUR_CELL->workspace->fullscreen_client == NULL && !new->dock) {
                 /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
                 if (new->workspace->fullscreen_client == NULL) {
