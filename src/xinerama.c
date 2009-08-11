@@ -160,7 +160,6 @@ static void disable_xinerama(xcb_connection_t *conn) {
 
         num_screens = 1;
         s->num = 0;
-        initialize_screen(conn, s, &(workspaces[0]));
 
         TAILQ_INSERT_TAIL(virtual_screens, s, screens);
 
