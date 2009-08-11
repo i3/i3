@@ -288,6 +288,20 @@ void resize_client(xcb_connection_t *conn, Client *client) {
                 LOG("new_height = %f, new_width = %d\n", new_height, new_width);
         }
 
+        if (client->height_increment > 1) {
+                int old_height = rect->height;
+                rect->height = ((int)(rect->height / client->height_increment) * client->height_increment) + 1;
+                LOG("Lost %d pixel due to client's height_increment (%d px)\n",
+                    old_height - rect->height, client->height_increment);
+        }
+
+        if (client->width_increment > 1) {
+                int old_width = rect->width;
+                rect->width = ((int)(rect->width / client->width_increment) * client->width_increment) + 1;
+                LOG("Lost %d pixel due to client's width_increment (%d px)\n",
+                    old_width - rect->width, client->width_increment);
+        }
+
         LOG("child will be at %dx%d with size %dx%d\n", rect->x, rect->y, rect->width, rect->height);
 
         xcb_configure_window(conn, client->child, mask, &(rect->x));

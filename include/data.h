@@ -346,6 +346,11 @@ struct Client {
         int proportional_height;
         int proportional_width;
 
+        /** contains the minimum increment size as specified for the window
+         * (in pixels). */
+        int width_increment;
+        int height_increment;
+
         /** Height which was determined by reading the _NET_WM_STRUT_PARTIAL
          * top/bottom of the screen reservation */
         int desired_height;

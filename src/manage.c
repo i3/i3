@@ -177,6 +177,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         new->child = child;
         new->rect.width = width;
         new->rect.height = height;
+        new->width_increment = 1;
+        new->height_increment = 1;
         /* Pre-initialize the values for floating */
         new->floating_rect.x = -1;
         new->floating_rect.width = width;

@@ -1021,10 +1021,9 @@ int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_wi
  */
 int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t name, xcb_get_property_reply_t *reply) {
-        LOG("handle_normal_hints\n");
         Client *client = table_get(&by_child, window);
         if (client == NULL) {
-                LOG("No such client\n");
+                LOG("Received WM_SIZE_HINTS for unknown client\n");
                 return 1;
         }
         xcb_size_hints_t size_hints;
@@ -1037,15 +1036,23 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
                 xcb_get_wm_normal_hints_reply(conn, xcb_get_wm_normal_hints_unchecked(conn, client->child), &size_hints, NULL);
 
         if ((size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE)) {
-                LOG("min size set\n");
-                LOG("gots min_width = %d, min_height = %d\n", size_hints.min_width, size_hints.min_height);
+                LOG("Minimum size: %d (width) x %d (height)\n", size_hints.min_width, size_hints.min_height);
+        }
+
+        if ((size_hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)) {
+                if (size_hints.width_inc > 0)
+                        client->width_increment = size_hints.width_inc;
+                if (size_hints.height_inc > 0)
+                        client->height_increment = size_hints.height_inc;
+
+                LOG("Updated client's width_increment to %d px, heigh_increment to %d px\n",
+                    client->width_increment, client->height_increment);
         }
 
         /* If no aspect ratio was set or if it was invalid, we ignore the hints */
         if (!(size_hints.flags & XCB_SIZE_HINT_P_ASPECT) ||
             (size_hints.min_aspect_num <= 0) ||
             (size_hints.min_aspect_den <= 0)) {
-                LOG("No aspect ratio set, ignoring\n");
                 return 1;
         }
 
@@ -1070,7 +1077,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         double min_aspect = (double)size_hints.min_aspect_num / size_hints.min_aspect_den;
         double max_aspect = (double)size_hints.max_aspect_num / size_hints.min_aspect_den;
 
-        LOG("min_aspect = %f, max_aspect = %f\n", min_aspect, max_aspect);
+        LOG("Aspect ratio set: minimum %f, maximum %f\n", min_aspect, max_aspect);
         LOG("width = %f, height = %f\n", width, height);
 
         /* Sanity checks, this is user-input, in a way */
