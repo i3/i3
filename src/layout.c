@@ -448,7 +448,6 @@ static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int 
 }
 
 static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int width, int height) {
-        LOG("Rendering internal bar\n");
         i3Font *font = load_font(conn, config.font);
         i3Screen *screen = r_ws->screen;
         enum { SET_NORMAL = 0, SET_FOCUSED = 1 };
@@ -491,8 +490,6 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
                                   (xcb_char2b_t*)ws->name);
                 drawn += ws->text_width + 12;
         }
-
-        LOG("done rendering internal\n");
 }
 
 /*
@@ -504,8 +501,6 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
 void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bool ignore_enter_notify) {
         Client *client;
         uint32_t values[1];
-
-        LOG("Ignore enter_notify = %d\n", ignore_enter_notify);
 
         FOR_TABLE(workspace)
                 CIRCLEQ_FOREACH(client, &(workspace->table[cols][rows]->clients), clients) {

@@ -57,6 +57,6 @@ i3Screen *get_screen_containing(int x, int y);
  * This function always returns a screen.
  *
  */
-i3Screen *get_screen_most(direction_t direction);
+i3Screen *get_screen_most(direction_t direction, i3Screen *current);
 
 #endif

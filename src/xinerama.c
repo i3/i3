@@ -92,7 +92,7 @@ i3Screen *get_screen_containing(int x, int y) {
  * This function always returns a screen.
  *
  */
-i3Screen *get_screen_most(direction_t direction) {
+i3Screen *get_screen_most(direction_t direction, i3Screen *current) {
         i3Screen *screen, *candidate = NULL;
         int position = 0;
         TAILQ_FOREACH(screen, virtual_screens, screens) {
@@ -103,6 +103,14 @@ i3Screen *get_screen_most(direction_t direction) {
                                 position = variable; \
                         } \
                         break;
+
+                if (((direction == D_UP) || (direction == D_DOWN)) &&
+                    (current->rect.x != screen->rect.x))
+                        continue;
+
+                if (((direction == D_LEFT) || (direction == D_RIGHT)) &&
+                    (current->rect.y != screen->rect.y))
+                        continue;
 
                 switch (direction) {
                         case D_UP:

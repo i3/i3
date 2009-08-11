@@ -97,4 +97,10 @@ void client_unmap(xcb_connection_t *conn, Client *client);
  */
 void client_map(xcb_connection_t *conn, Client *client);
 
+/**
+ * Pretty-prints the client’s information into the logfile.
+ *
+ */
+void client_log(Client *client);
+
 #endif
