@@ -205,11 +205,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         /* Yo dawg, I heard you like windows, so I create a window around your window… */
         new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, false, mask, values);
 
-        /* Set WM_STATE_NORMAL because GTK applications don’t want to drag & drop if we don’t.
-         * Also, xprop(1) needs that to work. */
-        long data[] = { XCB_WM_STATE_NORMAL, XCB_NONE };
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, new->child, atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
-
         /* Put the client inside the save set. Upon termination (whether killed or normal exit
            does not matter) of the window manager, these clients will be correctly reparented
            to their most closest living ancestor (= cleanup) */
@@ -442,7 +437,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         xcb_map_window(conn, child);
         if (map_frame) {
                 LOG("Mapping client\n");
-                xcb_map_window(conn, new->frame);
+                client_map(conn, new);
         }
         if (CUR_CELL->workspace->fullscreen_client == NULL && !new->dock) {
                 /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */

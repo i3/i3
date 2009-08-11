@@ -530,7 +530,7 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
         /* If we’re moving it to an invisible screen, we need to unmap it */
         if (!workspace_is_visible(t_ws)) {
                 LOG("This workspace is not visible, unmapping\n");
-                xcb_unmap_window(conn, client->frame);
+                client_unmap(conn, client);
         } else {
                 /* If this is not the case, we move the window to a workspace
                  * which is on another screen, so we also need to adjust its
@@ -613,7 +613,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         /* If we’re moving it to an invisible screen, we need to unmap it */
         if (!workspace_is_visible(to_container->workspace)) {
                 LOG("This workspace is not visible, unmapping\n");
-                xcb_unmap_window(conn, current_client->frame);
+                client_unmap(conn, current_client);
         } else {
                 if (current_client->fullscreen) {
                         LOG("Calling client_enter_fullscreen again\n");

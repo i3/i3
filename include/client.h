@@ -85,4 +85,16 @@ bool client_is_floating(Client *client);
  */
 void client_change_border(xcb_connection_t *conn, Client *client, char border_type);
 
+/**
+ * Unmap the client, correctly setting any state which is needed.
+ *
+ */
+void client_unmap(xcb_connection_t *conn, Client *client);
+
+/**
+ * Map the client, correctly restoring any state needed.
+ *
+ */
+void client_map(xcb_connection_t *conn, Client *client);
+
 #endif

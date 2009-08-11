@@ -289,3 +289,28 @@ void client_change_border(xcb_connection_t *conn, Client *client, char border_ty
 
         redecorate_window(conn, client);
 }
+
+/*
+ * Unmap the client, correctly setting any state which is needed.
+ *
+ */
+void client_unmap(xcb_connection_t *conn, Client *client) {
+        /* Set WM_STATE_WITHDRAWN, it seems like Java apps need it */
+        long data[] = { XCB_WM_STATE_WITHDRAWN, XCB_NONE };
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+
+        xcb_unmap_window(conn, client->frame);
+}
+
+/*
+ * Map the client, correctly restoring any state needed.
+ *
+ */
+void client_map(xcb_connection_t *conn, Client *client) {
+        /* Set WM_STATE_NORMAL because GTK applications don’t want to drag & drop if we don’t.
+         * Also, xprop(1) needs that to work. */
+        long data[] = { XCB_WM_STATE_NORMAL, XCB_NONE };
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+
+        xcb_map_window(conn, client->frame);
+}

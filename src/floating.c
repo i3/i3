@@ -415,8 +415,8 @@ void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace) {
         LOG("floating_hidden is now: %d\n", workspace->floating_hidden);
         TAILQ_FOREACH(client, &(workspace->floating_clients), floating_clients) {
                 if (workspace->floating_hidden)
-                        xcb_unmap_window(conn, client->frame);
-                else xcb_map_window(conn, client->frame);
+                        client_unmap(conn, client);
+                else client_map(conn, client);
         }
 
         /* If we just unmapped all floating windows we should ensure that the focus

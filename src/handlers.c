@@ -696,6 +696,9 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 
         LOG("child of 0x%08x.\n", client->frame);
         xcb_reparent_window(conn, client->child, root, 0, 0);
+
+        client_unmap(conn, client);
+
         xcb_destroy_window(conn, client->frame);
         xcb_flush(conn);
         table_remove(&by_parent, client->frame);

@@ -275,12 +275,12 @@ void workspace_map_clients(xcb_connection_t *conn, Workspace *ws) {
         /* Map all clients on the new workspace */
         FOR_TABLE(ws)
                 CIRCLEQ_FOREACH(client, &(ws->table[cols][rows]->clients), clients)
-                        xcb_map_window(conn, client->frame);
+                        client_map(conn, client);
 
         /* Map all floating clients */
         if (!ws->floating_hidden)
                 TAILQ_FOREACH(client, &(ws->floating_clients), floating_clients)
-                        xcb_map_window(conn, client->frame);
+                        client_map(conn, client);
 
         /* Map all stack windows, if any */
         struct Stack_Window *stack_win;
@@ -312,7 +312,7 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
         FOR_TABLE(u_ws)
                 CIRCLEQ_FOREACH(client, &(u_ws->table[cols][rows]->clients), clients) {
                         LOG("unmapping normal client %p / %p / %p\n", client, client->frame, client->child);
-                        xcb_unmap_window(conn, client->frame);
+                        client_unmap(conn, client);
                         unmapped_clients++;
                 }
 
@@ -323,7 +323,7 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
 
                 LOG("unmapping floating client %p / %p / %p\n", client, client->frame, client->child);
 
-                xcb_unmap_window(conn, client->frame);
+                client_unmap(conn, client);
                 unmapped_clients++;
         }
 
