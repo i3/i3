@@ -902,12 +902,28 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         }
 
         /* Is it 'bn' (border normal), 'bp' (border 1pixel) or 'bb' (border borderless)? */
+        /* or even 'bt' (toggle border: 'bp' -> 'bb' -> 'bn' ) */
         if (command[0] == 'b') {
                 if (last_focused == NULL) {
                         LOG("No window focused, cannot change border type\n");
                         return;
                 }
-                client_change_border(conn, last_focused, command[1]);
+
+                char com;
+                if (command[1] == 't') {
+                        if (last_focused->titlebar_position == TITLEBAR_TOP &&
+                                last_focused->borderless == false)
+                            com = 'p';
+                        else if (last_focused->titlebar_position == TITLEBAR_OFF &&
+                                last_focused->borderless == false)
+                            com = 'b';
+                        else
+                            com = 'n';
+                }
+                else
+                    com = command[1];
+
+                client_change_border(conn, last_focused, com);
                 return;
         }
 
