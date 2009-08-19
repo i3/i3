@@ -441,19 +441,19 @@ with +m+ when moving and with +s+ when snapping:
 # Focus clients on the left, bottom, top, right:
 bindsym Mod1+j h
 bindsym Mod1+k j
-bindsym Mod1+j k
+bindsym Mod1+l k
 bindsym Mod1+semicolon l
 
 # Move client to the left, bottom, top, right:
 bindsym Mod1+j mh
 bindsym Mod1+k mj
-bindsym Mod1+j mk
+bindsym Mod1+l mk
 bindsym Mod1+semicolon ml
 
 # Snap client to the left, bottom, top, right:
 bindsym Mod1+j sh
 bindsym Mod1+k sj
-bindsym Mod1+j sk
+bindsym Mod1+l sk
 bindsym Mod1+semicolon sl
 
 # Focus container on the left, bottom, top, right:
