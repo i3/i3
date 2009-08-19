@@ -43,6 +43,8 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
                 return 1;
         }
 
+        LOG("event->event_x = %d, event->root_x = %d\n", event->event_x, event->root_x);
+
         LOG("Screen dimensions: (%d, %d) %d x %d\n", screen->rect.x, screen->rect.y, screen->rect.width, screen->rect.height);
 
         /* FIXME: horizontal resizing causes empty spaces to exist */
@@ -61,7 +63,7 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
         /* Open a new window, the resizebar. Grab the pointer and move the window around
            as the user moves the pointer. */
         Rect grabrect = {0, 0, root_screen->width_in_pixels, root_screen->height_in_pixels};
-        xcb_window_t grabwin = create_window(conn, grabrect, XCB_WINDOW_CLASS_INPUT_ONLY, -1, mask, values);
+        xcb_window_t grabwin = create_window(conn, grabrect, XCB_WINDOW_CLASS_INPUT_ONLY, -1, true, mask, values);
 
         Rect helprect;
         if (orientation == O_VERTICAL) {
@@ -87,7 +89,7 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
         xcb_window_t helpwin = create_window(conn, helprect, XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                              (orientation == O_VERTICAL ?
                                               XCB_CURSOR_SB_V_DOUBLE_ARROW :
-                                              XCB_CURSOR_SB_H_DOUBLE_ARROW), mask, values);
+                                              XCB_CURSOR_SB_H_DOUBLE_ARROW), true, mask, values);
 
         xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, helpwin);
 

@@ -26,6 +26,9 @@
 #include "client.h"
 #include "floating.h"
 #include "xcb.h"
+#include "config.h"
+#include "workspace.h"
+#include "commands.h"
 
 bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction) {
         /* If this container is empty, we’re done */
@@ -53,7 +56,7 @@ bool focus_window_in_container(xcb_connection_t *conn, Container *container, dir
         return true;
 }
 
-typedef enum { THING_WINDOW, THING_CONTAINER } thing_t;
+typedef enum { THING_WINDOW, THING_CONTAINER, THING_SCREEN } thing_t;
 
 static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t thing) {
         LOG("focusing direction %d\n", direction);
@@ -76,6 +79,41 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
 
         if (container->workspace->fullscreen_client != NULL) {
                 LOG("You're in fullscreen mode. Won't switch focus\n");
+                return;
+        }
+
+        /* For focusing screens, situation is different: we get the rect
+         * of the current screen, then get the screen which is on its
+         * right/left/bottom/top and just switch to the workspace on
+         * the target screen. */
+        if (thing == THING_SCREEN) {
+                i3Screen *cs = c_ws->screen;
+                assert(cs != NULL);
+                Rect bounds = cs->rect;
+
+                if (direction == D_RIGHT)
+                        bounds.x += bounds.width;
+                else if (direction == D_LEFT)
+                        bounds.x -= bounds.width;
+                else if (direction == D_UP)
+                        bounds.y -= bounds.height;
+                else bounds.y += bounds.height;
+
+                i3Screen *target = get_screen_containing(bounds.x, bounds.y);
+                if (target == NULL) {
+                        LOG("Target screen NULL\n");
+                        /* Wrap around if the target screen is out of bounds */
+                        if (direction == D_RIGHT)
+                                target = get_screen_most(D_LEFT, cs);
+                        else if (direction == D_LEFT)
+                                target = get_screen_most(D_RIGHT, cs);
+                        else if (direction == D_UP)
+                                target = get_screen_most(D_DOWN, cs);
+                        else target = get_screen_most(D_UP, cs);
+                }
+
+                LOG("Switching to ws %d\n", target->current_workspace + 1);
+                workspace_show(conn, target->current_workspace + 1);
                 return;
         }
 
@@ -108,7 +146,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         if ((screen = get_screen_containing(container->x, destination_y)) == NULL) {
                                 LOG("Wrapping screen around vertically\n");
                                 /* No screen found? Then wrap */
-                                screen = get_screen_most((direction == D_UP ? D_DOWN : D_UP));
+                                screen = get_screen_most((direction == D_UP ? D_DOWN : D_UP), container->workspace->screen);
                         }
                         t_ws = &(workspaces[screen->current_workspace]);
                         new_row = (direction == D_UP ? (t_ws->rows - 1) : 0);
@@ -150,7 +188,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         int destination_x = (direction == D_LEFT ? (container->x - 1) : (container->x + container->width + 1));
                         if ((screen = get_screen_containing(destination_x, container->y)) == NULL) {
                                 LOG("Wrapping screen around horizontally\n");
-                                screen = get_screen_most((direction == D_LEFT ? D_RIGHT : D_LEFT));
+                                screen = get_screen_most((direction == D_LEFT ? D_RIGHT : D_LEFT), container->workspace->screen);
                         }
                         t_ws = &(workspaces[screen->current_workspace]);
                         new_col = (direction == D_LEFT ? (t_ws->cols - 1) : 0);
@@ -489,12 +527,10 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
 
         floating_assign_to_workspace(client, t_ws);
 
-        bool target_invisible = t_ws->screen->current_workspace != t_ws->num;
-
         /* If we’re moving it to an invisible screen, we need to unmap it */
-        if (target_invisible) {
+        if (!workspace_is_visible(t_ws)) {
                 LOG("This workspace is not visible, unmapping\n");
-                xcb_unmap_window(conn, client->frame);
+                client_unmap(conn, client);
         } else {
                 /* If this is not the case, we move the window to a workspace
                  * which is on another screen, so we also need to adjust its
@@ -514,7 +550,7 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
 
         render_layout(conn);
 
-        if (!target_invisible)
+        if (workspace_is_visible(t_ws))
                 set_focus(conn, client, true);
 }
 
@@ -574,12 +610,10 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         container->currently_focused = to_focus;
         to_container->currently_focused = current_client;
 
-        bool target_invisible = (to_container->workspace->screen->current_workspace != to_container->workspace->num);
-
         /* If we’re moving it to an invisible screen, we need to unmap it */
-        if (target_invisible) {
+        if (!workspace_is_visible(to_container->workspace)) {
                 LOG("This workspace is not visible, unmapping\n");
-                xcb_unmap_window(conn, current_client->frame);
+                client_unmap(conn, current_client);
         } else {
                 if (current_client->fullscreen) {
                         LOG("Calling client_enter_fullscreen again\n");
@@ -592,115 +626,8 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
 
         render_layout(conn);
 
-        if (!target_invisible)
+        if (workspace_is_visible(to_container->workspace))
                 set_focus(conn, current_client, true);
-}
-
-/*
- * Switches to the given workspace
- *
- */
-void show_workspace(xcb_connection_t *conn, int workspace) {
-        Client *client;
-        bool need_warp = false;
-        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
-        /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */
-        Workspace *t_ws = &(workspaces[workspace-1]);
-
-        LOG("show_workspace(%d)\n", workspace);
-
-        /* Store current_row/current_col */
-        c_ws->current_row = current_row;
-        c_ws->current_col = current_col;
-
-        /* Check if the workspace has not been used yet */
-        if (t_ws->screen == NULL) {
-                LOG("initializing new workspace, setting num to %d\n", workspace);
-                t_ws->screen = c_ws->screen;
-                /* Copy the dimensions from the virtual screen */
-		memcpy(&(t_ws->rect), &(t_ws->screen->rect), sizeof(Rect));
-        }
-
-        if (c_ws->screen != t_ws->screen) {
-                /* We need to switch to the other screen first */
-                LOG("moving over to other screen.\n");
-
-                /* Store the old client */
-                Client *old_client = CUR_CELL->currently_focused;
-
-                c_ws = &(workspaces[t_ws->screen->current_workspace]);
-                current_col = c_ws->current_col;
-                current_row = c_ws->current_row;
-                if (CUR_CELL->currently_focused != NULL)
-                        need_warp = true;
-                else {
-                        Rect *dims = &(c_ws->screen->rect);
-                        xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0,
-                                         dims->x + (dims->width / 2), dims->y + (dims->height / 2));
-                }
-
-                /* Re-decorate the old client, it’s not focused anymore */
-                if ((old_client != NULL) && !old_client->dock)
-                        redecorate_window(conn, old_client);
-                else xcb_flush(conn);
-        }
-
-        /* Check if we need to change something or if we’re already there */
-        if (c_ws->screen->current_workspace == (workspace-1)) {
-                Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
-                if (last_focused != SLIST_END(&(c_ws->focus_stack))) {
-                        set_focus(conn, last_focused, true);
-                        if (need_warp) {
-                                client_warp_pointer_into(conn, last_focused);
-                                xcb_flush(conn);
-                        }
-                }
-
-                return;
-        }
-
-        t_ws->screen->current_workspace = workspace-1;
-        Workspace *old_workspace = c_ws;
-        c_ws = &workspaces[workspace-1];
-
-        /* Unmap all clients of the old workspace */
-        unmap_workspace(conn, old_workspace);
-
-        current_row = c_ws->current_row;
-        current_col = c_ws->current_col;
-        LOG("new current row = %d, current col = %d\n", current_row, current_col);
-
-        ignore_enter_notify_forall(conn, c_ws, true);
-
-        /* Map all clients on the new workspace */
-        FOR_TABLE(c_ws)
-                CIRCLEQ_FOREACH(client, &(c_ws->table[cols][rows]->clients), clients)
-                        xcb_map_window(conn, client->frame);
-
-        /* Map all floating clients */
-        if (!c_ws->floating_hidden)
-                TAILQ_FOREACH(client, &(c_ws->floating_clients), floating_clients)
-                        xcb_map_window(conn, client->frame);
-
-        /* Map all stack windows, if any */
-        struct Stack_Window *stack_win;
-        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
-                if (stack_win->container->workspace == c_ws)
-                        xcb_map_window(conn, stack_win->window);
-
-        ignore_enter_notify_forall(conn, c_ws, false);
-
-        /* Restore focus on the new workspace */
-        Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
-        if (last_focused != SLIST_END(&(c_ws->focus_stack))) {
-                set_focus(conn, last_focused, true);
-                if (need_warp) {
-                        client_warp_pointer_into(conn, last_focused);
-                        xcb_flush(conn);
-                }
-        } else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
-
-        render_layout(conn);
 }
 
 /*
@@ -748,7 +675,7 @@ static void jump_to_container(xcb_connection_t *conn, const char *arguments) {
         }
 
         /* Move to the target workspace */
-        show_workspace(conn, ws);
+        workspace_show(conn, ws);
 
         if (result < 3)
                 return;
@@ -846,6 +773,38 @@ static char **append_argument(char **original, char *argument) {
         return result;
 }
 
+/* 
+ * Switch to next or previous existing workspace
+ *
+ */
+static void next_previous_workspace(xcb_connection_t *conn, int direction) {
+        Workspace *t_ws;
+        int i;
+
+        if (direction == 'n') {
+                /* If we are on the last workspace, we cannot go any further */
+                if (c_ws->num == 9)
+                        return;
+
+                for (i = c_ws->num + 1; i <= 9; i++) {
+                        t_ws = &(workspaces[i]);
+                        if (t_ws->screen != NULL)
+                                break;
+                }
+        } else if (direction == 'p') {
+                if (c_ws->num == 0)
+                        return;
+                for (i = c_ws->num - 1; i >= 0 ; i--) {
+                        t_ws = &(workspaces[i]);
+                        if (t_ws->screen != NULL)
+                                break;
+                }
+        }
+
+        if (t_ws->screen != NULL)
+                workspace_show(conn, i+1);
+}
+
 /*
  * Parses a command, see file CMDMODE for more information
  *
@@ -873,6 +832,12 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         if (STARTS_WITH(command, "exit")) {
                 LOG("User issued exit-command, exiting without error.\n");
                 exit(EXIT_SUCCESS);
+        }
+
+        /* Is it a <reload>? */
+        if (STARTS_WITH(command, "reload")) {
+                load_configuration(conn, NULL, true);
+                return;
         }
 
         /* Is it <restart>? Then restart in place. */
@@ -922,12 +887,22 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         /* Is it just 's' for stacking or 'd' for default? */
         if ((command[0] == 's' || command[0] == 'd') && (command[1] == '\0')) {
-                if (last_focused == NULL || client_is_floating(last_focused)) {
+                if (last_focused != NULL && client_is_floating(last_focused)) {
                         LOG("not switching, this is a floating client\n");
                         return;
                 }
                 LOG("Switching mode for current container\n");
                 switch_layout_mode(conn, CUR_CELL, (command[0] == 's' ? MODE_STACK : MODE_DEFAULT));
+                return;
+        }
+
+        /* Is it 'bn' (border normal), 'bp' (border 1pixel) or 'bb' (border borderless)? */
+        if (command[0] == 'b') {
+                if (last_focused == NULL) {
+                        LOG("No window focused, cannot change border type\n");
+                        return;
+                }
+                client_change_border(conn, last_focused, command[1]);
                 return;
         }
 
@@ -937,7 +912,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
-        enum { WITH_WINDOW, WITH_CONTAINER, WITH_WORKSPACE } with = WITH_WINDOW;
+        enum { WITH_WINDOW, WITH_CONTAINER, WITH_WORKSPACE, WITH_SCREEN } with = WITH_WINDOW;
 
         /* Is it a <with>? */
         if (command[0] == 'w') {
@@ -948,6 +923,9 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         command++;
                 } else if (command[0] == 'w') {
                         with = WITH_WORKSPACE;
+                        command++;
+                } else if (command[0] == 's') {
+                        with = WITH_SCREEN;
                         command++;
                 } else {
                         LOG("not yet implemented.\n");
@@ -983,6 +961,12 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
+	/* Is it 'n' or 'p' for next/previous workspace? (nw) */
+        if ((command[0] == 'n' || command[0] == 'p') && command[1] == 'w') {
+               next_previous_workspace(conn, command[0]);
+               return;
+        }
+
         /* It’s a normal <cmd> */
         char *rest = NULL;
         enum { ACTION_FOCUS, ACTION_MOVE, ACTION_SNAP } action = ACTION_FOCUS;
@@ -995,7 +979,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         if (*rest == '\0') {
                 /* No rest? This was a workspace number, not a times specification */
-                show_workspace(conn, times);
+                workspace_show(conn, times);
                 return;
         }
 
@@ -1046,6 +1030,10 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 rest++;
 
                 if (action == ACTION_FOCUS) {
+                        if (with == WITH_SCREEN) {
+                                focus_thing(conn, direction, THING_SCREEN);
+                                continue;
+                        }
                         if (client_is_floating(last_focused)) {
                                 floating_focus_direction(conn, last_focused, direction);
                                 continue;
@@ -1055,6 +1043,13 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 }
 
                 if (action == ACTION_MOVE) {
+                        if (with == WITH_SCREEN) {
+                                /* TODO: this should swap the screen’s contents
+                                 * (e.g. all workspaces) with the next/previous/…
+                                 * screen */
+                                LOG("Not yet implemented\n");
+                                continue;
+                        }
                         if (client_is_floating(last_focused)) {
                                 floating_move(conn, last_focused, direction);
                                 continue;
@@ -1066,10 +1061,12 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 }
 
                 if (action == ACTION_SNAP) {
+                        if (with == WITH_SCREEN) {
+                                LOG("You cannot snap a screen (it makes no sense).\n");
+                                continue;
+                        }
                         snap_current_container(conn, direction);
                         continue;
                 }
         }
-
-        LOG("--- done ---\n");
 }

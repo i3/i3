@@ -1,7 +1,7 @@
 i3(1)
 =====
 Michael Stapelberg <michael+i3@stapelberg.de>
-v3.beta, May 2009
+v3.gamma, August 2009
 
 == NAME
 
@@ -232,8 +232,12 @@ your login manager (xdm, slim, gdm, …) as soon as you login.
 # Disable DPMS turning off the screen
 xset dpms force on
 xset s off
+
 # Disable bell
 xset -b
+
+# Enable zapping (C-A-<Bksp> kills X)
+setxkbmap -option terminate:ctrl_alt_bksp
 
 # Enforce correct locales from the beginning
 unset LC_COLLATE
@@ -248,6 +252,9 @@ export LC_ADDRESS=de_DE.UTF-8
 export LC_TELEPHONE=de_DE.UTF-8
 export LC_MEASUREMENT=de_DE.UTF-8
 export LC_IDENTIFICATION=de_DE.UTF-8
+
+# Use XToolkit in java applications
+export AWT_TOOLKIT=XToolkit
 
 # Set background color
 xsetroot -solid "#333333"

@@ -103,19 +103,26 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         i3Font *font = load_font(conn, config.font);
         int decoration_height = font->height + 2 + 2;
         struct Colortriple *color;
+        Client *last_focused;
 
         /* Clients without a container (docks) won’t get decorated */
         if (client->dock)
                 return;
 
-        LOG("redecorating child %08x\n", client->child);
-        if (client_is_floating(client) || client->container->currently_focused == client) {
-                /* Distinguish if the window is currently focused… */
-                if (client_is_floating(client) || CUR_CELL->currently_focused == client)
+        last_focused = SLIST_FIRST(&(client->workspace->focus_stack));
+        if (client_is_floating(client)) {
+                if (last_focused == client)
                         color = &(config.client.focused);
-                /* …or if it is the focused window in a not focused container */
-                else color = &(config.client.focused_inactive);
-        } else color = &(config.client.unfocused);
+                else color = &(config.client.unfocused);
+        } else {
+                if (client->container->currently_focused == client) {
+                        /* Distinguish if the window is currently focused… */
+                        if (last_focused == client && c_ws == client->workspace)
+                                color = &(config.client.focused);
+                        /* …or if it is the focused window in a not focused container */
+                        else color = &(config.client.focused_inactive);
+                } else color = &(config.client.unfocused);
+        }
 
         /* Our plan is the following:
            - Draw a rect around the whole client in color->background
@@ -145,10 +152,15 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
         }
 
-        /* Draw the lines */
-        xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
-        xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
-                      client->rect.width - 3, offset + font->height + 3);
+        if (client->titlebar_position != TITLEBAR_OFF) {
+                /* Draw the lines */
+                xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
+                if ((client->container == NULL ||
+                    client->container->mode != MODE_STACK ||
+                    CIRCLEQ_NEXT_OR_NULL(&(client->container->clients), client, clients) == NULL))
+                        xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
+                                      client->rect.width - 3, offset + font->height + 3);
+        }
 
         /* If the client has a title, we draw it */
         if (client->name != NULL) {
@@ -196,20 +208,26 @@ void reposition_client(xcb_connection_t *conn, Client *client) {
         LOG("Client is on workspace %p with screen %p\n", client->workspace, client->workspace->screen);
         LOG("but screen at %d, %d is %p\n", client->rect.x, client->rect.y, screen);
         floating_assign_to_workspace(client, &workspaces[screen->current_workspace]);
-        LOG("fixed that\n");
 }
 
 /*
- * Pushes the client’s width/height to X11 and resizes the child window
+ * Pushes the client’s width/height to X11 and resizes the child window. This
+ * function also updates the client’s position, so if you work on tiling clients
+ * only, you can use this function instead of separate calls to reposition_client
+ * and resize_client to reduce flickering.
  *
  */
 void resize_client(xcb_connection_t *conn, Client *client) {
         i3Font *font = load_font(conn, config.font);
 
+        LOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
         LOG("resizing client 0x%08x to %d x %d\n", client->frame, client->rect.width, client->rect.height);
         xcb_configure_window(conn, client->frame,
-                        XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                        &(client->rect.width));
+                        XCB_CONFIG_WINDOW_X |
+                        XCB_CONFIG_WINDOW_Y |
+                        XCB_CONFIG_WINDOW_WIDTH |
+                        XCB_CONFIG_WINDOW_HEIGHT,
+                        &(client->rect.x));
 
         /* Adjust the position of the child inside its frame.
          * The coordinates of the child are relative to its frame, we
@@ -227,11 +245,16 @@ void resize_client(xcb_connection_t *conn, Client *client) {
                         rect->height = client->rect.height - 2;
                         break;
                 default:
-                        if (client->titlebar_position == TITLEBAR_OFF) {
+                        if (client->titlebar_position == TITLEBAR_OFF && client->borderless) {
                                 rect->x = 0;
                                 rect->y = 0;
                                 rect->width = client->rect.width;
                                 rect->height = client->rect.height;
+                        } else if (client->titlebar_position == TITLEBAR_OFF && !client->borderless) {
+                                rect->x = 1;
+                                rect->y = 1;
+                                rect->width = client->rect.width - 1 - 1;
+                                rect->height = client->rect.height - 1 - 1;
                         } else {
                                 rect->x = 2;
                                 rect->y = font->height + 2 + 2;
@@ -263,6 +286,20 @@ void resize_client(xcb_connection_t *conn, Client *client) {
                 LOG("new_height = %f, new_width = %d\n", new_height, new_width);
         }
 
+        if (client->height_increment > 1) {
+                int old_height = rect->height;
+                rect->height = ((int)(rect->height / client->height_increment) * client->height_increment) + 1;
+                LOG("Lost %d pixel due to client's height_increment (%d px)\n",
+                    old_height - rect->height, client->height_increment);
+        }
+
+        if (client->width_increment > 1) {
+                int old_width = rect->width;
+                rect->width = ((int)(rect->width / client->width_increment) * client->width_increment) + 1;
+                LOG("Lost %d pixel due to client's width_increment (%d px)\n",
+                    old_width - rect->width, client->width_increment);
+        }
+
         LOG("child will be at %dx%d with size %dx%d\n", rect->x, rect->y, rect->width, rect->height);
 
         xcb_configure_window(conn, client->child, mask, &(rect->x));
@@ -282,14 +319,10 @@ void render_container(xcb_connection_t *conn, Container *container) {
         Client *client;
         int num_clients = 0, current_client = 0;
 
-        if (container->currently_focused == NULL)
-                return;
-
         CIRCLEQ_FOREACH(client, &(container->clients), clients)
                 num_clients++;
 
         if (container->mode == MODE_DEFAULT) {
-                LOG("got %d clients in this default container.\n", num_clients);
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* If the client is in fullscreen mode, it does not get reconfigured */
                         if (container->workspace->fullscreen_client == client) {
@@ -302,14 +335,12 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         if (client->force_reconfigure |
                             update_if_necessary(&(client->rect.x), container->x) |
                             update_if_necessary(&(client->rect.y), container->y +
-                                        (container->height / num_clients) * current_client))
-                                reposition_client(conn, client);
-
-                        /* TODO: vertical default layout */
-                        if (client->force_reconfigure |
+                                        (container->height / num_clients) * current_client) |
                             update_if_necessary(&(client->rect.width), container->width) |
                             update_if_necessary(&(client->rect.height), container->height / num_clients))
                                 resize_client(conn, client);
+
+                        /* TODO: vertical default layout */
 
                         client->force_reconfigure = false;
 
@@ -322,7 +353,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
 
                 /* Check if we need to remap our stack title window, it gets unmapped when the container
                    is empty in src/handlers.c:unmap_notify() */
-                if (stack_win->rect.height == 0)
+                if (stack_win->rect.height == 0 && num_clients > 0)
                         xcb_map_window(conn, stack_win->window);
 
                 /* Check if we need to reconfigure our stack title window */
@@ -362,6 +393,9 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         xcb_configure_window(conn, stack_win->window, mask, values);
                 }
 
+                /* Prepare the pixmap for usage */
+                cached_pixmap_prepare(conn, &(stack_win->pixmap));
+
                 /* Render the decorations of all clients */
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* If the client is in fullscreen mode, it does not get reconfigured */
@@ -374,19 +408,19 @@ void render_container(xcb_connection_t *conn, Container *container) {
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |
                             update_if_necessary(&(client->rect.x), container->x) |
-                            update_if_necessary(&(client->rect.y), container->y + (decoration_height * num_clients)))
-                                reposition_client(conn, client);
-
-                        if (client->force_reconfigure |
+                            update_if_necessary(&(client->rect.y), container->y + (decoration_height * num_clients)) |
                             update_if_necessary(&(client->rect.width), container->width) |
                             update_if_necessary(&(client->rect.height), container->height - (decoration_height * num_clients)))
                                 resize_client(conn, client);
 
                         client->force_reconfigure = false;
 
-                        decorate_window(conn, client, stack_win->window, stack_win->gc,
+                        decorate_window(conn, client, stack_win->pixmap.id, stack_win->pixmap.gc,
                                         current_client++ * decoration_height);
                 }
+
+                xcb_copy_area(conn, stack_win->pixmap.id, stack_win->window, stack_win->pixmap.gc,
+                              0, 0, 0, 0, stack_win->rect.width, stack_win->rect.height);
         }
 }
 
@@ -395,7 +429,7 @@ static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int 
         SLIST_FOREACH(client, &(r_ws->screen->dock_clients), dock_clients) {
                 LOG("client is at %d, should be at %d\n", client->rect.y, *height);
                 if (client->force_reconfigure |
-                    update_if_necessary(&(client->rect.x), 0) |
+                    update_if_necessary(&(client->rect.x), r_ws->rect.x) |
                     update_if_necessary(&(client->rect.y), *height))
                         reposition_client(conn, client);
 
@@ -411,11 +445,9 @@ static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int 
 }
 
 static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int width, int height) {
-        LOG("Rendering internal bar\n");
         i3Font *font = load_font(conn, config.font);
         i3Screen *screen = r_ws->screen;
         enum { SET_NORMAL = 0, SET_FOCUSED = 1 };
-        char label[3];
 
         /* Fill the whole bar in black */
         xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
@@ -432,21 +464,29 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
 
                 struct Colortriple *color = (screen->current_workspace == c ? &(config.bar.focused) :
                                              &(config.bar.unfocused));
+                Workspace *ws = &workspaces[c];
 
+                /* Draw the outer rect */
                 xcb_draw_rect(conn, screen->bar, screen->bargc, color->border,
-                              drawn * height, 1, height - 2, height - 2);
-                xcb_draw_rect(conn, screen->bar, screen->bargc, color->background,
-                              drawn * height + 1, 2, height - 4, height - 4);
+                              drawn,              /* x */
+                              1,                  /* y */
+                              ws->text_width + 5 + 5, /* width = text width + 5 px left + 5px right */
+                              height - 2          /* height = max. height - 1 px upper and 1 px bottom border */);
 
-                snprintf(label, sizeof(label), "%d", c+1);
+                /* Draw the background of this rect */
+                xcb_draw_rect(conn, screen->bar, screen->bargc, color->background,
+                              drawn + 1,
+                              2,
+                              ws->text_width + 4 + 4,
+                              height - 4);
+
                 xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, color->text);
                 xcb_change_gc_single(conn, screen->bargc, XCB_GC_BACKGROUND, color->background);
-                xcb_image_text_8(conn, strlen(label), screen->bar, screen->bargc, drawn * height + 5 /* X */,
-                                                font->height + 1 /* Y = baseline of font */, label);
-                drawn++;
+                xcb_image_text_16(conn, ws->name_len, screen->bar, screen->bargc, drawn + 5 /* X */,
+                                  font->height + 1 /* Y = baseline of font */,
+                                  (xcb_char2b_t*)ws->name);
+                drawn += ws->text_width + 12;
         }
-
-        LOG("done rendering internal\n");
 }
 
 /*
@@ -458,8 +498,6 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
 void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bool ignore_enter_notify) {
         Client *client;
         uint32_t values[1];
-
-        LOG("Ignore enter_notify = %d\n", ignore_enter_notify);
 
         FOR_TABLE(workspace)
                 CIRCLEQ_FOREACH(client, &(workspace->table[cols][rows]->clients), clients) {
@@ -494,8 +532,6 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
         /* Space for the internal bar */
         height -= (font->height + 6);
 
-        LOG("got %d rows and %d cols\n", r_ws->rows, r_ws->cols);
-
         int xoffset[r_ws->rows];
         int yoffset[r_ws->cols];
         /* Initialize offsets */
@@ -504,19 +540,12 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
         for (int rows = 0; rows < r_ws->rows; rows++)
                 xoffset[rows] = r_ws->rect.x;
 
-        dump_table(conn, r_ws);
-
         ignore_enter_notify_forall(conn, r_ws, true);
 
         /* Go through the whole table and render what’s necessary */
         FOR_TABLE(r_ws) {
                 Container *container = r_ws->table[cols][rows];
                 int single_width = -1, single_height;
-                LOG("\n");
-                LOG("========\n");
-                LOG("container has %d colspan, %d rowspan\n",
-                                container->colspan, container->rowspan);
-                LOG("container at %d, %d\n", xoffset[rows], yoffset[cols]);
                 /* Update position of the container */
                 container->row = rows;
                 container->col = cols;
@@ -544,7 +573,6 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
 
                 xoffset[rows] += single_width;
                 yoffset[cols] += single_height;
-                LOG("==========\n");
         }
 
         ignore_enter_notify_forall(conn, r_ws, false);
@@ -564,10 +592,8 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
 void render_layout(xcb_connection_t *conn) {
         i3Screen *screen;
 
-        TAILQ_FOREACH(screen, virtual_screens, screens) {
-                LOG("Rendering screen %d\n", screen->num);
+        TAILQ_FOREACH(screen, virtual_screens, screens)
                 render_workspace(conn, screen, &(workspaces[screen->current_workspace]));
-        }
 
         xcb_flush(conn);
 }

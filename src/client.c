@@ -39,9 +39,11 @@ void client_remove_from_container(xcb_connection_t *conn, Client *client, Contai
         /* If the container will be empty now and is in stacking mode, we need to
            unmap the stack_win */
         if (CIRCLEQ_EMPTY(&(container->clients)) && container->mode == MODE_STACK) {
+                LOG("Unmapping stack window\n");
                 struct Stack_Window *stack_win = &(container->stack_win);
                 stack_win->rect.height = 0;
                 xcb_unmap_window(conn, stack_win->window);
+                xcb_flush(conn);
         }
 }
 
@@ -247,4 +249,68 @@ void client_set_below_floating(xcb_connection_t *conn, Client *client) {
  */
 bool client_is_floating(Client *client) {
         return (client->floating >= FLOATING_AUTO_ON);
+}
+
+/*
+ * Change the border type for the given client to normal (n), 1px border (p) or
+ * completely borderless (b).
+ *
+ */
+void client_change_border(xcb_connection_t *conn, Client *client, char border_type) {
+        switch (border_type) {
+                case 'n':
+                        LOG("Changing to normal border\n");
+                        client->titlebar_position = TITLEBAR_TOP;
+                        client->borderless = false;
+                        break;
+                case 'p':
+                        LOG("Changing to 1px border\n");
+                        client->titlebar_position = TITLEBAR_OFF;
+                        client->borderless = false;
+                        break;
+                case 'b':
+                        LOG("Changing to borderless\n");
+                        client->titlebar_position = TITLEBAR_OFF;
+                        client->borderless = true;
+                        break;
+                default:
+                        LOG("Unknown border mode\n");
+                        return;
+        }
+
+        /* Ensure that the child’s position inside our window gets updated */
+        client->force_reconfigure = true;
+
+        /* For clients inside a container, we can simply render the container.
+         * If the client is floating, we need to render the whole layout */
+        if (client->container != NULL)
+                render_container(conn, client->container);
+        else render_layout(conn);
+
+        redecorate_window(conn, client);
+}
+
+/*
+ * Unmap the client, correctly setting any state which is needed.
+ *
+ */
+void client_unmap(xcb_connection_t *conn, Client *client) {
+        /* Set WM_STATE_WITHDRAWN, it seems like Java apps need it */
+        long data[] = { XCB_WM_STATE_WITHDRAWN, XCB_NONE };
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+
+        xcb_unmap_window(conn, client->frame);
+}
+
+/*
+ * Map the client, correctly restoring any state needed.
+ *
+ */
+void client_map(xcb_connection_t *conn, Client *client) {
+        /* Set WM_STATE_NORMAL because GTK applications don’t want to drag & drop if we don’t.
+         * Also, xprop(1) needs that to work. */
+        long data[] = { XCB_WM_STATE_NORMAL, XCB_NONE };
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+
+        xcb_map_window(conn, client->frame);
 }

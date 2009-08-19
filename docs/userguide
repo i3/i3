@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael+i3@stapelberg.de>
-June 2009
+August 2009
 
 This document contains all information you need to configuring and using the i3
 window manager. If it does not, please contact me on IRC, Jabber or E-Mail and
@@ -174,24 +174,40 @@ font::
 
 === Keyboard bindings
 
-You can use each command (see below) using keyboard bindings. At the moment,
-keyboard bindings require you to specify the keycode (38) of the key, not its key
-symbol ("a"). This has some advantages (keybindings make sense regardless of
-the layout you type) and some disadvantages (hard to remember, you have to look
-them up every time).
+A keyboard binding makes i3 execute a command (see below) upon pressing a
+specific key. i3 allows you to bind either on keycodes or on keysyms (you can
+also mix your bindings, though i3 will not protect you from overlapping ones).
+
+* A keysym (key symbol) is a description for a specific symbol, like "a" or "b",
+  but also more strange ones like "underscore" instead of "_". These are the ones
+  you also use in Xmodmap to remap your keys. To get the current mapping of your
+  keys, use +xmodmap -pke+.
+
+* Keycodes however do not need to have a symbol assigned (handy for some hotkeys
+  on some notebooks) and they will not change their meaning as you switch to a
+  different keyboard layout.
+
+My recommendation is: If you often switch keyboard layouts because you try to
+learn a different one, but you want to keep your bindings at the same place,
+use keycodes. If you don’t switch layouts and like a clean and simple config
+file, use keysyms.
 
 *Syntax*:
---------------------------------
+----------------------------------
+bindsym [Modifiers+]keysym command
 bind [Modifiers+]keycode command
---------------------------------
+----------------------------------
 
 *Examples*:
 --------------------------------
 # Fullscreen
-bind Mod1+41 f
+bindsym Mod1+f f
 
 # Restart
-bind Mod1+Shift+27 restart
+bindsym Mod1+Shift+r restart
+
+# Notebook-specific hotkeys
+bind 214 exec /home/michael/toggle_beamer.sh
 --------------------------------
 
 Available Modifiers:
@@ -241,7 +257,7 @@ set name value
 *Examples*:
 ------------------------
 set $m Mod1
-bind $m+Shift+27 restart
+bindsym $m+Shift+r restart
 ------------------------
 
 Variables are directly replaced in the file when parsing, there is no fancy
@@ -259,13 +275,14 @@ i3 will get the title as soon as the application maps the window (mapping means
 actually displaying it on the screen), you’d need to have to match on Firefox
 in this case.
 
-You can use the special workspace +~+ to specify that matching clients should
-be put into floating mode.
+You can prefix or suffix workspaces with a `~` to specify that matching clients
+should be put into floating mode. If you specify only a `~`, the client will
+not be put onto any workspace, but will be set floating on the current one.
 
 *Syntax*:
-----------------------------------------------------
-assign ["]window class[/window title]["] [→] workspace
-----------------------------------------------------
+------------------------------------------------------------
+assign ["]window class[/window title]["] [→] [~ | workspace]
+------------------------------------------------------------
 
 *Examples*:
 ----------------------
@@ -273,7 +290,8 @@ assign urxvt 2
 assign urxvt → 2
 assign "urxvt" → 2
 assign "urxvt/VIM" → 3
-assign "gecko" → ~
+assign "gecko" → ~4
+assign "xv/MPlayer" → ~
 ----------------------
 
 === Automatically starting applications on startup
@@ -292,51 +310,56 @@ exec command
 exec sudo i3status | dzen2 -dock
 --------------------------------
 
-=== Jumping to specific windows
+=== Automatically putting workspaces on specific screens
 
-Especially when in a multi-monitor environment, you want to quickly jump to a specific
-window, for example while currently working on workspace 3 you may want to jump to
-your mailclient to mail your boss that you’ve achieved some important goal. Instead
-of figuring out how to navigate to your mailclient, it would be more convenient to
-have a shortcut.
+If you use the assigning of clients to workspaces and start some clients
+automatically, it might be handy to put the workspaces on specific screens.
+Also, the assignment of workspaces to screens will determine the workspace
+which i3 uses for a new screen when adding screens or when starting (e.g., by
+default it will use 1 for the first screen, 2 for the second screen and so on).
 
 *Syntax*:
-----------------------------------------------------
-jump ["]window class[/window title]["]
-jump workspace [ column row ]
-----------------------------------------------------
+----------------------------------
+workspace <number> screen <screen>
+----------------------------------
 
-You can either use the same matching algorithm as in the +assign+ command (see above)
-or you can specify the position of the client if you always use the same layout.
+Screen can be either a number (starting at 0 for the first screen) or a
+position. When using numbers, it is not guaranteed that your screens always
+get the same number. Though, unless you upgrade your X server or drivers, the
+order usually stays the same. When using positions, you have to specify the
+exact pixel where the screen *starts*, not a pixel which is contained by the
+screen. Thus, if your first screen has the dimensions 1280x800, you can match
+the second screen right of it by specifying 1280. You cannot use 1281.
 
 *Examples*:
---------------------------------------
-# Get me to the next open VIM instance
-bind Mod1+38 jump "urxvt/VIM"
---------------------------------------
+---------------------------
+workspace 1 screen 0
+workspace 5 screen 1
 
-=== Traveling the focus stack
+workspace 1 screen 1280
+workspace 2 screen x800
+workspace 3 screen 1280x800
+---------------------------
 
-This mechanism can be thought of as the opposite of the +jump+ command. It travels
-the focus stack and jumps to the window you focused before.
+=== Named workspaces
+
+If you always have a certain arrangement of workspaces, you might want to give
+them names (of course UTF-8 is supported):
 
 *Syntax*:
---------------
-focus [number] | floating | tilling | ft
---------------
+---------------------------------------
+workspace <number> <name>
+workspace <number> screen <screen> name
+---------------------------------------
 
-Where +number+ by default is 1 meaning that the next client in the focus stack will
-be selected.
+For more details about the screen-part of this command, see above.
 
-The special values have the following meaning:
-
-floating::
-	The next floating window is selected.
-tiling::
-	The next tiling window is selected.
-ft::
-	If the current window is floating, the next tiling window will be selected
-	and vice-versa.
+*Examples*:
+--------------------------
+workspace 1 www
+workspace 2 work
+workspace 3 i ♥ workspaces
+--------------------------
 
 === Changing colors
 
@@ -369,3 +392,171 @@ Colors are in HTML hex format, see below.
 # class        border  backgr. text
 client.focused #2F343A #900000 #FFFFFF
 --------------------------------------
+
+=== Interprocess communication
+
+i3 uses unix sockets to provide an IPC interface. At the moment, this interface
+is only useful for sending commands. To enable it, you have to configure a path
+where the unix socket will be stored. The default path is +/tmp/i3-ipc.sock+.
+
+*Examples*:
+----------------------------
+ipc-socket /tmp/i3-ipc.sock
+----------------------------
+
+You can then use the i3-msg command to perform any command listed in the next
+section.
+
+== List of commands
+
+=== Manipulating layout
+
+To change the layout of the current container to stacking or back to default
+layout, use +s+ or +d+. To make the current client (!) fullscreen, use +f+, to
+make it floating (or tiling again) use +t+:
+
+*Examples*:
+--------------
+bindsym Mod1+s s
+bindsym Mod1+l d
+
+# Toggle fullscreen
+bindsym Mod1+f f
+
+# Toggle floating/tiling
+bindsym Mod1+space t
+--------------
+
+=== Focussing/Moving/Snapping clients/containers/screens
+
+To change the focus, use one of the +h+, +j+, +k+ and +l+ commands, meaning
+respectively left, down, up, right. To focus a container, prefix it with +wc+,
+to focus a screen, prefix it with +ws+.
+
+The same principle applies for moving and snapping, just prefix the command
+with +m+ when moving and with +s+ when snapping:
+
+*Examples*:
+----------------------
+# Focus clients on the left, bottom, top, right:
+bindsym Mod1+j h
+bindsym Mod1+k j
+bindsym Mod1+l k
+bindsym Mod1+semicolon l
+
+# Move client to the left, bottom, top, right:
+bindsym Mod1+j mh
+bindsym Mod1+k mj
+bindsym Mod1+l mk
+bindsym Mod1+semicolon ml
+
+# Snap client to the left, bottom, top, right:
+bindsym Mod1+j sh
+bindsym Mod1+k sj
+bindsym Mod1+l sk
+bindsym Mod1+semicolon sl
+
+# Focus container on the left, bottom, top, right:
+bindsym Mod3+j wch
+…
+----------------------
+
+=== Changing workspaces/moving clients to workspaces
+
+To change to a specific workspace, the command is just the number of the
+workspace, e.g. +1+ or +3+. To move the current client to a specific workspace,
+prefix the number with an +m+.
+
+Furthermore, you can switch to the next and previous workspace with the
+commands +nw+ and +pw+, which is handy for example if you have workspace
+1, 3, 4 and 9 and you want to cycle through them with a single key combination.
+
+*Examples*:
+-------------------------
+bindsym Mod1+1 1
+bindsym Mod1+2 2
+...
+
+bindsym Mod1+Shift+1 m1
+bindsym Mod1+Shift+2 m2
+...
+
+bindsym Mod1+o nw
+bindsym Mod1+p pw
+-------------------------
+
+=== Jumping to specific windows
+
+Especially when in a multi-monitor environment, you want to quickly jump to a specific
+window, for example while currently working on workspace 3 you may want to jump to
+your mailclient to mail your boss that you’ve achieved some important goal. Instead
+of figuring out how to navigate to your mailclient, it would be more convenient to
+have a shortcut.
+
+*Syntax*:
+----------------------------------------------------
+jump ["]window class[/window title]["]
+jump workspace [ column row ]
+----------------------------------------------------
+
+You can either use the same matching algorithm as in the +assign+ command (see above)
+or you can specify the position of the client if you always use the same layout.
+
+*Examples*:
+--------------------------------------
+# Get me to the next open VIM instance
+bindsym Mod1+a jump "urxvt/VIM"
+--------------------------------------
+
+=== Traveling the focus stack
+
+This mechanism can be thought of as the opposite of the +jump+ command. It travels
+the focus stack and jumps to the window you focused before.
+
+*Syntax*:
+--------------
+focus [number] | floating | tilling | ft
+--------------
+
+Where +number+ by default is 1 meaning that the next client in the focus stack will
+be selected.
+
+The special values have the following meaning:
+
+floating::
+	The next floating window is selected.
+tiling::
+	The next tiling window is selected.
+ft::
+	If the current window is floating, the next tiling window will be selected
+	and vice-versa.
+
+=== Changing border style
+
+To change the border of the current client, you can use +bn+ to use the normal
+border (including window title), +bp+ to use a 1-pixel border (no window title)
+and +bb+ to make the client borderless.
+
+*Examples*:
+------------------
+bindsym Mod1+t bn
+bindsym Mod1+y bp
+bindsym Mod1+u bb
+------------------
+
+=== Reloading/Restarting/Exiting
+
+You can make i3 reload its configuration file with +reload+. You can also
+restart i3 inplace with the +restart+ command to get it out of some weird state
+(if that should ever happen) or to perform an upgrade without having to restart
+your X session. However, your layout is not preserved at the moment, meaning
+that all open windows will be in a single container in default layout. To exit
+i3 properly, you can use the +exit+ command, however you don’t need to (e.g.,
+simply killing your X session is fine aswell).
+
+*Examples*:
+----------------------------
+bindsym Mod1+Shift+r restart
+bindsym Mod1+Shift+w reload
+bindsym Mod1+Shift+e exit
+----------------------------

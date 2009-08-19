@@ -63,39 +63,25 @@ void slog(char *fmt, ...) {
 }
 
 /*
- * Prints the message (see printf()) to stderr, then exits the program.
- *
- */
-void die(char *fmt, ...) {
-        va_list args;
-
-        va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
-        va_end(args);
-
-        exit(EXIT_FAILURE);
-}
-
-/*
  * The s* functions (safe) are wrappers around malloc, strdup, …, which exits if one of
  * the called functions returns NULL, meaning that there is no more memory available
  *
  */
 void *smalloc(size_t size) {
         void *result = malloc(size);
-        exit_if_null(result, "Too less memory for malloc(%d)\n", size);
+        exit_if_null(result, "Error: out of memory (malloc(%zd))\n", size);
         return result;
 }
 
 void *scalloc(size_t size) {
         void *result = calloc(size, 1);
-        exit_if_null(result, "Too less memory for calloc(%d)\n", size);
+        exit_if_null(result, "Error: out of memory (calloc(%zd))\n", size);
         return result;
 }
 
 char *sstrdup(const char *str) {
         char *result = strdup(str);
-        exit_if_null(result, "Too less memory for strdup()\n");
+        exit_if_null(result, "Error: out of memory (strdup())\n");
         return result;
 }
 
@@ -238,65 +224,6 @@ Client *get_last_focused_client(xcb_connection_t *conn, Container *container, Cl
         return NULL;
 }
 
-/*
- * Unmaps all clients (and stack windows) of the given workspace.
- *
- * This needs to be called separately when temporarily rendering
- * a workspace which is not the active workspace to force
- * reconfiguration of all clients, like in src/xinerama.c when
- * re-assigning a workspace to another screen.
- *
- */
-void unmap_workspace(xcb_connection_t *conn, Workspace *u_ws) {
-        Client *client;
-        struct Stack_Window *stack_win;
-
-        /* Ignore notify events because they would cause focus to be changed */
-        ignore_enter_notify_forall(conn, u_ws, true);
-
-        /* Unmap all clients of the given workspace */
-        int unmapped_clients = 0;
-        FOR_TABLE(u_ws)
-                CIRCLEQ_FOREACH(client, &(u_ws->table[cols][rows]->clients), clients) {
-                        LOG("unmapping normal client %p / %p / %p\n", client, client->frame, client->child);
-                        xcb_unmap_window(conn, client->frame);
-                        unmapped_clients++;
-                }
-
-        /* To find floating clients, we traverse the focus stack */
-        SLIST_FOREACH(client, &(u_ws->focus_stack), focus_clients) {
-                if (!client_is_floating(client))
-                        continue;
-
-                LOG("unmapping floating client %p / %p / %p\n", client, client->frame, client->child);
-
-                xcb_unmap_window(conn, client->frame);
-                unmapped_clients++;
-        }
-
-        /* If we did not unmap any clients, the workspace is empty and we can destroy it, at least
-         * if it is not the current workspace. */
-        if (unmapped_clients == 0 && u_ws != c_ws) {
-                /* Re-assign the workspace of all dock clients which use this workspace */
-                Client *dock;
-                LOG("workspace %p is empty\n", u_ws);
-                SLIST_FOREACH(dock, &(u_ws->screen->dock_clients), dock_clients) {
-                        if (dock->workspace != u_ws)
-                                continue;
-
-                        LOG("Re-assigning dock client to c_ws (%p)\n", c_ws);
-                        dock->workspace = c_ws;
-                }
-                u_ws->screen = NULL;
-        }
-
-        /* Unmap the stack windows on the given workspace, if any */
-        SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
-                if (stack_win->container->workspace == u_ws)
-                        xcb_unmap_window(conn, stack_win->window);
-
-        ignore_enter_notify_forall(conn, u_ws, false);
-}
 
 /*
  * Sets the given client as focused by updating the data structures correctly,
@@ -313,10 +240,8 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         Client *old_client = SLIST_FIRST(&(c_ws->focus_stack));
 
         /* Check if the focus needs to be changed at all */
-        if (!set_anyways && (old_client == client)) {
-                LOG("old_client == client, not changing focus\n");
+        if (!set_anyways && (old_client == client))
                 return;
-        }
 
         /* Store current_row/current_col */
         c_ws->current_row = current_row;
@@ -334,7 +259,7 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
                 current_row = client->container->row;
         }
 
-        LOG("set_focus(frame %08x, child %08x, name %s)\n", client->frame, client->child, client->name);
+        CLIENT_LOG(client);
         /* Set focus to the entered window, and flush xcb buffer immediately */
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
         //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);
@@ -362,11 +287,6 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
                         redecorate_window(conn, last_focused);
         }
 
-        /* If we’re in stacking mode, this renders the container to update changes in the title
-           bars and to raise the focused client */
-        if ((old_client != NULL) && (old_client != client) && !old_client->dock)
-                redecorate_window(conn, old_client);
-
         /* If the last client was a floating client, we need to go to the next
          * tiling client in stack and re-decorate it. */
         if (old_client != NULL && client_is_floating(old_client)) {
@@ -386,6 +306,11 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
         SLIST_INSERT_HEAD(&(client->workspace->focus_stack), client, focus_clients);
 
+        /* If we’re in stacking mode, this renders the container to update changes in the title
+           bars and to raise the focused client */
+        if ((old_client != NULL) && (old_client != client) && !old_client->dock)
+                redecorate_window(conn, old_client);
+
         /* redecorate_window flushes, so we don’t need to */
         redecorate_window(conn, client);
 }
@@ -401,7 +326,8 @@ void leave_stack_mode(xcb_connection_t *conn, Container *container) {
 
         SLIST_REMOVE(&stack_wins, stack_win, Stack_Window, stack_windows);
 
-        xcb_free_gc(conn, stack_win->gc);
+        xcb_free_gc(conn, stack_win->pixmap.gc);
+        xcb_free_pixmap(conn, stack_win->pixmap.id);
         xcb_destroy_window(conn, stack_win->window);
 
         stack_win->rect.width = -1;
@@ -437,11 +363,15 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
                                 XCB_EVENT_MASK_EXPOSURE;        /* …our window needs to be redrawn */
 
                 struct Stack_Window *stack_win = &(container->stack_win);
-                stack_win->window = create_window(conn, rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
+                stack_win->window = create_window(conn, rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, false, mask, values);
 
-                /* Generate a graphics context for the titlebar */
-                stack_win->gc = xcb_generate_id(conn);
-                xcb_create_gc(conn, stack_win->gc, stack_win->window, 0, 0);
+                stack_win->rect.height = 0;
+
+                /* Initialize the entry for our cached pixmap. It will be
+                 * created as soon as it’s needed (see cached_pixmap_prepare). */
+                memset(&(stack_win->pixmap), 0, sizeof(struct Cached_Pixmap));
+                stack_win->pixmap.referred_rect = &stack_win->rect;
+                stack_win->pixmap.referred_drawable = stack_win->window;
 
                 stack_win->container = container;
 

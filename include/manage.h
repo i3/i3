@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -16,21 +16,26 @@
 #define _MANAGE_H
 
 /**
- * Go through all existing windows (if the window manager is restarted) and manage them
+ * Go through all existing windows (if the window manager is restarted) and
+ * manage them
  *
  */
-void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *prophs, xcb_window_t root);
+void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t
+                             *prophs, xcb_window_t root);
 
 /**
  * Do some sanity checks and then reparent the window.
  *
  */
 void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
-                   xcb_window_t window, window_attributes_t wa);
+                   xcb_window_t window,
+                   xcb_get_window_attributes_cookie_t cookie,
+                   bool needs_to_be_mapped);
 
 /**
- * reparent_window() gets called when a new window was opened and becomes a child of the root
- * window, or it gets called by us when we manage the already existing windows at startup.
+ * reparent_window() gets called when a new window was opened and becomes a
+ * child of the root window, or it gets called by us when we manage the
+ * already existing windows at startup.
  *
  * Essentially, this is the point where we take over control.
  *

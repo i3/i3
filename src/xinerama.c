@@ -27,12 +27,32 @@
 #include "layout.h"
 #include "xcb.h"
 #include "config.h"
+#include "workspace.h"
 
 /* This TAILQ of i3Screens stores the virtual screens, used for handling overlapping screens
  * (xrandr --same-as) */
 struct screens_head *virtual_screens;
 
 static bool xinerama_enabled = true;
+
+/*
+ * Returns true if both screen objects describe the same screen (checks their
+ * size and position).
+ *
+ */
+bool screens_are_equal(i3Screen *screen1, i3Screen *screen2) {
+        /* If one of both objects (or both) are NULL, we cannot compare them */
+        if (screen1 == NULL || screen2 == NULL)
+                return false;
+
+        /* If the pointers are equal, take the short-circuit */
+        if (screen1 == screen2)
+                return true;
+
+        /* Compare their size - other properties are not relevant to determine
+         * if a screen is equal to another one */
+        return (memcmp(&(screen1->rect), &(screen2->rect), sizeof(Rect)) == 0);
+}
 
 /*
  * Looks in virtual_screens for the i3Screen whose start coordinates are x, y
@@ -72,7 +92,7 @@ i3Screen *get_screen_containing(int x, int y) {
  * This function always returns a screen.
  *
  */
-i3Screen *get_screen_most(direction_t direction) {
+i3Screen *get_screen_most(direction_t direction, i3Screen *current) {
         i3Screen *screen, *candidate = NULL;
         int position = 0;
         TAILQ_FOREACH(screen, virtual_screens, screens) {
@@ -83,6 +103,14 @@ i3Screen *get_screen_most(direction_t direction) {
                                 position = variable; \
                         } \
                         break;
+
+                if (((direction == D_UP) || (direction == D_DOWN)) &&
+                    (current->rect.x != screen->rect.x))
+                        continue;
+
+                if (((direction == D_LEFT) || (direction == D_RIGHT)) &&
+                    (current->rect.y != screen->rect.y))
+                        continue;
 
                 switch (direction) {
                         case D_UP:
@@ -114,14 +142,12 @@ static void initialize_screen(xcb_connection_t *conn, i3Screen *screen, Workspac
                          font->height + 6};
         uint32_t mask = XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
         uint32_t values[] = {1, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS};
-        screen->bar = create_window(conn, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, mask, values);
+        screen->bar = create_window(conn, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, true, mask, values);
         screen->bargc = xcb_generate_id(conn);
         xcb_create_gc(conn, screen->bargc, screen->bar, 0, 0);
 
         SLIST_INIT(&(screen->dock_clients));
 
-        /* Copy dimensions */
-        memcpy(&(workspace->rect), &(screen->rect), sizeof(Rect));
         LOG("that is virtual screen at %d x %d with %d x %d\n",
                         screen->rect.x, screen->rect.y, screen->rect.width, screen->rect.height);
 }
@@ -142,7 +168,6 @@ static void disable_xinerama(xcb_connection_t *conn) {
 
         num_screens = 1;
         s->num = 0;
-        initialize_screen(conn, s, &(workspaces[0]));
 
         TAILQ_INSERT_TAIL(virtual_screens, s, screens);
 
@@ -175,7 +200,7 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
 
                 for (int screen = 0; screen < screens; screen++) {
                         i3Screen *s = get_screen_at(screen_info[screen].x_org, screen_info[screen].y_org, screenlist);
-                        if (s!= NULL) {
+                        if (s != NULL) {
                                 /* This screen already exists. We use the littlest screen so that the user
                                    can always see the complete workspace */
                                 s->rect.width = min(s->rect.width, screen_info[screen].width);
@@ -235,13 +260,14 @@ void initialize_xinerama(xcb_connection_t *conn) {
 
         FREE(reply);
 
-        i3Screen *s;
+        i3Screen *screen;
         num_screens = 0;
         /* Just go through each workspace and associate as many screens as we can. */
-        TAILQ_FOREACH(s, virtual_screens, screens) {
-                s->num = num_screens;
-                initialize_screen(conn, s, &(workspaces[num_screens]));
+        TAILQ_FOREACH(screen, virtual_screens, screens) {
+                screen->num = num_screens;
                 num_screens++;
+                Workspace *ws = get_first_workspace_for_screen(virtual_screens, screen);
+                initialize_screen(conn, screen, ws);
         }
 }
 
@@ -268,65 +294,85 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
         query_screens(conn, new_screens);
 
         i3Screen *first = TAILQ_FIRST(new_screens),
-                 *screen;
+                 *screen,
+                 *old_screen;
         int screen_count = 0;
+        /* Mark each workspace which currently is assigned to a screen, so we
+         * can garbage-collect afterwards */
+        for (int c = 0; c < 10; c++)
+                workspaces[c].reassigned = (workspaces[c].screen == NULL);
+
         TAILQ_FOREACH(screen, new_screens, screens) {
                 screen->num = screen_count;
                 screen->current_workspace = -1;
-                for (int c = 0; c < 10; c++)
-                        if ((workspaces[c].screen != NULL) &&
-                            (workspaces[c].screen->num == screen_count)) {
-                                LOG("Found a matching screen\n");
-                                /* Try to use the same workspace, if it’s available */
-                                if (workspaces[c].screen->current_workspace)
-                                        screen->current_workspace = workspaces[c].screen->current_workspace;
 
-                                if (screen->current_workspace == -1)
-                                        screen->current_workspace = c;
+                TAILQ_FOREACH(old_screen, virtual_screens, screens) {
+                        if (old_screen->num != screen_count)
+                                continue;
 
-                                /* Re-use the old bar window */
-                                screen->bar = workspaces[c].screen->bar;
-                                screen->bargc = workspaces[c].screen->bargc;
+                        LOG("Found a matching screen\n");
+                        /* Use the same workspace */
+                        screen->current_workspace = old_screen->current_workspace;
 
-                                Rect bar_rect = {screen->rect.x,
-                                                 screen->rect.height - (font->height + 6),
-                                                 screen->rect.x + screen->rect.width,
-                                                 font->height + 6};
+                        /* Re-use the old bar window */
+                        screen->bar = old_screen->bar;
+                        screen->bargc = old_screen->bargc;
+                        LOG("old_screen->bar = %p\n", old_screen->bar);
 
-                                xcb_configure_window(conn, screen->bar, XCB_CONFIG_WINDOW_X |
-                                                                        XCB_CONFIG_WINDOW_Y |
-                                                                        XCB_CONFIG_WINDOW_WIDTH |
-                                                                        XCB_CONFIG_WINDOW_HEIGHT, &(bar_rect.x));
+                        Rect bar_rect = {screen->rect.x,
+                                         screen->rect.height - (font->height + 6),
+                                         screen->rect.x + screen->rect.width,
+                                         font->height + 6};
 
-                                /* Copy the list head for the dock clients */
-                                screen->dock_clients = workspaces[c].screen->dock_clients;
+                        LOG("configuring bar to be at %d x %d with %d x %d\n",
+                                        bar_rect.x, bar_rect.y, bar_rect.height, bar_rect.width);
+                        xcb_configure_window(conn, screen->bar, XCB_CONFIG_WINDOW_X |
+                                                                XCB_CONFIG_WINDOW_Y |
+                                                                XCB_CONFIG_WINDOW_WIDTH |
+                                                                XCB_CONFIG_WINDOW_HEIGHT, &(bar_rect.x));
 
-                                /* Update the dimensions */
-                                memcpy(&(workspaces[c].rect), &(screen->rect), sizeof(Rect));
-                                workspaces[c].screen = screen;
+                        /* Copy the list head for the dock clients */
+                        screen->dock_clients = old_screen->dock_clients;
+
+                        /* Update the dimensions */
+                        for (int c = 0; c < 10; c++) {
+                                Workspace *ws = &(workspaces[c]);
+                                if (ws->screen != old_screen)
+                                        continue;
+
+                                LOG("re-assigning ws %d\n", ws->num);
+                                memcpy(&(ws->rect), &(screen->rect), sizeof(Rect));
+                                ws->screen = screen;
+                                ws->reassigned = true;
                         }
+
+                        break;
+                }
                 if (screen->current_workspace == -1) {
-                        /* Create a new workspace for this screen, it’s new */
-                        for (int c = 0; c < 10; c++)
-                                if (workspaces[c].screen == NULL) {
-                                        LOG("fix: initializing new workspace, setting num to %d\n", c);
-                                        initialize_screen(conn, screen, &(workspaces[c]));
-                                        break;
-                                }
+                        /* Find the first unused workspace, preferring the ones
+                         * which are assigned to this screen and initialize
+                         * the screen with it. */
+                        LOG("getting first ws for screen %p\n", screen);
+                        Workspace *ws = get_first_workspace_for_screen(new_screens, screen);
+                        initialize_screen(conn, screen, ws);
+
+                        /* As this workspace just got visible (we got a new screen
+                         * without workspace), we need to map its clients */
+                        workspace_map_clients(conn, ws);
                 }
                 screen_count++;
         }
 
         /* Check for workspaces which are out of bounds */
         for (int c = 0; c < 10; c++) {
-                if ((workspaces[c].screen == NULL) || (workspaces[c].screen->num < num_screens))
+                if (workspaces[c].reassigned)
                         continue;
 
                 /* f_ws is a shortcut to the workspace to fix */
                 Workspace *f_ws = &(workspaces[c]);
                 Client *client;
 
-                LOG("Closing bar window\n");
+                LOG("Closing bar window (%p)\n", f_ws->screen->bar);
                 xcb_destroy_window(conn, f_ws->screen->bar);
 
                 LOG("Workspace %d's screen out of bounds, assigning to first screen\n", c+1);
@@ -342,10 +388,15 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                 render_workspace(conn, first, f_ws);
 
                 /* …unless we want to see them at the moment, we should hide that workspace */
-                if (first->current_workspace == c)
+                if (workspace_is_visible(f_ws))
                         continue;
 
-                unmap_workspace(conn, f_ws);
+                workspace_unmap_clients(conn, f_ws);
+
+                if (c_ws == f_ws) {
+                        LOG("Need to adjust c_ws...\n");
+                        c_ws = &(workspaces[first->current_workspace]);
+                }
         }
         xcb_flush(conn);
 

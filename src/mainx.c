@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <locale.h>
+#include <fcntl.h>
 
 #include <X11/XKBlib.h>
 #include <X11/extensions/XKB.h>
@@ -45,12 +46,17 @@
 #include "xcb.h"
 #include "xinerama.h"
 #include "manage.h"
+#include "ipc.h"
+
+xcb_connection_t *global_conn;
 
 /* This is the path to i3, copied from argv[0] when starting up */
 char **start_argv;
 
 /* This is our connection to X11 for use with XKB */
 Display *xkbdpy;
+
+xcb_key_symbols_t *keysyms;
 
 /* The list of key bindings */
 struct bindings_head bindings = TAILQ_HEAD_INITIALIZER(bindings);
@@ -69,7 +75,11 @@ struct stack_wins_head stack_wins = SLIST_HEAD_INITIALIZER(stack_wins);
 xcb_event_handlers_t evenths;
 xcb_atom_t atoms[NUM_ATOMS];
 
+xcb_window_t root;
 int num_screens = 0;
+
+/* The depth of the root screen (used e.g. for creating new pixmaps later) */
+uint8_t root_depth;
 
 /*
  * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
@@ -102,13 +112,40 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
         }
 }
 
+/*
+ * When using xmodmap to change the keyboard mapping, this event
+ * is only sent via XKB. Therefore, we need this special handler.
+ *
+ */
+static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
+        LOG("got xkb event, yay\n");
+        XEvent ev;
+        /* When using xmodmap, every change (!) gets an own event.
+         * Therefore, we just read all events and only handle the
+         * mapping_notify once (we do not receive any other XKB
+         * events anyway). */
+        while (XPending(xkbdpy))
+                XNextEvent(xkbdpy, &ev);
+
+        xcb_key_symbols_free(keysyms);
+        keysyms = xcb_key_symbols_alloc(global_conn);
+
+        xcb_get_numlock_mask(global_conn);
+
+        ungrab_all_keys(global_conn);
+        LOG("Re-grabbing...\n");
+        grab_all_keys(global_conn);
+        LOG("Done\n");
+
+}
+
+
 int main(int argc, char *argv[], char *env[]) {
         int i, screens, opt;
         char *override_configpath = NULL;
         bool autostart = true;
         xcb_connection_t *conn;
         xcb_property_handlers_t prophs;
-        xcb_window_t root;
         xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
 
         setlocale(LC_ALL, "");
@@ -145,12 +182,12 @@ int main(int argc, char *argv[], char *env[]) {
         memset(&evenths, 0, sizeof(xcb_event_handlers_t));
         memset(&prophs, 0, sizeof(xcb_property_handlers_t));
 
-        conn = xcb_connect(NULL, &screens);
+        conn = global_conn = xcb_connect(NULL, &screens);
 
         if (xcb_connection_has_error(conn))
                 die("Cannot open display\n");
 
-        load_configuration(conn, override_configpath);
+        load_configuration(conn, override_configpath, false);
 
         /* Place requests for the atoms we need as soon as possible */
         #define REQUEST_ATOM(name) atom_cookies[name] = xcb_intern_atom(conn, 0, strlen(#name), #name);
@@ -172,6 +209,7 @@ int main(int argc, char *argv[], char *env[]) {
         REQUEST_ATOM(WM_DELETE_WINDOW);
         REQUEST_ATOM(UTF8_STRING);
         REQUEST_ATOM(WM_STATE);
+        REQUEST_ATOM(WM_CLIENT_LEADER);
 
         /* TODO: this has to be more beautiful somewhen */
         int major, minor, error;
@@ -186,6 +224,11 @@ int main(int argc, char *argv[], char *env[]) {
                 return 1;
         }
 
+        if (fcntl(ConnectionNumber(xkbdpy), F_SETFD, FD_CLOEXEC) == -1) {
+                fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
+                return 1;
+        }
+
         int i1;
         if (!XkbQueryExtension(xkbdpy,&i1,&evBase,&errBase,&major,&minor)) {
                 fprintf(stderr, "XKB not supported by X-server\n");
@@ -193,17 +236,29 @@ int main(int argc, char *argv[], char *env[]) {
         }
         /* end of ugliness */
 
+        if (!XkbSelectEvents(xkbdpy, XkbUseCoreKbd, XkbMapNotifyMask, XkbMapNotifyMask)) {
+                fprintf(stderr, "Could not set XKB event mask\n");
+                return 1;
+        }
+
         /* Initialize event loop using libev */
         struct ev_loop *loop = ev_default_loop(0);
         if (loop == NULL)
                 die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
 
         struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
+        struct ev_io *xkb = scalloc(sizeof(struct ev_io));
         struct ev_check *xcb_check = scalloc(sizeof(struct ev_check));
         struct ev_prepare *xcb_prepare = scalloc(sizeof(struct ev_prepare));
 
         ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
         ev_io_start(loop, xcb_watcher);
+
+        ev_io_init(xkb, xkb_got_event, ConnectionNumber(xkbdpy), EV_READ);
+        ev_io_start(loop, xkb);
+
+        /* Flush the buffer so that libev can properly get new events */
+        XFlush(xkbdpy);
 
         ev_check_init(xcb_check, xcb_check_cb);
         ev_check_start(loop, xcb_check);
@@ -250,6 +305,13 @@ int main(int argc, char *argv[], char *env[]) {
         /* Configure request = window tried to change size on its own */
         xcb_event_set_configure_request_handler(&evenths, handle_configure_request, NULL);
 
+        /* Motion notify = user moved his cursor (over the root window and may
+         * cross virtual screen boundaries doing that) */
+        xcb_event_set_motion_notify_handler(&evenths, handle_motion_notify, NULL);
+
+        /* Mapping notify = keyboard mapping changed (Xmodmap), re-grab bindings */
+        xcb_event_set_mapping_notify_handler(&evenths, handle_mapping_notify, NULL);
+
         /* Client message are sent to the root window. The only interesting client message
            for us is _NET_WM_STATE, we honour _NET_WM_STATE_FULLSCREEN */
         xcb_event_set_client_message_handler(&evenths, handle_client_message, NULL);
@@ -261,13 +323,16 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_property_set_handler(&prophs, WM_NORMAL_HINTS, UINT_MAX, handle_normal_hints, NULL);
 
         /* Get the root window and set the event mask */
-        root = xcb_aux_get_screen(conn, screens)->root;
+        xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
+        root = root_screen->root;
+        root_depth = root_screen->root_depth;
 
         uint32_t mask = XCB_CW_EVENT_MASK;
         uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
                               XCB_EVENT_MASK_STRUCTURE_NOTIFY |         /* when the user adds a screen (e.g. video
                                                                            projector), the root window gets a
                                                                            ConfigureNotify */
+                              XCB_EVENT_MASK_POINTER_MOTION |
                               XCB_EVENT_MASK_PROPERTY_CHANGE |
                               XCB_EVENT_MASK_ENTER_WINDOW };
         xcb_change_window_attributes(conn, root, mask, values);
@@ -300,6 +365,7 @@ int main(int argc, char *argv[], char *env[]) {
         GET_ATOM(WM_DELETE_WINDOW);
         GET_ATOM(UTF8_STRING);
         GET_ATOM(WM_STATE);
+        GET_ATOM(WM_CLIENT_LEADER);
 
         xcb_property_set_handler(&prophs, atoms[_NET_WM_WINDOW_TYPE], UINT_MAX, handle_window_type, NULL);
         /* TODO: In order to comply with EWMH, we have to watch _NET_WM_STRUT_PARTIAL */
@@ -316,6 +382,9 @@ int main(int argc, char *argv[], char *env[]) {
         /* Watch WM_CLASS (= class of the window) */
         xcb_property_set_handler(&prophs, WM_CLASS, 128, handle_windowclass_change, NULL);
 
+        /* Watch WM_CLIENT_LEADER (= logical parent window for toolbars etc.) */
+        xcb_property_set_handler(&prophs, atoms[WM_CLIENT_LEADER], UINT_MAX, handle_clientleader_change, NULL);
+
         /* Set up the atoms we support */
         check_error(conn, xcb_change_property_checked(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED],
                        ATOM, 32, 7, atoms), "Could not set _NET_SUPPORTED");
@@ -323,23 +392,11 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTING_WM_CHECK], WINDOW, 32, 1, &root);
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_WM_NAME], atoms[UTF8_STRING], 8, strlen("i3"), "i3");
 
+        keysyms = xcb_key_symbols_alloc(conn);
+
         xcb_get_numlock_mask(conn);
 
-        /* Grab the bound keys */
-        Binding *bind;
-        TAILQ_FOREACH(bind, &bindings, bindings) {
-                LOG("Grabbing %d\n", bind->keycode);
-                if (bind->mods & BIND_MODE_SWITCH)
-                        xcb_grab_key(conn, 0, root, 0, bind->keycode, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
-                else {
-                        /* Grab the key in all combinations */
-                        #define GRAB_KEY(modifier) xcb_grab_key(conn, 0, root, modifier, bind->keycode, \
-                                                                XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC)
-                        GRAB_KEY(bind->mods);
-                        GRAB_KEY(bind->mods | xcb_numlock_mask);
-                        GRAB_KEY(bind->mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
-                }
-        }
+        grab_all_keys(conn);
 
         /* Autostarting exec-lines */
         struct Autostart *exec;
@@ -356,8 +413,6 @@ int main(int argc, char *argv[], char *env[]) {
 
         xcb_flush(conn);
 
-        manage_existing_windows(conn, &prophs, root);
-
         /* Get pointer position to see on which screen we’re starting */
         xcb_query_pointer_reply_t *reply;
         if ((reply = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, root), NULL)) == NULL) {
@@ -370,9 +425,22 @@ int main(int argc, char *argv[], char *env[]) {
                 LOG("ERROR: No screen at %d x %d\n", reply->root_x, reply->root_y);
                 return 0;
         }
-        if (screen->current_workspace != 0) {
-                LOG("Ok, I need to go to the other workspace\n");
-                c_ws = &workspaces[screen->current_workspace];
+
+        LOG("Starting on %d\n", screen->current_workspace);
+        c_ws = &workspaces[screen->current_workspace];
+
+        manage_existing_windows(conn, &prophs, root);
+
+        /* Create the UNIX domain socket for IPC */
+        if (config.ipc_socket_path != NULL) {
+                int ipc_socket = ipc_create_socket(config.ipc_socket_path);
+                if (ipc_socket == -1) {
+                        LOG("Could not create the IPC socket, IPC disabled\n");
+                } else {
+                        struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
+                        ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
+                        ev_io_start(loop, ipc_io);
+                }
         }
 
         /* Handle the events which arrived until now */
