@@ -127,6 +127,9 @@ src/handlers.c::
 Contains all handlers for all kind of X events (new window title, new hints,
 unmapping, key presses, button presses, …).
 
+src/ipc.c::
+Contains code for the IPC interface.
+
 src/layout.c::
 Renders your layout (screens, workspaces, containers).
 
@@ -148,6 +151,9 @@ Manages the most important internal data structure, the design table.
 
 src/util.c::
 Contains useful functions which are not really dependant on anything.
+
+src/workspace.c::
+Contains all functions related to workspaces (displaying, hiding, renaming…)
 
 src/xcb.c::
 Contains wrappers to use xcb more easily.
