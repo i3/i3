@@ -1,14 +1,29 @@
-i3-wm (3.c-0) unstable; urgency=low
+i3-wm (3.c-1) unstable; urgency=low
 
   * Implement a reload command
+  * Implement keysymbols in configuration file
+  * Implement assignments of workspaces to screens
+  * Implement named workspaces
+  * Implement borderless/1-px-border windows
+  * Implement command to focus screens
   * Implement IPC via unix sockets
+  * Correctly render decoration of floating windows
+  * Map floating windows requesting (0x0) to center of their leader/workspace
   * Optimization: Render stack windows on pixmaps to reduce flickering
   * Optimization: Directly position new windows to their final position
   * Bugfix: Repeatedly try to find screens if none are available
   * Bugfix: Correctly redecorate clients when changing focus
   * Bugfix: Don’t crash when clients reconfigure themselves
+  * Bugfix: Fix screen wrapping
+  * Bugfix: Fix selecting a different screen with your mouse when not having
+    any windows on the current workspace
+  * Bugfix: Correctly unmap stack windows and don’t re-map them too early
+  * Bugfix: Allow switching layout if there are no clients in the this container
+  * Bugfix: Set WM_STATE_WITHDRAWN when unmapping, unmap windows when
+    destroying
+  * Bugfix: Don’t hide assigned clients to inactive but visible workspaces
 
- -- Michael Stapelberg <michael@stapelberg.de>  Sun, 02 Aug 2009 20:05:58 +0200
+ -- Michael Stapelberg <michael@stapelberg.de>  Wed, 19 Aug 2009 13:07:58 +0200
 
 i3-wm (3.b-1) unstable; urgency=low
 
