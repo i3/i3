@@ -201,10 +201,10 @@ bind [Modifiers+]keycode command
 *Examples*:
 --------------------------------
 # Fullscreen
-bind Mod1+f f
+bindsym Mod1+f f
 
 # Restart
-bind Mod1+Shift+r restart
+bindsym Mod1+Shift+r restart
 
 # Notebook-specific hotkeys
 bind 214 exec /home/michael/toggle_beamer.sh
@@ -417,14 +417,14 @@ make it floating (or tiling again) use +t+:
 
 *Examples*:
 --------------
-bind Mod1+s s
-bind Mod1+l d
+bindsym Mod1+s s
+bindsym Mod1+l d
 
 # Toggle fullscreen
-bind Mod1+f f
+bindsym Mod1+f f
 
 # Toggle floating/tiling
-bind Mod1+t t
+bindsym Mod1+t t
 --------------
 
 === Focussing/Moving/Snapping clients/containers/screens
@@ -505,7 +505,7 @@ or you can specify the position of the client if you always use the same layout.
 *Examples*:
 --------------------------------------
 # Get me to the next open VIM instance
-bind Mod1+38 jump "urxvt/VIM"
+bindsym Mod1+a jump "urxvt/VIM"
 --------------------------------------
 
 === Traveling the focus stack
