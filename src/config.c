@@ -113,7 +113,7 @@ void grab_all_keys(xcb_connection_t *conn) {
                         continue;
                 }
 
-                uint32_t last_keycode;
+                uint32_t last_keycode = 0;
                 bind->number_keycodes = 0;
                 for (xcb_keycode_t *walk = keycodes; *walk != 0; walk++) {
                         /* We hope duplicate keycodes will be returned in order
