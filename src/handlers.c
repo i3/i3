@@ -1115,6 +1115,8 @@ int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state
         if (prop == NULL) {
                 prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
                                         false, window, WM_CLIENT_LEADER, WINDOW, 0, 32), NULL);
+                if (prop == NULL)
+                        return 1;
         }
 
         Client *client = table_get(&by_child, window);
