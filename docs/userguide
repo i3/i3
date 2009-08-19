@@ -424,7 +424,7 @@ bindsym Mod1+l d
 bindsym Mod1+f f
 
 # Toggle floating/tiling
-bindsym Mod1+t t
+bindsym Mod1+space t
 --------------
 
 === Focussing/Moving/Snapping clients/containers/screens
