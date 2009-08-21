@@ -422,19 +422,20 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                            and don’t event bother to redraw the layout – that would not change
                            anything anyways */
                         client_toggle_fullscreen(conn, new);
-                        return;
+                        goto map;
                 }
 
         render_layout(conn);
 
+map:
         /* Map the window first to avoid flickering */
         xcb_map_window(conn, child);
         if (map_frame)
                 client_map(conn, new);
 
-        if (CUR_CELL->workspace->fullscreen_client == NULL && !new->dock) {
+        if ((CUR_CELL->workspace->fullscreen_client == NULL || new->fullscreen) && !new->dock) {
                 /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
-                if (new->workspace->fullscreen_client == NULL) {
+                if ((new->workspace->fullscreen_client == NULL) || new->fullscreen) {
                         if (!client_is_floating(new))
                                 new->container->currently_focused = new;
                         if (new->container == CUR_CELL || client_is_floating(new))
