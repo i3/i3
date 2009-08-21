@@ -17,11 +17,9 @@ BEGIN {
 X11::XCB::Connection->connect(':0');
 
 # Create a floating window which is smaller than the minimum enforced size of i3
-my $original_rect = X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30);
-
 my $window = X11::XCB::Window->new(
     class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => $original_rect,
+    rect => [ 0, 0, 30, 30],
     background_color => 12632256,
     type => 'utility',
 );
@@ -42,11 +40,9 @@ ok($absolute->{x} != 0 && $absolute->{y} != 0, "i3 did not map it to (0x0)");
 
 $window->unmap;
 
-$original_rect = X11::XCB::Rect->new(x => 1, y => 1, width => 80, height => 90);
-
 $window = X11::XCB::Window->new(
     class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => $original_rect,
+    rect => [ 1, 1, 80, 90],
     background_color => 12632256,
     type => 'utility',
 );

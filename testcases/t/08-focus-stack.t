@@ -39,11 +39,9 @@ $sock->write(i3test::format_ipc_command("ml"));
 my $focus = X11::XCB::Connection->input_focus;
 
 # Create a floating window which is smaller than the minimum enforced size of i3
-my $original_rect = X11::XCB::Rect->new(x => 1, y => 1, width => 30, height => 30);
-
 my $window = X11::XCB::Window->new(
     class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => $original_rect,
+    rect => [ 1, 1, 30, 30],
     background_color => 12632256,
     type => 'utility',
 );
