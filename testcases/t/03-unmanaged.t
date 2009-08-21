@@ -18,7 +18,7 @@ my $window = X11::XCB::Window->new(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => $original_rect,
     override_redirect => 1,
-    background_color => 12632256
+    background_color => '#C0C0C0',
 );
 
 isa_ok($window, 'X11::XCB::Window');

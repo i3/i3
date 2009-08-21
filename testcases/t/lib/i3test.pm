@@ -18,7 +18,7 @@ sub open_standard_window {
     my $window = X11::XCB::Window->new(
         class => WINDOW_CLASS_INPUT_OUTPUT,
         rect => $original_rect,
-        background_color => 12632256,
+        background_color => '#C0C0C0',
     );
 
     $window->create;

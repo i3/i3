@@ -20,7 +20,7 @@ X11::XCB::Connection->connect(':0');
 my $window = X11::XCB::Window->new(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30],
-    background_color => 12632256,
+    background_color => '#C0C0C0',
     type => 'utility',
 );
 
@@ -43,7 +43,7 @@ $window->unmap;
 $window = X11::XCB::Window->new(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 1, 1, 80, 90],
-    background_color => 12632256,
+    background_color => '#C0C0C0',
     type => 'utility',
 );
 

@@ -32,8 +32,7 @@ my $primary = first { $_->primary } @{$screens};
 my $window = X11::XCB::Window->new(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30],
-    #override_redirect => 1,
-    background_color => 12632256,
+    background_color => '#FF0000',
     type => 'dock',
 );
 

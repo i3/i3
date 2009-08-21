@@ -42,7 +42,7 @@ my $focus = X11::XCB::Connection->input_focus;
 my $window = X11::XCB::Window->new(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 1, 1, 30, 30],
-    background_color => 12632256,
+    background_color => '#C0C0C0',
     type => 'utility',
 );
 
