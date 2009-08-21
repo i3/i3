@@ -1,8 +1,9 @@
 #!perl
 
-use Test::More tests => 5;
+use Test::More tests => 8;
 use Test::Deep;
 use X11::XCB qw(:all);
+use Data::Dumper;
 
 # We use relatively long sleeps (1/4 second) to make sure the window manager
 # reacted.
@@ -44,5 +45,24 @@ sleep(0.25);
 
 $new_rect = $window->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned after fullscreen");
+
+$window->unmap;
+
+$window = X11::XCB::Window->new(
+	class => WINDOW_CLASS_INPUT_OUTPUT,
+	rect => $original_rect,
+	background_color => 61440,
+);
+
+is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
+
+$window->create;
+$window->fullscreen(1);
+$window->map;
+
+sleep(0.25);
+
+ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned after fullscreen");
+ok($window->mapped, "Window is mapped after opening it in fullscreen mode");
 
 diag( "Testing i3, Perl $], $^X" );
