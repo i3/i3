@@ -9,6 +9,7 @@ use Time::HiRes qw(sleep);
 use FindBin;
 use lib "$FindBin::Bin/lib";
 use i3test;
+use List::Util qw(first);
 
 BEGIN {
     #use_ok('IO::Socket::UNIX') or BAIL_OUT('Cannot load IO::Socket::UNIX');
@@ -21,6 +22,13 @@ X11::XCB::Connection->connect(':0');
 # Create a dock window and see if it gets managed
 #####################################################################
 
+my $screens = X11::XCB::Connection->screens;
+
+# Get the primary screen
+my $primary = first { $_->primary } @{$screens};
+
+# TODO: focus the primary screen before
+
 my $window = X11::XCB::Window->new(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30],
@@ -32,10 +40,9 @@ my $window = X11::XCB::Window->new(
 $window->create;
 $window->map;
 
-diag("dimensions before sleep: " . Dumper($window->rect));
-
 sleep 0.25;
 
-# TODO: check if it is as wide as the screen is
+my $rect = $window->rect;
+is($rect->width, $primary->rect->width, 'dock client is as wide as the screen');
 
-diag("dimensions after sleep: " . Dumper($window->rect));
+diag( "Testing i3, Perl $], $^X" );
