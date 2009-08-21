@@ -104,12 +104,12 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         LOG("Target screen NULL\n");
                         /* Wrap around if the target screen is out of bounds */
                         if (direction == D_RIGHT)
-                                target = get_screen_most(D_LEFT);
+                                target = get_screen_most(D_LEFT, cs);
                         else if (direction == D_LEFT)
-                                target = get_screen_most(D_RIGHT);
+                                target = get_screen_most(D_RIGHT, cs);
                         else if (direction == D_UP)
-                                target = get_screen_most(D_DOWN);
-                        else target = get_screen_most(D_UP);
+                                target = get_screen_most(D_DOWN, cs);
+                        else target = get_screen_most(D_UP, cs);
                 }
 
                 LOG("Switching to ws %d\n", target->current_workspace + 1);
@@ -146,7 +146,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         if ((screen = get_screen_containing(container->x, destination_y)) == NULL) {
                                 LOG("Wrapping screen around vertically\n");
                                 /* No screen found? Then wrap */
-                                screen = get_screen_most((direction == D_UP ? D_DOWN : D_UP));
+                                screen = get_screen_most((direction == D_UP ? D_DOWN : D_UP), container->workspace->screen);
                         }
                         t_ws = &(workspaces[screen->current_workspace]);
                         new_row = (direction == D_UP ? (t_ws->rows - 1) : 0);
@@ -188,7 +188,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         int destination_x = (direction == D_LEFT ? (container->x - 1) : (container->x + container->width + 1));
                         if ((screen = get_screen_containing(destination_x, container->y)) == NULL) {
                                 LOG("Wrapping screen around horizontally\n");
-                                screen = get_screen_most((direction == D_LEFT ? D_RIGHT : D_LEFT));
+                                screen = get_screen_most((direction == D_LEFT ? D_RIGHT : D_LEFT), container->workspace->screen);
                         }
                         t_ws = &(workspaces[screen->current_workspace]);
                         new_col = (direction == D_LEFT ? (t_ws->cols - 1) : 0);
@@ -1069,6 +1069,4 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         continue;
                 }
         }
-
-        LOG("--- done ---\n");
 }

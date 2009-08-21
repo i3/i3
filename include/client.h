@@ -97,4 +97,12 @@ void client_unmap(xcb_connection_t *conn, Client *client);
  */
 void client_map(xcb_connection_t *conn, Client *client);
 
+/**
+ * Pretty-prints the client’s information into the logfile.
+ *
+ */
+#define CLIENT_LOG(client) do { \
+                LOG("Window: frame 0x%08x, child 0x%08x\n", client->frame, client->child); \
+        } while (0)
+
 #endif

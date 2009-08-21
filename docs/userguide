@@ -505,7 +505,7 @@ or you can specify the position of the client if you always use the same layout.
 *Examples*:
 --------------------------------------
 # Get me to the next open VIM instance
-bind Mod1+38 jump "urxvt/VIM"
+bindsym Mod1+a jump "urxvt/VIM"
 --------------------------------------
 
 === Traveling the focus stack

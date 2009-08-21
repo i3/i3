@@ -48,8 +48,6 @@ static void add_ignore_event(const int sequence) {
         event->sequence = sequence;
         event->added = time(NULL);
 
-        LOG("Adding sequence %d to ignorelist\n", sequence);
-
         SLIST_INSERT_HEAD(&ignore_events, event, ignore_events);
 }
 
@@ -71,7 +69,6 @@ static bool event_is_ignored(const int sequence) {
 
         SLIST_FOREACH(event, &ignore_events, ignore_events) {
                 if (event->sequence == sequence) {
-                        LOG("Ignoring event (sequence %d)\n", sequence);
                         SLIST_REMOVE(&ignore_events, event, Ignore_Event, ignore_events);
                         free(event);
                         return true;
@@ -87,7 +84,6 @@ static bool event_is_ignored(const int sequence) {
  *
  */
 int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_event_t *event) {
-        LOG("got key release, just passing\n");
         xcb_allow_events(conn, XCB_ALLOW_REPLAY_KEYBOARD, event->time);
         xcb_flush(conn);
         return 1;
@@ -248,7 +244,10 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
  *
  */
 int handle_motion_notify(void *ignored, xcb_connection_t *conn, xcb_motion_notify_event_t *event) {
-        LOG("pointer motion notify, getting screen at %d x %d\n", event->root_x, event->root_y);
+        /* Skip events where the pointer was over a child window, we are only
+         * interested in events on the root window. */
+        if (event->child != 0)
+                return 1;
 
         check_crossing_screen_boundary(event->root_x, event->root_y);
 
@@ -261,20 +260,17 @@ int handle_motion_notify(void *ignored, xcb_connection_t *conn, xcb_motion_notif
  *
  */
 int handle_mapping_notify(void *ignored, xcb_connection_t *conn, xcb_mapping_notify_event_t *event) {
-        LOG("\n\nmapping notify\n\n");
-
         if (event->request != XCB_MAPPING_KEYBOARD &&
             event->request != XCB_MAPPING_MODIFIER)
                 return 0;
 
+        LOG("Received mapping_notify for keyboard or modifier mapping, re-grabbing keys\n");
         xcb_refresh_keyboard_mapping(keysyms, event);
 
         xcb_get_numlock_mask(conn);
 
         ungrab_all_keys(conn);
-        LOG("Re-grabbing...\n");
         grab_all_keys(conn);
-        LOG("Done\n");
 
         return 0;
 }
@@ -366,8 +362,7 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
 }
 
 int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
-        LOG("button press!\n");
-        LOG("state = %d\n", event->state);
+        LOG("Button %d pressed\n", event->state);
         /* This was either a focus for a client’s parent (= titlebar)… */
         Client *client = table_get(&by_child, event->event);
         bool border_click = false;
@@ -523,13 +518,11 @@ int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_eve
  *
  */
 int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure_request_event_t *event) {
-        LOG("configure-request, serial %d\n", event->sequence);
-        LOG("event->window = %08x\n", event->window);
-        LOG("application wants to be at %dx%d with %dx%d\n", event->x, event->y, event->width, event->height);
+        LOG("window 0x%08x wants to be at %dx%d with %dx%d\n",
+            event->window, event->x, event->y, event->width, event->height);
 
         Client *client = table_get(&by_child, event->window);
         if (client == NULL) {
-                LOG("This client is not mapped, so we don't care and just tell the client that he will get its size\n");
                 uint32_t mask = 0;
                 uint32_t values[7];
                 int c = 0;
@@ -611,15 +604,12 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
 int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
 
-        LOG("handle_configure_event for window %08x\n", event->window);
-        LOG("event->type = %d, \n", event->response_type);
-        LOG("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
-
         /* We ignore this sequence twice because events for child and frame should be ignored */
         add_ignore_event(event->sequence);
         add_ignore_event(event->sequence);
 
         if (event->event == root) {
+                LOG("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
                 LOG("reconfigure of the root window, need to xinerama\n");
                 /* FIXME: Somehow, this is occuring too often. Therefore, we check for 0/0,
                    but is there a better way? */
@@ -645,7 +635,6 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         /* First, we need to check if the client is awaiting an unmap-request which
            was generated by us reparenting the window. In that case, we just ignore it. */
         if (client != NULL && client->awaiting_useless_unmap) {
-                LOG("Dropping this unmap request, it was generated by reparenting\n");
                 client->awaiting_useless_unmap = false;
                 return 1;
         }
@@ -723,11 +712,8 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                         break;
                 }
 
-        if (workspace_empty) {
-                LOG("setting ws to NULL for workspace %d (%p)\n", client->workspace->num,
-                                client->workspace);
+        if (workspace_empty)
                 client->workspace->screen = NULL;
-        }
 
         FREE(client->window_class);
         FREE(client->name);
@@ -748,7 +734,6 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
  */
 int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
                                 xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
-        LOG("window's name changed.\n");
         if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
                 LOG("_NET_WM_NAME not specified, not changing\n");
                 return 1;
@@ -763,7 +748,7 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop));
         /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
         char *ucs2_name = convert_utf8_to_ucs2(new_name, &new_len);
-        LOG("Name should change to \"%s\"\n", new_name);
+        LOG("_NET_WM_NAME changed to \"%s\"\n", new_name);
         free(new_name);
 
         /* Check if they are the same and don’t update if so.
@@ -773,7 +758,6 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         if ((new_len == client->name_len) &&
             (client->name != NULL) &&
             (memcmp(client->name, ucs2_name, new_len * 2) == 0)) {
-                LOG("Name did not change, not updating\n");
                 free(ucs2_name);
                 return 1;
         }
@@ -810,7 +794,6 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
  */
 int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t state,
                                 xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
-        LOG("window's name changed (legacy).\n");
         if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
                 LOG("prop == NULL\n");
                 return 1;
@@ -819,10 +802,9 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
         if (client == NULL)
                 return 1;
 
-        if (client->uses_net_wm_name) {
-                LOG("This client is capable of _NET_WM_NAME, ignoring legacy name\n");
+        /* Client capable of _NET_WM_NAME, ignore legacy name changes */
+        if (client->uses_net_wm_name)
                 return 1;
-        }
 
         /* Save the old pointer to make the update atomic */
         char *new_name;
@@ -832,18 +814,17 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
                 return 1;
         }
         /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
-        LOG("Name should change to \"%s\"\n", new_name);
+        LOG("WM_NAME changed to \"%s\"\n", new_name);
 
         /* Check if they are the same and don’t update if so. */
         if (client->name != NULL &&
             strlen(new_name) == strlen(client->name) &&
             strcmp(client->name, new_name) == 0) {
-                LOG("Name did not change, not updating\n");
                 free(new_name);
                 return 1;
         }
 
-        LOG("Using legacy window title. Note that in order to get Unicode window titles in i3,"
+        LOG("Using legacy window title. Note that in order to get Unicode window titles in i3, "
             "the application has to set _NET_WM_NAME which is in UTF-8 encoding.\n");
 
         char *old_name = client->name;
@@ -871,7 +852,6 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
  */
 int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
                              xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
-        LOG("window class changed\n");
         if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
                 LOG("prop == NULL\n");
                 return 1;
@@ -886,15 +866,13 @@ int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
                 return 1;
         }
 
-        LOG("changed to %s\n", new_class);
+        LOG("WM_CLASS changed to %s\n", new_class);
         char *old_class = client->window_class;
         client->window_class = new_class;
         FREE(old_class);
 
-        if (!client->initialized) {
-                LOG("Client is not yet initialized, not putting it to floating\n");
+        if (!client->initialized)
                 return 1;
-        }
 
         if (strcmp(new_class, "tools") == 0 || strcmp(new_class, "Dialog") == 0) {
                 LOG("tool/dialog window, should we put it floating?\n");
@@ -935,11 +913,8 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                 return 1;
         }
 
-        LOG("got client %s\n", client->name);
-        if (client->dock) {
-                LOG("this is a dock\n");
+        if (client->dock)
                 return 1;
-        }
 
         if (client->container == NULL || client->container->mode != MODE_STACK)
                 decorate_window(conn, client, client->frame, client->titlegc, 0);
@@ -976,13 +951,9 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
  *
  */
 int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message_event_t *event) {
-        LOG("client_message\n");
-
         if (event->type == atoms[_NET_WM_STATE]) {
                 if (event->format != 32 || event->data.data32[1] != atoms[_NET_WM_STATE_FULLSCREEN])
                         return 0;
-
-                LOG("fullscreen\n");
 
                 Client *client = table_get(&by_child, event->window);
                 if (client == NULL)
@@ -1021,14 +992,14 @@ int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_wi
  */
 int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t name, xcb_get_property_reply_t *reply) {
-        LOG("handle_normal_hints\n");
         Client *client = table_get(&by_child, window);
         if (client == NULL) {
-                LOG("No such client\n");
+                LOG("Received WM_SIZE_HINTS for unknown client\n");
                 return 1;
         }
         xcb_size_hints_t size_hints;
-        LOG("client is %08x / child %08x\n", client->frame, client->child);
+
+        CLIENT_LOG(client);
 
         /* If the hints were already in this event, use them, if not, request them */
         if (reply != NULL)
@@ -1037,19 +1008,23 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
                 xcb_get_wm_normal_hints_reply(conn, xcb_get_wm_normal_hints_unchecked(conn, client->child), &size_hints, NULL);
 
         if ((size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE)) {
-                LOG("min size set\n");
-                LOG("gots min_width = %d, min_height = %d\n", size_hints.min_width, size_hints.min_height);
+                // TODO: Minimum size is not yet implemented
+                //LOG("Minimum size: %d (width) x %d (height)\n", size_hints.min_width, size_hints.min_height);
+        }
+
+        if ((size_hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)) {
+                if (size_hints.width_inc > 0)
+                        client->width_increment = size_hints.width_inc;
+                if (size_hints.height_inc > 0)
+                        client->height_increment = size_hints.height_inc;
         }
 
         /* If no aspect ratio was set or if it was invalid, we ignore the hints */
         if (!(size_hints.flags & XCB_SIZE_HINT_P_ASPECT) ||
             (size_hints.min_aspect_num <= 0) ||
             (size_hints.min_aspect_den <= 0)) {
-                LOG("No aspect ratio set, ignoring\n");
                 return 1;
         }
-
-        LOG("window is %08x / %s\n", client->child, client->name);
 
         int base_width = 0, base_height = 0;
 
@@ -1070,7 +1045,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         double min_aspect = (double)size_hints.min_aspect_num / size_hints.min_aspect_den;
         double max_aspect = (double)size_hints.max_aspect_num / size_hints.min_aspect_den;
 
-        LOG("min_aspect = %f, max_aspect = %f\n", min_aspect, max_aspect);
+        LOG("Aspect ratio set: minimum %f, maximum %f\n", min_aspect, max_aspect);
         LOG("width = %f, height = %f\n", width, height);
 
         /* Sanity checks, this is user-input, in a way */
@@ -1105,7 +1080,6 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
  */
 int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                          xcb_atom_t name, xcb_get_property_reply_t *reply) {
-        LOG("Transient hint!\n");
         Client *client = table_get(&by_child, window);
         if (client == NULL) {
                 LOG("No such client\n");
@@ -1115,16 +1089,12 @@ int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_
         xcb_window_t transient_for;
 
         if (reply != NULL) {
-                if (!xcb_get_wm_transient_for_from_reply(&transient_for, reply)) {
-                        LOG("Not transient for any window\n");
+                if (!xcb_get_wm_transient_for_from_reply(&transient_for, reply))
                         return 1;
-                }
         } else {
                 if (!xcb_get_wm_transient_for_reply(conn, xcb_get_wm_transient_for_unchecked(conn, window),
-                                                    &transient_for, NULL)) {
-                        LOG("Not transient for any window\n");
+                                                    &transient_for, NULL))
                         return 1;
-                }
         }
 
         if (client->floating == FLOATING_AUTO_OFF) {
@@ -1142,10 +1112,11 @@ int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_
  */
 int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t name, xcb_get_property_reply_t *prop) {
-        LOG("client leader changed\n");
         if (prop == NULL) {
                 prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
                                         false, window, WM_CLIENT_LEADER, WINDOW, 0, 32), NULL);
+                if (prop == NULL)
+                        return 1;
         }
 
         Client *client = table_get(&by_child, window);
@@ -1153,10 +1124,10 @@ int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state
                 return 1;
 
         xcb_window_t *leader = xcb_get_property_value(prop);
-        if (leader == NULL)
+        if (leader == NULL || *leader == 0)
                 return 1;
 
-        LOG("changed to %08x\n", *leader);
+        LOG("Client leader changed to %08x\n", *leader);
 
         client->leader = *leader;
 
