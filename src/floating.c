@@ -255,9 +255,36 @@ void floating_drag_window(xcb_connection_t *conn, Client *client, xcb_button_pre
                 /* fake_absolute_configure_notify flushes */
         }
 
-
         drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback);
 }
+
+/*
+ * Called when the user right-clicked on the titlebar of a floating window to
+ * resize it.
+ * Calls the drag_pointer function with the resize_window callback
+ *
+ */
+void floating_resize_window(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event) {
+        LOG("floating_resize_window\n");
+
+        void resize_window_callback(Rect *old_rect, uint32_t new_x, uint32_t new_y) {
+                int32_t new_width = old_rect->width + (new_x - event->root_x);
+                int32_t new_height = old_rect->height + (new_y - event->root_y);
+                /* Obey minimum window size */
+                if (new_width < 75 || new_height < 50)
+                        return;
+
+                /* Reposition the client correctly while moving */
+                client->rect.width = new_width;
+                client->rect.height = new_height;
+
+                /* resize_client flushes */
+                resize_client(conn, client);
+        }
+
+        drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, resize_window_callback);
+}
+
 
 /*
  * This function grabs your pointer and lets you drag stuff around (borders).

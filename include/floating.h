@@ -56,6 +56,15 @@ void floating_drag_window(xcb_connection_t *conn, Client *client,
                           xcb_button_press_event_t *event);
 
 /**
+ * Called when the user right-clicked on the titlebar of a floating window to
+ * resize it.
+ * Calls the drag_pointer function with the resize_window callback
+ *
+ */
+void floating_resize_window(xcb_connection_t *conn, Client *client,
+                            xcb_button_press_event_t *event);
+
+/**
  * Changes focus in the given direction for floating clients.
  *
  * Changing to the left/right means going to the previous/next floating client,

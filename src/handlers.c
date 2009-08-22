@@ -380,7 +380,14 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                         return 1;
                 }
                 if (client_is_floating(client)) {
-                        floating_drag_window(conn, client, event);
+                        LOG("button %d pressed\n", event->detail);
+                        if (event->detail == 1) {
+                                LOG("left mouse button, dragging\n");
+                                floating_drag_window(conn, client, event);
+                        } else if (event->detail == 3) {
+                                LOG("right mouse button\n");
+                                floating_resize_window(conn, client, event);
+                        }
                         return 1;
                 }
         }
