@@ -1,7 +1,7 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
@@ -33,10 +33,11 @@ sleep(0.25);
 
 my ($absolute, $top) = $window->rect;
 
-ok($absolute->{width} >= 75, "i3 raised the width to 75");
-ok($absolute->{height} >= 50, "i3 raised the height to 50");
+ok($window->mapped, 'Window is mapped');
+ok($absolute->{width} >= 75, 'i3 raised the width to 75');
+ok($absolute->{height} >= 50, 'i3 raised the height to 50');
 
-ok($absolute->{x} != 0 && $absolute->{y} != 0, "i3 did not map it to (0x0)");
+ok($absolute->{x} != 0 && $absolute->{y} != 0, 'i3 did not map it to (0x0)');
 
 $window->unmap;
 

@@ -3,7 +3,7 @@
 # Checks if the focus is correctly restored, when creating a floating client
 # over an unfocused tiling client and destroying the floating one again.
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
@@ -52,6 +52,7 @@ $window->create;
 $window->map;
 
 sleep(0.25);
+is(X11::XCB::Connection->input_focus, $window->id, 'floating window focused');
 
 $window->unmap;
 
