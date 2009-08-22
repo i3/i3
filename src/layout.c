@@ -85,12 +85,14 @@ int get_unoccupied_y(Workspace *workspace, int col) {
  *
  */
 void redecorate_window(xcb_connection_t *conn, Client *client) {
-        if (client->container != NULL && client->container->mode == MODE_STACK) {
+        if (client->container != NULL &&
+            (client->container->mode == MODE_STACK ||
+             client->container->mode == MODE_TABBED)) {
                 render_container(conn, client->container);
                 /* We clear the frame to generate exposure events, because the color used
                    in drawing may be different */
                 xcb_clear_area(conn, true, client->frame, 0, 0, client->rect.width, client->rect.height);
-        } else decorate_window(conn, client, client->frame, client->titlegc, 0);
+        } else decorate_window(conn, client, client->frame, client->titlegc, 0, 0);
         xcb_flush(conn);
 }
 
@@ -99,7 +101,8 @@ void redecorate_window(xcb_connection_t *conn, Client *client) {
  * When in stacking mode, the window decorations are drawn onto an own window.
  *
  */
-void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t drawable, xcb_gcontext_t gc, int offset) {
+void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t drawable,
+                     xcb_gcontext_t gc, int offset_x, int offset_y) {
         i3Font *font = load_font(conn, config.font);
         int decoration_height = font->height + 2 + 2;
         struct Colortriple *color;
@@ -134,11 +137,13 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, color->background);
 
         /* In stacking mode, we only render the rect for this specific decoration */
-        if (client->container != NULL && client->container->mode == MODE_STACK) {
+        if (client->container != NULL && (client->container->mode == MODE_STACK || client->container->mode == MODE_TABBED)) {
                 /* We need to use the container’s width because it is the more recent value - when
                    in stacking mode, clients get reconfigured only on demand (the not active client
                    is not reconfigured), so the client’s rect.width would be wrong */
-                xcb_rectangle_t rect = {0, offset, client->container->width, offset + decoration_height };
+                xcb_rectangle_t rect = {offset_x, offset_y,
+                                        offset_x + client->container->width,
+                                        offset_y + decoration_height };
                 xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
         } else {
                 xcb_rectangle_t rect = {0, 0, client->rect.width, client->rect.height};
@@ -154,12 +159,16 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
 
         if (client->titlebar_position != TITLEBAR_OFF) {
                 /* Draw the lines */
-                xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
+                xcb_draw_line(conn, drawable, gc, color->border, offset_x, offset_y, offset_x + client->rect.width, offset_y);
                 if ((client->container == NULL ||
-                    client->container->mode != MODE_STACK ||
+                    (client->container->mode != MODE_STACK &&
+                     client->container->mode != MODE_TABBED) ||
                     CIRCLEQ_NEXT_OR_NULL(&(client->container->clients), client, clients) == NULL))
-                        xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
-                                      client->rect.width - 3, offset + font->height + 3);
+                        xcb_draw_line(conn, drawable, gc, color->border,
+                                      offset_x + 2, /* x */
+                                      offset_y + font->height + 3, /* y */
+                                      offset_x + client->rect.width - 3, /* to_x */
+                                      offset_y + font->height + 3 /* to_y */);
         }
 
         /* If the client has a title, we draw it */
@@ -173,11 +182,11 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                    and we don’t handle the old window name (COMPOUND_TEXT) but only _NET_WM_NAME, which
                    is UTF-8 */
                 if (client->name_len == -1)
-                        xcb_image_text_8(conn, strlen(client->name), drawable, gc, 3 /* X */,
-                                         offset + font->height /* Y = baseline of font */, client->name);
+                        xcb_image_text_8(conn, strlen(client->name), drawable, gc, offset_x + 3 /* X */,
+                                         offset_y + font->height /* Y = baseline of font */, client->name);
                 else
-                        xcb_image_text_16(conn, client->name_len, drawable, gc, 3 /* X */,
-                                          offset + font->height /* Y = baseline of font */, (xcb_char2b_t*)client->name);
+                        xcb_image_text_16(conn, client->name_len, drawable, gc, offset_x + 3 /* X */,
+                                          offset_y + font->height /* Y = baseline of font */, (xcb_char2b_t*)client->name);
         }
 }
 
@@ -239,6 +248,7 @@ void resize_client(xcb_connection_t *conn, Client *client) {
         Rect *rect = &(client->child_rect);
         switch ((client->container != NULL ? client->container->mode : MODE_DEFAULT)) {
                 case MODE_STACK:
+                case MODE_TABBED:
                         rect->x = 2;
                         rect->y = 0;
                         rect->width = client->rect.width - (2 + 2);
@@ -350,11 +360,25 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 i3Font *font = load_font(conn, config.font);
                 int decoration_height = (font->height + 2 + 2);
                 struct Stack_Window *stack_win = &(container->stack_win);
+                /* The size for each tab (width), necessary as a separate variable
+                 * because num_clients gets fixed to 1 in tabbed mode. */
+                int size_each = (num_clients == 0 ? container->width : container->width / num_clients);
 
                 /* Check if we need to remap our stack title window, it gets unmapped when the container
                    is empty in src/handlers.c:unmap_notify() */
-                if (stack_win->rect.height == 0 && num_clients > 0)
+                if (stack_win->rect.height == 0 && num_clients > 0) {
+                        LOG("remapping stack win\n");
                         xcb_map_window(conn, stack_win->window);
+                } else LOG("not remapping stackwin, height = %d, num_clients = %d\n",
+                                stack_win->rect.height, num_clients);
+
+                if (container->mode == MODE_TABBED) {
+                        /* By setting num_clients to 1 we force that the stack window will be only one line
+                         * high. The rest of the code is useful in both cases. */
+                        LOG("tabbed mode, setting num_clients = 1\n");
+                        if (num_clients > 1)
+                                num_clients = 1;
+                }
 
                 /* Check if we need to reconfigure our stack title window */
                 if (update_if_necessary(&(stack_win->rect.x), container->x) |
@@ -405,7 +429,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         }
 
                         /* Check if we changed client->x or client->y by updating it.
-                         * Note the bitwise OR instead of logical OR to force evaluation of both statements */
+                         * Note the bitwise OR instead of logical OR to force evaluation of all statements */
                         if (client->force_reconfigure |
                             update_if_necessary(&(client->rect.x), container->x) |
                             update_if_necessary(&(client->rect.y), container->y + (decoration_height * num_clients)) |
@@ -415,8 +439,14 @@ void render_container(xcb_connection_t *conn, Container *container) {
 
                         client->force_reconfigure = false;
 
+                        int offset_x = 0;
+                        int offset_y = 0;
+                        if (container->mode == MODE_STACK)
+                                offset_y = current_client++ * decoration_height;
+                        else if (container->mode == MODE_TABBED)
+                                offset_x = current_client++ * size_each;
                         decorate_window(conn, client, stack_win->pixmap.id, stack_win->pixmap.gc,
-                                        current_client++ * decoration_height);
+                                        offset_x, offset_y);
                 }
 
                 xcb_copy_area(conn, stack_win->pixmap.id, stack_win->window, stack_win->pixmap.gc,

@@ -270,7 +270,8 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
                 Client *last_focused = get_last_focused_client(conn, client->container, NULL);
 
                 /* In stacking containers, raise the client in respect to the one which was focused before */
-                if (client->container->mode == MODE_STACK && client->container->workspace->fullscreen_client == NULL) {
+                if ((client->container->mode == MODE_STACK || client->container->mode == MODE_TABBED) &&
+                    client->container->workspace->fullscreen_client == NULL) {
                         /* We need to get the client again, this time excluding the current client, because
                          * we might have just gone into stacking mode and need to raise */
                         Client *last_focused = get_last_focused_client(conn, client->container, client);
@@ -339,10 +340,14 @@ void leave_stack_mode(xcb_connection_t *conn, Container *container) {
  *
  */
 void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) {
-        if (mode == MODE_STACK) {
+        if (mode == MODE_STACK || mode == MODE_TABBED) {
                 /* When we’re already in stacking mode, nothing has to be done */
-                if (container->mode == MODE_STACK)
+                if ((mode == MODE_STACK && container->mode == MODE_STACK) ||
+                    (mode == MODE_TABBED && container->mode == MODE_TABBED))
                         return;
+
+                if (container->mode == MODE_STACK || container->mode == MODE_TABBED)
+                        goto after_stackwin;
 
                 /* When entering stacking mode, we need to open a window on which we can draw the
                    title bars of the clients, it has height 1 because we don’t bother here with
@@ -377,9 +382,10 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
 
                 SLIST_INSERT_HEAD(&stack_wins, stack_win, stack_windows);
         } else {
-                if (container->mode == MODE_STACK)
+                if (container->mode == MODE_STACK || container->mode == MODE_TABBED)
                         leave_stack_mode(conn, container);
         }
+after_stackwin:
         container->mode = mode;
 
         /* Force reconfiguration of each client */

@@ -29,7 +29,8 @@ int get_unoccupied_x(Workspace *workspace);
  *
  */
 void decorate_window(xcb_connection_t *conn, Client *client,
-                     xcb_drawable_t drawable, xcb_gcontext_t gc, int offset);
+                     xcb_drawable_t drawable, xcb_gcontext_t gc,
+                     int offset_x, int offset_y);
 
 /**
  * Redecorates the given client correctly by checking if it’s in a stacking

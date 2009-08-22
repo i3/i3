@@ -38,7 +38,9 @@ void client_remove_from_container(xcb_connection_t *conn, Client *client, Contai
 
         /* If the container will be empty now and is in stacking mode, we need to
            unmap the stack_win */
-        if (CIRCLEQ_EMPTY(&(container->clients)) && container->mode == MODE_STACK) {
+        if (CIRCLEQ_EMPTY(&(container->clients)) &&
+            (container->mode == MODE_STACK ||
+             container->mode == MODE_TABBED)) {
                 LOG("Unmapping stack window\n");
                 struct Stack_Window *stack_win = &(container->stack_win);
                 stack_win->rect.height = 0;

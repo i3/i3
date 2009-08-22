@@ -886,13 +886,18 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         }
 
         /* Is it just 's' for stacking or 'd' for default? */
-        if ((command[0] == 's' || command[0] == 'd') && (command[1] == '\0')) {
+        if ((command[0] == 's' || command[0] == 'd' || command[0] == 'T') && (command[1] == '\0')) {
                 if (last_focused != NULL && client_is_floating(last_focused)) {
                         LOG("not switching, this is a floating client\n");
                         return;
                 }
                 LOG("Switching mode for current container\n");
-                switch_layout_mode(conn, CUR_CELL, (command[0] == 's' ? MODE_STACK : MODE_DEFAULT));
+                int new_mode = MODE_DEFAULT;
+                if (command[0] == 's')
+                        new_mode = MODE_STACK;
+                if (command[0] == 'T')
+                        new_mode = MODE_TABBED;
+                switch_layout_mode(conn, CUR_CELL, new_mode);
                 return;
         }
 

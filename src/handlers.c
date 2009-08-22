@@ -780,9 +780,11 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         if (client->dock)
                 return 1;
 
-        if (client->container != NULL && client->container->mode == MODE_STACK)
+        if (client->container != NULL &&
+            (client->container->mode == MODE_STACK ||
+             client->container->mode == MODE_TABBED))
                 render_container(conn, client->container);
-        else decorate_window(conn, client, client->frame, client->titlegc, 0);
+        else decorate_window(conn, client, client->frame, client->titlegc, 0, 0);
         xcb_flush(conn);
 
         return 1;
@@ -845,9 +847,11 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
         if (client->dock)
                 return 1;
 
-        if (client->container != NULL && client->container->mode == MODE_STACK)
+        if (client->container != NULL &&
+            (client->container->mode == MODE_STACK ||
+             client->container->mode == MODE_TABBED))
                 render_container(conn, client->container);
-        else decorate_window(conn, client, client->frame, client->titlegc, 0);
+        else decorate_window(conn, client, client->frame, client->titlegc, 0, 0);
         xcb_flush(conn);
 
         return 1;
@@ -923,8 +927,10 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
         if (client->dock)
                 return 1;
 
-        if (client->container == NULL || client->container->mode != MODE_STACK)
-                decorate_window(conn, client, client->frame, client->titlegc, 0);
+        if (client->container == NULL ||
+            (client->container->mode != MODE_STACK &&
+             client->container->mode != MODE_TABBED))
+                decorate_window(conn, client, client->frame, client->titlegc, 0, 0);
         else {
                 uint32_t background_color;
                 /* Distinguish if the window is currently focused… */

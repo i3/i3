@@ -453,7 +453,7 @@ struct Container {
 
         /* Ensure MODE_DEFAULT maps to 0 because we use calloc for
          * initialization later */
-        enum { MODE_DEFAULT = 0, MODE_STACK } mode;
+        enum { MODE_DEFAULT = 0, MODE_STACK, MODE_TABBED } mode;
         CIRCLEQ_HEAD(client_head, Client) clients;
 };
 
