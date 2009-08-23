@@ -26,6 +26,7 @@
 #include "layout.h"
 #include "client.h"
 #include "floating.h"
+#include "handlers.h"
 
 /*
  * Updates *destination with new_value and returns true if it was changed or false
@@ -298,21 +299,14 @@ void resize_client(xcb_connection_t *conn, Client *client) {
 
         if (client->height_increment > 1) {
                 int old_height = rect->height;
-                rect->height = ((int)(rect->height / client->height_increment) * client->height_increment);
-                /* We round up if the height was changed */
-                if (rect->height != old_height)
-                        rect->height++;
+                rect->height -= (rect->height - client->base_height) % client->height_increment;
                 LOG("Lost %d pixel due to client's height_increment (%d px)\n",
                     old_height - rect->height, client->height_increment);
         }
 
         if (client->width_increment > 1) {
                 int old_width = rect->width;
-                rect->width = ((int)(rect->width / client->width_increment) * client->width_increment);
-                /* We round up if the height was changed */
-                if (rect->width != old_width)
-                        rect->width++;
-
+                rect->width -= (rect->width - client->base_width) % client->width_increment;
                 LOG("Lost %d pixel due to client's width_increment (%d px)\n",
                     old_width - rect->width, client->width_increment);
         }
@@ -325,6 +319,13 @@ void resize_client(xcb_connection_t *conn, Client *client) {
          * This is necessary to inform the client of its position relative to the root window,
          * not relative to its frame (as done in the configure_notify_event by the x server). */
         fake_absolute_configure_notify(conn, client);
+
+        /* Force redrawing after resizing the window because any now lost
+         * pixels could contain old garbage. */
+        xcb_expose_event_t generated;
+        generated.window = client->frame;
+        generated.count = 0;
+        handle_expose_event(NULL, conn, &generated);
 }
 
 /*

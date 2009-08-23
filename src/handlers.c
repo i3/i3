@@ -1030,13 +1030,9 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
                         client->width_increment = size_hints.width_inc;
                 if (size_hints.height_inc > 0)
                         client->height_increment = size_hints.height_inc;
-        }
 
-        /* If no aspect ratio was set or if it was invalid, we ignore the hints */
-        if (!(size_hints.flags & XCB_SIZE_HINT_P_ASPECT) ||
-            (size_hints.min_aspect_num <= 0) ||
-            (size_hints.min_aspect_den <= 0)) {
-                return 1;
+                resize_client(conn, client);
+                xcb_flush(conn);
         }
 
         int base_width = 0, base_height = 0;
@@ -1050,6 +1046,16 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         } else if (size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE) {
                 base_width = size_hints.min_width;
                 base_height = size_hints.min_height;
+        }
+
+        client->base_width = base_width;
+        client->base_height = base_height;
+
+        /* If no aspect ratio was set or if it was invalid, we ignore the hints */
+        if (!(size_hints.flags & XCB_SIZE_HINT_P_ASPECT) ||
+            (size_hints.min_aspect_num <= 0) ||
+            (size_hints.min_aspect_den <= 0)) {
+                return 1;
         }
 
         double width = client->rect.width - base_width;
