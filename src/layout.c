@@ -298,14 +298,21 @@ void resize_client(xcb_connection_t *conn, Client *client) {
 
         if (client->height_increment > 1) {
                 int old_height = rect->height;
-                rect->height = ((int)(rect->height / client->height_increment) * client->height_increment) + 1;
+                rect->height = ((int)(rect->height / client->height_increment) * client->height_increment);
+                /* We round up if the height was changed */
+                if (rect->height != old_height)
+                        rect->height++;
                 LOG("Lost %d pixel due to client's height_increment (%d px)\n",
                     old_height - rect->height, client->height_increment);
         }
 
         if (client->width_increment > 1) {
                 int old_width = rect->width;
-                rect->width = ((int)(rect->width / client->width_increment) * client->width_increment) + 1;
+                rect->width = ((int)(rect->width / client->width_increment) * client->width_increment);
+                /* We round up if the height was changed */
+                if (rect->width != old_width)
+                        rect->width++;
+
                 LOG("Lost %d pixel due to client's width_increment (%d px)\n",
                     old_width - rect->width, client->width_increment);
         }
