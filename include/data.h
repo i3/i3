@@ -346,6 +346,9 @@ struct Client {
         int proportional_height;
         int proportional_width;
 
+        int base_height;
+        int base_width;
+
         /** contains the minimum increment size as specified for the window
          * (in pixels). */
         int width_increment;
