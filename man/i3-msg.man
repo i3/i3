@@ -1,0 +1,33 @@
+i3-msg(1)
+=========
+Michael Stapelberg <michael+i3@stapelberg.de>
+v3.gamma, August 2009
+
+== NAME
+
+i3-msg - send messages to i3
+
+== SYNOPSIS
+
+i3-msg "message"
+
+== DESCRIPTION
+
+i3-msg is a sample implementation for a client using the unix socket IPC
+interface to i3. At the moment, it can only be used for sending commands
+(like in configuration file for key bindings), but this may change in the
+future (staying backwards-compatible, of course).
+
+== EXAMPLE
+
+------------------------------------------------
+i3-msg "bp" # Use 1-px border for current client
+------------------------------------------------
+
+== SEE ALSO
+
+i3(1)
+
+== AUTHOR
+
+Michael Stapelberg and contributors
