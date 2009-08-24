@@ -50,7 +50,7 @@ ifeq ($(UNAME),FreeBSD)
 LDFLAGS += -liconv
 endif
 
-ifeq ($(UNAME),Linux)
+ifneq (,$(filter Linux GNU GNU/%, $(UNAME)))
 CFLAGS += -D_GNU_SOURCE
 endif
 
