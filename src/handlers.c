@@ -1026,13 +1026,23 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         }
 
         if ((size_hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)) {
-                if (size_hints.width_inc > 0)
-                        client->width_increment = size_hints.width_inc;
-                if (size_hints.height_inc > 0)
-                        client->height_increment = size_hints.height_inc;
+                bool changed = false;
 
-                resize_client(conn, client);
-                xcb_flush(conn);
+                if (size_hints.width_inc > 0)
+                        if (client->width_increment != size_hints.width_inc) {
+                                client->width_increment = size_hints.width_inc;
+                                changed = true;
+                        }
+                if (size_hints.height_inc > 0)
+                        if (client->height_increment != size_hints.height_inc) {
+                                client->height_increment = size_hints.height_inc;
+                                changed = true;
+                        }
+
+                if (changed) {
+                        resize_client(conn, client);
+                        xcb_flush(conn);
+                }
         }
 
         int base_width = 0, base_height = 0;
