@@ -237,6 +237,8 @@ void xcb_get_numlock_mask(xcb_connection_t *conn) {
 #else
         /* For now, we only use the first keysymbol. */
         xcb_keycode_t *numlock_syms = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
+        if (numlock_syms == NULL)
+                return;
         xcb_keycode_t numlock = *numlock_syms;
         free(numlock_syms);
 #endif
