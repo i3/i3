@@ -377,7 +377,6 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                                 workspaces[ws_num - 1].preferred_screen = screen;
 
                                 name += strlen("screen ") + strlen(screen);
-
                         }
 
                         /* Strip leading whitespace */
@@ -393,7 +392,8 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
                         LOG("setting name to \"%s\"\n", name);
 
-                        workspace_set_name(&(workspaces[ws_num - 1]), name);
+                        if (*name != '\0')
+                                workspace_set_name(&(workspaces[ws_num - 1]), name);
                         free(ws_str);
                         continue;
                 }
