@@ -135,7 +135,9 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
          */
 
         /* Draw a rectangle in background color around the window */
-        xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, color->background);
+        if (client->borderless)
+                xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+        else xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, color->background);
 
         /* In stacking mode, we only render the rect for this specific decoration */
         if (client->container != NULL && (client->container->mode == MODE_STACK || client->container->mode == MODE_TABBED)) {
