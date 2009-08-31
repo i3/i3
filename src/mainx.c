@@ -422,8 +422,9 @@ int main(int argc, char *argv[], char *env[]) {
 
         i3Screen *screen = get_screen_containing(reply->root_x, reply->root_y);
         if (screen == NULL) {
-                LOG("ERROR: No screen at %d x %d\n", reply->root_x, reply->root_y);
-                return 0;
+                LOG("ERROR: No screen at %d x %d, starting on the first screen\n",
+                    reply->root_x, reply->root_y);
+                screen = TAILQ_FIRST(virtual_screens);
         }
 
         LOG("Starting on %d\n", screen->current_workspace);
