@@ -19,6 +19,7 @@
 #include <limits.h>
 #include <locale.h>
 #include <fcntl.h>
+#include <getopt.h>
 
 #include <X11/XKBlib.h>
 #include <X11/extensions/XKB.h>
@@ -147,6 +148,14 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_connection_t *conn;
         xcb_property_handlers_t prophs;
         xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
+        static struct option long_options[] = {
+                {"no-autostart", no_argument, 0, 'a'},
+                {"config", required_argument, 0, 'c'},
+                {"version", no_argument, 0, 'v'},
+                {"help", no_argument, 0, 'h'},
+                {0, 0, 0, 0}
+        };
+        int option_index = 0;
 
         setlocale(LC_ALL, "");
 
@@ -156,7 +165,7 @@ int main(int argc, char *argv[], char *env[]) {
 
         start_argv = argv;
 
-        while ((opt = getopt(argc, argv, "c:va")) != -1) {
+        while ((opt = getopt_long(argc, argv, "c:vah", long_options, &option_index)) != -1) {
                 switch (opt) {
                         case 'a':
                                 LOG("Autostart disabled using -a\n");
@@ -169,7 +178,11 @@ int main(int argc, char *argv[], char *env[]) {
                                 printf("i3 version " I3_VERSION " © 2009 Michael Stapelberg and contributors\n");
                                 exit(EXIT_SUCCESS);
                         default:
-                                fprintf(stderr, "Usage: %s [-c configfile]\n", argv[0]);
+                                fprintf(stderr, "Usage: %s [-c configfile] [-a] [-v]\n", argv[0]);
+                                fprintf(stderr, "\n");
+                                fprintf(stderr, "-a: disable autostart\n");
+                                fprintf(stderr, "-v: display version and exit\n");
+                                fprintf(stderr, "-c <configfile>: use the provided configfile instead\n");
                                 exit(EXIT_FAILURE);
                 }
         }
