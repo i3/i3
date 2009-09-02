@@ -312,7 +312,16 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                                         rest++;
                                 if (*rest != ' ')
                                         die("Invalid binding (keysym)\n");
+#if defined(__OpenBSD__)
+                                size_t len = strlen(sym);
+                                if (len > (rest - sym))
+                                        len = (rest - sym);
+                                new->symbol = smalloc(len + 1);
+                                memcpy(new->symbol, sym, len+1);
+                                new->symbol[len]='\0';
+#else
                                 new->symbol = strndup(sym, (rest - sym));
+#endif
                         }
                         rest++;
                         LOG("keycode = %d, symbol = %s, modifiers = %d, command = *%s*\n", new->keycode, new->symbol, modifiers, rest);
