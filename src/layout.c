@@ -135,7 +135,9 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
          */
 
         /* Draw a rectangle in background color around the window */
-        if (client->borderless)
+        if (client->borderless && (client->container == NULL ||
+            (client->container->mode != MODE_STACK &&
+             client->container->mode != MODE_TABBED)))
                 xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
         else xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, color->background);
 
