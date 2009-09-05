@@ -246,19 +246,18 @@ void initialize_xinerama(xcb_connection_t *conn) {
         if (!xcb_get_extension_data(conn, &xcb_xinerama_id)->present) {
                 LOG("Xinerama extension not found, disabling.\n");
                 disable_xinerama(conn);
-                return;
+        } else {
+                xcb_xinerama_is_active_reply_t *reply;
+                reply = xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL);
+
+                if (reply == NULL || !reply->state) {
+                        LOG("Xinerama is not active (in your X-Server), disabling.\n");
+                        disable_xinerama(conn);
+                } else
+                        query_screens(conn, virtual_screens);
+
+                FREE(reply);
         }
-
-        xcb_xinerama_is_active_reply_t *reply;
-        reply = xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL);
-
-        if (reply == NULL || !reply->state) {
-                LOG("Xinerama is not active (in your X-Server), disabling.\n");
-                disable_xinerama(conn);
-        } else
-                query_screens(conn, virtual_screens);
-
-        FREE(reply);
 
         i3Screen *screen;
         num_screens = 0;
