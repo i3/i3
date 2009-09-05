@@ -231,12 +231,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         xcb_grab_button(conn, false, child, XCB_EVENT_MASK_BUTTON_PRESS,
                         XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                        1 /* left mouse button */, XCB_MOD_MASK_1);
-
-        xcb_grab_button(conn, false, child, XCB_EVENT_MASK_BUTTON_PRESS,
-                        XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                        3 /* right mouse button */, XCB_MOD_MASK_1);
-
+                        3 /* right mouse button */,
+                        XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
 
         /* Get _NET_WM_WINDOW_TYPE (to see if it’s a dock) */
         xcb_atom_t *atom;
