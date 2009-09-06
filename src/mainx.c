@@ -398,6 +398,9 @@ int main(int argc, char *argv[], char *env[]) {
         /* Watch WM_CLIENT_LEADER (= logical parent window for toolbars etc.) */
         xcb_property_set_handler(&prophs, atoms[WM_CLIENT_LEADER], UINT_MAX, handle_clientleader_change, NULL);
 
+        /* Watch WM_HINTS (contains the urgent property) */
+        xcb_property_set_handler(&prophs, WM_HINTS, UINT_MAX, handle_hints, NULL);
+
         /* Set up the atoms we support */
         check_error(conn, xcb_change_property_checked(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED],
                        ATOM, 32, 7, atoms), "Could not set _NET_SUPPORTED");

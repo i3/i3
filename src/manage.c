@@ -105,6 +105,7 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_CLASS);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NORMAL_HINTS);
+        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_HINTS);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_TRANSIENT_FOR);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[WM_CLIENT_LEADER]);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[_NET_WM_NAME]);

@@ -64,10 +64,12 @@ struct Config {
                 struct Colortriple focused;
                 struct Colortriple focused_inactive;
                 struct Colortriple unfocused;
+                struct Colortriple urgent;
         } client;
         struct config_bar {
                 struct Colortriple focused;
                 struct Colortriple unfocused;
+                struct Colortriple urgent;
         } bar;
 };
 

@@ -351,3 +351,21 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
         ignore_enter_notify_forall(conn, u_ws, false);
 }
 
+/*
+ * Goes through all clients on the given workspace and updates the workspace’s
+ * urgent flag accordingly.
+ *
+ */
+void workspace_update_urgent_flag(Workspace *ws) {
+        Client *current;
+
+        SLIST_FOREACH(current, &(ws->focus_stack), focus_clients) {
+                if (!current->urgent)
+                        continue;
+
+                ws->urgent = true;
+                return;
+        }
+
+        ws->urgent = false;
+}

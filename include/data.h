@@ -201,6 +201,9 @@ struct Workspace {
         /** Temporary flag needed for re-querying xinerama screens */
         bool reassigned;
 
+        /** True if any client on this workspace has its urgent flag set */
+        bool urgent;
+
         /** the client who is started in fullscreen mode on this workspace,
          * NULL if there is none */
         Client *fullscreen_client;
@@ -399,6 +402,9 @@ struct Client {
         /** If a client is set as a dock, it is placed at the very bottom of
          * the screen and its requested size is used */
         bool dock;
+
+        /** True if the client set the urgency flag in its WM_HINTS property */
+        bool urgent;
 
         /* After leaving fullscreen mode, a client needs to be reconfigured
          * (configuration = setting X, Y, width and height). By setting the

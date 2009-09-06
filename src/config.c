@@ -210,6 +210,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         config.client.unfocused.background = get_colorpixel(conn, "#222222");
         config.client.unfocused.text = get_colorpixel(conn, "#888888");
 
+        config.client.urgent.border = get_colorpixel(conn, "#2f343a");
+        config.client.urgent.background = get_colorpixel(conn, "#900000");
+        config.client.urgent.text = get_colorpixel(conn, "#ffffff");
+
         config.bar.focused.border = get_colorpixel(conn, "#4c7899");
         config.bar.focused.background = get_colorpixel(conn, "#285577");
         config.bar.focused.text = get_colorpixel(conn, "#ffffff");
@@ -217,6 +221,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         config.bar.unfocused.border = get_colorpixel(conn, "#333333");
         config.bar.unfocused.background = get_colorpixel(conn, "#222222");
         config.bar.unfocused.text = get_colorpixel(conn, "#888888");
+
+        config.bar.urgent.border = get_colorpixel(conn, "#2f343a");
+        config.bar.urgent.background = get_colorpixel(conn, "#900000");
+        config.bar.urgent.text = get_colorpixel(conn, "#ffffff");
 
         FILE *handle;
         if (override_configpath != NULL) {
@@ -260,8 +268,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 OPTION_COLORTRIPLE("client.focused", client.focused);
                 OPTION_COLORTRIPLE("client.focused_inactive", client.focused_inactive);
                 OPTION_COLORTRIPLE("client.unfocused", client.unfocused);
+                OPTION_COLORTRIPLE("client.urgent", client.urgent);
                 OPTION_COLORTRIPLE("bar.focused", bar.focused);
                 OPTION_COLORTRIPLE("bar.unfocused", bar.unfocused);
+                OPTION_COLORTRIPLE("bar.urgent", bar.urgent);
 
                 /* exec-lines (autostart) */
                 if (strcasecmp(key, "exec") == 0) {

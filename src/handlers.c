@@ -933,8 +933,10 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                 decorate_window(conn, client, client->frame, client->titlegc, 0, 0);
         else {
                 uint32_t background_color;
+                if (client->urgent)
+                        background_color = config.client.urgent.background;
                 /* Distinguish if the window is currently focused… */
-                if (CUR_CELL->currently_focused == client)
+                else if (CUR_CELL->currently_focused == client)
                         background_color = config.client.focused.background;
                 /* …or if it is the focused window in a not focused container */
                 else background_color = config.client.focused_inactive.background;
@@ -1094,6 +1096,43 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
 
         if (client->container != NULL) {
                 render_container(conn, client->container);
+                xcb_flush(conn);
+        }
+
+        return 1;
+}
+
+/*
+ * Handles the WM_HINTS property for extracting the urgency state of the window.
+ *
+ */
+int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+                  xcb_atom_t name, xcb_get_property_reply_t *reply) {
+        Client *client = table_get(&by_child, window);
+        if (client == NULL) {
+                LOG("Received WM_HINTS for unknown client\n");
+                return 1;
+        }
+        xcb_wm_hints_t hints;
+
+        if (reply != NULL)
+                xcb_get_wm_hints_from_reply(&hints, reply);
+        else
+                xcb_get_wm_hints_reply(conn, xcb_get_wm_hints_unchecked(conn, client->child), &hints, NULL);
+
+        /* Update the flag on the client directly */
+        client->urgent = (xcb_wm_hints_get_urgency(&hints) != 0);
+        CLIENT_LOG(client);
+        LOG("Urgency flag changed to %d\n", client->urgent);
+
+        workspace_update_urgent_flag(client->workspace);
+        redecorate_window(conn, client);
+
+        /* If the workspace this client is on is not visible, we need to redraw
+         * the workspace bar */
+        if (!workspace_is_visible(client->workspace)) {
+                i3Screen *screen = client->workspace->screen;
+                render_workspace(conn, screen, &(workspaces[screen->current_workspace]));
                 xcb_flush(conn);
         }
 

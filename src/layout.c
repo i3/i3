@@ -125,18 +125,23 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 return;
 
         last_focused = SLIST_FIRST(&(client->workspace->focus_stack));
-        if (client_is_floating(client)) {
-                if (last_focused == client)
-                        color = &(config.client.focused);
-                else color = &(config.client.unfocused);
-        } else {
-                if (client->container->currently_focused == client) {
-                        /* Distinguish if the window is currently focused… */
-                        if (last_focused == client && c_ws == client->workspace)
+        /* Is the window urgent? */
+        if (client->urgent)
+                color = &(config.client.urgent);
+        else {
+                if (client_is_floating(client)) {
+                        if (last_focused == client)
                                 color = &(config.client.focused);
-                        /* …or if it is the focused window in a not focused container */
-                        else color = &(config.client.focused_inactive);
-                } else color = &(config.client.unfocused);
+                        else color = &(config.client.unfocused);
+                } else {
+                        if (client->container->currently_focused == client) {
+                                /* Distinguish if the window is currently focused… */
+                                if (last_focused == client && c_ws == client->workspace)
+                                        color = &(config.client.focused);
+                                /* …or if it is the focused window in a not focused container */
+                                else color = &(config.client.focused_inactive);
+                        } else color = &(config.client.unfocused);
+                }
         }
 
         /* Our plan is the following:
@@ -515,9 +520,14 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
                 if (workspaces[c].screen != screen)
                         continue;
 
-                struct Colortriple *color = (screen->current_workspace == c ? &(config.bar.focused) :
-                                             &(config.bar.unfocused));
+                struct Colortriple *color;
                 Workspace *ws = &workspaces[c];
+
+                if (screen->current_workspace == c)
+                        color = &(config.bar.focused);
+                else if (ws->urgent)
+                        color = &(config.bar.urgent);
+                else color = &(config.bar.unfocused);
 
                 /* Draw the outer rect */
                 xcb_draw_rect(conn, screen->bar, screen->bargc, color->border,
