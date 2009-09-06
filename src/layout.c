@@ -63,16 +63,27 @@ int get_unoccupied_x(Workspace *workspace) {
 }
 
 /* See get_unoccupied_x() */
-int get_unoccupied_y(Workspace *workspace, int col) {
-        int unoccupied = workspace->rect.height;
-        float default_factor = ((float)workspace->rect.height / workspace->rows) / workspace->rect.height;
+int get_unoccupied_y(Workspace *workspace) {
+        int height = workspace->rect.height;
+        i3Font *font = load_font(global_conn, config.font);
+
+        /* Reserve space for dock clients */
+        Client *client;
+        SLIST_FOREACH(client, &(workspace->screen->dock_clients), dock_clients)
+                height -= client->desired_height;
+
+        /* Space for the internal bar */
+        height -= (font->height + 6);
+
+        int unoccupied = height;
+        float default_factor = ((float)height / workspace->rows) / height;
 
         LOG("get_unoccupied_y(), starting with %d, default_factor = %f\n", unoccupied, default_factor);
 
         for (int rows = 0; rows < workspace->rows; rows++) {
                 LOG("height_factor[%d] = %f\n", rows, workspace->height_factor[rows]);
                 if (workspace->height_factor[rows] == 0)
-                        unoccupied -= workspace->rect.height * default_factor;
+                        unoccupied -= height * default_factor;
         }
 
         LOG("unoccupied space: %d\n", unoccupied);
@@ -587,7 +598,7 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
         /* Go through the whole table and render what’s necessary */
         FOR_TABLE(r_ws) {
                 Container *container = r_ws->table[cols][rows];
-                int single_width = -1, single_height;
+                int single_width = -1, single_height = -1;
                 /* Update position of the container */
                 container->row = rows;
                 container->col = cols;
@@ -604,11 +615,25 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
                                 single_width = container->width;
                 }
 
+                LOG("height is %d\n", height);
+
+                container->height = 0;
+
+                for (int c = 0; c < container->rowspan; c++) {
+                        if (r_ws->height_factor[rows+c] == 0)
+                                container->height += (height / r_ws->rows);
+                        else container->height += get_unoccupied_y(r_ws) * r_ws->height_factor[rows+c];
+
+                        if (single_height == -1)
+                                single_height = container->height;
+                }
+
+
                 //if (container->height_factor == 0)
-                        container->height = (height / r_ws->rows);
+                        //container->height = (height / r_ws->rows);
                 //else container->height = get_unoccupied_y(r_ws, cols) * container->height_factor;
-                single_height = container->height;
-                container->height *= container->rowspan;
+                //single_height = container->height;
+                //container->height *= container->rowspan;
 
                 /* Render the container if it is not empty */
                 render_container(conn, container);

@@ -22,6 +22,9 @@
  */
 int get_unoccupied_x(Workspace *workspace);
 
+/** See get_unoccupied_x */
+int get_unoccupied_y(Workspace *workspace);
+
 /**
  * (Re-)draws window decorations for a given Client onto the given
  * drawable/graphic context.  When in stacking mode, the window decorations
