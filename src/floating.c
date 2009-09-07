@@ -342,8 +342,13 @@ void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event
                                         /* motion_notify events are saved for later */
                                         FREE(last_motion_notify);
                                         last_motion_notify = inside_event;
-
                                         break;
+
+                                case XCB_UNMAP_NOTIFY:
+                                        LOG("Unmap-notify, aborting\n");
+                                        xcb_event_handle(&evenths, inside_event);
+                                        goto done;
+
                                 default:
                                         LOG("Passing to original handler\n");
                                         /* Use original handler */
