@@ -909,19 +909,16 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         return;
                 }
 
-                char com;
+                char com = command[1];
                 if (command[1] == 't') {
                         if (last_focused->titlebar_position == TITLEBAR_TOP &&
-                                last_focused->borderless == false)
+                            !last_focused->borderless)
                             com = 'p';
                         else if (last_focused->titlebar_position == TITLEBAR_OFF &&
-                                last_focused->borderless == false)
+                                 !last_focused->borderless)
                             com = 'b';
-                        else
-                            com = 'n';
+                        else com = 'n';
                 }
-                else
-                    com = command[1];
 
                 client_change_border(conn, last_focused, com);
                 return;
