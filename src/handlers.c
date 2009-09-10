@@ -1116,9 +1116,11 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
         xcb_wm_hints_t hints;
 
         if (reply != NULL)
-                xcb_get_wm_hints_from_reply(&hints, reply);
+                if (!xcb_get_wm_hints_from_reply(&hints, reply))
+                        return 1;
         else
-                xcb_get_wm_hints_reply(conn, xcb_get_wm_hints_unchecked(conn, client->child), &hints, NULL);
+                if (!xcb_get_wm_hints_reply(conn, xcb_get_wm_hints_unchecked(conn, client->child), &hints, NULL))
+                        return 1;
 
         /* Update the flag on the client directly */
         client->urgent = (xcb_wm_hints_get_urgency(&hints) != 0);
