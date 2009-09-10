@@ -300,8 +300,15 @@ static bool button_press_stackwin(xcb_connection_t *conn, xcb_button_press_event
                 i3Font *font = load_font(conn, config.font);
                 int decoration_height = (font->height + 2 + 2);
                 int destination = (event->event_y / decoration_height),
-                    c = 0;
+                    c = 0,
+                    num_clients = 0;
                 Client *client;
+
+                CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
+                        num_clients++;
+
+                if (stack_win->container->mode == MODE_TABBED)
+                        destination = (event->event_x / (stack_win->container->width / num_clients));
 
                 LOG("Click on stack_win for client %d\n", destination);
                 CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
