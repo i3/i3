@@ -1,3 +1,9 @@
+i3-wm (3.d-0) unstable; urgency=low
+
+  * NOT YET RELEASED
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Thu, 10 Sep 2009 19:05:30 +0200
+
 i3-wm (3.c-2) unstable; urgency=low
 
   * Fix FTBFS on GNU/kFreeBSD and possibly GNU/Hurd (Closes: #542877)
