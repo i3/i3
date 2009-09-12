@@ -511,7 +511,7 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
 
         LOG("moving floating\n");
 
-        workspace_initialize(t_ws, container->workspace->screen);
+        workspace_initialize(t_ws, c_ws->screen);
 
         /* Check if there is already a fullscreen client on the destination workspace and
          * stop moving if so. */
