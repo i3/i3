@@ -511,18 +511,13 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
 
         LOG("moving floating\n");
 
-        if (t_ws->screen == NULL) {
-                LOG("initializing new workspace, setting num to %d\n", workspace-1);
-                t_ws->screen = c_ws->screen;
-                /* Copy the dimensions from the virtual screen */
-		memcpy(&(t_ws->rect), &(t_ws->screen->rect), sizeof(Rect));
-        } else {
-                /* Check if there is already a fullscreen client on the destination workspace and
-                 * stop moving if so. */
-                if (client->fullscreen && (t_ws->fullscreen_client != NULL)) {
-                        LOG("Not moving: Fullscreen client already existing on destination workspace.\n");
-                        return;
-                }
+        workspace_initialize(t_ws, container->workspace->screen);
+
+        /* Check if there is already a fullscreen client on the destination workspace and
+         * stop moving if so. */
+        if (client->fullscreen && (t_ws->fullscreen_client != NULL)) {
+                LOG("Not moving: Fullscreen client already existing on destination workspace.\n");
+                return;
         }
 
         floating_assign_to_workspace(client, t_ws);
