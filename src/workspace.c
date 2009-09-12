@@ -111,12 +111,11 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
         /* Check if we need to change something or if we’re already there */
         if (c_ws->screen->current_workspace == (workspace-1)) {
                 Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
-                if (last_focused != SLIST_END(&(c_ws->focus_stack))) {
+                if (last_focused != SLIST_END(&(c_ws->focus_stack)))
                         set_focus(conn, last_focused, true);
-                        if (need_warp) {
-                                client_warp_pointer_into(conn, last_focused);
-                                xcb_flush(conn);
-                        }
+                if (need_warp) {
+                        client_warp_pointer_into(conn, last_focused);
+                        xcb_flush(conn);
                 }
 
                 return;
@@ -135,17 +134,28 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
 
         workspace_map_clients(conn, c_ws);
 
+        /* POTENTIAL TO IMPROVE HERE: due to the call to _map_clients first and
+         * render_layout afterwards, there is a short flickering on the source
+         * workspace (assign ws 3 to screen 0, ws 4 to screen 1, create single
+         * client on ws 4, move it to ws 3, switch to ws 3, you’ll see the
+         * flickering). */
+
         /* Restore focus on the new workspace */
         Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
-        if (last_focused != SLIST_END(&(c_ws->focus_stack))) {
+        if (last_focused != SLIST_END(&(c_ws->focus_stack)))
                 set_focus(conn, last_focused, true);
-                if (need_warp) {
-                        client_warp_pointer_into(conn, last_focused);
-                        xcb_flush(conn);
-                }
-        } else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
+        else xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
 
         render_layout(conn);
+
+        /* We can warp the pointer only after the window has been
+         * reconfigured in render_layout, otherwise the pointer will
+         * be warped to the old position, which will not work when we
+         * moved it to another screen. */
+        if (last_focused != SLIST_END(&(c_ws->focus_stack)) && need_warp) {
+                client_warp_pointer_into(conn, last_focused);
+                xcb_flush(conn);
+        }
 }
 
 
