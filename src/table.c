@@ -198,11 +198,29 @@ static void shrink_table_cols(Workspace *workspace) {
  *
  */
 static void shrink_table_rows(Workspace *workspace) {
+        float free_space = workspace->height_factor[workspace->rows-1];
+
         workspace->rows--;
         for (int cols = 0; cols < workspace->cols; cols++)
                 workspace->table[cols] = realloc(workspace->table[cols], sizeof(Container*) * workspace->rows);
-}
 
+        /* Shrink the height_factor array */
+        workspace->height_factor = realloc(workspace->height_factor, sizeof(float) * workspace->rows);
+
+        /* Distribute the free space */
+        if (free_space == 0)
+                return;
+
+        for (int rows = (workspace->rows-1); rows >= 0; rows--) {
+                if (workspace->height_factor[rows] == 0)
+                        continue;
+
+                LOG("Added free space (%f) to %d (had %f)\n", free_space, rows,
+                                workspace->height_factor[rows]);
+                workspace->height_factor[rows] += free_space;
+                break;
+        }
+}
 
 /*
  * Performs simple bounds checking for the given column/row
