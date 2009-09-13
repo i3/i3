@@ -27,7 +27,7 @@ src/cfgparse.yy.o: src/cfgparse.l
 
 src/cfgparse.y.o: src/cfgparse.y
 	echo "YACC $<"
-	yacc -b $(basename $< .y) -d $<
+	yacc --debug --verbose -b $(basename $< .y) -d $<
 	$(CC) $(CFLAGS) -c -o $@ $(<:.y=.tab.c)
 
 install: all
