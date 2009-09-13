@@ -165,7 +165,7 @@ int main(int argc, char *argv[], char *env[]) {
 
         start_argv = argv;
 
-        while ((opt = getopt_long(argc, argv, "c:vah", long_options, &option_index)) != -1) {
+        while ((opt = getopt_long(argc, argv, "c:vahp", long_options, &option_index)) != -1) {
                 switch (opt) {
                         case 'a':
                                 LOG("Autostart disabled using -a\n");
@@ -177,6 +177,12 @@ int main(int argc, char *argv[], char *env[]) {
                         case 'v':
                                 printf("i3 version " I3_VERSION " © 2009 Michael Stapelberg and contributors\n");
                                 exit(EXIT_SUCCESS);
+                        case 'p':
+                                {
+                                        printf("parsing\n");
+                                        parse_file(override_configpath);
+                                        exit(0);
+                                }
                         default:
                                 fprintf(stderr, "Usage: %s [-c configfile] [-a] [-v]\n", argv[0]);
                                 fprintf(stderr, "\n");

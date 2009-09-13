@@ -3,29 +3,32 @@
 #include <string.h>
 #include <xcb/xcb.h>
 
-enum {
-        BIND_NONE = 0,
-        BIND_SHIFT = XCB_MOD_MASK_SHIFT,        /* (1 << 0) */
-        BIND_CONTROL = XCB_MOD_MASK_CONTROL,    /* (1 << 2) */
-        BIND_MOD1 = XCB_MOD_MASK_1,             /* (1 << 3) */
-        BIND_MOD2 = XCB_MOD_MASK_2,             /* (1 << 4) */
-        BIND_MOD3 = XCB_MOD_MASK_3,             /* (1 << 5) */
-        BIND_MOD4 = XCB_MOD_MASK_4,             /* (1 << 6) */
-        BIND_MOD5 = XCB_MOD_MASK_5,             /* (1 << 7) */
-        BIND_MODE_SWITCH = (1 << 8)
-};
+#include "data.h"
 
+extern int yylex(void);
+extern FILE *yyin;
 
 int yydebug = 1;
 
-void yyerror(const char *str)
-{
+void yyerror(const char *str) {
         fprintf(stderr,"error: %s\n",str);
 }
 
-int yywrap()
-{
+int yywrap() {
         return 1;
+}
+
+void parse_file(const char *f) {
+	printf("opening %s\n", f);
+        if ((yyin = fopen(f, "r")) == NULL) {
+		perror("fopen");
+		exit(1);
+	}
+	if (yyparse() != 0) {
+		fprintf(stderr, "Could not parse configfile\n");
+		exit(1);
+	}
+	fclose(yyin);
 }
 
 #if 0
@@ -45,11 +48,14 @@ main()
 
 %token <number>NUMBER
 %token <string>WORD
-%token <string>STRING
-%token <string>STRING_NG
+%token <string>STR
+%token <string>STR_NG
 %token <string>VARNAME
 %token <string>HEX
 %token TOKBIND
+%token TOKTERMINAL
+%token TOKCOMMENT
+%token TOKFONT
 %token TOKBINDSYM
 %token MODIFIER
 %token TOKCONTROL
@@ -83,10 +89,17 @@ line:
 	| ipcsocket
 	| exec
 	| color
+	| terminal
+	| font
+	| comment
         ;
 
+comment:
+	TOKCOMMENT
+	;
+
 command:
-	STRING
+	STR
 	;
 
 bind:
@@ -135,7 +148,7 @@ assign:
 
 window_class:
 	QUOTEDSTRING
-	| STRING_NG
+	| STR_NG
 	;
 
 optional_arrow:
@@ -144,7 +157,7 @@ optional_arrow:
 	;
 
 set:
-	TOKSET WHITESPACE variable WHITESPACE STRING
+	TOKSET WHITESPACE variable WHITESPACE STR
 	{
 		printf("set %s to %s\n", $<string>3, $<string>5);
 	}
@@ -156,18 +169,33 @@ variable:
 	;
 
 ipcsocket:
-	TOKIPCSOCKET WHITESPACE STRING
+	TOKIPCSOCKET WHITESPACE STR
 	{
 		printf("ipc %s\n", $<string>3);
 	}
 	;
 
 exec:
-	TOKEXEC WHITESPACE STRING
+	TOKEXEC WHITESPACE STR
 	{
 		printf("exec %s\n", $<string>3);
 	}
 	;
+
+terminal:
+	TOKTERMINAL WHITESPACE STR
+	{
+		printf("terminal %s\n", $<string>3);
+	}
+	;
+
+font:
+	TOKFONT WHITESPACE STR
+	{
+		printf("font %s\n", $<string>3);
+	}
+	;
+
 
 color:
 	TOKCOLOR WHITESPACE '#' HEX
