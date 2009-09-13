@@ -2,9 +2,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <xcb/xcb.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <errno.h>
 
 #include "data.h"
 #include "config.h"
+#include "util.h"
+#include "queue.h"
 
 extern int yylex(void);
 extern FILE *yyin;
@@ -20,25 +28,121 @@ int yywrap() {
 }
 
 void parse_file(const char *f) {
-        printf("opening %s\n", f);
-        if ((yyin = fopen(f, "r")) == NULL) {
-                perror("fopen");
-                exit(1);
+        SLIST_HEAD(variables_head, Variable) variables = SLIST_HEAD_INITIALIZER(&variables);
+        int fd, ret, read_bytes = 0;
+        struct stat stbuf;
+        char *buf;
+        FILE *fstr;
+        char buffer[1026], key[512], value[512];
+
+        if ((fd = open(f, O_RDONLY)) == -1)
+                die("Could not open configuration file: %s\n", strerror(errno));
+
+        if (fstat(fd, &stbuf) == -1)
+                die("Could not fstat file: %s\n", strerror(errno));
+
+        buf = smalloc(stbuf.st_size * sizeof(char));
+        while (read_bytes < stbuf.st_size) {
+                if ((ret = read(fd, buf + read_bytes, (stbuf.st_size - read_bytes))) < 0)
+                        die("Could not read(): %s\n", strerror(errno));
+                read_bytes += ret;
         }
+
+        if (lseek(fd, 0, SEEK_SET) == (off_t)-1)
+                die("Could not lseek: %s\n", strerror(errno));
+
+        if ((fstr = fdopen(fd, "r")) == NULL)
+                die("Could not fdopen: %s\n", strerror(errno));
+
+        while (!feof(fstr)) {
+                if (fgets(buffer, 1024, fstr) == NULL) {
+                        if (feof(fstr))
+                                break;
+                        die("Could not read configuration file\n");
+                }
+
+                /* sscanf implicitly strips whitespace. Also, we skip comments and empty lines. */
+                if (sscanf(buffer, "%s %[^\n]", key, value) < 1 ||
+                    key[0] == '#' || strlen(key) < 3)
+                        continue;
+
+                if (strcasecmp(key, "set") == 0) {
+                        if (value[0] != '$')
+                                die("Malformed variable assignment, name has to start with $\n");
+
+                        /* get key/value for this variable */
+                        char *v_key = value, *v_value;
+                        if ((v_value = strstr(value, " ")) == NULL)
+                                die("Malformed variable assignment, need a value\n");
+
+                        *(v_value++) = '\0';
+
+                        struct Variable *new = scalloc(sizeof(struct Variable));
+                        new->key = sstrdup(v_key);
+                        new->value = sstrdup(v_value);
+                        SLIST_INSERT_HEAD(&variables, new, variables);
+                        LOG("Got new variable %s = %s\n", v_key, v_value);
+                        continue;
+                }
+        }
+
+        /* For every custom variable, see how often it occurs in the file and
+         * how much extra bytes it requires when replaced. */
+        struct Variable *current, *nearest;
+        int extra_bytes = 0;
+        SLIST_FOREACH(current, &variables, variables) {
+                int extra = (strlen(current->value) - strlen(current->key));
+                char *next;
+                for (next = buf;
+                     (next = strcasestr(buf + (next - buf), current->key)) != NULL;
+                     next += strlen(current->key))
+                        extra_bytes += extra;
+        }
+
+        /* Then, allocate a new buffer and copy the file over to the new one,
+         * but replace occurences of our variables */
+        char *walk = buf, *destwalk;
+        char *new = smalloc((stbuf.st_size + extra_bytes) * sizeof(char));
+        destwalk = new;
+        while (walk < (buf + stbuf.st_size)) {
+                /* Find the next variable */
+                SLIST_FOREACH(current, &variables, variables)
+                        current->next_match = strcasestr(walk, current->key);
+                nearest = NULL;
+                int distance = stbuf.st_size;
+                SLIST_FOREACH(current, &variables, variables) {
+                        if (current->next_match == NULL)
+                                continue;
+                        if ((current->next_match - walk) < distance) {
+                                distance = (current->next_match - walk);
+                                nearest = current;
+                        }
+                }
+                if (nearest == NULL) {
+                        /* If there are no more variables, we just copy the rest */
+                        strncpy(destwalk, walk, (buf + stbuf.st_size) - walk);
+                        destwalk += (buf + stbuf.st_size) - walk;
+                        *destwalk = '\0';
+                        break;
+                } else {
+                        /* Copy until the next variable, then copy its value */
+                        strncpy(destwalk, walk, distance);
+                        strncpy(destwalk + distance, nearest->value, strlen(nearest->value));
+                        walk += distance + strlen(nearest->key);
+                        destwalk += distance + strlen(nearest->value);
+                }
+        }
+
+        yy_scan_string(new);
+
         if (yyparse() != 0) {
                 fprintf(stderr, "Could not parse configfile\n");
                 exit(1);
         }
-        fclose(yyin);
-}
 
-#if 0
-main()
-{
-        yyparse();
-        printf("parsing done\n");
+        free(new);
+        free(buf);
 }
-#endif
 
 %}
 
@@ -52,7 +156,6 @@ main()
 %token <string>WORD
 %token <string>STR
 %token <string>STR_NG
-%token <string>VARNAME
 %token <string>HEX
 %token TOKBIND
 %token TOKTERMINAL
@@ -87,7 +190,6 @@ line:
         | floating_modifier
         | workspace
         | assign
-        | set
         | ipcsocket
         | exec
         | color
@@ -163,18 +265,6 @@ window_class:
 optional_arrow:
         /* NULL */
         | TOKARROW WHITESPACE
-        ;
-
-set:
-        TOKSET WHITESPACE variable WHITESPACE STR
-        {
-                printf("set %s to %s\n", $<string>3, $<string>5);
-        }
-        ;
-
-variable:
-        '$' WORD        { asprintf(&$<string>$, "$%s", $<string>2); }
-        | '$' VARNAME   { asprintf(&$<string>$, "$%s", $<string>2); }
         ;
 
 ipcsocket:

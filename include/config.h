@@ -40,6 +40,7 @@ struct Colortriple {
 struct Variable {
         char *key;
         char *value;
+        char *next_match;
 
         SLIST_ENTRY(Variable) variables;
 };

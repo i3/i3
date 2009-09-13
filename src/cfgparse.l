@@ -5,7 +5,6 @@
 
 #include "data.h"
 #include "config.h"
-
 %}
 
 %Start BIND_COND
@@ -13,8 +12,6 @@
 %Start BIND_A2WS_COND
 %Start ASSIGN_COND
 %Start COLOR_COND
-%Start SET_COND
-%Start SET_AWS_COND
 %Start SCREEN_COND
 %Start SCREEN_AWS_COND
 
@@ -31,7 +28,7 @@ screen                          { BEGIN(SCREEN_COND); return TOKSCREEN; }
 terminal                        { BEGIN(BIND_AWS_COND); return TOKTERMINAL; }
 font                            { BEGIN(BIND_AWS_COND); return TOKFONT; }
 assign                          { BEGIN(ASSIGN_COND); return TOKASSIGN; }
-set                             { BEGIN(SET_COND); return TOKSET; }
+set[^\n]*                       { return TOKCOMMENT; }
 ipc-socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
 exec                            { BEGIN(BIND_AWS_COND); return TOKEXEC; }
 client.focused                  { BEGIN(COLOR_COND); yylval.color = &config.client.focused; return TOKCOLOR; }
@@ -52,9 +49,7 @@ shift                           { return TOKSHIFT; }
 \n                              /* ignore end of line */;
 <SCREEN_AWS_COND>x              { return (int)yytext[0]; }
 <BIND_COND>[ \t]+               { BEGIN(BIND_AWS_COND); return WHITESPACE; }
-<SET_COND>[ \t]+                { BEGIN(SET_AWS_COND); return WHITESPACE; }
 <BIND_AWS_COND>[ \t]+           { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
-<SET_AWS_COND>[ \t]+            { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
 <SCREEN_COND>[ \t]+             { BEGIN(SCREEN_AWS_COND); return WHITESPACE; }
 <SCREEN_AWS_COND>[ \t]+         { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
 [ \t]+                          { return WHITESPACE; }
@@ -69,6 +64,5 @@ shift                           { return TOKSHIFT; }
                                 }
 <ASSIGN_COND>[^ \t]+            { BEGIN(INITIAL); yylval.string = strdup(yytext); return STR_NG; }
 [a-zA-Z]+                       { yylval.string = strdup(yytext); return WORD; }
-<SET_AWS_COND>[a-zA-Z0-9_-]+    { yylval.string = strdup(yytext); return VARNAME; }
 .                               { return (int)yytext[0]; }
 %%
