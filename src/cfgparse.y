@@ -11,8 +11,10 @@
 
 #include "data.h"
 #include "config.h"
+#include "i3.h"
 #include "util.h"
 #include "queue.h"
+#include "table.h"
 
 extern int yylex(void);
 extern FILE *yyin;
@@ -210,6 +212,13 @@ bind:
         TOKBIND WHITESPACE binding_modifiers NUMBER WHITESPACE command
         {
                 printf("\tFound binding mod%d with key %d and command %s\n", $<number>3, $4, $<string>6);
+                Binding *new = scalloc(sizeof(Binding));
+
+                new->keycode = $<number>4;
+                new->mods = $<number>3;
+                new->command = sstrdup($<string>6);
+
+                TAILQ_INSERT_TAIL(&bindings, new, bindings);
         }
         ;
 
@@ -217,30 +226,42 @@ bindsym:
         TOKBINDSYM WHITESPACE binding_modifiers WORD WHITESPACE command
         {
                 printf("\tFound symbolic mod%d with key %s and command %s\n", $<number>3, $4, $<string>6);
+                Binding *new = scalloc(sizeof(Binding));
+
+                new->symbol = sstrdup($4);
+                new->mods = $<number>3;
+                new->command = sstrdup($<string>6);
+
+                TAILQ_INSERT_TAIL(&bindings, new, bindings);
         }
         ;
 
 floating_modifier:
         TOKFLOATING_MODIFIER WHITESPACE binding_modifiers
         {
-                printf("\tfloating modifier %d\n", $<number>3);
+                LOG("floating modifier = %d\n", $<number>3);
+                config.floating_modifier = $<number>3;
         }
         ;
 
 workspace:
-        TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKSCREEN WHITESPACE screen
+        TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKSCREEN WHITESPACE screen workspace_name
         {
-                printf("\t workspace %d to screen %s\n", $<number>3, $<string>7);
-        }
-        | TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKSCREEN WHITESPACE screen WHITESPACE workspace_name
-        {
-                printf("\t quoted: %s\n", $<string>9);
+                int ws_num = $<number>3;
+                if (ws_num < 1 || ws_num > 10) {
+                        LOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
+                } else {
+                        workspaces[ws_num - 1].preferred_screen = sstrdup($<string>7);
+                        if ($<string>8 != NULL)
+                                workspace_set_name(&(workspaces[ws_num - 1]), $<string>8);
+                }
         }
         ;
 
 workspace_name:
-        QUOTEDSTRING
-        | STR
+        /* NULL */                      { $<string>$ = NULL; }
+        | WHITESPACE QUOTEDSTRING       { $<string>$ = $<string>2; }
+        | WHITESPACE STR                { $<string>$ = $<string>2; }
         ;
 
 screen:
@@ -253,6 +274,7 @@ screen:
 assign:
         TOKASSIGN WHITESPACE window_class WHITESPACE optional_arrow NUMBER
         {
+                /* TODO */
                 printf("assignment of %s to %d\n", $<string>3, $<number>6);
         }
         ;
@@ -270,37 +292,49 @@ optional_arrow:
 ipcsocket:
         TOKIPCSOCKET WHITESPACE STR
         {
-                printf("ipc %s\n", $<string>3);
+                config.ipc_socket_path = sstrdup($<string>3);
         }
         ;
 
 exec:
         TOKEXEC WHITESPACE STR
         {
-                printf("exec %s\n", $<string>3);
+                struct Autostart *new = smalloc(sizeof(struct Autostart));
+                new->command = sstrdup($<string>3);
+                TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
         }
         ;
 
 terminal:
         TOKTERMINAL WHITESPACE STR
         {
-                printf("terminal %s\n", $<string>3);
+                config.terminal = sstrdup($<string>3);
+                printf("terminal %s\n", config.terminal);
         }
         ;
 
 font:
         TOKFONT WHITESPACE STR
         {
-                printf("font %s\n", $<string>3);
+                config.font = sstrdup($<string>3);
+                printf("font %s\n", config.font);
         }
         ;
 
 
 color:
-        TOKCOLOR WHITESPACE '#' HEX WHITESPACE '#' HEX WHITESPACE '#' HEX
+        TOKCOLOR WHITESPACE colorpixel WHITESPACE colorpixel WHITESPACE colorpixel
         {
-                printf("color %p, %s and %s and %s\n", $<color>1, $<string>4, $<string>7, $<string>10);
+                struct Colortriple *dest = $<color>1;
+
+                dest->border = $<number>3;
+                dest->background = $<number>5;
+                dest->text = $<number>7;
         }
+        ;
+
+colorpixel:
+        '#' HEX         { $<number>$ = get_colorpixel(global_conn, $<string>2); }
         ;
 
 
