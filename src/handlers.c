@@ -408,7 +408,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                                     to_bottom = client->rect.height - event->event_y;
                                 resize_orientation_t orientation = O_VERTICAL;
                                 Container *con = client->container;
-                                int first, second;
+                                int first = 0, second = 0;
 
                                 LOG("click was %d px to the right, %d px to the left, %d px to top, %d px to bottom\n",
                                                 to_right, to_left, to_top, to_bottom);
