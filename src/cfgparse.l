@@ -18,8 +18,8 @@
 %%
 <BIND_A2WS_COND>[^\n]+          { BEGIN(INITIAL); yylval.string = strdup(yytext); return STR; }
 ^#[^\n]*                        { return TOKCOMMENT; }
-[0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
 <COLOR_COND>[0-9a-fA-F]+        { yylval.string = strdup(yytext); return HEX; }
+[0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
 bind                            { BEGIN(BIND_COND); return TOKBIND; }
 bindsym                         { BEGIN(BIND_COND); return TOKBINDSYM; }
 floating_modifier               { return TOKFLOATING_MODIFIER; }
