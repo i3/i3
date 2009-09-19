@@ -43,6 +43,7 @@ Mod2                            { yylval.number = BIND_MOD2; return MODIFIER; }
 Mod3                            { yylval.number = BIND_MOD3; return MODIFIER; }
 Mod4                            { yylval.number = BIND_MOD4; return MODIFIER; }
 Mod5                            { yylval.number = BIND_MOD5; return MODIFIER; }
+Mode_switch                     { yylval.number = BIND_MODE_SWITCH; return MODIFIER; }
 control                         { return TOKCONTROL; }
 shift                           { return TOKSHIFT; }
 →                               { return TOKARROW; }

@@ -20,6 +20,7 @@
 
 typedef struct Config Config;
 extern Config config;
+extern bool config_use_lexer;
 
 /**
  * Part of the struct Config. It makes sense to group colors for background,

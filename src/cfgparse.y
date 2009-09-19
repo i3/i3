@@ -152,6 +152,7 @@ void parse_file(const char *f) {
         int number;
         char *string;
         struct Colortriple *color;
+	struct Assignment *assignment;
 }
 
 %token <number>NUMBER
@@ -272,12 +273,38 @@ screen:
         ;
 
 assign:
-        TOKASSIGN WHITESPACE window_class WHITESPACE optional_arrow NUMBER
+        TOKASSIGN WHITESPACE window_class WHITESPACE optional_arrow assign_target
         {
-                /* TODO */
                 printf("assignment of %s to %d\n", $<string>3, $<number>6);
+
+		struct Assignment *new = $<assignment>6;
+		new->windowclass_title = strdup($<string>3);
+		TAILQ_INSERT_TAIL(&assignments, new, assignments);
         }
         ;
+
+assign_target:
+	NUMBER
+	{
+		struct Assignment *new = scalloc(sizeof(struct Assignment));
+		new->workspace = $<number>1;
+		new->floating = ASSIGN_FLOATING_NO;
+		$<assignment>$ = new;
+	}
+	| '~'
+	{
+		struct Assignment *new = scalloc(sizeof(struct Assignment));
+		new->floating = ASSIGN_FLOATING_ONLY;
+		$<assignment>$ = new;
+	}
+	| '~' NUMBER
+	{
+		struct Assignment *new = scalloc(sizeof(struct Assignment));
+		new->workspace = $<number>2;
+		new->floating = ASSIGN_FLOATING;
+		$<assignment>$ = new;
+	}
+	;
 
 window_class:
         QUOTEDSTRING

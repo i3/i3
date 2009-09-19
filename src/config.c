@@ -28,6 +28,8 @@
 
 Config config;
 
+bool config_use_lexer = false;
+
 /*
  * This function resolves ~ in pathnames.
  *
@@ -225,6 +227,25 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         config.bar.urgent.border = get_colorpixel(conn, "#2f343a");
         config.bar.urgent.background = get_colorpixel(conn, "#900000");
         config.bar.urgent.text = get_colorpixel(conn, "#ffffff");
+
+        if (config_use_lexer) {
+                /* Yes, this will be cleaned up soon. */
+                if (override_configpath != NULL) {
+                        parse_file(override_configpath);
+                } else {
+                        FILE *handle;
+                        char *globbed = glob_path("~/.i3/config");
+                        if ((handle = fopen(globbed, "r")) == NULL) {
+                                if ((handle = fopen("/etc/i3/config", "r")) == NULL) {
+                                        die("Neither \"%s\" nor /etc/i3/config could be opened\n", globbed);
+                                } else {
+                                        parse_file("/etc/i3/config");
+                                }
+                        } else {
+                                parse_file(globbed);
+                        }
+                }
+        } else {
 
         FILE *handle;
         if (override_configpath != NULL) {
@@ -508,9 +529,6 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 grab_all_keys(conn);
         fclose(handle);
 
-        REQUIRED_OPTION(terminal);
-        REQUIRED_OPTION(font);
-
         while (!SLIST_EMPTY(&variables)) {
                 struct Variable *v = SLIST_FIRST(&variables);
                 SLIST_REMOVE_HEAD(&variables, variables);
@@ -518,6 +536,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 free(v->value);
                 free(v);
         }
+        }
+
+        REQUIRED_OPTION(terminal);
+        REQUIRED_OPTION(font);
 
         /* Set an empty name for every workspace which got no name */
         for (int i = 0; i < 10; i++) {
