@@ -257,6 +257,16 @@ workspace:
                                 workspace_set_name(&(workspaces[ws_num - 1]), $<string>8);
                 }
         }
+	| TOKWORKSPACE WHITESPACE NUMBER workspace_name
+	{
+                int ws_num = $<number>3;
+                if (ws_num < 1 || ws_num > 10) {
+                        LOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
+                } else {
+			if ($<string>4 != NULL)
+					workspace_set_name(&(workspaces[ws_num - 1]), $<string>4);
+		}
+	}
         ;
 
 workspace_name:
