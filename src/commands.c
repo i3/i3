@@ -58,6 +58,22 @@ bool focus_window_in_container(xcb_connection_t *conn, Container *container, dir
 
 typedef enum { THING_WINDOW, THING_CONTAINER, THING_SCREEN } thing_t;
 
+static void jump_to_mark(xcb_connection_t *conn, const char *mark) {
+        Client *current;
+        LOG("Jumping to \"%s\"\n", mark);
+
+        for (int c = 0; c < 10; c++)
+                SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
+                        if (current->mark == NULL || strcmp(current->mark, mark) != 0)
+                                continue;
+
+                        set_focus(conn, current, true);
+                        return;
+                }
+
+        LOG("No window with this mark found\n");
+}
+
 static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t thing) {
         LOG("focusing direction %d\n", direction);
 
@@ -814,6 +830,38 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         if (STARTS_WITH(command, "exec ")) {
                 LOG("starting \"%s\"\n", command + strlen("exec "));
                 start_application(command+strlen("exec "));
+                return;
+        }
+
+        if (STARTS_WITH(command, "mark")) {
+                if (last_focused == NULL) {
+                        LOG("There is no window to mark\n");
+                        return;
+                }
+                const char *rest = command + strlen("mark");
+                while (*rest == ' ')
+                        rest++;
+                if (*rest == '\0') {
+                        LOG("interactive mark starting\n");
+                        start_application("i3-input -p 'mark ' -l 1 -P 'Mark: '");
+                } else {
+                        LOG("mark with \"%s\"\n", rest);
+                        client_mark(conn, last_focused, rest);
+                }
+                return;
+        }
+
+        if (STARTS_WITH(command, "goto")) {
+                const char *rest = command + strlen("goto");
+                while (*rest == ' ')
+                        rest++;
+                if (*rest == '\0') {
+                        LOG("interactive go to mark starting\n");
+                        start_application("i3-input -p 'goto ' -l 1 -P 'Goto: '");
+                } else {
+                        LOG("go to \"%s\"\n", rest);
+                        jump_to_mark(conn, rest);
+                }
                 return;
         }
 

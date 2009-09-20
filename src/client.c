@@ -24,6 +24,7 @@
 #include "queue.h"
 #include "layout.h"
 #include "client.h"
+#include "table.h"
 
 /*
  * Removes the given client from the container, either because it will be inserted into another
@@ -315,4 +316,31 @@ void client_map(xcb_connection_t *conn, Client *client) {
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
 
         xcb_map_window(conn, client->frame);
+}
+
+/*
+ * Set the given mark for this client. Used for jumping to the client
+ * afterwards (like m<mark> and '<mark> in vim).
+ *
+ */
+void client_mark(xcb_connection_t *conn, Client *client, const char *mark) {
+        if (client->mark != NULL)
+                free(client->mark);
+        client->mark = sstrdup(mark);
+
+        /* Make sure no other client has this mark set */
+        Client *current;
+        for (int c = 0; c < 10; c++)
+                SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
+                        if (current == client ||
+                            current->mark == NULL ||
+                            strcmp(current->mark, mark) != 0)
+                                continue;
+
+                        free(current->mark);
+                        current->mark = NULL;
+                        /* We can break here since there can only be one other
+                         * client with this mark. */
+                        break;
+                }
 }

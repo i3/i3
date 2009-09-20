@@ -376,6 +376,9 @@ struct Client {
         /** Holds the WM_CLASS, useful for matching the client in commands */
         char *window_class;
 
+        /** Holds the client’s mark, for vim-like jumping */
+        char *mark;
+
         /** Holds the xcb_window_t (just an ID) for the leader window (logical
          * parent for toolwindows and similar floating windows) */
         xcb_window_t leader;

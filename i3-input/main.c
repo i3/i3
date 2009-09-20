@@ -46,6 +46,9 @@ static char *glyphs_utf8[512];
 static int input_position;
 static int font_height;
 static char *command_prefix;
+static char *prompt;
+static int prompt_len;
+static int limit;
 
 /*
  * Concats the glyphs (either UCS-2 or UTF-8) to a single string, suitable for
@@ -88,13 +91,23 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
         /* restore font color */
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FFFFFF"));
         uint8_t *con = concat_strings(glyphs_ucs, input_position);
-        xcb_image_text_16(conn, input_position, pixmap, pixmap_gc, 4 /* X */,
-                          font_height + 2 /* Y = baseline of font */, (xcb_char2b_t*)con);
+        char *full_text = (char*)con;
+        if (prompt != NULL) {
+                full_text = malloc((prompt_len + input_position) * 2 + 1);
+                if (full_text == NULL)
+                        err(EXIT_FAILURE, "malloc() failed\n");
+                memcpy(full_text, prompt, prompt_len * 2);
+                memcpy(full_text + (prompt_len * 2), con, input_position * 2);
+        }
+        xcb_image_text_16(conn, input_position + prompt_len, pixmap, pixmap_gc, 4 /* X */,
+                          font_height + 2 /* Y = baseline of font */, (xcb_char2b_t*)full_text);
 
         /* Copy the contents of the pixmap to the real window */
         xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, /* */ 500, font_height + 8);
         xcb_flush(conn);
         free(con);
+        if (prompt != NULL)
+                free(full_text);
 
         return 1;
 }
@@ -113,6 +126,25 @@ static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_rel
         }
 
         return 1;
+}
+
+static void finish_input() {
+        uint8_t *command = concat_strings(glyphs_utf8, input_position);
+        char *full_command = (char*)command;
+        /* prefix the command if a prefix was specified on commandline */
+        if (command_prefix != NULL) {
+                if (asprintf(&full_command, "%s%s", command_prefix, command) == -1)
+                        err(EXIT_FAILURE, "asprintf() failed\n");
+        }
+        printf("command = %s\n", full_command);
+
+        ipc_send_message(sockfd, strlen(full_command), 0, (uint8_t*)full_command);
+
+#if 0
+        free(command);
+        return 1;
+#endif
+        exit(0);
 }
 
 /*
@@ -138,24 +170,8 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
                 return 1;
         }
 
-        if (sym == XK_Return) {
-                uint8_t *command = concat_strings(glyphs_utf8, input_position);
-                char *full_command = (char*)command;
-                /* prefix the command if a prefix was specified on commandline */
-                if (command_prefix != NULL) {
-                        if (asprintf(&full_command, "%s%s", command_prefix, command) == -1)
-                                err(EXIT_FAILURE, "asprintf() failed\n");
-                }
-                printf("command = %s\n", full_command);
-
-                ipc_send_message(sockfd, strlen(full_command), 0, (uint8_t*)full_command);
-
-#if 0
-                free(command);
-                return 1;
-#endif
-                exit(0);
-        }
+        if (sym == XK_Return)
+                finish_input();
 
         if (sym == XK_BackSpace) {
                 if (input_position == 0)
@@ -208,6 +224,9 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
         glyphs_utf8[input_position] = strdup(out);
         input_position++;
 
+        if (input_position == limit)
+                finish_input();
+
         handle_expose(NULL, conn, NULL);
         return 1;
 }
@@ -220,29 +239,42 @@ int main(int argc, char *argv[]) {
         static struct option long_options[] = {
                 {"socket", required_argument, 0, 's'},
                 {"version", no_argument, 0, 'v'},
+                {"limit", required_argument, 0, 'l'},
+                {"prompt", required_argument, 0, 'P'},
                 {"prefix", required_argument, 0, 'p'},
                 {"help", no_argument, 0, 'h'},
                 {0, 0, 0, 0}
         };
 
-        char *options_string = "s:p:vh";
+        char *options_string = "s:p:P:l:vh";
 
         while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
-                if (o == 's') {
-                        socket_path = strdup(optarg);
-                } else if (o == 'v') {
-                        printf("i3-input " I3_VERSION);
-                        return 0;
-                } else if (o == 'p') {
-                        command_prefix = strdup(optarg);
-                } else if (o == 'h') {
-                        printf("i3-input " I3_VERSION);
-                        printf("i3-input [-s <socket>] [-p <prefix>]\n");
-                        return 0;
+                switch (o) {
+                        case 's':
+                                socket_path = strdup(optarg);
+                                break;
+                        case 'v':
+                                printf("i3-input " I3_VERSION);
+                                return 0;
+                        case 'p':
+                                command_prefix = strdup(optarg);
+                                break;
+                        case 'l':
+                                limit = atoi(optarg);
+                                break;
+                        case 'P':
+                                prompt = strdup(optarg);
+                                break;
+                        case 'h':
+                                printf("i3-input " I3_VERSION);
+                                printf("i3-input [-s <socket>] [-p <prefix>] [-l <limit>] [-P <prompt>] [-v]\n");
+                                return 0;
                 }
         }
 
         sockfd = connect_ipc(socket_path);
+
+        prompt = convert_utf8_to_ucs2(prompt, &prompt_len);
 
         int screens;
         xcb_connection_t *conn = xcb_connect(NULL, &screens);

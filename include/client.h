@@ -98,6 +98,13 @@ void client_unmap(xcb_connection_t *conn, Client *client);
 void client_map(xcb_connection_t *conn, Client *client);
 
 /**
+ * Set the given mark for this client. Used for jumping to the client
+ * afterwards (like m<mark> and '<mark> in vim).
+ *
+ */
+void client_mark(xcb_connection_t *conn, Client *client, const char *mark);
+
+/**
  * Pretty-prints the client’s information into the logfile.
  *
  */
