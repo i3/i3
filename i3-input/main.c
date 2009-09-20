@@ -45,7 +45,7 @@ static char *glyphs_ucs[512];
 static char *glyphs_utf8[512];
 static int input_position;
 static int font_height;
-
+static char *command_prefix;
 
 /*
  * Concats the glyphs (either UCS-2 or UTF-8) to a single string, suitable for
@@ -140,9 +140,15 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 
         if (sym == XK_Return) {
                 uint8_t *command = concat_strings(glyphs_utf8, input_position);
-                printf("command = %s\n", command);
+                char *full_command = (char*)command;
+                /* prefix the command if a prefix was specified on commandline */
+                if (command_prefix != NULL) {
+                        if (asprintf(&full_command, "%s%s", command_prefix, command) == -1)
+                                err(EXIT_FAILURE, "asprintf() failed\n");
+                }
+                printf("command = %s\n", full_command);
 
-                ipc_send_message(sockfd, strlen((char*)command), 0, command);
+                ipc_send_message(sockfd, strlen(full_command), 0, (uint8_t*)full_command);
 
 #if 0
                 free(command);
@@ -214,19 +220,21 @@ int main(int argc, char *argv[]) {
         static struct option long_options[] = {
                 {"socket", required_argument, 0, 's'},
                 {"version", no_argument, 0, 'v'},
+                {"prefix", required_argument, 0, 'p'},
                 {"help", no_argument, 0, 'h'},
                 {0, 0, 0, 0}
         };
 
-        char *options_string = "s:t:vh";
+        char *options_string = "s:p:vh";
 
         while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
                 if (o == 's') {
                         socket_path = strdup(optarg);
-                        break;
                 } else if (o == 'v') {
                         printf("i3-input " I3_VERSION);
                         return 0;
+                } else if (o == 'p') {
+                        command_prefix = strdup(optarg);
                 } else if (o == 'h') {
                         printf("i3-input " I3_VERSION);
                         printf("i3-input [-s <socket>] [-p <prefix>]\n");
