@@ -19,6 +19,8 @@ all: src/cfgparse.y.o src/cfgparse.yy.o ${FILES}
 	echo ""
 	echo "SUBDIR i3-msg"
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg
+	echo "SUBDIR i3-input"
+	$(MAKE) TOPDIR=$(TOPDIR) -C i3-input
 
 src/cfgparse.yy.o: src/cfgparse.l
 	echo "LEX $<"
@@ -39,13 +41,14 @@ install: all
 	test -e $(DESTDIR)/etc/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)/etc/i3/config
 	$(INSTALL) -m 0644 i3.desktop $(DESTDIR)/usr/share/xsessions/
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg install
+	$(MAKE) TOPDIR=$(TOPDIR) -C i3-input install
 
 dist: distclean
 	[ ! -d i3-${VERSION} ] || rm -rf i3-${VERSION}
 	[ ! -e i3-${VERSION}.tar.bz2 ] || rm i3-${VERSION}.tar.bz2
 	mkdir i3-${VERSION}
 	cp DEPENDS GOALS LICENSE PACKAGE-MAINTAINER TODO RELEASE-NOTES-${VERSION} i3.config i3.desktop pseudo-doc.doxygen Makefile i3-${VERSION}
-	cp -r src i3-msg include man i3-${VERSION}
+	cp -r src i3-msg i3-input include man i3-${VERSION}
 	# Only copy toplevel documentation (important stuff)
 	mkdir i3-${VERSION}/docs
 	find docs -maxdepth 1 -type f ! -name "*.xcf" -exec cp '{}' i3-${VERSION}/docs \;
@@ -62,7 +65,9 @@ clean:
 	$(MAKE) -C docs clean
 	$(MAKE) -C man clean
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg clean
+	$(MAKE) TOPDIR=$(TOPDIR) -C i3-input clean
 
 distclean: clean
 	rm -f i3
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg distclean
+	$(MAKE) TOPDIR=$(TOPDIR) -C i3-input distclean
