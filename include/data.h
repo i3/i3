@@ -436,8 +436,8 @@ struct Client {
 };
 
 /**
- * A container is either in default or stacking mode. It sits inside each cell
- * of the table.
+ * A container is either in default, stacking or tabbed mode. There is one for
+ * each cell of the table.
  *
  */
 struct Container {
@@ -466,6 +466,15 @@ struct Container {
         /* Ensure MODE_DEFAULT maps to 0 because we use calloc for
          * initialization later */
         enum { MODE_DEFAULT = 0, MODE_STACK, MODE_TABBED } mode;
+
+        /* When in stacking, one can either have unlimited windows inside the
+         * container or set a limit for the rows or columns the stack window
+         * should display to use the screen more efficiently. */
+        enum { STACK_LIMIT_NONE = 0, STACK_LIMIT_COLS, STACK_LIMIT_ROWS } stack_limit;
+
+        /* The number of columns or rows to limit to, see stack_limit */
+        int stack_limit_value;
+
         CIRCLEQ_HEAD(client_head, Client) clients;
 };
 

@@ -391,6 +391,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 /* The size for each tab (width), necessary as a separate variable
                  * because num_clients gets fixed to 1 in tabbed mode. */
                 int size_each = (num_clients == 0 ? container->width : container->width / num_clients);
+                int stack_lines = num_clients;
 
                 /* Check if we need to remap our stack title window, it gets unmapped when the container
                    is empty in src/handlers.c:unmap_notify() */
@@ -404,15 +405,21 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         /* By setting num_clients to 1 we force that the stack window will be only one line
                          * high. The rest of the code is useful in both cases. */
                         LOG("tabbed mode, setting num_clients = 1\n");
-                        if (num_clients > 1)
-                                num_clients = 1;
+                        if (stack_lines > 1)
+                                stack_lines = 1;
+                }
+
+                if (container->stack_limit == STACK_LIMIT_COLS) {
+                        stack_lines = ceil((float)num_clients / container->stack_limit_value);
+                } else if (container->stack_limit == STACK_LIMIT_ROWS) {
+                        stack_lines = min(num_clients, container->stack_limit_value);
                 }
 
                 /* Check if we need to reconfigure our stack title window */
                 if (update_if_necessary(&(stack_win->rect.x), container->x) |
                     update_if_necessary(&(stack_win->rect.y), container->y) |
                     update_if_necessary(&(stack_win->rect.width), container->width) |
-                    update_if_necessary(&(stack_win->rect.height), decoration_height * num_clients)) {
+                    update_if_necessary(&(stack_win->rect.height), decoration_height * stack_lines)) {
 
                         /* Configuration can happen in two slightly different ways:
 
@@ -448,6 +455,22 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 /* Prepare the pixmap for usage */
                 cached_pixmap_prepare(conn, &(stack_win->pixmap));
 
+                int current_row = 0, current_col = 0;
+                int wrap = 0;
+
+                if (container->stack_limit == STACK_LIMIT_COLS) {
+                        /* wrap stores the number of rows after which we will
+                         * wrap to a new column. */
+                        wrap = ceil((float)num_clients / container->stack_limit_value);
+                } else if (container->stack_limit == STACK_LIMIT_ROWS) {
+                        /* When limiting rows, the wrap variable serves a
+                         * slightly different purpose: it holds the number of
+                         * pixels which each client will get. This is constant
+                         * during the following loop, so it saves us some
+                         * divisions and ceil()ing. */
+                        wrap = (stack_win->rect.width / ceil((float)num_clients / container->stack_limit_value));
+                }
+
                 /* Render the decorations of all clients */
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* If the client is in fullscreen mode, it does not get reconfigured */
@@ -460,21 +483,64 @@ void render_container(xcb_connection_t *conn, Container *container) {
                          * Note the bitwise OR instead of logical OR to force evaluation of all statements */
                         if (client->force_reconfigure |
                             update_if_necessary(&(client->rect.x), container->x) |
-                            update_if_necessary(&(client->rect.y), container->y + (decoration_height * num_clients)) |
+                            update_if_necessary(&(client->rect.y), container->y + (decoration_height * stack_lines)) |
                             update_if_necessary(&(client->rect.width), container->width) |
-                            update_if_necessary(&(client->rect.height), container->height - (decoration_height * num_clients)))
+                            update_if_necessary(&(client->rect.height), container->height - (decoration_height * stack_lines)))
                                 resize_client(conn, client);
 
                         client->force_reconfigure = false;
 
                         int offset_x = 0;
                         int offset_y = 0;
-                        if (container->mode == MODE_STACK)
-                                offset_y = current_client++ * decoration_height;
-                        else if (container->mode == MODE_TABBED)
+                        if (container->mode == MODE_STACK) {
+                                if (container->stack_limit == STACK_LIMIT_COLS) {
+                                        offset_x = current_col * (stack_win->rect.width / container->stack_limit_value);
+                                        offset_y = current_row * decoration_height;
+                                        current_row++;
+                                        if ((current_row % wrap) == 0) {
+                                                current_col++;
+                                                current_row = 0;
+                                        }
+                                } else if (container->stack_limit == STACK_LIMIT_ROWS) {
+                                        offset_x = current_col * wrap;
+                                        offset_y = current_row * decoration_height;
+                                        current_row++;
+                                        if ((current_row % container->stack_limit_value) == 0) {
+                                                current_col++;
+                                                current_row = 0;
+                                        }
+                                } else {
+                                        offset_y = current_client * decoration_height;
+                                }
+                                current_client++;
+                        } else if (container->mode == MODE_TABBED)
                                 offset_x = current_client++ * size_each;
                         decorate_window(conn, client, stack_win->pixmap.id, stack_win->pixmap.gc,
                                         offset_x, offset_y);
+                }
+
+                /* Check if we need to fill one column because of an uneven
+                 * amount of windows */
+                if (container->mode == MODE_STACK) {
+                        if (container->stack_limit == STACK_LIMIT_COLS && (current_col % 2) != 0) {
+                                xcb_change_gc_single(conn, stack_win->pixmap.gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+
+                                int offset_x = current_col * (stack_win->rect.width / container->stack_limit_value);
+                                int offset_y = current_row * decoration_height;
+                                xcb_rectangle_t rect = {offset_x, offset_y,
+                                                        offset_x + container->width,
+                                                        offset_y + decoration_height };
+                                xcb_poly_fill_rectangle(conn, stack_win->pixmap.id, stack_win->pixmap.gc, 1, &rect);
+                        } else if (container->stack_limit == STACK_LIMIT_ROWS && (current_row % 2) != 0) {
+                                xcb_change_gc_single(conn, stack_win->pixmap.gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+
+                                int offset_x = current_col * wrap;
+                                int offset_y = current_row * decoration_height;
+                                xcb_rectangle_t rect = {offset_x, offset_y,
+                                                        offset_x + container->width,
+                                                        offset_y + decoration_height };
+                                xcb_poly_fill_rectangle(conn, stack_win->pixmap.id, stack_win->pixmap.gc, 1, &rect);
+                        }
                 }
 
                 xcb_copy_area(conn, stack_win->pixmap.id, stack_win->window, stack_win->pixmap.gc,

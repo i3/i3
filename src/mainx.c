@@ -39,6 +39,7 @@
 #include "data.h"
 #include "debug.h"
 #include "handlers.h"
+#include "click.h"
 #include "i3.h"
 #include "layout.h"
 #include "queue.h"

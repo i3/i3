@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_atom.h>
@@ -36,6 +37,19 @@
 #include "floating.h"
 #include "resize.h"
 
+static struct Stack_Window *get_stack_window(xcb_window_t window_id) {
+        struct Stack_Window *current;
+
+        SLIST_FOREACH(current, &stack_wins, stack_windows) {
+                if (current->window != window_id)
+                        continue;
+
+                return current;
+        }
+
+        return NULL;
+}
+
 /*
  * Checks if the button press was on a stack window, handles focus setting and returns true
  * if so, or false otherwise.
@@ -43,45 +57,60 @@
  */
 static bool button_press_stackwin(xcb_connection_t *conn, xcb_button_press_event_t *event) {
         struct Stack_Window *stack_win;
-        SLIST_FOREACH(stack_win, &stack_wins, stack_windows) {
-                if (stack_win->window != event->event)
-                        continue;
 
-                /* A stack window was clicked, we check if it was button4 or button5
-                   which are scroll up / scroll down. */
-                if (event->detail == XCB_BUTTON_INDEX_4 || event->detail == XCB_BUTTON_INDEX_5) {
-                        direction_t direction = (event->detail == XCB_BUTTON_INDEX_4 ? D_UP : D_DOWN);
-                        focus_window_in_container(conn, CUR_CELL, direction);
-                        return true;
-                }
+        /* If we find a corresponding stack window, we can handle the event */
+        if ((stack_win = get_stack_window(event->event)) == NULL)
+                return false;
 
-                /* It was no scrolling, so we calculate the destination client by
-                   dividing the Y position of the event through the height of a window
-                   decoration and then set the focus to this client. */
-                i3Font *font = load_font(conn, config.font);
-                int decoration_height = (font->height + 2 + 2);
-                int destination = (event->event_y / decoration_height),
-                    c = 0,
-                    num_clients = 0;
-                Client *client;
-
-                CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
-                        num_clients++;
-
-                if (stack_win->container->mode == MODE_TABBED)
-                        destination = (event->event_x / (stack_win->container->width / num_clients));
-
-                LOG("Click on stack_win for client %d\n", destination);
-                CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
-                        if (c++ == destination) {
-                                set_focus(conn, client, true);
-                                return true;
-                        }
-
+        /* A stack window was clicked, we check if it was button4 or button5
+           which are scroll up / scroll down. */
+        if (event->detail == XCB_BUTTON_INDEX_4 || event->detail == XCB_BUTTON_INDEX_5) {
+                direction_t direction = (event->detail == XCB_BUTTON_INDEX_4 ? D_UP : D_DOWN);
+                focus_window_in_container(conn, CUR_CELL, direction);
                 return true;
         }
 
-        return false;
+        /* It was no scrolling, so we calculate the destination client by
+           dividing the Y position of the event through the height of a window
+           decoration and then set the focus to this client. */
+        i3Font *font = load_font(conn, config.font);
+        int decoration_height = (font->height + 2 + 2);
+        int destination = (event->event_y / decoration_height),
+            c = 0,
+            num_clients = 0;
+        Client *client;
+        Container *container = stack_win->container;
+
+        CIRCLEQ_FOREACH(client, &(container->clients), clients)
+                num_clients++;
+
+        if (container->mode == MODE_TABBED)
+                destination = (event->event_x / (container->width / num_clients));
+        else if (container->mode == MODE_STACK &&
+                 container->stack_limit != STACK_LIMIT_NONE) {
+                if (container->stack_limit == STACK_LIMIT_COLS) {
+                        int wrap = ceil((float)num_clients / container->stack_limit_value);
+                        int clicked_column = (event->event_x / (stack_win->rect.width / container->stack_limit_value));
+                        int clicked_row = (event->event_y / decoration_height);
+                        LOG("clicked on column %d, row %d\n", clicked_column, clicked_row);
+                        destination = (wrap * clicked_column) + clicked_row;
+                } else {
+                        int width = (stack_win->rect.width / ceil((float)num_clients / container->stack_limit_value));
+                        int clicked_column = (event->event_x / width);
+                        int clicked_row = (event->event_y / decoration_height);
+                        LOG("clicked on column %d, row %d\n", clicked_column, clicked_row);
+                        destination = (container->stack_limit_value * clicked_column) + clicked_row;
+                }
+        }
+
+        LOG("Click on stack_win for client %d\n", destination);
+        CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
+                if (c++ == destination) {
+                        set_focus(conn, client, true);
+                        return true;
+                }
+
+        return true;
 }
 
 /*

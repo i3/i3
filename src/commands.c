@@ -865,6 +865,30 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
+        if (STARTS_WITH(command, "stack-limit ")) {
+                if (last_focused == NULL || client_is_floating(last_focused)) {
+                        LOG("No container focused\n");
+                        return;
+                }
+                const char *rest = command + strlen("stack-limit ");
+                if (strncmp(rest, "rows ", strlen("rows ")) == 0) {
+                        last_focused->container->stack_limit = STACK_LIMIT_ROWS;
+                        rest += strlen("rows ");
+                } else if (strncmp(rest, "cols ", strlen("cols ")) == 0) {
+                        last_focused->container->stack_limit = STACK_LIMIT_COLS;
+                        rest += strlen("cols ");
+                } else {
+                        LOG("Syntax: stack-limit <cols|rows> <limit>\n");
+                        return;
+                }
+
+                last_focused->container->stack_limit_value = atoi(rest);
+                if (last_focused->container->stack_limit_value == 0)
+                        last_focused->container->stack_limit = STACK_LIMIT_NONE;
+
+                return;
+        }
+
         /* Is it an <exit>? */
         if (STARTS_WITH(command, "exit")) {
                 LOG("User issued exit-command, exiting without error.\n");
