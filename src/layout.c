@@ -638,13 +638,6 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
                                 single_height = container->height;
                 }
 
-
-                //if (container->height_factor == 0)
-                        //container->height = (height / r_ws->rows);
-                //else container->height = get_unoccupied_y(r_ws, cols) * container->height_factor;
-                //single_height = container->height;
-                //container->height *= container->rowspan;
-
                 /* Render the container if it is not empty */
                 render_container(conn, container);
 
