@@ -36,12 +36,19 @@
 int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, int second,
                              resize_orientation_t orientation, xcb_button_press_event_t *event) {
         int new_position;
-        xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
         i3Screen *screen = get_screen_containing(event->root_x, event->root_y);
         if (screen == NULL) {
                 LOG("BUG: No screen found at this position (%d, %d)\n", event->root_x, event->root_y);
                 return 1;
         }
+
+        /* We cannot use the X root window's width_in_pixels or height_in_pixels
+         * attributes here since they are not updated when you configure new
+         * screens during runtime. Instead, we just use the most right and most
+         * bottom Xinerama screen and use their position + width/height to get
+         * the area of pixels currently in use */
+        i3Screen *most_right = get_screen_most(D_RIGHT, screen),
+                 *most_bottom = get_screen_most(D_DOWN, screen);
 
         LOG("event->event_x = %d, event->root_x = %d\n", event->event_x, event->root_x);
 
@@ -62,7 +69,10 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
 
         /* Open a new window, the resizebar. Grab the pointer and move the window around
            as the user moves the pointer. */
-        Rect grabrect = {0, 0, root_screen->width_in_pixels, root_screen->height_in_pixels};
+        Rect grabrect = {0,
+                         0,
+                         most_right->rect.x + most_right->rect.width,
+                         most_bottom->rect.x + most_bottom->rect.height};
         xcb_window_t grabwin = create_window(conn, grabrect, XCB_WINDOW_CLASS_INPUT_ONLY, -1, true, mask, values);
 
         Rect helprect;
@@ -73,9 +83,9 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
                 helprect.height = screen->rect.height;
                 new_position = event->root_x;
         } else {
-                helprect.x = 0;
+                helprect.x = screen->rect.x;
                 helprect.y = event->root_y;
-                helprect.width = root_screen->width_in_pixels;
+                helprect.width = screen->rect.width;
                 helprect.height = 2;
                 new_position = event->root_y;
         }
