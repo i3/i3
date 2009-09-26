@@ -26,6 +26,10 @@
 #include "table.h"
 #include "workspace.h"
 
+/* prototype for src/cfgparse.y, will be cleaned up as soon as we completely
+ * switched to the new scanner/parser. */
+void parse_file(const char *f);
+
 Config config;
 
 bool config_use_lexer = false;

@@ -1,5 +1,6 @@
 %{
 #include <stdio.h>
+#include <string.h>
 #include "cfgparse.tab.h"
 #include <xcb/xcb.h>
 

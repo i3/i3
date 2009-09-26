@@ -15,6 +15,8 @@
 #include "util.h"
 #include "queue.h"
 #include "table.h"
+#include "workspace.h"
+#include "xcb.h"
 
 extern int yylex(void);
 extern FILE *yyin;
