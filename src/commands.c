@@ -29,6 +29,7 @@
 #include "config.h"
 #include "workspace.h"
 #include "commands.h"
+#include "resize.h"
 
 bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction) {
         /* If this container is empty, we’re done */
@@ -810,6 +811,55 @@ static void next_previous_workspace(xcb_connection_t *conn, int direction) {
                 workspace_show(conn, i+1);
 }
 
+static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, const char *command) {
+        int first, second;
+        resize_orientation_t orientation = O_VERTICAL;
+        Container *con = last_focused->container;
+
+        if (STARTS_WITH(command, "left")) {
+                if (con->col == 0)
+                        return;
+                first = con->col - 1;
+                second = con->col;
+                command += strlen("left");
+        } else if (STARTS_WITH(command, "right")) {
+                first = con->col + (con->colspan - 1);
+                LOG("column %d\n", first);
+
+                if (!cell_exists(first, con->row) ||
+                    (first == (con->workspace->cols-1)))
+                        return;
+
+                second = first + 1;
+                command += strlen("right");
+        } else if (STARTS_WITH(command, "top")) {
+                if (con->row == 0)
+                        return;
+                first = con->row - 1;
+                second = con->row;
+                orientation = O_HORIZONTAL;
+                command += strlen("top");
+        } else if (STARTS_WITH(command, "bottom")) {
+                first = con->row + (con->rowspan - 1);
+                if (!cell_exists(con->col, first) ||
+                    (first == (con->workspace->rows-1)))
+                        return;
+
+                second = first + 1;
+                orientation = O_HORIZONTAL;
+                command += strlen("bottom");
+        } else {
+                LOG("Syntax: resize <left|right|up|down> [+|-]<pixels>\n");
+                return;
+        }
+
+        int pixels = atoi(command);
+        if (pixels == 0)
+                return;
+
+        resize_container(conn, con->workspace, first, second, orientation, pixels);
+}
+
 /*
  * Parses a command, see file CMDMODE for more information
  *
@@ -886,6 +936,14 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 if (last_focused->container->stack_limit_value == 0)
                         last_focused->container->stack_limit = STACK_LIMIT_NONE;
 
+                return;
+        }
+
+        if (STARTS_WITH(command, "resize ")) {
+                if (last_focused == NULL)
+                        return;
+                const char *rest = command + strlen("resize ");
+                parse_resize_command(conn, last_focused, rest);
                 return;
         }
 

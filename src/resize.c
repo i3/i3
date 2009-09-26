@@ -126,14 +126,26 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
         xcb_destroy_window(conn, grabwin);
         xcb_flush(conn);
 
+        int pixels;
+        if (orientation == O_VERTICAL)
+                pixels = (new_position - event->root_x);
+        else pixels = (new_position - event->root_y);
+        resize_container(conn, ws, first, second, orientation, pixels);
+
+        return 1;
+}
+
+/*
+ * Resizes a column/row by the given amount of pixels. Called by
+ * resize_graphical_handler (the user clicked) or parse_resize_command (the
+ * user issued the command)
+ *
+ */
+void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int second,
+                      resize_orientation_t orientation, int pixels) {
+
         /* TODO: refactor this, both blocks are very identical */
         if (orientation == O_VERTICAL) {
-                LOG("Resize was from X = %d to X = %d\n", event->root_x, new_position);
-                if (event->root_x == new_position) {
-                        LOG("Nothing changed, not updating anything\n");
-                        return 1;
-                }
-
                 int default_width = ws->rect.width / ws->cols;
                 int old_unoccupied_x = get_unoccupied_x(ws);
 
@@ -174,8 +186,8 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
 
                 LOG("middle = %f\n", ws->width_factor[first]);
                 int old_width = ws->width_factor[first] * old_unoccupied_x;
-                LOG("first->width = %d, new_position = %d, event->root_x = %d\n", old_width, new_position, event->root_x);
-                ws->width_factor[first] *= (float)(old_width + (new_position - event->root_x)) / old_width;
+                LOG("first->width = %d, pixels = %d\n", pixels);
+                ws->width_factor[first] *= (float)(old_width + pixels) / old_width;
                 LOG("-> %f\n", ws->width_factor[first]);
 
 
@@ -184,20 +196,14 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
                         ws->width_factor[second] = ((float)ws->rect.width / ws->cols) / new_unoccupied_x;
                 LOG("middle = %f\n", ws->width_factor[second]);
                 old_width = ws->width_factor[second] * old_unoccupied_x;
-                LOG("second->width = %d, new_position = %d, event->root_x = %d\n", old_width, new_position, event->root_x);
-                ws->width_factor[second] *= (float)(old_width - (new_position - event->root_x)) / old_width;
+                LOG("second->width = %d, pixels = %d\n", pixels);
+                ws->width_factor[second] *= (float)(old_width - pixels) / old_width;
                 LOG("-> %f\n", ws->width_factor[second]);
 
                 LOG("new unoccupied_x = %d\n", get_unoccupied_x(ws));
 
                 LOG("\n\n\n");
         } else {
-                LOG("Resize was from X = %d to X = %d\n", event->root_y, new_position);
-                if (event->root_y == new_position) {
-                        LOG("Nothing changed, not updating anything\n");
-                        return 1;
-                }
-
                 int default_height = ws->rect.height / ws->rows;
                 int old_unoccupied_y = get_unoccupied_y(ws);
 
@@ -238,8 +244,8 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
 
                 LOG("middle = %f\n", ws->height_factor[first]);
                 int old_height = ws->height_factor[first] * old_unoccupied_y;
-                LOG("first->width = %d, new_position = %d, event->root_x = %d\n", old_height, new_position, event->root_y);
-                ws->height_factor[first] *= (float)(old_height + (new_position - event->root_y)) / old_height;
+                LOG("first->width = %d, pixels = %d\n", pixels);
+                ws->height_factor[first] *= (float)(old_height + pixels) / old_height;
                 LOG("-> %f\n", ws->height_factor[first]);
 
 
@@ -248,8 +254,8 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
                         ws->height_factor[second] = ((float)ws->rect.height / ws->rows) / new_unoccupied_y;
                 LOG("middle = %f\n", ws->height_factor[second]);
                 old_height = ws->height_factor[second] * old_unoccupied_y;
-                LOG("second->width = %d, new_position = %d, event->root_x = %d\n", old_height, new_position, event->root_y);
-                ws->height_factor[second] *= (float)(old_height - (new_position - event->root_y)) / old_height;
+                LOG("second->width = %d, pixels = %d\n", pixels);
+                ws->height_factor[second] *= (float)(old_height - pixels) / old_height;
                 LOG("-> %f\n", ws->height_factor[second]);
 
                 LOG("new unoccupied_y = %d\n", get_unoccupied_y(ws));
@@ -258,6 +264,4 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
         }
 
         render_layout(conn);
-
-        return 1;
 }
