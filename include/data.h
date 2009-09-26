@@ -352,6 +352,9 @@ struct Client {
         int base_height;
         int base_width;
 
+        /** The amount of pixels which X will draw around the client. */
+        int border_width;
+
         /** contains the minimum increment size as specified for the window
          * (in pixels). */
         int width_increment;

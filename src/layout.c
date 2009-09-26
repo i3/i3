@@ -295,6 +295,9 @@ void resize_client(xcb_connection_t *conn, Client *client) {
                         break;
         }
 
+        rect->width -= (2 * client->border_width);
+        rect->height -= (2 * client->border_width);
+
         /* Obey the ratio, if any */
         if (client->proportional_height != 0 &&
             client->proportional_width != 0) {

@@ -99,7 +99,8 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
 
         /* Reparent the window and add it to our list of managed windows */
         reparent_window(conn, window, attr->visual, geom->root, geom->depth,
-                        geom->x, geom->y, geom->width, geom->height);
+                        geom->x, geom->y, geom->width, geom->height,
+                        geom->border_width);
 
         /* Generate callback events for every property we watch */
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_CLASS);
@@ -125,7 +126,8 @@ out:
  */
 void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                      xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
-                     int16_t x, int16_t y, uint16_t width, uint16_t height) {
+                     int16_t x, int16_t y, uint16_t width, uint16_t height,
+                     uint32_t border_width) {
 
         xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
                                   utf8_title_cookie, title_cookie,
@@ -175,6 +177,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         new->rect.height = height;
         new->width_increment = 1;
         new->height_increment = 1;
+        new->border_width = border_width;
         /* Pre-initialize the values for floating */
         new->floating_rect.x = -1;
         new->floating_rect.width = width;

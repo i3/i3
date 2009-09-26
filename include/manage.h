@@ -42,6 +42,7 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
  */
 void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                      xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
-                     int16_t x, int16_t y, uint16_t width, uint16_t height);
+                     int16_t x, int16_t y, uint16_t width, uint16_t height,
+                     uint32_t border_width);
 
 #endif
