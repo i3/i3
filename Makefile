@@ -24,12 +24,12 @@ all: src/cfgparse.y.o src/cfgparse.yy.o ${FILES}
 
 src/cfgparse.yy.o: src/cfgparse.l
 	echo "LEX $<"
-	lex -i -o $(@:.o=.c) $<
+	flex -i -o$(@:.o=.c) $<
 	$(CC) $(CFLAGS) -c -o $@ $(@:.o=.c)
 
 src/cfgparse.y.o: src/cfgparse.y
 	echo "YACC $<"
-	yacc --debug --verbose -b $(basename $< .y) -d $<
+	bison --debug --verbose -b $(basename $< .y) -d $<
 	$(CC) $(CFLAGS) -c -o $@ $(<:.y=.tab.c)
 
 install: all
