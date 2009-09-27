@@ -36,6 +36,7 @@ font                            { BEGIN(BIND_AWS_COND); return TOKFONT; }
 assign                          { BEGIN(ASSIGN_COND); return TOKASSIGN; }
 set[^\n]*                       { return TOKCOMMENT; }
 ipc-socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
+ipc_socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
 exec                            { BEGIN(BIND_AWS_COND); return TOKEXEC; }
 client.focused                  { BEGIN(COLOR_COND); yylval.color = &config.client.focused; return TOKCOLOR; }
 client.focused_inactive         { BEGIN(COLOR_COND); yylval.color = &config.client.focused_inactive; return TOKCOLOR; }
