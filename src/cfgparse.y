@@ -313,22 +313,23 @@ workspace:
         TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKSCREEN WHITESPACE screen workspace_name
         {
                 int ws_num = $<number>3;
-                if (ws_num < 1 || ws_num > 10) {
+                if (ws_num < 1) {
                         LOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
-                        workspaces[ws_num - 1].preferred_screen = sstrdup($<string>7);
+                        Workspace *ws = workspace_get(ws_num - 1);
+                        ws->preferred_screen = sstrdup($<string>7);
                         if ($<string>8 != NULL)
-                                workspace_set_name(&(workspaces[ws_num - 1]), $<string>8);
+                                workspace_set_name(ws, $<string>8);
                 }
         }
         | TOKWORKSPACE WHITESPACE NUMBER workspace_name
         {
                 int ws_num = $<number>3;
-                if (ws_num < 1 || ws_num > 10) {
+                if (ws_num < 1) {
                         LOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
                         if ($<string>4 != NULL)
-                                        workspace_set_name(&(workspaces[ws_num - 1]), $<string>4);
+                                workspace_set_name(workspace_get(ws_num - 1), $<string>4);
                 }
         }
         ;
