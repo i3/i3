@@ -303,7 +303,6 @@ void workspace_initialize(Workspace *ws, i3Screen *screen) {
         if (ws->preferred_screen == NULL ||
             (ws->screen = get_screen_from_preference(virtual_screens, ws->preferred_screen)) == NULL)
                 ws->screen = screen;
-        else { LOG("yay, found assignment\n"); }
 
         /* Copy the dimensions from the virtual screen */
         memcpy(&(ws->rect), &(ws->screen->rect), sizeof(Rect));
