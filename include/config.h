@@ -21,6 +21,7 @@
 typedef struct Config Config;
 extern Config config;
 extern bool config_use_lexer;
+extern SLIST_HEAD(modes_head, Mode) modes;
 
 /**
  * Part of the struct Config. It makes sense to group colors for background,
@@ -44,6 +45,19 @@ struct Variable {
         char *next_match;
 
         SLIST_ENTRY(Variable) variables;
+};
+
+/**
+ * The configuration file can contain multiple sets of bindings. Apart from the
+ * default set (name == "default"), you can specify other sets and change the
+ * currently active set of bindings by using the "mode <name>" command.
+ *
+ */
+struct Mode {
+        char *name;
+        struct bindings_head *bindings;
+
+        SLIST_ENTRY(Mode) modes;
 };
 
 /**
@@ -96,5 +110,11 @@ void ungrab_all_keys(xcb_connection_t *conn);
  *
  */
 void grab_all_keys(xcb_connection_t *conn);
+
+/**
+ * Switches the key bindings to the given mode, if the mode exists
+ *
+ */
+void switch_mode(xcb_connection_t *conn, const char *new_mode);
 
 #endif

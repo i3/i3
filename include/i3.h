@@ -27,7 +27,7 @@ extern xcb_connection_t *global_conn;
 extern xcb_key_symbols_t *keysyms;
 extern char **start_argv;
 extern Display *xkbdpy;
-extern TAILQ_HEAD(bindings_head, Binding) bindings;
+extern TAILQ_HEAD(bindings_head, Binding) *bindings;
 extern TAILQ_HEAD(autostarts_head, Autostart) autostarts;
 extern TAILQ_HEAD(assignments_head, Assignment) assignments;
 extern SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins;

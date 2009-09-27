@@ -31,6 +31,7 @@
 void parse_file(const char *f);
 
 Config config;
+struct modes_head modes;
 
 bool config_use_lexer = false;
 
@@ -99,7 +100,7 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
  */
 void grab_all_keys(xcb_connection_t *conn) {
         Binding *bind;
-        TAILQ_FOREACH(bind, &bindings, bindings) {
+        TAILQ_FOREACH(bind, bindings, bindings) {
                 /* The easy case: the user specified a keycode directly. */
                 if (bind->keycode > 0) {
                         grab_keycode_for_binding(conn, bind, bind->keycode);
@@ -138,6 +139,28 @@ void grab_all_keys(xcb_connection_t *conn) {
 }
 
 /*
+ * Switches the key bindings to the given mode, if the mode exists
+ *
+ */
+void switch_mode(xcb_connection_t *conn, const char *new_mode) {
+        struct Mode *mode;
+
+        LOG("Switching to mode %s\n", new_mode);
+
+        SLIST_FOREACH(mode, &modes, modes) {
+                if (strcasecmp(mode->name, new_mode) != 0)
+                        continue;
+
+                ungrab_all_keys(conn);
+                bindings = mode->bindings;
+                grab_all_keys(conn);
+                return;
+        }
+
+        LOG("ERROR: Mode not found\n");
+}
+
+/*
  * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
  *
  * If you specify override_configpath, only this path is used to look for a
@@ -149,13 +172,22 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 /* First ungrab the keys */
                 ungrab_all_keys(conn);
 
-                /* Clear the old binding and assignment lists */
+                struct Mode *mode;
                 Binding *bind;
-                while (!TAILQ_EMPTY(&bindings)) {
-                        bind = TAILQ_FIRST(&bindings);
-                        TAILQ_REMOVE(&bindings, bind, bindings);
-                        FREE(bind->command);
-                        FREE(bind);
+                while (!SLIST_EMPTY(&modes)) {
+                        mode = SLIST_FIRST(&modes);
+                        FREE(mode->name);
+
+                        /* Clear the old binding list */
+                        bindings = mode->bindings;
+                        while (!TAILQ_EMPTY(bindings)) {
+                                bind = TAILQ_FIRST(bindings);
+                                TAILQ_REMOVE(bindings, bind, bindings);
+                                FREE(bind->command);
+                                FREE(bind);
+                        }
+                        FREE(bindings);
+                        SLIST_REMOVE(&modes, mode, Mode, modes);
                 }
 
                 struct Assignment *assign;
@@ -166,6 +198,16 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         FREE(assign);
                 }
         }
+
+        SLIST_INIT(&modes);
+
+        struct Mode *default_mode = scalloc(sizeof(struct Mode));
+        default_mode->name = sstrdup("default");
+        default_mode->bindings = scalloc(sizeof(struct bindings_head));
+        TAILQ_INIT(default_mode->bindings);
+        SLIST_INSERT_HEAD(&modes, default_mode, modes);
+
+        bindings = default_mode->bindings;
 
         SLIST_HEAD(variables_head, Variable) variables;
 
@@ -364,7 +406,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         LOG("keycode = %d, symbol = %s, modifiers = %d, command = *%s*\n", new->keycode, new->symbol, modifiers, rest);
                         new->mods = modifiers;
                         new->command = sstrdup(rest);
-                        TAILQ_INSERT_TAIL(&bindings, new, bindings);
+                        TAILQ_INSERT_TAIL(bindings, new, bindings);
                         continue;
                 }
 

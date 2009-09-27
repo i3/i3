@@ -948,6 +948,12 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
+        if (STARTS_WITH(command, "mode ")) {
+                const char *rest = command + strlen("mode ");
+                switch_mode(conn, rest);
+                return;
+        }
+
         /* Is it an <exit>? */
         if (STARTS_WITH(command, "exit")) {
                 LOG("User issued exit-command, exiting without error.\n");

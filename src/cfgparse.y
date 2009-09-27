@@ -222,7 +222,7 @@ command:
 bindline:
         binding
         {
-                TAILQ_INSERT_TAIL(&bindings, $<binding>1, bindings);
+                TAILQ_INSERT_TAIL(bindings, $<binding>1, bindings);
         }
         ;
 
@@ -262,8 +262,23 @@ bindsym:
 mode:
         TOKMODE WHITESPACE QUOTEDSTRING WHITESPACE '{' modelines '}'
         {
+                if (strcasecmp($<string>3, "default") == 0) {
+                        printf("You cannot use the name \"default\" for your mode\n");
+                        exit(1);
+                }
                 printf("\t now in mode %s\n", $<string>3);
                 printf("\t current bindings = %p\n", current_bindings);
+                Binding *binding;
+                TAILQ_FOREACH(binding, current_bindings, bindings) {
+                        printf("got binding on mods %d, keycode %d, symbol %s, command %s\n",
+                                        binding->mods, binding->keycode, binding->symbol, binding->command);
+                }
+
+                struct Mode *mode = scalloc(sizeof(struct Mode));
+                mode->name = strdup($<string>3);
+                mode->bindings = current_bindings;
+                current_bindings = NULL;
+                SLIST_INSERT_HEAD(&modes, mode, modes);
         }
         ;
 

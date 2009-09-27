@@ -61,7 +61,7 @@ Display *xkbdpy;
 xcb_key_symbols_t *keysyms;
 
 /* The list of key bindings */
-struct bindings_head bindings = TAILQ_HEAD_INITIALIZER(bindings);
+struct bindings_head *bindings;
 
 /* The list of exec-lines */
 struct autostarts_head autostarts = TAILQ_HEAD_INITIALIZER(autostarts);

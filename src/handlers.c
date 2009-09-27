@@ -116,7 +116,7 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
 
         /* Find the binding */
         Binding *bind;
-        TAILQ_FOREACH(bind, &bindings, bindings) {
+        TAILQ_FOREACH(bind, bindings, bindings) {
                 /* First compare the modifiers */
                 if (bind->mods != state_filtered)
                         continue;
@@ -137,7 +137,7 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
 
         /* No match? Then it was an actively grabbed key, that is with Mode_switch, and
            the user did not press Mode_switch, so just pass it… */
-        if (bind == TAILQ_END(&bindings)) {
+        if (bind == TAILQ_END(bindings)) {
                 xcb_allow_events(conn, ReplayKeyboard, event->time);
                 xcb_flush(conn);
                 return 1;
