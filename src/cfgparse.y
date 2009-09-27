@@ -1,4 +1,8 @@
 %{
+/*
+ * vim:ts=8:expandtab
+ *
+ */
 #include <stdio.h>
 #include <string.h>
 #include <xcb/xcb.h>
