@@ -189,6 +189,9 @@ void parse_file(const char *f) {
 %token TOKCOLOR
 %token TOKARROW
 %token TOKMODE
+%token TOKNEWCONTAINER
+%token TOKCONTAINERMODE
+%token TOKSTACKLIMIT
 
 %%
 
@@ -201,6 +204,7 @@ line:
         bindline
         | mode
         | floating_modifier
+        | new_container
         | workspace
         | assign
         | ipcsocket
@@ -306,6 +310,45 @@ floating_modifier:
         {
                 LOG("floating modifier = %d\n", $<number>3);
                 config.floating_modifier = $<number>3;
+        }
+        ;
+
+new_container:
+        TOKNEWCONTAINER WHITESPACE TOKCONTAINERMODE
+        {
+                LOG("new containers will be in mode %d\n", $<number>3);
+                config.container_mode = $<number>3;
+
+                /* We also need to change the layout of the already existing
+                 * workspaces here. Workspaces may exist at this point because
+                 * of the other directives which are modifying workspaces
+                 * (setting the preferred screen or name). While the workspace
+                 * objects are already created, they have never been used.
+                 * Thus, the user very likely awaits the default container mode
+                 * to trigger in this case, regardless of where it is inside
+                 * his configuration file. */
+                for (int c = 0; c < num_workspaces; c++) {
+                        if (workspaces[c].table == NULL)
+                                continue;
+                        switch_layout_mode(global_conn,
+                                           workspaces[c].table[0][0],
+                                           config.container_mode);
+                }
+        }
+        | TOKNEWCONTAINER WHITESPACE TOKSTACKLIMIT WHITESPACE TOKSTACKLIMIT WHITESPACE NUMBER
+        {
+                LOG("stack-limit %d with val %d\n", $<number>5, $<number>7);
+                config.container_stack_limit = $<number>5;
+                config.container_stack_limit_value = $<number>7;
+
+                /* See the comment above */
+                for (int c = 0; c < num_workspaces; c++) {
+                        if (workspaces[c].table == NULL)
+                                continue;
+                        Container *con = workspaces[c].table[0][0];
+                        con->stack_limit = config.container_stack_limit;
+                        con->stack_limit_value = config.container_stack_limit_value;
+                }
         }
         ;
 

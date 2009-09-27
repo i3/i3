@@ -206,6 +206,14 @@ int main(int argc, char *argv[], char *env[]) {
 
         load_configuration(conn, override_configpath, false);
 
+        /* Create the initial container on the first workspace. This used to
+         * be part of init_table, but since it possibly requires an X
+         * connection and a loaded configuration (default mode for new
+         * containers may be stacking, which requires a new window to be
+         * created), it had to be delayed. */
+        expand_table_cols(&(workspaces[0]));
+        expand_table_rows(&(workspaces[0]));
+
         /* Place requests for the atoms we need as soon as possible */
         #define REQUEST_ATOM(name) atom_cookies[name] = xcb_intern_atom(conn, 0, strlen(#name), #name);
 

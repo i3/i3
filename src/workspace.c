@@ -66,16 +66,14 @@ Workspace *workspace_get(int number) {
                 LOG("We need to initialize that one\n");
                 num_workspaces = number+1;
                 workspaces = realloc(workspaces, num_workspaces * sizeof(Workspace));
-                for (int c = old_num_workspaces; c < num_workspaces; c++) {
+                /* Zero out the new workspaces so that we have sane default values */
+                for (int c = old_num_workspaces; c < num_workspaces; c++)
                         memset(&workspaces[c], 0, sizeof(Workspace));
-                        workspaces[c].screen = NULL;
-                        workspaces[c].num = c;
-                        TAILQ_INIT(&(workspaces[c].floating_clients));
-                        expand_table_cols(&(workspaces[c]));
-                        expand_table_rows(&(workspaces[c]));
-                        workspace_set_name(&(workspaces[c]), NULL);
-                }
 
+                /* Immediately after the realloc(), we restore the pointers.
+                 * They may be used when initializing the new workspaces, for
+                 * example when the user configures containers to be stacking
+                 * by default, thus requiring re-rendering the layout. */
                 c_ws = workspace_get((int)c_ws);
 
                 for (int c = 0; c < old_num_workspaces; c++)
@@ -94,6 +92,15 @@ Workspace *workspace_get(int number) {
                                 }
                         }
 
+                /* Initialize the new workspaces */
+                for (int c = old_num_workspaces; c < num_workspaces; c++) {
+                        memset(&workspaces[c], 0, sizeof(Workspace));
+                        workspaces[c].num = c;
+                        TAILQ_INIT(&(workspaces[c].floating_clients));
+                        expand_table_cols(&(workspaces[c]));
+                        expand_table_rows(&(workspaces[c]));
+                        workspace_set_name(&(workspaces[c]), NULL);
+                }
 
                 LOG("done\n");
         }

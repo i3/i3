@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 #include "queue.h"
+#include "i3.h"
 
 typedef struct Config Config;
 extern Config config;
@@ -70,6 +71,10 @@ struct Config {
         const char *font;
 
         const char *ipc_socket_path;
+
+        int container_mode;
+        int container_stack_limit;
+        int container_stack_limit_value;
 
         /** The modifier which needs to be pressed in combination with your mouse
          * buttons to do things with floating windows (move, resize) */

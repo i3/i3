@@ -352,10 +352,13 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
                 if (container->mode == MODE_STACK || container->mode == MODE_TABBED)
                         goto after_stackwin;
 
-                /* When entering stacking mode, we need to open a window on which we can draw the
-                   title bars of the clients, it has height 1 because we don’t bother here with
-                   calculating the correct height - it will be adjusted when rendering anyways. */
-                Rect rect = {container->x, container->y, container->width, 1};
+                /* When entering stacking mode, we need to open a window on
+                 * which we can draw the title bars of the clients, it has
+                 * height 1 because we don’t bother here with calculating the
+                 * correct height - it will be adjusted when rendering anyways.
+                 * Also, we need to use max(width, 1) because windows cannot
+                 * be created with either width == 0 or height == 0. */
+                Rect rect = {container->x, container->y, max(container->width, 1), 1};
 
                 uint32_t mask = 0;
                 uint32_t values[2];

@@ -25,6 +25,7 @@
 #include "util.h"
 #include "i3.h"
 #include "layout.h"
+#include "config.h"
 
 int current_workspace = 0;
 int num_workspaces = 1;
@@ -45,8 +46,6 @@ void init_table() {
         workspaces[0].screen = NULL;
         workspaces[0].num = 0;
         TAILQ_INIT(&(workspaces[0].floating_clients));
-        expand_table_cols(&(workspaces[0]));
-        expand_table_rows(&(workspaces[0]));
 }
 
 static void new_container(Workspace *workspace, Container **container, int col, int row) {
@@ -58,6 +57,9 @@ static void new_container(Workspace *workspace, Container **container, int col, 
         new->col = col;
         new->row = row;
         new->workspace = workspace;
+        switch_layout_mode(global_conn, new, config.container_mode);
+        new->stack_limit = config.container_stack_limit;
+        new->stack_limit_value = config.container_stack_limit_value;
 }
 
 /*

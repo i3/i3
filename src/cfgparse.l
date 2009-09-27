@@ -37,6 +37,13 @@ assign                          { BEGIN(ASSIGN_COND); return TOKASSIGN; }
 set[^\n]*                       { return TOKCOMMENT; }
 ipc-socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
 ipc_socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
+new_container                   { return TOKNEWCONTAINER; }
+default                         { yylval.number = MODE_DEFAULT; return TOKCONTAINERMODE; }
+stacking                        { yylval.number = MODE_STACK; return TOKCONTAINERMODE; }
+tabbed                          { yylval.number = MODE_TABBED; return TOKCONTAINERMODE; }
+stack-limit                     { return TOKSTACKLIMIT; }
+cols                            { yylval.number = STACK_LIMIT_COLS; return TOKSTACKLIMIT; }
+rows                            { yylval.number = STACK_LIMIT_ROWS; return TOKSTACKLIMIT; }
 exec                            { BEGIN(BIND_AWS_COND); return TOKEXEC; }
 client.focused                  { BEGIN(COLOR_COND); yylval.color = &config.client.focused; return TOKCOLOR; }
 client.focused_inactive         { BEGIN(COLOR_COND); yylval.color = &config.client.focused_inactive; return TOKCOLOR; }

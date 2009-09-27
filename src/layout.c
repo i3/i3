@@ -732,6 +732,9 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
 void render_layout(xcb_connection_t *conn) {
         i3Screen *screen;
 
+        if (virtual_screens == NULL)
+                return;
+
         TAILQ_FOREACH(screen, virtual_screens, screens)
                 render_workspace(conn, screen, &(workspaces[screen->current_workspace]));
 
