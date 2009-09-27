@@ -263,16 +263,16 @@ workspace:
                                 workspace_set_name(&(workspaces[ws_num - 1]), $<string>8);
                 }
         }
-	| TOKWORKSPACE WHITESPACE NUMBER workspace_name
-	{
+        | TOKWORKSPACE WHITESPACE NUMBER workspace_name
+        {
                 int ws_num = $<number>3;
                 if (ws_num < 1 || ws_num > 10) {
                         LOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
-			if ($<string>4 != NULL)
-					workspace_set_name(&(workspaces[ws_num - 1]), $<string>4);
-		}
-	}
+                        if ($<string>4 != NULL)
+                                        workspace_set_name(&(workspaces[ws_num - 1]), $<string>4);
+                }
+        }
         ;
 
 workspace_name:
@@ -293,34 +293,34 @@ assign:
         {
                 printf("assignment of %s to %d\n", $<string>3, $<number>6);
 
-		struct Assignment *new = $<assignment>6;
-		new->windowclass_title = strdup($<string>3);
-		TAILQ_INSERT_TAIL(&assignments, new, assignments);
+                struct Assignment *new = $<assignment>6;
+                new->windowclass_title = strdup($<string>3);
+                TAILQ_INSERT_TAIL(&assignments, new, assignments);
         }
         ;
 
 assign_target:
-	NUMBER
-	{
-		struct Assignment *new = scalloc(sizeof(struct Assignment));
-		new->workspace = $<number>1;
-		new->floating = ASSIGN_FLOATING_NO;
-		$<assignment>$ = new;
-	}
-	| '~'
-	{
-		struct Assignment *new = scalloc(sizeof(struct Assignment));
-		new->floating = ASSIGN_FLOATING_ONLY;
-		$<assignment>$ = new;
-	}
-	| '~' NUMBER
-	{
-		struct Assignment *new = scalloc(sizeof(struct Assignment));
-		new->workspace = $<number>2;
-		new->floating = ASSIGN_FLOATING;
-		$<assignment>$ = new;
-	}
-	;
+        NUMBER
+        {
+                struct Assignment *new = scalloc(sizeof(struct Assignment));
+                new->workspace = $<number>1;
+                new->floating = ASSIGN_FLOATING_NO;
+                $<assignment>$ = new;
+        }
+        | '~'
+        {
+                struct Assignment *new = scalloc(sizeof(struct Assignment));
+                new->floating = ASSIGN_FLOATING_ONLY;
+                $<assignment>$ = new;
+        }
+        | '~' NUMBER
+        {
+                struct Assignment *new = scalloc(sizeof(struct Assignment));
+                new->workspace = $<number>2;
+                new->floating = ASSIGN_FLOATING;
+                $<assignment>$ = new;
+        }
+        ;
 
 window_class:
         QUOTEDSTRING
