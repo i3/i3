@@ -27,6 +27,12 @@
 #include "workspace.h"
 #include "client.h"
 
+/*
+ * Returns a pointer to the workspace with the given number (starting at 0),
+ * creating the workspace if necessary (by allocating the necessary amount of
+ * memory and initializing the data structures correctly).
+ *
+ */
 Workspace *workspace_get(int number) {
         if (number > (num_workspaces-1)) {
                 int old_num_workspaces = num_workspaces;

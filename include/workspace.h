@@ -16,7 +16,12 @@
 #ifndef _WORKSPACE_H
 #define _WORKSPACE_H
 
-
+/**
+ * Returns a pointer to the workspace with the given number (starting at 0),
+ * creating the workspace if necessary (by allocating the necessary amount of
+ * memory and initializing the data structures correctly).
+ *
+ */
 Workspace *workspace_get(int number);
 
 /**
