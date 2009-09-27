@@ -298,7 +298,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
         int screen_count = 0;
         /* Mark each workspace which currently is assigned to a screen, so we
          * can garbage-collect afterwards */
-        for (int c = 0; c < 10; c++)
+        for (int c = 0; c < num_workspaces; c++)
                 workspaces[c].reassigned = (workspaces[c].screen == NULL);
 
         TAILQ_FOREACH(screen, new_screens, screens) {
@@ -334,7 +334,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                         screen->dock_clients = old_screen->dock_clients;
 
                         /* Update the dimensions */
-                        for (int c = 0; c < 10; c++) {
+                        for (int c = 0; c < num_workspaces; c++) {
                                 Workspace *ws = &(workspaces[c]);
                                 if (ws->screen != old_screen)
                                         continue;
@@ -363,7 +363,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
         }
 
         /* Check for workspaces which are out of bounds */
-        for (int c = 0; c < 10; c++) {
+        for (int c = 0; c < num_workspaces; c++) {
                 if (workspaces[c].reassigned)
                         continue;
 

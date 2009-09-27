@@ -63,7 +63,7 @@ static void jump_to_mark(xcb_connection_t *conn, const char *mark) {
         Client *current;
         LOG("Jumping to \"%s\"\n", mark);
 
-        for (int c = 0; c < 10; c++)
+        for (int c = 0; c < num_workspaces; c++)
                 SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
                         if (current->mark == NULL || strcmp(current->mark, mark) != 0)
                                 continue;
@@ -165,7 +165,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                                 /* No screen found? Then wrap */
                                 screen = get_screen_most((direction == D_UP ? D_DOWN : D_UP), container->workspace->screen);
                         }
-                        t_ws = &(workspaces[screen->current_workspace]);
+                        t_ws = workspace_get(screen->current_workspace);
                         new_row = (direction == D_UP ? (t_ws->rows - 1) : 0);
                 }
 
@@ -207,7 +207,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                                 LOG("Wrapping screen around horizontally\n");
                                 screen = get_screen_most((direction == D_LEFT ? D_RIGHT : D_LEFT), container->workspace->screen);
                         }
-                        t_ws = &(workspaces[screen->current_workspace]);
+                        t_ws = workspace_get(screen->current_workspace);
                         new_col = (direction == D_LEFT ? (t_ws->cols - 1) : 0);
                 }
 
@@ -523,7 +523,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
 
 static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *client, int workspace) {
         /* t_ws (to workspace) is just a container pointer to the workspace we’re switching to */
-        Workspace *t_ws = &(workspaces[workspace-1]),
+        Workspace *t_ws = workspace_get(workspace-1),
                   *old_ws = client->workspace;
 
         LOG("moving floating\n");
@@ -578,7 +578,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         assert(container != NULL);
 
         /* t_ws (to workspace) is just a container pointer to the workspace we’re switching to */
-        Workspace *t_ws = &(workspaces[workspace-1]);
+        Workspace *t_ws = workspace_get(workspace-1);
 
         Client *current_client = container->currently_focused;
         if (current_client == NULL) {
@@ -789,10 +789,10 @@ static void next_previous_workspace(xcb_connection_t *conn, int direction) {
 
         if (direction == 'n') {
                 /* If we are on the last workspace, we cannot go any further */
-                if (c_ws->num == 9)
+                if (c_ws->num == (num_workspaces-1))
                         return;
 
-                for (i = c_ws->num + 1; i <= 9; i++) {
+                for (i = c_ws->num + 1; i < num_workspaces; i++) {
                         t_ws = &(workspaces[i]);
                         if (t_ws->screen != NULL)
                                 break;
@@ -815,6 +815,7 @@ static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, c
         int first, second;
         resize_orientation_t orientation = O_VERTICAL;
         Container *con = last_focused->container;
+        Workspace *ws = con->workspace;
 
         if (STARTS_WITH(command, "left")) {
                 if (con->col == 0)
@@ -827,7 +828,7 @@ static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, c
                 LOG("column %d\n", first);
 
                 if (!cell_exists(first, con->row) ||
-                    (first == (con->workspace->cols-1)))
+                    (first == (ws->cols-1)))
                         return;
 
                 second = first + 1;
@@ -842,7 +843,7 @@ static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, c
         } else if (STARTS_WITH(command, "bottom")) {
                 first = con->row + (con->rowspan - 1);
                 if (!cell_exists(con->col, first) ||
-                    (first == (con->workspace->rows-1)))
+                    (first == (ws->rows-1)))
                         return;
 
                 second = first + 1;
@@ -857,7 +858,7 @@ static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, c
         if (pixels == 0)
                 return;
 
-        resize_container(conn, con->workspace, first, second, orientation, pixels);
+        resize_container(conn, ws, first, second, orientation, pixels);
 }
 
 /*
@@ -1082,14 +1083,16 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         return;
                 }
 
+                Workspace *ws = last_focused->workspace;
+
                 toggle_floating_mode(conn, last_focused, false);
                 /* delete all empty columns/rows */
-                cleanup_table(conn, last_focused->workspace);
+                cleanup_table(conn, ws);
 
                 /* Fix colspan/rowspan if it’d overlap */
-                fix_colrowspan(conn, last_focused->workspace);
+                fix_colrowspan(conn, ws);
 
-                render_workspace(conn, last_focused->workspace->screen, last_focused->workspace);
+                render_workspace(conn, ws->screen, ws);
 
                 /* Re-focus the client because cleanup_table sets the focus to the last
                  * focused client inside a container only. */

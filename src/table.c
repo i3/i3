@@ -27,9 +27,10 @@
 #include "layout.h"
 
 int current_workspace = 0;
-Workspace workspaces[10];
+int num_workspaces = 1;
+Workspace *workspaces;
 /* Convenience pointer to the current workspace */
-Workspace *c_ws = &workspaces[0];
+Workspace *c_ws;
 int current_col = 0;
 int current_row = 0;
 
@@ -38,15 +39,14 @@ int current_row = 0;
  *
  */
 void init_table() {
-        memset(workspaces, 0, sizeof(workspaces));
+        workspaces = scalloc(sizeof(Workspace));
+        c_ws = workspaces;
 
-        for (int i = 0; i < 10; i++) {
-                workspaces[i].screen = NULL;
-                workspaces[i].num = i;
-                TAILQ_INIT(&(workspaces[i].floating_clients));
-                expand_table_cols(&(workspaces[i]));
-                expand_table_rows(&(workspaces[i]));
-        }
+        workspaces[0].screen = NULL;
+        workspaces[0].num = 0;
+        TAILQ_INIT(&(workspaces[0].floating_clients));
+        expand_table_cols(&(workspaces[0]));
+        expand_table_rows(&(workspaces[0]));
 }
 
 static void new_container(Workspace *workspace, Container **container, int col, int row) {

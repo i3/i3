@@ -16,6 +16,9 @@
 #ifndef _WORKSPACE_H
 #define _WORKSPACE_H
 
+
+Workspace *workspace_get(int number);
+
 /**
  * Sets the name (or just its number) for the given workspace. This has to
  * be called for every workspace as the rendering function

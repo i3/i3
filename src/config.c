@@ -418,7 +418,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                                 if ((end = strchr(screen, ' ')) != NULL)
                                         *end = '\0';
                                 LOG("Setting preferred screen for workspace %d to \"%s\"\n", ws_num, screen);
-                                workspaces[ws_num - 1].preferred_screen = screen;
+                                workspace_get(ws_num-1)->preferred_screen = screen;
 
                                 name += strlen("screen ") + strlen(screen);
                         }
@@ -484,7 +484,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         while (*target == '~')
                                 target++;
 
-                        if (atoi(target) >= 1 && atoi(target) <= 10) {
+                        if (atoi(target) >= 1) {
                                 if (new->floating == ASSIGN_FLOATING_ONLY)
                                         new->floating = ASSIGN_FLOATING;
                                 new->workspace = atoi(target);
@@ -546,7 +546,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         REQUIRED_OPTION(font);
 
         /* Set an empty name for every workspace which got no name */
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < num_workspaces; i++) {
                 Workspace *ws = &(workspaces[i]);
                 if (ws->name != NULL) {
                         /* If the font was not specified when the workspace name

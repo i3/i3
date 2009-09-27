@@ -26,6 +26,7 @@
 #include "layout.h"
 #include "client.h"
 #include "floating.h"
+#include "workspace.h"
 
 /*
  * Toggles floating mode for the given client.
@@ -43,17 +44,18 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
         if (con == NULL) {
                 LOG("This client is already in floating (container == NULL), re-inserting\n");
                 Client *next_tiling;
-                SLIST_FOREACH(next_tiling, &(client->workspace->focus_stack), focus_clients)
+                Workspace *ws = client->workspace;
+                SLIST_FOREACH(next_tiling, &(ws->focus_stack), focus_clients)
                         if (!client_is_floating(next_tiling))
                                 break;
                 /* If there are no tiling clients on this workspace, there can only be one
                  * container: the first one */
-                if (next_tiling == TAILQ_END(&(client->workspace->focus_stack)))
-                        con = client->workspace->table[0][0];
+                if (next_tiling == TAILQ_END(&(ws->focus_stack)))
+                        con = ws->table[0][0];
                 else con = next_tiling->container;
 
                 /* Remove the client from the list of floating clients */
-                TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
+                TAILQ_REMOVE(&(ws->floating_clients), client, floating_clients);
 
                 LOG("destination container = %p\n", con);
                 Client *old_focused = con->currently_focused;
@@ -139,20 +141,21 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
  *
  */
 void floating_assign_to_workspace(Client *client, Workspace *new_workspace) {
-        /* Remove from focus stack and list of floating clients */
-        SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
-        TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
+        Workspace *ws = client->workspace;
 
-        if (client->workspace->fullscreen_client == client)
-                client->workspace->fullscreen_client = NULL;
+        /* Remove from focus stack and list of floating clients */
+        SLIST_REMOVE(&(ws->focus_stack), client, Client, focus_clients);
+        TAILQ_REMOVE(&(ws->floating_clients), client, floating_clients);
+
+        if (ws->fullscreen_client == client)
+                ws->fullscreen_client = NULL;
 
         /* Insert into destination focus stack and list of floating clients */
-        client->workspace = new_workspace;
-        SLIST_INSERT_HEAD(&(client->workspace->focus_stack), client, focus_clients);
-        TAILQ_INSERT_TAIL(&(client->workspace->floating_clients), client, floating_clients);
+        ws = new_workspace;
+        SLIST_INSERT_HEAD(&(ws->focus_stack), client, focus_clients);
+        TAILQ_INSERT_TAIL(&(ws->floating_clients), client, floating_clients);
         if (client->fullscreen)
-                client->workspace->fullscreen_client = client;
-
+                ws->fullscreen_client = client;
 }
 
 /*

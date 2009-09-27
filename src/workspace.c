@@ -27,6 +27,74 @@
 #include "workspace.h"
 #include "client.h"
 
+Workspace *workspace_get(int number) {
+        if (number > (num_workspaces-1)) {
+                int old_num_workspaces = num_workspaces;
+
+                /* Convert all container->workspace and client->workspace
+                 * pointers to numbers representing their workspace. Necessary
+                 * because the realloc() may make all the pointers invalid, so
+                 * we need to preserve them this way and restore them later.
+                 *
+                 * To distinguish between the first workspace and a NULL
+                 * pointer, we store <workspace number> + 1. */
+                for (int c = 0; c < num_workspaces; c++)
+                        FOR_TABLE(&(workspaces[c])) {
+                                Container *con = workspaces[c].table[cols][rows];
+                                if (con->workspace != NULL) {
+                                        LOG("Handling con %p with pointer %p (num %d)\n", con, con->workspace, con->workspace->num);
+                                        con->workspace = (Workspace*)(con->workspace->num + 1);
+                                }
+                                Client *current;
+                                SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
+                                        if (current->workspace == NULL)
+                                                continue;
+                                        LOG("Handling client %p with pointer %p (num %d)\n", current, current->workspace, current->workspace->num);
+                                        current->workspace = (Workspace*)(current->workspace->num + 1);
+                                }
+                        }
+
+                /* preserve c_ws */
+                c_ws = (Workspace*)(c_ws->num);
+
+                LOG("We need to initialize that one\n");
+                num_workspaces = number+1;
+                workspaces = realloc(workspaces, num_workspaces * sizeof(Workspace));
+                for (int c = old_num_workspaces; c < num_workspaces; c++) {
+                        memset(&workspaces[c], 0, sizeof(Workspace));
+                        workspaces[c].screen = NULL;
+                        workspaces[c].num = c;
+                        TAILQ_INIT(&(workspaces[c].floating_clients));
+                        expand_table_cols(&(workspaces[c]));
+                        expand_table_rows(&(workspaces[c]));
+                        workspace_set_name(&(workspaces[c]), NULL);
+                }
+
+                c_ws = workspace_get((int)c_ws);
+
+                for (int c = 0; c < old_num_workspaces; c++)
+                        FOR_TABLE(&(workspaces[c])) {
+                                Container *con = workspaces[c].table[cols][rows];
+                                if (con->workspace != NULL) {
+                                        LOG("Handling con %p with (num %d)\n", con, con->workspace);
+                                        con->workspace = workspace_get((int)con->workspace - 1);
+                                }
+                                Client *current;
+                                SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
+                                        if (current->workspace == NULL)
+                                                continue;
+                                        LOG("Handling client %p with (num %d)\n", current, current->workspace);
+                                        current->workspace = workspace_get((int)current->workspace - 1);
+                                }
+                        }
+
+
+                LOG("done\n");
+        }
+
+        return &(workspaces[number]);
+}
+
 /*
  * Sets the name (or just its number) for the given workspace. This has to
  * be called for every workspace as the rendering function
@@ -73,7 +141,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
         bool need_warp = false;
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */
-        Workspace *t_ws = &(workspaces[workspace-1]);
+        Workspace *t_ws = workspace_get(workspace-1);
 
         LOG("show_workspace(%d)\n", workspace);
 
@@ -91,7 +159,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
                 /* Store the old client */
                 Client *old_client = CUR_CELL->currently_focused;
 
-                c_ws = &(workspaces[t_ws->screen->current_workspace]);
+                c_ws = workspace_get(t_ws->screen->current_workspace);
                 current_col = c_ws->current_col;
                 current_row = c_ws->current_row;
                 if (CUR_CELL->currently_focused != NULL)
@@ -123,7 +191,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
 
         t_ws->screen->current_workspace = workspace-1;
         Workspace *old_workspace = c_ws;
-        c_ws = &workspaces[workspace-1];
+        c_ws = workspace_get(workspace-1);
 
         /* Unmap all clients of the old workspace */
         workspace_unmap_clients(conn, old_workspace);
@@ -243,8 +311,8 @@ void workspace_initialize(Workspace *ws, i3Screen *screen) {
 Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *screen) {
         Workspace *result = NULL;
 
-        for (int c = 0; c < 10; c++) {
-                Workspace *ws = &(workspaces[c]);
+        for (int c = 0; c < num_workspaces; c++) {
+                Workspace *ws = workspace_get(c);
                 if (ws->preferred_screen == NULL ||
                     !screens_are_equal(get_screen_from_preference(slist, ws->preferred_screen), screen))
                         continue;
@@ -255,11 +323,11 @@ Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *
 
         if (result == NULL) {
                 /* No assignment found, returning first unused workspace */
-                for (int c = 0; c < 10; c++) {
+                for (int c = 0; c < num_workspaces; c++) {
                         if (workspaces[c].screen != NULL)
                                 continue;
 
-                        result = &(workspaces[c]);
+                        result = workspace_get(c);
                         break;
                 }
         }

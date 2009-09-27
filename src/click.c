@@ -129,7 +129,7 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
                 /* Check if the button was one of button4 or button5 (scroll up / scroll down) */
                 if (event->detail == XCB_BUTTON_INDEX_4 || event->detail == XCB_BUTTON_INDEX_5) {
                         int add = (event->detail == XCB_BUTTON_INDEX_4 ? -1 : 1);
-                        for (int i = c_ws->num + add; (i >= 0) && (i < 10); i += add)
+                        for (int i = c_ws->num + add; (i >= 0) && (i < num_workspaces); i += add)
                                 if (workspaces[i].screen == screen) {
                                         workspace_show(conn, i+1);
                                         return true;
@@ -139,7 +139,7 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
                 int drawn = 0;
                 /* Because workspaces can be on different screens, we need to loop
                    through all of them and decide to count it based on its ->screen */
-                for (int i = 0; i < 10; i++) {
+                for (int i = 0; i < num_workspaces; i++) {
                         if (workspaces[i].screen != screen)
                                 continue;
                         LOG("Checking if click was on workspace %d with drawn = %d, tw = %d\n",
@@ -198,6 +198,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                                     to_bottom = client->rect.height - event->event_y;
                                 resize_orientation_t orientation = O_VERTICAL;
                                 Container *con = client->container;
+                                Workspace *ws = con->workspace;
                                 int first = 0, second = 0;
 
                                 LOG("click was %d px to the right, %d px to the left, %d px to top, %d px to bottom\n",
@@ -211,7 +212,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                                         LOG("column %d\n", first);
 
                                         if (!cell_exists(first, con->row) ||
-                                            (first == (con->workspace->cols-1)))
+                                            (first == (ws->cols-1)))
                                                 return 1;
 
                                         second = first + 1;
@@ -239,14 +240,14 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                                         /* …bottom border */
                                         first = con->row + (con->rowspan - 1);
                                         if (!cell_exists(con->col, first) ||
-                                            (first == (con->workspace->rows-1)))
+                                            (first == (ws->rows-1)))
                                                 return 1;
 
                                         second = first + 1;
                                         orientation = O_HORIZONTAL;
                                 }
 
-                               return resize_graphical_handler(conn, con->workspace, first, second, orientation, event);
+                               return resize_graphical_handler(conn, ws, first, second, orientation, event);
                         }
                 }
         }
@@ -323,6 +324,8 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         if (client_is_floating(client))
                 return floating_border_click(conn, client, event);
 
+        Workspace *ws = con->workspace;
+
         if (event->event_y < 2) {
                 /* This was a press on the top border */
                 if (con->row == 0)
@@ -334,7 +337,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 /* …bottom border */
                 first = con->row + (con->rowspan - 1);
                 if (!cell_exists(con->col, first) ||
-                    (first == (con->workspace->rows-1)))
+                    (first == (ws->rows-1)))
                         return 1;
 
                 second = first + 1;
@@ -352,11 +355,11 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 LOG("column %d\n", first);
 
                 if (!cell_exists(first, con->row) ||
-                    (first == (con->workspace->cols-1)))
+                    (first == (ws->cols-1)))
                         return 1;
 
                 second = first + 1;
         }
 
-        return resize_graphical_handler(conn, con->workspace, first, second, orientation, event);
+        return resize_graphical_handler(conn, ws, first, second, orientation, event);
 }
