@@ -249,6 +249,8 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                                 parse_file(globbed);
                         }
                 }
+                if (reload)
+                        grab_all_keys(conn);
         } else {
 
         FILE *handle;
