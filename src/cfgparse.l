@@ -25,6 +25,7 @@
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
 <COLOR_COND>[0-9a-fA-F]+        { yylval.string = strdup(yytext); return HEX; }
 [0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
+mode                            { return TOKMODE; }
 bind                            { BEGIN(BIND_COND); return TOKBIND; }
 bindsym                         { BEGIN(BIND_COND); return TOKBINDSYM; }
 floating_modifier               { return TOKFLOATING_MODIFIER; }

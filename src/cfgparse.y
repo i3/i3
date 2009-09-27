@@ -25,6 +25,8 @@
 extern int yylex(void);
 extern FILE *yyin;
 
+static struct bindings_head *current_bindings;
+
 int yydebug = 1;
 
 void yyerror(const char *str) {
@@ -158,7 +160,8 @@ void parse_file(const char *f) {
         int number;
         char *string;
         struct Colortriple *color;
-	struct Assignment *assignment;
+        struct Assignment *assignment;
+        struct Binding *binding;
 }
 
 %token <number>NUMBER
@@ -185,6 +188,7 @@ void parse_file(const char *f) {
 %token TOKEXEC
 %token TOKCOLOR
 %token TOKARROW
+%token TOKMODE
 
 %%
 
@@ -194,8 +198,8 @@ lines: /* empty */
         ;
 
 line:
-        bind
-        | bindsym
+        bindline
+        | mode
         | floating_modifier
         | workspace
         | assign
@@ -215,31 +219,70 @@ command:
         STR
         ;
 
-bind:
-        TOKBIND WHITESPACE binding_modifiers NUMBER WHITESPACE command
+bindline:
+        binding
         {
-                printf("\tFound binding mod%d with key %d and command %s\n", $<number>3, $4, $<string>6);
+                TAILQ_INSERT_TAIL(&bindings, $<binding>1, bindings);
+        }
+        ;
+
+binding:
+        TOKBIND WHITESPACE bind                 { $<binding>$ = $<binding>3; }
+        | TOKBINDSYM WHITESPACE bindsym         { $<binding>$ = $<binding>3; }
+        ;
+
+bind:
+        binding_modifiers NUMBER WHITESPACE command
+        {
+                printf("\tFound binding mod%d with key %d and command %s\n", $<number>1, $2, $<string>4);
                 Binding *new = scalloc(sizeof(Binding));
 
-                new->keycode = $<number>4;
-                new->mods = $<number>3;
-                new->command = sstrdup($<string>6);
+                new->keycode = $<number>2;
+                new->mods = $<number>1;
+                new->command = sstrdup($<string>4);
 
-                TAILQ_INSERT_TAIL(&bindings, new, bindings);
+                $<binding>$ = new;
         }
         ;
 
 bindsym:
-        TOKBINDSYM WHITESPACE binding_modifiers WORD WHITESPACE command
+        binding_modifiers WORD WHITESPACE command
         {
-                printf("\tFound symbolic mod%d with key %s and command %s\n", $<number>3, $4, $<string>6);
+                printf("\tFound symbolic mod%d with key %s and command %s\n", $<number>1, $2, $<string>4);
                 Binding *new = scalloc(sizeof(Binding));
 
-                new->symbol = sstrdup($4);
-                new->mods = $<number>3;
-                new->command = sstrdup($<string>6);
+                new->symbol = sstrdup($2);
+                new->mods = $<number>1;
+                new->command = sstrdup($<string>4);
 
-                TAILQ_INSERT_TAIL(&bindings, new, bindings);
+                $<binding>$ = new;
+        }
+        ;
+
+mode:
+        TOKMODE WHITESPACE QUOTEDSTRING WHITESPACE '{' modelines '}'
+        {
+                printf("\t now in mode %s\n", $<string>3);
+                printf("\t current bindings = %p\n", current_bindings);
+        }
+        ;
+
+modelines:
+        /* empty */
+        | modelines WHITESPACE modeline
+        | modelines modeline
+        ;
+
+modeline:
+        comment
+        | binding
+        {
+                if (current_bindings == NULL) {
+                        current_bindings = scalloc(sizeof(struct bindings_head));
+                        TAILQ_INIT(current_bindings);
+                }
+
+                TAILQ_INSERT_TAIL(current_bindings, $<binding>1, bindings);
         }
         ;
 
