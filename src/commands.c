@@ -850,7 +850,7 @@ static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, c
                 orientation = O_HORIZONTAL;
                 command += strlen("bottom");
         } else {
-                LOG("Syntax: resize <left|right|up|down> [+|-]<pixels>\n");
+                LOG("Syntax: resize <left|right|top|bottom> [+|-]<pixels>\n");
                 return;
         }
 
