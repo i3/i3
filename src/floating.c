@@ -141,21 +141,19 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
  *
  */
 void floating_assign_to_workspace(Client *client, Workspace *new_workspace) {
-        Workspace *ws = client->workspace;
-
         /* Remove from focus stack and list of floating clients */
-        SLIST_REMOVE(&(ws->focus_stack), client, Client, focus_clients);
-        TAILQ_REMOVE(&(ws->floating_clients), client, floating_clients);
+        SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
+        TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
 
-        if (ws->fullscreen_client == client)
-                ws->fullscreen_client = NULL;
+        if (client->workspace->fullscreen_client == client)
+                client->workspace->fullscreen_client = NULL;
 
         /* Insert into destination focus stack and list of floating clients */
-        ws = new_workspace;
-        SLIST_INSERT_HEAD(&(ws->focus_stack), client, focus_clients);
-        TAILQ_INSERT_TAIL(&(ws->floating_clients), client, floating_clients);
+        client->workspace = new_workspace;
+        SLIST_INSERT_HEAD(&(client->workspace->focus_stack), client, focus_clients);
+        TAILQ_INSERT_TAIL(&(client->workspace->floating_clients), client, floating_clients);
         if (client->fullscreen)
-                ws->fullscreen_client = client;
+                client->workspace->fullscreen_client = client;
 }
 
 /*
