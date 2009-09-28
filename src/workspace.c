@@ -344,13 +344,14 @@ Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *
                 }
         }
 
-        if (result != NULL) {
-                workspace_initialize(result, screen);
-                return result;
+        if (result == NULL) {
+                LOG("No existing free workspace found to assign, creating a new one\n");
+
+                result = workspace_get(num_workspaces);
         }
 
-        LOG("WARNING: No free workspace found to assign!\n");
-        return NULL;
+        workspace_initialize(result, screen);
+        return result;
 }
 
 /*

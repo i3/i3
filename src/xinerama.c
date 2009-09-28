@@ -354,6 +354,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                         LOG("getting first ws for screen %p\n", screen);
                         Workspace *ws = get_first_workspace_for_screen(new_screens, screen);
                         initialize_screen(conn, screen, ws);
+                        ws->reassigned = true;
 
                         /* As this workspace just got visible (we got a new screen
                          * without workspace), we need to map its clients */
