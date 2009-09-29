@@ -632,7 +632,10 @@ void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bo
         Client *client;
         uint32_t values[1];
 
-        FOR_TABLE(workspace)
+        FOR_TABLE(workspace) {
+                if (workspace->table[cols][rows] == NULL)
+                        continue;
+
                 CIRCLEQ_FOREACH(client, &(workspace->table[cols][rows]->clients), clients) {
                         /* Change event mask for the decorations */
                         values[0] = FRAME_EVENT_MASK;
@@ -646,6 +649,7 @@ void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bo
                                 values[0] &= ~(XCB_EVENT_MASK_ENTER_WINDOW);
                         xcb_change_window_attributes(conn, client->child, XCB_CW_EVENT_MASK, values);
                 }
+        }
 }
 
 /*
@@ -678,6 +682,8 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
         /* Go through the whole table and render what’s necessary */
         FOR_TABLE(r_ws) {
                 Container *container = r_ws->table[cols][rows];
+                if (container == NULL)
+                        continue;
                 int single_width = -1, single_height = -1;
                 /* Update position of the container */
                 container->row = rows;
