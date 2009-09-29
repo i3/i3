@@ -22,8 +22,12 @@
 #include "workspace.h"
 #include "xcb.h"
 
+
+typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(void);
+extern int yyparse(void);
 extern FILE *yyin;
+YY_BUFFER_STATE yy_scan_string(const char *);
 
 static struct bindings_head *current_bindings;
 

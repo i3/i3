@@ -1,3 +1,6 @@
+%option nounput
+%option noinput
+
 %{
 /*
  * vim:ts=8:expandtab
