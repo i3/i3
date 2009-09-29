@@ -13,7 +13,9 @@
 %}
 
 %Start BIND_COND
+%Start BINDSYM_COND
 %Start BIND_AWS_COND
+%Start BINDSYM_AWS_COND
 %Start BIND_A2WS_COND
 %Start ASSIGN_COND
 %Start COLOR_COND
@@ -27,7 +29,7 @@
 [0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
 mode                            { return TOKMODE; }
 bind                            { BEGIN(BIND_COND); return TOKBIND; }
-bindsym                         { BEGIN(BIND_COND); return TOKBINDSYM; }
+bindsym                         { BEGIN(BINDSYM_COND); return TOKBINDSYM; }
 floating_modifier               { return TOKFLOATING_MODIFIER; }
 workspace                       { BEGIN(INITIAL); return TOKWORKSPACE; }
 screen                          { BEGIN(SCREEN_COND); return TOKSCREEN; }
@@ -64,7 +66,9 @@ shift                           { return TOKSHIFT; }
 \n                              /* ignore end of line */;
 <SCREEN_AWS_COND>x              { return (int)yytext[0]; }
 <BIND_COND>[ \t]+               { BEGIN(BIND_AWS_COND); return WHITESPACE; }
+<BINDSYM_COND>[ \t]+            { BEGIN(BINDSYM_AWS_COND); return WHITESPACE; }
 <BIND_AWS_COND>[ \t]+           { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
+<BINDSYM_AWS_COND>[ \t]+        { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
 <SCREEN_COND>[ \t]+             { BEGIN(SCREEN_AWS_COND); return WHITESPACE; }
 <SCREEN_AWS_COND>[ \t]+         { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
 [ \t]+                          { return WHITESPACE; }
@@ -78,6 +82,7 @@ shift                           { return TOKSHIFT; }
                                   return QUOTEDSTRING;
                                 }
 <ASSIGN_COND>[^ \t]+            { BEGIN(INITIAL); yylval.string = strdup(yytext); return STR_NG; }
+<BINDSYM_AWS_COND>[a-zA-Z0-9]+  { yylval.string = strdup(yytext); return WORD; }
 [a-zA-Z]+                       { yylval.string = strdup(yytext); return WORD; }
 .                               { return (int)yytext[0]; }
 %%

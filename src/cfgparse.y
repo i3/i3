@@ -250,16 +250,24 @@ bind:
         ;
 
 bindsym:
-        binding_modifiers WORD WHITESPACE command
+        binding_modifiers word_or_number WHITESPACE command
         {
-                printf("\tFound symbolic mod%d with key %s and command %s\n", $<number>1, $2, $<string>4);
+                printf("\tFound symbolic mod%d with key %s and command %s\n", $<number>1, $<string>2, $<string>4);
                 Binding *new = scalloc(sizeof(Binding));
 
-                new->symbol = sstrdup($2);
+                new->symbol = sstrdup($<string>2);
                 new->mods = $<number>1;
                 new->command = sstrdup($<string>4);
 
                 $<binding>$ = new;
+        }
+        ;
+
+word_or_number:
+        WORD
+        | NUMBER
+        {
+                asprintf(&$<string>$, "%d", $1);
         }
         ;
 
