@@ -170,7 +170,7 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
 
         c_ws->current_row = current_row;
         c_ws->current_col = current_col;
-        c_ws = &workspaces[screen->current_workspace];
+        c_ws = screen->current_workspace;
         current_row = c_ws->current_row;
         current_col = c_ws->current_col;
         LOG("We're now on virtual screen number %d\n", screen->num);
@@ -486,7 +486,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         /* If this workspace is currently active, we don’t delete it */
         i3Screen *screen;
         TAILQ_FOREACH(screen, virtual_screens, screens)
-                if (screen->current_workspace == client->workspace->num) {
+                if (screen->current_workspace == client->workspace) {
                         workspace_active = true;
                         workspace_empty = false;
                         break;
@@ -908,7 +908,7 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
          * the workspace bar */
         if (!workspace_is_visible(client->workspace)) {
                 i3Screen *screen = client->workspace->screen;
-                render_workspace(conn, screen, &(workspaces[screen->current_workspace]));
+                render_workspace(conn, screen, screen->current_workspace);
                 xcb_flush(conn);
         }
 

@@ -112,7 +112,7 @@ void parse_file(const char *f) {
         /* Then, allocate a new buffer and copy the file over to the new one,
          * but replace occurences of our variables */
         char *walk = buf, *destwalk;
-        char *new = smalloc((stbuf.st_size + extra_bytes) * sizeof(char));
+        char *new = smalloc((stbuf.st_size + extra_bytes + 1) * sizeof(char));
         destwalk = new;
         while (walk < (buf + stbuf.st_size)) {
                 /* Find the next variable */
@@ -335,11 +335,12 @@ new_container:
                  * Thus, the user very likely awaits the default container mode
                  * to trigger in this case, regardless of where it is inside
                  * his configuration file. */
-                for (int c = 0; c < num_workspaces; c++) {
-                        if (workspaces[c].table == NULL)
+                Workspace *ws;
+                TAILQ_FOREACH(ws, workspaces, workspaces) {
+                        if (ws->table == NULL)
                                 continue;
                         switch_layout_mode(global_conn,
-                                           workspaces[c].table[0][0],
+                                           ws->table[0][0],
                                            config.container_mode);
                 }
         }
@@ -350,10 +351,11 @@ new_container:
                 config.container_stack_limit_value = $<number>7;
 
                 /* See the comment above */
-                for (int c = 0; c < num_workspaces; c++) {
-                        if (workspaces[c].table == NULL)
+                Workspace *ws;
+                TAILQ_FOREACH(ws, workspaces, workspaces) {
+                        if (ws->table == NULL)
                                 continue;
-                        Container *con = workspaces[c].table[0][0];
+                        Container *con = ws->table[0][0];
                         con->stack_limit = config.container_stack_limit;
                         con->stack_limit_value = config.container_stack_limit_value;
                 }

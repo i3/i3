@@ -238,7 +238,7 @@ void reposition_client(xcb_connection_t *conn, Client *client) {
 
         LOG("Client is on workspace %p with screen %p\n", client->workspace, client->workspace->screen);
         LOG("but screen at %d, %d is %p\n", client->rect.x, client->rect.y, screen);
-        floating_assign_to_workspace(client, workspace_get(screen->current_workspace));
+        floating_assign_to_workspace(client, screen->current_workspace);
 }
 
 /*
@@ -586,14 +586,14 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
         xcb_change_gc_single(conn, screen->bargc, XCB_GC_FONT, font->id);
 
         int drawn = 0;
-        for (int c = 0; c < num_workspaces; c++) {
-                if (workspaces[c].screen != screen)
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
+                if (ws->screen != screen)
                         continue;
 
                 struct Colortriple *color;
-                Workspace *ws = &workspaces[c];
 
-                if (screen->current_workspace == c)
+                if (screen->current_workspace == ws)
                         color = &(config.bar.focused);
                 else if (ws->urgent)
                         color = &(config.bar.urgent);
@@ -742,7 +742,8 @@ void render_layout(xcb_connection_t *conn) {
                 return;
 
         TAILQ_FOREACH(screen, virtual_screens, screens)
-                render_workspace(conn, screen, &(workspaces[screen->current_workspace]));
+                if (screen->current_workspace != NULL)
+                        render_workspace(conn, screen, screen->current_workspace);
 
         xcb_flush(conn);
 }

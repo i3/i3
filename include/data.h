@@ -232,6 +232,8 @@ struct Workspace {
          * opened, for example) have the same size as always */
         float *width_factor;
         float *height_factor;
+
+        TAILQ_ENTRY(Workspace) workspaces;
 };
 
 /**
@@ -492,7 +494,7 @@ struct Screen {
         int num;
 
         /** Current workspace selected on this virtual screen */
-        int current_workspace;
+        Workspace *current_workspace;
 
         /** x, y, width, height */
         Rect rect;

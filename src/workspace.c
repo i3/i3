@@ -34,80 +34,31 @@
  *
  */
 Workspace *workspace_get(int number) {
-        if (number > (num_workspaces-1)) {
-                int old_num_workspaces = num_workspaces;
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces)
+                if (ws->num == number)
+                        return ws;
 
-                /* Convert all container->workspace and client->workspace
-                 * pointers to numbers representing their workspace. Necessary
-                 * because the realloc() may make all the pointers invalid, so
-                 * we need to preserve them this way and restore them later.
-                 *
-                 * To distinguish between the first workspace and a NULL
-                 * pointer, we store <workspace number> + 1. */
-                for (int c = 0; c < num_workspaces; c++) {
-                        FOR_TABLE(&(workspaces[c])) {
-                                Container *con = workspaces[c].table[cols][rows];
-                                if (con->workspace != NULL) {
-                                        LOG("Handling con %p with pointer %p (num %d)\n", con, con->workspace, con->workspace->num);
-                                        con->workspace = (Workspace*)(con->workspace->num + 1);
-                                }
-                        }
-                        Client *current;
-                        SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
-                                if (current->workspace == NULL)
-                                        continue;
-                                LOG("Handling client %p with pointer %p (num %d)\n", current, current->workspace, current->workspace->num);
-                                current->workspace = (Workspace*)(current->workspace->num + 1);
-                        }
-                }
+        /* If we are still there, we could not find the requested workspace. */
+        int last_ws = TAILQ_LAST(workspaces, workspaces_head)->num;
 
-                /* preserve c_ws */
-                c_ws = (Workspace*)(c_ws->num);
+        LOG("We need to initialize that one, last ws = %d\n", last_ws);
 
-                LOG("We need to initialize that one\n");
-                num_workspaces = number+1;
-                workspaces = realloc(workspaces, num_workspaces * sizeof(Workspace));
-                /* Zero out the new workspaces so that we have sane default values */
-                for (int c = old_num_workspaces; c < num_workspaces; c++)
-                        memset(&workspaces[c], 0, sizeof(Workspace));
+        for (int c = last_ws; c < number; c++) {
+                LOG("Creating new ws\n");
 
-                /* Immediately after the realloc(), we restore the pointers.
-                 * They may be used when initializing the new workspaces, for
-                 * example when the user configures containers to be stacking
-                 * by default, thus requiring re-rendering the layout. */
-                c_ws = workspace_get((int)c_ws);
+                ws = scalloc(sizeof(Workspace));
+                ws->num = number;
+                TAILQ_INIT(&(ws->floating_clients));
+                expand_table_cols(ws);
+                expand_table_rows(ws);
+                workspace_set_name(ws, NULL);
 
-                for (int c = 0; c < old_num_workspaces; c++) {
-                        FOR_TABLE(&(workspaces[c])) {
-                                Container *con = workspaces[c].table[cols][rows];
-                                if (con->workspace != NULL) {
-                                        LOG("Handling con %p with (num %d)\n", con, con->workspace);
-                                        con->workspace = workspace_get((int)con->workspace - 1);
-                                }
-                        }
-                        Client *current;
-                        SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
-                                if (current->workspace == NULL)
-                                        continue;
-                                LOG("Handling client %p with (num %d)\n", current, current->workspace);
-                                current->workspace = workspace_get((int)current->workspace - 1);
-                        }
-                }
-
-                /* Initialize the new workspaces */
-                for (int c = old_num_workspaces; c < num_workspaces; c++) {
-                        memset(&workspaces[c], 0, sizeof(Workspace));
-                        workspaces[c].num = c;
-                        TAILQ_INIT(&(workspaces[c].floating_clients));
-                        expand_table_cols(&(workspaces[c]));
-                        expand_table_rows(&(workspaces[c]));
-                        workspace_set_name(&(workspaces[c]), NULL);
-                }
-
-                LOG("done\n");
+                TAILQ_INSERT_TAIL(workspaces, ws, workspaces);
         }
+        LOG("done\n");
 
-        return &(workspaces[number]);
+        return ws;
 }
 
 /*
@@ -145,7 +96,7 @@ void workspace_set_name(Workspace *ws, const char *name) {
  *
  */
 bool workspace_is_visible(Workspace *ws) {
-        return (ws->screen->current_workspace == ws->num);
+        return (ws->screen->current_workspace == ws);
 }
 
 /*
@@ -174,7 +125,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
                 /* Store the old client */
                 Client *old_client = CUR_CELL->currently_focused;
 
-                c_ws = workspace_get(t_ws->screen->current_workspace);
+                c_ws = t_ws->screen->current_workspace;
                 current_col = c_ws->current_col;
                 current_row = c_ws->current_row;
                 if (CUR_CELL->currently_focused != NULL)
@@ -192,7 +143,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
         }
 
         /* Check if we need to change something or if we’re already there */
-        if (c_ws->screen->current_workspace == (workspace-1)) {
+        if (c_ws->screen->current_workspace->num == (workspace-1)) {
                 Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
                 if (last_focused != SLIST_END(&(c_ws->focus_stack)))
                         set_focus(conn, last_focused, true);
@@ -204,9 +155,8 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
                 return;
         }
 
-        t_ws->screen->current_workspace = workspace-1;
         Workspace *old_workspace = c_ws;
-        c_ws = workspace_get(workspace-1);
+        c_ws = t_ws->screen->current_workspace = workspace_get(workspace-1);
 
         /* Unmap all clients of the old workspace */
         workspace_unmap_clients(conn, old_workspace);
@@ -325,8 +275,8 @@ void workspace_initialize(Workspace *ws, i3Screen *screen) {
 Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *screen) {
         Workspace *result = NULL;
 
-        for (int c = 0; c < num_workspaces; c++) {
-                Workspace *ws = workspace_get(c);
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
                 if (ws->preferred_screen == NULL ||
                     !screens_are_equal(get_screen_from_preference(slist, ws->preferred_screen), screen))
                         continue;
@@ -337,11 +287,12 @@ Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *
 
         if (result == NULL) {
                 /* No assignment found, returning first unused workspace */
-                for (int c = 0; c < num_workspaces; c++) {
-                        if (workspaces[c].screen != NULL)
+                Workspace *ws;
+                TAILQ_FOREACH(ws, workspaces, workspaces) {
+                        if (ws->screen != NULL)
                                 continue;
 
-                        result = workspace_get(c);
+                        result = ws;
                         break;
                 }
         }
@@ -349,7 +300,11 @@ Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *
         if (result == NULL) {
                 LOG("No existing free workspace found to assign, creating a new one\n");
 
-                result = workspace_get(num_workspaces);
+                Workspace *ws;
+                int last_ws = 0;
+                TAILQ_FOREACH(ws, workspaces, workspaces)
+                        last_ws = ws->num;
+                result = workspace_get(last_ws + 1);
         }
 
         workspace_initialize(result, screen);

@@ -128,29 +128,40 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
 
                 /* Check if the button was one of button4 or button5 (scroll up / scroll down) */
                 if (event->detail == XCB_BUTTON_INDEX_4 || event->detail == XCB_BUTTON_INDEX_5) {
-                        int add = (event->detail == XCB_BUTTON_INDEX_4 ? -1 : 1);
-                        for (int i = c_ws->num + add; (i >= 0) && (i < num_workspaces); i += add)
-                                if (workspaces[i].screen == screen) {
-                                        workspace_show(conn, i+1);
-                                        return true;
+                        Workspace *ws = c_ws;
+                        if (event->detail == XCB_BUTTON_INDEX_5) {
+                                while ((ws = TAILQ_NEXT(ws, workspaces)) != TAILQ_END(workspaces_head)) {
+                                        if (ws->screen == screen) {
+                                                workspace_show(conn, ws->num + 1);
+                                                return true;
+                                        }
                                 }
+                        } else {
+                                while ((ws = TAILQ_PREV(ws, workspaces_head, workspaces)) != TAILQ_END(workspaces)) {
+                                        if (ws->screen == screen) {
+                                                workspace_show(conn, ws->num + 1);
+                                                return true;
+                                        }
+                                }
+                        }
                         return true;
                 }
                 int drawn = 0;
                 /* Because workspaces can be on different screens, we need to loop
                    through all of them and decide to count it based on its ->screen */
-                for (int i = 0; i < num_workspaces; i++) {
-                        if (workspaces[i].screen != screen)
+                Workspace *ws;
+                TAILQ_FOREACH(ws, workspaces, workspaces) {
+                        if (ws->screen != screen)
                                 continue;
                         LOG("Checking if click was on workspace %d with drawn = %d, tw = %d\n",
-                                        i, drawn, workspaces[i].text_width);
+                                        ws->num, drawn, ws->text_width);
                         if (event->event_x > (drawn + 1) &&
-                            event->event_x <= (drawn + 1 + workspaces[i].text_width + 5 + 5)) {
-                                workspace_show(conn, i+1);
+                            event->event_x <= (drawn + 1 + ws->text_width + 5 + 5)) {
+                                workspace_show(conn, ws->num + 1);
                                 return true;
                         }
 
-                        drawn += workspaces[i].text_width + 5 + 5 + 2;
+                        drawn += ws->text_width + 5 + 5 + 2;
                 }
                 return true;
         }

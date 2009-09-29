@@ -329,7 +329,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         LOG("Assignment \"%s\" matches, so putting it on workspace %d\n",
                             assign->windowclass_title, assign->workspace);
 
-                        if (c_ws->screen->current_workspace == (assign->workspace-1)) {
+                        if (c_ws->screen->current_workspace->num == (assign->workspace-1)) {
                                 LOG("We are already there, no need to do anything\n");
                                 break;
                         }

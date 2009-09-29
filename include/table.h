@@ -21,8 +21,8 @@
 #define CUR_CELL (CUR_TABLE[current_col][current_row])
 
 extern Workspace *c_ws;
-extern Workspace *workspaces;
-extern int num_workspaces;
+extern TAILQ_HEAD(workspaces_head, Workspace) *workspaces;
+//extern int num_workspaces;
 extern int current_col;
 extern int current_row;
 

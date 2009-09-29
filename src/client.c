@@ -332,8 +332,9 @@ void client_mark(xcb_connection_t *conn, Client *client, const char *mark) {
 
         /* Make sure no other client has this mark set */
         Client *current;
-        for (int c = 0; c < 10; c++)
-                SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces)
+                SLIST_FOREACH(current, &(ws->focus_stack), focus_clients) {
                         if (current == client ||
                             current->mark == NULL ||
                             strcmp(current->mark, mark) != 0)

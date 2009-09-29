@@ -458,12 +458,13 @@ Client *get_matching_client(xcb_connection_t *conn, const char *window_classtitl
         }
 
         LOG("Getting clients for class \"%s\" / title \"%s\"\n", to_class, to_title);
-        for (int workspace = 0; workspace < num_workspaces; workspace++) {
-                if (workspaces[workspace].screen == NULL)
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
+                if (ws->screen == NULL)
                         continue;
 
                 Client *client;
-                SLIST_FOREACH(client, &(workspaces[workspace].focus_stack), focus_clients) {
+                SLIST_FOREACH(client, &(ws->focus_stack), focus_clients) {
                         LOG("Checking client with class=%s, name=%s\n", client->window_class, client->name);
                         if (!client_matches_class_name(client, to_class, to_title, to_title_ucs, to_title_ucs_len))
                                 continue;

@@ -63,8 +63,9 @@ static void jump_to_mark(xcb_connection_t *conn, const char *mark) {
         Client *current;
         LOG("Jumping to \"%s\"\n", mark);
 
-        for (int c = 0; c < num_workspaces; c++)
-                SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces)
+                SLIST_FOREACH(current, &(ws->focus_stack), focus_clients) {
                         if (current->mark == NULL || strcmp(current->mark, mark) != 0)
                                 continue;
 
@@ -130,7 +131,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                 }
 
                 LOG("Switching to ws %d\n", target->current_workspace + 1);
-                workspace_show(conn, target->current_workspace + 1);
+                workspace_show(conn, target->current_workspace->num + 1);
                 return;
         }
 
@@ -165,7 +166,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                                 /* No screen found? Then wrap */
                                 screen = get_screen_most((direction == D_UP ? D_DOWN : D_UP), container->workspace->screen);
                         }
-                        t_ws = workspace_get(screen->current_workspace);
+                        t_ws = screen->current_workspace;
                         new_row = (direction == D_UP ? (t_ws->rows - 1) : 0);
                 }
 
@@ -207,7 +208,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                                 LOG("Wrapping screen around horizontally\n");
                                 screen = get_screen_most((direction == D_LEFT ? D_RIGHT : D_LEFT), container->workspace->screen);
                         }
-                        t_ws = workspace_get(screen->current_workspace);
+                        t_ws = screen->current_workspace;
                         new_col = (direction == D_LEFT ? (t_ws->cols - 1) : 0);
                 }
 
@@ -784,31 +785,25 @@ static char **append_argument(char **original, char *argument) {
  *
  */
 static void next_previous_workspace(xcb_connection_t *conn, int direction) {
-        Workspace *t_ws;
-        int i;
+        Workspace *ws = c_ws;
 
         if (direction == 'n') {
-                /* If we are on the last workspace, we cannot go any further */
-                if (c_ws->num == (num_workspaces-1))
-                        return;
+                while ((ws = TAILQ_NEXT(ws, workspaces)) != TAILQ_END(workspaces_head)) {
+                        if (ws->screen == NULL)
+                                continue;
 
-                for (i = c_ws->num + 1; i < num_workspaces; i++) {
-                        t_ws = &(workspaces[i]);
-                        if (t_ws->screen != NULL)
-                                break;
+                        workspace_show(conn, ws->num + 1);
+                        return;
                 }
         } else if (direction == 'p') {
-                if (c_ws->num == 0)
+                while ((ws = TAILQ_PREV(ws, workspaces_head, workspaces)) != TAILQ_END(workspaces)) {
+                        if (ws->screen == NULL)
+                                continue;
+
+                        workspace_show(conn, ws->num + 1);
                         return;
-                for (i = c_ws->num - 1; i >= 0 ; i--) {
-                        t_ws = &(workspaces[i]);
-                        if (t_ws->screen != NULL)
-                                break;
                 }
         }
-
-        if (t_ws->screen != NULL)
-                workspace_show(conn, i+1);
 }
 
 static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, const char *command) {

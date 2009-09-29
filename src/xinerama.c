@@ -133,7 +133,7 @@ static void initialize_screen(xcb_connection_t *conn, i3Screen *screen, Workspac
         i3Font *font = load_font(conn, config.font);
 
         workspace->screen = screen;
-        screen->current_workspace = workspace->num;
+        screen->current_workspace = workspace;
 
         /* Create a bar for each screen */
         Rect bar_rect = {screen->rect.x,
@@ -298,12 +298,13 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
         int screen_count = 0;
         /* Mark each workspace which currently is assigned to a screen, so we
          * can garbage-collect afterwards */
-        for (int c = 0; c < num_workspaces; c++)
-                workspaces[c].reassigned = (workspaces[c].screen == NULL);
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces)
+                ws->reassigned = (ws->screen == NULL);
 
         TAILQ_FOREACH(screen, new_screens, screens) {
                 screen->num = screen_count;
-                screen->current_workspace = -1;
+                screen->current_workspace = NULL;
 
                 TAILQ_FOREACH(old_screen, virtual_screens, screens) {
                         if (old_screen->num != screen_count)
@@ -334,8 +335,8 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                         screen->dock_clients = old_screen->dock_clients;
 
                         /* Update the dimensions */
-                        for (int c = 0; c < num_workspaces; c++) {
-                                Workspace *ws = &(workspaces[c]);
+                        Workspace *ws;
+                        TAILQ_FOREACH(ws, workspaces, workspaces) {
                                 if (ws->screen != old_screen)
                                         continue;
 
@@ -347,7 +348,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
 
                         break;
                 }
-                if (screen->current_workspace == -1) {
+                if (screen->current_workspace == NULL) {
                         /* Find the first unused workspace, preferring the ones
                          * which are assigned to this screen and initialize
                          * the screen with it. */
@@ -364,38 +365,36 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
         }
 
         /* Check for workspaces which are out of bounds */
-        for (int c = 0; c < num_workspaces; c++) {
-                if (workspaces[c].reassigned)
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
+                if (ws->reassigned)
                         continue;
 
-                /* f_ws is a shortcut to the workspace to fix */
-                Workspace *f_ws = &(workspaces[c]);
                 Client *client;
 
-                LOG("Closing bar window (%p)\n", f_ws->screen->bar);
-                xcb_destroy_window(conn, f_ws->screen->bar);
+                LOG("Closing bar window (%p)\n", ws->screen->bar);
+                xcb_destroy_window(conn, ws->screen->bar);
 
-                LOG("Workspace %d's screen out of bounds, assigning to first screen\n", c+1);
-                f_ws->screen = first;
-                memcpy(&(f_ws->rect), &(first->rect), sizeof(Rect));
+                LOG("Workspace %d's screen out of bounds, assigning to first screen\n", ws->num + 1);
+                ws->screen = first;
+                memcpy(&(ws->rect), &(first->rect), sizeof(Rect));
 
                 /* Force reconfiguration for each client on that workspace */
-                FOR_TABLE(f_ws)
-                        CIRCLEQ_FOREACH(client, &(f_ws->table[cols][rows]->clients), clients)
+                FOR_TABLE(ws)
+                        CIRCLEQ_FOREACH(client, &(ws->table[cols][rows]->clients), clients)
                                 client->force_reconfigure = true;
 
                 /* Render the workspace to reconfigure the clients. However, they will be visible now, so… */
-                render_workspace(conn, first, f_ws);
+                render_workspace(conn, first, ws);
 
                 /* …unless we want to see them at the moment, we should hide that workspace */
-                if (workspace_is_visible(f_ws))
+                if (workspace_is_visible(ws))
                         continue;
 
-                workspace_unmap_clients(conn, f_ws);
+                workspace_unmap_clients(conn, ws);
 
-                if (c_ws == f_ws) {
+                if (c_ws == ws) {
                         LOG("Need to adjust c_ws...\n");
-                        c_ws = &(workspaces[first->current_workspace]);
+                        c_ws = first->current_workspace;
                 }
         }
         xcb_flush(conn);

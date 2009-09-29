@@ -26,10 +26,11 @@
 #include "i3.h"
 #include "layout.h"
 #include "config.h"
+#include "workspace.h"
 
 int current_workspace = 0;
 int num_workspaces = 1;
-Workspace *workspaces;
+struct workspaces_head *workspaces;
 /* Convenience pointer to the current workspace */
 Workspace *c_ws;
 int current_col = 0;
@@ -40,12 +41,13 @@ int current_row = 0;
  *
  */
 void init_table() {
-        workspaces = scalloc(sizeof(Workspace));
-        c_ws = workspaces;
+        workspaces = scalloc(sizeof(struct workspaces_head));
+        TAILQ_INIT(workspaces);
 
-        workspaces[0].screen = NULL;
-        workspaces[0].num = 0;
-        TAILQ_INIT(&(workspaces[0].floating_clients));
+        c_ws = scalloc(sizeof(Workspace));
+        workspace_set_name(c_ws, NULL);
+        TAILQ_INIT(&(c_ws->floating_clients));
+        TAILQ_INSERT_TAIL(workspaces, c_ws, workspaces);
 }
 
 static void new_container(Workspace *workspace, Container **container, int col, int row) {

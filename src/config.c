@@ -183,6 +183,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         while (!TAILQ_EMPTY(bindings)) {
                                 bind = TAILQ_FIRST(bindings);
                                 TAILQ_REMOVE(bindings, bind, bindings);
+                                FREE(bind->translated_to);
                                 FREE(bind->command);
                                 FREE(bind);
                         }
@@ -481,7 +482,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         LOG("setting name to \"%s\"\n", name);
 
                         if (*name != '\0')
-                                workspace_set_name(&(workspaces[ws_num - 1]), name);
+                                workspace_set_name(workspace_get(ws_num - 1), name);
                         free(ws_str);
                         continue;
                 }
@@ -590,8 +591,8 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         REQUIRED_OPTION(font);
 
         /* Set an empty name for every workspace which got no name */
-        for (int i = 0; i < num_workspaces; i++) {
-                Workspace *ws = &(workspaces[i]);
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
                 if (ws->name != NULL) {
                         /* If the font was not specified when the workspace name
                          * was loaded, we need to predict the text width now */
@@ -601,7 +602,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         continue;
                 }
 
-                workspace_set_name(&(workspaces[i]), NULL);
+                workspace_set_name(ws, NULL);
         }
  
         return;

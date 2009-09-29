@@ -211,8 +211,8 @@ int main(int argc, char *argv[], char *env[]) {
          * connection and a loaded configuration (default mode for new
          * containers may be stacking, which requires a new window to be
          * created), it had to be delayed. */
-        expand_table_cols(&(workspaces[0]));
-        expand_table_rows(&(workspaces[0]));
+        expand_table_cols(TAILQ_FIRST(workspaces));
+        expand_table_rows(TAILQ_FIRST(workspaces));
 
         /* Place requests for the atoms we need as soon as possible */
         #define REQUEST_ATOM(name) atom_cookies[name] = xcb_intern_atom(conn, 0, strlen(#name), #name);
@@ -456,7 +456,7 @@ int main(int argc, char *argv[], char *env[]) {
         }
 
         LOG("Starting on %d\n", screen->current_workspace);
-        c_ws = &workspaces[screen->current_workspace];
+        c_ws = screen->current_workspace;
 
         manage_existing_windows(conn, &prophs, root);
 
