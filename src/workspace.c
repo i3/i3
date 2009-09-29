@@ -44,21 +44,22 @@ Workspace *workspace_get(int number) {
                  *
                  * To distinguish between the first workspace and a NULL
                  * pointer, we store <workspace number> + 1. */
-                for (int c = 0; c < num_workspaces; c++)
+                for (int c = 0; c < num_workspaces; c++) {
                         FOR_TABLE(&(workspaces[c])) {
                                 Container *con = workspaces[c].table[cols][rows];
                                 if (con->workspace != NULL) {
                                         LOG("Handling con %p with pointer %p (num %d)\n", con, con->workspace, con->workspace->num);
                                         con->workspace = (Workspace*)(con->workspace->num + 1);
                                 }
-                                Client *current;
-                                SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
-                                        if (current->workspace == NULL)
-                                                continue;
-                                        LOG("Handling client %p with pointer %p (num %d)\n", current, current->workspace, current->workspace->num);
-                                        current->workspace = (Workspace*)(current->workspace->num + 1);
-                                }
                         }
+                        Client *current;
+                        SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
+                                if (current->workspace == NULL)
+                                        continue;
+                                LOG("Handling client %p with pointer %p (num %d)\n", current, current->workspace, current->workspace->num);
+                                current->workspace = (Workspace*)(current->workspace->num + 1);
+                        }
+                }
 
                 /* preserve c_ws */
                 c_ws = (Workspace*)(c_ws->num);
@@ -76,21 +77,22 @@ Workspace *workspace_get(int number) {
                  * by default, thus requiring re-rendering the layout. */
                 c_ws = workspace_get((int)c_ws);
 
-                for (int c = 0; c < old_num_workspaces; c++)
+                for (int c = 0; c < old_num_workspaces; c++) {
                         FOR_TABLE(&(workspaces[c])) {
                                 Container *con = workspaces[c].table[cols][rows];
                                 if (con->workspace != NULL) {
                                         LOG("Handling con %p with (num %d)\n", con, con->workspace);
                                         con->workspace = workspace_get((int)con->workspace - 1);
                                 }
-                                Client *current;
-                                SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
-                                        if (current->workspace == NULL)
-                                                continue;
-                                        LOG("Handling client %p with (num %d)\n", current, current->workspace);
-                                        current->workspace = workspace_get((int)current->workspace - 1);
-                                }
                         }
+                        Client *current;
+                        SLIST_FOREACH(current, &(workspaces[c].focus_stack), focus_clients) {
+                                if (current->workspace == NULL)
+                                        continue;
+                                LOG("Handling client %p with (num %d)\n", current, current->workspace);
+                                current->workspace = workspace_get((int)current->workspace - 1);
+                        }
+                }
 
                 /* Initialize the new workspaces */
                 for (int c = old_num_workspaces; c < num_workspaces; c++) {
