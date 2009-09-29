@@ -34,7 +34,7 @@
  *
  */
 Workspace *workspace_get(int number) {
-        Workspace *ws;
+        Workspace *ws = NULL;
         TAILQ_FOREACH(ws, workspaces, workspaces)
                 if (ws->num == number)
                         return ws;
@@ -48,7 +48,7 @@ Workspace *workspace_get(int number) {
                 LOG("Creating new ws\n");
 
                 ws = scalloc(sizeof(Workspace));
-                ws->num = number;
+                ws->num = c+1;
                 TAILQ_INIT(&(ws->floating_clients));
                 expand_table_cols(ws);
                 expand_table_rows(ws);
