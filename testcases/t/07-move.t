@@ -4,7 +4,7 @@
 # the workspace to be empty).
 # TODO: skip it by default?
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
@@ -77,3 +77,14 @@ is($focus, $bottom->id, "Right window focused");
 
 $focus = focus_after("h");
 is($focus, $top->id, "Top window focused");
+
+#####################################################################
+# Move window cross-workspace
+#####################################################################
+
+$sock->write(i3test::format_ipc_command("m12"));
+$sock->write(i3test::format_ipc_command("t"));
+$sock->write(i3test::format_ipc_command("m13"));
+$sock->write(i3test::format_ipc_command("12"));
+$sock->write(i3test::format_ipc_command("13"));
+ok(1, "Still living");
