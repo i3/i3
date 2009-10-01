@@ -493,7 +493,14 @@ color:
         ;
 
 colorpixel:
-        '#' HEX         { $<number>$ = get_colorpixel(global_conn, $<string>2); }
+        '#' HEX
+        {
+                char *hex;
+                if (asprintf(&hex, "#%s", $<string>2) == -1)
+                        die("asprintf()");
+                $<number>$ = get_colorpixel(global_conn, hex);
+                free(hex);
+        }
         ;
 
 
