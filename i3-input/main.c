@@ -274,7 +274,8 @@ int main(int argc, char *argv[]) {
 
         sockfd = connect_ipc(socket_path);
 
-        prompt = convert_utf8_to_ucs2(prompt, &prompt_len);
+        if (prompt != NULL)
+                prompt = convert_utf8_to_ucs2(prompt, &prompt_len);
 
         int screens;
         xcb_connection_t *conn = xcb_connect(NULL, &screens);
