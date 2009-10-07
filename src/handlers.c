@@ -501,9 +501,19 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 
         render_layout(conn);
 
-        /* Ensure the focus is set to the next client in the focus stack */
-        if (workspace_active && to_focus != NULL)
-                set_focus(conn, to_focus, true);
+        /* Ensure the focus is set to the next client in the focus stack or to
+         * the screen itself (if we do not focus the screen, it can happen that
+         * the focus is "nowhere" and thus keypress events will not be received
+         * by i3, thus the user cannot use any hotkeys). */
+        if (workspace_active) {
+                if (to_focus != NULL)
+                        set_focus(conn, to_focus, true);
+                else {
+                        LOG("Restoring focus to root screen\n");
+                        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
+                        xcb_flush(conn);
+                }
+        }
 
         return 1;
 }
