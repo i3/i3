@@ -77,10 +77,16 @@ static void ipc_handle_message(uint8_t *message, int size,
         LOG("payload as a string = %s\n", message);
 
         switch (message_type) {
-                case I3_IPC_MESSAGE_TYPE_COMMAND:
-                        parse_command(global_conn, (const char*)message);
+                case I3_IPC_MESSAGE_TYPE_COMMAND: {
+                        /* To get a properly terminated buffer, we copy
+                         * message_size bytes out of the buffer */
+                        char *command = scalloc(message_size);
+                        strncpy(command, (const char*)message, message_size);
+                        parse_command(global_conn, (const char*)command);
+                        free(command);
 
                         break;
+                }
                 default:
                         LOG("unhandled ipc message\n");
                         break;
@@ -148,20 +154,30 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
         }
 
         uint8_t *message = (uint8_t*)buf;
-        message += strlen(I3_IPC_MAGIC);
-        n -= strlen(I3_IPC_MAGIC);
+        while (n > 0) {
+                LOG("IPC: n = %d\n", n);
+                message += strlen(I3_IPC_MAGIC);
+                n -= strlen(I3_IPC_MAGIC);
 
-        /* The next 32 bit after the magic are the message size */
-        uint32_t message_size = *((uint32_t*)message);
-        message += sizeof(uint32_t);
-        n -= sizeof(uint32_t);
+                /* The next 32 bit after the magic are the message size */
+                uint32_t message_size = *((uint32_t*)message);
+                message += sizeof(uint32_t);
+                n -= sizeof(uint32_t);
 
-        /* The last 32 bits of the header are the message type */
-        uint32_t message_type = *((uint32_t*)message);
-        message += sizeof(uint32_t);
-        n -= sizeof(uint32_t);
+                if (message_size > n) {
+                        LOG("IPC: Either the message size was wrong or the message was not read completely, dropping\n");
+                        return;
+                }
 
-        ipc_handle_message(message, n, message_size, message_type);
+                /* The last 32 bits of the header are the message type */
+                uint32_t message_type = *((uint32_t*)message);
+                message += sizeof(uint32_t);
+                n -= sizeof(uint32_t);
+
+                ipc_handle_message(message, n, message_size, message_type);
+                n -= message_size;
+                message += message_size;
+        }
 }
 
 /*
