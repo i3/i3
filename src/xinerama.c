@@ -137,7 +137,7 @@ static void initialize_screen(xcb_connection_t *conn, i3Screen *screen, Workspac
 
         /* Create a bar for each screen */
         Rect bar_rect = {screen->rect.x,
-                         screen->rect.height - (font->height + 6),
+                         screen->rect.y + screen->rect.height - (font->height + 6),
                          screen->rect.x + screen->rect.width,
                          font->height + 6};
         uint32_t mask = XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
