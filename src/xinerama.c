@@ -319,7 +319,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                         LOG("old_screen->bar = %p\n", old_screen->bar);
 
                         Rect bar_rect = {screen->rect.x,
-                                         sscreen->rect.y + creen->rect.height - (font->height + 6),
+                                         screen->rect.y + screen->rect.height - (font->height + 6),
                                          screen->rect.x + screen->rect.width,
                                          font->height + 6};
 
