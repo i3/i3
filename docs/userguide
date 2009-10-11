@@ -162,6 +162,11 @@ you can set specific applications to start on a specific workspace, you can
 automatically start applications, you can change the colors of i3 or bind
 your keys to do useful stuff.
 
+To change the configuration of i3, copy +/etc/i3/config+ to +~/.i3/config+
+and edit it with a text editor.
+
+=== General configuration
+
 terminal::
 	Specifies the terminal emulator program you prefer. It will be started
 	by default when you press Mod1+Enter, but you can overwrite this. Refer
