@@ -719,7 +719,7 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                 if (client->urgent)
                         background_color = config.client.urgent.background;
                 /* Distinguish if the window is currently focused… */
-                else if (CUR_CELL->currently_focused == client)
+                else if (CUR_CELL != NULL && CUR_CELL->currently_focused == client)
                         background_color = config.client.focused.background;
                 /* …or if it is the focused window in a not focused container */
                 else background_color = config.client.focused_inactive.background;
