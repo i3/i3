@@ -1,8 +1,33 @@
 i3-wm (3.d-0) unstable; urgency=low
 
-  * NOT YET RELEASED
+  * Implement tabbing (command "T")
+  * Implement horizontal resize of containers (containers! not windows)
+  * Implement the urgency hint for windows/workspaces
+  * Implement vim-like marks (mark/goto command)
+  * Implement stack-limit for further defining how stack windows should look
+  * Implement modes which allow you to use a different set of keybindings
+    when inside a specific mode
+  * Implement changing the default mode of containers
+  * Implement long options (--version, --no-autostart, --help, --config)
+  * Implement 'bt' to toggle between the different border styles
+  * Use a yacc/lex parser/lexer for the configuration file
+  * The number of workspaces is now dynamic instead of limited to 10
+  * Floating windows (and tiled containers) can now be resized using
+    floating_modifier and right mouse button
+  * Dock windows can now reconfigure their height
+  * Bugfix: Correctly handle multiple messages on the IPC socket
+  * Bugfix: Correctly use base_width, base_height and size increment hints
+  * Bugfix: Correctly send fake configure_notify events
+  * Bugfix: Don’t crash if the numlock symbol cannot be found
+  * Bugfix: Don’t display a colon after unnamed workspaces
+  * Bugfix: If the pointer is outside of the screen when starting, fall back to
+    the first screen.
+  * Bugfix: Initialize screens correctly when not using Xinerama
+  * Bugfix: Correctly handle unmap_notify events when resizing
+  * Bugfix: Correctly warp pointer after rendering the layout
+  * Bugfix: Fix NULL pointer dereference when reconfiguring screens
 
- -- Michael Stapelberg <michael@stapelberg.de>  Thu, 10 Sep 2009 19:05:30 +0200
+ -- Michael Stapelberg <michael@stapelberg.de>  Fri, 23 Oct 2009 16:40:01 +0200
 
 i3-wm (3.c-2) unstable; urgency=low
 
