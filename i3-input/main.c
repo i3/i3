@@ -56,7 +56,7 @@ static int limit;
  *
  */
 static uint8_t *concat_strings(char **glyphs, int max) {
-        uint8_t *output = calloc(max, 4);
+        uint8_t *output = calloc(max+1, 4);
         uint8_t *walk = output;
         for (int c = 0; c < max; c++) {
                 printf("at %c\n", glyphs[c][0]);
