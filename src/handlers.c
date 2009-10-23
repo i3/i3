@@ -361,6 +361,22 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
                 return 1;
         }
 
+        /* Dock clients can be reconfigured in their height */
+        if (client->dock) {
+                LOG("Reconfiguring height of this dock client\n");
+
+                if (!(event->value_mask & XCB_CONFIG_WINDOW_HEIGHT)) {
+                        LOG("Ignoring configure request, no height given\n");
+                        return 1;
+                }
+
+                client->desired_height = event->height;
+                render_workspace(conn, c_ws->screen, c_ws);
+                xcb_flush(conn);
+
+                return 1;
+        }
+
         if (client->fullscreen) {
                 LOG("Client is in fullscreen mode\n");
 
