@@ -19,6 +19,12 @@ switch your configuration file to the new lexer/parser. This should only
 require minor changes, if at all. In the next released version of i3, the
 old configuration file parsing will be removed!
 
+Also, this release includes the testcases which were developed in a separate
+branch so far. They use Perl, together with X11::XCB, which you can download
+from CPAN. Please make sure you are not doing anything important when running
+the testcases, as they may modify your layout and use different workspaces.
+They also might, of course, actually find bugs and crash i3 ;-).
+
 Thanks for this release go out to xeen, mist, badboy, Mikael, mxf, Atsutane,
 tsdh, litemotiv, shatter, msi, yurifury, dirkson, Scytale, Grauwolf and all
 other people who reported bugs/made suggestions.
