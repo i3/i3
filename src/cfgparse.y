@@ -407,9 +407,11 @@ screen:
 assign:
         TOKASSIGN WHITESPACE window_class WHITESPACE optional_arrow assign_target
         {
-                printf("assignment of %s to %d\n", $<string>3, $<number>6);
+                printf("assignment of %s\n", $<string>3);
 
                 struct Assignment *new = $<assignment>6;
+                printf("  to %d\n", new->workspace);
+                printf("  floating = %d\n", new->floating);
                 new->windowclass_title = strdup($<string>3);
                 TAILQ_INSERT_TAIL(&assignments, new, assignments);
         }
