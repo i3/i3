@@ -74,7 +74,8 @@ two virtual screens.
 Here is a short overview of the default keybindings:
 
 j/k/l/;::
-Direction keys (left, down, up, right). They are on your homerow (see the mark on your "j" key).
+Direction keys (left, down, up, right). They are on your homerow (see the mark
+on your "j" key). Alternatively, you can use the cursor keys.
 
 Mod1+<direction>::
 Focus window in <direction>.
