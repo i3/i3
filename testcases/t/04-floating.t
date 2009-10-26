@@ -14,19 +14,19 @@ BEGIN {
     use_ok('X11::XCB::Window');
 }
 
-X11::XCB::Connection->connect(':0');
+my $x = X11::XCB::Connection->new;
 
 # Create a floating window which is smaller than the minimum enforced size of i3
-my $window = X11::XCB::Window->new(
+my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30],
     background_color => '#C0C0C0',
-    type => 'utility',
+    # replace the type with 'utility' as soon as the coercion works again in X11::XCB
+    type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
 );
 
 isa_ok($window, 'X11::XCB::Window');
 
-$window->create;
 $window->map;
 
 sleep(0.25);
@@ -41,16 +41,15 @@ ok($absolute->{x} != 0 && $absolute->{y} != 0, 'i3 did not map it to (0x0)');
 
 $window->unmap;
 
-$window = X11::XCB::Window->new(
+$window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 1, 1, 80, 90],
     background_color => '#C0C0C0',
-    type => 'utility',
+    type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
 );
 
 isa_ok($window, 'X11::XCB::Window');
 
-$window->create;
 $window->map;
 
 sleep(0.25);

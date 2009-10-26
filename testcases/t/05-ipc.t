@@ -15,7 +15,7 @@ BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 
-X11::XCB::Connection->connect(':0');
+my $x = X11::XCB::Connection->new;
 
 my $sock = IO::Socket::UNIX->new(Peer => '/tmp/i3-ipc.sock');
 
@@ -32,12 +32,12 @@ $sock->write(i3test::format_ipc_command("1"));
 sleep(0.25);
 
 # Create a window so we can get a focus different from NULL
-my $window = i3test::open_standard_window;
+my $window = i3test::open_standard_window($x);
 diag("window->id = " . $window->id);
 
 sleep(0.25);
 
-my $focus = X11::XCB::Connection->input_focus;
+my $focus = $x->input_focus;
 diag("old focus = $focus");
 
 # Switch to the nineth workspace
@@ -45,7 +45,7 @@ $sock->write(i3test::format_ipc_command("9"));
 
 sleep(0.25);
 
-my $new_focus = X11::XCB::Connection->input_focus;
+my $new_focus = $x->input_focus;
 isnt($focus, $new_focus, "Focus changed");
 
 diag( "Testing i3, Perl $], $^X" );

@@ -13,11 +13,11 @@ BEGIN {
 	use_ok('X11::XCB::Window');
 }
 
-X11::XCB::Connection->connect(':0');
+my $x = X11::XCB::Connection->new;
 
 my $original_rect = X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30);
 
-my $window = X11::XCB::Window->new(
+my $window = $x->root->create_child(
                 class => WINDOW_CLASS_INPUT_OUTPUT,
 		rect => $original_rect,
 		background_color => '#C0C0C0',
@@ -27,7 +27,6 @@ isa_ok($window, 'X11::XCB::Window');
 
 is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
 
-$window->create;
 $window->map;
 
 sleep(0.25);
@@ -47,7 +46,7 @@ ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned after fullscr
 
 $window->unmap;
 
-$window = X11::XCB::Window->new(
+$window = $x->root->create_child(
 	class => WINDOW_CLASS_INPUT_OUTPUT,
 	rect => $original_rect,
 	background_color => 61440,
@@ -55,7 +54,6 @@ $window = X11::XCB::Window->new(
 
 is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
 
-$window->create;
 $window->fullscreen(1);
 $window->map;
 

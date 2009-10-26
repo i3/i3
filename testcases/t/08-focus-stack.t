@@ -17,7 +17,7 @@ BEGIN {
     use_ok('X11::XCB::Window') or BAIL_OUT('Could not load X11::XCB::Window');
 }
 
-X11::XCB::Connection->connect(':0');
+my $x = X11::XCB::Connection->new;
 
 my $sock = IO::Socket::UNIX->new(Peer => '/tmp/i3-ipc.sock');
 isa_ok($sock, 'IO::Socket::UNIX');
@@ -27,37 +27,35 @@ $sock->write(i3test::format_ipc_command("9"));
 
 sleep(0.25);
 
-
-my $tiled_left = i3test::open_standard_window;
-my $tiled_right = i3test::open_standard_window;
+my $tiled_left = i3test::open_standard_window($x);
+my $tiled_right = i3test::open_standard_window($x);
 
 sleep(0.25);
 
 $sock->write(i3test::format_ipc_command("ml"));
 
 # Get input focus before creating the floating window
-my $focus = X11::XCB::Connection->input_focus;
+my $focus = $x->input_focus;
 
 # Create a floating window which is smaller than the minimum enforced size of i3
-my $window = X11::XCB::Window->new(
+my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 1, 1, 30, 30],
     background_color => '#C0C0C0',
-    type => 'utility',
+    type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
 );
 
 isa_ok($window, 'X11::XCB::Window');
 
-$window->create;
 $window->map;
 
 sleep(0.25);
-is(X11::XCB::Connection->input_focus, $window->id, 'floating window focused');
+is($x->input_focus, $window->id, 'floating window focused');
 
 $window->unmap;
 
 sleep(0.25);
 
-is(X11::XCB::Connection->input_focus, $focus, 'Focus correctly restored');
+is($x->input_focus, $focus, 'Focus correctly restored');
 
 diag( "Testing i3, Perl $], $^X" );

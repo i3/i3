@@ -18,7 +18,7 @@ BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 
-X11::XCB::Connection->connect(':0');
+my $x = X11::XCB::Connection->new;
 
 my $sock = IO::Socket::UNIX->new(Peer => '/tmp/i3-ipc.sock');
 isa_ok($sock, 'IO::Socket::UNIX');
@@ -32,11 +32,11 @@ sleep(0.25);
 # Create two windows and make sure focus switching works
 #####################################################################
 
-my $top = i3test::open_standard_window;
+my $top = i3test::open_standard_window($x);
 sleep(0.25);
-my $mid = i3test::open_standard_window;
+my $mid = i3test::open_standard_window($x);
 sleep(0.25);
-my $bottom = i3test::open_standard_window;
+my $bottom = i3test::open_standard_window($x);
 sleep(0.25);
 
 diag("top id = " . $top->id);
@@ -52,10 +52,10 @@ sub focus_after {
 
     $sock->write(i3test::format_ipc_command($msg));
     sleep(0.5);
-    return X11::XCB::Connection->input_focus;
+    return $x->input_focus;
 }
 
-$focus = X11::XCB::Connection->input_focus;
+$focus = $x->input_focus;
 is($focus, $bottom->id, "Latest window focused");
 
 $focus = focus_after("ml");

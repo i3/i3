@@ -13,15 +13,14 @@ BEGIN {
 }
 
 sub open_standard_window {
-    my $original_rect = X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30);
+    my ($x) = @_;
 
-    my $window = X11::XCB::Window->new(
+    my $window = $x->root->create_child(
         class => WINDOW_CLASS_INPUT_OUTPUT,
-        rect => $original_rect,
+        rect => [ 0, 0, 30, 30 ],
         background_color => '#C0C0C0',
     );
 
-    $window->create;
     $window->name('Window ' . counter_window());
     $window->map;
 

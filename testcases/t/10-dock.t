@@ -16,27 +16,26 @@ BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 
-X11::XCB::Connection->connect(':0');
+my $x = X11::XCB::Connection->new;
 
 #####################################################################
 # Create a dock window and see if it gets managed
 #####################################################################
 
-my $screens = X11::XCB::Connection->screens;
+my $screens = $x->screens;
 
 # Get the primary screen
 my $primary = first { $_->primary } @{$screens};
 
 # TODO: focus the primary screen before
 
-my $window = X11::XCB::Window->new(
+my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30],
     background_color => '#FF0000',
-    type => 'dock',
+    type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
 );
 
-$window->create;
 $window->map;
 
 sleep 0.25;
