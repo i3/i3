@@ -20,17 +20,19 @@ li {
 <h1>i3status</h1>
 
 <p>
-  i3status is a small program (around 500 SLOC) for filling dzen2 or wmii’s status
-  bar via its 9P pseudo filesystem. It is designed to be very efficient by issuing
-  a very small number of systemcalls (as the bar should be updated every second or
-  at your specified interval). This ensures that even under high load, your status
-  bar is updated correctly and it saves a little bit of battery life by not spawning
-  new processes every second like shell scripts do.
+  i3status is a small program (less than 1000 SLOC) for generating a status bar
+  for dzen2, xmobar or similar programs. It is designed to be very efficient by
+  issuing a very small number of systemcalls, as one generally wants to update
+  such a status line every second. This ensures that even under high load, your
+  status bar is updated correctly. Also, it saves a bit of energy by not hogging
+  your CPU as much as spawning the corresponding amount of shell commands would.
 </p>
 
 <h2>Releases</h2>
 
 <ul>
+  <li><a href="/i3status/i3status-2.0.tar.bz2">i3status-2.0.tar.bz2</a>
+  (<a href="/i3status/i3status-2.0.tar.bz2.asc">GPG signature</a>, 2009-10-27)</li>
   <li><a href="/i3status/i3status-1.2.tar.bz2">i3status-1.2.tar.bz2</a>
   (<a href="/i3status/i3status-1.2.tar.bz2.asc">GPG signature</a>, 2009-06-21)</li>
   <li><a href="/i3status/i3status-1.1.tar.bz2">i3status-1.1.tar.bz2</a>
