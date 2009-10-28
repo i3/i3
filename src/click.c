@@ -84,6 +84,11 @@ static bool button_press_stackwin(xcb_connection_t *conn, xcb_button_press_event
         CIRCLEQ_FOREACH(client, &(container->clients), clients)
                 num_clients++;
 
+        /* If we don’t have any clients in this container, we cannot do
+         * anything useful anyways. */
+        if (num_clients == 0)
+                return;
+
         if (container->mode == MODE_TABBED)
                 destination = (event->event_x / (container->width / num_clients));
         else if (container->mode == MODE_STACK &&
