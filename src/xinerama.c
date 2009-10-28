@@ -333,6 +333,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
 
                         /* Copy the list head for the dock clients */
                         screen->dock_clients = old_screen->dock_clients;
+                        SLIST_INIT(&(old_screen->dock_clients));
 
                         /* Update the dimensions */
                         Workspace *ws;
@@ -362,6 +363,27 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                         workspace_map_clients(conn, ws);
                 }
                 screen_count++;
+        }
+
+        /* check for dock_clients which are out of bounds */
+        TAILQ_FOREACH(old_screen, virtual_screens, screens) {
+                if (SLIST_EMPTY(&(old_screen->dock_clients)))
+                        continue;
+
+                LOG("dock_clients out of bounds at screen %p, reassigning\n", old_screen);
+                if (SLIST_EMPTY(&(first->dock_clients))) {
+                        first->dock_clients = old_screen->dock_clients;
+                        continue;
+                }
+
+                /* We need to merge the lists */
+                Client *dock_client;
+
+                while (!SLIST_EMPTY(&(old_screen->dock_clients))) {
+                        dock_client = SLIST_FIRST(&(old_screen->dock_clients));
+                        SLIST_INSERT_HEAD(&(first->dock_clients), dock_client, dock_clients);
+                        SLIST_REMOVE_HEAD(&(old_screen->dock_clients), dock_clients);
+                }
         }
 
         /* Check for workspaces which are out of bounds */
