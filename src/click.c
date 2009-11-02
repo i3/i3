@@ -87,7 +87,7 @@ static bool button_press_stackwin(xcb_connection_t *conn, xcb_button_press_event
         /* If we don’t have any clients in this container, we cannot do
          * anything useful anyways. */
         if (num_clients == 0)
-                return;
+                return true;
 
         if (container->mode == MODE_TABBED)
                 destination = (event->event_x / (container->width / num_clients));
