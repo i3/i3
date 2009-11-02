@@ -114,14 +114,23 @@ void grab_all_keys(xcb_connection_t *conn) {
                         continue;
                 }
 
+#ifdef OLD_XCB_KEYSYMS_API
+                bind->number_keycodes = 1;
+                xcb_keycode_t code = xcb_key_symbols_get_keycode(keysyms, keysym);
+                LOG("Translated symbol \"%s\" to 1 keycode (%d)\n", bind->symbol, code);
+                grab_keycode_for_binding(conn, bind, code);
+                bind->translated_to = smalloc(sizeof(xcb_keycode_t));
+                memcpy(bind->translated_to, &code, sizeof(xcb_keycode_t));
+#else
+                uint32_t last_keycode = 0;
                 xcb_keycode_t *keycodes = xcb_key_symbols_get_keycode(keysyms, keysym);
                 if (keycodes == NULL) {
                         LOG("Could not translate symbol \"%s\"\n", bind->symbol);
                         continue;
                 }
 
-                uint32_t last_keycode = 0;
                 bind->number_keycodes = 0;
+
                 for (xcb_keycode_t *walk = keycodes; *walk != 0; walk++) {
                         /* We hope duplicate keycodes will be returned in order
                          * and skip them */
@@ -135,6 +144,7 @@ void grab_all_keys(xcb_connection_t *conn) {
                 bind->translated_to = smalloc(bind->number_keycodes * sizeof(xcb_keycode_t));
                 memcpy(bind->translated_to, keycodes, bind->number_keycodes * sizeof(xcb_keycode_t));
                 free(keycodes);
+#endif
         }
 }
 
