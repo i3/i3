@@ -276,7 +276,7 @@ word_or_number:
         ;
 
 mode:
-        TOKMODE WHITESPACE QUOTEDSTRING WHITESPACE '{' modelines '}'
+        TOKMODE WHITESPACE QUOTEDSTRING WHITESPACE '{' WHITESPACE modelines WHITESPACE '}'
         {
                 if (strcasecmp($<string>3, "default") == 0) {
                         printf("You cannot use the name \"default\" for your mode\n");
