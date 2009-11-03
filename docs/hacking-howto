@@ -299,18 +299,21 @@ to be reserved for the window, the `_NET_WM_STRUT_PARTIAL` property is used.
 == What happens when an application is started?
 
 i3 does not care for applications. All it notices is when new windows are mapped (see
-`src/handlers.c`, `handle_map_notify_event()`). The window is then reparented (see section
+`src/handlers.c`, `handle_map_request()`). The window is then reparented (see section
 "Manage windows").
 
 After reparenting the window, `render_layout()` is called which renders the internal
 layout table. The window was placed in the currently focused container and
-therefore the new window and the old windows (if any) need te be moved/resized
+therefore the new window and the old windows (if any) need to be moved/resized
 so that the currently active layout (default mode/stacking mode) is rendered
 correctly. To move/resize windows, a window is ``configured'' in X11-speak.
 
 Some applications, such as MPlayer obivously assume the window manager is stupid
-and therefore configure their windows by themselves. This generates an event called
-configurenotify. i3 handles these events and pushes the window back to its position/size.
+and try to configure their windows by themselves. This generates an event called
+configurerequest. i3 handles these events and tells the window the size it had
+before the configurerequest (with the exception of not yet mapped windows, which
+get configured like they want to, and floating windows, which can reconfigure
+themselves).
 
 == _NET_WM_STATE
 
