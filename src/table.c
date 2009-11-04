@@ -249,7 +249,7 @@ bool cell_exists(int col, int row) {
 static void free_container(xcb_connection_t *conn, Workspace *workspace, int col, int row) {
         Container *old_container = workspace->table[col][row];
 
-        if (old_container->mode == MODE_STACK)
+        if (old_container->mode == MODE_STACK || old_container->mode == MODE_TABBED)
                 leave_stack_mode(conn, old_container);
 
         free(old_container);
