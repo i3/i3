@@ -50,7 +50,7 @@ void init_table() {
         TAILQ_INSERT_TAIL(workspaces, c_ws, workspaces);
 }
 
-static void new_container(Workspace *workspace, Container **container, int col, int row) {
+static void new_container(Workspace *workspace, Container **container, int col, int row, bool skip_layout_switch) {
         Container *new;
         new = *container = calloc(sizeof(Container), 1);
         CIRCLEQ_INIT(&(new->clients));
@@ -59,7 +59,8 @@ static void new_container(Workspace *workspace, Container **container, int col, 
         new->col = col;
         new->row = row;
         new->workspace = workspace;
-        switch_layout_mode(global_conn, new, config.container_mode);
+        if (!skip_layout_switch)
+                switch_layout_mode(global_conn, new, config.container_mode);
         new->stack_limit = config.container_stack_limit;
         new->stack_limit_value = config.container_stack_limit_value;
 }
@@ -76,8 +77,14 @@ void expand_table_rows(Workspace *workspace) {
 
         for (int c = 0; c < workspace->cols; c++) {
                 workspace->table[c] = realloc(workspace->table[c], sizeof(Container*) * workspace->rows);
-                new_container(workspace, &(workspace->table[c][workspace->rows-1]), c, workspace->rows-1);
+                new_container(workspace, &(workspace->table[c][workspace->rows-1]), c, workspace->rows-1, true);
         }
+
+        /* We need to switch the layout in a separate step because it could
+         * happen that render_layout() (being called by switch_layout_mode())
+         * would access containers which were not yet initialized. */
+        for (int c = 0; c < workspace->cols; c++)
+                switch_layout_mode(global_conn, workspace->table[c][workspace->rows-1], config.container_mode);
 }
 
 /*
@@ -109,7 +116,7 @@ void expand_table_rows_at_head(Workspace *workspace) {
                 }
 
         for (int cols = 0; cols < workspace->cols; cols++)
-                new_container(workspace, &(workspace->table[cols][0]), cols, 0);
+                new_container(workspace, &(workspace->table[cols][0]), cols, 0, false);
 }
 
 /*
@@ -125,7 +132,7 @@ void expand_table_cols(Workspace *workspace) {
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
         workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
         for (int c = 0; c < workspace->rows; c++)
-                new_container(workspace, &(workspace->table[workspace->cols-1][c]), workspace->cols-1, c);
+                new_container(workspace, &(workspace->table[workspace->cols-1][c]), workspace->cols-1, c, false);
 }
 
 /*
@@ -157,7 +164,7 @@ void expand_table_cols_at_head(Workspace *workspace) {
                 }
 
         for (int rows = 0; rows < workspace->rows; rows++)
-                new_container(workspace, &(workspace->table[0][rows]), 0, rows);
+                new_container(workspace, &(workspace->table[0][rows]), 0, rows, false);
 }
 
 /*
