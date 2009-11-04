@@ -131,8 +131,12 @@ void expand_table_cols(Workspace *workspace) {
 
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
         workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
+
         for (int c = 0; c < workspace->rows; c++)
-                new_container(workspace, &(workspace->table[workspace->cols-1][c]), workspace->cols-1, c, false);
+                new_container(workspace, &(workspace->table[workspace->cols-1][c]), workspace->cols-1, c, true);
+
+        for (int c = 0; c < workspace->rows; c++)
+                switch_layout_mode(global_conn, workspace->table[workspace->cols-1][c], config.container_mode);
 }
 
 /*
