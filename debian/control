@@ -27,6 +27,7 @@ Section: x11
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Provides: x-window-manager
 Suggests: rxvt-unicode | x-terminal-emulator
+Recommends: xfonts-base
 Description: an improved dynamic tiling window manager
  Key features of i3 are correct implementation of Xinerama (workspaces are
  assigned to virtual screens, i3 does the right thing when attaching new
