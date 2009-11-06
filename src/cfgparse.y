@@ -276,7 +276,7 @@ word_or_number:
         ;
 
 mode:
-        TOKMODE WHITESPACE QUOTEDSTRING WHITESPACE '{' optional_whitespace modelines optional_whitespace '}'
+        TOKMODE WHITESPACE QUOTEDSTRING WHITESPACE '{' modelines '}'
         {
                 if (strcasecmp($<string>3, "default") == 0) {
                         printf("You cannot use the name \"default\" for your mode\n");
@@ -298,19 +298,15 @@ mode:
         }
         ;
 
-optional_whitespace:
-        /* empty */
-        | WHITESPACE
-        ;
 
 modelines:
         /* empty */
-        | modelines WHITESPACE modeline
         | modelines modeline
         ;
 
 modeline:
-        comment
+        WHITESPACE
+        | comment
         | binding
         {
                 if (current_bindings == NULL) {
