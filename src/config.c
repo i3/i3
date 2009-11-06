@@ -261,8 +261,8 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         config.client.focused.background = get_colorpixel(conn, "#285577");
         config.client.focused.text = get_colorpixel(conn, "#ffffff");
 
-        config.client.focused_inactive.border = get_colorpixel(conn, "#4c7899");
-        config.client.focused_inactive.background = get_colorpixel(conn, "#555555");
+        config.client.focused_inactive.border = get_colorpixel(conn, "#333333");
+        config.client.focused_inactive.background = get_colorpixel(conn, "#5f676a");
         config.client.focused_inactive.text = get_colorpixel(conn, "#ffffff");
 
         config.client.unfocused.border = get_colorpixel(conn, "#333333");
