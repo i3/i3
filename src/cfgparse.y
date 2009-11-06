@@ -276,7 +276,7 @@ word_or_number:
         ;
 
 mode:
-        TOKMODE WHITESPACE QUOTEDSTRING WHITESPACE '{' WHITESPACE modelines WHITESPACE '}'
+        TOKMODE WHITESPACE QUOTEDSTRING WHITESPACE '{' optional_whitespace modelines optional_whitespace '}'
         {
                 if (strcasecmp($<string>3, "default") == 0) {
                         printf("You cannot use the name \"default\" for your mode\n");
@@ -296,6 +296,11 @@ mode:
                 current_bindings = NULL;
                 SLIST_INSERT_HEAD(&modes, mode, modes);
         }
+        ;
+
+optional_whitespace:
+        /* empty */
+        | WHITESPACE
         ;
 
 modelines:
