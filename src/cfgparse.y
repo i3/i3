@@ -368,7 +368,7 @@ new_container:
         ;
 
 workspace:
-        TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKSCREEN WHITESPACE screen workspace_name
+        TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKSCREEN WHITESPACE screen optional_workspace_name
         {
                 int ws_num = $<number>3;
                 if (ws_num < 1) {
@@ -380,7 +380,7 @@ workspace:
                                 workspace_set_name(ws, $<string>8);
                 }
         }
-        | TOKWORKSPACE WHITESPACE NUMBER workspace_name
+        | TOKWORKSPACE WHITESPACE NUMBER WHITESPACE workspace_name
         {
                 int ws_num = $<number>3;
                 if (ws_num < 1) {
@@ -392,10 +392,14 @@ workspace:
         }
         ;
 
+optional_workspace_name:
+        /* empty */                     { $<string>$ = NULL; }
+        | workspace_name                { $<string>$ = $<string>1; }
+        ;
+
 workspace_name:
-        /* NULL */                      { $<string>$ = NULL; }
-        | WHITESPACE QUOTEDSTRING       { $<string>$ = $<string>2; }
-        | WHITESPACE STR                { $<string>$ = $<string>2; }
+        QUOTEDSTRING         { $<string>$ = $<string>1; }
+        | STR                { $<string>$ = $<string>1; }
         ;
 
 screen:
