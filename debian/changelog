@@ -26,8 +26,9 @@ i3-wm (3.d-0) unstable; urgency=low
   * Bugfix: Correctly handle unmap_notify events when resizing
   * Bugfix: Correctly warp pointer after rendering the layout
   * Bugfix: Fix NULL pointer dereference when reconfiguring screens
+  * Explicitly specify -lxcb when linking (Closes: #554860)
 
- -- Michael Stapelberg <michael@stapelberg.de>  Fri, 23 Oct 2009 16:40:01 +0200
+ -- Michael Stapelberg <michael@stapelberg.de>  Sat, 07 Nov 2009 16:44:48 +0100
 
 i3-wm (3.c-2) unstable; urgency=low
 
