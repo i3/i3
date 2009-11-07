@@ -386,8 +386,8 @@ workspace:
                 if (ws_num < 1) {
                         LOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
-                        if ($<string>4 != NULL)
-                                workspace_set_name(workspace_get(ws_num - 1), $<string>4);
+                        if ($<string>5 != NULL)
+                                workspace_set_name(workspace_get(ws_num - 1), $<string>5);
                 }
         }
         ;
