@@ -194,6 +194,7 @@ void parse_file(const char *f) {
 %token TOKARROW
 %token TOKMODE
 %token TOKNEWCONTAINER
+%token TOKNEWWINDOW
 %token TOKCONTAINERMODE
 %token TOKSTACKLIMIT
 
@@ -209,6 +210,7 @@ line:
         | mode
         | floating_modifier
         | new_container
+        | new_window
         | workspace
         | assign
         | ipcsocket
@@ -364,6 +366,14 @@ new_container:
                         con->stack_limit = config.container_stack_limit;
                         con->stack_limit_value = config.container_stack_limit_value;
                 }
+        }
+        ;
+
+new_window:
+        TOKNEWWINDOW WHITESPACE WORD
+        {
+                LOG("new windows should start in mode %s\n", $<string>3);
+                config.default_border = strdup($<string>3);
         }
         ;
 

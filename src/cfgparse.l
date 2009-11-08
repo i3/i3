@@ -43,6 +43,7 @@ set[^\n]*                       { return TOKCOMMENT; }
 ipc-socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
 ipc_socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
 new_container                   { return TOKNEWCONTAINER; }
+new_window                      { return TOKNEWWINDOW; }
 default                         { yylval.number = MODE_DEFAULT; return TOKCONTAINERMODE; }
 stacking                        { yylval.number = MODE_STACK; return TOKCONTAINERMODE; }
 tabbed                          { yylval.number = MODE_TABBED; return TOKCONTAINERMODE; }

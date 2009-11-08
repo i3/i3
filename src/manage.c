@@ -183,6 +183,9 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         new->floating_rect.width = width;
         new->floating_rect.height = height;
 
+        if (config.default_border != NULL)
+                client_init_border(conn, new, config.default_border[1]);
+
         mask = 0;
 
         /* Don’t generate events for our new window, it should *not* be managed */

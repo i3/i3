@@ -86,6 +86,14 @@ bool client_is_floating(Client *client);
 void client_change_border(xcb_connection_t *conn, Client *client, char border_type);
 
 /**
+ * Change the border type for the given client to normal (n), 1px border (p) or
+ * completely borderless (b) without actually re-rendering the layout. Useful
+ * for calling it when initializing a new client.
+ *
+ */
+bool client_init_border(xcb_connection_t *conn, Client *client, char border_type);
+
+/**
  * Unmap the client, correctly setting any state which is needed.
  *
  */

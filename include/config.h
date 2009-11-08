@@ -76,6 +76,8 @@ struct Config {
         int container_stack_limit;
         int container_stack_limit_value;
 
+        const char *default_border;
+
         /** The modifier which needs to be pressed in combination with your mouse
          * buttons to do things with floating windows (move, resize) */
         uint32_t floating_modifier;

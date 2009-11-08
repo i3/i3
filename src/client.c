@@ -258,30 +258,41 @@ bool client_is_floating(Client *client) {
 
 /*
  * Change the border type for the given client to normal (n), 1px border (p) or
- * completely borderless (b).
+ * completely borderless (b) without actually re-rendering the layout. Useful
+ * for calling it when initializing a new client.
  *
  */
-void client_change_border(xcb_connection_t *conn, Client *client, char border_type) {
+bool client_init_border(xcb_connection_t *conn, Client *client, char border_type) {
         switch (border_type) {
                 case 'n':
                         LOG("Changing to normal border\n");
                         client->titlebar_position = TITLEBAR_TOP;
                         client->borderless = false;
-                        break;
+                        return true;
                 case 'p':
                         LOG("Changing to 1px border\n");
                         client->titlebar_position = TITLEBAR_OFF;
                         client->borderless = false;
-                        break;
+                        return true;
                 case 'b':
                         LOG("Changing to borderless\n");
                         client->titlebar_position = TITLEBAR_OFF;
                         client->borderless = true;
-                        break;
+                        return true;
                 default:
                         LOG("Unknown border mode\n");
-                        return;
+                        return false;
         }
+}
+
+/*
+ * Change the border type for the given client to normal (n), 1px border (p) or
+ * completely borderless (b).
+ *
+ */
+void client_change_border(xcb_connection_t *conn, Client *client, char border_type) {
+        if (!client_init_border(conn, client, border_type))
+                return;
 
         /* Ensure that the child’s position inside our window gets updated */
         client->force_reconfigure = true;
