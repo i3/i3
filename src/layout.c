@@ -174,9 +174,14 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 /* Draw the inner background to have a black frame around clients (such as mplayer)
                    which cannot be resized exactly in our frames and therefore are centered */
                 xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
-                xcb_rectangle_t crect = {2, decoration_height,
-                                         client->rect.width - (2 + 2), client->rect.height - 2 - decoration_height};
-                xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
+                if (client->titlebar_position == TITLEBAR_OFF) {
+                        xcb_rectangle_t crect = {1, 1, client->rect.width - (1 + 1), client->rect.height - (1 + 1)};
+                        xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
+                } else {
+                        xcb_rectangle_t crect = {2, decoration_height,
+                                                 client->rect.width - (2 + 2), client->rect.height - 2 - decoration_height};
+                        xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
+                }
         }
 
         if (client->titlebar_position != TITLEBAR_OFF) {

@@ -753,8 +753,13 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
 
                 /* Draw a black background */
                 xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
-                xcb_rectangle_t crect = {2, 0, client->rect.width - (2 + 2), client->rect.height - 2};
-                xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
+                if (client->titlebar_position == TITLEBAR_OFF) {
+                        xcb_rectangle_t crect = {1, 0, client->rect.width - (1 + 1), client->rect.height - 1};
+                        xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
+                } else {
+                        xcb_rectangle_t crect = {2, 0, client->rect.width - (2 + 2), client->rect.height - 2};
+                        xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
+                }
         }
         xcb_flush(conn);
         return 1;
