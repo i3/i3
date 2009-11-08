@@ -274,6 +274,21 @@ new_container stack-limit <cols|rows> <value>
 new_container tabbed
 ---------------------
 
+=== Border style for new windows
+
+This option is only available when using the new lexer/parser (pass +-l+ to i3
+when starting). It determines which border new windows will have.
+
+*Syntax*:
+---------------------------------------------
+new_window <bp|bn|bb>
+---------------------------------------------
+
+*Examples*:
+---------------------
+new_window bp
+---------------------
+
 === Variables
 
 As you learned in the previous section about keyboard bindings, you will have
