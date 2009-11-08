@@ -50,11 +50,11 @@ void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *pr
 
         /* Request the window attributes for every window */
         children = xcb_query_tree_children(reply);
-        for(i = 0; i < len; ++i)
+        for (i = 0; i < len; ++i)
                 cookies[i] = xcb_get_window_attributes(conn, children[i]);
 
         /* Call manage_window with the attributes for every window */
-        for(i = 0; i < len; ++i)
+        for (i = 0; i < len; ++i)
                 manage_window(prophs, conn, children[i], cookies[i], true);
 
         free(reply);
