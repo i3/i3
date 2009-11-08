@@ -404,7 +404,7 @@ workspace:
 
 optional_workspace_name:
         /* empty */                     { $<string>$ = NULL; }
-        | workspace_name                { $<string>$ = $<string>1; }
+        | WHITESPACE workspace_name     { $<string>$ = $<string>1; }
         ;
 
 workspace_name:
