@@ -160,6 +160,8 @@ void parse_file(const char *f) {
 
 %}
 
+%expect 1
+
 %union {
         int number;
         char *string;
@@ -404,7 +406,7 @@ workspace:
 
 optional_workspace_name:
         /* empty */                     { $<string>$ = NULL; }
-        | WHITESPACE workspace_name     { $<string>$ = $<string>1; }
+        | WHITESPACE workspace_name     { $<string>$ = $<string>2; }
         ;
 
 workspace_name:
