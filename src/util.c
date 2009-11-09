@@ -148,7 +148,7 @@ void start_application(const char *command) {
                                         shell = "/bin/sh";
 
                         /* This is the child */
-                        execl(shell, shell, "-c", command, NULL);
+                        execl(shell, shell, "-c", command, (void*)NULL);
                         /* not reached */
                 }
                 exit(0);
