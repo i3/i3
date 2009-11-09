@@ -1,7 +1,7 @@
 i3-msg(1)
 =========
 Michael Stapelberg <michael+i3@stapelberg.de>
-v3.gamma, August 2009
+v3.delta, November 2009
 
 == NAME
 
