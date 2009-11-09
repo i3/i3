@@ -1,3 +1,43 @@
+i3-wm (3.d-1) unstable; urgency=low
+
+  * Implement tabbing (command "T")
+  * Implement horizontal resize of containers (containers! not windows)
+  * Implement the urgency hint for windows/workspaces
+  * Implement vim-like marks (mark/goto command)
+  * Implement stack-limit for further defining how stack windows should look
+  * Implement modes which allow you to use a different set of keybindings
+    when inside a specific mode
+  * Implement changing the default mode of containers
+  * Implement long options (--version, --no-autostart, --help, --config)
+  * Implement 'bt' to toggle between the different border styles
+  * Implement an option to specify the default border style
+  * Use a yacc/lex parser/lexer for the configuration file
+  * The number of workspaces is now dynamic instead of limited to 10
+  * Floating windows (and tiled containers) can now be resized using
+    floating_modifier and right mouse button
+  * Dock windows can now reconfigure their height
+  * Bugfix: Correctly handle multiple messages on the IPC socket
+  * Bugfix: Correctly use base_width, base_height and size increment hints
+  * Bugfix: Correctly send fake configure_notify events
+  * Bugfix: Don’t crash if the numlock symbol cannot be found
+  * Bugfix: Don’t display a colon after unnamed workspaces
+  * Bugfix: If the pointer is outside of the screen when starting, fall back to
+    the first screen.
+  * Bugfix: Initialize screens correctly when not using Xinerama
+  * Bugfix: Correctly handle unmap_notify events when resizing
+  * Bugfix: Correctly warp pointer after rendering the layout
+  * Bugfix: Fix NULL pointer dereference when reconfiguring screens
+  * Explicitly specify -lxcb when linking (Closes: #554860)
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Mon, 09 Nov 2009 20:53:43 +0100
+
+i3-wm (3.c-2) unstable; urgency=low
+
+  * Fix FTBFS on GNU/kFreeBSD and possibly GNU/Hurd (Closes: #542877)
+  * Add manpage for i3-msg
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Mon, 24 Aug 2009 12:23:18 +0200
+
 i3-wm (3.c-1) unstable; urgency=low
 
   * Implement a reload command

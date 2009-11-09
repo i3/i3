@@ -86,6 +86,14 @@ bool client_is_floating(Client *client);
 void client_change_border(xcb_connection_t *conn, Client *client, char border_type);
 
 /**
+ * Change the border type for the given client to normal (n), 1px border (p) or
+ * completely borderless (b) without actually re-rendering the layout. Useful
+ * for calling it when initializing a new client.
+ *
+ */
+bool client_init_border(xcb_connection_t *conn, Client *client, char border_type);
+
+/**
  * Unmap the client, correctly setting any state which is needed.
  *
  */
@@ -96,6 +104,13 @@ void client_unmap(xcb_connection_t *conn, Client *client);
  *
  */
 void client_map(xcb_connection_t *conn, Client *client);
+
+/**
+ * Set the given mark for this client. Used for jumping to the client
+ * afterwards (like m<mark> and '<mark> in vim).
+ *
+ */
+void client_mark(xcb_connection_t *conn, Client *client, const char *mark);
 
 /**
  * Pretty-prints the client’s information into the logfile.

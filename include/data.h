@@ -201,6 +201,9 @@ struct Workspace {
         /** Temporary flag needed for re-querying xinerama screens */
         bool reassigned;
 
+        /** True if any client on this workspace has its urgent flag set */
+        bool urgent;
+
         /** the client who is started in fullscreen mode on this workspace,
          * NULL if there is none */
         Client *fullscreen_client;
@@ -229,6 +232,8 @@ struct Workspace {
          * opened, for example) have the same size as always */
         float *width_factor;
         float *height_factor;
+
+        TAILQ_ENTRY(Workspace) workspaces;
 };
 
 /**
@@ -349,6 +354,9 @@ struct Client {
         int base_height;
         int base_width;
 
+        /** The amount of pixels which X will draw around the client. */
+        int border_width;
+
         /** contains the minimum increment size as specified for the window
          * (in pixels). */
         int width_increment;
@@ -372,6 +380,9 @@ struct Client {
 
         /** Holds the WM_CLASS, useful for matching the client in commands */
         char *window_class;
+
+        /** Holds the client’s mark, for vim-like jumping */
+        char *mark;
 
         /** Holds the xcb_window_t (just an ID) for the leader window (logical
          * parent for toolwindows and similar floating windows) */
@@ -400,6 +411,9 @@ struct Client {
          * the screen and its requested size is used */
         bool dock;
 
+        /** True if the client set the urgency flag in its WM_HINTS property */
+        bool urgent;
+
         /* After leaving fullscreen mode, a client needs to be reconfigured
          * (configuration = setting X, Y, width and height). By setting the
          * force_reconfigure flag, render_layout() will reconfigure the
@@ -427,8 +441,8 @@ struct Client {
 };
 
 /**
- * A container is either in default or stacking mode. It sits inside each cell
- * of the table.
+ * A container is either in default, stacking or tabbed mode. There is one for
+ * each cell of the table.
  *
  */
 struct Container {
@@ -456,7 +470,16 @@ struct Container {
 
         /* Ensure MODE_DEFAULT maps to 0 because we use calloc for
          * initialization later */
-        enum { MODE_DEFAULT = 0, MODE_STACK } mode;
+        enum { MODE_DEFAULT = 0, MODE_STACK, MODE_TABBED } mode;
+
+        /* When in stacking, one can either have unlimited windows inside the
+         * container or set a limit for the rows or columns the stack window
+         * should display to use the screen more efficiently. */
+        enum { STACK_LIMIT_NONE = 0, STACK_LIMIT_COLS, STACK_LIMIT_ROWS } stack_limit;
+
+        /* The number of columns or rows to limit to, see stack_limit */
+        int stack_limit_value;
+
         CIRCLEQ_HEAD(client_head, Client) clients;
 };
 
@@ -471,7 +494,7 @@ struct Screen {
         int num;
 
         /** Current workspace selected on this virtual screen */
-        int current_workspace;
+        Workspace *current_workspace;
 
         /** x, y, width, height */
         Rect rect;

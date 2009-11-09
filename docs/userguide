@@ -46,13 +46,22 @@ image:two_columns.png[Two columns]
 
 === Changing mode of containers
 
-A container can be in two modes at the moment (more to be implemented later):
-+default+ or +stacking+. In default mode, clients are sized so that every client
-gets an equal amount of space of the container. In stacking mode, only one
-focused client of the container is displayed and you get a list of windows
-at the top of the container.
+A container can be in different modes:
 
-To switch the mode, press +Mod1+h+ for stacking and +Mod1+e+ for default.
+default::
+Windows are sized so that every window gets an equal amount of space of the
+container.
+stacking::
+Only the focused client of the container is displayed and you get a list of
+windows at the top of the container.
+tabbed::
+The same principle as +stacking+, but the list of windows at the top is only
+a single line which will be vertically split.
+
+To switch the mode, press +Mod1+e+ for default, +Mod1+h+ for stacking and
++Mod1+w+ for tabbed.
+
+image:modes.png[Container modes]
 
 === Toggling fullscreen mode for a window
 
@@ -102,12 +111,14 @@ To move a window to another workspace, simply press +Mod1+Shift+num+ where
 Similarly to switching workspaces, the target workspace will be created if
 it does not yet exist.
 
-=== Resizing columns
+=== Resizing columns/rows
 
-To resize columns just grab the border between the two columns and move it to
-the wanted size.
+To resize columns or rows just grab the border between the two columns/rows
+and move it to the wanted size. Please keep in mind that each cell of the table
+holds a +container+ and thus you cannot horizontally resize single windows.
 
-A command for doing this via keyboard will be implemented soon.
+See <<resizingconfig>> for how to configure i3 to be able to resize
+columns/rows with your keyboard.
 
 === Restarting i3 inplace
 
@@ -162,6 +173,11 @@ you can set specific applications to start on a specific workspace, you can
 automatically start applications, you can change the colors of i3 or bind
 your keys to do useful stuff.
 
+To change the configuration of i3, copy +/etc/i3/config+ to +~/.i3/config+
+and edit it with a text editor.
+
+=== General configuration
+
 terminal::
 	Specifies the terminal emulator program you prefer. It will be started
 	by default when you press Mod1+Enter, but you can overwrite this. Refer
@@ -201,10 +217,10 @@ bind [Modifiers+]keycode command
 *Examples*:
 --------------------------------
 # Fullscreen
-bindsym Mod1+f f
+bind Mod1+f f
 
 # Restart
-bindsym Mod1+Shift+r restart
+bind Mod1+Shift+r restart
 
 # Notebook-specific hotkeys
 bind 214 exec /home/michael/toggle_beamer.sh
@@ -241,6 +257,37 @@ floating_modifier <Modifiers>
 floating_modifier Mod1
 --------------------------------
 
+=== Layout mode for new containers
+
+This option is only available when using the new lexer/parser (pass +-l+ to i3
+when starting). It determines in which mode new containers will start. See also
+<<stack-limit>>.
+
+*Syntax*:
+---------------------------------------------
+new_container <default|stacking|tabbed>
+new_container stack-limit <cols|rows> <value>
+---------------------------------------------
+
+*Examples*:
+---------------------
+new_container tabbed
+---------------------
+
+=== Border style for new windows
+
+This option is only available when using the new lexer/parser (pass +-l+ to i3
+when starting). It determines which border new windows will have.
+
+*Syntax*:
+---------------------------------------------
+new_window <bp|bn|bb>
+---------------------------------------------
+
+*Examples*:
+---------------------
+new_window bp
+---------------------
 
 === Variables
 
@@ -380,10 +427,14 @@ client.focused_inactive::
 	the focus at the moment.
 client.unfocused::
 	A client which is not the focused one of its container.
+client.urgent::
+	A client which has its urgency hint activated.
 bar.focused::
 	The current workspace in the bottom bar.
 bar.unfocused::
 	All other workspaces in the bottom bar.
+bar.urgent::
+	A workspace which has at least one client with an activated urgency hint.
 
 Colors are in HTML hex format, see below.
 
@@ -411,20 +462,21 @@ section.
 
 === Manipulating layout
 
-To change the layout of the current container to stacking or back to default
-layout, use +s+ or +d+. To make the current client (!) fullscreen, use +f+, to
-make it floating (or tiling again) use +t+:
+To change the layout of the current container to stacking, use +s+, for default
+use +d+ and for tabbed, use +T+. To make the current client (!) fullscreen,
+use +f+, to make it floating (or tiling again) use +t+:
 
 *Examples*:
 --------------
 bindsym Mod1+s s
 bindsym Mod1+l d
+bindsym Mod1+w T
 
 # Toggle fullscreen
 bindsym Mod1+f f
 
 # Toggle floating/tiling
-bindsym Mod1+space t
+bindsym Mod1+t t
 --------------
 
 === Focussing/Moving/Snapping clients/containers/screens
@@ -441,19 +493,19 @@ with +m+ when moving and with +s+ when snapping:
 # Focus clients on the left, bottom, top, right:
 bindsym Mod1+j h
 bindsym Mod1+k j
-bindsym Mod1+l k
+bindsym Mod1+j k
 bindsym Mod1+semicolon l
 
 # Move client to the left, bottom, top, right:
 bindsym Mod1+j mh
 bindsym Mod1+k mj
-bindsym Mod1+l mk
+bindsym Mod1+j mk
 bindsym Mod1+semicolon ml
 
 # Snap client to the left, bottom, top, right:
 bindsym Mod1+j sh
 bindsym Mod1+k sj
-bindsym Mod1+l sk
+bindsym Mod1+j sk
 bindsym Mod1+semicolon sl
 
 # Focus container on the left, bottom, top, right:
@@ -485,6 +537,39 @@ bindsym Mod1+o nw
 bindsym Mod1+p pw
 -------------------------
 
+[[resizingconfig]]
+
+=== Resizing columns/rows
+
+If you want to resize columns/rows using your keyboard, you can use the
++resize+ command, I recommend using it a +mode+ (you need to use the new
+lexer/parser for that, so pass +-l+ to i3 when starting):
+
+.Example: Configuration file, defining a mode for resizing
+----------------------------------------------------------------------
+mode "resize" {
+        # These bindings trigger as soon as you enter the resize mode
+
+        # They resize the border in the direction you pressed, e.g.
+        # when pressing left, the window is resized so that it has
+        # more space on its left
+
+        bindsym n resize left -10
+        bindsym Shift+n resize left +10
+
+        bindsym r resize bottom +10
+        bindsym Shift+r resize bottom -10
+
+        bindsym t resize top -10
+        bindsym Shift+t resize top +10
+
+        bindsym d resize right +10
+        bindsym Shift+d resize right -10
+
+        bind 36 mode default
+}
+----------------------------------------------------------------------
+
 === Jumping to specific windows
 
 Especially when in a multi-monitor environment, you want to quickly jump to a specific
@@ -507,6 +592,37 @@ or you can specify the position of the client if you always use the same layout.
 # Get me to the next open VIM instance
 bindsym Mod1+a jump "urxvt/VIM"
 --------------------------------------
+
+=== VIM-like marks (mark/goto)
+
+This feature is like the jump feature: It allows you to directly jump to a
+specific window (this means switching to the appropriate workspace and setting
+focus to the windows). However, you can directly mark a specific window with
+an arbitrary label and use it afterwards, that is, you do not need to ensure
+that your windows have unique classes or titles and you do not need to change
+your configuration file.
+
+As the command needs to include the label with which you want to mark the
+window, you cannot simply bind it to a key (or, you could bind it to a key and
+only use the set of labels for which you created bindings). +i3-input+ is a
+tool created for this purpose: It lets you input a command and sends the
+command to i3. It can also prefix this command and display a custom prompt for
+the input dialog.
+
+*Syntax*:
+-----------------
+mark <identifier>
+goto <identifier>
+-----------------
+
+*Examples*:
+---------------------------------------
+# Read 1 character and mark the current window with this character
+bindsym Mod1+m exec i3-input -p 'mark ' -l 1 -P 'Mark: '
+
+# Read 1 character and go to the window with the character
+bindsym Mod1+g exec i3-input -p 'goto ' -l 1 -P 'Goto: '
+---------------------------------------
 
 === Traveling the focus stack
 
@@ -535,7 +651,8 @@ ft::
 
 To change the border of the current client, you can use +bn+ to use the normal
 border (including window title), +bp+ to use a 1-pixel border (no window title)
-and +bb+ to make the client borderless.
+and +bb+ to make the client borderless. There also is +bt+ which will toggle
+the different border styles.
 
 *Examples*:
 ------------------
@@ -543,6 +660,35 @@ bindsym Mod1+t bn
 bindsym Mod1+y bp
 bindsym Mod1+u bb
 ------------------
+
+[[stack-limit]]
+
+=== Changing the stack-limit of a container
+
+If you have a single container with a lot of windows inside (say, more than
+10), the default layout of a stacking container can get a little unhandy.
+Depending on your screen’s size, you might end up only using half of the
+titlebars of each window in the container.
+
+Using the +stack-limit+ command, you can limit the amount of rows or columns
+in a stacking container. i3 will create columns or rows (depending on what
+you limited) automatically as needed.
+
+*Syntax*:
+--------------------------------
+stack-limit <cols|rows> <value>
+--------------------------------
+
+*Examples*:
+-------------------
+# I always want to have two window titles in one line
+stack-limit cols 2
+
+# Not more than 5 rows in this stacking container
+stack-limit rows 5
+-------------------
+
+image:stacklimit.png[Container limited to two columns]
 
 === Reloading/Restarting/Exiting
 

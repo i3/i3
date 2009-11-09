@@ -50,11 +50,11 @@ void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *pr
 
         /* Request the window attributes for every window */
         children = xcb_query_tree_children(reply);
-        for(i = 0; i < len; ++i)
+        for (i = 0; i < len; ++i)
                 cookies[i] = xcb_get_window_attributes(conn, children[i]);
 
         /* Call manage_window with the attributes for every window */
-        for(i = 0; i < len; ++i)
+        for (i = 0; i < len; ++i)
                 manage_window(prophs, conn, children[i], cookies[i], true);
 
         free(reply);
@@ -99,12 +99,14 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
 
         /* Reparent the window and add it to our list of managed windows */
         reparent_window(conn, window, attr->visual, geom->root, geom->depth,
-                        geom->x, geom->y, geom->width, geom->height);
+                        geom->x, geom->y, geom->width, geom->height,
+                        geom->border_width);
 
         /* Generate callback events for every property we watch */
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_CLASS);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NORMAL_HINTS);
+        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_HINTS);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_TRANSIENT_FOR);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[WM_CLIENT_LEADER]);
         xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[_NET_WM_NAME]);
@@ -124,7 +126,8 @@ out:
  */
 void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                      xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
-                     int16_t x, int16_t y, uint16_t width, uint16_t height) {
+                     int16_t x, int16_t y, uint16_t width, uint16_t height,
+                     uint32_t border_width) {
 
         xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
                                   utf8_title_cookie, title_cookie,
@@ -174,10 +177,14 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         new->rect.height = height;
         new->width_increment = 1;
         new->height_increment = 1;
+        new->border_width = border_width;
         /* Pre-initialize the values for floating */
         new->floating_rect.x = -1;
         new->floating_rect.width = width;
         new->floating_rect.height = height;
+
+        if (config.default_border != NULL)
+                client_init_border(conn, new, config.default_border[1]);
 
         mask = 0;
 
@@ -231,7 +238,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         xcb_grab_button(conn, false, child, XCB_EVENT_MASK_BUTTON_PRESS,
                         XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                        1 /* left mouse button */, XCB_MOD_MASK_1);
+                        3 /* right mouse button */,
+                        XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
 
         /* Get _NET_WM_WINDOW_TYPE (to see if it’s a dock) */
         xcb_atom_t *atom;
@@ -324,13 +332,13 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         LOG("Assignment \"%s\" matches, so putting it on workspace %d\n",
                             assign->windowclass_title, assign->workspace);
 
-                        if (c_ws->screen->current_workspace == (assign->workspace-1)) {
+                        if (c_ws->screen->current_workspace->num == (assign->workspace-1)) {
                                 LOG("We are already there, no need to do anything\n");
                                 break;
                         }
 
                         LOG("Changing container/workspace and unmapping the client\n");
-                        Workspace *t_ws = &(workspaces[assign->workspace-1]);
+                        Workspace *t_ws = workspace_get(assign->workspace-1);
                         workspace_initialize(t_ws, c_ws->screen);
 
                         new->container = t_ws->table[t_ws->current_col][t_ws->current_row];

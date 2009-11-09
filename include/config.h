@@ -17,9 +17,12 @@
 
 #include <stdbool.h>
 #include "queue.h"
+#include "i3.h"
 
 typedef struct Config Config;
 extern Config config;
+extern bool config_use_lexer;
+extern SLIST_HEAD(modes_head, Mode) modes;
 
 /**
  * Part of the struct Config. It makes sense to group colors for background,
@@ -40,8 +43,22 @@ struct Colortriple {
 struct Variable {
         char *key;
         char *value;
+        char *next_match;
 
         SLIST_ENTRY(Variable) variables;
+};
+
+/**
+ * The configuration file can contain multiple sets of bindings. Apart from the
+ * default set (name == "default"), you can specify other sets and change the
+ * currently active set of bindings by using the "mode <name>" command.
+ *
+ */
+struct Mode {
+        char *name;
+        struct bindings_head *bindings;
+
+        SLIST_ENTRY(Mode) modes;
 };
 
 /**
@@ -55,6 +72,12 @@ struct Config {
 
         const char *ipc_socket_path;
 
+        int container_mode;
+        int container_stack_limit;
+        int container_stack_limit_value;
+
+        const char *default_border;
+
         /** The modifier which needs to be pressed in combination with your mouse
          * buttons to do things with floating windows (move, resize) */
         uint32_t floating_modifier;
@@ -64,10 +87,12 @@ struct Config {
                 struct Colortriple focused;
                 struct Colortriple focused_inactive;
                 struct Colortriple unfocused;
+                struct Colortriple urgent;
         } client;
         struct config_bar {
                 struct Colortriple focused;
                 struct Colortriple unfocused;
+                struct Colortriple urgent;
         } bar;
 };
 
@@ -92,5 +117,11 @@ void ungrab_all_keys(xcb_connection_t *conn);
  *
  */
 void grab_all_keys(xcb_connection_t *conn);
+
+/**
+ * Switches the key bindings to the given mode, if the mode exists
+ *
+ */
+void switch_mode(xcb_connection_t *conn, const char *new_mode);
 
 #endif

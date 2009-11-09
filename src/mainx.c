@@ -19,6 +19,7 @@
 #include <limits.h>
 #include <locale.h>
 #include <fcntl.h>
+#include <getopt.h>
 
 #include <X11/XKBlib.h>
 #include <X11/extensions/XKB.h>
@@ -38,6 +39,7 @@
 #include "data.h"
 #include "debug.h"
 #include "handlers.h"
+#include "click.h"
 #include "i3.h"
 #include "layout.h"
 #include "queue.h"
@@ -59,7 +61,7 @@ Display *xkbdpy;
 xcb_key_symbols_t *keysyms;
 
 /* The list of key bindings */
-struct bindings_head bindings = TAILQ_HEAD_INITIALIZER(bindings);
+struct bindings_head *bindings;
 
 /* The list of exec-lines */
 struct autostarts_head autostarts = TAILQ_HEAD_INITIALIZER(autostarts);
@@ -147,6 +149,14 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_connection_t *conn;
         xcb_property_handlers_t prophs;
         xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
+        static struct option long_options[] = {
+                {"no-autostart", no_argument, 0, 'a'},
+                {"config", required_argument, 0, 'c'},
+                {"version", no_argument, 0, 'v'},
+                {"help", no_argument, 0, 'h'},
+                {0, 0, 0, 0}
+        };
+        int option_index = 0;
 
         setlocale(LC_ALL, "");
 
@@ -156,7 +166,7 @@ int main(int argc, char *argv[], char *env[]) {
 
         start_argv = argv;
 
-        while ((opt = getopt(argc, argv, "c:va")) != -1) {
+        while ((opt = getopt_long(argc, argv, "c:vahl", long_options, &option_index)) != -1) {
                 switch (opt) {
                         case 'a':
                                 LOG("Autostart disabled using -a\n");
@@ -168,8 +178,15 @@ int main(int argc, char *argv[], char *env[]) {
                         case 'v':
                                 printf("i3 version " I3_VERSION " © 2009 Michael Stapelberg and contributors\n");
                                 exit(EXIT_SUCCESS);
+                        case 'l':
+                                config_use_lexer = true;
+                                break;
                         default:
-                                fprintf(stderr, "Usage: %s [-c configfile]\n", argv[0]);
+                                fprintf(stderr, "Usage: %s [-c configfile] [-a] [-v]\n", argv[0]);
+                                fprintf(stderr, "\n");
+                                fprintf(stderr, "-a: disable autostart\n");
+                                fprintf(stderr, "-v: display version and exit\n");
+                                fprintf(stderr, "-c <configfile>: use the provided configfile instead\n");
                                 exit(EXIT_FAILURE);
                 }
         }
@@ -188,6 +205,14 @@ int main(int argc, char *argv[], char *env[]) {
                 die("Cannot open display\n");
 
         load_configuration(conn, override_configpath, false);
+
+        /* Create the initial container on the first workspace. This used to
+         * be part of init_table, but since it possibly requires an X
+         * connection and a loaded configuration (default mode for new
+         * containers may be stacking, which requires a new window to be
+         * created), it had to be delayed. */
+        expand_table_cols(TAILQ_FIRST(workspaces));
+        expand_table_rows(TAILQ_FIRST(workspaces));
 
         /* Place requests for the atoms we need as soon as possible */
         #define REQUEST_ATOM(name) atom_cookies[name] = xcb_intern_atom(conn, 0, strlen(#name), #name);
@@ -385,6 +410,9 @@ int main(int argc, char *argv[], char *env[]) {
         /* Watch WM_CLIENT_LEADER (= logical parent window for toolbars etc.) */
         xcb_property_set_handler(&prophs, atoms[WM_CLIENT_LEADER], UINT_MAX, handle_clientleader_change, NULL);
 
+        /* Watch WM_HINTS (contains the urgent property) */
+        xcb_property_set_handler(&prophs, WM_HINTS, UINT_MAX, handle_hints, NULL);
+
         /* Set up the atoms we support */
         check_error(conn, xcb_change_property_checked(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED],
                        ATOM, 32, 7, atoms), "Could not set _NET_SUPPORTED");
@@ -422,12 +450,13 @@ int main(int argc, char *argv[], char *env[]) {
 
         i3Screen *screen = get_screen_containing(reply->root_x, reply->root_y);
         if (screen == NULL) {
-                LOG("ERROR: No screen at %d x %d\n", reply->root_x, reply->root_y);
-                return 0;
+                LOG("ERROR: No screen at %d x %d, starting on the first screen\n",
+                    reply->root_x, reply->root_y);
+                screen = TAILQ_FIRST(virtual_screens);
         }
 
         LOG("Starting on %d\n", screen->current_workspace);
-        c_ws = &workspaces[screen->current_workspace];
+        c_ws = screen->current_workspace;
 
         manage_existing_windows(conn, &prophs, root);
 

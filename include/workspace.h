@@ -17,6 +17,14 @@
 #define _WORKSPACE_H
 
 /**
+ * Returns a pointer to the workspace with the given number (starting at 0),
+ * creating the workspace if necessary (by allocating the necessary amount of
+ * memory and initializing the data structures correctly).
+ *
+ */
+Workspace *workspace_get(int number);
+
+/**
  * Sets the name (or just its number) for the given workspace. This has to
  * be called for every workspace as the rendering function
  * (render_internal_bar) relies on workspace->name and workspace->name_len
@@ -62,7 +70,17 @@ Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *
  */
 void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws);
 
-
+/**
+ * Maps all clients (and stack windows) of the given workspace.
+ *
+ */
 void workspace_map_clients(xcb_connection_t *conn, Workspace *ws);
+
+/**
+ * Goes through all clients on the given workspace and updates the workspace’s
+ * urgent flag accordingly.
+ *
+ */
+void workspace_update_urgent_flag(Workspace *ws);
 
 #endif

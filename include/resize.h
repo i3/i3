@@ -24,5 +24,13 @@ typedef enum { O_HORIZONTAL, O_VERTICAL } resize_orientation_t;
 int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first,
                              int second, resize_orientation_t orientation,
                              xcb_button_press_event_t *event);
+/**
+ * Resizes a column/row by the given amount of pixels. Called by
+ * resize_graphical_handler (the user clicked) or parse_resize_command (the
+ * user issued the command)
+ *
+ */
+void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int second,
+                      resize_orientation_t orientation, int pixels);
 
 #endif

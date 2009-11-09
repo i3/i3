@@ -26,7 +26,14 @@
 #include "table.h"
 #include "workspace.h"
 
+/* prototype for src/cfgparse.y, will be cleaned up as soon as we completely
+ * switched to the new scanner/parser. */
+void parse_file(const char *f);
+
 Config config;
+struct modes_head modes;
+
+bool config_use_lexer = false;
 
 /*
  * This function resolves ~ in pathnames.
@@ -93,7 +100,7 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
  */
 void grab_all_keys(xcb_connection_t *conn) {
         Binding *bind;
-        TAILQ_FOREACH(bind, &bindings, bindings) {
+        TAILQ_FOREACH(bind, bindings, bindings) {
                 /* The easy case: the user specified a keycode directly. */
                 if (bind->keycode > 0) {
                         grab_keycode_for_binding(conn, bind, bind->keycode);
@@ -107,14 +114,23 @@ void grab_all_keys(xcb_connection_t *conn) {
                         continue;
                 }
 
+#ifdef OLD_XCB_KEYSYMS_API
+                bind->number_keycodes = 1;
+                xcb_keycode_t code = xcb_key_symbols_get_keycode(keysyms, keysym);
+                LOG("Translated symbol \"%s\" to 1 keycode (%d)\n", bind->symbol, code);
+                grab_keycode_for_binding(conn, bind, code);
+                bind->translated_to = smalloc(sizeof(xcb_keycode_t));
+                memcpy(bind->translated_to, &code, sizeof(xcb_keycode_t));
+#else
+                uint32_t last_keycode = 0;
                 xcb_keycode_t *keycodes = xcb_key_symbols_get_keycode(keysyms, keysym);
                 if (keycodes == NULL) {
                         LOG("Could not translate symbol \"%s\"\n", bind->symbol);
                         continue;
                 }
 
-                uint32_t last_keycode = 0;
                 bind->number_keycodes = 0;
+
                 for (xcb_keycode_t *walk = keycodes; *walk != 0; walk++) {
                         /* We hope duplicate keycodes will be returned in order
                          * and skip them */
@@ -128,7 +144,30 @@ void grab_all_keys(xcb_connection_t *conn) {
                 bind->translated_to = smalloc(bind->number_keycodes * sizeof(xcb_keycode_t));
                 memcpy(bind->translated_to, keycodes, bind->number_keycodes * sizeof(xcb_keycode_t));
                 free(keycodes);
+#endif
         }
+}
+
+/*
+ * Switches the key bindings to the given mode, if the mode exists
+ *
+ */
+void switch_mode(xcb_connection_t *conn, const char *new_mode) {
+        struct Mode *mode;
+
+        LOG("Switching to mode %s\n", new_mode);
+
+        SLIST_FOREACH(mode, &modes, modes) {
+                if (strcasecmp(mode->name, new_mode) != 0)
+                        continue;
+
+                ungrab_all_keys(conn);
+                bindings = mode->bindings;
+                grab_all_keys(conn);
+                return;
+        }
+
+        LOG("ERROR: Mode not found\n");
 }
 
 /*
@@ -143,13 +182,23 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 /* First ungrab the keys */
                 ungrab_all_keys(conn);
 
-                /* Clear the old binding and assignment lists */
+                struct Mode *mode;
                 Binding *bind;
-                while (!TAILQ_EMPTY(&bindings)) {
-                        bind = TAILQ_FIRST(&bindings);
-                        TAILQ_REMOVE(&bindings, bind, bindings);
-                        FREE(bind->command);
-                        FREE(bind);
+                while (!SLIST_EMPTY(&modes)) {
+                        mode = SLIST_FIRST(&modes);
+                        FREE(mode->name);
+
+                        /* Clear the old binding list */
+                        bindings = mode->bindings;
+                        while (!TAILQ_EMPTY(bindings)) {
+                                bind = TAILQ_FIRST(bindings);
+                                TAILQ_REMOVE(bindings, bind, bindings);
+                                FREE(bind->translated_to);
+                                FREE(bind->command);
+                                FREE(bind);
+                        }
+                        FREE(bindings);
+                        SLIST_REMOVE(&modes, mode, Mode, modes);
                 }
 
                 struct Assignment *assign;
@@ -160,6 +209,16 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         FREE(assign);
                 }
         }
+
+        SLIST_INIT(&modes);
+
+        struct Mode *default_mode = scalloc(sizeof(struct Mode));
+        default_mode->name = sstrdup("default");
+        default_mode->bindings = scalloc(sizeof(struct bindings_head));
+        TAILQ_INIT(default_mode->bindings);
+        SLIST_INSERT_HEAD(&modes, default_mode, modes);
+
+        bindings = default_mode->bindings;
 
         SLIST_HEAD(variables_head, Variable) variables;
 
@@ -202,13 +261,17 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         config.client.focused.background = get_colorpixel(conn, "#285577");
         config.client.focused.text = get_colorpixel(conn, "#ffffff");
 
-        config.client.focused_inactive.border = get_colorpixel(conn, "#4c7899");
-        config.client.focused_inactive.background = get_colorpixel(conn, "#555555");
+        config.client.focused_inactive.border = get_colorpixel(conn, "#333333");
+        config.client.focused_inactive.background = get_colorpixel(conn, "#5f676a");
         config.client.focused_inactive.text = get_colorpixel(conn, "#ffffff");
 
         config.client.unfocused.border = get_colorpixel(conn, "#333333");
         config.client.unfocused.background = get_colorpixel(conn, "#222222");
         config.client.unfocused.text = get_colorpixel(conn, "#888888");
+
+        config.client.urgent.border = get_colorpixel(conn, "#2f343a");
+        config.client.urgent.background = get_colorpixel(conn, "#900000");
+        config.client.urgent.text = get_colorpixel(conn, "#ffffff");
 
         config.bar.focused.border = get_colorpixel(conn, "#4c7899");
         config.bar.focused.background = get_colorpixel(conn, "#285577");
@@ -217,6 +280,31 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         config.bar.unfocused.border = get_colorpixel(conn, "#333333");
         config.bar.unfocused.background = get_colorpixel(conn, "#222222");
         config.bar.unfocused.text = get_colorpixel(conn, "#888888");
+
+        config.bar.urgent.border = get_colorpixel(conn, "#2f343a");
+        config.bar.urgent.background = get_colorpixel(conn, "#900000");
+        config.bar.urgent.text = get_colorpixel(conn, "#ffffff");
+
+        if (config_use_lexer) {
+                /* Yes, this will be cleaned up soon. */
+                if (override_configpath != NULL) {
+                        parse_file(override_configpath);
+                } else {
+                        FILE *handle;
+                        char *globbed = glob_path("~/.i3/config");
+                        if ((handle = fopen(globbed, "r")) == NULL) {
+                                if ((handle = fopen("/etc/i3/config", "r")) == NULL) {
+                                        die("Neither \"%s\" nor /etc/i3/config could be opened\n", globbed);
+                                } else {
+                                        parse_file("/etc/i3/config");
+                                }
+                        } else {
+                                parse_file(globbed);
+                        }
+                }
+                if (reload)
+                        grab_all_keys(conn);
+        } else {
 
         FILE *handle;
         if (override_configpath != NULL) {
@@ -260,8 +348,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 OPTION_COLORTRIPLE("client.focused", client.focused);
                 OPTION_COLORTRIPLE("client.focused_inactive", client.focused_inactive);
                 OPTION_COLORTRIPLE("client.unfocused", client.unfocused);
+                OPTION_COLORTRIPLE("client.urgent", client.urgent);
                 OPTION_COLORTRIPLE("bar.focused", bar.focused);
                 OPTION_COLORTRIPLE("bar.unfocused", bar.unfocused);
+                OPTION_COLORTRIPLE("bar.urgent", bar.urgent);
 
                 /* exec-lines (autostart) */
                 if (strcasecmp(key, "exec") == 0) {
@@ -312,13 +402,22 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                                         rest++;
                                 if (*rest != ' ')
                                         die("Invalid binding (keysym)\n");
+#if defined(__OpenBSD__)
+                                size_t len = strlen(sym);
+                                if (len > (rest - sym))
+                                        len = (rest - sym);
+                                new->symbol = smalloc(len + 1);
+                                memcpy(new->symbol, sym, len+1);
+                                new->symbol[len]='\0';
+#else
                                 new->symbol = strndup(sym, (rest - sym));
+#endif
                         }
                         rest++;
                         LOG("keycode = %d, symbol = %s, modifiers = %d, command = *%s*\n", new->keycode, new->symbol, modifiers, rest);
                         new->mods = modifiers;
                         new->command = sstrdup(rest);
-                        TAILQ_INSERT_TAIL(&bindings, new, bindings);
+                        TAILQ_INSERT_TAIL(bindings, new, bindings);
                         continue;
                 }
 
@@ -374,7 +473,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                                 if ((end = strchr(screen, ' ')) != NULL)
                                         *end = '\0';
                                 LOG("Setting preferred screen for workspace %d to \"%s\"\n", ws_num, screen);
-                                workspaces[ws_num - 1].preferred_screen = screen;
+                                workspace_get(ws_num-1)->preferred_screen = screen;
 
                                 name += strlen("screen ") + strlen(screen);
                         }
@@ -393,7 +492,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         LOG("setting name to \"%s\"\n", name);
 
                         if (*name != '\0')
-                                workspace_set_name(&(workspaces[ws_num - 1]), name);
+                                workspace_set_name(workspace_get(ws_num - 1), name);
                         free(ws_str);
                         continue;
                 }
@@ -444,7 +543,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         while (*target == '~')
                                 target++;
 
-                        if (atoi(target) >= 1 && atoi(target) <= 10) {
+                        if (atoi(target) >= 1) {
                                 if (new->floating == ASSIGN_FLOATING_ONLY)
                                         new->floating = ASSIGN_FLOATING;
                                 new->workspace = atoi(target);
@@ -493,9 +592,6 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 grab_all_keys(conn);
         fclose(handle);
 
-        REQUIRED_OPTION(terminal);
-        REQUIRED_OPTION(font);
-
         while (!SLIST_EMPTY(&variables)) {
                 struct Variable *v = SLIST_FIRST(&variables);
                 SLIST_REMOVE_HEAD(&variables, variables);
@@ -503,10 +599,14 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 free(v->value);
                 free(v);
         }
+        }
+
+        REQUIRED_OPTION(terminal);
+        REQUIRED_OPTION(font);
 
         /* Set an empty name for every workspace which got no name */
-        for (int i = 0; i < 10; i++) {
-                Workspace *ws = &(workspaces[i]);
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
                 if (ws->name != NULL) {
                         /* If the font was not specified when the workspace name
                          * was loaded, we need to predict the text width now */
@@ -516,7 +616,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         continue;
                 }
 
-                workspace_set_name(&(workspaces[i]), NULL);
+                workspace_set_name(ws, NULL);
         }
  
         return;

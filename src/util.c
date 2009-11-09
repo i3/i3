@@ -18,6 +18,9 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <iconv.h>
+#if defined(__OpenBSD__)
+#include <sys/cdefs.h>
+#endif
 
 #include <xcb/xcb_icccm.h>
 
@@ -270,7 +273,8 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
                 Client *last_focused = get_last_focused_client(conn, client->container, NULL);
 
                 /* In stacking containers, raise the client in respect to the one which was focused before */
-                if (client->container->mode == MODE_STACK && client->container->workspace->fullscreen_client == NULL) {
+                if ((client->container->mode == MODE_STACK || client->container->mode == MODE_TABBED) &&
+                    client->container->workspace->fullscreen_client == NULL) {
                         /* We need to get the client again, this time excluding the current client, because
                          * we might have just gone into stacking mode and need to raise */
                         Client *last_focused = get_last_focused_client(conn, client->container, client);
@@ -339,15 +343,22 @@ void leave_stack_mode(xcb_connection_t *conn, Container *container) {
  *
  */
 void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) {
-        if (mode == MODE_STACK) {
+        if (mode == MODE_STACK || mode == MODE_TABBED) {
                 /* When we’re already in stacking mode, nothing has to be done */
-                if (container->mode == MODE_STACK)
+                if ((mode == MODE_STACK && container->mode == MODE_STACK) ||
+                    (mode == MODE_TABBED && container->mode == MODE_TABBED))
                         return;
 
-                /* When entering stacking mode, we need to open a window on which we can draw the
-                   title bars of the clients, it has height 1 because we don’t bother here with
-                   calculating the correct height - it will be adjusted when rendering anyways. */
-                Rect rect = {container->x, container->y, container->width, 1};
+                if (container->mode == MODE_STACK || container->mode == MODE_TABBED)
+                        goto after_stackwin;
+
+                /* When entering stacking mode, we need to open a window on
+                 * which we can draw the title bars of the clients, it has
+                 * height 1 because we don’t bother here with calculating the
+                 * correct height - it will be adjusted when rendering anyways.
+                 * Also, we need to use max(width, 1) because windows cannot
+                 * be created with either width == 0 or height == 0. */
+                Rect rect = {container->x, container->y, max(container->width, 1), 1};
 
                 uint32_t mask = 0;
                 uint32_t values[2];
@@ -377,9 +388,10 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode) 
 
                 SLIST_INSERT_HEAD(&stack_wins, stack_win, stack_windows);
         } else {
-                if (container->mode == MODE_STACK)
+                if (container->mode == MODE_STACK || container->mode == MODE_TABBED)
                         leave_stack_mode(conn, container);
         }
+after_stackwin:
         container->mode = mode;
 
         /* Force reconfiguration of each client */
@@ -446,12 +458,13 @@ Client *get_matching_client(xcb_connection_t *conn, const char *window_classtitl
         }
 
         LOG("Getting clients for class \"%s\" / title \"%s\"\n", to_class, to_title);
-        for (int workspace = 0; workspace < 10; workspace++) {
-                if (workspaces[workspace].screen == NULL)
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
+                if (ws->screen == NULL)
                         continue;
 
                 Client *client;
-                SLIST_FOREACH(client, &(workspaces[workspace].focus_stack), focus_clients) {
+                SLIST_FOREACH(client, &(ws->focus_stack), focus_clients) {
                         LOG("Checking client with class=%s, name=%s\n", client->window_class, client->name);
                         if (!client_matches_class_name(client, to_class, to_title, to_title_ucs, to_title_ucs_len))
                                 continue;
@@ -466,3 +479,40 @@ done:
         FREE(to_title_ucs);
         return matching;
 }
+
+#if defined(__OpenBSD__)
+
+/*
+ * Taken from FreeBSD
+ * Find the first occurrence of the byte string s in byte string l.
+ *
+ */
+void *memmem(const void *l, size_t l_len, const void *s, size_t s_len) {
+        register char *cur, *last;
+        const char *cl = (const char *)l;
+        const char *cs = (const char *)s;
+
+        /* we need something to compare */
+        if (l_len == 0 || s_len == 0)
+                return NULL;
+
+        /* "s" must be smaller or equal to "l" */
+        if (l_len < s_len)
+                return NULL;
+
+        /* special case where s_len == 1 */
+        if (s_len == 1)
+                return memchr(l, (int)*cs, l_len);
+
+        /* the last position where its possible to find "s" in "l" */
+        last = (char *)cl + l_len - s_len;
+
+        for (cur = (char *)cl; cur <= last; cur++)
+                if (cur[0] == cs[0] && memcmp(cur, cs, s_len) == 0)
+                        return cur;
+
+        return NULL;
+}
+
+#endif
+

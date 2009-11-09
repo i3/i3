@@ -28,6 +28,40 @@
 #include "client.h"
 
 /*
+ * Returns a pointer to the workspace with the given number (starting at 0),
+ * creating the workspace if necessary (by allocating the necessary amount of
+ * memory and initializing the data structures correctly).
+ *
+ */
+Workspace *workspace_get(int number) {
+        Workspace *ws = NULL;
+        TAILQ_FOREACH(ws, workspaces, workspaces)
+                if (ws->num == number)
+                        return ws;
+
+        /* If we are still there, we could not find the requested workspace. */
+        int last_ws = TAILQ_LAST(workspaces, workspaces_head)->num;
+
+        LOG("We need to initialize that one, last ws = %d\n", last_ws);
+
+        for (int c = last_ws; c < number; c++) {
+                LOG("Creating new ws\n");
+
+                ws = scalloc(sizeof(Workspace));
+                ws->num = c+1;
+                TAILQ_INIT(&(ws->floating_clients));
+                expand_table_cols(ws);
+                expand_table_rows(ws);
+                workspace_set_name(ws, NULL);
+
+                TAILQ_INSERT_TAIL(workspaces, ws, workspaces);
+        }
+        LOG("done\n");
+
+        return ws;
+}
+
+/*
  * Sets the name (or just its number) for the given workspace. This has to
  * be called for every workspace as the rendering function
  * (render_internal_bar) relies on workspace->name and workspace->name_len
@@ -62,7 +96,7 @@ void workspace_set_name(Workspace *ws, const char *name) {
  *
  */
 bool workspace_is_visible(Workspace *ws) {
-        return (ws->screen->current_workspace == ws->num);
+        return (ws->screen->current_workspace == ws);
 }
 
 /*
@@ -73,7 +107,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
         bool need_warp = false;
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */
-        Workspace *t_ws = &(workspaces[workspace-1]);
+        Workspace *t_ws = workspace_get(workspace-1);
 
         LOG("show_workspace(%d)\n", workspace);
 
@@ -91,7 +125,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
                 /* Store the old client */
                 Client *old_client = CUR_CELL->currently_focused;
 
-                c_ws = &(workspaces[t_ws->screen->current_workspace]);
+                c_ws = t_ws->screen->current_workspace;
                 current_col = c_ws->current_col;
                 current_row = c_ws->current_row;
                 if (CUR_CELL->currently_focused != NULL)
@@ -109,7 +143,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
         }
 
         /* Check if we need to change something or if we’re already there */
-        if (c_ws->screen->current_workspace == (workspace-1)) {
+        if (c_ws->screen->current_workspace->num == (workspace-1)) {
                 Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
                 if (last_focused != SLIST_END(&(c_ws->focus_stack)))
                         set_focus(conn, last_focused, true);
@@ -121,9 +155,8 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
                 return;
         }
 
-        t_ws->screen->current_workspace = workspace-1;
         Workspace *old_workspace = c_ws;
-        c_ws = &workspaces[workspace-1];
+        c_ws = t_ws->screen->current_workspace = workspace_get(workspace-1);
 
         /* Unmap all clients of the old workspace */
         workspace_unmap_clients(conn, old_workspace);
@@ -229,7 +262,6 @@ void workspace_initialize(Workspace *ws, i3Screen *screen) {
         if (ws->preferred_screen == NULL ||
             (ws->screen = get_screen_from_preference(virtual_screens, ws->preferred_screen)) == NULL)
                 ws->screen = screen;
-        else { LOG("yay, found assignment\n"); }
 
         /* Copy the dimensions from the virtual screen */
         memcpy(&(ws->rect), &(ws->screen->rect), sizeof(Rect));
@@ -243,8 +275,8 @@ void workspace_initialize(Workspace *ws, i3Screen *screen) {
 Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *screen) {
         Workspace *result = NULL;
 
-        for (int c = 0; c < 10; c++) {
-                Workspace *ws = &(workspaces[c]);
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
                 if (ws->preferred_screen == NULL ||
                     !screens_are_equal(get_screen_from_preference(slist, ws->preferred_screen), screen))
                         continue;
@@ -255,22 +287,28 @@ Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *
 
         if (result == NULL) {
                 /* No assignment found, returning first unused workspace */
-                for (int c = 0; c < 10; c++) {
-                        if (workspaces[c].screen != NULL)
+                Workspace *ws;
+                TAILQ_FOREACH(ws, workspaces, workspaces) {
+                        if (ws->screen != NULL)
                                 continue;
 
-                        result = &(workspaces[c]);
+                        result = ws;
                         break;
                 }
         }
 
-        if (result != NULL) {
-                workspace_initialize(result, screen);
-                return result;
+        if (result == NULL) {
+                LOG("No existing free workspace found to assign, creating a new one\n");
+
+                Workspace *ws;
+                int last_ws = 0;
+                TAILQ_FOREACH(ws, workspaces, workspaces)
+                        last_ws = ws->num;
+                result = workspace_get(last_ws + 1);
         }
 
-        LOG("WARNING: No free workspace found to assign!\n");
-        return NULL;
+        workspace_initialize(result, screen);
+        return result;
 }
 
 /*
@@ -361,3 +399,21 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
         ignore_enter_notify_forall(conn, u_ws, false);
 }
 
+/*
+ * Goes through all clients on the given workspace and updates the workspace’s
+ * urgent flag accordingly.
+ *
+ */
+void workspace_update_urgent_flag(Workspace *ws) {
+        Client *current;
+
+        SLIST_FOREACH(current, &(ws->focus_stack), focus_clients) {
+                if (!current->urgent)
+                        continue;
+
+                ws->urgent = true;
+                return;
+        }
+
+        ws->urgent = false;
+}

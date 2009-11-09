@@ -26,6 +26,7 @@
 #include "layout.h"
 #include "client.h"
 #include "floating.h"
+#include "workspace.h"
 
 /*
  * Toggles floating mode for the given client.
@@ -43,17 +44,18 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
         if (con == NULL) {
                 LOG("This client is already in floating (container == NULL), re-inserting\n");
                 Client *next_tiling;
-                SLIST_FOREACH(next_tiling, &(client->workspace->focus_stack), focus_clients)
+                Workspace *ws = client->workspace;
+                SLIST_FOREACH(next_tiling, &(ws->focus_stack), focus_clients)
                         if (!client_is_floating(next_tiling))
                                 break;
                 /* If there are no tiling clients on this workspace, there can only be one
                  * container: the first one */
-                if (next_tiling == TAILQ_END(&(client->workspace->focus_stack)))
-                        con = client->workspace->table[0][0];
+                if (next_tiling == TAILQ_END(&(ws->focus_stack)))
+                        con = ws->table[0][0];
                 else con = next_tiling->container;
 
                 /* Remove the client from the list of floating clients */
-                TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
+                TAILQ_REMOVE(&(ws->floating_clients), client, floating_clients);
 
                 LOG("destination container = %p\n", con);
                 Client *old_focused = con->currently_focused;
@@ -152,7 +154,6 @@ void floating_assign_to_workspace(Client *client, Workspace *new_workspace) {
         TAILQ_INSERT_TAIL(&(client->workspace->floating_clients), client, floating_clients);
         if (client->fullscreen)
                 client->workspace->fullscreen_client = client;
-
 }
 
 /*
@@ -255,9 +256,36 @@ void floating_drag_window(xcb_connection_t *conn, Client *client, xcb_button_pre
                 /* fake_absolute_configure_notify flushes */
         }
 
-
         drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback);
 }
+
+/*
+ * Called when the user right-clicked on the titlebar of a floating window to
+ * resize it.
+ * Calls the drag_pointer function with the resize_window callback
+ *
+ */
+void floating_resize_window(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event) {
+        LOG("floating_resize_window\n");
+
+        void resize_window_callback(Rect *old_rect, uint32_t new_x, uint32_t new_y) {
+                int32_t new_width = old_rect->width + (new_x - event->root_x);
+                int32_t new_height = old_rect->height + (new_y - event->root_y);
+                /* Obey minimum window size */
+                if (new_width < 75 || new_height < 50)
+                        return;
+
+                /* Reposition the client correctly while moving */
+                client->rect.width = new_width;
+                client->rect.height = new_height;
+
+                /* resize_client flushes */
+                resize_client(conn, client);
+        }
+
+        drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, resize_window_callback);
+}
+
 
 /*
  * This function grabs your pointer and lets you drag stuff around (borders).

@@ -24,6 +24,8 @@
 #include "queue.h"
 #include "layout.h"
 #include "client.h"
+#include "table.h"
+#include "workspace.h"
 
 /*
  * Removes the given client from the container, either because it will be inserted into another
@@ -38,7 +40,9 @@ void client_remove_from_container(xcb_connection_t *conn, Client *client, Contai
 
         /* If the container will be empty now and is in stacking mode, we need to
            unmap the stack_win */
-        if (CIRCLEQ_EMPTY(&(container->clients)) && container->mode == MODE_STACK) {
+        if (CIRCLEQ_EMPTY(&(container->clients)) &&
+            (container->mode == MODE_STACK ||
+             container->mode == MODE_TABBED)) {
                 LOG("Unmapping stack window\n");
                 struct Stack_Window *stack_win = &(container->stack_win);
                 stack_win->rect.height = 0;
@@ -233,8 +237,9 @@ void client_toggle_fullscreen(xcb_connection_t *conn, Client *client) {
  */
 void client_set_below_floating(xcb_connection_t *conn, Client *client) {
         /* Ensure that it is below all floating clients */
-        Client *first_floating = TAILQ_FIRST(&(client->workspace->floating_clients));
-        if (first_floating != TAILQ_END(&(client->workspace->floating_clients))) {
+        Workspace *ws = client->workspace;
+        Client *first_floating = TAILQ_FIRST(&(ws->floating_clients));
+        if (first_floating != TAILQ_END(&(ws->floating_clients))) {
                 LOG("Setting below floating\n");
                 uint32_t values[] = { first_floating->frame, XCB_STACK_MODE_BELOW };
                 xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
@@ -253,30 +258,41 @@ bool client_is_floating(Client *client) {
 
 /*
  * Change the border type for the given client to normal (n), 1px border (p) or
- * completely borderless (b).
+ * completely borderless (b) without actually re-rendering the layout. Useful
+ * for calling it when initializing a new client.
  *
  */
-void client_change_border(xcb_connection_t *conn, Client *client, char border_type) {
+bool client_init_border(xcb_connection_t *conn, Client *client, char border_type) {
         switch (border_type) {
                 case 'n':
                         LOG("Changing to normal border\n");
                         client->titlebar_position = TITLEBAR_TOP;
                         client->borderless = false;
-                        break;
+                        return true;
                 case 'p':
                         LOG("Changing to 1px border\n");
                         client->titlebar_position = TITLEBAR_OFF;
                         client->borderless = false;
-                        break;
+                        return true;
                 case 'b':
                         LOG("Changing to borderless\n");
                         client->titlebar_position = TITLEBAR_OFF;
                         client->borderless = true;
-                        break;
+                        return true;
                 default:
                         LOG("Unknown border mode\n");
-                        return;
+                        return false;
         }
+}
+
+/*
+ * Change the border type for the given client to normal (n), 1px border (p) or
+ * completely borderless (b).
+ *
+ */
+void client_change_border(xcb_connection_t *conn, Client *client, char border_type) {
+        if (!client_init_border(conn, client, border_type))
+                return;
 
         /* Ensure that the child’s position inside our window gets updated */
         client->force_reconfigure = true;
@@ -313,4 +329,32 @@ void client_map(xcb_connection_t *conn, Client *client) {
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
 
         xcb_map_window(conn, client->frame);
+}
+
+/*
+ * Set the given mark for this client. Used for jumping to the client
+ * afterwards (like m<mark> and '<mark> in vim).
+ *
+ */
+void client_mark(xcb_connection_t *conn, Client *client, const char *mark) {
+        if (client->mark != NULL)
+                free(client->mark);
+        client->mark = sstrdup(mark);
+
+        /* Make sure no other client has this mark set */
+        Client *current;
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces)
+                SLIST_FOREACH(current, &(ws->focus_stack), focus_clients) {
+                        if (current == client ||
+                            current->mark == NULL ||
+                            strcmp(current->mark, mark) != 0)
+                                continue;
+
+                        free(current->mark);
+                        current->mark = NULL;
+                        /* We can break here since there can only be one other
+                         * client with this mark. */
+                        break;
+                }
 }

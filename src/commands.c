@@ -29,6 +29,7 @@
 #include "config.h"
 #include "workspace.h"
 #include "commands.h"
+#include "resize.h"
 
 bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction) {
         /* If this container is empty, we’re done */
@@ -57,6 +58,24 @@ bool focus_window_in_container(xcb_connection_t *conn, Container *container, dir
 }
 
 typedef enum { THING_WINDOW, THING_CONTAINER, THING_SCREEN } thing_t;
+
+static void jump_to_mark(xcb_connection_t *conn, const char *mark) {
+        Client *current;
+        LOG("Jumping to \"%s\"\n", mark);
+
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces)
+                SLIST_FOREACH(current, &(ws->focus_stack), focus_clients) {
+                        if (current->mark == NULL || strcmp(current->mark, mark) != 0)
+                                continue;
+
+                        workspace_show(conn, current->workspace->num + 1);
+                        set_focus(conn, current, true);
+                        return;
+                }
+
+        LOG("No window with this mark found\n");
+}
 
 static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t thing) {
         LOG("focusing direction %d\n", direction);
@@ -113,7 +132,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                 }
 
                 LOG("Switching to ws %d\n", target->current_workspace + 1);
-                workspace_show(conn, target->current_workspace + 1);
+                workspace_show(conn, target->current_workspace->num + 1);
                 return;
         }
 
@@ -148,7 +167,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                                 /* No screen found? Then wrap */
                                 screen = get_screen_most((direction == D_UP ? D_DOWN : D_UP), container->workspace->screen);
                         }
-                        t_ws = &(workspaces[screen->current_workspace]);
+                        t_ws = screen->current_workspace;
                         new_row = (direction == D_UP ? (t_ws->rows - 1) : 0);
                 }
 
@@ -190,7 +209,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                                 LOG("Wrapping screen around horizontally\n");
                                 screen = get_screen_most((direction == D_LEFT ? D_RIGHT : D_LEFT), container->workspace->screen);
                         }
-                        t_ws = &(workspaces[screen->current_workspace]);
+                        t_ws = screen->current_workspace;
                         new_col = (direction == D_LEFT ? (t_ws->cols - 1) : 0);
                 }
 
@@ -506,7 +525,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
 
 static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *client, int workspace) {
         /* t_ws (to workspace) is just a container pointer to the workspace we’re switching to */
-        Workspace *t_ws = &(workspaces[workspace-1]),
+        Workspace *t_ws = workspace_get(workspace-1),
                   *old_ws = client->workspace;
 
         LOG("moving floating\n");
@@ -561,7 +580,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         assert(container != NULL);
 
         /* t_ws (to workspace) is just a container pointer to the workspace we’re switching to */
-        Workspace *t_ws = &(workspaces[workspace-1]);
+        Workspace *t_ws = workspace_get(workspace-1);
 
         Client *current_client = container->currently_focused;
         if (current_client == NULL) {
@@ -767,31 +786,75 @@ static char **append_argument(char **original, char *argument) {
  *
  */
 static void next_previous_workspace(xcb_connection_t *conn, int direction) {
-        Workspace *t_ws;
-        int i;
+        Workspace *ws = c_ws;
 
         if (direction == 'n') {
-                /* If we are on the last workspace, we cannot go any further */
-                if (c_ws->num == 9)
-                        return;
+                while ((ws = TAILQ_NEXT(ws, workspaces)) != TAILQ_END(workspaces_head)) {
+                        if (ws->screen == NULL)
+                                continue;
 
-                for (i = c_ws->num + 1; i <= 9; i++) {
-                        t_ws = &(workspaces[i]);
-                        if (t_ws->screen != NULL)
-                                break;
+                        workspace_show(conn, ws->num + 1);
+                        return;
                 }
         } else if (direction == 'p') {
-                if (c_ws->num == 0)
+                while ((ws = TAILQ_PREV(ws, workspaces_head, workspaces)) != TAILQ_END(workspaces)) {
+                        if (ws->screen == NULL)
+                                continue;
+
+                        workspace_show(conn, ws->num + 1);
                         return;
-                for (i = c_ws->num - 1; i >= 0 ; i--) {
-                        t_ws = &(workspaces[i]);
-                        if (t_ws->screen != NULL)
-                                break;
                 }
         }
+}
 
-        if (t_ws->screen != NULL)
-                workspace_show(conn, i+1);
+static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, const char *command) {
+        int first, second;
+        resize_orientation_t orientation = O_VERTICAL;
+        Container *con = last_focused->container;
+        Workspace *ws = con->workspace;
+
+        if (STARTS_WITH(command, "left")) {
+                if (con->col == 0)
+                        return;
+                first = con->col - 1;
+                second = con->col;
+                command += strlen("left");
+        } else if (STARTS_WITH(command, "right")) {
+                first = con->col + (con->colspan - 1);
+                LOG("column %d\n", first);
+
+                if (!cell_exists(first, con->row) ||
+                    (first == (ws->cols-1)))
+                        return;
+
+                second = first + 1;
+                command += strlen("right");
+        } else if (STARTS_WITH(command, "top")) {
+                if (con->row == 0)
+                        return;
+                first = con->row - 1;
+                second = con->row;
+                orientation = O_HORIZONTAL;
+                command += strlen("top");
+        } else if (STARTS_WITH(command, "bottom")) {
+                first = con->row + (con->rowspan - 1);
+                if (!cell_exists(con->col, first) ||
+                    (first == (ws->rows-1)))
+                        return;
+
+                second = first + 1;
+                orientation = O_HORIZONTAL;
+                command += strlen("bottom");
+        } else {
+                LOG("Syntax: resize <left|right|top|bottom> [+|-]<pixels>\n");
+                return;
+        }
+
+        int pixels = atoi(command);
+        if (pixels == 0)
+                return;
+
+        resize_container(conn, ws, first, second, orientation, pixels);
 }
 
 /*
@@ -814,6 +877,76 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         if (STARTS_WITH(command, "exec ")) {
                 LOG("starting \"%s\"\n", command + strlen("exec "));
                 start_application(command+strlen("exec "));
+                return;
+        }
+
+        if (STARTS_WITH(command, "mark")) {
+                if (last_focused == NULL) {
+                        LOG("There is no window to mark\n");
+                        return;
+                }
+                const char *rest = command + strlen("mark");
+                while (*rest == ' ')
+                        rest++;
+                if (*rest == '\0') {
+                        LOG("interactive mark starting\n");
+                        start_application("i3-input -p 'mark ' -l 1 -P 'Mark: '");
+                } else {
+                        LOG("mark with \"%s\"\n", rest);
+                        client_mark(conn, last_focused, rest);
+                }
+                return;
+        }
+
+        if (STARTS_WITH(command, "goto")) {
+                const char *rest = command + strlen("goto");
+                while (*rest == ' ')
+                        rest++;
+                if (*rest == '\0') {
+                        LOG("interactive go to mark starting\n");
+                        start_application("i3-input -p 'goto ' -l 1 -P 'Goto: '");
+                } else {
+                        LOG("go to \"%s\"\n", rest);
+                        jump_to_mark(conn, rest);
+                }
+                return;
+        }
+
+        if (STARTS_WITH(command, "stack-limit ")) {
+                if (last_focused == NULL || client_is_floating(last_focused)) {
+                        LOG("No container focused\n");
+                        return;
+                }
+                const char *rest = command + strlen("stack-limit ");
+                if (strncmp(rest, "rows ", strlen("rows ")) == 0) {
+                        last_focused->container->stack_limit = STACK_LIMIT_ROWS;
+                        rest += strlen("rows ");
+                } else if (strncmp(rest, "cols ", strlen("cols ")) == 0) {
+                        last_focused->container->stack_limit = STACK_LIMIT_COLS;
+                        rest += strlen("cols ");
+                } else {
+                        LOG("Syntax: stack-limit <cols|rows> <limit>\n");
+                        return;
+                }
+
+                last_focused->container->stack_limit_value = atoi(rest);
+                if (last_focused->container->stack_limit_value == 0)
+                        last_focused->container->stack_limit = STACK_LIMIT_NONE;
+
+                return;
+        }
+
+        if (STARTS_WITH(command, "resize ")) {
+                if (last_focused == NULL)
+                        return;
+                const char *rest = command + strlen("resize ");
+                parse_resize_command(conn, last_focused, rest);
+                return;
+        }
+
+        if (STARTS_WITH(command, "mode ")) {
+                const char *rest = command + strlen("mode ");
+                switch_mode(conn, rest);
                 return;
         }
 
@@ -875,23 +1008,41 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         }
 
         /* Is it just 's' for stacking or 'd' for default? */
-        if ((command[0] == 's' || command[0] == 'd') && (command[1] == '\0')) {
+        if ((command[0] == 's' || command[0] == 'd' || command[0] == 'T') && (command[1] == '\0')) {
                 if (last_focused != NULL && client_is_floating(last_focused)) {
                         LOG("not switching, this is a floating client\n");
                         return;
                 }
                 LOG("Switching mode for current container\n");
-                switch_layout_mode(conn, CUR_CELL, (command[0] == 's' ? MODE_STACK : MODE_DEFAULT));
+                int new_mode = MODE_DEFAULT;
+                if (command[0] == 's')
+                        new_mode = MODE_STACK;
+                if (command[0] == 'T')
+                        new_mode = MODE_TABBED;
+                switch_layout_mode(conn, CUR_CELL, new_mode);
                 return;
         }
 
         /* Is it 'bn' (border normal), 'bp' (border 1pixel) or 'bb' (border borderless)? */
+        /* or even 'bt' (toggle border: 'bp' -> 'bb' -> 'bn' ) */
         if (command[0] == 'b') {
                 if (last_focused == NULL) {
                         LOG("No window focused, cannot change border type\n");
                         return;
                 }
-                client_change_border(conn, last_focused, command[1]);
+
+                char com = command[1];
+                if (command[1] == 't') {
+                        if (last_focused->titlebar_position == TITLEBAR_TOP &&
+                            !last_focused->borderless)
+                            com = 'p';
+                        else if (last_focused->titlebar_position == TITLEBAR_OFF &&
+                                 !last_focused->borderless)
+                            com = 'b';
+                        else com = 'n';
+                }
+
+                client_change_border(conn, last_focused, com);
                 return;
         }
 
@@ -934,14 +1085,16 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         return;
                 }
 
+                Workspace *ws = last_focused->workspace;
+
                 toggle_floating_mode(conn, last_focused, false);
                 /* delete all empty columns/rows */
-                cleanup_table(conn, last_focused->workspace);
+                cleanup_table(conn, ws);
 
                 /* Fix colspan/rowspan if it’d overlap */
-                fix_colrowspan(conn, last_focused->workspace);
+                fix_colrowspan(conn, ws);
 
-                render_workspace(conn, last_focused->workspace->screen, last_focused->workspace);
+                render_workspace(conn, ws->screen, ws);
 
                 /* Re-focus the client because cleanup_table sets the focus to the last
                  * focused client inside a container only. */

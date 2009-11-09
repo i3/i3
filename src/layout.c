@@ -27,6 +27,7 @@
 #include "client.h"
 #include "floating.h"
 #include "handlers.h"
+#include "workspace.h"
 
 /*
  * Updates *destination with new_value and returns true if it was changed or false
@@ -63,16 +64,27 @@ int get_unoccupied_x(Workspace *workspace) {
 }
 
 /* See get_unoccupied_x() */
-int get_unoccupied_y(Workspace *workspace, int col) {
-        int unoccupied = workspace->rect.height;
-        float default_factor = ((float)workspace->rect.height / workspace->rows) / workspace->rect.height;
+int get_unoccupied_y(Workspace *workspace) {
+        int height = workspace->rect.height;
+        i3Font *font = load_font(global_conn, config.font);
+
+        /* Reserve space for dock clients */
+        Client *client;
+        SLIST_FOREACH(client, &(workspace->screen->dock_clients), dock_clients)
+                height -= client->desired_height;
+
+        /* Space for the internal bar */
+        height -= (font->height + 6);
+
+        int unoccupied = height;
+        float default_factor = ((float)height / workspace->rows) / height;
 
         LOG("get_unoccupied_y(), starting with %d, default_factor = %f\n", unoccupied, default_factor);
 
         for (int rows = 0; rows < workspace->rows; rows++) {
                 LOG("height_factor[%d] = %f\n", rows, workspace->height_factor[rows]);
                 if (workspace->height_factor[rows] == 0)
-                        unoccupied -= workspace->rect.height * default_factor;
+                        unoccupied -= height * default_factor;
         }
 
         LOG("unoccupied space: %d\n", unoccupied);
@@ -86,12 +98,14 @@ int get_unoccupied_y(Workspace *workspace, int col) {
  *
  */
 void redecorate_window(xcb_connection_t *conn, Client *client) {
-        if (client->container != NULL && client->container->mode == MODE_STACK) {
+        if (client->container != NULL &&
+            (client->container->mode == MODE_STACK ||
+             client->container->mode == MODE_TABBED)) {
                 render_container(conn, client->container);
                 /* We clear the frame to generate exposure events, because the color used
                    in drawing may be different */
                 xcb_clear_area(conn, true, client->frame, 0, 0, client->rect.width, client->rect.height);
-        } else decorate_window(conn, client, client->frame, client->titlegc, 0);
+        } else decorate_window(conn, client, client->frame, client->titlegc, 0, 0);
         xcb_flush(conn);
 }
 
@@ -100,7 +114,8 @@ void redecorate_window(xcb_connection_t *conn, Client *client) {
  * When in stacking mode, the window decorations are drawn onto an own window.
  *
  */
-void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t drawable, xcb_gcontext_t gc, int offset) {
+void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t drawable,
+                     xcb_gcontext_t gc, int offset_x, int offset_y) {
         i3Font *font = load_font(conn, config.font);
         int decoration_height = font->height + 2 + 2;
         struct Colortriple *color;
@@ -111,18 +126,23 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 return;
 
         last_focused = SLIST_FIRST(&(client->workspace->focus_stack));
-        if (client_is_floating(client)) {
-                if (last_focused == client)
-                        color = &(config.client.focused);
-                else color = &(config.client.unfocused);
-        } else {
-                if (client->container->currently_focused == client) {
-                        /* Distinguish if the window is currently focused… */
-                        if (last_focused == client && c_ws == client->workspace)
+        /* Is the window urgent? */
+        if (client->urgent)
+                color = &(config.client.urgent);
+        else {
+                if (client_is_floating(client)) {
+                        if (last_focused == client)
                                 color = &(config.client.focused);
-                        /* …or if it is the focused window in a not focused container */
-                        else color = &(config.client.focused_inactive);
-                } else color = &(config.client.unfocused);
+                        else color = &(config.client.unfocused);
+                } else {
+                        if (client->container->currently_focused == client) {
+                                /* Distinguish if the window is currently focused… */
+                                if (last_focused == client && c_ws == client->workspace)
+                                        color = &(config.client.focused);
+                                /* …or if it is the focused window in a not focused container */
+                                else color = &(config.client.focused_inactive);
+                        } else color = &(config.client.unfocused);
+                }
         }
 
         /* Our plan is the following:
@@ -132,16 +152,20 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
          */
 
         /* Draw a rectangle in background color around the window */
-        if (client->borderless)
+        if (client->borderless && (client->container == NULL ||
+            (client->container->mode != MODE_STACK &&
+             client->container->mode != MODE_TABBED)))
                 xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
         else xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, color->background);
 
         /* In stacking mode, we only render the rect for this specific decoration */
-        if (client->container != NULL && client->container->mode == MODE_STACK) {
+        if (client->container != NULL && (client->container->mode == MODE_STACK || client->container->mode == MODE_TABBED)) {
                 /* We need to use the container’s width because it is the more recent value - when
                    in stacking mode, clients get reconfigured only on demand (the not active client
                    is not reconfigured), so the client’s rect.width would be wrong */
-                xcb_rectangle_t rect = {0, offset, client->container->width, offset + decoration_height };
+                xcb_rectangle_t rect = {offset_x, offset_y,
+                                        offset_x + client->container->width,
+                                        offset_y + decoration_height };
                 xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
         } else {
                 xcb_rectangle_t rect = {0, 0, client->rect.width, client->rect.height};
@@ -150,19 +174,28 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 /* Draw the inner background to have a black frame around clients (such as mplayer)
                    which cannot be resized exactly in our frames and therefore are centered */
                 xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
-                xcb_rectangle_t crect = {2, decoration_height,
-                                         client->rect.width - (2 + 2), client->rect.height - 2 - decoration_height};
-                xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
+                if (client->titlebar_position == TITLEBAR_OFF) {
+                        xcb_rectangle_t crect = {1, 1, client->rect.width - (1 + 1), client->rect.height - (1 + 1)};
+                        xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
+                } else {
+                        xcb_rectangle_t crect = {2, decoration_height,
+                                                 client->rect.width - (2 + 2), client->rect.height - 2 - decoration_height};
+                        xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
+                }
         }
 
         if (client->titlebar_position != TITLEBAR_OFF) {
                 /* Draw the lines */
-                xcb_draw_line(conn, drawable, gc, color->border, 0, offset, client->rect.width, offset);
+                xcb_draw_line(conn, drawable, gc, color->border, offset_x, offset_y, offset_x + client->rect.width, offset_y);
                 if ((client->container == NULL ||
-                    client->container->mode != MODE_STACK ||
+                    (client->container->mode != MODE_STACK &&
+                     client->container->mode != MODE_TABBED) ||
                     CIRCLEQ_NEXT_OR_NULL(&(client->container->clients), client, clients) == NULL))
-                        xcb_draw_line(conn, drawable, gc, color->border, 2, offset + font->height + 3,
-                                      client->rect.width - 3, offset + font->height + 3);
+                        xcb_draw_line(conn, drawable, gc, color->border,
+                                      offset_x + 2, /* x */
+                                      offset_y + font->height + 3, /* y */
+                                      offset_x + client->rect.width - 3, /* to_x */
+                                      offset_y + font->height + 3 /* to_y */);
         }
 
         /* If the client has a title, we draw it */
@@ -176,11 +209,11 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                    and we don’t handle the old window name (COMPOUND_TEXT) but only _NET_WM_NAME, which
                    is UTF-8 */
                 if (client->name_len == -1)
-                        xcb_image_text_8(conn, strlen(client->name), drawable, gc, 3 /* X */,
-                                         offset + font->height /* Y = baseline of font */, client->name);
+                        xcb_image_text_8(conn, strlen(client->name), drawable, gc, offset_x + 3 /* X */,
+                                         offset_y + font->height /* Y = baseline of font */, client->name);
                 else
-                        xcb_image_text_16(conn, client->name_len, drawable, gc, 3 /* X */,
-                                          offset + font->height /* Y = baseline of font */, (xcb_char2b_t*)client->name);
+                        xcb_image_text_16(conn, client->name_len, drawable, gc, offset_x + 3 /* X */,
+                                          offset_y + font->height /* Y = baseline of font */, (xcb_char2b_t*)client->name);
         }
 }
 
@@ -210,7 +243,7 @@ void reposition_client(xcb_connection_t *conn, Client *client) {
 
         LOG("Client is on workspace %p with screen %p\n", client->workspace, client->workspace->screen);
         LOG("but screen at %d, %d is %p\n", client->rect.x, client->rect.y, screen);
-        floating_assign_to_workspace(client, &workspaces[screen->current_workspace]);
+        floating_assign_to_workspace(client, screen->current_workspace);
 }
 
 /*
@@ -242,6 +275,7 @@ void resize_client(xcb_connection_t *conn, Client *client) {
         Rect *rect = &(client->child_rect);
         switch ((client->container != NULL ? client->container->mode : MODE_DEFAULT)) {
                 case MODE_STACK:
+                case MODE_TABBED:
                         rect->x = 2;
                         rect->y = 0;
                         rect->width = client->rect.width - (2 + 2);
@@ -266,6 +300,9 @@ void resize_client(xcb_connection_t *conn, Client *client) {
                         }
                         break;
         }
+
+        rect->width -= (2 * client->border_width);
+        rect->height -= (2 * client->border_width);
 
         /* Obey the ratio, if any */
         if (client->proportional_height != 0 &&
@@ -360,17 +397,38 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 i3Font *font = load_font(conn, config.font);
                 int decoration_height = (font->height + 2 + 2);
                 struct Stack_Window *stack_win = &(container->stack_win);
+                /* The size for each tab (width), necessary as a separate variable
+                 * because num_clients gets fixed to 1 in tabbed mode. */
+                int size_each = (num_clients == 0 ? container->width : container->width / num_clients);
+                int stack_lines = num_clients;
 
                 /* Check if we need to remap our stack title window, it gets unmapped when the container
                    is empty in src/handlers.c:unmap_notify() */
-                if (stack_win->rect.height == 0 && num_clients > 0)
+                if (stack_win->rect.height == 0 && num_clients > 0) {
+                        LOG("remapping stack win\n");
                         xcb_map_window(conn, stack_win->window);
+                } else LOG("not remapping stackwin, height = %d, num_clients = %d\n",
+                                stack_win->rect.height, num_clients);
+
+                if (container->mode == MODE_TABBED) {
+                        /* By setting num_clients to 1 we force that the stack window will be only one line
+                         * high. The rest of the code is useful in both cases. */
+                        LOG("tabbed mode, setting num_clients = 1\n");
+                        if (stack_lines > 1)
+                                stack_lines = 1;
+                }
+
+                if (container->stack_limit == STACK_LIMIT_COLS) {
+                        stack_lines = ceil((float)num_clients / container->stack_limit_value);
+                } else if (container->stack_limit == STACK_LIMIT_ROWS) {
+                        stack_lines = min(num_clients, container->stack_limit_value);
+                }
 
                 /* Check if we need to reconfigure our stack title window */
                 if (update_if_necessary(&(stack_win->rect.x), container->x) |
                     update_if_necessary(&(stack_win->rect.y), container->y) |
                     update_if_necessary(&(stack_win->rect.width), container->width) |
-                    update_if_necessary(&(stack_win->rect.height), decoration_height * num_clients)) {
+                    update_if_necessary(&(stack_win->rect.height), decoration_height * stack_lines)) {
 
                         /* Configuration can happen in two slightly different ways:
 
@@ -406,6 +464,22 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 /* Prepare the pixmap for usage */
                 cached_pixmap_prepare(conn, &(stack_win->pixmap));
 
+                int current_row = 0, current_col = 0;
+                int wrap = 0;
+
+                if (container->stack_limit == STACK_LIMIT_COLS) {
+                        /* wrap stores the number of rows after which we will
+                         * wrap to a new column. */
+                        wrap = ceil((float)num_clients / container->stack_limit_value);
+                } else if (container->stack_limit == STACK_LIMIT_ROWS) {
+                        /* When limiting rows, the wrap variable serves a
+                         * slightly different purpose: it holds the number of
+                         * pixels which each client will get. This is constant
+                         * during the following loop, so it saves us some
+                         * divisions and ceil()ing. */
+                        wrap = (stack_win->rect.width / ceil((float)num_clients / container->stack_limit_value));
+                }
+
                 /* Render the decorations of all clients */
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* If the client is in fullscreen mode, it does not get reconfigured */
@@ -415,18 +489,67 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         }
 
                         /* Check if we changed client->x or client->y by updating it.
-                         * Note the bitwise OR instead of logical OR to force evaluation of both statements */
+                         * Note the bitwise OR instead of logical OR to force evaluation of all statements */
                         if (client->force_reconfigure |
                             update_if_necessary(&(client->rect.x), container->x) |
-                            update_if_necessary(&(client->rect.y), container->y + (decoration_height * num_clients)) |
+                            update_if_necessary(&(client->rect.y), container->y + (decoration_height * stack_lines)) |
                             update_if_necessary(&(client->rect.width), container->width) |
-                            update_if_necessary(&(client->rect.height), container->height - (decoration_height * num_clients)))
+                            update_if_necessary(&(client->rect.height), container->height - (decoration_height * stack_lines)))
                                 resize_client(conn, client);
 
                         client->force_reconfigure = false;
 
+                        int offset_x = 0;
+                        int offset_y = 0;
+                        if (container->mode == MODE_STACK) {
+                                if (container->stack_limit == STACK_LIMIT_COLS) {
+                                        offset_x = current_col * (stack_win->rect.width / container->stack_limit_value);
+                                        offset_y = current_row * decoration_height;
+                                        current_row++;
+                                        if ((current_row % wrap) == 0) {
+                                                current_col++;
+                                                current_row = 0;
+                                        }
+                                } else if (container->stack_limit == STACK_LIMIT_ROWS) {
+                                        offset_x = current_col * wrap;
+                                        offset_y = current_row * decoration_height;
+                                        current_row++;
+                                        if ((current_row % container->stack_limit_value) == 0) {
+                                                current_col++;
+                                                current_row = 0;
+                                        }
+                                } else {
+                                        offset_y = current_client * decoration_height;
+                                }
+                                current_client++;
+                        } else if (container->mode == MODE_TABBED)
+                                offset_x = current_client++ * size_each;
                         decorate_window(conn, client, stack_win->pixmap.id, stack_win->pixmap.gc,
-                                        current_client++ * decoration_height);
+                                        offset_x, offset_y);
+                }
+
+                /* Check if we need to fill one column because of an uneven
+                 * amount of windows */
+                if (container->mode == MODE_STACK) {
+                        if (container->stack_limit == STACK_LIMIT_COLS && (current_col % 2) != 0) {
+                                xcb_change_gc_single(conn, stack_win->pixmap.gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+
+                                int offset_x = current_col * (stack_win->rect.width / container->stack_limit_value);
+                                int offset_y = current_row * decoration_height;
+                                xcb_rectangle_t rect = {offset_x, offset_y,
+                                                        offset_x + container->width,
+                                                        offset_y + decoration_height };
+                                xcb_poly_fill_rectangle(conn, stack_win->pixmap.id, stack_win->pixmap.gc, 1, &rect);
+                        } else if (container->stack_limit == STACK_LIMIT_ROWS && (current_row % 2) != 0) {
+                                xcb_change_gc_single(conn, stack_win->pixmap.gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+
+                                int offset_x = current_col * wrap;
+                                int offset_y = current_row * decoration_height;
+                                xcb_rectangle_t rect = {offset_x, offset_y,
+                                                        offset_x + container->width,
+                                                        offset_y + decoration_height };
+                                xcb_poly_fill_rectangle(conn, stack_win->pixmap.id, stack_win->pixmap.gc, 1, &rect);
+                        }
                 }
 
                 xcb_copy_area(conn, stack_win->pixmap.id, stack_win->window, stack_win->pixmap.gc,
@@ -468,13 +591,18 @@ static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int wid
         xcb_change_gc_single(conn, screen->bargc, XCB_GC_FONT, font->id);
 
         int drawn = 0;
-        for (int c = 0; c < 10; c++) {
-                if (workspaces[c].screen != screen)
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
+                if (ws->screen != screen)
                         continue;
 
-                struct Colortriple *color = (screen->current_workspace == c ? &(config.bar.focused) :
-                                             &(config.bar.unfocused));
-                Workspace *ws = &workspaces[c];
+                struct Colortriple *color;
+
+                if (screen->current_workspace == ws)
+                        color = &(config.bar.focused);
+                else if (ws->urgent)
+                        color = &(config.bar.urgent);
+                else color = &(config.bar.unfocused);
 
                 /* Draw the outer rect */
                 xcb_draw_rect(conn, screen->bar, screen->bargc, color->border,
@@ -509,7 +637,10 @@ void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bo
         Client *client;
         uint32_t values[1];
 
-        FOR_TABLE(workspace)
+        FOR_TABLE(workspace) {
+                if (workspace->table[cols][rows] == NULL)
+                        continue;
+
                 CIRCLEQ_FOREACH(client, &(workspace->table[cols][rows]->clients), clients) {
                         /* Change event mask for the decorations */
                         values[0] = FRAME_EVENT_MASK;
@@ -523,6 +654,7 @@ void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bo
                                 values[0] &= ~(XCB_EVENT_MASK_ENTER_WINDOW);
                         xcb_change_window_attributes(conn, client->child, XCB_CW_EVENT_MASK, values);
                 }
+        }
 }
 
 /*
@@ -555,7 +687,9 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
         /* Go through the whole table and render what’s necessary */
         FOR_TABLE(r_ws) {
                 Container *container = r_ws->table[cols][rows];
-                int single_width = -1, single_height;
+                if (container == NULL)
+                        continue;
+                int single_width = -1, single_height = -1;
                 /* Update position of the container */
                 container->row = rows;
                 container->col = cols;
@@ -572,11 +706,18 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
                                 single_width = container->width;
                 }
 
-                //if (container->height_factor == 0)
-                        container->height = (height / r_ws->rows);
-                //else container->height = get_unoccupied_y(r_ws, cols) * container->height_factor;
-                single_height = container->height;
-                container->height *= container->rowspan;
+                LOG("height is %d\n", height);
+
+                container->height = 0;
+
+                for (int c = 0; c < container->rowspan; c++) {
+                        if (r_ws->height_factor[rows+c] == 0)
+                                container->height += (height / r_ws->rows);
+                        else container->height += get_unoccupied_y(r_ws) * r_ws->height_factor[rows+c];
+
+                        if (single_height == -1)
+                                single_height = container->height;
+                }
 
                 /* Render the container if it is not empty */
                 render_container(conn, container);
@@ -602,8 +743,12 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
 void render_layout(xcb_connection_t *conn) {
         i3Screen *screen;
 
+        if (virtual_screens == NULL)
+                return;
+
         TAILQ_FOREACH(screen, virtual_screens, screens)
-                render_workspace(conn, screen, &(workspaces[screen->current_workspace]));
+                if (screen->current_workspace != NULL)
+                        render_workspace(conn, screen, screen->current_workspace);
 
         xcb_flush(conn);
 }

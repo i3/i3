@@ -25,11 +25,14 @@
 #include "util.h"
 #include "i3.h"
 #include "layout.h"
+#include "config.h"
+#include "workspace.h"
 
 int current_workspace = 0;
-Workspace workspaces[10];
+int num_workspaces = 1;
+struct workspaces_head *workspaces;
 /* Convenience pointer to the current workspace */
-Workspace *c_ws = &workspaces[0];
+Workspace *c_ws;
 int current_col = 0;
 int current_row = 0;
 
@@ -38,18 +41,16 @@ int current_row = 0;
  *
  */
 void init_table() {
-        memset(workspaces, 0, sizeof(workspaces));
+        workspaces = scalloc(sizeof(struct workspaces_head));
+        TAILQ_INIT(workspaces);
 
-        for (int i = 0; i < 10; i++) {
-                workspaces[i].screen = NULL;
-                workspaces[i].num = i;
-                TAILQ_INIT(&(workspaces[i].floating_clients));
-                expand_table_cols(&(workspaces[i]));
-                expand_table_rows(&(workspaces[i]));
-        }
+        c_ws = scalloc(sizeof(Workspace));
+        workspace_set_name(c_ws, NULL);
+        TAILQ_INIT(&(c_ws->floating_clients));
+        TAILQ_INSERT_TAIL(workspaces, c_ws, workspaces);
 }
 
-static void new_container(Workspace *workspace, Container **container, int col, int row) {
+static void new_container(Workspace *workspace, Container **container, int col, int row, bool skip_layout_switch) {
         Container *new;
         new = *container = calloc(sizeof(Container), 1);
         CIRCLEQ_INIT(&(new->clients));
@@ -58,6 +59,10 @@ static void new_container(Workspace *workspace, Container **container, int col, 
         new->col = col;
         new->row = row;
         new->workspace = workspace;
+        if (!skip_layout_switch)
+                switch_layout_mode(global_conn, new, config.container_mode);
+        new->stack_limit = config.container_stack_limit;
+        new->stack_limit_value = config.container_stack_limit_value;
 }
 
 /*
@@ -72,8 +77,14 @@ void expand_table_rows(Workspace *workspace) {
 
         for (int c = 0; c < workspace->cols; c++) {
                 workspace->table[c] = realloc(workspace->table[c], sizeof(Container*) * workspace->rows);
-                new_container(workspace, &(workspace->table[c][workspace->rows-1]), c, workspace->rows-1);
+                new_container(workspace, &(workspace->table[c][workspace->rows-1]), c, workspace->rows-1, true);
         }
+
+        /* We need to switch the layout in a separate step because it could
+         * happen that render_layout() (being called by switch_layout_mode())
+         * would access containers which were not yet initialized. */
+        for (int c = 0; c < workspace->cols; c++)
+                switch_layout_mode(global_conn, workspace->table[c][workspace->rows-1], config.container_mode);
 }
 
 /*
@@ -105,7 +116,7 @@ void expand_table_rows_at_head(Workspace *workspace) {
                 }
 
         for (int cols = 0; cols < workspace->cols; cols++)
-                new_container(workspace, &(workspace->table[cols][0]), cols, 0);
+                new_container(workspace, &(workspace->table[cols][0]), cols, 0, false);
 }
 
 /*
@@ -120,8 +131,12 @@ void expand_table_cols(Workspace *workspace) {
 
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
         workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
+
         for (int c = 0; c < workspace->rows; c++)
-                new_container(workspace, &(workspace->table[workspace->cols-1][c]), workspace->cols-1, c);
+                new_container(workspace, &(workspace->table[workspace->cols-1][c]), workspace->cols-1, c, true);
+
+        for (int c = 0; c < workspace->rows; c++)
+                switch_layout_mode(global_conn, workspace->table[workspace->cols-1][c], config.container_mode);
 }
 
 /*
@@ -153,7 +168,7 @@ void expand_table_cols_at_head(Workspace *workspace) {
                 }
 
         for (int rows = 0; rows < workspace->rows; rows++)
-                new_container(workspace, &(workspace->table[0][rows]), 0, rows);
+                new_container(workspace, &(workspace->table[0][rows]), 0, rows, false);
 }
 
 /*
@@ -198,11 +213,29 @@ static void shrink_table_cols(Workspace *workspace) {
  *
  */
 static void shrink_table_rows(Workspace *workspace) {
+        float free_space = workspace->height_factor[workspace->rows-1];
+
         workspace->rows--;
         for (int cols = 0; cols < workspace->cols; cols++)
                 workspace->table[cols] = realloc(workspace->table[cols], sizeof(Container*) * workspace->rows);
-}
 
+        /* Shrink the height_factor array */
+        workspace->height_factor = realloc(workspace->height_factor, sizeof(float) * workspace->rows);
+
+        /* Distribute the free space */
+        if (free_space == 0)
+                return;
+
+        for (int rows = (workspace->rows-1); rows >= 0; rows--) {
+                if (workspace->height_factor[rows] == 0)
+                        continue;
+
+                LOG("Added free space (%f) to %d (had %f)\n", free_space, rows,
+                                workspace->height_factor[rows]);
+                workspace->height_factor[rows] += free_space;
+                break;
+        }
+}
 
 /*
  * Performs simple bounds checking for the given column/row
@@ -216,7 +249,7 @@ bool cell_exists(int col, int row) {
 static void free_container(xcb_connection_t *conn, Workspace *workspace, int col, int row) {
         Container *old_container = workspace->table[col][row];
 
-        if (old_container->mode == MODE_STACK)
+        if (old_container->mode == MODE_STACK || old_container->mode == MODE_TABBED)
                 leave_stack_mode(conn, old_container);
 
         free(old_container);

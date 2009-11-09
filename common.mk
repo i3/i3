@@ -1,8 +1,8 @@
 UNAME=$(shell uname)
 DEBUG=1
 INSTALL=install
-GIT_VERSION=$(shell git describe --tags --always)
-VERSION=$(shell git describe --tags --abbrev=0)
+GIT_VERSION:=$(shell git describe --tags --always)
+VERSION:=$(shell git describe --tags --abbrev=0)
 
 CFLAGS += -std=c99
 CFLAGS += -pipe
@@ -36,6 +36,7 @@ LDFLAGS += -lxcb-atom
 LDFLAGS += -lxcb-aux
 LDFLAGS += -lxcb-icccm
 LDFLAGS += -lxcb-xinerama
+LDFLAGS += -lxcb
 LDFLAGS += -lX11
 LDFLAGS += -lev
 LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib
@@ -46,11 +47,18 @@ CFLAGS += -idirafter /usr/pkg/include
 LDFLAGS += -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
 endif
 
+ifeq ($(UNAME),OpenBSD)
+CFLAGS += -ftrampolines
+CFLAGS += -I${X11BASE}/include
+LDFLAGS += -liconv
+LDFLAGS += -L${X11BASE}/lib
+endif
+
 ifeq ($(UNAME),FreeBSD)
 LDFLAGS += -liconv
 endif
 
-ifeq ($(UNAME),Linux)
+ifneq (,$(filter Linux GNU GNU/%, $(UNAME)))
 CFLAGS += -D_GNU_SOURCE
 endif
 

@@ -1,0 +1,43 @@
+1.) Welcome to i3!
+
+This message provides you with an overview of the default keybindings to use i3.
+Please also make sure to have a look at the man page and the user's guide:
+http://i3.zekjur.net/docs/userguide.html
+
+
+2.) Configuration Files
+
+/etc/i3/config is the default configuration. It is recommended to copy it and
+afterwards edit it to suit your needs (you can especially disable this message):
+
+	cp /etc/i3/config ~/.i3/config
+
+
+3.) Keybindings
+
+The following explanation is related to the QWERTY layout, but as the default
+configuration uses keycodes instead of keysymbols for binding, you still have
+to press the same keys, regardless of your keyboard layout.
+
+The Mod1 key is usually bound to the "Alt" key on your keyboard.
+
+Mod1+Enter opens a terminal emulator
+Mod1+v starts dmenu (an application launcher)
+
+The directional keys are j(left), k(down), l(up) and ;(right). You can also use
+the arrow keys on your keyboard, if you prefer them.
+
+Mod1+<directional key> moves the focus to the window in the given direction
+Mod1+Shift+<directional key> moves the window to the given direction,
+Mod1+<number> opens the corresponding workspace
+Mod1+Shift+<number> moves a window to the wished workspace
+Mod1+h sets the mode of a container to stacking
+Mod1+e sets the mode back to default
+Mod1+f toggles fullscreen mode for the current window
+Mod1+Shift+Space toggles floating mode for the current window
+Mod1+Shift+q closes a window
+Mod1+Shift+r restarts i3 in-place (you will lose your layout, though)
+Mod1+Shift+e exits i3
+
+If you have any questions, please don't hesitate to ask!
+Have fun using i3
