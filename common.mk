@@ -1,8 +1,8 @@
 UNAME=$(shell uname)
 DEBUG=1
 INSTALL=install
-GIT_VERSION=$(shell git describe --tags --always)
-VERSION=$(shell git describe --tags --abbrev=0)
+GIT_VERSION:=$(shell git describe --tags --always)
+VERSION:=$(shell git describe --tags --abbrev=0)
 
 CFLAGS += -std=c99
 CFLAGS += -pipe
