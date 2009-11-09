@@ -10,6 +10,7 @@ i3-wm (3.d-0) unstable; urgency=low
   * Implement changing the default mode of containers
   * Implement long options (--version, --no-autostart, --help, --config)
   * Implement 'bt' to toggle between the different border styles
+  * Implement an option to specify the default border style
   * Use a yacc/lex parser/lexer for the configuration file
   * The number of workspaces is now dynamic instead of limited to 10
   * Floating windows (and tiled containers) can now be resized using
@@ -28,7 +29,7 @@ i3-wm (3.d-0) unstable; urgency=low
   * Bugfix: Fix NULL pointer dereference when reconfiguring screens
   * Explicitly specify -lxcb when linking (Closes: #554860)
 
- -- Michael Stapelberg <michael@stapelberg.de>  Sat, 07 Nov 2009 16:44:48 +0100
+ -- Michael Stapelberg <michael@stapelberg.de>  Mon, 09 Nov 2009 20:53:43 +0100
 
 i3-wm (3.c-2) unstable; urgency=low
 

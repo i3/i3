@@ -41,6 +41,7 @@ A list of changes follows:
   * Implement changing the default mode of containers
   * Implement long options (--version, --no-autostart, --help, --config)
   * Implement 'bt' to toggle between the different border styles
+  * Implement an option to specify the default border style
   * Use a yacc/lex parser/lexer for the configuration file
   * The number of workspaces is now dynamic instead of limited to 10
   * Floating windows (and tiled containers) can now be resized using
@@ -58,4 +59,4 @@ A list of changes follows:
   * Bugfix: Correctly warp pointer after rendering the layout
   * Bugfix: Fix NULL pointer dereference when reconfiguring screens
 
- -- Michael Stapelberg, 2009-10-23
+ -- Michael Stapelberg, 2009-11-09
