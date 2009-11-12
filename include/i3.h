@@ -34,6 +34,7 @@ extern SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins;
 extern xcb_event_handlers_t evenths;
 extern int num_screens;
 extern uint8_t root_depth;
+extern bool xkb_supported;
 extern xcb_atom_t atoms[NUM_ATOMS];
 extern xcb_window_t root;
 

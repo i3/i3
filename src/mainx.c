@@ -83,6 +83,9 @@ int num_screens = 0;
 /* The depth of the root screen (used e.g. for creating new pixmaps later) */
 uint8_t root_depth;
 
+/* We hope that XKB is supported and set this to false */
+bool xkb_supported = true;
+
 /*
  * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
  * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop
@@ -245,25 +248,27 @@ int main(int argc, char *argv[], char *env[]) {
         int evBase, errBase;
 
         if ((xkbdpy = XkbOpenDisplay(getenv("DISPLAY"), &evBase, &errBase, &major, &minor, &error)) == NULL) {
-                fprintf(stderr, "XkbOpenDisplay() failed\n");
-                return 1;
+                LOG("ERROR: XkbOpenDisplay() failed, disabling XKB support\n");
+                xkb_supported = false;
         }
 
-        if (fcntl(ConnectionNumber(xkbdpy), F_SETFD, FD_CLOEXEC) == -1) {
-                fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
-                return 1;
-        }
+        if (xkb_supported) {
+                if (fcntl(ConnectionNumber(xkbdpy), F_SETFD, FD_CLOEXEC) == -1) {
+                        fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
+                        return 1;
+                }
 
-        int i1;
-        if (!XkbQueryExtension(xkbdpy,&i1,&evBase,&errBase,&major,&minor)) {
-                fprintf(stderr, "XKB not supported by X-server\n");
-                return 1;
-        }
-        /* end of ugliness */
+                int i1;
+                if (!XkbQueryExtension(xkbdpy,&i1,&evBase,&errBase,&major,&minor)) {
+                        fprintf(stderr, "XKB not supported by X-server\n");
+                        return 1;
+                }
+                /* end of ugliness */
 
-        if (!XkbSelectEvents(xkbdpy, XkbUseCoreKbd, XkbMapNotifyMask, XkbMapNotifyMask)) {
-                fprintf(stderr, "Could not set XKB event mask\n");
-                return 1;
+                if (!XkbSelectEvents(xkbdpy, XkbUseCoreKbd, XkbMapNotifyMask, XkbMapNotifyMask)) {
+                        fprintf(stderr, "Could not set XKB event mask\n");
+                        return 1;
+                }
         }
 
         /* Initialize event loop using libev */
@@ -279,11 +284,13 @@ int main(int argc, char *argv[], char *env[]) {
         ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
         ev_io_start(loop, xcb_watcher);
 
-        ev_io_init(xkb, xkb_got_event, ConnectionNumber(xkbdpy), EV_READ);
-        ev_io_start(loop, xkb);
+        if (xkb_supported) {
+                ev_io_init(xkb, xkb_got_event, ConnectionNumber(xkbdpy), EV_READ);
+                ev_io_start(loop, xkb);
 
-        /* Flush the buffer so that libev can properly get new events */
-        XFlush(xkbdpy);
+                /* Flush the buffer so that libev can properly get new events */
+                XFlush(xkbdpy);
+        }
 
         ev_check_init(xcb_check, xcb_check_cb);
         ev_check_start(loop, xcb_check);

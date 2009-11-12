@@ -105,12 +105,14 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
         state_filtered &= 0xFF;
         LOG("(removed upper 8 bits, state = %d)\n", state_filtered);
 
-        /* We need to get the keysym group (There are group 1 to group 4, each holding
-           two keysyms (without shift and with shift) using Xkb because X fails to
-           provide them reliably (it works in Xephyr, it does not in real X) */
-        XkbStateRec state;
-        if (XkbGetState(xkbdpy, XkbUseCoreKbd, &state) == Success && (state.group+1) == 2)
-                state_filtered |= BIND_MODE_SWITCH;
+        if (xkb_supported) {
+                /* We need to get the keysym group (There are group 1 to group 4, each holding
+                   two keysyms (without shift and with shift) using Xkb because X fails to
+                   provide them reliably (it works in Xephyr, it does not in real X) */
+                XkbStateRec state;
+                if (XkbGetState(xkbdpy, XkbUseCoreKbd, &state) == Success && (state.group+1) == 2)
+                        state_filtered |= BIND_MODE_SWITCH;
+        }
 
         LOG("(checked mode_switch, state %d)\n", state_filtered);
 
