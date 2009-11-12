@@ -65,6 +65,7 @@ Mod4                            { yylval.number = BIND_MOD4; return MODIFIER; }
 Mod5                            { yylval.number = BIND_MOD5; return MODIFIER; }
 Mode_switch                     { yylval.number = BIND_MODE_SWITCH; return MODIFIER; }
 control                         { return TOKCONTROL; }
+ctrl                            { return TOKCONTROL; }
 shift                           { return TOKSHIFT; }
 →                               { return TOKARROW; }
 \n                              /* ignore end of line */;
