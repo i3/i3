@@ -174,6 +174,82 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
         return false;
 }
 
+/*
+ * Called when the user clicks using the floating_modifier, but the client is in
+ * tiling layout.
+ *
+ * Returns false if it does not do anything (that is, the click should be sent
+ * to the client).
+ *
+ */
+static bool floating_mod_on_tiled_client(xcb_connection_t *conn, Client *client,
+                                         xcb_button_press_event_t *event) {
+        /* Only the right mouse button is interesting for us at the moment */
+        if (event->detail != 3)
+                return false;
+
+        /* The client is in tiling layout. We can still
+         * initiate a resize with the right mouse button,
+         * by chosing the border which is the most near one
+         * to the position of the mouse pointer */
+        int to_right = client->rect.width - event->event_x,
+            to_left = event->event_x,
+            to_top = event->event_y,
+            to_bottom = client->rect.height - event->event_y;
+        resize_orientation_t orientation = O_VERTICAL;
+        Container *con = client->container;
+        Workspace *ws = con->workspace;
+        int first = 0, second = 0;
+
+        LOG("click was %d px to the right, %d px to the left, %d px to top, %d px to bottom\n",
+                        to_right, to_left, to_top, to_bottom);
+
+        if (to_right < to_left &&
+            to_right < to_top &&
+            to_right < to_bottom) {
+                /* …right border */
+                first = con->col + (con->colspan - 1);
+                LOG("column %d\n", first);
+
+                if (!cell_exists(first, con->row) ||
+                    (first == (ws->cols-1)))
+                        return false;
+
+                second = first + 1;
+        } else if (to_left < to_right &&
+                   to_left < to_top &&
+                   to_left < to_bottom) {
+                /* …left border */
+                if (con->col == 0)
+                        return false;
+
+                first = con->col - 1;
+                second = con->col;
+        } else if (to_top < to_right &&
+                   to_top < to_left &&
+                   to_top < to_bottom) {
+                /* This was a press on the top border */
+                if (con->row == 0)
+                        return false;
+                first = con->row - 1;
+                second = con->row;
+                orientation = O_HORIZONTAL;
+        } else if (to_bottom < to_right &&
+                   to_bottom < to_left &&
+                   to_bottom < to_top) {
+                /* …bottom border */
+                first = con->row + (con->rowspan - 1);
+                if (!cell_exists(con->col, first) ||
+                    (first == (ws->rows-1)))
+                        return false;
+
+                second = first + 1;
+                orientation = O_HORIZONTAL;
+        }
+
+       return resize_graphical_handler(conn, ws, first, second, orientation, event);
+}
+
 int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
         LOG("Button %d pressed\n", event->state);
         /* This was either a focus for a client’s parent (= titlebar)… */
@@ -206,70 +282,14 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                                 floating_resize_window(conn, client, event);
                         }
                         return 1;
-                } else {
-                        /* The client is in tiling layout. We can still
-                         * initiate a resize with the right mouse button,
-                         * by chosing the border which is the most near one
-                         * to the position of the mouse pointer */
-                        if (event->detail == 3) {
-                                int to_right = client->rect.width - event->event_x,
-                                    to_left = event->event_x,
-                                    to_top = event->event_y,
-                                    to_bottom = client->rect.height - event->event_y;
-                                resize_orientation_t orientation = O_VERTICAL;
-                                Container *con = client->container;
-                                Workspace *ws = con->workspace;
-                                int first = 0, second = 0;
-
-                                LOG("click was %d px to the right, %d px to the left, %d px to top, %d px to bottom\n",
-                                                to_right, to_left, to_top, to_bottom);
-
-                                if (to_right < to_left &&
-                                    to_right < to_top &&
-                                    to_right < to_bottom) {
-                                        /* …right border */
-                                        first = con->col + (con->colspan - 1);
-                                        LOG("column %d\n", first);
-
-                                        if (!cell_exists(first, con->row) ||
-                                            (first == (ws->cols-1)))
-                                                return 1;
-
-                                        second = first + 1;
-                                } else if (to_left < to_right &&
-                                           to_left < to_top &&
-                                           to_left < to_bottom) {
-                                        /* …left border */
-                                        if (con->col == 0)
-                                                return 1;
-
-                                        first = con->col - 1;
-                                        second = con->col;
-                                } else if (to_top < to_right &&
-                                           to_top < to_left &&
-                                           to_top < to_bottom) {
-                                        /* This was a press on the top border */
-                                        if (con->row == 0)
-                                                return 1;
-                                        first = con->row - 1;
-                                        second = con->row;
-                                        orientation = O_HORIZONTAL;
-                                } else if (to_bottom < to_right &&
-                                           to_bottom < to_left &&
-                                           to_bottom < to_top) {
-                                        /* …bottom border */
-                                        first = con->row + (con->rowspan - 1);
-                                        if (!cell_exists(con->col, first) ||
-                                            (first == (ws->rows-1)))
-                                                return 1;
-
-                                        second = first + 1;
-                                        orientation = O_HORIZONTAL;
-                                }
-
-                               return resize_graphical_handler(conn, ws, first, second, orientation, event);
-                        }
                 }
+
+                if (!floating_mod_on_tiled_client(conn, client, event)) {
+                        xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
+                        xcb_flush(conn);
+                }
+
+                return 1;
         }
 
         if (client == NULL) {
