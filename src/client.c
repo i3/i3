@@ -297,11 +297,16 @@ void client_change_border(xcb_connection_t *conn, Client *client, char border_ty
         /* Ensure that the child’s position inside our window gets updated */
         client->force_reconfigure = true;
 
-        /* For clients inside a container, we can simply render the container.
-         * If the client is floating, we need to render the whole layout */
+        /* For clients inside a container, we can simply render the container */
         if (client->container != NULL)
                 render_container(conn, client->container);
-        else render_layout(conn);
+        else {
+                /* If the client is floating, directly push its size */
+                if (client_is_floating(client))
+                        resize_client(conn, client);
+                /* Otherwise, it may be a dock client, thus render the whole layout */
+                else render_layout(conn);
+        }
 
         redecorate_window(conn, client);
 }
