@@ -178,10 +178,6 @@ and edit it with a text editor.
 
 === General configuration
 
-terminal::
-	Specifies the terminal emulator program you prefer. It will be started
-	by default when you press Mod1+Enter, but you can overwrite this. Refer
-	to it as +$terminal+ to keep things modular.
 font::
 	Specifies the default font you want i3 to use. Use an X core font
 	descriptor here, like

@@ -486,8 +486,8 @@ exec:
 terminal:
         TOKTERMINAL WHITESPACE STR
         {
-                config.terminal = sstrdup($<string>3);
-                printf("terminal %s\n", config.terminal);
+                LOG("The terminal option is DEPRECATED and has no effect. "
+                    "Please remove it from your configuration file.");
         }
         ;
 

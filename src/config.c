@@ -597,7 +597,6 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         }
         }
 
-        REQUIRED_OPTION(terminal);
         REQUIRED_OPTION(font);
 
         /* Set an empty name for every workspace which got no name */
