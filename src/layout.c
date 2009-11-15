@@ -199,7 +199,10 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
         }
 
         /* If the client has a title, we draw it */
-        if (client->name != NULL && client->titlebar_position != TITLEBAR_OFF) {
+        if (client->name != NULL &&
+            ((client->container != NULL &&
+              client->container->mode != MODE_DEFAULT) ||
+             client->titlebar_position != TITLEBAR_OFF)) {
                 /* Draw the font */
                 uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
                 uint32_t values[] = { color->text, color->background, font->id };
