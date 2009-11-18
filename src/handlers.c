@@ -513,6 +513,10 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         if (workspace_empty)
                 client->workspace->screen = NULL;
 
+        /* Remove the urgency flag if set */
+        client->urgent = false;
+        workspace_update_urgent_flag(client->workspace);
+
         FREE(client->window_class);
         FREE(client->name);
         free(client);
