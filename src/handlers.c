@@ -342,15 +342,34 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
         /* Floating clients can be reconfigured */
         if (client_is_floating(client)) {
                 i3Font *font = load_font(conn, config.font);
+                int mode = (client->container != NULL ? client->container->mode : MODE_DEFAULT);
 
                 if (event->value_mask & XCB_CONFIG_WINDOW_X)
                         client->rect.x = event->x;
                 if (event->value_mask & XCB_CONFIG_WINDOW_Y)
                         client->rect.y = event->y;
-                if (event->value_mask & XCB_CONFIG_WINDOW_WIDTH)
-                        client->rect.width = event->width + 2 + 2;
-                if (event->value_mask & XCB_CONFIG_WINDOW_HEIGHT)
-                        client->rect.height = event->height + (font->height + 2 + 2) + 2;
+                if (event->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
+                        if (mode == MODE_STACK || mode == MODE_TABBED) {
+                                client->rect.width = event->width + 2 + 2;
+                        } else {
+                                if (client->titlebar_position == TITLEBAR_OFF && client->borderless)
+                                        client->rect.width = event->width;
+                                else if (client->titlebar_position == TITLEBAR_OFF && !client->borderless)
+                                        client->rect.width = event->width + (1 + 1);
+                                else client->rect.width = event->width + (2 + 2);
+                        }
+                }
+                if (event->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
+                        if (mode == MODE_STACK || mode == MODE_TABBED) {
+                                client->rect.height = event->height + 2;
+                        } else {
+                                if (client->titlebar_position == TITLEBAR_OFF && client->borderless)
+                                        client->rect.height = event->height;
+                                else if (client->titlebar_position == TITLEBAR_OFF && !client->borderless)
+                                        client->rect.height = event->height + (1 + 1);
+                                else client->rect.height = event->height + (font->height + 2 + 2) + 2;
+                        }
+                }
 
                 LOG("Accepted new position/size for floating client: (%d, %d) size %d x %d\n",
                     client->rect.x, client->rect.y, client->rect.width, client->rect.height);
