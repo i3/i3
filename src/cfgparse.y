@@ -412,6 +412,7 @@ optional_workspace_name:
 workspace_name:
         QUOTEDSTRING         { $<string>$ = $<string>1; }
         | STR                { $<string>$ = $<string>1; }
+        | WORD               { $<string>$ = $<string>1; }
         ;
 
 screen:
