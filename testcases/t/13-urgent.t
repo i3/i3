@@ -52,4 +52,9 @@ sleep 0.25;
 $sock->write(i3test::format_ipc_command("9"));
 sleep 0.25;
 $sock->write(i3test::format_ipc_command("1"));
+sleep 0.25;
+
+my $std = i3test::open_standard_window($x);
+sleep 0.25;
+$std->add_hint('urgency');
 sleep 1;
