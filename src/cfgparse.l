@@ -87,7 +87,7 @@ shift                           { return TOKSHIFT; }
                                   return QUOTEDSTRING;
                                 }
 <ASSIGN_COND>[^ \t]+            { BEGIN(INITIAL); yylval.string = strdup(yytext); return STR_NG; }
-<BINDSYM_AWS_COND>[a-zA-Z0-9]+  { yylval.string = strdup(yytext); return WORD; }
+<BINDSYM_AWS_COND>[a-zA-Z0-9_]+ { yylval.string = strdup(yytext); return WORD; }
 [a-zA-Z]+                       { yylval.string = strdup(yytext); return WORD; }
 .                               { return (int)yytext[0]; }
 %%
