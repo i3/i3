@@ -470,7 +470,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 if (container->stack_limit == STACK_LIMIT_COLS) {
                         /* wrap stores the number of rows after which we will
                          * wrap to a new column. */
-                        wrap = ceil((float)num_clients / container->stack_limit_value);
+                        wrap = container->stack_limit_value;
                 } else if (container->stack_limit == STACK_LIMIT_ROWS) {
                         /* When limiting rows, the wrap variable serves a
                          * slightly different purpose: it holds the number of
@@ -501,14 +501,16 @@ void render_container(xcb_connection_t *conn, Container *container) {
 
                         int offset_x = 0;
                         int offset_y = 0;
-                        if (container->mode == MODE_STACK) {
+                        if (container->mode == MODE_STACK ||
+                            (container->mode == MODE_TABBED &&
+                             container->stack_limit == STACK_LIMIT_COLS)) {
                                 if (container->stack_limit == STACK_LIMIT_COLS) {
                                         offset_x = current_col * (stack_win->rect.width / container->stack_limit_value);
                                         offset_y = current_row * decoration_height;
-                                        current_row++;
-                                        if ((current_row % wrap) == 0) {
-                                                current_col++;
-                                                current_row = 0;
+                                        current_col++;
+                                        if ((current_col % wrap) == 0) {
+                                                current_row++;
+                                                current_col = 0;
                                         }
                                 } else if (container->stack_limit == STACK_LIMIT_ROWS) {
                                         offset_x = current_col * wrap;
@@ -522,8 +524,13 @@ void render_container(xcb_connection_t *conn, Container *container) {
                                         offset_y = current_client * decoration_height;
                                 }
                                 current_client++;
-                        } else if (container->mode == MODE_TABBED)
+                        } else if (container->mode == MODE_TABBED) {
+                                if (container->stack_limit == STACK_LIMIT_ROWS) {
+                                        LOG("You limited this container in its rows. "
+                                            "This makes no sense in tabbing mode.\n");
+                                }
                                 offset_x = current_client++ * size_each;
+                        }
                         decorate_window(conn, client, stack_win->pixmap.id, stack_win->pixmap.gc,
                                         offset_x, offset_y);
                 }
