@@ -182,7 +182,7 @@ int main(int argc, char *argv[], char *env[]) {
                                 printf("i3 version " I3_VERSION " © 2009 Michael Stapelberg and contributors\n");
                                 exit(EXIT_SUCCESS);
                         case 'l':
-                                config_use_lexer = true;
+                                /* DEPRECATED, ignored for the next 3 versions (3.e, 3.f, 3.g) */
                                 break;
                         default:
                                 fprintf(stderr, "Usage: %s [-c configfile] [-a] [-v]\n", argv[0]);

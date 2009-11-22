@@ -7,8 +7,10 @@
  *
  * See file LICENSE for license information.
  *
- * include/config.h: Contains all structs/variables for
- * the configurable part of i3
+ * include/config.h: Contains all structs/variables for the configurable
+ * part of i3 as well as functions handling the configuration file (calling
+ * the parser (src/cfgparse.y) with the correct path, switching key bindings
+ * mode).
  *
  */
 
@@ -21,7 +23,6 @@
 
 typedef struct Config Config;
 extern Config config;
-extern bool config_use_lexer;
 extern SLIST_HEAD(modes_head, Mode) modes;
 
 /**
@@ -123,5 +124,8 @@ void grab_all_keys(xcb_connection_t *conn);
  *
  */
 void switch_mode(xcb_connection_t *conn, const char *new_mode);
+
+/* prototype for src/cfgparse.y */
+void parse_file(const char *f);
 
 #endif
