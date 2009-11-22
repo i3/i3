@@ -65,17 +65,7 @@ int get_unoccupied_x(Workspace *workspace) {
 
 /* See get_unoccupied_x() */
 int get_unoccupied_y(Workspace *workspace) {
-        int height = workspace->rect.height;
-        i3Font *font = load_font(global_conn, config.font);
-
-        /* Reserve space for dock clients */
-        Client *client;
-        SLIST_FOREACH(client, &(workspace->screen->dock_clients), dock_clients)
-                height -= client->desired_height;
-
-        /* Space for the internal bar */
-        height -= (font->height + 6);
-
+        int height = workspace_height(workspace);
         int unoccupied = height;
         float default_factor = ((float)height / workspace->rows) / height;
 
