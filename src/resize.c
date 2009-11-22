@@ -165,6 +165,27 @@ void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int seco
                 LOG("\n\n\n");
                 LOG("old = %d, new = %d\n", old_unoccupied_x, new_unoccupied_x);
 
+                int cols_without_wf = 0;
+                int old_width, old_second_width;
+                for (int col = 0; col < ws->cols; col++)
+                        if (ws->width_factor[col] == 0)
+                                cols_without_wf++;
+
+                LOG("old_unoccupied_x = %d\n", old_unoccupied_x);
+
+                LOG("Updating first (before = %f)\n", ws->width_factor[first]);
+                /* Convert 0 (for default width_factor) to actual numbers */
+                if (ws->width_factor[first] == 0)
+                        old_width = (old_unoccupied_x / max(cols_without_wf, 1));
+                else old_width = ws->width_factor[first] * old_unoccupied_x;
+
+                LOG("second (before = %f)\n", ws->width_factor[second]);
+                if (ws->width_factor[second] == 0)
+                        old_second_width = (old_unoccupied_x / max(cols_without_wf, 1));
+                else old_second_width = ws->width_factor[second] * old_unoccupied_x;
+
+                LOG("middle = %f\n", ws->width_factor[first]);
+
                 /* If the space used for customly resized columns has changed we need to adapt the
                  * other customly resized columns, if any */
                 if (new_unoccupied_x != old_unoccupied_x)
@@ -177,16 +198,12 @@ void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int seco
                                 LOG("to %f\n", ws->width_factor[col]);
                         }
 
-                LOG("old_unoccupied_x = %d\n", old_unoccupied_x);
-
                 LOG("Updating first (before = %f)\n", ws->width_factor[first]);
                 /* Convert 0 (for default width_factor) to actual numbers */
                 if (ws->width_factor[first] == 0)
                         ws->width_factor[first] = ((float)ws->rect.width / ws->cols) / new_unoccupied_x;
 
-                LOG("middle = %f\n", ws->width_factor[first]);
-                int old_width = ws->width_factor[first] * old_unoccupied_x;
-                LOG("first->width = %d, pixels = %d\n", pixels);
+                LOG("first->width = %d, pixels = %d\n", old_width, pixels);
                 ws->width_factor[first] *= (float)(old_width + pixels) / old_width;
                 LOG("-> %f\n", ws->width_factor[first]);
 
@@ -194,10 +211,10 @@ void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int seco
                 LOG("Updating second (before = %f)\n", ws->width_factor[second]);
                 if (ws->width_factor[second] == 0)
                         ws->width_factor[second] = ((float)ws->rect.width / ws->cols) / new_unoccupied_x;
+
                 LOG("middle = %f\n", ws->width_factor[second]);
-                old_width = ws->width_factor[second] * old_unoccupied_x;
-                LOG("second->width = %d, pixels = %d\n", pixels);
-                ws->width_factor[second] *= (float)(old_width - pixels) / old_width;
+                LOG("second->width = %d, pixels = %d\n", old_second_width, pixels);
+                ws->width_factor[second] *= (float)(old_second_width - pixels) / old_second_width;
                 LOG("-> %f\n", ws->width_factor[second]);
 
                 LOG("new unoccupied_x = %d\n", get_unoccupied_x(ws));
