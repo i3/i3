@@ -27,6 +27,7 @@
 #include "xinerama.h"
 #include "config.h"
 #include "floating.h"
+#include "workspace.h"
 
 /*
  * Renders the resize window between the first/second container and resizes
@@ -221,7 +222,8 @@ void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int seco
 
                 LOG("\n\n\n");
         } else {
-                int default_height = ws->rect.height / ws->rows;
+                int ws_height = workspace_height(ws);
+                int default_height = ws_height / ws->rows;
                 int old_unoccupied_y = get_unoccupied_y(ws);
 
                 /* We pre-calculate the unoccupied space to see if we need to adapt sizes before
@@ -229,13 +231,35 @@ void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int seco
                 int new_unoccupied_y = old_unoccupied_y;
 
                 if (old_unoccupied_y == 0)
-                        old_unoccupied_y = ws->rect.height;
+                        old_unoccupied_y = ws_height;
 
                 if (ws->height_factor[first] == 0)
                         new_unoccupied_y += default_height;
 
                 if (ws->height_factor[second] == 0)
                         new_unoccupied_y += default_height;
+
+                int cols_without_hf = 0;
+                int old_height, old_second_height;
+                for (int row = 0; row < ws->rows; row++)
+                        if (ws->height_factor[row] == 0)
+                                cols_without_hf++;
+
+                LOG("old_unoccupied_y = %d\n", old_unoccupied_y);
+
+                LOG("Updating first (before = %f)\n", ws->height_factor[first]);
+                /* Convert 0 (for default width_factor) to actual numbers */
+                if (ws->height_factor[first] == 0)
+                        old_height = (old_unoccupied_y / max(cols_without_hf, 1));
+                else old_height = ws->height_factor[first] * old_unoccupied_y;
+
+                LOG("second (before = %f)\n", ws->height_factor[second]);
+                if (ws->height_factor[second] == 0)
+                        old_second_height = (old_unoccupied_y / max(cols_without_hf, 1));
+                else old_second_height = ws->height_factor[second] * old_unoccupied_y;
+
+                LOG("middle = %f\n", ws->height_factor[first]);
+
 
                 LOG("\n\n\n");
                 LOG("old = %d, new = %d\n", old_unoccupied_y, new_unoccupied_y);
@@ -252,27 +276,23 @@ void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int seco
                                 LOG("to %f\n", ws->height_factor[row]);
                         }
 
-                LOG("old_unoccupied_y = %d\n", old_unoccupied_y);
 
                 LOG("Updating first (before = %f)\n", ws->height_factor[first]);
                 /* Convert 0 (for default width_factor) to actual numbers */
                 if (ws->height_factor[first] == 0)
-                        ws->height_factor[first] = ((float)ws->rect.height / ws->rows) / new_unoccupied_y;
+                        ws->height_factor[first] = ((float)ws_height / ws->rows) / new_unoccupied_y;
 
-                LOG("middle = %f\n", ws->height_factor[first]);
-                int old_height = ws->height_factor[first] * old_unoccupied_y;
-                LOG("first->width = %d, pixels = %d\n", pixels);
+                LOG("first->width = %d, pixels = %d\n", old_height, pixels);
                 ws->height_factor[first] *= (float)(old_height + pixels) / old_height;
                 LOG("-> %f\n", ws->height_factor[first]);
 
 
                 LOG("Updating second (before = %f)\n", ws->height_factor[second]);
                 if (ws->height_factor[second] == 0)
-                        ws->height_factor[second] = ((float)ws->rect.height / ws->rows) / new_unoccupied_y;
+                        ws->height_factor[second] = ((float)ws_height / ws->rows) / new_unoccupied_y;
                 LOG("middle = %f\n", ws->height_factor[second]);
-                old_height = ws->height_factor[second] * old_unoccupied_y;
-                LOG("second->width = %d, pixels = %d\n", pixels);
-                ws->height_factor[second] *= (float)(old_height - pixels) / old_height;
+                LOG("second->width = %d, pixels = %d\n", old_second_height, pixels);
+                ws->height_factor[second] *= (float)(old_second_height - pixels) / old_second_height;
                 LOG("-> %f\n", ws->height_factor[second]);
 
                 LOG("new unoccupied_y = %d\n", get_unoccupied_y(ws));
