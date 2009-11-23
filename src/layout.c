@@ -329,15 +329,15 @@ void resize_client(xcb_connection_t *conn, Client *client) {
         if (client->height_increment > 1) {
                 int old_height = rect->height;
                 rect->height -= (rect->height - client->base_height) % client->height_increment;
-                LOG("Lost %d pixel due to client's height_increment (%d px)\n",
-                    old_height - rect->height, client->height_increment);
+                LOG("Lost %d pixel due to client's height_increment (%d px, base_height = %d)\n",
+                    old_height - rect->height, client->height_increment, client->base_height);
         }
 
         if (client->width_increment > 1) {
                 int old_width = rect->width;
                 rect->width -= (rect->width - client->base_width) % client->width_increment;
-                LOG("Lost %d pixel due to client's width_increment (%d px)\n",
-                    old_width - rect->width, client->width_increment);
+                LOG("Lost %d pixel due to client's width_increment (%d px, base_width = %d)\n",
+                    old_width - rect->width, client->width_increment, client->base_width);
         }
 
         LOG("child will be at %dx%d with size %dx%d\n", rect->x, rect->y, rect->width, rect->height);
