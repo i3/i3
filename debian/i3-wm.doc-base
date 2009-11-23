@@ -1,0 +1,10 @@
+Document: i3-wm
+Title: i3 documentation
+Author: Michael Stapelberg
+Abstract: The documentation explains how to use and modify the i3 window
+ manager.
+Section: Window Managers
+
+Format: HTML
+Files: /usr/share/doc/i3-wm/*.html
+Index: /usr/share/doc/i3-wm/userguide.html
