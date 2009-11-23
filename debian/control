@@ -9,7 +9,6 @@ Homepage: http://i3.zekjur.net/
 
 Package: i3
 Architecture: any
-Priority: extra
 Section: x11
 Depends: i3-wm, ${misc:Depends}
 Recommends: i3lock, dwm-tools, i3status
@@ -22,7 +21,6 @@ Description: metapackage (i3 window manager, screen locker, menu, statusbar)
 
 Package: i3-wm
 Architecture: any
-Priority: extra
 Section: x11
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Provides: x-window-manager
@@ -40,7 +38,6 @@ Description: an improved dynamic tiling window manager
 
 Package: i3-wm-dbg
 Architecture: any
-Priority: extra
 Section: debug
 Depends: i3-wm (=${binary:Version}), ${misc:Depends}
 Description: Debugging symbols for the i3 window manager
