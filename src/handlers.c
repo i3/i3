@@ -889,8 +889,13 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
                 base_height = size_hints.min_height;
         }
 
-        client->base_width = base_width;
-        client->base_height = base_height;
+        if (base_width != client->base_width ||
+            base_height != client->base_height) {
+                client->base_width = base_width;
+                client->base_height = base_height;
+                LOG("client's base_height changed to %d\n", base_height);
+                resize_client(conn, client);
+        }
 
         /* If no aspect ratio was set or if it was invalid, we ignore the hints */
         if (!(size_hints.flags & XCB_SIZE_HINT_P_ASPECT) ||
