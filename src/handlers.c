@@ -953,7 +953,7 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
         }
 
         Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
-        if (client == last_focused) {
+        if (!client->urgent && client == last_focused) {
                 LOG("Ignoring urgency flag for current client\n");
                 return 1;
         }
