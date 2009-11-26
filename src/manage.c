@@ -444,8 +444,10 @@ map:
         if ((CUR_CELL->workspace->fullscreen_client == NULL || new->fullscreen) && !new->dock) {
                 /* Focus the new window if we’re not in fullscreen mode and if it is not a dock window */
                 if ((new->workspace->fullscreen_client == NULL) || new->fullscreen) {
-                        if (!client_is_floating(new))
+                        if (!client_is_floating(new)) {
                                 new->container->currently_focused = new;
+                                render_container(conn, new->container);
+                        }
                         if (new->container == CUR_CELL || client_is_floating(new))
                                 xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
                 }
