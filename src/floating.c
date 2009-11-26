@@ -271,13 +271,13 @@ void floating_resize_window(xcb_connection_t *conn, Client *client, xcb_button_p
         void resize_window_callback(Rect *old_rect, uint32_t new_x, uint32_t new_y) {
                 int32_t new_width = old_rect->width + (new_x - event->root_x);
                 int32_t new_height = old_rect->height + (new_y - event->root_y);
-                /* Obey minimum window size */
-                if (new_width < 75 || new_height < 50)
-                        return;
 
-                /* Reposition the client correctly while moving */
-                client->rect.width = new_width;
-                client->rect.height = new_height;
+                /* Obey minimum window size and reposition the client */
+                if (new_width >= 50)
+                        client->rect.width = new_width;
+
+                if (new_height >= 20)
+                        client->rect.height = new_height;
 
                 /* resize_client flushes */
                 resize_client(conn, client);
