@@ -506,7 +506,7 @@ First of all, update your working copy to the latest version of the master
 branch:
 
 --------
-rit pull
+git pull
 --------
 
 Afterwards, make the necessary changes for your bugfix/feature. Then, review
