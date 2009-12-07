@@ -310,6 +310,8 @@ wmii.
 
 === Automatically putting clients on specific workspaces
 
+[[assign_workspace]]
+
 It is recommended that you match on window classes whereever possible because
 some applications first create their window and then care about setting the
 correct title. Firefox with Vimperator comes to mind, as the window starts up
@@ -354,6 +356,8 @@ exec sudo i3status | dzen2 -dock
 --------------------------------
 
 === Automatically putting workspaces on specific screens
+
+[[workspace_screen]]
 
 If you use the assigning of clients to workspaces and start some clients
 automatically, it might be handy to put the workspaces on specific screens.
@@ -591,6 +595,8 @@ bindsym Mod1+a jump "urxvt/VIM"
 
 === VIM-like marks (mark/goto)
 
+[[vim_like_marks]]
+
 This feature is like the jump feature: It allows you to directly jump to a
 specific window (this means switching to the appropriate workspace and setting
 focus to the windows). However, you can directly mark a specific window with
@@ -702,3 +708,175 @@ bindsym Mod1+Shift+r restart
 bindsym Mod1+Shift+w reload
 bindsym Mod1+Shift+e exit
 ----------------------------
+
+== Multiple monitors
+
+[[multi_monitor]]
+
+As you can read in the goal list on its website, i3 was specifically developed
+with Xinerama (support for multiple monitors) in mind. This section will
+explain how to handle multiple monitors.
+
+When you have only one monitor, things are simple. You usually start with
+workspace 1 on your monitor and open new ones as you need them.
+
+When you have more than one monitor, each monitor will get an initial
+workspace, say the first gets 1, the second gets 2 and a possible third would
+get 3. When you switch to a workspace on a different screen, i3 will switch
+to that screen and then switch to the workspace. This way, you don’t need
+shortcuts to switch to a specific screen and remember where you put which
+workspace. New workspaces will be opened on the screen you currently are on.
+There is no possiblity to have a screen without workspaces.
+
+The idea to make workspaces global is due to the observation that most users
+have a very limited set of workspaces on their additional monitors, often
+using them for a specific task (browser, shell) or for monitoring several
+things (mail, IRC, syslog, …). Thus, using one workspace on one monitor and
+"the rest" on the other monitors often makes sense. However, as you can
+create unlimited workspaces in i3 and tie them to specific screens, you can
+have the "traditional" approach of having X workspaces per screen by
+changing your configuration (using modes, for example).
+
+=== Configuring your monitors
+
+To help you get going if you never did multiple monitors before, here comes a
+short overview of the xrandr options which are probably of interest for you.
+It is always useful to get an overview of the current screen configuration, so
+just run "xrandr" and you will get an output like the following:
+--------------------------------------------------------------------------------------
+$ xrandr
+Screen 0: minimum 320 x 200, current 1280 x 800, maximum 8192 x 8192
+VGA1 disconnected (normal left inverted right x axis y axis)
+LVDS1 connected 1280x800+0+0 (normal left inverted right x axis y axis) 261mm x 163mm
+   1280x800       60.0*+   50.0
+   1024x768       85.0     75.0     70.1     60.0
+   832x624        74.6
+   800x600        85.1     72.2     75.0     60.3     56.2
+   640x480        85.0     72.8     75.0     59.9
+   720x400        85.0
+   640x400        85.1
+   640x350        85.1
+--------------------------------------------------------------------------------------
+
+Several things are important here: You can see that +LVDS1+ is connected (of
+course, it is the internal flat panel) but +VGA1+ is not. If you have connected
+a monitor to one of the ports but xrandr still says "disconnected", you should
+check your cable, monitor or graphics driver.
+
+Furthermore, the maximum resolution you can see at the end of the first line
+is the maximum combined resolution of your monitors. By default, it is usually
+too low and has to be increased by editing +/etc/X11/xorg.conf+.
+
+So, say you connected VGA1 and want to use it as an additional screen:
+-------------------------------------------
+xrandr --output VGA1 --auto --left-of LVDS1
+-------------------------------------------
+This command lets xrandr try to find out the native resolution of the device
+connected to +VGA1+ and configures it to the left of your internal flat panel.
+When running "xrandr" again, the output looks like this:
+-----------------------------------------------------------------------------------------
+$ xrandr
+Screen 0: minimum 320 x 200, current 2560 x 1024, maximum 8192 x 8192
+VGA1 connected 1280x1024+0+0 (normal left inverted right x axis y axis) 338mm x 270mm
+   1280x1024      60.0*+   75.0
+   1280x960       60.0
+   1152x864       75.0
+   1024x768       75.1     70.1     60.0
+   832x624        74.6
+   800x600        72.2     75.0     60.3     56.2
+   640x480        72.8     75.0     66.7     60.0
+   720x400        70.1
+LVDS1 connected 1280x800+1280+0 (normal left inverted right x axis y axis) 261mm x 163mm
+   1280x800       60.0*+   50.0
+   1024x768       85.0     75.0     70.1     60.0
+   832x624        74.6
+   800x600        85.1     72.2     75.0     60.3     56.2
+   640x480        85.0     72.8     75.0     59.9
+   720x400        85.0
+   640x400        85.1
+   640x350        85.1
+-----------------------------------------------------------------------------------------
+Please note that i3 uses exactly the same API as xrandr does, so it will see
+only what you can see in xrandr.
+
+See also <<presentations>> for more examples of multi-monitor setups.
+
+=== Interesting configuration for multi-monitor environments
+
+There are several things to configure in i3 which may be interesting if you
+have more than one monitor:
+
+1. You can specify which workspace should be put on which screen. This will
+   allow you to have a different set of workspaces when starting than just
+   1 for the first monitor, 2 for the second and so on. See
+   <<workspace_screen>>.
+2. If you want some applications to generally open on the bigger screen
+   (MPlayer, Firefox, …), you can assign them to a specific workspace, see
+   <<assign_workspace>>.
+3. If you have many workspaces on many monitors, it might get hard to keep
+   track of which window you put where. Thus, you can use vim-like marks to
+   quickly switch between windows. See <<vim_like_marks>>.
+
+== i3 and the rest of your software world
+
+=== Displaying a status line
+
+A very common thing amongst users of exotic window managers is a status line at
+some corner of the screen. It is an often superior replacement of the widget
+approach you have in the task bar of a traditional desktop environment.
+
+If you don’t already have your favorite way of generating such a status line
+(self-written scripts, conky, …), then i3status is the recommended tool for
+this task. It was written in C with the goal to have as little syscalls as
+possible to reduce the time your CPU is waken up from sleep states.
+
+Regardless of which application you use to generate the status line, you
+want to make sure that the application does one of the following things:
+
+1. Register as a dock window using EWMH hints. This will make i3 position the
+   window above the workspace bar but below every other client. This is the
+   recommended way, but for example in case of dzen2 you need to check out
+   the source of dzen2 from subversion, because the -dock option is not present
+   in the released versions.
+2. Overlay the internal workspace bar. This method will not waste any space
+   in the workspace bar. However, it is a rather hackish way. Just configure
+   the output window to be over your workspace bar (say -x 200 and -y 780 if
+   your screen is 800 px height).
+
+The planned solution for this problem is to make the workspace bar optional
+and switch to dzen2 (for example) completely (it will contain the workspaces
+then).
+
+=== Giving presentations (multi-monitor)
+
+When giving a presentation, you typically want the audience to see what you see
+on your screen and then go through a series of slides (if the presentation is
+simple). For more complex presentations, you might want to have some notes
+which only you can see on your screen, while the audience can only see the
+slides.
+
+[[presentations]]
+==== Case 1: everybody gets the same output
+This is the rather easy case. You connect your computer to the video projector,
+turn on both (computer and video projector) and configure your X server to
+clone the internal flat panel of your computer to the video output:
+-----------------------------------------------------
+xrandr --output VGA1 --mode 1024x768 --same-as LVDS1
+-----------------------------------------------------
+i3 will then use the lowest common subset of screen resolutions, the rest of
+your screen will be left untouched (so it will show the X background). So, in
+our example, this would be 1024x768 (my notebook has 1280x800).
+
+==== Case 2: you can see more than your audience
+This case is a bit harder. First of all, you should configure the VGA output
+somewhere near your internal flat panel, say right of it:
+-----------------------------------------------------
+xrandr --output VGA1 --mode 1024x768 --right-of LVDS1
+-----------------------------------------------------
+Now, i3 will put a new workspace (depending on your settings) on the new screen
+and you are in multi-monitor mode (see <<multi_monitor>>).
+
+Because i3 is not a compositing window manager, there is no possibility to
+display a window on two screens at the same time. Instead, you presentation
+software needs to do this job (that is, open a window on each screen with the
+same contents).
