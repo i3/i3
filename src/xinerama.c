@@ -188,7 +188,7 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
          * which the X server does not return any screens, such as when rotating
          * screens), but not longer than 5 seconds (strictly speaking, only four
          * seconds of trying are guaranteed due to the 1-second-resolution) */
-        while ((time(NULL) - before_trying) < 5) {
+        while ((time(NULL) - before_trying) < 10) {
                 reply = xcb_xinerama_query_screens_reply(conn, xcb_xinerama_query_screens_unchecked(conn), NULL);
                 if (!reply) {
                         LOG("Couldn't get Xinerama screens\n");
@@ -227,10 +227,18 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
 
                 if (num_screens == 0) {
                         LOG("No screens found. This is weird. Trying again...\n");
+                        /* Give the scheduler a chance to do something else
+                         * and don’t hog the CPU */
+                        usleep(250);
                         continue;
                 }
 
                 break;
+        }
+
+        if (num_screens == 0) {
+                LOG("No screens found for 10 seconds. Please fix your setup. i3 will exit now.\n");
+                exit(0);
         }
 }
 
