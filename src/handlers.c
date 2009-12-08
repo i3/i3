@@ -894,7 +894,10 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
                 client->base_width = base_width;
                 client->base_height = base_height;
                 LOG("client's base_height changed to %d\n", base_height);
-                resize_client(conn, client);
+                if (client->fullscreen)
+                        LOG("Not resizing client, it is in fullscreen mode\n");
+                else
+                        resize_client(conn, client);
         }
 
         /* If no aspect ratio was set or if it was invalid, we ignore the hints */
