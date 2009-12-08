@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xinerama.h>
