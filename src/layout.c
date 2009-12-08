@@ -47,37 +47,37 @@ static bool update_if_necessary(uint32_t *destination, const uint32_t new_value)
  *
  */
 int get_unoccupied_x(Workspace *workspace) {
-        int unoccupied = workspace->rect.width;
-        float default_factor = ((float)workspace->rect.width / workspace->cols) / workspace->rect.width;
+        double unoccupied = workspace->rect.width;
+        double default_factor = ((float)workspace->rect.width / workspace->cols) / workspace->rect.width;
 
-        LOG("get_unoccupied_x(), starting with %d, default_factor = %f\n", unoccupied, default_factor);
+        LOG("get_unoccupied_x(), starting with %f, default_factor = %f\n", unoccupied, default_factor);
 
         for (int cols = 0; cols < workspace->cols; cols++) {
-                LOG("width_factor[%d] = %f\n", cols, workspace->width_factor[cols]);
+                LOG("width_factor[%d] = %f, unoccupied = %f\n", cols, workspace->width_factor[cols], unoccupied);
 
                 if (workspace->width_factor[cols] == 0)
                         unoccupied -= workspace->rect.width * default_factor;
         }
 
-        LOG("unoccupied space: %d\n", unoccupied);
+        LOG("unoccupied space: %f\n", unoccupied);
         return unoccupied;
 }
 
 /* See get_unoccupied_x() */
 int get_unoccupied_y(Workspace *workspace) {
         int height = workspace_height(workspace);
-        int unoccupied = height;
-        float default_factor = ((float)height / workspace->rows) / height;
+        double unoccupied = height;
+        double default_factor = ((float)height / workspace->rows) / height;
 
-        LOG("get_unoccupied_y(), starting with %d, default_factor = %f\n", unoccupied, default_factor);
+        LOG("get_unoccupied_y(), starting with %f, default_factor = %f\n", unoccupied, default_factor);
 
         for (int rows = 0; rows < workspace->rows; rows++) {
-                LOG("height_factor[%d] = %f\n", rows, workspace->height_factor[rows]);
+                LOG("height_factor[%d] = %f, unoccupied = %f\n", rows, workspace->height_factor[rows], unoccupied);
                 if (workspace->height_factor[rows] == 0)
                         unoccupied -= height * default_factor;
         }
 
-        LOG("unoccupied space: %d\n", unoccupied);
+        LOG("unoccupied space: %f\n", unoccupied);
         return unoccupied;
 }
 
