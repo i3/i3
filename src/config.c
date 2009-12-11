@@ -166,6 +166,7 @@ static void parse_configuration(const char *override_configpath) {
                         die("Neither \"%s\" nor /etc/i3/config could be opened\n", globbed);
 
                 parse_file("/etc/i3/config");
+                fclose(handle);
                 return;
         }
 
