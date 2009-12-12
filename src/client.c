@@ -26,6 +26,7 @@
 #include "client.h"
 #include "table.h"
 #include "workspace.h"
+#include "config.h"
 
 /*
  * Removes the given client from the container, either because it will be inserted into another
@@ -371,4 +372,39 @@ void client_mark(xcb_connection_t *conn, Client *client, const char *mark) {
                          * client with this mark. */
                         break;
                 }
+}
+
+/*
+ * Returns the minimum height of a specific window. The height is calculated
+ * by using 2 pixels (for the client window itself), possibly padding this to
+ * comply with the client’s base_height and then adding the decoration height.
+ *
+ */
+uint32_t client_min_height(Client *client) {
+        uint32_t height = max(2, client->base_height);
+        i3Font *font = load_font(global_conn, config.font);
+
+        if (client->titlebar_position == TITLEBAR_OFF && client->borderless)
+                return height;
+
+        if (client->titlebar_position == TITLEBAR_OFF && !client->borderless)
+                return height + 2;
+
+        return height + font->height + 2 + 2;
+}
+
+/*
+ * See client_min_height.
+ *
+ */
+uint32_t client_min_width(Client *client) {
+        uint32_t width = max(2, client->base_width);
+
+        if (client->titlebar_position == TITLEBAR_OFF && client->borderless)
+                return width;
+
+        if (client->titlebar_position == TITLEBAR_OFF && !client->borderless)
+                return width + 2;
+
+        return width + 2 + 2;
 }

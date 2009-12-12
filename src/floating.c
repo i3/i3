@@ -173,7 +173,7 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
                         case BORDER_RIGHT: {
                                 int new_width = old_rect->width + (new_x - event->root_x);
                                 if ((new_width < 0) ||
-                                    (new_width < 50 && client->rect.width >= new_width))
+                                    (new_width < client_min_width(client) && client->rect.width >= new_width))
                                         return;
                                 client->rect.width = new_width;
                                 break;
@@ -182,7 +182,7 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
                         case BORDER_BOTTOM: {
                                 int new_height = old_rect->height + (new_y - event->root_y);
                                 if ((new_height < 0) ||
-                                    (new_height < 20 && client->rect.height >= new_height))
+                                    (new_height < client_min_height(client) && client->rect.height >= new_height))
                                         return;
                                 client->rect.height = old_rect->height + (new_y - event->root_y);
                                 break;
@@ -191,7 +191,7 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
                         case BORDER_TOP: {
                                 int new_height = old_rect->height + (event->root_y - new_y);
                                 if ((new_height < 0) ||
-                                    (new_height < 20 && client->rect.height >= new_height))
+                                    (new_height < client_min_height(client) && client->rect.height >= new_height))
                                         return;
 
                                 client->rect.y = old_rect->y + (new_y - event->root_y);
@@ -202,7 +202,7 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
                         case BORDER_LEFT: {
                                 int new_width = old_rect->width + (event->root_x - new_x);
                                 if ((new_width < 0) ||
-                                    (new_width < 50 && client->rect.width >= new_width))
+                                    (new_width < client_min_width(client) && client->rect.width >= new_width))
                                         return;
                                 client->rect.x = old_rect->x + (new_x - event->root_x);
                                 client->rect.width = new_width;
@@ -273,10 +273,10 @@ void floating_resize_window(xcb_connection_t *conn, Client *client, xcb_button_p
                 int32_t new_height = old_rect->height + (new_y - event->root_y);
 
                 /* Obey minimum window size and reposition the client */
-                if (new_width >= 50)
+                if (new_width > 0 && new_width >= client_min_width(client))
                         client->rect.width = new_width;
 
-                if (new_height >= 20)
+                if (new_height > 0 && new_height >= client_min_height(client))
                         client->rect.height = new_height;
 
                 /* resize_client flushes */

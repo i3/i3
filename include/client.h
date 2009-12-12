@@ -113,6 +113,20 @@ void client_map(xcb_connection_t *conn, Client *client);
 void client_mark(xcb_connection_t *conn, Client *client, const char *mark);
 
 /**
+ * Returns the minimum height of a specific window. The height is calculated
+ * by using 2 pixels (for the client window itself), possibly padding this to
+ * comply with the client’s base_height and then adding the decoration height.
+ *
+ */
+uint32_t client_min_height(Client *client);
+
+/**
+ * See client_min_height.
+ *
+ */
+uint32_t client_min_width(Client *client);
+
+/**
  * Pretty-prints the client’s information into the logfile.
  *
  */
