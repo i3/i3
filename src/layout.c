@@ -463,7 +463,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 if (container->stack_limit == STACK_LIMIT_COLS) {
                         /* wrap stores the number of rows after which we will
                          * wrap to a new column. */
-                        wrap = container->stack_limit_value;
+                        wrap = ceil((float)num_clients / container->stack_limit_value);
                 } else if (container->stack_limit == STACK_LIMIT_ROWS) {
                         /* When limiting rows, the wrap variable serves a
                          * slightly different purpose: it holds the number of
@@ -500,10 +500,10 @@ void render_container(xcb_connection_t *conn, Container *container) {
                                 if (container->stack_limit == STACK_LIMIT_COLS) {
                                         offset_x = current_col * (stack_win->rect.width / container->stack_limit_value);
                                         offset_y = current_row * decoration_height;
-                                        current_col++;
-                                        if ((current_col % wrap) == 0) {
-                                                current_row++;
-                                                current_col = 0;
+                                        current_row++;
+                                        if ((current_row % wrap) == 0) {
+                                                current_col++;
+                                                current_row = 0;
                                         }
                                 } else if (container->stack_limit == STACK_LIMIT_ROWS) {
                                         offset_x = current_col * wrap;
