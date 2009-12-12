@@ -1,3 +1,9 @@
+i3-wm (3.d-bf1-1) unstable; urgency=low
+
+  * NOT YET RELEASED
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Sat, 12 Dec 2009 21:34:37 +0100
+
 i3-wm (3.d-2) unstable; urgency=low
 
   * debian: register in doc-base
