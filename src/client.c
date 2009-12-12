@@ -239,11 +239,20 @@ void client_set_below_floating(xcb_connection_t *conn, Client *client) {
         /* Ensure that it is below all floating clients */
         Workspace *ws = client->workspace;
         Client *first_floating = TAILQ_FIRST(&(ws->floating_clients));
-        if (first_floating != TAILQ_END(&(ws->floating_clients))) {
-                LOG("Setting below floating\n");
-                uint32_t values[] = { first_floating->frame, XCB_STACK_MODE_BELOW };
-                xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
-        }
+        if (first_floating == TAILQ_END(&(ws->floating_clients)))
+                return;
+
+        LOG("Setting below floating\n");
+        uint32_t values[] = { first_floating->frame, XCB_STACK_MODE_BELOW };
+        xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+
+        if (client->workspace->fullscreen_client == NULL)
+                return;
+
+        LOG("(and below fullscreen)\n");
+        /* Ensure that the window is still below the fullscreen window */
+        values[0] = client->workspace->fullscreen_client->frame;
+        xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
 }
 
 /*
