@@ -363,6 +363,10 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 num_clients++;
 
         if (container->mode == MODE_DEFAULT) {
+                int height = (container->height / max(1, num_clients));
+                int rest_pixels = (container->height % max(1, num_clients));
+                LOG("height per client = %d, rest = %d\n", height, rest_pixels);
+
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* If the client is in fullscreen mode, it does not get reconfigured */
                         if (container->workspace->fullscreen_client == client) {
@@ -370,6 +374,13 @@ void render_container(xcb_connection_t *conn, Container *container) {
                                 continue;
                         }
 
+                        /* If we have some pixels left to distribute, add one
+                         * pixel to each client as long as possible. */
+                        int this_height = height;
+                        if (rest_pixels > 0) {
+                                height++;
+                                rest_pixels--;
+                        }
                         /* Check if we changed client->x or client->y by updating it.
                          * Note the bitwise OR instead of logical OR to force evaluation of both statements */
                         if (client->force_reconfigure |
@@ -377,7 +388,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
                             update_if_necessary(&(client->rect.y), container->y +
                                         (container->height / num_clients) * current_client) |
                             update_if_necessary(&(client->rect.width), container->width) |
-                            update_if_necessary(&(client->rect.height), container->height / num_clients))
+                            update_if_necessary(&(client->rect.height), this_height))
                                 resize_client(conn, client);
 
                         /* TODO: vertical default layout */
