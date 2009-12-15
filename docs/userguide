@@ -444,6 +444,10 @@ Colors are in HTML hex format, see below.
 client.focused #2F343A #900000 #FFFFFF
 --------------------------------------
 
+Note that for the window decorations the color around the child window is the
+background color and the border color is only the two thin lines at the top of
+the window.
+
 === Interprocess communication
 
 i3 uses unix sockets to provide an IPC interface. At the moment, this interface
