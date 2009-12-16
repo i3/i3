@@ -24,7 +24,7 @@ Package: i3-wm
 Architecture: any
 Priority: extra
 Section: x11
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, x11-utils
 Provides: x-window-manager
 Suggests: rxvt-unicode | x-terminal-emulator
 Recommends: xfonts-base
