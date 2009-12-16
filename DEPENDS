@@ -10,6 +10,8 @@ In that case, please try using the versions mentioned below until a fix is provi
  * asciidoc >= 8.3.0 for docs/hacking-howto
  * asciidoc, xmlto, docbook-xml for man/i3.man
  * Xlib, the one that comes with your X-Server
+ * x11-utils for xmessage (only for displaying the welcome message, so this is
+   mainly interesting for distributors)
 
 Recommendations:
  * i3lock for locking your screen
