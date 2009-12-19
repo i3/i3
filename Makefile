@@ -79,7 +79,7 @@ dist: distclean
 	rm -rf i3-${VERSION}
 
 clean:
-	rm -f src/*.o src/cfgparse.tab.{c,h} src/cfgparse.yy.c
+	rm -f src/*.o src/cfgparse.tab.{c,h} src/cfgparse.yy.c loglevels.tmp include/loglevels.h
 	$(MAKE) -C docs clean
 	$(MAKE) -C man clean
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg clean
