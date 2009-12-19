@@ -49,6 +49,7 @@
 #include "xinerama.h"
 #include "manage.h"
 #include "ipc.h"
+#include "log.h"
 
 xcb_connection_t *global_conn;
 
@@ -169,7 +170,7 @@ int main(int argc, char *argv[], char *env[]) {
 
         start_argv = argv;
 
-        while ((opt = getopt_long(argc, argv, "c:vahl", long_options, &option_index)) != -1) {
+        while ((opt = getopt_long(argc, argv, "c:vahld:V", long_options, &option_index)) != -1) {
                 switch (opt) {
                         case 'a':
                                 LOG("Autostart disabled using -a\n");
@@ -181,14 +182,23 @@ int main(int argc, char *argv[], char *env[]) {
                         case 'v':
                                 printf("i3 version " I3_VERSION " © 2009 Michael Stapelberg and contributors\n");
                                 exit(EXIT_SUCCESS);
+                        case 'V':
+                                set_verbosity(true);
+                                break;
+                        case 'd':
+                                LOG("Enabling debug loglevel %s\n", optarg);
+                                add_loglevel(optarg);
+                                break;
                         case 'l':
                                 /* DEPRECATED, ignored for the next 3 versions (3.e, 3.f, 3.g) */
                                 break;
                         default:
-                                fprintf(stderr, "Usage: %s [-c configfile] [-a] [-v]\n", argv[0]);
+                                fprintf(stderr, "Usage: %s [-c configfile] [-d loglevel] [-a] [-v] [-V]\n", argv[0]);
                                 fprintf(stderr, "\n");
                                 fprintf(stderr, "-a: disable autostart\n");
                                 fprintf(stderr, "-v: display version and exit\n");
+                                fprintf(stderr, "-V: enable verbose mode\n");
+                                fprintf(stderr, "-d <loglevel>: enable debug loglevel <loglevel>\n");
                                 fprintf(stderr, "-c <configfile>: use the provided configfile instead\n");
                                 exit(EXIT_FAILURE);
                 }
