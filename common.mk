@@ -74,5 +74,5 @@ endif
 .SILENT:
 
 # Always remake the following targets
-.PHONY: install clean dist distclean
+.PHONY: install clean dist distclean rm_loglevels
 
