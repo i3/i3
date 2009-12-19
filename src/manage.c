@@ -30,6 +30,7 @@
 #include "floating.h"
 #include "client.h"
 #include "workspace.h"
+#include "log.h"
 
 /*
  * Go through all existing windows (if the window manager is restarted) and manage them
@@ -78,7 +79,7 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
         /* Check if the window is mapped (it could be not mapped when intializing and
            calling manage_window() for every window) */
         if ((attr = xcb_get_window_attributes_reply(conn, cookie, 0)) == NULL) {
-                LOG("Could not get attributes\n");
+                ELOG("Could not get attributes\n");
                 return;
         }
 
@@ -156,8 +157,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         /* Events for already managed windows should already be filtered in manage_window() */
         assert(new == NULL);
 
-        LOG("Reparenting window 0x%08x\n", child);
-        LOG("x = %d, y = %d, width = %d, height = %d\n", x, y, width, height);
+        LOG("Managing window 0x%08x\n", child);
+        DLOG("x = %d, y = %d, width = %d, height = %d\n", x, y, width, height);
         new = calloc(sizeof(Client), 1);
         new->force_reconfigure = true;
 
@@ -220,7 +221,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         new->awaiting_useless_unmap = true;
         xcb_void_cookie_t cookie = xcb_reparent_window_checked(conn, child, new->frame, 0, font->height);
         if (xcb_request_check(conn, cookie) != NULL) {
-                LOG("Could not reparent the window, aborting\n");
+                DLOG("Could not reparent the window, aborting\n");
                 xcb_destroy_window(conn, new->frame);
                 free(new);
                 return;
@@ -247,7 +248,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         if (preply != NULL && preply->value_len > 0 && (atom = xcb_get_property_value(preply))) {
                 for (int i = 0; i < xcb_get_property_value_length(preply); i++)
                         if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]) {
-                                LOG("Window is a dock.\n");
+                                DLOG("Window is a dock.\n");
                                 new->dock = true;
                                 new->borderless = true;
                                 new->titlebar_position = TITLEBAR_OFF;
@@ -263,19 +264,19 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                                    atom[i] == atoms[_NET_WM_WINDOW_TYPE_SPLASH]) {
                                 /* Set the dialog window to automatically floating, will be used below */
                                 new->floating = FLOATING_AUTO_ON;
-                                LOG("dialog/utility/toolbar/splash window, automatically floating\n");
+                                DLOG("dialog/utility/toolbar/splash window, automatically floating\n");
                         }
         }
 
         /* All clients which have a leader should be floating */
         if (!new->dock && !client_is_floating(new) && new->leader != 0) {
-                LOG("Client has WM_CLIENT_LEADER hint set, setting floating\n");
+                DLOG("Client has WM_CLIENT_LEADER hint set, setting floating\n");
                 new->floating = FLOATING_AUTO_ON;
         }
 
         if (new->workspace->auto_float) {
                 new->floating = FLOATING_AUTO_ON;
-                LOG("workspace is in autofloat mode, setting floating\n");
+                DLOG("workspace is in autofloat mode, setting floating\n");
         }
 
         if (new->dock) {
@@ -289,12 +290,12 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                            TODO: bars at the top */
                         new->desired_height = strut[3];
                         if (new->desired_height == 0) {
-                                LOG("Client wanted to be 0 pixels high, using the window's height (%d)\n", original_height);
+                                DLOG("Client wanted to be 0 pixels high, using the window's height (%d)\n", original_height);
                                 new->desired_height = original_height;
                         }
-                        LOG("the client wants to be %d pixels high\n", new->desired_height);
+                        DLOG("the client wants to be %d pixels high\n", new->desired_height);
                 } else {
-                        LOG("The client didn't specify space to reserve at the screen edge, using its height (%d)\n", original_height);
+                        DLOG("The client didn't specify space to reserve at the screen edge, using its height (%d)\n", original_height);
                         new->desired_height = original_height;
                 }
         } else {
@@ -333,11 +334,11 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                             assign->windowclass_title, assign->workspace);
 
                         if (c_ws->screen->current_workspace->num == (assign->workspace-1)) {
-                                LOG("We are already there, no need to do anything\n");
+                                DLOG("We are already there, no need to do anything\n");
                                 break;
                         }
 
-                        LOG("Changing container/workspace and unmapping the client\n");
+                        DLOG("Changing container/workspace and unmapping the client\n");
                         Workspace *t_ws = workspace_get(assign->workspace-1);
                         workspace_initialize(t_ws, c_ws->screen);
 
@@ -351,7 +352,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         }
 
         if (new->workspace->fullscreen_client != NULL) {
-                LOG("Setting below fullscreen window\n");
+                DLOG("Setting below fullscreen window\n");
 
                 /* If we are in fullscreen, we should lower the window to not be annoying */
                 uint32_t values[] = { XCB_STACK_MODE_BELOW };
@@ -388,10 +389,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                  * to (0, 0), so we push them to a reasonable position
                  * (centered over their leader) */
                 if (new->leader != 0 && x == 0 && y == 0) {
-                        LOG("Floating client wants to (0x0), moving it over its leader instead\n");
+                        DLOG("Floating client wants to (0x0), moving it over its leader instead\n");
                         Client *leader = table_get(&by_child, new->leader);
                         if (leader == NULL) {
-                                LOG("leader is NULL, centering it over current workspace\n");
+                                DLOG("leader is NULL, centering it over current workspace\n");
 
                                 x = c_ws->rect.x + (c_ws->rect.width / 2) - (new->rect.width / 2);
                                 y = c_ws->rect.y + (c_ws->rect.height / 2) - (new->rect.height / 2);
@@ -402,10 +403,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 }
                 new->floating_rect.x = new->rect.x = x;
                 new->floating_rect.y = new->rect.y = y;
-                LOG("copying floating_rect from tiling (%d, %d) size (%d, %d)\n",
+                DLOG("copying floating_rect from tiling (%d, %d) size (%d, %d)\n",
                                 new->floating_rect.x, new->floating_rect.y,
                                 new->floating_rect.width, new->floating_rect.height);
-                LOG("outer rect (%d, %d) size (%d, %d)\n",
+                DLOG("outer rect (%d, %d) size (%d, %d)\n",
                                 new->rect.x, new->rect.y, new->rect.width, new->rect.height);
 
                 /* Make sure it is on top of the other windows */

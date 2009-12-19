@@ -27,6 +27,7 @@
 #include "client.h"
 #include "floating.h"
 #include "workspace.h"
+#include "log.h"
 
 /*
  * Toggles floating mode for the given client.
@@ -42,7 +43,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
         i3Font *font = load_font(conn, config.font);
 
         if (con == NULL) {
-                LOG("This client is already in floating (container == NULL), re-inserting\n");
+                DLOG("This client is already in floating (container == NULL), re-inserting\n");
                 Client *next_tiling;
                 Workspace *ws = client->workspace;
                 SLIST_FOREACH(next_tiling, &(ws->focus_stack), focus_clients)
@@ -57,7 +58,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                 /* Remove the client from the list of floating clients */
                 TAILQ_REMOVE(&(ws->floating_clients), client, floating_clients);
 
-                LOG("destination container = %p\n", con);
+                DLOG("destination container = %p\n", con);
                 Client *old_focused = con->currently_focused;
                 /* Preserve position/size */
                 memcpy(&(client->floating_rect), &(client->rect), sizeof(Rect));
@@ -69,7 +70,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                         CIRCLEQ_INSERT_AFTER(&(con->clients), old_focused, client, clients);
                 else CIRCLEQ_INSERT_TAIL(&(con->clients), client, clients);
 
-                LOG("Re-inserted the client into the matrix.\n");
+                DLOG("Re-inserted the window.\n");
                 con->currently_focused = client;
 
                 client_set_below_floating(conn, client);
@@ -80,7 +81,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                 return;
         }
 
-        LOG("Entering floating for client %08x\n", client->child);
+        DLOG("Entering floating for client %08x\n", client->child);
 
         /* Remove the client of its container */
         client_remove_from_container(conn, client, con, false);
@@ -90,7 +91,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
         TAILQ_INSERT_TAIL(&(client->workspace->floating_clients), client, floating_clients);
 
         if (con->currently_focused == client) {
-                LOG("Need to re-adjust currently_focused\n");
+                DLOG("Need to re-adjust currently_focused\n");
                 /* Get the next client in the focus stack for this particular container */
                 con->currently_focused = get_last_focused_client(conn, con, NULL);
         }
@@ -113,11 +114,11 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                 client->rect.width = client->child_rect.width + 2 + 2;
                 client->rect.height = client->child_rect.height + (font->height + 2 + 2) + 2;
 
-                LOG("copying size from tiling (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
+                DLOG("copying size from tiling (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
                                 client->floating_rect.width, client->floating_rect.height);
         } else {
                 /* If the client was already in floating before we restore the old position / size */
-                LOG("using: (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
+                DLOG("using: (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
                         client->floating_rect.width, client->floating_rect.height);
                 memcpy(&(client->rect), &(client->floating_rect), sizeof(Rect));
         }
@@ -163,8 +164,7 @@ void floating_assign_to_workspace(Client *client, Workspace *new_workspace) {
  *
  */
 int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event) {
-
-        LOG("floating border click\n");
+        DLOG("floating border click\n");
 
         border_t border;
 
@@ -225,11 +225,11 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
         else if (event->event_x >= (client->rect.width - 2))
                 border = BORDER_RIGHT;
         else {
-                LOG("Not on any border, not doing anything.\n");
+                DLOG("Not on any border, not doing anything.\n");
                 return 1;
         }
 
-        LOG("border = %d\n", border);
+        DLOG("border = %d\n", border);
 
         drag_pointer(conn, client, event, XCB_NONE, border, resize_callback);
 
@@ -243,7 +243,7 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
  *
  */
 void floating_drag_window(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event) {
-        LOG("floating_drag_window\n");
+        DLOG("floating_drag_window\n");
 
         void drag_window_callback(Rect *old_rect, uint32_t new_x, uint32_t new_y) {
                 /* Reposition the client correctly while moving */
@@ -266,7 +266,7 @@ void floating_drag_window(xcb_connection_t *conn, Client *client, xcb_button_pre
  *
  */
 void floating_resize_window(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event) {
-        LOG("floating_resize_window\n");
+        DLOG("floating_resize_window\n");
 
         void resize_window_callback(Rect *old_rect, uint32_t new_x, uint32_t new_y) {
                 int32_t new_width = old_rect->width + (new_x - event->root_x);
@@ -346,12 +346,12 @@ void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event
                                         break;
 
                                 case XCB_UNMAP_NOTIFY:
-                                        LOG("Unmap-notify, aborting\n");
+                                        DLOG("Unmap-notify, aborting\n");
                                         xcb_event_handle(&evenths, inside_event);
                                         goto done;
 
                                 default:
-                                        LOG("Passing to original handler\n");
+                                        DLOG("Passing to original handler\n");
                                         /* Use original handler */
                                         xcb_event_handle(&evenths, inside_event);
                                         break;
@@ -382,7 +382,7 @@ done:
  *
  */
 void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused, direction_t direction) {
-        LOG("floating focus\n");
+        DLOG("floating focus\n");
 
         if (direction == D_LEFT || direction == D_RIGHT) {
                 /* Go to the next/previous floating client */
@@ -404,7 +404,7 @@ void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused,
  *
  */
 void floating_move(xcb_connection_t *conn, Client *currently_focused, direction_t direction) {
-        LOG("floating move\n");
+        DLOG("floating move\n");
 
         switch (direction) {
                 case D_LEFT:
@@ -445,7 +445,7 @@ void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace) {
         Client *client;
 
         workspace->floating_hidden = !workspace->floating_hidden;
-        LOG("floating_hidden is now: %d\n", workspace->floating_hidden);
+        DLOG("floating_hidden is now: %d\n", workspace->floating_hidden);
         TAILQ_FOREACH(client, &(workspace->floating_clients), floating_clients) {
                 if (workspace->floating_hidden)
                         client_unmap(conn, client);

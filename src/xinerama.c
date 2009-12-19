@@ -29,6 +29,7 @@
 #include "xcb.h"
 #include "config.h"
 #include "workspace.h"
+#include "log.h"
 
 /* This TAILQ of i3Screens stores the virtual screens, used for handling overlapping screens
  * (xrandr --same-as) */
@@ -75,7 +76,7 @@ i3Screen *get_screen_at(int x, int y, struct screens_head *screenlist) {
 i3Screen *get_screen_containing(int x, int y) {
         i3Screen *screen;
         TAILQ_FOREACH(screen, virtual_screens, screens) {
-                LOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
+                DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
                                 x, y, screen->rect.x, screen->rect.y, screen->rect.width, screen->rect.height);
                 if (x >= screen->rect.x && x < (screen->rect.x + screen->rect.width) &&
                     y >= screen->rect.y && y < (screen->rect.y + screen->rect.height))
@@ -149,7 +150,7 @@ static void initialize_screen(xcb_connection_t *conn, i3Screen *screen, Workspac
 
         SLIST_INIT(&(screen->dock_clients));
 
-        LOG("that is virtual screen at %d x %d with %d x %d\n",
+        DLOG("that is virtual screen at %d x %d with %d x %d\n",
                         screen->rect.x, screen->rect.y, screen->rect.width, screen->rect.height);
 }
 
@@ -192,7 +193,7 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
         while ((time(NULL) - before_trying) < 10) {
                 reply = xcb_xinerama_query_screens_reply(conn, xcb_xinerama_query_screens_unchecked(conn), NULL);
                 if (!reply) {
-                        LOG("Couldn't get Xinerama screens\n");
+                        DLOG("Couldn't get Xinerama screens\n");
                         return;
                 }
                 screen_info = xcb_xinerama_query_screens_screen_info(reply);
@@ -219,7 +220,7 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
                                 num_screens++;
                         }
 
-                        LOG("found Xinerama screen: %d x %d at %d x %d\n",
+                        DLOG("found Xinerama screen: %d x %d at %d x %d\n",
                                         screen_info[screen].width, screen_info[screen].height,
                                         screen_info[screen].x_org, screen_info[screen].y_org);
                 }
@@ -227,7 +228,7 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
                 free(reply);
 
                 if (num_screens == 0) {
-                        LOG("No screens found. This is weird. Trying again...\n");
+                        DLOG("No screens found. This is weird. Trying again...\n");
                         /* Give the scheduler a chance to do something else
                          * and don’t hog the CPU */
                         usleep(250);
@@ -238,7 +239,7 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
         }
 
         if (num_screens == 0) {
-                LOG("No screens found for 10 seconds. Please fix your setup. i3 will exit now.\n");
+                DLOG("No screens found for 10 seconds. Please fix your setup. i3 will exit now.\n");
                 exit(0);
         }
 }
@@ -253,14 +254,14 @@ void initialize_xinerama(xcb_connection_t *conn) {
         TAILQ_INIT(virtual_screens);
 
         if (!xcb_get_extension_data(conn, &xcb_xinerama_id)->present) {
-                LOG("Xinerama extension not found, disabling.\n");
+                DLOG("Xinerama extension not found, disabling.\n");
                 disable_xinerama(conn);
         } else {
                 xcb_xinerama_is_active_reply_t *reply;
                 reply = xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL);
 
                 if (reply == NULL || !reply->state) {
-                        LOG("Xinerama is not active (in your X-Server), disabling.\n");
+                        DLOG("Xinerama is not active (in your X-Server), disabling.\n");
                         disable_xinerama(conn);
                 } else
                         query_screens(conn, virtual_screens);
@@ -291,7 +292,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
            it change when I move the --right-of video projector to --left-of? */
 
         if (!xinerama_enabled) {
-                LOG("Xinerama is disabled\n");
+                DLOG("Xinerama is disabled\n");
                 return;
         }
 
@@ -319,21 +320,21 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                         if (old_screen->num != screen_count)
                                 continue;
 
-                        LOG("Found a matching screen\n");
+                        DLOG("Found a matching screen\n");
                         /* Use the same workspace */
                         screen->current_workspace = old_screen->current_workspace;
 
                         /* Re-use the old bar window */
                         screen->bar = old_screen->bar;
                         screen->bargc = old_screen->bargc;
-                        LOG("old_screen->bar = %p\n", old_screen->bar);
+                        DLOG("old_screen->bar = %p\n", old_screen->bar);
 
                         Rect bar_rect = {screen->rect.x,
                                          screen->rect.y + screen->rect.height - (font->height + 6),
                                          screen->rect.x + screen->rect.width,
                                          font->height + 6};
 
-                        LOG("configuring bar to be at %d x %d with %d x %d\n",
+                        DLOG("configuring bar to be at %d x %d with %d x %d\n",
                                         bar_rect.x, bar_rect.y, bar_rect.height, bar_rect.width);
                         xcb_configure_window(conn, screen->bar, XCB_CONFIG_WINDOW_X |
                                                                 XCB_CONFIG_WINDOW_Y |
@@ -350,7 +351,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                                 if (ws->screen != old_screen)
                                         continue;
 
-                                LOG("re-assigning ws %d\n", ws->num);
+                                DLOG("re-assigning ws %d\n", ws->num);
                                 memcpy(&(ws->rect), &(screen->rect), sizeof(Rect));
                                 ws->screen = screen;
                                 ws->reassigned = true;
@@ -362,7 +363,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                         /* Find the first unused workspace, preferring the ones
                          * which are assigned to this screen and initialize
                          * the screen with it. */
-                        LOG("getting first ws for screen %p\n", screen);
+                        DLOG("getting first ws for screen %p\n", screen);
                         Workspace *ws = get_first_workspace_for_screen(new_screens, screen);
                         initialize_screen(conn, screen, ws);
                         ws->reassigned = true;
@@ -379,7 +380,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                 if (SLIST_EMPTY(&(old_screen->dock_clients)))
                         continue;
 
-                LOG("dock_clients out of bounds at screen %p, reassigning\n", old_screen);
+                DLOG("dock_clients out of bounds at screen %p, reassigning\n", old_screen);
                 if (SLIST_EMPTY(&(first->dock_clients))) {
                         first->dock_clients = old_screen->dock_clients;
                         continue;
@@ -402,10 +403,10 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
 
                 Client *client;
 
-                LOG("Closing bar window (%p)\n", ws->screen->bar);
+                DLOG("Closing bar window (%p)\n", ws->screen->bar);
                 xcb_destroy_window(conn, ws->screen->bar);
 
-                LOG("Workspace %d's screen out of bounds, assigning to first screen\n", ws->num + 1);
+                DLOG("Workspace %d's screen out of bounds, assigning to first screen\n", ws->num + 1);
                 ws->screen = first;
                 memcpy(&(ws->rect), &(first->rect), sizeof(Rect));
 
@@ -424,7 +425,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                 workspace_unmap_clients(conn, ws);
 
                 if (c_ws == ws) {
-                        LOG("Need to adjust c_ws...\n");
+                        DLOG("Need to adjust c_ws...\n");
                         c_ws = first->current_workspace;
                 }
         }
@@ -440,7 +441,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
 
         virtual_screens = new_screens;
 
-        LOG("Current workspace is now: %d\n", first->current_workspace);
+        DLOG("Current workspace is now: %d\n", first->current_workspace);
 
         render_layout(conn);
 }

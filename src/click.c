@@ -36,6 +36,7 @@
 #include "commands.h"
 #include "floating.h"
 #include "resize.h"
+#include "log.h"
 
 static struct Stack_Window *get_stack_window(xcb_window_t window_id) {
         struct Stack_Window *current;
@@ -97,18 +98,18 @@ static bool button_press_stackwin(xcb_connection_t *conn, xcb_button_press_event
                         int wrap = ceil((float)num_clients / container->stack_limit_value);
                         int clicked_column = (event->event_x / (stack_win->rect.width / container->stack_limit_value));
                         int clicked_row = (event->event_y / decoration_height);
-                        LOG("clicked on column %d, row %d\n", clicked_column, clicked_row);
+                        DLOG("clicked on column %d, row %d\n", clicked_column, clicked_row);
                         destination = (wrap * clicked_column) + clicked_row;
                 } else {
                         int width = (stack_win->rect.width / ceil((float)num_clients / container->stack_limit_value));
                         int clicked_column = (event->event_x / width);
                         int clicked_row = (event->event_y / decoration_height);
-                        LOG("clicked on column %d, row %d\n", clicked_column, clicked_row);
+                        DLOG("clicked on column %d, row %d\n", clicked_column, clicked_row);
                         destination = (container->stack_limit_value * clicked_column) + clicked_row;
                 }
         }
 
-        LOG("Click on stack_win for client %d\n", destination);
+        DLOG("Click on stack_win for client %d\n", destination);
         CIRCLEQ_FOREACH(client, &(stack_win->container->clients), clients)
                 if (c++ == destination) {
                         set_focus(conn, client, true);
@@ -129,7 +130,7 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
                 if (screen->bar != event->event)
                         continue;
 
-                LOG("Click on a bar\n");
+                DLOG("Click on a bar\n");
 
                 /* Check if the button was one of button4 or button5 (scroll up / scroll down) */
                 if (event->detail == XCB_BUTTON_INDEX_4 || event->detail == XCB_BUTTON_INDEX_5) {
@@ -158,7 +159,7 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
                 TAILQ_FOREACH(ws, workspaces, workspaces) {
                         if (ws->screen != screen)
                                 continue;
-                        LOG("Checking if click was on workspace %d with drawn = %d, tw = %d\n",
+                        DLOG("Checking if click was on workspace %d with drawn = %d, tw = %d\n",
                                         ws->num, drawn, ws->text_width);
                         if (event->event_x > (drawn + 1) &&
                             event->event_x <= (drawn + 1 + ws->text_width + 5 + 5)) {
@@ -201,7 +202,7 @@ static bool floating_mod_on_tiled_client(xcb_connection_t *conn, Client *client,
         Workspace *ws = con->workspace;
         int first = 0, second = 0;
 
-        LOG("click was %d px to the right, %d px to the left, %d px to top, %d px to bottom\n",
+        DLOG("click was %d px to the right, %d px to the left, %d px to top, %d px to bottom\n",
                         to_right, to_left, to_top, to_bottom);
 
         if (to_right < to_left &&
@@ -209,7 +210,7 @@ static bool floating_mod_on_tiled_client(xcb_connection_t *conn, Client *client,
             to_right < to_bottom) {
                 /* …right border */
                 first = con->col + (con->colspan - 1);
-                LOG("column %d\n", first);
+                DLOG("column %d\n", first);
 
                 if (!cell_exists(first, con->row) ||
                     (first == (ws->cols-1)))
@@ -251,7 +252,7 @@ static bool floating_mod_on_tiled_client(xcb_connection_t *conn, Client *client,
 }
 
 int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
-        LOG("Button %d pressed\n", event->state);
+        DLOG("Button %d pressed\n", event->state);
         /* This was either a focus for a client’s parent (= titlebar)… */
         Client *client = table_get(&by_child, event->event);
         bool border_click = false;
@@ -265,20 +266,20 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         if (config.floating_modifier != 0 &&
             (event->state & config.floating_modifier) != 0) {
                 if (client == NULL) {
-                        LOG("Not handling, floating_modifier was pressed and no client found\n");
+                        DLOG("Not handling, floating_modifier was pressed and no client found\n");
                         return 1;
                 }
                 if (client->fullscreen) {
-                        LOG("Not handling, client is in fullscreen mode\n");
+                        DLOG("Not handling, client is in fullscreen mode\n");
                         return 1;
                 }
                 if (client_is_floating(client)) {
-                        LOG("button %d pressed\n", event->detail);
+                        DLOG("button %d pressed\n", event->detail);
                         if (event->detail == 1) {
-                                LOG("left mouse button, dragging\n");
+                                DLOG("left mouse button, dragging\n");
                                 floating_drag_window(conn, client, event);
                         } else if (event->detail == 3) {
-                                LOG("right mouse button\n");
+                                DLOG("right mouse button\n");
                                 floating_resize_window(conn, client, event);
                         }
                         return 1;
@@ -301,7 +302,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 if (button_press_bar(conn, event))
                         return 1;
 
-                LOG("Could not handle this button press\n");
+                DLOG("Could not handle this button press\n");
                 return 1;
         }
 
@@ -309,19 +310,19 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         set_focus(conn, client, true);
 
         /* Let’s see if this was on the borders (= resize). If not, we’re done */
-        LOG("press button on x=%d, y=%d\n", event->event_x, event->event_y);
+        DLOG("press button on x=%d, y=%d\n", event->event_x, event->event_y);
         resize_orientation_t orientation = O_VERTICAL;
         Container *con = client->container;
         int first, second;
 
         if (client->dock) {
-                LOG("dock. done.\n");
+                DLOG("dock. done.\n");
                 xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
                 xcb_flush(conn);
                 return 1;
         }
 
-        LOG("event->event_x = %d, client->rect.width = %d\n", event->event_x, client->rect.width);
+        DLOG("event->event_x = %d, client->rect.width = %d\n", event->event_x, client->rect.width);
 
         /* Some clients (xfontsel for example) seem to pass clicks on their
          * window to the parent window, thus we receive an event here which in
@@ -331,12 +332,12 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
             event->event_x <= (client->child_rect.x + client->child_rect.width) &&
             event->event_y >= client->child_rect.y &&
             event->event_y <= (client->child_rect.y + client->child_rect.height)) {
-                LOG("Fixing border_click = false because of click in child\n");
+                DLOG("Fixing border_click = false because of click in child\n");
                 border_click = false;
         }
 
         if (!border_click) {
-                LOG("client. done.\n");
+                DLOG("client. done.\n");
                 xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
                 /* Floating clients should be raised on click */
                 if (client_is_floating(client))
@@ -348,7 +349,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         /* Don’t handle events inside the titlebar, only borders are interesting */
         i3Font *font = load_font(conn, config.font);
         if (event->event_y >= 2 && event->event_y <= (font->height + 2 + 2)) {
-                LOG("click on titlebar\n");
+                DLOG("click on titlebar\n");
 
                 /* Floating clients can be dragged by grabbing their titlebar */
                 if (client_is_floating(client)) {
@@ -392,7 +393,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         } else if (event->event_x > 2) {
                 /* …right border */
                 first = con->col + (con->colspan - 1);
-                LOG("column %d\n", first);
+                DLOG("column %d\n", first);
 
                 if (!cell_exists(first, con->row) ||
                     (first == (ws->cols-1)))

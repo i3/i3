@@ -21,6 +21,7 @@
 #include "table.h"
 #include "workspace.h"
 #include "xcb.h"
+#include "log.h"
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(void);
@@ -94,7 +95,7 @@ void parse_file(const char *f) {
                         new->key = sstrdup(v_key);
                         new->value = sstrdup(v_value);
                         SLIST_INSERT_HEAD(&variables, new, variables);
-                        LOG("Got new variable %s = %s\n", v_key, v_value);
+                        DLOG("Got new variable %s = %s\n", v_key, v_value);
                         continue;
                 }
         }
@@ -324,7 +325,7 @@ modeline:
 floating_modifier:
         TOKFLOATING_MODIFIER WHITESPACE binding_modifiers
         {
-                LOG("floating modifier = %d\n", $<number>3);
+                DLOG("floating modifier = %d\n", $<number>3);
                 config.floating_modifier = $<number>3;
         }
         ;
@@ -332,7 +333,7 @@ floating_modifier:
 new_container:
         TOKNEWCONTAINER WHITESPACE TOKCONTAINERMODE
         {
-                LOG("new containers will be in mode %d\n", $<number>3);
+                DLOG("new containers will be in mode %d\n", $<number>3);
                 config.container_mode = $<number>3;
 
                 /* We also need to change the layout of the already existing
@@ -354,7 +355,7 @@ new_container:
         }
         | TOKNEWCONTAINER WHITESPACE TOKSTACKLIMIT WHITESPACE TOKSTACKLIMIT WHITESPACE NUMBER
         {
-                LOG("stack-limit %d with val %d\n", $<number>5, $<number>7);
+                DLOG("stack-limit %d with val %d\n", $<number>5, $<number>7);
                 config.container_stack_limit = $<number>5;
                 config.container_stack_limit_value = $<number>7;
 
@@ -373,7 +374,7 @@ new_container:
 new_window:
         TOKNEWWINDOW WHITESPACE WORD
         {
-                LOG("new windows should start in mode %s\n", $<string>3);
+                DLOG("new windows should start in mode %s\n", $<string>3);
                 config.default_border = strdup($<string>3);
         }
         ;
@@ -383,7 +384,7 @@ workspace:
         {
                 int ws_num = $<number>3;
                 if (ws_num < 1) {
-                        LOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
+                        DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
                         Workspace *ws = workspace_get(ws_num - 1);
                         ws->preferred_screen = sstrdup($<string>7);
@@ -395,7 +396,7 @@ workspace:
         {
                 int ws_num = $<number>3;
                 if (ws_num < 1) {
-                        LOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
+                        DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
                         if ($<string>5 != NULL)
                                 workspace_set_name(workspace_get(ws_num - 1), $<string>5);
@@ -486,7 +487,7 @@ exec:
 terminal:
         TOKTERMINAL WHITESPACE STR
         {
-                LOG("The terminal option is DEPRECATED and has no effect. "
+                DLOG("The terminal option is DEPRECATED and has no effect. "
                     "Please remove it from your configuration file.");
         }
         ;

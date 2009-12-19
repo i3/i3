@@ -36,6 +36,7 @@
 #include "manage.h"
 #include "floating.h"
 #include "workspace.h"
+#include "log.h"
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -95,15 +96,15 @@ int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_ev
  *
  */
 int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
-        LOG("Keypress %d, state raw = %d\n", event->detail, event->state);
+        DLOG("Keypress %d, state raw = %d\n", event->detail, event->state);
 
         /* Remove the numlock bit, all other bits are modifiers we can bind to */
         uint16_t state_filtered = event->state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK);
-        LOG("(removed numlock, state = %d)\n", state_filtered);
+        DLOG("(removed numlock, state = %d)\n", state_filtered);
         /* Only use the lower 8 bits of the state (modifier masks) so that mouse
          * button masks are filtered out */
         state_filtered &= 0xFF;
-        LOG("(removed upper 8 bits, state = %d)\n", state_filtered);
+        DLOG("(removed upper 8 bits, state = %d)\n", state_filtered);
 
         if (xkb_supported) {
                 /* We need to get the keysym group (There are group 1 to group 4, each holding
@@ -114,7 +115,7 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
                         state_filtered |= BIND_MODE_SWITCH;
         }
 
-        LOG("(checked mode_switch, state %d)\n", state_filtered);
+        DLOG("(checked mode_switch, state %d)\n", state_filtered);
 
         /* Find the binding */
         Binding *bind;
@@ -147,7 +148,7 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
 
         parse_command(conn, bind->command);
         if (state_filtered & BIND_MODE_SWITCH) {
-                LOG("Mode_switch -> allow_events(SyncKeyboard)\n");
+                DLOG("Mode_switch -> allow_events(SyncKeyboard)\n");
                 xcb_allow_events(conn, SyncKeyboard, event->time);
                 xcb_flush(conn);
         }
@@ -164,7 +165,7 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
         i3Screen *screen;
 
         if ((screen = get_screen_containing(x, y)) == NULL) {
-                LOG("ERROR: No such screen\n");
+                ELOG("ERROR: No such screen\n");
                 return;
         }
         if (screen == c_ws->screen)
@@ -175,7 +176,7 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
         c_ws = screen->current_workspace;
         current_row = c_ws->current_row;
         current_col = c_ws->current_col;
-        LOG("We're now on virtual screen number %d\n", screen->num);
+        DLOG("We're now on virtual screen number %d\n", screen->num);
 }
 
 /*
@@ -183,9 +184,9 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
  *
  */
 int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_event_t *event) {
-        LOG("enter_notify for %08x, mode = %d, detail %d, serial %d\n", event->event, event->mode, event->detail, event->sequence);
+        DLOG("enter_notify for %08x, mode = %d, detail %d, serial %d\n", event->event, event->mode, event->detail, event->sequence);
         if (event->mode != XCB_NOTIFY_MODE_NORMAL) {
-                LOG("This was not a normal notify, ignoring\n");
+                DLOG("This was not a normal notify, ignoring\n");
                 return 1;
         }
         /* Some events are not interesting, because they were not generated actively by the
@@ -212,7 +213,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
 
         /* If not, then the user moved his cursor to the root window. In that case, we adjust c_ws */
         if (client == NULL) {
-                LOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
+                DLOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
                 check_crossing_screen_boundary(event->root_x, event->root_y);
                 return 1;
         }
@@ -222,7 +223,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
         if (client->container != NULL &&
             client->container->mode == MODE_STACK &&
             client->container->currently_focused != client) {
-                LOG("Plausibility check says: no\n");
+                DLOG("Plausibility check says: no\n");
                 return 1;
         }
 
@@ -230,7 +231,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
                 /* This can happen when a client gets assigned to a different workspace than
                  * the current one (see src/mainx.c:reparent_window). Shortly after it was created,
                  * an enter_notify will follow. */
-                LOG("enter_notify for a client on a different workspace but the same screen, ignoring\n");
+                DLOG("enter_notify for a client on a different workspace but the same screen, ignoring\n");
                 return 1;
         }
 
@@ -266,7 +267,7 @@ int handle_mapping_notify(void *ignored, xcb_connection_t *conn, xcb_mapping_not
             event->request != XCB_MAPPING_MODIFIER)
                 return 0;
 
-        LOG("Received mapping_notify for keyboard or modifier mapping, re-grabbing keys\n");
+        DLOG("Received mapping_notify for keyboard or modifier mapping, re-grabbing keys\n");
         xcb_refresh_keyboard_mapping(keysyms, event);
 
         xcb_get_numlock_mask(conn);
@@ -286,7 +287,7 @@ int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_eve
 
         cookie = xcb_get_window_attributes_unchecked(conn, event->window);
 
-        LOG("window = 0x%08x, serial is %d.\n", event->window, event->sequence);
+        DLOG("window = 0x%08x, serial is %d.\n", event->window, event->sequence);
         add_ignore_event(event->sequence);
 
         manage_window(prophs, conn, event->window, cookie, false);
@@ -300,7 +301,7 @@ int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_eve
  *
  */
 int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure_request_event_t *event) {
-        LOG("window 0x%08x wants to be at %dx%d with %dx%d\n",
+        DLOG("window 0x%08x wants to be at %dx%d with %dx%d\n",
             event->window, event->x, event->y, event->width, event->height);
 
         Client *client = table_get(&by_child, event->window);
@@ -330,7 +331,7 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
         }
 
         if (client->fullscreen) {
-                LOG("Client is in fullscreen mode\n");
+                DLOG("Client is in fullscreen mode\n");
 
                 Rect child_rect = client->workspace->rect;
                 child_rect.x = child_rect.y = 0;
@@ -371,7 +372,7 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
                         }
                 }
 
-                LOG("Accepted new position/size for floating client: (%d, %d) size %d x %d\n",
+                DLOG("Accepted new position/size for floating client: (%d, %d) size %d x %d\n",
                     client->rect.x, client->rect.y, client->rect.width, client->rect.height);
 
                 /* Push the new position/size to X11 */
@@ -384,10 +385,10 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
 
         /* Dock clients can be reconfigured in their height */
         if (client->dock) {
-                LOG("Reconfiguring height of this dock client\n");
+                DLOG("Reconfiguring height of this dock client\n");
 
                 if (!(event->value_mask & XCB_CONFIG_WINDOW_HEIGHT)) {
-                        LOG("Ignoring configure request, no height given\n");
+                        DLOG("Ignoring configure request, no height given\n");
                         return 1;
                 }
 
@@ -399,7 +400,7 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
         }
 
         if (client->fullscreen) {
-                LOG("Client is in fullscreen mode\n");
+                DLOG("Client is in fullscreen mode\n");
 
                 Rect child_rect = client->container->workspace->rect;
                 child_rect.x = child_rect.y = 0;
@@ -426,8 +427,8 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
         add_ignore_event(event->sequence);
 
         if (event->event == root) {
-                LOG("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
-                LOG("reconfigure of the root window, need to xinerama\n");
+                DLOG("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
+                DLOG("reconfigure of the root window, need to xinerama\n");
                 /* FIXME: Somehow, this is occuring too often. Therefore, we check for 0/0,
                    but is there a better way? */
                 if (event->x == 0 && event->y == 0)
@@ -456,10 +457,10 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 return 1;
         }
 
-        LOG("event->window = %08x, event->event = %08x\n", event->window, event->event);
-        LOG("UnmapNotify for 0x%08x (received from 0x%08x)\n", event->window, event->event);
+        DLOG("event->window = %08x, event->event = %08x\n", event->window, event->event);
+        DLOG("UnmapNotify for 0x%08x (received from 0x%08x)\n", event->window, event->event);
         if (client == NULL) {
-                LOG("not a managed window. Ignoring.\n");
+                DLOG("not a managed window. Ignoring.\n");
 
                 /* This was most likely the destroyed frame of a client which is
                  * currently being unmapped, so we add this sequence (again!) to
@@ -490,17 +491,17 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 if ((con->currently_focused != NULL) && ((con == CUR_CELL) || client->fullscreen))
                         set_focus(conn, con->currently_focused, true);
         } else if (client_is_floating(client)) {
-                LOG("Removing from floating clients\n");
+                DLOG("Removing from floating clients\n");
                 TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
                 SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
         }
 
         if (client->dock) {
-                LOG("Removing from dock clients\n");
+                DLOG("Removing from dock clients\n");
                 SLIST_REMOVE(&(client->workspace->screen->dock_clients), client, Client, dock_clients);
         }
 
-        LOG("child of 0x%08x.\n", client->frame);
+        DLOG("child of 0x%08x.\n", client->frame);
         xcb_reparent_window(conn, client->child, root, 0, 0);
 
         client_unmap(conn, client);
@@ -550,7 +551,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 if (to_focus != NULL)
                         set_focus(conn, to_focus, true);
                 else {
-                        LOG("Restoring focus to root screen\n");
+                        DLOG("Restoring focus to root screen\n");
                         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
                         xcb_flush(conn);
                 }
@@ -566,7 +567,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
                                 xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
         if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-                LOG("_NET_WM_NAME not specified, not changing\n");
+                DLOG("_NET_WM_NAME not specified, not changing\n");
                 return 1;
         }
         Client *client = table_get(&by_child, window);
@@ -628,7 +629,7 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
 int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t state,
                                 xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
         if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-                LOG("prop == NULL\n");
+                DLOG("prop == NULL\n");
                 return 1;
         }
         Client *client = table_get(&by_child, window);
@@ -643,7 +644,7 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
         char *new_name;
         if (asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop)) == -1) {
                 perror("Could not get old name");
-                LOG("Could not get old name\n");
+                DLOG("Could not get old name\n");
                 return 1;
         }
         /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
@@ -688,7 +689,7 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
 int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
                              xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
         if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-                LOG("prop == NULL\n");
+                DLOG("prop == NULL\n");
                 return 1;
         }
         Client *client = table_get(&by_child, window);
@@ -697,7 +698,7 @@ int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
         char *new_class;
         if (asprintf(&new_class, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop)) == -1) {
                 perror("Could not get window class");
-                LOG("Could not get window class\n");
+                DLOG("Could not get window class\n");
                 return 1;
         }
 
@@ -710,7 +711,7 @@ int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
                 return 1;
 
         if (strcmp(new_class, "tools") == 0 || strcmp(new_class, "Dialog") == 0) {
-                LOG("tool/dialog window, should we put it floating?\n");
+                DLOG("tool/dialog window, should we put it floating?\n");
                 if (client->floating == FLOATING_AUTO_OFF)
                         toggle_floating_mode(conn, client, true);
         }
@@ -727,7 +728,7 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
            skip all events but the last one */
         if (event->count != 0)
                 return 1;
-        LOG("window = %08x\n", event->window);
+        DLOG("window = %08x\n", event->window);
 
         Client *client = table_get(&by_parent, event->window);
         if (client == NULL) {
@@ -812,7 +813,7 @@ int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message
                       event->data.data32[0] == _NET_WM_STATE_TOGGLE)))
                         client_toggle_fullscreen(conn, client);
         } else {
-                LOG("unhandled clientmessage\n");
+                ELOG("unhandled clientmessage\n");
                 return 0;
         }
 
@@ -823,7 +824,7 @@ int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_wi
                         xcb_atom_t atom, xcb_get_property_reply_t *property) {
         /* TODO: Implement this one. To do this, implement a little test program which sleep(1)s
          before changing this property. */
-        LOG("_NET_WM_WINDOW_TYPE changed, this is not yet implemented.\n");
+        ELOG("_NET_WM_WINDOW_TYPE changed, this is not yet implemented.\n");
         return 0;
 }
 
@@ -838,7 +839,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
                         xcb_atom_t name, xcb_get_property_reply_t *reply) {
         Client *client = table_get(&by_child, window);
         if (client == NULL) {
-                LOG("Received WM_SIZE_HINTS for unknown client\n");
+                DLOG("Received WM_SIZE_HINTS for unknown client\n");
                 return 1;
         }
         xcb_size_hints_t size_hints;
@@ -893,9 +894,9 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
             base_height != client->base_height) {
                 client->base_width = base_width;
                 client->base_height = base_height;
-                LOG("client's base_height changed to %d\n", base_height);
+                DLOG("client's base_height changed to %d\n", base_height);
                 if (client->fullscreen)
-                        LOG("Not resizing client, it is in fullscreen mode\n");
+                        DLOG("Not resizing client, it is in fullscreen mode\n");
                 else
                         resize_client(conn, client);
         }
@@ -913,8 +914,8 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         double min_aspect = (double)size_hints.min_aspect_num / size_hints.min_aspect_den;
         double max_aspect = (double)size_hints.max_aspect_num / size_hints.min_aspect_den;
 
-        LOG("Aspect ratio set: minimum %f, maximum %f\n", min_aspect, max_aspect);
-        LOG("width = %f, height = %f\n", width, height);
+        DLOG("Aspect ratio set: minimum %f, maximum %f\n", min_aspect, max_aspect);
+        DLOG("width = %f, height = %f\n", width, height);
 
         /* Sanity checks, this is user-input, in a way */
         if (max_aspect <= 0 || min_aspect <= 0 || height == 0 || (width / height) <= 0)
@@ -947,7 +948,7 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
                   xcb_atom_t name, xcb_get_property_reply_t *reply) {
         Client *client = table_get(&by_child, window);
         if (client == NULL) {
-                LOG("Received WM_HINTS for unknown client\n");
+                DLOG("Received WM_HINTS for unknown client\n");
                 return 1;
         }
         xcb_wm_hints_t hints;
@@ -962,7 +963,7 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
 
         Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
         if (!client->urgent && client == last_focused) {
-                LOG("Ignoring urgency flag for current client\n");
+                DLOG("Ignoring urgency flag for current client\n");
                 return 1;
         }
 
@@ -996,7 +997,7 @@ int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_
                          xcb_atom_t name, xcb_get_property_reply_t *reply) {
         Client *client = table_get(&by_child, window);
         if (client == NULL) {
-                LOG("No such client\n");
+                DLOG("No such client\n");
                 return 1;
         }
 
@@ -1012,7 +1013,7 @@ int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_
         }
 
         if (client->floating == FLOATING_AUTO_OFF) {
-                LOG("This is a popup window, putting into floating\n");
+                DLOG("This is a popup window, putting into floating\n");
                 toggle_floating_mode(conn, client, true);
         }
 
@@ -1041,7 +1042,7 @@ int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state
         if (leader == NULL || *leader == 0)
                 return 1;
 
-        LOG("Client leader changed to %08x\n", *leader);
+        DLOG("Client leader changed to %08x\n", *leader);
 
         client->leader = *leader;
 

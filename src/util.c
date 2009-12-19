@@ -31,6 +31,7 @@
 #include "util.h"
 #include "xcb.h"
 #include "client.h"
+#include "log.h"
 
 static iconv_t conversion_descriptor = 0;
 struct keyvalue_table_head by_parent = TAILQ_HEAD_INITIALIZER(by_parent);
@@ -42,27 +43,6 @@ int min(int a, int b) {
 
 int max(int a, int b) {
         return (a > b ? a : b);
-}
-
-/*
- * Logs the given message to stdout while prefixing the current time to it.
- * This is to be called by LOG() which includes filename/linenumber
- *
- */
-void slog(char *fmt, ...) {
-        va_list args;
-        char timebuf[64];
-
-        va_start(args, fmt);
-        /* Get current time */
-        time_t t = time(NULL);
-        /* Convert time to local time (determined by the locale) */
-        struct tm *tmp = localtime(&t);
-        /* Generate time prefix */
-        strftime(timebuf, sizeof(timebuf), "%x %X - ", tmp);
-        printf("%s", timebuf);
-        vprintf(fmt, args);
-        va_end(args);
 }
 
 /*
@@ -280,7 +260,7 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
                         Client *last_focused = get_last_focused_client(conn, client->container, client);
 
                         if (last_focused != NULL) {
-                                LOG("raising above frame %p / child %p\n", last_focused->frame, last_focused->child);
+                                DLOG("raising above frame %p / child %p\n", last_focused->frame, last_focused->child);
                                 uint32_t values[] = { last_focused->frame, XCB_STACK_MODE_ABOVE };
                                 xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
                         }
@@ -294,13 +274,13 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         /* If the last client was a floating client, we need to go to the next
          * tiling client in stack and re-decorate it. */
         if (old_client != NULL && client_is_floating(old_client)) {
-                LOG("Coming from floating client, searching next tiling...\n");
+                DLOG("Coming from floating client, searching next tiling...\n");
                 Client *current;
                 SLIST_FOREACH(current, &(client->workspace->focus_stack), focus_clients) {
                         if (client_is_floating(current))
                                 continue;
 
-                        LOG("Found window: %p / child %p\n", current->frame, current->child);
+                        DLOG("Found window: %p / child %p\n", current->frame, current->child);
                         redecorate_window(conn, current);
                         break;
                 }
@@ -411,14 +391,14 @@ after_stackwin:
                         if (client == container->currently_focused || client == last_focused)
                                 continue;
 
-                        LOG("setting %08x below %08x / %08x\n", client->frame, container->currently_focused->frame);
+                        DLOG("setting %08x below %08x / %08x\n", client->frame, container->currently_focused->frame);
                         uint32_t values[] = { container->currently_focused->frame, XCB_STACK_MODE_BELOW };
                         xcb_configure_window(conn, client->frame,
                                              XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
                 }
 
                 if (last_focused != NULL) {
-                        LOG("Putting last_focused directly underneath the currently focused\n");
+                        DLOG("Putting last_focused directly underneath the currently focused\n");
                         uint32_t values[] = { container->currently_focused->frame, XCB_STACK_MODE_BELOW };
                         xcb_configure_window(conn, last_focused->frame,
                                              XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
@@ -457,7 +437,7 @@ Client *get_matching_client(xcb_connection_t *conn, const char *window_classtitl
                 goto done;
         }
 
-        LOG("Getting clients for class \"%s\" / title \"%s\"\n", to_class, to_title);
+        DLOG("Getting clients for class \"%s\" / title \"%s\"\n", to_class, to_title);
         Workspace *ws;
         TAILQ_FOREACH(ws, workspaces, workspaces) {
                 if (ws->screen == NULL)
@@ -465,7 +445,7 @@ Client *get_matching_client(xcb_connection_t *conn, const char *window_classtitl
 
                 Client *client;
                 SLIST_FOREACH(client, &(ws->focus_stack), focus_clients) {
-                        LOG("Checking client with class=%s, name=%s\n", client->window_class, client->name);
+                        DLOG("Checking client with class=%s, name=%s\n", client->window_class, client->name);
                         if (!client_matches_class_name(client, to_class, to_title, to_title_ucs, to_title_ucs_len))
                                 continue;
 

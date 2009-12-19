@@ -21,6 +21,7 @@
 #include "i3.h"
 #include "util.h"
 #include "xcb.h"
+#include "log.h"
 
 TAILQ_HEAD(cached_fonts_head, Font) cached_fonts = TAILQ_HEAD_INITIALIZER(cached_fonts);
 unsigned int xcb_numlock_mask;
@@ -270,7 +271,7 @@ void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
  *
  */
 void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap) {
-        LOG("preparing pixmap\n");
+        DLOG("preparing pixmap\n");
 
         /* If the Rect did not change, the pixmap does not need to be recreated */
         if (memcmp(&(pixmap->rect), pixmap->referred_rect, sizeof(Rect)) == 0)
@@ -279,11 +280,11 @@ void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap)
         memcpy(&(pixmap->rect), pixmap->referred_rect, sizeof(Rect));
 
         if (pixmap->id == 0 || pixmap->gc == 0) {
-                LOG("Creating new pixmap...\n");
+                DLOG("Creating new pixmap...\n");
                 pixmap->id = xcb_generate_id(conn);
                 pixmap->gc = xcb_generate_id(conn);
         } else {
-                LOG("Re-creating this pixmap...\n");
+                DLOG("Re-creating this pixmap...\n");
                 xcb_free_gc(conn, pixmap->gc);
                 xcb_free_pixmap(conn, pixmap->id);
         }

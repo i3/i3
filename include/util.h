@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -34,23 +34,12 @@
 } \
 while (0)
 
-/** ##__VA_ARGS__ means: leave out __VA_ARGS__ completely if it is empty, that
-   is, delete the preceding comma */
-#define LOG(fmt, ...) slog("%s:%s:%d - " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
-
 TAILQ_HEAD(keyvalue_table_head, keyvalue_element);
 extern struct keyvalue_table_head by_parent;
 extern struct keyvalue_table_head by_child;
 
 int min(int a, int b);
 int max(int a, int b);
-
-/**
- * Logs the given message to stdout while prefixing the current time to it.
- * This is to be called by LOG() which includes filename/linenumber
- *
- */
-void slog(char *fmt, ...);
 
 /**
  * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that

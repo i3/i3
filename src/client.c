@@ -27,6 +27,7 @@
 #include "table.h"
 #include "workspace.h"
 #include "config.h"
+#include "log.h"
 
 /*
  * Removes the given client from the container, either because it will be inserted into another
@@ -44,7 +45,7 @@ void client_remove_from_container(xcb_connection_t *conn, Client *client, Contai
         if (CIRCLEQ_EMPTY(&(container->clients)) &&
             (container->mode == MODE_STACK ||
              container->mode == MODE_TABBED)) {
-                LOG("Unmapping stack window\n");
+                DLOG("Unmapping stack window\n");
                 struct Stack_Window *stack_win = &(container->stack_win);
                 stack_win->rect.height = 0;
                 xcb_unmap_window(conn, stack_win->window);
@@ -169,7 +170,7 @@ void client_enter_fullscreen(xcb_connection_t *conn, Client *client) {
                               workspace->rect.width,
                               workspace->rect.height};
 
-        LOG("child itself will be at %dx%d with size %dx%d\n",
+        DLOG("child itself will be at %dx%d with size %dx%d\n",
                         values[0], values[1], values[2], values[3]);
 
         xcb_configure_window(conn, client->frame, mask, values);
@@ -243,14 +244,14 @@ void client_set_below_floating(xcb_connection_t *conn, Client *client) {
         if (first_floating == TAILQ_END(&(ws->floating_clients)))
                 return;
 
-        LOG("Setting below floating\n");
+        DLOG("Setting below floating\n");
         uint32_t values[] = { first_floating->frame, XCB_STACK_MODE_BELOW };
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
 
         if (client->workspace->fullscreen_client == NULL)
                 return;
 
-        LOG("(and below fullscreen)\n");
+        DLOG("(and below fullscreen)\n");
         /* Ensure that the window is still below the fullscreen window */
         values[0] = client->workspace->fullscreen_client->frame;
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);

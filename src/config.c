@@ -29,6 +29,7 @@
 #include "xcb.h"
 #include "table.h"
 #include "workspace.h"
+#include "log.h"
 
 Config config;
 struct modes_head modes;
@@ -52,12 +53,12 @@ static char *glob_path(const char *path) {
  *
  */
 void ungrab_all_keys(xcb_connection_t *conn) {
-        LOG("Ungrabbing all keys\n");
+        DLOG("Ungrabbing all keys\n");
         xcb_ungrab_key(conn, XCB_GRAB_ANY, root, XCB_BUTTON_MASK_ANY);
 }
 
 static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint32_t keycode) {
-        LOG("Grabbing %d\n", keycode);
+        DLOG("Grabbing %d\n", keycode);
         if ((bind->mods & BIND_MODE_SWITCH) != 0)
                 xcb_grab_key(conn, 0, root, 0, keycode,
                         XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
@@ -87,14 +88,14 @@ void grab_all_keys(xcb_connection_t *conn) {
                 /* We need to translate the symbol to a keycode */
                 xcb_keysym_t keysym = XStringToKeysym(bind->symbol);
                 if (keysym == NoSymbol) {
-                        LOG("Could not translate string to key symbol: \"%s\"\n", bind->symbol);
+                        ELOG("Could not translate string to key symbol: \"%s\"\n", bind->symbol);
                         continue;
                 }
 
 #ifdef OLD_XCB_KEYSYMS_API
                 bind->number_keycodes = 1;
                 xcb_keycode_t code = xcb_key_symbols_get_keycode(keysyms, keysym);
-                LOG("Translated symbol \"%s\" to 1 keycode (%d)\n", bind->symbol, code);
+                DLOG("Translated symbol \"%s\" to 1 keycode (%d)\n", bind->symbol, code);
                 grab_keycode_for_binding(conn, bind, code);
                 bind->translated_to = smalloc(sizeof(xcb_keycode_t));
                 memcpy(bind->translated_to, &code, sizeof(xcb_keycode_t));
@@ -102,7 +103,7 @@ void grab_all_keys(xcb_connection_t *conn) {
                 uint32_t last_keycode = 0;
                 xcb_keycode_t *keycodes = xcb_key_symbols_get_keycode(keysyms, keysym);
                 if (keycodes == NULL) {
-                        LOG("Could not translate symbol \"%s\"\n", bind->symbol);
+                        DLOG("Could not translate symbol \"%s\"\n", bind->symbol);
                         continue;
                 }
 
@@ -117,7 +118,7 @@ void grab_all_keys(xcb_connection_t *conn) {
                         last_keycode = *walk;
                         bind->number_keycodes++;
                 }
-                LOG("Translated symbol \"%s\" to %d keycode\n", bind->symbol, bind->number_keycodes);
+                DLOG("Translated symbol \"%s\" to %d keycode\n", bind->symbol, bind->number_keycodes);
                 bind->translated_to = smalloc(bind->number_keycodes * sizeof(xcb_keycode_t));
                 memcpy(bind->translated_to, keycodes, bind->number_keycodes * sizeof(xcb_keycode_t));
                 free(keycodes);
@@ -144,7 +145,7 @@ void switch_mode(xcb_connection_t *conn, const char *new_mode) {
                 return;
         }
 
-        LOG("ERROR: Mode not found\n");
+        ELOG("ERROR: Mode not found\n");
 }
 
 /*

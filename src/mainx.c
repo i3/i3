@@ -124,7 +124,7 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
  *
  */
 static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
-        LOG("got xkb event, yay\n");
+        DLOG("Handling XKB event\n");
         XEvent ev;
         /* When using xmodmap, every change (!) gets an own event.
          * Therefore, we just read all events and only handle the
@@ -139,9 +139,9 @@ static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
         xcb_get_numlock_mask(global_conn);
 
         ungrab_all_keys(global_conn);
-        LOG("Re-grabbing...\n");
+        DLOG("Re-grabbing...\n");
         grab_all_keys(global_conn);
-        LOG("Done\n");
+        DLOG("Done\n");
 
 }
 
@@ -258,7 +258,7 @@ int main(int argc, char *argv[], char *env[]) {
         int evBase, errBase;
 
         if ((xkbdpy = XkbOpenDisplay(getenv("DISPLAY"), &evBase, &errBase, &major, &minor, &error)) == NULL) {
-                LOG("ERROR: XkbOpenDisplay() failed, disabling XKB support\n");
+                ELOG("ERROR: XkbOpenDisplay() failed, disabling XKB support\n");
                 xkb_supported = false;
         }
 
@@ -383,7 +383,7 @@ int main(int argc, char *argv[], char *env[]) {
         #define GET_ATOM(name) { \
                 xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, atom_cookies[name], NULL); \
                 if (!reply) { \
-                        LOG("Could not get atom " #name "\n"); \
+                        ELOG("Could not get atom " #name "\n"); \
                         exit(-1); \
                 } \
                 atoms[name] = reply->atom; \
@@ -453,7 +453,7 @@ int main(int argc, char *argv[], char *env[]) {
         }
 
         /* check for Xinerama */
-        LOG("Checking for Xinerama...\n");
+        DLOG("Checking for Xinerama...\n");
         initialize_xinerama(conn);
 
         xcb_flush(conn);
@@ -461,18 +461,18 @@ int main(int argc, char *argv[], char *env[]) {
         /* Get pointer position to see on which screen we’re starting */
         xcb_query_pointer_reply_t *reply;
         if ((reply = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, root), NULL)) == NULL) {
-                LOG("Could not get pointer position\n");
+                ELOG("Could not get pointer position\n");
                 return 1;
         }
 
         i3Screen *screen = get_screen_containing(reply->root_x, reply->root_y);
         if (screen == NULL) {
-                LOG("ERROR: No screen at %d x %d, starting on the first screen\n",
+                ELOG("ERROR: No screen at %d x %d, starting on the first screen\n",
                     reply->root_x, reply->root_y);
                 screen = TAILQ_FIRST(virtual_screens);
         }
 
-        LOG("Starting on %d\n", screen->current_workspace);
+        DLOG("Starting on %d\n", screen->current_workspace);
         c_ws = screen->current_workspace;
 
         manage_existing_windows(conn, &prophs, root);
@@ -481,7 +481,7 @@ int main(int argc, char *argv[], char *env[]) {
         if (config.ipc_socket_path != NULL) {
                 int ipc_socket = ipc_create_socket(config.ipc_socket_path);
                 if (ipc_socket == -1) {
-                        LOG("Could not create the IPC socket, IPC disabled\n");
+                        ELOG("Could not create the IPC socket, IPC disabled\n");
                 } else {
                         struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
                         ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);

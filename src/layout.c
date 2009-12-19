@@ -28,6 +28,7 @@
 #include "floating.h"
 #include "handlers.h"
 #include "workspace.h"
+#include "log.h"
 
 /*
  * Updates *destination with new_value and returns true if it was changed or false
@@ -50,16 +51,16 @@ int get_unoccupied_x(Workspace *workspace) {
         double unoccupied = workspace->rect.width;
         double default_factor = ((float)workspace->rect.width / workspace->cols) / workspace->rect.width;
 
-        LOG("get_unoccupied_x(), starting with %f, default_factor = %f\n", unoccupied, default_factor);
+        DLOG("get_unoccupied_x(), starting with %f, default_factor = %f\n", unoccupied, default_factor);
 
         for (int cols = 0; cols < workspace->cols; cols++) {
-                LOG("width_factor[%d] = %f, unoccupied = %f\n", cols, workspace->width_factor[cols], unoccupied);
+                DLOG("width_factor[%d] = %f, unoccupied = %f\n", cols, workspace->width_factor[cols], unoccupied);
 
                 if (workspace->width_factor[cols] == 0)
                         unoccupied -= workspace->rect.width * default_factor;
         }
 
-        LOG("unoccupied space: %f\n", unoccupied);
+        DLOG("unoccupied space: %f\n", unoccupied);
         return unoccupied;
 }
 
@@ -69,15 +70,15 @@ int get_unoccupied_y(Workspace *workspace) {
         double unoccupied = height;
         double default_factor = ((float)height / workspace->rows) / height;
 
-        LOG("get_unoccupied_y(), starting with %f, default_factor = %f\n", unoccupied, default_factor);
+        DLOG("get_unoccupied_y(), starting with %f, default_factor = %f\n", unoccupied, default_factor);
 
         for (int rows = 0; rows < workspace->rows; rows++) {
-                LOG("height_factor[%d] = %f, unoccupied = %f\n", rows, workspace->height_factor[rows], unoccupied);
+                DLOG("height_factor[%d] = %f, unoccupied = %f\n", rows, workspace->height_factor[rows], unoccupied);
                 if (workspace->height_factor[rows] == 0)
                         unoccupied -= height * default_factor;
         }
 
-        LOG("unoccupied space: %f\n", unoccupied);
+        DLOG("unoccupied space: %f\n", unoccupied);
         return unoccupied;
 }
 
@@ -217,7 +218,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
 void reposition_client(xcb_connection_t *conn, Client *client) {
         i3Screen *screen;
 
-        LOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
+        DLOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
         /* Note: We can use a pointer to client->x like an array of uint32_ts
            because it is followed by client->y by definition */
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, &(client->rect.x));
@@ -230,12 +231,12 @@ void reposition_client(xcb_connection_t *conn, Client *client) {
                 return;
 
         if (screen == NULL) {
-                LOG("Boundary checking disabled, no screen found for (%d, %d)\n", client->rect.x, client->rect.y);
+                DLOG("Boundary checking disabled, no screen found for (%d, %d)\n", client->rect.x, client->rect.y);
                 return;
         }
 
-        LOG("Client is on workspace %p with screen %p\n", client->workspace, client->workspace->screen);
-        LOG("but screen at %d, %d is %p\n", client->rect.x, client->rect.y, screen);
+        DLOG("Client is on workspace %p with screen %p\n", client->workspace, client->workspace->screen);
+        DLOG("but screen at %d, %d is %p\n", client->rect.x, client->rect.y, screen);
         floating_assign_to_workspace(client, screen->current_workspace);
 }
 
@@ -249,8 +250,8 @@ void reposition_client(xcb_connection_t *conn, Client *client) {
 void resize_client(xcb_connection_t *conn, Client *client) {
         i3Font *font = load_font(conn, config.font);
 
-        LOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
-        LOG("resizing client 0x%08x to %d x %d\n", client->frame, client->rect.width, client->rect.height);
+        DLOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
+        DLOG("resizing client 0x%08x to %d x %d\n", client->frame, client->rect.width, client->rect.height);
         xcb_configure_window(conn, client->frame,
                         XCB_CONFIG_WINDOW_X |
                         XCB_CONFIG_WINDOW_Y |
@@ -300,7 +301,7 @@ void resize_client(xcb_connection_t *conn, Client *client) {
         /* Obey the ratio, if any */
         if (client->proportional_height != 0 &&
             client->proportional_width != 0) {
-                LOG("proportional height = %d, width = %d\n", client->proportional_height, client->proportional_width);
+                DLOG("proportional height = %d, width = %d\n", client->proportional_height, client->proportional_width);
                 double new_height = rect->height + 1;
                 int new_width = rect->width;
 
@@ -316,24 +317,24 @@ void resize_client(xcb_connection_t *conn, Client *client) {
 
                 rect->height = new_height;
                 rect->width = new_width;
-                LOG("new_height = %f, new_width = %d\n", new_height, new_width);
+                DLOG("new_height = %f, new_width = %d\n", new_height, new_width);
         }
 
         if (client->height_increment > 1) {
                 int old_height = rect->height;
                 rect->height -= (rect->height - client->base_height) % client->height_increment;
-                LOG("Lost %d pixel due to client's height_increment (%d px, base_height = %d)\n",
+                DLOG("Lost %d pixel due to client's height_increment (%d px, base_height = %d)\n",
                     old_height - rect->height, client->height_increment, client->base_height);
         }
 
         if (client->width_increment > 1) {
                 int old_width = rect->width;
                 rect->width -= (rect->width - client->base_width) % client->width_increment;
-                LOG("Lost %d pixel due to client's width_increment (%d px, base_width = %d)\n",
+                DLOG("Lost %d pixel due to client's width_increment (%d px, base_width = %d)\n",
                     old_width - rect->width, client->width_increment, client->base_width);
         }
 
-        LOG("child will be at %dx%d with size %dx%d\n", rect->x, rect->y, rect->width, rect->height);
+        DLOG("child will be at %dx%d with size %dx%d\n", rect->x, rect->y, rect->width, rect->height);
 
         xcb_configure_window(conn, client->child, mask, &(rect->x));
 
@@ -365,7 +366,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
         if (container->mode == MODE_DEFAULT) {
                 int height = (container->height / max(1, num_clients));
                 int rest_pixels = (container->height % max(1, num_clients));
-                LOG("height per client = %d, rest = %d\n", height, rest_pixels);
+                DLOG("height per client = %d, rest = %d\n", height, rest_pixels);
 
                 CIRCLEQ_FOREACH(client, &(container->clients), clients) {
                         /* If the client is in fullscreen mode, it does not get reconfigured */
@@ -409,15 +410,15 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 /* Check if we need to remap our stack title window, it gets unmapped when the container
                    is empty in src/handlers.c:unmap_notify() */
                 if (stack_win->rect.height == 0 && num_clients > 0) {
-                        LOG("remapping stack win\n");
+                        DLOG("remapping stack win\n");
                         xcb_map_window(conn, stack_win->window);
-                } else LOG("not remapping stackwin, height = %d, num_clients = %d\n",
+                } else DLOG("not remapping stackwin, height = %d, num_clients = %d\n",
                                 stack_win->rect.height, num_clients);
 
                 if (container->mode == MODE_TABBED) {
                         /* By setting num_clients to 1 we force that the stack window will be only one line
                          * high. The rest of the code is useful in both cases. */
-                        LOG("tabbed mode, setting num_clients = 1\n");
+                        DLOG("tabbed mode, setting num_clients = 1\n");
                         if (stack_lines > 1)
                                 stack_lines = 1;
                 }
@@ -530,7 +531,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
                                 current_client++;
                         } else if (container->mode == MODE_TABBED) {
                                 if (container->stack_limit == STACK_LIMIT_ROWS) {
-                                        LOG("You limited this container in its rows. "
+                                        LOG("You limited a tabbed container in its rows. "
                                             "This makes no sense in tabbing mode.\n");
                                 }
                                 offset_x = current_client++ * size_each;
@@ -571,7 +572,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
 static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int *height) {
         Client *client;
         SLIST_FOREACH(client, &(r_ws->screen->dock_clients), dock_clients) {
-                LOG("client is at %d, should be at %d\n", client->rect.y, *height);
+                DLOG("client is at %d, should be at %d\n", client->rect.y, *height);
                 if (client->force_reconfigure |
                     update_if_necessary(&(client->rect.x), r_ws->rect.x) |
                     update_if_necessary(&(client->rect.y), *height))
@@ -583,7 +584,7 @@ static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int 
                         resize_client(conn, client);
 
                 client->force_reconfigure = false;
-                LOG("desired_height = %d\n", client->desired_height);
+                DLOG("desired_height = %d\n", client->desired_height);
                 *height += client->desired_height;
         }
 }
@@ -717,7 +718,7 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
                                 single_width = container->width;
                 }
 
-                LOG("height is %d\n", height);
+                DLOG("height is %d\n", height);
 
                 container->height = 0;
 

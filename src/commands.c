@@ -30,6 +30,7 @@
 #include "workspace.h"
 #include "commands.h"
 #include "resize.h"
+#include "log.h"
 
 bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction) {
         /* If this container is empty, we’re done */
@@ -45,7 +46,7 @@ bool focus_window_in_container(xcb_connection_t *conn, Container *container, dir
         else if (direction == D_DOWN) {
                 if ((candidate = CIRCLEQ_NEXT_OR_NULL(&(container->clients), container->currently_focused, clients)) == NULL)
                         candidate = CIRCLEQ_FIRST(&(container->clients));
-        } else LOG("Direction not implemented!\n");
+        } else ELOG("Direction not implemented!\n");
 
         /* If we could not switch, the container contains exactly one client. We return false */
         if (candidate == container->currently_focused)
@@ -74,11 +75,11 @@ static void jump_to_mark(xcb_connection_t *conn, const char *mark) {
                         return;
                 }
 
-        LOG("No window with this mark found\n");
+        ELOG("No window with this mark found\n");
 }
 
 static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t thing) {
-        LOG("focusing direction %d\n", direction);
+        DLOG("focusing direction %d\n", direction);
 
         int new_row = current_row,
             new_col = current_col;
@@ -120,7 +121,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
 
                 i3Screen *target = get_screen_containing(bounds.x, bounds.y);
                 if (target == NULL) {
-                        LOG("Target screen NULL\n");
+                        DLOG("Target screen NULL\n");
                         /* Wrap around if the target screen is out of bounds */
                         if (direction == D_RIGHT)
                                 target = get_screen_most(D_LEFT, cs);
@@ -131,7 +132,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         else target = get_screen_most(D_UP, cs);
                 }
 
-                LOG("Switching to ws %d\n", target->current_workspace + 1);
+                DLOG("Switching to ws %d\n", target->current_workspace + 1);
                 workspace_show(conn, target->current_workspace->num + 1);
                 return;
         }
@@ -159,11 +160,11 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         }
                 } else {
                         /* Let’s see if there is a screen down/up there to which we can switch */
-                        LOG("container is at %d with height %d\n", container->y, container->height);
+                        DLOG("container is at %d with height %d\n", container->y, container->height);
                         i3Screen *screen;
                         int destination_y = (direction == D_UP ? (container->y - 1) : (container->y + container->height + 1));
                         if ((screen = get_screen_containing(container->x, destination_y)) == NULL) {
-                                LOG("Wrapping screen around vertically\n");
+                                DLOG("Wrapping screen around vertically\n");
                                 /* No screen found? Then wrap */
                                 screen = get_screen_most((direction == D_UP ? D_DOWN : D_UP), container->workspace->screen);
                         }
@@ -173,9 +174,9 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
 
                 check_colrow_boundaries();
 
-                LOG("new_col = %d, new_row = %d\n", new_col, new_row);
+                DLOG("new_col = %d, new_row = %d\n", new_col, new_row);
                 if (t_ws->table[new_col][new_row]->currently_focused == NULL) {
-                        LOG("Cell empty, checking for colspanned client above...\n");
+                        DLOG("Cell empty, checking for colspanned client above...\n");
                         for (int cols = 0; cols < new_col; cols += t_ws->table[cols][new_row]->colspan) {
                                 if (new_col > (cols + (t_ws->table[cols][new_row]->colspan - 1)))
                                         continue;
@@ -183,7 +184,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                                 new_col = cols;
                                 break;
                         }
-                        LOG("Fixed it to new col %d\n", new_col);
+                        DLOG("Fixed it to new col %d\n", new_col);
                 }
         } else if (direction == D_LEFT || direction == D_RIGHT) {
                 if (direction == D_RIGHT && cell_exists(current_col+1, current_row))
@@ -202,11 +203,11 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         }
                 } else {
                         /* Let’s see if there is a screen left/right here to which we can switch */
-                        LOG("container is at %d with width %d\n", container->x, container->width);
+                        DLOG("container is at %d with width %d\n", container->x, container->width);
                         i3Screen *screen;
                         int destination_x = (direction == D_LEFT ? (container->x - 1) : (container->x + container->width + 1));
                         if ((screen = get_screen_containing(destination_x, container->y)) == NULL) {
-                                LOG("Wrapping screen around horizontally\n");
+                                DLOG("Wrapping screen around horizontally\n");
                                 screen = get_screen_most((direction == D_LEFT ? D_RIGHT : D_LEFT), container->workspace->screen);
                         }
                         t_ws = screen->current_workspace;
@@ -215,9 +216,9 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
 
                 check_colrow_boundaries();
 
-                LOG("new_col = %d, new_row = %d\n", new_col, new_row);
+                DLOG("new_col = %d, new_row = %d\n", new_col, new_row);
                 if (t_ws->table[new_col][new_row]->currently_focused == NULL) {
-                        LOG("Cell empty, checking for rowspanned client above...\n");
+                        DLOG("Cell empty, checking for rowspanned client above...\n");
                         for (int rows = 0; rows < new_row; rows += t_ws->table[new_col][rows]->rowspan) {
                                 if (new_row > (rows + (t_ws->table[new_col][rows]->rowspan - 1)))
                                         continue;
@@ -225,10 +226,10 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                                 new_row = rows;
                                 break;
                         }
-                        LOG("Fixed it to new row %d\n", new_row);
+                        DLOG("Fixed it to new row %d\n", new_row);
                 }
         } else {
-                LOG("direction unhandled\n");
+                ELOG("direction unhandled\n");
                 return;
         }
 
@@ -254,7 +255,7 @@ static bool move_current_window_in_container(xcb_connection_t *conn, Client *cli
         if (other == CIRCLEQ_END(&(client->container->clients)))
                 return false;
 
-        LOG("i can do that\n");
+        DLOG("i can do that\n");
         /* We can move the client inside its current container */
         CIRCLEQ_REMOVE(&(client->container->clients), client, clients);
         if (direction == D_UP)
@@ -411,7 +412,7 @@ static void move_current_container(xcb_connection_t *conn, direction_t direction
                         return;
         }
 
-        LOG("old = %d,%d and new = %d,%d\n", container->col, container->row, new->col, new->row);
+        DLOG("old = %d,%d and new = %d,%d\n", container->col, container->row, new->col, new->row);
 
         /* Swap the containers */
         int col = new->col;
@@ -453,7 +454,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                         /* Snap to the left is actually a move to the left and then a snap right */
                         if (!cell_exists(container->col - 1, container->row) ||
                             CUR_TABLE[container->col-1][container->row]->currently_focused != NULL) {
-                                LOG("cannot snap to left - the cell is already used\n");
+                                ELOG("cannot snap to left - the cell is already used\n");
                                 return;
                         }
 
@@ -466,18 +467,18 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                         for (int i = 0; i < container->rowspan; i++)
                                 if (!cell_exists(new_col, container->row + i) ||
                                     CUR_TABLE[new_col][container->row + i]->currently_focused != NULL) {
-                                        LOG("cannot snap to right - the cell is already used\n");
+                                        ELOG("cannot snap to right - the cell is already used\n");
                                         return;
                                 }
 
                         /* Check if there are other cells with rowspan, which are in our way.
                          * If so, reduce their rowspan. */
                         for (int i = container->row-1; i >= 0; i--) {
-                                LOG("we got cell %d, %d with rowspan %d\n",
+                                DLOG("we got cell %d, %d with rowspan %d\n",
                                                 new_col, i, CUR_TABLE[new_col][i]->rowspan);
                                 while ((CUR_TABLE[new_col][i]->rowspan-1) >= (container->row - i))
                                         CUR_TABLE[new_col][i]->rowspan--;
-                                LOG("new rowspan = %d\n", CUR_TABLE[new_col][i]->rowspan);
+                                DLOG("new rowspan = %d\n", CUR_TABLE[new_col][i]->rowspan);
                         }
 
                         container->colspan++;
@@ -486,7 +487,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                 case D_UP:
                         if (!cell_exists(container->col, container->row - 1) ||
                             CUR_TABLE[container->col][container->row-1]->currently_focused != NULL) {
-                                LOG("cannot snap to top - the cell is already used\n");
+                                ELOG("cannot snap to top - the cell is already used\n");
                                 return;
                         }
 
@@ -494,21 +495,21 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                         snap_current_container(conn, D_DOWN);
                         return;
                 case D_DOWN: {
-                        LOG("snapping down\n");
+                        DLOG("snapping down\n");
                         int new_row = container->row + container->rowspan;
                         for (int i = 0; i < container->colspan; i++)
                                 if (!cell_exists(container->col + i, new_row) ||
                                     CUR_TABLE[container->col + i][new_row]->currently_focused != NULL) {
-                                        LOG("cannot snap down - the cell is already used\n");
+                                        ELOG("cannot snap down - the cell is already used\n");
                                         return;
                                 }
 
                         for (int i = container->col-1; i >= 0; i--) {
-                                LOG("we got cell %d, %d with colspan %d\n",
+                                DLOG("we got cell %d, %d with colspan %d\n",
                                                 i, new_row, CUR_TABLE[i][new_row]->colspan);
                                 while ((CUR_TABLE[i][new_row]->colspan-1) >= (container->col - i))
                                         CUR_TABLE[i][new_row]->colspan--;
-                                LOG("new colspan = %d\n", CUR_TABLE[i][new_row]->colspan);
+                                DLOG("new colspan = %d\n", CUR_TABLE[i][new_row]->colspan);
 
                         }
 
@@ -535,7 +536,7 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
         /* Check if there is already a fullscreen client on the destination workspace and
          * stop moving if so. */
         if (client->fullscreen && (t_ws->fullscreen_client != NULL)) {
-                LOG("Not moving: Fullscreen client already existing on destination workspace.\n");
+                ELOG("Not moving: Fullscreen client already existing on destination workspace.\n");
                 return;
         }
 
@@ -543,24 +544,24 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
 
         /* If we’re moving it to an invisible screen, we need to unmap it */
         if (!workspace_is_visible(t_ws)) {
-                LOG("This workspace is not visible, unmapping\n");
+                DLOG("This workspace is not visible, unmapping\n");
                 client_unmap(conn, client);
         } else {
                 /* If this is not the case, we move the window to a workspace
                  * which is on another screen, so we also need to adjust its
                  * coordinates. */
-                LOG("before x = %d, y = %d\n", client->rect.x, client->rect.y);
+                DLOG("before x = %d, y = %d\n", client->rect.x, client->rect.y);
                 uint32_t relative_x = client->rect.x - old_ws->rect.x,
                          relative_y = client->rect.y - old_ws->rect.y;
-                LOG("rel_x = %d, rel_y = %d\n", relative_x, relative_y);
+                DLOG("rel_x = %d, rel_y = %d\n", relative_x, relative_y);
                 client->rect.x = t_ws->rect.x + relative_x;
                 client->rect.y = t_ws->rect.y + relative_y;
-                LOG("after x = %d, y = %d\n", client->rect.x, client->rect.y);
+                DLOG("after x = %d, y = %d\n", client->rect.x, client->rect.y);
                 reposition_client(conn, client);
                 xcb_flush(conn);
         }
 
-        LOG("done\n");
+        DLOG("done\n");
 
         render_layout(conn);
 
@@ -584,7 +585,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
 
         Client *current_client = container->currently_focused;
         if (current_client == NULL) {
-                LOG("No currently focused client in current container.\n");
+                ELOG("No currently focused client in current container.\n");
                 return;
         }
         Client *to_focus = CIRCLEQ_NEXT_OR_NULL(&(container->clients), current_client, clients);
@@ -595,7 +596,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         /* Check if there is already a fullscreen client on the destination workspace and
          * stop moving if so. */
         if (current_client->fullscreen && (t_ws->fullscreen_client != NULL)) {
-                LOG("Not moving: Fullscreen client already existing on destination workspace.\n");
+                ELOG("Not moving: Fullscreen client already existing on destination workspace.\n");
                 return;
         }
 
@@ -611,7 +612,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         CIRCLEQ_INSERT_TAIL(&(to_container->clients), current_client, clients);
 
         SLIST_INSERT_HEAD(&(to_container->workspace->focus_stack), current_client, focus_clients);
-        LOG("Moved.\n");
+        DLOG("Moved.\n");
 
         current_client->container = to_container;
         current_client->workspace = to_container->workspace;
@@ -620,11 +621,11 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
 
         /* If we’re moving it to an invisible screen, we need to unmap it */
         if (!workspace_is_visible(to_container->workspace)) {
-                LOG("This workspace is not visible, unmapping\n");
+                DLOG("This workspace is not visible, unmapping\n");
                 client_unmap(conn, current_client);
         } else {
                 if (current_client->fullscreen) {
-                        LOG("Calling client_enter_fullscreen again\n");
+                        DLOG("Calling client_enter_fullscreen again\n");
                         client_enter_fullscreen(conn, current_client);
                 }
         }
@@ -656,7 +657,7 @@ static void jump_to_window(xcb_connection_t *conn, const char *arguments) {
 
         if ((client = get_matching_client(conn, classtitle, NULL)) == NULL) {
                 free(classtitle);
-                LOG("No matching client found.\n");
+                ELOG("No matching client found.\n");
                 return;
         }
 
@@ -678,7 +679,7 @@ static void jump_to_container(xcb_connection_t *conn, const char *arguments) {
 
         /* No match? Either no arguments were specified, or no numbers */
         if (result < 1) {
-                LOG("At least one valid argument required\n");
+                ELOG("At least one valid argument required\n");
                 return;
         }
 
@@ -688,7 +689,7 @@ static void jump_to_container(xcb_connection_t *conn, const char *arguments) {
         if (result < 3)
                 return;
 
-        LOG("Boundary-checking col %d, row %d... (max cols %d, max rows %d)\n", col, row, c_ws->cols, c_ws->rows);
+        DLOG("Boundary-checking col %d, row %d... (max cols %d, max rows %d)\n", col, row, c_ws->cols, c_ws->rows);
 
         /* Move to row/col */
         if (row >= c_ws->rows)
@@ -696,7 +697,7 @@ static void jump_to_container(xcb_connection_t *conn, const char *arguments) {
         if (col >= c_ws->cols)
                 col = c_ws->cols - 1;
 
-        LOG("Jumping to col %d, row %d\n", col, row);
+        DLOG("Jumping to col %d, row %d\n", col, row);
         if (c_ws->table[col][row]->currently_focused != NULL)
                 set_focus(conn, c_ws->table[col][row]->currently_focused, true);
 }
@@ -725,7 +726,7 @@ static void travel_focus_stack(xcb_connection_t *conn, const char *arguments) {
         } else if (strcasecmp(arguments, "ft") == 0) {
                 Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
                 if (last_focused == SLIST_END(&(c_ws->focus_stack))) {
-                        LOG("Cannot select the next floating/tiling client because there is no client at all\n");
+                        ELOG("Cannot select the next floating/tiling client because there is no client at all\n");
                         return;
                 }
 
@@ -733,17 +734,17 @@ static void travel_focus_stack(xcb_connection_t *conn, const char *arguments) {
         } else {
                 /* …or a number was specified */
                 if (sscanf(arguments, "%u", &times) != 1) {
-                        LOG("No or invalid argument given (\"%s\"), using default of 1 times\n", arguments);
+                        ELOG("No or invalid argument given (\"%s\"), using default of 1 times\n", arguments);
                         times = 1;
                 }
 
                 SLIST_FOREACH(current, &(CUR_CELL->workspace->focus_stack), focus_clients) {
                         if (++count < times) {
-                                LOG("Skipping\n");
+                                DLOG("Skipping\n");
                                 continue;
                         }
 
-                        LOG("Focussing\n");
+                        DLOG("Focussing\n");
                         set_focus(conn, current, true);
                         break;
                 }
@@ -767,7 +768,7 @@ static void travel_focus_stack(xcb_connection_t *conn, const char *arguments) {
 static char **append_argument(char **original, char *argument) {
         int num_args;
         for (num_args = 0; original[num_args] != NULL; num_args++) {
-                LOG("original argument: \"%s\"\n", original[num_args]);
+                DLOG("original argument: \"%s\"\n", original[num_args]);
                 /* If the argument is already present we return the original pointer */
                 if (strcmp(original[num_args], argument) == 0)
                         return original;
@@ -821,7 +822,7 @@ static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, c
                 command += strlen("left");
         } else if (STARTS_WITH(command, "right")) {
                 first = con->col + (con->colspan - 1);
-                LOG("column %d\n", first);
+                DLOG("column %d\n", first);
 
                 if (!cell_exists(first, con->row) ||
                     (first == (ws->cols-1)))
@@ -846,7 +847,7 @@ static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, c
                 orientation = O_HORIZONTAL;
                 command += strlen("bottom");
         } else {
-                LOG("Syntax: resize <left|right|top|bottom> [+|-]<pixels>\n");
+                ELOG("Syntax: resize <left|right|top|bottom> [+|-]<pixels>\n");
                 return;
         }
 
@@ -882,14 +883,14 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         if (STARTS_WITH(command, "mark")) {
                 if (last_focused == NULL) {
-                        LOG("There is no window to mark\n");
+                        ELOG("There is no window to mark\n");
                         return;
                 }
                 const char *rest = command + strlen("mark");
                 while (*rest == ' ')
                         rest++;
                 if (*rest == '\0') {
-                        LOG("interactive mark starting\n");
+                        DLOG("interactive mark starting\n");
                         start_application("i3-input -p 'mark ' -l 1 -P 'Mark: '");
                 } else {
                         LOG("mark with \"%s\"\n", rest);
@@ -903,7 +904,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 while (*rest == ' ')
                         rest++;
                 if (*rest == '\0') {
-                        LOG("interactive go to mark starting\n");
+                        DLOG("interactive go to mark starting\n");
                         start_application("i3-input -p 'goto ' -l 1 -P 'Goto: '");
                 } else {
                         LOG("go to \"%s\"\n", rest);
@@ -914,7 +915,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         if (STARTS_WITH(command, "stack-limit ")) {
                 if (last_focused == NULL || client_is_floating(last_focused)) {
-                        LOG("No container focused\n");
+                        ELOG("No container focused\n");
                         return;
                 }
                 const char *rest = command + strlen("stack-limit ");
@@ -925,7 +926,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         last_focused->container->stack_limit = STACK_LIMIT_COLS;
                         rest += strlen("cols ");
                 } else {
-                        LOG("Syntax: stack-limit <cols|rows> <limit>\n");
+                        ELOG("Syntax: stack-limit <cols|rows> <limit>\n");
                         return;
                 }
 
@@ -974,7 +975,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
         if (STARTS_WITH(command, "kill")) {
                 if (last_focused == NULL) {
-                        LOG("There is no window to kill\n");
+                        ELOG("There is no window to kill\n");
                         return;
                 }
 
@@ -1010,7 +1011,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         /* Is it just 's' for stacking or 'd' for default? */
         if ((command[0] == 's' || command[0] == 'd' || command[0] == 'T') && (command[1] == '\0')) {
                 if (last_focused != NULL && client_is_floating(last_focused)) {
-                        LOG("not switching, this is a floating client\n");
+                        ELOG("not switching, this is a floating client\n");
                         return;
                 }
                 LOG("Switching mode for current container\n");
@@ -1027,7 +1028,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         /* or even 'bt' (toggle border: 'bp' -> 'bb' -> 'bn' ) */
         if (command[0] == 'b') {
                 if (last_focused == NULL) {
-                        LOG("No window focused, cannot change border type\n");
+                        ELOG("No window focused, cannot change border type\n");
                         return;
                 }
 
@@ -1068,7 +1069,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         with = WITH_SCREEN;
                         command++;
                 } else {
-                        LOG("not yet implemented.\n");
+                        ELOG("not yet implemented.\n");
                         return;
                 }
         }
@@ -1081,7 +1082,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         return;
                 }
                 if (last_focused == NULL) {
-                        LOG("Cannot toggle tiling/floating: workspace empty\n");
+                        ELOG("Cannot toggle tiling/floating: workspace empty\n");
                         return;
                 }
 
@@ -1115,7 +1116,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         direction_t direction;
         int times = strtol(command, &rest, 10);
         if (rest == NULL) {
-                LOG("Invalid command (\"%s\")\n", command);
+                ELOG("Invalid command (\"%s\")\n", command);
                 return;
         }
 
@@ -1133,7 +1134,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         int workspace = strtol(rest, &rest, 10);
 
         if (rest == NULL) {
-                LOG("Invalid command (\"%s\")\n", command);
+                ELOG("Invalid command (\"%s\")\n", command);
                 return;
         }
 
@@ -1145,13 +1146,13 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         }
 
         if (last_focused == NULL) {
-                LOG("Not performing (no window found)\n");
+                ELOG("Not performing (no window found)\n");
                 return;
         }
 
         if (client_is_floating(last_focused) &&
             (action != ACTION_FOCUS && action != ACTION_MOVE)) {
-                LOG("Not performing (floating)\n");
+                ELOG("Not performing (floating)\n");
                 return;
         }
 
@@ -1166,7 +1167,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 else if (*rest == 'l')
                         direction = D_RIGHT;
                 else {
-                        LOG("unknown direction: %c\n", *rest);
+                        ELOG("unknown direction: %c\n", *rest);
                         return;
                 }
                 rest++;
@@ -1189,7 +1190,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                                 /* TODO: this should swap the screen’s contents
                                  * (e.g. all workspaces) with the next/previous/…
                                  * screen */
-                                LOG("Not yet implemented\n");
+                                ELOG("Not yet implemented\n");
                                 continue;
                         }
                         if (client_is_floating(last_focused)) {
@@ -1204,7 +1205,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
                 if (action == ACTION_SNAP) {
                         if (with == WITH_SCREEN) {
-                                LOG("You cannot snap a screen (it makes no sense).\n");
+                                ELOG("You cannot snap a screen (it makes no sense).\n");
                                 continue;
                         }
                         snap_current_container(conn, direction);

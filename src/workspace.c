@@ -26,6 +26,7 @@
 #include "layout.h"
 #include "workspace.h"
 #include "client.h"
+#include "log.h"
 
 /*
  * Returns a pointer to the workspace with the given number (starting at 0),
@@ -42,10 +43,10 @@ Workspace *workspace_get(int number) {
         /* If we are still there, we could not find the requested workspace. */
         int last_ws = TAILQ_LAST(workspaces, workspaces_head)->num;
 
-        LOG("We need to initialize that one, last ws = %d\n", last_ws);
+        DLOG("We need to initialize that one, last ws = %d\n", last_ws);
 
         for (int c = last_ws; c < number; c++) {
-                LOG("Creating new ws\n");
+                DLOG("Creating new ws\n");
 
                 ws = scalloc(sizeof(Workspace));
                 ws->num = c+1;
@@ -56,7 +57,7 @@ Workspace *workspace_get(int number) {
 
                 TAILQ_INSERT_TAIL(workspaces, ws, workspaces);
         }
-        LOG("done\n");
+        DLOG("done\n");
 
         return ws;
 }
@@ -109,7 +110,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
         /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */
         Workspace *t_ws = workspace_get(workspace-1);
 
-        LOG("show_workspace(%d)\n", workspace);
+        DLOG("show_workspace(%d)\n", workspace);
 
         /* Store current_row/current_col */
         c_ws->current_row = current_row;
@@ -120,7 +121,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
 
         if (c_ws->screen != t_ws->screen) {
                 /* We need to switch to the other screen first */
-                LOG("moving over to other screen.\n");
+                DLOG("moving over to other screen.\n");
 
                 /* Store the old client */
                 Client *old_client = CUR_CELL->currently_focused;
@@ -163,7 +164,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
 
         current_row = c_ws->current_row;
         current_col = c_ws->current_col;
-        LOG("new current row = %d, current col = %d\n", current_row, current_col);
+        DLOG("new current row = %d, current col = %d\n", current_row, current_col);
 
         workspace_map_clients(conn, c_ws);
 
@@ -206,7 +207,7 @@ static i3Screen *get_screen_from_preference(struct screens_head *slist, char *pr
         char *rest;
         int preferred_screen = strtol(preference, &rest, 10);
 
-        LOG("Getting screen for preference \"%s\" (%d)\n", preference, preferred_screen);
+        DLOG("Getting screen for preference \"%s\" (%d)\n", preference, preferred_screen);
 
         if ((rest == preference) || (preferred_screen >= num_screens)) {
                 int x = INT_MAX, y = INT_MAX;
@@ -222,16 +223,16 @@ static i3Screen *get_screen_from_preference(struct screens_head *slist, char *pr
                         x = atoi(preference);
                 }
 
-                LOG("Looking for screen at %d x %d\n", x, y);
+                DLOG("Looking for screen at %d x %d\n", x, y);
 
                 TAILQ_FOREACH(screen, slist, screens)
                         if ((x == INT_MAX || screen->rect.x == x) &&
                             (y == INT_MAX || screen->rect.y == y)) {
-                                LOG("found %p\n", screen);
+                                DLOG("found %p\n", screen);
                                 return screen;
                         }
 
-                LOG("none found\n");
+                DLOG("none found\n");
                 return NULL;
         } else {
                 int c = 0;
@@ -252,7 +253,7 @@ static i3Screen *get_screen_from_preference(struct screens_head *slist, char *pr
  */
 void workspace_initialize(Workspace *ws, i3Screen *screen) {
         if (ws->screen != NULL) {
-                LOG("Workspace already initialized\n");
+                DLOG("Workspace already initialized\n");
                 return;
         }
 
@@ -298,7 +299,7 @@ Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *
         }
 
         if (result == NULL) {
-                LOG("No existing free workspace found to assign, creating a new one\n");
+                DLOG("No existing free workspace found to assign, creating a new one\n");
 
                 Workspace *ws;
                 int last_ws = 0;
@@ -359,7 +360,7 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
         int unmapped_clients = 0;
         FOR_TABLE(u_ws)
                 CIRCLEQ_FOREACH(client, &(u_ws->table[cols][rows]->clients), clients) {
-                        LOG("unmapping normal client %p / %p / %p\n", client, client->frame, client->child);
+                        DLOG("unmapping normal client %p / %p / %p\n", client, client->frame, client->child);
                         client_unmap(conn, client);
                         unmapped_clients++;
                 }
@@ -369,7 +370,7 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
                 if (!client_is_floating(client))
                         continue;
 
-                LOG("unmapping floating client %p / %p / %p\n", client, client->frame, client->child);
+                DLOG("unmapping floating client %p / %p / %p\n", client, client->frame, client->child);
 
                 client_unmap(conn, client);
                 unmapped_clients++;
@@ -380,12 +381,12 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
         if (unmapped_clients == 0 && u_ws != c_ws) {
                 /* Re-assign the workspace of all dock clients which use this workspace */
                 Client *dock;
-                LOG("workspace %p is empty\n", u_ws);
+                DLOG("workspace %p is empty\n", u_ws);
                 SLIST_FOREACH(dock, &(u_ws->screen->dock_clients), dock_clients) {
                         if (dock->workspace != u_ws)
                                 continue;
 
-                        LOG("Re-assigning dock client to c_ws (%p)\n", c_ws);
+                        DLOG("Re-assigning dock client to c_ws (%p)\n", c_ws);
                         dock->workspace = c_ws;
                 }
                 u_ws->screen = NULL;

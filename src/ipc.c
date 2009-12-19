@@ -28,6 +28,7 @@
 #include "i3.h"
 #include "util.h"
 #include "commands.h"
+#include "log.h"
 
 typedef struct ipc_client {
         int fd;
@@ -71,10 +72,10 @@ void broadcast(EV_P_ struct ev_timer *t, int revents) {
  */
 static void ipc_handle_message(uint8_t *message, int size,
                                 uint32_t message_size, uint32_t message_type) {
-        LOG("handling message of size %d\n", size);
-        LOG("sender specified size %d\n", message_size);
-        LOG("sender specified type %d\n", message_type);
-        LOG("payload as a string = %s\n", message);
+        DLOG("handling message of size %d\n", size);
+        DLOG("sender specified size %d\n", message_size);
+        DLOG("sender specified type %d\n", message_type);
+        DLOG("payload as a string = %s\n", message);
 
         switch (message_type) {
                 case I3_IPC_MESSAGE_TYPE_COMMAND: {
@@ -88,7 +89,7 @@ static void ipc_handle_message(uint8_t *message, int size,
                         break;
                 }
                 default:
-                        LOG("unhandled ipc message\n");
+                        DLOG("unhandled ipc message\n");
                         break;
         }
 }
@@ -135,7 +136,7 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
 
                 ev_io_stop(EV_A_ w);
 
-                LOG("IPC: client disconnected\n");
+                DLOG("IPC: client disconnected\n");
                 return;
         }
 
@@ -144,18 +145,18 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
 
         /* Check if the message starts with the i3 IPC magic code */
         if (n < strlen(I3_IPC_MAGIC)) {
-                LOG("IPC: message too short, ignoring\n");
+                DLOG("IPC: message too short, ignoring\n");
                 return;
         }
 
         if (strncmp(buf, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC)) != 0) {
-                LOG("IPC: message does not start with the IPC magic\n");
+                DLOG("IPC: message does not start with the IPC magic\n");
                 return;
         }
 
         uint8_t *message = (uint8_t*)buf;
         while (n > 0) {
-                LOG("IPC: n = %d\n", n);
+                DLOG("IPC: n = %d\n", n);
                 message += strlen(I3_IPC_MAGIC);
                 n -= strlen(I3_IPC_MAGIC);
 
@@ -165,7 +166,7 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
                 n -= sizeof(uint32_t);
 
                 if (message_size > n) {
-                        LOG("IPC: Either the message size was wrong or the message was not read completely, dropping\n");
+                        DLOG("IPC: Either the message size was wrong or the message was not read completely, dropping\n");
                         return;
                 }
 
@@ -204,7 +205,7 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
         ev_io_init(package, ipc_receive_message, client, EV_READ);
         ev_io_start(EV_A_ package);
 
-        LOG("IPC: new client connected\n");
+        DLOG("IPC: new client connected\n");
 
         struct ipc_client *new = calloc(sizeof(struct ipc_client), 1);
         new->fd = client;
