@@ -9,7 +9,7 @@ FILES:=$(FILES:.c=.o)
 HEADERS:=$(filter-out include/loglevels.h,$(wildcard include/*.h))
 
 # Depend on the specific file (.c for each .o) and on all headers
-src/%.o: src/%.c ${HEADERS}
+src/%.o: src/%.c ${HEADERS} loglevels.h
 	echo "CC $<"
 	$(CC) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/$(shell basename $< .c)/ { print NR }' loglevels.tmp))" -c -o $@ $<
 
@@ -37,12 +37,12 @@ loglevels.h: rm_loglevels
 	done; \
 	echo "};") > include/loglevels.h
 
-src/cfgparse.yy.o: src/cfgparse.l
+src/cfgparse.yy.o: src/cfgparse.l loglevels.h
 	echo "LEX $<"
 	flex -i -o$(@:.o=.c) $<
 	$(CC) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
 
-src/cfgparse.y.o: src/cfgparse.y
+src/cfgparse.y.o: src/cfgparse.y loglevels.h
 	echo "YACC $<"
 	bison --debug --verbose -b $(basename $< .y) -d $<
 	$(CC) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.y/ { print NR }' loglevels.tmp))" -c -o $@ $(<:.y=.tab.c)
