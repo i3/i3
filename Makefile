@@ -33,7 +33,7 @@ loglevels.h: rm_loglevels
 	done > loglevels.tmp
 	(echo "char *loglevels[] = {"; for file in $$(cat loglevels.tmp); \
 	do \
-		echo -e "\t\"$$file\", "; \
+		echo "\"$$file\", "; \
 	done; \
 	echo "};") > include/loglevels.h
 
