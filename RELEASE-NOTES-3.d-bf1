@@ -1,0 +1,29 @@
+Release notes for i3 v3.δ-bf1
+-----------------------------
+
+This is the first bugfix release (bf1) for version 3.δ (transcribed 3.d) of
+i3. Because many bugs were fixed after the release of version 3.δ, we thought
+users of the stable releases might profit from this additional bugfix release.
+
+Thanks for this release go out to msi, merovius, Grauwolf, jace, Syntropy,
+Mirko, helgiks and Moredread.
+
+A list of changes follows:
+
+  * Bugfix: Don’t draw window title when titlebar is disabled
+  * Bugfix: Correctly switch border types for floating windows
+  * Bugfix: Correctly replay pointer if the click handler does not trigger
+  * Bugfix: Also allow WORDs as workspace names
+  * Bugfix: Correctly clear the urgency hint if a window gets unmapped without
+    clearing it
+  * Bugfix: Fix resizing of floating windows in borderless/1-px-border mode
+  * Bugfix: Accept underscores in bindsym
+  * Bugfix: Don’t set the urgency flag if the window is focused
+  * Bugfix: Handle stack-limit cols on tabbed containers
+  * Bugfix: Resize client after updating base_width/base_height
+  * Bugfix: Force render containers after setting the client active
+  * Bugfix: Fix two problems in resizing floating windows with right mouse
+  * Bugfix: Use more precise floating point arithmetics
+  * Bugfix: Correctly place new windows below fullscreen windows
+
+ -- Michael Stapelberg, 2009-12-21
