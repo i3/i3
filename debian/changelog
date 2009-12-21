@@ -1,8 +1,28 @@
-i3-wm (3.d-bf1-1) unstable; urgency=low
+i3-wm (3.e-0) unstable; urgency=low
 
   * NOT YET RELEASED
 
- -- Michael Stapelberg <michael@stapelberg.de>  Sat, 12 Dec 2009 21:34:37 +0100
+ -- Michael Stapelberg <michael@stapelberg.de>  Mon, 21 Dec 2009 23:08:01 +0100
+
+i3-wm (3.d-bf1-1) unstable; urgency=low
+
+  * Bugfix: Don’t draw window title when titlebar is disabled
+  * Bugfix: Correctly switch border types for floating windows
+  * Bugfix: Correctly replay pointer if the click handler does not trigger
+  * Bugfix: Also allow WORDs as workspace names
+  * Bugfix: Correctly clear the urgency hint if a window gets unmapped without
+    clearing it
+  * Bugfix: Fix resizing of floating windows in borderless/1-px-border mode
+  * Bugfix: Accept underscores in bindsym
+  * Bugfix: Don’t set the urgency flag if the window is focused
+  * Bugfix: Handle stack-limit cols on tabbed containers
+  * Bugfix: Resize client after updating base_width/base_height
+  * Bugfix: Force render containers after setting the client active
+  * Bugfix: Fix two problems in resizing floating windows with right mouse
+  * Bugfix: Use more precise floating point arithmetics
+  * Bugfix: Correctly place new windows below fullscreen windows
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Mon, 21 Dec 2009 22:33:02 +0100
 
 i3-wm (3.d-2) unstable; urgency=low
 
