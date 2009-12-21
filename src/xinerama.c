@@ -193,7 +193,7 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
         while ((time(NULL) - before_trying) < 10) {
                 reply = xcb_xinerama_query_screens_reply(conn, xcb_xinerama_query_screens_unchecked(conn), NULL);
                 if (!reply) {
-                        DLOG("Couldn't get Xinerama screens\n");
+                        ELOG("Couldn't get Xinerama screens\n");
                         return;
                 }
                 screen_info = xcb_xinerama_query_screens_screen_info(reply);
@@ -228,7 +228,7 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
                 free(reply);
 
                 if (num_screens == 0) {
-                        DLOG("No screens found. This is weird. Trying again...\n");
+                        ELOG("No screens found. This is weird. Trying again...\n");
                         /* Give the scheduler a chance to do something else
                          * and don’t hog the CPU */
                         usleep(250);
@@ -239,7 +239,7 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
         }
 
         if (num_screens == 0) {
-                DLOG("No screens found for 10 seconds. Please fix your setup. i3 will exit now.\n");
+                ELOG("No screens found for 10 seconds. Please fix your setup. i3 will exit now.\n");
                 exit(0);
         }
 }
