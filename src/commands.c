@@ -531,7 +531,7 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
 
         LOG("moving floating\n");
 
-        workspace_initialize(t_ws, c_ws->screen);
+        workspace_initialize(t_ws, c_ws->screen, false);
 
         /* Check if there is already a fullscreen client on the destination workspace and
          * stop moving if so. */
@@ -592,7 +592,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         if (to_focus == NULL)
                 to_focus = CIRCLEQ_PREV_OR_NULL(&(container->clients), current_client, clients);
 
-        workspace_initialize(t_ws, container->workspace->screen);
+        workspace_initialize(t_ws, container->workspace->screen, false);
         /* Check if there is already a fullscreen client on the destination workspace and
          * stop moving if so. */
         if (current_client->fullscreen && (t_ws->fullscreen_client != NULL)) {

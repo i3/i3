@@ -117,7 +117,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
         c_ws->current_col = current_col;
 
         /* Check if the workspace has not been used yet */
-        workspace_initialize(t_ws, c_ws->screen);
+        workspace_initialize(t_ws, c_ws->screen, false);
 
         if (c_ws->screen != t_ws->screen) {
                 /* We need to switch to the other screen first */
@@ -245,17 +245,64 @@ static i3Screen *get_screen_from_preference(struct screens_head *slist, char *pr
 }
 
 /*
+ * Assigns the given workspace to the given screen by correctly updating its
+ * state and reconfiguring all the clients on this workspace.
+ *
+ * This is called when initializing a screen and when re-assigning it to a
+ * different screen which just got available (if you configured it to be on
+ * screen 1 and you just plugged in screen 1).
+ *
+ */
+void workspace_assign_to(Workspace *ws, i3Screen *screen) {
+        Client *client;
+        bool empty = true;
+
+        ws->screen = screen;
+
+        /* Copy the dimensions from the virtual screen */
+        memcpy(&(ws->rect), &(ws->screen->rect), sizeof(Rect));
+
+        /* Force reconfiguration for each client on that workspace */
+        FOR_TABLE(ws)
+                CIRCLEQ_FOREACH(client, &(ws->table[cols][rows]->clients), clients) {
+                        client->force_reconfigure = true;
+                        empty = false;
+                }
+
+        if (empty)
+                return;
+
+        /* Render the workspace to reconfigure the clients. However, they will be visible now, so… */
+        render_workspace(global_conn, screen, ws);
+
+        /* …unless we want to see them at the moment, we should hide that workspace */
+        if (workspace_is_visible(ws))
+                return;
+
+        workspace_unmap_clients(global_conn, ws);
+
+        if (c_ws == ws) {
+                DLOG("Need to adjust c_ws...\n");
+                c_ws = screen->current_workspace;
+        }
+}
+
+/*
  * Initializes the given workspace if it is not already initialized. The given
  * screen is to be understood as a fallback, if the workspace itself either
  * was not assigned to a particular screen or cannot be placed there because
  * the screen is not attached at the moment.
  *
  */
-void workspace_initialize(Workspace *ws, i3Screen *screen) {
-        if (ws->screen != NULL) {
+void workspace_initialize(Workspace *ws, i3Screen *screen, bool recheck) {
+        i3Screen *old_screen;
+
+        if (ws->screen != NULL && !recheck) {
                 DLOG("Workspace already initialized\n");
                 return;
         }
+
+        old_screen = ws->screen;
 
         /* If this workspace has no preferred screen or if the screen it wants
          * to be on is not available at the moment, we initialize it with
@@ -264,8 +311,12 @@ void workspace_initialize(Workspace *ws, i3Screen *screen) {
             (ws->screen = get_screen_from_preference(virtual_screens, ws->preferred_screen)) == NULL)
                 ws->screen = screen;
 
-        /* Copy the dimensions from the virtual screen */
-        memcpy(&(ws->rect), &(ws->screen->rect), sizeof(Rect));
+        DLOG("old_screen = %p, ws->screen = %p\n", old_screen, ws->screen);
+        /* If the assignment did not change, we do not need to update anything */
+        if (old_screen != NULL && ws->screen == old_screen)
+                return;
+
+        workspace_assign_to(ws, ws->screen);
 }
 
 /*
@@ -308,7 +359,7 @@ Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *
                 result = workspace_get(last_ws + 1);
         }
 
-        workspace_initialize(result, screen);
+        workspace_initialize(result, screen, false);
         return result;
 }
 

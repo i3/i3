@@ -340,7 +340,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
                         DLOG("Changing container/workspace and unmapping the client\n");
                         Workspace *t_ws = workspace_get(assign->workspace-1);
-                        workspace_initialize(t_ws, c_ws->screen);
+                        workspace_initialize(t_ws, c_ws->screen, false);
 
                         new->container = t_ws->table[t_ws->current_col][t_ws->current_row];
                         new->workspace = t_ws;

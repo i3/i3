@@ -45,13 +45,24 @@ bool workspace_is_visible(Workspace *ws);
 void workspace_show(xcb_connection_t *conn, int workspace);
 
 /**
+ * Assigns the given workspace to the given screen by correctly updating its
+ * state and reconfiguring all the clients on this workspace.
+ *
+ * This is called when initializing a screen and when re-assigning it to a
+ * different screen which just got available (if you configured it to be on
+ * screen 1 and you just plugged in screen 1).
+ *
+ */
+void workspace_assign_to(Workspace *ws, i3Screen *screen);
+
+/**
  * Initializes the given workspace if it is not already initialized. The given
  * screen is to be understood as a fallback, if the workspace itself either
  * was not assigned to a particular screen or cannot be placed there because
  * the screen is not attached at the moment.
  *
  */
-void workspace_initialize(Workspace *ws, i3Screen *screen);
+void workspace_initialize(Workspace *ws, i3Screen *screen, bool recheck);
 
 /**
  * Gets the first unused workspace for the given screen, taking into account

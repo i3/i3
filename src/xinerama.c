@@ -203,12 +203,14 @@ static void query_screens(xcb_connection_t *conn, struct screens_head *screenlis
                 for (int screen = 0; screen < screens; screen++) {
                         i3Screen *s = get_screen_at(screen_info[screen].x_org, screen_info[screen].y_org, screenlist);
                         if (s != NULL) {
+                                DLOG("Re-used old Xinerama screen %p\n", s);
                                 /* This screen already exists. We use the littlest screen so that the user
                                    can always see the complete workspace */
                                 s->rect.width = min(s->rect.width, screen_info[screen].width);
                                 s->rect.height = min(s->rect.height, screen_info[screen].height);
                         } else {
                                 s = calloc(sizeof(i3Screen), 1);
+                                DLOG("Created new Xinerama screen %p\n", s);
                                 s->rect.x = screen_info[screen].x_org;
                                 s->rect.y = screen_info[screen].y_org;
                                 s->rect.width = screen_info[screen].width;
@@ -331,7 +333,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
 
                         Rect bar_rect = {screen->rect.x,
                                          screen->rect.y + screen->rect.height - (font->height + 6),
-                                         screen->rect.x + screen->rect.width,
+                                         screen->rect.width,
                                          font->height + 6};
 
                         DLOG("configuring bar to be at %d x %d with %d x %d\n",
@@ -401,34 +403,13 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
                 if (ws->reassigned)
                         continue;
 
-                Client *client;
-
                 DLOG("Closing bar window (%p)\n", ws->screen->bar);
                 xcb_destroy_window(conn, ws->screen->bar);
 
                 DLOG("Workspace %d's screen out of bounds, assigning to first screen\n", ws->num + 1);
-                ws->screen = first;
-                memcpy(&(ws->rect), &(first->rect), sizeof(Rect));
-
-                /* Force reconfiguration for each client on that workspace */
-                FOR_TABLE(ws)
-                        CIRCLEQ_FOREACH(client, &(ws->table[cols][rows]->clients), clients)
-                                client->force_reconfigure = true;
-
-                /* Render the workspace to reconfigure the clients. However, they will be visible now, so… */
-                render_workspace(conn, first, ws);
-
-                /* …unless we want to see them at the moment, we should hide that workspace */
-                if (workspace_is_visible(ws))
-                        continue;
-
-                workspace_unmap_clients(conn, ws);
-
-                if (c_ws == ws) {
-                        DLOG("Need to adjust c_ws...\n");
-                        c_ws = first->current_workspace;
-                }
+                workspace_assign_to(ws, first);
         }
+
         xcb_flush(conn);
 
         /* Free the old list */
@@ -440,6 +421,15 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
         free(virtual_screens);
 
         virtual_screens = new_screens;
+
+        /* Check for workspaces which need to be assigned to specific screens
+         * which may now be available */
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
+                if (ws->preferred_screen == NULL)
+                        continue;
+
+                workspace_initialize(ws, ws->screen, true);
+        }
 
         DLOG("Current workspace is now: %d\n", first->current_workspace);
 
