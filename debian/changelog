@@ -18,6 +18,15 @@ i3-wm (3.d-bf1-1) unstable; urgency=low
 
  -- Michael Stapelberg <michael@stapelberg.de>  Mon, 21 Dec 2009 22:33:02 +0100
 
+i3-wm (3.d-2) unstable; urgency=low
+
+  * debian: register in doc-base
+  * debian: add watchfile
+  * debian: remove unnecessary priority-field from binary packages
+  * debian: add missing images to documentation
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Mon, 23 Nov 2009 21:56:04 +0100
+
 i3-wm (3.d-1) unstable; urgency=low
 
   * Implement tabbing (command "T")
