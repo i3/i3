@@ -21,23 +21,23 @@
  *
  */
 int container_mode(Container *con, bool for_frame) {
-	int num_clients = 0;
-	Client *client;
+        int num_clients = 0;
+        Client *client;
 
-	if (con == NULL || con->mode == MODE_DEFAULT)
-		return MODE_DEFAULT;
+        if (con == NULL || con->mode == MODE_DEFAULT)
+                return MODE_DEFAULT;
 
         if (!for_frame)
                 return con->mode;
 
-	CIRCLEQ_FOREACH(client, &(con->clients), clients)
-		num_clients++;
+        CIRCLEQ_FOREACH(client, &(con->clients), clients)
+                num_clients++;
 
-	/* If the container contains only one client, mode is irrelevant */
-	if (num_clients == 1) {
-		DLOG("mode to default\n");
-		return MODE_DEFAULT;
-	}
+        /* If the container contains only one client, mode is irrelevant */
+        if (num_clients == 1) {
+                DLOG("mode to default\n");
+                return MODE_DEFAULT;
+        }
 
-	return con->mode;
+        return con->mode;
 }
