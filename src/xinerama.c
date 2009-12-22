@@ -425,7 +425,7 @@ void xinerama_requery_screens(xcb_connection_t *conn) {
         /* Check for workspaces which need to be assigned to specific screens
          * which may now be available */
         TAILQ_FOREACH(ws, workspaces, workspaces) {
-                if (ws->preferred_screen == NULL)
+                if (ws->preferred_screen == NULL || ws->screen == NULL)
                         continue;
 
                 workspace_initialize(ws, ws->screen, true);
