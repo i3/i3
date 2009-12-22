@@ -144,7 +144,7 @@ void start_application(const char *command) {
 void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_message) {
         xcb_generic_error_t *error = xcb_request_check(conn, cookie);
         if (error != NULL) {
-                fprintf(stderr, "ERROR: %s : %d\n", err_message , error->error_code);
+                fprintf(stderr, "ERROR: %s (X error %d)\n", err_message , error->error_code);
                 xcb_disconnect(conn);
                 exit(-1);
         }

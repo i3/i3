@@ -377,7 +377,9 @@ int main(int argc, char *argv[], char *env[]) {
                               XCB_EVENT_MASK_POINTER_MOTION |
                               XCB_EVENT_MASK_PROPERTY_CHANGE |
                               XCB_EVENT_MASK_ENTER_WINDOW };
-        xcb_change_window_attributes(conn, root, mask, values);
+        xcb_void_cookie_t cookie;
+        cookie = xcb_change_window_attributes_checked(conn, root, mask, values);
+        check_error(conn, cookie, "Another window manager seems to be running");
 
         /* Setup NetWM atoms */
         #define GET_ATOM(name) { \
