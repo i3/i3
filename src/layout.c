@@ -29,6 +29,7 @@
 #include "handlers.h"
 #include "workspace.h"
 #include "log.h"
+#include "container.h"
 
 /*
  * Updates *destination with new_value and returns true if it was changed or false
@@ -141,16 +142,15 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
            - Draw two lines in a lighter color
            - Draw the window’s title
          */
+        int mode = container_mode(client->container, true);
 
         /* Draw a rectangle in background color around the window */
-        if (client->borderless && (client->container == NULL ||
-            (client->container->mode != MODE_STACK &&
-             client->container->mode != MODE_TABBED)))
+        if (client->borderless && mode == MODE_DEFAULT)
                 xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
         else xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, color->background);
 
         /* In stacking mode, we only render the rect for this specific decoration */
-        if (client->container != NULL && (client->container->mode == MODE_STACK || client->container->mode == MODE_TABBED)) {
+        if (mode == MODE_STACK || mode == MODE_TABBED) {
                 /* We need to use the container’s width because it is the more recent value - when
                    in stacking mode, clients get reconfigured only on demand (the not active client
                    is not reconfigured), so the client’s rect.width would be wrong */
@@ -165,7 +165,10 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 /* Draw the inner background to have a black frame around clients (such as mplayer)
                    which cannot be resized exactly in our frames and therefore are centered */
                 xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
-                if (client->titlebar_position == TITLEBAR_OFF) {
+                if (client->titlebar_position == TITLEBAR_OFF && client->borderless) {
+                        xcb_rectangle_t crect = {0, 0, client->rect.width, client->rect.height};
+                        xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
+                } else if (client->titlebar_position == TITLEBAR_OFF && !client->borderless) {
                         xcb_rectangle_t crect = {1, 1, client->rect.width - (1 + 1), client->rect.height - (1 + 1)};
                         xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
                 } else {
@@ -175,13 +178,13 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 }
         }
 
+        mode = container_mode(client->container, false);
+
         if (client->titlebar_position != TITLEBAR_OFF) {
                 /* Draw the lines */
                 xcb_draw_line(conn, drawable, gc, color->border, offset_x, offset_y, offset_x + client->rect.width, offset_y);
-                if ((client->container == NULL ||
-                    (client->container->mode != MODE_STACK &&
-                     client->container->mode != MODE_TABBED) ||
-                    CIRCLEQ_NEXT_OR_NULL(&(client->container->clients), client, clients) == NULL))
+                if (mode == MODE_DEFAULT ||
+                    CIRCLEQ_NEXT_OR_NULL(&(client->container->clients), client, clients) == NULL)
                         xcb_draw_line(conn, drawable, gc, color->border,
                                       offset_x + 2, /* x */
                                       offset_y + font->height + 3, /* y */
@@ -191,9 +194,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
 
         /* If the client has a title, we draw it */
         if (client->name != NULL &&
-            ((client->container != NULL &&
-              client->container->mode != MODE_DEFAULT) ||
-             client->titlebar_position != TITLEBAR_OFF)) {
+            (mode != MODE_DEFAULT || client->titlebar_position != TITLEBAR_OFF)) {
                 /* Draw the font */
                 uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
                 uint32_t values[] = { color->text, color->background, font->id };
@@ -267,7 +268,7 @@ void resize_client(xcb_connection_t *conn, Client *client) {
                         XCB_CONFIG_WINDOW_WIDTH |
                         XCB_CONFIG_WINDOW_HEIGHT;
         Rect *rect = &(client->child_rect);
-        switch ((client->container != NULL ? client->container->mode : MODE_DEFAULT)) {
+        switch (container_mode(client->container, true)) {
                 case MODE_STACK:
                 case MODE_TABBED:
                         rect->x = 2;
@@ -409,7 +410,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
 
                 /* Check if we need to remap our stack title window, it gets unmapped when the container
                    is empty in src/handlers.c:unmap_notify() */
-                if (stack_win->rect.height == 0 && num_clients > 0) {
+                if (stack_win->rect.height == 0 && num_clients > 1) {
                         DLOG("remapping stack win\n");
                         xcb_map_window(conn, stack_win->window);
                 } else DLOG("not remapping stackwin, height = %d, num_clients = %d\n",
@@ -429,11 +430,21 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         stack_lines = min(num_clients, container->stack_limit_value);
                 }
 
+                int height = decoration_height * stack_lines;
+                if (num_clients == 1) {
+                        height = 0;
+                        stack_win->rect.height = 0;
+                        xcb_unmap_window(conn, stack_win->window);
+
+                        DLOG("Just one client, setting height to %d\n", height);
+                }
+
                 /* Check if we need to reconfigure our stack title window */
-                if (update_if_necessary(&(stack_win->rect.x), container->x) |
-                    update_if_necessary(&(stack_win->rect.y), container->y) |
-                    update_if_necessary(&(stack_win->rect.width), container->width) |
-                    update_if_necessary(&(stack_win->rect.height), decoration_height * stack_lines)) {
+                if (height > 0 && (
+                     update_if_necessary(&(stack_win->rect.x), container->x) |
+                     update_if_necessary(&(stack_win->rect.y), container->y) |
+                     update_if_necessary(&(stack_win->rect.width), container->width) |
+                     update_if_necessary(&(stack_win->rect.height), height))) {
 
                         /* Configuration can happen in two slightly different ways:
 
@@ -497,9 +508,9 @@ void render_container(xcb_connection_t *conn, Container *container) {
                          * Note the bitwise OR instead of logical OR to force evaluation of all statements */
                         if (client->force_reconfigure |
                             update_if_necessary(&(client->rect.x), container->x) |
-                            update_if_necessary(&(client->rect.y), container->y + (decoration_height * stack_lines)) |
+                            update_if_necessary(&(client->rect.y), container->y + height) |
                             update_if_necessary(&(client->rect.width), container->width) |
-                            update_if_necessary(&(client->rect.height), container->height - (decoration_height * stack_lines)))
+                            update_if_necessary(&(client->rect.height), container->height - height))
                                 resize_client(conn, client);
 
                         client->force_reconfigure = false;

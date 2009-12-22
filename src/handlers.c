@@ -37,6 +37,7 @@
 #include "floating.h"
 #include "workspace.h"
 #include "log.h"
+#include "container.h"
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -605,9 +606,8 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         if (client->dock)
                 return 1;
 
-        if (client->container != NULL &&
-            (client->container->mode == MODE_STACK ||
-             client->container->mode == MODE_TABBED))
+        int mode = container_mode(client->container, true);
+        if (mode == MODE_STACK || mode == MODE_TABBED)
                 render_container(conn, client->container);
         else decorate_window(conn, client, client->frame, client->titlegc, 0, 0);
         xcb_flush(conn);
@@ -752,9 +752,7 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
         if (client->dock)
                 return 1;
 
-        if (client->container == NULL ||
-            (client->container->mode != MODE_STACK &&
-             client->container->mode != MODE_TABBED))
+        if (container_mode(client->container, true) == MODE_DEFAULT)
                 decorate_window(conn, client, client->frame, client->titlegc, 0, 0);
         else {
                 uint32_t background_color;
@@ -779,7 +777,7 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
 
                 /* Draw a black background */
                 xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
-                if (client->titlebar_position == TITLEBAR_OFF) {
+                if (client->titlebar_position == TITLEBAR_OFF && !client->borderless) {
                         xcb_rectangle_t crect = {1, 0, client->rect.width - (1 + 1), client->rect.height - 1};
                         xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
                 } else {
