@@ -20,4 +20,13 @@
  */
 void ewmh_update_current_desktop();
 
+/**
+ * Updates _NET_ACTIVE_WINDOW with the currently focused window.
+ *
+ * EWMH: The window ID of the currently active window or None if no window has
+ * the focus.
+ *
+ */
+void ewmh_update_active_window(xcb_window_t window);
+
 #endif

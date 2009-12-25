@@ -30,3 +30,15 @@ void ewmh_update_current_desktop() {
                             atoms[_NET_CURRENT_DESKTOP], CARDINAL, 32, 1,
                             &current_desktop);
 }
+
+/*
+ * Updates _NET_ACTIVE_WINDOW with the currently focused window.
+ *
+ * EWMH: The window ID of the currently active window or None if no window has
+ * the focus.
+ *
+ */
+void ewmh_update_active_window(xcb_window_t window) {
+        xcb_change_property(global_conn, XCB_PROP_MODE_REPLACE, root,
+                            atoms[_NET_ACTIVE_WINDOW], WINDOW, 32, 1, &window);
+}
