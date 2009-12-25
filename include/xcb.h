@@ -61,7 +61,8 @@ enum { _NET_SUPPORTED = 0,
         WM_DELETE_WINDOW,
         UTF8_STRING,
         WM_STATE,
-        WM_CLIENT_LEADER
+        WM_CLIENT_LEADER,
+        _NET_CURRENT_DESKTOP
 };
 
 extern unsigned int xcb_numlock_mask;

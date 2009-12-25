@@ -21,7 +21,7 @@
 #ifndef _I3_H
 #define _I3_H
 
-#define NUM_ATOMS 18
+#define NUM_ATOMS 19
 
 extern xcb_connection_t *global_conn;
 extern xcb_key_symbols_t *keysyms;

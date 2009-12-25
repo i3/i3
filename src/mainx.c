@@ -248,6 +248,7 @@ int main(int argc, char *argv[], char *env[]) {
         REQUEST_ATOM(UTF8_STRING);
         REQUEST_ATOM(WM_STATE);
         REQUEST_ATOM(WM_CLIENT_LEADER);
+        REQUEST_ATOM(_NET_CURRENT_DESKTOP);
 
         /* TODO: this has to be more beautiful somewhen */
         int major, minor, error;
@@ -410,6 +411,7 @@ int main(int argc, char *argv[], char *env[]) {
         GET_ATOM(UTF8_STRING);
         GET_ATOM(WM_STATE);
         GET_ATOM(WM_CLIENT_LEADER);
+        GET_ATOM(_NET_CURRENT_DESKTOP);
 
         xcb_property_set_handler(&prophs, atoms[_NET_WM_WINDOW_TYPE], UINT_MAX, handle_window_type, NULL);
         /* TODO: In order to comply with EWMH, we have to watch _NET_WM_STRUT_PARTIAL */

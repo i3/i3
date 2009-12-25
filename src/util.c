@@ -32,6 +32,7 @@
 #include "xcb.h"
 #include "client.h"
 #include "log.h"
+#include "ewmh.h"
 
 static iconv_t conversion_descriptor = 0;
 struct keyvalue_table_head by_parent = TAILQ_HEAD_INITIALIZER(by_parent);
@@ -230,6 +231,7 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         c_ws->current_row = current_row;
         c_ws->current_col = current_col;
         c_ws = client->workspace;
+        ewmh_update_current_desktop();
         /* Load current_col/current_row if we switch to a client without a container */
         current_col = c_ws->current_col;
         current_row = c_ws->current_row;
