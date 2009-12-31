@@ -29,4 +29,14 @@ void ewmh_update_current_desktop();
  */
 void ewmh_update_active_window(xcb_window_t window);
 
+/**
+ * Updates the workarea for each desktop.
+ *
+ * EWMH: Contains a geometry for each desktop. These geometries specify an area
+ * that is completely contained within the viewport. Work area SHOULD be used by
+ * desktop applications to place desktop icons appropriately.
+ *
+ */
+void ewmh_update_workarea();
+
 #endif

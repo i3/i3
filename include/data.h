@@ -75,12 +75,16 @@ enum {
 
 /**
  * Stores a rectangle, for example the size of a window, the child window etc.
+ * It needs to be packed so that the compiler will not add any padding bytes.
+ * (it is used in src/ewmh.c for example)
  *
  */
 struct Rect {
-        uint32_t x, y;
-        uint32_t width, height;
-};
+        uint32_t x;
+        uint32_t y;
+        uint32_t width;
+        uint32_t height;
+} __attribute__((packed));
 
 /**
  * Defines a position in the table

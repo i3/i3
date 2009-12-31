@@ -27,6 +27,7 @@
 #include "workspace.h"
 #include "client.h"
 #include "log.h"
+#include "ewmh.h"
 
 /*
  * Returns a pointer to the workspace with the given number (starting at 0),
@@ -58,6 +59,8 @@ Workspace *workspace_get(int number) {
                 TAILQ_INSERT_TAIL(workspaces, ws, workspaces);
         }
         DLOG("done\n");
+
+        ewmh_update_workarea();
 
         return ws;
 }
@@ -261,6 +264,8 @@ void workspace_assign_to(Workspace *ws, i3Screen *screen) {
 
         /* Copy the dimensions from the virtual screen */
         memcpy(&(ws->rect), &(ws->screen->rect), sizeof(Rect));
+
+        ewmh_update_workarea();
 
         /* Force reconfiguration for each client on that workspace */
         FOR_TABLE(ws)
