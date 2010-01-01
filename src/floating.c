@@ -41,6 +41,11 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
         Container *con = client->container;
         i3Font *font = load_font(conn, config.font);
 
+        if (client->dock) {
+                DLOG("Not putting dock client into floating mode\n");
+                return;
+        }
+
         if (con == NULL) {
                 LOG("This client is already in floating (container == NULL), re-inserting\n");
                 Client *next_tiling;
