@@ -242,9 +242,9 @@ static void shrink_table_rows(Workspace *workspace) {
  * Performs simple bounds checking for the given column/row
  *
  */
-bool cell_exists(int col, int row) {
-        return (col >= 0 && col < c_ws->cols) &&
-               (row >= 0 && row < c_ws->rows);
+bool cell_exists(Workspace *ws, int col, int row) {
+        return (col >= 0 && col < ws->cols) &&
+               (row >= 0 && row < ws->rows);
 }
 
 static void free_container(xcb_connection_t *conn, Workspace *workspace, int col, int row) {
@@ -389,7 +389,7 @@ void fix_colrowspan(xcb_connection_t *conn, Workspace *workspace) {
                 if (con->colspan > 1) {
                         DLOG("gots one with colspan %d (at %d c, %d r)\n", con->colspan, cols, rows);
                         while (con->colspan > 1 &&
-                               (!cell_exists(cols + (con->colspan-1), rows) ||
+                               (!cell_exists(workspace, cols + (con->colspan-1), rows) &&
                                 workspace->table[cols + (con->colspan - 1)][rows]->currently_focused != NULL))
                                 con->colspan--;
                         DLOG("fixed it to %d\n", con->colspan);
@@ -397,7 +397,7 @@ void fix_colrowspan(xcb_connection_t *conn, Workspace *workspace) {
                 if (con->rowspan > 1) {
                         DLOG("gots one with rowspan %d (at %d c, %d r)\n", con->rowspan, cols, rows);
                         while (con->rowspan > 1 &&
-                               (!cell_exists(cols, rows + (con->rowspan - 1)) ||
+                               (!cell_exists(workspace, cols, rows + (con->rowspan - 1)) &&
                                 workspace->table[cols][rows + (con->rowspan - 1)]->currently_focused != NULL))
                                 con->rowspan--;
                         DLOG("fixed it to %d\n", con->rowspan);

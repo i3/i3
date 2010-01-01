@@ -144,9 +144,9 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         if (focus_window_in_container(conn, container, direction))
                                 return;
 
-                if (direction == D_DOWN && cell_exists(current_col, current_row+1))
+                if (direction == D_DOWN && cell_exists(t_ws, current_col, current_row+1))
                         new_row = current_row + t_ws->table[current_col][current_row]->rowspan;
-                else if (direction == D_UP && cell_exists(current_col, current_row-1)) {
+                else if (direction == D_UP && cell_exists(c_ws, current_col, current_row-1)) {
                         /* Set new_row as a sane default, but it may get overwritten in a second */
                         new_row--;
 
@@ -187,9 +187,9 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         DLOG("Fixed it to new col %d\n", new_col);
                 }
         } else if (direction == D_LEFT || direction == D_RIGHT) {
-                if (direction == D_RIGHT && cell_exists(current_col+1, current_row))
+                if (direction == D_RIGHT && cell_exists(t_ws, current_col+1, current_row))
                         new_col = current_col + t_ws->table[current_col][current_row]->colspan;
-                else if (direction == D_LEFT && cell_exists(current_col-1, current_row)) {
+                else if (direction == D_LEFT && cell_exists(t_ws, current_col-1, current_row)) {
                         /* Set new_col as a sane default, but it may get overwritten in a second */
                         new_col--;
 
@@ -452,7 +452,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
         switch (direction) {
                 case D_LEFT:
                         /* Snap to the left is actually a move to the left and then a snap right */
-                        if (!cell_exists(container->col - 1, container->row) ||
+                        if (!cell_exists(container->workspace, container->col - 1, container->row) ||
                             CUR_TABLE[container->col-1][container->row]->currently_focused != NULL) {
                                 ELOG("cannot snap to left - the cell is already used\n");
                                 return;
@@ -465,7 +465,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                         /* Check if the cell is used */
                         int new_col = container->col + container->colspan;
                         for (int i = 0; i < container->rowspan; i++)
-                                if (!cell_exists(new_col, container->row + i) ||
+                                if (!cell_exists(container->workspace, new_col, container->row + i) ||
                                     CUR_TABLE[new_col][container->row + i]->currently_focused != NULL) {
                                         ELOG("cannot snap to right - the cell is already used\n");
                                         return;
@@ -485,7 +485,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                         break;
                 }
                 case D_UP:
-                        if (!cell_exists(container->col, container->row - 1) ||
+                        if (!cell_exists(container->workspace, container->col, container->row - 1) ||
                             CUR_TABLE[container->col][container->row-1]->currently_focused != NULL) {
                                 ELOG("cannot snap to top - the cell is already used\n");
                                 return;
@@ -498,7 +498,7 @@ static void snap_current_container(xcb_connection_t *conn, direction_t direction
                         DLOG("snapping down\n");
                         int new_row = container->row + container->rowspan;
                         for (int i = 0; i < container->colspan; i++)
-                                if (!cell_exists(container->col + i, new_row) ||
+                                if (!cell_exists(container->workspace, container->col + i, new_row) ||
                                     CUR_TABLE[container->col + i][new_row]->currently_focused != NULL) {
                                         ELOG("cannot snap down - the cell is already used\n");
                                         return;
@@ -824,7 +824,7 @@ static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, c
                 first = con->col + (con->colspan - 1);
                 DLOG("column %d\n", first);
 
-                if (!cell_exists(first, con->row) ||
+                if (!cell_exists(ws, first, con->row) ||
                     (first == (ws->cols-1)))
                         return;
 
@@ -839,7 +839,7 @@ static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, c
                 command += strlen("top");
         } else if (STARTS_WITH(command, "bottom")) {
                 first = con->row + (con->rowspan - 1);
-                if (!cell_exists(con->col, first) ||
+                if (!cell_exists(ws, con->col, first) ||
                     (first == (ws->rows-1)))
                         return;
 

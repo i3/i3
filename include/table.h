@@ -48,7 +48,7 @@ void expand_table_cols_at_head(Workspace *workspace);
  * Performs simple bounds checking for the given column/row
  *
  */
-bool cell_exists(int col, int row);
+bool cell_exists(Workspace *ws, int col, int row);
 
 /**
  * Shrinks the table by "compacting" it, that is, removing completely empty

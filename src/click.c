@@ -212,7 +212,7 @@ static bool floating_mod_on_tiled_client(xcb_connection_t *conn, Client *client,
                 first = con->col + (con->colspan - 1);
                 DLOG("column %d\n", first);
 
-                if (!cell_exists(first, con->row) ||
+                if (!cell_exists(ws, first, con->row) ||
                     (first == (ws->cols-1)))
                         return false;
 
@@ -240,7 +240,7 @@ static bool floating_mod_on_tiled_client(xcb_connection_t *conn, Client *client,
                    to_bottom < to_top) {
                 /* …bottom border */
                 first = con->row + (con->rowspan - 1);
-                if (!cell_exists(con->col, first) ||
+                if (!cell_exists(ws, con->col, first) ||
                     (first == (ws->rows-1)))
                         return false;
 
@@ -377,7 +377,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         } else if (event->event_y >= (client->rect.height - 2)) {
                 /* …bottom border */
                 first = con->row + (con->rowspan - 1);
-                if (!cell_exists(con->col, first) ||
+                if (!cell_exists(ws, con->col, first) ||
                     (first == (ws->rows-1)))
                         return 1;
 
@@ -395,7 +395,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 first = con->col + (con->colspan - 1);
                 DLOG("column %d\n", first);
 
-                if (!cell_exists(first, con->row) ||
+                if (!cell_exists(ws, first, con->row) ||
                     (first == (ws->cols-1)))
                         return 1;
 
