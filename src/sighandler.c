@@ -205,6 +205,8 @@ void setup_signal_handler() {
         action.sa_sigaction = handle_signal;
         action.sa_flags = SA_NODEFER | SA_RESETHAND | SA_SIGINFO;
         sigemptyset(&action.sa_mask);
-        sigaction(SIGSEGV, &action, NULL);
-        sigaction(SIGFPE, &action, NULL);
+
+        if (sigaction(SIGSEGV, &action, NULL) == -1 ||
+            sigaction(SIGFPE, &action, NULL) == -1)
+                ELOG("Could not setup signal handler");
 }
