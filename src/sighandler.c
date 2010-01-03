@@ -3,8 +3,8 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
- * © 2009 Jan-Erik Rediger
+ * © 2009-2010 Michael Stapelberg and contributors
+ * © 2009-2010 Jan-Erik Rediger
  *
  * See file LICENSE for license information.
  *
