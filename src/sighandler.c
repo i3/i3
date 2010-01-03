@@ -107,16 +107,13 @@ static xcb_window_t open_input_window(xcb_connection_t *conn, Rect screen_rect, 
         xcb_window_t win = xcb_generate_id(conn);
 
         uint32_t mask = 0;
-        uint32_t values[3];
+        uint32_t values[2];
 
         mask |= XCB_CW_BACK_PIXEL;
         values[0] = 0;
 
         mask |= XCB_CW_OVERRIDE_REDIRECT;
         values[1] = 1;
-
-        mask |= XCB_CW_EVENT_MASK;
-        values[2] = XCB_EVENT_MASK_EXPOSURE;
 
         /* center each popup on the specified screen */
         uint32_t x = screen_rect.x + ((screen_rect.width / 2) - (width/2)),
