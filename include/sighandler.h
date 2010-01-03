@@ -12,7 +12,7 @@
 #ifndef _SIGHANDLER_H
 #define _SIGHANDLER_H
 
-/*
+/**
  * Setup signal handlers to safely handle SIGSEGV and SIGFPE
  *
  */
