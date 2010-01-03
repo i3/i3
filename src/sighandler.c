@@ -52,7 +52,8 @@ static int crash_text_longest = 1;
  */
 static int sig_draw_window(xcb_connection_t *conn, xcb_window_t win, int width, int height, int font_height) {
         /* re-draw the background */
-        xcb_rectangle_t border = {0, 0, width, height}, inner = {2, 2, width-4, height-4};
+        xcb_rectangle_t border = { 0, 0, width, height},
+                        inner = { 2, 2, width - 4, height - 4};
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FF0000"));
         xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
@@ -61,15 +62,12 @@ static int sig_draw_window(xcb_connection_t *conn, xcb_window_t win, int width, 
         /* restore font color */
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FFFFFF"));
 
-        char *full_text;
-        int text_len;
-        int i;
-        int crash_text_num = sizeof(crash_text) / sizeof(char*);
-        for (i = 0; i < crash_text_num; i++) {
-                text_len = strlen(crash_text[i]);
-                full_text = convert_utf8_to_ucs2(crash_text[i], &text_len);
+        for (int i = 0; i < sizeof(crash_text) / sizeof(char*); i++) {
+                int text_len = strlen(crash_text[i]);
+                char *full_text = convert_utf8_to_ucs2(crash_text[i], &text_len);
                 xcb_image_text_16(conn, text_len, pixmap, pixmap_gc, 8 /* X */,
-                                3 + (i+1)*font_height /* Y = baseline of font */, (xcb_char2b_t*)full_text);
+                                3 + (i + 1) * font_height /* Y = baseline of font */,
+                                (xcb_char2b_t*)full_text);
                 free(full_text);
         }
 
@@ -93,6 +91,7 @@ static int sig_handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_p
                 raise(raised_signal);
                 exit(1);
         }
+
         if (sym == 'r')
                 i3_restart();
 
@@ -156,7 +155,7 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
 
         xcb_connection_t *conn = global_conn;
 
-        /* Set up event handlers for key press and key release */
+        /* setup event handler for key presses */
         xcb_event_handlers_t sig_evenths;
         memset(&sig_evenths, 0, sizeof(xcb_event_handlers_t));
         xcb_event_handlers_init(conn, &sig_evenths);
@@ -174,7 +173,7 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         int font_width = predict_text_width(conn, config.font, longest_text, text_len);
         int width = font_width + 20;
 
-        /* Open an popup window on each virtual screen */
+        /* Open a popup window on each virtual screen */
         i3Screen *screen;
         xcb_window_t win;
         TAILQ_FOREACH(screen, virtual_screens, screens) {
@@ -207,6 +206,7 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
  */
 void setup_signal_handler() {
         struct sigaction action;
+
         action.sa_sigaction = handle_signal;
         action.sa_flags = SA_NODEFER | SA_RESETHAND | SA_SIGINFO;
         sigemptyset(&action.sa_mask);
