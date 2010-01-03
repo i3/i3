@@ -150,6 +150,13 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode);
 Client *get_matching_client(xcb_connection_t *conn,
                             const char *window_classtitle, Client *specific);
 
+/*
+ * Restart i3 in-place
+ * appends -a to argument list to disable autostart
+ *
+ */
+void i3_restart();
+
 #if defined(__OpenBSD__)
 /* OpenBSD does not provide memmem(), so we provide FreeBSD’s implementation */
 void *memmem(const void *l, size_t l_len, const void *s, size_t s_len);

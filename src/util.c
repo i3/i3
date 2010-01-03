@@ -159,16 +159,16 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_mes
  *
  */
 char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
-	size_t input_size = strlen(input) + 1;
-	/* UCS-2 consumes exactly two bytes for each glyph */
-	int buffer_size = input_size * 2;
+        size_t input_size = strlen(input) + 1;
+        /* UCS-2 consumes exactly two bytes for each glyph */
+        int buffer_size = input_size * 2;
 
-	char *buffer = smalloc(buffer_size);
-	size_t output_size = buffer_size;
-	/* We need to use an additional pointer, because iconv() modifies it */
-	char *output = buffer;
+        char *buffer = smalloc(buffer_size);
+        size_t output_size = buffer_size;
+        /* We need to use an additional pointer, because iconv() modifies it */
+        char *output = buffer;
 
-	/* We convert the input into UCS-2 big endian */
+        /* We convert the input into UCS-2 big endian */
         if (conversion_descriptor == 0) {
                 conversion_descriptor = iconv_open("UCS-2BE", "UTF-8");
                 if (conversion_descriptor == 0) {
@@ -177,22 +177,22 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
                 }
         }
 
-	/* Get the conversion descriptor back to original state */
-	iconv(conversion_descriptor, NULL, NULL, NULL, NULL);
+        /* Get the conversion descriptor back to original state */
+        iconv(conversion_descriptor, NULL, NULL, NULL, NULL);
 
-	/* Convert our text */
-	int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
+        /* Convert our text */
+        int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
         if (rc == (size_t)-1) {
                 perror("Converting to UCS-2 failed");
                 if (real_strlen != NULL)
-		        *real_strlen = 0;
+                        *real_strlen = 0;
                 return NULL;
-	}
+        }
 
         if (real_strlen != NULL)
-	        *real_strlen = ((buffer_size - output_size) / 2) - 1;
+                *real_strlen = ((buffer_size - output_size) / 2) - 1;
 
-	return buffer;
+        return buffer;
 }
 
 /*
@@ -461,6 +461,43 @@ done:
         free(to_class);
         FREE(to_title_ucs);
         return matching;
+}
+
+/*
+ * Goes through the list of arguments (for exec()) and checks if the given argument
+ * is present. If not, it copies the arguments (because we cannot realloc it) and
+ * appends the given argument.
+ *
+ */
+static char **append_argument(char **original, char *argument) {
+        int num_args;
+        for (num_args = 0; original[num_args] != NULL; num_args++) {
+                DLOG("original argument: \"%s\"\n", original[num_args]);
+                /* If the argument is already present we return the original pointer */
+                if (strcmp(original[num_args], argument) == 0)
+                        return original;
+        }
+        /* Copy the original array */
+        char **result = smalloc((num_args+2) * sizeof(char*));
+        memcpy(result, original, num_args * sizeof(char*));
+        result[num_args] = argument;
+        result[num_args+1] = NULL;
+
+        return result;
+}
+
+/*
+ * Restart i3 in-place
+ * appends -a to argument list to disable autostart
+ *
+ */
+void i3_restart() {
+        LOG("restarting \"%s\"...\n", start_argv[0]);
+        /* make sure -a is in the argument list or append it */
+        start_argv = append_argument(start_argv, "-a");
+
+        execvp(start_argv[0], start_argv);
+        /* not reached */
 }
 
 #if defined(__OpenBSD__)
