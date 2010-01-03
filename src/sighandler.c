@@ -87,7 +87,7 @@ static int sig_handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_p
         xcb_keysym_t sym = xcb_key_press_lookup_keysym(keysyms, event, event->state);
 
         if (sym == 'e') {
-                LOG("User issued exit-command, raising error again.\n");
+                DLOG("User issued exit-command, raising error again.\n");
                 raise(raised_signal);
                 exit(1);
         }
@@ -146,7 +146,7 @@ static xcb_window_t open_input_window(xcb_connection_t *conn, Rect screen_rect, 
  *
  */
 void handle_signal(int sig, siginfo_t *info, void *data) {
-        LOG("i3 crashed. SIG: %d\n", sig);
+        DLOG("i3 crashed. SIG: %d\n", sig);
 
         struct sigaction action;
         action.sa_handler = SIG_DFL;
@@ -177,8 +177,6 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         i3Screen *screen;
         xcb_window_t win;
         TAILQ_FOREACH(screen, virtual_screens, screens) {
-                LOG("%d, %d, %d, %d\n", screen->rect.width, screen->rect.height, screen->rect.x, screen->rect.y);
-
                 win = open_input_window(conn, screen->rect, width, height);
 
                 /* Create pixmap */
