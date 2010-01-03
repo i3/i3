@@ -78,7 +78,6 @@ static int sig_draw_window(xcb_connection_t *conn, xcb_window_t win, int width, 
         return 1;
 }
 
-
 /*
  * Handles keypresses of 'e' or 'r' to exit or restart i3
  *
@@ -116,8 +115,8 @@ static xcb_window_t open_input_window(xcb_connection_t *conn, Rect screen_rect, 
         values[1] = 1;
 
         /* center each popup on the specified screen */
-        uint32_t x = screen_rect.x + ((screen_rect.width / 2) - (width/2)),
-                 y = screen_rect.y + ((screen_rect.height / 2) - (height/2));
+        uint32_t x = screen_rect.x + ((screen_rect.width / 2) - (width / 2)),
+                 y = screen_rect.y + ((screen_rect.height / 2) - (height / 2));
 
         xcb_create_window(conn,
                         XCB_COPY_FROM_PARENT,
