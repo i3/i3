@@ -15,8 +15,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <stdlib.h>
 #include <glob.h>
+#include <unistd.h>
 
 /* We need Xlib for XStringToKeysym */
 #include <X11/Xlib.h>
@@ -45,6 +47,15 @@ static char *glob_path(const char *path) {
         char *result = sstrdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
         globfree(&globbuf);
         return result;
+}
+
+/*
+ * Checks if the given path exists by calling stat().
+ *
+ */
+static bool path_exists(const char *path) {
+        struct stat buf;
+        return (stat(path, &buf) == 0);
 }
 
 /**
@@ -149,6 +160,61 @@ void switch_mode(xcb_connection_t *conn, const char *new_mode) {
 }
 
 /*
+ * Get the path of the first configuration file found. Checks the XDG folders
+ * first ($XDG_CONFIG_HOME, $XDG_CONFIG_DIRS), then the traditional paths.
+ *
+ */
+static char *get_config_path() {
+        /* 1: check for $XDG_CONFIG_HOME/i3/config */
+        char *xdg_config_home, *xdg_config_dirs, *config_path;
+
+        if ((xdg_config_home = getenv("XDG_CONFIG_HOME")) == NULL)
+                xdg_config_home = "~/.config";
+
+        xdg_config_home = glob_path(xdg_config_home);
+        if (asprintf(&config_path, "%s/i3/config", xdg_config_home) == -1)
+                die("asprintf() failed");
+        free(xdg_config_home);
+
+        if (path_exists(config_path))
+                return config_path;
+        free(config_path);
+
+        /* 2: check for $XDG_CONFIG_DIRS/i3/config */
+        if ((xdg_config_dirs = getenv("XDG_CONFIG_DIRS")) == NULL)
+                xdg_config_dirs = "/etc/xdg";
+
+        char *buf = strdup(xdg_config_dirs);
+        char *tok = strtok(buf, ":");
+        while (tok != NULL) {
+                tok = glob_path(tok);
+                if (asprintf(&config_path, "%s/i3/config", tok) == -1)
+                        die("asprintf() failed");
+                free(tok);
+                if (path_exists(config_path)) {
+                        free(buf);
+                        return config_path;
+                }
+                free(config_path);
+                tok = strtok(NULL, ":");
+        }
+        free(buf);
+
+        /* 3: check traditional paths */
+        config_path = glob_path("~/.i3/config");
+        if (path_exists(config_path))
+                return config_path;
+
+        config_path = strdup("/etc/i3/config");
+        if (!path_exists(config_path))
+                die("Neither $XDG_CONFIG_HOME/i3/config, nor "
+                    "$XDG_CONFIG_DIRS/i3/config, nor ~/.i3/config nor "
+                    "/etc/i3/config exist.");
+
+        return config_path;
+}
+
+/*
  * Finds the configuration file to use (either the one specified by
  * override_configpath), the user’s one or the system default) and calls
  * parse_file().
@@ -160,19 +226,10 @@ static void parse_configuration(const char *override_configpath) {
                 return;
         }
 
-        FILE *handle;
-        char *globbed = glob_path("~/.i3/config");
-        if ((handle = fopen(globbed, "r")) == NULL) {
-                if ((handle = fopen("/etc/i3/config", "r")) == NULL)
-                        die("Neither \"%s\" nor /etc/i3/config could be opened\n", globbed);
-
-                parse_file("/etc/i3/config");
-                fclose(handle);
-                return;
-        }
-
-        parse_file(globbed);
-        fclose(handle);
+        char *path = get_config_path();
+        DLOG("Parsing configfile %s\n", path);
+        parse_file(path);
+        free(path);
 }
 
 /*
