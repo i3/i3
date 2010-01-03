@@ -188,6 +188,10 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
                 /* Grab the keyboard to get all input */
                 xcb_grab_keyboard(conn, false, win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
+                /* Grab the cursor inside the popup */
+                xcb_grab_pointer(conn, false, win, XCB_NONE, XCB_GRAB_MODE_ASYNC,
+                                 XCB_GRAB_MODE_ASYNC, win, XCB_NONE, XCB_CURRENT_TIME);
+
                 sig_draw_window(conn, win, width, height, font->height);
                 xcb_flush(conn);
         }
