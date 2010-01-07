@@ -359,7 +359,7 @@ int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *t
 
         /* If no per-char info is available for this font, we use the default */
         if (xcb_query_font_char_infos_length(font_info) == 0) {
-                DLOG("Falling back on default char_width of %d pixels\n", font_info->max_bounds.character_width);
+                LOG("Falling back on default char_width of %d pixels\n", font_info->max_bounds.character_width);
                 return (font_info->max_bounds.character_width * length);
         }
 
