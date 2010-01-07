@@ -345,10 +345,25 @@ static xcb_charinfo_t *get_charinfo(int col, int row, xcb_query_font_reply_t *fo
 int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *text, int length) {
         xcb_query_font_reply_t *font_info;
         xcb_charinfo_t *table;
+        xcb_generic_error_t *error;
         int i, width = 0;
         i3Font *font = load_font(conn, font_pattern);
 
-        font_info = xcb_query_font_reply(conn, xcb_query_font_unchecked(conn, font->id), NULL);
+        font_info = xcb_query_font_reply(conn, xcb_query_font(conn, font->id), &error);
+        if (error != NULL) {
+                fprintf(stderr, "ERROR: query font (X error code %d)\n", error->error_code);
+                /* We return the rather safe guess of 7 pixels, because a
+                 * rendering error is better than a crash. Plus, the user will
+                 * see the error on his stderr. */
+                return 7;
+        }
+
+        /* If no per-char info is available for this font, we use the default */
+        if (xcb_query_font_char_infos_length(font_info) == 0) {
+                DLOG("Falling back on default char_width of %d pixels\n", font_info->max_bounds.character_width);
+                return (font_info->max_bounds.character_width * length);
+        }
+
         table = xcb_query_font_char_infos(font_info);
 
         for (i = 0; i < 2 * length; i += 2) {
