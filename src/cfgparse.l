@@ -33,7 +33,7 @@
 mode                            { return TOKMODE; }
 bind                            { BEGIN(BIND_COND); return TOKBIND; }
 bindsym                         { BEGIN(BINDSYM_COND); return TOKBINDSYM; }
-floating_modifier               { return TOKFLOATING_MODIFIER; }
+floating_modifier               { BEGIN(INITIAL); return TOKFLOATING_MODIFIER; }
 workspace                       { BEGIN(INITIAL); return TOKWORKSPACE; }
 screen                          { BEGIN(SCREEN_COND); return TOKSCREEN; }
 terminal                        { BEGIN(BIND_AWS_COND); return TOKTERMINAL; }
