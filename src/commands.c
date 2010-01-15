@@ -768,7 +768,15 @@ static void next_previous_workspace(xcb_connection_t *conn, int direction) {
         Workspace *ws = c_ws;
 
         if (direction == 'n') {
-                while ((ws = TAILQ_NEXT(ws, workspaces)) != TAILQ_END(workspaces_head)) {
+                while (1) {
+                        ws = TAILQ_NEXT(ws, workspaces);
+
+                        if (ws == TAILQ_END(workspaces))
+                                ws = TAILQ_FIRST(workspaces);
+
+                        if (ws == c_ws)
+                                return;
+
                         if (ws->screen == NULL)
                                 continue;
 
@@ -776,7 +784,15 @@ static void next_previous_workspace(xcb_connection_t *conn, int direction) {
                         return;
                 }
         } else if (direction == 'p') {
-                while ((ws = TAILQ_PREV(ws, workspaces_head, workspaces)) != TAILQ_END(workspaces)) {
+                while (1) {
+                        ws = TAILQ_PREV(ws, workspaces_head, workspaces);
+
+                        if (ws == TAILQ_END(workspaces))
+                                ws = TAILQ_LAST(workspaces, workspaces_head);
+
+                        if (ws == c_ws)
+                                return;
+
                         if (ws->screen == NULL)
                                 continue;
 
