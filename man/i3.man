@@ -281,6 +281,8 @@ are building from source, run +make -C docs+.
 
 You can also access these documents online at http://i3.zekjur.net/
 
+i3-input(1), i3-msg(1)
+
 == AUTHOR
 
 Michael Stapelberg and contributors
