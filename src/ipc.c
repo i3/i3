@@ -228,6 +228,8 @@ int ipc_create_socket(const char *filename) {
                 return -1;
         }
 
+        (void)fcntl(sockfd, F_SETFD, FD_CLOEXEC);
+
         struct sockaddr_un addr;
         memset(&addr, 0, sizeof(struct sockaddr_un));
         addr.sun_family = AF_LOCAL;
