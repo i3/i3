@@ -806,7 +806,34 @@ static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, c
         int first, second;
         resize_orientation_t orientation = O_VERTICAL;
         Container *con = last_focused->container;
-        Workspace *ws = con->workspace;
+        Workspace *ws = last_focused->workspace;
+
+        if (client_is_floating(last_focused)) {
+                DLOG("Resizing a floating client\n");
+                if (STARTS_WITH(command, "left")) {
+                        command += strlen("left");
+                        last_focused->rect.width += atoi(command);
+                        last_focused->rect.x -= atoi(command);
+                } else if (STARTS_WITH(command, "right")) {
+                        command += strlen("right");
+                        last_focused->rect.width += atoi(command);
+                } else if (STARTS_WITH(command, "top")) {
+                        command += strlen("top");
+                        last_focused->rect.height += atoi(command);
+                        last_focused->rect.y -= atoi(command);
+                } else if (STARTS_WITH(command, "bottom")) {
+                        command += strlen("bottom");
+                        last_focused->rect.height += atoi(command);
+                } else {
+                        ELOG("Syntax: resize <left|right|top|bottom> [+|-]<pixels>\n");
+                        return;
+                }
+
+                /* resize_client flushes */
+                resize_client(conn, last_focused);
+
+                return;
+        }
 
         if (STARTS_WITH(command, "left")) {
                 if (con->col == 0)
