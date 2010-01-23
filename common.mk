@@ -1,7 +1,7 @@
 UNAME=$(shell uname)
 DEBUG=1
 INSTALL=install
-GIT_VERSION:=$(shell git describe --tags --always)
+GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1))"
 VERSION:=$(shell git describe --tags --abbrev=0)
 
 CFLAGS += -std=c99
