@@ -197,6 +197,7 @@ void parse_file(const char *f) {
 %token TOKMODE
 %token TOKNEWCONTAINER
 %token TOKNEWWINDOW
+%token TOKFOCUSFOLLOWSMOUSE
 %token TOKCONTAINERMODE
 %token TOKSTACKLIMIT
 
@@ -213,6 +214,7 @@ line:
         | floating_modifier
         | new_container
         | new_window
+        | focus_follows_mouse
         | workspace
         | assign
         | ipcsocket
@@ -376,6 +378,13 @@ new_window:
         {
                 DLOG("new windows should start in mode %s\n", $<string>3);
                 config.default_border = strdup($<string>3);
+        }
+        ;
+
+focus_follows_mouse:
+        TOKFOCUSFOLLOWSMOUSE WHITESPACE NUMBER
+        {
+                config.focus_follows_mouse = ($<number>3 == 0 ? 0 : 1);
         }
         ;
 

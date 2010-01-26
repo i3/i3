@@ -236,7 +236,8 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
                 return 1;
         }
 
-        set_focus(conn, client, false);
+        if (config.focus_follows_mouse)
+                set_focus(conn, client, false);
 
         return 1;
 }

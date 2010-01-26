@@ -77,6 +77,8 @@ struct Config {
         int container_stack_limit;
         int container_stack_limit_value;
 
+        bool focus_follows_mouse;
+
         const char *default_border;
 
         /** The modifier which needs to be pressed in combination with your mouse
