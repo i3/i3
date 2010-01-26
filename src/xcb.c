@@ -99,14 +99,6 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
         /* If the window class is XCB_WINDOW_CLASS_INPUT_ONLY, depth has to be 0 */
         uint16_t depth = (window_class == XCB_WINDOW_CLASS_INPUT_ONLY ? 0 : XCB_COPY_FROM_PARENT);
 
-        /* Use the default cursor (left pointer) */
-        if (cursor > -1) {
-                i3Font *cursor_font = load_font(conn, "cursor");
-                xcb_create_glyph_cursor(conn, cursor_id, cursor_font->id, cursor_font->id,
-                                XCB_CURSOR_LEFT_PTR, XCB_CURSOR_LEFT_PTR + 1,
-                                0, 0, 0, 65535, 65535, 65535);
-        }
-
         xcb_create_window(conn,
                           depth,
                           result, /* the window id */
@@ -118,8 +110,14 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
                           mask,
                           values);
 
-        if (cursor > -1)
-                xcb_change_window_attributes(conn, result, XCB_CW_CURSOR, &cursor_id);
+        /* Set the cursor */
+        i3Font *cursor_font = load_font(conn, "cursor");
+        xcb_create_glyph_cursor(conn, cursor_id, cursor_font->id, cursor_font->id,
+                        (cursor == -1 ? XCB_CURSOR_LEFT_PTR : cursor),
+                        (cursor == -1 ? XCB_CURSOR_LEFT_PTR : cursor) + 1,
+                        0, 0, 0, 65535, 65535, 65535);
+        xcb_change_window_attributes(conn, result, XCB_CW_CURSOR, &cursor_id);
+        xcb_free_cursor(conn, cursor_id);
 
         /* Map the window (= make it visible) */
         if (map)
