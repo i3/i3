@@ -546,8 +546,8 @@ bindsym Mod1+p pw
 === Resizing columns/rows
 
 If you want to resize columns/rows using your keyboard, you can use the
-+resize+ command, I recommend using it a +mode+ (you need to use the new
-lexer/parser for that, so pass +-l+ to i3 when starting):
++resize+ command, I recommend using it inside a so called +mode+ (you need to
+use the new lexer/parser for that, so pass +-l+ to i3 when starting):
 
 .Example: Configuration file, defining a mode for resizing
 ----------------------------------------------------------------------
@@ -572,6 +572,9 @@ mode "resize" {
 
         bind 36 mode default
 }
+
+# Enter resize mode
+bindsym Mod1+r mode resize
 ----------------------------------------------------------------------
 
 === Jumping to specific windows
