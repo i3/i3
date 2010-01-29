@@ -77,7 +77,11 @@ struct Config {
         int container_stack_limit;
         int container_stack_limit_value;
 
-        bool focus_follows_mouse;
+        /** By default, focus follows mouse. If the user explicitly wants to
+         * turn this off (and instead rely only on the keyboard for changing
+         * focus), we allow him to do this with this relatively special option.
+         * It is not planned to add any different focus models. */
+        bool disable_focus_follows_mouse;
 
         const char *default_border;
 

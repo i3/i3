@@ -381,10 +381,27 @@ new_window:
         }
         ;
 
-focus_follows_mouse:
-        TOKFOCUSFOLLOWSMOUSE WHITESPACE NUMBER
+bool:
+        NUMBER
         {
-                config.focus_follows_mouse = ($<number>3 == 0 ? 0 : 1);
+                $<number>$ = ($<number>1 == 1);
+        }
+        | WORD
+        {
+                DLOG("checking word \"%s\"\n", $<string>1);
+                $<number>$ = (strcasecmp($<string>1, "yes") == 0 ||
+                              strcasecmp($<string>1, "true") == 0 ||
+                              strcasecmp($<string>1, "on") == 0 ||
+                              strcasecmp($<string>1, "enable") == 0 ||
+                              strcasecmp($<string>1, "active") == 0);
+        }
+        ;
+
+focus_follows_mouse:
+        TOKFOCUSFOLLOWSMOUSE WHITESPACE bool
+        {
+                DLOG("focus follows mouse = %d\n", $<number>3);
+                config.disable_focus_follows_mouse = !($<number>3);
         }
         ;
 
