@@ -462,6 +462,24 @@ ipc-socket /tmp/i3-ipc.sock
 You can then use the i3-msg command to perform any command listed in the next
 section.
 
+=== Disable focus follows mouse
+
+If you have a setup where your mouse usually is in your way (like a touchpad
+on your laptop which you do not want to disable completely), you might want
+to disable focus follows mouse and control focus only by using your keyboard.
+The mouse will still be useful inside the currently active window (for example
+to click on links in your browser window).
+
+*Syntax*:
+----------------------------
+focus_follows_mouse <yes|no>
+----------------------------
+
+*Examples*:
+----------------------
+focus_follows_mouse no
+----------------------
+
 == List of commands
 
 === Manipulating layout
