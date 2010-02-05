@@ -162,9 +162,6 @@ reparents the window and inserts it into our data structures.
 src/resize.c::
 Contains the functions to resize columns/rows in the table.
 
-src/resize.c::
-Contains the functions to resize columns/rows in the table.
-
 src/table.c::
 Manages the most important internal data structure, the design table.
 
