@@ -76,6 +76,12 @@ enum {
 /**
  * Stores a rectangle, for example the size of a window, the child window etc.
  *
+ * Note that x and y can contain signed values in some cases (for example when
+ * used for the coordinates of a window, which can be set outside of the
+ * visible area, but not when specifying the position of a workspace for the
+ * _NET_WM_WORKAREA hint). Not declaring x/y as int32_t saves us a lot of
+ * typecasts.
+ *
  */
 struct Rect {
         uint32_t x, y;
