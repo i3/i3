@@ -382,8 +382,10 @@ struct Client {
          * in. If set to true, legacy window names are ignored. */
         bool uses_net_wm_name;
 
-        /** Holds the WM_CLASS, useful for matching the client in commands */
-        char *window_class;
+        /** Holds the WM_CLASS (which consists of two strings, the instance
+         * and the class), useful for matching the client in commands */
+        char *window_class_instance;
+        char *window_class_class;
 
         /** Holds the client’s mark, for vim-like jumping */
         char *mark;

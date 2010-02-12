@@ -124,7 +124,10 @@ void client_kill(xcb_connection_t *conn, Client *window) {
 bool client_matches_class_name(Client *client, char *to_class, char *to_title,
                                char *to_title_ucs, int to_title_ucs_len) {
         /* Check if the given class is part of the window class */
-        if (client->window_class == NULL || strcasestr(client->window_class, to_class) == NULL)
+        if ((client->window_class_instance == NULL ||
+             strcasestr(client->window_class_instance, to_class) == NULL) &&
+            (client->window_class_class == NULL ||
+             strcasestr(client->window_class_class, to_class) == NULL))
                 return false;
 
         /* If no title was given, we’re done */
