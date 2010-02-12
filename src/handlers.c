@@ -534,7 +534,8 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         client->urgent = false;
         workspace_update_urgent_flag(client->workspace);
 
-        FREE(client->window_class);
+        FREE(client->window_class_instance);
+        FREE(client->window_class_class);
         FREE(client->name);
         free(client);
 
@@ -692,28 +693,23 @@ int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
         Client *client = table_get(&by_child, window);
         if (client == NULL)
                 return 1;
-        char *new_class;
-        if (asprintf(&new_class, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop)) == -1) {
-                perror("Could not get window class");
-                LOG("Could not get window class\n");
-                return 1;
-        }
 
-        LOG("WM_CLASS changed to %s\n", new_class);
-        char *old_class = client->window_class;
-        client->window_class = new_class;
-        FREE(old_class);
+        /* We cannot use asprintf here since this property contains two
+         * null-terminated strings (for compatibility reasons). Instead, we
+         * use strdup() on both strings */
+        char *new_class = xcb_get_property_value(prop);
 
-        if (!client->initialized)
-                return 1;
+        FREE(client->window_class_instance);
+        FREE(client->window_class_class);
 
-        if (strcmp(new_class, "tools") == 0 || strcmp(new_class, "Dialog") == 0) {
-                LOG("tool/dialog window, should we put it floating?\n");
-                if (client->floating == FLOATING_AUTO_OFF)
-                        toggle_floating_mode(conn, client, true);
-        }
+        client->window_class_instance = strdup(new_class);
+        if ((strlen(new_class) + 1) < xcb_get_property_value_length(prop))
+                client->window_class_class = strdup(new_class + strlen(new_class) + 1);
+        else client->window_class_class = NULL;
+        LOG("WM_CLASS changed to %s (instance), %s (class)\n",
+            client->window_class_instance, client->window_class_class);
 
-        return 1;
+        return 0;
 }
 
 /*

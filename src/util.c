@@ -465,7 +465,8 @@ Client *get_matching_client(xcb_connection_t *conn, const char *window_classtitl
 
                 Client *client;
                 SLIST_FOREACH(client, &(ws->focus_stack), focus_clients) {
-                        LOG("Checking client with class=%s, name=%s\n", client->window_class, client->name);
+                        LOG("Checking client with class=%s / %s, name=%s\n", client->window_class_instance,
+                             client->window_class_class, client->name);
                         if (!client_matches_class_name(client, to_class, to_title, to_title_ucs, to_title_ucs_len))
                                 continue;
 
