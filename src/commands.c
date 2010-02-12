@@ -636,8 +636,10 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
 
         render_layout(conn);
 
-        if (workspace_is_visible(to_container->workspace))
+        if (workspace_is_visible(to_container->workspace)) {
+                client_warp_pointer_into(conn, current_client);
                 set_focus(conn, current_client, true);
+        }
 }
 
 /*
