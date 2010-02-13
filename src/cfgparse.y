@@ -161,6 +161,7 @@ void parse_file(const char *f) {
 %}
 
 %expect 1
+%error-verbose
 
 %union {
         int number;
@@ -170,36 +171,36 @@ void parse_file(const char *f) {
         struct Binding *binding;
 }
 
-%token <number>NUMBER
-%token <string>WORD
-%token <string>STR
-%token <string>STR_NG
-%token <string>HEX
+%token <number>NUMBER "<number>"
+%token <string>WORD "<word>"
+%token <string>STR "<string>"
+%token <string>STR_NG "<string (non-greedy)>"
+%token <string>HEX "<hex>"
 %token TOKBIND
 %token TOKTERMINAL
-%token TOKCOMMENT
-%token TOKFONT
-%token TOKBINDSYM
-%token MODIFIER
-%token TOKCONTROL
-%token TOKSHIFT
-%token WHITESPACE
-%token TOKFLOATING_MODIFIER
-%token QUOTEDSTRING
-%token TOKWORKSPACE
-%token TOKSCREEN
-%token TOKASSIGN
+%token TOKCOMMENT "<comment>"
+%token TOKFONT "font"
+%token TOKBINDSYM "bindsym"
+%token MODIFIER "<modifier>"
+%token TOKCONTROL "control"
+%token TOKSHIFT "shift"
+%token WHITESPACE "<whitespace>"
+%token TOKFLOATING_MODIFIER "floating_modifier"
+%token QUOTEDSTRING "<quoted string>"
+%token TOKWORKSPACE "workspace"
+%token TOKSCREEN "screen"
+%token TOKASSIGN "assign"
 %token TOKSET
-%token TOKIPCSOCKET
-%token TOKEXEC
+%token TOKIPCSOCKET "ipc_socket"
+%token TOKEXEC "exec"
 %token TOKCOLOR
-%token TOKARROW
-%token TOKMODE
-%token TOKNEWCONTAINER
-%token TOKNEWWINDOW
-%token TOKFOCUSFOLLOWSMOUSE
-%token TOKCONTAINERMODE
-%token TOKSTACKLIMIT
+%token TOKARROW "→"
+%token TOKMODE "mode"
+%token TOKNEWCONTAINER "new_container"
+%token TOKNEWWINDOW "new_window"
+%token TOKFOCUSFOLLOWSMOUSE "focus_follows_mouse"
+%token TOKCONTAINERMODE "default/stacking/tabbed"
+%token TOKSTACKLIMIT "stack-limit"
 
 %%
 
