@@ -24,17 +24,32 @@
 #include "log.h"
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
-extern int yylex(void);
+extern int yylex(struct context *context);
 extern int yyparse(void);
 extern FILE *yyin;
 YY_BUFFER_STATE yy_scan_string(const char *);
 
 static struct bindings_head *current_bindings;
+static struct context *context;
 
-int yydebug = 1;
+/* We don’t need yydebug for now, as we got decent error messages using
+ * yyerror(). Should you ever want to extend the parser, it might be handy
+ * to just comment it in again, so it stays here. */
+//int yydebug = 1;
 
-void yyerror(const char *str) {
-        fprintf(stderr,"error: %s\n",str);
+void yyerror(const char *error_message) {
+        ELOG("\n");
+        ELOG("CONFIG: %s\n", error_message);
+        ELOG("CONFIG: in file \"%s\", line %d:\n",
+                context->filename, context->line_number);
+        ELOG("CONFIG:   %s\n", context->line_copy);
+        ELOG("CONFIG:   ");
+        for (int c = 1; c <= context->last_column; c++)
+                if (c >= context->first_column)
+                        printf("^");
+                else printf(" ");
+        printf("\n");
+        ELOG("\n");
 }
 
 int yywrap() {
@@ -149,11 +164,16 @@ void parse_file(const char *f) {
 
         yy_scan_string(new);
 
+        context = scalloc(sizeof(struct context));
+        context->filename = f;
+
         if (yyparse() != 0) {
                 fprintf(stderr, "Could not parse configfile\n");
                 exit(1);
         }
 
+        FREE(context->line_copy);
+        free(context);
         free(new);
         free(buf);
 }
@@ -162,6 +182,7 @@ void parse_file(const char *f) {
 
 %expect 1
 %error-verbose
+%lex-param { struct context *context }
 
 %union {
         int number;

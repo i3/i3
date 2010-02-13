@@ -150,6 +150,7 @@ int main(int argc, char *argv[], char *env[]) {
         int i, screens, opt;
         char *override_configpath = NULL;
         bool autostart = true;
+        bool only_check_config = false;
         xcb_connection_t *conn;
         xcb_property_handlers_t prophs;
         xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
@@ -170,7 +171,7 @@ int main(int argc, char *argv[], char *env[]) {
 
         start_argv = argv;
 
-        while ((opt = getopt_long(argc, argv, "c:vahld:V", long_options, &option_index)) != -1) {
+        while ((opt = getopt_long(argc, argv, "c:Cvahld:V", long_options, &option_index)) != -1) {
                 switch (opt) {
                         case 'a':
                                 LOG("Autostart disabled using -a\n");
@@ -178,6 +179,10 @@ int main(int argc, char *argv[], char *env[]) {
                                 break;
                         case 'c':
                                 override_configpath = sstrdup(optarg);
+                                break;
+                        case 'C':
+                                LOG("Checking configuration file only (-C)\n");
+                                only_check_config = true;
                                 break;
                         case 'v':
                                 printf("i3 version " I3_VERSION " © 2009 Michael Stapelberg and contributors\n");
@@ -218,6 +223,10 @@ int main(int argc, char *argv[], char *env[]) {
                 die("Cannot open display\n");
 
         load_configuration(conn, override_configpath, false);
+        if (only_check_config) {
+                LOG("Done checking configuration file. Exiting.\n");
+                exit(0);
+        }
 
         /* Create the initial container on the first workspace. This used to
          * be part of init_table, but since it possibly requires an X

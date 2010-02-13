@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -24,6 +24,21 @@
 typedef struct Config Config;
 extern Config config;
 extern SLIST_HEAD(modes_head, Mode) modes;
+
+/**
+ * Used during the config file lexing/parsing to keep the state of the lexer
+ * in order to provide useful error messages in yyerror().
+ *
+ */
+struct context {
+        int line_number;
+        char *line_copy;
+        const char *filename;
+
+        /* These are the same as in YYLTYPE */
+        int first_column;
+        int last_column;
+};
 
 /**
  * Part of the struct Config. It makes sense to group colors for background,

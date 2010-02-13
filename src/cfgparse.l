@@ -1,5 +1,7 @@
 %option nounput
 %option noinput
+%option noyy_top_state
+%option stack
 
 %{
 /*
@@ -13,19 +15,57 @@
 
 #include "data.h"
 #include "config.h"
+#include "log.h"
+#include "util.h"
+
+int yycolumn = 1;
+
+#define YY_DECL int yylex (struct context *context)
+
+#define YY_USER_ACTION { \
+        context->first_column = yycolumn; \
+        context->last_column = yycolumn+yyleng-1; \
+        yycolumn += yyleng; \
+}
+
 %}
 
-%Start BIND_COND
-%Start BINDSYM_COND
-%Start BIND_AWS_COND
-%Start BINDSYM_AWS_COND
-%Start BIND_A2WS_COND
-%Start ASSIGN_COND
-%Start COLOR_COND
-%Start SCREEN_COND
-%Start SCREEN_AWS_COND
+EOL	(\r?\n)
+
+%s BIND_COND
+%s BINDSYM_COND
+%s BIND_AWS_COND
+%s BINDSYM_AWS_COND
+%s BIND_A2WS_COND
+%s ASSIGN_COND
+%s COLOR_COND
+%s SCREEN_COND
+%s SCREEN_AWS_COND
+%x BUFFER_LINE
 
 %%
+
+	{
+		/* This is called when a new line is lexed. We only want the
+		 * first line to match to go into state BUFFER_LINE */
+		if (context->line_number == 0) {
+			context->line_number = 1;
+			BEGIN(INITIAL);
+			yy_push_state(BUFFER_LINE);
+		}
+	}
+
+<BUFFER_LINE>^[^\r\n]*/{EOL}? {
+	/* save whole line */
+	context->line_copy = strdup(yytext);
+
+	yyless(0);
+	yy_pop_state();
+	yy_set_bol(true);
+	yycolumn = 1;
+}
+
+
 <BIND_A2WS_COND>[^\n]+          { BEGIN(INITIAL); yylval.string = strdup(yytext); return STR; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
 <COLOR_COND>[0-9a-fA-F]+        { yylval.string = strdup(yytext); return HEX; }
@@ -69,7 +109,11 @@ control                         { return TOKCONTROL; }
 ctrl                            { return TOKCONTROL; }
 shift                           { return TOKSHIFT; }
 →                               { return TOKARROW; }
-\n                              /* ignore end of line */;
+{EOL}                           {
+                                  FREE(context->line_copy);
+                                  context->line_number++;
+                                  yy_push_state(BUFFER_LINE);
+                                }
 <SCREEN_AWS_COND>x              { return (int)yytext[0]; }
 <BIND_COND>[ \t]+               { BEGIN(BIND_AWS_COND); return WHITESPACE; }
 <BINDSYM_COND>[ \t]+            { BEGIN(BINDSYM_AWS_COND); return WHITESPACE; }
@@ -91,4 +135,11 @@ shift                           { return TOKSHIFT; }
 <BINDSYM_AWS_COND>[a-zA-Z0-9_]+ { yylval.string = strdup(yytext); return WORD; }
 [a-zA-Z]+                       { yylval.string = strdup(yytext); return WORD; }
 .                               { return (int)yytext[0]; }
+
+<<EOF>> {
+        while (yy_start_stack_ptr > 0)
+                yy_pop_state();
+        yyterminate();
+}
+
 %%
