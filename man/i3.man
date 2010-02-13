@@ -9,15 +9,27 @@ i3 - an improved dynamic, tiling window manager
 
 == SYNOPSIS
 
-i3 [-c configfile] [-a]
+i3 [-a] [-c configfile] [-C] [-d <loglevel>] [-v] [-V]
 
 == OPTIONS
 
--c::
-Specifies an alternate configuration file path
-
 -a::
 Disables autostart.
+
+-c::
+Specifies an alternate configuration file path.
+
+-C::
+Check the configuration file for validity and exit.
+
+-d::
+Specifies the debug loglevel. To see the most output, use -d all.
+
+-v::
+Display version number (and date of the last commit).
+
+-V::
+Be verbose.
 
 == DESCRIPTION
 

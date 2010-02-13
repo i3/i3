@@ -198,13 +198,14 @@ int main(int argc, char *argv[], char *env[]) {
                                 /* DEPRECATED, ignored for the next 3 versions (3.e, 3.f, 3.g) */
                                 break;
                         default:
-                                fprintf(stderr, "Usage: %s [-c configfile] [-d loglevel] [-a] [-v] [-V]\n", argv[0]);
+                                fprintf(stderr, "Usage: %s [-c configfile] [-d loglevel] [-a] [-v] [-V] [-C]\n", argv[0]);
                                 fprintf(stderr, "\n");
                                 fprintf(stderr, "-a: disable autostart\n");
                                 fprintf(stderr, "-v: display version and exit\n");
                                 fprintf(stderr, "-V: enable verbose mode\n");
                                 fprintf(stderr, "-d <loglevel>: enable debug loglevel <loglevel>\n");
                                 fprintf(stderr, "-c <configfile>: use the provided configfile instead\n");
+                                fprintf(stderr, "-C: check configuration file and exit\n");
                                 exit(EXIT_FAILURE);
                 }
         }
