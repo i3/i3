@@ -44,12 +44,12 @@ loglevels.h:
 	done; \
 	echo "};") > include/loglevels.h;
 
-src/cfgparse.yy.o: src/cfgparse.l
+src/cfgparse.yy.o: src/cfgparse.l ${HEADERS}
 	echo "LEX $<"
 	flex -i -o$(@:.o=.c) $<
 	$(CC) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
 
-src/cfgparse.y.o: src/cfgparse.y
+src/cfgparse.y.o: src/cfgparse.y ${HEADERS}
 	echo "YACC $<"
 	bison --debug --verbose -b $(basename $< .y) -d $<
 	$(CC) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.y/ { print NR }' loglevels.tmp))" -c -o $@ $(<:.y=.tab.c)
