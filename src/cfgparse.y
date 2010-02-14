@@ -227,6 +227,7 @@ void parse_file(const char *f) {
 
 lines: /* empty */
         | lines WHITESPACE line
+        | lines error
         | lines line
         ;
 
