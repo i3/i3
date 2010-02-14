@@ -437,7 +437,7 @@ void floating_move(xcb_connection_t *conn, Client *currently_focused, direction_
             (int32_t)(destination.x + 5) >= (int32_t)(screen->x + screen->width) ||
             (int32_t)(destination.y + destination.height - 5) <= (int32_t)screen->y ||
             (int32_t)(destination.y + 5) >= (int32_t)(screen->y + screen->height)) {
-                DLOG("boundary check failed, not moving\n");
+                LOG("boundary check failed, not moving\n");
                 return;
         }
 
