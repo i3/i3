@@ -536,7 +536,7 @@ exec:
 terminal:
         TOKTERMINAL WHITESPACE STR
         {
-                DLOG("The terminal option is DEPRECATED and has no effect. "
+                ELOG("The terminal option is DEPRECATED and has no effect. "
                     "Please remove it from your configuration file.");
         }
         ;
