@@ -855,12 +855,12 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         if ((size_hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)) {
                 bool changed = false;
 
-                if (size_hints.width_inc > 0)
+                if (size_hints.width_inc > 0 && size_hints.width_inc < 0xFFFF)
                         if (client->width_increment != size_hints.width_inc) {
                                 client->width_increment = size_hints.width_inc;
                                 changed = true;
                         }
-                if (size_hints.height_inc > 0)
+                if (size_hints.height_inc > 0 && size_hints.height_inc < 0xFFFF)
                         if (client->height_increment != size_hints.height_inc) {
                                 client->height_increment = size_hints.height_inc;
                                 changed = true;
