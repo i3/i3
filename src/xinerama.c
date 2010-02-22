@@ -51,8 +51,8 @@ bool screens_are_equal(i3Screen *screen1, i3Screen *screen2) {
         if (screen1 == screen2)
                 return true;
 
-        /* Compare their size - other properties are not relevant to determine
-         * if a screen is equal to another one */
+        /* Compare their size and position - other properties are not relevant
+         * to determine if a screen is equal to another one */
         return (memcmp(&(screen1->rect), &(screen2->rect), sizeof(Rect)) == 0);
 }
 
