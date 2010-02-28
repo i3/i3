@@ -246,20 +246,11 @@ void resize_client(xcb_connection_t *conn, Client *client) {
 
         DLOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
         DLOG("resizing client 0x%08x to %d x %d\n", client->frame, client->rect.width, client->rect.height);
-        xcb_configure_window(conn, client->frame,
-                        XCB_CONFIG_WINDOW_X |
-                        XCB_CONFIG_WINDOW_Y |
-                        XCB_CONFIG_WINDOW_WIDTH |
-                        XCB_CONFIG_WINDOW_HEIGHT,
-                        &(client->rect.x));
+        xcb_set_window_rect(conn, client->frame, client->rect);
 
         /* Adjust the position of the child inside its frame.
          * The coordinates of the child are relative to its frame, we
          * add a border of 2 pixel to each value */
-        uint32_t mask = XCB_CONFIG_WINDOW_X |
-                        XCB_CONFIG_WINDOW_Y |
-                        XCB_CONFIG_WINDOW_WIDTH |
-                        XCB_CONFIG_WINDOW_HEIGHT;
         Rect *rect = &(client->child_rect);
         switch (container_mode(client->container, true)) {
                 case MODE_STACK:
@@ -330,7 +321,7 @@ void resize_client(xcb_connection_t *conn, Client *client) {
 
         DLOG("child will be at %dx%d with size %dx%d\n", rect->x, rect->y, rect->width, rect->height);
 
-        xcb_configure_window(conn, client->child, mask, &(rect->x));
+        xcb_set_window_rect(conn, client->child, *rect);
 
         /* After configuring a child window we need to fake a configure_notify_event (see ICCCM 4.2.3).
          * This is necessary to inform the client of its position relative to the root window,

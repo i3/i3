@@ -164,4 +164,10 @@ void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap)
 int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *text,
                        int length);
 
+/**
+ * Configures the given window to have the size/position specified by given rect
+ *
+ */
+void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r);
+
 #endif

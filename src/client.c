@@ -164,32 +164,23 @@ void client_enter_fullscreen(xcb_connection_t *conn, Client *client) {
         workspace->fullscreen_client = client;
         LOG("Entering fullscreen mode...\n");
         /* We just entered fullscreen mode, let’s configure the window */
-        uint32_t mask = XCB_CONFIG_WINDOW_X |
-                        XCB_CONFIG_WINDOW_Y |
-                        XCB_CONFIG_WINDOW_WIDTH |
-                        XCB_CONFIG_WINDOW_HEIGHT;
-        uint32_t values[4] = {workspace->rect.x,
-                              workspace->rect.y,
-                              workspace->rect.width,
-                              workspace->rect.height};
+        Rect r = workspace->rect;
 
         DLOG("child itself will be at %dx%d with size %dx%d\n",
-                        values[0], values[1], values[2], values[3]);
+                        r.x, r.y, r.width, r.height);
 
-        xcb_configure_window(conn, client->frame, mask, values);
+        xcb_set_window_rect(conn, client->frame, r);
 
         /* Child’s coordinates are relative to the parent (=frame) */
-        values[0] = 0;
-        values[1] = 0;
-        xcb_configure_window(conn, client->child, mask, values);
+        r.x = 0;
+        r.y = 0;
+        xcb_set_window_rect(conn, client->child, r);
 
         /* Raise the window */
-        values[0] = XCB_STACK_MODE_ABOVE;
+        uint32_t values[] = { XCB_STACK_MODE_ABOVE };
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
 
-        Rect child_rect = workspace->rect;
-        child_rect.x = child_rect.y = 0;
-        fake_configure_notify(conn, child_rect, client->child);
+        fake_configure_notify(conn, r, client->child);
 
         xcb_flush(conn);
 }

@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -374,4 +374,17 @@ int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *t
         free(font_info);
 
         return width;
+}
+
+/*
+ * Configures the given window to have the size/position specified by given rect
+ *
+ */
+void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r) {
+        xcb_configure_window(conn, window,
+                             XCB_CONFIG_WINDOW_X |
+                             XCB_CONFIG_WINDOW_Y |
+                             XCB_CONFIG_WINDOW_WIDTH |
+                             XCB_CONFIG_WINDOW_HEIGHT,
+                             &(r.x));
 }
