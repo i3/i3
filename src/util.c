@@ -47,6 +47,17 @@ int max(int a, int b) {
 }
 
 /*
+ * Updates *destination with new_value and returns true if it was changed or false
+ * if it was the same
+ *
+ */
+bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
+        uint32_t old_value = *destination;
+
+        return ((*destination = new_value) != old_value);
+}
+
+/*
  * The s* functions (safe) are wrappers around malloc, strdup, …, which exits if one of
  * the called functions returns NULL, meaning that there is no more memory available
  *

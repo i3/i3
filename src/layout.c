@@ -32,17 +32,6 @@
 #include "container.h"
 
 /*
- * Updates *destination with new_value and returns true if it was changed or false
- * if it was the same
- *
- */
-static bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
-        uint32_t old_value = *destination;
-
-        return ((*destination = new_value) != old_value);
-}
-
-/*
  * Gets the unoccupied space (= space which is available for windows which were resized by the user)
  * for the given row. This is necessary to render both, customly resized windows and never touched
  * windows correctly, meaning that the aspect ratio will be maintained when opening new windows.

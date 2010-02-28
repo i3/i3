@@ -42,6 +42,13 @@ int min(int a, int b);
 int max(int a, int b);
 
 /**
+ * Updates *destination with new_value and returns true if it was changed or false
+ * if it was the same
+ *
+ */
+bool update_if_necessary(uint32_t *destination, const uint32_t new_value);
+
+/**
  * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that
  * there is no more memory available)
  *
