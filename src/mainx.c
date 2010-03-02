@@ -460,15 +460,6 @@ int main(int argc, char *argv[], char *env[]) {
 
         grab_all_keys(conn);
 
-        /* Autostarting exec-lines */
-        struct Autostart *exec;
-        if (autostart) {
-                TAILQ_FOREACH(exec, &autostarts, autostarts) {
-                        LOG("auto-starting %s\n", exec->command);
-                        start_application(exec->command);
-                }
-        }
-
         DLOG("Checking for XRandR...\n");
         int randr_base;
         initialize_randr(conn, &randr_base);
@@ -517,6 +508,16 @@ int main(int argc, char *argv[], char *env[]) {
         setup_signal_handler();
         /* Ungrab the server to receive events and enter libev’s eventloop */
         xcb_ungrab_server(conn);
+
+        /* Autostarting exec-lines */
+        struct Autostart *exec;
+        if (autostart) {
+                TAILQ_FOREACH(exec, &autostarts, autostarts) {
+                        LOG("auto-starting %s\n", exec->command);
+                        start_application(exec->command);
+                }
+        }
+
         ev_loop(loop, 0);
 
         /* not reached */
