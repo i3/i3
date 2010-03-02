@@ -100,8 +100,8 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
         assert(container != NULL);
 
         if (container->workspace->fullscreen_client != NULL) {
-                LOG("You're in fullscreen mode. Won't switch focus\n");
-                return;
+                LOG("You're in fullscreen mode. Forcing focus to operate on whole screens\n");
+                thing = THING_SCREEN;
         }
 
         /* For focusing screens, situation is different: we get the rect
