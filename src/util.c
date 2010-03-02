@@ -454,7 +454,7 @@ Client *get_matching_client(xcb_connection_t *conn, const char *window_classtitl
         DLOG("Getting clients for class \"%s\" / title \"%s\"\n", to_class, to_title);
         Workspace *ws;
         TAILQ_FOREACH(ws, workspaces, workspaces) {
-                if (ws->screen == NULL)
+                if (ws->output == NULL)
                         continue;
 
                 Client *client;

@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -37,6 +37,7 @@
 #include "floating.h"
 #include "resize.h"
 #include "log.h"
+#include "randr.h"
 
 static struct Stack_Window *get_stack_window(xcb_window_t window_id) {
         struct Stack_Window *current;
@@ -125,9 +126,9 @@ static bool button_press_stackwin(xcb_connection_t *conn, xcb_button_press_event
  *
  */
 static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *event) {
-        i3Screen *screen;
-        TAILQ_FOREACH(screen, virtual_screens, screens) {
-                if (screen->bar != event->event)
+        Output *output;
+        TAILQ_FOREACH(output, &outputs, outputs) {
+                if (output->bar != event->event)
                         continue;
 
                 DLOG("Click on a bar\n");
@@ -137,14 +138,14 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
                         Workspace *ws = c_ws;
                         if (event->detail == XCB_BUTTON_INDEX_5) {
                                 while ((ws = TAILQ_NEXT(ws, workspaces)) != TAILQ_END(workspaces_head)) {
-                                        if (ws->screen == screen) {
+                                        if (ws->output == output) {
                                                 workspace_show(conn, ws->num + 1);
                                                 return true;
                                         }
                                 }
                         } else {
                                 while ((ws = TAILQ_PREV(ws, workspaces_head, workspaces)) != TAILQ_END(workspaces)) {
-                                        if (ws->screen == screen) {
+                                        if (ws->output == output) {
                                                 workspace_show(conn, ws->num + 1);
                                                 return true;
                                         }
@@ -153,11 +154,11 @@ static bool button_press_bar(xcb_connection_t *conn, xcb_button_press_event_t *e
                         return true;
                 }
                 int drawn = 0;
-                /* Because workspaces can be on different screens, we need to loop
-                   through all of them and decide to count it based on its ->screen */
+                /* Because workspaces can be on different outputs, we need to loop
+                   through all of them and decide to count it based on its ->output */
                 Workspace *ws;
                 TAILQ_FOREACH(ws, workspaces, workspaces) {
-                        if (ws->screen != screen)
+                        if (ws->output != output)
                                 continue;
                         DLOG("Checking if click was on workspace %d with drawn = %d, tw = %d\n",
                                         ws->num, drawn, ws->text_width);

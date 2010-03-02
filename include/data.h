@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -11,6 +11,7 @@
  *
  */
 #include <xcb/xcb.h>
+#include <xcb/randr.h>
 #include <xcb/xcb_atom.h>
 #include <stdbool.h>
 
@@ -25,11 +26,12 @@
  *
  * Let’s start from the biggest to the smallest:
  *
- * - An i3Screen is a virtual screen (Xinerama). This can be a single one,
- *   though two monitors might be connected, if you’re running clone
- *   mode. There can also be multiple of them.
+ * - An Output is a physical output on your graphics driver. Outputs which
+ *   are currently in use have (output->active == true). Each output has a
+ *   position and a mode. An output usually corresponds to one connected
+ *   screen (except if you are running multiple screens in clone mode).
  *
- * - Each i3Screen contains Workspaces. The concept is known from various
+ * - Each Output contains Workspaces. The concept is known from various
  *   other window managers.  Basically, a workspace is a specific set of
  *   windows, usually grouped thematically (irc, www, work, …). You can switch
  *   between these.
@@ -54,7 +56,7 @@ typedef struct Client Client;
 typedef struct Binding Binding;
 typedef struct Workspace Workspace;
 typedef struct Rect Rect;
-typedef struct Screen i3Screen;
+typedef struct xoutput Output;
 
 /******************************************************************************
  * Helper types
@@ -228,8 +230,8 @@ struct Workspace {
          * appended) */
         TAILQ_HEAD(floating_clients_head, Client) floating_clients;
 
-        /** Backpointer to the screen this workspace is on */
-        i3Screen *screen;
+        /** Backpointer to the output this workspace is on */
+        Output *output;
 
         /** This is a two-dimensional dynamic array of
          * Container-pointers. I’ve always wanted to be a three-star
@@ -496,14 +498,21 @@ struct Container {
 };
 
 /**
- * This is a virtual screen (Xinerama). This can be a single one, though two
- * monitors might be connected, if you’re running clone mode. There can also
- * be multiple of them.
+ * An Output is a physical output on your graphics driver. Outputs which
+ * are currently in use have (output->active == true). Each output has a
+ * position and a mode. An output usually corresponds to one connected
+ * screen (except if you are running multiple screens in clone mode).
  *
  */
-struct Screen {
-        /** Virtual screen number */
-        int num;
+struct xoutput {
+        /** Output id, so that we can requery the output directly later */
+        xcb_randr_output_t id;
+        /** Name of the output */
+        char *name;
+
+        /** Whether the output is currently (has a CRTC attached with a valid
+         * mode) */
+        bool active;
 
         /** Current workspace selected on this virtual screen */
         Workspace *current_workspace;
@@ -519,7 +528,7 @@ struct Screen {
          * _NET_WM_WINDOW_TYPE_DOCK */
         SLIST_HEAD(dock_clients_head, Client) dock_clients;
 
-        TAILQ_ENTRY(Screen) screens;
+        TAILQ_ENTRY(xoutput) outputs;
 };
 
 #endif

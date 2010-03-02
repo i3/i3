@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -17,6 +17,7 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_icccm.h>
+#include <xcb/randr.h>
 
 #include <X11/XKBlib.h>
 
@@ -28,7 +29,7 @@
 #include "data.h"
 #include "xcb.h"
 #include "util.h"
-#include "xinerama.h"
+#include "randr.h"
 #include "config.h"
 #include "queue.h"
 #include "resize.h"
@@ -163,21 +164,21 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
  *
  */
 static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
-        i3Screen *screen;
+        Output *output;
 
-        if ((screen = get_screen_containing(x, y)) == NULL) {
+        if ((output = get_screen_containing(x, y)) == NULL) {
                 ELOG("ERROR: No such screen\n");
                 return;
         }
-        if (screen == c_ws->screen)
+        if (output == c_ws->output)
                 return;
 
         c_ws->current_row = current_row;
         c_ws->current_col = current_col;
-        c_ws = screen->current_workspace;
+        c_ws = output->current_workspace;
         current_row = c_ws->current_row;
         current_col = c_ws->current_col;
-        DLOG("We're now on virtual screen number %d\n", screen->num);
+        DLOG("We're now on output %p\n", output);
 }
 
 /*
@@ -228,7 +229,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_
                 return 1;
         }
 
-        if (client->workspace != c_ws && client->workspace->screen == c_ws->screen) {
+        if (client->workspace != c_ws && client->workspace->output == c_ws->output) {
                 /* This can happen when a client gets assigned to a different workspace than
                  * the current one (see src/mainx.c:reparent_window). Shortly after it was created,
                  * an enter_notify will follow. */
@@ -395,7 +396,7 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
                 }
 
                 client->desired_height = event->height;
-                render_workspace(conn, c_ws->screen, c_ws);
+                render_workspace(conn, c_ws->output, c_ws);
                 xcb_flush(conn);
 
                 return 1;
@@ -417,26 +418,28 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
 }
 
 /*
- * Configuration notifies are only handled because we need to set up ignore for the following
- * enter notify events
+ * Configuration notifies are only handled because we need to set up ignore for
+ * the following enter notify events.
  *
  */
 int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event) {
-        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
-
         /* We ignore this sequence twice because events for child and frame should be ignored */
         add_ignore_event(event->sequence);
         add_ignore_event(event->sequence);
 
-        if (event->event == root) {
-                DLOG("event->x = %d, ->y = %d, ->width = %d, ->height = %d\n", event->x, event->y, event->width, event->height);
-                DLOG("reconfigure of the root window, need to xinerama\n");
-                /* FIXME: Somehow, this is occuring too often. Therefore, we check for 0/0,
-                   but is there a better way? */
-                if (event->x == 0 && event->y == 0)
-                        xinerama_requery_screens(conn);
-                return 1;
-        }
+        return 1;
+}
+
+/*
+ * Gets triggered upon a RandR screen change event, that is when the user
+ * changes the screen configuration in any way (mode, position, …)
+ *
+ */
+int handle_screen_change(void *prophs, xcb_connection_t *conn,
+                         xcb_generic_event_t *e) {
+        DLOG("RandR screen change\n");
+
+        randr_query_screens(conn);
 
         return 1;
 }
@@ -500,7 +503,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 
         if (client->dock) {
                 DLOG("Removing from dock clients\n");
-                SLIST_REMOVE(&(client->workspace->screen->dock_clients), client, Client, dock_clients);
+                SLIST_REMOVE(&(client->workspace->output->dock_clients), client, Client, dock_clients);
         }
 
         DLOG("child of 0x%08x.\n", client->frame);
@@ -524,8 +527,8 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         Client *to_focus = (!workspace_empty ? SLIST_FIRST(&(client->workspace->focus_stack)) : NULL);
 
         /* If this workspace is currently active, we don’t delete it */
-        i3Screen *screen;
-        TAILQ_FOREACH(screen, virtual_screens, screens)
+        Output *screen;
+        TAILQ_FOREACH(screen, &outputs, outputs)
                 if (screen->current_workspace == client->workspace) {
                         workspace_active = true;
                         workspace_empty = false;
@@ -533,7 +536,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                 }
 
         if (workspace_empty)
-                client->workspace->screen = NULL;
+                client->workspace->output = NULL;
 
         /* Remove the urgency flag if set */
         client->urgent = false;
@@ -739,9 +742,9 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
                         }
 
                 /* …or one of the bars? */
-                i3Screen *screen;
-                TAILQ_FOREACH(screen, virtual_screens, screens)
-                        if (screen->bar == event->window)
+                Output *output;
+                TAILQ_FOREACH(output, &outputs, outputs)
+                        if (output->bar == event->window)
                                 render_layout(conn);
                 return 1;
         }
@@ -973,8 +976,8 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
         /* If the workspace this client is on is not visible, we need to redraw
          * the workspace bar */
         if (!workspace_is_visible(client->workspace)) {
-                i3Screen *screen = client->workspace->screen;
-                render_workspace(conn, screen, screen->current_workspace);
+                Output *output = client->workspace->output;
+                render_workspace(conn, output, output->current_workspace);
                 xcb_flush(conn);
         }
 

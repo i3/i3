@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -11,7 +11,7 @@
 #include <xcb/xcb.h>
 
 #include "data.h"
-#include "xinerama.h"
+#include "randr.h"
 
 #ifndef _WORKSPACE_H
 #define _WORKSPACE_H
@@ -53,7 +53,7 @@ void workspace_show(xcb_connection_t *conn, int workspace);
  * screen 1 and you just plugged in screen 1).
  *
  */
-void workspace_assign_to(Workspace *ws, i3Screen *screen);
+void workspace_assign_to(Workspace *ws, Output *screen);
 
 /**
  * Initializes the given workspace if it is not already initialized. The given
@@ -62,14 +62,14 @@ void workspace_assign_to(Workspace *ws, i3Screen *screen);
  * the screen is not attached at the moment.
  *
  */
-void workspace_initialize(Workspace *ws, i3Screen *screen, bool recheck);
+void workspace_initialize(Workspace *ws, Output *screen, bool recheck);
 
 /**
  * Gets the first unused workspace for the given screen, taking into account
  * the preferred_screen setting of every workspace (workspace assignments).
  *
  */
-Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *screen);
+Workspace *get_first_workspace_for_screen(Output *screen);
 
 /**
  * Unmaps all clients (and stack windows) of the given workspace.

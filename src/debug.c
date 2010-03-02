@@ -225,6 +225,8 @@ int format_event(xcb_generic_event_t *e) {
             labelRequest[*((uint8_t *) e + 10)]);
         break;
     default:
+        if (e->response_type > sizeof(labelEvent) / sizeof(char*))
+                break;
         printf("Event %s following seqnum %d%s.\n",
             labelEvent[e->response_type],
             seqnum,

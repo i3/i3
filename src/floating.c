@@ -412,7 +412,7 @@ void floating_move(xcb_connection_t *conn, Client *currently_focused, direction_
         DLOG("floating move\n");
 
         Rect destination = currently_focused->rect;
-        Rect *screen = &(currently_focused->workspace->screen->rect);
+        Rect *screen = &(currently_focused->workspace->output->rect);
 
         switch (direction) {
                 case D_LEFT:

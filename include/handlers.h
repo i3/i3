@@ -3,13 +3,15 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
  */
 #ifndef _HANDLERS_H
 #define _HANDLERS_H
+
+#include <xcb/randr.h>
 
 /**
  * Due to bindings like Mode_switch + <a>, we need to bind some keys in
@@ -73,6 +75,14 @@ int handle_map_request(void *prophs, xcb_connection_t *conn,
  *
  */
 int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event);
+
+/**
+ * Gets triggered upon a RandR screen change event, that is when the user
+ * changes the screen configuration in any way (mode, position, …)
+ *
+ */
+int handle_screen_change(void *prophs, xcb_connection_t *conn,
+                         xcb_generic_event_t *e);
 
 /**
  * Configure requests are received when the application wants to resize

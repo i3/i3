@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -22,7 +22,7 @@
 #include "table.h"
 #include "layout.h"
 #include "i3.h"
-#include "xinerama.h"
+#include "randr.h"
 #include "client.h"
 #include "floating.h"
 #include "xcb.h"
@@ -108,7 +108,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
          * right/left/bottom/top and just switch to the workspace on
          * the target screen. */
         if (thing == THING_SCREEN) {
-                i3Screen *cs = c_ws->screen;
+                Output *cs = c_ws->output;
                 assert(cs != NULL);
                 Rect bounds = cs->rect;
 
@@ -120,9 +120,9 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         bounds.y -= bounds.height;
                 else bounds.y += bounds.height;
 
-                i3Screen *target = get_screen_containing(bounds.x, bounds.y);
+                Output *target = get_screen_containing(bounds.x, bounds.y);
                 if (target == NULL) {
-                        DLOG("Target screen NULL\n");
+                        DLOG("Target output NULL\n");
                         /* Wrap around if the target screen is out of bounds */
                         if (direction == D_RIGHT)
                                 target = get_screen_most(D_LEFT, cs);
@@ -162,14 +162,14 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                 } else {
                         /* Let’s see if there is a screen down/up there to which we can switch */
                         DLOG("container is at %d with height %d\n", container->y, container->height);
-                        i3Screen *screen;
+                        Output *output;
                         int destination_y = (direction == D_UP ? (container->y - 1) : (container->y + container->height + 1));
-                        if ((screen = get_screen_containing(container->x, destination_y)) == NULL) {
+                        if ((output = get_screen_containing(container->x, destination_y)) == NULL) {
                                 DLOG("Wrapping screen around vertically\n");
                                 /* No screen found? Then wrap */
-                                screen = get_screen_most((direction == D_UP ? D_DOWN : D_UP), container->workspace->screen);
+                                output = get_screen_most((direction == D_UP ? D_DOWN : D_UP), container->workspace->output);
                         }
-                        t_ws = screen->current_workspace;
+                        t_ws = output->current_workspace;
                         new_row = (direction == D_UP ? (t_ws->rows - 1) : 0);
                 }
 
@@ -205,13 +205,13 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                 } else {
                         /* Let’s see if there is a screen left/right here to which we can switch */
                         DLOG("container is at %d with width %d\n", container->x, container->width);
-                        i3Screen *screen;
+                        Output *output;
                         int destination_x = (direction == D_LEFT ? (container->x - 1) : (container->x + container->width + 1));
-                        if ((screen = get_screen_containing(destination_x, container->y)) == NULL) {
+                        if ((output = get_screen_containing(destination_x, container->y)) == NULL) {
                                 DLOG("Wrapping screen around horizontally\n");
-                                screen = get_screen_most((direction == D_LEFT ? D_RIGHT : D_LEFT), container->workspace->screen);
+                                output = get_screen_most((direction == D_LEFT ? D_RIGHT : D_LEFT), container->workspace->output);
                         }
-                        t_ws = screen->current_workspace;
+                        t_ws = output->current_workspace;
                         new_col = (direction == D_LEFT ? (t_ws->cols - 1) : 0);
                 }
 
@@ -359,7 +359,7 @@ static void move_current_window(xcb_connection_t *conn, direction_t direction) {
         /* Fix colspan/rowspan if it’d overlap */
         fix_colrowspan(conn, workspace);
 
-        render_workspace(conn, workspace->screen, workspace);
+        render_workspace(conn, workspace->output, workspace);
         xcb_flush(conn);
 
         set_focus(conn, current_client, true);
@@ -532,7 +532,7 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
 
         LOG("moving floating\n");
 
-        workspace_initialize(t_ws, c_ws->screen, false);
+        workspace_initialize(t_ws, c_ws->output, false);
 
         /* Check if there is already a fullscreen client on the destination workspace and
          * stop moving if so. */
@@ -593,7 +593,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         if (to_focus == NULL)
                 to_focus = CIRCLEQ_PREV_OR_NULL(&(container->clients), current_client, clients);
 
-        workspace_initialize(t_ws, container->workspace->screen, false);
+        workspace_initialize(t_ws, container->workspace->output, false);
         /* Check if there is already a fullscreen client on the destination workspace and
          * stop moving if so. */
         if (current_client->fullscreen && (t_ws->fullscreen_client != NULL)) {
@@ -779,7 +779,7 @@ static void next_previous_workspace(xcb_connection_t *conn, int direction) {
                         if (ws == c_ws)
                                 return;
 
-                        if (ws->screen == NULL)
+                        if (ws->output == NULL)
                                 continue;
 
                         workspace_show(conn, ws->num + 1);
@@ -795,7 +795,7 @@ static void next_previous_workspace(xcb_connection_t *conn, int direction) {
                         if (ws == c_ws)
                                 return;
 
-                        if (ws->screen == NULL)
+                        if (ws->output == NULL)
                                 continue;
 
                         workspace_show(conn, ws->num + 1);
@@ -1113,7 +1113,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 /* Fix colspan/rowspan if it’d overlap */
                 fix_colrowspan(conn, ws);
 
-                render_workspace(conn, ws->screen, ws);
+                render_workspace(conn, ws->output, ws);
 
                 /* Re-focus the client because cleanup_table sets the focus to the last
                  * focused client inside a container only. */

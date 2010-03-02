@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -30,7 +30,6 @@
 #include <xcb/xcb_property.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
-#include <xcb/xinerama.h>
 
 #include <ev.h>
 
@@ -45,7 +44,7 @@
 #include "table.h"
 #include "util.h"
 #include "xcb.h"
-#include "xinerama.h"
+#include "randr.h"
 #include "manage.h"
 #include "ipc.h"
 #include "log.h"
@@ -470,9 +469,14 @@ int main(int argc, char *argv[], char *env[]) {
                 }
         }
 
-        /* check for Xinerama */
-        DLOG("Checking for Xinerama...\n");
-        initialize_xinerama(conn);
+        DLOG("Checking for XRandR...\n");
+        int randr_base;
+        initialize_randr(conn, &randr_base);
+
+        xcb_event_set_handler(&evenths,
+                              randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY,
+                              handle_screen_change,
+                              NULL);
 
         xcb_flush(conn);
 
@@ -483,14 +487,14 @@ int main(int argc, char *argv[], char *env[]) {
                 return 1;
         }
 
-        i3Screen *screen = get_screen_containing(reply->root_x, reply->root_y);
+        Output *screen = get_screen_containing(reply->root_x, reply->root_y);
         if (screen == NULL) {
                 ELOG("ERROR: No screen at %d x %d, starting on the first screen\n",
                     reply->root_x, reply->root_y);
-                screen = TAILQ_FIRST(virtual_screens);
+                screen = get_first_output();
         }
 
-        DLOG("Starting on %d\n", screen->current_workspace);
+        DLOG("Starting on %p\n", screen->current_workspace);
         c_ws = screen->current_workspace;
 
         manage_existing_windows(conn, &prophs, root);

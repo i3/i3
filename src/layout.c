@@ -22,7 +22,7 @@
 #include "xcb.h"
 #include "table.h"
 #include "util.h"
-#include "xinerama.h"
+#include "randr.h"
 #include "layout.h"
 #include "client.h"
 #include "floating.h"
@@ -206,7 +206,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
  *
  */
 void reposition_client(xcb_connection_t *conn, Client *client) {
-        i3Screen *screen;
+        Output *output;
 
         DLOG("frame 0x%08x needs to be pushed to %dx%d\n", client->frame, client->rect.x, client->rect.y);
         /* Note: We can use a pointer to client->x like an array of uint32_ts
@@ -217,19 +217,19 @@ void reposition_client(xcb_connection_t *conn, Client *client) {
                 return;
 
         /* If the client is floating, we need to check if we moved it to a different workspace */
-        screen = get_screen_containing(client->rect.x + (client->rect.width / 2),
+        output = get_screen_containing(client->rect.x + (client->rect.width / 2),
                                        client->rect.y + (client->rect.height / 2));
-        if (client->workspace->screen == screen)
+        if (client->workspace->output == output)
                 return;
 
-        if (screen == NULL) {
-                DLOG("Boundary checking disabled, no screen found for (%d, %d)\n", client->rect.x, client->rect.y);
+        if (output == NULL) {
+                DLOG("Boundary checking disabled, no output found for (%d, %d)\n", client->rect.x, client->rect.y);
                 return;
         }
 
-        DLOG("Client is on workspace %p with screen %p\n", client->workspace, client->workspace->screen);
-        DLOG("but screen at %d, %d is %p\n", client->rect.x, client->rect.y, screen);
-        floating_assign_to_workspace(client, screen->current_workspace);
+        DLOG("Client is on workspace %p with output %p\n", client->workspace, client->workspace->output);
+        DLOG("but output at %d, %d is %p\n", client->rect.x, client->rect.y, output);
+        floating_assign_to_workspace(client, output->current_workspace);
 
         set_focus(conn, client, true);
 }
@@ -566,7 +566,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
 
 static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int *height) {
         Client *client;
-        SLIST_FOREACH(client, &(r_ws->screen->dock_clients), dock_clients) {
+        SLIST_FOREACH(client, &(r_ws->output->dock_clients), dock_clients) {
                 DLOG("client is at %d, should be at %d\n", client->rect.y, *height);
                 if (client->force_reconfigure |
                     update_if_necessary(&(client->rect.x), r_ws->rect.x) |
@@ -586,48 +586,48 @@ static void render_bars(xcb_connection_t *conn, Workspace *r_ws, int width, int 
 
 static void render_internal_bar(xcb_connection_t *conn, Workspace *r_ws, int width, int height) {
         i3Font *font = load_font(conn, config.font);
-        i3Screen *screen = r_ws->screen;
+        Output *output = r_ws->output;
         enum { SET_NORMAL = 0, SET_FOCUSED = 1 };
 
         /* Fill the whole bar in black */
-        xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+        xcb_change_gc_single(conn, output->bargc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
         xcb_rectangle_t rect = {0, 0, width, height};
-        xcb_poly_fill_rectangle(conn, screen->bar, screen->bargc, 1, &rect);
+        xcb_poly_fill_rectangle(conn, output->bar, output->bargc, 1, &rect);
 
         /* Set font */
-        xcb_change_gc_single(conn, screen->bargc, XCB_GC_FONT, font->id);
+        xcb_change_gc_single(conn, output->bargc, XCB_GC_FONT, font->id);
 
         int drawn = 0;
         Workspace *ws;
         TAILQ_FOREACH(ws, workspaces, workspaces) {
-                if (ws->screen != screen)
+                if (ws->output != output)
                         continue;
 
                 struct Colortriple *color;
 
-                if (screen->current_workspace == ws)
+                if (output->current_workspace == ws)
                         color = &(config.bar.focused);
                 else if (ws->urgent)
                         color = &(config.bar.urgent);
                 else color = &(config.bar.unfocused);
 
                 /* Draw the outer rect */
-                xcb_draw_rect(conn, screen->bar, screen->bargc, color->border,
+                xcb_draw_rect(conn, output->bar, output->bargc, color->border,
                               drawn,              /* x */
                               1,                  /* y */
                               ws->text_width + 5 + 5, /* width = text width + 5 px left + 5px right */
                               height - 2          /* height = max. height - 1 px upper and 1 px bottom border */);
 
                 /* Draw the background of this rect */
-                xcb_draw_rect(conn, screen->bar, screen->bargc, color->background,
+                xcb_draw_rect(conn, output->bar, output->bargc, color->background,
                               drawn + 1,
                               2,
                               ws->text_width + 4 + 4,
                               height - 4);
 
-                xcb_change_gc_single(conn, screen->bargc, XCB_GC_FOREGROUND, color->text);
-                xcb_change_gc_single(conn, screen->bargc, XCB_GC_BACKGROUND, color->background);
-                xcb_image_text_16(conn, ws->name_len, screen->bar, screen->bargc, drawn + 5 /* X */,
+                xcb_change_gc_single(conn, output->bargc, XCB_GC_FOREGROUND, color->text);
+                xcb_change_gc_single(conn, output->bargc, XCB_GC_BACKGROUND, color->background);
+                xcb_image_text_16(conn, ws->name_len, output->bar, output->bargc, drawn + 5 /* X */,
                                   font->height + 1 /* Y = baseline of font */,
                                   (xcb_char2b_t*)ws->name);
                 drawn += ws->text_width + 12;
@@ -668,14 +668,14 @@ void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace, bo
  * Renders the given workspace on the given screen
  *
  */
-void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws) {
+void render_workspace(xcb_connection_t *conn, Output *output, Workspace *r_ws) {
         i3Font *font = load_font(conn, config.font);
         int width = r_ws->rect.width;
         int height = r_ws->rect.height;
 
         /* Reserve space for dock clients */
         Client *client;
-        SLIST_FOREACH(client, &(screen->dock_clients), dock_clients)
+        SLIST_FOREACH(client, &(output->dock_clients), dock_clients)
                 height -= client->desired_height;
 
         /* Space for the internal bar */
@@ -748,14 +748,11 @@ void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws)
  *
  */
 void render_layout(xcb_connection_t *conn) {
-        i3Screen *screen;
+        Output *output;
 
-        if (virtual_screens == NULL)
-                return;
-
-        TAILQ_FOREACH(screen, virtual_screens, screens)
-                if (screen->current_workspace != NULL)
-                        render_workspace(conn, screen, screen->current_workspace);
+        TAILQ_FOREACH(output, &outputs, outputs)
+                if (output->current_workspace != NULL)
+                        render_workspace(conn, output, output->current_workspace);
 
         xcb_flush(conn);
 }

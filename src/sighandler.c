@@ -31,7 +31,7 @@
 #include "xcb.h"
 #include "log.h"
 #include "config.h"
-#include "xinerama.h"
+#include "randr.h"
 
 static xcb_gcontext_t pixmap_gc;
 static xcb_pixmap_t pixmap;
@@ -170,9 +170,9 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         int width = font_width + 20;
 
         /* Open a popup window on each virtual screen */
-        i3Screen *screen;
+        Output *screen;
         xcb_window_t win;
-        TAILQ_FOREACH(screen, virtual_screens, screens) {
+        TAILQ_FOREACH(screen, &outputs, outputs) {
                 win = open_input_window(conn, screen->rect, width, height);
 
                 /* Create pixmap */

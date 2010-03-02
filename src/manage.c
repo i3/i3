@@ -255,7 +255,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                                 new->titlebar_position = TITLEBAR_OFF;
                                 new->force_reconfigure = true;
                                 new->container = NULL;
-                                SLIST_INSERT_HEAD(&(c_ws->screen->dock_clients), new, dock_clients);
+                                SLIST_INSERT_HEAD(&(c_ws->output->dock_clients), new, dock_clients);
                                 /* If it’s a dock we can’t make it float, so we break */
                                 new->floating = FLOATING_AUTO_OFF;
                                 break;
@@ -334,14 +334,14 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         LOG("Assignment \"%s\" matches, so putting it on workspace %d\n",
                             assign->windowclass_title, assign->workspace);
 
-                        if (c_ws->screen->current_workspace->num == (assign->workspace-1)) {
+                        if (c_ws->output->current_workspace->num == (assign->workspace-1)) {
                                 DLOG("We are already there, no need to do anything\n");
                                 break;
                         }
 
                         DLOG("Changing container/workspace and unmapping the client\n");
                         Workspace *t_ws = workspace_get(assign->workspace-1);
-                        workspace_initialize(t_ws, c_ws->screen, false);
+                        workspace_initialize(t_ws, c_ws->output, false);
 
                         new->container = t_ws->table[t_ws->current_col][t_ws->current_row];
                         new->workspace = t_ws;
