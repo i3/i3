@@ -39,8 +39,8 @@ EOL	(\r?\n)
 %s BIND_A2WS_COND
 %s ASSIGN_COND
 %s COLOR_COND
-%s SCREEN_COND
-%s SCREEN_AWS_COND
+%s OUTPUT_COND
+%s OUTPUT_AWS_COND
 %x BUFFER_LINE
 
 %%
@@ -67,6 +67,7 @@ EOL	(\r?\n)
 
 
 <BIND_A2WS_COND>[^\n]+          { BEGIN(INITIAL); yylval.string = strdup(yytext); return STR; }
+<OUTPUT_AWS_COND>[a-zA-Z0-9_-]+ { BEGIN(BIND_A2WS_COND); yylval.string = strdup(yytext); return OUTPUT; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
 <COLOR_COND>[0-9a-fA-F]+        { yylval.string = strdup(yytext); return HEX; }
 [0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
@@ -75,7 +76,14 @@ bind                            { BEGIN(BIND_COND); return TOKBIND; }
 bindsym                         { BEGIN(BINDSYM_COND); return TOKBINDSYM; }
 floating_modifier               { BEGIN(INITIAL); return TOKFLOATING_MODIFIER; }
 workspace                       { BEGIN(INITIAL); return TOKWORKSPACE; }
-screen                          { BEGIN(SCREEN_COND); return TOKSCREEN; }
+output                          { BEGIN(OUTPUT_COND); return TOKOUTPUT; }
+screen                          {
+                                  /* for compatibility until v3.φ */
+                                  ELOG("Assignments to screens are DEPRECATED and will not work. " \
+                                       "Please replace them with assignments to outputs.\n");
+                                  BEGIN(OUTPUT_COND);
+                                  return TOKOUTPUT;
+                                }
 terminal                        { BEGIN(BIND_AWS_COND); return TOKTERMINAL; }
 font                            { BEGIN(BIND_AWS_COND); return TOKFONT; }
 assign                          { BEGIN(ASSIGN_COND); return TOKASSIGN; }
@@ -112,15 +120,15 @@ shift                           { return TOKSHIFT; }
 {EOL}                           {
                                   FREE(context->line_copy);
                                   context->line_number++;
+                                  BEGIN(INITIAL);
                                   yy_push_state(BUFFER_LINE);
                                 }
-<SCREEN_AWS_COND>x              { return (int)yytext[0]; }
 <BIND_COND>[ \t]+               { BEGIN(BIND_AWS_COND); return WHITESPACE; }
 <BINDSYM_COND>[ \t]+            { BEGIN(BINDSYM_AWS_COND); return WHITESPACE; }
 <BIND_AWS_COND>[ \t]+           { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
 <BINDSYM_AWS_COND>[ \t]+        { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
-<SCREEN_COND>[ \t]+             { BEGIN(SCREEN_AWS_COND); return WHITESPACE; }
-<SCREEN_AWS_COND>[ \t]+         { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
+<OUTPUT_COND>[ \t]+             { BEGIN(OUTPUT_AWS_COND); return WHITESPACE; }
+<OUTPUT_AWS_COND>[ \t]+         { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
 [ \t]+                          { return WHITESPACE; }
 \"[^\"]+\"                      {
                                   /* if ASSIGN_COND then */

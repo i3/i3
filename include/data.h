@@ -206,9 +206,8 @@ struct Workspace {
         /** Are the floating clients on this workspace currently hidden? */
         bool floating_hidden;
 
-        /** A <screen> specifier on which this workspace would like to be (if
-         * the screen is available). screen := <number> | <position> */
-        char *preferred_screen;
+        /** The name of the RandR output this screen should be on */
+        char *preferred_output;
 
         /** Temporary flag needed for re-querying xinerama screens */
         bool reassigned;

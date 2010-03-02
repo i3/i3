@@ -195,58 +195,6 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
         }
 }
 
-
-/*
- * Parses the preferred_screen property of a workspace. You can either specify
- * the screen number (it is not given that the screen numbering always stays
- * the same) or the screen coordinates (exact coordinates, e.g. 1280 will match
- * the screen starting at x=1280, but 1281 will not). For coordinates, you can
- * either specify an x coordinate ("1280") or an y coordinate ("x800") or both
- * ("1280x800").
- *
- */
-static Output *get_screen_from_preference(char *preference) {
-        Output *screen;
-        char *rest;
-        int preferred_screen = strtol(preference, &rest, 10);
-
-        DLOG("Getting screen for preference \"%s\" (%d)\n", preference, preferred_screen);
-
-        if ((rest == preference) || (preferred_screen >= num_screens)) {
-                int x = INT_MAX, y = INT_MAX;
-                if (strchr(preference, 'x') != NULL) {
-                        /* Check if only the y coordinate was specified */
-                        if (*preference == 'x')
-                                y = atoi(preference+1);
-                        else {
-                                x = atoi(preference);
-                                y = atoi(strchr(preference, 'x') + 1);
-                        }
-                } else {
-                        x = atoi(preference);
-                }
-
-                DLOG("Looking for screen at %d x %d\n", x, y);
-
-                TAILQ_FOREACH(screen, &outputs, outputs)
-                        if ((x == INT_MAX || screen->rect.x == x) &&
-                            (y == INT_MAX || screen->rect.y == y)) {
-                                DLOG("found %p\n", screen);
-                                return screen;
-                        }
-
-                DLOG("none found\n");
-                return NULL;
-        } else {
-                int c = 0;
-                TAILQ_FOREACH(screen, &outputs, outputs)
-                        if (c++ == preferred_screen)
-                                return screen;
-        }
-
-        return NULL;
-}
-
 /*
  * Assigns the given workspace to the given output by correctly updating its
  * state and reconfiguring all the clients on this workspace.
@@ -311,8 +259,8 @@ void workspace_initialize(Workspace *ws, Output *output, bool recheck) {
         /* If this workspace has no preferred output or if the output it wants
          * to be on is not available at the moment, we initialize it with
          * the output which was given */
-        if (ws->preferred_screen == NULL ||
-            (ws->output = get_screen_from_preference(ws->preferred_screen)) == NULL)
+        if (ws->preferred_output == NULL ||
+            (ws->output = get_output_by_name(ws->preferred_output)) == NULL)
                 ws->output = output;
 
         DLOG("old_output = %p, ws->output = %p\n", old_output, ws->output);
@@ -325,7 +273,7 @@ void workspace_initialize(Workspace *ws, Output *output, bool recheck) {
 
 /*
  * Gets the first unused workspace for the given screen, taking into account
- * the preferred_screen setting of every workspace (workspace assignments).
+ * the preferred_output setting of every workspace (workspace assignments).
  *
  */
 Workspace *get_first_workspace_for_screen(Output *output) {
@@ -333,8 +281,8 @@ Workspace *get_first_workspace_for_screen(Output *output) {
 
         Workspace *ws;
         TAILQ_FOREACH(ws, workspaces, workspaces) {
-                if (ws->preferred_screen == NULL ||
-                    !screens_are_equal(get_screen_from_preference(ws->preferred_screen), output))
+                if (ws->preferred_output == NULL ||
+                    get_output_by_name(ws->preferred_output) != output)
                         continue;
 
                 result = ws;

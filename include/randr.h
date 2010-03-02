@@ -18,13 +18,6 @@ TAILQ_HEAD(outputs_head, xoutput);
 extern struct outputs_head outputs;
 
 /**
- * Returns true if both screen objects describe the same screen (checks their
- * size and position).
- *
- */
-bool screens_are_equal(Output *screen1, Output *screen2);
-
-/**
  * We have just established a connection to the X server and need the initial
  * XRandR information to setup workspaces for each screen.
  *
@@ -42,6 +35,12 @@ void randr_query_screens(xcb_connection_t *conn);
  *
  */
 Output *get_first_output();
+
+/**
+ * Returns the output with the given name if it is active (!) or NULL.
+ *
+ */
+Output *get_output_by_name(const char *name);
 
 /**
  * Looks in virtual_screens for the i3Screen which contains coordinates x, y

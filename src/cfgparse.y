@@ -197,6 +197,7 @@ void parse_file(const char *f) {
 %token <string>STR "<string>"
 %token <string>STR_NG "<string (non-greedy)>"
 %token <string>HEX "<hex>"
+%token <string>OUTPUT "<RandR output>"
 %token TOKBIND
 %token TOKTERMINAL
 %token TOKCOMMENT "<comment>"
@@ -209,7 +210,7 @@ void parse_file(const char *f) {
 %token TOKFLOATING_MODIFIER "floating_modifier"
 %token QUOTEDSTRING "<quoted string>"
 %token TOKWORKSPACE "workspace"
-%token TOKSCREEN "screen"
+%token TOKOUTPUT "output"
 %token TOKASSIGN "assign"
 %token TOKSET
 %token TOKIPCSOCKET "ipc_socket"
@@ -429,14 +430,14 @@ focus_follows_mouse:
         ;
 
 workspace:
-        TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKSCREEN WHITESPACE screen optional_workspace_name
+        TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKOUTPUT WHITESPACE OUTPUT optional_workspace_name
         {
                 int ws_num = $<number>3;
                 if (ws_num < 1) {
                         DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
                         Workspace *ws = workspace_get(ws_num - 1);
-                        ws->preferred_screen = sstrdup($<string>7);
+                        ws->preferred_output = sstrdup($<string>7);
                         if ($<string>8 != NULL)
                                 workspace_set_name(ws, $<string>8);
                 }
@@ -447,6 +448,7 @@ workspace:
                 if (ws_num < 1) {
                         DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
+                        DLOG("workspace name to: %s\n", $<string>5);
                         if ($<string>5 != NULL)
                                 workspace_set_name(workspace_get(ws_num - 1), $<string>5);
                 }
@@ -462,13 +464,6 @@ workspace_name:
         QUOTEDSTRING         { $<string>$ = $<string>1; }
         | STR                { $<string>$ = $<string>1; }
         | WORD               { $<string>$ = $<string>1; }
-        ;
-
-screen:
-        NUMBER              { asprintf(&$<string>$, "%d", $<number>1); }
-        | NUMBER 'x'        { asprintf(&$<string>$, "%d", $<number>1); }
-        | NUMBER 'x' NUMBER { asprintf(&$<string>$, "%dx%d", $<number>1, $<number>3); }
-        | 'x' NUMBER        { asprintf(&$<string>$, "x%d", $<number>2); }
         ;
 
 assign:

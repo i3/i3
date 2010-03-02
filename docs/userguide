@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael+i3@stapelberg.de>
-August 2009
+March 2010
 
 This document contains all information you need to configuring and using the i3
 window manager. If it does not, please contact me on IRC, Jabber or E-Mail and
@@ -367,25 +367,17 @@ default it will use 1 for the first screen, 2 for the second screen and so on).
 
 *Syntax*:
 ----------------------------------
-workspace <number> screen <screen>
+workspace <number> output <output>
 ----------------------------------
 
-Screen can be either a number (starting at 0 for the first screen) or a
-position. When using numbers, it is not guaranteed that your screens always
-get the same number. Though, unless you upgrade your X server or drivers, the
-order usually stays the same. When using positions, you have to specify the
-exact pixel where the screen *starts*, not a pixel which is contained by the
-screen. Thus, if your first screen has the dimensions 1280x800, you can match
-the second screen right of it by specifying 1280. You cannot use 1281.
+The output is the name of the RandR output you attach your screen to. On a
+laptop, you might have VGA1 and LVDS1 as output names. You can see the
+available outputs by running +xrandr --current+.
 
 *Examples*:
 ---------------------------
-workspace 1 screen 0
-workspace 5 screen 1
-
-workspace 1 screen 1280
-workspace 2 screen x800
-workspace 3 screen 1280x800
+workspace 1 output LVDS1
+workspace 5 output VGA1
 ---------------------------
 
 === Named workspaces
@@ -396,10 +388,10 @@ them names (of course UTF-8 is supported):
 *Syntax*:
 ---------------------------------------
 workspace <number> <name>
-workspace <number> screen <screen> name
+workspace <number> output <output> name
 ---------------------------------------
 
-For more details about the screen-part of this command, see above.
+For more details about the output-part of this command, see above.
 
 *Examples*:
 --------------------------

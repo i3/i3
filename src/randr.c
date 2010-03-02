@@ -45,35 +45,30 @@ typedef xcb_randr_get_screen_resources_current_reply_t resources_reply;
 struct outputs_head outputs = TAILQ_HEAD_INITIALIZER(outputs);
 
 /*
- * Returns true if both screen objects describe the same screen (checks their
- * size and position).
- *
- */
-bool screens_are_equal(Output *screen1, Output *screen2) {
-        /* If one of both objects (or both) are NULL, we cannot compare them */
-        if (screen1 == NULL || screen2 == NULL)
-                return false;
-
-        /* If the pointers are equal, take the short-circuit */
-        if (screen1 == screen2)
-                return true;
-
-        /* Compare their size and position - other properties are not relevant
-         * to determine if a screen is equal to another one */
-        return (memcmp(&(screen1->rect), &(screen2->rect), sizeof(Rect)) == 0);
-}
-
-/*
  * Get a specific output by its internal X11 id. Used by randr_query_screens
  * to check if the output is new (only in the first scan) or if we are
  * re-scanning.
  *
  */
 static Output *get_output_by_id(xcb_randr_output_t id) {
-        Output *screen;
-        TAILQ_FOREACH(screen, &outputs, outputs)
-                if (screen->id == id)
-                        return screen;
+        Output *output;
+        TAILQ_FOREACH(output, &outputs, outputs)
+                if (output->id == id)
+                        return output;
+
+        return NULL;
+}
+
+/*
+ * Returns the output with the given name if it is active (!) or NULL.
+ *
+ */
+Output *get_output_by_name(const char *name) {
+        Output *output;
+        TAILQ_FOREACH(output, &outputs, outputs)
+                if (output->active &&
+                    strcasecmp(output->name, name) == 0)
+                        return output;
 
         return NULL;
 }
