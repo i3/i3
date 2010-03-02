@@ -44,7 +44,7 @@ loglevels.h:
 	done; \
 	echo "};") > include/loglevels.h;
 
-src/cfgparse.yy.o: src/cfgparse.l ${HEADERS}
+src/cfgparse.yy.o: src/cfgparse.l src/cfgparse.y.o ${HEADERS}
 	echo "LEX $<"
 	flex -i -o$(@:.o=.c) $<
 	$(CC) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
