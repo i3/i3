@@ -119,6 +119,9 @@ Output *get_screen_most(direction_t direction, Output *current) {
         Output *screen, *candidate = NULL;
         int position = 0;
         TAILQ_FOREACH(screen, &outputs, outputs) {
+                if (!screen->active)
+                        continue;
+
                 /* Repeated calls of WIN determine the winner of the comparison */
                 #define WIN(variable, condition) \
                         if (variable condition) { \
