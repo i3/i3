@@ -33,6 +33,7 @@
 #include "client.h"
 #include "log.h"
 #include "ewmh.h"
+#include "manage.h"
 
 static iconv_t conversion_descriptor = 0;
 struct keyvalue_table_head by_parent = TAILQ_HEAD_INITIALIZER(by_parent);
@@ -504,6 +505,8 @@ static char **append_argument(char **original, char *argument) {
  *
  */
 void i3_restart() {
+        restore_geometry(global_conn);
+
         LOG("restarting \"%s\"...\n", start_argv[0]);
         /* make sure -a is in the argument list or append it */
         start_argv = append_argument(start_argv, "-a");

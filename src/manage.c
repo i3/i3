@@ -64,6 +64,28 @@ void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *pr
 }
 
 /*
+ * Restores the geometry of each window by reparenting it to the root window
+ * at the position of its frame.
+ *
+ * This is to be called *only* before exiting/restarting i3 because of evil
+ * side-effects which are to be expected when continuing to run i3.
+ *
+ */
+void restore_geometry(xcb_connection_t *conn) {
+        Workspace *ws;
+        Client *client;
+        DLOG("Restoring geometry\n");
+
+        TAILQ_FOREACH(ws, workspaces, workspaces)
+                SLIST_FOREACH(client, &(ws->focus_stack), focus_clients)
+                        xcb_reparent_window(conn, client->child, root,
+                                            client->rect.x, client->rect.y);
+
+        /* Make sure our changes reach the X server, we restart/exit now */
+        xcb_flush(conn);
+}
+
+/*
  * Do some sanity checks and then reparent the window.
  *
  */
