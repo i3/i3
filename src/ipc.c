@@ -201,13 +201,13 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
 
         set_nonblock(client);
 
-        struct ev_io *package = calloc(sizeof(struct ev_io), 1);
+        struct ev_io *package = scalloc(sizeof(struct ev_io));
         ev_io_init(package, ipc_receive_message, client, EV_READ);
         ev_io_start(EV_A_ package);
 
         DLOG("IPC: new client connected\n");
 
-        struct ipc_client *new = calloc(sizeof(struct ipc_client), 1);
+        struct ipc_client *new = scalloc(sizeof(struct ipc_client));
         new->fd = client;
 
         TAILQ_INSERT_TAIL(&all_clients, new, clients);

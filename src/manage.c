@@ -160,7 +160,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         LOG("Managing window 0x%08x\n", child);
         DLOG("x = %d, y = %d, width = %d, height = %d\n", x, y, width, height);
-        new = calloc(sizeof(Client), 1);
+        new = scalloc(sizeof(Client));
         new->force_reconfigure = true;
 
         /* Update the data structures */

@@ -53,7 +53,7 @@ void init_table() {
 
 static void new_container(Workspace *workspace, Container **container, int col, int row, bool skip_layout_switch) {
         Container *new;
-        new = *container = calloc(sizeof(Container), 1);
+        new = *container = scalloc(sizeof(Container));
         CIRCLEQ_INIT(&(new->clients));
         new->colspan = 1;
         new->rowspan = 1;
@@ -131,7 +131,7 @@ void expand_table_cols(Workspace *workspace) {
         workspace->width_factor[workspace->cols-1] = 0;
 
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
-        workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
+        workspace->table[workspace->cols-1] = scalloc(sizeof(Container*) * workspace->rows);
 
         for (int c = 0; c < workspace->rows; c++)
                 new_container(workspace, &(workspace->table[workspace->cols-1][c]), workspace->cols-1, c, true);
@@ -158,7 +158,7 @@ void expand_table_cols_at_head(Workspace *workspace) {
         workspace->width_factor[0] = 0;
 
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
-        workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
+        workspace->table[workspace->cols-1] = scalloc(sizeof(Container*) * workspace->rows);
 
         /* Move the other columns */
         for (int rows = 0; rows < workspace->rows; rows++)
