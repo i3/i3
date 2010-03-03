@@ -880,7 +880,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         /* base_width/height are the desired size of the window.
            We check if either the program-specified size or the program-specified
            min-size is available */
-        if (size_hints.flags & XCB_SIZE_HINT_P_SIZE) {
+        if (size_hints.flags & XCB_SIZE_HINT_BASE_SIZE) {
                 base_width = size_hints.base_width;
                 base_height = size_hints.base_height;
         } else if (size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE) {
