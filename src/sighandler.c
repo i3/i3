@@ -173,6 +173,8 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         Output *screen;
         xcb_window_t win;
         TAILQ_FOREACH(screen, &outputs, outputs) {
+                if (!screen->active)
+                        continue;
                 win = open_input_window(conn, screen->rect, width, height);
 
                 /* Create pixmap */
