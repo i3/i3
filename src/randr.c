@@ -252,6 +252,18 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
 
                 SLIST_FOREACH(client, &(ws->focus_stack), focus_clients)
                         client->force_reconfigure = true;
+
+                /* Update the dimensions of a fullscreen client, if any */
+                if (ws->fullscreen_client != NULL) {
+                        DLOG("Updating fullscreen client size\n");
+                        client = ws->fullscreen_client;
+                        Rect r = ws->rect;
+                        xcb_set_window_rect(conn, client->frame, r);
+
+                        r.x = 0;
+                        r.y = 0;
+                        xcb_set_window_rect(conn, client->child, r);
+                }
         }
 }
 
