@@ -306,11 +306,33 @@ int main(int argc, char *argv[]) {
         xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, 500, font_height + 8);
         xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
 
+        /* Set input focus (we have override_redirect=1, so the wm will not do
+         * this for us) */
+        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, win, XCB_CURRENT_TIME);
+
         /* Create graphics context */
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font_id);
 
         /* Grab the keyboard to get all input */
-        xcb_grab_keyboard(conn, false, win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+        xcb_flush(conn);
+
+        /* Try (repeatedly, if necessary) to grab the keyboard. We might not
+         * get the keyboard at the first attempt because of the keybinding
+         * still being active when started via a wm’s keybinding. */
+        xcb_grab_keyboard_cookie_t cookie;
+        xcb_grab_keyboard_reply_t *reply = NULL;
+
+        int count = 0;
+        while ((reply == NULL || reply->status != XCB_GRAB_STATUS_SUCCESS) && (count++ < 500)) {
+                cookie = xcb_grab_keyboard(conn, false, win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+                reply = xcb_grab_keyboard_reply(conn, cookie, NULL);
+                usleep(1000);
+        }
+
+        if (reply->status != XCB_GRAB_STATUS_SUCCESS) {
+                fprintf(stderr, "Could not grab keyboard, status = %d\n", reply->status);
+                exit(-1);
+        }
 
         xcb_flush(conn);
 
