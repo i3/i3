@@ -852,12 +852,11 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
 
         if ((size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE)) {
                 // TODO: Minimum size is not yet implemented
-                //LOG("Minimum size: %d (width) x %d (height)\n", size_hints.min_width, size_hints.min_height);
+                DLOG("Minimum size: %d (width) x %d (height)\n", size_hints.min_width, size_hints.min_height);
         }
 
+        bool changed = false;
         if ((size_hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)) {
-                bool changed = false;
-
                 if (size_hints.width_inc > 0 && size_hints.width_inc < 0xFFFF)
                         if (client->width_increment != size_hints.width_inc) {
                                 client->width_increment = size_hints.width_inc;
@@ -869,10 +868,8 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
                                 changed = true;
                         }
 
-                if (changed) {
-                        resize_client(conn, client);
-                        xcb_flush(conn);
-                }
+                if (changed)
+                        DLOG("resize increments changed\n");
         }
 
         int base_width = 0, base_height = 0;
@@ -884,6 +881,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
                 base_width = size_hints.base_width;
                 base_height = size_hints.base_height;
         } else if (size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE) {
+                /* TODO: is this right? icccm says not */
                 base_width = size_hints.min_width;
                 base_height = size_hints.min_height;
         }
@@ -893,10 +891,17 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
                 client->base_width = base_width;
                 client->base_height = base_height;
                 DLOG("client's base_height changed to %d\n", base_height);
+                DLOG("client's base_width changed to %d\n", base_width);
+                changed = true;
+        }
+
+        if (changed) {
                 if (client->fullscreen)
                         DLOG("Not resizing client, it is in fullscreen mode\n");
-                else
+                else {
                         resize_client(conn, client);
+                        xcb_flush(conn);
+                }
         }
 
         /* If no aspect ratio was set or if it was invalid, we ignore the hints */
