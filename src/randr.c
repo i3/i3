@@ -427,7 +427,7 @@ void randr_query_screens(xcb_connection_t *conn) {
 
         ewmh_update_workarea();
 
-        /* Just go through each workspace and associate as many screens as we can. */
+        /* Just go through each active output and associate one workspace */
         TAILQ_FOREACH(screen, &outputs, outputs) {
                 if (!screen->active || screen->current_workspace != NULL)
                         continue;
