@@ -204,7 +204,7 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
  * output 1 and you just plugged in output 1).
  *
  */
-void workspace_assign_to(Workspace *ws, Output *output) {
+void workspace_assign_to(Workspace *ws, Output *output, bool hide_it) {
         Client *client;
         bool empty = true;
         bool visible = workspace_is_visible(ws);
@@ -229,7 +229,7 @@ void workspace_assign_to(Workspace *ws, Output *output) {
         render_workspace(global_conn, output, ws);
 
         /* …unless we want to see them at the moment, we should hide that workspace */
-        if (visible)
+        if (visible && !hide_it)
                 return;
 
         workspace_unmap_clients(global_conn, ws);
@@ -269,7 +269,7 @@ void workspace_initialize(Workspace *ws, Output *output, bool recheck) {
         if (old_output != NULL && ws->output == old_output)
                 return;
 
-        workspace_assign_to(ws, ws->output);
+        workspace_assign_to(ws, ws->output, false);
 }
 
 /*

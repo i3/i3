@@ -162,6 +162,12 @@ static void initialize_output(xcb_connection_t *conn, Output *output,
         workspace->output = output;
         output->current_workspace = workspace;
 
+        /* Copy rect for the workspace */
+        memcpy(&(workspace->rect), &(output->rect), sizeof(Rect));
+
+        /* Map clients on the workspace, if any */
+        workspace_map_clients(conn, workspace);
+
         /* Create a xoutput for each output */
         Rect bar_rect = {output->rect.x,
                          output->rect.y + output->rect.height - (font->height + 6),
@@ -437,7 +443,7 @@ void randr_query_screens(xcb_connection_t *conn) {
                                 if (ws->output != output)
                                         continue;
 
-                                workspace_assign_to(ws, first);
+                                workspace_assign_to(ws, first, true);
                                 if (!needs_init)
                                         continue;
                                 initialize_output(conn, first, ws);

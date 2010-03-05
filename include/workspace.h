@@ -53,7 +53,7 @@ void workspace_show(xcb_connection_t *conn, int workspace);
  * screen 1 and you just plugged in screen 1).
  *
  */
-void workspace_assign_to(Workspace *ws, Output *screen);
+void workspace_assign_to(Workspace *ws, Output *screen, bool hide_it);
 
 /**
  * Initializes the given workspace if it is not already initialized. The given

@@ -179,6 +179,24 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
         current_row = c_ws->current_row;
         current_col = c_ws->current_col;
         DLOG("We're now on output %p\n", output);
+
+        /* While usually this function is only called when the user switches
+         * to a different output using his mouse (and thus the output is
+         * empty), it may be that the following race condition occurs:
+         * 1) the user actives a new output (say VGA1).
+         * 2) the cursor is sent to the first pixel of the new VGA1, thus
+         *    generating an enter_notify for the screen (the enter_notify
+         *    is not yet received by i3).
+         * 3) i3 requeries screen configuration and maps a workspace onto the
+         *    new output.
+         * 4) the enter_notify event arrives and c_ws is set to the new
+         *    workspace but the existing windows on the new workspace are not
+         *    focused.
+         *
+         * Therefore, we re-set the focus here to be sure it’s correct. */
+        Client *first_client = SLIST_FIRST(&(c_ws->focus_stack));
+        if (first_client != NULL)
+                set_focus(global_conn, first_client, true);
 }
 
 /*
