@@ -291,7 +291,6 @@ Workspace *get_first_workspace_for_screen(Output *output) {
 
         if (result == NULL) {
                 /* No assignment found, returning first unused workspace */
-                Workspace *ws;
                 TAILQ_FOREACH(ws, workspaces, workspaces) {
                         if (ws->output != NULL)
                                 continue;
@@ -304,7 +303,6 @@ Workspace *get_first_workspace_for_screen(Output *output) {
         if (result == NULL) {
                 DLOG("No existing free workspace found to assign, creating a new one\n");
 
-                Workspace *ws;
                 int last_ws = 0;
                 TAILQ_FOREACH(ws, workspaces, workspaces)
                         last_ws = ws->num;
