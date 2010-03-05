@@ -34,6 +34,7 @@
 #include "log.h"
 #include "ewmh.h"
 #include "manage.h"
+#include "workspace.h"
 
 static iconv_t conversion_descriptor = 0;
 struct keyvalue_table_head by_parent = TAILQ_HEAD_INITIALIZER(by_parent);
@@ -299,11 +300,16 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
                         redecorate_window(conn, current);
                         break;
                 }
-
         }
 
         SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
         SLIST_INSERT_HEAD(&(client->workspace->focus_stack), client, focus_clients);
+
+        /* Clear the urgency flag if set (necessary when i3 sets the flag, for
+         * example when automatically putting windows on the workspace of their
+         * leader) */
+        client->urgent = false;
+        workspace_update_urgent_flag(client->workspace);
 
         /* If we’re in stacking mode, this renders the container to update changes in the title
            bars and to raise the focused client */
