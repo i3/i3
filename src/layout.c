@@ -215,7 +215,7 @@ void reposition_client(xcb_connection_t *conn, Client *client) {
                 return;
 
         /* If the client is floating, we need to check if we moved it to a different workspace */
-        output = get_screen_containing(client->rect.x + (client->rect.width / 2),
+        output = get_output_containing(client->rect.x + (client->rect.width / 2),
                                        client->rect.y + (client->rect.height / 2));
         if (client->workspace->output == output)
                 return;

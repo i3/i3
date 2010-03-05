@@ -44,8 +44,10 @@ typedef xcb_randr_get_screen_resources_current_reply_t resources_reply;
 /* Stores all outputs available in your current session. */
 struct outputs_head outputs = TAILQ_HEAD_INITIALIZER(outputs);
 
+static bool randr_disabled = false;
+
 /*
- * Get a specific output by its internal X11 id. Used by randr_query_screens
+ * Get a specific output by its internal X11 id. Used by randr_query_outputs
  * to check if the output is new (only in the first scan) or if we are
  * re-scanning.
  *
@@ -78,75 +80,75 @@ Output *get_output_by_name(const char *name) {
  *
  */
 Output *get_first_output() {
-        Output *screen;
+        Output *output;
 
-        TAILQ_FOREACH(screen, &outputs, outputs) {
-                if (screen->active)
-                        return screen;
-        }
+        TAILQ_FOREACH(output, &outputs, outputs)
+                if (output->active)
+                        return output;
 
         return NULL;
 }
 
 /*
- * Looks in virtual_screens for the Output which contains coordinates x, y
+ * Returns the active (!) output which contains the coordinates x, y or NULL
+ * if there is no output which contains these coordinates.
  *
  */
-Output *get_screen_containing(int x, int y) {
-        Output *screen;
-        TAILQ_FOREACH(screen, &outputs, outputs) {
-                if (!screen->active)
+Output *get_output_containing(int x, int y) {
+        Output *output;
+        TAILQ_FOREACH(output, &outputs, outputs) {
+                if (!output->active)
                         continue;
                 DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
-                                x, y, screen->rect.x, screen->rect.y, screen->rect.width, screen->rect.height);
-                if (x >= screen->rect.x && x < (screen->rect.x + screen->rect.width) &&
-                    y >= screen->rect.y && y < (screen->rect.y + screen->rect.height))
-                        return screen;
+                                x, y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
+                if (x >= output->rect.x && x < (output->rect.x + output->rect.width) &&
+                    y >= output->rect.y && y < (output->rect.y + output->rect.height))
+                        return output;
         }
 
         return NULL;
 }
 
 /*
- * Gets the screen which is the last one in the given direction, for example the screen
- * on the most bottom when direction == D_DOWN, the screen most right when direction == D_RIGHT
- * and so on.
+ * Gets the output which is the last one in the given direction, for example
+ * the output on the most bottom when direction == D_DOWN, the output most
+ * right when direction == D_RIGHT and so on.
  *
- * This function always returns a screen.
+ * This function always returns a output.
  *
  */
-Output *get_screen_most(direction_t direction, Output *current) {
-        Output *screen, *candidate = NULL;
+Output *get_output_most(direction_t direction, Output *current) {
+        Output *output, *candidate = NULL;
         int position = 0;
-        TAILQ_FOREACH(screen, &outputs, outputs) {
-                if (!screen->active)
+        TAILQ_FOREACH(output, &outputs, outputs) {
+                if (!output->active)
                         continue;
 
                 /* Repeated calls of WIN determine the winner of the comparison */
                 #define WIN(variable, condition) \
                         if (variable condition) { \
-                                candidate = screen; \
+                                candidate = output; \
                                 position = variable; \
                         } \
                         break;
 
                 if (((direction == D_UP) || (direction == D_DOWN)) &&
-                    (current->rect.x != screen->rect.x))
+                    (current->rect.x != output->rect.x))
                         continue;
 
                 if (((direction == D_LEFT) || (direction == D_RIGHT)) &&
-                    (current->rect.y != screen->rect.y))
+                    (current->rect.y != output->rect.y))
                         continue;
 
                 switch (direction) {
                         case D_UP:
-                                WIN(screen->rect.y, <= position);
+                                WIN(output->rect.y, <= position);
                         case D_DOWN:
-                                WIN(screen->rect.y, >= position);
+                                WIN(output->rect.y, >= position);
                         case D_LEFT:
-                                WIN(screen->rect.x, <= position);
+                                WIN(output->rect.x, <= position);
                         case D_RIGHT:
-                                WIN(screen->rect.x, >= position);
+                                WIN(output->rect.x, >= position);
                 }
         }
 
@@ -186,14 +188,14 @@ static void initialize_output(xcb_connection_t *conn, Output *output,
 }
 
 /*
- * Fills virtual_screens with exactly one screen with width/height of the
- * whole X screen.
+ * Disables RandR support by creating exactly one output with the size of the
+ * X11 screen.
  *
  */
 static void disable_randr(xcb_connection_t *conn) {
         xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 
-        DLOG("RandR extension not found, disabling.\n");
+        DLOG("RandR extension unusable, disabling.\n");
 
         Output *s = scalloc(sizeof(Output));
 
@@ -204,6 +206,8 @@ static void disable_randr(xcb_connection_t *conn) {
         s->rect.height = root_screen->height_in_pixels;
 
         TAILQ_INSERT_TAIL(&outputs, s, outputs);
+
+        randr_disabled = true;
 }
 
 /*
@@ -274,7 +278,7 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
 }
 
 /*
- * Gets called by randr_query_screens() for each output. The function adds new
+ * Gets called by randr_query_outputs() for each output. The function adds new
  * outputs to the list of outputs, checks if the mode of existing outputs has
  * been changed or if an existing output has been disabled. It will then change
  * either the "changed" or the "to_be_deleted" flag of the output, if
@@ -353,8 +357,9 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
  * (Re-)queries the outputs via RandR and stores them in the list of outputs.
  *
  */
-void randr_query_screens(xcb_connection_t *conn) {
+void randr_query_outputs(xcb_connection_t *conn) {
         Workspace *ws;
+        Output *output, *other, *first;
         xcb_randr_get_screen_resources_current_cookie_t rcookie;
         resources_reply *res;
         /* timestamp of the configuration so that we get consistent replies to all
@@ -364,10 +369,15 @@ void randr_query_screens(xcb_connection_t *conn) {
         /* an output is VGA-1, LVDS-1, etc. (usually physical video outputs) */
         xcb_randr_output_t *randr_outputs;
 
+        if (randr_disabled)
+                return;
+
         /* Get screen resources (crtcs, outputs, modes) */
         rcookie = xcb_randr_get_screen_resources_current(conn, root);
-        if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL)
-                die("Could not get RandR screen resources\n");
+        if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL) {
+                disable_randr(conn);
+                return;
+        }
         cts = res->config_timestamp;
 
         int len = xcb_randr_get_screen_resources_current_outputs_length(res);
@@ -389,46 +399,47 @@ void randr_query_screens(xcb_connection_t *conn) {
         }
 
         free(res);
-        Output *screen, *oscreen;
-        /* Check for clones and reduce the mode to the lowest common mode */
-        TAILQ_FOREACH(screen, &outputs, outputs) {
-                if (!screen->active || screen->to_be_disabled)
+        /* Check for clones, disable the clones and reduce the mode to the
+         * lowest common mode */
+        TAILQ_FOREACH(output, &outputs, outputs) {
+                if (!output->active || output->to_be_disabled)
                         continue;
-                DLOG("screen %p, position (%d, %d), checking for clones\n",
-                        screen, screen->rect.x, screen->rect.y);
+                DLOG("output %p, position (%d, %d), checking for clones\n",
+                        output, output->rect.x, output->rect.y);
 
-                for (oscreen = screen;
-                     oscreen != TAILQ_END(&outputs);
-                     oscreen = TAILQ_NEXT(oscreen, outputs)) {
-                        if (oscreen == screen || !oscreen->active || oscreen->to_be_disabled)
+                for (other = output;
+                     other != TAILQ_END(&outputs);
+                     other = TAILQ_NEXT(other, outputs)) {
+                        if (other == output || !other->active || other->to_be_disabled)
                                 continue;
 
-                        if (oscreen->rect.x != screen->rect.x ||
-                            oscreen->rect.y != screen->rect.y)
+                        if (other->rect.x != output->rect.x ||
+                            other->rect.y != output->rect.y)
                                 continue;
 
-                        DLOG("screen %p has the same position, his mode = %d x %d\n",
-                                        oscreen, oscreen->rect.width, oscreen->rect.height);
-                        uint32_t width = min(oscreen->rect.width, screen->rect.width);
-                        uint32_t height = min(oscreen->rect.height, screen->rect.height);
+                        DLOG("output %p has the same position, his mode = %d x %d\n",
+                                        other, other->rect.width, other->rect.height);
+                        uint32_t width = min(other->rect.width, output->rect.width);
+                        uint32_t height = min(other->rect.height, output->rect.height);
 
-                        if (update_if_necessary(&(screen->rect.width), width) |
-                            update_if_necessary(&(screen->rect.height), height))
-                                screen->changed = true;
+                        if (update_if_necessary(&(output->rect.width), width) |
+                            update_if_necessary(&(output->rect.height), height))
+                                output->changed = true;
 
-                        update_if_necessary(&(oscreen->rect.width), width);
-                        update_if_necessary(&(oscreen->rect.height), height);
+                        update_if_necessary(&(other->rect.width), width);
+                        update_if_necessary(&(other->rect.height), height);
 
-                        DLOG("disabling screen %p (%s)\n", oscreen, oscreen->name);
-                        oscreen->to_be_disabled = true;
+                        DLOG("disabling output %p (%s)\n", other, other->name);
+                        other->to_be_disabled = true;
 
-                        DLOG("new screen mode %d x %d, oscreen mode %d x %d\n",
-                                        screen->rect.width, screen->rect.height,
-                                        oscreen->rect.width, oscreen->rect.height);
+                        DLOG("new output mode %d x %d, other mode %d x %d\n",
+                                        output->rect.width, output->rect.height,
+                                        other->rect.width, other->rect.height);
                 }
         }
 
-        Output *output, *first;
+        /* Handle outputs which have a new mode or are disabled now (either
+         * because the user disabled them or because they are clones) */
         TAILQ_FOREACH(output, &outputs, outputs) {
                 if (output->to_be_disabled) {
                         output->active = false;
@@ -467,11 +478,11 @@ void randr_query_screens(xcb_connection_t *conn) {
         ewmh_update_workarea();
 
         /* Just go through each active output and associate one workspace */
-        TAILQ_FOREACH(screen, &outputs, outputs) {
-                if (!screen->active || screen->current_workspace != NULL)
+        TAILQ_FOREACH(output, &outputs, outputs) {
+                if (!output->active || output->current_workspace != NULL)
                         continue;
-                ws = get_first_workspace_for_screen(screen);
-                initialize_output(conn, screen, ws);
+                ws = get_first_workspace_for_output(output);
+                initialize_output(conn, output, ws);
         }
 
         /* render_layout flushes */
@@ -489,7 +500,7 @@ void initialize_randr(xcb_connection_t *conn, int *event_base) {
         extreply = xcb_get_extension_data(conn, &xcb_randr_id);
         if (!extreply->present)
                 disable_randr(conn);
-        else randr_query_screens(conn);
+        else randr_query_outputs(conn);
 
         if (event_base != NULL)
                 *event_base = extreply->first_event;

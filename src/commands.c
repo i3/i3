@@ -121,17 +121,17 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         bounds.y -= bounds.height;
                 else bounds.y += bounds.height;
 
-                Output *target = get_screen_containing(bounds.x, bounds.y);
+                Output *target = get_output_containing(bounds.x, bounds.y);
                 if (target == NULL) {
                         DLOG("Target output NULL\n");
                         /* Wrap around if the target screen is out of bounds */
                         if (direction == D_RIGHT)
-                                target = get_screen_most(D_LEFT, cs);
+                                target = get_output_most(D_LEFT, cs);
                         else if (direction == D_LEFT)
-                                target = get_screen_most(D_RIGHT, cs);
+                                target = get_output_most(D_RIGHT, cs);
                         else if (direction == D_UP)
-                                target = get_screen_most(D_DOWN, cs);
-                        else target = get_screen_most(D_UP, cs);
+                                target = get_output_most(D_DOWN, cs);
+                        else target = get_output_most(D_UP, cs);
                 }
 
                 DLOG("Switching to ws %d\n", target->current_workspace + 1);
@@ -165,10 +165,10 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         DLOG("container is at %d with height %d\n", container->y, container->height);
                         Output *output;
                         int destination_y = (direction == D_UP ? (container->y - 1) : (container->y + container->height + 1));
-                        if ((output = get_screen_containing(container->x, destination_y)) == NULL) {
+                        if ((output = get_output_containing(container->x, destination_y)) == NULL) {
                                 DLOG("Wrapping screen around vertically\n");
                                 /* No screen found? Then wrap */
-                                output = get_screen_most((direction == D_UP ? D_DOWN : D_UP), container->workspace->output);
+                                output = get_output_most((direction == D_UP ? D_DOWN : D_UP), container->workspace->output);
                         }
                         t_ws = output->current_workspace;
                         new_row = (direction == D_UP ? (t_ws->rows - 1) : 0);
@@ -208,9 +208,9 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         DLOG("container is at %d with width %d\n", container->x, container->width);
                         Output *output;
                         int destination_x = (direction == D_LEFT ? (container->x - 1) : (container->x + container->width + 1));
-                        if ((output = get_screen_containing(destination_x, container->y)) == NULL) {
+                        if ((output = get_output_containing(destination_x, container->y)) == NULL) {
                                 DLOG("Wrapping screen around horizontally\n");
-                                output = get_screen_most((direction == D_LEFT ? D_RIGHT : D_LEFT), container->workspace->output);
+                                output = get_output_most((direction == D_LEFT ? D_RIGHT : D_LEFT), container->workspace->output);
                         }
                         t_ws = output->current_workspace;
                         new_col = (direction == D_LEFT ? (t_ws->cols - 1) : 0);

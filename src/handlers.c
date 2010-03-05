@@ -166,7 +166,7 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
 static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
         Output *output;
 
-        if ((output = get_screen_containing(x, y)) == NULL) {
+        if ((output = get_output_containing(x, y)) == NULL) {
                 ELOG("ERROR: No such screen\n");
                 return;
         }
@@ -457,7 +457,7 @@ int handle_screen_change(void *prophs, xcb_connection_t *conn,
                          xcb_generic_event_t *e) {
         DLOG("RandR screen change\n");
 
-        randr_query_screens(conn);
+        randr_query_outputs(conn);
 
         return 1;
 }

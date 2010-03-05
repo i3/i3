@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -38,7 +38,7 @@
 int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, int second,
                              resize_orientation_t orientation, xcb_button_press_event_t *event) {
         int new_position;
-        struct xoutput *screen = get_screen_containing(event->root_x, event->root_y);
+        struct xoutput *screen = get_output_containing(event->root_x, event->root_y);
         if (screen == NULL) {
                 ELOG("BUG: No screen found at this position (%d, %d)\n", event->root_x, event->root_y);
                 return 1;
@@ -49,8 +49,8 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
          * screens during runtime. Instead, we just use the most right and most
          * bottom Xinerama screen and use their position + width/height to get
          * the area of pixels currently in use */
-        struct xoutput *most_right = get_screen_most(D_RIGHT, screen),
-                 *most_bottom = get_screen_most(D_DOWN, screen);
+        struct xoutput *most_right = get_output_most(D_RIGHT, screen),
+                 *most_bottom = get_output_most(D_DOWN, screen);
 
         DLOG("event->event_x = %d, event->root_x = %d\n", event->event_x, event->root_x);
 

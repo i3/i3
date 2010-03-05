@@ -277,7 +277,7 @@ void workspace_initialize(Workspace *ws, Output *output, bool recheck) {
  * the preferred_output setting of every workspace (workspace assignments).
  *
  */
-Workspace *get_first_workspace_for_screen(Output *output) {
+Workspace *get_first_workspace_for_output(Output *output) {
         Workspace *result = NULL;
 
         Workspace *ws;

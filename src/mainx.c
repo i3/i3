@@ -478,7 +478,7 @@ int main(int argc, char *argv[], char *env[]) {
                 return 1;
         }
 
-        Output *screen = get_screen_containing(reply->root_x, reply->root_y);
+        Output *screen = get_output_containing(reply->root_x, reply->root_y);
         if (screen == NULL) {
                 ELOG("ERROR: No screen at %d x %d, starting on the first screen\n",
                     reply->root_x, reply->root_y);

@@ -69,7 +69,7 @@ void workspace_initialize(Workspace *ws, Output *screen, bool recheck);
  * the preferred_screen setting of every workspace (workspace assignments).
  *
  */
-Workspace *get_first_workspace_for_screen(Output *screen);
+Workspace *get_first_workspace_for_output(Output *screen);
 
 /**
  * Unmaps all clients (and stack windows) of the given workspace.

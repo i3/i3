@@ -28,7 +28,7 @@ void initialize_randr(xcb_connection_t *conn, int *event_base);
  * (Re-)queries the outputs via RandR and stores them in the list of outputs.
  *
  */
-void randr_query_screens(xcb_connection_t *conn);
+void randr_query_outputs(xcb_connection_t *conn);
 
 /**
  * Returns the first output which is active.
@@ -43,19 +43,20 @@ Output *get_first_output();
 Output *get_output_by_name(const char *name);
 
 /**
- * Looks in virtual_screens for the i3Screen which contains coordinates x, y
+ * Returns the active (!) output which contains the coordinates x, y or NULL
+ * if there is no output which contains these coordinates.
  *
  */
-Output *get_screen_containing(int x, int y);
+Output *get_output_containing(int x, int y);
 
 /**
- * Gets the screen which is the last one in the given direction, for example
- * the screen on the most bottom when direction == D_DOWN, the screen most
+ * Gets the output which is the last one in the given direction, for example
+ * the output on the most bottom when direction == D_DOWN, the output most
  * right when direction == D_RIGHT and so on.
  *
- * This function always returns a screen.
+ * This function always returns a output.
  *
  */
-Output *get_screen_most(direction_t direction, Output *current);
+Output *get_output_most(direction_t direction, Output *current);
 
 #endif
