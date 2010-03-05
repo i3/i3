@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -339,6 +339,29 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
                 preply = xcb_get_property_reply(conn, leader_cookie, NULL);
                 handle_clientleader_change(NULL, conn, 0, new->child, atoms[WM_CLIENT_LEADER], preply);
+
+                /* if WM_CLIENT_LEADER is set, we put the new window on the
+                 * same window as its leader. This might be overwritten by
+                 * assignments afterwards. */
+                if (new->leader != XCB_NONE) {
+                        DLOG("client->leader is set (to 0x%08x)\n", new->leader);
+                        Client *parent = table_get(&by_child, new->leader);
+                        if (parent != NULL && parent->container != NULL) {
+                                Workspace *t_ws = parent->workspace;
+                                new->container = t_ws->table[parent->container->col][parent->container->row];
+                                new->workspace = t_ws;
+                                old_focused = new->container->currently_focused;
+                                map_frame = workspace_is_visible(t_ws);
+                                new->urgent = true;
+                                /* This is a little tricky: we cannot use
+                                 * workspace_update_urgent_flag() because the
+                                 * new window was not yet inserted into the
+                                 * focus stack on t_ws. */
+                                t_ws->urgent = true;
+                        } else {
+                                DLOG("parent is not usable\n");
+                        }
+                }
 
                 struct Assignment *assign;
                 TAILQ_FOREACH(assign, &assignments, assignments) {
