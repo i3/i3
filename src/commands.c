@@ -1036,7 +1036,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 }
                 LOG("Switching mode for current container\n");
                 int new_mode = MODE_DEFAULT;
-                if (command[0] == 's' && CUR_CELL->mode != MODE_STACK) 
+                if (command[0] == 's' && CUR_CELL->mode != MODE_STACK)
                         new_mode = MODE_STACK;
                 if (command[0] == 'T' && CUR_CELL->mode != MODE_TABBED)
                         new_mode = MODE_TABBED;
