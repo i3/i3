@@ -270,14 +270,14 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
 /*
  * Gets called by randr_query_screens() for each output. The function adds new
  * outputs to the list of outputs, checks if the mode of existing outputs has
- * been changed or if an existing output has been disabled.
+ * been changed or if an existing output has been disabled. It will then change
+ * either the "changed" or the "to_be_deleted" flag of the output, if
+ * appropriate.
  *
  */
 static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
                           xcb_randr_get_output_info_reply_t *output,
                           xcb_timestamp_t cts, resources_reply *res) {
-        Workspace *ws;
-
         /* each CRT controller has a position in which we are interested in */
         crtc_info *crtc;
 
@@ -303,15 +303,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
                 if (!existing)
                         TAILQ_INSERT_TAIL(&outputs, new, outputs);
                 else if (new->active) {
-                        new->active = false;
-                        new->current_workspace = NULL;
-                        DLOG("Output %s disabled (no CRTC)\n", new->name);
-                        TAILQ_FOREACH(ws, workspaces, workspaces) {
-                                if (ws->output != new)
-                                        continue;
-
-                                workspace_assign_to(ws, get_first_output());
-                        }
+                        new->to_be_disabled = true;
 
                 }
                 free(output);
@@ -348,7 +340,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
                 return;
         }
 
-        output_change_mode(conn, new);
+        new->changed = true;
 }
 
 /*
@@ -356,6 +348,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
  *
  */
 void randr_query_screens(xcb_connection_t *conn) {
+        Workspace *ws;
         xcb_randr_get_screen_resources_current_cookie_t rcookie;
         resources_reply *res;
         /* timestamp of the configuration so that we get consistent replies to all
@@ -380,8 +373,9 @@ void randr_query_screens(xcb_connection_t *conn) {
                 ocookie[i] = xcb_randr_get_output_info(conn, randr_outputs[i], cts);
 
         /* Loop through all outputs available for this X11 screen */
-        xcb_randr_get_output_info_reply_t *output;
         for (int i = 0; i < len; i++) {
+                xcb_randr_get_output_info_reply_t *output;
+
                 if ((output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL)) == NULL)
                         continue;
 
@@ -390,15 +384,17 @@ void randr_query_screens(xcb_connection_t *conn) {
 
         free(res);
         Output *screen, *oscreen;
-        /* Check for clones and reduce the mode  to the lowest common mode */
+        /* Check for clones and reduce the mode to the lowest common mode */
         TAILQ_FOREACH(screen, &outputs, outputs) {
-                if (!screen->active)
+                if (!screen->active || screen->to_be_disabled)
                         continue;
                 DLOG("screen %p, position (%d, %d), checking for clones\n",
                         screen, screen->rect.x, screen->rect.y);
 
-                TAILQ_FOREACH(oscreen, &outputs, outputs) {
-                        if (oscreen == screen || !oscreen->active)
+                for (oscreen = screen;
+                     oscreen != TAILQ_END(&outputs);
+                     oscreen = TAILQ_NEXT(oscreen, outputs)) {
+                        if (oscreen == screen || !oscreen->active || oscreen->to_be_disabled)
                                 continue;
 
                         if (oscreen->rect.x != screen->rect.x ||
@@ -412,16 +408,53 @@ void randr_query_screens(xcb_connection_t *conn) {
 
                         if (update_if_necessary(&(screen->rect.width), width) |
                             update_if_necessary(&(screen->rect.height), height))
-                                output_change_mode(conn, screen);
+                                screen->changed = true;
 
-                        if (update_if_necessary(&(oscreen->rect.width), width) |
-                            update_if_necessary(&(oscreen->rect.height), height))
-                                output_change_mode(conn, oscreen);
+                        update_if_necessary(&(oscreen->rect.width), width);
+                        update_if_necessary(&(oscreen->rect.height), height);
 
+                        DLOG("disabling screen %p (%s)\n", oscreen, oscreen->name);
+                        oscreen->to_be_disabled = true;
 
                         DLOG("new screen mode %d x %d, oscreen mode %d x %d\n",
                                         screen->rect.width, screen->rect.height,
                                         oscreen->rect.width, oscreen->rect.height);
+                }
+        }
+
+        Output *output, *first;
+        TAILQ_FOREACH(output, &outputs, outputs) {
+                if (output->to_be_disabled) {
+                        output->active = false;
+                        DLOG("Output %s disabled, re-assigning workspaces/docks\n", output->name);
+
+                        if ((first = get_first_output()) == NULL)
+                                die("No usable outputs available\n");
+
+                        bool needs_init = (first->current_workspace == NULL);
+
+                        TAILQ_FOREACH(ws, workspaces, workspaces) {
+                                if (ws->output != output)
+                                        continue;
+
+                                workspace_assign_to(ws, first);
+                                if (!needs_init)
+                                        continue;
+                                initialize_output(conn, first, ws);
+                                needs_init = false;
+                        }
+
+                        Client *dock;
+                        while (!SLIST_EMPTY(&(output->dock_clients))) {
+                                dock = SLIST_FIRST(&(output->dock_clients));
+                                SLIST_INSERT_HEAD(&(first->dock_clients), dock, dock_clients);
+                                SLIST_REMOVE_HEAD(&(output->dock_clients), dock_clients);
+                        }
+                        output->current_workspace = NULL;
+                        output->to_be_disabled = false;
+                } else if (output->changed) {
+                        output_change_mode(conn, output);
+                        output->changed = false;
                 }
         }
 
@@ -431,7 +464,7 @@ void randr_query_screens(xcb_connection_t *conn) {
         TAILQ_FOREACH(screen, &outputs, outputs) {
                 if (!screen->active || screen->current_workspace != NULL)
                         continue;
-                Workspace *ws = get_first_workspace_for_screen(screen);
+                ws = get_first_workspace_for_screen(screen);
                 initialize_output(conn, screen, ws);
         }
 

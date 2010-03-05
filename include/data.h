@@ -513,6 +513,11 @@ struct xoutput {
          * mode) */
         bool active;
 
+        /** Internal flags, necessary for querying RandR screens (happens in
+         * two stages) */
+        bool changed;
+        bool to_be_disabled;
+
         /** Current workspace selected on this virtual screen */
         Workspace *current_workspace;
 
