@@ -1060,7 +1060,7 @@ int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state
                 return 1;
 
         xcb_window_t *leader = xcb_get_property_value(prop);
-        if (leader == NULL || *leader == 0)
+        if (leader == NULL)
                 return 1;
 
         DLOG("Client leader changed to %08x\n", *leader);
