@@ -460,7 +460,8 @@ void render_container(xcb_connection_t *conn, Container *container) {
                 }
 
                 /* Prepare the pixmap for usage */
-                cached_pixmap_prepare(conn, &(stack_win->pixmap));
+                if (num_clients != 1)
+                        cached_pixmap_prepare(conn, &(stack_win->pixmap));
 
                 int current_row = 0, current_col = 0;
                 int wrap = 0;
