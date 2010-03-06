@@ -529,8 +529,10 @@ void render_container(xcb_connection_t *conn, Container *container) {
                                 }
                                 offset_x = current_client++ * size_each;
                         }
-                        decorate_window(conn, client, stack_win->pixmap.id, stack_win->pixmap.gc,
-                                        offset_x, offset_y);
+                        if (stack_win->pixmap.id == XCB_NONE)
+                                continue;
+                        decorate_window(conn, client, stack_win->pixmap.id,
+                                        stack_win->pixmap.gc, offset_x, offset_y);
                 }
 
                 /* Check if we need to fill one column because of an uneven
@@ -557,6 +559,8 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         }
                 }
 
+                if (stack_win->pixmap.id == XCB_NONE)
+                        return;
                 xcb_copy_area(conn, stack_win->pixmap.id, stack_win->window, stack_win->pixmap.gc,
                               0, 0, 0, 0, stack_win->rect.width, stack_win->rect.height);
         }
