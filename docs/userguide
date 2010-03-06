@@ -173,16 +173,35 @@ you can set specific applications to start on a specific workspace, you can
 automatically start applications, you can change the colors of i3 or bind
 your keys to do useful stuff.
 
-To change the configuration of i3, copy +/etc/i3/config+ to +~/.i3/config+
-and edit it with a text editor.
+To change the configuration of i3, copy +/etc/i3/config+ to +\~/.i3/config+
+(or +~/.config/i3/config+ if you like the XDG directory scheme) and edit it
+with a text editor.
 
-=== General configuration
+=== Comments
 
-font::
-	Specifies the default font you want i3 to use. Use an X core font
-	descriptor here, like
-	+-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1+. You can
-	use +xfontsel(1)+ to pick one.
+It is possible and recommended to use comments in your configuration file to
+properly document your setup for later reference. Comments are started with
+a # and can only be used at the beginning of a line, like this:
+
+*Examples*:
+-------------------
+# This is a comment
+-------------------
+
+=== Fonts
+
+i3 uses X core fonts (not Xft) for rendering window titles and the internal
+workspace bar. You can use +xfontsel(1)+ to generate such a font description.
+
+*Syntax*:
+------------------------------
+font <X core font description>
+------------------------------
+
+*Examples*:
+--------------------------------------------------------------
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+--------------------------------------------------------------
 
 === Keyboard bindings
 
