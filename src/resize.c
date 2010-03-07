@@ -31,14 +31,52 @@
 #include "log.h"
 
 /*
+ * This is an ugly data structure which we need because there is no standard
+ * way of having nested functions (only available as a gcc extension at the
+ * moment, clang doesn’t support it) or blocks (only available as a clang
+ * extension and only on Mac OS X systems at the moment).
+ *
+ */
+struct callback_params {
+        resize_orientation_t orientation;
+        Output *screen;
+        xcb_window_t helpwin;
+        uint32_t *new_position;
+};
+
+DRAGGING_CB(resize_callback) {
+        struct callback_params *params = extra;
+        Output *screen = params->screen;
+        DLOG("new x = %d, y = %d\n", new_x, new_y);
+        if (params->orientation == O_VERTICAL) {
+                /* Check if the new coordinates are within screen boundaries */
+                if (new_x > (screen->rect.x + screen->rect.width - 25) ||
+                    new_x < (screen->rect.x + 25))
+                        return;
+
+                *(params->new_position) = new_x;
+                xcb_configure_window(conn, params->helpwin, XCB_CONFIG_WINDOW_X, params->new_position);
+        } else {
+                if (new_y > (screen->rect.y + screen->rect.height - 25) ||
+                    new_y < (screen->rect.y + 25))
+                        return;
+
+                *(params->new_position) = new_y;
+                xcb_configure_window(conn, params->helpwin, XCB_CONFIG_WINDOW_Y, params->new_position);
+        }
+
+        xcb_flush(conn);
+}
+
+/*
  * Renders the resize window between the first/second container and resizes
  * the table column/row.
  *
  */
 int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, int second,
                              resize_orientation_t orientation, xcb_button_press_event_t *event) {
-        int new_position;
-        struct xoutput *screen = get_output_containing(event->root_x, event->root_y);
+        uint32_t new_position;
+        Output *screen = get_output_containing(event->root_x, event->root_y);
         if (screen == NULL) {
                 ELOG("BUG: No screen found at this position (%d, %d)\n", event->root_x, event->root_y);
                 return 1;
@@ -49,8 +87,8 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
          * screens during runtime. Instead, we just use the most right and most
          * bottom Xinerama screen and use their position + width/height to get
          * the area of pixels currently in use */
-        struct xoutput *most_right = get_output_most(D_RIGHT, screen),
-                 *most_bottom = get_output_most(D_DOWN, screen);
+        Output *most_right = get_output_most(D_RIGHT, screen),
+               *most_bottom = get_output_most(D_DOWN, screen);
 
         DLOG("event->event_x = %d, event->root_x = %d\n", event->event_x, event->root_x);
 
@@ -100,29 +138,9 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
 
         xcb_flush(conn);
 
-        void resize_callback(Rect *old_rect, uint32_t new_x, uint32_t new_y) {
-                DLOG("new x = %d, y = %d\n", new_x, new_y);
-                if (orientation == O_VERTICAL) {
-                        /* Check if the new coordinates are within screen boundaries */
-                        if (new_x > (screen->rect.x + screen->rect.width - 25) ||
-                            new_x < (screen->rect.x + 25))
-                                return;
+        struct callback_params params = { orientation, screen, helpwin, &new_position };
 
-                        values[0] = new_position = new_x;
-                        xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_X, values);
-                } else {
-                        if (new_y > (screen->rect.y + screen->rect.height - 25) ||
-                            new_y < (screen->rect.y + 25))
-                                return;
-
-                        values[0] = new_position = new_y;
-                        xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_Y, values);
-                }
-
-                xcb_flush(conn);
-        }
-
-        drag_pointer(conn, NULL, event, grabwin, BORDER_TOP, resize_callback);
+        drag_pointer(conn, NULL, event, grabwin, BORDER_TOP, resize_callback, &params);
 
         xcb_destroy_window(conn, helpwin);
         xcb_destroy_window(conn, grabwin);

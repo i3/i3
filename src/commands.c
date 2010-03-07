@@ -89,12 +89,13 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
         Workspace *t_ws = c_ws;
 
         /* Makes sure new_col and new_row are within bounds of the new workspace */
-        void check_colrow_boundaries() {
-                if (new_col >= t_ws->cols)
-                        new_col = (t_ws->cols - 1);
-                if (new_row >= t_ws->rows)
-                        new_row = (t_ws->rows - 1);
-        }
+#define CHECK_COLROW_BOUNDARIES \
+        do { \
+                if (new_col >= t_ws->cols) \
+                        new_col = (t_ws->cols - 1); \
+                if (new_row >= t_ws->rows) \
+                        new_row = (t_ws->rows - 1); \
+        } while (0)
 
         /* There always is a container. If not, current_col or current_row is wrong */
         assert(container != NULL);
@@ -174,7 +175,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         new_row = (direction == D_UP ? (t_ws->rows - 1) : 0);
                 }
 
-                check_colrow_boundaries();
+                CHECK_COLROW_BOUNDARIES;
 
                 DLOG("new_col = %d, new_row = %d\n", new_col, new_row);
                 if (t_ws->table[new_col][new_row]->currently_focused == NULL) {
@@ -216,7 +217,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                         new_col = (direction == D_LEFT ? (t_ws->cols - 1) : 0);
                 }
 
-                check_colrow_boundaries();
+                CHECK_COLROW_BOUNDARIES;
 
                 DLOG("new_col = %d, new_row = %d\n", new_col, new_row);
                 if (t_ws->table[new_col][new_row]->currently_focused == NULL) {
@@ -235,7 +236,7 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                 return;
         }
 
-        check_colrow_boundaries();
+        CHECK_COLROW_BOUNDARIES;
 
         if (t_ws->table[new_col][new_row]->currently_focused != NULL)
                 set_focus(conn, t_ws->table[new_col][new_row]->currently_focused, true);

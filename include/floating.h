@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -12,7 +12,13 @@
 #define _FLOATING_H
 
 /** Callback for dragging */
-typedef void(*callback_t)(Rect*, uint32_t, uint32_t);
+typedef void(*callback_t)(xcb_connection_t*, Client*, Rect*, uint32_t, uint32_t, void*);
+
+/** Macro to create a callback function for dragging */
+#define DRAGGING_CB(name) \
+        static void name(xcb_connection_t *conn, Client *client, \
+                         Rect *old_rect, uint32_t new_x, uint32_t new_y, \
+                         void *extra)
 
 /** On which border was the dragging initiated? */
 typedef enum { BORDER_LEFT, BORDER_RIGHT, BORDER_TOP, BORDER_BOTTOM} border_t;
@@ -97,6 +103,7 @@ void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace);
  *
  */
 void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event,
-                  xcb_window_t confine_to, border_t border, callback_t callback);
+                  xcb_window_t confine_to, border_t border, callback_t callback,
+                  void *extra);
 
 #endif

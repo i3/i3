@@ -7,7 +7,9 @@ VERSION:=$(shell git describe --tags --abbrev=0)
 CFLAGS += -std=c99
 CFLAGS += -pipe
 CFLAGS += -Wall
-CFLAGS += -Wunused
+# unused-function, unused-label, unused-variable are turned on by -Wall
+# We don’t want unused-parameter because of the use of many callbacks
+CFLAGS += -Wunused-value
 CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include
 CFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
