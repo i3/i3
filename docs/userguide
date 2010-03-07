@@ -7,7 +7,25 @@ This document contains all information you need to configuring and using the i3
 window manager. If it does not, please contact me on IRC, Jabber or E-Mail and
 I’ll help you out.
 
-For a complete listing of the default keybindings, please see the manpage.
+== Default keybindings
+
+For the "too long; didn’t read" people, here comes an overview of the default
+keybindings (click to see the full size image):
+
+*Keys to use with Mod1 (alt):*
+
+image:keyboard-layer1.png["Keys to use with Mod1 (alt)",width=600,link="keyboard-layer1.png"]
+
+*Keys to use with Shift+Mod1:*
+
+image:keyboard-layer2.png["Keys to use with Shift+Mod1",width=600,link="keyboard-layer2.png"]
+
+As i3 uses keycodes in the default configuration, it does not mapper which
+layout you actually use. The key positions are what matters (of course you can
+also use keysymbols, see below).
+
+The red keys are the modifiers you need to press (by default, you may have
+changed which keys are which modifier), the blue keys are your homerow.
 
 == Using i3
 
