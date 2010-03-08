@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -155,14 +155,19 @@ bool client_matches_class_name(Client *client, char *to_class, char *to_title,
  */
 void client_enter_fullscreen(xcb_connection_t *conn, Client *client, bool global) {
         Workspace *workspace;
+        Output *output;
         Rect r;
 
         if (global) {
-                TAILQ_FOREACH(workspace, workspaces, workspaces) {
-                        if (workspace->fullscreen_client == NULL && workspace->fullscreen_client != client)
+                TAILQ_FOREACH(output, &outputs, outputs) {
+                        if (!output->active)
                                 continue;
 
-                        LOG("Not entering global fullscreen mode, there already is a fullscreen client.\n");
+                        if (output->current_workspace->fullscreen_client == NULL)
+                                continue;
+
+                        LOG("Not entering global fullscreen mode, there already "
+                            "is a fullscreen client on output %s.\n", output->name);
                         return;
                 }
 
@@ -172,19 +177,19 @@ void client_enter_fullscreen(xcb_connection_t *conn, Client *client, bool global
                 /* Set fullscreen_client for each active workspace.
                  * Expand the rectangle to contain all outputs. */
                 TAILQ_FOREACH(output, &outputs, outputs) {
-                        if(!output->active)
+                        if (!output->active)
                                 continue;
 
                         output->current_workspace->fullscreen_client = client;
 
                         /* Temporarily abuse width/heigth as coordinates of the lower right corner */
-                        if(r.x > output->rect.x)
+                        if (r.x > output->rect.x)
                                 r.x = output->rect.x;
-                        if(r.y > output->rect.y)
+                        if (r.y > output->rect.y)
                                 r.y = output->rect.y;
-                        if(r.x + r.width < output->rect.x + output->rect.width)
+                        if (r.x + r.width < output->rect.x + output->rect.width)
                                 r.width = output->rect.x + output->rect.width;
-                        if(r.y + r.height < output->rect.y + output->rect.height)
+                        if (r.y + r.height < output->rect.y + output->rect.height)
                                 r.height = output->rect.y + output->rect.height;
                 }
 
