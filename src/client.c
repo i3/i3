@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
@@ -152,20 +153,62 @@ bool client_matches_class_name(Client *client, char *to_class, char *to_title,
  * and when moving a fullscreen client to another screen.
  *
  */
-void client_enter_fullscreen(xcb_connection_t *conn, Client *client) {
-        Workspace *workspace = client->workspace;
+void client_enter_fullscreen(xcb_connection_t *conn, Client *client, bool global) {
+        Workspace *workspace;
+        Rect r;
 
-        if (workspace->fullscreen_client != NULL) {
-                LOG("Not entering fullscreen mode, there already is a fullscreen client.\n");
-                return;
+        if (global) {
+                TAILQ_FOREACH(workspace, workspaces, workspaces) {
+                        if (workspace->fullscreen_client == NULL && workspace->fullscreen_client != client)
+                                continue;
+
+                        LOG("Not entering global fullscreen mode, there already is a fullscreen client.\n");
+                        return;
+                }
+
+                r = (Rect) { UINT_MAX, UINT_MAX, 0,0 };
+                Output *output;
+
+                /* Set fullscreen_client for each active workspace.
+                 * Expand the rectangle to contain all outputs. */
+                TAILQ_FOREACH(output, &outputs, outputs) {
+                        if(!output->active)
+                                continue;
+
+                        output->current_workspace->fullscreen_client = client;
+
+                        /* Temporarily abuse width/heigth as coordinates of the lower right corner */
+                        if(r.x > output->rect.x)
+                                r.x = output->rect.x;
+                        if(r.y > output->rect.y)
+                                r.y = output->rect.y;
+                        if(r.x + r.width < output->rect.x + output->rect.width)
+                                r.width = output->rect.x + output->rect.width;
+                        if(r.y + r.height < output->rect.y + output->rect.height)
+                                r.height = output->rect.y + output->rect.height;
+                }
+
+                /* Putting them back to their original meaning */
+                r.height -= r.x;
+                r.width -= r.y;
+
+                LOG("Entering global fullscreen mode...\n");
+        } else {
+                workspace = client->workspace;
+                if (workspace->fullscreen_client != NULL && workspace->fullscreen_client != client) {
+                        LOG("Not entering fullscreen mode, there already is a fullscreen client.\n");
+                        return;
+                }
+
+                workspace->fullscreen_client = client;
+                r = workspace->rect;
+
+                LOG("Entering fullscreen mode...\n");
         }
 
         client->fullscreen = true;
-        workspace->fullscreen_client = client;
-        LOG("Entering fullscreen mode...\n");
-        /* We just entered fullscreen mode, let’s configure the window */
-        Rect r = workspace->rect;
 
+        /* We just entered fullscreen mode, let’s configure the window */
         DLOG("child itself will be at %dx%d with size %dx%d\n",
                         r.x, r.y, r.width, r.height);
 
@@ -186,25 +229,17 @@ void client_enter_fullscreen(xcb_connection_t *conn, Client *client) {
 }
 
 /*
- * Toggles fullscreen mode for the given client. It updates the data structures and
- * reconfigures (= resizes/moves) the client and its frame to the full size of the
- * screen. When leaving fullscreen, re-rendering the layout is forced.
+ * Leaves fullscreen mode for the current client. This is called by toggle_fullscreen.
  *
  */
-void client_toggle_fullscreen(xcb_connection_t *conn, Client *client) {
-        /* dock clients cannot enter fullscreen mode */
-        assert(!client->dock);
-
-        Workspace *workspace = client->workspace;
-
-        if (!client->fullscreen) {
-                client_enter_fullscreen(conn, client);
-                return;
-        }
-
+void client_leave_fullscreen(xcb_connection_t *conn, Client *client) {
         LOG("leaving fullscreen mode\n");
         client->fullscreen = false;
-        workspace->fullscreen_client = NULL;
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces)
+                if (ws->fullscreen_client == client)
+                        ws->fullscreen_client = NULL;
+
         if (client_is_floating(client)) {
                 /* For floating clients it’s enough if we just reconfigure that window (in fact,
                  * re-rendering the layout will not update the client.) */
@@ -223,6 +258,38 @@ void client_toggle_fullscreen(xcb_connection_t *conn, Client *client) {
         }
 
         xcb_flush(conn);
+}
+
+/*
+ * Toggles fullscreen mode for the given client. It updates the data structures and
+ * reconfigures (= resizes/moves) the client and its frame to the full size of the
+ * screen. When leaving fullscreen, re-rendering the layout is forced.
+ *
+ */
+void client_toggle_fullscreen(xcb_connection_t *conn, Client *client) {
+        /* dock clients cannot enter fullscreen mode */
+        assert(!client->dock);
+
+        if (!client->fullscreen) {
+                client_enter_fullscreen(conn, client, false);
+        } else {
+                client_leave_fullscreen(conn, client);
+        }
+}
+
+/*
+ * Like client_toggle_fullscreen(), but putting it in global fullscreen-mode.
+ *
+ */
+void client_toggle_fullscreen_global(xcb_connection_t *conn, Client *client) {
+        /* dock clients cannot enter fullscreen mode */
+        assert(!client->dock);
+
+        if (!client->fullscreen) {
+                client_enter_fullscreen(conn, client, true);
+        } else {
+                client_leave_fullscreen(conn, client);
+        }
 }
 
 /*

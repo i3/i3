@@ -144,6 +144,12 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
                 if ((old_client != NULL) && !old_client->dock)
                         redecorate_window(conn, old_client);
                 else xcb_flush(conn);
+
+                /* We need to check, if a global fullscreen-client is blocking the t_ws and if
+                 * necessary switch that to local fullscreen */
+                Client* client = c_ws->fullscreen_client;
+                if (client != NULL && client->workspace != c_ws)
+                        client_enter_fullscreen(conn, client, false);
         }
 
         /* Check if we need to change something or if we’re already there */

@@ -629,7 +629,7 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
         } else {
                 if (current_client->fullscreen) {
                         DLOG("Calling client_enter_fullscreen again\n");
-                        client_enter_fullscreen(conn, current_client);
+                        client_enter_fullscreen(conn, current_client, false);
                 }
         }
 
@@ -1021,11 +1021,14 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                 return;
         }
 
-        /* Is it 'f' for fullscreen? */
+        /* Is it 'f' for fullscreen, or 'fg' for fullscreen_global? */
         if (command[0] == 'f') {
                 if (last_focused == NULL)
                         return;
-                client_toggle_fullscreen(conn, last_focused);
+                if (command[1] == 'g')
+                        client_toggle_fullscreen_global(conn, last_focused);
+                else
+                        client_toggle_fullscreen(conn, last_focused);
                 return;
         }
 

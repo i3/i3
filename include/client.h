@@ -51,7 +51,13 @@ bool client_matches_class_name(Client *client, char *to_class, char *to_title,
  * and when moving a fullscreen client to another screen.
  *
  */
-void client_enter_fullscreen(xcb_connection_t *conn, Client *client);
+void client_enter_fullscreen(xcb_connection_t *conn, Client *client, bool global);
+
+/**
+ * Leaves fullscreen mode for the given client. This is called by toggle_fullscreen.
+ *
+ */
+void client_leave_fullscreen(xcb_connection_t *conn, Client *client);
 
 /**
  * Toggles fullscreen mode for the given client. It updates the data
@@ -61,6 +67,12 @@ void client_enter_fullscreen(xcb_connection_t *conn, Client *client);
  *
  */
 void client_toggle_fullscreen(xcb_connection_t *conn, Client *client);
+
+/**
+ * Like client_toggle_fullscreen(), but putting it in global fullscreen-mode.
+ *
+ */
+void client_toggle_fullscreen_global(xcb_connection_t *conn, Client *client);
 
 /**
  * Sets the position of the given client in the X stack to the highest (tiling

@@ -86,6 +86,9 @@ image:modes.png[Container modes]
 To display a window fullscreen or to go out of fullscreen mode again, press
 +Mod1+f+.
 
+There is also a global fullscreen mode in i3 in which the client will use all
+available outputs. To use it, or to get out of it again, press +Mod1+Shift+f+.
+
 === Opening other applications
 
 Aside from opening applicatios from a terminal, you can also use the handy
@@ -515,7 +518,8 @@ focus_follows_mouse no
 
 To change the layout of the current container to stacking, use +s+, for default
 use +d+ and for tabbed, use +T+. To make the current client (!) fullscreen,
-use +f+, to make it floating (or tiling again) use +t+:
+use +f+, to make it spanning all outputs, use +fg+, to make it floating (or
+tiling again) use +t+:
 
 *Examples*:
 --------------
@@ -525,6 +529,9 @@ bindsym Mod1+w T
 
 # Toggle fullscreen
 bindsym Mod1+f f
+
+# Toggle global fullscreen
+bindsym Mod1+Shift+f fg
 
 # Toggle floating/tiling
 bindsym Mod1+t t
