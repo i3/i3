@@ -37,6 +37,7 @@ LDFLAGS += -lxcb-keysyms
 LDFLAGS += -lxcb-atom
 LDFLAGS += -lxcb-aux
 LDFLAGS += -lxcb-icccm
+LDFLAGS += -lxcb-xinerama
 LDFLAGS += -lxcb-randr
 LDFLAGS += -lxcb
 LDFLAGS += -lX11

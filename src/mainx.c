@@ -45,6 +45,7 @@
 #include "util.h"
 #include "xcb.h"
 #include "randr.h"
+#include "xinerama.h"
 #include "manage.h"
 #include "ipc.h"
 #include "log.h"
@@ -150,6 +151,7 @@ int main(int argc, char *argv[], char *env[]) {
         char *override_configpath = NULL;
         bool autostart = true;
         bool only_check_config = false;
+        bool force_xinerama = false;
         xcb_connection_t *conn;
         xcb_property_handlers_t prophs;
         xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
@@ -158,6 +160,7 @@ int main(int argc, char *argv[], char *env[]) {
                 {"config", required_argument, 0, 'c'},
                 {"version", no_argument, 0, 'v'},
                 {"help", no_argument, 0, 'h'},
+                {"force-xinerama", no_argument, 0, 0},
                 {0, 0, 0, 0}
         };
         int option_index = 0;
@@ -196,6 +199,17 @@ int main(int argc, char *argv[], char *env[]) {
                         case 'l':
                                 /* DEPRECATED, ignored for the next 3 versions (3.e, 3.f, 3.g) */
                                 break;
+                        case 0:
+                                if (strcmp(long_options[option_index].name, "force-xinerama") == 0) {
+                                        force_xinerama = true;
+                                        ELOG("Using Xinerama instead of RandR. This option should be "
+                                             "avoided at all cost because it does not refresh the list "
+                                             "of screens, so you cannot configure displays at runtime. "
+                                             "Please check if your driver really does not support RandR "
+                                             "and disable this option as soon as you can.\n");
+                                        break;
+                                }
+                                /* fall-through */
                         default:
                                 fprintf(stderr, "Usage: %s [-c configfile] [-d loglevel] [-a] [-v] [-V] [-C]\n", argv[0]);
                                 fprintf(stderr, "\n");
@@ -205,6 +219,9 @@ int main(int argc, char *argv[], char *env[]) {
                                 fprintf(stderr, "-d <loglevel>: enable debug loglevel <loglevel>\n");
                                 fprintf(stderr, "-c <configfile>: use the provided configfile instead\n");
                                 fprintf(stderr, "-C: check configuration file and exit\n");
+                                fprintf(stderr, "--force-xinerama: Use Xinerama instead of RandR. This "
+                                                "option should only be used if you are stuck with the "
+                                                "nvidia closed source driver which does not support RandR.\n");
                                 exit(EXIT_FAILURE);
                 }
         }
@@ -460,14 +477,18 @@ int main(int argc, char *argv[], char *env[]) {
 
         grab_all_keys(conn);
 
-        DLOG("Checking for XRandR...\n");
         int randr_base;
-        initialize_randr(conn, &randr_base);
+        if (force_xinerama) {
+                initialize_xinerama(conn);
+        } else {
+                DLOG("Checking for XRandR...\n");
+                initialize_randr(conn, &randr_base);
 
-        xcb_event_set_handler(&evenths,
-                              randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY,
-                              handle_screen_change,
-                              NULL);
+                xcb_event_set_handler(&evenths,
+                                      randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY,
+                                      handle_screen_change,
+                                      NULL);
+        }
 
         xcb_flush(conn);
 

@@ -157,8 +157,11 @@ Output *get_output_most(direction_t direction, Output *current) {
         return candidate;
 }
 
-static void initialize_output(xcb_connection_t *conn, Output *output,
-                              Workspace *workspace) {
+/*
+ * Initializes the specified output, assigning the specified workspace to it.
+ *
+ */
+void initialize_output(xcb_connection_t *conn, Output *output, Workspace *workspace) {
         i3Font *font = load_font(conn, config.font);
 
         workspace->output = output;
@@ -192,7 +195,7 @@ static void initialize_output(xcb_connection_t *conn, Output *output,
  * X11 screen.
  *
  */
-static void disable_randr(xcb_connection_t *conn) {
+void disable_randr(xcb_connection_t *conn) {
         xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 
         DLOG("RandR extension unusable, disabling.\n");

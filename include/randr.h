@@ -25,6 +25,19 @@ extern struct outputs_head outputs;
 void initialize_randr(xcb_connection_t *conn, int *event_base);
 
 /**
+ * Disables RandR support by creating exactly one output with the size of the
+ * X11 screen.
+ *
+ */
+void disable_randr(xcb_connection_t *conn);
+
+/**
+ * Initializes the specified output, assigning the specified workspace to it.
+ *
+ */
+void initialize_output(xcb_connection_t *conn, Output *output, Workspace *workspace);
+
+/**
  * (Re-)queries the outputs via RandR and stores them in the list of outputs.
  *
  */
