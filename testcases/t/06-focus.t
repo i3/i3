@@ -4,7 +4,7 @@
 # the workspace to be empty).
 # TODO: skip it by default?
 
-use Test::More tests => 8;
+use Test::More tests => 14;
 use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
@@ -75,5 +75,51 @@ is($focus, $bottom->id, "Bottom window focused (wrapping to the top works)");
 
 $focus = focus_after("j");
 is($focus, $top->id, "Top window focused (wrapping to the bottom works)");
+
+###############################################
+# Test focus with empty containers and colspan
+###############################################
+
+# Switch to the 10. workspace
+$sock->write(i3test::format_ipc_command("10"));
+sleep 0.25;
+
+$top = i3test::open_standard_window($x);
+$bottom = i3test::open_standard_window($x);
+sleep 0.25;
+
+$focus = focus_after("mj");
+$focus = focus_after("mh");
+$focus = focus_after("k");
+is($focus, $bottom->id, "Selecting top window without snapping doesn't work");
+
+$focus = focus_after("sl");
+is($focus, $bottom->id, "Bottom window focused");
+
+$focus = focus_after("k");
+is($focus, $top->id, "Top window focused");
+
+# Same thing, but left/right instead of top/bottom
+
+# Switch to the 11. workspace
+$sock->write(i3test::format_ipc_command("11"));
+sleep 0.25;
+
+my $left = i3test::open_standard_window($x);
+my $right = i3test::open_standard_window($x);
+sleep 0.25;
+
+$focus = focus_after("ml");
+$focus = focus_after("h");
+$focus = focus_after("mk");
+$focus = focus_after("l");
+is($focus, $left->id, "Selecting right window without snapping doesn't work");
+
+$focus = focus_after("sj");
+is($focus, $left->id, "left window focused");
+
+$focus = focus_after("l");
+is($focus, $right->id, "right window focused");
+
 
 diag( "Testing i3, Perl $], $^X" );

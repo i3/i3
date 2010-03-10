@@ -185,9 +185,26 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                                         continue;
 
                                 new_col = cols;
+                                DLOG("Fixed it to new col %d\n", new_col);
                                 break;
                         }
-                        DLOG("Fixed it to new col %d\n", new_col);
+                }
+
+                if (t_ws->table[new_col][new_row]->currently_focused == NULL) {
+                        DLOG("Cell still empty, checking for full cols above spanned width...\n");
+                        DLOG("new_col = %d\n", new_col);
+                        DLOG("colspan = %d\n", container->colspan);
+                        for (int cols = new_col;
+                             cols < container->col + container->colspan;
+                             cols += t_ws->table[cols][new_row]->colspan) {
+                                DLOG("candidate: new_row = %d, cols = %d\n", new_row, cols);
+                                if (t_ws->table[cols][new_row]->currently_focused == NULL)
+                                        continue;
+
+                                new_col = cols;
+                                DLOG("Fixed it to new col %d\n", new_col);
+                                break;
+                        }
                 }
         } else if (direction == D_LEFT || direction == D_RIGHT) {
                 if (direction == D_RIGHT && cell_exists(t_ws, current_col+1, current_row))
@@ -227,10 +244,28 @@ static void focus_thing(xcb_connection_t *conn, direction_t direction, thing_t t
                                         continue;
 
                                 new_row = rows;
+                                DLOG("Fixed it to new row %d\n", new_row);
                                 break;
                         }
-                        DLOG("Fixed it to new row %d\n", new_row);
                 }
+
+                if (t_ws->table[new_col][new_row]->currently_focused == NULL) {
+                        DLOG("Cell still empty, checking for full cols near full spanned height...\n");
+                        DLOG("new_row = %d\n", new_row);
+                        DLOG("rowspan = %d\n", container->rowspan);
+                        for (int rows = new_row;
+                             rows < container->row + container->rowspan;
+                             rows += t_ws->table[new_col][rows]->rowspan) {
+                                DLOG("candidate: new_col = %d, rows = %d\n", new_col, rows);
+                                if (t_ws->table[new_col][rows]->currently_focused == NULL)
+                                        continue;
+
+                                new_row = rows;
+                                DLOG("Fixed it to new col %d\n", new_row);
+                                break;
+                        }
+                }
+
         } else {
                 ELOG("direction unhandled\n");
                 return;
