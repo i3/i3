@@ -309,7 +309,7 @@ int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *t
 
         cookie = xcb_query_text_extents(conn, font->id, length, (xcb_char2b_t*)text);
         if ((reply = xcb_query_text_extents_reply(conn, cookie, &error)) == NULL) {
-                ELOG("Could not get text extents (X error code %d)\n",
+                LOG("Could not get text extents (X error code %d)\n",
                      error->error_code);
                 /* We return the rather safe guess of 7 pixels, because a
                  * rendering error is better than a crash. Plus, the user will
