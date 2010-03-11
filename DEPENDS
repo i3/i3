@@ -7,6 +7,7 @@ In that case, please try using the versions mentioned below until a fix is provi
  * xcb-util-0.3.3 (2009-01-31)
  * libev
  * flex and bison
+ * yajl (the IPC interface uses JSON to serialize data)
  * asciidoc >= 8.3.0 for docs/hacking-howto
  * asciidoc, xmlto, docbook-xml for man/i3.man
  * Xlib, the one that comes with your X-Server
@@ -24,6 +25,7 @@ http://xcb.freedesktop.org/dist/xcb-util-0.3.5.tar.bz2
 http://libev.schmorp.de/
 http://flex.sourceforge.net/
 http://www.gnu.org/software/bison/
+http://lloyd.github.com/yajl/
 
 http://i3.zekjur.net/i3lock/
 http://tools.suckless.org/dmenu

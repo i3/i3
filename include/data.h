@@ -177,6 +177,9 @@ struct Workspace {
         /** Number of this workspace, starting from 0 */
         int num;
 
+        /** Name of the workspace (in UTF-8) */
+        char *utf8_name;
+
         /** Name of the workspace (in UCS-2) */
         char *name;
 

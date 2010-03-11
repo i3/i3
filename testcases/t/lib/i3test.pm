@@ -40,4 +40,22 @@ sub format_ipc_command {
     return $message;
 }
 
+sub recv_ipc_command {
+    my ($sock, $expected) = @_;
+
+    my $buffer;
+    # header is 14 bytes ("i3-ipc" + 32 bit + 32 bit)
+    $sock->read($buffer, 14);
+    return undef unless substr($buffer, 0, length("i3-ipc")) eq "i3-ipc";
+
+    my ($len, $type) = unpack("LL", substr($buffer, 6));
+
+    return undef unless $type == $expected;
+
+    # read the payload
+    $sock->read($buffer, $len);
+
+    decode_json($buffer)
+}
+
 1

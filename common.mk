@@ -40,6 +40,7 @@ LDFLAGS += -lxcb-icccm
 LDFLAGS += -lxcb-xinerama
 LDFLAGS += -lxcb-randr
 LDFLAGS += -lxcb
+LDFLAGS += -lyajl
 LDFLAGS += -lX11
 LDFLAGS += -lev
 LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib

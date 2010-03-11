@@ -84,13 +84,13 @@ void workspace_set_name(Workspace *ws, const char *name) {
                 errx(1, "asprintf() failed");
 
         FREE(ws->name);
+        FREE(ws->utf8_name);
 
         ws->name = convert_utf8_to_ucs2(label, &(ws->name_len));
         if (config.font != NULL)
                 ws->text_width = predict_text_width(global_conn, config.font, ws->name, ws->name_len);
         else ws->text_width = 0;
-
-        free(label);
+        ws->utf8_name = label;
 }
 
 /*

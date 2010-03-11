@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <ev.h>
+#include <yajl/yajl_gen.h>
 
 #include "queue.h"
 #include "i3/ipc.h"
@@ -29,6 +30,11 @@
 #include "util.h"
 #include "commands.h"
 #include "log.h"
+#include "table.h"
+
+/* Shorter names for all those yajl_gen_* functions */
+#define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
+#define ystr(str) yajl_gen_string(gen, (unsigned char*)str, strlen(str))
 
 typedef struct ipc_client {
         int fd;
@@ -60,6 +66,83 @@ void broadcast(EV_P_ struct ev_timer *t, int revents) {
 }
 #endif
 
+static void ipc_send_message(int fd, const unsigned char *payload,
+                             int message_type, int message_size) {
+        int buffer_size = strlen("i3-ipc") + sizeof(uint32_t) +
+                          sizeof(uint32_t) + message_size;
+        char msg[buffer_size];
+        char *walk = msg;
+
+        strcpy(walk, "i3-ipc");
+        walk += strlen("i3-ipc");
+        memcpy(walk, &message_size, sizeof(uint32_t));
+        walk += sizeof(uint32_t);
+        memcpy(walk, &message_type, sizeof(uint32_t));
+        walk += sizeof(uint32_t);
+        memcpy(walk, payload, message_size);
+
+        int sent_bytes = 0;
+        int bytes_to_go = buffer_size;
+        while (sent_bytes < bytes_to_go) {
+                int n = write(fd, msg + sent_bytes, bytes_to_go);
+                if (n == -1)
+                        err(EXIT_FAILURE, "write() failed");
+
+                sent_bytes += n;
+                bytes_to_go -= n;
+        }
+}
+
+/*
+ * Formats the reply message for a GET_WORKSPACES request and sends it to the
+ * client
+ *
+ */
+static void ipc_send_workspaces(int fd) {
+        Workspace *ws;
+
+        yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+        y(array_open);
+
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
+                if (ws->output == NULL)
+                        continue;
+
+                y(map_open);
+                ystr("num");
+                y(integer, ws->num);
+
+                ystr("name");
+                ystr(ws->utf8_name);
+
+                ystr("rect");
+                y(map_open);
+                ystr("x");
+                y(integer, ws->rect.x);
+                ystr("y");
+                y(integer, ws->rect.y);
+                ystr("width");
+                y(integer, ws->rect.width);
+                ystr("height");
+                y(integer, ws->rect.height);
+                y(map_close);
+
+                ystr("output");
+                ystr(ws->output->name);
+
+                y(map_close);
+        }
+
+        y(array_close);
+
+        const unsigned char *payload;
+        unsigned int length;
+        y(get_buf, &payload, &length);
+
+        ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_WORKSPACES, length);
+        y(free);
+}
+
 /*
  * Decides what to do with the received message.
  *
@@ -70,8 +153,8 @@ void broadcast(EV_P_ struct ev_timer *t, int revents) {
  * message_type is the type of the message as the sender specified it.
  *
  */
-static void ipc_handle_message(uint8_t *message, int size,
-                                uint32_t message_size, uint32_t message_type) {
+static void ipc_handle_message(int fd, uint8_t *message, int size,
+                               uint32_t message_size, uint32_t message_type) {
         DLOG("handling message of size %d\n", size);
         DLOG("sender specified size %d\n", message_size);
         DLOG("sender specified type %d\n", message_type);
@@ -88,6 +171,9 @@ static void ipc_handle_message(uint8_t *message, int size,
 
                         break;
                 }
+                case I3_IPC_MESSAGE_TYPE_GET_WORKSPACES:
+                        ipc_send_workspaces(fd);
+                        break;
                 default:
                         DLOG("unhandled ipc message\n");
                         break;
@@ -175,7 +261,7 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
                 message += sizeof(uint32_t);
                 n -= sizeof(uint32_t);
 
-                ipc_handle_message(message, n, message_size, message_type);
+                ipc_handle_message(w->fd, message, n, message_size, message_type);
                 n -= message_size;
                 message += message_size;
         }
