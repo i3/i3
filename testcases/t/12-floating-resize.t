@@ -4,7 +4,7 @@
 # the workspace to be empty).
 # TODO: skip it by default?
 
-use Test::More tests => 16;
+use Test::More tests => 17;
 use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
@@ -47,6 +47,13 @@ isa_ok($window, 'X11::XCB::Window');
 $window->map;
 sleep 0.25;
 
+# See if configurerequests cause window movements (they should not)
+my ($a, $t) = $window->rect;
+$window->rect(X11::XCB::Rect->new(x => $a->x, y => $a->y, width => $a->width, height => $a->height));
+
+sleep 0.25;
+my ($na, $nt) = $window->rect;
+is_deeply($na, $a, 'Rects are equal after configurerequest');
 
 sub test_resize {
     $window->rect(X11::XCB::Rect->new(x => 0, y => 0, width => 100, height => 100));
