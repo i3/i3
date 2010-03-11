@@ -115,6 +115,9 @@ static void ipc_send_workspaces(int fd) {
                 ystr("name");
                 ystr(ws->utf8_name);
 
+                ystr("active");
+                y(bool, ws->output->current_workspace == ws);
+
                 ystr("rect");
                 y(map_open);
                 ystr("x");
