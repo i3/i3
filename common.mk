@@ -51,7 +51,6 @@ LDFLAGS += -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
 endif
 
 ifeq ($(UNAME),OpenBSD)
-CFLAGS += -ftrampolines
 CFLAGS += -I${X11BASE}/include
 LDFLAGS += -liconv
 LDFLAGS += -L${X11BASE}/lib
