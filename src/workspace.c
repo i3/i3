@@ -345,7 +345,7 @@ void workspace_map_clients(xcb_connection_t *conn, Workspace *ws) {
         /* Map all stack windows, if any */
         struct Stack_Window *stack_win;
         SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
-                if (stack_win->container->workspace == ws)
+                if (stack_win->container->workspace == ws && stack_win->rect.height > 0)
                         xcb_map_window(conn, stack_win->window);
 
         ignore_enter_notify_forall(conn, ws, false);
