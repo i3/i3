@@ -341,11 +341,31 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
         if (client_is_floating(client)) {
                 i3Font *font = load_font(conn, config.font);
                 int mode = (client->container != NULL ? client->container->mode : MODE_DEFAULT);
+                /* TODO: refactor this code. we need a function to translate
+                 * coordinates of child_rect/rect. */
 
-                if (event->value_mask & XCB_CONFIG_WINDOW_X)
-                        client->rect.x = event->x;
-                if (event->value_mask & XCB_CONFIG_WINDOW_Y)
-                        client->rect.y = event->y;
+                if (event->value_mask & XCB_CONFIG_WINDOW_X) {
+                        if (mode == MODE_STACK || mode == MODE_TABBED) {
+                                client->rect.x = event->x - 2;
+                        } else {
+                                if (client->titlebar_position == TITLEBAR_OFF && client->borderless)
+                                        client->rect.x = event->x;
+                                else if (client->titlebar_position == TITLEBAR_OFF && !client->borderless)
+                                        client->rect.x = event->x - 1;
+                                else client->rect.x = event->x - 2;
+                        }
+                }
+                if (event->value_mask & XCB_CONFIG_WINDOW_Y) {
+                        if (mode == MODE_STACK || mode == MODE_TABBED) {
+                                client->rect.y = event->y - 2;
+                        } else {
+                                if (client->titlebar_position == TITLEBAR_OFF && client->borderless)
+                                        client->rect.y = event->y;
+                                else if (client->titlebar_position == TITLEBAR_OFF && !client->borderless)
+                                        client->rect.y = event->y - 1;
+                                else client->rect.y = event->y - font->height - 2 - 2;
+                        }
+                }
                 if (event->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
                         if (mode == MODE_STACK || mode == MODE_TABBED) {
                                 client->rect.width = event->width + 2 + 2;
