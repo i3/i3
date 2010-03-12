@@ -101,6 +101,10 @@ static void ipc_send_message(int fd, const unsigned char *payload,
 static void ipc_send_workspaces(int fd) {
         Workspace *ws;
 
+        Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
+        if (last_focused == SLIST_END(&(c_ws->focus_stack)))
+                last_focused = NULL;
+
         yajl_gen gen = yajl_gen_alloc(NULL, NULL);
         y(array_open);
 
@@ -115,8 +119,11 @@ static void ipc_send_workspaces(int fd) {
                 ystr("name");
                 ystr(ws->utf8_name);
 
-                ystr("active");
+                ystr("visible");
                 y(bool, ws->output->current_workspace == ws);
+
+                ystr("focused");
+                y(bool, (last_focused != NULL && last_focused->workspace == ws));
 
                 ystr("rect");
                 y(map_open);
