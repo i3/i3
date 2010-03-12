@@ -299,8 +299,8 @@ DRAGGING_CB(resize_window_callback) {
 }
 
 /*
- * Called when the user right-clicked on the titlebar of a floating window to
- * resize it.
+ * Called when the user clicked on a floating window while holding the
+ * floating_modifier and the right mouse button.
  * Calls the drag_pointer function with the resize_window callback
  *
  */
