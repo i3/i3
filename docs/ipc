@@ -1,0 +1,146 @@
+IPC interface (interprocess communication)
+==========================================
+Michael Stapelberg <michael+i3@stapelberg.de>
+March 2010
+
+This document describes how to interface with i3 from a separate process. This
+is useful for example to remote-control i3 (to write test cases for example) or
+to get various information like the current workspaces to implement an external
+workspace bar.
+
+The method of choice for IPC in our case is a unix socket because it has very
+little overhead on both sides and is usually available without headaches in
+most languages. In the default configuration file, no ipc-socket path is
+specified and thus no socket is created. The standard path (which +i3-msg+ and
++i3-input+ use) is +/tmp/i3-ipc.sock+.
+
+== Establishing a connection
+
+To establish a connection, simply open the IPC socket. The following code
+snippet illustrates this in Perl:
+
+-------------------------------------------------------------
+use IO::Socket::UNIX;
+my $sock = IO::Socket::UNIX->new(Peer => '/tmp/i3-ipc.sock');
+-------------------------------------------------------------
+
+== Sending messages to i3
+
+To send a message to i3, you have to format in the binary message format which
+i3 expects. This format specifies a magic string in the beginning to ensure
+the integrity of messages (to prevent follow-up errors). Afterwards follows
+the length of the payload of the message as 32-bit integer and the type of
+the message as 32-bit integer (the integers are not converted, so they are
+in native byte order).
+
+The magic string currently is "i3-ipc" and will only be changed when a change
+in the IPC API is done which breaks compatibility (we hope that we don’t need
+to do that).
+
+Currently implemented message types are the following:
+
+0 (COMMAND)::
+	The payload of the message is a command for i3 (like the commands you
+	can bind to keys in the configuration file) and will be executed
+	directly after receiving it. There is no reply to this message.
+1 (GET_WORKSPACES)::
+	Gets the current workspaces. The reply will be a JSON-encoded list of
+	workspaces (see the reply section).
+
+So, a typical message could look like this:
+--------------------------------------------------
+"i3-ipc" <message length> <message type> <payload>
+--------------------------------------------------
+
+Or, as a hexdump:
+------------------------------------------------------------------------------
+00000000  69 33 2d 69 70 63 04 00  00 00 00 00 00 00 65 78  |i3-ipc........ex|
+00000010  69 74 0a                                          |it.|
+------------------------------------------------------------------------------
+
+To generate and send such a message, you could use the following code in Perl:
+------------------------------------------------------------
+sub format_ipc_command {
+    my ($msg) = @_;
+    my $len;
+    # Get the real byte count (vs. amount of characters)
+    { use bytes; $len = length($msg); }
+    return "i3-ipc" . pack("LL", $len, 0) . $msg;
+}
+
+$sock->write(format_ipc_command("exit"));
+------------------------------------------------------------
+
+== Receiving replies from i3
+
+Replies of i3 usually consist of a simple string (the length of the string
+is the message_length, so you can consider them length-prefixed) which in turn
+contain the JSON serialization of a data structure. For example, the
+GET_WORKSPACES message returns an array of workspaces (each workspace is a map
+with certain attributes).
+
+=== Reply format
+
+The reply format is identical to the normal message format. There also is
+the magic string, then the message length, then the message type and the
+payload.
+
+The following reply types are implemented:
+
+1 (GET_WORKSPACES)::
+	Reply to the GET_WORKSPACES message.
+
+=== GET_WORKSPACES reply
+
+The reply consists of a serialized list of workspaces. Each workspace has the
+following properties:
+
+num (integer)::
+	The internal number of the workspace. Corresponds to the command
+	to switch to this workspace.
+name (string)::
+	The name of this workspace (by default num+1), as changed by the
+	user. Encoded in UTF-8.
+visible (boolean)::
+	Whether this workspace is currently visible on an output (multiple
+	workspaces can be visible at the same time).
+focused (boolean)::
+	Whether this workspace currently has the focus (only one workspace
+	can have the focus at the same time).
+rect (map)::
+	The rectangle of this workspace (equals the rect of the output it
+	is on), consists of x, y, width, height.
+output (string)::
+	The video output this workspace is on (LVDS1, VGA1, …).
+
+*Example:*
+-------------------
+[
+ {
+  "num": 0,
+  "name": "1",
+  "visible": true,
+  "focused": true,
+  "rect": {
+   "x": 0,
+   "y": 0,
+   "width": 1280,
+   "height": 800
+  },
+  "output": "LVDS1"
+ },
+ {
+  "num": 1,
+  "name": "2",
+  "visible": false,
+  "focused": false,
+  "rect": {
+   "x": 0,
+   "y": 0,
+   "width": 1280,
+   "height": 800
+  },
+  "output": "LVDS1"
+ }
+]
+-------------------
