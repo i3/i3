@@ -169,13 +169,13 @@ void floating_assign_to_workspace(Client *client, Workspace *new_workspace) {
  * extension and only on Mac OS X systems at the moment).
  *
  */
-struct callback_params {
+struct resize_callback_params {
         border_t border;
         xcb_button_press_event_t *event;
 };
 
 DRAGGING_CB(resize_callback) {
-        struct callback_params *params = extra;
+        struct resize_callback_params *params = extra;
         xcb_button_press_event_t *event = params->event;
         switch (params->border) {
                 case BORDER_RIGHT: {
@@ -251,7 +251,7 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
 
         DLOG("border = %d\n", border);
 
-        struct callback_params params = { border, event };
+        struct resize_callback_params params = { border, event };
 
         drag_pointer(conn, client, event, XCB_NONE, border, resize_callback, &params);
 
@@ -282,17 +282,49 @@ void floating_drag_window(xcb_connection_t *conn, Client *client, xcb_button_pre
         drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback, event);
 }
 
+/*
+ * This is an ugly data structure which we need because there is no standard
+ * way of having nested functions (only available as a gcc extension at the
+ * moment, clang doesn’t support it) or blocks (only available as a clang
+ * extension and only on Mac OS X systems at the moment).
+ *
+ */
+struct resize_window_callback_params {
+        border_t corner;
+        xcb_button_press_event_t *event;
+};
+
 DRAGGING_CB(resize_window_callback) {
-        xcb_button_press_event_t *event = extra;
-        int32_t new_width = old_rect->width + (new_x - event->root_x);
-        int32_t new_height = old_rect->height + (new_y - event->root_y);
+        struct resize_window_callback_params *params = extra;
+        xcb_button_press_event_t *event = params->event;
+        border_t corner = params->corner;
+
+        int32_t dest_x = client->rect.x;
+        int32_t dest_y = client->rect.y;
+        uint32_t dest_width;
+        uint32_t dest_height;
+
+        if (corner & BORDER_LEFT) {
+                dest_x = old_rect->x + (new_x - event->root_x);
+                dest_width = old_rect->width - (new_x - event->root_x);
+        } else dest_width = old_rect->width + (new_x - event->root_x);
+
+        if (corner & BORDER_TOP) {
+                dest_y = old_rect->y + (new_y - event->root_y);
+                dest_height = old_rect->height - (new_y - event->root_y);
+        } else dest_height = old_rect->height + (new_y - event->root_y);
+
 
         /* Obey minimum window size and reposition the client */
-        if (new_width > 0 && new_width >= client_min_width(client))
-                client->rect.width = new_width;
+        if (dest_width > 0 && dest_width >= client_min_width(client)) {
+                client->rect.x = dest_x;
+                client->rect.width = dest_width;
+        }
 
-        if (new_height > 0 && new_height >= client_min_height(client))
-                client->rect.height = new_height;
+        if (dest_height > 0 && dest_height >= client_min_height(client)) {
+                client->rect.y = dest_y;
+                client->rect.height = dest_height;
+        }
 
         /* resize_client flushes */
         resize_client(conn, client);
@@ -307,7 +339,21 @@ DRAGGING_CB(resize_window_callback) {
 void floating_resize_window(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event) {
         DLOG("floating_resize_window\n");
 
-        drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, resize_window_callback, event);
+        /* corner saves the nearest corner to the original click. It contains
+         * a bitmask of the nearest borders (BORDER_LEFT, BORDER_RIGHT, …) */
+        border_t corner = 0;
+
+        if (event->event_x <= (client->rect.width / 2))
+                corner |= BORDER_LEFT;
+        else corner |= BORDER_RIGHT;
+
+        if (event->event_y <= (client->rect.height / 2))
+                corner |= BORDER_TOP;
+        else corner |= BORDER_RIGHT;
+
+        struct resize_window_callback_params params = { corner, event };
+
+        drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, resize_window_callback, &params);
 }
 
 

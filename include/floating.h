@@ -21,7 +21,10 @@ typedef void(*callback_t)(xcb_connection_t*, Client*, Rect*, uint32_t, uint32_t,
                          void *extra)
 
 /** On which border was the dragging initiated? */
-typedef enum { BORDER_LEFT, BORDER_RIGHT, BORDER_TOP, BORDER_BOTTOM} border_t;
+typedef enum { BORDER_LEFT   = (1 << 0),
+               BORDER_RIGHT  = (1 << 1),
+               BORDER_TOP    = (1 << 2),
+               BORDER_BOTTOM = (1 << 3)} border_t;
 
 /**
  * Enters floating mode for the given client.  Correctly takes care of the
