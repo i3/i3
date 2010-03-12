@@ -23,9 +23,10 @@
 #include <stdio.h>
 #include <ev.h>
 #include <yajl/yajl_gen.h>
+#include <yajl/yajl_parse.h>
 
 #include "queue.h"
-#include "i3/ipc.h"
+#include "ipc.h"
 #include "i3.h"
 #include "util.h"
 #include "commands.h"
@@ -35,12 +36,6 @@
 /* Shorter names for all those yajl_gen_* functions */
 #define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
 #define ystr(str) yajl_gen_string(gen, (unsigned char*)str, strlen(str))
-
-typedef struct ipc_client {
-        int fd;
-
-        TAILQ_ENTRY(ipc_client) clients;
-} ipc_client;
 
 TAILQ_HEAD(ipc_client_head, ipc_client) all_clients = TAILQ_HEAD_INITIALIZER(all_clients);
 
@@ -56,15 +51,6 @@ static void set_nonblock(int sockfd) {
         if (fcntl(sockfd, F_SETFL, flags) < 0)
                 err(-1, "Could not set O_NONBLOCK");
 }
-
-#if 0
-void broadcast(EV_P_ struct ev_timer *t, int revents) {
-        ipc_client *current;
-        TAILQ_FOREACH(current, &all_clients, clients) {
-                write(current->fd, "hi there!\n", strlen("hi there!\n"));
-        }
-}
-#endif
 
 static void ipc_send_message(int fd, const unsigned char *payload,
                              int message_type, int message_size) {
@@ -96,11 +82,55 @@ static void ipc_send_message(int fd, const unsigned char *payload,
 }
 
 /*
+ * Sends the specified event to all IPC clients which are currently connected
+ * and subscribed to this kind of event.
+ *
+ */
+void ipc_send_event(const char *event, uint32_t message_type, const char *payload) {
+        ipc_client *current;
+        TAILQ_FOREACH(current, &all_clients, clients) {
+                /* see if this client is interested in this event */
+                bool interested = false;
+                for (int i = 0; i < current->num_events; i++) {
+                        if (strcasecmp(current->events[i], event) != 0)
+                                continue;
+                        interested = true;
+                        break;
+                }
+                if (!interested)
+                        continue;
+
+                ipc_send_message(current->fd, (const unsigned char*)payload,
+                                 message_type, strlen(payload));
+        }
+}
+
+/*
+ * Executes the command and returns whether it could be successfully parsed
+ * or not (at the moment, always returns true).
+ *
+ */
+IPC_HANDLER(command) {
+        /* To get a properly terminated buffer, we copy
+         * message_size bytes out of the buffer */
+        char *command = scalloc(message_size);
+        strncpy(command, (const char*)message, message_size);
+        parse_command(global_conn, (const char*)command);
+        free(command);
+
+        /* For now, every command gets a positive acknowledge
+         * (will change with the new command parser) */
+        const char *reply = "{\"success\":true}";
+        ipc_send_message(fd, (const unsigned char*)reply,
+                         I3_IPC_REPLY_TYPE_COMMAND, strlen(reply));
+}
+
+/*
  * Formats the reply message for a GET_WORKSPACES request and sends it to the
  * client
  *
  */
-static void ipc_send_workspaces(int fd) {
+IPC_HANDLER(get_workspaces) {
         Workspace *ws;
 
         Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
@@ -156,47 +186,86 @@ static void ipc_send_workspaces(int fd) {
 }
 
 /*
- * Decides what to do with the received message.
- *
- * message is the raw packet, as received from the UNIX domain socket. size
- * is the remaining size of bytes for this packet.
- *
- * message_size is the size of the message as the sender specified it.
- * message_type is the type of the message as the sender specified it.
+ * Callback for the YAJL parser (will be called when a string is parsed).
  *
  */
-static void ipc_handle_message(int fd, uint8_t *message, int size,
-                               uint32_t message_size, uint32_t message_type) {
-        DLOG("handling message of size %d\n", size);
-        DLOG("sender specified size %d\n", message_size);
-        DLOG("sender specified type %d\n", message_type);
-        DLOG("payload as a string = %s\n", message);
+static int add_subscription(void *extra, const unsigned char *s,
+                            unsigned int len) {
+        ipc_client *client = extra;
 
-        switch (message_type) {
-                case I3_IPC_MESSAGE_TYPE_COMMAND: {
-                        /* To get a properly terminated buffer, we copy
-                         * message_size bytes out of the buffer */
-                        char *command = scalloc(message_size);
-                        strncpy(command, (const char*)message, message_size);
-                        parse_command(global_conn, (const char*)command);
-                        free(command);
+        DLOG("should add subscription to extra %p, sub %.*s\n", client, len, s);
+        int event = client->num_events;
 
-                        /* For now, every command gets a positive acknowledge
-                         * (will change with the new command parser) */
-                        const char *reply = "{\"success\":true}";
-                        ipc_send_message(fd, (const unsigned char*)reply,
-                                         I3_IPC_REPLY_TYPE_COMMAND, strlen(reply));
+        client->num_events++;
+        client->events = realloc(client->events, client->num_events * sizeof(char*));
+        /* We copy the string because it is not null-terminated and strndup()
+         * is missing on some BSD systems */
+        client->events[event] = scalloc(len+1);
+        memcpy(client->events[event], s, len);
 
-                        break;
-                }
-                case I3_IPC_MESSAGE_TYPE_GET_WORKSPACES:
-                        ipc_send_workspaces(fd);
-                        break;
-                default:
-                        DLOG("unhandled ipc message\n");
-                        break;
-        }
+        DLOG("client is now subscribed to:\n");
+        for (int i = 0; i < client->num_events; i++)
+                DLOG("event %s\n", client->events[i]);
+        DLOG("(done)\n");
+
+        return 1;
 }
+
+/*
+ * Subscribes this connection to the event types which were given as a JSON
+ * serialized array in the payload field of the message.
+ *
+ */
+IPC_HANDLER(subscribe) {
+        yajl_handle p;
+        yajl_callbacks callbacks;
+        yajl_status stat;
+        ipc_client *current, *client = NULL;
+
+        /* Search the ipc_client structure for this connection */
+        TAILQ_FOREACH(current, &all_clients, clients) {
+                if (current->fd != fd)
+                        continue;
+
+                client = current;
+                break;
+        }
+
+        if (client == NULL) {
+                ELOG("Could not find ipc_client data structure for fd %d\n", fd);
+                return;
+        }
+
+        /* Setup the JSON parser */
+        memset(&callbacks, 0, sizeof(yajl_callbacks));
+        callbacks.yajl_string = add_subscription;
+
+        p = yajl_alloc(&callbacks, NULL, NULL, (void*)client);
+        stat = yajl_parse(p, (const unsigned char*)message, message_size);
+        if (stat != yajl_status_ok) {
+                unsigned char *err;
+                err = yajl_get_error(p, true, (const unsigned char*)message,
+                                     message_size);
+                ELOG("YAJL parse error: %s\n", err);
+                yajl_free_error(p, err);
+
+                const char *reply = "{\"success\":false}";
+                ipc_send_message(fd, (const unsigned char*)reply,
+                                 I3_IPC_REPLY_TYPE_SUBSCRIBE, strlen(reply));
+                yajl_free(p);
+                return;
+        }
+        yajl_free(p);
+        const char *reply = "{\"success\":true}";
+        ipc_send_message(fd, (const unsigned char*)reply,
+                         I3_IPC_REPLY_TYPE_SUBSCRIBE, strlen(reply));
+}
+
+handler_t handlers[3] = {
+        handle_command,
+        handle_get_workspaces,
+        handle_subscribe
+};
 
 /*
  * Handler for activity on a client connection, receives a message from a
@@ -227,11 +296,13 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
                 close(w->fd);
 
                 /* Delete the client from the list of clients */
-                struct ipc_client *current;
+                ipc_client *current;
                 TAILQ_FOREACH(current, &all_clients, clients) {
                         if (current->fd != w->fd)
                                 continue;
 
+                        for (int i = 0; i < current->num_events; i++)
+                                free(current->events[i]);
                         /* We can call TAILQ_REMOVE because we break out of the
                          * TAILQ_FOREACH afterwards */
                         TAILQ_REMOVE(&all_clients, current, clients);
@@ -279,7 +350,12 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
                 message += sizeof(uint32_t);
                 n -= sizeof(uint32_t);
 
-                ipc_handle_message(w->fd, message, n, message_size, message_type);
+                if (message_type >= (sizeof(handlers) / sizeof(handler_t)))
+                        DLOG("Unhandled message type: %d\n", message_type);
+                else {
+                        handler_t h = handlers[message_type];
+                        h(w->fd, message, n, message_size, message_type);
+                }
                 n -= message_size;
                 message += message_size;
         }
@@ -311,7 +387,7 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
 
         DLOG("IPC: new client connected\n");
 
-        struct ipc_client *new = scalloc(sizeof(struct ipc_client));
+        ipc_client *new = scalloc(sizeof(ipc_client));
         new->fd = client;
 
         TAILQ_INSERT_TAIL(&all_clients, new, clients);

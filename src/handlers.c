@@ -39,6 +39,7 @@
 #include "workspace.h"
 #include "log.h"
 #include "container.h"
+#include "ipc.h"
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -573,8 +574,10 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
                         break;
                 }
 
-        if (workspace_empty)
+        if (workspace_empty) {
                 client->workspace->output = NULL;
+                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"empty\"}");
+        }
 
         /* Remove the urgency flag if set */
         client->urgent = false;

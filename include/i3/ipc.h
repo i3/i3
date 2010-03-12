@@ -29,6 +29,9 @@
 /** Requests the current workspaces from i3 */
 #define I3_IPC_MESSAGE_TYPE_GET_WORKSPACES      1
 
+/** Subscribe to the specified events */
+#define I3_IPC_MESSAGE_TYPE_SUBSCRIBE           2
+
 /*
  * Messages from i3 to clients
  *
@@ -39,5 +42,15 @@
 
 /** Workspaces reply type */
 #define I3_IPC_REPLY_TYPE_WORKSPACES            1
+
+/** Subscription reply type */
+#define I3_IPC_REPLY_TYPE_SUBSCRIBE             2
+
+/*
+ * Events from i3 to clients
+ *
+ */
+
+#define I3_IPC_EVENT_WORKSPACE                  0
 
 #endif

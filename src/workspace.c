@@ -28,6 +28,7 @@
 #include "client.h"
 #include "log.h"
 #include "ewmh.h"
+#include "ipc.h"
 
 /*
  * Returns a pointer to the workspace with the given number (starting at 0),
@@ -57,6 +58,8 @@ Workspace *workspace_get(int number) {
                 workspace_set_name(ws, NULL);
 
                 TAILQ_INSERT_TAIL(workspaces, ws, workspaces);
+
+                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
         }
         DLOG("done\n");
 
@@ -165,6 +168,8 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
                         xcb_flush(conn);
                 }
 
+                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
+
                 return;
         }
 
@@ -177,6 +182,8 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
         current_row = c_ws->current_row;
         current_col = c_ws->current_col;
         DLOG("new current row = %d, current col = %d\n", current_row, current_col);
+
+        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
 
         workspace_map_clients(conn, c_ws);
 
