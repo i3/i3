@@ -283,6 +283,9 @@ it as the same one you use for managing windows (Mod1 for example). Afterwards,
 you can press Mod1, click into a window using your left mouse button and drag
 it to the position you want it at.
 
+When holding the floating modifier, you can resize a floating window by pressing
+the right mousebutton on it and moving around holding it.
+
 *Syntax*:
 --------------------------------
 floating_modifier <Modifiers>
