@@ -116,7 +116,7 @@ static void ipc_send_workspaces(int fd) {
 
                 y(map_open);
                 ystr("num");
-                y(integer, ws->num);
+                y(integer, ws->num + 1);
 
                 ystr("name");
                 ystr(ws->utf8_name);
