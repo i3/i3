@@ -34,6 +34,9 @@
  *
  */
 
+/** Command reply type */
+#define I3_IPC_REPLY_TYPE_COMMAND               0
+
 /** Workspaces reply type */
 #define I3_IPC_REPLY_TYPE_WORKSPACES            1
 

@@ -181,6 +181,12 @@ static void ipc_handle_message(int fd, uint8_t *message, int size,
                         parse_command(global_conn, (const char*)command);
                         free(command);
 
+                        /* For now, every command gets a positive acknowledge
+                         * (will change with the new command parser) */
+                        const char *reply = "{\"success\":true}";
+                        ipc_send_message(fd, (const unsigned char*)reply,
+                                         I3_IPC_REPLY_TYPE_COMMAND, strlen(reply));
+
                         break;
                 }
                 case I3_IPC_MESSAGE_TYPE_GET_WORKSPACES:
