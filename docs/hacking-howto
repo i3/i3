@@ -227,8 +227,9 @@ moving them to the bottom you create a new row).
 === Container
 
 A container is the content of a table’s cell. It holds an arbitrary amount of
-windows and has a specific layout (default layout or stack layout). Containers
-can consume multiple table cells by modifying their colspan/rowspan attribute.
+windows and has a specific layout (default layout, stack layout or tabbed
+layout). Containers can consume multiple table cells by modifying their
+colspan/rowspan attribute.
 
 === Client
 
