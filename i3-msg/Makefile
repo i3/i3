@@ -3,6 +3,8 @@ TOPDIR=..
 
 include $(TOPDIR)/common.mk
 
+CFLAGS += -I$(TOPDIR)/include
+
 # Depend on the object files of all source-files in src/*.c and on all header files
 FILES=$(patsubst %.c,%.o,$(wildcard *.c))
 HEADERS=$(wildcard *.h)
