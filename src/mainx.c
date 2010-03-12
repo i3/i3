@@ -527,6 +527,11 @@ int main(int argc, char *argv[], char *env[]) {
         xcb_check_cb(NULL, NULL, 0);
 
         setup_signal_handler();
+
+        /* Ignore SIGPIPE to survive errors when an IPC client disconnects
+         * while we are sending him a message */
+        signal(SIGPIPE, SIG_IGN);
+
         /* Ungrab the server to receive events and enter libev’s eventloop */
         xcb_ungrab_server(conn);
 

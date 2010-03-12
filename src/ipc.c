@@ -85,8 +85,10 @@ static void ipc_send_message(int fd, const unsigned char *payload,
         int bytes_to_go = buffer_size;
         while (sent_bytes < bytes_to_go) {
                 int n = write(fd, msg + sent_bytes, bytes_to_go);
-                if (n == -1)
-                        err(EXIT_FAILURE, "write() failed");
+                if (n == -1) {
+                        DLOG("write() failed: %s\n", strerror(errno));
+                        return;
+                }
 
                 sent_bytes += n;
                 bytes_to_go -= n;
