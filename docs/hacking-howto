@@ -340,7 +340,7 @@ reparented (see section "Manage windows").
 After reparenting the window, `render_layout()` is called which renders the
 internal layout table. The new window has been placed in the currently focused
 container and therefore the new window and the old windows (if any) need to be
-moved/resized so that the currently active layout (default mode/stacking mode)
+moved/resized so that the currently active layout (default/stacking/tabbed mode)
 is rendered correctly. To move/resize windows, a window is ``configured'' in
 X11-speak.
 
