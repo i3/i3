@@ -291,6 +291,7 @@ void floating_drag_window(xcb_connection_t *conn, Client *client, xcb_button_pre
  */
 struct resize_window_callback_params {
         border_t corner;
+        bool proportional;
         xcb_button_press_event_t *event;
 };
 
@@ -304,27 +305,37 @@ DRAGGING_CB(resize_window_callback) {
         uint32_t dest_width;
         uint32_t dest_height;
 
-        if (corner & BORDER_LEFT) {
-                dest_x = old_rect->x + (new_x - event->root_x);
+        double ratio = (double) old_rect->width / old_rect->height;
+
+        /* First guess: We resize by exactly the amount the mouse moved,
+         * taking into account in which corner the client was grabbed */
+        if (corner & BORDER_LEFT)
                 dest_width = old_rect->width - (new_x - event->root_x);
-        } else dest_width = old_rect->width + (new_x - event->root_x);
+        else dest_width = old_rect->width + (new_x - event->root_x);
 
-        if (corner & BORDER_TOP) {
-                dest_y = old_rect->y + (new_y - event->root_y);
+        if (corner & BORDER_TOP)
                 dest_height = old_rect->height - (new_y - event->root_y);
-        } else dest_height = old_rect->height + (new_y - event->root_y);
+        else dest_height = old_rect->height + (new_y - event->root_y);
 
+        /* Obey minimum window size */
+        dest_width = max(dest_width, client_min_width(client));
+        dest_height = max(dest_height, client_min_height(client));
 
-        /* Obey minimum window size and reposition the client */
-        if (dest_width > 0 && dest_width >= client_min_width(client)) {
-                client->rect.x = dest_x;
-                client->rect.width = dest_width;
+        /* User wants to keep proportions, so we may have to adjust our values */
+        if (params->proportional) {
+                dest_width = max(dest_width, (int) (dest_height * ratio));
+                dest_height = max(dest_height, (int) (dest_width / ratio));
         }
 
-        if (dest_height > 0 && dest_height >= client_min_height(client)) {
-                client->rect.y = dest_y;
-                client->rect.height = dest_height;
-        }
+        /* If not the lower right corner is grabbed, we must also reposition
+         * the client by exactly the amount we resized it */
+        if (corner & BORDER_LEFT)
+                dest_x = old_rect->x + (old_rect->width - dest_width);
+
+        if (corner & BORDER_TOP)
+                dest_y = old_rect->y + (old_rect->height - dest_height);
+
+        client->rect = (Rect) { dest_x, dest_y, dest_width, dest_height };
 
         /* resize_client flushes */
         resize_client(conn, client);
@@ -336,7 +347,8 @@ DRAGGING_CB(resize_window_callback) {
  * Calls the drag_pointer function with the resize_window callback
  *
  */
-void floating_resize_window(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event) {
+void floating_resize_window(xcb_connection_t *conn, Client *client,
+                            bool proportional, xcb_button_press_event_t *event) {
         DLOG("floating_resize_window\n");
 
         /* corner saves the nearest corner to the original click. It contains
@@ -351,7 +363,7 @@ void floating_resize_window(xcb_connection_t *conn, Client *client, xcb_button_p
                 corner |= BORDER_TOP;
         else corner |= BORDER_RIGHT;
 
-        struct resize_window_callback_params params = { corner, event };
+        struct resize_window_callback_params params = { corner, proportional, event };
 
         drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, resize_window_callback, &params);
 }

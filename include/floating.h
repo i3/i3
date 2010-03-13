@@ -71,7 +71,7 @@ void floating_drag_window(xcb_connection_t *conn, Client *client,
  *
  */
 void floating_resize_window(xcb_connection_t *conn, Client *client,
-                            xcb_button_press_event_t *event);
+                            bool proportional, xcb_button_press_event_t *event);
 
 /**
  * Changes focus in the given direction for floating clients.

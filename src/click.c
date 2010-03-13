@@ -280,8 +280,9 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                                 DLOG("left mouse button, dragging\n");
                                 floating_drag_window(conn, client, event);
                         } else if (event->detail == 3) {
+                                bool proportional = (event->state & BIND_SHIFT);
                                 DLOG("right mouse button\n");
-                                floating_resize_window(conn, client, event);
+                                floating_resize_window(conn, client, proportional, event);
                         }
                         return 1;
                 }
