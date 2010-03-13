@@ -155,7 +155,7 @@ IPC_HANDLER(get_workspaces) {
                 y(bool, ws->output->current_workspace == ws);
 
                 ystr("focused");
-                y(bool, (last_focused != NULL && last_focused->workspace == ws));
+                y(bool, c_ws == ws);
 
                 ystr("rect");
                 y(map_open);
