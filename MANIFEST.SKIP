@@ -1,0 +1,11 @@
+^\.git/
+\.bak$
+blib/
+Makefile
+Makefile.old
+Build
+Build.bat
+^pm_to_blib
+\.tar\.gz$
+^pod2htm(.*).tmp$
+^AnyEvent-I3-
