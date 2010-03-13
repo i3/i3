@@ -98,6 +98,12 @@ struct Config {
          * It is not planned to add any different focus models. */
         bool disable_focus_follows_mouse;
 
+        /** By default, a workspace bar is drawn at the bottom of the screen.
+         * If you want to have a more fancy bar, it is recommended to replace
+         * the whole bar by dzen2, for example using the i3-wsbar script which
+         * comes with i3. Thus, you can turn it off entirely. */
+        bool disable_workspace_bar;
+
         const char *default_border;
 
         /** The modifier which needs to be pressed in combination with your mouse

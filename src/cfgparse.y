@@ -221,6 +221,7 @@ void parse_file(const char *f) {
 %token TOKNEWCONTAINER "new_container"
 %token TOKNEWWINDOW "new_window"
 %token TOKFOCUSFOLLOWSMOUSE "focus_follows_mouse"
+%token TOKWORKSPACEBAR "workspace_bar"
 %token TOKCONTAINERMODE "default/stacking/tabbed"
 %token TOKSTACKLIMIT "stack-limit"
 
@@ -239,6 +240,7 @@ line:
         | new_container
         | new_window
         | focus_follows_mouse
+        | workspace_bar
         | workspace
         | assign
         | ipcsocket
@@ -426,6 +428,14 @@ focus_follows_mouse:
         {
                 DLOG("focus follows mouse = %d\n", $<number>3);
                 config.disable_focus_follows_mouse = !($<number>3);
+        }
+        ;
+
+workspace_bar:
+        TOKWORKSPACEBAR WHITESPACE bool
+        {
+                DLOG("workspace bar = %d\n", $<number>3);
+                config.disable_workspace_bar = !($<number>3);
         }
         ;
 
