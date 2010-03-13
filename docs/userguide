@@ -284,7 +284,8 @@ you can press Mod1, click into a window using your left mouse button and drag
 it to the position you want it at.
 
 When holding the floating modifier, you can resize a floating window by pressing
-the right mousebutton on it and moving around holding it.
+the right mousebutton on it and moving around holding it. If you hold the shift
+button aswell, the resize will be proportional.
 
 *Syntax*:
 --------------------------------
