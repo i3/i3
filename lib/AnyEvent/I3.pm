@@ -60,6 +60,7 @@ our @EXPORT = qw(i3);
 
 my $magic = "i3-ipc";
 
+# TODO: export constants for message types
 # TODO: auto-generate this from the header file? (i3/ipc.h)
 my $event_mask = (1 << 31);
 my %events = (
@@ -93,7 +94,12 @@ sub new {
 =head2 $i3->connect
 
 Establishes the connection to i3. Returns an C<AnyEvent::CondVar> which will
-be triggered as soon as the connection has been established.
+be triggered with a boolean (true if the connection was established) as soon as
+the connection has been established.
+
+    if ($i3->connect->recv) {
+        say "Connected to i3";
+    }
 
 =cut
 sub connect {
@@ -104,12 +110,14 @@ sub connect {
     tcp_connect "unix/", $self->{path}, sub {
         my ($fh) = @_;
 
+        return $cv->send(0) unless $fh;
+
         $self->{ipchdl} = AnyEvent::Handle->new(
             fh => $fh,
             on_read => sub { my ($hdl) = @_; $self->_data_available($hdl) }
         );
 
-        $cv->send
+        $cv->send(1)
     };
 
     $cv
