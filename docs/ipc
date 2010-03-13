@@ -39,13 +39,16 @@ to do that).
 
 Currently implemented message types are the following:
 
-0 (COMMAND)::
+COMMAND (0)::
 	The payload of the message is a command for i3 (like the commands you
 	can bind to keys in the configuration file) and will be executed
 	directly after receiving it. There is no reply to this message.
-1 (GET_WORKSPACES)::
+GET_WORKSPACES (1)::
 	Gets the current workspaces. The reply will be a JSON-encoded list of
 	workspaces (see the reply section).
+SUBSCRIBE (2)::
+	Subscribes your connection to certain events. See <<events>> for a
+	description of this message and the concept of events.
 
 So, a typical message could look like this:
 --------------------------------------------------
@@ -87,8 +90,22 @@ payload.
 
 The following reply types are implemented:
 
-1 (GET_WORKSPACES)::
+COMMAND (0)::
+	Confirmation/Error code for the COMMAND message.
+GET_WORKSPACES (1)::
 	Reply to the GET_WORKSPACES message.
+SUBSCRIBE (2)::
+	Confirmation/Error code for the SUBSCRIBE message.
+
+=== COMMAND reply
+
+The reply consists of a single serialized map. At the moment, the only
+property is +success (bool)+, but this will be expanded in future versions.
+
+*Example:*
+-------------------
+{ "success": true }
+-------------------
 
 === GET_WORKSPACES reply
 
@@ -96,7 +113,7 @@ The reply consists of a serialized list of workspaces. Each workspace has the
 following properties:
 
 num (integer)::
-	The internal number of the workspace. Corresponds to the command
+	The logical number of the workspace. Corresponds to the command
 	to switch to this workspace.
 name (string)::
 	The name of this workspace (by default num+1), as changed by the
@@ -144,3 +161,71 @@ output (string)::
  }
 ]
 -------------------
+
+=== SUBSCRIBE reply
+
+The reply consists of a single serialized map. The only property is
++success (bool)+, indicating whether the subscription was successful (the
+default) or whether a JSON parse error occurred.
+
+*Example:*
+-------------------
+{ "success": true }
+-------------------
+
+== Events
+
+[[events]]
+
+To get informed when certain things happen in i3, clients can subscribe to
+events. Events consist of a name (like "workspace") and an event reply type
+(like I3_IPC_EVENT_WORKSPACE). The events sent by i3 are in the same format
+as replies to specific commands.
+
+Caveat: As soon as you subscribe to an event, it is not guaranteed any longer
+that the requests to i3 are processed in order. This means, the following
+situation can happen: You send a GET_WORKSPACES request but you receive a
+"workspace" event before receiving the reply to GET_WORKSPACES. If your
+program does not want to cope which such kinds of race conditions (an
+event based library may not have a problem here), I advise to create a separate
+connection to receive events.
+
+=== Subscribing to events
+
+By sending a message of type SUBSCRIBE with a JSON-encoded array as payload
+you can register to an event.
+
+*Example:*
+---------------------------------
+type: SUBSCRIBE
+payload: [ "workspace", "focus" ]
+---------------------------------
+
+=== Available events
+
+workspace::
+	Sent when the user switches to a different workspace, when a new
+	workspace is initialized or when a workspace is removed (because the
+	last client vanished).
+
+=== workspace event
+
+This event consists of a single serialized map containing a property
++change (string)+ which indicates the type of the change ("focus", "init",
+"empty").
+
+*Example:*
+---------------------
+{ "change": "focus" }
+---------------------
+
+== See also
+
+For some languages, libraries are available (so you don’t have to implement
+all this on your own). This list names some (if you wrote one, please let me
+know):
+
+Ruby::
+	http://github.com/badboy/i3-ipc
+Perl::
+	http://search.cpan.org/search?query=AnyEvent::I3
