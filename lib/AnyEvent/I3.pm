@@ -30,14 +30,14 @@ Note that as soon as you subscribe to some kind of event, you should B<NOT>
 send any more messages as race conditions might occur. Instead, open another
 connection for that.
 
-    use AnyEvent::I3;
+    use AnyEvent::I3 qw(:all);
 
     my $i3 = i3("/tmp/i3-ipc.sock");
 
     $i3->connect->recv;
     say "Connected to i3";
 
-    my $workspaces = $i3->message(1)->recv;
+    my $workspaces = $i3->message(TYPE_GET_WORKSPACES)->recv;
     say "Currently, you use " . @{$workspaces} . " workspaces";
 
 =head1 EXPORT
@@ -51,16 +51,23 @@ the UNIX socket to connect to.
 
 =cut
 
-
 use Exporter;
 use base 'Exporter';
 
 our @EXPORT = qw(i3);
 
+use constant TYPE_COMMAND => 0;
+use constant TYPE_GET_WORKSPACES => 1;
+use constant TYPE_SUBSCRIBE => 2;
+
+our %EXPORT_TAGS = ( 'all' => [
+    qw(TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE)
+] );
+
+our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
 
 my $magic = "i3-ipc";
 
-# TODO: export constants for message types
 # TODO: auto-generate this from the header file? (i3/ipc.h)
 my $event_mask = (1 << 31);
 my %events = (
@@ -178,8 +185,7 @@ sub subscribe {
 Sends a message of the specified C<type> to i3, possibly containing the data
 structure C<payload>, if specified.
 
-    my $cv = $i3->message(0, "reload");
-    my $reply = $cv->recv;
+    my $reply = $i3->message(TYPE_COMMAND, "reload")->recv;
     if ($reply->{success}) {
         say "Configuration successfully reloaded";
     }
