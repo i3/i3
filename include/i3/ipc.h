@@ -47,10 +47,11 @@
 #define I3_IPC_REPLY_TYPE_SUBSCRIBE             2
 
 /*
- * Events from i3 to clients
+ * Events from i3 to clients. Events have the first bit set high.
  *
  */
+#define I3_IPC_EVENT_MASK                       (1 << 31)
 
-#define I3_IPC_EVENT_WORKSPACE                  0
+#define I3_IPC_EVENT_WORKSPACE                  (I3_IPC_EVENT_MASK | 0)
 
 #endif
