@@ -66,7 +66,7 @@ my %events = (
     workspace => ($event_mask | 0),
 );
 
-sub bytelength {
+sub _bytelength {
     my ($scalar) = @_;
     use bytes;
     length($scalar)
@@ -106,7 +106,7 @@ sub connect {
 
         $self->{ipchdl} = AnyEvent::Handle->new(
             fh => $fh,
-            on_read => sub { my ($hdl) = @_; $self->data_available($hdl) }
+            on_read => sub { my ($hdl) = @_; $self->_data_available($hdl) }
         );
 
         $cv->send
@@ -115,7 +115,7 @@ sub connect {
     $cv
 }
 
-sub data_available {
+sub _data_available {
     my ($self, $hdl) = @_;
 
     $hdl->unshift_read(
@@ -126,13 +126,13 @@ sub data_available {
             my ($len, $type) = unpack("LL", substr($header, length($magic)));
             $hdl->unshift_read(
                 chunk => $len,
-                sub { $self->handle_i3_message($type, $_[1]) }
+                sub { $self->_handle_i3_message($type, $_[1]) }
             );
         }
     );
 }
 
-sub handle_i3_message {
+sub _handle_i3_message {
     my ($self, $type, $payload) = @_;
 
     return unless defined($self->{callbacks}->{$type});
@@ -155,7 +155,7 @@ sub subscribe {
     my ($self, $callbacks) = @_;
 
     my $payload = encode_json [ keys %{$callbacks} ];
-    my $message = $magic . pack("LL", bytelength($payload), 2) . $payload;
+    my $message = $magic . pack("LL", _bytelength($payload), 2) . $payload;
     $self->{ipchdl}->push_write($message);
 
     # Register callbacks for each message type
@@ -190,7 +190,7 @@ sub message {
             $payload = encode_json $content;
         }
     }
-    my $message = $magic . pack("LL", bytelength($payload), $type) . $payload;
+    my $message = $magic . pack("LL", _bytelength($payload), $type) . $payload;
     $self->{ipchdl}->push_write($message);
 
     my $cv = AnyEvent->condvar;
