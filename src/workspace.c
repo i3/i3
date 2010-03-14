@@ -460,7 +460,8 @@ int workspace_height(Workspace *ws) {
                 height -= client->desired_height;
 
         /* Space for the internal bar */
-        height -= (font->height + 6);
+        if (!config.disable_workspace_bar)
+                height -= (font->height + 6);
 
         return height;
 }

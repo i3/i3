@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -682,7 +682,8 @@ void render_workspace(xcb_connection_t *conn, Output *output, Workspace *r_ws) {
                 height -= client->desired_height;
 
         /* Space for the internal bar */
-        height -= (font->height + 6);
+        if (!config.disable_workspace_bar)
+                height -= (font->height + 6);
 
         int xoffset[r_ws->rows];
         int yoffset[r_ws->cols];
@@ -739,7 +740,8 @@ void render_workspace(xcb_connection_t *conn, Output *output, Workspace *r_ws) {
         ignore_enter_notify_forall(conn, r_ws, false);
 
         render_bars(conn, r_ws, width, &height);
-        render_internal_bar(conn, r_ws, width, font->height + 6);
+        if (!config.disable_workspace_bar)
+                render_internal_bar(conn, r_ws, width, font->height + 6);
 }
 
 /*

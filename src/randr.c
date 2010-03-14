@@ -173,16 +173,18 @@ void initialize_output(xcb_connection_t *conn, Output *output, Workspace *worksp
         /* Map clients on the workspace, if any */
         workspace_map_clients(conn, workspace);
 
-        /* Create a xoutput for each output */
-        Rect bar_rect = {output->rect.x,
-                         output->rect.y + output->rect.height - (font->height + 6),
-                         output->rect.x + output->rect.width,
-                         font->height + 6};
-        uint32_t mask = XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
-        uint32_t values[] = {1, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS};
-        output->bar = create_window(conn, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, true, mask, values);
-        output->bargc = xcb_generate_id(conn);
-        xcb_create_gc(conn, output->bargc, output->bar, 0, 0);
+        /* Create a bar window on each output */
+        if (!config.disable_workspace_bar) {
+                Rect bar_rect = {output->rect.x,
+                                 output->rect.y + output->rect.height - (font->height + 6),
+                                 output->rect.x + output->rect.width,
+                                 font->height + 6};
+                uint32_t mask = XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
+                uint32_t values[] = {1, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS};
+                output->bar = create_window(conn, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, true, mask, values);
+                output->bargc = xcb_generate_id(conn);
+                xcb_create_gc(conn, output->bargc, output->bar, 0, 0);
+        }
 
         SLIST_INIT(&(output->dock_clients));
 
