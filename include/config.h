@@ -134,6 +134,12 @@ struct Config {
 void load_configuration(xcb_connection_t *conn, const char *override_configfile, bool reload);
 
 /**
+ * Translates keysymbols to keycodes for all bindings which use keysyms.
+ *
+ */
+void translate_keysyms();
+
+/**
  * Ungrabs all keys, to be called before re-grabbing the keys because of a
  * mapping_notify event or a configuration file reload
  *
@@ -144,13 +150,20 @@ void ungrab_all_keys(xcb_connection_t *conn);
  * Grab the bound keys (tell X to send us keypress events for those keycodes)
  *
  */
-void grab_all_keys(xcb_connection_t *conn);
+void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch);
 
 /**
  * Switches the key bindings to the given mode, if the mode exists
  *
  */
 void switch_mode(xcb_connection_t *conn, const char *new_mode);
+
+/**
+ * Returns a pointer to the Binding with the specified modifiers and keycode
+ * or NULL if no such binding exists.
+ *
+ */
+Binding *get_binding(uint16_t modifiers, xcb_keycode_t keycode);
 
 /* prototype for src/cfgparse.y */
 void parse_file(const char *f);

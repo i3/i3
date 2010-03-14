@@ -51,6 +51,10 @@
 #include "log.h"
 #include "sighandler.h"
 
+static int xkb_event_base;
+
+int xkb_current_group;
+
 xcb_connection_t *global_conn;
 
 /* This is the path to i3, copied from argv[0] when starting up */
@@ -125,14 +129,54 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
  */
 static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
         DLOG("Handling XKB event\n");
-        XEvent ev;
+        XkbEvent ev;
+
         /* When using xmodmap, every change (!) gets an own event.
          * Therefore, we just read all events and only handle the
-         * mapping_notify once (we do not receive any other XKB
-         * events anyway). */
-        while (XPending(xkbdpy))
-                XNextEvent(xkbdpy, &ev);
+         * mapping_notify once. */
+        bool mapping_changed = false;
+        while (XPending(xkbdpy)) {
+                XNextEvent(xkbdpy, (XEvent*)&ev);
+                /* While we should never receive a non-XKB event,
+                 * better do sanity checking */
+                if (ev.type != xkb_event_base)
+                        continue;
 
+                if (ev.any.xkb_type == XkbMapNotify) {
+                        mapping_changed = true;
+                        continue;
+                }
+
+                if (ev.any.xkb_type != XkbStateNotify) {
+                        ELOG("Unknown XKB event received (type %d)\n", ev.any.xkb_type);
+                        continue;
+                }
+
+                /* See The XKB Extension: Library Specification, section 14.1 */
+                /* We check if the current group (each group contains
+                 * two levels) has been changed. Mode_switch activates
+                 * group XkbGroup2Index */
+                if (xkb_current_group == ev.state.group)
+                        continue;
+
+                xkb_current_group = ev.state.group;
+
+                if (ev.state.group == XkbGroup2Index) {
+                        DLOG("Mode_switch enabled\n");
+                        grab_all_keys(global_conn, true);
+                }
+
+                if (ev.state.group == XkbGroup1Index) {
+                        DLOG("Mode_switch disabled\n");
+                        ungrab_all_keys(global_conn);
+                        grab_all_keys(global_conn, false);
+                }
+        }
+
+        if (!mapping_changed)
+                return;
+
+        DLOG("Keyboard mapping changed, updating keybindings\n");
         xcb_key_symbols_free(keysyms);
         keysyms = xcb_key_symbols_alloc(global_conn);
 
@@ -140,9 +184,9 @@ static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
 
         ungrab_all_keys(global_conn);
         DLOG("Re-grabbing...\n");
-        grab_all_keys(global_conn);
+        translate_keysyms();
+        grab_all_keys(global_conn, (xkb_current_group == XkbGroup2Index));
         DLOG("Done\n");
-
 }
 
 
@@ -284,9 +328,9 @@ int main(int argc, char *argv[], char *env[]) {
         major = XkbMajorVersion;
         minor = XkbMinorVersion;
 
-        int evBase, errBase;
+        int errBase;
 
-        if ((xkbdpy = XkbOpenDisplay(getenv("DISPLAY"), &evBase, &errBase, &major, &minor, &error)) == NULL) {
+        if ((xkbdpy = XkbOpenDisplay(getenv("DISPLAY"), &xkb_event_base, &errBase, &major, &minor, &error)) == NULL) {
                 ELOG("ERROR: XkbOpenDisplay() failed, disabling XKB support\n");
                 xkb_supported = false;
         }
@@ -298,13 +342,15 @@ int main(int argc, char *argv[], char *env[]) {
                 }
 
                 int i1;
-                if (!XkbQueryExtension(xkbdpy,&i1,&evBase,&errBase,&major,&minor)) {
+                if (!XkbQueryExtension(xkbdpy,&i1,&xkb_event_base,&errBase,&major,&minor)) {
                         fprintf(stderr, "XKB not supported by X-server\n");
                         return 1;
                 }
                 /* end of ugliness */
 
-                if (!XkbSelectEvents(xkbdpy, XkbUseCoreKbd, XkbMapNotifyMask, XkbMapNotifyMask)) {
+                if (!XkbSelectEvents(xkbdpy, XkbUseCoreKbd,
+                                     XkbMapNotifyMask | XkbStateNotifyMask,
+                                     XkbMapNotifyMask | XkbStateNotifyMask)) {
                         fprintf(stderr, "Could not set XKB event mask\n");
                         return 1;
                 }
@@ -352,9 +398,8 @@ int main(int argc, char *argv[], char *env[]) {
         /* Expose = an Application should redraw itself, in this case it’s our titlebars. */
         xcb_event_set_expose_handler(&evenths, handle_expose_event, NULL);
 
-        /* Key presses/releases are pretty obvious, I think */
+        /* Key presses are pretty obvious, I think */
         xcb_event_set_key_press_handler(&evenths, handle_key_press, NULL);
-        xcb_event_set_key_release_handler(&evenths, handle_key_release, NULL);
 
         /* Enter window = user moved his mouse over the window */
         xcb_event_set_enter_notify_handler(&evenths, handle_enter_notify, NULL);
@@ -475,7 +520,8 @@ int main(int argc, char *argv[], char *env[]) {
 
         xcb_get_numlock_mask(conn);
 
-        grab_all_keys(conn);
+        translate_keysyms();
+        grab_all_keys(conn, false);
 
         int randr_base;
         if (force_xinerama) {

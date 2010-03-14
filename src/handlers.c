@@ -83,17 +83,6 @@ static bool event_is_ignored(const int sequence) {
 }
 
 /*
- * Due to bindings like Mode_switch + <a>, we need to bind some keys in XCB_GRAB_MODE_SYNC.
- * Therefore, we just replay all key presses.
- *
- */
-int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_event_t *event) {
-        xcb_allow_events(conn, XCB_ALLOW_REPLAY_KEYBOARD, event->time);
-        xcb_flush(conn);
-        return 1;
-}
-
-/*
  * There was a key press. We compare this key code with our bindings table and pass
  * the bound action to parse_command().
  *
@@ -109,52 +98,29 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
         state_filtered &= 0xFF;
         DLOG("(removed upper 8 bits, state = %d)\n", state_filtered);
 
-        if (xkb_supported) {
-                /* We need to get the keysym group (There are group 1 to group 4, each holding
-                   two keysyms (without shift and with shift) using Xkb because X fails to
-                   provide them reliably (it works in Xephyr, it does not in real X) */
-                XkbStateRec state;
-                if (XkbGetState(xkbdpy, XkbUseCoreKbd, &state) == Success && (state.group+1) == 2)
-                        state_filtered |= BIND_MODE_SWITCH;
-        }
+        if (xkb_current_group == XkbGroup2Index)
+                state_filtered |= BIND_MODE_SWITCH;
 
         DLOG("(checked mode_switch, state %d)\n", state_filtered);
 
         /* Find the binding */
-        Binding *bind;
-        TAILQ_FOREACH(bind, bindings, bindings) {
-                /* First compare the modifiers */
-                if (bind->mods != state_filtered)
-                        continue;
+        Binding *bind = get_binding(state_filtered, event->detail);
 
-                /* If a symbol was specified by the user, we need to look in
-                 * the array of translated keycodes for the event’s keycode */
-                if (bind->symbol != NULL) {
-                        if (memmem(bind->translated_to,
-                                   bind->number_keycodes * sizeof(xcb_keycode_t),
-                                   &(event->detail), sizeof(xcb_keycode_t)) != NULL)
-                                break;
-                } else {
-                        /* This case is easier: The user specified a keycode */
-                        if (bind->keycode == event->detail)
-                                break;
+        /* No match? Then the user has Mode_switch enabled but does not have a
+         * specific keybinding. Fall back to the default keybindings (without
+         * Mode_switch). Makes it much more convenient for users of a hybrid
+         * layout (like us, ru). */
+        if (bind == NULL) {
+                state_filtered &= ~(BIND_MODE_SWITCH);
+                DLOG("no match, new state_filtered = %d\n", state_filtered);
+                if ((bind = get_binding(state_filtered, event->detail)) == NULL) {
+                        ELOG("Could not lookup key binding (modifiers %d, keycode %d)\n",
+                             state_filtered, event->detail);
+                        return 1;
                 }
         }
 
-        /* No match? Then it was an actively grabbed key, that is with Mode_switch, and
-           the user did not press Mode_switch, so just pass it… */
-        if (bind == TAILQ_END(bindings)) {
-                xcb_allow_events(conn, ReplayKeyboard, event->time);
-                xcb_flush(conn);
-                return 1;
-        }
-
         parse_command(conn, bind->command);
-        if (state_filtered & BIND_MODE_SWITCH) {
-                DLOG("Mode_switch -> allow_events(SyncKeyboard)\n");
-                xcb_allow_events(conn, SyncKeyboard, event->time);
-                xcb_flush(conn);
-        }
         return 1;
 }
 
@@ -295,7 +261,8 @@ int handle_mapping_notify(void *ignored, xcb_connection_t *conn, xcb_mapping_not
         xcb_get_numlock_mask(conn);
 
         ungrab_all_keys(conn);
-        grab_all_keys(conn);
+        translate_keysyms();
+        grab_all_keys(conn, false);
 
         return 0;
 }

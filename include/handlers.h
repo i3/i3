@@ -14,14 +14,6 @@
 #include <xcb/randr.h>
 
 /**
- * Due to bindings like Mode_switch + <a>, we need to bind some keys in
- * XCB_GRAB_MODE_SYNC.  Therefore, we just replay all key presses.
- *
- */
-int handle_key_release(void *ignored, xcb_connection_t *conn,
-                       xcb_key_release_event_t *event);
-
-/**
  * There was a key press. We compare this key code with our bindings table and
  * pass the bound action to parse_command().
  *
