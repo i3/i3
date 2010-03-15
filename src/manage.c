@@ -353,9 +353,15 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         if (new->workspace->fullscreen_client != NULL) {
                 LOG("Setting below fullscreen window\n");
 
-                /* If we are in fullscreen, we should lower the window to not be annoying */
-                uint32_t values[] = { XCB_STACK_MODE_BELOW };
-                xcb_configure_window(conn, new->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
+                /* If we are in fullscreen, we should place the window below
+                 * the fullscreen window to not be annoying */
+                uint32_t values[] = {
+                        new->workspace->fullscreen_client->frame,
+                        XCB_STACK_MODE_BELOW
+                };
+                xcb_configure_window(conn, new->frame,
+                                     XCB_CONFIG_WINDOW_SIBLING |
+                                     XCB_CONFIG_WINDOW_STACK_MODE, values);
         }
 
         /* Insert into the currently active container, if it’s not a dock window */
