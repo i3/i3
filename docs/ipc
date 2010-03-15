@@ -225,6 +225,9 @@ For some languages, libraries are available (so you don’t have to implement
 all this on your own). This list names some (if you wrote one, please let me
 know):
 
+C::
+	i3 includes a headerfile +i3/ipc.h+ which provides you all constants.
+	However, there is no library yet.
 Ruby::
 	http://github.com/badboy/i3-ipc
 Perl::
