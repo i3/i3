@@ -20,8 +20,8 @@ all: ${FILES}
 
 install: all
 	echo "INSTALL"
-	$(INSTALL) -d -m 0755 $(DESTDIR)/usr/bin
-	$(INSTALL) -m 0755 i3-msg $(DESTDIR)/usr/bin/
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
+	$(INSTALL) -m 0755 i3-msg $(DESTDIR)$(PREFIX)/bin/
 
 clean:
 	rm -f *.o

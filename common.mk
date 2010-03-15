@@ -1,6 +1,12 @@
 UNAME=$(shell uname)
 DEBUG=1
 INSTALL=install
+PREFIX=/usr
+ifeq ($(PREFIX),/usr)
+SYSCONFDIR=/etc
+else
+SYSCONFDIR=$(PREFIX)/etc
+endif
 GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1))"
 VERSION:=$(shell git describe --tags --abbrev=0)
 
