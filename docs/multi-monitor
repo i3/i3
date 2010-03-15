@@ -1,0 +1,58 @@
+The multi-monitor situation
+===========================
+Michael Stapelberg <michael+i3@stapelberg.de>
+March 2010
+
+…or: oh no, I have an nvidia graphics card!
+
+== The quick fix
+
+If you are using the nvidia binary graphics driver, you need to use the
++--force-xinerama+ flag when starting i3, like so (in your xsession):
+
+.Example:
+----------------------------------------------
+exec i3 --force-xinerama -V >>~/.i3/i3log 2>&1 
+----------------------------------------------
+
+== The explanation
+
+Starting with version 3.ε, i3 uses the RandR (Rotate and Resize) API instead
+of Xinerama. This is due to the reason that RandR provides more information
+about your outputs and connected screens than Xinerama does. To be specific,
+the code which handled on-the-fly screen reconfiguration (meaning without
+restarting the X server) was a very messy heuristic and most of the time did
+not work correctly -- that is just not possible with the little information
+Xinerama offers (just a list of screen resolutions, no identifiers for the
+screens or any additional information). Xinerama simply was not designed
+for dynamic configuration.
+
+So, RandR came up as a more powerful alternative (RandR 1.2 to be specific).
+It offers all of Xinerama’s possibilities and lots more. Using the RandR API
+made our code much more robust and clean. Also, you can now reliably assign
+workspaces to output names instead of some rather unreliable screen identifier
+(position inside the list of screens, which could change, and so on…).
+
+As RandR is around for about three years, it seemed like a very good idea to
+us and it still is a very good one. What we did not expect, however, was the
+nVidia binary driver. It still does not support RandR (as of March 2010), even
+though nVidia announced that it will support RandR eventually. What does this
+mean for you, if you are stuck with the binary driver for some reason (say
+the free drivers don’t work with your card)? First of all, you are stuck with
+TwinView and cannot use +xrandr+. While this ruins the user experience, the
+more grave problem is that the nVidia driver not only does not support dynamic
+configuration using RandR, it also does not even expose correct multi-monitor
+information via the RandR API. So, in some setups, i3 will not find any
+screens, in others it will find one large screen which actually contains both
+of your physical screens (but it will not know that these are two screens).
+
+For this very reason, we decided to implement the following workaround: As
+long as the nVidia driver does not support RandR, an option called
++--force-xinerama+ is available in i3. This option gets the list of screens
+*once* when starting and never updates it. As the nVidia driver cannot do
+dynamic configuration anyways, this is not a big deal.
+
+== See also
+
+For more information on how to use multi-monitor setups, see the i3 User’s
+Guide.

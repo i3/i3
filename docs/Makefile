@@ -1,5 +1,5 @@
 
-all: hacking-howto.html debugging.html userguide.html ipc.html
+all: hacking-howto.html debugging.html userguide.html ipc.html multi-monitor.html
 
 hacking-howto.html: hacking-howto
 	asciidoc -a toc -n $<
@@ -11,6 +11,9 @@ userguide.html: userguide
 	asciidoc -a toc -n $<
 
 ipc.html: ipc
+	asciidoc -a toc -n $<
+
+multi-monitor.html: multi-monitor
 	asciidoc -a toc -n $<
 
 clean:
