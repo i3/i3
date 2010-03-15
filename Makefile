@@ -58,11 +58,13 @@ install: all
 	echo "INSTALL"
 	$(INSTALL) -d -m 0755 $(DESTDIR)/usr/bin
 	$(INSTALL) -d -m 0755 $(DESTDIR)/etc/i3
+	$(INSTALL) -d -m 0755 $(DESTDIR)/usr/include/i3
 	$(INSTALL) -d -m 0755 $(DESTDIR)/usr/share/xsessions
 	$(INSTALL) -m 0755 i3 $(DESTDIR)/usr/bin/
 	test -e $(DESTDIR)/etc/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)/etc/i3/config
 	$(INSTALL) -m 0644 i3.welcome $(DESTDIR)/etc/i3/welcome
 	$(INSTALL) -m 0644 i3.desktop $(DESTDIR)/usr/share/xsessions/
+	$(INSTALL) -m 0644 include/i3/ipc.h $(DESTDIR)/usr/include/i3/
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg install
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-input install
 
