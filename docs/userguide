@@ -3,7 +3,7 @@ i3 User’s Guide
 Michael Stapelberg <michael+i3@stapelberg.de>
 March 2010
 
-This document contains all information you need to configuring and using the i3
+This document contains all information you need for configuring and using the i3
 window manager. If it does not, please contact me on IRC, Jabber or E-Mail and
 I’ll help you out.
 
@@ -20,20 +20,20 @@ image:keyboard-layer1.png["Keys to use with Mod1 (alt)",width=600,link="keyboard
 
 image:keyboard-layer2.png["Keys to use with Shift+Mod1",width=600,link="keyboard-layer2.png"]
 
-As i3 uses keycodes in the default configuration, it does not mapper which
+As i3 uses keycodes in the default configuration, it does not matter which
 layout you actually use. The key positions are what matters (of course you can
 also use keysymbols, see below).
 
-The red keys are the modifiers you need to press (by default, you may have
-changed which keys are which modifier), the blue keys are your homerow.
+The red keys are the modifiers you need to press (by default), the blue keys
+are your homerow.
 
 == Using i3
 
-=== Creating terminals and moving around
+=== Opening terminals and moving around
 
-A very basic operation is to create a new terminal. By default, the keybinding
+A very basic operation is to open a new terminal. By default, the keybinding
 for that is Mod1+Enter, that is Alt+Enter in the default configuration. By
-pressing Mod1+Enter, a new terminal will be created and it will fill the whole
+pressing Mod1+Enter, a new terminal will be opened and it will fill the whole
 space which is available on your screen.
 
 image:single_terminal.png[Single terminal]
@@ -64,7 +64,7 @@ image:two_columns.png[Two columns]
 
 === Changing mode of containers
 
-A container can be in different modes:
+A container can be in the following modes:
 
 default::
 Windows are sized so that every window gets an equal amount of space of the
@@ -86,7 +86,7 @@ image:modes.png[Container modes]
 To display a window fullscreen or to go out of fullscreen mode again, press
 +Mod1+f+.
 
-There is also a global fullscreen mode in i3 in which the client will use all
+There also is a global fullscreen mode in i3 in which the client will use all
 available outputs. To use it, or to get out of it again, press +Mod1+Shift+f+.
 
 === Opening other applications
@@ -97,7 +97,8 @@ Aside from opening applicatios from a terminal, you can also use the handy
 your +$PATH+ for that to work.
 
 Furthermore, if you have applications you open very frequently, you can also
-create a keybinding for it. See the section "Configuring i3" for details.
+create a keybinding for starting the application directly. See the section
+"Configuring i3" for details.
 
 === Closing windows
 
@@ -143,11 +144,11 @@ columns/rows with your keyboard.
 
 === Restarting i3 inplace
 
-To restart i3 inplace (and thus get it into a clean state if it has a bug, to
-reload your configuration or even to upgrade to a newer version of i3) you
-can use +Mod1+Shift+r+. Be aware, though, that this kills your current layout
-and all the windows you have opened will be put in a default container in only
-one cell. Saving the layout will be implemented in a later version.
+To restart i3 inplace (and thus get it into a clean state if it has a bug or
+to upgrade to a newer version of i3) you can use +Mod1+Shift+r+. Be aware,
+though, that this kills your current layout and all the windows you have opened
+will be put in a default container in only one cell. Saving the layout will be
+implemented in a later version.
 
 === Exiting i3
 
@@ -167,12 +168,12 @@ by pressing +Mod1+Control+k+ (or snap container 2 rightwards).
 
 === Floating
 
-Floating is the opposite of tiling mode. The position and size of a window
+Floating mode is the opposite of tiling mode. The position and size of a window
 are then not managed by i3, but by you. Using this mode violates the tiling
 paradigm but can be useful for some corner cases like "Save as" dialog
 windows or toolbar windows (GIMP or similar).
 
-You can enable floating for a window by pressing +Mod1+Shift+Space+. By
+You can enable floating mode for a window by pressing +Mod1+Shift+Space+. By
 dragging the window’s titlebar with your mouse, you can move the window
 around. By grabbing the borders and moving them you can resize the window.
 
@@ -213,6 +214,8 @@ a # and can only be used at the beginning of a line, like this:
 
 i3 uses X core fonts (not Xft) for rendering window titles and the internal
 workspace bar. You can use +xfontsel(1)+ to generate such a font description.
+To see special characters (Unicode), you need to use a font which supports
+the ISO-10646 encoding.
 
 *Syntax*:
 ------------------------------
@@ -237,7 +240,7 @@ also mix your bindings, though i3 will not protect you from overlapping ones).
 
 * Keycodes however do not need to have a symbol assigned (handy for some hotkeys
   on some notebooks) and they will not change their meaning as you switch to a
-  different keyboard layout.
+  different keyboard layout (when using +xmodmap+).
 
 My recommendation is: If you often switch keyboard layouts because you try to
 learn a different one, but you want to keep your bindings at the same place,
@@ -253,10 +256,10 @@ bind [Modifiers+]keycode command
 *Examples*:
 --------------------------------
 # Fullscreen
-bind Mod1+f f
+bindsym Mod1+f f
 
 # Restart
-bind Mod1+Shift+r restart
+bindsym Mod1+Shift+r restart
 
 # Notebook-specific hotkeys
 bind 214 exec /home/michael/toggle_beamer.sh
@@ -284,7 +287,7 @@ you can press Mod1, click into a window using your left mouse button and drag
 it to the position you want it at.
 
 When holding the floating modifier, you can resize a floating window by pressing
-the right mousebutton on it and moving around holding it. If you hold the shift
+the right mouse button on it and moving around holding it. If you hold the shift
 button aswell, the resize will be proportional.
 
 *Syntax*:
@@ -299,8 +302,7 @@ floating_modifier Mod1
 
 === Layout mode for new containers
 
-This option is only available when using the new lexer/parser (pass +-l+ to i3
-when starting). It determines in which mode new containers will start. See also
+This option determines in which mode new containers will start. See also
 <<stack-limit>>.
 
 *Syntax*:
@@ -316,8 +318,7 @@ new_container tabbed
 
 === Border style for new windows
 
-This option is only available when using the new lexer/parser (pass +-l+ to i3
-when starting). It determines which border new windows will have.
+This option determines which border style new windows will have.
 
 *Syntax*:
 ---------------------------------------------
@@ -349,8 +350,9 @@ bindsym $m+Shift+r restart
 
 Variables are directly replaced in the file when parsing, there is no fancy
 handling and there are absolutely no plans to change this. If you need a more
-dynamic configuration, you should create a little script, like when configuring
-wmii.
+dynamic configuration, you should create a little script which generates a
+configuration file and run it before starting i3 (for example in your
++.xsession+ file).
 
 === Automatically putting clients on specific workspaces
 
@@ -383,10 +385,13 @@ assign "gecko" → ~4
 assign "xv/MPlayer" → ~
 ----------------------
 
+Note that the arrow is not required, it just looks good :-). If you decide to
+use it, it has to be a UTF-8 encoded arrow, not "->" or something like that.
+
 === Automatically starting applications on startup
 
 By using the +exec+ keyword outside a keybinding, you can configure which
-commands will be performed by i3 on the first start (not when reloading inplace
+commands will be performed by i3 on the first start (not when restarting inplace
 however). The commands will be run in order.
 
 *Syntax*:
@@ -403,11 +408,11 @@ exec sudo i3status | dzen2 -dock
 
 [[workspace_screen]]
 
-If you use the assigning of clients to workspaces and start some clients
-automatically, it might be handy to put the workspaces on specific screens.
-Also, the assignment of workspaces to screens will determine the workspace
-which i3 uses for a new screen when adding screens or when starting (e.g., by
-default it will use 1 for the first screen, 2 for the second screen and so on).
+If you use assignments of clients to workspaces, it might be handy to put the
+workspaces on specific screens. Also, the assignment of workspaces to screens
+will determine the workspace which i3 uses for a new screen when adding screens
+or when starting (e.g., by default it will use 1 for the first screen, 2 for
+the second screen and so on).
 
 *Syntax*:
 ----------------------------------
@@ -472,7 +477,7 @@ bar.unfocused::
 bar.urgent::
 	A workspace which has at least one client with an activated urgency hint.
 
-Colors are in HTML hex format, see below.
+Colors are in HTML hex format (#rrggbb), see the following example:
 
 *Examples*:
 --------------------------------------
@@ -486,16 +491,19 @@ the window.
 
 === Interprocess communication
 
-i3 uses unix sockets to provide an IPC interface. At the moment, this interface
-is only useful for sending commands. To enable it, you have to configure a path
-where the unix socket will be stored. The default path is +/tmp/i3-ipc.sock+.
+i3 uses unix sockets to provide an IPC interface. This allows third-party
+programs to get information like the current workspaces to display a workspace
+bar and to control i3.
+
+To enable it, you have to configure a path where the unix socket will be
+stored. The default path is +/tmp/i3-ipc.sock+.
 
 *Examples*:
 ----------------------------
 ipc-socket /tmp/i3-ipc.sock
 ----------------------------
 
-You can then use the i3-msg command to perform any command listed in the next
+You can then use the +i3-msg+ command to perform any command listed in the next
 section.
 
 === Disable focus follows mouse
@@ -522,7 +530,7 @@ focus_follows_mouse no
 
 To change the layout of the current container to stacking, use +s+, for default
 use +d+ and for tabbed, use +T+. To make the current client (!) fullscreen,
-use +f+, to make it spanning all outputs, use +fg+, to make it floating (or
+use +f+, to make it span all outputs, use +fg+, to make it floating (or
 tiling again) use +t+:
 
 *Examples*:
@@ -544,7 +552,7 @@ bindsym Mod1+t t
 === Focussing/Moving/Snapping clients/containers/screens
 
 To change the focus, use one of the +h+, +j+, +k+ and +l+ commands, meaning
-respectively left, down, up, right. To focus a container, prefix it with +wc+,
+left, down, up, right (respectively). To focus a container, prefix it with +wc+,
 to focus a screen, prefix it with +ws+.
 
 The same principle applies for moving and snapping, just prefix the command
@@ -604,8 +612,7 @@ bindsym Mod1+p pw
 === Resizing columns/rows
 
 If you want to resize columns/rows using your keyboard, you can use the
-+resize+ command, I recommend using it inside a so called +mode+ (you need to
-use the new lexer/parser for that, so pass +-l+ to i3 when starting):
++resize+ command, I recommend using it inside a so called +mode+:
 
 .Example: Configuration file, defining a mode for resizing
 ----------------------------------------------------------------------
@@ -698,7 +705,7 @@ the focus stack and jumps to the window you focused before.
 
 *Syntax*:
 --------------
-focus [number] | floating | tilling | ft
+focus [number] | floating | tiling | ft
 --------------
 
 Where +number+ by default is 1 meaning that the next client in the focus stack will
@@ -779,8 +786,8 @@ bindsym Mod1+Shift+e exit
 [[multi_monitor]]
 
 As you can read in the goal list on its website, i3 was specifically developed
-with Xinerama (support for multiple monitors) in mind. This section will
-explain how to handle multiple monitors.
+with support for multiple monitors in mind. This section will explain how to
+handle multiple monitors.
 
 When you have only one monitor, things are simple. You usually start with
 workspace 1 on your monitor and open new ones as you need them.
@@ -804,7 +811,7 @@ changing your configuration (using modes, for example).
 
 === Configuring your monitors
 
-To help you get going if you never did multiple monitors before, here comes a
+To help you get going if you never used multiple monitors before, here comes a
 short overview of the xrandr options which are probably of interest for you.
 It is always useful to get an overview of the current screen configuration, so
 just run "xrandr" and you will get an output like the following:
@@ -836,7 +843,7 @@ So, say you connected VGA1 and want to use it as an additional screen:
 -------------------------------------------
 xrandr --output VGA1 --auto --left-of LVDS1
 -------------------------------------------
-This command lets xrandr try to find out the native resolution of the device
+This command makes xrandr try to find out the native resolution of the device
 connected to +VGA1+ and configures it to the left of your internal flat panel.
 When running "xrandr" again, the output looks like this:
 -----------------------------------------------------------------------------------------
@@ -892,7 +899,7 @@ approach you have in the task bar of a traditional desktop environment.
 
 If you don’t already have your favorite way of generating such a status line
 (self-written scripts, conky, …), then i3status is the recommended tool for
-this task. It was written in C with the goal to have as little syscalls as
+this task. It was written in C with the goal to use as little syscalls as
 possible to reduce the time your CPU is waken up from sleep states.
 
 Regardless of which application you use to generate the status line, you
@@ -943,5 +950,4 @@ and you are in multi-monitor mode (see <<multi_monitor>>).
 
 Because i3 is not a compositing window manager, there is no possibility to
 display a window on two screens at the same time. Instead, you presentation
-software needs to do this job (that is, open a window on each screen with the
-same contents).
+software needs to do this job (that is, open a window on each screen).
