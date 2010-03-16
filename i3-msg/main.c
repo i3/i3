@@ -73,6 +73,8 @@ static void ipc_recv_message(int sockfd, uint32_t message_type,
                 int n = read(sockfd, msg + read_bytes, to_read);
                 if (n == -1)
                         err(EXIT_FAILURE, "read() failed");
+                if (n == 0)
+                        errx(EXIT_FAILURE, "received EOF instead of reply");
 
                 read_bytes += n;
                 to_read -= n;

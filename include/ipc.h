@@ -67,5 +67,11 @@ int ipc_create_socket(const char *filename);
  */
 void ipc_send_event(const char *event, uint32_t message_type, const char *payload);
 
+/**
+ * Calls shutdown() on each socket and closes it. This function to be called
+ * when exiting or restarting only!
+ *
+ */
+void ipc_shutdown();
 
 #endif

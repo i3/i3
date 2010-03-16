@@ -35,6 +35,7 @@
 #include "ewmh.h"
 #include "manage.h"
 #include "workspace.h"
+#include "ipc.h"
 
 static iconv_t conversion_descriptor = 0;
 struct keyvalue_table_head by_parent = TAILQ_HEAD_INITIALIZER(by_parent);
@@ -512,6 +513,8 @@ static char **append_argument(char **original, char *argument) {
  */
 void i3_restart() {
         restore_geometry(global_conn);
+
+        ipc_shutdown();
 
         LOG("restarting \"%s\"...\n", start_argv[0]);
         /* make sure -a is in the argument list or append it */

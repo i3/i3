@@ -33,6 +33,7 @@
 #include "log.h"
 #include "sighandler.h"
 #include "manage.h"
+#include "ipc.h"
 
 bool focus_window_in_container(xcb_connection_t *conn, Container *container, direction_t direction) {
         /* If this container is empty, we’re done */
@@ -1015,6 +1016,7 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         if (STARTS_WITH(command, "exit")) {
                 LOG("User issued exit-command, exiting without error.\n");
                 restore_geometry(global_conn);
+                ipc_shutdown();
                 exit(EXIT_SUCCESS);
         }
 

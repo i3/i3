@@ -106,6 +106,19 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
 }
 
 /*
+ * Calls shutdown() on each socket and closes it. This function to be called
+ * when exiting or restarting only!
+ *
+ */
+void ipc_shutdown() {
+        ipc_client *current;
+        TAILQ_FOREACH(current, &all_clients, clients) {
+                shutdown(current->fd, SHUT_RDWR);
+                close(current->fd);
+        }
+}
+
+/*
  * Executes the command and returns whether it could be successfully parsed
  * or not (at the moment, always returns true).
  *
