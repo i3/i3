@@ -600,6 +600,22 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
                 xcb_flush(conn);
         }
 
+        /* Configure the window above all tiling windows (or below a fullscreen
+         * window, if any) */
+        if (t_ws->fullscreen_client != NULL) {
+                uint32_t values[] = { t_ws->fullscreen_client->frame, XCB_STACK_MODE_BELOW };
+                xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+        } else {
+                Client *last_tiling;
+                SLIST_FOREACH(last_tiling, &(t_ws->focus_stack), focus_clients)
+                        if (!client_is_floating(last_tiling))
+                                break;
+                if (last_tiling != SLIST_END(&(t_ws->focus_stack))) {
+                        uint32_t values[] = { last_tiling->frame, XCB_STACK_MODE_ABOVE };
+                        xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
+                }
+        }
+
         DLOG("done\n");
 
         render_layout(conn);
