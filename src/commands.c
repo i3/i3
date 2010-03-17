@@ -620,8 +620,10 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
 
         render_layout(conn);
 
-        if (workspace_is_visible(t_ws))
+        if (workspace_is_visible(t_ws)) {
+                client_warp_pointer_into(conn, client);
                 set_focus(conn, client, true);
+        }
 }
 
 /*
