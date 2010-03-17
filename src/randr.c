@@ -216,24 +216,6 @@ void disable_randr(xcb_connection_t *conn) {
 }
 
 /*
- * Searches for a mode in the current RandR configuration by the mode id.
- * Returns NULL if no such mode could be found (should never happen).
- *
- */
-static mode_info *get_mode_by_id(resources_reply *reply, xcb_randr_mode_t mode) {
-        xcb_randr_mode_info_iterator_t it;
-
-        for (it = xcb_randr_get_screen_resources_current_modes_iterator(reply);
-                it.rem > 0;
-                xcb_randr_mode_info_next(&it)) {
-                if (it.data->id == mode)
-                        return it.data;
-        }
-
-        return NULL;
-}
-
-/*
  * This function needs to be called when changing the mode of an output when
  * it already has some workspaces (or a bar window) assigned.
  *
@@ -296,10 +278,6 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         /* each CRT controller has a position in which we are interested in */
         crtc_info *crtc;
 
-        /* the CRTC runs in a specific mode, while the position is stored in
-         * the output itself */
-        mode_info *mode;
-
         Output *new = get_output_by_id(id);
         bool existing = (new != NULL);
         if (!existing)
@@ -327,10 +305,9 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
 
         xcb_randr_get_crtc_info_cookie_t icookie;
         icookie = xcb_randr_get_crtc_info(conn, output->crtc, cts);
-        if ((crtc = xcb_randr_get_crtc_info_reply(conn, icookie, NULL)) == NULL ||
-            (mode = get_mode_by_id(res, crtc->mode)) == NULL) {
-                DLOG("Skipping output %s: could not get CRTC/mode (%p/%p)\n",
-                     new->name, crtc, mode);
+        if ((crtc = xcb_randr_get_crtc_info_reply(conn, icookie, NULL)) == NULL) {
+                DLOG("Skipping output %s: could not get CRTC (%p)\n",
+                     new->name, crtc);
                 free(new);
                 free(output);
                 return;
@@ -339,8 +316,8 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         new->active = true;
         bool updated = update_if_necessary(&(new->rect.x), crtc->x) |
                        update_if_necessary(&(new->rect.y), crtc->y) |
-                       update_if_necessary(&(new->rect.width), mode->width) |
-                       update_if_necessary(&(new->rect.height), mode->height);
+                       update_if_necessary(&(new->rect.width), crtc->width) |
+                       update_if_necessary(&(new->rect.height), crtc->height);
 
         DLOG("mode: %dx%d+%d+%d\n", new->rect.width, new->rect.height,
                                     new->rect.x, new->rect.y);
