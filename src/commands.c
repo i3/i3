@@ -1167,6 +1167,9 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
                 Workspace *ws = last_focused->workspace;
 
+                if(last_focused->fullscreen)
+                        client_leave_fullscreen(conn, last_focused);
+
                 toggle_floating_mode(conn, last_focused, false);
                 /* delete all empty columns/rows */
                 cleanup_table(conn, ws);
