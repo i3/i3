@@ -185,6 +185,9 @@ IPC_HANDLER(get_workspaces) {
                 ystr("output");
                 ystr(ws->output->name);
 
+                ystr("urgent");
+                y(bool, ws->urgent);
+
                 y(map_close);
         }
 

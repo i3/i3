@@ -124,6 +124,8 @@ visible (boolean)::
 focused (boolean)::
 	Whether this workspace currently has the focus (only one workspace
 	can have the focus at the same time).
+urgent (boolean)::
+	Whether a window on this workspace has the "urgent" flag set.
 rect (map)::
 	The rectangle of this workspace (equals the rect of the output it
 	is on), consists of x, y, width, height.
@@ -138,6 +140,7 @@ output (string)::
   "name": "1",
   "visible": true,
   "focused": true,
+  "urgent": false,
   "rect": {
    "x": 0,
    "y": 0,
@@ -151,6 +154,7 @@ output (string)::
   "name": "2",
   "visible": false,
   "focused": false,
+  "urgent": false,
   "rect": {
    "x": 0,
    "y": 0,
