@@ -458,6 +458,11 @@ void randr_query_outputs(xcb_connection_t *conn) {
                 }
         }
 
+        if (TAILQ_EMPTY(&outputs)) {
+                ELOG("No outputs found via RandR, disabling\n");
+                disable_randr(conn);
+        }
+
         ewmh_update_workarea();
 
         /* Just go through each active output and associate one workspace */
