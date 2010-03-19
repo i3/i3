@@ -260,6 +260,9 @@ workspace::
 	Sent when the user switches to a different workspace, when a new
 	workspace is initialized or when a workspace is removed (because the
 	last client vanished).
+output::
+	Sent when RandR issues a change notification (of either screens,
+	outputs, CRTCs or output properties).
 
 === workspace event
 
@@ -271,6 +274,17 @@ This event consists of a single serialized map containing a property
 ---------------------
 { "change": "focus" }
 ---------------------
+
+=== output event
+
+This event consists of a single serialized map containing a property
++change (string)+ which indicates the type of the change (currently only
+"unspecified").
+
+*Example:*
+---------------------------
+{ "change": "unspecified" }
+---------------------------
 
 == See also
 

@@ -447,6 +447,8 @@ int handle_screen_change(void *prophs, xcb_connection_t *conn,
 
         randr_query_outputs(conn);
 
+        ipc_send_event("output", I3_IPC_EVENT_OUTPUT, "{\"change\":\"unspecified\"}");
+
         return 1;
 }
 

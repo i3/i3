@@ -58,6 +58,10 @@
  */
 #define I3_IPC_EVENT_MASK                       (1 << 31)
 
+/* The workspace event will be triggered upon changes in the workspace list */
 #define I3_IPC_EVENT_WORKSPACE                  (I3_IPC_EVENT_MASK | 0)
+
+/* The output event will be triggered upon changes in the output list */
+#define I3_IPC_EVENT_OUTPUT                     (I3_IPC_EVENT_MASK | 1)
 
 #endif
