@@ -138,7 +138,7 @@ void translate_keysyms() {
                 bind->number_keycodes = 1;
                 xcb_keycode_t code = xcb_key_symbols_get_keycode(keysyms, keysym);
                 DLOG("Translated symbol \"%s\" to 1 keycode (%d)\n", bind->symbol, code);
-                grab_keycode_for_binding(conn, bind, code);
+                grab_keycode_for_binding(global_conn, bind, code);
                 bind->translated_to = smalloc(sizeof(xcb_keycode_t));
                 memcpy(bind->translated_to, &code, sizeof(xcb_keycode_t));
 #else
