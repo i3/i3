@@ -59,9 +59,10 @@ our @EXPORT = qw(i3);
 use constant TYPE_COMMAND => 0;
 use constant TYPE_GET_WORKSPACES => 1;
 use constant TYPE_SUBSCRIBE => 2;
+use constant TYPE_GET_OUTPUTS => 3;
 
 our %EXPORT_TAGS = ( 'all' => [
-    qw(TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE)
+    qw(i3 TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS)
 ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
@@ -72,6 +73,7 @@ my $magic = "i3-ipc";
 my $event_mask = (1 << 31);
 my %events = (
     workspace => ($event_mask | 0),
+    output => ($event_mask | 1),
 );
 
 sub _bytelength {
