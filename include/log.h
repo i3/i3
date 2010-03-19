@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -12,6 +12,7 @@
 #define _LOG_H
 
 #include <stdarg.h>
+#include <stdbool.h>
 
 /** ##__VA_ARGS__ means: leave out __VA_ARGS__ completely if it is empty, that
    is, delete the preceding comma */

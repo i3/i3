@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -13,6 +13,8 @@
  */
 #include <stdio.h>
 #include <xcb/xcb.h>
+
+#include "log.h"
 
 static const char *labelError[] = {
     "Success",
@@ -219,7 +221,7 @@ int format_event(xcb_generic_event_t *e) {
 
     switch(e->response_type) {
     case 0:
-        printf("Error %s on seqnum %d (%s).\n",
+        DLOG("Error %s on seqnum %d (%s).\n",
             labelError[*((uint8_t *) e + 1)],
             seqnum,
             labelRequest[*((uint8_t *) e + 10)]);
@@ -227,13 +229,13 @@ int format_event(xcb_generic_event_t *e) {
     default:
         if (e->response_type > sizeof(labelEvent) / sizeof(char*))
                 break;
-        printf("Event %s following seqnum %d%s.\n",
+        DLOG("Event %s following seqnum %d%s.\n",
             labelEvent[e->response_type],
             seqnum,
             labelSendEvent[sendEvent]);
         break;
     case XCB_KEYMAP_NOTIFY:
-        printf("Event %s%s.\n",
+        DLOG("Event %s%s.\n",
             labelEvent[e->response_type],
             labelSendEvent[sendEvent]);
         break;
