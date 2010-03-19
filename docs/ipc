@@ -49,6 +49,9 @@ GET_WORKSPACES (1)::
 SUBSCRIBE (2)::
 	Subscribes your connection to certain events. See <<events>> for a
 	description of this message and the concept of events.
+GET_OUTPUTS (3)::
+	Gets the current outputs. The reply will be a JSON-encoded list of outputs
+	(see the reply section).
 
 So, a typical message could look like this:
 --------------------------------------------------
@@ -96,6 +99,8 @@ GET_WORKSPACES (1)::
 	Reply to the GET_WORKSPACES message.
 SUBSCRIBE (2)::
 	Confirmation/Error code for the SUBSCRIBE message.
+GET_OUTPUTS (3)::
+	Reply to the GET_OUTPUTS message.
 
 === COMMAND reply
 
@@ -175,6 +180,50 @@ default) or whether a JSON parse error occurred.
 *Example:*
 -------------------
 { "success": true }
+-------------------
+
+=== GET_OUTPUTS reply
+
+The reply consists of a serialized list of outputs. Each output has the
+following properties:
+
+name (string)::
+	The name of this output (as seen in +xrandr(1)+). Encoded in UTF-8.
+active (boolean)::
+	Whether this output is currently active (has a valid mode).
+current_workspace (integer)::
+	The current workspace which is visible on this output. +null+ if the
+	output is not active.
+rect (map)::
+	The rectangle of this output (equals the rect of the output it
+	is on), consists of x, y, width, height.
+
+*Example:*
+-------------------
+[
+ {
+  "name": "LVDS1",
+  "active": true,
+  "current_workspace": 4,
+  "rect": {
+   "x": 0,
+   "y": 0,
+   "width": 1280,
+   "height": 800
+  }
+ },
+ {
+  "name": "VGA1",
+  "active": true,
+  "current_workspace": 1,
+  "rect": {
+   "x": 1280,
+   "y": 0,
+   "width": 1280,
+   "height": 1024
+  },
+ }
+]
 -------------------
 
 == Events

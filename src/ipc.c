@@ -32,6 +32,7 @@
 #include "commands.h"
 #include "log.h"
 #include "table.h"
+#include "randr.h"
 
 /* Shorter names for all those yajl_gen_* functions */
 #define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
@@ -202,6 +203,56 @@ IPC_HANDLER(get_workspaces) {
 }
 
 /*
+ * Formats the reply message for a GET_OUTPUTS request and sends it to the
+ * client
+ *
+ */
+IPC_HANDLER(get_outputs) {
+        Output *output;
+
+        yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+        y(array_open);
+
+        TAILQ_FOREACH(output, &outputs, outputs) {
+                y(map_open);
+
+                ystr("name");
+                ystr(output->name);
+
+                ystr("active");
+                y(bool, output->active);
+
+                ystr("rect");
+                y(map_open);
+                ystr("x");
+                y(integer, output->rect.x);
+                ystr("y");
+                y(integer, output->rect.y);
+                ystr("width");
+                y(integer, output->rect.width);
+                ystr("height");
+                y(integer, output->rect.height);
+                y(map_close);
+
+                ystr("current_workspace");
+                if (output->current_workspace == NULL)
+                        y(null);
+                else y(integer, output->current_workspace->num + 1);
+
+                y(map_close);
+        }
+
+        y(array_close);
+
+        const unsigned char *payload;
+        unsigned int length;
+        y(get_buf, &payload, &length);
+
+        ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_OUTPUTS, length);
+        y(free);
+}
+
+/*
  * Callback for the YAJL parser (will be called when a string is parsed).
  *
  */
@@ -277,10 +328,13 @@ IPC_HANDLER(subscribe) {
                          I3_IPC_REPLY_TYPE_SUBSCRIBE, strlen(reply));
 }
 
-handler_t handlers[3] = {
+/* The index of each callback function corresponds to the numeric
+ * value of the message type (see include/i3/ipc.h) */
+handler_t handlers[4] = {
         handle_command,
         handle_get_workspaces,
-        handle_subscribe
+        handle_subscribe,
+        handle_get_outputs
 };
 
 /*

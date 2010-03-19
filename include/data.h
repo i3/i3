@@ -512,8 +512,8 @@ struct xoutput {
         /** Name of the output */
         char *name;
 
-        /** Whether the output is currently (has a CRTC attached with a valid
-         * mode) */
+        /** Whether the output is currently active (has a CRTC attached with a
+         * valid mode) */
         bool active;
 
         /** Internal flags, necessary for querying RandR screens (happens in

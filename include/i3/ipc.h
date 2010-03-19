@@ -32,6 +32,9 @@
 /** Subscribe to the specified events */
 #define I3_IPC_MESSAGE_TYPE_SUBSCRIBE           2
 
+/** Requests the current outputs from i3 */
+#define I3_IPC_MESSAGE_TYPE_GET_OUTPUTS         3
+
 /*
  * Messages from i3 to clients
  *
@@ -45,6 +48,9 @@
 
 /** Subscription reply type */
 #define I3_IPC_REPLY_TYPE_SUBSCRIBE             2
+
+/** Outputs reply type */
+#define I3_IPC_REPLY_TYPE_OUTPUTS               3
 
 /*
  * Events from i3 to clients. Events have the first bit set high.
