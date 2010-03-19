@@ -209,6 +209,7 @@ void disable_randr(xcb_connection_t *conn) {
         s->rect.y = 0;
         s->rect.width = root_screen->width_in_pixels;
         s->rect.height = root_screen->height_in_pixels;
+        s->name = "xroot-0";
 
         TAILQ_INSERT_TAIL(&outputs, s, outputs);
 
