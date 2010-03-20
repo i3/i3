@@ -193,6 +193,38 @@ void client_enter_fullscreen(xcb_connection_t *conn, Client *client) {
 }
 
 /*
+ * Leaves fullscreen mode for the current client. This is called by toggle_fullscreen.
+ *
+ */
+void client_leave_fullscreen(xcb_connection_t *conn, Client *client) {
+        LOG("leaving fullscreen mode\n");
+        client->fullscreen = false;
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces)
+                if (ws->fullscreen_client == client)
+                        ws->fullscreen_client = NULL;
+
+        if (client_is_floating(client)) {
+                /* For floating clients it’s enough if we just reconfigure that window (in fact,
+                 * re-rendering the layout will not update the client.) */
+                reposition_client(conn, client);
+                resize_client(conn, client);
+                /* redecorate_window flushes */
+                redecorate_window(conn, client);
+        } else {
+                client_set_below_floating(conn, client);
+
+                /* Because the coordinates of the window haven’t changed, it would not be
+                   re-configured if we don’t set the following flag */
+                client->force_reconfigure = true;
+                /* We left fullscreen mode, redraw the whole layout to ensure enternotify events are disabled */
+                render_layout(conn);
+        }
+
+        xcb_flush(conn);
+}
+
+/*
  * Toggles fullscreen mode for the given client. It updates the data structures and
  * reconfigures (= resizes/moves) the client and its frame to the full size of the
  * screen. When leaving fullscreen, re-rendering the layout is forced.
