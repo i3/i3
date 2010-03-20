@@ -447,8 +447,8 @@ void randr_query_outputs(xcb_connection_t *conn) {
                         Client *dock;
                         while (!SLIST_EMPTY(&(output->dock_clients))) {
                                 dock = SLIST_FIRST(&(output->dock_clients));
-                                SLIST_INSERT_HEAD(&(first->dock_clients), dock, dock_clients);
                                 SLIST_REMOVE_HEAD(&(output->dock_clients), dock_clients);
+                                SLIST_INSERT_HEAD(&(first->dock_clients), dock, dock_clients);
                         }
                         output->current_workspace = NULL;
                         output->to_be_disabled = false;
