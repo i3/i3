@@ -268,7 +268,7 @@ output::
 
 This event consists of a single serialized map containing a property
 +change (string)+ which indicates the type of the change ("focus", "init",
-"empty").
+"empty", "urgent").
 
 *Example:*
 ---------------------

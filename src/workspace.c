@@ -425,16 +425,21 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
  */
 void workspace_update_urgent_flag(Workspace *ws) {
         Client *current;
+        bool old_flag = ws->urgent;
+        bool urgent = false;
 
         SLIST_FOREACH(current, &(ws->focus_stack), focus_clients) {
                 if (!current->urgent)
                         continue;
 
-                ws->urgent = true;
-                return;
+                urgent = true;
+                break;
         }
 
-        ws->urgent = false;
+        ws->urgent = urgent;
+
+        if (old_flag != urgent)
+                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"urgent\"}");
 }
 
 /*
