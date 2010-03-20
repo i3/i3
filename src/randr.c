@@ -34,6 +34,7 @@
 #include "workspace.h"
 #include "log.h"
 #include "ewmh.h"
+#include "ipc.h"
 
 /* While a clean namespace is usually a pretty good thing, we really need
  * to use shorter names than the whole xcb_randr_* default names. */
@@ -188,6 +189,7 @@ void initialize_output(xcb_connection_t *conn, Output *output, Workspace *worksp
 
         SLIST_INIT(&(output->dock_clients));
 
+        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
         DLOG("initialized output at (%d, %d) with %d x %d\n",
                         output->rect.x, output->rect.y, output->rect.width, output->rect.height);
 }
