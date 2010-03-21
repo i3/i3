@@ -1,6 +1,5 @@
 i3-input(1)
 =========
-
 Michael Stapelberg <michael+i3@stapelberg.de>
 v3.delta, November 2009
 
