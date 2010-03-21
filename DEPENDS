@@ -1,6 +1,7 @@
-You need the following libraries. The version given is to be understand as the minimum
-version. However, if any of these libraries changes the API, i3 may not compile anymore.
-In that case, please try using the versions mentioned below until a fix is provided.
+You need the following libraries. The version given is to be understood as the
+minimum version required. However, if any of these libraries changes the API,
+i3 may not compile anymore. In that case, please try using the versions
+mentioned below until a fix is provided.
 
  * xcb-proto-1.3 (2008-12-10)
  * libxcb-1.1.93 (2008-12-11)

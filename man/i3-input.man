@@ -1,11 +1,12 @@
 i3-input(1)
 =========
+
 Michael Stapelberg <michael+i3@stapelberg.de>
 v3.delta, November 2009
 
 == NAME
 
-i3-input - interactively take a command for i3
+i3-input - interactively take a command for i3 window manager
 
 == SYNOPSIS
 
@@ -13,8 +14,9 @@ i3-input [-s <socket>] [-p <prefix>] [-l <limit>] [-P <prompt>] [-v]
 
 == DESCRIPTION
 
-i3-input is a tool to take commands (or parts of a command) and then send it
-to i3. This is useful for example for the mark/goto command.
+i3-input is a tool to take commands (or parts of a command) composed by
+the user, and send it/them to i3. This is useful, for example, for the
+mark/goto command.
 
 == EXAMPLE
 

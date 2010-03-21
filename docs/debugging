@@ -1,5 +1,5 @@
 Debugging i3: How To
-==================
+====================
 Michael Stapelberg <michael+i3@stapelberg.de>
 April 2009
 
@@ -13,22 +13,22 @@ debugging and/or need further help, do not hesitate to contact us!
 == Enabling logging
 
 i3 spits out much information onto stdout. To have a clearly defined place
-where logfiles will be saved, you should redirect stdout and stderr in
-xsession. While you’re at it, putting each run of i3 in a separate logfile with
-date/time in it is a good idea to not get confused about the different logfiles
-later on.
+where log files will be saved, you should redirect stdout and stderr in
+xsession. While you’re at it, putting each run of i3 in a separate log file
+with date/time in it is a good idea to not get confused about the different
+log files later on.
 
 --------------------------------------------------------------------
 exec /usr/bin/i3 >/home/michael/i3/i3log-$(date +'%F-%k-%M-%S') 2>&1
 --------------------------------------------------------------------
 
-== Enabling coredumps
+== Enabling core dumps
 
-When i3 crashes, often you have the chance of getting a coredump (an image of
-the memory of the i3 process which can be loaded into a debugger). To get a
-core-dump, you have to make sure that the user limit for core dump files is set
+When i3 crashes, often you have the chance of getting a 'core dump' (an image
+of the memory of the i3 process which can be loaded into a debugger). To get a
+core dump, you have to make sure that the user limit for core dump files is set
 high enough. Many systems ship with a default value which even forbids core
-dumps completely. To disable the limit completely and thus enable coredumps,
+dumps completely. To disable the limit completely and thus enable core dumps,
 use the following command (in your .xsession, before starting i3):
 
 -------------------
@@ -49,7 +49,7 @@ process id (%p) in it. You can save this setting across reboots using
 
 == Compiling with debug symbols
 
-To actually get useful coredumps, you should make sure that your version of i3
+To actually get useful core dumps, you should make sure that your version of i3
 is compiled with debug symbols, that is, that they are not stripped during the
 build process. You can check whether your executable contains symbols by
 issuing the following command:
@@ -72,15 +72,15 @@ stripping. If nothing helps, please build i3 from source.
 == Generating a backtrace
 
 Once you have made sure that your i3 is compiled with debug symbols and that
-coredumps are enabled, you can start getting some sense out of the coredumps.
+core dumps are enabled, you can start making sense out of the core dumps.
 
-Because the coredump depends on the original executable (and its debug
+Because the core dump depends on the original executable (and its debug
 symbols), please do this as soon as you encounter the problem. If you
-re-compile i3, your coredump might be useless afterwards.
+re-compile i3, your core dump might be useless afterwards.
 
 Please install +gdb+, a debugger for C. No worries, you don’t need to learn it
 now.  Start gdb using the following command (replacing the actual name of the
-coredump of course):
+core dump of course):
 
 ----------------------------
 gdb $(which i3) core.i3.3849
@@ -92,13 +92,13 @@ Then, generate a backtrace using:
 backtrace full
 --------------
 
-== Sending bugreports/debugging on IRC
+== Sending bug reports/debugging on IRC
 
-When sending bugreports, please paste the relevant part of the log (if in
+When sending bug reports, please paste the relevant part of the log (if in
 doubt, please send us rather too much information than too less) and the whole
-backtrace (if there was a coredump).
+backtrace (if there was a core dump).
 
 When debugging with us in IRC, be prepared to use a so called nopaste service
-such as http://nopaste.info because pasting large amounts of text in IRC
-sometimes leads to incomplete lines (servers have line length limitations) or
-flood kicks.
+such as http://nopaste.info or http://pastebin.com because pasting large
+amounts of text in IRC sometimes leads to incomplete lines (servers have line
+length limitations) or flood kicks.

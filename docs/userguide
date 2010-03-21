@@ -21,8 +21,8 @@ image:keyboard-layer1.png["Keys to use with Mod1 (alt)",width=600,link="keyboard
 image:keyboard-layer2.png["Keys to use with Shift+Mod1",width=600,link="keyboard-layer2.png"]
 
 As i3 uses keycodes in the default configuration, it does not matter which
-keyboard layout you actually use. The key positions are what matters (of course you can
-also use keysymbols, see below).
+keyboard layout you actually use. The key positions are what matters (of course
+you can also use keysymbols, see below).
 
 The red keys are the modifiers you need to press (by default), the blue keys
 are your homerow.
@@ -40,7 +40,8 @@ image:single_terminal.png[Single terminal]
 
 It is important to keep in mind that i3 uses a table to manage your windows. At
 the moment, you have exactly one column and one row which leaves you with one
-cell. In this cell there is a container which is where your new terminal is opened.
+cell. In this cell there is a container, which is where your new terminal is
+opened.
 
 If you now open another terminal, you still have only one cell. However, the
 container in that cell holds both of your terminals. So, a container is just a
@@ -52,12 +53,12 @@ image:two_terminals.png[Two terminals]
 To move the focus between the two terminals, you use the direction keys which
 you may know from the editor +vi+. However, in i3, your homerow is used for
 these keys (in +vi+, the keys are shifted to the left by one for compatibility
-with most keyboard layouts). Therefore, +Mod1+J+ is left, +Mod1+K+ is down, +Mod1+L+
-is up and `Mod1+;` is right. So, to switch between the terminals, use +Mod1+K+ or
-+Mod1+L+.
+with most keyboard layouts). Therefore, +Mod1+J+ is left, +Mod1+K+ is down,
++Mod1+L+ is up and `Mod1+;` is right. So, to switch between the terminals,
+use +Mod1+K+ or +Mod1+L+.
 
 To create a new row/column (and a new cell), you can simply move a terminal (or
-any other window) to the direction you want to expand your table. So, let’s
+any other window) in the direction you want to expand your table. So, let’s
 expand the table to the right by pressing `Mod1+Shift+;`.
 
 image:two_columns.png[Two columns]
@@ -118,8 +119,8 @@ another workspace, press +Mod1+num+ where +num+ is the number of the workspace
 you want to use. If the workspace does not exist yet, it will be created.
 
 A common paradigm is to put the web browser on one workspace, communication
-applications (+mutt+, +irssi+, ...) on another one and the ones with which you
-work on the third one. Of course, there is no need to follow this approach.
+applications (+mutt+, +irssi+, ...) on another one, and the ones with which you
+work, on the third one. Of course, there is no need to follow this approach.
 
 If you have multiple screens, a workspace will be created on each screen at
 startup. If you open a new workspace, it will be bound to the screen you
@@ -135,10 +136,10 @@ it does not yet exist.
 
 === Resizing columns/rows
 
-To resize columns or rows just grab the border between the two columns/rows
+To resize columns or rows, just grab the border between the two columns/rows
 and move it to the wanted size. Please keep in mind that each cell of the table
 holds a +container+ and thus you cannot horizontally resize single windows.  If
-you need applications with different horizontal sizes place them in seperate
+you need applications with different horizontal sizes, place them in seperate
 cells one above the other.
 
 See <<resizingconfig>> for how to configure i3 to be able to resize
@@ -146,7 +147,7 @@ columns/rows with your keyboard.
 
 === Restarting i3 inplace
 
-To restart i3 inplace (and thus get into a clean state if there is a bug or
+To restart i3 inplace (and thus get into a clean state if there is a bug, or
 to upgrade to a newer version of i3) you can use +Mod1+Shift+r+. Be aware,
 though, that this kills your current layout and all the windows you have opened
 will be put in a default container in only one cell. Saving layouts will be
@@ -173,7 +174,7 @@ by pressing +Mod1+Control+k+ (or snap container 2 rightwards).
 Floating mode is the opposite of tiling mode. The position and size of a window
 are not managed by i3, but by you. Using this mode violates the tiling
 paradigm but can be useful for some corner cases like "Save as" dialog
-windows or toolbar windows (GIMP or similar).
+windows, or toolbar windows (GIMP or similar).
 
 You can enable floating mode for a window by pressing +Mod1+Shift+Space+. By
 dragging the window’s titlebar with your mouse you can move the window
@@ -235,18 +236,19 @@ A keyboard binding makes i3 execute a command (see below) upon pressing a
 specific key. i3 allows you to bind either on keycodes or on keysyms (you can
 also mix your bindings, though i3 will not protect you from overlapping ones).
 
-* A keysym (key symbol) is a description for a specific symbol, like "a" or "b",
-  but also more strange ones like "underscore" instead of "_". These are the ones
-  you use in Xmodmap to remap your keys. To get the current mapping of your
-  keys, use +xmodmap -pke+.
+* A keysym (key symbol) is a description for a specific symbol, like "a"
+  or "b", but also more strange ones like "underscore" instead of "_". These
+  are the ones you use in Xmodmap to remap your keys. To get the current
+  mapping of your keys, use +xmodmap -pke+.
 
 * Keycodes do not need to have a symbol assigned (handy for some hotkeys
   on some notebooks) and they will not change their meaning as you switch to a
   different keyboard layout (when using +xmodmap+).
 
 My recommendation is: If you often switch keyboard layouts but you want to keep
-your bindings in the same physical location on the keyboard use keycodes. If you
-don’t switch layouts and want a clean and simple config file, use keysyms.
+your bindings in the same physical location on the keyboard, use keycodes.
+If you don’t switch layouts, and want a clean and simple config file, use
+keysyms.
 
 *Syntax*:
 ----------------------------------
@@ -287,9 +289,9 @@ use the same key you use for managing windows (Mod1 for example). Then
 you can press Mod1, click into a window using your left mouse button, and drag
 it to the position you want.
 
-When holding the floating modifier, you can resize a floating window by pressing
-the right mouse button on it and moving around while holding it. If you hold the
-shift button as well, the resize will be proportional.
+When holding the floating modifier, you can resize a floating window by
+pressing the right mouse button on it and moving around while holding it. If
+you hold the shift button as well, the resize will be proportional.
 
 *Syntax*:
 --------------------------------
@@ -359,13 +361,13 @@ configuration file and run it before starting i3 (for example in your
 
 [[assign_workspace]]
 
-It is recommended that you match on window classes whereever possible because
-some applications first create their window and then worry about setting the
+It is recommended that you match on window classes wherever possible because
+some applications first create their window, and then worry about setting the
 correct title. Firefox with Vimperator comes to mind. The window starts up
-being named Firefox and only when Vimperator is loaded the title changes. As
-i3 will get the title as soon as the application maps the window (mapping means
-actually displaying it on the screen), you’d need to have to match on Firefox
-in this case.
+being named Firefox, and only when Vimperator is loaded does the title change.
+As i3 will get the title as soon as the application maps the window (mapping
+means actually displaying it on the screen), you’d need to have to match on
+'Firefox' in this case.
 
 You can prefix or suffix workspaces with a `~` to specify that matching clients
 should be put into floating mode. If you specify only a `~`, the client will
@@ -389,11 +391,11 @@ assign "xv/MPlayer" → ~
 Note that the arrow is not required, it just looks good :-). If you decide to
 use it, it has to be a UTF-8 encoded arrow, not "->" or something like that.
 
-=== Automatically starting applications on startup
+=== Automatically starting applications on i3 startup
 
 By using the +exec+ keyword outside a keybinding, you can configure which
-commands will be performed by i3 on initial startup (not when restarting inplace
-however). These commands will be run in order.
+commands will be performed by i3 on initial startup (not when restarting i3
+in-place however). These commands will be run in order.
 
 *Syntax*:
 ------------
@@ -420,7 +422,7 @@ the second screen and so on).
 workspace <number> output <output>
 ----------------------------------
 
-The output is the name of the RandR output you attach your screen to. On a
+The 'output' is the name of the RandR output you attach your screen to. On a
 laptop, you might have VGA1 and LVDS1 as output names. You can see the
 available outputs by running +xrandr --current+.
 
@@ -441,7 +443,7 @@ workspace <number> <name>
 workspace <number> output <output> name
 ---------------------------------------
 
-For more details about the output-part of this command, see above.
+For more details about the 'output' part of this command, see above.
 
 *Examples*:
 --------------------------
@@ -486,15 +488,15 @@ Colors are in HTML hex format (#rrggbb), see the following example:
 client.focused #2F343A #900000 #FFFFFF
 --------------------------------------
 
-Note that for the window decorations the color around the child window is the
-background color and the border color is only the two thin lines at the top of
+Note that for the window decorations, the color around the child window is the
+background color, and the border color is only the two thin lines at the top of
 the window.
 
 === Interprocess communication
 
 i3 uses unix sockets to provide an IPC interface. This allows third-party
-programs to get information like the current workspaces to display a workspace
-bar, and to control i3.
+programs to get information from i3, such as the current workspaces
+(to display a workspace bar), and to control i3.
 
 To enable it, you have to configure a path where the unix socket will be
 stored. The default path is +/tmp/i3-ipc.sock+.
@@ -504,14 +506,14 @@ stored. The default path is +/tmp/i3-ipc.sock+.
 ipc-socket /tmp/i3-ipc.sock
 ----------------------------
 
-You can then use the +i3-msg+ application to perform any command listed in the next
-section.
+You can then use the +i3-msg+ application to perform any command listed in
+the next section.
 
 === Disable focus follows mouse
 
 If you have a setup where your mouse usually is in your way (like a touchpad
 on your laptop which you do not want to disable completely), you might want
-to disable focus follows mouse and control focus only by using your keyboard.
+to disable 'focus follows mouse' and control focus only by using your keyboard.
 The mouse will still be useful inside the currently active window (for example
 to click on links in your browser window).
 
@@ -550,13 +552,13 @@ bindsym Mod1+Shift+f fg
 bindsym Mod1+t t
 --------------
 
-=== Focussing/Moving/Snapping clients/containers/screens
+=== Focusing/Moving/Snapping clients/containers/screens
 
 To change the focus, use one of the +h+, +j+, +k+ and +l+ commands, meaning
-left, down, up, right (respectively). To focus a container, prefix it with +wc+,
-to focus a screen, prefix it with +ws+.
+left, down, up, right (respectively). To focus a container, prefix it with
++wc+. To focus a screen, prefix it with +ws+.
 
-The same principle applies for moving and snapping, just prefix the command
+The same principle applies for moving and snapping: just prefix the command
 with +m+ when moving and with +s+ when snapping:
 
 *Examples*:
@@ -590,9 +592,9 @@ To change to a specific workspace, the command is just the number of the
 workspace, e.g. +1+ or +3+. To move the current client to a specific workspace,
 prefix the number with an +m+.
 
-You can also switch to the next and previous workspace with the
-commands +nw+ and +pw+, which is handy, for example, if you have workspace
-1, 3, 4 and 9 and you want to cycle through them with a single key combination.
+You can also switch to the next and previous workspace with the commands +nw+
+and +pw+, which is handy, for example, if you have workspace 1, 3, 4 and 9 and
+you want to cycle through them with a single key combination.
 
 *Examples*:
 -------------------------
@@ -645,11 +647,11 @@ bindsym Mod1+r mode resize
 
 === Jumping to specific windows
 
-Often when in a multi-monitor environment, you want to quickly jump to a specific
-window. For example while working on workspace 3 you may want to jump to
-your mailclient to mail your boss that you’ve achieved some important goal. Instead
-of figuring out how to navigate to your mailclient, it would be more convenient to
-have a shortcut.
+Often when in a multi-monitor environment, you want to quickly jump to a
+specific window. For example, while working on workspace 3 you may want to
+jump to your mail client to email your boss that you’ve achieved some
+important goal. Instead of figuring out how to navigate to your mailclient,
+it would be more convenient to have a shortcut.
 
 *Syntax*:
 ----------------------------------------------------
@@ -657,8 +659,9 @@ jump ["]window class[/window title]["]
 jump workspace [ column row ]
 ----------------------------------------------------
 
-You can either use the same matching algorithm as in the +assign+ command (see above)
-or you can specify the position of the client if you always use the same layout.
+You can either use the same matching algorithm as in the +assign+ command
+(see above) or you can specify the position of the client if you always use
+the same layout.
 
 *Examples*:
 --------------------------------------
@@ -673,9 +676,9 @@ bindsym Mod1+a jump "urxvt/VIM"
 This feature is like the jump feature: It allows you to directly jump to a
 specific window (this means switching to the appropriate workspace and setting
 focus to the windows). However, you can directly mark a specific window with
-an arbitrary label and use it afterwards.  You do not need to ensure
-that your windows have unique classes or titles, and you do not need to change
-your configuration file.
+an arbitrary label and use it afterwards.  You do not need to ensure that your
+windows have unique classes or titles, and you do not need to change your
+configuration file.
 
 As the command needs to include the label with which you want to mark the
 window, you cannot simply bind it to a key.  +i3-input+ is a tool created
@@ -702,16 +705,16 @@ seperate bindings for a specific set of labels and then only use those labels.
 
 === Traveling the focus stack
 
-This mechanism can be thought of as the opposite of the +jump+ command. It travels
-the focus stack and jumps to the window which had focus previously.
+This mechanism can be thought of as the opposite of the +jump+ command.
+It travels the focus stack and jumps to the window which had focus previously.
 
 *Syntax*:
 --------------
 focus [number] | floating | tiling | ft
 --------------
 
-Where +number+ by default is 1 meaning that the next client in the focus stack will
-be selected.
+Where +number+ by default is 1 meaning that the next client in the focus stack
+will be selected.
 
 The special values have the following meaning:
 
@@ -720,8 +723,8 @@ floating::
 tiling::
 	The next tiling window is selected.
 ft::
-	If the current window is floating, the next tiling window will be selected
-	and vice-versa.
+	If the current window is floating, the next tiling window will be
+       selected; and vice-versa.
 
 === Changing border style
 
@@ -772,9 +775,9 @@ You can make i3 reload its configuration file with +reload+. You can also
 restart i3 inplace with the +restart+ command to get it out of some weird state
 (if that should ever happen) or to perform an upgrade without having to restart
 your X session. However, your layout is not preserved at the moment, meaning
-that all open windows will be in a single container in default layout. To exit
-i3 properly, you can use the +exit+ command, however you don’t need to (e.g.,
-simply killing your X session is fine as well).
+that all open windows will end up in a single container in default layout
+after the restart. To exit i3 properly, you can use the +exit+ command,
+however you don’t need to (simply killing your X session is fine as well).
 
 *Examples*:
 ----------------------------
@@ -791,33 +794,33 @@ As you can see in the goal list on the website, i3 was specifically developed
 with support for multiple monitors in mind. This section will explain how to
 handle multiple monitors.
 
-When you have only one monitor things are simple. You usually start with
+When you have only one monitor, things are simple. You usually start with
 workspace 1 on your monitor and open new ones as you need them.
 
 When you have more than one monitor, each monitor will get an initial
-workspace.  The first monitor gets 1, the second gets 2 and a possible third would
-get 3. When you switch to a workspace on a different monitor, i3 will switch
-to that monitor and then switch to the workspace. This way, you don’t need
-shortcuts to switch to a specific monitor, and you don’t need to remember where
-you put which workspace. New workspaces will be opened on the currently active
-monitor.  It is not possible to have a monitor without a workspace.
+workspace.  The first monitor gets 1, the second gets 2 and a possible third
+would get 3. When you switch to a workspace on a different monitor, i3 will
+switch to that monitor and then switch to the workspace. This way, you don’t
+need shortcuts to switch to a specific monitor, and you don’t need to remember
+where you put which workspace. New workspaces will be opened on the currently
+active monitor.  It is not possible to have a monitor without a workspace.
 
-The idea of making workspaces global is based on the observation that most users
-have a very limited set of workspaces on their additional monitors.  They are
-often used for a specific task (browser, shell) or for monitoring several
-things (mail, IRC, syslog, …). Thus, using one workspace on one monitor and
-"the rest" on the other monitors often makes sense. However, as you can
-create an unlimited number of workspaces in i3 and tie them to specific screens,
-you can have the "traditional" approach of having X workspaces per screen by
-changing your configuration (using modes, for example).
+The idea of making workspaces global is based on the observation that most
+users have a very limited set of workspaces on their additional monitors.
+They are often used for a specific task (browser, shell) or for monitoring
+several things (mail, IRC, syslog, …). Thus, using one workspace on one monitor
+and "the rest" on the other monitors often makes sense. However, as you can
+create an unlimited number of workspaces in i3 and tie them to specific
+screens, you can have the "traditional" approach of having X workspaces per
+screen by changing your configuration (using modes, for example).
 
 === Configuring your monitors
 
-To help you get going if you have never used multiple monitors before, here is a
-short overview of the xrandr options which will probably be of interest to you.
-It is always useful to get an overview of the current screen configuration.
+To help you get going if you have never used multiple monitors before, here is
+a short overview of the xrandr options which will probably be of interest to
+you. It is always useful to get an overview of the current screen configuration.
 Just run "xrandr" and you will get an output like the following:
---------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 $ xrandr
 Screen 0: minimum 320 x 200, current 1280 x 800, maximum 8192 x 8192
 VGA1 disconnected (normal left inverted right x axis y axis)
@@ -837,9 +840,9 @@ course, it is the internal flat panel) but +VGA1+ is not. If you have a monitor
 connected to one of the ports but xrandr still says "disconnected", you should
 check your cable, monitor or graphics driver.
 
-The maximum resolution you can see at the end of the first line
-is the maximum combined resolution of your monitors. By default, it is usually
-too low and has to be increased by editing +/etc/X11/xorg.conf+.
+The maximum resolution you can see at the end of the first line is the maximum
+combined resolution of your monitors. By default, it is usually too low and has
+to be increased by editing +/etc/X11/xorg.conf+.
 
 So, say you connected VGA1 and want to use it as an additional screen:
 -------------------------------------------
@@ -848,7 +851,7 @@ xrandr --output VGA1 --auto --left-of LVDS1
 This command makes xrandr try to find the native resolution of the device
 connected to +VGA1+ and configures it to the left of your internal flat panel.
 When running "xrandr" again, the output looks like this:
------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 $ xrandr
 Screen 0: minimum 320 x 200, current 2560 x 1024, maximum 8192 x 8192
 VGA1 connected 1280x1024+0+0 (normal left inverted right x axis y axis) 338mm x 270mm
@@ -869,7 +872,7 @@ LVDS1 connected 1280x800+1280+0 (normal left inverted right x axis y axis) 261mm
    720x400        85.0
    640x400        85.1
    640x350        85.1
------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 Please note that i3 uses exactly the same API as xrandr does, so it will see
 only what you can see in xrandr.
 

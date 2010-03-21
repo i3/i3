@@ -24,8 +24,9 @@ some events which normal clients usually don’t handle.
 In the case of i3, the tasks (and order of them) are the following:
 
 . Grab the key bindings (events will be sent upon keypress/keyrelease)
-. Iterate through all existing windows (if the window manager is not started as the first
-  client of X) and manage them (= reparent them, create window decorations)
+. Iterate through all existing windows (if the window manager is not started as
+  the first client of X) and manage them (reparent them, create window
+  decorations, etc.)
 . When new windows are created, manage them
 . Handle the client’s `_WM_STATE` property, but only the `_WM_STATE_FULLSCREEN`
 . Handle the client’s `WM_NAME` property
@@ -35,8 +36,8 @@ In the case of i3, the tasks (and order of them) are the following:
 . Handle button (as in mouse buttons) presses for focus/raise on click
 . Handle expose events to re-draw own windows such as decorations
 . React to the user’s commands: Change focus, Move windows, Switch workspaces,
-Change the layout mode of a container (default/stacking), Start a new application,
-Restart the window manager
+  Change the layout mode of a container (default/stacking/tabbed), start a new
+  application, restart the window manager
 
 In the following chapters, each of these tasks and their implementation details
 will be discussed.
@@ -46,8 +47,8 @@ will be discussed.
 Traditionally, there are two approaches to managing windows: The most common
 one nowadays is floating, which means the user can freely move/resize the
 windows. The other approach is called tiling, which means that your window
-manager distributing windows to use as much space as possible while not
-overlapping.
+manager distributes windows to use as much space as possible while not
+overlapping each other.
 
 The idea behind tiling is that you should not need to waste your time
 moving/resizing windows while you usually want to get some work done. After
@@ -90,8 +91,9 @@ When moving terminal 2 to the bottom, the table will be expanded again.
 |========
 
 You can really think of the layout table like a traditional HTML table, if
-you’ve ever designed one. Especially col- and rowspan work equally. Below you
-see an example of colspan=2 for the first container (which has T1 as window).
+you’ve ever designed one. Especially col- and rowspan work similarly. Below,
+you see an example of colspan=2 for the first container (which has T1 as
+window).
 
 [width="15%",cols="^asciidoc"]
 |========
@@ -112,7 +114,7 @@ Contains data definitions used by nearly all files. You really need to read
 this first.
 
 include/*.h::
-Contains forward definitions for all public functions, aswell as
+Contains forward definitions for all public functions, as well as
 doxygen-compatible comments (so if you want to get a bit more of the big
 picture, either browse all header files or use doxygen if you prefer that).
 
@@ -131,7 +133,7 @@ Contains all functions which are specific to a certain client (make it
 fullscreen, see if its class/name matches a pattern, kill it, …).
 
 src/commands.c::
-Parsing commands and actually execute them (focussing, moving, …).
+Parsing commands and actually executing them (focusing, moving, …).
 
 src/config.c::
 Parses the configuration file.
@@ -143,7 +145,7 @@ src/floating.c::
 Contains functions for floating mode (mostly resizing/dragging).
 
 src/handlers.c::
-Contains all handlers for all kind of X events (new window title, new hints,
+Contains all handlers for all kinds of X events (new window title, new hints,
 unmapping, key presses, button presses, …).
 
 src/ipc.c::
@@ -212,7 +214,7 @@ screen you are currently on.
 === Workspace
 
 A workspace is identified by its number. Basically, you could think of
-workspaces as different desks in your bureau, if you like the desktop
+workspaces as different desks in your office, if you like the desktop
 methaphor. They just contain different sets of windows and are completely
 separate of each other. Other window managers also call this ``Virtual
 desktops''.
@@ -288,7 +290,7 @@ So, why do we need to grab keycodes actively? Because X does not set the
 state-property of keypress/keyrelease events properly. The Mode_switch bit is
 not set and we need to get it using XkbGetState. This means we cannot pass X
 our combination of modifiers containing Mode_switch when grabbing the key and
-therefore need to grab the keycode itself without any modiffiers. This means,
+therefore need to grab the keycode itself without any modifiers. This means,
 if you bind Mode_switch + keycode 38 ("a"), i3 will grab keycode 38 ("a") and
 check on each press of "a" if the Mode_switch bit is set using XKB. If yes, it
 will handle the event, if not, it will replay the event.
@@ -344,7 +346,7 @@ moved/resized so that the currently active layout (default/stacking/tabbed mode)
 is rendered correctly. To move/resize windows, a window is ``configured'' in
 X11-speak.
 
-Some applications, such as MPlayer obivously assume the window manager is
+Some applications, such as MPlayer obviously assume the window manager is
 stupid and try to configure their windows by themselves. This generates an
 event called configurerequest. i3 handles these events and tells the window the
 size it had before the configurerequest (with the exception of not yet mapped
@@ -374,7 +376,7 @@ characters (every special character contained in your font).
 
 == Size hints
 
-Size hints specify the minimum/maximum size for a given window aswell as its
+Size hints specify the minimum/maximum size for a given window as well as its
 aspect ratio.  This is important for clients like mplayer, who only set the
 aspect ratio and resize their window to be as small as possible (but only with
 some video outputs, for example in Xv, while when using x11, mplayer does the
@@ -447,10 +449,10 @@ floating windows:
   (+grabwin+)
 * Another window, 2px width and as high as your screen (or vice versa for
   horizontal resizing) is created. Its background color is the border color and
-  it is only there to signalize the user how big the container will be (it
+  it is only there to inform the user how big the container will be (it
   creates the impression of dragging the border out of the container).
 * The +drag_pointer+ function of +src/floating.c+ is called to grab the pointer
-  and enter an own event loop which will pass all events (expose events) but
+  and enter its own event loop which will pass all events (expose events) but
   motion notify events. This function then calls the specified callback
   (+resize_callback+) which does some boundary checking and moves the helper
   window. As soon as the mouse button is released, this loop will be
@@ -497,7 +499,7 @@ http://git-scm.com/documentation
 
 When you want to send a patch because you fixed a bug or implemented a cool
 feature (please talk to us before working on features to see whether they are
-maybe already implemented, not possible because of some reason or don’t fit
+maybe already implemented, not possible for some some reason, or don’t fit
 into the concept), please use git to create a patchfile.
 
 First of all, update your working copy to the latest version of the master
@@ -519,4 +521,4 @@ apply to the branch, preserving your commit message and name:
 git format-patch origin
 -----------------------
 
-Just send us the generated file via mail.
+Just send us the generated file via email.

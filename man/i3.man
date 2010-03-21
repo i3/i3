@@ -132,7 +132,8 @@ support that, the window will be killed and it depends on the application what
 happens.
 
 Mod1+Shift+r::
-Restarts i3 in place (without losing any windows, but the layout).
+Restarts i3 in place (without losing any windows, but at this time, the layout
+and placement of windows is not retained).
 
 Mod1+Shift+e::
 Exits i3.
@@ -283,14 +284,15 @@ exec /usr/bin/i3 >> ~/.i3/logfile
 
 == TODO
 
-There is still lot of work to do. Please check our bugtracker for up-to-date information
-about tasks which are still not finished.
+There is still lot of work to do. Please check our bugtracker for up-to-date
+information about tasks which are still not finished.
 
 == SEE ALSO
 
-You should have a copy of the userguide (featuring nice screenshots/graphics which is why this
-is not integrated into this manpage), the debugging guide and the "how to hack" guide. If you
-are building from source, run +make -C docs+.
+You should have a copy of the userguide (featuring nice screenshots/graphics
+which is why this is not integrated into this manpage), the debugging guide,
+and the "how to hack" guide. If you are building from source, run:
+ +make -C docs+
 
 You can also access these documents online at http://i3.zekjur.net/
 
