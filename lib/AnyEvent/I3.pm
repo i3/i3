@@ -7,6 +7,7 @@ use JSON::XS;
 use AnyEvent::Handle;
 use AnyEvent::Socket;
 use AnyEvent;
+use Encode;
 
 =head1 NAME
 
@@ -75,12 +76,6 @@ my %events = (
     workspace => ($event_mask | 0),
     output => ($event_mask | 1),
 );
-
-sub _bytelength {
-    my ($scalar) = @_;
-    use bytes;
-    length($scalar)
-}
 
 sub i3 {
     AnyEvent::I3->new(@_)
@@ -172,7 +167,7 @@ sub subscribe {
     my ($self, $callbacks) = @_;
 
     my $payload = encode_json [ keys %{$callbacks} ];
-    my $message = $magic . pack("LL", _bytelength($payload), 2) . $payload;
+    my $message = $magic . pack("LL", length($payload), 2) . $payload;
     $self->{ipchdl}->push_write($message);
 
     # Register callbacks for each message type
@@ -185,7 +180,8 @@ sub subscribe {
 =head2 $i3->message($type, $content)
 
 Sends a message of the specified C<type> to i3, possibly containing the data
-structure C<payload>, if specified.
+structure C<content> (or C<content>, encoded as utf8, if C<content> is a
+scalar), if specified.
 
     my $reply = $i3->message(TYPE_COMMAND, "reload")->recv;
     if ($reply->{success}) {
@@ -200,13 +196,14 @@ sub message {
 
     my $payload = "";
     if ($content) {
-        if (ref($content) eq "SCALAR") {
-            $payload = $content;
+        if (not ref($content)) {
+            # Convert from Perl’s internal encoding to UTF8 octets
+            $payload = encode_utf8($content);
         } else {
             $payload = encode_json $content;
         }
     }
-    my $message = $magic . pack("LL", _bytelength($payload), $type) . $payload;
+    my $message = $magic . pack("LL", length($payload), $type) . $payload;
     $self->{ipchdl}->push_write($message);
 
     my $cv = AnyEvent->condvar;
