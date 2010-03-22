@@ -27,10 +27,6 @@ This module connects to the i3 window manager using the UNIX socket based
 IPC interface it provides (if enabled in the configuration file). You can
 then subscribe to events or send messages and receive their replies.
 
-Note that as soon as you subscribe to some kind of event, you should B<NOT>
-send any more messages as race conditions might occur. Instead, open another
-connection for that.
-
     use AnyEvent::I3 qw(:all);
 
     my $i3 = i3("/tmp/i3-ipc.sock");
