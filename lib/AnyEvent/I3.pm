@@ -31,10 +31,18 @@ then subscribe to events or send messages and receive their replies.
 
     my $i3 = i3("/tmp/i3-ipc.sock");
 
-    $i3->connect->recv;
+    $i3->connect->recv or die "Error connecting";
     say "Connected to i3";
 
     my $workspaces = $i3->message(TYPE_GET_WORKSPACES)->recv;
+    say "Currently, you use " . @{$workspaces} . " workspaces";
+
+...or, using the sugar methods:
+
+    use AnyEvent::I3;
+
+    my $i3 = i3;
+    my $workspaces = $i3->workspaces->recv;
     say "Currently, you use " . @{$workspaces} . " workspaces";
 
 =head1 EXPORT
@@ -215,6 +223,70 @@ sub message {
         };
 
     $cv
+}
+
+=head1 SUGAR METHODS
+
+These methods intend to make your scripts as beautiful as possible. All of
+them automatically establish a connection to i3 blockingly (if it does not
+already exist).
+
+=cut
+
+sub _ensure_connection {
+    my ($self) = @_;
+
+    return if defined($self->{ipchdl});
+
+    $self->connect->recv or die "Unable to connect to i3"
+}
+
+=head2 get_workspaces
+
+Gets the current workspaces from i3.
+
+    my $ws = i3->get_workspaces->recv;
+    say Dumper($ws);
+
+=cut
+sub get_workspaces {
+    my ($self) = @_;
+
+    $self->_ensure_connection;
+
+    $self->message(TYPE_GET_WORKSPACES)
+}
+
+=head2 get_outputs
+
+Gets the current outputs from i3.
+
+    my $outs = i3->get_outputs->recv;
+    say Dumper($outs);
+
+=cut
+sub get_outputs {
+    my ($self) = @_;
+
+    $self->_ensure_connection;
+
+    $self->message(TYPE_GET_OUTPUTS)
+}
+
+=head2 command($content)
+
+Makes i3 execute the given command
+
+    my $reply = i3->command("reload")->recv;
+    die "command failed" unless $reply->{success};
+
+=cut
+sub command {
+    my ($self, $content) = @_;
+
+    $self->_ensure_connection;
+
+    $self->message(TYPE_COMMAND, $content)
 }
 
 =head1 AUTHOR
