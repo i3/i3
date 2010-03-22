@@ -52,7 +52,7 @@ the UNIX socket to connect to.
 
 =cut
 
-use Exporter;
+use Exporter qw(import);
 use base 'Exporter';
 
 our @EXPORT = qw(i3);
