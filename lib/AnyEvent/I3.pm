@@ -196,7 +196,7 @@ structure C<payload>, if specified.
 sub message {
     my ($self, $type, $content) = @_;
 
-    die "No message type specified" unless $type;
+    die "No message type specified" unless defined($type);
 
     my $payload = "";
     if ($content) {
