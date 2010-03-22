@@ -108,7 +108,6 @@ the connection has been established.
 =cut
 sub connect {
     my ($self) = @_;
-    my $hdl;
     my $cv = AnyEvent->condvar;
 
     tcp_connect "unix/", $self->{path}, sub {
