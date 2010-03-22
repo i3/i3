@@ -67,7 +67,7 @@ EOL	(\r?\n)
 
 
 <BIND_A2WS_COND>[^\n]+          { BEGIN(INITIAL); yylval.string = strdup(yytext); return STR; }
-<OUTPUT_AWS_COND>[a-zA-Z0-9_-]+ { BEGIN(BIND_A2WS_COND); yylval.string = strdup(yytext); return OUTPUT; }
+<OUTPUT_AWS_COND>[a-zA-Z0-9_-]+ { yylval.string = strdup(yytext); return OUTPUT; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
 <COLOR_COND>[0-9a-fA-F]+        { yylval.string = strdup(yytext); return HEX; }
 [0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
