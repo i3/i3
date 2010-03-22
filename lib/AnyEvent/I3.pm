@@ -157,24 +157,25 @@ sub _handle_i3_message {
 Subscribes to the given event types. This function awaits a hashref with the
 key being the name of the event and the value being a callback.
 
-    $i3->subscribe({
+    my %callbacks = (
         workspace => sub { say "Workspaces changed" }
-    });
+    );
+
+    if ($i3->subscribe(\%callbacks)->recv->{success})
+        say "Successfully subscribed";
+    }
 
 =cut
 sub subscribe {
     my ($self, $callbacks) = @_;
-
-    my $payload = encode_json [ keys %{$callbacks} ];
-    my $len = length($payload);
-    my $message = $magic . pack("LL", $len, TYPE_SUBSCRIBE) . $payload;
-    $self->{ipchdl}->push_write($message);
 
     # Register callbacks for each message type
     for my $key (keys %{$callbacks}) {
         my $type = $events{$key};
         $self->{callbacks}->{$type} = $callbacks->{$key};
     }
+
+    $self->message(TYPE_SUBSCRIBE, [ keys %{$callbacks} ])
 }
 
 =head2 $i3->message($type, $content)
