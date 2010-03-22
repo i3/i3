@@ -167,7 +167,8 @@ sub subscribe {
     my ($self, $callbacks) = @_;
 
     my $payload = encode_json [ keys %{$callbacks} ];
-    my $message = $magic . pack("LL", length($payload), 2) . $payload;
+    my $len = length($payload);
+    my $message = $magic . pack("LL", $len, TYPE_SUBSCRIBE) . $payload;
     $self->{ipchdl}->push_write($message);
 
     # Register callbacks for each message type
