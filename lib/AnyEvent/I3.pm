@@ -41,8 +41,7 @@ then subscribe to events or send messages and receive their replies.
 
     use AnyEvent::I3;
 
-    my $i3 = i3;
-    my $workspaces = $i3->workspaces->recv;
+    my $workspaces = i3->workspaces->recv;
     say "Currently, you use " . @{$workspaces} . " workspaces";
 
 =head1 EXPORT
@@ -79,6 +78,7 @@ my $event_mask = (1 << 31);
 my %events = (
     workspace => ($event_mask | 0),
     output => ($event_mask | 1),
+    _error => 0xFFFFFFFF,
 );
 
 sub i3 {
@@ -121,7 +121,25 @@ sub connect {
 
         $self->{ipchdl} = AnyEvent::Handle->new(
             fh => $fh,
-            on_read => sub { my ($hdl) = @_; $self->_data_available($hdl) }
+            on_read => sub { my ($hdl) = @_; $self->_data_available($hdl) },
+            on_error => sub {
+                my ($hdl, $fatal, $msg) = @_;
+                delete $self->{ipchdl};
+                $hdl->destroy;
+
+                my $cb = $self->{callbacks};
+
+                # Trigger all one-time callbacks with undef
+                for my $type (keys %{$cb}) {
+                    next if ($type & $event_mask) == $event_mask;
+                    $cb->{$type}->();
+                }
+
+                # Trigger _error callback, if set
+                my $type = $events{_error};
+                return unless defined($cb->{$type});
+                $cb->{$type}->($msg);
+            }
         );
 
         $cv->send(1)
@@ -154,6 +172,12 @@ sub _handle_i3_message {
 
     my $cb = $self->{callbacks}->{$type};
     $cb->(decode_json $payload);
+
+    return if ($type & $event_mask) == $event_mask;
+
+    # If this was a one-time callback, we delete it
+    # (when connection is lost, all one-time callbacks get triggered)
+    delete $self->{callbacks}->{$type};
 }
 
 =head2 $i3->subscribe(\%callbacks)
@@ -168,6 +192,20 @@ key being the name of the event and the value being a callback.
     if ($i3->subscribe(\%callbacks)->recv->{success})
         say "Successfully subscribed";
     }
+
+The special callback with name C<_error> is called when the connection to i3
+is killed (because of a crash, exit or restart of i3 most likely). You can
+use it to print an appropriate message and exit cleanly or to try to reconnect.
+
+    my %callbacks = (
+        _error => sub {
+            my ($msg) = @_;
+            say "I am sorry. I am so sorry: $msg";
+            exit 1;
+        }
+    );
+
+    $i3->subscribe(\%callbacks)->recv;
 
 =cut
 sub subscribe {
@@ -198,6 +236,8 @@ sub message {
     my ($self, $type, $content) = @_;
 
     die "No message type specified" unless defined($type);
+
+    die "No connection to i3" unless defined($self->{ipchdl});
 
     my $payload = "";
     if ($content) {
