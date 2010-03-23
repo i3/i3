@@ -531,17 +531,12 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 
         /* Let’s see how many clients there are left on the workspace to delete it if it’s empty */
         bool workspace_empty = SLIST_EMPTY(&(client->workspace->focus_stack));
-        bool workspace_active = false;
+        bool workspace_focused = (c_ws == client->workspace);
         Client *to_focus = (!workspace_empty ? SLIST_FIRST(&(client->workspace->focus_stack)) : NULL);
 
-        /* If this workspace is currently active, we don’t delete it */
-        Output *screen;
-        TAILQ_FOREACH(screen, &outputs, outputs)
-                if (screen->current_workspace == client->workspace) {
-                        workspace_active = true;
-                        workspace_empty = false;
-                        break;
-                }
+        /* If this workspace is currently visible, we don’t delete it */
+        if (workspace_is_visible(client->workspace))
+                workspace_empty = false;
 
         if (workspace_empty) {
                 client->workspace->output = NULL;
@@ -563,7 +558,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
          * the screen itself (if we do not focus the screen, it can happen that
          * the focus is "nowhere" and thus keypress events will not be received
          * by i3, thus the user cannot use any hotkeys). */
-        if (workspace_active) {
+        if (workspace_focused) {
                 if (to_focus != NULL)
                         set_focus(conn, to_focus, true);
                 else {
