@@ -13,6 +13,7 @@ META.yml
 README
 t/00-load.t
 t/01-workspaces.t
+t/02-sugar.t
 t/boilerplate.t
 t/manifest.t
 t/pod-coverage.t
