@@ -37,6 +37,7 @@
 static int sockfd;
 static xcb_key_symbols_t *symbols;
 static int modeswitchmask;
+static int numlockmask;
 static bool modeswitch_active = false;
 static xcb_window_t win;
 static xcb_pixmap_t pixmap;
@@ -119,6 +120,9 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
 static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_event_t *event) {
         printf("releasing %d, state raw = %d\n", event->detail, event->state);
 
+        /* fix state */
+        event->state &= ~numlockmask;
+
         xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, event->state);
         if (sym == XK_Mode_switch) {
                 printf("Mode switch disabled\n");
@@ -162,6 +166,11 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
         /* fix state */
         if (modeswitch_active)
                 event->state |= modeswitchmask;
+
+        /* Apparantly, after activating numlock once, the numlock modifier
+         * stays turned on (use xev(1) to verify). So, to resolve useful
+         * keysyms, we remove the numlock flag from the event state */
+        event->state &= ~numlockmask;
 
         xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, event->state);
         if (sym == XK_Mode_switch) {
@@ -290,7 +299,8 @@ int main(int argc, char *argv[]) {
         xcb_event_set_key_release_handler(&evenths, handle_key_release, NULL);
         xcb_event_set_expose_handler(&evenths, handle_expose, NULL);
 
-        modeswitchmask = get_mode_switch_mask(conn);
+        modeswitchmask = get_mod_mask(conn, XK_Mode_switch);
+        numlockmask = get_mod_mask(conn, XK_Num_Lock);
 	symbols = xcb_key_symbols_alloc(conn);
 
         uint32_t font_id = get_font_id(conn, pattern, &font_height);
