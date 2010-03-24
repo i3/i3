@@ -1,0 +1,244 @@
+#!/usr/bin/env perl
+# vim:ts=4:sw=4:expandtab:ft=perl
+# © 2010 Michael Stapelberg, see LICENSE for license information
+
+use strict;
+use warnings;
+use Getopt::Long;
+use Pod::Usage;
+use IPC::Run qw(start pump);
+use AnyEvent::I3;
+use AnyEvent;
+use v5.10;
+
+my $stdin;
+my $i3 = i3;
+my ($workspaces, $outputs) = ([], {});
+my $last_line = "";
+
+my $command = "";
+my $input_on = "";
+my $output_on = "";
+my $show_all = 0;
+
+my $result = GetOptions(
+    'command=s' => \$command,
+    'input-on=s' => \$input_on,
+    'output-on=s' => \$output_on,
+    'show-all' => \$show_all,
+    'help' => sub { pod2usage(1); exit 0 },
+);
+
+if ($command eq '') {
+    say "i3-wsbar is only useful in combination with dzen2.";
+    say "Please specify -c (command)";
+    exit 1;
+}
+
+my @input_on = split(/,/, $input_on);
+my @output_on = split(/,/, $output_on);
+
+# Disable buffering
+$| = 1;
+
+# Wait a short amount of time and try to connect to i3 again
+sub reconnect {
+    my $timer;
+    my $c = sub {
+        $timer = AnyEvent->timer(
+            after => 0.01,
+            cb => sub { $i3->connect->cb(\&connected) }
+        );
+    };
+    $c->();
+}
+
+# Connection attempt succeeded or failed
+sub connected {
+    my ($cv) = @_;
+
+    if (!$cv->recv) {
+        reconnect();
+        return;
+    }
+
+    $i3->subscribe({
+        workspace => \&ws_change,
+        output => \&output_change,
+        _error => sub { reconnect() }
+    });
+    ws_change();
+    output_change();
+}
+
+# Called when a ws changes
+sub ws_change {
+    # Request the current workspaces and update the output afterwards
+    $i3->get_workspaces->cb(
+        sub {
+            my ($cv) = @_;
+            $workspaces = $cv->recv;
+            update_output();
+        });
+}
+
+# Called when the reply to the GET_OUTPUTS message arrives
+# Compares old outputs with new outputs and starts/kills
+# $command for each output (if specified)
+sub got_outputs {
+    my $reply = shift->recv;
+    my %old = %{$outputs};
+    my %new = map { ($_->{name}, $_) } grep { $_->{active} } @{$reply};
+
+    # If no command was given, we do not need to compare outputs
+    if ($command eq '') {
+        update_output();
+        return;
+    }
+
+    # Handle new outputs
+    for my $name (keys %new) {
+        next if @output_on and !($name ~~ @output_on);
+
+        if (defined($old{$name})) {
+            # Check if the mode changed (by reversing the hashes so
+            # that we can check for equality using the smartmatch op)
+            my %oldrect = reverse %{$old{$name}->{rect}};
+            my %newrect = reverse %{$new{$name}->{rect}};
+            next if (%oldrect ~~ %newrect);
+
+            # On mode changes, we re-start the command
+            $outputs->{$name}->{cmd}->finish;
+            delete $outputs->{$name};
+        }
+
+        my $x = $new{$name}->{rect}->{x};
+        my $launch = $command;
+        $launch =~ s/([^%])%x/$1$x/g;
+        $launch =~ s/%%x/%x/g;
+
+        $new{$name}->{cmd_input} = '';
+        my @cmd = ('/bin/sh', '-c', $launch);
+        $new{$name}->{cmd} = start \@cmd, \$new{$name}->{cmd_input};
+        $outputs->{$name} = $new{$name};
+    }
+
+    # Handle old outputs
+    for my $name (keys %old) {
+        next if defined($new{$name});
+
+        $outputs->{$name}->{cmd}->finish;
+        delete $outputs->{$name};
+    }
+
+    update_output();
+}
+
+sub output_change {
+    $i3->get_outputs->cb(\&got_outputs)
+}
+
+sub update_output {
+    my $dzen_bg = "#111111";
+    my $out;
+
+    for my $name (keys %{$outputs}) {
+        my $width = $outputs->{$name}->{rect}->{width};
+
+        $out = qq|^pa(;2)|;
+        for my $ws (@{$workspaces}) {
+            next if $ws->{output} ne $name and !$show_all;
+
+            my ($bg, $fg) = qw(333333 888888);
+            ($bg, $fg) = qw(4c7899 ffffff) if $ws->{visible};
+            ($bg, $fg) = qw(900000 ffffff) if $ws->{urgent};
+
+            my $cmd = q|i3-msg "| . $ws->{num} . q|"|;
+            my $name = $ws->{name};
+
+            # Begin the clickable area
+            $out .= qq|^ca(1,$cmd)|;
+
+            # Draw the rest of the bar in the background color, but
+            # don’t move the "cursor"
+            $out .= qq|^p(_LOCK_X)^fg(#$bg)^r(${width}x17)^p(_UNLOCK_X)|;
+            # Draw the name of the workspace without overwriting the
+            # background color
+            $out .= qq|^p(+3)^fg(#$fg)^ib(1)$name^ib(0)^p(+5)|;
+            # Draw the rest of the bar in the normal background color
+            # without moving the "cursor"
+            $out .= qq|^p(_LOCK_X)^fg($dzen_bg)^r(${width}x17)^p(_UNLOCK_X)|;
+
+            # End the clickable area
+            $out .= qq|^ca()|;
+
+            # Move to the next rect, reset Y coordinate
+            $out .= qq|^p(2)^pa(;2)|;
+        }
+
+        $out .= qq|^p(_LOCK_X)^fg($dzen_bg)^r(${width}x17)^p(_UNLOCK_X)^fg(white)|;
+        $out .= qq|^p(+5)|;
+        $out .= $last_line if (!@input_on or $name ~~ @input_on);
+        $out .= "\n";
+
+        $outputs->{$name}->{cmd_input} = $out;
+        pump $outputs->{$name}->{cmd} while length $outputs->{$name}->{cmd_input};
+    }
+}
+
+$i3->connect->cb(\&connected);
+
+$stdin = AnyEvent->io(
+    fh => \*STDIN,
+    poll => 'r',
+    cb => sub {
+        chomp (my $line = <STDIN>);
+        $last_line = $line;
+        update_output();
+    });
+
+# let AnyEvent do the rest ("endless loop")
+AnyEvent->condvar->recv
+
+__END__
+
+=head1 NAME
+
+i3-wsbar - sample implementation of a standalone workspace bar
+
+=head1 SYNOPSIS
+
+i3-wsbar -c <dzen2-commandline> [options]
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--command> <command>
+
+This command (at the moment only dzen2 is supported) will be started for each
+output. C<%x> will be replaced with the X coordinate of the output.
+
+Example:
+    --command "dzen2 -dock -x %x"
+
+=item B<--input-on> <list-of-RandR-outputs>
+
+Specifies on which outputs the contents of stdin should be appended to the
+workspace bar.
+
+Example:
+    --input-on "LVDS1"
+
+=item B<--output-on> <list-of-RandR-outputs>
+
+Specifies for which outputs i3-wsbar should start C<command>.
+
+=item B<--show-all>
+
+If enabled, all workspaces are shown (not only those of the current output).
+Handy to use with C<--output-on>.
+
+=back
+
+=cut
