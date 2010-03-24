@@ -248,12 +248,17 @@ void workspace_assign_to(Workspace *ws, Output *output, bool hide_it) {
         if (visible && !hide_it)
                 return;
 
-        workspace_unmap_clients(global_conn, ws);
-
+        /* however, if this is the current workspace, we only need to adjust
+         * the output’s current_workspace pointer (and must not unmap the
+         * windows) */
         if (c_ws == ws) {
                 DLOG("Need to adjust output->current_workspace...\n");
                 output->current_workspace = c_ws;
+                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
+                return;
         }
+
+        workspace_unmap_clients(global_conn, ws);
 }
 
 /*
