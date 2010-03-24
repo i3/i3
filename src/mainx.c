@@ -414,6 +414,9 @@ int main(int argc, char *argv[], char *env[]) {
            it any longer. Usually, the client destroys the window shortly afterwards. */
         xcb_event_set_unmap_notify_handler(&evenths, handle_unmap_notify_event, NULL);
 
+        /* Destroy notify is handled the same as unmap notify */
+        xcb_event_set_destroy_notify_handler(&evenths, handle_destroy_notify_event, NULL);
+
         /* Configure notify = window’s configuration (geometry, stacking, …). We only need
            it to set up ignore the following enter_notify events */
         xcb_event_set_configure_notify_handler(&evenths, handle_configure_event, NULL);
