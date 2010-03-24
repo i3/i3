@@ -225,6 +225,12 @@ void reposition_client(xcb_connection_t *conn, Client *client) {
                 return;
         }
 
+        if (output->current_workspace == NULL) {
+                DLOG("Boundary checking deferred, no current workspace on output\n");
+                client->force_reconfigure = true;
+                return;
+        }
+
         DLOG("Client is on workspace %p with output %p\n", client->workspace, client->workspace->output);
         DLOG("but output at %d, %d is %p\n", client->rect.x, client->rect.y, output);
         floating_assign_to_workspace(client, output->current_workspace);
@@ -735,6 +741,16 @@ void render_workspace(xcb_connection_t *conn, Output *output, Workspace *r_ws) {
 
                 xoffset[rows] += single_width;
                 yoffset[cols] += single_height;
+        }
+
+        /* Reposition all floating clients with force_reconfigure == true */
+        TAILQ_FOREACH(client, &(r_ws->floating_clients), floating_clients) {
+                if (!client->force_reconfigure)
+                        continue;
+
+                client->force_reconfigure = false;
+                reposition_client(conn, client);
+                resize_client(conn, client);
         }
 
         ignore_enter_notify_forall(conn, r_ws, false);

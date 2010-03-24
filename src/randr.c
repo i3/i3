@@ -35,6 +35,7 @@
 #include "log.h"
 #include "ewmh.h"
 #include "ipc.h"
+#include "client.h"
 
 /* While a clean namespace is usually a pretty good thing, we really need
  * to use shorter names than the whole xcb_randr_* default names. */
@@ -247,11 +248,22 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
                 if (ws->output != output)
                         continue;
 
+                SLIST_FOREACH(client, &(ws->focus_stack), focus_clients) {
+                        client->force_reconfigure = true;
+                        if (!client_is_floating(client))
+                                continue;
+                        /* For floating clients we need to translate the
+                         * coordinates (old workspace to new workspace) */
+                        DLOG("old: (%x, %x)\n", client->rect.x, client->rect.y);
+                        client->rect.x -= ws->rect.x;
+                        client->rect.y -= ws->rect.y;
+                        client->rect.x += ws->output->rect.x;
+                        client->rect.y += ws->output->rect.y;
+                        DLOG("new: (%x, %x)\n", client->rect.x, client->rect.y);
+                }
+
                 /* Update dimensions from output */
                 memcpy(&(ws->rect), &(ws->output->rect), sizeof(Rect));
-
-                SLIST_FOREACH(client, &(ws->focus_stack), focus_clients)
-                        client->force_reconfigure = true;
 
                 /* Update the dimensions of a fullscreen client, if any */
                 if (ws->fullscreen_client != NULL) {
