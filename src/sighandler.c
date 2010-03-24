@@ -83,7 +83,14 @@ static int sig_draw_window(xcb_connection_t *conn, xcb_window_t win, int width, 
  *
  */
 static int sig_handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
-        xcb_keysym_t sym = xcb_key_press_lookup_keysym(keysyms, event, event->state);
+        uint16_t state = event->state;
+
+        /* Apparantly, after activating numlock once, the numlock modifier
+         * stays turned on (use xev(1) to verify). So, to resolve useful
+         * keysyms, we remove the numlock flag from the event state */
+        state &= ~xcb_numlock_mask;
+
+        xcb_keysym_t sym = xcb_key_press_lookup_keysym(keysyms, event, state);
 
         if (sym == 'e') {
                 DLOG("User issued exit-command, raising error again.\n");
