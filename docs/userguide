@@ -22,7 +22,7 @@ image:keyboard-layer2.png["Keys to use with Shift+Mod1",width=600,link="keyboard
 
 As i3 uses keycodes in the default configuration, it does not matter which
 keyboard layout you actually use. The key positions are what matters (of course
-you can also use keysymbols, see below).
+you can also use keysymbols, see <<keybindings>>).
 
 The red keys are the modifiers you need to press (by default), the blue keys
 are your homerow.
@@ -178,9 +178,10 @@ windows, or toolbar windows (GIMP or similar).
 
 You can enable floating mode for a window by pressing +Mod1+Shift+Space+. By
 dragging the window’s titlebar with your mouse you can move the window
-around. By grabbing the borders and moving them you can resize the window.
+around. By grabbing the borders and moving them you can resize the window. You
+can also do that by using the <<floating_modifier>>.
 
-Bindings for doing this with your keyboard will follow.
+For resizing floating windows with your keyboard, see <<resizingconfig>>.
 
 Floating windows are always on top of tiling windows.
 
@@ -229,6 +230,8 @@ font <X core font description>
 --------------------------------------------------------------
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 --------------------------------------------------------------
+
+[[keybindings]]
 
 === Keyboard bindings
 
@@ -279,6 +282,8 @@ you to remap capslock (for example) to Mode_switch and use it for both: typing
 umlauts or special characters 'and' having some comfortably reachable key
 bindings. For example, when typing, capslock+1 or capslock+2 for switching
 workspaces is totally convenient. Try it :-).
+
+[[floating_modifier]]
 
 === The floating modifier
 
@@ -407,9 +412,9 @@ exec command
 exec sudo i3status | dzen2 -dock
 --------------------------------
 
-=== Automatically putting workspaces on specific screens
-
 [[workspace_screen]]
+
+=== Automatically putting workspaces on specific screens
 
 If you assign clients to workspaces, it might be handy to put the
 workspaces on specific screens. Also, the assignment of workspaces to screens
@@ -806,9 +811,9 @@ bindsym Mod1+Shift+w reload
 bindsym Mod1+Shift+e exit
 ----------------------------
 
-== Multiple monitors
-
 [[multi_monitor]]
+
+== Multiple monitors
 
 As you can see in the goal list on the website, i3 was specifically developed
 with support for multiple monitors in mind. This section will explain how to
