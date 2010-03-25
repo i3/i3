@@ -323,10 +323,8 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         if (output->crtc == XCB_NONE) {
                 if (!existing)
                         TAILQ_INSERT_TAIL(&outputs, new, outputs);
-                else if (new->active) {
+                else if (new->active)
                         new->to_be_disabled = true;
-
-                }
                 free(output);
                 return;
         }
