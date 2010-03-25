@@ -205,6 +205,7 @@ void switch_mode(xcb_connection_t *conn, const char *new_mode) {
 
                 ungrab_all_keys(conn);
                 bindings = mode->bindings;
+                translate_keysyms();
                 grab_all_keys(conn, false);
                 return;
         }
