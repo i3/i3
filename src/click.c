@@ -265,7 +265,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
          * to move around the client if it was floating. if not, we just process
          * as usual. */
         if (config.floating_modifier != 0 &&
-            (event->state & config.floating_modifier) != 0) {
+            (event->state & config.floating_modifier) == config.floating_modifier) {
                 if (client == NULL) {
                         DLOG("Not handling, floating_modifier was pressed and no client found\n");
                         return 1;
