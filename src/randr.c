@@ -193,6 +193,19 @@ void initialize_output(xcb_connection_t *conn, Output *output, Workspace *worksp
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
         DLOG("initialized output at (%d, %d) with %d x %d\n",
                         output->rect.x, output->rect.y, output->rect.width, output->rect.height);
+
+        DLOG("assigning configured workspaces to this output...\n");
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
+                if (ws == workspace)
+                        continue;
+                if (ws->preferred_output == NULL ||
+                    get_output_by_name(ws->preferred_output) != output)
+                        continue;
+
+                DLOG("assigning ws %d\n", ws->num + 1);
+                workspace_assign_to(ws, output, true);
+        }
 }
 
 /*

@@ -103,7 +103,7 @@ void workspace_set_name(Workspace *ws, const char *name) {
  *
  */
 bool workspace_is_visible(Workspace *ws) {
-        return (ws->output->current_workspace == ws);
+        return (ws->output != NULL && ws->output->current_workspace == ws);
 }
 
 /*
