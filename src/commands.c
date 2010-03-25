@@ -721,6 +721,7 @@ static void jump_to_window(xcb_connection_t *conn, const char *arguments) {
         }
 
         free(classtitle);
+        workspace_show(conn, client->workspace->num + 1);
         set_focus(conn, client, true);
 }
 
