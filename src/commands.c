@@ -1042,6 +1042,9 @@ void parse_command(xcb_connection_t *conn, const char *command) {
         /* Is it a <reload>? */
         if (STARTS_WITH(command, "reload")) {
                 load_configuration(conn, NULL, true);
+                render_layout(conn);
+                /* Send an IPC event just in case the ws names have changed */
+                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"reload\"}");
                 return;
         }
 

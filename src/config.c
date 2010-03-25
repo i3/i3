@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -320,6 +320,11 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         TAILQ_REMOVE(&assignments, assign, assignments);
                         FREE(assign);
                 }
+
+                /* Clear workspace names */
+                Workspace *ws;
+                TAILQ_FOREACH(ws, workspaces, workspaces)
+                        workspace_set_name(ws, NULL);
         }
 
         SLIST_INIT(&modes);
