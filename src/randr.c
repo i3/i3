@@ -311,6 +311,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         if (!existing)
                 new = scalloc(sizeof(Output));
         new->id = id;
+        FREE(new->name);
         asprintf(&new->name, "%.*s",
                         xcb_randr_get_output_info_name_length(output),
                         xcb_randr_get_output_info_name(output));
@@ -325,7 +326,6 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
                         TAILQ_INSERT_TAIL(&outputs, new, outputs);
                 else if (new->active)
                         new->to_be_disabled = true;
-                free(output);
                 return;
         }
 
@@ -335,7 +335,6 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
                 DLOG("Skipping output %s: could not get CRTC (%p)\n",
                      new->name, crtc);
                 free(new);
-                free(output);
                 return;
         }
 
@@ -359,7 +358,6 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         if (!updated || !existing) {
                 if (!existing)
                         TAILQ_INSERT_TAIL(&outputs, new, outputs);
-                free(output);
                 return;
         }
 
@@ -409,6 +407,7 @@ void randr_query_outputs(xcb_connection_t *conn) {
                         continue;
 
                 handle_output(conn, randr_outputs[i], output, cts, res);
+                free(output);
         }
 
         free(res);

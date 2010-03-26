@@ -212,9 +212,6 @@ struct Workspace {
         /** The name of the RandR output this screen should be on */
         char *preferred_output;
 
-        /** Temporary flag needed for re-querying xinerama screens */
-        bool reassigned;
-
         /** True if any client on this workspace has its urgent flag set */
         bool urgent;
 

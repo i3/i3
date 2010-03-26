@@ -176,6 +176,14 @@ void parse_file(const char *f) {
         free(context);
         free(new);
         free(buf);
+
+        while (!SLIST_EMPTY(&variables)) {
+                current = SLIST_FIRST(&variables);
+                FREE(current->key);
+                FREE(current->value);
+                SLIST_REMOVE_HEAD(&variables, variables);
+                FREE(current);
+        }
 }
 
 %}
@@ -279,7 +287,7 @@ bind:
 
                 new->keycode = $<number>2;
                 new->mods = $<number>1;
-                new->command = sstrdup($<string>4);
+                new->command = $<string>4;
 
                 $<binding>$ = new;
         }
@@ -291,9 +299,9 @@ bindsym:
                 printf("\tFound symbolic mod%d with key %s and command %s\n", $<number>1, $<string>2, $<string>4);
                 Binding *new = scalloc(sizeof(Binding));
 
-                new->symbol = sstrdup($<string>2);
+                new->symbol = $<string>2;
                 new->mods = $<number>1;
-                new->command = sstrdup($<string>4);
+                new->command = $<string>4;
 
                 $<binding>$ = new;
         }
@@ -323,7 +331,7 @@ mode:
                 }
 
                 struct Mode *mode = scalloc(sizeof(struct Mode));
-                mode->name = strdup($<string>3);
+                mode->name = $<string>3;
                 mode->bindings = current_bindings;
                 current_bindings = NULL;
                 SLIST_INSERT_HEAD(&modes, mode, modes);
@@ -403,7 +411,7 @@ new_window:
         TOKNEWWINDOW WHITESPACE WORD
         {
                 DLOG("new windows should start in mode %s\n", $<string>3);
-                config.default_border = strdup($<string>3);
+                config.default_border = sstrdup($<string>3);
         }
         ;
 
@@ -447,9 +455,11 @@ workspace:
                         DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
                         Workspace *ws = workspace_get(ws_num - 1);
-                        ws->preferred_output = sstrdup($<string>7);
-                        if ($<string>8 != NULL)
+                        ws->preferred_output = $<string>7;
+                        if ($<string>8 != NULL) {
                                 workspace_set_name(ws, $<string>8);
+                                free($<string>8);
+                        }
                 }
         }
         | TOKWORKSPACE WHITESPACE NUMBER WHITESPACE workspace_name
@@ -459,8 +469,10 @@ workspace:
                         DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
                         DLOG("workspace name to: %s\n", $<string>5);
-                        if ($<string>5 != NULL)
+                        if ($<string>5 != NULL) {
                                 workspace_set_name(workspace_get(ws_num - 1), $<string>5);
+                                free($<string>5);
+                        }
                 }
         }
         ;
@@ -484,7 +496,7 @@ assign:
                 struct Assignment *new = $<assignment>6;
                 printf("  to %d\n", new->workspace);
                 printf("  floating = %d\n", new->floating);
-                new->windowclass_title = strdup($<string>3);
+                new->windowclass_title = $<string>3;
                 TAILQ_INSERT_TAIL(&assignments, new, assignments);
         }
         ;
@@ -525,7 +537,7 @@ optional_arrow:
 ipcsocket:
         TOKIPCSOCKET WHITESPACE STR
         {
-                config.ipc_socket_path = sstrdup($<string>3);
+                config.ipc_socket_path = $<string>3;
         }
         ;
 
@@ -533,7 +545,7 @@ exec:
         TOKEXEC WHITESPACE STR
         {
                 struct Autostart *new = smalloc(sizeof(struct Autostart));
-                new->command = sstrdup($<string>3);
+                new->command = $<string>3;
                 TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
         }
         ;
@@ -549,7 +561,7 @@ terminal:
 font:
         TOKFONT WHITESPACE STR
         {
-                config.font = sstrdup($<string>3);
+                config.font = $<string>3;
                 printf("font %s\n", config.font);
         }
         ;
