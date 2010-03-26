@@ -70,7 +70,7 @@ void parse_file(const char *f) {
         if (fstat(fd, &stbuf) == -1)
                 die("Could not fstat file: %s\n", strerror(errno));
 
-        buf = smalloc(stbuf.st_size * sizeof(char));
+        buf = scalloc((stbuf.st_size + 1) * sizeof(char));
         while (read_bytes < stbuf.st_size) {
                 if ((ret = read(fd, buf + read_bytes, (stbuf.st_size - read_bytes))) < 0)
                         die("Could not read(): %s\n", strerror(errno));
