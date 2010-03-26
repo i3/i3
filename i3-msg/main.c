@@ -127,7 +127,6 @@ int main(int argc, char *argv[]) {
         while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
                 if (o == 's') {
                         socket_path = strdup(optarg);
-                        break;
                 } else if (o == 't') {
                         if (strcasecmp(optarg, "command") == 0)
                                 message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
