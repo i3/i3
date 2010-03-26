@@ -339,11 +339,16 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
                 return;
         }
 
-        new->active = true;
         bool updated = update_if_necessary(&(new->rect.x), crtc->x) |
                        update_if_necessary(&(new->rect.y), crtc->y) |
                        update_if_necessary(&(new->rect.width), crtc->width) |
                        update_if_necessary(&(new->rect.height), crtc->height);
+        free(crtc);
+        new->active = (new->rect.width != 0 && new->rect.height != 0);
+        if (!new->active) {
+                DLOG("width/height 0/0, disabling output\n");
+                return;
+        }
 
         DLOG("mode: %dx%d+%d+%d\n", new->rect.width, new->rect.height,
                                     new->rect.x, new->rect.y);
