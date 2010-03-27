@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -22,6 +22,7 @@
 #include <err.h>
 #include <stdint.h>
 #include <getopt.h>
+#include <glob.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -50,6 +51,21 @@ static char *command_prefix;
 static char *prompt;
 static int prompt_len;
 static int limit;
+
+/*
+ * This function resolves ~ in pathnames (and more, see glob(3)).
+ *
+ */
+static char *glob_path(const char *path) {
+        static glob_t globbuf;
+        if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0)
+                errx(EXIT_FAILURE, "glob() failed");
+        char *result = strdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
+        if (result == NULL)
+                err(EXIT_FAILURE, "malloc() failed");
+        globfree(&globbuf);
+        return result;
+}
 
 /*
  * Concats the glyphs (either UCS-2 or UTF-8) to a single string, suitable for
@@ -241,7 +257,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 }
 
 int main(int argc, char *argv[]) {
-        char *socket_path = "/tmp/i3-ipc.sock";
+        char *socket_path = glob_path("~/.i3/ipc.sock");
         char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
         int o, option_index = 0;
 
@@ -260,7 +276,7 @@ int main(int argc, char *argv[]) {
         while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
                 switch (o) {
                         case 's':
-                                socket_path = strdup(optarg);
+                                socket_path = glob_path(optarg);
                                 break;
                         case 'v':
                                 printf("i3-input " I3_VERSION);

@@ -27,8 +27,24 @@
 #include <err.h>
 #include <stdint.h>
 #include <getopt.h>
+#include <glob.h>
 
 #include <i3/ipc.h>
+
+/*
+ * This function resolves ~ in pathnames (and more, see glob(3)).
+ *
+ */
+static char *glob_path(const char *path) {
+        static glob_t globbuf;
+        if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0)
+                errx(EXIT_FAILURE, "glob() failed");
+        char *result = strdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
+        if (result == NULL)
+                err(EXIT_FAILURE, "malloc() failed");
+        globfree(&globbuf);
+        return result;
+}
 
 /*
  * Formats a message (payload) of the given size and type and sends it to i3 via
@@ -107,7 +123,7 @@ static void ipc_recv_message(int sockfd, uint32_t message_type,
 }
 
 int main(int argc, char *argv[]) {
-        char *socket_path = "/tmp/i3-ipc.sock";
+        char *socket_path = glob_path("~/.i3/ipc.sock");
         int o, option_index = 0;
         int message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
         char *payload = "";
@@ -126,7 +142,7 @@ int main(int argc, char *argv[]) {
 
         while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
                 if (o == 's') {
-                        socket_path = strdup(optarg);
+                        socket_path = glob_path(optarg);
                 } else if (o == 't') {
                         if (strcasecmp(optarg, "command") == 0)
                                 message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
