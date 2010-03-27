@@ -45,6 +45,7 @@ install: build
 	cp man/i3.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
 	cp man/i3-msg.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
 	cp man/i3-input.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
+	cp man/i3-wsbar.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
 
 
 # Build architecture-independent files here.
