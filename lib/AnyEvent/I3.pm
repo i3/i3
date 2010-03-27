@@ -15,11 +15,11 @@ AnyEvent::I3 - communicate with the i3 window manager
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =head1 SYNOPSIS
 
@@ -29,7 +29,7 @@ then subscribe to events or send messages and receive their replies.
 
     use AnyEvent::I3 qw(:all);
 
-    my $i3 = i3("/tmp/i3-ipc.sock");
+    my $i3 = i3("~/.i3/ipc.sock");
 
     $i3->connect->recv or die "Error connecting";
     say "Connected to i3";
@@ -94,9 +94,9 @@ the UNIX socket to connect to.
 sub new {
     my ($class, $path) = @_;
 
-    $path ||= '/tmp/i3-ipc.sock';
+    $path ||= '~/.i3/ipc.sock';
 
-    bless { path => $path } => $class;
+    bless { path => glob($path) } => $class;
 }
 
 =head2 $i3->connect
