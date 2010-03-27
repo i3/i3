@@ -268,10 +268,14 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
             (event->state & config.floating_modifier) == config.floating_modifier) {
                 if (client == NULL) {
                         DLOG("Not handling, floating_modifier was pressed and no client found\n");
+                        xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
+                        xcb_flush(conn);
                         return 1;
                 }
                 if (client->fullscreen) {
                         DLOG("Not handling, client is in fullscreen mode\n");
+                        xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
+                        xcb_flush(conn);
                         return 1;
                 }
                 if (client_is_floating(client)) {
