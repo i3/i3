@@ -12,7 +12,7 @@ The method of choice for IPC in our case is a unix socket because it has very
 little overhead on both sides and is usually available without headaches in
 most languages. In the default configuration file, no ipc-socket path is
 specified and thus no socket is created. The standard path (which +i3-msg+ and
-+i3-input+ use) is +/tmp/i3-ipc.sock+.
++i3-input+ use) is +~/.i3/ipc.sock+.
 
 == Establishing a connection
 
@@ -21,7 +21,7 @@ snippet illustrates this in Perl:
 
 -------------------------------------------------------------
 use IO::Socket::UNIX;
-my $sock = IO::Socket::UNIX->new(Peer => '/tmp/i3-ipc.sock');
+my $sock = IO::Socket::UNIX->new(Peer => '~/.i3/ipc.sock');
 -------------------------------------------------------------
 
 == Sending messages to i3

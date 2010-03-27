@@ -504,11 +504,11 @@ programs to get information from i3, such as the current workspaces
 (to display a workspace bar), and to control i3.
 
 To enable it, you have to configure a path where the unix socket will be
-stored. The default path is +/tmp/i3-ipc.sock+.
+stored. The default path is +~/.i3/ipc.sock+.
 
 *Examples*:
 ----------------------------
-ipc-socket /tmp/i3-ipc.sock
+ipc-socket ~/.i3/ipc.sock
 ----------------------------
 
 You can then use the +i3-msg+ application to perform any command listed in
