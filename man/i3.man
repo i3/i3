@@ -44,6 +44,18 @@ create i3.
 
 Please be aware that i3 is primarily targeted at advanced users and developers.
 
+=== IMPORTANT NOTE TO nVidia BINARY DRIVER USERS
+
+If you are using the nVidia binary graphics driver (also known as 'blob')
+you need to use the +--force-xinerama+ flag (in your .xsession) when starting
+i3, like so:
+
+----------------------------------------------
+exec i3 --force-xinerama -V >>~/.i3/i3log 2>&1
+----------------------------------------------
+
+See also docs/multi-monitor for the full explanation.
+
 === TERMINOLOGY
 
 Client::
@@ -279,7 +291,7 @@ ulimit -c unlimited
 
 # Start i3 and log to ~/.i3/logfile
 echo "Starting at $(date)" >> ~/.i3/logfile
-exec /usr/bin/i3 >> ~/.i3/logfile
+exec /usr/bin/i3 -V -d all >> ~/.i3/logfile
 -------------------------------------------------------------
 
 == TODO
@@ -296,7 +308,7 @@ and the "how to hack" guide. If you are building from source, run:
 
 You can also access these documents online at http://i3.zekjur.net/
 
-i3-input(1), i3-msg(1)
+i3-input(1), i3-msg(1), i3-wsbar(1)
 
 == AUTHOR
 
