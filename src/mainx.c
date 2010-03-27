@@ -231,7 +231,7 @@ int main(int argc, char *argv[], char *env[]) {
                                 only_check_config = true;
                                 break;
                         case 'v':
-                                printf("i3 version " I3_VERSION " © 2009 Michael Stapelberg and contributors\n");
+                                printf("i3 version " I3_VERSION " © 2009-2010 Michael Stapelberg and contributors\n");
                                 exit(EXIT_SUCCESS);
                         case 'V':
                                 set_verbosity(true);
