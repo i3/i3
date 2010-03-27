@@ -29,6 +29,7 @@
 #include "workspace.h"
 #include "config.h"
 #include "log.h"
+#include "handlers.h"
 
 /*
  * Removes the given client from the container, either because it will be inserted into another
@@ -62,7 +63,12 @@ void client_remove_from_container(xcb_connection_t *conn, Client *client, Contai
 void client_warp_pointer_into(xcb_connection_t *conn, Client *client) {
         int mid_x = client->rect.width / 2,
             mid_y = client->rect.height / 2;
-        xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, mid_x, mid_y);
+        xcb_void_cookie_t cookie;
+        cookie = xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, mid_x, mid_y);
+        /* We need to add this event twice because we get one enter_notify for
+         * the child and one for the frame */
+        add_ignore_event(cookie.sequence);
+        add_ignore_event(cookie.sequence);
 }
 
 /*

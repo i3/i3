@@ -46,7 +46,13 @@
    changing workspaces */
 static SLIST_HEAD(ignore_head, Ignore_Event) ignore_events;
 
-static void add_ignore_event(const int sequence) {
+/*
+ * Adds the sequence number of an event to the ignored events.
+ * Useful to ignore for example the enter notify caused by a pointer warp of
+ * i3.
+ *
+ */
+void add_ignore_event(const int sequence) {
         struct Ignore_Event *event = smalloc(sizeof(struct Ignore_Event));
 
         event->sequence = sequence;
