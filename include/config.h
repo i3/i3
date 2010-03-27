@@ -125,6 +125,18 @@ struct Config {
 };
 
 /**
+ * This function resolves ~ in pathnames.
+ *
+ */
+char *glob_path(const char *path);
+
+/**
+ * Checks if the given path exists by calling stat().
+ *
+ */
+bool path_exists(const char *path);
+
+/**
  * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
  *
  * If you specify override_configpath, only this path is used to look for a

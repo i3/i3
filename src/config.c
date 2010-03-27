@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <glob.h>
+#include <wordexp.h>
 #include <unistd.h>
 
 /* We need Xlib for XStringToKeysym */
@@ -40,12 +41,25 @@ struct modes_head modes;
  * This function resolves ~ in pathnames.
  *
  */
-static char *glob_path(const char *path) {
+char *glob_path(const char *path) {
         static glob_t globbuf;
         if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0)
                 die("glob() failed");
         char *result = sstrdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
         globfree(&globbuf);
+
+        /* If the file does not exist yet, we still may need to resolve tilde,
+         * so call wordexp */
+        if (strcmp(result, path) == 0) {
+                wordexp_t we;
+                wordexp(path, &we, WRDE_NOCMD);
+                if (we.we_wordc > 0) {
+                        free(result);
+                        result = sstrdup(we.we_wordv[0]);
+                }
+                wordfree(&we);
+        }
+
         return result;
 }
 
@@ -53,7 +67,7 @@ static char *glob_path(const char *path) {
  * Checks if the given path exists by calling stat().
  *
  */
-static bool path_exists(const char *path) {
+bool path_exists(const char *path) {
         struct stat buf;
         return (stat(path, &buf) == 0);
 }

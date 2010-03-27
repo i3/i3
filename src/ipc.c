@@ -12,6 +12,7 @@
  */
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/un.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -21,6 +22,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <libgen.h>
 #include <ev.h>
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
@@ -33,6 +35,7 @@
 #include "log.h"
 #include "table.h"
 #include "randr.h"
+#include "config.h"
 
 /* Shorter names for all those yajl_gen_* functions */
 #define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
@@ -51,6 +54,34 @@ static void set_nonblock(int sockfd) {
         flags |= O_NONBLOCK;
         if (fcntl(sockfd, F_SETFL, flags) < 0)
                 err(-1, "Could not set O_NONBLOCK");
+}
+
+/*
+ * Emulates mkdir -p (creates any missing folders)
+ *
+ */
+static bool mkdirp(const char *path) {
+        if (mkdir(path, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0)
+                return true;
+        if (errno != ENOENT) {
+                ELOG("mkdir(%s) failed: %s\n", path, strerror(errno));
+                return false;
+        }
+        char *copy = strdup(path);
+        /* strip trailing slashes, if any */
+        while (copy[strlen(copy)-1] == '/')
+                copy[strlen(copy)-1] = '\0';
+
+        char *sep = strrchr(copy, '/');
+        if (sep == NULL)
+                return false;
+        *sep = '\0';
+        bool result = false;
+        if (mkdirp(copy))
+                result = mkdirp(path);
+        free(copy);
+
+        return result;
 }
 
 static void ipc_send_message(int fd, const unsigned char *payload,
@@ -471,11 +502,20 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
 int ipc_create_socket(const char *filename) {
         int sockfd;
 
+        char *globbed = glob_path(filename);
+        DLOG("Creating IPC-socket at %s\n", globbed);
+        char *copy = sstrdup(globbed);
+        const char *dir = dirname(copy);
+        if (!path_exists(dir))
+                mkdirp(dir);
+        free(copy);
+
         /* Unlink the unix domain socket before */
         unlink(filename);
 
         if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
                 perror("socket()");
+                free(globbed);
                 return -1;
         }
 
@@ -484,12 +524,14 @@ int ipc_create_socket(const char *filename) {
         struct sockaddr_un addr;
         memset(&addr, 0, sizeof(struct sockaddr_un));
         addr.sun_family = AF_LOCAL;
-        strcpy(addr.sun_path, filename);
+        strcpy(addr.sun_path, globbed);
         if (bind(sockfd, (struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0) {
                 perror("bind()");
+                free(globbed);
                 return -1;
         }
 
+        free(globbed);
         set_nonblock(sockfd);
 
         if (listen(sockfd, 5) < 0) {
