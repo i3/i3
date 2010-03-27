@@ -10,18 +10,8 @@
  * xcb.c: Helper functions for easier usage of XCB
  *
  */
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include <xcb/xcb.h>
-#include <xcb/xcb_keysyms.h>
-
-#include "i3.h"
-#include "util.h"
-#include "xcb.h"
-#include "log.h"
+#include "all.h"
 
 TAILQ_HEAD(cached_fonts_head, Font) cached_fonts = TAILQ_HEAD_INITIALIZER(cached_fonts);
 unsigned int xcb_numlock_mask;
@@ -74,7 +64,7 @@ i3Font *load_font(xcb_connection_t *conn, const char *pattern) {
  * This has to be done by the caller.
  *
  */
-uint32_t get_colorpixel(xcb_connection_t *conn, char *hex) {
+uint32_t get_colorpixel(char *hex) {
         char strgroups[3][3] = {{hex[1], hex[2], '\0'},
                                 {hex[3], hex[4], '\0'},
                                 {hex[5], hex[6], '\0'}};
@@ -182,6 +172,7 @@ void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window) 
         xcb_flush(conn);
 }
 
+#if 0
 /*
  * Generates a configure_notify_event with absolute coordinates (relative to the X root
  * window, not to the client’s frame) for the given client.
@@ -197,6 +188,7 @@ void fake_absolute_configure_notify(xcb_connection_t *conn, Client *client) {
 
         fake_configure_notify(conn, absolute, client->child);
 }
+#endif
 
 /*
  * Finds out which modifier mask is the one for numlock, as the user may change this.

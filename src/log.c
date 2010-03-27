@@ -22,7 +22,7 @@
 #include "loglevels.h"
 
 static uint32_t loglevel = 0;
-static bool verbose = false;
+static bool verbose = true;
 
 /**
  * Set verbosity of i3. If verbose is set to true, informative messages will

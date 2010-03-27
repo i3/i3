@@ -10,25 +10,11 @@
  * workspace.c: Functions for modifying workspaces
  *
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <limits.h>
-#include <err.h>
 
-#include "util.h"
-#include "data.h"
-#include "i3.h"
-#include "config.h"
-#include "xcb.h"
-#include "table.h"
-#include "randr.h"
-#include "layout.h"
-#include "workspace.h"
-#include "client.h"
-#include "log.h"
-#include "ewmh.h"
-#include "ipc.h"
+#include "all.h"
+
+extern Con *focused;
 
 /*
  * Returns a pointer to the workspace with the given number (starting at 0),
@@ -36,37 +22,39 @@
  * memory and initializing the data structures correctly).
  *
  */
-Workspace *workspace_get(int number) {
-        Workspace *ws = NULL;
-        TAILQ_FOREACH(ws, workspaces, workspaces)
-                if (ws->num == number)
-                        return ws;
+Con *workspace_get(const char *num) {
+        Con *output, *workspace = NULL, *current;
 
-        /* If we are still there, we could not find the requested workspace. */
-        int last_ws = TAILQ_LAST(workspaces, workspaces_head)->num;
+        /* TODO: could that look like this in the future?
+        GET_MATCHING_NODE(workspace, croot, strcasecmp(current->name, num) != 0);
+        */
+        TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+                TAILQ_FOREACH(current, &(output->nodes_head), nodes) {
+                        if (strcasecmp(current->name, num) != 0)
+                                continue;
 
-        DLOG("We need to initialize that one, last ws = %d\n", last_ws);
+                        workspace = current;
+                        break;
+                }
+        }
 
-        for (int c = last_ws; c < number; c++) {
-                DLOG("Creating new ws\n");
-
-                ws = scalloc(sizeof(Workspace));
-                ws->num = c+1;
-                TAILQ_INIT(&(ws->floating_clients));
-                expand_table_cols(ws);
-                expand_table_rows(ws);
-                workspace_set_name(ws, NULL);
-
-                TAILQ_INSERT_TAIL(workspaces, ws, workspaces);
+        LOG("should switch to ws %s\n", num);
+        if (workspace == NULL) {
+                LOG("need to create this one\n");
+                output = con_get_output(focused);
+                LOG("got output %p\n", output);
+                workspace = con_new(output);
+                workspace->name = strdup(num);
 
                 ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
         }
-        DLOG("done\n");
 
-        ewmh_update_workarea();
+        //ewmh_update_workarea();
 
-        return ws;
+        return workspace;
 }
+
+#if 0
 
 /*
  * Sets the name (or just its number) for the given workspace. This has to
@@ -105,22 +93,27 @@ void workspace_set_name(Workspace *ws, const char *name) {
 bool workspace_is_visible(Workspace *ws) {
         return (ws->output != NULL && ws->output->current_workspace == ws);
 }
+#endif
+
 
 /*
  * Switches to the given workspace
  *
  */
-void workspace_show(xcb_connection_t *conn, int workspace) {
-        bool need_warp = false;
-        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
-        /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */
-        Workspace *t_ws = workspace_get(workspace-1);
+void workspace_show(const char *num) {
+        Con *workspace, *current;
 
-        DLOG("show_workspace(%d)\n", workspace);
+        workspace = workspace_get(num);
+        workspace->fullscreen_mode = CF_OUTPUT;
+        /* disable fullscreen */
+        TAILQ_FOREACH(current, &(workspace->parent->nodes_head), nodes)
+                current->fullscreen_mode = CF_NONE;
 
-        /* Store current_row/current_col */
-        c_ws->current_row = current_row;
-        c_ws->current_col = current_col;
+        LOG("switching to %p\n", workspace);
+        con_focus(workspace);
+        workspace->fullscreen_mode = CF_OUTPUT;
+        LOG("focused now = %p / %s\n", focused, focused->name);
+#if 0
 
         /* Check if the workspace has not been used yet */
         workspace_initialize(t_ws, c_ws->output, false);
@@ -209,8 +202,10 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
                 client_warp_pointer_into(conn, last_focused);
                 xcb_flush(conn);
         }
+#endif
 }
 
+#if 0
 /*
  * Assigns the given workspace to the given output by correctly updating its
  * state and reconfiguring all the clients on this workspace.
@@ -475,3 +470,4 @@ int workspace_height(Workspace *ws) {
 
         return height;
 }
+#endif

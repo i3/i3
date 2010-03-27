@@ -11,6 +11,7 @@
 #include <xcb/xcb.h>
 
 #include "data.h"
+#include "tree.h"
 #include "randr.h"
 
 #ifndef _WORKSPACE_H
@@ -22,8 +23,9 @@
  * memory and initializing the data structures correctly).
  *
  */
-Workspace *workspace_get(int number);
+Con *workspace_get(const char *num);
 
+#if 0
 /**
  * Sets the name (or just its number) for the given workspace. This has to
  * be called for every workspace as the rendering function
@@ -41,9 +43,11 @@ void workspace_set_name(Workspace *ws, const char *name);
  */
 bool workspace_is_visible(Workspace *ws);
 
+#endif
 /** Switches to the given workspace */
-void workspace_show(xcb_connection_t *conn, int workspace);
+void workspace_show(const char *num);
 
+#if 0
 /**
  * Assigns the given workspace to the given screen by correctly updating its
  * state and reconfiguring all the clients on this workspace.
@@ -106,5 +110,5 @@ int workspace_width(Workspace *ws);
  *
  */
 int workspace_height(Workspace *ws);
-
+#endif
 #endif

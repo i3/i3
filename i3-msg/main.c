@@ -127,12 +127,11 @@ int main(int argc, char *argv[]) {
         while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
                 if (o == 's') {
                         socket_path = strdup(optarg);
-                        break;
                 } else if (o == 't') {
                         if (strcasecmp(optarg, "command") == 0)
                                 message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
-                        else if (strcasecmp(optarg, "get_workspaces") == 0)
-                                message_type = I3_IPC_MESSAGE_TYPE_GET_WORKSPACES;
+                        else if (strcasecmp(optarg, "tree") == 0)
+                                message_type = I3_IPC_MESSAGE_TYPE_GET_TREE;
                         else {
                                 printf("Unknown message type\n");
                                 printf("Known types: command, get_workspaces\n");

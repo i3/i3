@@ -12,26 +12,12 @@
  * mode).
  *
  */
-#include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <glob.h>
-#include <unistd.h>
 
 /* We need Xlib for XStringToKeysym */
 #include <X11/Xlib.h>
+#include <wordexp.h>
 
-#include <xcb/xcb_keysyms.h>
-
-#include "i3.h"
-#include "util.h"
-#include "config.h"
-#include "xcb.h"
-#include "table.h"
-#include "workspace.h"
-#include "log.h"
+#include "all.h"
 
 Config config;
 struct modes_head modes;
@@ -40,20 +26,34 @@ struct modes_head modes;
  * This function resolves ~ in pathnames.
  *
  */
-static char *glob_path(const char *path) {
+char *glob_path(const char *path) {
         static glob_t globbuf;
         if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0)
                 die("glob() failed");
         char *result = sstrdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
         globfree(&globbuf);
+
+        /* If the file does not exist yet, we still may need to resolve tilde,
+         * so call wordexp */
+        if (strcmp(result, path) == 0) {
+                wordexp_t we;
+                wordexp(path, &we, WRDE_NOCMD);
+                if (we.we_wordc > 0) {
+                        free(result);
+                        result = sstrdup(we.we_wordv[0]);
+                }
+                wordfree(&we);
+        }
+
         return result;
 }
+
 
 /*
  * Checks if the given path exists by calling stat().
  *
  */
-static bool path_exists(const char *path) {
+bool path_exists(const char *path) {
         struct stat buf;
         return (stat(path, &buf) == 0);
 }
@@ -134,14 +134,6 @@ void translate_keysyms() {
                         continue;
                 }
 
-#ifdef OLD_XCB_KEYSYMS_API
-                bind->number_keycodes = 1;
-                xcb_keycode_t code = xcb_key_symbols_get_keycode(keysyms, keysym);
-                DLOG("Translated symbol \"%s\" to 1 keycode (%d)\n", bind->symbol, code);
-                grab_keycode_for_binding(global_conn, bind, code);
-                bind->translated_to = smalloc(sizeof(xcb_keycode_t));
-                memcpy(bind->translated_to, &code, sizeof(xcb_keycode_t));
-#else
                 uint32_t last_keycode = 0;
                 xcb_keycode_t *keycodes = xcb_key_symbols_get_keycode(keysyms, keysym);
                 if (keycodes == NULL) {
@@ -163,7 +155,6 @@ void translate_keysyms() {
                 bind->translated_to = smalloc(bind->number_keycodes * sizeof(xcb_keycode_t));
                 memcpy(bind->translated_to, keycodes, bind->number_keycodes * sizeof(xcb_keycode_t));
                 free(keycodes);
-#endif
         }
 }
 
@@ -323,9 +314,11 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 }
 
                 /* Clear workspace names */
+#if 0
                 Workspace *ws;
                 TAILQ_FOREACH(ws, workspaces, workspaces)
                         workspace_set_name(ws, NULL);
+#endif
         }
 
         SLIST_INIT(&modes);
@@ -348,9 +341,9 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         /* Initialize default colors */
 #define INIT_COLOR(x, cborder, cbackground, ctext) \
         do { \
-                x.border = get_colorpixel(conn, cborder); \
-                x.background = get_colorpixel(conn, cbackground); \
-                x.text = get_colorpixel(conn, ctext); \
+                x.border = get_colorpixel(cborder); \
+                x.background = get_colorpixel(cbackground); \
+                x.text = get_colorpixel(ctext); \
         } while (0)
 
         INIT_COLOR(config.client.focused, "#4c7899", "#285577", "#ffffff");
@@ -370,6 +363,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
         REQUIRED_OPTION(font);
 
+#if 0
         /* Set an empty name for every workspace which got no name */
         Workspace *ws;
         TAILQ_FOREACH(ws, workspaces, workspaces) {
@@ -384,4 +378,5 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
                 workspace_set_name(ws, NULL);
         }
+#endif
 }

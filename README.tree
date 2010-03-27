@@ -1,0 +1,49 @@
+README file for the "tree" branch of i3
+=======================================
+
+This is a *massive* refactoring of i3. It was driven by thinking about whether
+a different data structure could make things easier (for users and developers).
+The old data structure of a table provided relatively flexible layouts but was
+*very* hard to implement.
+
+The new data structure is a tree. You can have horizontally and vertically split
+containers. Each container can contain either nothing yet (waiting for a window
+or for the user to put more containers in it), one or more containers or exactly
+one window. RandR Outputs and workspaces are not treated specially, but they
+are just containers inside the tree.
+
+This structure allows for easy serialization, meaning multiple things:
+- we can store and reload the layout for inplace restarts (this is already working)
+- we can store parts of the layout and load them at any position in our tree
+  (partly working)
+  - we can load a layout specifying the physical positions of RandR outputs
+    for pathologic screen setups
+  - we can load a default layout for each workspace to specify the position
+    of dock clients
+- we can use test-driven development to a much higher degree because we have
+  access to the whole tree
+
+Ripping out the core data structures of i3 and replacing them of course has
+some side-effects, which I will describe here (the list may not be complete,
+new side-effects may not be known yet):
+- Empty containers are allowed. They can swallow windows based on certain
+  criteria. We can implement session-saving this way.
+- Assignments (put windows on certain workspaces, put workspaces on certain
+  outputs) are just special cases of the point above.
+- Window decorations are now always rendered on the parent window. This means
+  we don’t have to carry around ugly Stack_Windows any more.
+- Operations always (?) operate on containers, so you can make a container
+  (containing multiple windows) fullscreen or floating (for example) and no
+  longer just single windows.
+- All X11 requests are now pushed to X11 in a separate step (rendering is one
+  step, updating X11 another). This makes talking to X11 a lot less error-prone
+  and allows for simpler code.
+
+======================
+SOME WORDS OF WARNING:
+======================
+
+The current state of the branch is not nearly the quality you know of i3. It
+is in flux, changes and crashes are to be expected. Many features do not work
+yet. It is only suitable if you want to help developing or have a look at what
+is coming. Do *NOT* use it for production! You have been warned.

@@ -124,6 +124,9 @@ struct Config {
         } bar;
 };
 
+char *glob_path(const char *path);
+bool path_exists(const char *path);
+
 /**
  * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
  *

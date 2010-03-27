@@ -11,34 +11,17 @@
  *              because they are quite large.
  *
  */
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
 #include <time.h>
-#include <stdbool.h>
 #include <math.h>
 
-#include <xcb/xcb.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_icccm.h>
 
 #include <X11/XKBlib.h>
 
-#include "i3.h"
-#include "queue.h"
-#include "table.h"
-#include "config.h"
-#include "util.h"
-#include "xcb.h"
-#include "client.h"
-#include "workspace.h"
-#include "commands.h"
-#include "floating.h"
-#include "resize.h"
-#include "log.h"
-#include "randr.h"
+#include "all.h"
 
+#if 0
 static struct Stack_Window *get_stack_window(xcb_window_t window_id) {
         struct Stack_Window *current;
 
@@ -251,50 +234,63 @@ static bool floating_mod_on_tiled_client(xcb_connection_t *conn, Client *client,
 
        return resize_graphical_handler(conn, ws, first, second, orientation, event);
 }
+#endif
 
 int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
-        DLOG("Button %d pressed\n", event->state);
-        /* This was either a focus for a client’s parent (= titlebar)… */
-        Client *client = table_get(&by_child, event->event);
+        Con *con;
+        LOG("Button %d pressed\n", event->state);
+
+        con = con_by_window_id(event->event);
         bool border_click = false;
-        if (client == NULL) {
-                client = table_get(&by_parent, event->event);
+        if (con == NULL) {
+                con = con_by_frame_id(event->event);
                 border_click = true;
         }
+        //if (con && con->type == CT_FLOATING_CON)
+                //con = TAILQ_FIRST(&(con->nodes_head));
+
         /* See if this was a click with the configured modifier. If so, we need
          * to move around the client if it was floating. if not, we just process
          * as usual. */
-        if (config.floating_modifier != 0 &&
-            (event->state & config.floating_modifier) == config.floating_modifier) {
-                if (client == NULL) {
-                        DLOG("Not handling, floating_modifier was pressed and no client found\n");
+        //if (config.floating_modifier != 0 &&
+            //(event->state & config.floating_modifier) == config.floating_modifier) {
+                if (con == NULL) {
+                        LOG("Not handling, floating_modifier was pressed and no client found\n");
                         return 1;
                 }
-                if (client->fullscreen) {
-                        DLOG("Not handling, client is in fullscreen mode\n");
+#if 0
+                if (con->fullscreen) {
+                        LOG("Not handling, client is in fullscreen mode\n");
                         return 1;
                 }
-                if (client_is_floating(client)) {
-                        DLOG("button %d pressed\n", event->detail);
+#endif
+                if (con->type == CT_FLOATING_CON) {
+                        LOG("button %d pressed\n", event->detail);
                         if (event->detail == 1) {
-                                DLOG("left mouse button, dragging\n");
-                                floating_drag_window(conn, client, event);
-                        } else if (event->detail == 3) {
+                                LOG("left mouse button, dragging\n");
+                                floating_drag_window(con, event);
+                        } 
+#if 0
+                        else if (event->detail == 3) {
                                 bool proportional = (event->state & BIND_SHIFT);
                                 DLOG("right mouse button\n");
                                 floating_resize_window(conn, client, proportional, event);
                         }
+#endif
                         return 1;
                 }
 
+#if 0
                 if (!floating_mod_on_tiled_client(conn, client, event)) {
                         xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
                         xcb_flush(conn);
                 }
+#endif
 
                 return 1;
-        }
+        //}
 
+#if 0
         if (client == NULL) {
                 /* The client was neither on a client’s titlebar nor on a client itself, maybe on a stack_window? */
                 if (button_press_stackwin(conn, event))
@@ -405,4 +401,5 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         }
 
         return resize_graphical_handler(conn, ws, first, second, orientation, event);
+#endif
 }

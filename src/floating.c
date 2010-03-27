@@ -10,38 +10,81 @@
  * src/floating.c: contains all functions for handling floating clients
  *
  */
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
 
-#include <xcb/xcb.h>
-#include <xcb/xcb_event.h>
 
-#include "i3.h"
-#include "config.h"
-#include "data.h"
-#include "util.h"
-#include "xcb.h"
-#include "debug.h"
-#include "layout.h"
-#include "client.h"
-#include "floating.h"
-#include "workspace.h"
-#include "log.h"
+#include "all.h"
+
+extern xcb_connection_t *conn;
 
 /*
- * Toggles floating mode for the given client.
- * Correctly takes care of the position/size (separately stored for tiling/floating mode)
- * and repositions/resizes/redecorates the client.
+ * Toggles floating mode for the given container.
  *
  * If the automatic flag is set to true, this was an automatic update by a change of the
  * window class from the application which can be overwritten by the user.
  *
  */
-void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic) {
-        Container *con = client->container;
-        i3Font *font = load_font(conn, config.font);
+void toggle_floating_mode(Con *con, bool automatic) {
+        //i3Font *font = load_font(conn, config.font);
 
+        /* see if the client is already floating */
+        if (con_is_floating(con)) {
+                LOG("already floating, re-setting to tiling\n");
+                assert(con->old_parent != NULL);
+
+                /* 1: detach from parent container */
+                TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
+                TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
+
+                /* 2: kill parent container */
+                TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
+                tree_close(con->parent);
+
+                /* 3: re-attach to previous parent */
+                con->parent = con->old_parent;
+                TAILQ_INSERT_TAIL(&(con->parent->nodes_head), con, nodes);
+                TAILQ_INSERT_TAIL(&(con->parent->focus_head), con, focused);
+
+                return;
+        }
+
+        /* 1: detach the container from its parent */
+        /* TODO: refactor this with tree_close() */
+        TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
+        TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
+
+        Con *child;
+    int children = 0;
+    TAILQ_FOREACH(child, &(con->parent->nodes_head), nodes)
+        children++;
+    /* TODO: better document why this math works */
+    double fix = 1.0 / (1.0 - (1.0 / (children+1)));
+    TAILQ_FOREACH(child, &(con->parent->nodes_head), nodes) {
+        if (child->percent <= 0.0)
+            continue;
+        child->percent *= fix;
+    }
+
+        /* 2: create a new container to render the decoration on, add
+         * it as a floating window to the workspace */
+        Con *nc = con_new(NULL);
+        nc->parent = con_get_workspace(con);
+        nc->rect = con->rect;
+        nc->orientation = NO_ORIENTATION;
+        nc->type = CT_FLOATING_CON;
+        TAILQ_INSERT_TAIL(&(nc->parent->floating_head), nc, floating_windows);
+
+        /* 3: attach the child to the new parent container */
+        con->old_parent = con->parent;
+        con->parent = nc;
+        con->floating = FLOATING_USER_ON;
+        nc->rect.x = 400;
+        nc->rect.y = 400;
+        TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
+        TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
+
+
+
+#if 0
         if (client->dock) {
                 DLOG("Not putting dock client into floating mode\n");
                 return;
@@ -138,8 +181,10 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
         /* Re-render the tiling layout of this container */
         render_container(conn, con);
         xcb_flush(conn);
+#endif
 }
 
+#if 0
 /*
  * Removes the floating client from its workspace and attaches it to the new workspace.
  * This is centralized here because it may happen if you move it via keyboard and
@@ -258,16 +303,17 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
         return 1;
 }
 
+#endif
 DRAGGING_CB(drag_window_callback) {
         struct xcb_button_press_event_t *event = extra;
 
         /* Reposition the client correctly while moving */
-        client->rect.x = old_rect->x + (new_x - event->root_x);
-        client->rect.y = old_rect->y + (new_y - event->root_y);
-        reposition_client(conn, client);
+        con->rect.x = old_rect->x + (new_x - event->root_x);
+        con->rect.y = old_rect->y + (new_y - event->root_y);
+        //reposition_client(conn, con);
         /* Because reposition_client does not send a faked configure event (only resize does),
          * we need to initiate that on our own */
-        fake_absolute_configure_notify(conn, client);
+        //fake_absolute_configure_notify(conn, client);
         /* fake_absolute_configure_notify flushes */
 }
 
@@ -276,12 +322,14 @@ DRAGGING_CB(drag_window_callback) {
  * Calls the drag_pointer function with the drag_window callback
  *
  */
-void floating_drag_window(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event) {
+void floating_drag_window(Con *con, xcb_button_press_event_t *event) {
         DLOG("floating_drag_window\n");
 
-        drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback, event);
+        drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback, event);
+        tree_render();
 }
 
+#if 0
 /*
  * This is an ugly data structure which we need because there is no standard
  * way of having nested functions (only available as a gcc extension at the
@@ -368,7 +416,7 @@ void floating_resize_window(xcb_connection_t *conn, Client *client,
         drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, resize_window_callback, &params);
 }
 
-
+#endif
 /*
  * This function grabs your pointer and lets you drag stuff around (borders).
  * Every time you move your mouse, an XCB_MOTION_NOTIFY event will be received
@@ -377,13 +425,14 @@ void floating_resize_window(xcb_connection_t *conn, Client *client,
  * the event and the new coordinates (x, y).
  *
  */
-void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event,
-                  xcb_window_t confine_to, border_t border, callback_t callback, void *extra) {
+void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
+                confine_to, border_t border, callback_t callback, void *extra)
+{
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         uint32_t new_x, new_y;
         Rect old_rect;
-        if (client != NULL)
-                memcpy(&old_rect, &(client->rect), sizeof(Rect));
+        if (con != NULL)
+                memcpy(&old_rect, &(con->rect), sizeof(Rect));
 
         /* Grab the pointer */
         /* TODO: returncode */
@@ -409,7 +458,7 @@ void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event
                         int nr = inside_event->response_type;
                         if (nr == 0) {
                                 /* An error occured */
-                                handle_event(NULL, conn, inside_event);
+                                //handle_event(NULL, conn, inside_event);
                                 free(inside_event);
                                 continue;
                         }
@@ -448,7 +497,7 @@ void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event
                 new_x = ((xcb_motion_notify_event_t*)last_motion_notify)->root_x;
                 new_y = ((xcb_motion_notify_event_t*)last_motion_notify)->root_y;
 
-                callback(conn, client, &old_rect, new_x, new_y, extra);
+                callback(con, &old_rect, new_x, new_y, extra);
                 FREE(last_motion_notify);
         }
 done:
@@ -456,6 +505,7 @@ done:
         xcb_flush(conn);
 }
 
+#if 0
 /*
  * Changes focus in the given direction for floating clients.
  *
@@ -555,3 +605,4 @@ void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace) {
 
         xcb_flush(conn);
 }
+#endif

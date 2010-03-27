@@ -12,30 +12,11 @@
  * (take your time to read it completely, it answers all questions).
  *
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <assert.h>
 #include <time.h>
-#include <unistd.h>
 
-#include <xcb/xcb.h>
 #include <xcb/randr.h>
 
-#include "queue.h"
-#include "i3.h"
-#include "data.h"
-#include "table.h"
-#include "util.h"
-#include "layout.h"
-#include "xcb.h"
-#include "config.h"
-#include "workspace.h"
-#include "log.h"
-#include "ewmh.h"
-#include "ipc.h"
-#include "client.h"
+#include "all.h"
 
 /* While a clean namespace is usually a pretty good thing, we really need
  * to use shorter names than the whole xcb_randr_* default names. */
@@ -159,6 +140,7 @@ Output *get_output_most(direction_t direction, Output *current) {
         return candidate;
 }
 
+#if 0
 /*
  * Initializes the specified output, assigning the specified workspace to it.
  *
@@ -207,6 +189,7 @@ void initialize_output(xcb_connection_t *conn, Output *output, Workspace *worksp
                 workspace_assign_to(ws, output, true);
         }
 }
+#endif
 
 /*
  * Disables RandR support by creating exactly one output with the size of the
@@ -245,8 +228,6 @@ void disable_randr(xcb_connection_t *conn) {
  */
 static void output_change_mode(xcb_connection_t *conn, Output *output) {
         i3Font *font = load_font(conn, config.font);
-        Workspace *ws;
-        Client *client;
 
         DLOG("Output mode changed, reconfiguring bar, updating workspaces\n");
         Rect bar_rect = {output->rect.x,
@@ -256,6 +237,7 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
 
         xcb_set_window_rect(conn, output->bar, bar_rect);
 
+#if 0
         /* go through all workspaces and set force_reconfigure */
         TAILQ_FOREACH(ws, workspaces, workspaces) {
                 if (ws->output != output)
@@ -290,6 +272,7 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
                         xcb_set_window_rect(conn, client->child, r);
                 }
         }
+#endif
 }
 
 /*
@@ -368,8 +351,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
  * (Re-)queries the outputs via RandR and stores them in the list of outputs.
  *
  */
-void randr_query_outputs(xcb_connection_t *conn) {
-        Workspace *ws;
+void randr_query_outputs() {
         Output *output, *other, *first;
         xcb_randr_get_screen_resources_current_cookie_t rcookie;
         resources_reply *res;
@@ -460,8 +442,9 @@ void randr_query_outputs(xcb_connection_t *conn) {
                         if ((first = get_first_output()) == NULL)
                                 die("No usable outputs available\n");
 
-                        bool needs_init = (first->current_workspace == NULL);
+                        //bool needs_init = (first->current_workspace == NULL);
 
+#if 0
                         TAILQ_FOREACH(ws, workspaces, workspaces) {
                                 if (ws->output != output)
                                         continue;
@@ -469,7 +452,7 @@ void randr_query_outputs(xcb_connection_t *conn) {
                                 workspace_assign_to(ws, first, true);
                                 if (!needs_init)
                                         continue;
-                                initialize_output(conn, first, ws);
+                                //initialize_output(conn, first, ws);
                                 needs_init = false;
                         }
 
@@ -479,7 +462,9 @@ void randr_query_outputs(xcb_connection_t *conn) {
                                 SLIST_REMOVE_HEAD(&(output->dock_clients), dock_clients);
                                 SLIST_INSERT_HEAD(&(first->dock_clients), dock, dock_clients);
                         }
-                        output->current_workspace = NULL;
+
+#endif
+                        //output->current_workspace = NULL;
                         output->to_be_disabled = false;
                 } else if (output->changed) {
                         output_change_mode(conn, output);
@@ -492,8 +477,9 @@ void randr_query_outputs(xcb_connection_t *conn) {
                 disable_randr(conn);
         }
 
-        ewmh_update_workarea();
+        //ewmh_update_workarea();
 
+#if 0
         /* Just go through each active output and associate one workspace */
         TAILQ_FOREACH(output, &outputs, outputs) {
                 if (!output->active || output->current_workspace != NULL)
@@ -501,9 +487,10 @@ void randr_query_outputs(xcb_connection_t *conn) {
                 ws = get_first_workspace_for_output(output);
                 initialize_output(conn, output, ws);
         }
+#endif
 
         /* render_layout flushes */
-        render_layout(conn);
+        tree_render();
 }
 
 /*
@@ -511,7 +498,7 @@ void randr_query_outputs(xcb_connection_t *conn) {
  * XRandR information to setup workspaces for each screen.
  *
  */
-void initialize_randr(xcb_connection_t *conn, int *event_base) {
+void randr_init(int *event_base) {
         const xcb_query_extension_reply_t *extreply;
 
         extreply = xcb_get_extension_data(conn, &xcb_randr_id);

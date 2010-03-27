@@ -10,34 +10,18 @@
  * util.c: Utility functions, which can be useful everywhere.
  *
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 #include <sys/wait.h>
 #include <stdarg.h>
-#include <assert.h>
 #include <iconv.h>
 #if defined(__OpenBSD__)
 #include <sys/cdefs.h>
 #endif
 
-#include <xcb/xcb_icccm.h>
+#include <fcntl.h>
 
-#include "i3.h"
-#include "data.h"
-#include "table.h"
-#include "layout.h"
-#include "util.h"
-#include "xcb.h"
-#include "client.h"
-#include "log.h"
-#include "ewmh.h"
-#include "manage.h"
-#include "workspace.h"
-#include "ipc.h"
+#include "all.h"
 
-static iconv_t conversion_descriptor = 0;
+//static iconv_t conversion_descriptor = 0;
 struct keyvalue_table_head by_parent = TAILQ_HEAD_INITIALIZER(by_parent);
 struct keyvalue_table_head by_child = TAILQ_HEAD_INITIALIZER(by_child);
 
@@ -77,11 +61,19 @@ void *scalloc(size_t size) {
         return result;
 }
 
+void *srealloc(void *ptr, size_t size) {
+        void *result = realloc(ptr, size);
+        exit_if_null(result, "Error: out memory (realloc(%zd))\n", size);
+        return result;
+}
+
 char *sstrdup(const char *str) {
         char *result = strdup(str);
         exit_if_null(result, "Error: out of memory (strdup())\n");
         return result;
 }
+
+#if 0
 
 /*
  * The table_* functions emulate the behaviour of libxcb-wm, which in libxcb 0.3.4 suddenly
@@ -120,7 +112,7 @@ void *table_get(struct keyvalue_table_head *head, uint32_t key) {
 
         return NULL;
 }
-
+#endif
 /*
  * Starts the given application by passing it through a shell. We use double fork
  * to avoid zombie processes. As the started application’s parent exits (immediately),
@@ -132,6 +124,7 @@ void *table_get(struct keyvalue_table_head *head, uint32_t key) {
  *
  */
 void start_application(const char *command) {
+        LOG("executing: %s\n", command);
         if (fork() == 0) {
                 /* Child process */
                 if (fork() == 0) {
@@ -165,6 +158,7 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_mes
         }
 }
 
+#if 0
 /*
  * Converts the given string to UCS-2 big endian for use with
  * xcb_image_text_16(). The amount of real glyphs is stored in real_strlen,
@@ -482,6 +476,7 @@ done:
         FREE(to_title_ucs);
         return matching;
 }
+#endif
 
 /*
  * Goes through the list of arguments (for exec()) and checks if the given argument
@@ -506,15 +501,58 @@ static char **append_argument(char **original, char *argument) {
         return result;
 }
 
+#define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
+#define ystr(str) yajl_gen_string(gen, (unsigned char*)str, strlen(str))
+
+void store_restart_layout() {
+        yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+
+        dump_node(gen, croot, true);
+
+        const unsigned char *payload;
+        unsigned int length;
+        y(get_buf, &payload, &length);
+
+        char *globbed = glob_path("~/.i3/_restart.json");
+        int fd = open(globbed, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+        free(globbed);
+        if (fd == -1) {
+                perror("open()");
+                return;
+        }
+
+        int written = 0;
+        while (written < length) {
+                int n = write(fd, payload + written, length - written);
+                /* TODO: correct error-handling */
+                if (n == -1) {
+                        perror("write()");
+                        return;
+                }
+                if (n == 0) {
+                        printf("write == 0?\n");
+                        return;
+                }
+                written += n;
+                printf("written: %d of %d\n", written, length);
+        }
+        close(fd);
+
+        printf("layout: %.*s\n", length, payload);
+
+        y(free);
+}
+
 /*
  * Restart i3 in-place
  * appends -a to argument list to disable autostart
  *
  */
 void i3_restart() {
-        restore_geometry(global_conn);
+        store_restart_layout();
+        restore_geometry();
 
-        ipc_shutdown();
+        //ipc_shutdown();
 
         LOG("restarting \"%s\"...\n", start_argv[0]);
         /* make sure -a is in the argument list or append it */
@@ -523,6 +561,8 @@ void i3_restart() {
         execvp(start_argv[0], start_argv);
         /* not reached */
 }
+
+#if 0
 
 #if defined(__OpenBSD__)
 
@@ -559,4 +599,4 @@ void *memmem(const void *l, size_t l_len, const void *s, size_t s_len) {
 }
 
 #endif
-
+#endif

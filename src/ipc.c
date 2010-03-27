@@ -10,29 +10,14 @@
  * ipc.c: Everything about the UNIX domain sockets for IPC
  *
  */
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-#include <err.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <ev.h>
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
 
-#include "queue.h"
-#include "ipc.h"
-#include "i3.h"
-#include "util.h"
-#include "commands.h"
-#include "log.h"
-#include "table.h"
-#include "randr.h"
+#include "all.h"
 
 /* Shorter names for all those yajl_gen_* functions */
 #define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
@@ -129,7 +114,7 @@ IPC_HANDLER(command) {
          * message_size bytes out of the buffer */
         char *command = scalloc(message_size);
         strncpy(command, (const char*)message, message_size);
-        parse_command(global_conn, (const char*)command);
+        parse_command((const char*)command);
         free(command);
 
         /* For now, every command gets a positive acknowledge
@@ -139,6 +124,88 @@ IPC_HANDLER(command) {
                          I3_IPC_REPLY_TYPE_COMMAND, strlen(reply));
 }
 
+void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
+        y(map_open);
+        ystr("id");
+        y(integer, (long int)con);
+
+        ystr("type");
+        y(integer, con->type);
+
+        ystr("orientation");
+        y(integer, con->orientation);
+
+        ystr("layout");
+        y(integer, con->layout);
+
+        ystr("rect");
+        y(map_open);
+        ystr("x");
+        y(integer, con->rect.x);
+        ystr("y");
+        y(integer, con->rect.y);
+        ystr("width");
+        y(integer, con->rect.width);
+        ystr("height");
+        y(integer, con->rect.height);
+        y(map_close);
+
+        ystr("name");
+        ystr(con->name);
+
+        ystr("window");
+        if (con->window)
+                y(integer, con->window->id);
+        else y(null);
+
+        ystr("nodes");
+        y(array_open);
+        Con *leaf;
+        TAILQ_FOREACH(leaf, &(con->nodes_head), nodes) {
+                dump_node(gen, leaf, inplace_restart);
+        }
+        y(array_close);
+
+        ystr("focus");
+        y(array_open);
+        TAILQ_FOREACH(leaf, &(con->nodes_head), nodes) {
+                y(integer, (long int)leaf);
+        }
+        y(array_close);
+
+        ystr("fullscreen_mode");
+        y(integer, con->fullscreen_mode);
+
+        if (inplace_restart) {
+                if (con->window != NULL) {
+                ystr("swallows");
+                y(array_open);
+                y(map_open);
+                ystr("id");
+                y(integer, con->window->id);
+                y(map_close);
+                y(array_close);
+                }
+        }
+
+        y(map_close);
+}
+
+IPC_HANDLER(tree) {
+        printf("tree\n");
+        yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+        dump_node(gen, croot, false);
+
+        const unsigned char *payload;
+        unsigned int length;
+        y(get_buf, &payload, &length);
+
+        ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_TREE, length);
+        y(free);
+
+}
+
+#if 0
 /*
  * Formats the reply message for a GET_WORKSPACES request and sends it to the
  * client
@@ -327,14 +394,13 @@ IPC_HANDLER(subscribe) {
         ipc_send_message(fd, (const unsigned char*)reply,
                          I3_IPC_REPLY_TYPE_SUBSCRIBE, strlen(reply));
 }
+#endif
 
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[4] = {
+handler_t handlers[2] = {
         handle_command,
-        handle_get_workspaces,
-        handle_subscribe,
-        handle_get_outputs
+        handle_tree
 };
 
 /*

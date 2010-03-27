@@ -11,33 +11,17 @@
  *               (or existing ones on restart).
  *
  */
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
 
-#include <xcb/xcb.h>
-#include <xcb/xcb_icccm.h>
+#include "all.h"
 
-#include "xcb.h"
-#include "data.h"
-#include "util.h"
-#include "i3.h"
-#include "table.h"
-#include "config.h"
-#include "handlers.h"
-#include "layout.h"
-#include "manage.h"
-#include "floating.h"
-#include "client.h"
-#include "workspace.h"
-#include "log.h"
-#include "ewmh.h"
+extern struct Con *focused;
+
 
 /*
  * Go through all existing windows (if the window manager is restarted) and manage them
  *
  */
-void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *prophs, xcb_window_t root) {
+void manage_existing_windows(xcb_window_t root) {
         xcb_query_tree_reply_t *reply;
         int i, len;
         xcb_window_t *children;
@@ -57,7 +41,8 @@ void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *pr
 
         /* Call manage_window with the attributes for every window */
         for (i = 0; i < len; ++i)
-                manage_window(prophs, conn, children[i], cookies[i], true);
+                manage_window(children[i], cookies[i], true);
+
 
         free(reply);
         free(cookies);
@@ -71,15 +56,16 @@ void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *pr
  * side-effects which are to be expected when continuing to run i3.
  *
  */
-void restore_geometry(xcb_connection_t *conn) {
-        Workspace *ws;
-        Client *client;
-        DLOG("Restoring geometry\n");
+void restore_geometry() {
+        LOG("Restoring geometry\n");
 
-        TAILQ_FOREACH(ws, workspaces, workspaces)
-                SLIST_FOREACH(client, &(ws->focus_stack), focus_clients)
-                        xcb_reparent_window(conn, client->child, root,
-                                            client->rect.x, client->rect.y);
+        Con *con;
+        TAILQ_FOREACH(con, &all_cons, all_cons)
+                if (con->window) {
+                        printf("placing window at %d %d\n", con->rect.x, con->rect.y);
+                        xcb_reparent_window(conn, con->window->id, root,
+                                            con->rect.x, con->rect.y);
+                }
 
         /* Make sure our changes reach the X server, we restart/exit now */
         xcb_flush(conn);
@@ -89,58 +75,123 @@ void restore_geometry(xcb_connection_t *conn) {
  * Do some sanity checks and then reparent the window.
  *
  */
-void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
-                   xcb_window_t window, xcb_get_window_attributes_cookie_t cookie,
+void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cookie,
                    bool needs_to_be_mapped) {
         xcb_drawable_t d = { window };
         xcb_get_geometry_cookie_t geomc;
         xcb_get_geometry_reply_t *geom;
         xcb_get_window_attributes_reply_t *attr = 0;
 
+        printf("---> looking at window 0x%08x\n", window);
+
+        xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
+                                  utf8_title_cookie, title_cookie,
+                                  class_cookie, leader_cookie;
+
+        wm_type_cookie = xcb_get_any_property_unchecked(conn, false, window, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
+        strut_cookie = xcb_get_any_property_unchecked(conn, false, window, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
+        state_cookie = xcb_get_any_property_unchecked(conn, false, window, atoms[_NET_WM_STATE], UINT32_MAX);
+        utf8_title_cookie = xcb_get_any_property_unchecked(conn, false, window, atoms[_NET_WM_NAME], 128);
+        leader_cookie = xcb_get_any_property_unchecked(conn, false, window, atoms[WM_CLIENT_LEADER], UINT32_MAX);
+        title_cookie = xcb_get_any_property_unchecked(conn, false, window, WM_NAME, 128);
+        class_cookie = xcb_get_any_property_unchecked(conn, false, window, WM_CLASS, 128);
+
+
         geomc = xcb_get_geometry(conn, d);
 
         /* Check if the window is mapped (it could be not mapped when intializing and
            calling manage_window() for every window) */
         if ((attr = xcb_get_window_attributes_reply(conn, cookie, 0)) == NULL) {
-                ELOG("Could not get attributes\n");
+                LOG("Could not get attributes\n");
                 return;
         }
 
-        if (needs_to_be_mapped && attr->map_state != XCB_MAP_STATE_VIEWABLE)
+        if (needs_to_be_mapped && attr->map_state != XCB_MAP_STATE_VIEWABLE) {
+                LOG("map_state unviewable\n");
                 goto out;
+        }
 
         /* Don’t manage clients with the override_redirect flag */
+        LOG("override_redirect is %d\n", attr->override_redirect);
         if (attr->override_redirect)
                 goto out;
 
         /* Check if the window is already managed */
-        if (table_get(&by_child, window))
+        if (con_by_window_id(window) != NULL)
                 goto out;
 
         /* Get the initial geometry (position, size, …) */
         if ((geom = xcb_get_geometry_reply(conn, geomc, 0)) == NULL)
                 goto out;
 
+        LOG("reparenting!\n");
+
+        i3Window *cwindow = scalloc(sizeof(i3Window));
+        cwindow->id = window;
+
+        class_cookie = xcb_get_any_property_unchecked(conn, false, window, WM_CLASS, 128);
+        xcb_get_property_reply_t *preply;
+        preply = xcb_get_property_reply(conn, class_cookie, NULL);
+        if (preply == NULL || xcb_get_property_value_length(preply) == 0) {
+                LOG("cannot get wm_class\n");
+        } else cwindow->class = strdup(xcb_get_property_value(preply));
+
+        Con *nc;
+        Match *match;
+
+        /* TODO: assignments */
+        /* TODO: two matches for one container */
+        /* See if any container swallows this new window */
+        nc = con_for_window(cwindow, &match);
+        if (nc == NULL) {
+                if (focused->type == CT_CON && con_accepts_window(focused)) {
+                        LOG("using current container, focused = %p, focused->name = %s\n",
+                                        focused, focused->name);
+                        nc = focused;
+                } else nc = tree_open_con(NULL);
+        } else {
+                if (match != NULL && match->insert_where == M_ACTIVE) {
+                        /* We need to go down the focus stack starting from nc */
+                        while (TAILQ_FIRST(&(nc->focus_head)) != TAILQ_END(&(nc->focus_head))) {
+                                printf("walking down one step...\n");
+                                nc = TAILQ_FIRST(&(nc->focus_head));
+                        }
+                        /* We need to open a new con */
+                        /* TODO: make a difference between match-once containers (directly assign
+                         * cwindow) and match-multiple (tree_open_con first) */
+                        nc = tree_open_con(nc->parent);
+
+                }
+
+        }
+        nc->window = cwindow;
+
+        xcb_void_cookie_t rcookie = xcb_reparent_window_checked(conn, window, nc->frame, 0, 0);
+        if (xcb_request_check(conn, rcookie) != NULL) {
+                LOG("Could not reparent the window, aborting\n");
+                goto out;
+                //xcb_destroy_window(conn, nc->frame);
+        }
+
+        xcb_change_save_set(conn, XCB_SET_MODE_INSERT, window);
+
+        tree_render();
+
+#if 0
         /* Reparent the window and add it to our list of managed windows */
         reparent_window(conn, window, attr->visual, geom->root, geom->depth,
                         geom->x, geom->y, geom->width, geom->height,
                         geom->border_width);
+#endif
 
         /* Generate callback events for every property we watch */
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_CLASS);
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NORMAL_HINTS);
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_HINTS);
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_TRANSIENT_FOR);
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[WM_CLIENT_LEADER]);
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[_NET_WM_NAME]);
-
         free(geom);
 out:
         free(attr);
         return;
 }
 
+#if 0
 /*
  * reparent_window() gets called when a new window was opened and becomes a child of the root
  * window, or it gets called by us when we manage the already existing windows at startup.
@@ -517,3 +568,4 @@ map:
 
         xcb_flush(conn);
 }
+#endif

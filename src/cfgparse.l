@@ -94,12 +94,12 @@ new_container                   { return TOKNEWCONTAINER; }
 new_window                      { return TOKNEWWINDOW; }
 focus_follows_mouse             { return TOKFOCUSFOLLOWSMOUSE; }
 workspace_bar                   { return TOKWORKSPACEBAR; }
-default                         { yylval.number = MODE_DEFAULT; return TOKCONTAINERMODE; }
-stacking                        { yylval.number = MODE_STACK; return TOKCONTAINERMODE; }
-tabbed                          { yylval.number = MODE_TABBED; return TOKCONTAINERMODE; }
+default                         { /* yylval.number = MODE_DEFAULT; */return TOKCONTAINERMODE; }
+stacking                        { /* yylval.number = MODE_STACK; */return TOKCONTAINERMODE; }
+tabbed                          { /* yylval.number = MODE_TABBED; */return TOKCONTAINERMODE; }
 stack-limit                     { return TOKSTACKLIMIT; }
-cols                            { yylval.number = STACK_LIMIT_COLS; return TOKSTACKLIMIT; }
-rows                            { yylval.number = STACK_LIMIT_ROWS; return TOKSTACKLIMIT; }
+cols                            { /* yylval.number = STACK_LIMIT_COLS; */return TOKSTACKLIMIT; }
+rows                            { /* yylval.number = STACK_LIMIT_ROWS; */return TOKSTACKLIMIT; }
 exec                            { BEGIN(BIND_AWS_COND); return TOKEXEC; }
 client.focused                  { BEGIN(COLOR_COND); yylval.color = &config.client.focused; return TOKCOLOR; }
 client.focused_inactive         { BEGIN(COLOR_COND); yylval.color = &config.client.focused_inactive; return TOKCOLOR; }

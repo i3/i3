@@ -26,42 +26,25 @@
  *
  * Let’s start from the biggest to the smallest:
  *
- * - An Output is a physical output on your graphics driver. Outputs which
- *   are currently in use have (output->active == true). Each output has a
- *   position and a mode. An output usually corresponds to one connected
- *   screen (except if you are running multiple screens in clone mode).
- *
- * - Each Output contains Workspaces. The concept is known from various
- *   other window managers.  Basically, a workspace is a specific set of
- *   windows, usually grouped thematically (irc, www, work, …). You can switch
- *   between these.
- *
- * - Each Workspace has a table, which is our layout abstraction. You manage
- *   your windows by moving them around in your table. It grows as necessary.
- *
- * - Each cell of the table has a container, which can be in default or
- *   stacking mode. In default mode, each client is given equally much space
- *   in the container. In stacking mode, only one client is shown at a time,
- *   but all the titlebars are rendered at the top.
- *
- * - Inside the container are clients, which is X11-speak for a window.
+ * TODO
  *
  */
 
 /* Forward definitions */
-typedef struct Cell Cell;
 typedef struct Font i3Font;
-typedef struct Container Container;
-typedef struct Client Client;
 typedef struct Binding Binding;
-typedef struct Workspace Workspace;
 typedef struct Rect Rect;
 typedef struct xoutput Output;
+typedef struct Con Con;
+typedef struct Match Match;
+typedef struct Window i3Window;
+
 
 /******************************************************************************
  * Helper types
  *****************************************************************************/
 typedef enum { D_LEFT, D_RIGHT, D_UP, D_DOWN } direction_t;
+typedef enum { HORIZ, VERT, NO_ORIENTATION } orientation_t;
 
 enum {
         BIND_NONE = 0,
@@ -95,15 +78,6 @@ struct Rect {
 } __attribute__((packed));
 
 /**
- * Defines a position in the table
- *
- */
-struct Cell {
-        int row;
-        int column;
-};
-
-/**
  * Used for the cache of colorpixels.
  *
  */
@@ -129,22 +103,6 @@ struct Cached_Pixmap {
         xcb_drawable_t referred_drawable;
 };
 
-/**
- * Contains data for the windows needed to draw the titlebars on in stacking
- * mode
- *
- */
-struct Stack_Window {
-        xcb_window_t window;
-        struct Cached_Pixmap pixmap;
-        Rect rect;
-
-        /** Backpointer to the container this stack window is in */
-        Container *container;
-
-        SLIST_ENTRY(Stack_Window) stack_windows;
-};
-
 struct Ignore_Event {
         int sequence;
         time_t added;
@@ -166,86 +124,6 @@ struct keyvalue_element {
 /******************************************************************************
  * Major types
  *****************************************************************************/
-
-/**
- * The concept of Workspaces is known from various other window
- * managers. Basically, a workspace is a specific set of windows, usually
- * grouped thematically (irc, www, work, …). You can switch between these.
- *
- */
-struct Workspace {
-        /** Number of this workspace, starting from 0 */
-        int num;
-
-        /** Name of the workspace (in UTF-8) */
-        char *utf8_name;
-
-        /** Name of the workspace (in UCS-2) */
-        char *name;
-
-        /** Length of the workspace’s name (in glyphs) */
-        int name_len;
-
-        /** Width of the workspace’s name (in pixels) rendered in config.font */
-        int text_width;
-
-        /** x, y, width, height */
-        Rect rect;
-
-        /** table dimensions */
-        int cols;
-        /** table dimensions */
-        int rows;
-
-        /** These are stored here only while this workspace is _not_ shown
-         * (see show_workspace()) */
-        int current_row;
-        /** These are stored here only while this workspace is _not_ shown
-         * (see show_workspace()) */
-        int current_col;
-
-        /** Should clients on this workspace be automatically floating? */
-        bool auto_float;
-        /** Are the floating clients on this workspace currently hidden? */
-        bool floating_hidden;
-
-        /** The name of the RandR output this screen should be on */
-        char *preferred_output;
-
-        /** True if any client on this workspace has its urgent flag set */
-        bool urgent;
-
-        /** the client who is started in fullscreen mode on this workspace,
-         * NULL if there is none */
-        Client *fullscreen_client;
-
-        /** The focus stack contains the clients in the correct order of focus
-           so that the focus can be reverted correctly when a client is
-           closed */
-        SLIST_HEAD(focus_stack_head, Client) focus_stack;
-
-        /** This tail queue contains the floating clients in order of when
-         * they were first set to floating (new floating clients are just
-         * appended) */
-        TAILQ_HEAD(floating_clients_head, Client) floating_clients;
-
-        /** Backpointer to the output this workspace is on */
-        Output *output;
-
-        /** This is a two-dimensional dynamic array of
-         * Container-pointers. I’ve always wanted to be a three-star
-         * programmer :) */
-        Container ***table;
-
-        /** width_factor and height_factor contain the amount of space
-         * (percentage) a column/row has of all the space which is available
-         * for resized windows. This ensures that non-resized windows (newly
-         * opened, for example) have the same size as always */
-        float *width_factor;
-        float *height_factor;
-
-        TAILQ_ENTRY(Workspace) workspaces;
-};
 
 /**
  * Holds a keybinding, consisting of a keycode combined with modifiers and the
@@ -329,172 +207,6 @@ struct Font {
         TAILQ_ENTRY(Font) fonts;
 };
 
-/**
- * A client is X11-speak for a window.
- *
- */
-struct Client {
-        /** initialized will be set to true if the client was fully
-         * initialized by manage_window() and all functions can be used
-         * normally */
-        bool initialized;
-
-        /** if you set a client to floating and set it back to managed, it
-         * does remember its old position and *tries* to get back there */
-        Cell old_position;
-
-        /** Backpointer. A client is inside a container */
-        Container *container;
-        /** Because dock clients don’t have a container, we have this
-         * workspace-backpointer */
-        Workspace *workspace;
-
-        /** x, y, width, height of the frame */
-        Rect rect;
-        /** Position in floating mode and in tiling mode are saved
-         * separately */
-        Rect floating_rect;
-        /** x, y, width, height of the child (relative to its frame) */
-        Rect child_rect;
-
-        /** contains the size calculated from the hints set by the window or 0
-         * if the client did not send any hints */
-        int proportional_height;
-        int proportional_width;
-
-        int base_height;
-        int base_width;
-
-        /** The amount of pixels which X will draw around the client. */
-        int border_width;
-
-        /** contains the minimum increment size as specified for the window
-         * (in pixels). */
-        int width_increment;
-        int height_increment;
-
-        /** Height which was determined by reading the _NET_WM_STRUT_PARTIAL
-         * top/bottom of the screen reservation */
-        int desired_height;
-
-        /** Name (= window title) */
-        char *name;
-        /** name_len stores the real string length (glyphs) of the window
-         * title if the client uses _NET_WM_NAME. Otherwise, it is set to -1
-         * to indicate that name should be just passed to X as 8-bit string
-         * and therefore will not be rendered correctly. This behaviour is to
-         * support legacy applications which do not set _NET_WM_NAME */
-        int name_len;
-        /** This will be set to true as soon as the first _NET_WM_NAME comes
-         * in. If set to true, legacy window names are ignored. */
-        bool uses_net_wm_name;
-
-        /** Holds the WM_CLASS (which consists of two strings, the instance
-         * and the class), useful for matching the client in commands */
-        char *window_class_instance;
-        char *window_class_class;
-
-        /** Holds the client’s mark, for vim-like jumping */
-        char *mark;
-
-        /** Holds the xcb_window_t (just an ID) for the leader window (logical
-         * parent for toolwindows and similar floating windows) */
-        xcb_window_t leader;
-
-        /** fullscreen is pretty obvious */
-        bool fullscreen;
-
-        /** floating? (= not in tiling layout) This cannot be simply a bool
-         * because we want to keep track of whether the status was set by the
-         * application (by setting WM_CLASS to tools for example) or by the
-         * user. The user’s choice overwrites automatic mode, of course. The
-         * order of the values is important because we check with >=
-         * FLOATING_AUTO_ON if a client is floating. */
-        enum { FLOATING_AUTO_OFF = 0, FLOATING_USER_OFF = 1, FLOATING_AUTO_ON = 2, FLOATING_USER_ON = 3 } floating;
-
-        /** Ensure TITLEBAR_TOP maps to 0 because we use calloc for
-         * initialization later */
-        enum { TITLEBAR_TOP = 0, TITLEBAR_LEFT, TITLEBAR_RIGHT, TITLEBAR_BOTTOM, TITLEBAR_OFF } titlebar_position;
-
-        /** Contains a bool specifying whether this window should not be drawn
-         * with the usual decorations */
-        bool borderless;
-
-        /** If a client is set as a dock, it is placed at the very bottom of
-         * the screen and its requested size is used */
-        bool dock;
-
-        /** True if the client set the urgency flag in its WM_HINTS property */
-        bool urgent;
-
-        /* After leaving fullscreen mode, a client needs to be reconfigured
-         * (configuration = setting X, Y, width and height). By setting the
-         * force_reconfigure flag, render_layout() will reconfigure the
-         * client. */
-        bool force_reconfigure;
-
-        /* When reparenting a window, an unmap-notify is sent. As we delete
-         * windows when they’re unmapped, we need to ignore that
-         * one. Therefore, this flag is set when reparenting. */
-        bool awaiting_useless_unmap;
-
-        /* XCB contexts */
-        xcb_window_t frame;             /**< Our window: The frame around the
-                                         * client */
-        xcb_gcontext_t titlegc;         /**< The titlebar’s graphic context
-                                         * inside the frame */
-        xcb_window_t child;             /**< The client’s window */
-
-        /** The following entry provides the necessary list pointers to use
-         * Client with LIST_* macros */
-        CIRCLEQ_ENTRY(Client) clients;
-        SLIST_ENTRY(Client) dock_clients;
-        SLIST_ENTRY(Client) focus_clients;
-        TAILQ_ENTRY(Client) floating_clients;
-};
-
-/**
- * A container is either in default, stacking or tabbed mode. There is one for
- * each cell of the table.
- *
- */
-struct Container {
-        /* Those are speaking for themselves: */
-        Client *currently_focused;
-        int colspan;
-        int rowspan;
-
-        /* Position of the container inside our table */
-        int row;
-        int col;
-        /* Xinerama: X/Y of the container */
-        int x;
-        int y;
-        /* Width/Height of the container. Changeable by the user */
-        int width;
-        int height;
-
-        /* When in stacking mode, we draw the titlebars of each client onto a
-         * separate window */
-        struct Stack_Window stack_win;
-
-        /* Backpointer to the workspace this container is in */
-        Workspace *workspace;
-
-        /* Ensure MODE_DEFAULT maps to 0 because we use calloc for
-         * initialization later */
-        enum { MODE_DEFAULT = 0, MODE_STACK, MODE_TABBED } mode;
-
-        /* When in stacking, one can either have unlimited windows inside the
-         * container or set a limit for the rows or columns the stack window
-         * should display to use the screen more efficiently. */
-        enum { STACK_LIMIT_NONE = 0, STACK_LIMIT_COLS, STACK_LIMIT_ROWS } stack_limit;
-
-        /* The number of columns or rows to limit to, see stack_limit */
-        int stack_limit_value;
-
-        CIRCLEQ_HEAD(client_head, Client) clients;
-};
 
 /**
  * An Output is a physical output on your graphics driver. Outputs which
@@ -518,9 +230,6 @@ struct xoutput {
         bool changed;
         bool to_be_disabled;
 
-        /** Current workspace selected on this virtual screen */
-        Workspace *current_workspace;
-
         /** x, y, width, height */
         Rect rect;
 
@@ -533,6 +242,87 @@ struct xoutput {
         SLIST_HEAD(dock_clients_head, Client) dock_clients;
 
         TAILQ_ENTRY(xoutput) outputs;
+};
+
+struct Window {
+    xcb_window_t id;
+
+    const char *class;
+};
+
+struct Match {
+    enum { M_WINDOW, M_CON } what;
+
+    char *title;
+    int title_len;
+    char *application;
+    char *class;
+    char *instance;
+    xcb_window_t id;
+    bool floating;
+
+    enum { M_GLOBAL, M_OUTPUT, M_WORKSPACE } levels;
+
+    enum { M_USER, M_RESTART } source;
+
+    /* wo das fenster eingefügt werden soll. bei here wird es direkt
+     * diesem Con zugewiesen, also layout saving. bei active ist es
+     * ein assignment, welches an der momentan fokussierten stelle einfügt */
+    enum { M_HERE, M_ACTIVE } insert_where;
+
+    TAILQ_ENTRY(Match) matches;
+};
+
+struct Con {
+    bool mapped;
+    enum { CT_ROOT = 0, CT_OUTPUT = 1, CT_CON = 2, CT_FLOATING_CON = 3 } type;
+    orientation_t orientation;
+    struct Con *parent;
+    /* parent before setting it to floating */
+    struct Con *old_parent;
+
+    struct Rect rect;
+    struct Rect window_rect;
+    struct Rect deco_rect;
+
+    char *name;
+
+    double percent;
+
+    struct Window *window;
+
+    /* ids/gc for the frame window */
+    xcb_window_t frame;
+    xcb_gcontext_t gc;
+
+    /* Only workspace-containers can have floating clients */
+    TAILQ_HEAD(floating_head, Con) floating_head;
+
+    TAILQ_HEAD(nodes_head, Con) nodes_head;
+    TAILQ_HEAD(focus_head, Con) focus_head;
+
+    TAILQ_HEAD(swallow_head, Match) swallow_head;
+
+    enum { CF_NONE = 0, CF_OUTPUT = 1, CF_GLOBAL = 2 } fullscreen_mode;
+    enum { L_DEFAULT = 0, L_STACKED = 1, L_TABBED = 2 } layout;
+    /** floating? (= not in tiling layout) This cannot be simply a bool
+     * because we want to keep track of whether the status was set by the
+     * application (by setting _NET_WM_WINDOW_TYPE appropriately) or by the
+     * user. The user’s choice overwrites automatic mode, of course. The
+     * order of the values is important because we check with >=
+     * FLOATING_AUTO_ON if a client is floating. */
+    enum {
+        FLOATING_AUTO_OFF = 0,
+        FLOATING_USER_OFF = 1,
+        FLOATING_AUTO_ON = 2,
+        FLOATING_USER_ON = 3
+    } floating;
+
+
+    TAILQ_ENTRY(Con) nodes;
+    TAILQ_ENTRY(Con) focused;
+    TAILQ_ENTRY(Con) all_cons;
+    TAILQ_ENTRY(Con) floating_windows;
 };
 
 #endif

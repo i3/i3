@@ -13,6 +13,12 @@
 #define _IPC_H
 
 #include <ev.h>
+#include <stdbool.h>
+#include <yajl/yajl_gen.h>
+#include <yajl/yajl_parse.h>
+
+#include "data.h"
+#include "tree.h"
 
 #include "i3/ipc.h"
 
@@ -73,5 +79,7 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
  *
  */
 void ipc_shutdown();
+
+void dump_node(yajl_gen gen, Con *con, bool inplace_restart);
 
 #endif

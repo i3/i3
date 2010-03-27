@@ -3,25 +3,12 @@
  * vim:ts=8:expandtab
  *
  */
-#include <stdio.h>
-#include <string.h>
-#include <xcb/xcb.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdlib.h>
-#include <errno.h>
 
-#include "data.h"
-#include "config.h"
-#include "i3.h"
-#include "util.h"
-#include "queue.h"
-#include "table.h"
-#include "workspace.h"
-#include "xcb.h"
-#include "log.h"
+#include "all.h"
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(struct context *context);
@@ -372,6 +359,7 @@ new_container:
                 DLOG("new containers will be in mode %d\n", $<number>3);
                 config.container_mode = $<number>3;
 
+#if 0
                 /* We also need to change the layout of the already existing
                  * workspaces here. Workspaces may exist at this point because
                  * of the other directives which are modifying workspaces
@@ -388,6 +376,7 @@ new_container:
                                            ws->table[0][0],
                                            config.container_mode);
                 }
+#endif
         }
         | TOKNEWCONTAINER WHITESPACE TOKSTACKLIMIT WHITESPACE TOKSTACKLIMIT WHITESPACE NUMBER
         {
@@ -395,6 +384,7 @@ new_container:
                 config.container_stack_limit = $<number>5;
                 config.container_stack_limit_value = $<number>7;
 
+#if 0
                 /* See the comment above */
                 Workspace *ws;
                 TAILQ_FOREACH(ws, workspaces, workspaces) {
@@ -404,6 +394,7 @@ new_container:
                         con->stack_limit = config.container_stack_limit;
                         con->stack_limit_value = config.container_stack_limit_value;
                 }
+#endif
         }
         ;
 
@@ -454,12 +445,14 @@ workspace:
                 if (ws_num < 1) {
                         DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
+#if 0
                         Workspace *ws = workspace_get(ws_num - 1);
                         ws->preferred_output = $<string>7;
                         if ($<string>8 != NULL) {
                                 workspace_set_name(ws, $<string>8);
                                 free($<string>8);
                         }
+#endif
                 }
         }
         | TOKWORKSPACE WHITESPACE NUMBER WHITESPACE workspace_name
@@ -469,10 +462,12 @@ workspace:
                         DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
                         DLOG("workspace name to: %s\n", $<string>5);
+#if 0
                         if ($<string>5 != NULL) {
                                 workspace_set_name(workspace_get(ws_num - 1), $<string>5);
                                 free($<string>5);
                         }
+#endif
                 }
         }
         ;
@@ -584,7 +579,7 @@ colorpixel:
                 char *hex;
                 if (asprintf(&hex, "#%s", $<string>2) == -1)
                         die("asprintf()");
-                $<number>$ = get_colorpixel(global_conn, hex);
+                $<number>$ = get_colorpixel(hex);
                 free(hex);
         }
         ;

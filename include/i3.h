@@ -23,7 +23,7 @@
 
 #define NUM_ATOMS 21
 
-extern xcb_connection_t *global_conn;
+extern xcb_connection_t *conn;
 extern xcb_key_symbols_t *keysyms;
 extern char **start_argv;
 extern Display *xkbdpy;

@@ -63,6 +63,13 @@ void *smalloc(size_t size);
 void *scalloc(size_t size);
 
 /**
+ * Safe-wrapper around realloc which exits if realloc returns NULL (meaning
+ * that there is no more memory available).
+ *
+ */
+void *srealloc(void *ptr, size_t size);
+
+/**
  * Safe-wrapper around strdup which exits if malloc returns NULL (meaning that
  * there is no more memory available)
  *
@@ -118,6 +125,7 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie,
  */
 char *convert_utf8_to_ucs2(char *input, int *real_strlen);
 
+#if 0
 /**
  * Returns the client which comes next in focus stack (= was selected before) for
  * the given container, optionally excluding the given client.
@@ -125,7 +133,9 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen);
  */
 Client *get_last_focused_client(xcb_connection_t *conn, Container *container,
                                 Client *exclude);
+#endif
 
+#if 0
 /**
  * Sets the given client as focused by updating the data structures correctly,
  * updating the X input focus and finally re-decorating both windows (to
@@ -156,6 +166,7 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode);
  */
 Client *get_matching_client(xcb_connection_t *conn,
                             const char *window_classtitle, Client *specific);
+#endif
 
 /*
  * Restart i3 in-place
