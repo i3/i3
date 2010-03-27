@@ -14,14 +14,6 @@
 #include <xcb/randr.h>
 
 /**
- * Adds the sequence number of an event to the ignored events.
- * Useful to ignore for example the enter notify caused by a pointer warp of
- * i3.
- *
- */
-void add_ignore_event(const int sequence);
-
-/**
  * There was a key press. We compare this key code with our bindings table and
  * pass the bound action to parse_command().
  *

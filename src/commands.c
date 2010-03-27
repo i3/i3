@@ -73,8 +73,8 @@ static void jump_to_mark(xcb_connection_t *conn, const char *mark) {
                         if (current->mark == NULL || strcmp(current->mark, mark) != 0)
                                 continue;
 
-                        workspace_show(conn, current->workspace->num + 1);
                         set_focus(conn, current, true);
+                        workspace_show(conn, current->workspace->num + 1);
                         return;
                 }
 

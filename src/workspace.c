@@ -29,7 +29,6 @@
 #include "log.h"
 #include "ewmh.h"
 #include "ipc.h"
-#include "handlers.h"
 
 /*
  * Returns a pointer to the workspace with the given number (starting at 0),
@@ -140,10 +139,8 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
                         need_warp = true;
                 else {
                         Rect *dims = &(c_ws->output->rect);
-                        xcb_void_cookie_t cookie;
-                        cookie = xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0,
+                        xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0,
                                          dims->x + (dims->width / 2), dims->y + (dims->height / 2));
-                        add_ignore_event(cookie.sequence);
                 }
 
                 /* Re-decorate the old client, it’s not focused anymore */
