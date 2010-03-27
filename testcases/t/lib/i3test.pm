@@ -35,35 +35,6 @@ sub open_standard_window {
     return $window;
 }
 
-sub format_ipc_command {
-    my $msg = shift;
-    my $len;
-
-    { use bytes; $len = length($msg); }
-
-    my $message = "i3-ipc" . pack("LL", $len, 0) . $msg;
-
-    return $message;
-}
-
-sub recv_ipc_command {
-    my ($sock, $expected) = @_;
-
-    my $buffer;
-    # header is 14 bytes ("i3-ipc" + 32 bit + 32 bit)
-    $sock->read($buffer, 14);
-    return undef unless substr($buffer, 0, length("i3-ipc")) eq "i3-ipc";
-
-    my ($len, $type) = unpack("LL", substr($buffer, 6));
-
-    return undef unless $type == $expected;
-
-    # read the payload
-    $sock->read($buffer, $len);
-
-    decode_json($buffer)
-}
-
 sub get_workspace_names {
     my $i3 = i3("/tmp/nestedcons");
     # TODO: use correct command as soon as AnyEvent::i3 is updated

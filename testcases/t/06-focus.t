@@ -4,7 +4,7 @@
 # the workspace to be empty).
 # TODO: skip it by default?
 
-use Test::More tests => 14;
+use Test::More tests => 13;
 use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
@@ -12,29 +12,25 @@ use Time::HiRes qw(sleep);
 use FindBin;
 use lib "$FindBin::Bin/lib";
 use i3test;
+use AnyEvent::I3;
 
 BEGIN {
-    use_ok('IO::Socket::UNIX') or BAIL_OUT('Cannot load IO::Socket::UNIX');
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 
 my $x = X11::XCB::Connection->new;
 
-my $sock = IO::Socket::UNIX->new(Peer => '/tmp/i3-ipc.sock');
-isa_ok($sock, 'IO::Socket::UNIX');
+my $i3 = i3;
 
 # Switch to the nineth workspace
-$sock->write(i3test::format_ipc_command("9"));
-
-sleep(0.25);
+$i3->command('9')->recv;
 
 #####################################################################
 # Create two windows and make sure focus switching works
 #####################################################################
 
 # Change mode of the container to "default" for following tests
-$sock->write(i3test::format_ipc_command("d"));
-sleep(0.25);
+$i3->command('d')->recv;
 
 my $top = i3test::open_standard_window($x);
 my $mid = i3test::open_standard_window($x);
@@ -52,8 +48,7 @@ diag("bottom id = " . $bottom->id);
 sub focus_after {
     my $msg = shift;
 
-    $sock->write(i3test::format_ipc_command($msg));
-    sleep(0.5);
+    $i3->command($msg)->recv;
     return $x->input_focus;
 }
 
@@ -81,8 +76,7 @@ is($focus, $top->id, "Top window focused (wrapping to the bottom works)");
 ###############################################
 
 # Switch to the 10. workspace
-$sock->write(i3test::format_ipc_command("10"));
-sleep 0.25;
+$i3->command('10')->recv;
 
 $top = i3test::open_standard_window($x);
 $bottom = i3test::open_standard_window($x);
@@ -102,8 +96,7 @@ is($focus, $top->id, "Top window focused");
 # Same thing, but left/right instead of top/bottom
 
 # Switch to the 11. workspace
-$sock->write(i3test::format_ipc_command("11"));
-sleep 0.25;
+$i3->command('11')->recv;
 
 my $left = i3test::open_standard_window($x);
 my $right = i3test::open_standard_window($x);
