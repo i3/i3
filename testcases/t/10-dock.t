@@ -12,7 +12,6 @@ use i3test;
 use List::Util qw(first);
 
 BEGIN {
-    #use_ok('IO::Socket::UNIX') or BAIL_OUT('Cannot load IO::Socket::UNIX');
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 

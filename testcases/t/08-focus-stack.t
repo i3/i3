@@ -3,7 +3,7 @@
 # Checks if the focus is correctly restored, when creating a floating client
 # over an unfocused tiling client and destroying the floating one again.
 
-use Test::More tests => 6;
+use Test::More tests => 4;
 use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
@@ -11,28 +11,25 @@ use Time::HiRes qw(sleep);
 use FindBin;
 use lib "$FindBin::Bin/lib";
 use i3test;
+use AnyEvent::I3;
 
 BEGIN {
-    use_ok('IO::Socket::UNIX') or BAIL_OUT('Cannot load IO::Socket::UNIX');
     use_ok('X11::XCB::Window') or BAIL_OUT('Could not load X11::XCB::Window');
 }
 
 my $x = X11::XCB::Connection->new;
 
-my $sock = IO::Socket::UNIX->new(Peer => '/tmp/i3-ipc.sock');
-isa_ok($sock, 'IO::Socket::UNIX');
+my $i3 = i3;
 
 # Switch to the nineth workspace
-$sock->write(i3test::format_ipc_command("9"));
-
-sleep(0.25);
+$i3->command('9')->recv;
 
 my $tiled_left = i3test::open_standard_window($x);
 my $tiled_right = i3test::open_standard_window($x);
 
 sleep(0.25);
 
-$sock->write(i3test::format_ipc_command("ml"));
+$i3->command('ml')->recv;
 
 # Get input focus before creating the floating window
 my $focus = $x->input_focus;

@@ -4,7 +4,7 @@
 # the workspace to be empty).
 # TODO: skip it by default?
 
-use Test::More tests => 17;
+use Test::More tests => 15;
 use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
@@ -13,21 +13,18 @@ use FindBin;
 use Digest::SHA1 qw(sha1_base64);
 use lib "$FindBin::Bin/lib";
 use i3test;
+use AnyEvent::I3;
 
 BEGIN {
-    use_ok('IO::Socket::UNIX') or BAIL_OUT('Cannot load IO::Socket::UNIX');
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 
 my $x = X11::XCB::Connection->new;
 
-my $sock = IO::Socket::UNIX->new(Peer => '/tmp/i3-ipc.sock');
-isa_ok($sock, 'IO::Socket::UNIX');
+my $i3 = i3;
 
 # Switch to the nineth workspace
-$sock->write(i3test::format_ipc_command("9"));
-
-sleep 0.25;
+$i3->command('9')->recv;
 
 #####################################################################
 # Create a floating window and see if resizing works
@@ -78,13 +75,11 @@ sub test_resize {
 test_resize;
 
 # Test borderless
-$sock->write(i3test::format_ipc_command("bb"));
-sleep 0.25;
+$i3->command('bb')->recv;
 
 test_resize;
 
 # Test with 1-px-border
-$sock->write(i3test::format_ipc_command("bp"));
-sleep 0.25;
+$i3->command('bp')->recv;
 
 test_resize;

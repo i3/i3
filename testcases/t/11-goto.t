@@ -4,7 +4,7 @@
 # the workspace to be empty).
 # TODO: skip it by default?
 
-use Test::More tests => 9;
+use Test::More tests => 7;
 use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
@@ -13,21 +13,18 @@ use FindBin;
 use Digest::SHA1 qw(sha1_base64);
 use lib "$FindBin::Bin/lib";
 use i3test;
+use AnyEvent::I3;
 
 BEGIN {
-    use_ok('IO::Socket::UNIX') or BAIL_OUT('Cannot load IO::Socket::UNIX');
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 
 my $x = X11::XCB::Connection->new;
 
-my $sock = IO::Socket::UNIX->new(Peer => '/tmp/i3-ipc.sock');
-isa_ok($sock, 'IO::Socket::UNIX');
+my $i3 = i3;
 
 # Switch to the nineth workspace
-$sock->write(i3test::format_ipc_command("9"));
-
-sleep(0.25);
+$i3->command('9')->recv;
 
 #####################################################################
 # Create two windows and make sure focus switching works
@@ -51,8 +48,7 @@ diag("bottom id = " . $bottom->id);
 sub focus_after {
     my $msg = shift;
 
-    $sock->write(i3test::format_ipc_command($msg));
-    sleep(0.5);
+    $i3->command($msg)->recv;
     return $x->input_focus;
 }
 
@@ -74,7 +70,7 @@ my $random_mark = sha1_base64(rand());
 $focus = focus_after("goto $random_mark");
 is($focus, $mid->id, "focus unchanged");
 
-$sock->write(i3test::format_ipc_command("mark $random_mark"));
+$i3->command("mark $random_mark")->recv;
 
 $focus = focus_after("k");
 is($focus, $top->id, "Top window focused");
