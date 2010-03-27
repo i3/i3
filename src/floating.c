@@ -488,6 +488,11 @@ void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused,
 void floating_move(xcb_connection_t *conn, Client *currently_focused, direction_t direction) {
         DLOG("floating move\n");
 
+        if (currently_focused->fullscreen) {
+                DLOG("Cannot move fullscreen windows\n");
+                return;
+        }
+
         Rect destination = currently_focused->rect;
         Rect *screen = &(currently_focused->workspace->output->rect);
 
