@@ -1,12 +1,18 @@
-all:
-	a2x -f manpage --asciidoc-opts="-f asciidoc.conf" i3.man
-	a2x -f manpage --asciidoc-opts="-f asciidoc.conf" i3-msg.man
-	a2x -f manpage --asciidoc-opts="-f asciidoc.conf" i3-input.man
-	a2x -f manpage --asciidoc-opts="-f asciidoc.conf" i3-nagbar.man
-	pod2man ../i3-wsbar > i3-wsbar.1
+A2M:=a2x -f manpage --asciidoc-opts="-f asciidoc.conf"
+
+all: i3.1 i3-msg.1 i3-input.1 i3-nagbar.1 i3-wsbar.1
+
+%.1: %.man asciidoc.conf
+	${A2M} $<
+
+i3-wsbar.1: ../i3-wsbar
+	pod2man $^ > $@
 
 clean:
-	for file in "i3 i3-msg i3-input i3-nagbar"; \
+	for file in $$(echo i3 i3-msg i3-input i3-nagbar i3-wsbar); \
 	do \
 		rm -f $${file}.1 $${file}.html $${file}.xml; \
 	done
+
+distclean: clean
+	rm -f *.1
