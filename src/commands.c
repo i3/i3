@@ -593,11 +593,16 @@ static void move_floating_window_to_workspace(xcb_connection_t *conn, Client *cl
                 uint32_t relative_x = client->rect.x - old_ws->rect.x,
                          relative_y = client->rect.y - old_ws->rect.y;
                 DLOG("rel_x = %d, rel_y = %d\n", relative_x, relative_y);
-                client->rect.x = t_ws->rect.x + relative_x;
-                client->rect.y = t_ws->rect.y + relative_y;
-                DLOG("after x = %d, y = %d\n", client->rect.x, client->rect.y);
-                reposition_client(conn, client);
-                xcb_flush(conn);
+                if (client->fullscreen) {
+                        client_enter_fullscreen(conn, client, false);
+                        memcpy(&(client->rect), &(t_ws->rect), sizeof(Rect));
+                } else {
+                        client->rect.x = t_ws->rect.x + relative_x;
+                        client->rect.y = t_ws->rect.y + relative_y;
+                        DLOG("after x = %d, y = %d\n", client->rect.x, client->rect.y);
+                        reposition_client(conn, client);
+                        xcb_flush(conn);
+                }
         }
 
         /* Configure the window above all tiling windows (or below a fullscreen
