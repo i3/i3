@@ -475,31 +475,3 @@ int workspace_height(Workspace *ws) {
 
         return height;
 }
-
-/*
- * Returns the width of the workspace.
- *
- */
-int workspace_width(Workspace *ws) {
-        return ws->rect.width;
-}
-
-/*
- * Returns the effective height of the workspace (without the internal bar and
- * without dock clients).
- *
- */
-int workspace_height(Workspace *ws) {
-        int height = ws->rect.height;
-        i3Font *font = load_font(global_conn, config.font);
-
-        /* Reserve space for dock clients */
-        Client *client;
-        SLIST_FOREACH(client, &(ws->screen->dock_clients), dock_clients)
-                height -= client->desired_height;
-
-        /* Space for the internal bar */
-        height -= (font->height + 6);
-
-        return height;
-}
