@@ -1,8 +1,75 @@
-i3-wm (3.e-0) unstable; urgency=low
+i3-wm (3.e-1) unstable; urgency=low
 
-  * NOT YET RELEASED
+  * Implement RandR instead of Xinerama
+  * Obey the XDG Base Directory Specification for config file paths
+  * lexer/parser: proper error messages
+  * Add new options -V for verbose mode and -d <loglevel> for debug log levels
+  * Implement resize command for floating clients
+  * Include date of the last commit in version string
+  * Fixed cursor orientation when resizing
+  * Added focus_follows_mouse config option
+  * Feature: Cycle through workspaces
+  * Fix bindings using the cursor keys in default config
+  * added popup for handling SIGSEGV or SIGFPE
+  * Correctly exit when another window manager is already running
+  * Take into account the window’s base_{width,height} when resizing
+  * Disable XKB instead of quitting with an error
+  * Make containers containing exactly one window behave like default containers
+  * Also warp the pointer when moving a window to a another visible workspace
+  * work around clients setting 0xFFFF as resize increments
+  * Move autostart after creating the IPC socket in start process
+  * Restore geometry of all windows before exiting/restarting
+  * When in fullscreen mode, focus whole screens instead of denying to focus
+  * draw consistent borders for each frame in a tabbed/stacked container
+  * Update fullscreen client position/size when an output changes
+  * i3-input: Bugfix: repeatedly grab the keyboard if it does not succeed
+  * put windows with WM_CLIENT_LEADER on the workspace of their leader
+  * use real functions instead of nested functions (enables compilation with
+    llvm-clang)
+  * implement screen-spanning fullscreen mode
+  * floating resize now uses arbitrary corners
+  * floating resize now works proportionally when pressing shift
+  * Don’t use SYNC key bindings for mode_switch but re-grab keys
+  * support PREFIX and SYSCONFDIR in Makefile
+  * make pointer follow the focus when moving to a different screen also for
+    floating clients
+  * start dock clients on the output they request to be started on according
+    to their geometry
+  * handle destroy notify events like unmap notify events
+  * ewmh: correctly set _NET_CURRENT_DESKTOP to the number of the active
+    workspace
+  * ewmh: correctly set _NET_ACTIVE_WINDOW
+  * ewmh: implement support for _NET_WORKAREA (rdesktop can use that)
+  * default ipc-socket path is now ~/.i3/ipc.sock, enabled in the default config
+  * Bugfix: Containers could lose their snap state
+  * Bugfix: Use ev_loop_new to not block SIGCHLD
+  * Bugfix: if a font provides no per-char info for width, fall back to default
+  * Bugfix: lexer: return to INITIAL state after floating_modifier
+  * Bugfix: Don’t leak IPC socket to launched processes
+  * Bugfix: Use both parts of WM_CLASS (it contains instance and class)
+  * Bugfix: Correctly do boundary checking/moving to other workspaces when
+    moving floating clients via keyboard
+  * Bugfix: checked for wrong flag in size hints
+  * Bugfix: Correctly render workspace names containing some non-ascii chars
+  * Bugfix: Correctly position floating windows sending configure requests
+  * Bugfix: Don’t remap stack windows errnously when changing workspaces
+  * Bugfix: configure floating windows above tiling windows when moving them
+    to another workspace
+  * Bugfix: Take window out of fullscreen mode before entering floating mode
+  * Bugfix: Don’t enter BIND_A2WS_COND state too early
+  * Bugfix: only restore focus if the workspace is focused, not if it is visible
+  * Bugfix: numlock state will now be filtered in i3-input and signal handler
+  * Bugfix: Don’t unmap windows when current workspace gets reassigned
+  * Bugfix: correctly translate coordinates for floating windows when outputs
+    change
+  * Bugfix: Correctly switch workspace when using the "jump" command
+  * Bugfix: Fix rendering of workspace names after "reload"
+  * Bugfix: Correctly ignore clicks when in fullscreen mode
+  * Bugfix: Don’t allow fullscreen floating windows to be moved
+  * Bugfix: Don’t render containers which are not visible on hint changes
+  * Some memory leaks/invalid accesses have been fixed
 
- -- Michael Stapelberg <michael@stapelberg.de>  Mon, 21 Dec 2009 23:08:01 +0100
+ -- Michael Stapelberg <michael@stapelberg.de>  Tue, 30 Mar 2010 13:11:50 +0200
 
 i3-wm (3.d-bf1-1) unstable; urgency=low
 
