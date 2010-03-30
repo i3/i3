@@ -636,6 +636,9 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         if (client->dock)
                 return 1;
 
+        if (!workspace_is_visible(client->workspace))
+                return 1;
+
         int mode = container_mode(client->container, true);
         if (mode == MODE_STACK || mode == MODE_TABBED)
                 render_container(conn, client->container);
@@ -700,6 +703,9 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
 
         /* If the client is a dock window, we don’t need to render anything */
         if (client->dock)
+                return 1;
+
+        if (!workspace_is_visible(client->workspace))
                 return 1;
 
         if (client->container != NULL &&
@@ -1001,7 +1007,6 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
         LOG("Urgency flag changed to %d\n", client->urgent);
 
         workspace_update_urgent_flag(client->workspace);
-        redecorate_window(conn, client);
 
         /* If the workspace this client is on is not visible, we need to redraw
          * the workspace bar */
@@ -1009,6 +1014,8 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
                 Output *output = client->workspace->output;
                 render_workspace(conn, output, output->current_workspace);
                 xcb_flush(conn);
+        } else {
+                redecorate_window(conn, client);
         }
 
         return 1;
