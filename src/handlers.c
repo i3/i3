@@ -486,9 +486,14 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 
         client = table_remove(&by_child, event->window);
 
-        /* If this was the fullscreen client, we need to unset it */
-        if (client->fullscreen)
-                client->workspace->fullscreen_client = NULL;
+        /* If this was the fullscreen client, we need to unset it from all
+         * workspaces it was on (global fullscreen) */
+        if (client->fullscreen) {
+                Workspace *ws;
+                TAILQ_FOREACH(ws, workspaces, workspaces)
+                        if (ws->fullscreen_client == client)
+                                ws->fullscreen_client = NULL;
+        }
 
         /* Clients without a container are either floating or dock windows */
         if (client->container != NULL) {
