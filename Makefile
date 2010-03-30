@@ -87,6 +87,8 @@ dist: distclean
 	cp -r src i3-msg i3-nagbar i3-config-wizard yajl-fallback include man i3-${VERSION}
 	# Only copy toplevel documentation (important stuff)
 	mkdir i3-${VERSION}/docs
+	# Pre-generate documentation
+	make -C docs
 	find docs -maxdepth 1 -type f ! -name "*.xcf" -exec cp '{}' i3-${VERSION}/docs \;
 	# Only copy source code from i3-input
 	mkdir i3-${VERSION}/i3-input
