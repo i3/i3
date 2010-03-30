@@ -101,7 +101,7 @@ dist: distclean
 	rm -rf i3-${VERSION}
 
 clean:
-	rm -f src/*.o src/*.gcno src/cfgparse.tab.{c,h} src/cfgparse.yy.c src/cfgparse.output src/cmdparse.tab.{c,h} src/cmdparse.yy.c src/cmdparse.output loglevels.tmp include/loglevels.h
+	rm -f src/*.o src/*.gcno src/cfgparse.tab.{c,h} src/cfgparse.yy.c src/cfgparse.{output,dot} src/cmdparse.tab.{c,h} src/cmdparse.yy.c src/cmdparse.{output,dot} loglevels.tmp include/loglevels.h
 	(which lcov >/dev/null && lcov -d . --zerocounters) || true
 	$(MAKE) -C docs clean
 	$(MAKE) -C man clean
