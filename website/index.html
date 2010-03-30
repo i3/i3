@@ -4,7 +4,7 @@
 <title>i3 - an improved dynamic tiling window manager</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="description" content="i3 is a dynamic tiling window manager with clean, readable and documented code, featuring extended Xinerama support, usage of libxcb instead of xlib and several improvements over wmii">
+<meta name="description" content="i3 is a dynamic tiling window manager with clean, readable and documented code, featuring extended XRandR support, usage of libxcb instead of xlib and several improvements over wmii">
 <meta name="keywords" content="i3, window, manager, tiling, keyboard, wmii, x11, xcb, xinerama, utf8">
 <meta name="author" content="i3 developers">
 <style type="text/css">
@@ -80,11 +80,11 @@ a {
 
 <p>
   i3 was created because wmii, our favorite window manager at the time, didn’t
-  provide some features we wanted (Xinerama done right, for example), had some
-  bugs, didn’t progress since quite some time and wasn’t easy to hack at all
-  (source code comments/documentation completely lacking). Still, we think the
-  wmii developers and contributors did a great job. Thank you for inspiring us
-  to create i3.
+  provide some features we wanted (multi-monitor done right, for example), had
+  some bugs, didn’t progress since quite some time and wasn’t easy to hack at
+  all (source code comments/documentation completely lacking). Still, we think
+  the wmii developers and contributors did a great job. Thank you for inspiring
+  us to create i3.
 </p>
 
 <p>
@@ -114,7 +114,7 @@ a {
     in quite a lot of situations.
   </li>
   <li>
-    Implement Xinerama correctly, that is by assigning each workspace to a
+    Implement multi-monitor correctly, that is by assigning each workspace to a
     virtual screen. Especially make sure that attaching and detaching new monitors
     like video projectors works during operation and does the right thing.
   </li>
