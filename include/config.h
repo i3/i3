@@ -3,12 +3,14 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
- * include/config.h: Contains all structs/variables for
- * the configurable part of i3
+ * include/config.h: Contains all structs/variables for the configurable
+ * part of i3 as well as functions handling the configuration file (calling
+ * the parser (src/cfgparse.y) with the correct path, switching key bindings
+ * mode).
  *
  */
 
@@ -21,8 +23,22 @@
 
 typedef struct Config Config;
 extern Config config;
-extern bool config_use_lexer;
 extern SLIST_HEAD(modes_head, Mode) modes;
+
+/**
+ * Used during the config file lexing/parsing to keep the state of the lexer
+ * in order to provide useful error messages in yyerror().
+ *
+ */
+struct context {
+        int line_number;
+        char *line_copy;
+        const char *filename;
+
+        /* These are the same as in YYLTYPE */
+        int first_column;
+        int last_column;
+};
 
 /**
  * Part of the struct Config. It makes sense to group colors for background,
@@ -76,6 +92,18 @@ struct Config {
         int container_stack_limit;
         int container_stack_limit_value;
 
+        /** By default, focus follows mouse. If the user explicitly wants to
+         * turn this off (and instead rely only on the keyboard for changing
+         * focus), we allow him to do this with this relatively special option.
+         * It is not planned to add any different focus models. */
+        bool disable_focus_follows_mouse;
+
+        /** By default, a workspace bar is drawn at the bottom of the screen.
+         * If you want to have a more fancy bar, it is recommended to replace
+         * the whole bar by dzen2, for example using the i3-wsbar script which
+         * comes with i3. Thus, you can turn it off entirely. */
+        bool disable_workspace_bar;
+
         const char *default_border;
 
         /** The modifier which needs to be pressed in combination with your mouse
@@ -97,6 +125,18 @@ struct Config {
 };
 
 /**
+ * This function resolves ~ in pathnames.
+ *
+ */
+char *glob_path(const char *path);
+
+/**
+ * Checks if the given path exists by calling stat().
+ *
+ */
+bool path_exists(const char *path);
+
+/**
  * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
  *
  * If you specify override_configpath, only this path is used to look for a
@@ -104,6 +144,12 @@ struct Config {
  *
  */
 void load_configuration(xcb_connection_t *conn, const char *override_configfile, bool reload);
+
+/**
+ * Translates keysymbols to keycodes for all bindings which use keysyms.
+ *
+ */
+void translate_keysyms();
 
 /**
  * Ungrabs all keys, to be called before re-grabbing the keys because of a
@@ -116,12 +162,22 @@ void ungrab_all_keys(xcb_connection_t *conn);
  * Grab the bound keys (tell X to send us keypress events for those keycodes)
  *
  */
-void grab_all_keys(xcb_connection_t *conn);
+void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch);
 
 /**
  * Switches the key bindings to the given mode, if the mode exists
  *
  */
 void switch_mode(xcb_connection_t *conn, const char *new_mode);
+
+/**
+ * Returns a pointer to the Binding with the specified modifiers and keycode
+ * or NULL if no such binding exists.
+ *
+ */
+Binding *get_binding(uint16_t modifiers, xcb_keycode_t keycode);
+
+/* prototype for src/cfgparse.y */
+void parse_file(const char *f);
 
 #endif

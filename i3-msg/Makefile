@@ -3,6 +3,8 @@ TOPDIR=..
 
 include $(TOPDIR)/common.mk
 
+CFLAGS += -I$(TOPDIR)/include
+
 # Depend on the object files of all source-files in src/*.c and on all header files
 FILES=$(patsubst %.c,%.o,$(wildcard *.c))
 HEADERS=$(wildcard *.h)
@@ -18,8 +20,8 @@ all: ${FILES}
 
 install: all
 	echo "INSTALL"
-	$(INSTALL) -d -m 0755 $(DESTDIR)/usr/bin
-	$(INSTALL) -m 0755 i3-msg $(DESTDIR)/usr/bin/
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
+	$(INSTALL) -m 0755 i3-msg $(DESTDIR)$(PREFIX)/bin/
 
 clean:
 	rm -f *.o

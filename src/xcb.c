@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -21,6 +21,7 @@
 #include "i3.h"
 #include "util.h"
 #include "xcb.h"
+#include "log.h"
 
 TAILQ_HEAD(cached_fonts_head, Font) cached_fonts = TAILQ_HEAD_INITIALIZER(cached_fonts);
 unsigned int xcb_numlock_mask;
@@ -98,14 +99,6 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
         /* If the window class is XCB_WINDOW_CLASS_INPUT_ONLY, depth has to be 0 */
         uint16_t depth = (window_class == XCB_WINDOW_CLASS_INPUT_ONLY ? 0 : XCB_COPY_FROM_PARENT);
 
-        /* Use the default cursor (left pointer) */
-        if (cursor > -1) {
-                i3Font *cursor_font = load_font(conn, "cursor");
-                xcb_create_glyph_cursor(conn, cursor_id, cursor_font->id, cursor_font->id,
-                                XCB_CURSOR_LEFT_PTR, XCB_CURSOR_LEFT_PTR + 1,
-                                0, 0, 0, 65535, 65535, 65535);
-        }
-
         xcb_create_window(conn,
                           depth,
                           result, /* the window id */
@@ -117,8 +110,14 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
                           mask,
                           values);
 
-        if (cursor > -1)
-                xcb_change_window_attributes(conn, result, XCB_CW_CURSOR, &cursor_id);
+        /* Set the cursor */
+        i3Font *cursor_font = load_font(conn, "cursor");
+        xcb_create_glyph_cursor(conn, cursor_id, cursor_font->id, cursor_font->id,
+                        (cursor == -1 ? XCB_CURSOR_LEFT_PTR : cursor),
+                        (cursor == -1 ? XCB_CURSOR_LEFT_PTR : cursor) + 1,
+                        0, 0, 0, 65535, 65535, 65535);
+        xcb_change_window_attributes(conn, result, XCB_CW_CURSOR, &cursor_id);
+        xcb_free_cursor(conn, cursor_id);
 
         /* Map the window (= make it visible) */
         if (map)
@@ -270,7 +269,7 @@ void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
  *
  */
 void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap) {
-        LOG("preparing pixmap\n");
+        DLOG("preparing pixmap\n");
 
         /* If the Rect did not change, the pixmap does not need to be recreated */
         if (memcmp(&(pixmap->rect), pixmap->referred_rect, sizeof(Rect)) == 0)
@@ -279,11 +278,11 @@ void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap)
         memcpy(&(pixmap->rect), pixmap->referred_rect, sizeof(Rect));
 
         if (pixmap->id == 0 || pixmap->gc == 0) {
-                LOG("Creating new pixmap...\n");
+                DLOG("Creating new pixmap...\n");
                 pixmap->id = xcb_generate_id(conn);
                 pixmap->gc = xcb_generate_id(conn);
         } else {
-                LOG("Re-creating this pixmap...\n");
+                DLOG("Re-creating this pixmap...\n");
                 xcb_free_gc(conn, pixmap->gc);
                 xcb_free_pixmap(conn, pixmap->id);
         }
@@ -309,7 +308,7 @@ int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *t
 
         cookie = xcb_query_text_extents(conn, font->id, length, (xcb_char2b_t*)text);
         if ((reply = xcb_query_text_extents_reply(conn, cookie, &error)) == NULL) {
-                LOG("Could not get text extents (X error code %d)\n",
+                ELOG("Could not get text extents (X error code %d)\n",
                      error->error_code);
                 /* We return the rather safe guess of 7 pixels, because a
                  * rendering error is better than a crash. Plus, the user will
@@ -320,4 +319,17 @@ int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *t
         width = reply->overall_width;
         free(reply);
         return width;
+}
+
+/*
+ * Configures the given window to have the size/position specified by given rect
+ *
+ */
+void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r) {
+        xcb_configure_window(conn, window,
+                             XCB_CONFIG_WINDOW_X |
+                             XCB_CONFIG_WINDOW_Y |
+                             XCB_CONFIG_WINDOW_WIDTH |
+                             XCB_CONFIG_WINDOW_HEIGHT,
+                             &(r.x));
 }

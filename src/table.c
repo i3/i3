@@ -27,6 +27,7 @@
 #include "layout.h"
 #include "config.h"
 #include "workspace.h"
+#include "log.h"
 
 int current_workspace = 0;
 int num_workspaces = 1;
@@ -52,7 +53,7 @@ void init_table() {
 
 static void new_container(Workspace *workspace, Container **container, int col, int row, bool skip_layout_switch) {
         Container *new;
-        new = *container = calloc(sizeof(Container), 1);
+        new = *container = scalloc(sizeof(Container));
         CIRCLEQ_INIT(&(new->clients));
         new->colspan = 1;
         new->rowspan = 1;
@@ -96,9 +97,9 @@ void expand_table_rows_at_head(Workspace *workspace) {
 
         workspace->height_factor = realloc(workspace->height_factor, sizeof(float) * workspace->rows);
 
-        LOG("rows = %d\n", workspace->rows);
+        DLOG("rows = %d\n", workspace->rows);
         for (int rows = (workspace->rows - 1); rows >= 1; rows--) {
-                LOG("Moving height_factor %d (%f) to %d\n", rows-1, workspace->height_factor[rows-1], rows);
+                DLOG("Moving height_factor %d (%f) to %d\n", rows-1, workspace->height_factor[rows-1], rows);
                 workspace->height_factor[rows] = workspace->height_factor[rows-1];
         }
 
@@ -110,7 +111,7 @@ void expand_table_rows_at_head(Workspace *workspace) {
         /* Move the other rows */
         for (int cols = 0; cols < workspace->cols; cols++)
                 for (int rows = workspace->rows - 1; rows > 0; rows--) {
-                        LOG("Moving row %d to %d\n", rows-1, rows);
+                        DLOG("Moving row %d to %d\n", rows-1, rows);
                         workspace->table[cols][rows] = workspace->table[cols][rows-1];
                         workspace->table[cols][rows]->row = rows;
                 }
@@ -130,7 +131,7 @@ void expand_table_cols(Workspace *workspace) {
         workspace->width_factor[workspace->cols-1] = 0;
 
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
-        workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
+        workspace->table[workspace->cols-1] = scalloc(sizeof(Container*) * workspace->rows);
 
         for (int c = 0; c < workspace->rows; c++)
                 new_container(workspace, &(workspace->table[workspace->cols-1][c]), workspace->cols-1, c, true);
@@ -148,21 +149,21 @@ void expand_table_cols_at_head(Workspace *workspace) {
 
         workspace->width_factor = realloc(workspace->width_factor, sizeof(float) * workspace->cols);
 
-        LOG("cols = %d\n", workspace->cols);
+        DLOG("cols = %d\n", workspace->cols);
         for (int cols = (workspace->cols - 1); cols >= 1; cols--) {
-                LOG("Moving width_factor %d (%f) to %d\n", cols-1, workspace->width_factor[cols-1], cols);
+                DLOG("Moving width_factor %d (%f) to %d\n", cols-1, workspace->width_factor[cols-1], cols);
                 workspace->width_factor[cols] = workspace->width_factor[cols-1];
         }
 
         workspace->width_factor[0] = 0;
 
         workspace->table = realloc(workspace->table, sizeof(Container**) * workspace->cols);
-        workspace->table[workspace->cols-1] = calloc(sizeof(Container*) * workspace->rows, 1);
+        workspace->table[workspace->cols-1] = scalloc(sizeof(Container*) * workspace->rows);
 
         /* Move the other columns */
         for (int rows = 0; rows < workspace->rows; rows++)
                 for (int cols = workspace->cols - 1; cols > 0; cols--) {
-                        LOG("Moving col %d to %d\n", cols-1, cols);
+                        DLOG("Moving col %d to %d\n", cols-1, cols);
                         workspace->table[cols][rows] = workspace->table[cols-1][rows];
                         workspace->table[cols][rows]->col = cols;
                 }
@@ -201,7 +202,7 @@ static void shrink_table_cols(Workspace *workspace) {
                 if (workspace->width_factor[cols] == 0)
                         continue;
 
-                LOG("Added free space (%f) to %d (had %f)\n", free_space, cols,
+                DLOG("Added free space (%f) to %d (had %f)\n", free_space, cols,
                                 workspace->width_factor[cols]);
                 workspace->width_factor[cols] += free_space;
                 break;
@@ -230,7 +231,7 @@ static void shrink_table_rows(Workspace *workspace) {
                 if (workspace->height_factor[rows] == 0)
                         continue;
 
-                LOG("Added free space (%f) to %d (had %f)\n", free_space, rows,
+                DLOG("Added free space (%f) to %d (had %f)\n", free_space, rows,
                                 workspace->height_factor[rows]);
                 workspace->height_factor[rows] += free_space;
                 break;
@@ -256,7 +257,7 @@ static void free_container(xcb_connection_t *conn, Workspace *workspace, int col
 }
 
 static void move_columns_from(xcb_connection_t *conn, Workspace *workspace, int cols) {
-        LOG("firstly freeing \n");
+        DLOG("firstly freeing \n");
 
         /* Free the columns which are cleaned up */
         for (int rows = 0; rows < workspace->rows; rows++)
@@ -264,10 +265,10 @@ static void move_columns_from(xcb_connection_t *conn, Workspace *workspace, int 
 
         for (; cols < workspace->cols; cols++)
                 for (int rows = 0; rows < workspace->rows; rows++) {
-                        LOG("at col = %d, row = %d\n", cols, rows);
+                        DLOG("at col = %d, row = %d\n", cols, rows);
                         Container *new_container = workspace->table[cols][rows];
 
-                        LOG("moving cols = %d to cols -1 = %d\n", cols, cols-1);
+                        DLOG("moving cols = %d to cols -1 = %d\n", cols, cols-1);
                         workspace->table[cols-1][rows] = new_container;
 
                         new_container->row = rows;
@@ -283,7 +284,7 @@ static void move_rows_from(xcb_connection_t *conn, Workspace *workspace, int row
                 for (int cols = 0; cols < workspace->cols; cols++) {
                         Container *new_container = workspace->table[cols][rows];
 
-                        LOG("moving rows = %d to rows -1 = %d\n", rows, rows - 1);
+                        DLOG("moving rows = %d to rows -1 = %d\n", rows, rows - 1);
                         workspace->table[cols][rows-1] = new_container;
 
                         new_container->row = rows-1;
@@ -296,19 +297,19 @@ static void move_rows_from(xcb_connection_t *conn, Workspace *workspace, int row
  *
  */
 void dump_table(xcb_connection_t *conn, Workspace *workspace) {
-        LOG("dump_table()\n");
+        DLOG("dump_table()\n");
         FOR_TABLE(workspace) {
                 Container *con = workspace->table[cols][rows];
-                LOG("----\n");
-                LOG("at col=%d, row=%d\n", cols, rows);
-                LOG("currently_focused = %p\n", con->currently_focused);
+                DLOG("----\n");
+                DLOG("at col=%d, row=%d\n", cols, rows);
+                DLOG("currently_focused = %p\n", con->currently_focused);
                 Client *loop;
                 CIRCLEQ_FOREACH(loop, &(con->clients), clients) {
-                        LOG("got client %08x / %s\n", loop->child, loop->name);
+                        DLOG("got client %08x / %s\n", loop->child, loop->name);
                 }
-                LOG("----\n");
+                DLOG("----\n");
         }
-        LOG("done\n");
+        DLOG("done\n");
 }
 
 /*
@@ -316,7 +317,7 @@ void dump_table(xcb_connection_t *conn, Workspace *workspace) {
  *
  */
 void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
-        LOG("cleanup_table()\n");
+        DLOG("cleanup_table()\n");
 
         /* Check for empty columns if we got more than one column */
         for (int cols = 0; (workspace->cols > 1) && (cols < workspace->cols);) {
@@ -327,7 +328,7 @@ void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
                                 break;
                         }
                 if (completely_empty) {
-                        LOG("Removing completely empty column %d\n", cols);
+                        DLOG("Removing completely empty column %d\n", cols);
                         if (cols < (workspace->cols - 1))
                                 move_columns_from(conn, workspace, cols+1);
                         else {
@@ -344,14 +345,14 @@ void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
         /* Check for empty rows if we got more than one row */
         for (int rows = 0; (workspace->rows > 1) && (rows < workspace->rows);) {
                 bool completely_empty = true;
-                LOG("Checking row %d\n", rows);
+                DLOG("Checking row %d\n", rows);
                 for (int cols = 0; cols < workspace->cols; cols++)
                         if (workspace->table[cols][rows]->currently_focused != NULL) {
                                 completely_empty = false;
                                 break;
                         }
                 if (completely_empty) {
-                        LOG("Removing completely empty row %d\n", rows);
+                        DLOG("Removing completely empty row %d\n", rows);
                         if (rows < (workspace->rows - 1))
                                 move_rows_from(conn, workspace, rows+1);
                         else {
@@ -381,25 +382,25 @@ void cleanup_table(xcb_connection_t *conn, Workspace *workspace) {
  *
  */
 void fix_colrowspan(xcb_connection_t *conn, Workspace *workspace) {
-        LOG("Fixing col/rowspan\n");
+        DLOG("Fixing col/rowspan\n");
 
         FOR_TABLE(workspace) {
                 Container *con = workspace->table[cols][rows];
                 if (con->colspan > 1) {
-                        LOG("gots one with colspan %d (at %d c, %d r)\n", con->colspan, cols, rows);
+                        DLOG("gots one with colspan %d (at %d c, %d r)\n", con->colspan, cols, rows);
                         while (con->colspan > 1 &&
                                (!cell_exists(workspace, cols + (con->colspan-1), rows) &&
                                 workspace->table[cols + (con->colspan - 1)][rows]->currently_focused != NULL))
                                 con->colspan--;
-                        LOG("fixed it to %d\n", con->colspan);
+                        DLOG("fixed it to %d\n", con->colspan);
                 }
                 if (con->rowspan > 1) {
-                        LOG("gots one with rowspan %d (at %d c, %d r)\n", con->rowspan, cols, rows);
+                        DLOG("gots one with rowspan %d (at %d c, %d r)\n", con->rowspan, cols, rows);
                         while (con->rowspan > 1 &&
                                (!cell_exists(workspace, cols, rows + (con->rowspan - 1)) &&
                                 workspace->table[cols][rows + (con->rowspan - 1)]->currently_focused != NULL))
                                 con->rowspan--;
-                        LOG("fixed it to %d\n", con->rowspan);
+                        DLOG("fixed it to %d\n", con->rowspan);
                 }
         }
 }

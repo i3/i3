@@ -21,20 +21,35 @@
 #include "table.h"
 #include "workspace.h"
 #include "xcb.h"
-
+#include "log.h"
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
-extern int yylex(void);
+extern int yylex(struct context *context);
 extern int yyparse(void);
 extern FILE *yyin;
 YY_BUFFER_STATE yy_scan_string(const char *);
 
 static struct bindings_head *current_bindings;
+static struct context *context;
 
-int yydebug = 1;
+/* We don’t need yydebug for now, as we got decent error messages using
+ * yyerror(). Should you ever want to extend the parser, it might be handy
+ * to just comment it in again, so it stays here. */
+//int yydebug = 1;
 
-void yyerror(const char *str) {
-        fprintf(stderr,"error: %s\n",str);
+void yyerror(const char *error_message) {
+        ELOG("\n");
+        ELOG("CONFIG: %s\n", error_message);
+        ELOG("CONFIG: in file \"%s\", line %d:\n",
+                context->filename, context->line_number);
+        ELOG("CONFIG:   %s\n", context->line_copy);
+        ELOG("CONFIG:   ");
+        for (int c = 1; c <= context->last_column; c++)
+                if (c >= context->first_column)
+                        printf("^");
+                else printf(" ");
+        printf("\n");
+        ELOG("\n");
 }
 
 int yywrap() {
@@ -55,7 +70,7 @@ void parse_file(const char *f) {
         if (fstat(fd, &stbuf) == -1)
                 die("Could not fstat file: %s\n", strerror(errno));
 
-        buf = smalloc(stbuf.st_size * sizeof(char));
+        buf = scalloc((stbuf.st_size + 1) * sizeof(char));
         while (read_bytes < stbuf.st_size) {
                 if ((ret = read(fd, buf + read_bytes, (stbuf.st_size - read_bytes))) < 0)
                         die("Could not read(): %s\n", strerror(errno));
@@ -95,7 +110,7 @@ void parse_file(const char *f) {
                         new->key = sstrdup(v_key);
                         new->value = sstrdup(v_value);
                         SLIST_INSERT_HEAD(&variables, new, variables);
-                        LOG("Got new variable %s = %s\n", v_key, v_value);
+                        DLOG("Got new variable %s = %s\n", v_key, v_value);
                         continue;
                 }
         }
@@ -149,18 +164,33 @@ void parse_file(const char *f) {
 
         yy_scan_string(new);
 
+        context = scalloc(sizeof(struct context));
+        context->filename = f;
+
         if (yyparse() != 0) {
                 fprintf(stderr, "Could not parse configfile\n");
                 exit(1);
         }
 
+        FREE(context->line_copy);
+        free(context);
         free(new);
         free(buf);
+
+        while (!SLIST_EMPTY(&variables)) {
+                current = SLIST_FIRST(&variables);
+                FREE(current->key);
+                FREE(current->value);
+                SLIST_REMOVE_HEAD(&variables, variables);
+                FREE(current);
+        }
 }
 
 %}
 
 %expect 1
+%error-verbose
+%lex-param { struct context *context }
 
 %union {
         int number;
@@ -170,40 +200,44 @@ void parse_file(const char *f) {
         struct Binding *binding;
 }
 
-%token <number>NUMBER
-%token <string>WORD
-%token <string>STR
-%token <string>STR_NG
-%token <string>HEX
+%token <number>NUMBER "<number>"
+%token <string>WORD "<word>"
+%token <string>STR "<string>"
+%token <string>STR_NG "<string (non-greedy)>"
+%token <string>HEX "<hex>"
+%token <string>OUTPUT "<RandR output>"
 %token TOKBIND
 %token TOKTERMINAL
-%token TOKCOMMENT
-%token TOKFONT
-%token TOKBINDSYM
-%token MODIFIER
-%token TOKCONTROL
-%token TOKSHIFT
-%token WHITESPACE
-%token TOKFLOATING_MODIFIER
-%token QUOTEDSTRING
-%token TOKWORKSPACE
-%token TOKSCREEN
-%token TOKASSIGN
+%token TOKCOMMENT "<comment>"
+%token TOKFONT "font"
+%token TOKBINDSYM "bindsym"
+%token MODIFIER "<modifier>"
+%token TOKCONTROL "control"
+%token TOKSHIFT "shift"
+%token WHITESPACE "<whitespace>"
+%token TOKFLOATING_MODIFIER "floating_modifier"
+%token QUOTEDSTRING "<quoted string>"
+%token TOKWORKSPACE "workspace"
+%token TOKOUTPUT "output"
+%token TOKASSIGN "assign"
 %token TOKSET
-%token TOKIPCSOCKET
-%token TOKEXEC
+%token TOKIPCSOCKET "ipc_socket"
+%token TOKEXEC "exec"
 %token TOKCOLOR
-%token TOKARROW
-%token TOKMODE
-%token TOKNEWCONTAINER
-%token TOKNEWWINDOW
-%token TOKCONTAINERMODE
-%token TOKSTACKLIMIT
+%token TOKARROW "→"
+%token TOKMODE "mode"
+%token TOKNEWCONTAINER "new_container"
+%token TOKNEWWINDOW "new_window"
+%token TOKFOCUSFOLLOWSMOUSE "focus_follows_mouse"
+%token TOKWORKSPACEBAR "workspace_bar"
+%token TOKCONTAINERMODE "default/stacking/tabbed"
+%token TOKSTACKLIMIT "stack-limit"
 
 %%
 
 lines: /* empty */
         | lines WHITESPACE line
+        | lines error
         | lines line
         ;
 
@@ -213,6 +247,8 @@ line:
         | floating_modifier
         | new_container
         | new_window
+        | focus_follows_mouse
+        | workspace_bar
         | workspace
         | assign
         | ipcsocket
@@ -251,7 +287,7 @@ bind:
 
                 new->keycode = $<number>2;
                 new->mods = $<number>1;
-                new->command = sstrdup($<string>4);
+                new->command = $<string>4;
 
                 $<binding>$ = new;
         }
@@ -263,9 +299,9 @@ bindsym:
                 printf("\tFound symbolic mod%d with key %s and command %s\n", $<number>1, $<string>2, $<string>4);
                 Binding *new = scalloc(sizeof(Binding));
 
-                new->symbol = sstrdup($<string>2);
+                new->symbol = $<string>2;
                 new->mods = $<number>1;
-                new->command = sstrdup($<string>4);
+                new->command = $<string>4;
 
                 $<binding>$ = new;
         }
@@ -295,7 +331,7 @@ mode:
                 }
 
                 struct Mode *mode = scalloc(sizeof(struct Mode));
-                mode->name = strdup($<string>3);
+                mode->name = $<string>3;
                 mode->bindings = current_bindings;
                 current_bindings = NULL;
                 SLIST_INSERT_HEAD(&modes, mode, modes);
@@ -325,7 +361,7 @@ modeline:
 floating_modifier:
         TOKFLOATING_MODIFIER WHITESPACE binding_modifiers
         {
-                LOG("floating modifier = %d\n", $<number>3);
+                DLOG("floating modifier = %d\n", $<number>3);
                 config.floating_modifier = $<number>3;
         }
         ;
@@ -333,7 +369,7 @@ floating_modifier:
 new_container:
         TOKNEWCONTAINER WHITESPACE TOKCONTAINERMODE
         {
-                LOG("new containers will be in mode %d\n", $<number>3);
+                DLOG("new containers will be in mode %d\n", $<number>3);
                 config.container_mode = $<number>3;
 
                 /* We also need to change the layout of the already existing
@@ -355,7 +391,7 @@ new_container:
         }
         | TOKNEWCONTAINER WHITESPACE TOKSTACKLIMIT WHITESPACE TOKSTACKLIMIT WHITESPACE NUMBER
         {
-                LOG("stack-limit %d with val %d\n", $<number>5, $<number>7);
+                DLOG("stack-limit %d with val %d\n", $<number>5, $<number>7);
                 config.container_stack_limit = $<number>5;
                 config.container_stack_limit_value = $<number>7;
 
@@ -374,32 +410,69 @@ new_container:
 new_window:
         TOKNEWWINDOW WHITESPACE WORD
         {
-                LOG("new windows should start in mode %s\n", $<string>3);
-                config.default_border = strdup($<string>3);
+                DLOG("new windows should start in mode %s\n", $<string>3);
+                config.default_border = sstrdup($<string>3);
+        }
+        ;
+
+bool:
+        NUMBER
+        {
+                $<number>$ = ($<number>1 == 1);
+        }
+        | WORD
+        {
+                DLOG("checking word \"%s\"\n", $<string>1);
+                $<number>$ = (strcasecmp($<string>1, "yes") == 0 ||
+                              strcasecmp($<string>1, "true") == 0 ||
+                              strcasecmp($<string>1, "on") == 0 ||
+                              strcasecmp($<string>1, "enable") == 0 ||
+                              strcasecmp($<string>1, "active") == 0);
+        }
+        ;
+
+focus_follows_mouse:
+        TOKFOCUSFOLLOWSMOUSE WHITESPACE bool
+        {
+                DLOG("focus follows mouse = %d\n", $<number>3);
+                config.disable_focus_follows_mouse = !($<number>3);
+        }
+        ;
+
+workspace_bar:
+        TOKWORKSPACEBAR WHITESPACE bool
+        {
+                DLOG("workspace bar = %d\n", $<number>3);
+                config.disable_workspace_bar = !($<number>3);
         }
         ;
 
 workspace:
-        TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKSCREEN WHITESPACE screen optional_workspace_name
+        TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKOUTPUT WHITESPACE OUTPUT optional_workspace_name
         {
                 int ws_num = $<number>3;
                 if (ws_num < 1) {
-                        LOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
+                        DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
                         Workspace *ws = workspace_get(ws_num - 1);
-                        ws->preferred_screen = sstrdup($<string>7);
-                        if ($<string>8 != NULL)
+                        ws->preferred_output = $<string>7;
+                        if ($<string>8 != NULL) {
                                 workspace_set_name(ws, $<string>8);
+                                free($<string>8);
+                        }
                 }
         }
         | TOKWORKSPACE WHITESPACE NUMBER WHITESPACE workspace_name
         {
                 int ws_num = $<number>3;
                 if (ws_num < 1) {
-                        LOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
+                        DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
-                        if ($<string>5 != NULL)
+                        DLOG("workspace name to: %s\n", $<string>5);
+                        if ($<string>5 != NULL) {
                                 workspace_set_name(workspace_get(ws_num - 1), $<string>5);
+                                free($<string>5);
+                        }
                 }
         }
         ;
@@ -415,13 +488,6 @@ workspace_name:
         | WORD               { $<string>$ = $<string>1; }
         ;
 
-screen:
-        NUMBER              { asprintf(&$<string>$, "%d", $<number>1); }
-        | NUMBER 'x'        { asprintf(&$<string>$, "%d", $<number>1); }
-        | NUMBER 'x' NUMBER { asprintf(&$<string>$, "%dx%d", $<number>1, $<number>3); }
-        | 'x' NUMBER        { asprintf(&$<string>$, "x%d", $<number>2); }
-        ;
-
 assign:
         TOKASSIGN WHITESPACE window_class WHITESPACE optional_arrow assign_target
         {
@@ -430,7 +496,7 @@ assign:
                 struct Assignment *new = $<assignment>6;
                 printf("  to %d\n", new->workspace);
                 printf("  floating = %d\n", new->floating);
-                new->windowclass_title = strdup($<string>3);
+                new->windowclass_title = $<string>3;
                 TAILQ_INSERT_TAIL(&assignments, new, assignments);
         }
         ;
@@ -471,7 +537,7 @@ optional_arrow:
 ipcsocket:
         TOKIPCSOCKET WHITESPACE STR
         {
-                config.ipc_socket_path = sstrdup($<string>3);
+                config.ipc_socket_path = $<string>3;
         }
         ;
 
@@ -479,7 +545,7 @@ exec:
         TOKEXEC WHITESPACE STR
         {
                 struct Autostart *new = smalloc(sizeof(struct Autostart));
-                new->command = sstrdup($<string>3);
+                new->command = $<string>3;
                 TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
         }
         ;
@@ -487,15 +553,15 @@ exec:
 terminal:
         TOKTERMINAL WHITESPACE STR
         {
-                config.terminal = sstrdup($<string>3);
-                printf("terminal %s\n", config.terminal);
+                ELOG("The terminal option is DEPRECATED and has no effect. "
+                    "Please remove it from your configuration file.\n");
         }
         ;
 
 font:
         TOKFONT WHITESPACE STR
         {
-                config.font = sstrdup($<string>3);
+                config.font = $<string>3;
                 printf("font %s\n", config.font);
         }
         ;

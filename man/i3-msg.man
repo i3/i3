@@ -5,7 +5,7 @@ v3.delta, November 2009
 
 == NAME
 
-i3-msg - send messages to i3
+i3-msg - send messages to i3 window manager
 
 == SYNOPSIS
 

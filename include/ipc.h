@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -15,6 +15,34 @@
 #include <ev.h>
 
 #include "i3/ipc.h"
+
+typedef struct ipc_client {
+        int fd;
+
+        /* The events which this client wants to receive */
+        int num_events;
+        char **events;
+
+        TAILQ_ENTRY(ipc_client) clients;
+} ipc_client;
+
+/*
+ * Callback type for the different message types.
+ *
+ * message is the raw packet, as received from the UNIX domain socket. size
+ * is the remaining size of bytes for this packet.
+ *
+ * message_size is the size of the message as the sender specified it.
+ * message_type is the type of the message as the sender specified it.
+ *
+ */
+typedef void(*handler_t)(int, uint8_t*, int, uint32_t, uint32_t);
+
+/* Macro to declare a callback */
+#define IPC_HANDLER(name) \
+        static void handle_ ## name (int fd, uint8_t *message, \
+                                     int size, uint32_t message_size, \
+                                     uint32_t message_type)
 
 /**
  * Handler for activity on the listening socket, meaning that a new client
@@ -31,5 +59,19 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents);
  *
  */
 int ipc_create_socket(const char *filename);
+
+/**
+ * Sends the specified event to all IPC clients which are currently connected
+ * and subscribed to this kind of event.
+ *
+ */
+void ipc_send_event(const char *event, uint32_t message_type, const char *payload);
+
+/**
+ * Calls shutdown() on each socket and closes it. This function to be called
+ * when exiting or restarting only!
+ *
+ */
+void ipc_shutdown();
 
 #endif

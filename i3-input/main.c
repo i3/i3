@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -22,6 +22,7 @@
 #include <err.h>
 #include <stdint.h>
 #include <getopt.h>
+#include <glob.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -37,6 +38,7 @@
 static int sockfd;
 static xcb_key_symbols_t *symbols;
 static int modeswitchmask;
+static int numlockmask;
 static bool modeswitch_active = false;
 static xcb_window_t win;
 static xcb_pixmap_t pixmap;
@@ -49,6 +51,21 @@ static char *command_prefix;
 static char *prompt;
 static int prompt_len;
 static int limit;
+
+/*
+ * This function resolves ~ in pathnames (and more, see glob(3)).
+ *
+ */
+static char *glob_path(const char *path) {
+        static glob_t globbuf;
+        if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0)
+                errx(EXIT_FAILURE, "glob() failed");
+        char *result = strdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
+        if (result == NULL)
+                err(EXIT_FAILURE, "malloc() failed");
+        globfree(&globbuf);
+        return result;
+}
 
 /*
  * Concats the glyphs (either UCS-2 or UTF-8) to a single string, suitable for
@@ -119,6 +136,9 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
 static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_event_t *event) {
         printf("releasing %d, state raw = %d\n", event->detail, event->state);
 
+        /* fix state */
+        event->state &= ~numlockmask;
+
         xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, event->state);
         if (sym == XK_Mode_switch) {
                 printf("Mode switch disabled\n");
@@ -162,6 +182,11 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
         /* fix state */
         if (modeswitch_active)
                 event->state |= modeswitchmask;
+
+        /* Apparantly, after activating numlock once, the numlock modifier
+         * stays turned on (use xev(1) to verify). So, to resolve useful
+         * keysyms, we remove the numlock flag from the event state */
+        event->state &= ~numlockmask;
 
         xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, event->state);
         if (sym == XK_Mode_switch) {
@@ -232,7 +257,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 }
 
 int main(int argc, char *argv[]) {
-        char *socket_path = "/tmp/i3-ipc.sock";
+        char *socket_path = glob_path("~/.i3/ipc.sock");
         char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
         int o, option_index = 0;
 
@@ -251,7 +276,7 @@ int main(int argc, char *argv[]) {
         while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
                 switch (o) {
                         case 's':
-                                socket_path = strdup(optarg);
+                                socket_path = glob_path(optarg);
                                 break;
                         case 'v':
                                 printf("i3-input " I3_VERSION);
@@ -290,7 +315,8 @@ int main(int argc, char *argv[]) {
         xcb_event_set_key_release_handler(&evenths, handle_key_release, NULL);
         xcb_event_set_expose_handler(&evenths, handle_expose, NULL);
 
-        modeswitchmask = get_mode_switch_mask(conn);
+        modeswitchmask = get_mod_mask(conn, XK_Mode_switch);
+        numlockmask = get_mod_mask(conn, XK_Num_Lock);
 	symbols = xcb_key_symbols_alloc(conn);
 
         uint32_t font_id = get_font_id(conn, pattern, &font_height);
@@ -306,11 +332,33 @@ int main(int argc, char *argv[]) {
         xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, 500, font_height + 8);
         xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
 
+        /* Set input focus (we have override_redirect=1, so the wm will not do
+         * this for us) */
+        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, win, XCB_CURRENT_TIME);
+
         /* Create graphics context */
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font_id);
 
         /* Grab the keyboard to get all input */
-        xcb_grab_keyboard(conn, false, win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+        xcb_flush(conn);
+
+        /* Try (repeatedly, if necessary) to grab the keyboard. We might not
+         * get the keyboard at the first attempt because of the keybinding
+         * still being active when started via a wm’s keybinding. */
+        xcb_grab_keyboard_cookie_t cookie;
+        xcb_grab_keyboard_reply_t *reply = NULL;
+
+        int count = 0;
+        while ((reply == NULL || reply->status != XCB_GRAB_STATUS_SUCCESS) && (count++ < 500)) {
+                cookie = xcb_grab_keyboard(conn, false, win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+                reply = xcb_grab_keyboard_reply(conn, cookie, NULL);
+                usleep(1000);
+        }
+
+        if (reply->status != XCB_GRAB_STATUS_SUCCESS) {
+                fprintf(stderr, "Could not grab keyboard, status = %d\n", reply->status);
+                exit(-1);
+        }
 
         xcb_flush(conn);
 

@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -34,10 +34,6 @@
 } \
 while (0)
 
-/** ##__VA_ARGS__ means: leave out __VA_ARGS__ completely if it is empty, that
-   is, delete the preceding comma */
-#define LOG(fmt, ...) slog("%s:%s:%d - " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
-
 TAILQ_HEAD(keyvalue_table_head, keyvalue_element);
 extern struct keyvalue_table_head by_parent;
 extern struct keyvalue_table_head by_child;
@@ -46,11 +42,11 @@ int min(int a, int b);
 int max(int a, int b);
 
 /**
- * Logs the given message to stdout while prefixing the current time to it.
- * This is to be called by LOG() which includes filename/linenumber
+ * Updates *destination with new_value and returns true if it was changed or false
+ * if it was the same
  *
  */
-void slog(char *fmt, ...);
+bool update_if_necessary(uint32_t *destination, const uint32_t new_value);
 
 /**
  * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that
@@ -160,6 +156,13 @@ void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode);
  */
 Client *get_matching_client(xcb_connection_t *conn,
                             const char *window_classtitle, Client *specific);
+
+/*
+ * Restart i3 in-place
+ * appends -a to argument list to disable autostart
+ *
+ */
+void i3_restart();
 
 #if defined(__OpenBSD__)
 /* OpenBSD does not provide memmem(), so we provide FreeBSD’s implementation */

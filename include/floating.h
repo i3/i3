@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -12,10 +12,19 @@
 #define _FLOATING_H
 
 /** Callback for dragging */
-typedef void(*callback_t)(Rect*, uint32_t, uint32_t);
+typedef void(*callback_t)(xcb_connection_t*, Client*, Rect*, uint32_t, uint32_t, void*);
+
+/** Macro to create a callback function for dragging */
+#define DRAGGING_CB(name) \
+        static void name(xcb_connection_t *conn, Client *client, \
+                         Rect *old_rect, uint32_t new_x, uint32_t new_y, \
+                         void *extra)
 
 /** On which border was the dragging initiated? */
-typedef enum { BORDER_LEFT, BORDER_RIGHT, BORDER_TOP, BORDER_BOTTOM} border_t;
+typedef enum { BORDER_LEFT   = (1 << 0),
+               BORDER_RIGHT  = (1 << 1),
+               BORDER_TOP    = (1 << 2),
+               BORDER_BOTTOM = (1 << 3)} border_t;
 
 /**
  * Enters floating mode for the given client.  Correctly takes care of the
@@ -56,13 +65,13 @@ void floating_drag_window(xcb_connection_t *conn, Client *client,
                           xcb_button_press_event_t *event);
 
 /**
- * Called when the user right-clicked on the titlebar of a floating window to
- * resize it.
+ * Called when the user clicked on a floating window while holding the
+ * floating_modifier and the right mouse button.
  * Calls the drag_pointer function with the resize_window callback
  *
  */
 void floating_resize_window(xcb_connection_t *conn, Client *client,
-                            xcb_button_press_event_t *event);
+                            bool proportional, xcb_button_press_event_t *event);
 
 /**
  * Changes focus in the given direction for floating clients.
@@ -97,6 +106,7 @@ void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace);
  *
  */
 void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event,
-                  xcb_window_t confine_to, border_t border, callback_t callback);
+                  xcb_window_t confine_to, border_t border, callback_t callback,
+                  void *extra);
 
 #endif

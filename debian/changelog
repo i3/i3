@@ -1,3 +1,9 @@
+i3-wm (3.e-0) unstable; urgency=low
+
+  * NOT YET RELEASED
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Mon, 21 Dec 2009 23:08:01 +0100
+
 i3-wm (3.d-bf1-1) unstable; urgency=low
 
   * Bugfix: Don’t draw window title when titlebar is disabled

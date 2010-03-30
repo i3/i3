@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -30,7 +30,6 @@
 #include <xcb/xcb_property.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
-#include <xcb/xinerama.h>
 
 #include <ev.h>
 
@@ -45,9 +44,16 @@
 #include "table.h"
 #include "util.h"
 #include "xcb.h"
+#include "randr.h"
 #include "xinerama.h"
 #include "manage.h"
 #include "ipc.h"
+#include "log.h"
+#include "sighandler.h"
+
+static int xkb_event_base;
+
+int xkb_current_group;
 
 xcb_connection_t *global_conn;
 
@@ -81,6 +87,9 @@ int num_screens = 0;
 
 /* The depth of the root screen (used e.g. for creating new pixmaps later) */
 uint8_t root_depth;
+
+/* We hope that XKB is supported and set this to false */
+bool xkb_supported = true;
 
 /*
  * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
@@ -119,25 +128,65 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
  *
  */
 static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
-        LOG("got xkb event, yay\n");
-        XEvent ev;
+        DLOG("Handling XKB event\n");
+        XkbEvent ev;
+
         /* When using xmodmap, every change (!) gets an own event.
          * Therefore, we just read all events and only handle the
-         * mapping_notify once (we do not receive any other XKB
-         * events anyway). */
-        while (XPending(xkbdpy))
-                XNextEvent(xkbdpy, &ev);
+         * mapping_notify once. */
+        bool mapping_changed = false;
+        while (XPending(xkbdpy)) {
+                XNextEvent(xkbdpy, (XEvent*)&ev);
+                /* While we should never receive a non-XKB event,
+                 * better do sanity checking */
+                if (ev.type != xkb_event_base)
+                        continue;
 
+                if (ev.any.xkb_type == XkbMapNotify) {
+                        mapping_changed = true;
+                        continue;
+                }
+
+                if (ev.any.xkb_type != XkbStateNotify) {
+                        ELOG("Unknown XKB event received (type %d)\n", ev.any.xkb_type);
+                        continue;
+                }
+
+                /* See The XKB Extension: Library Specification, section 14.1 */
+                /* We check if the current group (each group contains
+                 * two levels) has been changed. Mode_switch activates
+                 * group XkbGroup2Index */
+                if (xkb_current_group == ev.state.group)
+                        continue;
+
+                xkb_current_group = ev.state.group;
+
+                if (ev.state.group == XkbGroup2Index) {
+                        DLOG("Mode_switch enabled\n");
+                        grab_all_keys(global_conn, true);
+                }
+
+                if (ev.state.group == XkbGroup1Index) {
+                        DLOG("Mode_switch disabled\n");
+                        ungrab_all_keys(global_conn);
+                        grab_all_keys(global_conn, false);
+                }
+        }
+
+        if (!mapping_changed)
+                return;
+
+        DLOG("Keyboard mapping changed, updating keybindings\n");
         xcb_key_symbols_free(keysyms);
         keysyms = xcb_key_symbols_alloc(global_conn);
 
         xcb_get_numlock_mask(global_conn);
 
         ungrab_all_keys(global_conn);
-        LOG("Re-grabbing...\n");
-        grab_all_keys(global_conn);
-        LOG("Done\n");
-
+        DLOG("Re-grabbing...\n");
+        translate_keysyms();
+        grab_all_keys(global_conn, (xkb_current_group == XkbGroup2Index));
+        DLOG("Done\n");
 }
 
 
@@ -145,6 +194,8 @@ int main(int argc, char *argv[], char *env[]) {
         int i, screens, opt;
         char *override_configpath = NULL;
         bool autostart = true;
+        bool only_check_config = false;
+        bool force_xinerama = false;
         xcb_connection_t *conn;
         xcb_property_handlers_t prophs;
         xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
@@ -153,6 +204,7 @@ int main(int argc, char *argv[], char *env[]) {
                 {"config", required_argument, 0, 'c'},
                 {"version", no_argument, 0, 'v'},
                 {"help", no_argument, 0, 'h'},
+                {"force-xinerama", no_argument, 0, 0},
                 {0, 0, 0, 0}
         };
         int option_index = 0;
@@ -165,7 +217,7 @@ int main(int argc, char *argv[], char *env[]) {
 
         start_argv = argv;
 
-        while ((opt = getopt_long(argc, argv, "c:vahl", long_options, &option_index)) != -1) {
+        while ((opt = getopt_long(argc, argv, "c:Cvahld:V", long_options, &option_index)) != -1) {
                 switch (opt) {
                         case 'a':
                                 LOG("Autostart disabled using -a\n");
@@ -174,18 +226,46 @@ int main(int argc, char *argv[], char *env[]) {
                         case 'c':
                                 override_configpath = sstrdup(optarg);
                                 break;
-                        case 'v':
-                                printf("i3 version " I3_VERSION " © 2009 Michael Stapelberg and contributors\n");
-                                exit(EXIT_SUCCESS);
-                        case 'l':
-                                config_use_lexer = true;
+                        case 'C':
+                                LOG("Checking configuration file only (-C)\n");
+                                only_check_config = true;
                                 break;
+                        case 'v':
+                                printf("i3 version " I3_VERSION " © 2009-2010 Michael Stapelberg and contributors\n");
+                                exit(EXIT_SUCCESS);
+                        case 'V':
+                                set_verbosity(true);
+                                break;
+                        case 'd':
+                                LOG("Enabling debug loglevel %s\n", optarg);
+                                add_loglevel(optarg);
+                                break;
+                        case 'l':
+                                /* DEPRECATED, ignored for the next 3 versions (3.e, 3.f, 3.g) */
+                                break;
+                        case 0:
+                                if (strcmp(long_options[option_index].name, "force-xinerama") == 0) {
+                                        force_xinerama = true;
+                                        ELOG("Using Xinerama instead of RandR. This option should be "
+                                             "avoided at all cost because it does not refresh the list "
+                                             "of screens, so you cannot configure displays at runtime. "
+                                             "Please check if your driver really does not support RandR "
+                                             "and disable this option as soon as you can.\n");
+                                        break;
+                                }
+                                /* fall-through */
                         default:
-                                fprintf(stderr, "Usage: %s [-c configfile] [-a] [-v]\n", argv[0]);
+                                fprintf(stderr, "Usage: %s [-c configfile] [-d loglevel] [-a] [-v] [-V] [-C]\n", argv[0]);
                                 fprintf(stderr, "\n");
                                 fprintf(stderr, "-a: disable autostart\n");
                                 fprintf(stderr, "-v: display version and exit\n");
+                                fprintf(stderr, "-V: enable verbose mode\n");
+                                fprintf(stderr, "-d <loglevel>: enable debug loglevel <loglevel>\n");
                                 fprintf(stderr, "-c <configfile>: use the provided configfile instead\n");
+                                fprintf(stderr, "-C: check configuration file and exit\n");
+                                fprintf(stderr, "--force-xinerama: Use Xinerama instead of RandR. This "
+                                                "option should only be used if you are stuck with the "
+                                                "nvidia closed source driver which does not support RandR.\n");
                                 exit(EXIT_FAILURE);
                 }
         }
@@ -204,6 +284,10 @@ int main(int argc, char *argv[], char *env[]) {
                 die("Cannot open display\n");
 
         load_configuration(conn, override_configpath, false);
+        if (only_check_config) {
+                LOG("Done checking configuration file. Exiting.\n");
+                exit(0);
+        }
 
         /* Create the initial container on the first workspace. This used to
          * be part of init_table, but since it possibly requires an X
@@ -234,6 +318,9 @@ int main(int argc, char *argv[], char *env[]) {
         REQUEST_ATOM(UTF8_STRING);
         REQUEST_ATOM(WM_STATE);
         REQUEST_ATOM(WM_CLIENT_LEADER);
+        REQUEST_ATOM(_NET_CURRENT_DESKTOP);
+        REQUEST_ATOM(_NET_ACTIVE_WINDOW);
+        REQUEST_ATOM(_NET_WORKAREA);
 
         /* TODO: this has to be more beautiful somewhen */
         int major, minor, error;
@@ -241,28 +328,32 @@ int main(int argc, char *argv[], char *env[]) {
         major = XkbMajorVersion;
         minor = XkbMinorVersion;
 
-        int evBase, errBase;
+        int errBase;
 
-        if ((xkbdpy = XkbOpenDisplay(getenv("DISPLAY"), &evBase, &errBase, &major, &minor, &error)) == NULL) {
-                fprintf(stderr, "XkbOpenDisplay() failed\n");
-                return 1;
+        if ((xkbdpy = XkbOpenDisplay(getenv("DISPLAY"), &xkb_event_base, &errBase, &major, &minor, &error)) == NULL) {
+                ELOG("ERROR: XkbOpenDisplay() failed, disabling XKB support\n");
+                xkb_supported = false;
         }
 
-        if (fcntl(ConnectionNumber(xkbdpy), F_SETFD, FD_CLOEXEC) == -1) {
-                fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
-                return 1;
-        }
+        if (xkb_supported) {
+                if (fcntl(ConnectionNumber(xkbdpy), F_SETFD, FD_CLOEXEC) == -1) {
+                        fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
+                        return 1;
+                }
 
-        int i1;
-        if (!XkbQueryExtension(xkbdpy,&i1,&evBase,&errBase,&major,&minor)) {
-                fprintf(stderr, "XKB not supported by X-server\n");
-                return 1;
-        }
-        /* end of ugliness */
+                int i1;
+                if (!XkbQueryExtension(xkbdpy,&i1,&xkb_event_base,&errBase,&major,&minor)) {
+                        fprintf(stderr, "XKB not supported by X-server\n");
+                        return 1;
+                }
+                /* end of ugliness */
 
-        if (!XkbSelectEvents(xkbdpy, XkbUseCoreKbd, XkbMapNotifyMask, XkbMapNotifyMask)) {
-                fprintf(stderr, "Could not set XKB event mask\n");
-                return 1;
+                if (!XkbSelectEvents(xkbdpy, XkbUseCoreKbd,
+                                     XkbMapNotifyMask | XkbStateNotifyMask,
+                                     XkbMapNotifyMask | XkbStateNotifyMask)) {
+                        fprintf(stderr, "Could not set XKB event mask\n");
+                        return 1;
+                }
         }
 
         /* Initialize event loop using libev */
@@ -278,11 +369,13 @@ int main(int argc, char *argv[], char *env[]) {
         ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
         ev_io_start(loop, xcb_watcher);
 
-        ev_io_init(xkb, xkb_got_event, ConnectionNumber(xkbdpy), EV_READ);
-        ev_io_start(loop, xkb);
+        if (xkb_supported) {
+                ev_io_init(xkb, xkb_got_event, ConnectionNumber(xkbdpy), EV_READ);
+                ev_io_start(loop, xkb);
 
-        /* Flush the buffer so that libev can properly get new events */
-        XFlush(xkbdpy);
+                /* Flush the buffer so that libev can properly get new events */
+                XFlush(xkbdpy);
+        }
 
         ev_check_init(xcb_check, xcb_check_cb);
         ev_check_start(loop, xcb_check);
@@ -305,9 +398,8 @@ int main(int argc, char *argv[], char *env[]) {
         /* Expose = an Application should redraw itself, in this case it’s our titlebars. */
         xcb_event_set_expose_handler(&evenths, handle_expose_event, NULL);
 
-        /* Key presses/releases are pretty obvious, I think */
+        /* Key presses are pretty obvious, I think */
         xcb_event_set_key_press_handler(&evenths, handle_key_press, NULL);
-        xcb_event_set_key_release_handler(&evenths, handle_key_release, NULL);
 
         /* Enter window = user moved his mouse over the window */
         xcb_event_set_enter_notify_handler(&evenths, handle_enter_notify, NULL);
@@ -321,6 +413,9 @@ int main(int argc, char *argv[], char *env[]) {
         /* Unmap notify = window disappeared. When sent from a client, we don’t manage
            it any longer. Usually, the client destroys the window shortly afterwards. */
         xcb_event_set_unmap_notify_handler(&evenths, handle_unmap_notify_event, NULL);
+
+        /* Destroy notify is handled the same as unmap notify */
+        xcb_event_set_destroy_notify_handler(&evenths, handle_destroy_notify_event, NULL);
 
         /* Configure notify = window’s configuration (geometry, stacking, …). We only need
            it to set up ignore the following enter_notify events */
@@ -359,13 +454,15 @@ int main(int argc, char *argv[], char *env[]) {
                               XCB_EVENT_MASK_POINTER_MOTION |
                               XCB_EVENT_MASK_PROPERTY_CHANGE |
                               XCB_EVENT_MASK_ENTER_WINDOW };
-        xcb_change_window_attributes(conn, root, mask, values);
+        xcb_void_cookie_t cookie;
+        cookie = xcb_change_window_attributes_checked(conn, root, mask, values);
+        check_error(conn, cookie, "Another window manager seems to be running");
 
         /* Setup NetWM atoms */
         #define GET_ATOM(name) { \
                 xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, atom_cookies[name], NULL); \
                 if (!reply) { \
-                        LOG("Could not get atom " #name "\n"); \
+                        ELOG("Could not get atom " #name "\n"); \
                         exit(-1); \
                 } \
                 atoms[name] = reply->atom; \
@@ -390,6 +487,9 @@ int main(int argc, char *argv[], char *env[]) {
         GET_ATOM(UTF8_STRING);
         GET_ATOM(WM_STATE);
         GET_ATOM(WM_CLIENT_LEADER);
+        GET_ATOM(_NET_CURRENT_DESKTOP);
+        GET_ATOM(_NET_ACTIVE_WINDOW);
+        GET_ATOM(_NET_WORKAREA);
 
         xcb_property_set_handler(&prophs, atoms[_NET_WM_WINDOW_TYPE], UINT_MAX, handle_window_type, NULL);
         /* TODO: In order to comply with EWMH, we have to watch _NET_WM_STRUT_PARTIAL */
@@ -423,38 +523,39 @@ int main(int argc, char *argv[], char *env[]) {
 
         xcb_get_numlock_mask(conn);
 
-        grab_all_keys(conn);
+        translate_keysyms();
+        grab_all_keys(conn, false);
 
-        /* Autostarting exec-lines */
-        struct Autostart *exec;
-        if (autostart) {
-                TAILQ_FOREACH(exec, &autostarts, autostarts) {
-                        LOG("auto-starting %s\n", exec->command);
-                        start_application(exec->command);
-                }
+        int randr_base;
+        if (force_xinerama) {
+                initialize_xinerama(conn);
+        } else {
+                DLOG("Checking for XRandR...\n");
+                initialize_randr(conn, &randr_base);
+
+                xcb_event_set_handler(&evenths,
+                                      randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY,
+                                      handle_screen_change,
+                                      NULL);
         }
-
-        /* check for Xinerama */
-        LOG("Checking for Xinerama...\n");
-        initialize_xinerama(conn);
 
         xcb_flush(conn);
 
         /* Get pointer position to see on which screen we’re starting */
         xcb_query_pointer_reply_t *reply;
         if ((reply = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, root), NULL)) == NULL) {
-                LOG("Could not get pointer position\n");
+                ELOG("Could not get pointer position\n");
                 return 1;
         }
 
-        i3Screen *screen = get_screen_containing(reply->root_x, reply->root_y);
+        Output *screen = get_output_containing(reply->root_x, reply->root_y);
         if (screen == NULL) {
-                LOG("ERROR: No screen at %d x %d, starting on the first screen\n",
+                ELOG("ERROR: No screen at %d x %d, starting on the first screen\n",
                     reply->root_x, reply->root_y);
-                screen = TAILQ_FIRST(virtual_screens);
+                screen = get_first_output();
         }
 
-        LOG("Starting on %d\n", screen->current_workspace);
+        DLOG("Starting on %p\n", screen->current_workspace);
         c_ws = screen->current_workspace;
 
         manage_existing_windows(conn, &prophs, root);
@@ -463,7 +564,7 @@ int main(int argc, char *argv[], char *env[]) {
         if (config.ipc_socket_path != NULL) {
                 int ipc_socket = ipc_create_socket(config.ipc_socket_path);
                 if (ipc_socket == -1) {
-                        LOG("Could not create the IPC socket, IPC disabled\n");
+                        ELOG("Could not create the IPC socket, IPC disabled\n");
                 } else {
                         struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
                         ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
@@ -474,8 +575,24 @@ int main(int argc, char *argv[], char *env[]) {
         /* Handle the events which arrived until now */
         xcb_check_cb(NULL, NULL, 0);
 
+        setup_signal_handler();
+
+        /* Ignore SIGPIPE to survive errors when an IPC client disconnects
+         * while we are sending him a message */
+        signal(SIGPIPE, SIG_IGN);
+
         /* Ungrab the server to receive events and enter libev’s eventloop */
         xcb_ungrab_server(conn);
+
+        /* Autostarting exec-lines */
+        struct Autostart *exec;
+        if (autostart) {
+                TAILQ_FOREACH(exec, &autostarts, autostarts) {
+                        LOG("auto-starting %s\n", exec->command);
+                        start_application(exec->command);
+                }
+        }
+
         ev_loop(loop, 0);
 
         /* not reached */

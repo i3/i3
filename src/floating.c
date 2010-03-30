@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -27,6 +27,7 @@
 #include "client.h"
 #include "floating.h"
 #include "workspace.h"
+#include "log.h"
 
 /*
  * Toggles floating mode for the given client.
@@ -42,12 +43,12 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
         i3Font *font = load_font(conn, config.font);
 
         if (client->dock) {
-                LOG("Not putting dock client into floating mode\n");
+                DLOG("Not putting dock client into floating mode\n");
                 return;
         }
 
         if (con == NULL) {
-                LOG("This client is already in floating (container == NULL), re-inserting\n");
+                DLOG("This client is already in floating (container == NULL), re-inserting\n");
                 Client *next_tiling;
                 Workspace *ws = client->workspace;
                 SLIST_FOREACH(next_tiling, &(ws->focus_stack), focus_clients)
@@ -62,7 +63,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                 /* Remove the client from the list of floating clients */
                 TAILQ_REMOVE(&(ws->floating_clients), client, floating_clients);
 
-                LOG("destination container = %p\n", con);
+                DLOG("destination container = %p\n", con);
                 Client *old_focused = con->currently_focused;
                 /* Preserve position/size */
                 memcpy(&(client->floating_rect), &(client->rect), sizeof(Rect));
@@ -74,7 +75,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                         CIRCLEQ_INSERT_AFTER(&(con->clients), old_focused, client, clients);
                 else CIRCLEQ_INSERT_TAIL(&(con->clients), client, clients);
 
-                LOG("Re-inserted the client into the matrix.\n");
+                DLOG("Re-inserted the window.\n");
                 con->currently_focused = client;
 
                 client_set_below_floating(conn, client);
@@ -85,7 +86,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                 return;
         }
 
-        LOG("Entering floating for client %08x\n", client->child);
+        DLOG("Entering floating for client %08x\n", client->child);
 
         /* Remove the client of its container */
         client_remove_from_container(conn, client, con, false);
@@ -95,7 +96,7 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
         TAILQ_INSERT_TAIL(&(client->workspace->floating_clients), client, floating_clients);
 
         if (con->currently_focused == client) {
-                LOG("Need to re-adjust currently_focused\n");
+                DLOG("Need to re-adjust currently_focused\n");
                 /* Get the next client in the focus stack for this particular container */
                 con->currently_focused = get_last_focused_client(conn, con, NULL);
         }
@@ -118,11 +119,11 @@ void toggle_floating_mode(xcb_connection_t *conn, Client *client, bool automatic
                 client->rect.width = client->child_rect.width + 2 + 2;
                 client->rect.height = client->child_rect.height + (font->height + 2 + 2) + 2;
 
-                LOG("copying size from tiling (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
+                DLOG("copying size from tiling (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
                                 client->floating_rect.width, client->floating_rect.height);
         } else {
                 /* If the client was already in floating before we restore the old position / size */
-                LOG("using: (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
+                DLOG("using: (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
                         client->floating_rect.width, client->floating_rect.height);
                 memcpy(&(client->rect), &(client->floating_rect), sizeof(Rect));
         }
@@ -162,64 +163,78 @@ void floating_assign_to_workspace(Client *client, Workspace *new_workspace) {
 }
 
 /*
+ * This is an ugly data structure which we need because there is no standard
+ * way of having nested functions (only available as a gcc extension at the
+ * moment, clang doesn’t support it) or blocks (only available as a clang
+ * extension and only on Mac OS X systems at the moment).
+ *
+ */
+struct resize_callback_params {
+        border_t border;
+        xcb_button_press_event_t *event;
+};
+
+DRAGGING_CB(resize_callback) {
+        struct resize_callback_params *params = extra;
+        xcb_button_press_event_t *event = params->event;
+        switch (params->border) {
+                case BORDER_RIGHT: {
+                        int new_width = old_rect->width + (new_x - event->root_x);
+                        if ((new_width < 0) ||
+                            (new_width < client_min_width(client) && client->rect.width >= new_width))
+                                return;
+                        client->rect.width = new_width;
+                        break;
+                }
+
+                case BORDER_BOTTOM: {
+                        int new_height = old_rect->height + (new_y - event->root_y);
+                        if ((new_height < 0) ||
+                            (new_height < client_min_height(client) && client->rect.height >= new_height))
+                                return;
+                        client->rect.height = old_rect->height + (new_y - event->root_y);
+                        break;
+                }
+
+                case BORDER_TOP: {
+                        int new_height = old_rect->height + (event->root_y - new_y);
+                        if ((new_height < 0) ||
+                            (new_height < client_min_height(client) && client->rect.height >= new_height))
+                                return;
+
+                        client->rect.y = old_rect->y + (new_y - event->root_y);
+                        client->rect.height = new_height;
+                        break;
+                }
+
+                case BORDER_LEFT: {
+                        int new_width = old_rect->width + (event->root_x - new_x);
+                        if ((new_width < 0) ||
+                            (new_width < client_min_width(client) && client->rect.width >= new_width))
+                                return;
+                        client->rect.x = old_rect->x + (new_x - event->root_x);
+                        client->rect.width = new_width;
+                        break;
+                }
+        }
+
+        /* Push the new position/size to X11 */
+        reposition_client(conn, client);
+        resize_client(conn, client);
+        xcb_flush(conn);
+}
+
+
+/*
  * Called whenever the user clicks on a border (not the titlebar!) of a floating window.
  * Determines on which border the user clicked and launches the drag_pointer function
  * with the resize_callback.
  *
  */
 int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event) {
-
-        LOG("floating border click\n");
+        DLOG("floating border click\n");
 
         border_t border;
-
-        void resize_callback(Rect *old_rect, uint32_t new_x, uint32_t new_y) {
-                switch (border) {
-                        case BORDER_RIGHT: {
-                                int new_width = old_rect->width + (new_x - event->root_x);
-                                if ((new_width < 0) ||
-                                    (new_width < 50 && client->rect.width >= new_width))
-                                        return;
-                                client->rect.width = new_width;
-                                break;
-                        }
-
-                        case BORDER_BOTTOM: {
-                                int new_height = old_rect->height + (new_y - event->root_y);
-                                if ((new_height < 0) ||
-                                    (new_height < 20 && client->rect.height >= new_height))
-                                        return;
-                                client->rect.height = old_rect->height + (new_y - event->root_y);
-                                break;
-                        }
-
-                        case BORDER_TOP: {
-                                int new_height = old_rect->height + (event->root_y - new_y);
-                                if ((new_height < 0) ||
-                                    (new_height < 20 && client->rect.height >= new_height))
-                                        return;
-
-                                client->rect.y = old_rect->y + (new_y - event->root_y);
-                                client->rect.height = new_height;
-                                break;
-                        }
-
-                        case BORDER_LEFT: {
-                                int new_width = old_rect->width + (event->root_x - new_x);
-                                if ((new_width < 0) ||
-                                    (new_width < 50 && client->rect.width >= new_width))
-                                        return;
-                                client->rect.x = old_rect->x + (new_x - event->root_x);
-                                client->rect.width = new_width;
-                                break;
-                        }
-                }
-
-                /* Push the new position/size to X11 */
-                reposition_client(conn, client);
-                resize_client(conn, client);
-                xcb_flush(conn);
-        }
 
         if (event->event_y < 2)
                 border = BORDER_TOP;
@@ -230,17 +245,31 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
         else if (event->event_x >= (client->rect.width - 2))
                 border = BORDER_RIGHT;
         else {
-                LOG("Not on any border, not doing anything.\n");
+                DLOG("Not on any border, not doing anything.\n");
                 return 1;
         }
 
-        LOG("border = %d\n", border);
+        DLOG("border = %d\n", border);
 
-        drag_pointer(conn, client, event, XCB_NONE, border, resize_callback);
+        struct resize_callback_params params = { border, event };
+
+        drag_pointer(conn, client, event, XCB_NONE, border, resize_callback, &params);
 
         return 1;
 }
 
+DRAGGING_CB(drag_window_callback) {
+        struct xcb_button_press_event_t *event = extra;
+
+        /* Reposition the client correctly while moving */
+        client->rect.x = old_rect->x + (new_x - event->root_x);
+        client->rect.y = old_rect->y + (new_y - event->root_y);
+        reposition_client(conn, client);
+        /* Because reposition_client does not send a faked configure event (only resize does),
+         * we need to initiate that on our own */
+        fake_absolute_configure_notify(conn, client);
+        /* fake_absolute_configure_notify flushes */
+}
 
 /*
  * Called when the user clicked on the titlebar of a floating window.
@@ -248,47 +277,95 @@ int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_pre
  *
  */
 void floating_drag_window(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event) {
-        LOG("floating_drag_window\n");
+        DLOG("floating_drag_window\n");
 
-        void drag_window_callback(Rect *old_rect, uint32_t new_x, uint32_t new_y) {
-                /* Reposition the client correctly while moving */
-                client->rect.x = old_rect->x + (new_x - event->root_x);
-                client->rect.y = old_rect->y + (new_y - event->root_y);
-                reposition_client(conn, client);
-                /* Because reposition_client does not send a faked configure event (only resize does),
-                 * we need to initiate that on our own */
-                fake_absolute_configure_notify(conn, client);
-                /* fake_absolute_configure_notify flushes */
-        }
-
-        drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback);
+        drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback, event);
 }
 
 /*
- * Called when the user right-clicked on the titlebar of a floating window to
- * resize it.
+ * This is an ugly data structure which we need because there is no standard
+ * way of having nested functions (only available as a gcc extension at the
+ * moment, clang doesn’t support it) or blocks (only available as a clang
+ * extension and only on Mac OS X systems at the moment).
+ *
+ */
+struct resize_window_callback_params {
+        border_t corner;
+        bool proportional;
+        xcb_button_press_event_t *event;
+};
+
+DRAGGING_CB(resize_window_callback) {
+        struct resize_window_callback_params *params = extra;
+        xcb_button_press_event_t *event = params->event;
+        border_t corner = params->corner;
+
+        int32_t dest_x = client->rect.x;
+        int32_t dest_y = client->rect.y;
+        uint32_t dest_width;
+        uint32_t dest_height;
+
+        double ratio = (double) old_rect->width / old_rect->height;
+
+        /* First guess: We resize by exactly the amount the mouse moved,
+         * taking into account in which corner the client was grabbed */
+        if (corner & BORDER_LEFT)
+                dest_width = old_rect->width - (new_x - event->root_x);
+        else dest_width = old_rect->width + (new_x - event->root_x);
+
+        if (corner & BORDER_TOP)
+                dest_height = old_rect->height - (new_y - event->root_y);
+        else dest_height = old_rect->height + (new_y - event->root_y);
+
+        /* Obey minimum window size */
+        dest_width = max(dest_width, client_min_width(client));
+        dest_height = max(dest_height, client_min_height(client));
+
+        /* User wants to keep proportions, so we may have to adjust our values */
+        if (params->proportional) {
+                dest_width = max(dest_width, (int) (dest_height * ratio));
+                dest_height = max(dest_height, (int) (dest_width / ratio));
+        }
+
+        /* If not the lower right corner is grabbed, we must also reposition
+         * the client by exactly the amount we resized it */
+        if (corner & BORDER_LEFT)
+                dest_x = old_rect->x + (old_rect->width - dest_width);
+
+        if (corner & BORDER_TOP)
+                dest_y = old_rect->y + (old_rect->height - dest_height);
+
+        client->rect = (Rect) { dest_x, dest_y, dest_width, dest_height };
+
+        /* resize_client flushes */
+        resize_client(conn, client);
+}
+
+/*
+ * Called when the user clicked on a floating window while holding the
+ * floating_modifier and the right mouse button.
  * Calls the drag_pointer function with the resize_window callback
  *
  */
-void floating_resize_window(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event) {
-        LOG("floating_resize_window\n");
+void floating_resize_window(xcb_connection_t *conn, Client *client,
+                            bool proportional, xcb_button_press_event_t *event) {
+        DLOG("floating_resize_window\n");
 
-        void resize_window_callback(Rect *old_rect, uint32_t new_x, uint32_t new_y) {
-                int32_t new_width = old_rect->width + (new_x - event->root_x);
-                int32_t new_height = old_rect->height + (new_y - event->root_y);
+        /* corner saves the nearest corner to the original click. It contains
+         * a bitmask of the nearest borders (BORDER_LEFT, BORDER_RIGHT, …) */
+        border_t corner = 0;
 
-                /* Obey minimum window size and reposition the client */
-                if (new_width >= 50)
-                        client->rect.width = new_width;
+        if (event->event_x <= (client->rect.width / 2))
+                corner |= BORDER_LEFT;
+        else corner |= BORDER_RIGHT;
 
-                if (new_height >= 20)
-                        client->rect.height = new_height;
+        if (event->event_y <= (client->rect.height / 2))
+                corner |= BORDER_TOP;
+        else corner |= BORDER_RIGHT;
 
-                /* resize_client flushes */
-                resize_client(conn, client);
-        }
+        struct resize_window_callback_params params = { corner, proportional, event };
 
-        drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, resize_window_callback);
+        drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, resize_window_callback, &params);
 }
 
 
@@ -301,7 +378,7 @@ void floating_resize_window(xcb_connection_t *conn, Client *client, xcb_button_p
  *
  */
 void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event,
-                  xcb_window_t confine_to, border_t border, callback_t callback) {
+                  xcb_window_t confine_to, border_t border, callback_t callback, void *extra) {
         xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         uint32_t new_x, new_y;
         Rect old_rect;
@@ -351,12 +428,12 @@ void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event
                                         break;
 
                                 case XCB_UNMAP_NOTIFY:
-                                        LOG("Unmap-notify, aborting\n");
+                                        DLOG("Unmap-notify, aborting\n");
                                         xcb_event_handle(&evenths, inside_event);
                                         goto done;
 
                                 default:
-                                        LOG("Passing to original handler\n");
+                                        DLOG("Passing to original handler\n");
                                         /* Use original handler */
                                         xcb_event_handle(&evenths, inside_event);
                                         break;
@@ -371,7 +448,7 @@ void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event
                 new_x = ((xcb_motion_notify_event_t*)last_motion_notify)->root_x;
                 new_y = ((xcb_motion_notify_event_t*)last_motion_notify)->root_y;
 
-                callback(&old_rect, new_x, new_y);
+                callback(conn, client, &old_rect, new_x, new_y, extra);
                 FREE(last_motion_notify);
         }
 done:
@@ -387,7 +464,7 @@ done:
  *
  */
 void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused, direction_t direction) {
-        LOG("floating focus\n");
+        DLOG("floating focus\n");
 
         if (direction == D_LEFT || direction == D_RIGHT) {
                 /* Go to the next/previous floating client */
@@ -409,10 +486,15 @@ void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused,
  *
  */
 void floating_move(xcb_connection_t *conn, Client *currently_focused, direction_t direction) {
-        LOG("floating move\n");
+        DLOG("floating move\n");
+
+        if (currently_focused->fullscreen) {
+                DLOG("Cannot move fullscreen windows\n");
+                return;
+        }
 
         Rect destination = currently_focused->rect;
-        Rect *screen = &(currently_focused->workspace->screen->rect);
+        Rect *screen = &(currently_focused->workspace->output->rect);
 
         switch (direction) {
                 case D_LEFT:
@@ -437,7 +519,7 @@ void floating_move(xcb_connection_t *conn, Client *currently_focused, direction_
             (int32_t)(destination.x + 5) >= (int32_t)(screen->x + screen->width) ||
             (int32_t)(destination.y + destination.height - 5) <= (int32_t)screen->y ||
             (int32_t)(destination.y + 5) >= (int32_t)(screen->y + screen->height)) {
-                LOG("boundary check failed, not moving\n");
+                DLOG("boundary check failed, not moving\n");
                 return;
         }
 
@@ -459,7 +541,7 @@ void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace) {
         Client *client;
 
         workspace->floating_hidden = !workspace->floating_hidden;
-        LOG("floating_hidden is now: %d\n", workspace->floating_hidden);
+        DLOG("floating_hidden is now: %d\n", workspace->floating_hidden);
         TAILQ_FOREACH(client, &(workspace->floating_clients), floating_clients) {
                 if (workspace->floating_hidden)
                         client_unmap(conn, client);

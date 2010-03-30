@@ -12,7 +12,6 @@ use i3test;
 use List::Util qw(first);
 
 BEGIN {
-    #use_ok('IO::Socket::UNIX') or BAIL_OUT('Cannot load IO::Socket::UNIX');
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 
@@ -42,5 +41,18 @@ sleep 0.25;
 
 my $rect = $window->rect;
 is($rect->width, $primary->rect->width, 'dock client is as wide as the screen');
+
+my $fwindow = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30],
+    background_color => '#FF0000',
+    type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+);
+
+$fwindow->transient_for($window);
+$fwindow->map;
+
+sleep 0.25;
+
 
 diag( "Testing i3, Perl $], $^X" );

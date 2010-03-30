@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -22,10 +22,13 @@
 #include "config.h"
 #include "xcb.h"
 #include "table.h"
-#include "xinerama.h"
+#include "randr.h"
 #include "layout.h"
 #include "workspace.h"
 #include "client.h"
+#include "log.h"
+#include "ewmh.h"
+#include "ipc.h"
 
 /*
  * Returns a pointer to the workspace with the given number (starting at 0),
@@ -42,10 +45,10 @@ Workspace *workspace_get(int number) {
         /* If we are still there, we could not find the requested workspace. */
         int last_ws = TAILQ_LAST(workspaces, workspaces_head)->num;
 
-        LOG("We need to initialize that one, last ws = %d\n", last_ws);
+        DLOG("We need to initialize that one, last ws = %d\n", last_ws);
 
         for (int c = last_ws; c < number; c++) {
-                LOG("Creating new ws\n");
+                DLOG("Creating new ws\n");
 
                 ws = scalloc(sizeof(Workspace));
                 ws->num = c+1;
@@ -55,8 +58,12 @@ Workspace *workspace_get(int number) {
                 workspace_set_name(ws, NULL);
 
                 TAILQ_INSERT_TAIL(workspaces, ws, workspaces);
+
+                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
         }
-        LOG("done\n");
+        DLOG("done\n");
+
+        ewmh_update_workarea();
 
         return ws;
 }
@@ -80,13 +87,13 @@ void workspace_set_name(Workspace *ws, const char *name) {
                 errx(1, "asprintf() failed");
 
         FREE(ws->name);
+        FREE(ws->utf8_name);
 
         ws->name = convert_utf8_to_ucs2(label, &(ws->name_len));
         if (config.font != NULL)
                 ws->text_width = predict_text_width(global_conn, config.font, ws->name, ws->name_len);
         else ws->text_width = 0;
-
-        free(label);
+        ws->utf8_name = label;
 }
 
 /*
@@ -96,7 +103,7 @@ void workspace_set_name(Workspace *ws, const char *name) {
  *
  */
 bool workspace_is_visible(Workspace *ws) {
-        return (ws->screen->current_workspace == ws);
+        return (ws->output != NULL && ws->output->current_workspace == ws);
 }
 
 /*
@@ -109,29 +116,29 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
         /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */
         Workspace *t_ws = workspace_get(workspace-1);
 
-        LOG("show_workspace(%d)\n", workspace);
+        DLOG("show_workspace(%d)\n", workspace);
 
         /* Store current_row/current_col */
         c_ws->current_row = current_row;
         c_ws->current_col = current_col;
 
         /* Check if the workspace has not been used yet */
-        workspace_initialize(t_ws, c_ws->screen);
+        workspace_initialize(t_ws, c_ws->output, false);
 
-        if (c_ws->screen != t_ws->screen) {
-                /* We need to switch to the other screen first */
-                LOG("moving over to other screen.\n");
+        if (c_ws->output != t_ws->output) {
+                /* We need to switch to the other output first */
+                DLOG("moving over to other output.\n");
 
                 /* Store the old client */
                 Client *old_client = CUR_CELL->currently_focused;
 
-                c_ws = t_ws->screen->current_workspace;
+                c_ws = t_ws->output->current_workspace;
                 current_col = c_ws->current_col;
                 current_row = c_ws->current_row;
                 if (CUR_CELL->currently_focused != NULL)
                         need_warp = true;
                 else {
-                        Rect *dims = &(c_ws->screen->rect);
+                        Rect *dims = &(c_ws->output->rect);
                         xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0,
                                          dims->x + (dims->width / 2), dims->y + (dims->height / 2));
                 }
@@ -140,10 +147,19 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
                 if ((old_client != NULL) && !old_client->dock)
                         redecorate_window(conn, old_client);
                 else xcb_flush(conn);
+
+                /* We need to check if a global fullscreen-client is blocking
+                 * the t_ws and if necessary switch that to local fullscreen */
+                Client* client = c_ws->fullscreen_client;
+                if (client != NULL && client->workspace != c_ws) {
+                        if (c_ws->fullscreen_client->workspace != c_ws)
+                                c_ws->fullscreen_client = NULL;
+                        client_enter_fullscreen(conn, client, false);
+                }
         }
 
         /* Check if we need to change something or if we’re already there */
-        if (c_ws->screen->current_workspace->num == (workspace-1)) {
+        if (c_ws->output->current_workspace->num == (workspace-1)) {
                 Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
                 if (last_focused != SLIST_END(&(c_ws->focus_stack)))
                         set_focus(conn, last_focused, true);
@@ -152,24 +168,28 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
                         xcb_flush(conn);
                 }
 
+                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
+
                 return;
         }
 
         Workspace *old_workspace = c_ws;
-        c_ws = t_ws->screen->current_workspace = workspace_get(workspace-1);
+        c_ws = t_ws->output->current_workspace = workspace_get(workspace-1);
 
         /* Unmap all clients of the old workspace */
         workspace_unmap_clients(conn, old_workspace);
 
         current_row = c_ws->current_row;
         current_col = c_ws->current_col;
-        LOG("new current row = %d, current col = %d\n", current_row, current_col);
+        DLOG("new current row = %d, current col = %d\n", current_row, current_col);
+
+        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
 
         workspace_map_clients(conn, c_ws);
 
         /* POTENTIAL TO IMPROVE HERE: due to the call to _map_clients first and
          * render_layout afterwards, there is a short flickering on the source
-         * workspace (assign ws 3 to screen 0, ws 4 to screen 1, create single
+         * workspace (assign ws 3 to output 0, ws 4 to output 1, create single
          * client on ws 4, move it to ws 3, switch to ws 3, you’ll see the
          * flickering). */
 
@@ -184,63 +204,61 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
         /* We can warp the pointer only after the window has been
          * reconfigured in render_layout, otherwise the pointer will
          * be warped to the old position, which will not work when we
-         * moved it to another screen. */
+         * moved it to another output. */
         if (last_focused != SLIST_END(&(c_ws->focus_stack)) && need_warp) {
                 client_warp_pointer_into(conn, last_focused);
                 xcb_flush(conn);
         }
 }
 
-
 /*
- * Parses the preferred_screen property of a workspace. You can either specify
- * the screen number (it is not given that the screen numbering always stays
- * the same) or the screen coordinates (exact coordinates, e.g. 1280 will match
- * the screen starting at x=1280, but 1281 will not). For coordinates, you can
- * either specify an x coordinate ("1280") or an y coordinate ("x800") or both
- * ("1280x800").
+ * Assigns the given workspace to the given output by correctly updating its
+ * state and reconfiguring all the clients on this workspace.
+ *
+ * This is called when initializing a output and when re-assigning it to a
+ * different output which just got available (if you configured it to be on
+ * output 1 and you just plugged in output 1).
  *
  */
-static i3Screen *get_screen_from_preference(struct screens_head *slist, char *preference) {
-        i3Screen *screen;
-        char *rest;
-        int preferred_screen = strtol(preference, &rest, 10);
+void workspace_assign_to(Workspace *ws, Output *output, bool hide_it) {
+        Client *client;
+        bool empty = true;
+        bool visible = workspace_is_visible(ws);
 
-        LOG("Getting screen for preference \"%s\" (%d)\n", preference, preferred_screen);
+        ws->output = output;
 
-        if ((rest == preference) || (preferred_screen >= num_screens)) {
-                int x = INT_MAX, y = INT_MAX;
-                if (strchr(preference, 'x') != NULL) {
-                        /* Check if only the y coordinate was specified */
-                        if (*preference == 'x')
-                                y = atoi(preference+1);
-                        else {
-                                x = atoi(preference);
-                                y = atoi(strchr(preference, 'x') + 1);
-                        }
-                } else {
-                        x = atoi(preference);
-                }
+        /* Copy the dimensions from the virtual output */
+        memcpy(&(ws->rect), &(ws->output->rect), sizeof(Rect));
 
-                LOG("Looking for screen at %d x %d\n", x, y);
+        ewmh_update_workarea();
 
-                TAILQ_FOREACH(screen, slist, screens)
-                        if ((x == INT_MAX || screen->rect.x == x) &&
-                            (y == INT_MAX || screen->rect.y == y)) {
-                                LOG("found %p\n", screen);
-                                return screen;
-                        }
-
-                LOG("none found\n");
-                return NULL;
-        } else {
-                int c = 0;
-                TAILQ_FOREACH(screen, slist, screens)
-                        if (c++ == preferred_screen)
-                                return screen;
+        /* Force reconfiguration for each client on that workspace */
+        SLIST_FOREACH(client, &(ws->focus_stack), focus_clients) {
+                client->force_reconfigure = true;
+                empty = false;
         }
 
-        return NULL;
+        if (empty)
+                return;
+
+        /* Render the workspace to reconfigure the clients. However, they will be visible now, so… */
+        render_workspace(global_conn, output, ws);
+
+        /* …unless we want to see them at the moment, we should hide that workspace */
+        if (visible && !hide_it)
+                return;
+
+        /* however, if this is the current workspace, we only need to adjust
+         * the output’s current_workspace pointer (and must not unmap the
+         * windows) */
+        if (c_ws == ws) {
+                DLOG("Need to adjust output->current_workspace...\n");
+                output->current_workspace = c_ws;
+                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
+                return;
+        }
+
+        workspace_unmap_clients(global_conn, ws);
 }
 
 /*
@@ -250,35 +268,43 @@ static i3Screen *get_screen_from_preference(struct screens_head *slist, char *pr
  * the screen is not attached at the moment.
  *
  */
-void workspace_initialize(Workspace *ws, i3Screen *screen) {
-        if (ws->screen != NULL) {
-                LOG("Workspace already initialized\n");
+void workspace_initialize(Workspace *ws, Output *output, bool recheck) {
+        Output *old_output;
+
+        if (ws->output != NULL && !recheck) {
+                DLOG("Workspace already initialized\n");
                 return;
         }
 
-        /* If this workspace has no preferred screen or if the screen it wants
-         * to be on is not available at the moment, we initialize it with
-         * the screen which was given */
-        if (ws->preferred_screen == NULL ||
-            (ws->screen = get_screen_from_preference(virtual_screens, ws->preferred_screen)) == NULL)
-                ws->screen = screen;
+        old_output = ws->output;
 
-        /* Copy the dimensions from the virtual screen */
-        memcpy(&(ws->rect), &(ws->screen->rect), sizeof(Rect));
+        /* If this workspace has no preferred output or if the output it wants
+         * to be on is not available at the moment, we initialize it with
+         * the output which was given */
+        if (ws->preferred_output == NULL ||
+            (ws->output = get_output_by_name(ws->preferred_output)) == NULL)
+                ws->output = output;
+
+        DLOG("old_output = %p, ws->output = %p\n", old_output, ws->output);
+        /* If the assignment did not change, we do not need to update anything */
+        if (old_output != NULL && ws->output == old_output)
+                return;
+
+        workspace_assign_to(ws, ws->output, false);
 }
 
 /*
  * Gets the first unused workspace for the given screen, taking into account
- * the preferred_screen setting of every workspace (workspace assignments).
+ * the preferred_output setting of every workspace (workspace assignments).
  *
  */
-Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *screen) {
+Workspace *get_first_workspace_for_output(Output *output) {
         Workspace *result = NULL;
 
         Workspace *ws;
         TAILQ_FOREACH(ws, workspaces, workspaces) {
-                if (ws->preferred_screen == NULL ||
-                    !screens_are_equal(get_screen_from_preference(slist, ws->preferred_screen), screen))
+                if (ws->preferred_output == NULL ||
+                    get_output_by_name(ws->preferred_output) != output)
                         continue;
 
                 result = ws;
@@ -287,9 +313,8 @@ Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *
 
         if (result == NULL) {
                 /* No assignment found, returning first unused workspace */
-                Workspace *ws;
                 TAILQ_FOREACH(ws, workspaces, workspaces) {
-                        if (ws->screen != NULL)
+                        if (ws->output != NULL)
                                 continue;
 
                         result = ws;
@@ -298,16 +323,15 @@ Workspace *get_first_workspace_for_screen(struct screens_head *slist, i3Screen *
         }
 
         if (result == NULL) {
-                LOG("No existing free workspace found to assign, creating a new one\n");
+                DLOG("No existing free workspace found to assign, creating a new one\n");
 
-                Workspace *ws;
                 int last_ws = 0;
                 TAILQ_FOREACH(ws, workspaces, workspaces)
                         last_ws = ws->num;
                 result = workspace_get(last_ws + 1);
         }
 
-        workspace_initialize(result, screen);
+        workspace_initialize(result, output, false);
         return result;
 }
 
@@ -359,7 +383,7 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
         int unmapped_clients = 0;
         FOR_TABLE(u_ws)
                 CIRCLEQ_FOREACH(client, &(u_ws->table[cols][rows]->clients), clients) {
-                        LOG("unmapping normal client %p / %p / %p\n", client, client->frame, client->child);
+                        DLOG("unmapping normal client %p / %p / %p\n", client, client->frame, client->child);
                         client_unmap(conn, client);
                         unmapped_clients++;
                 }
@@ -369,7 +393,7 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
                 if (!client_is_floating(client))
                         continue;
 
-                LOG("unmapping floating client %p / %p / %p\n", client, client->frame, client->child);
+                DLOG("unmapping floating client %p / %p / %p\n", client, client->frame, client->child);
 
                 client_unmap(conn, client);
                 unmapped_clients++;
@@ -380,15 +404,15 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
         if (unmapped_clients == 0 && u_ws != c_ws) {
                 /* Re-assign the workspace of all dock clients which use this workspace */
                 Client *dock;
-                LOG("workspace %p is empty\n", u_ws);
-                SLIST_FOREACH(dock, &(u_ws->screen->dock_clients), dock_clients) {
+                DLOG("workspace %p is empty\n", u_ws);
+                SLIST_FOREACH(dock, &(u_ws->output->dock_clients), dock_clients) {
                         if (dock->workspace != u_ws)
                                 continue;
 
-                        LOG("Re-assigning dock client to c_ws (%p)\n", c_ws);
+                        DLOG("Re-assigning dock client to c_ws (%p)\n", c_ws);
                         dock->workspace = c_ws;
                 }
-                u_ws->screen = NULL;
+                u_ws->output = NULL;
         }
 
         /* Unmap the stack windows on the given workspace, if any */
@@ -406,16 +430,50 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
  */
 void workspace_update_urgent_flag(Workspace *ws) {
         Client *current;
+        bool old_flag = ws->urgent;
+        bool urgent = false;
 
         SLIST_FOREACH(current, &(ws->focus_stack), focus_clients) {
                 if (!current->urgent)
                         continue;
 
-                ws->urgent = true;
-                return;
+                urgent = true;
+                break;
         }
 
-        ws->urgent = false;
+        ws->urgent = urgent;
+
+        if (old_flag != urgent)
+                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"urgent\"}");
+}
+
+/*
+ * Returns the width of the workspace.
+ *
+ */
+int workspace_width(Workspace *ws) {
+        return ws->rect.width;
+}
+
+/*
+ * Returns the effective height of the workspace (without the internal bar and
+ * without dock clients).
+ *
+ */
+int workspace_height(Workspace *ws) {
+        int height = ws->rect.height;
+        i3Font *font = load_font(global_conn, config.font);
+
+        /* Reserve space for dock clients */
+        Client *client;
+        SLIST_FOREACH(client, &(ws->output->dock_clients), dock_clients)
+                height -= client->desired_height;
+
+        /* Space for the internal bar */
+        if (!config.disable_workspace_bar)
+                height -= (font->height + 6);
+
+        return height;
 }
 
 /*

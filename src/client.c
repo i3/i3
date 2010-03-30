@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
@@ -26,6 +27,8 @@
 #include "client.h"
 #include "table.h"
 #include "workspace.h"
+#include "config.h"
+#include "log.h"
 
 /*
  * Removes the given client from the container, either because it will be inserted into another
@@ -43,7 +46,7 @@ void client_remove_from_container(xcb_connection_t *conn, Client *client, Contai
         if (CIRCLEQ_EMPTY(&(container->clients)) &&
             (container->mode == MODE_STACK ||
              container->mode == MODE_TABBED)) {
-                LOG("Unmapping stack window\n");
+                DLOG("Unmapping stack window\n");
                 struct Stack_Window *stack_win = &(container->stack_win);
                 stack_win->rect.height = 0;
                 xcb_unmap_window(conn, stack_win->window);
@@ -150,44 +153,82 @@ bool client_matches_class_name(Client *client, char *to_class, char *to_title,
  * and when moving a fullscreen client to another screen.
  *
  */
-void client_enter_fullscreen(xcb_connection_t *conn, Client *client) {
-        Workspace *workspace = client->workspace;
+void client_enter_fullscreen(xcb_connection_t *conn, Client *client, bool global) {
+        Workspace *workspace;
+        Output *output;
+        Rect r;
 
-        if (workspace->fullscreen_client != NULL) {
-                LOG("Not entering fullscreen mode, there already is a fullscreen client.\n");
-                return;
+        if (global) {
+                TAILQ_FOREACH(output, &outputs, outputs) {
+                        if (!output->active)
+                                continue;
+
+                        if (output->current_workspace->fullscreen_client == NULL)
+                                continue;
+
+                        LOG("Not entering global fullscreen mode, there already "
+                            "is a fullscreen client on output %s.\n", output->name);
+                        return;
+                }
+
+                r = (Rect) { UINT_MAX, UINT_MAX, 0,0 };
+                Output *output;
+
+                /* Set fullscreen_client for each active workspace.
+                 * Expand the rectangle to contain all outputs. */
+                TAILQ_FOREACH(output, &outputs, outputs) {
+                        if (!output->active)
+                                continue;
+
+                        output->current_workspace->fullscreen_client = client;
+
+                        /* Temporarily abuse width/heigth as coordinates of the lower right corner */
+                        if (r.x > output->rect.x)
+                                r.x = output->rect.x;
+                        if (r.y > output->rect.y)
+                                r.y = output->rect.y;
+                        if (r.x + r.width < output->rect.x + output->rect.width)
+                                r.width = output->rect.x + output->rect.width;
+                        if (r.y + r.height < output->rect.y + output->rect.height)
+                                r.height = output->rect.y + output->rect.height;
+                }
+
+                /* Putting them back to their original meaning */
+                r.height -= r.x;
+                r.width -= r.y;
+
+                LOG("Entering global fullscreen mode...\n");
+        } else {
+                workspace = client->workspace;
+                if (workspace->fullscreen_client != NULL && workspace->fullscreen_client != client) {
+                        LOG("Not entering fullscreen mode, there already is a fullscreen client.\n");
+                        return;
+                }
+
+                workspace->fullscreen_client = client;
+                r = workspace->rect;
+
+                LOG("Entering fullscreen mode...\n");
         }
 
         client->fullscreen = true;
-        workspace->fullscreen_client = client;
-        LOG("Entering fullscreen mode...\n");
+
         /* We just entered fullscreen mode, let’s configure the window */
-        uint32_t mask = XCB_CONFIG_WINDOW_X |
-                        XCB_CONFIG_WINDOW_Y |
-                        XCB_CONFIG_WINDOW_WIDTH |
-                        XCB_CONFIG_WINDOW_HEIGHT;
-        uint32_t values[4] = {workspace->rect.x,
-                              workspace->rect.y,
-                              workspace->rect.width,
-                              workspace->rect.height};
+        DLOG("child itself will be at %dx%d with size %dx%d\n",
+                        r.x, r.y, r.width, r.height);
 
-        LOG("child itself will be at %dx%d with size %dx%d\n",
-                        values[0], values[1], values[2], values[3]);
-
-        xcb_configure_window(conn, client->frame, mask, values);
+        xcb_set_window_rect(conn, client->frame, r);
 
         /* Child’s coordinates are relative to the parent (=frame) */
-        values[0] = 0;
-        values[1] = 0;
-        xcb_configure_window(conn, client->child, mask, values);
+        r.x = 0;
+        r.y = 0;
+        xcb_set_window_rect(conn, client->child, r);
 
         /* Raise the window */
-        values[0] = XCB_STACK_MODE_ABOVE;
+        uint32_t values[] = { XCB_STACK_MODE_ABOVE };
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
 
-        Rect child_rect = workspace->rect;
-        child_rect.x = child_rect.y = 0;
-        fake_configure_notify(conn, child_rect, client->child);
+        fake_configure_notify(conn, r, client->child);
 
         xcb_flush(conn);
 }
@@ -234,34 +275,26 @@ void client_toggle_fullscreen(xcb_connection_t *conn, Client *client) {
         /* dock clients cannot enter fullscreen mode */
         assert(!client->dock);
 
-        Workspace *workspace = client->workspace;
+        if (!client->fullscreen) {
+                client_enter_fullscreen(conn, client, false);
+        } else {
+                client_leave_fullscreen(conn, client);
+        }
+}
+
+/*
+ * Like client_toggle_fullscreen(), but putting it in global fullscreen-mode.
+ *
+ */
+void client_toggle_fullscreen_global(xcb_connection_t *conn, Client *client) {
+        /* dock clients cannot enter fullscreen mode */
+        assert(!client->dock);
 
         if (!client->fullscreen) {
-                client_enter_fullscreen(conn, client);
-                return;
-        }
-
-        LOG("leaving fullscreen mode\n");
-        client->fullscreen = false;
-        workspace->fullscreen_client = NULL;
-        if (client_is_floating(client)) {
-                /* For floating clients it’s enough if we just reconfigure that window (in fact,
-                 * re-rendering the layout will not update the client.) */
-                reposition_client(conn, client);
-                resize_client(conn, client);
-                /* redecorate_window flushes */
-                redecorate_window(conn, client);
+                client_enter_fullscreen(conn, client, true);
         } else {
-                client_set_below_floating(conn, client);
-
-                /* Because the coordinates of the window haven’t changed, it would not be
-                   re-configured if we don’t set the following flag */
-                client->force_reconfigure = true;
-                /* We left fullscreen mode, redraw the whole layout to ensure enternotify events are disabled */
-                render_layout(conn);
+                client_leave_fullscreen(conn, client);
         }
-
-        xcb_flush(conn);
 }
 
 /*
@@ -277,14 +310,14 @@ void client_set_below_floating(xcb_connection_t *conn, Client *client) {
         if (first_floating == TAILQ_END(&(ws->floating_clients)))
                 return;
 
-        LOG("Setting below floating\n");
+        DLOG("Setting below floating\n");
         uint32_t values[] = { first_floating->frame, XCB_STACK_MODE_BELOW };
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
 
         if (client->workspace->fullscreen_client == NULL)
                 return;
 
-        LOG("(and below fullscreen)\n");
+        DLOG("(and below fullscreen)\n");
         /* Ensure that the window is still below the fullscreen window */
         values[0] = client->workspace->fullscreen_client->frame;
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
@@ -406,4 +439,39 @@ void client_mark(xcb_connection_t *conn, Client *client, const char *mark) {
                          * client with this mark. */
                         break;
                 }
+}
+
+/*
+ * Returns the minimum height of a specific window. The height is calculated
+ * by using 2 pixels (for the client window itself), possibly padding this to
+ * comply with the client’s base_height and then adding the decoration height.
+ *
+ */
+uint32_t client_min_height(Client *client) {
+        uint32_t height = max(2, client->base_height);
+        i3Font *font = load_font(global_conn, config.font);
+
+        if (client->titlebar_position == TITLEBAR_OFF && client->borderless)
+                return height;
+
+        if (client->titlebar_position == TITLEBAR_OFF && !client->borderless)
+                return height + 2;
+
+        return height + font->height + 2 + 2;
+}
+
+/*
+ * See client_min_height.
+ *
+ */
+uint32_t client_min_width(Client *client) {
+        uint32_t width = max(2, client->base_width);
+
+        if (client->titlebar_position == TITLEBAR_OFF && client->borderless)
+                return width;
+
+        if (client->titlebar_position == TITLEBAR_OFF && !client->borderless)
+                return width + 2;
+
+        return width + 2 + 2;
 }

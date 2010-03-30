@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -11,6 +11,7 @@
  *
  */
 #include <xcb/xcb.h>
+#include <xcb/randr.h>
 #include <xcb/xcb_atom.h>
 #include <stdbool.h>
 
@@ -25,11 +26,12 @@
  *
  * Let’s start from the biggest to the smallest:
  *
- * - An i3Screen is a virtual screen (Xinerama). This can be a single one,
- *   though two monitors might be connected, if you’re running clone
- *   mode. There can also be multiple of them.
+ * - An Output is a physical output on your graphics driver. Outputs which
+ *   are currently in use have (output->active == true). Each output has a
+ *   position and a mode. An output usually corresponds to one connected
+ *   screen (except if you are running multiple screens in clone mode).
  *
- * - Each i3Screen contains Workspaces. The concept is known from various
+ * - Each Output contains Workspaces. The concept is known from various
  *   other window managers.  Basically, a workspace is a specific set of
  *   windows, usually grouped thematically (irc, www, work, …). You can switch
  *   between these.
@@ -54,7 +56,7 @@ typedef struct Client Client;
 typedef struct Binding Binding;
 typedef struct Workspace Workspace;
 typedef struct Rect Rect;
-typedef struct Screen i3Screen;
+typedef struct xoutput Output;
 
 /******************************************************************************
  * Helper types
@@ -75,6 +77,14 @@ enum {
 
 /**
  * Stores a rectangle, for example the size of a window, the child window etc.
+ * It needs to be packed so that the compiler will not add any padding bytes.
+ * (it is used in src/ewmh.c for example)
+ *
+ * Note that x and y can contain signed values in some cases (for example when
+ * used for the coordinates of a window, which can be set outside of the
+ * visible area, but not when specifying the position of a workspace for the
+ * _NET_WM_WORKAREA hint). Not declaring x/y as int32_t saves us a lot of
+ * typecasts.
  *
  * Note that x and y can contain signed values in some cases (for example when
  * used for the coordinates of a window, which can be set outside of the
@@ -84,9 +94,11 @@ enum {
  *
  */
 struct Rect {
-        uint32_t x, y;
-        uint32_t width, height;
-};
+        uint32_t x;
+        uint32_t y;
+        uint32_t width;
+        uint32_t height;
+} __attribute__((packed));
 
 /**
  * Defines a position in the table
@@ -171,6 +183,9 @@ struct Workspace {
         /** Number of this workspace, starting from 0 */
         int num;
 
+        /** Name of the workspace (in UTF-8) */
+        char *utf8_name;
+
         /** Name of the workspace (in UCS-2) */
         char *name;
 
@@ -200,12 +215,8 @@ struct Workspace {
         /** Are the floating clients on this workspace currently hidden? */
         bool floating_hidden;
 
-        /** A <screen> specifier on which this workspace would like to be (if
-         * the screen is available). screen := <number> | <position> */
-        char *preferred_screen;
-
-        /** Temporary flag needed for re-querying xinerama screens */
-        bool reassigned;
+        /** The name of the RandR output this screen should be on */
+        char *preferred_output;
 
         /** True if any client on this workspace has its urgent flag set */
         bool urgent;
@@ -224,8 +235,8 @@ struct Workspace {
          * appended) */
         TAILQ_HEAD(floating_clients_head, Client) floating_clients;
 
-        /** Backpointer to the screen this workspace is on */
-        i3Screen *screen;
+        /** Backpointer to the output this workspace is on */
+        Output *output;
 
         /** This is a two-dimensional dynamic array of
          * Container-pointers. I’ve always wanted to be a three-star
@@ -492,14 +503,26 @@ struct Container {
 };
 
 /**
- * This is a virtual screen (Xinerama). This can be a single one, though two
- * monitors might be connected, if you’re running clone mode. There can also
- * be multiple of them.
+ * An Output is a physical output on your graphics driver. Outputs which
+ * are currently in use have (output->active == true). Each output has a
+ * position and a mode. An output usually corresponds to one connected
+ * screen (except if you are running multiple screens in clone mode).
  *
  */
-struct Screen {
-        /** Virtual screen number */
-        int num;
+struct xoutput {
+        /** Output id, so that we can requery the output directly later */
+        xcb_randr_output_t id;
+        /** Name of the output */
+        char *name;
+
+        /** Whether the output is currently active (has a CRTC attached with a
+         * valid mode) */
+        bool active;
+
+        /** Internal flags, necessary for querying RandR screens (happens in
+         * two stages) */
+        bool changed;
+        bool to_be_disabled;
 
         /** Current workspace selected on this virtual screen */
         Workspace *current_workspace;
@@ -515,7 +538,7 @@ struct Screen {
          * _NET_WM_WINDOW_TYPE_DOCK */
         SLIST_HEAD(dock_clients_head, Client) dock_clients;
 
-        TAILQ_ENTRY(Screen) screens;
+        TAILQ_ENTRY(xoutput) outputs;
 };
 
 #endif

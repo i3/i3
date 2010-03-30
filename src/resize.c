@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -24,10 +24,49 @@
 #include "xcb.h"
 #include "debug.h"
 #include "layout.h"
-#include "xinerama.h"
+#include "randr.h"
 #include "config.h"
 #include "floating.h"
 #include "workspace.h"
+#include "log.h"
+
+/*
+ * This is an ugly data structure which we need because there is no standard
+ * way of having nested functions (only available as a gcc extension at the
+ * moment, clang doesn’t support it) or blocks (only available as a clang
+ * extension and only on Mac OS X systems at the moment).
+ *
+ */
+struct callback_params {
+        resize_orientation_t orientation;
+        Output *screen;
+        xcb_window_t helpwin;
+        uint32_t *new_position;
+};
+
+DRAGGING_CB(resize_callback) {
+        struct callback_params *params = extra;
+        Output *screen = params->screen;
+        DLOG("new x = %d, y = %d\n", new_x, new_y);
+        if (params->orientation == O_VERTICAL) {
+                /* Check if the new coordinates are within screen boundaries */
+                if (new_x > (screen->rect.x + screen->rect.width - 25) ||
+                    new_x < (screen->rect.x + 25))
+                        return;
+
+                *(params->new_position) = new_x;
+                xcb_configure_window(conn, params->helpwin, XCB_CONFIG_WINDOW_X, params->new_position);
+        } else {
+                if (new_y > (screen->rect.y + screen->rect.height - 25) ||
+                    new_y < (screen->rect.y + 25))
+                        return;
+
+                *(params->new_position) = new_y;
+                xcb_configure_window(conn, params->helpwin, XCB_CONFIG_WINDOW_Y, params->new_position);
+        }
+
+        xcb_flush(conn);
+}
 
 /*
  * Renders the resize window between the first/second container and resizes
@@ -36,10 +75,10 @@
  */
 int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, int second,
                              resize_orientation_t orientation, xcb_button_press_event_t *event) {
-        int new_position;
-        i3Screen *screen = get_screen_containing(event->root_x, event->root_y);
+        uint32_t new_position;
+        Output *screen = get_output_containing(event->root_x, event->root_y);
         if (screen == NULL) {
-                LOG("BUG: No screen found at this position (%d, %d)\n", event->root_x, event->root_y);
+                ELOG("BUG: No screen found at this position (%d, %d)\n", event->root_x, event->root_y);
                 return 1;
         }
 
@@ -48,12 +87,12 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
          * screens during runtime. Instead, we just use the most right and most
          * bottom Xinerama screen and use their position + width/height to get
          * the area of pixels currently in use */
-        i3Screen *most_right = get_screen_most(D_RIGHT, screen),
-                 *most_bottom = get_screen_most(D_DOWN, screen);
+        Output *most_right = get_output_most(D_RIGHT, screen),
+               *most_bottom = get_output_most(D_DOWN, screen);
 
-        LOG("event->event_x = %d, event->root_x = %d\n", event->event_x, event->root_x);
+        DLOG("event->event_x = %d, event->root_x = %d\n", event->event_x, event->root_x);
 
-        LOG("Screen dimensions: (%d, %d) %d x %d\n", screen->rect.x, screen->rect.y, screen->rect.width, screen->rect.height);
+        DLOG("Screen dimensions: (%d, %d) %d x %d\n", screen->rect.x, screen->rect.y, screen->rect.width, screen->rect.height);
 
         uint32_t mask = 0;
         uint32_t values[2];
@@ -92,36 +131,16 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
 
         xcb_window_t helpwin = create_window(conn, helprect, XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                              (orientation == O_VERTICAL ?
-                                              XCB_CURSOR_SB_V_DOUBLE_ARROW :
-                                              XCB_CURSOR_SB_H_DOUBLE_ARROW), true, mask, values);
+                                              XCB_CURSOR_SB_H_DOUBLE_ARROW :
+                                              XCB_CURSOR_SB_V_DOUBLE_ARROW), true, mask, values);
 
         xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, helpwin);
 
         xcb_flush(conn);
 
-        void resize_callback(Rect *old_rect, uint32_t new_x, uint32_t new_y) {
-                LOG("new x = %d, y = %d\n", new_x, new_y);
-                if (orientation == O_VERTICAL) {
-                        /* Check if the new coordinates are within screen boundaries */
-                        if (new_x > (screen->rect.x + screen->rect.width - 25) ||
-                            new_x < (screen->rect.x + 25))
-                                return;
+        struct callback_params params = { orientation, screen, helpwin, &new_position };
 
-                        values[0] = new_position = new_x;
-                        xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_X, values);
-                } else {
-                        if (new_y > (screen->rect.y + screen->rect.height - 25) ||
-                            new_y < (screen->rect.y + 25))
-                                return;
-
-                        values[0] = new_position = new_y;
-                        xcb_configure_window(conn, helpwin, XCB_CONFIG_WINDOW_Y, values);
-                }
-
-                xcb_flush(conn);
-        }
-
-        drag_pointer(conn, NULL, event, grabwin, BORDER_TOP, resize_callback);
+        drag_pointer(conn, NULL, event, grabwin, BORDER_TOP, resize_callback, &params);
 
         xcb_destroy_window(conn, helpwin);
         xcb_destroy_window(conn, grabwin);
@@ -163,8 +182,29 @@ void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int seco
                 if (ws->width_factor[second] == 0)
                         new_unoccupied_x += default_width;
 
-                LOG("\n\n\n");
-                LOG("old = %d, new = %d\n", old_unoccupied_x, new_unoccupied_x);
+                DLOG("\n\n\n");
+                DLOG("old = %d, new = %d\n", old_unoccupied_x, new_unoccupied_x);
+
+                int cols_without_wf = 0;
+                int old_width, old_second_width;
+                for (int col = 0; col < ws->cols; col++)
+                        if (ws->width_factor[col] == 0)
+                                cols_without_wf++;
+
+                DLOG("old_unoccupied_x = %d\n", old_unoccupied_x);
+
+                DLOG("Updating first (before = %f)\n", ws->width_factor[first]);
+                /* Convert 0 (for default width_factor) to actual numbers */
+                if (ws->width_factor[first] == 0)
+                        old_width = (old_unoccupied_x / max(cols_without_wf, 1));
+                else old_width = ws->width_factor[first] * old_unoccupied_x;
+
+                DLOG("second (before = %f)\n", ws->width_factor[second]);
+                if (ws->width_factor[second] == 0)
+                        old_second_width = (old_unoccupied_x / max(cols_without_wf, 1));
+                else old_second_width = ws->width_factor[second] * old_unoccupied_x;
+
+                DLOG("middle = %f\n", ws->width_factor[first]);
 
                 /* If the space used for customly resized columns has changed we need to adapt the
                  * other customly resized columns, if any */
@@ -173,37 +213,33 @@ void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int seco
                                 if (ws->width_factor[col] == 0)
                                         continue;
 
-                                LOG("Updating other column (%d) (current width_factor = %f)\n", col, ws->width_factor[col]);
+                                DLOG("Updating other column (%d) (current width_factor = %f)\n", col, ws->width_factor[col]);
                                 ws->width_factor[col] = (ws->width_factor[col] * old_unoccupied_x) / new_unoccupied_x;
-                                LOG("to %f\n", ws->width_factor[col]);
+                                DLOG("to %f\n", ws->width_factor[col]);
                         }
 
-                LOG("old_unoccupied_x = %d\n", old_unoccupied_x);
-
-                LOG("Updating first (before = %f)\n", ws->width_factor[first]);
+                DLOG("Updating first (before = %f)\n", ws->width_factor[first]);
                 /* Convert 0 (for default width_factor) to actual numbers */
                 if (ws->width_factor[first] == 0)
                         ws->width_factor[first] = ((float)ws->rect.width / ws->cols) / new_unoccupied_x;
 
-                LOG("middle = %f\n", ws->width_factor[first]);
-                int old_width = ws->width_factor[first] * old_unoccupied_x;
-                LOG("first->width = %d, pixels = %d\n", pixels);
+                DLOG("first->width = %d, pixels = %d\n", old_width, pixels);
                 ws->width_factor[first] *= (float)(old_width + pixels) / old_width;
-                LOG("-> %f\n", ws->width_factor[first]);
+                DLOG("-> %f\n", ws->width_factor[first]);
 
 
-                LOG("Updating second (before = %f)\n", ws->width_factor[second]);
+                DLOG("Updating second (before = %f)\n", ws->width_factor[second]);
                 if (ws->width_factor[second] == 0)
                         ws->width_factor[second] = ((float)ws->rect.width / ws->cols) / new_unoccupied_x;
-                LOG("middle = %f\n", ws->width_factor[second]);
-                old_width = ws->width_factor[second] * old_unoccupied_x;
-                LOG("second->width = %d, pixels = %d\n", pixels);
-                ws->width_factor[second] *= (float)(old_width - pixels) / old_width;
-                LOG("-> %f\n", ws->width_factor[second]);
 
-                LOG("new unoccupied_x = %d\n", get_unoccupied_x(ws));
+                DLOG("middle = %f\n", ws->width_factor[second]);
+                DLOG("second->width = %d, pixels = %d\n", old_second_width, pixels);
+                ws->width_factor[second] *= (float)(old_second_width - pixels) / old_second_width;
+                DLOG("-> %f\n", ws->width_factor[second]);
 
-                LOG("\n\n\n");
+                DLOG("new unoccupied_x = %d\n", get_unoccupied_x(ws));
+
+                DLOG("\n\n\n");
         } else {
                 int ws_height = workspace_height(ws);
                 int default_height = ws_height / ws->rows;
@@ -228,24 +264,25 @@ void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int seco
                         if (ws->height_factor[row] == 0)
                                 cols_without_hf++;
 
-                LOG("old_unoccupied_y = %d\n", old_unoccupied_y);
+                DLOG("old_unoccupied_y = %d\n", old_unoccupied_y);
 
-                LOG("Updating first (before = %f)\n", ws->height_factor[first]);
+                DLOG("Updating first (before = %f)\n", ws->height_factor[first]);
+
                 /* Convert 0 (for default width_factor) to actual numbers */
                 if (ws->height_factor[first] == 0)
                         old_height = (old_unoccupied_y / max(cols_without_hf, 1));
                 else old_height = ws->height_factor[first] * old_unoccupied_y;
 
-                LOG("second (before = %f)\n", ws->height_factor[second]);
+                DLOG("second (before = %f)\n", ws->height_factor[second]);
                 if (ws->height_factor[second] == 0)
                         old_second_height = (old_unoccupied_y / max(cols_without_hf, 1));
                 else old_second_height = ws->height_factor[second] * old_unoccupied_y;
 
-                LOG("middle = %f\n", ws->height_factor[first]);
+                DLOG("middle = %f\n", ws->height_factor[first]);
 
 
-                LOG("\n\n\n");
-                LOG("old = %d, new = %d\n", old_unoccupied_y, new_unoccupied_y);
+                DLOG("\n\n\n");
+                DLOG("old = %d, new = %d\n", old_unoccupied_y, new_unoccupied_y);
 
                 /* If the space used for customly resized columns has changed we need to adapt the
                  * other customly resized columns, if any */
@@ -254,33 +291,33 @@ void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int seco
                                 if (ws->height_factor[row] == 0)
                                         continue;
 
-                                LOG("Updating other column (%d) (current width_factor = %f)\n", row, ws->height_factor[row]);
+                                DLOG("Updating other column (%d) (current width_factor = %f)\n", row, ws->height_factor[row]);
                                 ws->height_factor[row] = (ws->height_factor[row] * old_unoccupied_y) / new_unoccupied_y;
-                                LOG("to %f\n", ws->height_factor[row]);
+                                DLOG("to %f\n", ws->height_factor[row]);
                         }
 
 
-                LOG("Updating first (before = %f)\n", ws->height_factor[first]);
+                DLOG("Updating first (before = %f)\n", ws->height_factor[first]);
                 /* Convert 0 (for default width_factor) to actual numbers */
                 if (ws->height_factor[first] == 0)
                         ws->height_factor[first] = ((float)ws_height / ws->rows) / new_unoccupied_y;
 
-                LOG("first->width = %d, pixels = %d\n", old_height, pixels);
+                DLOG("first->width = %d, pixels = %d\n", old_height, pixels);
                 ws->height_factor[first] *= (float)(old_height + pixels) / old_height;
-                LOG("-> %f\n", ws->height_factor[first]);
+                DLOG("-> %f\n", ws->height_factor[first]);
 
 
-                LOG("Updating second (before = %f)\n", ws->height_factor[second]);
+                DLOG("Updating second (before = %f)\n", ws->height_factor[second]);
                 if (ws->height_factor[second] == 0)
                         ws->height_factor[second] = ((float)ws_height / ws->rows) / new_unoccupied_y;
-                LOG("middle = %f\n", ws->height_factor[second]);
-                LOG("second->width = %d, pixels = %d\n", old_second_height, pixels);
+                DLOG("middle = %f\n", ws->height_factor[second]);
+                DLOG("second->width = %d, pixels = %d\n", old_second_height, pixels);
                 ws->height_factor[second] *= (float)(old_second_height - pixels) / old_second_height;
-                LOG("-> %f\n", ws->height_factor[second]);
+                DLOG("-> %f\n", ws->height_factor[second]);
 
-                LOG("new unoccupied_y = %d\n", get_unoccupied_y(ws));
+                DLOG("new unoccupied_y = %d\n", get_unoccupied_y(ws));
 
-                LOG("\n\n\n");
+                DLOG("\n\n\n");
         }
 
         render_layout(conn);

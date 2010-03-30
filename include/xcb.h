@@ -61,7 +61,10 @@ enum { _NET_SUPPORTED = 0,
         WM_DELETE_WINDOW,
         UTF8_STRING,
         WM_STATE,
-        WM_CLIENT_LEADER
+        WM_CLIENT_LEADER,
+        _NET_CURRENT_DESKTOP,
+        _NET_ACTIVE_WINDOW,
+        _NET_WORKAREA
 };
 
 extern unsigned int xcb_numlock_mask;
@@ -160,5 +163,11 @@ void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap)
  */
 int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *text,
                        int length);
+
+/**
+ * Configures the given window to have the size/position specified by given rect
+ *
+ */
+void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r);
 
 #endif

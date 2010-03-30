@@ -4,7 +4,7 @@
 # the workspace to be empty).
 # TODO: skip it by default?
 
-use Test::More tests => 10;
+use Test::More tests => 8;
 use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
@@ -12,21 +12,18 @@ use Time::HiRes qw(sleep);
 use FindBin;
 use lib "$FindBin::Bin/lib";
 use i3test;
+use AnyEvent::I3;
 
 BEGIN {
-    use_ok('IO::Socket::UNIX') or BAIL_OUT('Cannot load IO::Socket::UNIX');
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 
 my $x = X11::XCB::Connection->new;
 
-my $sock = IO::Socket::UNIX->new(Peer => '/tmp/i3-ipc.sock');
-isa_ok($sock, 'IO::Socket::UNIX');
+my $i3 = i3;
 
 # Switch to the nineth workspace
-$sock->write(i3test::format_ipc_command("9"));
-
-sleep(0.25);
+$i3->command('9')->recv;
 
 #####################################################################
 # Create two windows and make sure focus switching works
@@ -50,8 +47,7 @@ diag("bottom id = " . $bottom->id);
 sub focus_after {
     my $msg = shift;
 
-    $sock->write(i3test::format_ipc_command($msg));
-    sleep(0.5);
+    $i3->command($msg)->recv;
     return $x->input_focus;
 }
 
@@ -82,9 +78,7 @@ is($focus, $top->id, "Top window focused");
 # Move window cross-workspace
 #####################################################################
 
-$sock->write(i3test::format_ipc_command("m12"));
-$sock->write(i3test::format_ipc_command("t"));
-$sock->write(i3test::format_ipc_command("m13"));
-$sock->write(i3test::format_ipc_command("12"));
-$sock->write(i3test::format_ipc_command("13"));
+for my $cmd (qw(m12 t m13 12 13)) {
+    $i3->command($cmd)->recv;
+}
 ok(1, "Still living");

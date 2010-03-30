@@ -31,6 +31,11 @@
 #include "util.h"
 #include "xcb.h"
 #include "client.h"
+#include "log.h"
+#include "ewmh.h"
+#include "manage.h"
+#include "workspace.h"
+#include "ipc.h"
 
 static iconv_t conversion_descriptor = 0;
 struct keyvalue_table_head by_parent = TAILQ_HEAD_INITIALIZER(by_parent);
@@ -45,24 +50,14 @@ int max(int a, int b) {
 }
 
 /*
- * Logs the given message to stdout while prefixing the current time to it.
- * This is to be called by LOG() which includes filename/linenumber
+ * Updates *destination with new_value and returns true if it was changed or false
+ * if it was the same
  *
  */
-void slog(char *fmt, ...) {
-        va_list args;
-        char timebuf[64];
+bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
+        uint32_t old_value = *destination;
 
-        va_start(args, fmt);
-        /* Get current time */
-        time_t t = time(NULL);
-        /* Convert time to local time (determined by the locale) */
-        struct tm *tmp = localtime(&t);
-        /* Generate time prefix */
-        strftime(timebuf, sizeof(timebuf), "%x %X - ", tmp);
-        printf("%s", timebuf);
-        vprintf(fmt, args);
-        va_end(args);
+        return ((*destination = new_value) != old_value);
 }
 
 /*
@@ -148,7 +143,7 @@ void start_application(const char *command) {
                                         shell = "/bin/sh";
 
                         /* This is the child */
-                        execl(shell, shell, "-c", command, NULL);
+                        execl(shell, shell, "-c", command, (void*)NULL);
                         /* not reached */
                 }
                 exit(0);
@@ -164,7 +159,7 @@ void start_application(const char *command) {
 void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_message) {
         xcb_generic_error_t *error = xcb_request_check(conn, cookie);
         if (error != NULL) {
-                fprintf(stderr, "ERROR: %s : %d\n", err_message , error->error_code);
+                fprintf(stderr, "ERROR: %s (X error %d)\n", err_message , error->error_code);
                 xcb_disconnect(conn);
                 exit(-1);
         }
@@ -178,16 +173,16 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_mes
  *
  */
 char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
-	size_t input_size = strlen(input) + 1;
-	/* UCS-2 consumes exactly two bytes for each glyph */
-	int buffer_size = input_size * 2;
+        size_t input_size = strlen(input) + 1;
+        /* UCS-2 consumes exactly two bytes for each glyph */
+        int buffer_size = input_size * 2;
 
-	char *buffer = smalloc(buffer_size);
-	size_t output_size = buffer_size;
-	/* We need to use an additional pointer, because iconv() modifies it */
-	char *output = buffer;
+        char *buffer = smalloc(buffer_size);
+        size_t output_size = buffer_size;
+        /* We need to use an additional pointer, because iconv() modifies it */
+        char *output = buffer;
 
-	/* We convert the input into UCS-2 big endian */
+        /* We convert the input into UCS-2 big endian */
         if (conversion_descriptor == 0) {
                 conversion_descriptor = iconv_open("UCS-2BE", "UTF-8");
                 if (conversion_descriptor == 0) {
@@ -196,22 +191,22 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
                 }
         }
 
-	/* Get the conversion descriptor back to original state */
-	iconv(conversion_descriptor, NULL, NULL, NULL, NULL);
+        /* Get the conversion descriptor back to original state */
+        iconv(conversion_descriptor, NULL, NULL, NULL, NULL);
 
-	/* Convert our text */
-	int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
+        /* Convert our text */
+        int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
         if (rc == (size_t)-1) {
                 perror("Converting to UCS-2 failed");
                 if (real_strlen != NULL)
-		        *real_strlen = 0;
+                        *real_strlen = 0;
                 return NULL;
-	}
+        }
 
         if (real_strlen != NULL)
-	        *real_strlen = ((buffer_size - output_size) / 2) - 1;
+                *real_strlen = ((buffer_size - output_size) / 2) - 1;
 
-	return buffer;
+        return buffer;
 }
 
 /*
@@ -250,6 +245,7 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         c_ws->current_row = current_row;
         c_ws->current_col = current_col;
         c_ws = client->workspace;
+        ewmh_update_current_desktop();
         /* Load current_col/current_row if we switch to a client without a container */
         current_col = c_ws->current_col;
         current_row = c_ws->current_row;
@@ -265,6 +261,7 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         CLIENT_LOG(client);
         /* Set focus to the entered window, and flush xcb buffer immediately */
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
+        ewmh_update_active_window(client->child);
         //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);
 
         if (client->container != NULL) {
@@ -280,7 +277,7 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
                         Client *last_focused = get_last_focused_client(conn, client->container, client);
 
                         if (last_focused != NULL) {
-                                LOG("raising above frame %p / child %p\n", last_focused->frame, last_focused->child);
+                                DLOG("raising above frame %p / child %p\n", last_focused->frame, last_focused->child);
                                 uint32_t values[] = { last_focused->frame, XCB_STACK_MODE_ABOVE };
                                 xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
                         }
@@ -294,21 +291,26 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         /* If the last client was a floating client, we need to go to the next
          * tiling client in stack and re-decorate it. */
         if (old_client != NULL && client_is_floating(old_client)) {
-                LOG("Coming from floating client, searching next tiling...\n");
+                DLOG("Coming from floating client, searching next tiling...\n");
                 Client *current;
                 SLIST_FOREACH(current, &(client->workspace->focus_stack), focus_clients) {
                         if (client_is_floating(current))
                                 continue;
 
-                        LOG("Found window: %p / child %p\n", current->frame, current->child);
+                        DLOG("Found window: %p / child %p\n", current->frame, current->child);
                         redecorate_window(conn, current);
                         break;
                 }
-
         }
 
         SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
         SLIST_INSERT_HEAD(&(client->workspace->focus_stack), client, focus_clients);
+
+        /* Clear the urgency flag if set (necessary when i3 sets the flag, for
+         * example when automatically putting windows on the workspace of their
+         * leader) */
+        client->urgent = false;
+        workspace_update_urgent_flag(client->workspace);
 
         /* If we’re in stacking mode, this renders the container to update changes in the title
            bars and to raise the focused client */
@@ -411,14 +413,14 @@ after_stackwin:
                         if (client == container->currently_focused || client == last_focused)
                                 continue;
 
-                        LOG("setting %08x below %08x / %08x\n", client->frame, container->currently_focused->frame);
+                        DLOG("setting %08x below %08x / %08x\n", client->frame, container->currently_focused->frame);
                         uint32_t values[] = { container->currently_focused->frame, XCB_STACK_MODE_BELOW };
                         xcb_configure_window(conn, client->frame,
                                              XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
                 }
 
                 if (last_focused != NULL) {
-                        LOG("Putting last_focused directly underneath the currently focused\n");
+                        DLOG("Putting last_focused directly underneath the currently focused\n");
                         uint32_t values[] = { container->currently_focused->frame, XCB_STACK_MODE_BELOW };
                         xcb_configure_window(conn, last_focused->frame,
                                              XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, values);
@@ -457,15 +459,15 @@ Client *get_matching_client(xcb_connection_t *conn, const char *window_classtitl
                 goto done;
         }
 
-        LOG("Getting clients for class \"%s\" / title \"%s\"\n", to_class, to_title);
+        DLOG("Getting clients for class \"%s\" / title \"%s\"\n", to_class, to_title);
         Workspace *ws;
         TAILQ_FOREACH(ws, workspaces, workspaces) {
-                if (ws->screen == NULL)
+                if (ws->output == NULL)
                         continue;
 
                 Client *client;
                 SLIST_FOREACH(client, &(ws->focus_stack), focus_clients) {
-                        LOG("Checking client with class=%s / %s, name=%s\n", client->window_class_instance,
+                        DLOG("Checking client with class=%s / %s, name=%s\n", client->window_class_instance,
                              client->window_class_class, client->name);
                         if (!client_matches_class_name(client, to_class, to_title, to_title_ucs, to_title_ucs_len))
                                 continue;
@@ -479,6 +481,47 @@ done:
         free(to_class);
         FREE(to_title_ucs);
         return matching;
+}
+
+/*
+ * Goes through the list of arguments (for exec()) and checks if the given argument
+ * is present. If not, it copies the arguments (because we cannot realloc it) and
+ * appends the given argument.
+ *
+ */
+static char **append_argument(char **original, char *argument) {
+        int num_args;
+        for (num_args = 0; original[num_args] != NULL; num_args++) {
+                DLOG("original argument: \"%s\"\n", original[num_args]);
+                /* If the argument is already present we return the original pointer */
+                if (strcmp(original[num_args], argument) == 0)
+                        return original;
+        }
+        /* Copy the original array */
+        char **result = smalloc((num_args+2) * sizeof(char*));
+        memcpy(result, original, num_args * sizeof(char*));
+        result[num_args] = argument;
+        result[num_args+1] = NULL;
+
+        return result;
+}
+
+/*
+ * Restart i3 in-place
+ * appends -a to argument list to disable autostart
+ *
+ */
+void i3_restart() {
+        restore_geometry(global_conn);
+
+        ipc_shutdown();
+
+        LOG("restarting \"%s\"...\n", start_argv[0]);
+        /* make sure -a is in the argument list or append it */
+        start_argv = append_argument(start_argv, "-a");
+
+        execvp(start_argv[0], start_argv);
+        /* not reached */
 }
 
 #if defined(__OpenBSD__)

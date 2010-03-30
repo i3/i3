@@ -79,7 +79,7 @@ void ignore_enter_notify_forall(xcb_connection_t *conn, Workspace *workspace,
  * Renders the given workspace on the given screen
  *
  */
-void render_workspace(xcb_connection_t *conn, i3Screen *screen, Workspace *r_ws);
+void render_workspace(xcb_connection_t *conn, Output *output, Workspace *r_ws);
 
 /**
  * Renders the whole layout, that is: Go through each screen, each workspace,

@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -11,13 +11,7 @@
 #ifndef _HANDLERS_H
 #define _HANDLERS_H
 
-/**
- * Due to bindings like Mode_switch + <a>, we need to bind some keys in
- * XCB_GRAB_MODE_SYNC.  Therefore, we just replay all key presses.
- *
- */
-int handle_key_release(void *ignored, xcb_connection_t *conn,
-                       xcb_key_release_event_t *event);
+#include <xcb/randr.h>
 
 /**
  * There was a key press. We compare this key code with our bindings table and
@@ -75,6 +69,14 @@ int handle_map_request(void *prophs, xcb_connection_t *conn,
 int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event);
 
 /**
+ * Gets triggered upon a RandR screen change event, that is when the user
+ * changes the screen configuration in any way (mode, position, …)
+ *
+ */
+int handle_screen_change(void *prophs, xcb_connection_t *conn,
+                         xcb_generic_event_t *e);
+
+/**
  * Configure requests are received when the application wants to resize
  * windows on their own.
  *
@@ -91,6 +93,18 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn,
  *
  */
 int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_notify_event_t *event);
+
+/**
+ * A destroy notify event is sent when the window is not unmapped, but
+ * immediately destroyed (for example when starting a window and immediately
+ * killing the program which started it).
+ *
+ * We just pass on the event to the unmap notify handler (by copying the
+ * important fields in the event data structure).
+ *
+ */
+int handle_destroy_notify_event(void *data, xcb_connection_t *conn,
+                                xcb_destroy_notify_event_t *event);
 
 /**
  * Called when a window changes its title

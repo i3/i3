@@ -1,13 +1,21 @@
 UNAME=$(shell uname)
 DEBUG=1
 INSTALL=install
-GIT_VERSION:=$(shell git describe --tags --always)
+PREFIX=/usr
+ifeq ($(PREFIX),/usr)
+SYSCONFDIR=/etc
+else
+SYSCONFDIR=$(PREFIX)/etc
+endif
+GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1))"
 VERSION:=$(shell git describe --tags --abbrev=0)
 
 CFLAGS += -std=c99
 CFLAGS += -pipe
 CFLAGS += -Wall
-CFLAGS += -Wunused
+# unused-function, unused-label, unused-variable are turned on by -Wall
+# We don’t want unused-parameter because of the use of many callbacks
+CFLAGS += -Wunused-value
 CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include
 CFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
@@ -36,7 +44,9 @@ LDFLAGS += -lxcb-atom
 LDFLAGS += -lxcb-aux
 LDFLAGS += -lxcb-icccm
 LDFLAGS += -lxcb-xinerama
+LDFLAGS += -lxcb-randr
 LDFLAGS += -lxcb
+LDFLAGS += -lyajl
 LDFLAGS += -lX11
 LDFLAGS += -lev
 LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib
@@ -48,7 +58,6 @@ LDFLAGS += -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
 endif
 
 ifeq ($(UNAME),OpenBSD)
-CFLAGS += -ftrampolines
 CFLAGS += -I${X11BASE}/include
 LDFLAGS += -liconv
 LDFLAGS += -L${X11BASE}/lib

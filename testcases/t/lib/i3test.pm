@@ -29,15 +29,4 @@ sub open_standard_window {
     return $window;
 }
 
-sub format_ipc_command {
-    my $msg = shift;
-    my $len;
-
-    { use bytes; $len = length($msg); }
-
-    my $message = "i3-ipc" . pack("LL", $len, 0) . $msg;
-
-    return $message;
-}
-
 1

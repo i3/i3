@@ -1,7 +1,7 @@
 i3(1)
 =====
 Michael Stapelberg <michael+i3@stapelberg.de>
-v3.delta, November 2009
+v3.epsilon, March 2010
 
 == NAME
 
@@ -9,28 +9,52 @@ i3 - an improved dynamic, tiling window manager
 
 == SYNOPSIS
 
-i3 [-c configfile] [-a]
+i3 [-a] [-c configfile] [-C] [-d <loglevel>] [-v] [-V]
 
 == OPTIONS
 
--c::
-Specifies an alternate configuration file path
-
 -a::
 Disables autostart.
+
+-c::
+Specifies an alternate configuration file path.
+
+-C::
+Check the configuration file for validity and exit.
+
+-d::
+Specifies the debug loglevel. To see the most output, use -d all.
+
+-v::
+Display version number (and date of the last commit).
+
+-V::
+Be verbose.
 
 == DESCRIPTION
 
 === INTRODUCTION
 
 i3 was created because wmii, our favorite window manager at the time, didn’t
-provide some features we wanted (Xinerama done right, for example), had some
-bugs, didn’t progress since quite some time and wasn’t easy to hack at all
+provide some features we wanted (multi-monitor done right, for example), had
+some bugs, didn’t progress since quite some time and wasn’t easy to hack at all
 (source code comments/documentation completely lacking). Still, we think the
 wmii developers and contributors did a great job. Thank you for inspiring us to
 create i3.
 
 Please be aware that i3 is primarily targeted at advanced users and developers.
+
+=== IMPORTANT NOTE TO nVidia BINARY DRIVER USERS
+
+If you are using the nVidia binary graphics driver (also known as 'blob')
+you need to use the +--force-xinerama+ flag (in your .xsession) when starting
+i3, like so:
+
+----------------------------------------------
+exec i3 --force-xinerama -V >>~/.i3/i3log 2>&1
+----------------------------------------------
+
+See also docs/multi-monitor for the full explanation.
 
 === TERMINOLOGY
 
@@ -38,36 +62,35 @@ Client::
 A client is X11-speak for a window.
 
 Table::
-Your workspace is managed using a table. You can move windows around and create new columns
-(move a client to the right) or rows (move it to the bottom) implicitly.
+Your workspace is managed using a table. You can move windows around and create
+new columns (move a client to the right) or rows (move it to the bottom)
+implicitly.
 +
 By "snapping" a client in a specific direction, you increase its colspan/rowspan.
 
 Container::
-A container contains a variable number of clients. Each cell of the table is a container.
+A container contains a variable number of clients. Each cell of the table is a
+container.
 +
-Containers can be used in various modes. The default mode is called "default" and just
-resizes each client equally so that it fits.
+Containers can be used in various modes. The default mode is called "default"
+and just resizes each client equally so that it fits.
 
 Workspace::
-A workspace is a set of clients (technically speaking, it’s just a table). Other window
-managers call this "Virtual Desktops".
+A workspace is a set of clients (technically speaking, it’s just a table).
+Other window managers call this "Virtual Desktops".
 +
-In i3, each workspace is assigned to a specific virtual screen. By default, screen 1
-has workspace 1, screen 2 has workspace 2 and so on… However, when you create a new
-workspace (by simply switching to it), it’ll be assigned the screen you are currently
-on.
+In i3, each workspace is assigned to a specific virtual screen. By default,
+screen 1 has workspace 1, screen 2 has workspace 2 and so on… However, when you
+create a new workspace (by simply switching to it), it’ll be assigned the
+screen you are currently on.
 
-Virtual Screen::
-Using Xinerama, you can have an X11 screen spanning multiple real monitors. Furthermore,
-you can set them up in cloning mode or with positions (monitor 1 is left of monitor 2).
+Output::
+Using XRandR, you can have an X11 screen spanning multiple real monitors.
+Furthermore, you can set them up in cloning mode or with positions (monitor 1
+is left of monitor 2).
 +
-A virtual screen is the result of your Xinerama setup. For example, if you have attached
-two real monitors (let’s say your laptop screen and a video projector) and enabled cloning, i3
-will use one virtual screen with the size of the smallest screen you have attached (so
-that you can see all your windows on each screen all the time).
-If you have two monitors attached, one configured to be left of the other, i3 will use
-two virtual screens.
+i3 uses the RandR API to query which outputs are available and which screens
+are connected to these outputs.
 
 == KEYBINDINGS
 
@@ -114,31 +137,34 @@ Mod1+t::
 Select the first tiling window if the current window is floating and vice-versa.
 
 Mod1+Shift+q::
-Kills the current window. This is equivalent to "clicking on the close button", meaning a polite
-request to the application to close this window. For example, Firefox will save its session
-upon such a request. If the application does not support that, the window will be killed and
-it depends on the application what happens.
+Kills the current window. This is equivalent to "clicking on the close button",
+meaning a polite request to the application to close this window. For example,
+Firefox will save its session upon such a request. If the application does not
+support that, the window will be killed and it depends on the application what
+happens.
 
 Mod1+Shift+r::
-Restarts i3 in place (without losing any windows, but the layout).
+Restarts i3 in place (without losing any windows, but at this time, the layout
+and placement of windows is not retained).
 
 Mod1+Shift+e::
 Exits i3.
 
 == FILES
 
-=== ~/.i3/config
+=== \~/.i3/config (or ~/.config/i3/config)
 
-When starting, i3 looks for ~/.i3/config and loads the configuration. If ~/.i3/config is not found,
-i3 tries /etc/i3/config. You can specify a custom path using the -c option.
+When starting, i3 looks for configuration files in the following order:
 
-At the moment, you can specify only the path to your favorite terminal emulator, the font and keybindings.
+1. ~/.config/i3/config (or $XDG_CONFIG_HOME/i3/config if set)
+2. /etc/xdg/i3/config (or $XDG_CONFIG_DIRS/i3/config if set)
+3. ~/.i3/config
+4. /etc/i3/config
 
-At the moment, you have to bind to keycodes (find them out via xev(1)).
+You can specify a custom path using the -c option.
 
 .Sample configuration
 -------------------------------------------------------------
-terminal /usr/bin/urxvt
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # Start terminal (Mod1+Enter)
@@ -265,21 +291,24 @@ ulimit -c unlimited
 
 # Start i3 and log to ~/.i3/logfile
 echo "Starting at $(date)" >> ~/.i3/logfile
-exec /usr/bin/i3 >> ~/.i3/logfile
+exec /usr/bin/i3 -V -d all >> ~/.i3/logfile
 -------------------------------------------------------------
 
 == TODO
 
-There is still lot of work to do. Please check our bugtracker for up-to-date information
-about tasks which are still not finished.
+There is still lot of work to do. Please check our bugtracker for up-to-date
+information about tasks which are still not finished.
 
 == SEE ALSO
 
-You should have a copy of the userguide (featuring nice screenshots/graphics which is why this
-is not integrated into this manpage), the debugging guide and the "how to hack" guide. If you
-are building from source, run +make -C docs+.
+You should have a copy of the userguide (featuring nice screenshots/graphics
+which is why this is not integrated into this manpage), the debugging guide,
+and the "how to hack" guide. If you are building from source, run:
+ +make -C docs+
 
 You can also access these documents online at http://i3.zekjur.net/
+
+i3-input(1), i3-msg(1), i3-wsbar(1)
 
 == AUTHOR
 

@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -51,7 +51,13 @@ bool client_matches_class_name(Client *client, char *to_class, char *to_title,
  * and when moving a fullscreen client to another screen.
  *
  */
-void client_enter_fullscreen(xcb_connection_t *conn, Client *client);
+void client_enter_fullscreen(xcb_connection_t *conn, Client *client, bool global);
+
+/**
+ * Leaves fullscreen mode for the given client. This is called by toggle_fullscreen.
+ *
+ */
+void client_leave_fullscreen(xcb_connection_t *conn, Client *client);
 
 /**
  * Leaves fullscreen mode for the current client. This is called by toggle_fullscreen.
@@ -67,6 +73,12 @@ void client_leave_fullscreen(xcb_connection_t *conn, Client *client);
  *
  */
 void client_toggle_fullscreen(xcb_connection_t *conn, Client *client);
+
+/**
+ * Like client_toggle_fullscreen(), but putting it in global fullscreen-mode.
+ *
+ */
+void client_toggle_fullscreen_global(xcb_connection_t *conn, Client *client);
 
 /**
  * Sets the position of the given client in the X stack to the highest (tiling
@@ -119,11 +131,25 @@ void client_map(xcb_connection_t *conn, Client *client);
 void client_mark(xcb_connection_t *conn, Client *client, const char *mark);
 
 /**
+ * Returns the minimum height of a specific window. The height is calculated
+ * by using 2 pixels (for the client window itself), possibly padding this to
+ * comply with the client’s base_height and then adding the decoration height.
+ *
+ */
+uint32_t client_min_height(Client *client);
+
+/**
+ * See client_min_height.
+ *
+ */
+uint32_t client_min_width(Client *client);
+
+/**
  * Pretty-prints the client’s information into the logfile.
  *
  */
 #define CLIENT_LOG(client) do { \
-                LOG("Window: frame 0x%08x, child 0x%08x\n", client->frame, client->child); \
+                DLOG("Window: frame 0x%08x, child 0x%08x\n", client->frame, client->child); \
         } while (0)
 
 #endif
