@@ -89,7 +89,7 @@ dist: distclean
 	mkdir i3-${VERSION}/docs
 	# Pre-generate documentation
 	make -C docs
-	find docs -maxdepth 1 -type f ! -name "*.xcf" -exec cp '{}' i3-${VERSION}/docs \;
+	find docs -maxdepth 1 -type f ! \( -name "*.xcf" -or -name "*.svg" \) -exec cp '{}' i3-${VERSION}/docs \;
 	# Only copy source code from i3-input
 	mkdir i3-${VERSION}/i3-input
 	find i3-input -maxdepth 1 -type f \( -name "*.c" -or -name "*.h" -or -name "Makefile" \) -exec cp '{}' i3-${VERSION}/i3-input \;
