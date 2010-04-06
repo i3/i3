@@ -364,6 +364,22 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         new->changed = true;
 }
 
+static void init_workspaces() {
+        Output *output;
+        Workspace *ws;
+
+        /* Just go through each active output and associate one workspace */
+        TAILQ_FOREACH(output, &outputs, outputs) {
+                if (!output->active || output->current_workspace != NULL)
+                        continue;
+                ws = get_first_workspace_for_output(output);
+                initialize_output(global_conn, output, ws);
+        }
+
+        /* render_layout flushes */
+        render_layout(global_conn);
+}
+
 /*
  * (Re-)queries the outputs via RandR and stores them in the list of outputs.
  *
@@ -387,6 +403,7 @@ void randr_query_outputs(xcb_connection_t *conn) {
         rcookie = xcb_randr_get_screen_resources_current(conn, root);
         if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL) {
                 disable_randr(conn);
+                init_workspaces();
                 return;
         }
         cts = res->config_timestamp;
@@ -494,16 +511,7 @@ void randr_query_outputs(xcb_connection_t *conn) {
 
         ewmh_update_workarea();
 
-        /* Just go through each active output and associate one workspace */
-        TAILQ_FOREACH(output, &outputs, outputs) {
-                if (!output->active || output->current_workspace != NULL)
-                        continue;
-                ws = get_first_workspace_for_output(output);
-                initialize_output(conn, output, ws);
-        }
-
-        /* render_layout flushes */
-        render_layout(conn);
+        init_workspaces();
 }
 
 /*
