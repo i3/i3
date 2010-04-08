@@ -106,7 +106,14 @@ a {
     <a href="https://admin.fedoraproject.org/pkgdb/acls/name/i3">Fedora</a>, maintained by cassmodiah
   </li>
   <li>
-    <a href="http://packages.ubuntu.com/karmic/i3">Ubuntu Linux</a> (in karmic/universe)
+    <a href="http://packages.ubuntu.com/karmic/i3">Ubuntu Linux</a> (in karmic/universe)<br>
+    Because Ubuntu packages are always outdated, you can also install
+    up-to-date third-party i3 packages for Ubuntu by adding the following line
+    to your <code>/etc/apt/sources.list</code> and using <code>apt-get install
+    i3</code> afterwards:<br>
+    <pre>
+    deb http://debian.sur5r.net/i3/ karmic universe
+    </pre>
   </li>
 </ul>
 
