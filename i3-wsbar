@@ -12,7 +12,7 @@ use AnyEvent;
 use v5.10;
 
 my $stdin;
-my $i3 = i3;
+my $socket_path = undef;
 my ($workspaces, $outputs) = ([], {});
 my $last_line = "";
 
@@ -23,6 +23,7 @@ my $show_all = 0;
 
 my $result = GetOptions(
     'command=s' => \$command,
+    'socket=s' => \$socket_path,
     'input-on=s' => \$input_on,
     'output-on=s' => \$output_on,
     'show-all' => \$show_all,
@@ -34,6 +35,8 @@ if ($command eq '') {
     say "Please specify -c (command)";
     exit 1;
 }
+
+my $i3 = i3($socket_path);
 
 my @input_on = split(/,/, $input_on);
 my @output_on = split(/,/, $output_on);
