@@ -704,6 +704,41 @@ static void move_current_window_to_workspace(xcb_connection_t *conn, int workspa
 }
 
 /*
+ * Brings the given window class / title to the current workspace.
+ *
+ */
+static void bring_window_here(xcb_connection_t *conn, const char *arguments) {
+	char *classtitle;
+	Client *client;
+
+	/* The first character is a quote, this was checked before */
+	classtitle = sstrdup(arguments+1);
+	/* The last character is a quote, we just set it to NULL */
+	classtitle[strlen(classtitle)-1] = '\0';
+
+	if ((client = get_matching_client(conn, classtitle, NULL)) == NULL) {
+		free(classtitle);
+		ELOG("No matching client found.\n");
+		return;
+	}
+
+	/* This is the workspace num that we are on */
+	int current_workspace_num = c_ws->output->current_workspace->num + 1;
+	/* This is the workspace num that the client is on */
+	int clients_workspace_num = client->workspace->num + 1;
+
+	free(classtitle);
+	workspace_show(conn, clients_workspace_num);
+	set_focus(conn, client, true);
+	if (client_is_floating(client))
+		move_floating_window_to_workspace(conn, client, current_workspace_num);
+	else move_current_window_to_workspace(conn, current_workspace_num);
+	workspace_show(conn, current_workspace_num);
+	set_focus(conn, client, true);
+
+}
+
+/*
  * Jumps to the given window class / title.
  * Title is matched using strstr, that is, matches if it appears anywhere
  * in the string. Regular expressions seem to be a bit overkill here. However,
@@ -1101,6 +1136,13 @@ void parse_command(xcb_connection_t *conn, const char *command) {
 
                 LOG("Killing current window\n");
                 client_kill(conn, last_focused);
+                return;
+        }
+
+        if (STARTS_WITH(command, "bring ")) {
+                const char *arguments = command + strlen("bring ");
+                if (arguments[0] == '"')
+                        bring_window_here(conn, arguments);
                 return;
         }
 
