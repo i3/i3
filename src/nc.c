@@ -172,12 +172,12 @@ int main(int argc, char *argv[]) {
     bool force_xinerama = false;
     xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
     static struct option long_options[] = {
-            {"no-autostart", no_argument, 0, 'a'},
-            {"config", required_argument, 0, 'c'},
-            {"version", no_argument, 0, 'v'},
-            {"help", no_argument, 0, 'h'},
-            {"force-xinerama", no_argument, 0, 0},
-            {0, 0, 0, 0}
+        {"no-autostart", no_argument, 0, 'a'},
+        {"config", required_argument, 0, 'c'},
+        {"version", no_argument, 0, 'v'},
+        {"help", no_argument, 0, 'h'},
+        {"force-xinerama", no_argument, 0, 0},
+        {0, 0, 0, 0}
     };
     int option_index = 0, opt;
 
