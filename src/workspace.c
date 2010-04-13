@@ -1,11 +1,8 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * workspace.c: Functions for modifying workspaces
  *
@@ -14,8 +11,6 @@
 
 #include "all.h"
 
-extern Con *focused;
-
 /*
  * Returns a pointer to the workspace with the given number (starting at 0),
  * creating the workspace if necessary (by allocating the necessary amount of
@@ -23,35 +18,35 @@ extern Con *focused;
  *
  */
 Con *workspace_get(const char *num) {
-        Con *output, *workspace = NULL, *current;
+    Con *output, *workspace = NULL, *current;
 
-        /* TODO: could that look like this in the future?
-        GET_MATCHING_NODE(workspace, croot, strcasecmp(current->name, num) != 0);
-        */
-        TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-                TAILQ_FOREACH(current, &(output->nodes_head), nodes) {
-                        if (strcasecmp(current->name, num) != 0)
-                                continue;
+    /* TODO: could that look like this in the future?
+    GET_MATCHING_NODE(workspace, croot, strcasecmp(current->name, num) != 0);
+    */
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        TAILQ_FOREACH(current, &(output->nodes_head), nodes) {
+            if (strcasecmp(current->name, num) != 0)
+                    continue;
 
-                        workspace = current;
-                        break;
-                }
+            workspace = current;
+            break;
         }
+    }
 
-        LOG("should switch to ws %s\n", num);
-        if (workspace == NULL) {
-                LOG("need to create this one\n");
-                output = con_get_output(focused);
-                LOG("got output %p\n", output);
-                workspace = con_new(output);
-                workspace->name = strdup(num);
+    LOG("should switch to ws %s\n", num);
+    if (workspace == NULL) {
+        LOG("need to create this one\n");
+        output = con_get_output(focused);
+        LOG("got output %p\n", output);
+        workspace = con_new(output);
+        workspace->name = strdup(num);
 
-                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
-        }
+        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
+    }
 
-        //ewmh_update_workarea();
+    //ewmh_update_workarea();
 
-        return workspace;
+    return workspace;
 }
 
 #if 0
@@ -101,23 +96,23 @@ bool workspace_is_visible(Workspace *ws) {
  *
  */
 void workspace_show(const char *num) {
-        Con *workspace, *current;
+    Con *workspace, *current;
 
-        workspace = workspace_get(num);
-        workspace->fullscreen_mode = CF_OUTPUT;
-        /* disable fullscreen */
-        TAILQ_FOREACH(current, &(workspace->parent->nodes_head), nodes)
-                current->fullscreen_mode = CF_NONE;
+    workspace = workspace_get(num);
+    workspace->fullscreen_mode = CF_OUTPUT;
+    /* disable fullscreen */
+    TAILQ_FOREACH(current, &(workspace->parent->nodes_head), nodes)
+        current->fullscreen_mode = CF_NONE;
 
-        LOG("switching to %p\n", workspace);
-        Con *next = workspace;
+    LOG("switching to %p\n", workspace);
+    Con *next = workspace;
 
     while (!TAILQ_EMPTY(&(next->focus_head)))
         next = TAILQ_FIRST(&(next->focus_head));
 
-        con_focus(next);
-        workspace->fullscreen_mode = CF_OUTPUT;
-        LOG("focused now = %p / %s\n", focused, focused->name);
+    con_focus(next);
+    workspace->fullscreen_mode = CF_OUTPUT;
+    LOG("focused now = %p / %s\n", focused, focused->name);
 #if 0
 
         /* Check if the workspace has not been used yet */
