@@ -34,10 +34,6 @@
 } \
 while (0)
 
-TAILQ_HEAD(keyvalue_table_head, keyvalue_element);
-extern struct keyvalue_table_head by_parent;
-extern struct keyvalue_table_head by_child;
-
 int min(int a, int b);
 int max(int a, int b);
 
@@ -75,26 +71,6 @@ void *srealloc(void *ptr, size_t size);
  *
  */
 char *sstrdup(const char *str);
-
-/**
- * Inserts an element into the given keyvalue-table using the given key.
- *
- */
-bool table_put(struct keyvalue_table_head *head, uint32_t key, void *value);
-
-/**
- * Removes the element from the given keyvalue-table with the given key and
- * returns its value;
- *
- */
-void *table_remove(struct keyvalue_table_head *head, uint32_t key);
-
-/**
- * Returns the value of the element of the given keyvalue-table with the given
- * key.
- *
- */
-void *table_get(struct keyvalue_table_head *head, uint32_t key);
 
 /**
  * Starts the given application by passing it through a shell. We use double
