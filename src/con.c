@@ -124,33 +124,54 @@ Con *con_get_workspace(Con *con) {
 }
 
 /*
+ * helper data structure for the breadth-first-search in
+ * con_get_fullscreen_con()
+ *
+ */
+struct bfs_entry {
+    Con *con;
+
+    TAILQ_ENTRY(bfs_entry) entries;
+};
+
+/*
  * Returns the first fullscreen node below this node.
  *
  */
 Con *con_get_fullscreen_con(Con *con) {
-    Con *current;
+    Con *current, *child;
 
     LOG("looking for fullscreen node\n");
     /* TODO: is breadth-first-search really appropriate? (check as soon as
      * fullscreen levels and fullscreen for containers is implemented) */
-    Con **queue = NULL;
-    int queue_len = 0;
-    TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
-        queue_len++;
-        queue = srealloc(queue, queue_len * sizeof(Con*));
-        queue[queue_len-1] = current;
-    }
+    TAILQ_HEAD(bfs_head, bfs_entry) bfs_head = TAILQ_HEAD_INITIALIZER(bfs_head);
+    struct bfs_entry *entry = smalloc(sizeof(struct bfs_entry));
+    entry->con = con;
+    TAILQ_INSERT_TAIL(&bfs_head, entry, entries);
 
-    while (queue_len > 0) {
-        current = queue[queue_len-1];
+    while (!TAILQ_EMPTY(&bfs_head)) {
+        entry = TAILQ_FIRST(&bfs_head);
+        current = entry->con;
         LOG("checking %p\n", current);
-        if (current->fullscreen_mode != CF_NONE) {
-            free(queue);
+        if (current != con && current->fullscreen_mode != CF_NONE) {
+            /* empty the queue */
+            while (!TAILQ_EMPTY(&bfs_head)) {
+                entry = TAILQ_FIRST(&bfs_head);
+                TAILQ_REMOVE(&bfs_head, entry, entries);
+                free(entry);
+            }
             return current;
         }
+
         LOG("deleting from queue\n");
-        queue_len--;
-        queue = realloc(queue, queue_len * sizeof(Con*));
+        TAILQ_REMOVE(&bfs_head, entry, entries);
+        free(entry);
+
+        TAILQ_FOREACH(child, &(current->nodes_head), nodes) {
+            entry = smalloc(sizeof(struct bfs_entry));
+            entry->con = child;
+            TAILQ_INSERT_TAIL(&bfs_head, entry, entries);
+        }
     }
 
     return NULL;

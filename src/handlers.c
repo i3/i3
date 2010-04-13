@@ -19,7 +19,7 @@
    changing workspaces */
 static SLIST_HEAD(ignore_head, Ignore_Event) ignore_events;
 
-static void add_ignore_event(const int sequence) {
+void add_ignore_event(const int sequence) {
     struct Ignore_Event *event = smalloc(sizeof(struct Ignore_Event));
 
     event->sequence = sequence;
@@ -48,8 +48,11 @@ static bool event_is_ignored(const int sequence) {
         if (event->sequence != sequence)
             continue;
 
-        SLIST_REMOVE(&ignore_events, event, Ignore_Event, ignore_events);
-        free(event);
+        /* instead of removing a sequence number we better wait until it gets
+         * garbage collected. it may generate multiple events (there are multiple
+         * enter_notifies for one configure_request, for example). */
+        //SLIST_REMOVE(&ignore_events, event, Ignore_Event, ignore_events);
+        //free(event);
         return true;
     }
 

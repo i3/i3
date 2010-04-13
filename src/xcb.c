@@ -318,10 +318,13 @@ int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *t
  *
  */
 void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r) {
-        xcb_configure_window(conn, window,
+        xcb_void_cookie_t cookie;
+        cookie = xcb_configure_window(conn, window,
                              XCB_CONFIG_WINDOW_X |
                              XCB_CONFIG_WINDOW_Y |
                              XCB_CONFIG_WINDOW_WIDTH |
                              XCB_CONFIG_WINDOW_HEIGHT,
                              &(r.x));
+        /* ignore events which are generated because we configured a window */
+        add_ignore_event(cookie.sequence);
 }

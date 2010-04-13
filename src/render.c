@@ -37,6 +37,18 @@ void render_con(Con *con) {
     printf("mapped = true\n");
     con->mapped = true;
 
+    /* if this container contains a window, set the coordinates */
+    if (con->window) {
+        /* depending on the border style, the rect of the child window
+         * needs to be smaller */
+        Rect *inset = &(con->window_rect);
+        *inset = (Rect){0, 0, con->rect.width, con->rect.height};
+        /* TODO: different border styles */
+        inset->x += 2;
+        inset->width -= 2 * 2;
+        inset->height -= 2;
+    }
+
     /* Check for fullscreen nodes */
     Con *fullscreen = con_get_fullscreen_con(con);
     if (fullscreen) {
@@ -45,7 +57,6 @@ void render_con(Con *con) {
         render_con(fullscreen);
         return;
     }
-
 
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
 
@@ -105,16 +116,6 @@ void render_con(Con *con) {
         printf("child at (%d, %d) with (%d x %d)\n",
                 child->rect.x, child->rect.y, child->rect.width, child->rect.height);
         printf("x now %d, y now %d\n", x, y);
-        if (child->window) {
-            /* depending on the border style, the rect of the child window
-             * needs to be smaller */
-            Rect *inset = &(child->window_rect);
-            *inset = (Rect){0, 0, child->rect.width, child->rect.height};
-            /* TODO: different border styles */
-            inset->x += 2;
-            inset->width -= 2 * 2;
-            inset->height -= 2;
-        }
         x_raise_con(child);
         render_con(child);
         i++;

@@ -89,8 +89,11 @@ void parse_command(const char *command) {
         workspace_show(command + strlen("workspace "));
     else if (strcasecmp(command, "stack") == 0) {
         focused->layout = L_STACKED;
-        x_push_changes(croot);
-
+    }
+    else if (strcasecmp(command, "fullscreen") == 0) {
+        if (focused->fullscreen_mode == CF_NONE)
+            focused->fullscreen_mode = CF_OUTPUT;
+        else focused->fullscreen_mode = CF_NONE;
     }
     else if (strcasecmp(command, "move before h") == 0)
         tree_move('p', HORIZ);
