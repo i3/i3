@@ -21,7 +21,6 @@
 int handle_key_press(void *ignored, xcb_connection_t *conn,
                      xcb_key_press_event_t *event);
 
-#if 0
 /**
  * When the user moves the mouse pointer onto a window, this callback gets
  * called.
@@ -30,6 +29,7 @@ int handle_key_press(void *ignored, xcb_connection_t *conn,
 int handle_enter_notify(void *ignored, xcb_connection_t *conn,
                         xcb_enter_notify_event_t *event);
 
+#if 0
 /**
  * When the user moves the mouse but does not change the active window
  * (e.g. when having no windows opened but moving mouse on the root screen

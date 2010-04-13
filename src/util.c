@@ -31,6 +31,13 @@ int max(int a, int b) {
         return (a > b ? a : b);
 }
 
+bool rect_contains(Rect rect, uint32_t x, uint32_t y) {
+        return (x >= rect.x &&
+                x <= (rect.x + rect.width) &&
+                y >= rect.y &&
+                y <= (rect.y + rect.height));
+}
+
 /*
  * Updates *destination with new_value and returns true if it was changed or false
  * if it was the same

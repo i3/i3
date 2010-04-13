@@ -36,6 +36,7 @@ while (0)
 
 int min(int a, int b);
 int max(int a, int b);
+bool rect_contains(Rect rect, uint32_t x, uint32_t y);
 
 /**
  * Updates *destination with new_value and returns true if it was changed or false

@@ -305,6 +305,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         SLIST_REMOVE(&modes, mode, Mode, modes);
                 }
 
+#if 0
                 struct Assignment *assign;
                 while (!TAILQ_EMPTY(&assignments)) {
                         assign = TAILQ_FIRST(&assignments);
@@ -312,6 +313,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         TAILQ_REMOVE(&assignments, assign, assignments);
                         FREE(assign);
                 }
+#endif
 
                 /* Clear workspace names */
 #if 0

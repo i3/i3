@@ -486,6 +486,7 @@ workspace_name:
 assign:
         TOKASSIGN WHITESPACE window_class WHITESPACE optional_arrow assign_target
         {
+#if 0
                 printf("assignment of %s\n", $<string>3);
 
                 struct Assignment *new = $<assignment>6;
@@ -493,29 +494,36 @@ assign:
                 printf("  floating = %d\n", new->floating);
                 new->windowclass_title = $<string>3;
                 TAILQ_INSERT_TAIL(&assignments, new, assignments);
+#endif
         }
         ;
 
 assign_target:
         NUMBER
         {
+#if 0
                 struct Assignment *new = scalloc(sizeof(struct Assignment));
                 new->workspace = $<number>1;
                 new->floating = ASSIGN_FLOATING_NO;
                 $<assignment>$ = new;
+#endif
         }
         | '~'
         {
+#if 0
                 struct Assignment *new = scalloc(sizeof(struct Assignment));
                 new->floating = ASSIGN_FLOATING_ONLY;
                 $<assignment>$ = new;
+#endif
         }
         | '~' NUMBER
         {
+#if 0
                 struct Assignment *new = scalloc(sizeof(struct Assignment));
                 new->workspace = $<number>2;
                 new->floating = ASSIGN_FLOATING;
                 $<assignment>$ = new;
+#endif
         }
         ;
 

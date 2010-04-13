@@ -139,7 +139,11 @@ void parse_command(const char *command) {
         tree_next('n', VERT);
     else if (strncasecmp(command, "workspace ", strlen("workspace ")) == 0)
         workspace_show(command + strlen("workspace "));
+    else if (strcasecmp(command, "stack") == 0) {
+        focused->layout = L_STACKED;
+        x_push_changes(croot);
 
+    }
     else if (strcasecmp(command, "move before h") == 0)
         tree_move('p', HORIZ);
     else if (strcasecmp(command, "move before v") == 0)
@@ -311,6 +315,9 @@ int main(int argc, char *argv[]) {
     //xcb_event_set_destroy_notify_handler(&evenths, handle_destroy_notify_event, NULL);
 
     xcb_event_set_expose_handler(&evenths, handle_expose_event, NULL);
+
+    /* Enter window = user moved his mouse over the window */
+    xcb_event_set_enter_notify_handler(&evenths, handle_enter_notify, NULL);
 
 
     /* Setup NetWM atoms */

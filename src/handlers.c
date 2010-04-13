@@ -20,12 +20,12 @@
 static SLIST_HEAD(ignore_head, Ignore_Event) ignore_events;
 
 static void add_ignore_event(const int sequence) {
-        struct Ignore_Event *event = smalloc(sizeof(struct Ignore_Event));
+    struct Ignore_Event *event = smalloc(sizeof(struct Ignore_Event));
 
-        event->sequence = sequence;
-        event->added = time(NULL);
+    event->sequence = sequence;
+    event->added = time(NULL);
 
-        SLIST_INSERT_HEAD(&ignore_events, event, ignore_events);
+    SLIST_INSERT_HEAD(&ignore_events, event, ignore_events);
 }
 
 /*
@@ -33,26 +33,27 @@ static void add_ignore_event(const int sequence) {
  *
  */
 static bool event_is_ignored(const int sequence) {
-        struct Ignore_Event *event;
-        time_t now = time(NULL);
-        for (event = SLIST_FIRST(&ignore_events); event != SLIST_END(&ignore_events);) {
-                if ((now - event->added) > 5) {
-                        struct Ignore_Event *save = event;
-                        event = SLIST_NEXT(event, ignore_events);
-                        SLIST_REMOVE(&ignore_events, save, Ignore_Event, ignore_events);
-                        free(save);
-                } else event = SLIST_NEXT(event, ignore_events);
-        }
+    struct Ignore_Event *event;
+    time_t now = time(NULL);
+    for (event = SLIST_FIRST(&ignore_events); event != SLIST_END(&ignore_events);) {
+        if ((now - event->added) > 5) {
+            struct Ignore_Event *save = event;
+            event = SLIST_NEXT(event, ignore_events);
+            SLIST_REMOVE(&ignore_events, save, Ignore_Event, ignore_events);
+            free(save);
+        } else event = SLIST_NEXT(event, ignore_events);
+    }
 
-        SLIST_FOREACH(event, &ignore_events, ignore_events) {
-                if (event->sequence == sequence) {
-                        SLIST_REMOVE(&ignore_events, event, Ignore_Event, ignore_events);
-                        free(event);
-                        return true;
-                }
-        }
+    SLIST_FOREACH(event, &ignore_events, ignore_events) {
+        if (event->sequence != sequence)
+            continue;
 
-        return false;
+        SLIST_REMOVE(&ignore_events, event, Ignore_Event, ignore_events);
+        free(event);
+        return true;
+    }
+
+    return false;
 }
 
 /*
@@ -140,68 +141,78 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
         if (first_client != NULL)
                 set_focus(global_conn, first_client, true);
 }
+#endif
 
 /*
  * When the user moves the mouse pointer onto a window, this callback gets called.
  *
  */
-int handle_enter_notify(void *ignored, xcb_connection_t *conn, xcb_enter_notify_event_t *event) {
-        DLOG("enter_notify for %08x, mode = %d, detail %d, serial %d\n", event->event, event->mode, event->detail, event->sequence);
-        if (event->mode != XCB_NOTIFY_MODE_NORMAL) {
-                DLOG("This was not a normal notify, ignoring\n");
-                return 1;
-        }
-        /* Some events are not interesting, because they were not generated actively by the
-           user, but by reconfiguration of windows */
-        if (event_is_ignored(event->sequence))
-                return 1;
+int handle_enter_notify(void *ignored, xcb_connection_t *conn,
+                        xcb_enter_notify_event_t *event) {
+    Con *con;
 
-        /* This was either a focus for a client’s parent (= titlebar)… */
-        Client *client = table_get(&by_parent, event->event);
-        /* …or the client itself */
-        if (client == NULL)
-                client = table_get(&by_child, event->event);
-
-        /* Check for stack windows */
-        if (client == NULL) {
-                struct Stack_Window *stack_win;
-                SLIST_FOREACH(stack_win, &stack_wins, stack_windows)
-                        if (stack_win->window == event->event) {
-                                client = stack_win->container->currently_focused;
-                                break;
-                        }
-        }
-
-
-        /* If not, then the user moved his cursor to the root window. In that case, we adjust c_ws */
-        if (client == NULL) {
-                DLOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
-                check_crossing_screen_boundary(event->root_x, event->root_y);
-                return 1;
-        }
-
-        /* Do plausibility checks: This event may be useless for us if it occurs on a window
-           which is in a stacked container but not the focused one */
-        if (client->container != NULL &&
-            client->container->mode == MODE_STACK &&
-            client->container->currently_focused != client) {
-                DLOG("Plausibility check says: no\n");
-                return 1;
-        }
-
-        if (client->workspace != c_ws && client->workspace->output == c_ws->output) {
-                /* This can happen when a client gets assigned to a different workspace than
-                 * the current one (see src/mainx.c:reparent_window). Shortly after it was created,
-                 * an enter_notify will follow. */
-                DLOG("enter_notify for a client on a different workspace but the same screen, ignoring\n");
-                return 1;
-        }
-
-        if (!config.disable_focus_follows_mouse)
-                set_focus(conn, client, false);
-
+    DLOG("enter_notify for %08x, mode = %d, detail %d, serial %d\n",
+         event->event, event->mode, event->detail, event->sequence);
+    DLOG("coordinates %x, %x\n", event->event_x, event->event_y);
+    if (event->mode != XCB_NOTIFY_MODE_NORMAL) {
+        DLOG("This was not a normal notify, ignoring\n");
         return 1;
+    }
+    /* Some events are not interesting, because they were not generated
+     * actively by the user, but by reconfiguration of windows */
+    if (event_is_ignored(event->sequence))
+        return 1;
+
+    /* Get container by frame or by child window */
+    if ((con = con_by_frame_id(event->event)) == NULL)
+        con = con_by_window_id(event->event);
+
+    /* If not, then the user moved his cursor to the root window. In that case, we adjust c_ws */
+    if (con == NULL) {
+        DLOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
+        //check_crossing_screen_boundary(event->root_x, event->root_y);
+        return 1;
+    }
+
+    /* see if the user entered the window on a certain window decoration */
+    int layout = con->layout;
+    Con *child;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+        if (rect_contains(child->deco_rect, event->event_x, event->event_y)) {
+            LOG("using child %p / %s instead!\n", child, child->name);
+            con = child;
+            break;
+        }
+
+    /* for stacked/tabbed layout we do not want to change focus when the user
+     * enters the window at the decoration of any child window. */
+    if (layout == L_STACKED || layout == L_TABBED) {
+        con = TAILQ_FIRST(&(con->parent->focus_head));
+        LOG("using focused %p / %s instead\n", con, con->name);
+    }
+
+#if 0
+    if (client->workspace != c_ws && client->workspace->output == c_ws->output) {
+            /* This can happen when a client gets assigned to a different workspace than
+             * the current one (see src/mainx.c:reparent_window). Shortly after it was created,
+             * an enter_notify will follow. */
+            DLOG("enter_notify for a client on a different workspace but the same screen, ignoring\n");
+            return 1;
+    }
+#endif
+
+    if (config.disable_focus_follows_mouse)
+        return 1;
+    Con *next = con;
+    while (!TAILQ_EMPTY(&(next->focus_head)))
+        next = TAILQ_FIRST(&(next->focus_head));
+
+    con_focus(next);
+    x_push_changes(croot);
+
+    return 1;
 }
+#if 0
 
 /*
  * When the user moves the mouse but does not change the active window
