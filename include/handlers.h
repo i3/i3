@@ -54,14 +54,14 @@ int handle_mapping_notify(void *ignored, xcb_connection_t *conn,
  */
 int handle_button_press(void *ignored, xcb_connection_t *conn,
                         xcb_button_press_event_t *event);
-
+#endif
 /**
  * A new window appeared on the screen (=was mapped), so let’s manage it.
  *
  */
 int handle_map_request(void *prophs, xcb_connection_t *conn,
                        xcb_map_request_event_t *event);
-
+#if 0
 /**
  * Configuration notifies are only handled because we need to set up ignore
  * for the following enter notify events
@@ -87,14 +87,14 @@ int handle_screen_change(void *prophs, xcb_connection_t *conn,
  */
 int handle_configure_request(void *prophs, xcb_connection_t *conn,
                              xcb_configure_request_event_t *event);
-
+#endif
 /**
  * Our window decorations were unmapped. That means, the window will be killed
  * now, so we better clean up before.
  *
  */
 int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_notify_event_t *event);
-
+#if 0
 /**
  * A destroy notify event is sent when the window is not unmapped, but
  * immediately destroyed (for example when starting a window and immediately
@@ -134,14 +134,14 @@ int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
                               xcb_window_t window, xcb_atom_t atom,
                               xcb_get_property_reply_t *prop);
 
-
+#endif
 /**
  * Expose event means we should redraw our windows (= title bar)
  *
  */
 int handle_expose_event(void *data, xcb_connection_t *conn,
                         xcb_expose_event_t *event);
-
+#if 0
 /**
  * Handle client messages (EWMH)
  *

@@ -62,58 +62,6 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
     }
 }
 
-int handle_map_request(void *unused, xcb_connection_t *conn, xcb_map_request_event_t *event) {
-    xcb_get_window_attributes_cookie_t cookie;
-
-    cookie = xcb_get_window_attributes_unchecked(conn, event->window);
-
-    LOG("window = 0x%08x, serial is %d.\n", event->window, event->sequence);
-    //add_ignore_event(event->sequence);
-
-    manage_window(event->window, cookie, false);
-    return 1;
-}
-
-
-int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_notify_event_t *event) {
-    LOG("unmap event for 0x%08x\n", event->window);
-    Con *con = con_by_window_id(event->window);
-    if (con == NULL) {
-        LOG("Not a managed window, ignoring\n");
-        return 1;
-    }
-
-    tree_close(con);
-    tree_render();
-    return 1;
-}
-
-int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *event) {
-    Con *parent, *con;
-
-    /* event->count is the number of minimum remaining expose events for this window, so we
-       skip all events but the last one */
-    if (event->count != 0)
-            return 1;
-    LOG("expose-event, window = %08x\n", event->window);
-
-    if ((parent = con_by_frame_id(event->window)) == NULL) {
-        LOG("expose event for unknown window, ignoring\n");
-        return 1;
-    }
-
-    TAILQ_FOREACH(con, &(parent->nodes_head), nodes) {
-        LOG("expose for con %p / %s\n", con, con->name);
-        if (con->window)
-            x_draw_decoration(con);
-    }
-    xcb_flush(conn);
-
-    return 1;
-}
-
-
-
 void parse_command(const char *command) {
     printf("received command: %s\n", command);
 
