@@ -153,28 +153,40 @@ void x_draw_decoration(Con *con) {
     xcb_rectangle_t drect = { con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height };
     xcb_poly_fill_rectangle(conn, parent->frame, parent->gc, 1, &drect);
 
-    if (con->window == NULL) {
+    if (con->window == NULL)
         return;
-    }
 
-    if (con->window->name_ucs2 == NULL) {
+    i3Window *win = con->window;
+
+    if (win->name_x == NULL) {
         LOG("not rendering decoration, not yet known\n");
         return;
     }
 
 
-    LOG("should render text %s onto %p / %s\n", con->window->name_utf8, parent, parent->name);
+    LOG("should render text %s onto %p / %s\n", win->name_json, parent, parent->name);
 
     xcb_change_gc_single(conn, parent->gc, XCB_GC_FOREGROUND, get_colorpixel("#FFFFFF"));
-    xcb_image_text_16(
-        conn,
-        con->window->name_len,
-        parent->frame,
-        parent->gc,
-        con->deco_rect.x,
-        con->deco_rect.y + 14,
-        (xcb_char2b_t*)con->window->name_ucs2
-    );
+    if (win->uses_net_wm_name)
+        xcb_image_text_16(
+            conn,
+            win->name_len,
+            parent->frame,
+            parent->gc,
+            con->deco_rect.x,
+            con->deco_rect.y + 14, /* TODO: hardcoded */
+            (xcb_char2b_t*)win->name_x
+        );
+    else
+        xcb_image_text_8(
+            conn,
+            win->name_len,
+            parent->frame,
+            parent->gc,
+            con->deco_rect.x,
+            con->deco_rect.y + 14, /* TODO: hardcoded */
+            win->name_x
+        );
 }
 
 /*

@@ -115,17 +115,9 @@ int handle_destroy_notify_event(void *data, xcb_connection_t *conn,
 int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
                              xcb_window_t window, xcb_atom_t atom,
                              xcb_get_property_reply_t *prop);
-#if 0
 /**
- * We handle legacy window names (titles) which are in COMPOUND_TEXT
- * encoding. However, we just pass them along, so when containing non-ASCII
- * characters, those will be rendering incorrectly. In order to correctly
- * render unicode window titles in i3, an application has to set _NET_WM_NAME,
- * which is in UTF-8 encoding.
- *
- * On every update, a message is put out to the user, so he may improve the
- * situation and update applications which display filenames in their title to
- * correctly use _NET_WM_NAME and therefore support unicode.
+ * Handles legacy window name updates (WM_NAME), see also src/window.c,
+ * window_update_name_legacy().
  *
  */
 int handle_windowname_change_legacy(void *data, xcb_connection_t *conn,
@@ -133,6 +125,7 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn,
                                     xcb_atom_t atom, xcb_get_property_reply_t
                                     *prop);
 
+#if 0
 /**
  * Store the window classes for jumping to them later.
  *

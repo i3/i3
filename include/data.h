@@ -247,11 +247,21 @@ struct xoutput {
 struct Window {
     xcb_window_t id;
 
-    const char *class_class;
-    const char *class_instance;
-    const char *name_ucs2;
-    const char *name_utf8;
+    char *class_class;
+    char *class_instance;
+
+    /** The name of the window as it will be passod to X11 (in UCS2 if the
+     * application supports _NET_WM_NAME, in COMPOUND_TEXT otherwise). */
+    char *name_x;
+
+    /** The name of the window as used in JSON (in UTF-8 if the application
+     * supports _NET_WM_NAME, in COMPOUND_TEXT otherwise) */
+    char *name_json;
+
+    /** The length of the name in glyphs (not bytes) */
     int name_len;
+
+    /** Whether the application used _NET_WM_NAME */
     bool uses_net_wm_name;
 };
 

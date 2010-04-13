@@ -129,6 +129,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     /* update as much information as possible so far (some replies may be NULL) */
     window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL));
+    window_update_name_legacy(cwindow, xcb_get_property_reply(conn, title_cookie, NULL));
     window_update_name(cwindow, xcb_get_property_reply(conn, utf8_title_cookie, NULL));
 
     Con *nc;
