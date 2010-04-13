@@ -2,10 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
 #include <time.h>
@@ -568,61 +565,24 @@ int handle_destroy_notify_event(void *data, xcb_connection_t *conn, xcb_destroy_
 
         return handle_unmap_notify_event(NULL, conn, &unmap);
 }
-
+#endif
 /*
  * Called when a window changes its title
  *
  */
 int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
                                 xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
-        if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-                DLOG("_NET_WM_NAME not specified, not changing\n");
-                return 1;
-        }
-        Client *client = table_get(&by_child, window);
-        if (client == NULL)
-                return 1;
-
-        /* Save the old pointer to make the update atomic */
-        char *new_name;
-        int new_len;
-        asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop));
-        /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
-        char *ucs2_name = convert_utf8_to_ucs2(new_name, &new_len);
-        LOG("_NET_WM_NAME changed to \"%s\"\n", new_name);
-        free(new_name);
-
-        /* Check if they are the same and don’t update if so.
-           Note the use of new_len * 2 to check all bytes as each glyph takes 2 bytes.
-           Also note the use of memcmp() instead of strncmp() because the latter stops on nullbytes,
-           but UCS-2 uses nullbytes to fill up glyphs which only use one byte. */
-        if ((new_len == client->name_len) &&
-            (client->name != NULL) &&
-            (memcmp(client->name, ucs2_name, new_len * 2) == 0)) {
-                free(ucs2_name);
-                return 1;
-        }
-
-        char *old_name = client->name;
-        client->name = ucs2_name;
-        client->name_len = new_len;
-        client->uses_net_wm_name = true;
-
-        FREE(old_name);
-
-        /* If the client is a dock window, we don’t need to render anything */
-        if (client->dock)
-                return 1;
-
-        int mode = container_mode(client->container, true);
-        if (mode == MODE_STACK || mode == MODE_TABBED)
-                render_container(conn, client->container);
-        else decorate_window(conn, client, client->frame, client->titlegc, 0, 0);
-        xcb_flush(conn);
-
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return 1;
-}
 
+    window_update_name(con->window, prop);
+
+    x_push_changes(croot);
+
+    return 1;
+}
+#if 0
 /*
  * We handle legacy window names (titles) which are in COMPOUND_TEXT encoding. However, we
  * just pass them along, so when containing non-ASCII characters, those will be rendering
@@ -689,6 +649,7 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
 
         return 1;
 }
+#endif
 
 /*
  * Updates the client’s WM_CLASS property
@@ -696,32 +657,16 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
  */
 int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
                              xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
-        if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-                DLOG("prop == NULL\n");
-                return 1;
-        }
-        Client *client = table_get(&by_child, window);
-        if (client == NULL)
-                return 1;
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
+        return 1;
 
-        /* We cannot use asprintf here since this property contains two
-         * null-terminated strings (for compatibility reasons). Instead, we
-         * use strdup() on both strings */
-        char *new_class = xcb_get_property_value(prop);
+    window_update_class(con->window, prop);
 
-        FREE(client->window_class_instance);
-        FREE(client->window_class_class);
-
-        client->window_class_instance = strdup(new_class);
-        if ((strlen(new_class) + 1) < xcb_get_property_value_length(prop))
-                client->window_class_class = strdup(new_class + strlen(new_class) + 1);
-        else client->window_class_class = NULL;
-        LOG("WM_CLASS changed to %s (instance), %s (class)\n",
-            client->window_class_instance, client->window_class_class);
-
-        return 0;
+    return 0;
 }
 
+#if 0
 /*
  * Expose event means we should redraw our windows (= title bar)
  *

@@ -37,7 +37,6 @@ void manage_existing_windows(xcb_window_t root) {
     for (i = 0; i < len; ++i)
         manage_window(children[i], cookies[i], true);
 
-
     free(reply);
     free(cookies);
 }
@@ -119,16 +118,18 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         goto out;
 
     LOG("reparenting!\n");
+    uint32_t mask = 0;
+    uint32_t values[1];
+    mask = XCB_CW_EVENT_MASK;
+    values[0] = CHILD_EVENT_MASK;
+    xcb_change_window_attributes(conn, window, mask, values);
 
     i3Window *cwindow = scalloc(sizeof(i3Window));
     cwindow->id = window;
 
-    class_cookie = xcb_get_any_property_unchecked(conn, false, window, WM_CLASS, 128);
-    xcb_get_property_reply_t *preply;
-    preply = xcb_get_property_reply(conn, class_cookie, NULL);
-    if (preply == NULL || xcb_get_property_value_length(preply) == 0) {
-        LOG("cannot get wm_class\n");
-    } else cwindow->class = strdup(xcb_get_property_value(preply));
+    /* update as much information as possible so far (some replies may be NULL) */
+    window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL));
+    window_update_name(cwindow, xcb_get_property_reply(conn, utf8_title_cookie, NULL));
 
     Con *nc;
     Match *match;
@@ -176,7 +177,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
                     geom->border_width);
 #endif
 
-    /* Generate callback events for every property we watch */
     free(geom);
 out:
     free(attr);

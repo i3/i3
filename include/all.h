@@ -48,5 +48,6 @@
 #include "con.h"
 #include "load_layout.h"
 #include "render.h"
+#include "window.h"
 
 #endif

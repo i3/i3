@@ -21,7 +21,7 @@
 
 #include "all.h"
 
-//static iconv_t conversion_descriptor = 0;
+static iconv_t conversion_descriptor = 0;
 struct keyvalue_table_head by_parent = TAILQ_HEAD_INITIALIZER(by_parent);
 struct keyvalue_table_head by_child = TAILQ_HEAD_INITIALIZER(by_child);
 
@@ -158,7 +158,6 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_mes
         }
 }
 
-#if 0
 /*
  * Converts the given string to UCS-2 big endian for use with
  * xcb_image_text_16(). The amount of real glyphs is stored in real_strlen,
@@ -202,6 +201,7 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
 
         return buffer;
 }
+#if 0
 
 /*
  * Returns the client which comes next in focus stack (= was selected before) for

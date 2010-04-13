@@ -184,17 +184,23 @@ Con *con_by_frame_id(xcb_window_t frame) {
 
 static bool match_matches_window(Match *match, i3Window *window) {
     /* TODO: pcre, full matching, … */
-    if (match->class != NULL && strcasecmp(match->class, window->class) == 0) {
-        LOG("match made by window class (%s)\n", window->class);
+    if (match->class != NULL && strcasecmp(match->class, window->class_class) == 0) {
+        LOG("match made by window class (%s)\n", window->class_class);
         return true;
     }
+
+    if (match->instance != NULL && strcasecmp(match->instance, window->class_instance) == 0) {
+        LOG("match made by window instance (%s)\n", window->class_instance);
+        return true;
+    }
+
 
     if (match->id != XCB_NONE && window->id == match->id) {
         LOG("match made by window id (%d)\n", window->id);
         return true;
     }
 
-    LOG("window %d (%s) could not be matched\n", window->id, window->class);
+    LOG("window %d (%s) could not be matched\n", window->id, window->class_class);
 
     return false;
 }
@@ -208,7 +214,7 @@ Con *con_for_window(i3Window *window, Match **store_match) {
     Con *con;
     Match *match;
     LOG("searching con for window %p\n", window);
-    LOG("class == %s\n", window->class);
+    LOG("class == %s\n", window->class_class);
 
     TAILQ_FOREACH(con, &all_cons, all_cons)
         TAILQ_FOREACH(match, &(con->swallow_head), matches) {

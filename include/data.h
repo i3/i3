@@ -247,7 +247,12 @@ struct xoutput {
 struct Window {
     xcb_window_t id;
 
-    const char *class;
+    const char *class_class;
+    const char *class_instance;
+    const char *name_ucs2;
+    const char *name_utf8;
+    int name_len;
+    bool uses_net_wm_name;
 };
 
 struct Match {

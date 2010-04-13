@@ -107,6 +107,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 int handle_destroy_notify_event(void *data, xcb_connection_t *conn,
                                 xcb_destroy_notify_event_t *event);
 
+#endif
 /**
  * Called when a window changes its title
  *
@@ -114,7 +115,7 @@ int handle_destroy_notify_event(void *data, xcb_connection_t *conn,
 int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
                              xcb_window_t window, xcb_atom_t atom,
                              xcb_get_property_reply_t *prop);
-
+#if 0
 /**
  * We handle legacy window names (titles) which are in COMPOUND_TEXT
  * encoding. However, we just pass them along, so when containing non-ASCII

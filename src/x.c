@@ -157,23 +157,23 @@ void x_draw_decoration(Con *con) {
         return;
     }
 
-    if (con->window->class == NULL) {
+    if (con->window->name_ucs2 == NULL) {
         LOG("not rendering decoration, not yet known\n");
         return;
     }
 
 
-    LOG("should render text %s onto %p / %s\n", con->window->class, parent, parent->name);
+    LOG("should render text %s onto %p / %s\n", con->window->name_utf8, parent, parent->name);
 
     xcb_change_gc_single(conn, parent->gc, XCB_GC_FOREGROUND, get_colorpixel("#FFFFFF"));
-    xcb_image_text_8(
+    xcb_image_text_16(
         conn,
-        strlen(con->window->class),
+        con->window->name_len,
         parent->frame,
         parent->gc,
         con->deco_rect.x,
         con->deco_rect.y + 14,
-        con->window->class
+        (xcb_char2b_t*)con->window->name_ucs2
     );
 }
 

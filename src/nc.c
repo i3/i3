@@ -14,6 +14,7 @@ char **start_argv;
 
 xcb_connection_t *conn;
 xcb_event_handlers_t evenths;
+xcb_property_handlers_t prophs;
 xcb_atom_t atoms[NUM_ATOMS];
 
 xcb_window_t root;
@@ -295,8 +296,11 @@ int main(int argc, char *argv[]) {
     REQUEST_ATOM(_NET_ACTIVE_WINDOW);
     REQUEST_ATOM(_NET_WORKAREA);
 
+    memset(&evenths, 0, sizeof(xcb_event_handlers_t));
+    memset(&prophs, 0, sizeof(xcb_property_handlers_t));
 
     xcb_event_handlers_init(conn, &evenths);
+    xcb_property_handlers_init(&prophs, &evenths);
     xcb_event_set_key_press_handler(&evenths, handle_key_press, NULL);
 
     xcb_event_set_button_press_handler(&evenths, handle_button_press, NULL);
@@ -307,6 +311,7 @@ int main(int argc, char *argv[]) {
     //xcb_event_set_destroy_notify_handler(&evenths, handle_destroy_notify_event, NULL);
 
     xcb_event_set_expose_handler(&evenths, handle_expose_event, NULL);
+
 
     /* Setup NetWM atoms */
     #define GET_ATOM(name) \
@@ -341,6 +346,8 @@ int main(int argc, char *argv[]) {
     GET_ATOM(_NET_CURRENT_DESKTOP);
     GET_ATOM(_NET_ACTIVE_WINDOW);
     GET_ATOM(_NET_WORKAREA);
+
+    xcb_property_set_handler(&prophs, atoms[_NET_WM_NAME], 128, handle_windowname_change, NULL);
 
     keysyms = xcb_key_symbols_alloc(conn);
 
