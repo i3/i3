@@ -418,7 +418,7 @@ variables can be handy.
 
 *Syntax*:
 --------------
-set name value
+set $name value
 --------------
 
 *Examples*:
