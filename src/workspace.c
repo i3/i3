@@ -110,7 +110,12 @@ void workspace_show(const char *num) {
                 current->fullscreen_mode = CF_NONE;
 
         LOG("switching to %p\n", workspace);
-        con_focus(workspace);
+        Con *next = workspace;
+
+    while (!TAILQ_EMPTY(&(next->focus_head)))
+        next = TAILQ_FIRST(&(next->focus_head));
+
+        con_focus(next);
         workspace->fullscreen_mode = CF_OUTPUT;
         LOG("focused now = %p / %s\n", focused, focused->name);
 #if 0

@@ -275,7 +275,7 @@ void tree_next(char way, orientation_t orientation) {
     /* 3: focus choice comes in here. at the moment we will go down
      * until we find a window */
     /* TODO: check for window, atm we only go down as far as possible */
-    while (TAILQ_FIRST(&(next->focus_head)) != TAILQ_END(&(next->focus_head)))
+    while (!TAILQ_EMPTY(&(next->focus_head)))
         next = TAILQ_FIRST(&(next->focus_head));
 
     con_focus(next);
