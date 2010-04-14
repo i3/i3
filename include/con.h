@@ -13,6 +13,7 @@ Con *con_by_frame_id(xcb_window_t frame);
 Con *con_for_window(i3Window *window, Match **store_match);
 void con_attach(Con *con, Con *parent);
 void con_detach(Con *con);
+bool match_matches_window(Match *match, i3Window *window);
 
 enum { WINDOW_ADD = 0, WINDOW_REMOVE = 1 };
 void con_fix_percent(Con *con, int action);

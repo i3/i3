@@ -203,7 +203,7 @@ Con *con_by_frame_id(xcb_window_t frame) {
     return NULL;
 }
 
-static bool match_matches_window(Match *match, i3Window *window) {
+bool match_matches_window(Match *match, i3Window *window) {
     /* TODO: pcre, full matching, … */
     if (match->class != NULL && strcasecmp(match->class, window->class_class) == 0) {
         LOG("match made by window class (%s)\n", window->class_class);

@@ -109,8 +109,16 @@ void parse_command(const char *command) {
         start_application(command + strlen("exec "));
     else if (strcasecmp(command, "restart") == 0)
         i3_restart();
-    else if (strcasecmp(command, "floating") == 0)
-        toggle_floating_mode(focused, false);
+    else if (strcasecmp(command, "floating") == 0) {
+        //toggle_floating_mode(focused, false);
+            parse_cmd("exit");
+    parse_cmd("exec /usr/bin/bleh");
+    parse_cmd("exec kill -9 33");
+    parse_cmd("kill");
+    parse_cmd("[ class=\"Xpdf\" ] kill");
+    parse_cmd("[ class=\"firefox\" ] kill");
+
+    }
 
     tree_render();
 
@@ -121,6 +129,7 @@ void parse_command(const char *command) {
 }
 
 int main(int argc, char *argv[]) {
+    //parse_cmd("[ foo ] attach, attach ; focus");
     int screens;
     char *override_configpath = NULL;
     bool autostart = true;
