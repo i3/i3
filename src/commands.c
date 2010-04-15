@@ -866,6 +866,35 @@ static void next_previous_workspace(xcb_connection_t *conn, int direction) {
         }
 }
 
+static void parse_move_command(xcb_connection_t *conn, Client *last_focused, const char *command) {
+        int first, second;
+        resize_orientation_t orientation = O_VERTICAL;
+        Container *con = last_focused->container;
+        Workspace *ws = last_focused->workspace;
+        if (client_is_floating(last_focused)) {
+                DLOG("Moving a floating client\n");
+                if (STARTS_WITH(command, "left")) {
+                        command += strlen("left");
+                        last_focused->rect.x -= atoi(command);
+                } else if (STARTS_WITH(command, "right")) {
+                        command += strlen("right");
+                        last_focused->rect.x += atoi(command);
+                } else if (STARTS_WITH(command, "top")) {
+                        command += strlen("top");
+                        last_focused->rect.y -= atoi(command);
+                } else if (STARTS_WITH(command, "bottom")) {
+                        command += strlen("bottom");
+                        last_focused->rect.y += atoi(command);
+                } else {
+                        ELOG("Syntax: move <left|right|top|bottom> <pixels>\n");
+                        return;
+                }
+                /* resize_client flushes */
+                resize_client(conn, last_focused);
+                return;
+        }
+}
+
 static void parse_resize_command(xcb_connection_t *conn, Client *last_focused, const char *command) {
         int first, second;
         resize_orientation_t orientation = O_VERTICAL;
@@ -1027,6 +1056,14 @@ void parse_command(xcb_connection_t *conn, const char *command) {
                         return;
                 const char *rest = command + strlen("resize ");
                 parse_resize_command(conn, last_focused, rest);
+                return;
+        }
+
+        if (STARTS_WITH(command, "move ")) {
+                if (last_focused == NULL)
+                        return;
+                const char *rest = command + strlen("move ");
+                parse_move_command(conn, last_focused, rest);
                 return;
         }
 
