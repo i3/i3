@@ -18,7 +18,7 @@ bool match_is_empty(Match *match) {
             match->instance == NULL &&
             match->id == XCB_NONE &&
             match->con_id == NULL &&
-            match->floating == false);
+            match->floating == M_ANY);
 }
 
 bool match_matches_window(Match *match, i3Window *window) {

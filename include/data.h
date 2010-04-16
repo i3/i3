@@ -240,16 +240,16 @@ struct Match {
     char *instance;
     xcb_window_t id;
     Con *con_id;
-    bool floating;
+    enum { M_ANY = 0, M_TILING, M_FLOATING } floating;
 
-    enum { M_GLOBAL, M_OUTPUT, M_WORKSPACE } levels;
+    enum { M_GLOBAL = 0, M_OUTPUT, M_WORKSPACE } levels;
 
-    enum { M_USER, M_RESTART } source;
+    enum { M_USER = 0, M_RESTART } source;
 
     /* wo das fenster eingefügt werden soll. bei here wird es direkt
      * diesem Con zugewiesen, also layout saving. bei active ist es
      * ein assignment, welches an der momentan fokussierten stelle einfügt */
-    enum { M_HERE, M_ACTIVE } insert_where;
+    enum { M_HERE = 0, M_ACTIVE } insert_where;
 
     TAILQ_ENTRY(Match) matches;
 };
