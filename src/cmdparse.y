@@ -285,7 +285,7 @@ kill:
 
         printf("killing!\n");
         /* TODO: check if the match is empty, not if the result is empty */
-        if (TAILQ_EMPTY(&owindows))
+        if (match_is_empty(&current_match))
             tree_close(focused);
         else {
         TAILQ_FOREACH(current, &owindows, owindows) {
