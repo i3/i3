@@ -221,29 +221,6 @@ Con *con_by_frame_id(xcb_window_t frame) {
     return NULL;
 }
 
-bool match_matches_window(Match *match, i3Window *window) {
-    /* TODO: pcre, full matching, … */
-    if (match->class != NULL && strcasecmp(match->class, window->class_class) == 0) {
-        LOG("match made by window class (%s)\n", window->class_class);
-        return true;
-    }
-
-    if (match->instance != NULL && strcasecmp(match->instance, window->class_instance) == 0) {
-        LOG("match made by window instance (%s)\n", window->class_instance);
-        return true;
-    }
-
-
-    if (match->id != XCB_NONE && window->id == match->id) {
-        LOG("match made by window id (%d)\n", window->id);
-        return true;
-    }
-
-    LOG("window %d (%s) could not be matched\n", window->id, window->class_class);
-
-    return false;
-}
-
 /*
  * Returns the first container which wants to swallow this window
  * TODO: priority
