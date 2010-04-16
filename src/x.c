@@ -255,7 +255,7 @@ void x_push_changes(Con *con) {
     LOG("\n\n PUSHING CHANGES\n\n");
     x_push_node(con);
 
-    LOG("-- PUSHING FOCUS STACK --\n");
+    LOG("-- PUSHING WINDOW STACK --\n");
     /* X11 correctly represents the stack if we push it from bottom to top */
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
         LOG("stack: 0x%08x\n", state->id);
@@ -278,7 +278,7 @@ void x_push_changes(Con *con) {
         to_focus = focused->window->id;
 
     if (focused_id != to_focus) {
-        LOG("Updating focus\n");
+        LOG("Updating focus (focused: %p / %s)\n", focused, focused->name);
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, XCB_CURRENT_TIME);
     }
 
