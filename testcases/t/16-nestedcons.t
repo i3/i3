@@ -49,6 +49,9 @@ my $expected = {
     orientation => ignore(),
     type => 0,
     id => ignore(),
+    rect => ignore(),
+    layout => 0,
+    focus => ignore(),
 };
 
 cmp_deeply($tree, $expected, 'root node OK');
