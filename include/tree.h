@@ -15,7 +15,6 @@ extern struct all_cons_head all_cons;
 void tree_init();
 Con *tree_open_con(Con *con);
 void tree_split(Con *con, orientation_t orientation);
-void con_focus(Con *con);
 void level_up();
 void level_down();
 void tree_render();

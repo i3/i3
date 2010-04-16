@@ -10,24 +10,6 @@ struct Con *focused;
 struct all_cons_head all_cons = TAILQ_HEAD_INITIALIZER(all_cons);
 
 /*
- * Sets input focus to the given container. Will be updated in X11 in the next
- * run of x_push_changes().
- *
- */
-void con_focus(Con *con) {
-    assert(con != NULL);
-
-    /* 1: set focused-pointer to the new con */
-    /* 2: exchange the position of the container in focus stack of the parent all the way up */
-    TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
-    TAILQ_INSERT_HEAD(&(con->parent->focus_head), con, focused);
-    if (con->parent->parent != NULL)
-        con_focus(con->parent);
-
-    focused = con;
-}
-
-/*
  * Loads tree from ~/.i3/_restart.json
  *
  */

@@ -2,6 +2,7 @@
 #define _CON_H
 
 Con *con_new(Con *parent);
+void con_focus(Con *con);
 bool con_is_leaf(Con *con);
 bool con_accepts_window(Con *con);
 Con *con_get_output(Con *con);
