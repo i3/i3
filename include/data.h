@@ -239,6 +239,7 @@ struct Match {
     char *class;
     char *instance;
     xcb_window_t id;
+    Con *con_id;
     bool floating;
 
     enum { M_GLOBAL, M_OUTPUT, M_WORKSPACE } levels;

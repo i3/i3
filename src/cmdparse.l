@@ -95,11 +95,14 @@ none                            { return TOK_NONE; }
 mode                            { return TOK_MODE; }
 tiling                          { return TOK_TILING; }
 floating                        { return TOK_FLOATING; }
-workspace                       { return TOK_WORKSPACE; }
+workspace                       { BEGIN(WANT_WS_STRING); return TOK_WORKSPACE; }
 focus                           { return TOK_FOCUS; }
 move                            { return TOK_MOVE; }
+open                            { return TOK_OPEN; }
 
 class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
+id                              { BEGIN(WANT_QSTRING); return TOK_ID; }
+con_id                          { BEGIN(WANT_QSTRING); return TOK_CON_ID; }
 
 .                               { return (int)yytext[0]; }
 

@@ -109,8 +109,11 @@ void parse_cmd(const char *new) {
 %token TOK_WORKSPACE "workspace"
 %token TOK_FOCUS "focus"
 %token TOK_MOVE "move"
+%token TOK_OPEN "open"
 
 %token TOK_CLASS "class"
+%token TOK_ID "id"
+%token TOK_CON_ID "con_id"
 
 %token WHITESPACE "<whitespace>"
 %token STR "<string>"
@@ -156,9 +159,6 @@ matchstart:
         /* copy all_cons */
         Con *con;
         TAILQ_FOREACH(con, &all_cons, all_cons) {
-            if (con->window == NULL)
-                continue;
-
             owindow *ow = smalloc(sizeof(owindow));
             ow->con = con;
             TAILQ_INSERT_TAIL(&owindows, ow, owindows);
@@ -184,12 +184,22 @@ matchend:
             next = TAILQ_NEXT(next, owindows);
 
             printf("checking if con %p / %s matches\n", current->con, current->con->name);
-            if (match_matches_window(&current_match, current->con->window)) {
-                printf("matches!\n");
-                TAILQ_INSERT_TAIL(&owindows, current, owindows);
+            if (current_match.con_id != NULL) {
+                if (current_match.con_id == current->con) {
+                    printf("matches container!\n");
+                    TAILQ_INSERT_TAIL(&owindows, current, owindows);
+
+                }
             } else {
-                printf("doesnt match\n");
-                free(current);
+                if (current->con->window == NULL)
+                    continue;
+                if (match_matches_window(&current_match, current->con->window)) {
+                    printf("matches window!\n");
+                    TAILQ_INSERT_TAIL(&owindows, current, owindows);
+                } else {
+                    printf("doesnt match\n");
+                    free(current);
+                }
             }
         }
 
@@ -205,6 +215,13 @@ criteria:
     {
         printf("criteria: class = %s\n", $<string>3);
         current_match.class = $<string>3;
+    }
+    | TOK_CON_ID '=' STR
+    {
+        printf("criteria: id = %s\n", $<string>3);
+        /* TODO: correctly parse number */
+        current_match.con_id = atoi($<string>3);
+        printf("id as int = %d\n", current_match.con_id);
     }
     ;
 
@@ -226,9 +243,11 @@ operation:
     | mode
     | workspace
     | move*/
+    | workspace
     | attach
     | focus
     | kill
+    | open
     ;
 
 exec:
@@ -265,10 +284,32 @@ kill:
         owindow *current;
 
         printf("killing!\n");
+        /* TODO: check if the match is empty, not if the result is empty */
+        if (TAILQ_EMPTY(&owindows))
+            tree_close(focused);
+        else {
         TAILQ_FOREACH(current, &owindows, owindows) {
             printf("matching: %p / %s\n", current->con, current->con->name);
             tree_close(current->con);
         }
+        }
 
+    }
+    ;
+
+workspace:
+    TOK_WORKSPACE WHITESPACE STR
+    {
+        printf("should switch to workspace %s\n", $<string>3);
+        workspace_show($<string>3);
+        free($<string>3);
+    }
+    ;
+
+open:
+    TOK_OPEN
+    {
+        printf("opening new container\n");
+        tree_open_con(NULL);
     }
     ;
