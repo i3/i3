@@ -14,21 +14,21 @@ use v5.10;
 my $i3 = i3("/tmp/nestedcons");
 
 sub get_workspace_names {
-	my $tree = $i3->get_workspaces->recv;
-	my @workspaces = map { @{$_->{nodes}} } @{$tree->{nodes}};
-	[ map { $_->{name} } @workspaces ]
+    my $tree = $i3->get_workspaces->recv;
+    my @workspaces = map { @{$_->{nodes}} } @{$tree->{nodes}};
+    [ map { $_->{name} } @workspaces ]
 }
 
 sub workspace_exists {
-	my ($name) = @_;
-	($name ~~ @{get_workspace_names()})
+    my ($name) = @_;
+    ($name ~~ @{get_workspace_names()})
 }
 
 sub get_unused_workspace {
-	my @names = get_workspace_names();
-	my $tmp;
-	do { $tmp = tmpnam() } while ($tmp ~~ @names);
-	$tmp
+    my @names = get_workspace_names();
+    my $tmp;
+    do { $tmp = tmpnam() } while ($tmp ~~ @names);
+    $tmp
 }
 
 my $tmp = get_unused_workspace();
