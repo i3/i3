@@ -33,7 +33,7 @@ Con *workspace_get(const char *num) {
         }
     }
 
-    LOG("should switch to ws %s\n", num);
+    LOG("getting ws %s\n", num);
     if (workspace == NULL) {
         LOG("need to create this one\n");
         output = con_get_output(focused);
@@ -96,7 +96,9 @@ bool workspace_is_visible(Workspace *ws) {
  *
  */
 void workspace_show(const char *num) {
-    Con *workspace, *current;
+    Con *workspace, *current, *old;
+
+    old = con_get_workspace(focused);
 
     workspace = workspace_get(num);
     workspace->fullscreen_mode = CF_OUTPUT;
@@ -109,6 +111,12 @@ void workspace_show(const char *num) {
 
     while (!TAILQ_EMPTY(&(next->focus_head)))
         next = TAILQ_FIRST(&(next->focus_head));
+
+
+    if (TAILQ_EMPTY(&(old->nodes_head))) {
+        LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
+        tree_close(old);
+    }
 
     con_focus(next);
     workspace->fullscreen_mode = CF_OUTPUT;
