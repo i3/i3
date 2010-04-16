@@ -5,30 +5,17 @@
 # (necessary for further tests)
 #
 use Test::More tests => 2;
-use List::MoreUtils qw(all none);
-use Data::Dumper;
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use i3test;
 use AnyEvent::I3;
-use File::Temp qw(tmpnam);
 use v5.10;
 
 my $i3 = i3("/tmp/nestedcons");
 
-sub get_workspace_names {
-    my $tree = $i3->get_workspaces->recv;
-    my @workspaces = map { @{$_->{nodes}} } @{$tree->{nodes}};
-    [ map { $_->{name} } @workspaces ]
-}
-
 sub workspace_exists {
     my ($name) = @_;
     ($name ~~ @{get_workspace_names()})
-}
-
-sub get_unused_workspace {
-    my @names = get_workspace_names();
-    my $tmp;
-    do { $tmp = tmpnam() } while ($tmp ~~ @names);
-    $tmp
 }
 
 my $tmp = get_unused_workspace();
@@ -36,6 +23,11 @@ diag("Temporary workspace name: $tmp\n");
 
 $i3->command("workspace $tmp")->recv;
 ok(workspace_exists($tmp), 'workspace created');
+# if the workspace could not be created, we cannot run any other test
+# (every test starts by creating its workspace)
+if (!workspace_exists($tmp)) {
+    BAIL_OUT('Cannot create workspace, further tests make no sense');
+}
 
 my $otmp = get_unused_workspace();
 diag("Other temporary workspace name: $otmp\n");
