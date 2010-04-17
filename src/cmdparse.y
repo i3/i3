@@ -132,6 +132,7 @@ commands: /* empty */
             TAILQ_REMOVE(&owindows, current, owindows);
             free(current);
         }
+        memset(&current_match, 0, sizeof(Match));
     }
     ;
 
