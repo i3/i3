@@ -6,6 +6,7 @@
 #define _X_H
 
 void x_con_init(Con *con);
+void x_reinit(Con *con);
 void x_con_kill(Con *con);
 void x_window_kill(xcb_window_t window);
 void x_draw_decoration(Con *con);

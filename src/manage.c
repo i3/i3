@@ -110,12 +110,16 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         goto out;
 
     /* Check if the window is already managed */
-    if (con_by_window_id(window) != NULL)
+    if (con_by_window_id(window) != NULL) {
+        LOG("already managed\n");
         goto out;
+    }
 
     /* Get the initial geometry (position, size, …) */
-    if ((geom = xcb_get_geometry_reply(conn, geomc, 0)) == NULL)
+    if ((geom = xcb_get_geometry_reply(conn, geomc, 0)) == NULL) {
+        LOG("could not get geometry\n");
         goto out;
+    }
 
     LOG("reparenting!\n");
     uint32_t mask = 0;
@@ -159,6 +163,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         }
     }
     nc->window = cwindow;
+    x_reinit(nc);
 
     xcb_void_cookie_t rcookie = xcb_reparent_window_checked(conn, window, nc->frame, 0, 0);
     if (xcb_request_check(conn, rcookie) != NULL) {

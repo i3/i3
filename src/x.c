@@ -86,6 +86,25 @@ void x_con_init(Con *con) {
     LOG("adding new state for window id 0x%08x\n", state->id);
 }
 
+/*
+ * Re-initializes the associated X window state for this container. You have
+ * to call this when you assign a client to an empty container to ensure that
+ * its state gets updated correctly.
+ *
+ */
+void x_reinit(Con *con) {
+    struct con_state *state;
+
+    if ((state = state_for_frame(con->frame)) == NULL) {
+        ELOG("window state not found\n");
+        return;
+    }
+
+    LOG("resetting state %p to initial\n", state);
+    state->initial = true;
+    memset(&(state->window_rect), 0, sizeof(Rect));
+}
+
 void x_con_kill(Con *con) {
     con_state *state;
 
@@ -202,8 +221,10 @@ static void x_push_node(Con *con) {
     LOG("Pushing changes for node %p / %s\n", con, con->name);
     state = state_for_frame(con->frame);
 
-    /* map/unmap if map state changed */
-    if (state->mapped != con->mapped) {
+    /* map/unmap if map state changed, also ensure that the child window
+     * is changed if we are mapped *and* in initial state (meaning the
+     * container was empty before, but now got a child) */
+    if (state->mapped != con->mapped || (con->mapped && state->initial)) {
         if (!con->mapped) {
             LOG("unmapping container\n");
             xcb_unmap_window(conn, con->frame);
