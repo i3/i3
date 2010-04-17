@@ -272,7 +272,7 @@ int main(int argc, char *argv[]) {
     xcb_event_set_map_request_handler(&evenths, handle_map_request, NULL);
 
     xcb_event_set_unmap_notify_handler(&evenths, handle_unmap_notify_event, NULL);
-    //xcb_event_set_destroy_notify_handler(&evenths, handle_destroy_notify_event, NULL);
+    xcb_event_set_destroy_notify_handler(&evenths, handle_destroy_notify_event, NULL);
 
     xcb_event_set_expose_handler(&evenths, handle_expose_event, NULL);
 

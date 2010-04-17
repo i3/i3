@@ -97,7 +97,7 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn,
  *
  */
 int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_notify_event_t *event);
-#if 0
+
 /**
  * A destroy notify event is sent when the window is not unmapped, but
  * immediately destroyed (for example when starting a window and immediately
@@ -110,7 +110,6 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 int handle_destroy_notify_event(void *data, xcb_connection_t *conn,
                                 xcb_destroy_notify_event_t *event);
 
-#endif
 /**
  * Called when a window changes its title
  *

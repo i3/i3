@@ -507,7 +507,6 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         return 1;
 }
 
-#if 0
 /*
  * A destroy notify event is sent when the window is not unmapped, but
  * immediately destroyed (for example when starting a window and immediately
@@ -518,16 +517,16 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
  *
  */
 int handle_destroy_notify_event(void *data, xcb_connection_t *conn, xcb_destroy_notify_event_t *event) {
-        DLOG("destroy notify for 0x%08x, 0x%08x\n", event->event, event->window);
+    DLOG("destroy notify for 0x%08x, 0x%08x\n", event->event, event->window);
 
-        xcb_unmap_notify_event_t unmap;
-        unmap.sequence = event->sequence;
-        unmap.event = event->event;
-        unmap.window = event->window;
+    xcb_unmap_notify_event_t unmap;
+    unmap.sequence = event->sequence;
+    unmap.event = event->event;
+    unmap.window = event->window;
 
-        return handle_unmap_notify_event(NULL, conn, &unmap);
+    return handle_unmap_notify_event(NULL, conn, &unmap);
 }
-#endif
+
 /*
  * Called when a window changes its title
  *
