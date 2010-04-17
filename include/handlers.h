@@ -144,7 +144,6 @@ int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
  */
 int handle_expose_event(void *data, xcb_connection_t *conn,
                         xcb_expose_event_t *event);
-#if 0
 /**
  * Handle client messages (EWMH)
  *
@@ -152,6 +151,7 @@ int handle_expose_event(void *data, xcb_connection_t *conn,
 int handle_client_message(void *data, xcb_connection_t *conn,
                           xcb_client_message_event_t *event);
 
+#if 0
 /**
  * Handles _NET_WM_WINDOW_TYPE changes
  *

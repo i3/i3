@@ -642,36 +642,40 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
 #endif
 }
 
-#if 0
 /*
  * Handle client messages (EWMH)
  *
  */
 int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message_event_t *event) {
-        if (event->type == atoms[_NET_WM_STATE]) {
-                if (event->format != 32 || event->data.data32[1] != atoms[_NET_WM_STATE_FULLSCREEN])
-                        return 0;
+    LOG("ClientMessage for window 0x%08x\n", event->window);
+    if (event->type == atoms[_NET_WM_STATE]) {
+        if (event->format != 32 || event->data.data32[1] != atoms[_NET_WM_STATE_FULLSCREEN])
+            return 0;
 
-                Client *client = table_get(&by_child, event->window);
-                if (client == NULL)
-                        return 0;
+        Con *con = con_by_window_id(event->window);
+        if (con == NULL)
+            return 0;
 
-                /* Check if the fullscreen state should be toggled */
-                if ((client->fullscreen &&
-                     (event->data.data32[0] == _NET_WM_STATE_REMOVE ||
-                      event->data.data32[0] == _NET_WM_STATE_TOGGLE)) ||
-                    (!client->fullscreen &&
-                     (event->data.data32[0] == _NET_WM_STATE_ADD ||
-                      event->data.data32[0] == _NET_WM_STATE_TOGGLE)))
-                        client_toggle_fullscreen(conn, client);
-        } else {
-                ELOG("unhandled clientmessage\n");
-                return 0;
-        }
+        /* Check if the fullscreen state should be toggled */
+        if ((con->fullscreen_mode != CF_NONE &&
+             (event->data.data32[0] == _NET_WM_STATE_REMOVE ||
+              event->data.data32[0] == _NET_WM_STATE_TOGGLE)) ||
+            (con->fullscreen_mode == CF_NONE &&
+             (event->data.data32[0] == _NET_WM_STATE_ADD ||
+              event->data.data32[0] == _NET_WM_STATE_TOGGLE)))
+                con_toggle_fullscreen(con);
 
-        return 1;
+        tree_render();
+        x_push_changes(croot);
+    } else {
+        ELOG("unhandled clientmessage\n");
+        return 0;
+    }
+
+    return 1;
 }
 
+#if 0
 int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t atom, xcb_get_property_reply_t *property) {
         /* TODO: Implement this one. To do this, implement a little test program which sleep(1)s

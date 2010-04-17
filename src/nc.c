@@ -279,6 +279,9 @@ int main(int argc, char *argv[]) {
     /* Enter window = user moved his mouse over the window */
     xcb_event_set_enter_notify_handler(&evenths, handle_enter_notify, NULL);
 
+    /* Client message are sent to the root window. The only interesting client message
+       for us is _NET_WM_STATE, we honour _NET_WM_STATE_FULLSCREEN */
+    xcb_event_set_client_message_handler(&evenths, handle_client_message, NULL);
 
     /* Setup NetWM atoms */
     #define GET_ATOM(name) \
