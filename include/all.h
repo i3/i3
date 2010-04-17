@@ -49,5 +49,6 @@
 #include "load_layout.h"
 #include "render.h"
 #include "window.h"
+#include "match.h"
 
 #endif
