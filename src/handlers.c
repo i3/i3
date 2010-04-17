@@ -270,6 +270,7 @@ int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_eve
     add_ignore_event(event->sequence);
 
     manage_window(event->window, cookie, false);
+    x_push_changes(croot);
     return 1;
 }
 #if 0
