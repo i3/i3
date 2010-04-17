@@ -238,7 +238,6 @@ operation:
     /*| reload
     | restart
     | mark
-    | fullscreen
     | layout
     | border
     | mode
@@ -249,6 +248,7 @@ operation:
     | focus
     | kill
     | open
+    | fullscreen
     ;
 
 exec:
@@ -285,14 +285,14 @@ kill:
         owindow *current;
 
         printf("killing!\n");
-        /* TODO: check if the match is empty, not if the result is empty */
+        /* check if the match is empty, not if the result is empty */
         if (match_is_empty(&current_match))
             tree_close(focused);
         else {
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            tree_close(current->con);
-        }
+            TAILQ_FOREACH(current, &owindows, owindows) {
+                printf("matching: %p / %s\n", current->con, current->con->name);
+                tree_close(current->con);
+            }
         }
 
     }
@@ -312,5 +312,24 @@ open:
     {
         printf("opening new container\n");
         tree_open_con(NULL);
+    }
+    ;
+
+fullscreen:
+    TOK_FULLSCREEN
+    {
+        printf("toggling fullscreen\n");
+        owindow *current;
+
+        /* check if the match is empty, not if the result is empty */
+        if (match_is_empty(&current_match))
+            con_toggle_fullscreen(focused);
+        else {
+            TAILQ_FOREACH(current, &owindows, owindows) {
+                printf("matching: %p / %s\n", current->con, current->con->name);
+                con_toggle_fullscreen(current->con);
+            }
+        }
+
     }
     ;
