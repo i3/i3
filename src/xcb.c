@@ -328,3 +328,23 @@ void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r) {
         /* ignore events which are generated because we configured a window */
         add_ignore_event(cookie.sequence);
 }
+
+/*
+ * Returns true if the given reply contains the given atom.
+ *
+ */
+bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom) {
+    if (prop == NULL || xcb_get_property_value_length(prop) == 0)
+        return false;
+
+    xcb_atom_t *atoms;
+    if ((atoms = xcb_get_property_value(prop)) == NULL)
+        return false;
+
+    for (int i = 0; i < xcb_get_property_value_length(prop); i++)
+        if (atoms[i] == atom)
+            return true;
+
+    return false;
+
+}

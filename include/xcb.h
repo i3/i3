@@ -172,4 +172,7 @@ int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *t
  */
 void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r);
 
+
+bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom);
+
 #endif

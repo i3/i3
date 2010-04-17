@@ -169,32 +169,30 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (xcb_request_check(conn, rcookie) != NULL) {
         LOG("Could not reparent the window, aborting\n");
         goto out;
-        //xcb_destroy_window(conn, nc->frame);
     }
 
-    xcb_atom_t *state;
-    xcb_get_property_reply_t *preply;
-    if ((preply = xcb_get_property_reply(conn, state_cookie, NULL)) != NULL &&
-        (state = xcb_get_property_value(preply)) != NULL) {
-        /* Check all set _NET_WM_STATEs */
-        for (int i = 0; i < xcb_get_property_value_length(preply); i++) {
-            if (state[i] != atoms[_NET_WM_STATE_FULLSCREEN])
-                    continue;
-            con_toggle_fullscreen(nc);
-            break;
-        }
-    }
+    xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, state_cookie, NULL);
+    if (xcb_reply_contains_atom(reply, atoms[_NET_WM_STATE_FULLSCREEN]))
+        con_toggle_fullscreen(nc);
 
+    reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
+    if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DOCK]))
+        LOG("this window is a dock\n");
+
+    if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DIALOG]) ||
+        xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_UTILITY]) ||
+        xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_TOOLBAR]) ||
+        xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_SPLASH]))
+        LOG("This window is a dialog window\n");
+
+
+    /* Put the client inside the save set. Upon termination (whether killed or
+     * normal exit does not matter) of the window manager, these clients will
+     * be correctly reparented to their most closest living ancestor (=
+     * cleanup) */
     xcb_change_save_set(conn, XCB_SET_MODE_INSERT, window);
 
     tree_render();
-
-#if 0
-    /* Reparent the window and add it to our list of managed windows */
-    reparent_window(conn, window, attr->visual, geom->root, geom->depth,
-                    geom->x, geom->y, geom->width, geom->height,
-                    geom->border_width);
-#endif
 
     free(geom);
 out:
@@ -203,118 +201,17 @@ out:
 }
 
 #if 0
-/*
- * reparent_window() gets called when a new window was opened and becomes a child of the root
- * window, or it gets called by us when we manage the already existing windows at startup.
- *
- * Essentially, this is the point where we take over control.
- *
- */
 void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                      xcb_visualid_t visual, xcb_window_t root, uint8_t depth,
                      int16_t x, int16_t y, uint16_t width, uint16_t height,
                      uint32_t border_width) {
 
-        xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
-                                  utf8_title_cookie, title_cookie,
-                                  class_cookie, leader_cookie;
-        uint32_t mask = 0;
-        uint32_t values[3];
-        uint16_t original_height = height;
-        bool map_frame = true;
-
-        /* We are interested in property changes */
-        mask = XCB_CW_EVENT_MASK;
-        values[0] = CHILD_EVENT_MASK;
-        xcb_change_window_attributes(conn, child, mask, values);
-
-        /* Place requests for properties ASAP */
-        wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
-        strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
-        state_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STATE], UINT32_MAX);
-        utf8_title_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_NAME], 128);
-        leader_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[WM_CLIENT_LEADER], UINT32_MAX);
-        title_cookie = xcb_get_any_property_unchecked(conn, false, child, WM_NAME, 128);
-        class_cookie = xcb_get_any_property_unchecked(conn, false, child, WM_CLASS, 128);
-
-        Client *new = table_get(&by_child, child);
-
-        /* Events for already managed windows should already be filtered in manage_window() */
-        assert(new == NULL);
-
-        LOG("Managing window 0x%08x\n", child);
-        DLOG("x = %d, y = %d, width = %d, height = %d\n", x, y, width, height);
-        new = scalloc(sizeof(Client));
-        new->force_reconfigure = true;
-
-        /* Update the data structures */
-        Client *old_focused = CUR_CELL->currently_focused;
-
-        new->container = CUR_CELL;
-        new->workspace = new->container->workspace;
-
-        /* Minimum useful size for managed windows is 75x50 (primarily affects floating) */
+       /* Minimum useful size for managed windows is 75x50 (primarily affects floating) */
         width = max(width, 75);
         height = max(height, 50);
 
-        new->frame = xcb_generate_id(conn);
-        new->child = child;
-        new->rect.width = width;
-        new->rect.height = height;
-        new->width_increment = 1;
-        new->height_increment = 1;
-        new->border_width = border_width;
-        /* Pre-initialize the values for floating */
-        new->floating_rect.x = -1;
-        new->floating_rect.width = width;
-        new->floating_rect.height = height;
-
         if (config.default_border != NULL)
                 client_init_border(conn, new, config.default_border[1]);
-
-        mask = 0;
-
-        /* Don’t generate events for our new window, it should *not* be managed */
-        mask |= XCB_CW_OVERRIDE_REDIRECT;
-        values[0] = 1;
-
-        /* We want to know when… */
-        mask |= XCB_CW_EVENT_MASK;
-        values[1] = FRAME_EVENT_MASK;
-
-        i3Font *font = load_font(conn, config.font);
-        width = min(width, c_ws->rect.x + c_ws->rect.width);
-        height = min(height, c_ws->rect.y + c_ws->rect.height);
-
-        Rect framerect = {x, y,
-                          width + 2 + 2,                  /* 2 px border at each side */
-                          height + 2 + 2 + font->height}; /* 2 px border plus font’s height */
-
-        /* Yo dawg, I heard you like windows, so I create a window around your window… */
-        new->frame = create_window(conn, framerect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, false, mask, values);
-
-        /* Put the client inside the save set. Upon termination (whether killed or normal exit
-           does not matter) of the window manager, these clients will be correctly reparented
-           to their most closest living ancestor (= cleanup) */
-        xcb_change_save_set(conn, XCB_SET_MODE_INSERT, child);
-
-        /* Generate a graphics context for the titlebar */
-        new->titlegc = xcb_generate_id(conn);
-        xcb_create_gc(conn, new->titlegc, new->frame, 0, 0);
-
-        /* Moves the original window into the new frame we've created for it */
-        new->awaiting_useless_unmap = true;
-        xcb_void_cookie_t cookie = xcb_reparent_window_checked(conn, child, new->frame, 0, font->height);
-        if (xcb_request_check(conn, cookie) != NULL) {
-                DLOG("Could not reparent the window, aborting\n");
-                xcb_destroy_window(conn, new->frame);
-                free(new);
-                return;
-        }
-
-        /* Put our data structure (Client) into the table */
-        table_put(&by_parent, new->frame, new);
-        table_put(&by_child, child, new);
 
         /* We need to grab the mouse buttons for click to focus */
         xcb_grab_button(conn, false, child, XCB_EVENT_MASK_BUTTON_PRESS,
@@ -327,36 +224,22 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         3 /* right mouse button */,
                         XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
 
-        /* Get _NET_WM_WINDOW_TYPE (to see if it’s a dock) */
-        xcb_atom_t *atom;
-        xcb_get_property_reply_t *preply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
-        if (preply != NULL && preply->value_len > 0 && (atom = xcb_get_property_value(preply))) {
-                for (int i = 0; i < xcb_get_property_value_length(preply); i++)
-                        if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]) {
-                                DLOG("Window is a dock.\n");
-                                Output *t_out = get_output_containing(x, y);
-                                if (t_out != c_ws->output) {
-                                        DLOG("Dock client requested to be on output %s by geometry (%d, %d)\n",
-                                                        t_out->name, x, y);
-                                        new->workspace = t_out->current_workspace;
-                                }
-                                new->dock = true;
-                                new->borderless = true;
-                                new->titlebar_position = TITLEBAR_OFF;
-                                new->force_reconfigure = true;
-                                new->container = NULL;
-                                SLIST_INSERT_HEAD(&(t_out->dock_clients), new, dock_clients);
-                                /* If it’s a dock we can’t make it float, so we break */
-                                new->floating = FLOATING_AUTO_OFF;
-                                break;
-                        } else if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DIALOG] ||
-                                   atom[i] == atoms[_NET_WM_WINDOW_TYPE_UTILITY] ||
-                                   atom[i] == atoms[_NET_WM_WINDOW_TYPE_TOOLBAR] ||
-                                   atom[i] == atoms[_NET_WM_WINDOW_TYPE_SPLASH]) {
-                                /* Set the dialog window to automatically floating, will be used below */
-                                new->floating = FLOATING_AUTO_ON;
-                                DLOG("dialog/utility/toolbar/splash window, automatically floating\n");
-                        }
+        if (dock) {
+            DLOG("Window is a dock.\n");
+            Output *t_out = get_output_containing(x, y);
+            if (t_out != c_ws->output) {
+                    DLOG("Dock client requested to be on output %s by geometry (%d, %d)\n",
+                                    t_out->name, x, y);
+                    new->workspace = t_out->current_workspace;
+            }
+            new->dock = true;
+            new->borderless = true;
+            new->titlebar_position = TITLEBAR_OFF;
+            new->force_reconfigure = true;
+            new->container = NULL;
+            SLIST_INSERT_HEAD(&(t_out->dock_clients), new, dock_clients);
+            /* If it’s a dock we can’t make it float, so we break */
+            new->floating = FLOATING_AUTO_OFF;
         }
 
         /* All clients which have a leader should be floating */
@@ -465,34 +348,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 }
         }
 
-        if (new->workspace->fullscreen_client != NULL) {
-                DLOG("Setting below fullscreen window\n");
-
-                /* If we are in fullscreen, we should place the window below
-                 * the fullscreen window to not be annoying */
-                uint32_t values[] = {
-                        new->workspace->fullscreen_client->frame,
-                        XCB_STACK_MODE_BELOW
-                };
-                xcb_configure_window(conn, new->frame,
-                                     XCB_CONFIG_WINDOW_SIBLING |
-                                     XCB_CONFIG_WINDOW_STACK_MODE, values);
-        }
-
-        /* Insert into the currently active container, if it’s not a dock window */
-        if (!new->dock && !client_is_floating(new)) {
-                /* Insert after the old active client, if existing. If it does not exist, the
-                   container is empty and it does not matter, where we insert it */
-                if (old_focused != NULL && !old_focused->dock)
-                        CIRCLEQ_INSERT_AFTER(&(new->container->clients), old_focused, new, clients);
-                else CIRCLEQ_INSERT_TAIL(&(new->container->clients), new, clients);
-
-                if (new->container->workspace->fullscreen_client != NULL)
-                        SLIST_INSERT_AFTER(new->container->workspace->fullscreen_client, new, focus_clients);
-                else SLIST_INSERT_HEAD(&(new->container->workspace->focus_stack), new, focus_clients);
-
-                client_set_below_floating(conn, new);
-        }
 
         if (client_is_floating(new)) {
                 SLIST_INSERT_HEAD(&(new->workspace->focus_stack), new, focus_clients);
@@ -539,20 +394,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
         new->initialized = true;
 
-        /* Check if the window already got the fullscreen hint set */
-        xcb_atom_t *state;
-        if ((preply = xcb_get_property_reply(conn, state_cookie, NULL)) != NULL &&
-            (state = xcb_get_property_value(preply)) != NULL)
-                /* Check all set _NET_WM_STATEs */
-                for (int i = 0; i < xcb_get_property_value_length(preply); i++) {
-                        if (state[i] != atoms[_NET_WM_STATE_FULLSCREEN])
-                                continue;
-                        /* If the window got the fullscreen state, we just toggle fullscreen
-                           and don’t event bother to redraw the layout – that would not change
-                           anything anyways */
-                        client_toggle_fullscreen(conn, new);
-                        goto map;
-                }
 
         render_layout(conn);
 
