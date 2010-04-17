@@ -21,7 +21,7 @@ endif
 # Depend on the specific file (.c for each .o) and on all headers
 src/%.o: src/%.c ${HEADERS}
 	echo "CC $<"
-	$(CC) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/$(shell basename $< .c)/ { print NR }' loglevels.tmp))" -c -o $@ $<
+	$(CC) $(CFLAGS) -DLOGLEVEL="((uint64_t)1 << $(shell awk '/$(shell basename $< .c)/ { print NR }' loglevels.tmp))" -c -o $@ $<
 
 all: src/cfgparse.y.o src/cfgparse.yy.o src/cmdparse.y.o src/cmdparse.yy.o ${FILES}
 	echo "LINK i3"

@@ -41,7 +41,7 @@ void set_verbosity(bool _verbose);
  * but only if the corresponding debug loglevel was activated.
  *
  */
-void debuglog(int lev, char *fmt, ...);
+void debuglog(uint64_t lev, char *fmt, ...);
 
 /**
  * Logs the given message to stdout while prefixing the current time to it.
