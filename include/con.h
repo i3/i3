@@ -17,5 +17,6 @@ void con_detach(Con *con);
 
 enum { WINDOW_ADD = 0, WINDOW_REMOVE = 1 };
 void con_fix_percent(Con *con, int action);
+void con_toggle_fullscreen(Con *con);
 
 #endif

@@ -268,3 +268,25 @@ void con_fix_percent(Con *con, int action) {
         child->percent *= fix;
     }
 }
+
+void con_toggle_fullscreen(Con *con) {
+    Con *workspace, *fullscreen;
+    LOG("toggling fullscreen for %p / %s\n", con, con->name);
+    if (con->fullscreen_mode == CF_NONE) {
+        /* 1: check if there already is a fullscreen con */
+        workspace = con_get_workspace(con);
+        if ((fullscreen = con_get_fullscreen_con(workspace)) != NULL) {
+            LOG("Not entering fullscreen mode, container (%p/%s) "
+                "already is in fullscreen mode\n",
+                fullscreen, fullscreen->name);
+            return;
+        }
+
+        /* 2: enable fullscreen */
+        con->fullscreen_mode = CF_OUTPUT;
+    } else {
+        /* 1: disable fullscreen */
+        con->fullscreen_mode = CF_NONE;
+    }
+    LOG("mode now: %d\n", con->fullscreen_mode);
+}
