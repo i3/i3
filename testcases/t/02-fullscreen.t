@@ -1,7 +1,7 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use Test::More tests => 19;
+use Test::More tests => 24;
 use Test::Deep;
 use X11::XCB qw(:all);
 use Data::Dumper;
@@ -20,6 +20,10 @@ my $i3 = i3("/tmp/nestedcons");
 
 my $tmp = get_unused_workspace();
 $i3->command("workspace $tmp")->recv;
+
+sub fullscreen_windows {
+    scalar grep { $_->{fullscreen_mode} != 0 } @{get_ws_content($tmp)}
+}
 
 # get the output of this workspace
 my $tree = $i3->get_workspaces->recv;
@@ -134,16 +138,38 @@ ok(!$swindow->mapped, 'window not mapped while fullscreen window active');
 $new_rect = $swindow->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned");
 
-sleep(0.25);
 $swindow->fullscreen(1);
-sleep(0.25);
+sleep 0.25;
 
-my $content = get_ws_content($tmp);
+is(fullscreen_windows(), 1, 'amount of fullscreen windows');
 
-my $fullscreen_windows = grep { $_->{fullscreen_mode} != 0 } @{$content};
-is($fullscreen_windows, 1, 'amount of fullscreen windows');
+$window->fullscreen(0);
+sleep 0.25;
+is(fullscreen_windows(), 0, 'amount of fullscreen windows');
+
+ok($swindow->mapped, 'window mapped after other fullscreen ended');
+
+###########################################################################
+# as $swindow is out of state at the moment (it requested to be fullscreen,
+# but the WM denied), we check what happens if we go out of fullscreen now
+# (nothing should happen)
+###########################################################################
+
+$swindow->fullscreen(0);
+sleep 0.25;
+
+is(fullscreen_windows(), 0, 'amount of fullscreen windows after disabling');
+
+$i3->command('fullscreen')->recv;
+
+is(fullscreen_windows(), 1, 'amount of fullscreen windows after fullscreen command');
+
+$i3->command('fullscreen')->recv;
+
+is(fullscreen_windows(), 0, 'amount of fullscreen windows after fullscreen command');
 
 # clean up the workspace so that it will be cleaned when switching away
-$i3->command('kill')->recv for (@{$content});
+$i3->command('kill')->recv for (@{get_ws_content($tmp)});
+
 
 diag( "Testing i3, Perl $], $^X" );
