@@ -167,6 +167,19 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         //xcb_destroy_window(conn, nc->frame);
     }
 
+    xcb_atom_t *state;
+    xcb_get_property_reply_t *preply;
+    if ((preply = xcb_get_property_reply(conn, state_cookie, NULL)) != NULL &&
+        (state = xcb_get_property_value(preply)) != NULL) {
+        /* Check all set _NET_WM_STATEs */
+        for (int i = 0; i < xcb_get_property_value_length(preply); i++) {
+            if (state[i] != atoms[_NET_WM_STATE_FULLSCREEN])
+                    continue;
+            con_toggle_fullscreen(nc);
+            break;
+        }
+    }
+
     xcb_change_save_set(conn, XCB_SET_MODE_INSERT, window);
 
     tree_render();
