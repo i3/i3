@@ -4,16 +4,9 @@
 # the workspace to be empty).
 # TODO: skip it by default?
 
-use Test::More tests => 7;
-use Test::Deep;
+use i3test tests => 7;
 use X11::XCB qw(:all);
-use Data::Dumper;
 use Time::HiRes qw(sleep);
-use FindBin;
-use Digest::SHA1 qw(sha1_base64);
-use lib "$FindBin::Bin/lib";
-use i3test;
-use AnyEvent::I3;
 
 BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');

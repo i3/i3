@@ -4,11 +4,7 @@
 # Tests whether we can switch to a non-existant workspace
 # (necessary for further tests)
 #
-use Test::More tests => 2;
-use FindBin;
-use lib "$FindBin::Bin/lib";
-use i3test;
-use AnyEvent::I3;
+use i3test tests => 2;
 use v5.10;
 
 my $i3 = i3("/tmp/nestedcons");

@@ -1,13 +1,8 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use Test::More tests => 3;
-use Test::Exception;
+use i3test tests => 2;
 use List::MoreUtils qw(all);
-use FindBin;
-use lib "$FindBin::Bin/lib";
-use i3test;
-use AnyEvent::I3;
 
 my $i3 = i3;
 

@@ -3,12 +3,7 @@
 #
 # Tests all kinds of matching methods
 #
-use Test::More tests => 4;
-use Data::Dumper;
-use FindBin;
-use lib "$FindBin::Bin/lib";
-use i3test;
-use AnyEvent::I3;
+use i3test tests => 4;
 use X11::XCB qw(:all);
 use v5.10;
 

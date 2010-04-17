@@ -3,15 +3,9 @@
 # Checks if the focus is correctly restored, when creating a floating client
 # over an unfocused tiling client and destroying the floating one again.
 
-use Test::More tests => 4;
-use Test::Deep;
+use i3test tests => 4;
 use X11::XCB qw(:all);
-use Data::Dumper;
 use Time::HiRes qw(sleep);
-use FindBin;
-use lib "$FindBin::Bin/lib";
-use i3test;
-use AnyEvent::I3;
 
 BEGIN {
     use_ok('X11::XCB::Window') or BAIL_OUT('Could not load X11::XCB::Window');

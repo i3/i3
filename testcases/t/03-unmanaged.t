@@ -1,10 +1,8 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use Test::More tests => 5;
-use Test::Deep;
+use i3test tests => 5;
 use X11::XCB qw(:all);
-use Data::Dumper;
 
 BEGIN {
     use_ok('X11::XCB::Window');

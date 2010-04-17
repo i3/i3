@@ -1,11 +1,8 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use Test::More tests => 8;
-use Test::Deep;
+use i3test tests => 8;
 use List::MoreUtils qw(all none);
-use Data::Dumper;
-use AnyEvent::I3;
 
 my $i3 = i3("/tmp/nestedcons");
 

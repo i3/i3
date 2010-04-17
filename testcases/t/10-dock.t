@@ -1,14 +1,9 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use Test::More tests => 2;
-use Test::Deep;
+use i3test tests => 2;
 use X11::XCB qw(:all);
-use Data::Dumper;
 use Time::HiRes qw(sleep);
-use FindBin;
-use lib "$FindBin::Bin/lib";
-use i3test;
 use List::Util qw(first);
 
 BEGIN {

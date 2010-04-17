@@ -1,20 +1,11 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use Test::More tests => 24;
-use Test::Deep;
+use i3test tests => 24;
 use X11::XCB qw(:all);
-use Data::Dumper;
-use FindBin;
-use lib "$FindBin::Bin/lib";
-use i3test;
-use AnyEvent::I3;
 use List::Util qw(first);
-use v5.10;
-
-# We use relatively long sleeps (1/4 second) to make sure the window manager
-# reacted.
 use Time::HiRes qw(sleep);
+use v5.10;
 
 my $i3 = i3("/tmp/nestedcons");
 

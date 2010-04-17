@@ -3,12 +3,7 @@
 #
 # Tests whether opening an empty container and killing it again works
 #
-use Test::More tests => 6;
-use Data::Dumper;
-use FindBin;
-use lib "$FindBin::Bin/lib";
-use i3test;
-use AnyEvent::I3;
+use i3test tests => 6;
 use v5.10;
 
 my $i3 = i3("/tmp/nestedcons");

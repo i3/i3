@@ -1,18 +1,11 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use Test::More tests => 3;
-use Test::Deep;
+use i3test tests => 3;
 use X11::XCB qw(:all);
-use Data::Dumper;
 use Time::HiRes qw(sleep);
-use FindBin;
-use lib "$FindBin::Bin/lib";
-use i3test;
-use AnyEvent::I3;
 
 BEGIN {
-    use_ok('IO::Socket::UNIX') or BAIL_OUT('Cannot load IO::Socket::UNIX');
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 

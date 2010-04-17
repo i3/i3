@@ -1,9 +1,7 @@
 #!perl
 
-use Test::More tests => 4;
-use Test::Deep;
+use i3test tests => 4;
 use X11::XCB qw(:all);
-use Data::Dumper;
 use Time::HiRes qw(sleep);
 
 BEGIN {

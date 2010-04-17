@@ -1,12 +1,22 @@
 package i3test;
 # vim:ts=4:sw=4:expandtab
 
+use Test::Kit qw(
+    Test::Exception
+    Data::Dumper
+    AnyEvent::I3
+),
+    'Test::Deep' => {
+        exclude => [ qw(all) ],
+    };
+
 use File::Temp qw(tmpnam);
 use X11::XCB::Rect;
 use X11::XCB::Window;
 use X11::XCB qw(:all);
 use AnyEvent::I3;
-use Exporter qw(import);
+# Test::Kit already uses Exporter
+#use Exporter qw(import);
 use base 'Exporter';
 
 our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content);
