@@ -88,7 +88,7 @@ To display a window fullscreen or to go out of fullscreen mode again, press
 +Mod1+f+.
 
 There is also a global fullscreen mode in i3 in which the client will use all
-available outputs. To use it, or to get out of it again, press +Mod1+Shift+f+.
+available outputs.
 
 === Opening other applications
 
