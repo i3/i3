@@ -115,6 +115,7 @@ IPC_HANDLER(command) {
         char *command = scalloc(message_size);
         strncpy(command, (const char*)message, message_size);
         parse_cmd((const char*)command);
+        tree_render();
         free(command);
 
         /* For now, every command gets a positive acknowledge
