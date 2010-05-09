@@ -4,7 +4,7 @@
 # Tests whether we can switch to a non-existant workspace
 # (necessary for further tests)
 #
-use i3test tests => 2;
+use i3test tests => 3;
 use v5.10;
 
 my $i3 = i3("/tmp/nestedcons");
@@ -32,5 +32,10 @@ diag("Other temporary workspace name: $otmp\n");
 # cleaned up as we switch away from it
 $i3->command("workspace $otmp")->recv;
 ok(!workspace_exists($tmp), 'old workspace cleaned up');
+
+# Switch to the same workspace again to make sure it doesn’t get cleaned up
+$i3->command("workspace $otmp")->recv;
+$i3->command("workspace $otmp")->recv;
+ok(workspace_exists($otmp), 'other workspace still exists');
 
 diag( "Testing i3, Perl $], $^X" );

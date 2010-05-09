@@ -101,6 +101,8 @@ void workspace_show(const char *num) {
     old = con_get_workspace(focused);
 
     workspace = workspace_get(num);
+    if (workspace == old)
+        return;
     workspace->fullscreen_mode = CF_OUTPUT;
     /* disable fullscreen */
     TAILQ_FOREACH(current, &(workspace->parent->nodes_head), nodes)
