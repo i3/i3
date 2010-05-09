@@ -161,16 +161,16 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
         ystr("nodes");
         y(array_open);
-        Con *leaf;
-        TAILQ_FOREACH(leaf, &(con->nodes_head), nodes) {
-                dump_node(gen, leaf, inplace_restart);
+        Con *node;
+        TAILQ_FOREACH(node, &(con->nodes_head), nodes) {
+                dump_node(gen, node, inplace_restart);
         }
         y(array_close);
 
         ystr("focus");
         y(array_open);
-        TAILQ_FOREACH(leaf, &(con->nodes_head), nodes) {
-                y(integer, (long int)leaf);
+        TAILQ_FOREACH(node, &(con->focus_head), nodes) {
+                y(integer, (long int)node);
         }
         y(array_close);
 
