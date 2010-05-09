@@ -99,6 +99,7 @@ workspace                       { BEGIN(WANT_WS_STRING); return TOK_WORKSPACE; }
 focus                           { return TOK_FOCUS; }
 move                            { return TOK_MOVE; }
 open                            { return TOK_OPEN; }
+next                            { return TOK_NEXT; }
 
 class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
 id                              { BEGIN(WANT_QSTRING); return TOK_ID; }

@@ -62,17 +62,18 @@ sub get_unused_workspace {
 
 #
 # returns the content (== tree, starting from the node of a workspace)
-# of a workspace
+# of a workspace. If called in array context, also includes the focus
+# stack of the workspace
 #
 sub get_ws_content {
     my ($name) = @_;
     my $i3 = i3("/tmp/nestedcons");
     my $tree = $i3->get_workspaces->recv;
     my @ws = map { @{$_->{nodes}} } @{$tree->{nodes}};
-    my @cons = map { $_->{nodes} } grep { $_->{name} eq $name } @ws;
+    my @cons = grep { $_->{name} eq $name } @ws;
     # as there can only be one workspace with this name, we can safely
     # return the first entry
-    return $cons[0];
+    return wantarray ? ($cons[0]->{nodes}, $cons[0]->{focus}) : $cons[0]->{nodes};
 }
 
 1

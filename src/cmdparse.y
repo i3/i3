@@ -86,6 +86,7 @@ void parse_cmd(const char *new) {
 
 %union {
     char *string;
+    char chr;
 }
 
 %token TOK_ATTACH "attach"
@@ -110,6 +111,7 @@ void parse_cmd(const char *new) {
 %token TOK_FOCUS "focus"
 %token TOK_MOVE "move"
 %token TOK_OPEN "open"
+%token TOK_NEXT "next"
 
 %token TOK_CLASS "class"
 %token TOK_ID "id"
@@ -249,6 +251,7 @@ operation:
     | kill
     | open
     | fullscreen
+    | next
     ;
 
 exec:
@@ -332,4 +335,19 @@ fullscreen:
         }
 
     }
+    ;
+
+next:
+    TOK_NEXT WHITESPACE direction
+    {
+        printf("should select next window in direction %c\n", $<chr>3);
+        tree_next('n', ($<chr>3 == 'v' ? VERT : HORIZ));
+    }
+    ;
+
+direction:
+    'h'             { $<chr>$ = 'h'; }
+    | 'horizontal'  { $<chr>$ = 'h'; }
+    | 'v'           { $<chr>$ = 'v'; }
+    | 'vertical'    { $<chr>$ = 'v'; }
     ;
