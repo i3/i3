@@ -19,7 +19,6 @@ CFLAGS += -Wunused-value
 CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include
 CFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
-CFLAGS += -freorder-blocks-and-partition
 
 LDFLAGS += -lm
 LDFLAGS += -lxcb-event
@@ -62,6 +61,7 @@ CFLAGS += -gdwarf-2
 CFLAGS += -g3
 else
 CFLAGS += -O2
+CFLAGS += -freorder-blocks-and-partition
 endif
 
 # Don’t print command lines which are run
