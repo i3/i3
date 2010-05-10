@@ -3,7 +3,7 @@
 #
 # Tests focus switching (next/prev)
 #
-use i3test tests => 4;
+use i3test tests => 13;
 use X11::XCB qw(:all);
 use v5.10;
 
@@ -31,22 +31,60 @@ is($focus->[0], $old_focused, 'focus did not change with only one con');
 ######################################################################
 # Open another container, verify that 'next h' switches
 ######################################################################
-$i3->command('open')->recv;
+my $left = $old_focused;
 
+$i3->command('open')->recv;
 ($nodes, $focus) = get_ws_content($tmp);
 isnt($old_focused, $focus->[0], 'new container is focused');
-$old_focused = $focus->[0];
+my $mid = $focus->[0];
+
+$i3->command('open')->recv;
+($nodes, $focus) = get_ws_content($tmp);
+isnt($old_focused, $focus->[0], 'new container is focused');
+my $right = $focus->[0];
 
 $i3->command('next h')->recv;
-
 ($nodes, $focus) = get_ws_content($tmp);
-isnt($focus->[0], $old_focused, 'focus did change');
+isnt($focus->[0], $right, 'focus did change');
+is($focus->[0], $left, 'left container focused (wrapping)');
+
+$i3->command('next h')->recv;
+($nodes, $focus) = get_ws_content($tmp);
+is($focus->[0], $mid, 'middle container focused');
+
+$i3->command('next h')->recv;
+($nodes, $focus) = get_ws_content($tmp);
+is($focus->[0], $right, 'right container focused');
+
+$i3->command('prev h')->recv;
+($nodes, $focus) = get_ws_content($tmp);
+is($focus->[0], $mid, 'middle container focused');
+
+$i3->command('prev h')->recv;
+($nodes, $focus) = get_ws_content($tmp);
+is($focus->[0], $left, 'left container focused');
+
+$i3->command('prev h')->recv;
+($nodes, $focus) = get_ws_content($tmp);
+is($focus->[0], $right, 'right container focused');
+
+
+######################################################################
+# Test synonyms (horizontal/vertical instead of h/v)
+######################################################################
+
+$i3->command('prev horizontal')->recv;
+($nodes, $focus) = get_ws_content($tmp);
+is($focus->[0], $mid, 'middle container focused');
+
+$i3->command('next horizontal')->recv;
+($nodes, $focus) = get_ws_content($tmp);
+is($focus->[0], $right, 'right container focused');
+
 
 #
-# TODO: extend this test-case:
-# - implement prev
+# TODO: extend this test-case (as soon as splitting is implemented):
 # - wrapping (no horizontal switch possible, goes level-up)
 # - going level-up "manually"
-# - different synonyms (horizontal/vertical)
 
 diag( "Testing i3, Perl $], $^X" );

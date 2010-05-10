@@ -112,6 +112,9 @@ void parse_cmd(const char *new) {
 %token TOK_MOVE "move"
 %token TOK_OPEN "open"
 %token TOK_NEXT "next"
+%token TOK_PREV "prev"
+%token TOK_HORIZONTAL "horizontal"
+%token TOK_VERTICAL "vertical"
 
 %token TOK_CLASS "class"
 %token TOK_ID "id"
@@ -252,6 +255,7 @@ operation:
     | open
     | fullscreen
     | next
+    | prev
     ;
 
 exec:
@@ -345,9 +349,17 @@ next:
     }
     ;
 
+prev:
+    TOK_PREV WHITESPACE direction
+    {
+        printf("should select prev window in direction %c\n", $<chr>3);
+        tree_next('p', ($<chr>3 == 'v' ? VERT : HORIZ));
+    }
+    ;
+
 direction:
-    'h'             { $<chr>$ = 'h'; }
-    | 'horizontal'  { $<chr>$ = 'h'; }
+    TOK_HORIZONTAL  { $<chr>$ = 'h'; }
+    | 'h'           { $<chr>$ = 'h'; }
+    | TOK_VERTICAL  { $<chr>$ = 'v'; }
     | 'v'           { $<chr>$ = 'v'; }
-    | 'vertical'    { $<chr>$ = 'v'; }
     ;

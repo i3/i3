@@ -100,6 +100,9 @@ focus                           { return TOK_FOCUS; }
 move                            { return TOK_MOVE; }
 open                            { return TOK_OPEN; }
 next                            { return TOK_NEXT; }
+prev                            { return TOK_PREV; }
+horizontal                      { return TOK_HORIZONTAL; }
+vertical                        { return TOK_VERTICAL; }
 
 class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
 id                              { BEGIN(WANT_QSTRING); return TOK_ID; }
