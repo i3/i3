@@ -326,7 +326,9 @@ new_container tabbed
 
 === Border style for new windows
 
-This option determines which border style new windows will have.
+This option determines which border style new windows will have: +bn+ for
+the normal border (including window title), +bp+ for a 1-pixel border (no
+window title) and +bb+ to make the window borderless.
 
 *Syntax*:
 ---------------------------------------------
