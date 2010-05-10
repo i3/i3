@@ -101,6 +101,7 @@ move                            { return TOK_MOVE; }
 open                            { return TOK_OPEN; }
 next                            { return TOK_NEXT; }
 prev                            { return TOK_PREV; }
+split                           { return TOK_SPLIT; }
 horizontal                      { return TOK_HORIZONTAL; }
 vertical                        { return TOK_VERTICAL; }
 

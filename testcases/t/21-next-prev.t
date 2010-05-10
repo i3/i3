@@ -81,10 +81,4 @@ $i3->command('next horizontal')->recv;
 ($nodes, $focus) = get_ws_content($tmp);
 is($focus->[0], $right, 'right container focused');
 
-
-#
-# TODO: extend this test-case (as soon as splitting is implemented):
-# - wrapping (no horizontal switch possible, goes level-up)
-# - going level-up "manually"
-
 diag( "Testing i3, Perl $], $^X" );

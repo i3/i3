@@ -113,6 +113,7 @@ void parse_cmd(const char *new) {
 %token TOK_OPEN "open"
 %token TOK_NEXT "next"
 %token TOK_PREV "prev"
+%token TOK_SPLIT "split"
 %token TOK_HORIZONTAL "horizontal"
 %token TOK_VERTICAL "vertical"
 
@@ -256,6 +257,7 @@ operation:
     | fullscreen
     | next
     | prev
+    | split
     ;
 
 exec:
@@ -354,6 +356,14 @@ prev:
     {
         printf("should select prev window in direction %c\n", $<chr>3);
         tree_next('p', ($<chr>3 == 'v' ? VERT : HORIZ));
+    }
+    ;
+
+split:
+    TOK_SPLIT WHITESPACE direction
+    {
+        printf("splitting in direction %c\n", $<chr>3);
+        tree_split(focused, ($<chr>3 == 'v' ? VERT : HORIZ));
     }
     ;
 

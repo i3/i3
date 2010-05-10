@@ -19,7 +19,7 @@ use AnyEvent::I3;
 #use Exporter qw(import);
 use base 'Exporter';
 
-our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content);
+our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws);
 
 BEGIN {
     my $window_count = 0;
@@ -75,5 +75,15 @@ sub get_ws_content {
     # return the first entry
     return wantarray ? ($cons[0]->{nodes}, $cons[0]->{focus}) : $cons[0]->{nodes};
 }
+
+sub get_ws {
+    my ($name) = @_;
+    my $i3 = i3("/tmp/nestedcons");
+    my $tree = $i3->get_workspaces->recv;
+    my @ws = map { @{$_->{nodes}} } @{$tree->{nodes}};
+    my @cons = grep { $_->{name} eq $name } @ws;
+    return $cons[0];
+}
+
 
 1

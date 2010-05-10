@@ -167,6 +167,11 @@ void tree_close_con() {
  *
  */
 void tree_split(Con *con, orientation_t orientation) {
+    /* for a workspace, we just need to change orientation */
+    if (con->parent->type == CT_OUTPUT) {
+        con->orientation = orientation;
+        return;
+    }
     /* 2: replace it with a new Con */
     Con *new = con_new(NULL);
     Con *parent = con->parent;
