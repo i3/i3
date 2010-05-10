@@ -87,6 +87,7 @@ void parse_cmd(const char *new) {
 %union {
     char *string;
     char chr;
+    int number;
 }
 
 %token TOK_ATTACH "attach"
@@ -116,6 +117,9 @@ void parse_cmd(const char *new) {
 %token TOK_SPLIT "split"
 %token TOK_HORIZONTAL "horizontal"
 %token TOK_VERTICAL "vertical"
+%token TOK_LEVEL "level"
+%token TOK_UP "up"
+%token TOK_DOWN "down"
 
 %token TOK_CLASS "class"
 %token TOK_ID "id"
@@ -241,13 +245,11 @@ operations:
 operation:
     exec
     | exit
-    /*| reload
     | restart
+    /*| reload
     | mark
     | layout
     | border
-    | mode
-    | workspace
     | move*/
     | workspace
     | attach
@@ -258,12 +260,15 @@ operation:
     | next
     | prev
     | split
+    | mode
+    | level
     ;
 
 exec:
     TOK_EXEC WHITESPACE STR
     {
         printf("should execute %s\n", $<string>3);
+        start_application($<string>3);
     }
     ;
 
@@ -271,6 +276,15 @@ exit:
     TOK_EXIT
     {
         printf("exit, bye bye\n");
+        exit(0);
+    }
+    ;
+
+restart:
+    TOK_RESTART
+    {
+        printf("restarting i3\n");
+        i3_restart();
     }
     ;
 
@@ -346,6 +360,7 @@ fullscreen:
 next:
     TOK_NEXT WHITESPACE direction
     {
+        /* TODO: use matches */
         printf("should select next window in direction %c\n", $<chr>3);
         tree_next('n', ($<chr>3 == 'v' ? VERT : HORIZ));
     }
@@ -354,6 +369,7 @@ next:
 prev:
     TOK_PREV WHITESPACE direction
     {
+        /* TODO: use matches */
         printf("should select prev window in direction %c\n", $<chr>3);
         tree_next('p', ($<chr>3 == 'v' ? VERT : HORIZ));
     }
@@ -362,6 +378,7 @@ prev:
 split:
     TOK_SPLIT WHITESPACE direction
     {
+        /* TODO: use matches */
         printf("splitting in direction %c\n", $<chr>3);
         tree_split(focused, ($<chr>3 == 'v' ? VERT : HORIZ));
     }
@@ -372,4 +389,32 @@ direction:
     | 'h'           { $<chr>$ = 'h'; }
     | TOK_VERTICAL  { $<chr>$ = 'v'; }
     | 'v'           { $<chr>$ = 'v'; }
+    ;
+
+mode:
+    TOK_MODE WHITESPACE layout_mode
+    {
+        printf("should switch mode to %s\n", ($<number>3 == TOK_FLOATING ? "floating" : "tiling"));
+        /* TODO: actually switch mode (not toggle) */
+    }
+    ;
+
+layout_mode:
+    TOK_FLOATING    { $<number>$ = TOK_FLOATING; }
+    | TOK_TILING    { $<number>$ = TOK_TILING; }
+    ;
+
+level:
+    TOK_LEVEL WHITESPACE level_direction
+    {
+        printf("level %c\n", $<chr>3);
+        if ($<chr>3 == 'u')
+            level_up();
+        else level_down();
+    }
+    ;
+
+level_direction:
+    TOK_UP     { $<chr>$ = 'u'; }
+    | TOK_DOWN { $<chr>$ = 'd'; }
     ;

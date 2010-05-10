@@ -104,6 +104,9 @@ prev                            { return TOK_PREV; }
 split                           { return TOK_SPLIT; }
 horizontal                      { return TOK_HORIZONTAL; }
 vertical                        { return TOK_VERTICAL; }
+level                           { return TOK_LEVEL; }
+up                              { return TOK_UP; }
+down                            { return TOK_DOWN; }
 
 class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
 id                              { BEGIN(WANT_QSTRING); return TOK_ID; }
