@@ -122,6 +122,7 @@ void parse_cmd(const char *new) {
 %token TOK_DOWN "down"
 %token TOK_AFTER "after"
 %token TOK_BEFORE "before"
+%token TOK_RESTORE "restore"
 
 %token TOK_CLASS "class"
 %token TOK_ID "id"
@@ -252,6 +253,7 @@ operation:
     | mark
     | layout
     | border */
+    | restore
     | move
     | workspace
     | attach
@@ -434,4 +436,12 @@ move:
 before_after:
     TOK_BEFORE { $<number>$ = TOK_BEFORE; }
     | TOK_AFTER { $<number>$ = TOK_AFTER; }
+    ;
+
+restore:
+    TOK_RESTORE WHITESPACE STR
+    {
+        printf("restoring \"%s\"\n", $<string>3);
+        tree_append_json($<string>3);
+    }
     ;

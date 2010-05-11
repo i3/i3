@@ -109,6 +109,7 @@ up                              { return TOK_UP; }
 down                            { return TOK_DOWN; }
 before                          { return TOK_BEFORE; }
 after                           { return TOK_AFTER; }
+restore                         { BEGIN(WANT_WS_STRING); return TOK_RESTORE; }
 
 class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
 id                              { BEGIN(WANT_QSTRING); return TOK_ID; }
