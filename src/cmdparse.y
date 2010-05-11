@@ -396,14 +396,14 @@ direction:
     ;
 
 mode:
-    TOK_MODE WHITESPACE layout_mode
+    TOK_MODE WHITESPACE window_mode
     {
         printf("should switch mode to %s\n", ($<number>3 == TOK_FLOATING ? "floating" : "tiling"));
         /* TODO: actually switch mode (not toggle) */
     }
     ;
 
-layout_mode:
+window_mode:
     TOK_FLOATING    { $<number>$ = TOK_FLOATING; }
     | TOK_TILING    { $<number>$ = TOK_TILING; }
     ;
