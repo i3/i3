@@ -271,6 +271,8 @@ void tree_next(char way, orientation_t orientation) {
 void tree_move(char way, orientation_t orientation) {
     /* 1: get the first parent with the same orientation */
     Con *parent = focused->parent;
+    if (parent->type == CT_OUTPUT)
+        return;
     bool level_changed = false;
     while (parent->orientation != orientation) {
         LOG("need to go one level further up\n");

@@ -107,6 +107,8 @@ vertical                        { return TOK_VERTICAL; }
 level                           { return TOK_LEVEL; }
 up                              { return TOK_UP; }
 down                            { return TOK_DOWN; }
+before                          { return TOK_BEFORE; }
+after                           { return TOK_AFTER; }
 
 class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
 id                              { BEGIN(WANT_QSTRING); return TOK_ID; }

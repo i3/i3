@@ -120,6 +120,8 @@ void parse_cmd(const char *new) {
 %token TOK_LEVEL "level"
 %token TOK_UP "up"
 %token TOK_DOWN "down"
+%token TOK_AFTER "after"
+%token TOK_BEFORE "before"
 
 %token TOK_CLASS "class"
 %token TOK_ID "id"
@@ -249,8 +251,8 @@ operation:
     /*| reload
     | mark
     | layout
-    | border
-    | move*/
+    | border */
+    | move
     | workspace
     | attach
     | focus
@@ -417,4 +419,19 @@ level:
 level_direction:
     TOK_UP     { $<chr>$ = 'u'; }
     | TOK_DOWN { $<chr>$ = 'd'; }
+    ;
+
+move:
+    TOK_MOVE WHITESPACE before_after WHITESPACE direction
+    {
+        printf("moving: %s and %c\n", ($<number>3 == TOK_BEFORE ? "before" : "after"), $<chr>5);
+        /* TODO: change API for the next call, we need to convert in both directions while ideally
+         * we should not need any of both */
+        tree_move(($<number>3 == TOK_BEFORE ? 'p' : 'n'), ($<chr>5 == 'v' ? VERT : HORIZ));
+    }
+    ;
+
+before_after:
+    TOK_BEFORE { $<number>$ = TOK_BEFORE; }
+    | TOK_AFTER { $<number>$ = TOK_AFTER; }
     ;
