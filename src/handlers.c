@@ -98,6 +98,7 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
     }
 
     parse_cmd(bind->command);
+    tree_render();
     return 1;
 }
 
