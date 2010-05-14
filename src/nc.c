@@ -257,6 +257,11 @@ int main(int argc, char *argv[]) {
     /* Watch WM_NAME (title of the window encoded in COMPOUND_TEXT) */
     xcb_watch_wm_name(&prophs, 128, handle_windowname_change_legacy, NULL);
 
+    /* Set up the atoms we support */
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED], ATOM, 32, 7, atoms);
+    /* Set up the window manager’s name */
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTING_WM_CHECK], WINDOW, 32, 1, &root);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_WM_NAME], atoms[UTF8_STRING], 8, strlen("i3"), "i3");
 
     keysyms = xcb_key_symbols_alloc(conn);
 
