@@ -171,6 +171,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         goto out;
     }
 
+    LOG("ignoring sequence %d for reparenting!\n", rcookie.sequence);
+    add_ignore_event(rcookie.sequence);
+
     xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, state_cookie, NULL);
     if (xcb_reply_contains_atom(reply, atoms[_NET_WM_STATE_FULLSCREEN]))
         con_toggle_fullscreen(nc);
