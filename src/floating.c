@@ -37,7 +37,7 @@ void toggle_floating_mode(Con *con, bool automatic) {
 
                 /* 2: kill parent container */
                 TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
-                tree_close(con->parent);
+                tree_close(con->parent, false);
 
                 /* 3: re-attach to previous parent */
                 con->parent = con->old_parent;

@@ -21,7 +21,7 @@ void tree_render();
 void tree_close_con();
 void tree_next(char way, orientation_t orientation);
 void tree_move(char way, orientation_t orientation);
-void tree_close(Con *con);
+void tree_close(Con *con, bool kill_window);
 bool tree_restore();
 
 #endif

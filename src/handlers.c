@@ -469,7 +469,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
         return 1;
     }
 
-    tree_close(con);
+    tree_close(con, false);
     tree_render();
     x_push_changes(croot);
     return 1;

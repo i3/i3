@@ -117,7 +117,7 @@ void workspace_show(const char *num) {
 
     if (TAILQ_EMPTY(&(old->nodes_head))) {
         LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
-        tree_close(old);
+        tree_close(old, false);
     }
 
     con_focus(next);

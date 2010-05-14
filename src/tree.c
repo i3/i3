@@ -108,7 +108,7 @@ Con *tree_open_con(Con *con) {
  * Closes the given container including all children
  *
  */
-void tree_close(Con *con) {
+void tree_close(Con *con, bool kill_window) {
     /* TODO: check floating clients and adjust old_parent if necessary */
 
     /* Get the container which is next focused */
@@ -129,7 +129,19 @@ void tree_close(Con *con) {
      * in their parent’s nodes_head */
     while (!TAILQ_EMPTY(&(con->nodes_head))) {
         child = TAILQ_FIRST(&(con->nodes_head));
-        tree_close(child);
+        tree_close(child, kill_window);
+    }
+
+    if (con->window != NULL) {
+        if (kill_window)
+            x_window_kill(con->window->id);
+        else {
+            /* un-parent the window */
+            xcb_reparent_window(conn, con->window->id, root, 0, 0);
+            /* TODO: client_unmap to set state to withdrawn */
+
+        }
+        free(con->window);
     }
 
     /* kill the X11 part of this container */
@@ -138,10 +150,6 @@ void tree_close(Con *con) {
     con_detach(con);
     con_fix_percent(con->parent, WINDOW_REMOVE);
 
-    if (con->window != NULL) {
-        x_window_kill(con->window->id);
-        free(con->window);
-    }
     free(con->name);
     TAILQ_REMOVE(&all_cons, con, all_cons);
     free(con);
@@ -158,7 +166,7 @@ void tree_close_con() {
     }
 
     /* Kill con */
-    tree_close(focused);
+    tree_close(focused, true);
 }
 
 /*
