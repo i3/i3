@@ -184,6 +184,8 @@ void parse_file(const char *f) {
                 SLIST_REMOVE_HEAD(&variables, variables);
                 FREE(current);
         }
+        fclose(fstr);
+        close(fd);
 }
 
 %}
