@@ -228,6 +228,10 @@ void client_enter_fullscreen(xcb_connection_t *conn, Client *client, bool global
         uint32_t values[] = { XCB_STACK_MODE_ABOVE };
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
 
+        /* Update _NET_WM_STATE */
+        values[0] = atoms[_NET_WM_STATE_FULLSCREEN];
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, atoms[_NET_WM_STATE], ATOM, 32, 1, values);
+
         fake_configure_notify(conn, r, client->child);
 
         xcb_flush(conn);
@@ -261,6 +265,9 @@ void client_leave_fullscreen(xcb_connection_t *conn, Client *client) {
                 /* We left fullscreen mode, redraw the whole layout to ensure enternotify events are disabled */
                 render_layout(conn);
         }
+
+        /* Update _NET_WM_STATE */
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, atoms[_NET_WM_STATE], ATOM, 32, 0, NULL);
 
         xcb_flush(conn);
 }
