@@ -289,4 +289,19 @@ void con_toggle_fullscreen(Con *con) {
         con->fullscreen_mode = CF_NONE;
     }
     LOG("mode now: %d\n", con->fullscreen_mode);
+
+    /* update _NET_WM_STATE if this container has a window */
+    /* TODO: when a window is assigned to a container which is already
+     * fullscreened, this state needs to be pushed to the client, too */
+    if (con->window == NULL)
+        return;
+
+    uint32_t values[1];
+    unsigned int num = 0;
+
+    if (con->fullscreen_mode != CF_NONE)
+        values[num++] = atoms[_NET_WM_STATE_FULLSCREEN];
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
+                        atoms[_NET_WM_STATE], ATOM, 32, num, values);
 }
