@@ -15,6 +15,13 @@ my $stdin;
 my $socket_path = undef;
 my ($workspaces, $outputs) = ([], {});
 my $last_line = "";
+my $w = AnyEvent->timer(
+    after => 2,
+    cb => sub {
+        say "Connection to i3 timed out. Verify socket path ($socket_path)";
+        exit 1;
+    }
+);
 
 my $command = "";
 my $input_on = "";
@@ -47,6 +54,16 @@ $| = 1;
 # Wait a short amount of time and try to connect to i3 again
 sub reconnect {
     my $timer;
+    if (!defined($w)) {
+        $w = AnyEvent->timer(
+            after => 2,
+            cb => sub {
+                say "Connection to i3 timed out. Verify socket path ($socket_path)";
+                exit 1;
+            }
+        );
+    }
+
     my $c = sub {
         $timer = AnyEvent->timer(
             after => 0.01,
@@ -64,6 +81,8 @@ sub connected {
         reconnect();
         return;
     }
+
+    $w = undef;
 
     $i3->subscribe({
         workspace => \&ws_change,
