@@ -613,11 +613,19 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
         /* Save the old pointer to make the update atomic */
         char *new_name;
         int new_len;
-        asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop));
+        if (asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop), (char*)xcb_get_property_value(prop)) == -1) {
+                perror("asprintf");
+                LOG("Could not format _NET_WM_NAME, ignoring new hint\n");
+                return 1;
+        }
         /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
         char *ucs2_name = convert_utf8_to_ucs2(new_name, &new_len);
         LOG("_NET_WM_NAME changed to \"%s\"\n", new_name);
         free(new_name);
+        if (ucs2_name == NULL) {
+                LOG("Could not convert _NET_WM_NAME to UCS-2, ignoring new hint\n");
+                return 1;
+        }
 
         /* Check if they are the same and don’t update if so.
            Note the use of new_len * 2 to check all bytes as each glyph takes 2 bytes.
