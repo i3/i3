@@ -256,7 +256,7 @@ struct Match {
 
 struct Con {
     bool mapped;
-    enum { CT_ROOT = 0, CT_OUTPUT = 1, CT_CON = 2, CT_FLOATING_CON = 3 } type;
+    enum { CT_ROOT = 0, CT_OUTPUT = 1, CT_CON = 2, CT_FLOATING_CON = 3, CT_WORKSPACE = 4 } type;
     orientation_t orientation;
     struct Con *parent;
     /* parent before setting it to floating */

@@ -107,7 +107,7 @@ bool con_is_leaf(Con *con) {
  */
 bool con_accepts_window(Con *con) {
     /* 1: workspaces never accept direct windows */
-    if (con->parent->type == CT_OUTPUT)
+    if (con->type == CT_WORKSPACE)
         return false;
 
     /* TODO: if this is a swallowing container, we need to check its max_clients */
@@ -135,7 +135,7 @@ Con *con_get_output(Con *con) {
  */
 Con *con_get_workspace(Con *con) {
     Con *result = con;
-    while (result != NULL && result->parent->type != CT_OUTPUT)
+    while (result != NULL && result->type != CT_WORKSPACE)
         result = result->parent;
     assert(result != NULL);
     return result;

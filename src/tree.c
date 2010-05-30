@@ -71,6 +71,7 @@ void tree_init() {
 
         /* add a workspace to this output */
         ws = con_new(oc);
+        ws->type = CT_WORKSPACE;
         ws->name = strdup("1");
         ws->fullscreen_mode = CF_OUTPUT;
     }
@@ -160,7 +161,7 @@ void tree_close(Con *con, bool kill_window) {
 
 void tree_close_con() {
     assert(focused != NULL);
-    if (focused->parent->type == CT_OUTPUT) {
+    if (focused->type == CT_WORKSPACE) {
         LOG("Cannot close workspace\n");
         return;
     }
@@ -176,7 +177,7 @@ void tree_close_con() {
  */
 void tree_split(Con *con, orientation_t orientation) {
     /* for a workspace, we just need to change orientation */
-    if (con->parent->type == CT_OUTPUT) {
+    if (con->type == CT_WORKSPACE) {
         con->orientation = orientation;
         return;
     }
@@ -194,7 +195,8 @@ void tree_split(Con *con, orientation_t orientation) {
 
 void level_up() {
     /* We can focus up to the workspace, but not any higher in the tree */
-    if (focused->parent->type != CT_CON) {
+    if (focused->parent->type != CT_CON &&
+        focused->parent->type != CT_WORKSPACE) {
         printf("cannot go up\n");
         return;
     }
@@ -246,7 +248,7 @@ void tree_next(char way, orientation_t orientation) {
         LOG("need to go one level further up\n");
         /* if the current parent is an output, we are at a workspace
          * and the orientation still does not match */
-        if (parent->parent->type == CT_OUTPUT)
+        if (parent->type == CT_WORKSPACE)
             return;
         parent = parent->parent;
     }
@@ -279,14 +281,14 @@ void tree_next(char way, orientation_t orientation) {
 void tree_move(char way, orientation_t orientation) {
     /* 1: get the first parent with the same orientation */
     Con *parent = focused->parent;
-    if (parent->type == CT_OUTPUT)
+    if (focused->type == CT_WORKSPACE)
         return;
     bool level_changed = false;
     while (parent->orientation != orientation) {
         LOG("need to go one level further up\n");
         /* if the current parent is an output, we are at a workspace
          * and the orientation still does not match */
-        if (parent->parent->type == CT_OUTPUT)
+        if (parent->type == CT_WORKSPACE)
             return;
         parent = parent->parent;
         level_changed = true;

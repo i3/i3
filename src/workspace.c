@@ -39,6 +39,7 @@ Con *workspace_get(const char *num) {
         output = con_get_output(focused);
         LOG("got output %p\n", output);
         workspace = con_new(output);
+        workspace->type = CT_WORKSPACE;
         workspace->name = strdup(num);
 
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
