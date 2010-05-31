@@ -239,11 +239,13 @@ static void x_push_node(Con *con) {
         state->mapped = con->mapped;
     }
 
+    bool fake_notify = false;
     /* set new position if rect changed */
     if (memcmp(&(state->rect), &(con->rect), sizeof(Rect)) != 0) {
         LOG("setting rect (%d, %d, %d, %d)\n", con->rect.x, con->rect.y, con->rect.width, con->rect.height);
         xcb_set_window_rect(conn, con->frame, con->rect);
         memcpy(&(state->rect), &(con->rect), sizeof(Rect));
+        fake_notify = true;
     }
 
     /* dito, but for child windows */
@@ -252,6 +254,12 @@ static void x_push_node(Con *con) {
             con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
         xcb_set_window_rect(conn, con->window->id, con->window_rect);
         memcpy(&(state->rect), &(con->rect), sizeof(Rect));
+        fake_notify = true;
+    }
+
+    if (fake_notify) {
+        LOG("Sending fake configure notify\n");
+        fake_absolute_configure_notify(con);
     }
 
     /* handle all children and floating windows of this node */
