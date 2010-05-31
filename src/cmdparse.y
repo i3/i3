@@ -109,6 +109,7 @@ void parse_cmd(const char *new) {
 %token TOK_TILING "tiling"
 %token TOK_FLOATING "floating"
 %token TOK_WORKSPACE "workspace"
+%token TOK_TOGGLE "toggle"
 %token TOK_FOCUS "focus"
 %token TOK_MOVE "move"
 %token TOK_OPEN "open"
@@ -398,14 +399,20 @@ direction:
 mode:
     TOK_MODE WHITESPACE window_mode
     {
-        printf("should switch mode to %s\n", ($<number>3 == TOK_FLOATING ? "floating" : "tiling"));
-        /* TODO: actually switch mode (not toggle) */
+        if ($<number>3 == TOK_TOGGLE) {
+            printf("should toggle mode\n");
+            toggle_floating_mode(focused, false);
+        } else {
+            printf("should switch mode to %s\n", ($<number>3 == TOK_FLOATING ? "floating" : "tiling"));
+            /* TODO: actually switch mode (not toggle) */
+        }
     }
     ;
 
 window_mode:
     TOK_FLOATING    { $<number>$ = TOK_FLOATING; }
     | TOK_TILING    { $<number>$ = TOK_TILING; }
+    | TOK_TOGGLE    { $<number>$ = TOK_TOGGLE; }
     ;
 
 level:

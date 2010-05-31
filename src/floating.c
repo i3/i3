@@ -37,12 +37,15 @@ void toggle_floating_mode(Con *con, bool automatic) {
 
                 /* 2: kill parent container */
                 TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
+                TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
                 tree_close(con->parent, false);
 
                 /* 3: re-attach to previous parent */
                 con->parent = con->old_parent;
                 TAILQ_INSERT_TAIL(&(con->parent->nodes_head), con, nodes);
                 TAILQ_INSERT_TAIL(&(con->parent->focus_head), con, focused);
+
+                con->floating = FLOATING_USER_OFF;
 
                 return;
         }
@@ -72,6 +75,7 @@ void toggle_floating_mode(Con *con, bool automatic) {
         nc->orientation = NO_ORIENTATION;
         nc->type = CT_FLOATING_CON;
         TAILQ_INSERT_TAIL(&(nc->parent->floating_head), nc, floating_windows);
+        TAILQ_INSERT_TAIL(&(nc->parent->focus_head), nc, focused);
 
         /* 3: attach the child to the new parent container */
         con->old_parent = con->parent;

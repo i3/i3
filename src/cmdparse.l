@@ -95,6 +95,7 @@ none                            { return TOK_NONE; }
 mode                            { return TOK_MODE; }
 tiling                          { return TOK_TILING; }
 floating                        { return TOK_FLOATING; }
+toggle                          { return TOK_TOGGLE; }
 workspace                       { BEGIN(WANT_WS_STRING); return TOK_WORKSPACE; }
 focus                           { return TOK_FOCUS; }
 move                            { return TOK_MOVE; }
