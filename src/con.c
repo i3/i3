@@ -67,7 +67,8 @@ void con_attach(Con *con, Con *parent) {
 
 void con_detach(Con *con) {
     if (con->type == CT_FLOATING_CON) {
-        /* TODO: remove */
+        TAILQ_REMOVE(&(con->parent->floating_head), con, floating_windows);
+        TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
     } else {
         TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
         TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
