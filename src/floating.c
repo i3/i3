@@ -314,11 +314,10 @@ DRAGGING_CB(drag_window_callback) {
         /* Reposition the client correctly while moving */
         con->rect.x = old_rect->x + (new_x - event->root_x);
         con->rect.y = old_rect->y + (new_y - event->root_y);
-        //reposition_client(conn, con);
-        /* Because reposition_client does not send a faked configure event (only resize does),
-         * we need to initiate that on our own */
-        //fake_absolute_configure_notify(conn, client);
-        /* fake_absolute_configure_notify flushes */
+        /* TODO: don’t re-render the whole tree just because we change
+         * coordinates of a floating window */
+        tree_render();
+        x_push_changes(croot);
 }
 
 /*
