@@ -41,7 +41,7 @@ typedef struct Window i3Window;
  * Helper types
  *****************************************************************************/
 typedef enum { D_LEFT, D_RIGHT, D_UP, D_DOWN } direction_t;
-typedef enum { HORIZ, VERT, NO_ORIENTATION } orientation_t;
+typedef enum { NO_ORIENTATION = 0, HORIZ, VERT } orientation_t;
 
 enum {
     BIND_NONE = 0,

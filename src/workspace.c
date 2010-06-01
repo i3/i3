@@ -41,6 +41,7 @@ Con *workspace_get(const char *num) {
         workspace = con_new(output);
         workspace->type = CT_WORKSPACE;
         workspace->name = strdup(num);
+        workspace->orientation = HORIZ;
 
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
     }

@@ -74,6 +74,7 @@ void tree_init() {
         ws->type = CT_WORKSPACE;
         ws->name = strdup("1");
         ws->fullscreen_mode = CF_OUTPUT;
+        ws->orientation = HORIZ;
     }
 
     con_focus(ws);
@@ -203,9 +204,17 @@ void tree_split(Con *con, orientation_t orientation) {
         con->orientation = orientation;
         return;
     }
+
+    Con *parent = con->parent;
+    /* if we are in a container whose parent contains only one
+     * child and has the same orientation like we are trying to
+     * set, this operation is a no-op to not confuse the user */
+    if (parent->orientation == orientation &&
+        TAILQ_NEXT(con, nodes) == TAILQ_END(&(parent->nodes_head)))
+        return;
+
     /* 2: replace it with a new Con */
     Con *new = con_new(NULL);
-    Con *parent = con->parent;
     TAILQ_REPLACE(&(parent->nodes_head), con, new, nodes);
     TAILQ_REPLACE(&(parent->focus_head), con, new, focused);
     new->parent = parent;
