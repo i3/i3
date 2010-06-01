@@ -252,8 +252,8 @@ operation:
     | restart
     /*| reload
     | mark
-    | layout
     | border */
+    | layout
     | restore
     | move
     | workspace
@@ -465,4 +465,29 @@ restore:
         printf("restoring \"%s\"\n", $<string>3);
         tree_append_json($<string>3);
     }
+    ;
+
+layout:
+    TOK_LAYOUT WHITESPACE layout_mode
+    {
+        printf("changing layout to %d\n", $<number>3);
+        owindow *current;
+
+        /* check if the match is empty, not if the result is empty */
+        if (match_is_empty(&current_match))
+            focused->layout = $<number>3;
+        else {
+            TAILQ_FOREACH(current, &owindows, owindows) {
+                printf("matching: %p / %s\n", current->con, current->con->name);
+                current->con->layout = $<number>3;
+            }
+        }
+
+    }
+    ;
+
+layout_mode:
+    TOK_DEFAULT   { $<number>$ = L_DEFAULT; }
+    | TOK_STACKED { $<number>$ = L_STACKED; }
+    | TOK_TABBED  { $<number>$ = L_TABBED; }
     ;

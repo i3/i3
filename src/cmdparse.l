@@ -88,6 +88,7 @@ global                          { return TOK_GLOBAL; }
 layout                          { return TOK_LAYOUT; }
 default                         { return TOK_DEFAULT; }
 stacked                         { return TOK_STACKED; }
+stacking                        { return TOK_STACKED; }
 tabbed                          { return TOK_TABBED; }
 border                          { return TOK_BORDER; }
 none                            { return TOK_NONE; }

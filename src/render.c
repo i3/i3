@@ -124,7 +124,8 @@ void render_con(Con *con) {
     /* in a stacking container, we ensure the focused client is raised */
     if (con->layout == L_STACKED) {
         Con *foc = TAILQ_FIRST(&(con->focus_head));
-        x_raise_con(foc);
+        if (foc != TAILQ_END(&(con->focus_head)))
+            x_raise_con(foc);
     }
 
     TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
