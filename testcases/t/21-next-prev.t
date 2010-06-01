@@ -3,7 +3,7 @@
 #
 # Tests focus switching (next/prev)
 #
-use i3test tests => 13;
+use i3test tests => 14;
 use X11::XCB qw(:all);
 use v5.10;
 
@@ -80,5 +80,12 @@ is($focus->[0], $mid, 'middle container focused');
 $i3->command('next horizontal')->recv;
 ($nodes, $focus) = get_ws_content($tmp);
 is($focus->[0], $right, 'right container focused');
+
+# Test focus command
+
+$i3->command(qq|[con_id="$mid"] focus|)->recv;
+($nodes, $focus) = get_ws_content($tmp);
+is($focus->[0], $mid, 'middle container focused');
+
 
 diag( "Testing i3, Perl $], $^X" );

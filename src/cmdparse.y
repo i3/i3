@@ -303,7 +303,21 @@ attach:
 focus:
     TOK_FOCUS
     {
+        owindow *current;
+
         printf("should focus\n");
+        if (match_is_empty(&current_match)) {
+            /* TODO: better error message */
+            LOG("Error: The foucs command requires you to use some criteria.\n");
+            return;
+        }
+
+        /* TODO: warning if the match contains more than one entry. does not
+         * make so much sense when focusing */
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            LOG("focusing %p / %s\n", current->con, current->con->name);
+            con_focus(current->con);
+        }
     }
     ;
 
