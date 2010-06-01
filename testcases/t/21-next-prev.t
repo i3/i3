@@ -81,7 +81,9 @@ $i3->command('next horizontal')->recv;
 ($nodes, $focus) = get_ws_content($tmp);
 is($focus->[0], $right, 'right container focused');
 
+######################################################################
 # Test focus command
+######################################################################
 
 $i3->command(qq|[con_id="$mid"] focus|)->recv;
 ($nodes, $focus) = get_ws_content($tmp);
