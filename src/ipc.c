@@ -112,8 +112,9 @@ void ipc_shutdown() {
 IPC_HANDLER(command) {
         /* To get a properly terminated buffer, we copy
          * message_size bytes out of the buffer */
-        char *command = scalloc(message_size);
+        char *command = scalloc(message_size + 1);
         strncpy(command, (const char*)message, message_size);
+        LOG("IPC: received: *%s*\n", command);
         parse_cmd((const char*)command);
         tree_render();
         free(command);
