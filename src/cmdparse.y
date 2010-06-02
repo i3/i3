@@ -238,6 +238,13 @@ criteria:
         current_match.con_id = atoi($<string>3);
         printf("id as int = %d\n", current_match.con_id);
     }
+    | TOK_ID '=' STR
+    {
+        printf("criteria: window id = %s\n", $<string>3);
+        /* TODO: correctly parse number */
+        current_match.id = atoi($<string>3);
+        printf("window id as int = %d\n", current_match.id);
+    }
     ;
 
 operations:
