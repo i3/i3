@@ -111,7 +111,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     /* Check if the window is already managed */
     if (con_by_window_id(window) != NULL) {
-        LOG("already managed\n");
+        LOG("already managed (by con %p)\n", con_by_window_id(window));
         goto out;
     }
 

@@ -421,6 +421,7 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
  *
  */
 int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event) {
+    DLOG("configure_event, sequence %d\n", event->sequence);
         /* We ignore this sequence twice because events for child and frame should be ignored */
         add_ignore_event(event->sequence);
         add_ignore_event(event->sequence);

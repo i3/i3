@@ -147,7 +147,7 @@ void tree_close(Con *con, bool kill_window) {
             next = con->parent;
     }
 
-    LOG("closing %p\n", con);
+    DLOG("closing %p, kill_window = %d\n", con, kill_window);
     Con *child;
     /* We cannot use TAILQ_FOREACH because the children get deleted
      * in their parent’s nodes_head */
