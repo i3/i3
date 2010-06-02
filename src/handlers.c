@@ -454,9 +454,11 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
 
     bool ignored = event_is_ignored(event->sequence);
 
+    /* FIXME: we cannot ignore this sequence because more UnmapNotifys with the same sequence
+     * numbers but different window IDs may follow */
     /* we need to ignore EnterNotify events which will be generated because a
      * different window is visible now */
-    add_ignore_event(event->sequence);
+    //add_ignore_event(event->sequence);
 
     DLOG("UnmapNotify for 0x%08x (received from 0x%08x), serial %d\n", event->window, event->event, event->sequence);
     if (ignored) {
