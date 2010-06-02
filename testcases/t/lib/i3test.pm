@@ -15,6 +15,7 @@ use X11::XCB::Rect;
 use X11::XCB::Window;
 use X11::XCB qw(:all);
 use AnyEvent::I3;
+use List::Util qw(first);
 # Test::Kit already uses Exporter
 #use Exporter qw(import);
 use base 'Exporter';
@@ -60,6 +61,17 @@ sub get_unused_workspace {
     $tmp
 }
 
+sub get_ws {
+    my ($name) = @_;
+    my $i3 = i3("/tmp/nestedcons");
+    my $tree = $i3->get_workspaces->recv;
+    my @ws = map { @{$_->{nodes}} } @{$tree->{nodes}};
+
+    # as there can only be one workspace with this name, we can safely
+    # return the first entry
+    return first { $_->{name} eq $name } @ws;
+}
+
 #
 # returns the content (== tree, starting from the node of a workspace)
 # of a workspace. If called in array context, also includes the focus
@@ -67,13 +79,8 @@ sub get_unused_workspace {
 #
 sub get_ws_content {
     my ($name) = @_;
-    my $i3 = i3("/tmp/nestedcons");
-    my $tree = $i3->get_workspaces->recv;
-    my @ws = map { @{$_->{nodes}} } @{$tree->{nodes}};
-    my @cons = grep { $_->{name} eq $name } @ws;
-    # as there can only be one workspace with this name, we can safely
-    # return the first entry
-    return wantarray ? ($cons[0]->{nodes}, $cons[0]->{focus}) : $cons[0]->{nodes};
+    my $con = get_ws($name);
+    return wantarray ? ($con->{nodes}, $con->{focus}) : $con->{nodes};
 }
 
 sub get_focused {
@@ -96,15 +103,6 @@ sub get_focused {
     }
 
     return $lf;
-}
-
-sub get_ws {
-    my ($name) = @_;
-    my $i3 = i3("/tmp/nestedcons");
-    my $tree = $i3->get_workspaces->recv;
-    my @ws = map { @{$_->{nodes}} } @{$tree->{nodes}};
-    my @cons = grep { $_->{name} eq $name } @ws;
-    return $cons[0];
 }
 
 1
