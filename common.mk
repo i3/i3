@@ -7,7 +7,8 @@ SYSCONFDIR=/etc
 else
 SYSCONFDIR=$(PREFIX)/etc
 endif
-GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1))"
+# The escaping is absurd, but we need to escape for shell, sed, make, define
+GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch $(shell [ -f .git/HEAD ] && sed 's/ref: refs\/heads\/\(.*\)/\\\\\\"\1\\\\\\"/g' .git/HEAD || echo 'unknown'))"
 VERSION:=$(shell git describe --tags --abbrev=0)
 
 CFLAGS += -std=c99
