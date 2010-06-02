@@ -115,6 +115,11 @@ bool con_accepts_window(Con *con) {
     if (con->type == CT_WORKSPACE)
         return false;
 
+    if (con->orientation != NO_ORIENTATION) {
+        DLOG("container %p does not accepts windows, orientation != NO_ORIENTATION\n", con);
+        return false;
+    }
+
     /* TODO: if this is a swallowing container, we need to check its max_clients */
     return (con->window == NULL);
 }
