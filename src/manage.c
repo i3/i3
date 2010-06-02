@@ -124,9 +124,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     LOG("reparenting!\n");
     uint32_t mask = 0;
     uint32_t values[1];
-    mask = XCB_CW_EVENT_MASK;
-    values[0] = CHILD_EVENT_MASK;
-    xcb_change_window_attributes(conn, window, mask, values);
 
     i3Window *cwindow = scalloc(sizeof(i3Window));
     cwindow->id = window;
@@ -162,8 +159,14 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             nc = tree_open_con(nc->parent);
         }
     }
+    DLOG("new container = %p\n", nc);
     nc->window = cwindow;
     x_reinit(nc);
+
+    /* to avoid getting an UnmapNotify event due to reparenting, we temporarily
+     * declare no interest in any state change event of this window */
+    values[0] = XCB_NONE;
+    xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, values);
 
     xcb_void_cookie_t rcookie = xcb_reparent_window_checked(conn, window, nc->frame, 0, 0);
     if (xcb_request_check(conn, rcookie) != NULL) {
@@ -171,8 +174,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         goto out;
     }
 
-    LOG("ignoring sequence %d for reparenting!\n", rcookie.sequence);
-    add_ignore_event(rcookie.sequence);
+    mask = XCB_CW_EVENT_MASK;
+    values[0] = CHILD_EVENT_MASK;
+    xcb_change_window_attributes(conn, window, mask, values);
 
     xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, state_cookie, NULL);
     if (xcb_reply_contains_atom(reply, atoms[_NET_WM_STATE_FULLSCREEN]))
