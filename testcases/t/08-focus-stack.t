@@ -13,17 +13,16 @@ BEGIN {
 
 my $x = X11::XCB::Connection->new;
 
-my $i3 = i3;
+my $i3 = i3("/tmp/nestedcons");
+my $tmp = get_unused_workspace();
+$i3->command("workspace $tmp")->recv;
 
-# Switch to the nineth workspace
-$i3->command('9')->recv;
 
+$i3->command('split h')->recv;
 my $tiled_left = i3test::open_standard_window($x);
 my $tiled_right = i3test::open_standard_window($x);
 
-sleep(0.25);
-
-$i3->command('ml')->recv;
+sleep 0.25;
 
 # Get input focus before creating the floating window
 my $focus = $x->input_focus;
@@ -40,12 +39,13 @@ isa_ok($window, 'X11::XCB::Window');
 
 $window->map;
 
-sleep(0.25);
+sleep 1;
+sleep 0.25;
 is($x->input_focus, $window->id, 'floating window focused');
 
 $window->unmap;
 
-sleep(0.25);
+sleep 0.25;
 
 is($x->input_focus, $focus, 'Focus correctly restored');
 

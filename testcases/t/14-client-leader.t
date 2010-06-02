@@ -1,8 +1,5 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
-# Beware that this test uses workspace 9 and 10 to perform some tests (it expects
-# the workspace to be empty).
-# TODO: skip it by default?
 
 use i3test tests => 3;
 use X11::XCB qw(:all);
@@ -13,10 +10,10 @@ BEGIN {
 }
 
 my $x = X11::XCB::Connection->new;
-my $i3 = i3;
+my $i3 = i3("/tmp/nestedcons");
 
-# Switch to the nineth workspace
-$i3->command('9')->recv;
+my $tmp = get_unused_workspace();
+$i3->command("workspace $tmp")->recv;
 
 #####################################################################
 # Create a parent window
@@ -37,7 +34,8 @@ sleep 0.25;
 # Switch workspace to 10 and open a child window. It should be positioned
 # on workspace 9.
 #########################################################################
-$i3->command('10')->recv;
+my $otmp = get_unused_workspace();
+$i3->command("workspace $otmp")->recv;
 
 my $child = $x->root->create_child(
 class => WINDOW_CLASS_INPUT_OUTPUT,
@@ -54,6 +52,6 @@ sleep 0.25;
 isnt($x->input_focus, $child->id, "Child window focused");
 
 # Switch back
-$i3->command('9')->recv;
+$i3->command("workspace $tmp")->recv;
 
 is($x->input_focus, $child->id, "Child window focused");

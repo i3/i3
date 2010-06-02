@@ -12,12 +12,14 @@ BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 
+SKIP: {
+    skip "border styles not yet implemented", 14;
+
 my $x = X11::XCB::Connection->new;
 
-my $i3 = i3;
-
-# Switch to the nineth workspace
-$i3->command('9')->recv;
+my $i3 = i3("/tmp/nestedcons");
+my $tmp = get_unused_workspace();
+$i3->command("workspace $tmp")->recv;
 
 #####################################################################
 # Create a floating window and see if resizing works
@@ -76,3 +78,5 @@ test_resize;
 $i3->command('bp')->recv;
 
 test_resize;
+
+}
