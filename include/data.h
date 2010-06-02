@@ -238,6 +238,7 @@ struct Match {
     char *application;
     char *class;
     char *instance;
+    char *mark;
     xcb_window_t id;
     Con *con_id;
     enum { M_ANY = 0, M_TILING, M_FLOATING } floating;
@@ -267,6 +268,9 @@ struct Con {
     struct Rect deco_rect;
 
     char *name;
+
+    /* user-definable mark to jump to this container later */
+    char *mark;
 
     double percent;
 

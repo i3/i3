@@ -201,6 +201,7 @@ void tree_close_con() {
 void tree_split(Con *con, orientation_t orientation) {
     /* for a workspace, we just need to change orientation */
     if (con->type == CT_WORKSPACE) {
+        DLOG("Workspace, simply changing orientation to %d\n", orientation);
         con->orientation = orientation;
         return;
     }
@@ -210,8 +211,12 @@ void tree_split(Con *con, orientation_t orientation) {
      * child and has the same orientation like we are trying to
      * set, this operation is a no-op to not confuse the user */
     if (parent->orientation == orientation &&
-        TAILQ_NEXT(con, nodes) == TAILQ_END(&(parent->nodes_head)))
+        TAILQ_NEXT(con, nodes) == TAILQ_END(&(parent->nodes_head))) {
+        DLOG("Not splitting the same way again\n");
         return;
+    }
+
+    DLOG("Splitting in orientation %d\n", orientation);
 
     /* 2: replace it with a new Con */
     Con *new = con_new(NULL);

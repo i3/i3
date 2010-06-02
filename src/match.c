@@ -13,6 +13,7 @@ bool match_is_empty(Match *match) {
      * TAILQ and I don’t want to start with things like assuming that the
      * last member of a struct really is at the end in memory… */
     return (match->title == NULL &&
+            match->mark == NULL &&
             match->application == NULL &&
             match->class == NULL &&
             match->instance == NULL &&
@@ -32,7 +33,6 @@ bool match_matches_window(Match *match, i3Window *window) {
         LOG("match made by window instance (%s)\n", window->class_instance);
         return true;
     }
-
 
     if (match->id != XCB_NONE && window->id == match->id) {
         LOG("match made by window id (%d)\n", window->id);

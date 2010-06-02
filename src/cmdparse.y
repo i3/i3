@@ -124,6 +124,7 @@ void parse_cmd(const char *new) {
 %token TOK_AFTER "after"
 %token TOK_BEFORE "before"
 %token TOK_RESTORE "restore"
+%token TOK_MARK "mark"
 
 %token TOK_CLASS "class"
 %token TOK_ID "id"
@@ -205,6 +206,11 @@ matchend:
                     TAILQ_INSERT_TAIL(&owindows, current, owindows);
 
                 }
+            } else if (current_match.mark != NULL && current->con->mark != NULL &&
+                    strcasecmp(current_match.mark, current->con->mark) == 0) {
+                printf("match by mark\n");
+                    TAILQ_INSERT_TAIL(&owindows, current, owindows);
+
             } else {
                 if (current->con->window == NULL)
                     continue;
@@ -245,6 +251,11 @@ criteria:
         current_match.id = atoi($<string>3);
         printf("window id as int = %d\n", current_match.id);
     }
+    | TOK_MARK '=' STR
+    {
+        printf("criteria: mark = %s\n", $<string>3);
+        current_match.mark = $<string>3;
+    }
     ;
 
 operations:
@@ -274,6 +285,7 @@ operation:
     | split
     | mode
     | level
+    | mark
     ;
 
 exec:
@@ -497,4 +509,24 @@ layout_mode:
     TOK_DEFAULT   { $<number>$ = L_DEFAULT; }
     | TOK_STACKED { $<number>$ = L_STACKED; }
     | TOK_TABBED  { $<number>$ = L_TABBED; }
+    ;
+
+mark:
+    TOK_MARK WHITESPACE STR
+    {
+        printf("marking window with str %s\n", $<string>3);
+        owindow *current;
+
+        /* check if the match is empty, not if the result is empty */
+        if (match_is_empty(&current_match))
+            focused->mark = sstrdup($<string>3);
+        else {
+            TAILQ_FOREACH(current, &owindows, owindows) {
+                printf("matching: %p / %s\n", current->con, current->con->name);
+                current->con->mark = sstrdup($<string>3);
+            }
+        }
+
+        free($<string>3);
+    }
     ;

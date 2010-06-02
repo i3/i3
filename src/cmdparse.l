@@ -112,10 +112,12 @@ down                            { return TOK_DOWN; }
 before                          { return TOK_BEFORE; }
 after                           { return TOK_AFTER; }
 restore                         { BEGIN(WANT_WS_STRING); return TOK_RESTORE; }
+mark                            { BEGIN(WANT_WS_STRING); return TOK_MARK; }
 
 class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
 id                              { BEGIN(WANT_QSTRING); return TOK_ID; }
 con_id                          { BEGIN(WANT_QSTRING); return TOK_CON_ID; }
+con_mark                        { BEGIN(WANT_QSTRING); return TOK_MARK; }
 
 .                               { return (int)yytext[0]; }
 

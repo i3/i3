@@ -1,10 +1,7 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
-# Beware that this test uses workspace 9 to perform some tests (it expects
-# the workspace to be empty).
-# TODO: skip it by default?
 
-use i3test tests => 7;
+use i3test tests => 6;
 use X11::XCB qw(:all);
 use Time::HiRes qw(sleep);
 use Digest::SHA1 qw(sha1_base64);
@@ -15,21 +12,22 @@ BEGIN {
 
 my $x = X11::XCB::Connection->new;
 
-my $i3 = i3;
+my $i3 = i3("/tmp/nestedcons");
+my $tmp = get_unused_workspace();
+$i3->command("workspace $tmp")->recv;
 
-# Switch to the nineth workspace
-$i3->command('9')->recv;
+$i3->command('split h')->recv;
 
 #####################################################################
 # Create two windows and make sure focus switching works
 #####################################################################
 
 my $top = i3test::open_standard_window($x);
-sleep(0.25);
+sleep 0.25;
 my $mid = i3test::open_standard_window($x);
-sleep(0.25);
+sleep 0.25;
 my $bottom = i3test::open_standard_window($x);
-sleep(0.25);
+sleep 0.25;
 
 diag("top id = " . $top->id);
 diag("mid id = " . $mid->id);
@@ -49,10 +47,7 @@ sub focus_after {
 $focus = $x->input_focus;
 is($focus, $bottom->id, "Latest window focused");
 
-$focus = focus_after("ml");
-is($focus, $bottom->id, "Right window still focused");
-
-$focus = focus_after("h");
+$focus = focus_after("prev h");
 is($focus, $mid->id, "Middle window focused");
 
 #####################################################################
@@ -61,14 +56,14 @@ is($focus, $mid->id, "Middle window focused");
 
 my $random_mark = sha1_base64(rand());
 
-$focus = focus_after("goto $random_mark");
+$focus = focus_after(qq|[con_mark="$random_mark"] focus|);
 is($focus, $mid->id, "focus unchanged");
 
 $i3->command("mark $random_mark")->recv;
 
-$focus = focus_after("k");
+$focus = focus_after("prev h");
 is($focus, $top->id, "Top window focused");
 
-$focus = focus_after("goto $random_mark");
+$focus = focus_after(qq|[con_mark="$random_mark"] focus|);
 is($focus, $mid->id, "goto worked");
 
