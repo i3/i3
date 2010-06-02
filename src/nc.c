@@ -2,6 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  */
 #include <ev.h>
+#include <limits.h>
 #include "all.h"
 
 static int xkb_event_base;
@@ -253,6 +254,9 @@ int main(int argc, char *argv[]) {
 
     /* Watch _NET_WM_NAME (title of the window encoded in UTF-8) */
     xcb_property_set_handler(&prophs, atoms[_NET_WM_NAME], 128, handle_windowname_change, NULL);
+
+    /* Watch WM_HINTS (contains the urgent property) */
+    xcb_property_set_handler(&prophs, WM_HINTS, UINT_MAX, handle_hints, NULL);
 
     /* Watch WM_NAME (title of the window encoded in COMPOUND_TEXT) */
     xcb_watch_wm_name(&prophs, 128, handle_windowname_change_legacy, NULL);

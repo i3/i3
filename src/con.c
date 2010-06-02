@@ -91,6 +91,10 @@ void con_focus(Con *con) {
         con_focus(con->parent);
 
     focused = con;
+    if (con->urgent) {
+        con->urgent = false;
+        workspace_update_urgent_flag(con_get_workspace(con));
+    }
 }
 
 /*

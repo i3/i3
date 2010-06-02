@@ -171,12 +171,14 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state,
                         xcb_window_t window, xcb_atom_t name,
                         xcb_get_property_reply_t *reply);
 
+#endif
 /**
  * Handles the WM_HINTS property for extracting the urgency state of the window.
  *
  */
 int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                   xcb_atom_t name, xcb_get_property_reply_t *reply);
+#if 0
 
 /**
  * Handles the transient for hints set by a window, signalizing that this

@@ -810,6 +810,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
 
         return 1;
 }
+#endif
 
 /*
  * Handles the WM_HINTS property for extracting the urgency state of the window.
@@ -817,45 +818,48 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
  */
 int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                   xcb_atom_t name, xcb_get_property_reply_t *reply) {
-        Client *client = table_get(&by_child, window);
-        if (client == NULL) {
-                DLOG("Received WM_HINTS for unknown client\n");
-                return 1;
-        }
-        xcb_wm_hints_t hints;
-
-        if (reply != NULL) {
-                if (!xcb_get_wm_hints_from_reply(&hints, reply))
-                        return 1;
-        } else {
-                if (!xcb_get_wm_hints_reply(conn, xcb_get_wm_hints_unchecked(conn, client->child), &hints, NULL))
-                        return 1;
-        }
-
-        Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
-        if (!client->urgent && client == last_focused) {
-                DLOG("Ignoring urgency flag for current client\n");
-                return 1;
-        }
-
-        /* Update the flag on the client directly */
-        client->urgent = (xcb_wm_hints_get_urgency(&hints) != 0);
-        CLIENT_LOG(client);
-        LOG("Urgency flag changed to %d\n", client->urgent);
-
-        workspace_update_urgent_flag(client->workspace);
-        redecorate_window(conn, client);
-
-        /* If the workspace this client is on is not visible, we need to redraw
-         * the workspace bar */
-        if (!workspace_is_visible(client->workspace)) {
-                Output *output = client->workspace->output;
-                render_workspace(conn, output, output->current_workspace);
-                xcb_flush(conn);
-        }
-
+    Con *con = con_by_window_id(window);
+    if (con == NULL) {
+        DLOG("Received WM_HINTS for unknown client\n");
         return 1;
+    }
+
+    xcb_wm_hints_t hints;
+
+    if (reply != NULL) {
+        if (!xcb_get_wm_hints_from_reply(&hints, reply))
+            return 1;
+    } else {
+        if (!xcb_get_wm_hints_reply(conn, xcb_get_wm_hints_unchecked(conn, con->window->id), &hints, NULL))
+            return 1;
+    }
+
+    if (!con->urgent && focused == con) {
+        DLOG("Ignoring urgency flag for current client\n");
+        return 1;
+    }
+
+    /* Update the flag on the client directly */
+    con->urgent = (xcb_wm_hints_get_urgency(&hints) != 0);
+    //CLIENT_LOG(con);
+    LOG("Urgency flag changed to %d\n", con->urgent);
+
+    workspace_update_urgent_flag(con_get_workspace(con));
+
+#if 0
+    /* If the workspace this client is on is not visible, we need to redraw
+     * the workspace bar */
+    if (!workspace_is_visible(client->workspace)) {
+            Output *output = client->workspace->output;
+            render_workspace(conn, output, output->current_workspace);
+            xcb_flush(conn);
+    }
+#endif
+
+    return 1;
 }
+
+#if 0
 
 /*
  * Handles the transient for hints set by a window, signalizing that this window is a popup window

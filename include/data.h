@@ -272,6 +272,10 @@ struct Con {
 
     struct Window *window;
 
+    /* Should this container be marked urgent? This gets set when the window
+     * inside this container (if any) sets the urgency hint, for example. */
+    bool urgent;
+
     /* ids/gc for the frame window */
     xcb_window_t frame;
     xcb_gcontext_t gc;

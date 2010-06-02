@@ -90,14 +90,16 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws);
  *
  */
 void workspace_map_clients(xcb_connection_t *conn, Workspace *ws);
+#endif
 
 /**
  * Goes through all clients on the given workspace and updates the workspace’s
  * urgent flag accordingly.
  *
  */
-void workspace_update_urgent_flag(Workspace *ws);
+void workspace_update_urgent_flag(Con *ws);
 
+#if 0
 /*
  * Returns the width of the workspace.
  *

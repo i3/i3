@@ -137,6 +137,9 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         ystr("orientation");
         y(integer, con->orientation);
 
+        ystr("urgent");
+        y(integer, con->urgent);
+
         ystr("layout");
         y(integer, con->layout);
 

@@ -429,30 +429,36 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws) {
 
         ignore_enter_notify_forall(conn, u_ws, false);
 }
+#endif
+
+static bool get_urgency_flag(Con *con) {
+    Con *child;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+        if (child->urgent || get_urgency_flag(child))
+            return true;
+
+    TAILQ_FOREACH(child, &(con->floating_head), floating_windows)
+        if (child->urgent || get_urgency_flag(child))
+            return true;
+
+    return false;
+}
 
 /*
  * Goes through all clients on the given workspace and updates the workspace’s
  * urgent flag accordingly.
  *
  */
-void workspace_update_urgent_flag(Workspace *ws) {
-        Client *current;
-        bool old_flag = ws->urgent;
-        bool urgent = false;
+void workspace_update_urgent_flag(Con *ws) {
+    bool old_flag = ws->urgent;
+    ws->urgent = get_urgency_flag(ws);
+    DLOG("Workspace urgency flag changed from %d to %d\n", old_flag, ws->urgent);
 
-        SLIST_FOREACH(current, &(ws->focus_stack), focus_clients) {
-                if (!current->urgent)
-                        continue;
-
-                urgent = true;
-                break;
-        }
-
-        ws->urgent = urgent;
-
-        if (old_flag != urgent)
-                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"urgent\"}");
+    if (old_flag != ws->urgent)
+        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"urgent\"}");
 }
+
+#if 0
 
 /*
  * Returns the width of the workspace.
