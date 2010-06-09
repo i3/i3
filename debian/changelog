@@ -1,3 +1,13 @@
+i3-wm (3.e-bf1-1) unstable; urgency=low
+
+  * Bugfix: Correctly initialize workspaces if RandR is not available
+  * Bugfix: Correctly handle asprintf() return value
+  * Bugfix: Update _NET_WM_STATE when clients request changes via ClientMessage
+  * Bugfix: Don’t invert directions when resizing floating clients (top/left)
+  * Bugfix: Don’t leak file descriptors
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Wed, 09 Jun 2010 09:51:10 +0200
+
 i3-wm (3.e-3) unstable; urgency=low
 
   * Bump debian policy version
