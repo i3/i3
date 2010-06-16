@@ -7,6 +7,7 @@ use warnings;
 use Getopt::Long;
 use Pod::Usage;
 use IPC::Run qw(start pump);
+use Try::Tiny;
 use AnyEvent::I3;
 use AnyEvent;
 use v5.10;
@@ -204,7 +205,12 @@ sub update_output {
         $out .= "\n";
 
         $outputs->{$name}->{cmd_input} = $out;
-        pump $outputs->{$name}->{cmd} while length $outputs->{$name}->{cmd_input};
+        try {
+            pump $outputs->{$name}->{cmd} while length $outputs->{$name}->{cmd_input};
+        } catch {
+            warn "Could not write to dzen2";
+            exit 1;
+        }
     }
 }
 
