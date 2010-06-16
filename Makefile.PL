@@ -9,4 +9,8 @@ requires 'AnyEvent::Handle';
 requires 'AnyEvent::Socket';
 requires 'JSON::XS';
 
+if ($^O eq 'MSWin32') {
+    die "AnyEvent::I3 cannot be used on win32 (unix sockets are missing)";
+}
+
 WriteAll;
