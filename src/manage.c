@@ -273,6 +273,8 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                         if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]) {
                                 DLOG("Window is a dock.\n");
                                 Output *t_out = get_output_containing(x, y);
+                                if (t_out == NULL)
+                                        t_out = c_ws->output;
                                 if (t_out != c_ws->output) {
                                         DLOG("Dock client requested to be on output %s by geometry (%d, %d)\n",
                                                         t_out->name, x, y);
