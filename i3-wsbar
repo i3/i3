@@ -136,9 +136,12 @@ sub got_outputs {
         }
 
         my $x = $new{$name}->{rect}->{x};
+        my $w = $new{$name}->{rect}->{width};
         my $launch = $command;
         $launch =~ s/([^%])%x/$1$x/g;
+        $launch =~ s/([^%])%w/$1$w/g;
         $launch =~ s/%%x/%x/g;
+        $launch =~ s/%%w/%w/g;
 
         $new{$name}->{cmd_input} = '';
         my @cmd = ('/bin/sh', '-c', $launch);
@@ -245,10 +248,11 @@ i3-wsbar -c <dzen2-commandline> [options]
 =item B<--command> <command>
 
 This command (at the moment only dzen2 is supported) will be started for each
-output. C<%x> will be replaced with the X coordinate of the output.
+output. C<%x> will be replaced with the X coordinate of the output, C<%w> will
+be replaced with the width of the output.
 
 Example:
-    --command "dzen2 -dock -x %x"
+    --command "dzen2 -dock -x %x -w %w"
 
 =item B<--input-on> <list-of-RandR-outputs>
 
