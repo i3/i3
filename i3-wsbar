@@ -202,7 +202,7 @@ sub update_output {
             $out .= qq|^p(2)^pa(;2)|;
         }
 
-        $out .= qq|^p(_LOCK_X)^fg($dzen_bg)^r(${width}x17)^p(_UNLOCK_X)^fg(white)|;
+        $out .= qq|^p(_LOCK_X)^fg($dzen_bg)^r(${width}x17)^p(_UNLOCK_X)^fg()|;
         $out .= qq|^p(+5)|;
         $out .= $last_line if (!@input_on or $name ~~ @input_on);
         $out .= "\n";
