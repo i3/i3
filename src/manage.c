@@ -128,6 +128,18 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     i3Window *cwindow = scalloc(sizeof(i3Window));
     cwindow->id = window;
 
+    /* We need to grab the mouse buttons for click to focus */
+    xcb_grab_button(conn, false, window, XCB_EVENT_MASK_BUTTON_PRESS,
+                    XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
+                    1 /* left mouse button */,
+                    XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
+
+    xcb_grab_button(conn, false, window, XCB_EVENT_MASK_BUTTON_PRESS,
+                    XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
+                    3 /* right mouse button */,
+                    XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
+
+
     /* update as much information as possible so far (some replies may be NULL) */
     window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL));
     window_update_name_legacy(cwindow, xcb_get_property_reply(conn, title_cookie, NULL));

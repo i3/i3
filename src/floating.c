@@ -340,7 +340,6 @@ void floating_drag_window(Con *con, xcb_button_press_event_t *event) {
         tree_render();
 }
 
-#if 0
 /*
  * This is an ugly data structure which we need because there is no standard
  * way of having nested functions (only available as a gcc extension at the
@@ -349,55 +348,60 @@ void floating_drag_window(Con *con, xcb_button_press_event_t *event) {
  *
  */
 struct resize_window_callback_params {
-        border_t corner;
-        bool proportional;
-        xcb_button_press_event_t *event;
+    border_t corner;
+    bool proportional;
+    xcb_button_press_event_t *event;
 };
 
 DRAGGING_CB(resize_window_callback) {
-        struct resize_window_callback_params *params = extra;
-        xcb_button_press_event_t *event = params->event;
-        border_t corner = params->corner;
+    struct resize_window_callback_params *params = extra;
+    xcb_button_press_event_t *event = params->event;
+    border_t corner = params->corner;
 
-        int32_t dest_x = client->rect.x;
-        int32_t dest_y = client->rect.y;
-        uint32_t dest_width;
-        uint32_t dest_height;
+    int32_t dest_x = con->rect.x;
+    int32_t dest_y = con->rect.y;
+    uint32_t dest_width;
+    uint32_t dest_height;
 
-        double ratio = (double) old_rect->width / old_rect->height;
+    double ratio = (double) old_rect->width / old_rect->height;
 
-        /* First guess: We resize by exactly the amount the mouse moved,
-         * taking into account in which corner the client was grabbed */
-        if (corner & BORDER_LEFT)
-                dest_width = old_rect->width - (new_x - event->root_x);
-        else dest_width = old_rect->width + (new_x - event->root_x);
+    /* First guess: We resize by exactly the amount the mouse moved,
+     * taking into account in which corner the client was grabbed */
+    if (corner & BORDER_LEFT)
+            dest_width = old_rect->width - (new_x - event->root_x);
+    else dest_width = old_rect->width + (new_x - event->root_x);
 
-        if (corner & BORDER_TOP)
-                dest_height = old_rect->height - (new_y - event->root_y);
-        else dest_height = old_rect->height + (new_y - event->root_y);
+    if (corner & BORDER_TOP)
+            dest_height = old_rect->height - (new_y - event->root_y);
+    else dest_height = old_rect->height + (new_y - event->root_y);
 
-        /* Obey minimum window size */
-        dest_width = max(dest_width, client_min_width(client));
-        dest_height = max(dest_height, client_min_height(client));
+    /* TODO: minimum window size */
+#if 0
+    /* Obey minimum window size */
+    dest_width = max(dest_width, client_min_width(client));
+    dest_height = max(dest_height, client_min_height(client));
+#endif
 
-        /* User wants to keep proportions, so we may have to adjust our values */
-        if (params->proportional) {
-                dest_width = max(dest_width, (int) (dest_height * ratio));
-                dest_height = max(dest_height, (int) (dest_width / ratio));
-        }
+    /* User wants to keep proportions, so we may have to adjust our values */
+    if (params->proportional) {
+            dest_width = max(dest_width, (int) (dest_height * ratio));
+            dest_height = max(dest_height, (int) (dest_width / ratio));
+    }
 
-        /* If not the lower right corner is grabbed, we must also reposition
-         * the client by exactly the amount we resized it */
-        if (corner & BORDER_LEFT)
-                dest_x = old_rect->x + (old_rect->width - dest_width);
+    /* If not the lower right corner is grabbed, we must also reposition
+     * the client by exactly the amount we resized it */
+    if (corner & BORDER_LEFT)
+            dest_x = old_rect->x + (old_rect->width - dest_width);
 
-        if (corner & BORDER_TOP)
-                dest_y = old_rect->y + (old_rect->height - dest_height);
+    if (corner & BORDER_TOP)
+            dest_y = old_rect->y + (old_rect->height - dest_height);
 
-        client->rect = (Rect) { dest_x, dest_y, dest_width, dest_height };
+    con->rect = (Rect) { dest_x, dest_y, dest_width, dest_height };
 
-        /* resize_client flushes */
-        resize_client(conn, client);
+    /* TODO: don’t re-render the whole tree just because we change
+     * coordinates of a floating window */
+    tree_render();
+    x_push_changes(croot);
 }
 
 /*
@@ -406,28 +410,27 @@ DRAGGING_CB(resize_window_callback) {
  * Calls the drag_pointer function with the resize_window callback
  *
  */
-void floating_resize_window(xcb_connection_t *conn, Client *client,
-                            bool proportional, xcb_button_press_event_t *event) {
-        DLOG("floating_resize_window\n");
+void floating_resize_window(Con *con, bool proportional,
+                            xcb_button_press_event_t *event) {
+    DLOG("floating_resize_window\n");
 
-        /* corner saves the nearest corner to the original click. It contains
-         * a bitmask of the nearest borders (BORDER_LEFT, BORDER_RIGHT, …) */
-        border_t corner = 0;
+    /* corner saves the nearest corner to the original click. It contains
+     * a bitmask of the nearest borders (BORDER_LEFT, BORDER_RIGHT, …) */
+    border_t corner = 0;
 
-        if (event->event_x <= (client->rect.width / 2))
-                corner |= BORDER_LEFT;
-        else corner |= BORDER_RIGHT;
+    if (event->event_x <= (con->rect.width / 2))
+            corner |= BORDER_LEFT;
+    else corner |= BORDER_RIGHT;
 
-        if (event->event_y <= (client->rect.height / 2))
-                corner |= BORDER_TOP;
-        else corner |= BORDER_RIGHT;
+    if (event->event_y <= (con->rect.height / 2))
+            corner |= BORDER_TOP;
+    else corner |= BORDER_RIGHT;
 
-        struct resize_window_callback_params params = { corner, proportional, event };
+    struct resize_window_callback_params params = { corner, proportional, event };
 
-        drag_pointer(conn, client, event, XCB_NONE, BORDER_TOP /* irrelevant */, resize_window_callback, &params);
+    drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, resize_window_callback, &params);
 }
 
-#endif
 /*
  * This function grabs your pointer and lets you drag stuff around (borders).
  * Every time you move your mouse, an XCB_MOTION_NOTIFY event will be received

@@ -78,7 +78,6 @@ int floating_border_click(xcb_connection_t *conn, Client *client,
  *
  */
 void floating_drag_window(Con *con, xcb_button_press_event_t *event);
-#if 0
 
 /**
  * Called when the user clicked on a floating window while holding the
@@ -86,9 +85,9 @@ void floating_drag_window(Con *con, xcb_button_press_event_t *event);
  * Calls the drag_pointer function with the resize_window callback
  *
  */
-void floating_resize_window(xcb_connection_t *conn, Client *client,
-                            bool proportional, xcb_button_press_event_t *event);
+void floating_resize_window(Con *con, bool proportional, xcb_button_press_event_t *event);
 
+#if 0
 /**
  * Changes focus in the given direction for floating clients.
  *
