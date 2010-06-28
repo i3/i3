@@ -298,6 +298,10 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 return 1;
         }
 
+        /* click to focus */
+        con_focus(con);
+        tree_render();
+
         xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
         xcb_flush(conn);
         return 0;
