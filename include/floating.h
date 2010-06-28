@@ -28,9 +28,23 @@ typedef enum { BORDER_LEFT   = (1 << 0),
                BORDER_BOTTOM = (1 << 3)} border_t;
 
 /**
- * Enters floating mode for the given client.  Correctly takes care of the
- * position/size (separately stored for tiling/floating mode) and
- * repositions/resizes/redecorates the client.
+ * Enables floating mode for the given container by detaching it from its
+ * parent, creating a new container around it and storing this container in the
+ * floating_windows list of the workspace.
+ *
+ */
+void floating_enable(Con *con, bool automatic);
+
+/**
+ * Disables floating mode for the given container by re-attaching the container
+ * to its old parent.
+ *
+ */
+void floating_disable(Con *con, bool automatic);
+
+/**
+ * Calls floating_enable() for tiling containers and floating_disable() for
+ * floating containers.
  *
  * If the automatic flag is set to true, this was an automatic update by a
  * change of the window class from the application which can be overwritten by

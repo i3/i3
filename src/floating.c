@@ -1,5 +1,5 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
  *
@@ -16,6 +16,65 @@
 
 extern xcb_connection_t *conn;
 
+void floating_enable(Con *con, bool automatic) {
+    /* 1: detach the container from its parent */
+    /* TODO: refactor this with tree_close() */
+    TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
+    TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
+
+    Con *child;
+    int children = 0;
+    TAILQ_FOREACH(child, &(con->parent->nodes_head), nodes)
+        children++;
+    /* TODO: better document why this math works */
+    double fix = 1.0 / (1.0 - (1.0 / (children+1)));
+    TAILQ_FOREACH(child, &(con->parent->nodes_head), nodes) {
+        if (child->percent <= 0.0)
+            continue;
+        child->percent *= fix;
+    }
+
+    /* 2: create a new container to render the decoration on, add
+     * it as a floating window to the workspace */
+    Con *nc = con_new(NULL);
+    nc->parent = con_get_workspace(con);
+    nc->rect = con->rect;
+    nc->orientation = NO_ORIENTATION;
+    nc->type = CT_FLOATING_CON;
+    TAILQ_INSERT_TAIL(&(nc->parent->floating_head), nc, floating_windows);
+    TAILQ_INSERT_TAIL(&(nc->parent->focus_head), nc, focused);
+
+    /* 3: attach the child to the new parent container */
+    con->old_parent = con->parent;
+    con->parent = nc;
+    con->floating = FLOATING_USER_ON;
+    nc->rect.x = 400;
+    nc->rect.y = 400;
+    TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
+    TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
+}
+
+void floating_disable(Con *con, bool automatic) {
+    assert(con->old_parent != NULL);
+
+    /* 1: detach from parent container */
+    TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
+    TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
+
+    /* 2: kill parent container */
+    TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
+    TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
+    tree_close(con->parent, false);
+
+    /* 3: re-attach to previous parent */
+    con->parent = con->old_parent;
+    TAILQ_INSERT_TAIL(&(con->parent->nodes_head), con, nodes);
+    TAILQ_INSERT_TAIL(&(con->parent->focus_head), con, focused);
+
+    con->floating = FLOATING_USER_OFF;
+}
+
+
 /*
  * Toggles floating mode for the given container.
  *
@@ -29,63 +88,12 @@ void toggle_floating_mode(Con *con, bool automatic) {
         /* see if the client is already floating */
         if (con_is_floating(con)) {
                 LOG("already floating, re-setting to tiling\n");
-                assert(con->old_parent != NULL);
 
-                /* 1: detach from parent container */
-                TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
-                TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
-
-                /* 2: kill parent container */
-                TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
-                TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
-                tree_close(con->parent, false);
-
-                /* 3: re-attach to previous parent */
-                con->parent = con->old_parent;
-                TAILQ_INSERT_TAIL(&(con->parent->nodes_head), con, nodes);
-                TAILQ_INSERT_TAIL(&(con->parent->focus_head), con, focused);
-
-                con->floating = FLOATING_USER_OFF;
-
+                floating_disable(con, automatic);
                 return;
         }
 
-        /* 1: detach the container from its parent */
-        /* TODO: refactor this with tree_close() */
-        TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
-        TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
-
-        Con *child;
-    int children = 0;
-    TAILQ_FOREACH(child, &(con->parent->nodes_head), nodes)
-        children++;
-    /* TODO: better document why this math works */
-    double fix = 1.0 / (1.0 - (1.0 / (children+1)));
-    TAILQ_FOREACH(child, &(con->parent->nodes_head), nodes) {
-        if (child->percent <= 0.0)
-            continue;
-        child->percent *= fix;
-    }
-
-        /* 2: create a new container to render the decoration on, add
-         * it as a floating window to the workspace */
-        Con *nc = con_new(NULL);
-        nc->parent = con_get_workspace(con);
-        nc->rect = con->rect;
-        nc->orientation = NO_ORIENTATION;
-        nc->type = CT_FLOATING_CON;
-        TAILQ_INSERT_TAIL(&(nc->parent->floating_head), nc, floating_windows);
-        TAILQ_INSERT_TAIL(&(nc->parent->focus_head), nc, focused);
-
-        /* 3: attach the child to the new parent container */
-        con->old_parent = con->parent;
-        con->parent = nc;
-        con->floating = FLOATING_USER_ON;
-        nc->rect.x = 400;
-        nc->rect.y = 400;
-        TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
-        TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
-
+        floating_enable(con, automatic);
 
 
 #if 0
