@@ -22,17 +22,7 @@ void floating_enable(Con *con, bool automatic) {
     TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
     TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
 
-    Con *child;
-    int children = 0;
-    TAILQ_FOREACH(child, &(con->parent->nodes_head), nodes)
-        children++;
-    /* TODO: better document why this math works */
-    double fix = 1.0 / (1.0 - (1.0 / (children+1)));
-    TAILQ_FOREACH(child, &(con->parent->nodes_head), nodes) {
-        if (child->percent <= 0.0)
-            continue;
-        child->percent *= fix;
-    }
+    con_fix_percent(con->parent, WINDOW_REMOVE);
 
     /* 2: create a new container to render the decoration on, add
      * it as a floating window to the workspace */
@@ -72,6 +62,8 @@ void floating_disable(Con *con, bool automatic) {
     TAILQ_INSERT_TAIL(&(con->parent->focus_head), con, focused);
 
     con->floating = FLOATING_USER_OFF;
+
+    con_fix_percent(con->parent, WINDOW_ADD);
 }
 
 
