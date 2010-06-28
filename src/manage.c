@@ -163,6 +163,24 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     nc->window = cwindow;
     x_reinit(nc);
 
+    xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
+    if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DOCK]))
+        LOG("this window is a dock\n");
+
+    /* set floating if necessary */
+    if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DIALOG]) ||
+        xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_UTILITY]) ||
+        xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_TOOLBAR]) ||
+        xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_SPLASH])) {
+        LOG("This window is a dialog window, setting floating\n");
+
+        /* We respect the geometry wishes of floating windows, as long as they
+         * are bigger than our minimal useful size (75x50). */
+        nc->rect.width = max(geom->width, 75);
+        nc->rect.height = max(geom->height, 50);
+        floating_enable(nc, false);
+    }
+
     /* to avoid getting an UnmapNotify event due to reparenting, we temporarily
      * declare no interest in any state change event of this window */
     values[0] = XCB_NONE;
@@ -178,20 +196,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     values[0] = CHILD_EVENT_MASK;
     xcb_change_window_attributes(conn, window, mask, values);
 
-    xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, state_cookie, NULL);
+    reply = xcb_get_property_reply(conn, state_cookie, NULL);
     if (xcb_reply_contains_atom(reply, atoms[_NET_WM_STATE_FULLSCREEN]))
         con_toggle_fullscreen(nc);
-
-    reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
-    if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DOCK]))
-        LOG("this window is a dock\n");
-
-    if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DIALOG]) ||
-        xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_UTILITY]) ||
-        xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_TOOLBAR]) ||
-        xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_SPLASH]))
-        LOG("This window is a dialog window\n");
-
 
     /* Put the client inside the save set. Upon termination (whether killed or
      * normal exit does not matter) of the window manager, these clients will
