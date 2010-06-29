@@ -59,7 +59,7 @@ Workspace *workspace_get(int number) {
 
                 TAILQ_INSERT_TAIL(workspaces, ws, workspaces);
 
-                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
+                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"create\"}");
         }
         DLOG("done\n");
 
@@ -291,6 +291,8 @@ void workspace_initialize(Workspace *ws, Output *output, bool recheck) {
                 return;
 
         workspace_assign_to(ws, ws->output, false);
+
+        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
 }
 
 /*
