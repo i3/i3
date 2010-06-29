@@ -350,6 +350,10 @@ void tree_move(char way, orientation_t orientation) {
                 LOG("cannot move further to the right\n");
                 return;
             }
+
+            /* if this is a split container, we need to go down */
+            while (!TAILQ_EMPTY(&(next->focus_head)))
+                next = TAILQ_FIRST(&(next->focus_head));
         }
 
         con_detach(focused);
@@ -360,18 +364,31 @@ void tree_move(char way, orientation_t orientation) {
         /* TODO: don’t influence focus handling? */
     } else {
         LOG("i would insert it before %p / %s\n", current, current->name);
+        bool gone_down = false;
         if (!level_changed) {
             next = TAILQ_PREV(next, nodes_head, nodes);
             if (next == TAILQ_END(&(next->parent->nodes_head))) {
                 LOG("cannot move further\n");
                 return;
             }
+
+            /* if this is a split container, we need to go down */
+            while (!TAILQ_EMPTY(&(next->focus_head))) {
+                gone_down = true;
+                next = TAILQ_FIRST(&(next->focus_head));
+            }
         }
 
         con_detach(focused);
         focused->parent = next->parent;
 
-        TAILQ_INSERT_BEFORE(next, focused, nodes);
+        /* After going down in the tree, we insert the container *after*
+         * the currently focused one even though the command used "before".
+         * This is to keep the user experience clear, since the before/after
+         * only signifies the direction of the movement on top-level */
+        if (gone_down)
+            TAILQ_INSERT_AFTER(&(next->parent->nodes_head), next, focused, nodes);
+        else TAILQ_INSERT_BEFORE(next, focused, nodes);
         TAILQ_INSERT_HEAD(&(next->parent->focus_head), focused, focused);
         /* TODO: don’t influence focus handling? */
     }
