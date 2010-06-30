@@ -348,7 +348,7 @@ kill:
         printf("killing!\n");
         /* check if the match is empty, not if the result is empty */
         if (match_is_empty(&current_match))
-            tree_close(focused, true);
+            tree_close_con();
         else {
             TAILQ_FOREACH(current, &owindows, owindows) {
                 printf("matching: %p / %s\n", current->con, current->con->name);
