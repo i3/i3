@@ -268,7 +268,8 @@ operation:
     exec
     | exit
     | restart
-    /*| reload
+    | reload
+    /*
     | mark
     | border */
     | layout
@@ -301,6 +302,16 @@ exit:
     {
         printf("exit, bye bye\n");
         exit(0);
+    }
+    ;
+
+reload:
+    TOK_RELOAD
+    {
+        printf("reloading\n");
+        load_configuration(conn, NULL, true);
+        /* Send an IPC event just in case the ws names have changed */
+        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"reload\"}");
     }
     ;
 
