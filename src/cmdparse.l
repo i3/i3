@@ -109,8 +109,16 @@ vertical                        { return TOK_VERTICAL; }
 level                           { return TOK_LEVEL; }
 up                              { return TOK_UP; }
 down                            { return TOK_DOWN; }
+left                            { return TOK_LEFT; }
+right                           { return TOK_RIGHT; }
 before                          { return TOK_BEFORE; }
 after                           { return TOK_AFTER; }
+resize                          { return TOK_RESIZE; }
+shrink                          { return TOK_SHRINK; }
+grow                            { return TOK_GROW; }
+px                              { return TOK_PX; }
+or                              { return TOK_OR; }
+ppt                             { return TOK_PPT; }
 restore                         { BEGIN(WANT_WS_STRING); return TOK_RESTORE; }
 mark                            { BEGIN(WANT_WS_STRING); return TOK_MARK; }
 
@@ -118,6 +126,8 @@ class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
 id                              { BEGIN(WANT_QSTRING); return TOK_ID; }
 con_id                          { BEGIN(WANT_QSTRING); return TOK_CON_ID; }
 con_mark                        { BEGIN(WANT_QSTRING); return TOK_MARK; }
+
+[0-9]+                          { cmdyylval.number = atoi(yytext); return NUMBER; }
 
 .                               { return (int)yytext[0]; }
 

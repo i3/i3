@@ -121,10 +121,18 @@ void parse_cmd(const char *new) {
 %token TOK_LEVEL "level"
 %token TOK_UP "up"
 %token TOK_DOWN "down"
+%token TOK_LEFT "left"
+%token TOK_RIGHT "right"
 %token TOK_AFTER "after"
 %token TOK_BEFORE "before"
 %token TOK_RESTORE "restore"
 %token TOK_MARK "mark"
+%token TOK_RESIZE "resize"
+%token TOK_GROW "grow"
+%token TOK_SHRINK "shrink"
+%token TOK_PX "px"
+%token TOK_OR "or"
+%token TOK_PPT "ppt"
 
 %token TOK_CLASS "class"
 %token TOK_ID "id"
@@ -132,6 +140,7 @@ void parse_cmd(const char *new) {
 
 %token WHITESPACE "<whitespace>"
 %token STR "<string>"
+%token NUMBER "<number>"
 
 %%
 
@@ -270,7 +279,6 @@ operation:
     | restart
     | reload
     /*
-    | mark
     | border */
     | layout
     | restore
@@ -287,6 +295,7 @@ operation:
     | mode
     | level
     | mark
+    | resize
     ;
 
 exec:
@@ -544,4 +553,98 @@ mark:
 
         free($<string>3);
     }
+    ;
+
+resize:
+    TOK_RESIZE WHITESPACE resize_way WHITESPACE direction resize_px resize_tiling
+    {
+        /* resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt] */
+        printf("resizing in way %d, direction %d, px %d or ppt %d\n", $<number>3, $<number>5, $<number>6, $<number>7);
+        int direction = $<number>5;
+        int px = $<number>6;
+        int ppt = $<number>7;
+        if ($<number>3 == TOK_SHRINK) {
+            px *= -1;
+            ppt *= -1;
+        }
+
+        if (con_is_floating(focused)) {
+            printf("floating resize\n");
+            if (direction == TOK_UP) {
+                focused->parent->rect.y -= px;
+                focused->parent->rect.height += px;
+            } else if (direction == TOK_DOWN) {
+                focused->rect.height += px;
+            } else if (direction == TOK_LEFT) {
+                focused->rect.x -= px;
+                focused->rect.width += px;
+            } else {
+                focused->rect.width += px;
+            }
+        } else {
+            LOG("tiling resize\n");
+            /* get the default percentage */
+            int children = 0;
+            Con *other;
+            TAILQ_FOREACH(other, &(focused->parent->nodes_head), nodes)
+                children++;
+            LOG("ins. %d children\n", children);
+            double percentage = 1.0 / children;
+            LOG("default percentage = %f\n", percentage);
+
+            if (direction == TOK_UP || direction == TOK_LEFT) {
+                other = TAILQ_PREV(focused, nodes_head, nodes);
+            } else {
+                other = TAILQ_NEXT(focused, nodes);
+            }
+            if (other == TAILQ_END(workspaces)) {
+                LOG("No other container in this direction found, cannot resize.\n");
+                return 0;
+            }
+            LOG("other->percent = %f\n", other->percent);
+            LOG("focused->percent before = %f\n", focused->percent);
+            if (focused->percent == 0.0)
+                focused->percent = percentage;
+            if (other->percent == 0.0)
+                other->percent = percentage;
+            focused->percent += ((double)ppt / 100.0);
+            other->percent -= ((double)ppt / 100.0);
+            LOG("focused->percent after = %f\n", focused->percent);
+            LOG("other->percent after = %f\n", other->percent);
+        }
+    }
+    ;
+
+resize_px:
+    /* empty */
+    {
+        $<number>$ = 10;
+    }
+    | WHITESPACE NUMBER WHITESPACE TOK_PX
+    {
+        $<number>$ = $<number>2;
+    }
+    ;
+
+resize_tiling:
+    /* empty */
+    {
+        $<number>$ = 10;
+    }
+    | WHITESPACE TOK_OR WHITESPACE NUMBER WHITESPACE TOK_PPT
+    {
+        $<number>$ = $<number>4;
+    }
+    ;
+
+resize_way:
+    TOK_GROW        { $<number>$ = TOK_GROW; }
+    | TOK_SHRINK    { $<number>$ = TOK_SHRINK; }
+    ;
+
+direction:
+    TOK_UP          { $<number>$ = TOK_UP; }
+    | TOK_DOWN      { $<number>$ = TOK_DOWN; }
+    | TOK_LEFT      { $<number>$ = TOK_LEFT; }
+    | TOK_RIGHT     { $<number>$ = TOK_RIGHT; }
     ;
