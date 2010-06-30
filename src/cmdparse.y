@@ -448,7 +448,11 @@ mode:
             toggle_floating_mode(focused, false);
         } else {
             printf("should switch mode to %s\n", ($<number>3 == TOK_FLOATING ? "floating" : "tiling"));
-            /* TODO: actually switch mode (not toggle) */
+            if ($<number>3 == TOK_FLOATING) {
+                floating_enable(focused, false);
+            } else {
+                floating_disable(focused, false);
+            }
         }
     }
     ;

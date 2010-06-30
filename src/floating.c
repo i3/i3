@@ -17,6 +17,11 @@
 extern xcb_connection_t *conn;
 
 void floating_enable(Con *con, bool automatic) {
+    if (con_is_floating(con)) {
+        LOG("Container is already in floating mode, not doing anything.\n");
+        return;
+    }
+
     /* 1: detach the container from its parent */
     /* TODO: refactor this with tree_close() */
     TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
@@ -45,6 +50,11 @@ void floating_enable(Con *con, bool automatic) {
 }
 
 void floating_disable(Con *con, bool automatic) {
+    if (!con_is_floating(con)) {
+        LOG("Container isn't floating, not doing anything.\n");
+        return;
+    }
+
     assert(con->old_parent != NULL);
 
     /* 1: detach from parent container */
