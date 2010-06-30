@@ -140,7 +140,7 @@ void tree_close(Con *con, bool kill_window) {
     if (con->type == CT_FLOATING_CON) {
         next = TAILQ_NEXT(con, floating_windows);
         if (next == TAILQ_END(&(con->parent->floating_head)))
-            next = con->parent;
+            next = con_get_workspace(con);
     } else {
         next = TAILQ_NEXT(con, focused);
         if (next == TAILQ_END(&(con->parent->nodes_head)))
@@ -180,12 +180,19 @@ void tree_close(Con *con, bool kill_window) {
         TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
         TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
         tree_close(con->parent, false);
+        next = NULL;
     }
 
     free(con->name);
     TAILQ_REMOVE(&all_cons, con, all_cons);
     free(con);
 
+    /* in the case of floating windows, we already focused another container
+     * when closing the parent, so we can exit now. */
+    if (!next)
+        return;
+
+    DLOG("focusing %p / %s\n", next, next->name);
     /* TODO: check if the container (or one of its children) was focused */
     con_focus(next);
 }
