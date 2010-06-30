@@ -315,3 +315,25 @@ void con_toggle_fullscreen(Con *con) {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
                         atoms[_NET_WM_STATE], ATOM, 32, num, values);
 }
+
+/*
+ * TODO: is there a better place for this function?
+ *
+ */
+void con_move_to_workspace(Con *con, Con *workspace) {
+    /* 1: get the focused container of this workspace by going down as far as
+     * possible */
+    Con *next = workspace;
+
+    while (!TAILQ_EMPTY(&(next->focus_head)))
+        next = TAILQ_FIRST(&(next->focus_head));
+
+    /* 2: we go up one level, but only when next is a normal container */
+    if (next->type != CT_WORKSPACE)
+        next = next->parent;
+
+    DLOG("Re-attaching container to %p / %s\n", next, next->name);
+    /* 3: re-attach the con to the parent of this focused container */
+    con_detach(con);
+    con_attach(con, next);
+}

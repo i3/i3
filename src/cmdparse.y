@@ -495,6 +495,24 @@ move:
          * we should not need any of both */
         tree_move(($<number>3 == TOK_BEFORE ? 'p' : 'n'), ($<chr>5 == 'v' ? VERT : HORIZ));
     }
+    | TOK_MOVE WHITESPACE TOK_WORKSPACE WHITESPACE STR
+    {
+        owindow *current;
+
+        printf("should move window to workspace %s\n", $<string>5);
+        /* get the workspace */
+        Con *ws = workspace_get($<string>5);
+
+        /* check if the match is empty, not if the result is empty */
+        if (match_is_empty(&current_match))
+            con_move_to_workspace(focused, ws);
+        else {
+            TAILQ_FOREACH(current, &owindows, owindows) {
+                printf("matching: %p / %s\n", current->con, current->con->name);
+                con_move_to_workspace(current->con, ws);
+            }
+        }
+    }
     ;
 
 before_after:
