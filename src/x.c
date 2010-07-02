@@ -226,15 +226,23 @@ static void x_push_node(Con *con) {
      * container was empty before, but now got a child) */
     if (state->mapped != con->mapped || (con->mapped && state->initial)) {
         if (!con->mapped) {
-            LOG("unmapping container\n");
-            xcb_unmap_window(conn, con->frame);
+            xcb_void_cookie_t cookie;
+            cookie = xcb_unmap_window(conn, con->frame);
+            LOG("unmapping container (serial %d)\n", cookie.sequence);
+            /* Ignore enter_notifies which are generated when unmapping */
+            add_ignore_event(cookie.sequence);
         } else {
+            xcb_void_cookie_t cookie;
             if (state->initial && con->window != NULL) {
-                LOG("mapping child window\n");
-                xcb_map_window(conn, con->window->id);
+                cookie = xcb_map_window(conn, con->window->id);
+                LOG("mapping child window (serial %d)\n", cookie.sequence);
+                /* Ignore enter_notifies which are generated when mapping */
+                add_ignore_event(cookie.sequence);
             }
-            LOG("mapping container\n");
-            xcb_map_window(conn, con->frame);
+            cookie = xcb_map_window(conn, con->frame);
+            LOG("mapping container (serial %d)\n", cookie.sequence);
+            /* Ignore enter_notifies which are generated when mapping */
+            add_ignore_event(cookie.sequence);
         }
         state->mapped = con->mapped;
     }
