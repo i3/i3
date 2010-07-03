@@ -3,6 +3,7 @@
 #
 # Tests whether opening an empty container and killing it again works
 #
+use List::Util qw(first);
 use i3test tests => 6;
 use v5.10;
 
@@ -31,10 +32,8 @@ $i3->command('open')->recv;
 ok(@{get_ws_content($tmp)} == 2, 'two containers opened');
 
 my $content = get_ws_content($tmp);
-# TODO: get the focused window, don’t assume that it is
-# the latest one
-my $id = $content->[0]->{id};
-diag('id of not focused = ' . $id);
+my $not_focused = first { !$_->{focused} } @{$content};
+my $id = $not_focused->{id};
 
 $i3->command("[con_id=\"$id\"] kill")->recv;
 
