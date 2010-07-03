@@ -1,25 +1,15 @@
 package i3test;
 # vim:ts=4:sw=4:expandtab
 
-use Test::Kit qw(
-    Test::Exception
-    Data::Dumper
-    AnyEvent::I3
-),
-    'Test::Deep' => {
-        exclude => [ qw(all) ],
-    };
-
 use File::Temp qw(tmpnam);
 use X11::XCB::Rect;
 use X11::XCB::Window;
 use X11::XCB qw(:all);
 use AnyEvent::I3;
 use List::Util qw(first);
-# Test::Kit already uses Exporter
-#use Exporter qw(import);
-use base 'Exporter';
+use v5.10;
 
+use Exporter ();
 our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws get_focused);
 
 BEGIN {
@@ -27,6 +17,23 @@ BEGIN {
     sub counter_window {
         return $window_count++;
     }
+}
+
+sub import {
+    my $class = shift;
+    my $pkg = caller;
+    eval "package $pkg;
+use Test::More qw(@_);
+use Test::Exception;
+use Data::Dumper;
+use AnyEvent::I3;
+use Test::Deep qw(eq_deeply cmp_deeply cmp_set cmp_bag cmp_methods useclass noclass set bag subbagof superbagof subsetof supersetof superhashof subhashof bool str arraylength Isa ignore methods regexprefonly regexpmatches num regexponly scalref reftype hashkeysonly blessed array re hash regexpref hash_each shallow array_each code arrayelementsonly arraylengthonly scalarrefonly listmethods any hashkeys isa);
+use v5.10;
+use strict;
+use warnings;
+";
+    @_ = ($class);
+    goto \&Exporter::import;
 }
 
 sub open_standard_window {
