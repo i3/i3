@@ -143,8 +143,11 @@ void tree_close(Con *con, bool kill_window) {
             next = con_get_workspace(con);
     } else {
         next = TAILQ_NEXT(con, focused);
-        if (next == TAILQ_END(&(con->parent->nodes_head)))
+        if (next == TAILQ_END(&(con->parent->nodes_head))) {
             next = con->parent;
+            while (!TAILQ_EMPTY(&(next->focus_head)))
+                next = TAILQ_FIRST(&(next->focus_head));
+        }
     }
 
     DLOG("closing %p, kill_window = %d\n", con, kill_window);
