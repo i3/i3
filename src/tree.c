@@ -145,7 +145,8 @@ void tree_close(Con *con, bool kill_window) {
         next = TAILQ_NEXT(con, focused);
         if (next == TAILQ_END(&(con->parent->nodes_head))) {
             next = con->parent;
-            while (!TAILQ_EMPTY(&(next->focus_head)))
+            while (!TAILQ_EMPTY(&(next->focus_head)) &&
+                   TAILQ_FIRST(&(next->focus_head)) != con)
                 next = TAILQ_FIRST(&(next->focus_head));
         }
     }
