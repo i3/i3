@@ -9,7 +9,6 @@
 #
 use i3test tests => 16;
 use X11::XCB qw(:all);
-use v5.10;
 
 my $i3 = i3("/tmp/nestedcons");
 

@@ -5,7 +5,6 @@
 # (necessary for further tests)
 #
 use i3test tests => 3;
-use v5.10;
 
 my $i3 = i3("/tmp/nestedcons");
 

@@ -5,7 +5,6 @@
 #
 use List::Util qw(first);
 use i3test tests => 6;
-use v5.10;
 
 my $i3 = i3("/tmp/nestedcons");
 
