@@ -536,10 +536,11 @@ void render_container(xcb_connection_t *conn, Container *container) {
                                 }
                                 offset_x = current_client++ * size_each;
                         }
-                        if (stack_win->pixmap.id == XCB_NONE)
-                                continue;
-                        decorate_window(conn, client, stack_win->pixmap.id,
-                                        stack_win->pixmap.gc, offset_x, offset_y);
+                        if (stack_win->pixmap.id != XCB_NONE)
+                                decorate_window(conn, client, stack_win->pixmap.id,
+                                                stack_win->pixmap.gc, offset_x, offset_y);
+                        else
+                                decorate_window(conn, client, client->frame, client->titlegc, 0, 0);
                 }
 
                 /* Check if we need to fill one column because of an uneven
