@@ -293,12 +293,15 @@ void x_push_changes(Con *con) {
     x_push_node(con);
 
     LOG("-- PUSHING WINDOW STACK --\n");
+    bool order_changed = false;
     /* X11 correctly represents the stack if we push it from bottom to top */
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
         LOG("stack: 0x%08x\n", state->id);
         con_state *prev = CIRCLEQ_PREV(state, state);
         con_state *old_prev = CIRCLEQ_PREV(state, old_state);
-        if ((state->initial || prev != old_prev) && prev != CIRCLEQ_END(&state_head)) {
+        if (prev != old_prev)
+            order_changed = true;
+        if ((state->initial || order_changed) && prev != CIRCLEQ_END(&state_head)) {
             state->initial = false;
             LOG("Stacking 0x%08x above 0x%08x\n", prev->id, state->id);
             uint32_t mask = 0;
