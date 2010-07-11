@@ -157,7 +157,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn,
 
     DLOG("enter_notify for %08x, mode = %d, detail %d, serial %d\n",
          event->event, event->mode, event->detail, event->sequence);
-    DLOG("coordinates %x, %x\n", event->event_x, event->event_y);
+    DLOG("coordinates %d, %d\n", event->event_x, event->event_y);
     if (event->mode != XCB_NOTIFY_MODE_NORMAL) {
         DLOG("This was not a normal notify, ignoring\n");
         return 1;
