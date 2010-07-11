@@ -30,7 +30,6 @@
 #include <xcb/xcb_icccm.h>
 
 #include "util.h"
-#include "commands.h"
 #include "ipc.h"
 #include "tree.h"
 #include "log.h"
