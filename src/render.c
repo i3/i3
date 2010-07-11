@@ -54,6 +54,7 @@ void render_con(Con *con) {
     if (fullscreen) {
         LOG("got fs node: %p\n", fullscreen);
         fullscreen->rect = rect;
+        x_raise_con(fullscreen);
         render_con(fullscreen);
         return;
     }
