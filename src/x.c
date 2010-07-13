@@ -105,6 +105,10 @@ void x_reinit(Con *con) {
     memset(&(state->window_rect), 0, sizeof(Rect));
 }
 
+/*
+ * Kills the window decoration associated with the given container.
+ *
+ */
 void x_con_kill(Con *con) {
     con_state *state;
 
@@ -137,6 +141,10 @@ static bool window_supports_protocol(xcb_window_t window, xcb_atom_t atom) {
     return result;
 }
 
+/*
+ * Kills the given X11 window using WM_DELETE_WINDOW (if supported).
+ *
+ */
 void x_window_kill(xcb_window_t window) {
     /* if this window does not support WM_DELETE_WINDOW, we kill it the hard way */
     if (!window_supports_protocol(window, atoms[WM_DELETE_WINDOW])) {
@@ -161,6 +169,10 @@ void x_window_kill(xcb_window_t window) {
     xcb_flush(conn);
 }
 
+/*
+ * Draws the decoration of the given container onto its parent.
+ *
+ */
 void x_draw_decoration(Con *con) {
     Con *parent;
 

@@ -12,16 +12,76 @@ extern Con *focused;
 TAILQ_HEAD(all_cons_head, Con);
 extern struct all_cons_head all_cons;
 
+/**
+ * Initializes the tree by creating the root node, adding all RandR outputs
+ * to the tree (that means randr_init() has to be called before) and
+ * assigning a workspace to each RandR output.
+ *
+ */
 void tree_init();
+
+/**
+ * Opens an empty container in the current container
+ *
+ */
 Con *tree_open_con(Con *con);
+
+/**
+ * Splits (horizontally or vertically) the given container by creating a new
+ * container which contains the old one and the future ones.
+ *
+ */
 void tree_split(Con *con, orientation_t orientation);
+
+/**
+ * Moves focus one level up.
+ *
+ */
 void level_up();
+
+/**
+ * Moves focus one level down.
+ *
+ */
 void level_down();
+
+/**
+ * Renders the tree, that is rendering all outputs using render_con() and
+ * pushing the changes to X11 using x_push_changes().
+ *
+ */
 void tree_render();
+
+/**
+ * Closes the current container using tree_close().
+ *
+ */
 void tree_close_con();
+
+/**
+ * Changes focus in the given way (next/previous) and given orientation
+ * (horizontal/vertical).
+ *
+ */
 void tree_next(char way, orientation_t orientation);
+
+/**
+ * Moves the current container in the given way (next/previous) and given
+ * orientation (horizontal/vertical).
+ *
+ */
 void tree_move(char way, orientation_t orientation);
+
+/**
+ * Closes the given container including all children
+ *
+ */
 void tree_close(Con *con, bool kill_window);
+
+/**
+ * Loads tree from ~/.i3/_restart.json (used for in-place restarts).
+ *
+ */
 bool tree_restore();
 
 #endif

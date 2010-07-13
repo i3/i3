@@ -24,7 +24,12 @@ char *colors[] = {
     "#aa00aa"
 };
 
-
+/*
+ * Create a new container (and attach it to the given parent, if not NULL).
+ * This function initializes the data structures and creates the appropriate
+ * X11 IDs using x_con_init().
+ *
+ */
 Con *con_new(Con *parent) {
     Con *new = scalloc(sizeof(Con));
     TAILQ_INSERT_TAIL(&all_cons, new, all_cons);
@@ -56,6 +61,12 @@ Con *con_new(Con *parent) {
     return new;
 }
 
+/*
+ * Attaches the given container to the given parent. This happens when moving
+ * a container or when inserting a new container at a specific place in the
+ * tree.
+ *
+ */
 void con_attach(Con *con, Con *parent) {
     con->parent = parent;
     Con *current = TAILQ_FIRST(&(parent->focus_head));
@@ -72,6 +83,10 @@ void con_attach(Con *con, Con *parent) {
     TAILQ_INSERT_TAIL(&(parent->focus_head), con, focused);
 }
 
+/*
+ * Detaches the given container from its current parent
+ *
+ */
 void con_detach(Con *con) {
     if (con->type == CT_FLOATING_CON) {
         TAILQ_REMOVE(&(con->parent->floating_head), con, floating_windows);
@@ -222,6 +237,11 @@ bool con_is_floating(Con *con) {
     return (con->floating >= FLOATING_AUTO_ON);
 }
 
+/*
+ * Returns the container with the given client window ID or NULL if no such
+ * container exists.
+ *
+ */
 Con *con_by_window_id(xcb_window_t window) {
     Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons)
@@ -230,6 +250,11 @@ Con *con_by_window_id(xcb_window_t window) {
     return NULL;
 }
 
+/*
+ * Returns the container with the given frame ID or NULL if no such container
+ * exists.
+ *
+ */
 Con *con_by_frame_id(xcb_window_t frame) {
     Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons)
@@ -286,6 +311,11 @@ void con_fix_percent(Con *con, int action) {
     }
 }
 
+/*
+ * Toggles fullscreen mode for the given container. Fullscreen mode will not be
+ * entered when there already is a fullscreen container on this workspace.
+ *
+ */
 void con_toggle_fullscreen(Con *con) {
     Con *workspace, *fullscreen;
     LOG("toggling fullscreen for %p / %s\n", con, con->name);
@@ -324,6 +354,8 @@ void con_toggle_fullscreen(Con *con) {
 }
 
 /*
+ * Moves the given container to the currently focused container on the given
+ * workspace.
  * TODO: is there a better place for this function?
  *
  */

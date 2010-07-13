@@ -10,7 +10,7 @@ struct Con *focused;
 struct all_cons_head all_cons = TAILQ_HEAD_INITIALIZER(all_cons);
 
 /*
- * Loads tree from ~/.i3/_restart.json
+ * Loads tree from ~/.i3/_restart.json (used for in-place restarts).
  *
  */
 bool tree_restore() {
@@ -201,6 +201,10 @@ void tree_close(Con *con, bool kill_window) {
     con_focus(next);
 }
 
+/*
+ * Closes the current container using tree_close().
+ *
+ */
 void tree_close_con() {
     assert(focused != NULL);
     if (focused->type == CT_WORKSPACE) {
@@ -248,6 +252,10 @@ void tree_split(Con *con, orientation_t orientation) {
     con_attach(con, new);
 }
 
+/*
+ * Moves focus one level up.
+ *
+ */
 void level_up() {
     /* We can focus up to the workspace, but not any higher in the tree */
     if (focused->parent->type != CT_CON &&
@@ -258,6 +266,10 @@ void level_up() {
     con_focus(focused->parent);
 }
 
+/*
+ * Moves focus one level down.
+ *
+ */
 void level_down() {
     /* Go down the focus stack of the current node */
     Con *next = TAILQ_FIRST(&(focused->focus_head));
@@ -276,6 +288,11 @@ static void mark_unmapped(Con *con) {
         mark_unmapped(current);
 }
 
+/*
+ * Renders the tree, that is rendering all outputs using render_con() and
+ * pushing the changes to X11 using x_push_changes().
+ *
+ */
 void tree_render() {
     if (croot == NULL)
         return;
@@ -296,6 +313,11 @@ void tree_render() {
     printf("-- END RENDERING --\n");
 }
 
+/*
+ * Changes focus in the given way (next/previous) and given orientation
+ * (horizontal/vertical).
+ *
+ */
 void tree_next(char way, orientation_t orientation) {
     /* 1: get the first parent with the same orientation */
     Con *parent = focused->parent;
@@ -333,6 +355,11 @@ void tree_next(char way, orientation_t orientation) {
     con_focus(next);
 }
 
+/*
+ * Moves the current container in the given way (next/previous) and given
+ * orientation (horizontal/vertical).
+ *
+ */
 void tree_move(char way, orientation_t orientation) {
     /* 1: get the first parent with the same orientation */
     Con *parent = focused->parent;

@@ -4,10 +4,21 @@
  * i3 - an improved dynamic tiling window manager
  * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
  *
+ * A "match" is a data structure which acts like a mask or expression to match
+ * certain windows or not. For example, when using commands, you can specify a
+ * command like this: [title="*Firefox*"] kill. The title member of the match
+ * data structure will then be filled and i3 will check each window using
+ * match_matches_window() to find the windows affected by this command.
+ *
  */
 
 #include "all.h"
 
+/*
+ * Check if a match is empty. This is necessary while parsing commands to see
+ * whether the user specified a match at all.
+ *
+ */
 bool match_is_empty(Match *match) {
     /* we cannot simply use memcmp() because the structure is part of a
      * TAILQ and I don’t want to start with things like assuming that the
@@ -22,6 +33,10 @@ bool match_is_empty(Match *match) {
             match->floating == M_ANY);
 }
 
+/*
+ * Check if a match data structure matches the given window.
+ *
+ */
 bool match_matches_window(Match *match, i3Window *window) {
     /* TODO: pcre, full matching, … */
     if (match->class != NULL && window->class_class != NULL && strcasecmp(match->class, window->class_class) == 0) {
