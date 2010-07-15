@@ -502,20 +502,20 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
 int ipc_create_socket(const char *filename) {
         int sockfd;
 
-        char *globbed = glob_path(filename);
-        DLOG("Creating IPC-socket at %s\n", globbed);
-        char *copy = sstrdup(globbed);
+        char *resolved = resolve_tilde(filename);
+        DLOG("Creating IPC-socket at %s\n", resolved);
+        char *copy = sstrdup(resolved);
         const char *dir = dirname(copy);
         if (!path_exists(dir))
                 mkdirp(dir);
         free(copy);
 
         /* Unlink the unix domain socket before */
-        unlink(globbed);
+        unlink(resolved);
 
         if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
                 perror("socket()");
-                free(globbed);
+                free(resolved);
                 return -1;
         }
 
@@ -524,14 +524,14 @@ int ipc_create_socket(const char *filename) {
         struct sockaddr_un addr;
         memset(&addr, 0, sizeof(struct sockaddr_un));
         addr.sun_family = AF_LOCAL;
-        strcpy(addr.sun_path, globbed);
+        strncpy(addr.sun_path, resolved, sizeof(addr.sun_path) - 1);
         if (bind(sockfd, (struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0) {
                 perror("bind()");
-                free(globbed);
+                free(resolved);
                 return -1;
         }
 
-        free(globbed);
+        free(resolved);
         set_nonblock(sockfd);
 
         if (listen(sockfd, 5) < 0) {
