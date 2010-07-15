@@ -91,7 +91,7 @@ static void ipc_send_message(int fd, const unsigned char *payload,
         char msg[buffer_size];
         char *walk = msg;
 
-        strcpy(walk, "i3-ipc");
+        strncpy(walk, "i3-ipc", buffer_size - 1);
         walk += strlen("i3-ipc");
         memcpy(walk, &message_size, sizeof(uint32_t));
         walk += sizeof(uint32_t);

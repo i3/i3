@@ -175,7 +175,7 @@ int main(int argc, char *argv[]) {
         struct sockaddr_un addr;
         memset(&addr, 0, sizeof(struct sockaddr_un));
         addr.sun_family = AF_LOCAL;
-        strcpy(addr.sun_path, socket_path);
+        strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
         if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0)
                 err(EXIT_FAILURE, "Could not connect to i3");
 
