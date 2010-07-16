@@ -201,6 +201,15 @@ void tree_close(Con *con, bool kill_window) {
     DLOG("focusing %p / %s\n", next, next->name);
     /* TODO: check if the container (or one of its children) was focused */
     con_focus(next);
+
+    /* check if the parent container is empty now and close it */
+    if (parent->type != CT_WORKSPACE &&
+        TAILQ_EMPTY(&(parent->nodes_head))) {
+        DLOG("Closing empty parent container\n");
+        /* TODO: check if this container would swallow any other client and
+         * don’t close it automatically. */
+        tree_close(parent, false);
+    }
 }
 
 /*
