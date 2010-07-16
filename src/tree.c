@@ -132,6 +132,8 @@ static void fix_floating_parent(Con *con, Con *vanishing) {
  *
  */
 void tree_close(Con *con, bool kill_window) {
+    Con *parent = con->parent;
+
     /* check floating clients and adjust old_parent if necessary */
     fix_floating_parent(croot, con);
 
@@ -139,12 +141,12 @@ void tree_close(Con *con, bool kill_window) {
     Con *next;
     if (con->type == CT_FLOATING_CON) {
         next = TAILQ_NEXT(con, floating_windows);
-        if (next == TAILQ_END(&(con->parent->floating_head)))
+        if (next == TAILQ_END(&(parent->floating_head)))
             next = con_get_workspace(con);
     } else {
         next = TAILQ_NEXT(con, focused);
-        if (next == TAILQ_END(&(con->parent->nodes_head))) {
-            next = con->parent;
+        if (next == TAILQ_END(&(parent->nodes_head))) {
+            next = parent;
             while (!TAILQ_EMPTY(&(next->focus_head)) &&
                    TAILQ_FIRST(&(next->focus_head)) != con)
                 next = TAILQ_FIRST(&(next->focus_head));
@@ -176,14 +178,14 @@ void tree_close(Con *con, bool kill_window) {
     x_con_kill(con);
 
     con_detach(con);
-    con_fix_percent(con->parent, WINDOW_REMOVE);
+    con_fix_percent(parent, WINDOW_REMOVE);
 
     if (con_is_floating(con)) {
         DLOG("Container was floating, killing floating container\n");
 
-        TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
-        TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
-        tree_close(con->parent, false);
+        TAILQ_REMOVE(&(parent->parent->floating_head), parent, floating_windows);
+        TAILQ_REMOVE(&(parent->parent->focus_head), parent, focused);
+        tree_close(parent, false);
         next = NULL;
     }
 
