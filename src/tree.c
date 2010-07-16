@@ -332,7 +332,7 @@ void tree_render() {
 void tree_next(char way, orientation_t orientation) {
     /* 1: get the first parent with the same orientation */
     Con *parent = focused->parent;
-    while (parent->orientation != orientation) {
+    while (con_orientation(parent) != orientation) {
         LOG("need to go one level further up\n");
         /* if the current parent is an output, we are at a workspace
          * and the orientation still does not match */
@@ -377,7 +377,7 @@ void tree_move(char way, orientation_t orientation) {
     if (focused->type == CT_WORKSPACE)
         return;
     bool level_changed = false;
-    while (parent->orientation != orientation) {
+    while (con_orientation(parent) != orientation) {
         LOG("need to go one level further up\n");
         /* if the current parent is an output, we are at a workspace
          * and the orientation still does not match */

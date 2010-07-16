@@ -376,3 +376,17 @@ void con_move_to_workspace(Con *con, Con *workspace) {
     con_detach(con);
     con_attach(con, next);
 }
+
+/*
+ * Returns the orientation of the given container (for stacked containers,
+ * vertical orientation is used regardless of the actual orientation of the
+ * container).
+ *
+ */
+int con_orientation(Con *con) {
+    /* stacking containers behave like they are in vertical orientation */
+    if (con->layout == L_STACKED)
+        return VERT;
+
+    return con->orientation;
+}
