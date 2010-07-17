@@ -37,6 +37,10 @@ typedef struct owindow {
 } owindow;
 static TAILQ_HEAD(owindows_head, owindow) owindows;
 
+/* Holds the JSON which will be returned via IPC or NULL for the default return
+ * message */
+static char *json_output;
+
 /* We don’t need yydebug for now, as we got decent error messages using
  * yyerror(). Should you ever want to extend the parser, it might be handy
  * to just comment it in again, so it stays here. */
@@ -61,7 +65,7 @@ int cmdyywrap() {
     return 1;
 }
 
-void parse_cmd(const char *new) {
+char *parse_cmd(const char *new) {
 
     //const char *new = "[level-up workspace] attach $output, focus";
 
@@ -69,14 +73,16 @@ void parse_cmd(const char *new) {
 
     context = scalloc(sizeof(struct context));
     context->filename = "cmd";
+    FREE(json_output);
     if (cmdyyparse() != 0) {
             fprintf(stderr, "Could not parse configfile\n");
             exit(1);
     }
-    printf("done\n");
+    printf("done, json output = %s\n", json_output);
 
     FREE(context->line_copy);
     free(context);
+    return json_output;
 }
 
 %}
@@ -392,7 +398,8 @@ open:
     TOK_OPEN
     {
         printf("opening new container\n");
-        tree_open_con(NULL);
+        Con *con = tree_open_con(NULL);
+        asprintf(&json_output, "{\"success\":true, \"id\":%d}", (long int)con);
     }
     ;
 

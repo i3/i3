@@ -49,5 +49,6 @@
 #include "render.h"
 #include "window.h"
 #include "match.h"
+#include "cmdparse.h"
 
 #endif

@@ -115,13 +115,13 @@ IPC_HANDLER(command) {
         char *command = scalloc(message_size + 1);
         strncpy(command, (const char*)message, message_size);
         LOG("IPC: received: *%s*\n", command);
-        parse_cmd((const char*)command);
+        const char *reply = parse_cmd((const char*)command);
         tree_render();
         free(command);
 
-        /* For now, every command gets a positive acknowledge
-         * (will change with the new command parser) */
-        const char *reply = "{\"success\":true}";
+        /* If no reply was provided, we just use the default success message */
+        if (reply == NULL)
+                reply = "{\"success\":true}";
         ipc_send_message(fd, (const unsigned char*)reply,
                          I3_IPC_REPLY_TYPE_COMMAND, strlen(reply));
 }
