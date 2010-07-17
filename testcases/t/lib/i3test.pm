@@ -10,7 +10,7 @@ use List::Util qw(first);
 use v5.10;
 
 use Exporter ();
-our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws get_focused);
+our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws get_focused open_empty_con);
 
 BEGIN {
     my $window_count = 0;
@@ -51,6 +51,13 @@ sub open_standard_window {
     sleep(0.25);
 
     return $window;
+}
+
+sub open_empty_con {
+    my ($i3) = @_;
+
+    my $reply = $i3->command('open')->recv;
+    return $reply->{id};
 }
 
 sub get_workspace_names {
