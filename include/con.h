@@ -121,4 +121,12 @@ void con_move_to_workspace(Con *con, Con *workspace);
  */
 int con_orientation(Con *con);
 
+/**
+ * Returns the container which will be focused next when the given container
+ * is not available anymore. Called in tree_close and con_move_to_workspace
+ * to properly restore focus.
+ *
+ */
+Con *con_next_focused(Con *con);
+
 #endif

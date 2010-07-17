@@ -138,20 +138,7 @@ void tree_close(Con *con, bool kill_window) {
     fix_floating_parent(croot, con);
 
     /* Get the container which is next focused */
-    Con *next;
-    if (con->type == CT_FLOATING_CON) {
-        next = TAILQ_NEXT(con, floating_windows);
-        if (next == TAILQ_END(&(parent->floating_head)))
-            next = con_get_workspace(con);
-    } else {
-        next = TAILQ_NEXT(con, focused);
-        if (next == TAILQ_END(&(parent->nodes_head))) {
-            next = parent;
-            while (!TAILQ_EMPTY(&(next->focus_head)) &&
-                   TAILQ_FIRST(&(next->focus_head)) != con)
-                next = TAILQ_FIRST(&(next->focus_head));
-        }
-    }
+    Con *next = con_next_focused(con);
 
     DLOG("closing %p, kill_window = %d\n", con, kill_window);
     Con *child;

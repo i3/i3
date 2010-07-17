@@ -360,21 +360,28 @@ void con_toggle_fullscreen(Con *con) {
  *
  */
 void con_move_to_workspace(Con *con, Con *workspace) {
-    /* 1: get the focused container of this workspace by going down as far as
+    /* 1: save the container which is going to be focused after the current
+     * container is moved away */
+    Con *focus_next = con_next_focused(con);
+
+    /* 2: get the focused container of this workspace by going down as far as
      * possible */
     Con *next = workspace;
 
     while (!TAILQ_EMPTY(&(next->focus_head)))
         next = TAILQ_FIRST(&(next->focus_head));
 
-    /* 2: we go up one level, but only when next is a normal container */
+    /* 3: we go up one level, but only when next is a normal container */
     if (next->type != CT_WORKSPACE)
         next = next->parent;
 
     DLOG("Re-attaching container to %p / %s\n", next, next->name);
-    /* 3: re-attach the con to the parent of this focused container */
+    /* 4: re-attach the con to the parent of this focused container */
     con_detach(con);
     con_attach(con, next);
+
+    /* 5: keep focus on the current workspace */
+    con_focus(focus_next);
 }
 
 /*
@@ -389,4 +396,36 @@ int con_orientation(Con *con) {
         return VERT;
 
     return con->orientation;
+}
+
+/*
+ * Returns the container which will be focused next when the given container
+ * is not available anymore. Called in tree_close and con_move_to_workspace
+ * to properly restore focus.
+ *
+ */
+Con *con_next_focused(Con *con) {
+    Con *next;
+    /* floating containers are attached to a workspace, so we focus either the
+     * next floating container (if any) or the workspace itself. */
+    if (con->type == CT_FLOATING_CON) {
+        next = TAILQ_NEXT(con, floating_windows);
+        if (next == TAILQ_END(&(parent->floating_head)))
+            next = con_get_workspace(con);
+        return next;
+    }
+
+    /* try to focus the next container on the same level as this one */
+    next = TAILQ_NEXT(con, focused);
+
+    /* if none, go up to its parent and go down the focus stack as far as
+     * possible, excluding the current container */
+    if (next == TAILQ_END(&(parent->nodes_head))) {
+        next = con->parent;
+        while (!TAILQ_EMPTY(&(next->focus_head)) &&
+               TAILQ_FIRST(&(next->focus_head)) != con)
+            next = TAILQ_FIRST(&(next->focus_head));
+    }
+
+    return next;
 }
