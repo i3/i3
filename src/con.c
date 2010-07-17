@@ -418,14 +418,15 @@ Con *con_next_focused(Con *con) {
     /* try to focus the next container on the same level as this one */
     next = TAILQ_NEXT(con, focused);
 
-    /* if none, go up to its parent and go down the focus stack as far as
-     * possible, excluding the current container */
-    if (next == TAILQ_END(&(parent->nodes_head))) {
+    /* if that was not possible, go up to its parent */
+    if (next == TAILQ_END(&(parent->nodes_head)))
         next = con->parent;
-        while (!TAILQ_EMPTY(&(next->focus_head)) &&
-               TAILQ_FIRST(&(next->focus_head)) != con)
-            next = TAILQ_FIRST(&(next->focus_head));
-    }
+
+    /* now go down the focus stack as far as
+     * possible, excluding the current container */
+    while (!TAILQ_EMPTY(&(next->focus_head)) &&
+           TAILQ_FIRST(&(next->focus_head)) != con)
+        next = TAILQ_FIRST(&(next->focus_head));
 
     return next;
 }
