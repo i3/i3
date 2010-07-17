@@ -19,12 +19,8 @@ $i3->command("workspace $tmp")->recv;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-$i3->command('open')->recv;
-my ($nodes, $focus) = get_ws_content($tmp);
-my $first = $focus->[0];
-$i3->command('open')->recv;
-($nodes, $focus) = get_ws_content($tmp);
-my $second = $focus->[0];
+my $first = open_empty_con($i3);
+my $second = open_empty_con($i3);
 ok(@{get_ws_content($tmp)} == 2, 'two containers on first ws');
 
 $i3->command("workspace $tmp2")->recv;
@@ -35,7 +31,7 @@ $i3->command("workspace $tmp")->recv;
 $i3->command("move workspace $tmp2")->recv;
 ok(@{get_ws_content($tmp)} == 1, 'one container on first ws anymore');
 ok(@{get_ws_content($tmp2)} == 1, 'one container on second ws');
-($nodes, $focus) = get_ws_content($tmp2);
+my ($nodes, $focus) = get_ws_content($tmp2);
 
 is($focus->[0], $second, 'same container on different ws');
 

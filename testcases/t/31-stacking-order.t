@@ -18,13 +18,8 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 # Enforce vertical split mode
 $i3->command('split v')->recv;
 
-$i3->command('open')->recv;
-my ($nodes, $focus) = get_ws_content($tmp);
-my $first = $focus->[0];
-
-$i3->command('open')->recv;
-($nodes, $focus) = get_ws_content($tmp);
-my $second = $focus->[0];
+my $first = open_empty_con($i3);
+my $second = open_empty_con($i3);
 
 isnt($first, $second, 'two different containers opened');
 
@@ -33,7 +28,7 @@ isnt($first, $second, 'two different containers opened');
 ##############################################################
 
 $i3->command('layout stacking')->recv;
-($nodes, $focus) = get_ws_content($tmp);
+my ($nodes, $focus) = get_ws_content($tmp);
 is($focus->[0], $second, 'second container still focused');
 
 $i3->command('next v')->recv;

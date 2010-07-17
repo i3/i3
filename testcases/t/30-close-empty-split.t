@@ -13,9 +13,7 @@ $i3->command("workspace $tmp")->recv;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-$i3->command('open')->recv;
-my ($nodes, $focus) = get_ws_content($tmp);
-my $first = $focus->[0];
+my $first = open_empty_con($i3);
 
 $i3->command('split v')->recv;
 
@@ -29,10 +27,7 @@ $i3->command('level up')->recv;
 my $split = $focus->[0];
 $i3->command('level down')->recv;
 
-$i3->command('open')->recv;
-
-($nodes, $focus) = get_ws_content($tmp);
-my $second = $focus->[0];
+my $second = open_empty_con($i3);
 
 isnt($first, $second, 'different container focused');
 

@@ -14,17 +14,11 @@ $i3->command("workspace $tmp")->recv;
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
 # Open two new container
-$i3->command("open")->recv;
+my $first = open_empty_con($i3);
 
 ok(@{get_ws_content($tmp)} == 1, 'containers opened');
 
-my ($nodes, $focus) = get_ws_content($tmp);
-my $first = $focus->[0];
-
-$i3->command("open")->recv;
-
-($nodes, $focus) = get_ws_content($tmp);
-my $second = $focus->[0];
+my $second = open_empty_con($i3);
 
 isnt($first, $second, 'different container focused');
 
