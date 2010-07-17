@@ -33,6 +33,14 @@ my $second = $focus->[0];
 
 isnt($first, $second, 'different container focused');
 
+# We have the following layout now (con is focused):
+# .----------------.
+# | split  |       |
+# | .----. |  con  |
+# | | cn | |       |
+# | `----' |       |
+# `----------------'
+
 ##############################################################
 # see if the focus goes down to $first (not to its split parent)
 # when closing $second
