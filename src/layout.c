@@ -454,12 +454,12 @@ void render_container(xcb_connection_t *conn, Container *container) {
                         /* Raise the stack window, but keep it below the first floating client
                          * and below the fullscreen client (if any) */
                         Client *first_floating = TAILQ_FIRST(&(container->workspace->floating_clients));
-                        if (first_floating != TAILQ_END(&(container->workspace->floating_clients))) {
-                                mask |= XCB_CONFIG_WINDOW_SIBLING;
-                                values[4] = first_floating->frame;
-                        } else if (container->workspace->fullscreen_client != NULL) {
+                        if (container->workspace->fullscreen_client != NULL) {
                                 mask |= XCB_CONFIG_WINDOW_SIBLING;
                                 values[4] = container->workspace->fullscreen_client->frame;
+                        } else if (first_floating != TAILQ_END(&(container->workspace->floating_clients))) {
+                                mask |= XCB_CONFIG_WINDOW_SIBLING;
+                                values[4] = first_floating->frame;
                         }
 
                         xcb_configure_window(conn, stack_win->window, mask, values);
