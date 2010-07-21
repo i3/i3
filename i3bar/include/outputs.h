@@ -1,0 +1,27 @@
+#ifndef OUTPUTS_H_
+#define OUTPUTS_H_
+
+#include "common.h"
+#include <xcb/xcb.h>
+
+typedef struct i3_output_t i3_output;
+
+i3_output* outputs;
+
+void		refresh_outputs();
+void		free_outputs();
+i3_output*	get_output_by_name(char* name);
+
+struct i3_output_t {
+	char*		name;
+	bool		active;
+	int		ws;
+	rect		rect;
+
+	xcb_window_t	win;
+	xcb_gcontext_t	gctx;
+
+	i3_output*	next;
+};
+
+#endif
