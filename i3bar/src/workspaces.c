@@ -91,6 +91,7 @@ static int workspaces_integer_cb(void* params_, long val) {
 }
 
 static int workspaces_string_cb(void* params_, const unsigned char* val, unsigned int len) {
+
         struct workspaces_json_params* params = (struct workspaces_json_params*) params_;
 
         char* output_name;
@@ -151,6 +152,10 @@ static int workspaces_map_key_cb(void* params_, const unsigned char* keyVal, uns
 	FREE(params->cur_key);
 
 	params->cur_key = malloc(sizeof(unsigned char) * (keyLen + 1));
+	if (params->cur_key == NULL) {
+		printf("ERROR: Could not allocate memory!\n");
+		exit(EXIT_FAILURE);
+	}
 	strncpy(params->cur_key, (const char*) keyVal, keyLen);
 	params->cur_key[keyLen] = '\0';
 
@@ -171,18 +176,20 @@ yajl_callbacks workspaces_callbacks = {
 	NULL
 };
 
-void got_workspaces_json_cb(char* json, void* params_) {
+void parse_workspaces_json(char* json) {
 	/* FIXME: Fasciliate stream-processing, i.e. allow starting to interpret
 	 * JSON in chunks */
-	struct workspaces_json_params* params = (struct workspaces_json_params*) params_;
+	struct workspaces_json_params params;
+	params.workspaces = NULL;
+	params.workspaces_walk = NULL;
+	params.cur_key = NULL;
+	params.json = json;
 
 	yajl_handle handle;
 	yajl_parser_config parse_conf = { 0, 0 };
 	yajl_status state;
 	
-	params->json = json;
-
-	handle = yajl_alloc(&workspaces_callbacks, &parse_conf, NULL, (void*) params);
+	handle = yajl_alloc(&workspaces_callbacks, &parse_conf, NULL, (void*) &params);
 
 	state = yajl_parse(handle, (const unsigned char*) json, strlen(json));
 
@@ -201,21 +208,9 @@ void got_workspaces_json_cb(char* json, void* params_) {
 	yajl_free(handle);
 
 	free_workspaces();
-	workspaces = params->workspaces;
+	workspaces = params.workspaces;
 	
-	FREE(params->json);
-	FREE(params);
-}
-
-void refresh_workspaces() {
-	struct workspaces_json_params* params = malloc(sizeof(struct workspaces_json_params));
-
-	params->workspaces = NULL;
-	params->workspaces_walk = NULL;
-	params->cur_key = NULL;
-	params->json = NULL;
-
-	get_workspaces_json(&got_workspaces_json_cb, params);
+	FREE(params.cur_key);
 }
 
 void free_workspaces() {

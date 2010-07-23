@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <i3/ipc.h>
 
 #include <yajl/yajl_parse.h>
 
@@ -13,8 +14,6 @@ struct outputs_json_params {
 	i3_output*	outputs_walk;
 	char*		cur_key;
 	char*		json;
-	void		(*callback)(void*);
-	void*		cb_params;
 };
 
 static int outputs_null_cb(void* params_) {
@@ -144,18 +143,20 @@ yajl_callbacks outputs_callbacks = {
 	NULL
 };
 
-void got_outputs_json_cb(char* json, void* params_) {
+void parse_outputs_json(char* json) {
 	/* FIXME: Fasciliate stream-processing, i.e. allow starting to interpret
 	 * JSON in chunks */
-	struct outputs_json_params* params = (struct outputs_json_params*) params_;
+	struct outputs_json_params params;
+	params.outputs = NULL;
+	params.outputs_walk = NULL;
+	params.cur_key = NULL;
+	params.json = json;
 
 	yajl_handle handle;
 	yajl_parser_config parse_conf = { 0, 0 };
 	yajl_status state;
 	
-	params->json = json;
-
-	handle = yajl_alloc(&outputs_callbacks, &parse_conf, NULL, (void*) params);
+	handle = yajl_alloc(&outputs_callbacks, &parse_conf, NULL, (void*) &params);
 
 	state = yajl_parse(handle, (const unsigned char*) json, strlen(json));
 
@@ -174,27 +175,7 @@ void got_outputs_json_cb(char* json, void* params_) {
 	yajl_free(handle);
 
 	free_outputs();
-	outputs = params->outputs;
-
-	if (params->callback != NULL) {
-		params->callback(params->cb_params);
-	}
-	
-	FREE(params->json);
-	FREE(params);
-}
-
-void refresh_outputs(void (*callback)(void*), void* cb_params) {
-	struct outputs_json_params* params = malloc(sizeof(struct outputs_json_params));
-
-	params->outputs = NULL;
-	params->outputs_walk = NULL;
-	params->cur_key = NULL;
-	params->json = NULL;
-	params->callback = callback;
-	params->cb_params = cb_params;
-
-	get_outputs_json(&got_outputs_json_cb, params);
+	outputs = params.outputs;
 }
 
 void free_outputs() {
@@ -209,7 +190,7 @@ void free_outputs() {
 
 i3_output* get_output_by_name(char* name) {
 	if (outputs == NULL) {
-		refresh_outputs(NULL, NULL);
+		i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
 		return NULL;
 	}
 

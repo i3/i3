@@ -8,7 +8,7 @@ typedef struct i3_output_t i3_output;
 
 i3_output* outputs;
 
-void		refresh_outputs();
+void		parse_outputs_json(char* json);
 void		free_outputs();
 i3_output*	get_output_by_name(char* name);
 

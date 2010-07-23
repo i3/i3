@@ -8,7 +8,7 @@ typedef struct i3_ws_t i3_ws;
 
 i3_ws* workspaces;
 
-void refresh_workspaces();
+void parse_workspaces_json();
 void free_workspaces();
 
 struct i3_ws_t {

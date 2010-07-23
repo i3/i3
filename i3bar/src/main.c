@@ -1,21 +1,21 @@
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <ev.h>
+
 #include "ipc.h"
 #include "outputs.h"
 #include "workspaces.h"
 #include "common.h"
 #include "xcb.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <ev.h>
-
 int main(int argc, char **argv) {
 	main_loop = ev_default_loop(0);
 
 	init_xcb();
+	init_connection("/home/mero/.i3/ipc.sock");
 
-	refresh_outputs(&create_windows, NULL);
-	refresh_workspaces(NULL, NULL);
+	subscribe_events();
 
 	ev_loop(main_loop, 0);
 
@@ -24,6 +24,5 @@ int main(int argc, char **argv) {
 	free_outputs();
 	free_workspaces();
 
-	//sleep(5);
 	return 0;	
 }
