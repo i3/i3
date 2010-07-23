@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <i3/ipc.h>
 #include <string.h>
 #include <unistd.h>
 #include <ev.h>
@@ -16,6 +17,8 @@ int main(int argc, char **argv) {
 	init_connection("/home/mero/.i3/ipc.sock");
 
 	subscribe_events();
+
+	i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
 
 	ev_loop(main_loop, 0);
 

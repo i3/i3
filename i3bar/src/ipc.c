@@ -9,6 +9,7 @@
 #include "common.h"
 #include "outputs.h"
 #include "workspaces.h"
+#include "xcb.h"
 #include "ipc.h"
 
 ev_io* i3_connection;
@@ -42,12 +43,16 @@ void got_workspace_reply(char *reply) {
 }
 
 void got_subscribe_reply(char *reply) {
-	printf("Got Subscribe Reply: %s\n", reply); 
+	printf("Got Subscribe Reply: %s\n", reply);
 }
 
 void got_output_reply(char *reply) {
+	printf("Got Outputs-Data!\nDestroying Windows...\n");
+	destroy_windows();
+	printf("Parsing JSON...\n");
 	parse_outputs_json(reply);
-	printf("Got Outputs-Data!\n");
+	printf("Creating_Windows,,,\n");
+	create_windows();
 }
 
 handler_t reply_handlers[] = {

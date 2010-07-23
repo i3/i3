@@ -19,6 +19,7 @@ xcb_window_t		xcb_root;
 void init_xcb();
 void clean_xcb();
 void get_atoms();
+void destroy_windows();
 void create_windows();
 
 #endif

@@ -42,6 +42,14 @@ void get_atoms() {
 	printf("Got Atoms\n");
 }
 
+void destroy_windows() {
+	i3_output *walk = outputs;
+	while(walk != NULL) {
+		xcb_destroy_window(xcb_connection, walk->win);
+		walk->win = XCB_NONE;
+	}
+}
+
 void create_windows() {
 	uint32_t mask;
 	uint32_t values[2];
@@ -83,43 +91,3 @@ void create_windows() {
 	}
 	xcb_flush(xcb_connection);
 }
-
-#if 0	
-	xcb_screen_t* screens = xcb_setup_roots_iterator(xcb_get_setup(xcb_connection)).data;
-
-	xcb_gcontext_t ctx = xcb_generate_id(xcb_connection);
-
-   	xcb_window_t win = screens->root;
-   	uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES;
-   	uint32_t values[2];
-	values[0] = screens->black_pixel;
-   	values[1] = 0;
-	xcb_create_gc(xcb_connection, ctx, win, mask, values);
-
-	request_atoms();
-
-        /* Fenster erzeugen */
-	win = xcb_generate_id(xcb_connection);
-	mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-	values[0] = screens->white_pixel;
-	values[1] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS;
-	xcb_create_window(xcb_connection, screens->root_depth, win, screens->root,
-		10, 10, 20, 20, 1,
-		XCB_WINDOW_CLASS_INPUT_OUTPUT, screens->root_visual,
-		mask, values);
-
-	get_atoms();
-
-	xcb_change_property(xcb_connection,
-			    XCB_PROP_MODE_REPLACE,
-			    win,
-			    atoms[_NET_WM_WINDOW_TYPE],
-			    atoms[ATOM],
-			    32,
-			    1,
-			    (unsigned char *) &atoms[_NET_WM_WINDOW_TYPE_DOCK]);
-
-	xcb_map_window(xcb_connection, win);
-	 
-	xcb_flush(xcb_connection);
-#endif
