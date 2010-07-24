@@ -59,7 +59,7 @@ char *resolve_tilde(const char *path) {
         }
         else {
                 head = globbuf.gl_pathv[0];
-                result = smalloc(strlen(head) + (tail ? strlen(tail) : 0) + 1);
+                result = scalloc(strlen(head) + (tail ? strlen(tail) : 0) + 1);
                 strncpy(result, head, strlen(head));
                 strncat(result, tail, strlen(tail));
         }
