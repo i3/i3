@@ -1,11 +1,15 @@
 UNAME=$(shell uname)
 DEBUG=1
 INSTALL=install
-PREFIX=/usr
-ifeq ($(PREFIX),/usr)
-SYSCONFDIR=/etc
-else
-SYSCONFDIR=$(PREFIX)/etc
+ifndef PREFIX
+  PREFIX=/usr
+endif
+ifndef SYSCONFDIR
+  ifeq ($(PREFIX),/usr)
+    SYSCONFDIR=/etc
+  else
+    SYSCONFDIR=$(PREFIX)/etc
+  endif
 endif
 # The escaping is absurd, but we need to escape for shell, sed, make, define
 GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch $(shell [ -f .git/HEAD ] && sed 's/ref: refs\/heads\/\(.*\)/\\\\\\"\1\\\\\\"/g' .git/HEAD || echo 'unknown'))"
