@@ -117,6 +117,16 @@ void draw_buttons() {
 	printf("Drawing Buttons...\n");
 	i3_output *outputs_walk = outputs;
 	int i = 0;
+	xcb_font_t button_font = xcb_generate_id(xcb_connection);
+	char *fontname = "-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1";
+	xcb_open_font(xcb_connection,
+		      button_font,
+		      strlen(fontname),
+		      fontname);
+	xcb_change_gc(xcb_connection,
+		      outputs_walk->bargc,
+		      XCB_GC_FONT,
+		      &button_font);
 	while (outputs_walk != NULL) {
 		if (!outputs_walk->active) {
 			printf("Output %s inactive, skipping...\n", outputs_walk->name);
@@ -166,6 +176,17 @@ void draw_buttons() {
 						outputs_walk->bargc,
 						1,
 						&rect);
+			color = get_colorpixel("FFFFFF");
+			xcb_change_gc(xcb_connection,
+				      outputs_walk->bargc,
+				      XCB_GC_FOREGROUND,
+				      &color);
+			xcb_image_text_8(xcb_connection,
+					 strlen(ws_walk->name),
+					 outputs_walk->bar,
+					 outputs_walk->bargc,
+					 i + 3, 14,
+					 ws_walk->name);
 			i += 20;
 			ws_walk = ws_walk->next;
 		}
