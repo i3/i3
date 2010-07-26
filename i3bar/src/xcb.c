@@ -19,6 +19,10 @@ uint32_t get_colorpixel(const char *s) {
 	return (r << 16 | g << 8 | b);
 }
 
+void handle_xcb_event(xcb_generic_event_t ev) {
+
+}
+
 void init_xcb() {
 	/* FIXME: xcb_connect leaks Memory */
 	xcb_connection = xcb_connect(NULL, NULL);
@@ -77,8 +81,9 @@ void create_windows() {
 		printf("Creating Window for output %s\n", walk->name);
 
 		walk->bar = xcb_generate_id(xcb_connection);
-		mask = XCB_CW_BACK_PIXEL;
+		mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
 		values[0] = xcb_screens->black_pixel;
+		values[1] = XCB_EVENT_MASK_EXPOSURE;
 		xcb_create_window(xcb_connection,
 				  xcb_screens->root_depth,
 				  walk->bar,
