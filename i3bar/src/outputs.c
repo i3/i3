@@ -104,6 +104,7 @@ static int outputs_start_map_cb(void* params_) {
 		new_output->ws = 0,
 		memset(&new_output->rect, 0, sizeof(rect));
 		new_output->next = NULL;
+		new_output->bar = XCB_NONE;
 
 		if (params->outputs == NULL) {
 			params->outputs = new_output;
@@ -197,7 +198,7 @@ i3_output* get_output_by_name(char* name) {
 	i3_output* walk;
 
 	for (walk = outputs; walk != NULL; walk = walk->next) {
-		if (strcmp(walk->name, name)) {
+		if (!strcmp(walk->name, name)) {
 			break;
 		}
 	}

@@ -18,8 +18,8 @@ struct i3_output_t {
 	int		ws;
 	rect		rect;
 
-	xcb_window_t	win;
-	xcb_gcontext_t	gctx;
+	xcb_window_t	bar;
+	xcb_gcontext_t	bargc;
 
 	i3_output*	next;
 };

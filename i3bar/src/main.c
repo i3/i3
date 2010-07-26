@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
 	subscribe_events();
 
 	i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
+	i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
 
 	ev_loop(main_loop, 0);
 

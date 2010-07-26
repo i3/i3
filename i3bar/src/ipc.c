@@ -35,15 +35,18 @@ int get_ipc_fd(const char* socket_path) {
 }
 
 void got_command_reply(char *reply) {
+	/* FIXME: Error handling for command-replies */
 }
 
 void got_workspace_reply(char *reply) {
 	printf("Got Workspace-Data!\n");
 	parse_workspaces_json(reply);
+	draw_buttons();
 }
 
 void got_subscribe_reply(char *reply) {
 	printf("Got Subscribe Reply: %s\n", reply);
+	/* FIXME: Error handling for subscribe-commands */
 }
 
 void got_output_reply(char *reply) {
@@ -51,7 +54,7 @@ void got_output_reply(char *reply) {
 	destroy_windows();
 	printf("Parsing JSON...\n");
 	parse_outputs_json(reply);
-	printf("Creating_Windows,,,\n");
+	printf("Creating_Windows...\n");
 	create_windows();
 }
 

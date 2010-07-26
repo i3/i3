@@ -21,5 +21,6 @@ void clean_xcb();
 void get_atoms();
 void destroy_windows();
 void create_windows();
+void draw_buttons();
 
 #endif
