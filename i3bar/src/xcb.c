@@ -23,6 +23,23 @@ void handle_xcb_event(xcb_generic_event_t ev) {
 
 }
 
+int get_string_width(char *string) {
+	xcb_query_text_extents_cookie_t cookie;
+	xcb_query_text_extents_reply_t *reply;
+	xcb_generic_error_t *error;
+	int width;
+
+	cookie = xcb_query_text_extents(xcb_connection, xcb_font, strlen(string), (xcb_char2b_t *)string);
+	if ((reply= xcb_query_text_extents_reply(xcb_connection, cookie, &error)) == NULL) {
+		printf("ERROR: Could not get text extents!");
+		return 7;
+	}
+
+	width = reply->overall_width;
+	free(reply);
+	return width;
+}
+
 void init_xcb() {
 	/* FIXME: xcb_connect leaks Memory */
 	xcb_connection = xcb_connect(NULL, NULL);
@@ -38,6 +55,26 @@ void init_xcb() {
 
 	xcb_screens = xcb_setup_roots_iterator(xcb_get_setup(xcb_connection)).data;
 	xcb_root = xcb_screens->root;
+
+	xcb_font = xcb_generate_id(xcb_connection);
+	char *fontname = "-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1";
+	xcb_open_font(xcb_connection,
+		      xcb_font,
+		      strlen(fontname),
+		      fontname);
+
+	xcb_list_fonts_with_info_cookie_t cookie;
+	cookie = xcb_list_fonts_with_info(xcb_connection,
+	                                  1,
+					  strlen(fontname),
+					  fontname);
+	xcb_list_fonts_with_info_reply_t *reply;
+	reply = xcb_list_fonts_with_info_reply(xcb_connection,
+					       cookie,
+					       NULL);
+	font_height = reply->font_ascent + reply->font_descent;
+	printf("Calculated Font-height: %d\n", font_height);
+
 
 	/* FIXME: Maybe we can push that further backwards */
 	get_atoms();
@@ -89,7 +126,7 @@ void create_windows() {
 				  walk->bar,
 				  xcb_root,
 				  walk->rect.x, walk->rect.y,
-				  walk->rect.w, 20,
+				  walk->rect.w, font_height + 6,
 				  1,
 				  XCB_WINDOW_CLASS_INPUT_OUTPUT,
 				  xcb_screens->root_visual,
@@ -106,11 +143,13 @@ void create_windows() {
 				    (unsigned char*) &atoms[_NET_WM_WINDOW_TYPE_DOCK]);
 
 		walk->bargc = xcb_generate_id(xcb_connection);
+		mask = XCB_GC_FONT;
+		values[0] = xcb_font;
 		xcb_create_gc(xcb_connection,
 			      walk->bargc,
 			      walk->bar,
-			      0,
-			      NULL);
+			      mask,
+			      values);
 
 		xcb_map_window(xcb_connection, walk->bar);
 		walk = walk->next;
@@ -122,16 +161,6 @@ void draw_buttons() {
 	printf("Drawing Buttons...\n");
 	i3_output *outputs_walk = outputs;
 	int i = 0;
-	xcb_font_t button_font = xcb_generate_id(xcb_connection);
-	char *fontname = "-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1";
-	xcb_open_font(xcb_connection,
-		      button_font,
-		      strlen(fontname),
-		      fontname);
-	xcb_change_gc(xcb_connection,
-		      outputs_walk->bargc,
-		      XCB_GC_FONT,
-		      &button_font);
 	while (outputs_walk != NULL) {
 		if (!outputs_walk->active) {
 			printf("Output %s inactive, skipping...\n", outputs_walk->name);
@@ -146,7 +175,7 @@ void draw_buttons() {
 			      outputs_walk->bargc,
 			      XCB_GC_FOREGROUND,
 			      &color);
-		xcb_rectangle_t rect = { 0, 0, outputs_walk->rect.w, 20 };
+		xcb_rectangle_t rect = { 0, 0, outputs_walk->rect.w, font_height + 6 };
 		xcb_poly_fill_rectangle(xcb_connection,
 					outputs_walk->bar,
 					outputs_walk->bargc,
@@ -175,7 +204,7 @@ void draw_buttons() {
 				      outputs_walk->bargc,
 				      XCB_GC_BACKGROUND,
 				      &color);
-			xcb_rectangle_t rect = { i + 1, 1, 18, 18 };
+			xcb_rectangle_t rect = { i + 1, 1, ws_walk->name_width + 8, font_height + 4 };
 			xcb_poly_fill_rectangle(xcb_connection,
 						outputs_walk->bar,
 						outputs_walk->bargc,
@@ -190,9 +219,9 @@ void draw_buttons() {
 					 strlen(ws_walk->name),
 					 outputs_walk->bar,
 					 outputs_walk->bargc,
-					 i + 3, 14,
+					 i + 5, font_height + 1,
 					 ws_walk->name);
-			i += 20;
+			i += 10 + ws_walk->name_width;
 			ws_walk = ws_walk->next;
 		}
 		outputs_walk = outputs_walk->next;

@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "workspaces.h"
+#include "xcb.h"
 #include "ipc.h"
 
 struct workspaces_json_params {
@@ -101,6 +102,11 @@ static int workspaces_string_cb(void* params_, const unsigned char* val, unsigne
                 strncpy(params->workspaces_walk->name, (const char*) val, len);
 		params->workspaces_walk->name[len] = '\0';
 
+		params->workspaces_walk->name_width = get_string_width(params->workspaces_walk->name);
+
+		printf("Got Workspace %s, name_width: %d\n",
+		       params->workspaces_walk->name,
+		       params->workspaces_walk->name_width);
                 FREE(params->cur_key);
 
                 return 1;

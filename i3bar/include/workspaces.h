@@ -14,6 +14,7 @@ void free_workspaces();
 struct i3_ws_t {
 	int		num;
 	char*		name;
+	int		name_width;
 	bool		visible;
 	bool		focused;
 	bool		urgent;
