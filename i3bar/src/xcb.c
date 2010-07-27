@@ -20,7 +20,11 @@ uint32_t get_colorpixel(const char *s) {
 }
 
 void handle_xcb_event(xcb_generic_event_t ev) {
-
+	switch (event->response_type & ~0x80) {
+		case XCB_EXPOSE:
+			draw_buttons();
+			break;
+	}
 }
 
 int get_string_width(char *string) {

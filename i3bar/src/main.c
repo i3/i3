@@ -19,10 +19,7 @@ void ev_prepare_cb(struct ev_loop *loop, ev_prepare *w, int revents) {
 void ev_check_cb(struct ev_loop *loop, ev_check *w, int revents) {
 	xcb_generic_event_t *event;
 	if ((event = xcb_poll_for_event(xcb_connection)) != NULL) {
-		switch (event->response_type & ~0x80) {
-			case XCB_EXPOSE:
-				draw_buttons();
-		}
+		handle_xcb_event(event);
 		free(event);
 	}
 }
