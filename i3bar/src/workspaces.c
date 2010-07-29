@@ -44,7 +44,7 @@ static int workspaces_boolean_cb(void* params_, bool val) {
 	}
 
 	if (!strcmp(params->cur_key, "urgent")) {
-		params->workspaces_walk->focused = val;
+		params->workspaces_walk->urgent = val;
 		FREE(params->cur_key);
 		return 1;
 	}
