@@ -20,8 +20,8 @@ void ev_check_cb(struct ev_loop *loop, ev_check *w, int revents) {
 	xcb_generic_event_t *event;
 	if ((event = xcb_poll_for_event(xcb_connection)) != NULL) {
 		handle_xcb_event(event);
-		free(event);
 	}
+	free(event);
 }
 
 void xcb_io_cb(struct ev_loop *loop, ev_io *w, int revents) {

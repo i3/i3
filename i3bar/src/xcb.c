@@ -47,7 +47,23 @@ void handle_button(xcb_button_press_event_t *event) {
 		return;
 	}
 
+	int32_t x = event->event_x;
+
+	printf("Got Button %d\n", event->detail);
+
 	switch (event->detail) {
+		case 1:
+			TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
+				printf("x = %d\n", x);
+				if (x < cur_ws->name_width + 10) {
+					break;
+				}
+				x -= cur_ws->name_width + 10;
+			}
+			if (cur_ws == NULL) {
+				return;
+			}
+			break;
 		case 4:
 			if (cur_ws == TAILQ_LAST(walk->workspaces, ws_head)) {
 				cur_ws = TAILQ_FIRST(walk->workspaces);
@@ -241,7 +257,7 @@ void draw_buttons() {
 					&rect);
 		i3_ws *ws_walk;
 		TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
-			printf("Drawing Button for WS %s...\n", ws_walk->name);
+			printf("Drawing Button for WS %s at x = %d\n", ws_walk->name, i);
 			uint32_t color = get_colorpixel("240000");
 			if (ws_walk->visible) {
 				color = get_colorpixel("480000");
