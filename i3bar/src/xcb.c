@@ -2,10 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <i3/ipc.h>
 
 #include "xcb.h"
 #include "outputs.h"
 #include "workspaces.h"
+#include "ipc.h"
 
 xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
 
@@ -19,10 +21,61 @@ uint32_t get_colorpixel(const char *s) {
 	return (r << 16 | g << 8 | b);
 }
 
+void handle_button(xcb_button_press_event_t *event) {
+	i3_ws *cur_ws;
+	i3_output *walk;
+	xcb_window_t bar = event->event;
+	SLIST_FOREACH(walk, outputs, slist) {
+		if (walk->bar == bar) {
+			break;
+		}
+	}
+
+	if (walk == NULL) {
+		printf("Unknown Bar klicked!\n");
+		return;
+	}
+
+	TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
+		if (cur_ws->visible) {
+			break;
+		}
+	}
+
+	if (cur_ws == NULL) {
+		printf("No Workspace active?\n");
+		return;
+	}
+
+	switch (event->detail) {
+		case 4:
+			if (cur_ws == TAILQ_LAST(walk->workspaces, ws_head)) {
+				cur_ws = TAILQ_FIRST(walk->workspaces);
+			} else {
+				cur_ws = TAILQ_NEXT(cur_ws, tailq);
+			}
+			break;
+		case 5:
+			if (cur_ws == TAILQ_FIRST(walk->workspaces)) {
+				cur_ws = TAILQ_LAST(walk->workspaces, ws_head);
+			} else {
+				cur_ws = TAILQ_PREV(cur_ws, ws_head, tailq);
+			}
+			break;
+	}
+
+	char buffer[50];
+	snprintf(buffer, 50, "%d", cur_ws->num);
+	i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, buffer);
+}
+
 void handle_xcb_event(xcb_generic_event_t *event) {
 	switch (event->response_type & ~0x80) {
 		case XCB_EXPOSE:
 			draw_buttons();
+			break;
+		case XCB_BUTTON_PRESS:
+			handle_button((xcb_button_press_event_t*) event);
 			break;
 	}
 }
@@ -126,7 +179,8 @@ void create_windows() {
 		walk->bar = xcb_generate_id(xcb_connection);
 		mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
 		values[0] = xcb_screens->black_pixel;
-		values[1] = XCB_EVENT_MASK_EXPOSURE;
+		values[1] = XCB_EVENT_MASK_EXPOSURE |
+			    XCB_EVENT_MASK_BUTTON_PRESS;
 		xcb_create_window(xcb_connection,
 				  xcb_screens->root_depth,
 				  walk->bar,
