@@ -19,7 +19,7 @@ uint32_t get_colorpixel(const char *s) {
 	return (r << 16 | g << 8 | b);
 }
 
-void handle_xcb_event(xcb_generic_event_t ev) {
+void handle_xcb_event(xcb_generic_event_t *event) {
 	switch (event->response_type & ~0x80) {
 		case XCB_EXPOSE:
 			draw_buttons();
@@ -99,8 +99,11 @@ void get_atoms() {
 }
 
 void destroy_windows() {
-	i3_output *walk = outputs;
-	while(walk != NULL) {
+	i3_output *walk;
+	if (outputs == NULL) {
+		return;
+	}
+	SLIST_FOREACH(walk, outputs, slist) {
 		if (walk->bar == XCB_NONE) {
 			continue;
 		}
@@ -113,10 +116,9 @@ void create_windows() {
 	uint32_t mask;
 	uint32_t values[2];
 
-	i3_output* walk = outputs;
-	while (walk != NULL) {
+	i3_output *walk;
+	SLIST_FOREACH(walk, outputs, slist) {
 		if (!walk->active) {
-			walk = walk->next;
 			continue;
 		}
 		printf("Creating Window for output %s\n", walk->name);
@@ -156,19 +158,17 @@ void create_windows() {
 			      values);
 
 		xcb_map_window(xcb_connection, walk->bar);
-		walk = walk->next;
 	}
 	xcb_flush(xcb_connection);
 }
 
 void draw_buttons() {
 	printf("Drawing Buttons...\n");
-	i3_output *outputs_walk = outputs;
 	int i = 0;
-	while (outputs_walk != NULL) {
+	i3_output *outputs_walk;
+	SLIST_FOREACH(outputs_walk, outputs, slist) {
 		if (!outputs_walk->active) {
 			printf("Output %s inactive, skipping...\n", outputs_walk->name);
-			outputs_walk = outputs_walk->next;
 			continue;
 		}
 		if (outputs_walk->bar == XCB_NONE) {
@@ -185,19 +185,15 @@ void draw_buttons() {
 					outputs_walk->bargc,
 					1,
 					&rect);
-		i3_ws *ws_walk = workspaces;
-		while (ws_walk != NULL) {
-			if (ws_walk->output != outputs_walk) {
-				printf("WS %s on wrong output, skipping...\n", ws_walk->name);
-				ws_walk = ws_walk->next;
-				continue;
-			}
+		i3_ws *ws_walk;
+		TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
 			printf("Drawing Button for WS %s...\n", ws_walk->name);
 			uint32_t color = get_colorpixel("240000");
 			if (ws_walk->visible) {
 				color = get_colorpixel("480000");
 			}
 			if (ws_walk->urgent) {
+				printf("WS %s is urgent!\n", ws_walk->name);
 				color = get_colorpixel("002400");
 			}
 			xcb_change_gc(xcb_connection,
@@ -226,9 +222,7 @@ void draw_buttons() {
 					 i + 5, font_height + 1,
 					 ws_walk->name);
 			i += 10 + ws_walk->name_width;
-			ws_walk = ws_walk->next;
 		}
-		outputs_walk = outputs_walk->next;
 		i = 0;
 	}
 	xcb_flush(xcb_connection);

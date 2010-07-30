@@ -10,10 +10,10 @@
 #include "ipc.h"
 
 struct outputs_json_params {
-	i3_output*	outputs;
-	i3_output*	outputs_walk;
-	char*		cur_key;
-	char*		json;
+	struct outputs_head	*outputs;
+	i3_output		*outputs_walk;
+	char*			cur_key;
+	char*			json;
 };
 
 static int outputs_null_cb(void* params_) {
@@ -96,23 +96,22 @@ static int outputs_string_cb(void* params_, const unsigned char* val, unsigned i
 
 static int outputs_start_map_cb(void* params_) {
 	struct outputs_json_params* params = (struct outputs_json_params*) params_;
-	i3_output* new_output = NULL;
+	i3_output *new_output = NULL;
 
 	if (params->cur_key == NULL) {
 		new_output = malloc(sizeof(i3_output));
 		new_output->name = NULL;
 		new_output->ws = 0,
 		memset(&new_output->rect, 0, sizeof(rect));
-		new_output->next = NULL;
 		new_output->bar = XCB_NONE;
 
-		if (params->outputs == NULL) {
-			params->outputs = new_output;
-		} else {
-			params->outputs_walk->next = new_output;
-		}
+		new_output->workspaces = malloc(sizeof(struct ws_head));
+		TAILQ_INIT(new_output->workspaces);
 
-		params->outputs_walk = new_output;
+		SLIST_INSERT_HEAD(params->outputs, new_output, slist);
+
+		params->outputs_walk = SLIST_FIRST(params->outputs);
+
 		return 1;
 	}
 
@@ -148,7 +147,10 @@ void parse_outputs_json(char* json) {
 	/* FIXME: Fasciliate stream-processing, i.e. allow starting to interpret
 	 * JSON in chunks */
 	struct outputs_json_params params;
-	params.outputs = NULL;
+	printf(json);
+	params.outputs = malloc(sizeof(struct outputs_head));
+	SLIST_INIT(params.outputs);
+
 	params.outputs_walk = NULL;
 	params.cur_key = NULL;
 	params.json = json;
@@ -175,29 +177,16 @@ void parse_outputs_json(char* json) {
 	
 	yajl_free(handle);
 
-	free_outputs();
+	if (outputs != NULL) {
+		FREE_SLIST(outputs, i3_output);
+	}
+
 	outputs = params.outputs;
 }
 
-void free_outputs() {
-	i3_output* tmp;
-	while (outputs != NULL) {
-		tmp = outputs;
-		outputs = outputs->next;
-		FREE(tmp->name);
-		FREE(tmp);
-	}
-}
-
 i3_output* get_output_by_name(char* name) {
-	if (outputs == NULL) {
-		i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
-		return NULL;
-	}
-
-	i3_output* walk;
-
-	for (walk = outputs; walk != NULL; walk = walk->next) {
+	i3_output *walk;
+	SLIST_FOREACH(walk, outputs, slist) {
 		if (!strcmp(walk->name, name)) {
 			break;
 		}

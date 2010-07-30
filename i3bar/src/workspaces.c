@@ -10,10 +10,10 @@
 #include "ipc.h"
 
 struct workspaces_json_params {
-	i3_ws*	workspaces;
-	i3_ws*	workspaces_walk;
-	char*	cur_key;
-	char*	json;
+	struct ws_head	*workspaces;
+	i3_ws		*workspaces_walk;
+	char		*cur_key;
+	char		*json;
 };
 
 static int workspaces_null_cb(void* params_) {
@@ -117,8 +117,12 @@ static int workspaces_string_cb(void* params_, const unsigned char* val, unsigne
                 strncpy(output_name, (const char*) val, len);
 		output_name[len] = '\0';
                 params->workspaces_walk->output = get_output_by_name(output_name);
-                free(output_name);
 
+		TAILQ_INSERT_TAIL(params->workspaces_walk->output->workspaces,
+				  params->workspaces_walk,
+				  tailq);
+
+                free(output_name);
                 return 1;
         }
 
@@ -127,7 +131,8 @@ static int workspaces_string_cb(void* params_, const unsigned char* val, unsigne
 
 static int workspaces_start_map_cb(void* params_) {
 	struct workspaces_json_params* params = (struct workspaces_json_params*) params_;
-	i3_ws* new_workspace = NULL;
+
+	i3_ws	  *new_workspace = NULL;
 
 	if (params->cur_key == NULL) {
 		new_workspace = malloc(sizeof(i3_ws));
@@ -138,13 +143,6 @@ static int workspaces_start_map_cb(void* params_) {
 		new_workspace->urgent = 0;
 		memset(&new_workspace->rect, 0, sizeof(rect));
 		new_workspace->output = NULL;
-		new_workspace->next = NULL;
-
-		if (params->workspaces == NULL) {
-			params->workspaces = new_workspace;
-		} else {
-			params->workspaces_walk->next = new_workspace;
-		}
 
 		params->workspaces_walk = new_workspace;
 		return 1;
@@ -186,7 +184,9 @@ void parse_workspaces_json(char* json) {
 	/* FIXME: Fasciliate stream-processing, i.e. allow starting to interpret
 	 * JSON in chunks */
 	struct workspaces_json_params params;
-	params.workspaces = NULL;
+
+	free_workspaces();
+
 	params.workspaces_walk = NULL;
 	params.cur_key = NULL;
 	params.json = json;
@@ -212,19 +212,15 @@ void parse_workspaces_json(char* json) {
 	}
 
 	yajl_free(handle);
-
-	free_workspaces();
-	workspaces = params.workspaces;
 	
 	FREE(params.cur_key);
 }
 
 void free_workspaces() {
-	i3_ws* tmp;
-	while (workspaces != NULL) {
-		tmp = workspaces;
-		workspaces = workspaces->next;
-		FREE(tmp->name);
-		FREE(tmp);
+	i3_output *outputs_walk;
+	SLIST_FOREACH(outputs_walk, outputs, slist) {
+		if (outputs_walk->workspaces != NULL && !TAILQ_EMPTY(outputs_walk->workspaces)) {
+			FREE_TAILQ(outputs_walk->workspaces, i3_ws);
+		}
 	}
 }

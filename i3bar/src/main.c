@@ -59,8 +59,9 @@ int main(int argc, char **argv) {
 
 	ev_default_destroy();
 	clean_xcb();
-	free_outputs();
+
 	free_workspaces();
+	FREE_SLIST(outputs, i3_output);
 
 	return 0;	
 }

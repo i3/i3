@@ -25,5 +25,6 @@ void destroy_windows();
 void create_windows();
 void draw_buttons();
 int get_string_width(char *string);
+void handle_xcb_event(xcb_generic_event_t *event);
 
 #endif

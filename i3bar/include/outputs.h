@@ -1,18 +1,21 @@
 #ifndef OUTPUTS_H_
 #define OUTPUTS_H_
 
-#include "common.h"
 #include <xcb/xcb.h>
 
-typedef struct i3_output_t i3_output;
+#include "common.h"
+#include "workspaces.h"
 
-i3_output* outputs;
+typedef struct i3_output i3_output;
+
+SLIST_HEAD(outputs_head, i3_output);
+struct outputs_head *outputs;
 
 void		parse_outputs_json(char* json);
 void		free_outputs();
 i3_output*	get_output_by_name(char* name);
 
-struct i3_output_t {
+struct i3_output {
 	char*		name;
 	bool		active;
 	int		ws;
@@ -21,7 +24,9 @@ struct i3_output_t {
 	xcb_window_t	bar;
 	xcb_gcontext_t	bargc;
 
-	i3_output*	next;
+	struct ws_head	*workspaces;
+
+	SLIST_ENTRY(i3_output) slist;
 };
 
 #endif
