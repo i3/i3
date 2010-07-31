@@ -277,11 +277,11 @@ static char *get_config_path() {
         if (path_exists(config_path))
                 return config_path;
 
-        config_path = strdup("/etc/i3/config");
+        config_path = strdup(SYSCONFDIR "/i3/config");
         if (!path_exists(config_path))
                 die("Neither $XDG_CONFIG_HOME/i3/config, nor "
                     "$XDG_CONFIG_DIRS/i3/config, nor ~/.i3/config nor "
-                    "/etc/i3/config exist.");
+                    SYSCONFDIR "/i3/config exist.");
 
         return config_path;
 }

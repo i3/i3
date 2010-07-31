@@ -24,6 +24,7 @@ CFLAGS += -Wunused-value
 CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include
 CFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
+CFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
 
 # Check if pkg-config is installed, because without pkg-config, the following
 # check for the version of libxcb cannot be done.
