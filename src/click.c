@@ -309,6 +309,8 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                         return 1;
 
                 DLOG("Could not handle this button press\n");
+                xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
+                xcb_flush(conn);
                 return 1;
         }
 
