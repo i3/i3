@@ -11,9 +11,9 @@ typedef struct i3_output i3_output;
 SLIST_HEAD(outputs_head, i3_output);
 struct outputs_head *outputs;
 
-void		parse_outputs_json(char* json);
-void		free_outputs();
-i3_output*	get_output_by_name(char* name);
+void        parse_outputs_json(char* json);
+void        free_outputs();
+i3_output*  get_output_by_name(char* name);
 
 struct i3_output {
 	char*		name;

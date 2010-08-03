@@ -12,16 +12,16 @@ void parse_workspaces_json();
 void free_workspaces();
 
 struct i3_ws {
-	int			num;
-	char			*name;
-	int			name_width;
-	bool			visible;
-	bool			focused;
-	bool			urgent;
-	rect			rect;
-	struct i3_output	*output;
+    int                num;
+    char               *name;
+    int                name_width;
+    bool               visible;
+    bool               focused;
+    bool               urgent;
+    rect               rect;
+    struct i3_output   *output;
 
-	TAILQ_ENTRY(i3_ws)	tailq;
+    TAILQ_ENTRY(i3_ws) tailq;
 };
 
 #endif
