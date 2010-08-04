@@ -144,6 +144,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
         reply_handlers[type](buffer);
     }
 
+    FREE(header);
     FREE(buffer);
 }
 

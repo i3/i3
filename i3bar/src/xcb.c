@@ -147,8 +147,8 @@ void init_xcb() {
                                            cookie,
                                            NULL);
     font_height = reply->font_ascent + reply->font_descent;
+    FREE(reply);
     printf("Calculated Font-height: %d\n", font_height);
-
 
     /* FIXME: Maybe we can push that further backwards */
     get_atoms();

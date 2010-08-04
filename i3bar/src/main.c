@@ -158,8 +158,15 @@ int main(int argc, char **argv) {
 
     ev_prepare_stop(main_loop, ev_prep);
     ev_check_stop(main_loop, ev_chk);
+    ev_io_stop(main_loop, xcb_io);
+    ev_io_stop(main_loop, child_io);
+
+    FREE(xcb_io);
     FREE(ev_prep);
     FREE(ev_chk);
+    free(child_io);
+
+    FREE(statusline);
 
     ev_default_destroy();
     clean_xcb();
