@@ -7,6 +7,7 @@
 #include "xcb.h"
 #include "outputs.h"
 #include "workspaces.h"
+#include "common.h"
 #include "ipc.h"
 
 xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
@@ -88,7 +89,7 @@ void handle_button(xcb_button_press_event_t *event) {
 void handle_xcb_event(xcb_generic_event_t *event) {
     switch (event->response_type & ~0x80) {
         case XCB_EXPOSE:
-            draw_buttons();
+            draw_bars();
             break;
         case XCB_BUTTON_PRESS:
             handle_button((xcb_button_press_event_t*) event);
@@ -232,8 +233,8 @@ void create_windows() {
     xcb_flush(xcb_connection);
 }
 
-void draw_buttons() {
-    printf("Drawing Buttons...\n");
+void draw_bars() {
+    printf("Drawing Bars...\n");
     int i = 0;
     i3_output *outputs_walk;
     SLIST_FOREACH(outputs_walk, outputs, slist) {
@@ -255,6 +256,26 @@ void draw_buttons() {
                                 outputs_walk->bargc,
                                 1,
                                 &rect);
+        if (statusline != NULL) {
+            printf("Printing statusline!\n");
+            xcb_change_gc(xcb_connection,
+                          outputs_walk->bargc,
+                          XCB_GC_BACKGROUND,
+                          &color);
+            color = get_colorpixel("FFFFFF");
+            xcb_change_gc(xcb_connection,
+                          outputs_walk->bargc,
+                          XCB_GC_FOREGROUND,
+                          &color);
+
+            xcb_image_text_8(xcb_connection,
+                             strlen(statusline),
+                             outputs_walk->bar,
+                             outputs_walk->bargc,
+                             outputs_walk->rect.w - get_string_width(statusline) - 4,
+                             font_height + 1,
+                             statusline);
+        }
         i3_ws *ws_walk;
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
             printf("Drawing Button for WS %s at x = %d\n", ws_walk->name, i);
@@ -293,6 +314,7 @@ void draw_buttons() {
                              ws_walk->name);
             i += 10 + ws_walk->name_width;
         }
+
         i = 0;
     }
     xcb_flush(xcb_connection);

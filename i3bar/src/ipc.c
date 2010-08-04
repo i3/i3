@@ -41,7 +41,7 @@ void got_command_reply(char *reply) {
 void got_workspace_reply(char *reply) {
     printf("Got Workspace-Data!\n");
     parse_workspaces_json(reply);
-    draw_buttons();
+    draw_bars();
 }
 
 void got_subscribe_reply(char *reply) {

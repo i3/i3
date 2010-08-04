@@ -3,9 +3,12 @@
 
 #include "util.h"
 
+typedef struct rect_t rect;
 typedef int bool;
 
-typedef struct rect_t rect;
+struct ev_loop* main_loop;
+pid_t           child_pid;
+char            *statusline;
 
 struct rect_t {
 	int	x;
@@ -13,7 +16,5 @@ struct rect_t {
 	int	w;
 	int	h;
 };
-
-struct ev_loop* main_loop;
 
 #endif
