@@ -2,12 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <i3/ipc.h>
-
 #include <yajl/yajl_parse.h>
 
 #include "common.h"
-#include "outputs.h"
-#include "ipc.h"
 
 struct outputs_json_params {
     struct outputs_head *outputs;

@@ -1,7 +1,6 @@
 #ifndef IPC_H_
 #define IPC_H_
 
-#include <ev.h>
 #include <stdint.h>
 
 int init_connection(const char *socket_path);

@@ -4,7 +4,6 @@
 #include <xcb/xcb.h>
 
 #include "common.h"
-#include "workspaces.h"
 
 typedef struct i3_output i3_output;
 

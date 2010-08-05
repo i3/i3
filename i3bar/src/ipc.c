@@ -5,12 +5,9 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <i3/ipc.h>
+#include <ev.h>
 
 #include "common.h"
-#include "outputs.h"
-#include "workspaces.h"
-#include "xcb.h"
-#include "ipc.h"
 
 ev_io *i3_connection;
 

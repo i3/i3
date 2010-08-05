@@ -3,14 +3,28 @@
 #include <stdlib.h>
 #include <string.h>
 #include <i3/ipc.h>
+#include <ev.h>
 
-#include "xcb.h"
-#include "outputs.h"
-#include "workspaces.h"
 #include "common.h"
-#include "ipc.h"
+
+#define NUM_ATOMS 3
+
+enum {
+    #define ATOM_DO(name) name,
+    #include "xcb_atoms.def"
+};
 
 xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
+xcb_atom_t               atoms[NUM_ATOMS];
+
+xcb_connection_t *xcb_connection;
+xcb_screen_t     *xcb_screens;
+xcb_window_t     xcb_root;
+xcb_font_t       xcb_font;
+
+ev_prepare *xcb_prep;
+ev_check   *xcb_chk;
+ev_io      *xcb_io;
 
 uint32_t get_colorpixel(const char *s) {
     char strings[3][3] = { { s[0], s[1], '\0'} ,
@@ -97,6 +111,23 @@ void handle_xcb_event(xcb_generic_event_t *event) {
     }
 }
 
+void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revenst) {
+    xcb_flush(xcb_connection);
+}
+
+void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
+    xcb_generic_event_t *event;
+    if ((event = xcb_poll_for_event(xcb_connection)) != NULL) {
+        handle_xcb_event(event);
+    }
+    FREE(event);
+}
+
+void xcb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+    /* Dummy Callback. We only need this, so that xcb-events trigger
+     * Prepare- and Check-Watchers */
+}
+
 int get_string_width(char *string) {
     xcb_query_text_extents_cookie_t cookie;
     xcb_query_text_extents_reply_t *reply;
@@ -150,12 +181,32 @@ void init_xcb() {
     FREE(reply);
     printf("Calculated Font-height: %d\n", font_height);
 
+    xcb_io = malloc(sizeof(ev_io));
+    xcb_prep = malloc(sizeof(ev_prepare));
+    xcb_chk = malloc(sizeof(ev_check));
+
+    ev_io_init(xcb_io, &xcb_io_cb, xcb_get_file_descriptor(xcb_connection), EV_READ);
+    ev_prepare_init(xcb_prep, &xcb_prep_cb);
+    ev_check_init(xcb_chk, &xcb_chk_cb);
+
+    ev_io_start(main_loop, xcb_io);
+    ev_prepare_start(main_loop, xcb_prep);
+    ev_check_start(main_loop, xcb_chk);
+
     /* FIXME: Maybe we can push that further backwards */
     get_atoms();
 }
 
 void clean_xcb() {
     xcb_disconnect(xcb_connection);
+
+    ev_check_stop(main_loop, xcb_chk);
+    ev_prepare_stop(main_loop, xcb_prep);
+    ev_io_stop(main_loop, xcb_io);
+
+    FREE(xcb_chk);
+    FREE(xcb_prep);
+    FREE(xcb_io);
 }
 
 void get_atoms() {

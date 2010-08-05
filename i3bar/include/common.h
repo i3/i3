@@ -1,8 +1,6 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
-#include "util.h"
-
 typedef struct rect_t rect;
 typedef int bool;
 
@@ -16,5 +14,13 @@ struct rect_t {
 	int	w;
 	int	h;
 };
+
+#include "queue.h"
+#include "child.h"
+#include "ipc.h"
+#include "outputs.h"
+#include "util.h"
+#include "workspaces.h"
+#include "xcb.h"
 
 #endif

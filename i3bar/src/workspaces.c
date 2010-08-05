@@ -1,13 +1,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-
 #include <yajl/yajl_parse.h>
 
 #include "common.h"
-#include "workspaces.h"
-#include "xcb.h"
-#include "ipc.h"
 
 struct workspaces_json_params {
     struct ws_head *workspaces;

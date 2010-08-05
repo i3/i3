@@ -2,7 +2,6 @@
 #define WORKSPACES_H_
 
 #include "common.h"
-#include "outputs.h"
 
 typedef struct i3_ws i3_ws;
 
