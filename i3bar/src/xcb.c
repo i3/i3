@@ -297,7 +297,6 @@ void reconfig_windows() {
                                  values);
         }
     }
-    xcb_flush(xcb_connection);
 }
 
 void draw_bars() {
@@ -394,5 +393,4 @@ void draw_bars() {
 
         i = 0;
     }
-    xcb_flush(xcb_connection);
 }
