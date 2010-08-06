@@ -240,6 +240,7 @@ void reconfig_windows() {
     i3_output *walk;
     SLIST_FOREACH(walk, outputs, slist) {
         if (!walk->active) {
+            printf("Destroying window for output %s\n", walk->name);
             destroy_window(walk);
             continue;
         }
@@ -288,9 +289,10 @@ void reconfig_windows() {
                    XCB_CONFIG_WINDOW_WIDTH |
                    XCB_CONFIG_WINDOW_HEIGHT;
             values[0] = walk->rect.x;
-            values[1] = walk->rect.y;
+            values[1] = walk->rect.y + walk->rect.h - font_height - 6;
             values[2] = walk->rect.w;
-            values[3] = walk->rect.h;
+            values[3] = font_height + 6;
+            printf("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
             xcb_configure_window(xcb_connection,
                                  walk->bar,
                                  mask,
