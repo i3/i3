@@ -12,18 +12,6 @@ struct workspaces_json_params {
     char           *json;
 };
 
-static int workspaces_null_cb(void *params_) {
-    struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
-
-    if (strcmp(params->cur_key, "current_workspace")) {
-        return 0;
-    }
-
-    FREE(params->cur_key);
-
-    return 1;
-}
-
 static int workspaces_boolean_cb(void *params_, bool val) {
     struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
 
@@ -169,7 +157,7 @@ static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, uns
 }
 
 yajl_callbacks workspaces_callbacks = {
-    &workspaces_null_cb,
+    NULL,
     &workspaces_boolean_cb,
     &workspaces_integer_cb,
     NULL,
