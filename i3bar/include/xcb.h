@@ -7,8 +7,8 @@ void init_xcb();
 void clean_xcb();
 void get_atoms();
 void destroy_windows();
-void create_windows();
+void reconfig_windows();
 void draw_bars();
-int get_string_width(char *string);
+int get_string_width(xcb_char2b_t *string, int glyph_len);
 
 #endif

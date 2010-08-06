@@ -11,6 +11,7 @@ SLIST_HEAD(outputs_head, i3_output);
 struct outputs_head *outputs;
 
 void        parse_outputs_json(char* json);
+void        init_outputs();
 void        free_outputs();
 i3_output*  get_output_by_name(char* name);
 

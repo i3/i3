@@ -1,4 +1,6 @@
 #include <xcb/xcb.h>
+#include <xcb/xproto.h>
+#include <xcb/xcb_event.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +27,8 @@ xcb_font_t       xcb_font;
 ev_prepare *xcb_prep;
 ev_check   *xcb_chk;
 ev_io      *xcb_io;
+
+xcb_event_handlers_t xcb_event_handlers;
 
 uint32_t get_colorpixel(const char *s) {
     char strings[3][3] = { { s[0], s[1], '\0'} ,
@@ -128,14 +132,14 @@ void xcb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
      * Prepare- and Check-Watchers */
 }
 
-int get_string_width(char *string) {
+int get_string_width(xcb_char2b_t *string, int glyph_len) {
     xcb_query_text_extents_cookie_t cookie;
     xcb_query_text_extents_reply_t *reply;
     xcb_generic_error_t *error;
     int width;
 
-    cookie = xcb_query_text_extents(xcb_connection, xcb_font, strlen(string), (xcb_char2b_t*) string);
-    if ((reply= xcb_query_text_extents_reply(xcb_connection, cookie, &error)) == NULL) {
+    cookie = xcb_query_text_extents(xcb_connection, xcb_font, glyph_len, string);
+    if ((reply = xcb_query_text_extents_reply(xcb_connection, cookie, &error)) == NULL) {
         printf("ERROR: Could not get text extents!");
         return 7;
     }
@@ -145,7 +149,7 @@ int get_string_width(char *string) {
     return width;
 }
 
-void init_xcb() {
+void init_xcb(char *fontname) {
     /* FIXME: xcb_connect leaks Memory */
     xcb_connection = xcb_connect(NULL, NULL);
     if (xcb_connection_has_error(xcb_connection)) {
@@ -162,7 +166,6 @@ void init_xcb() {
     xcb_root = xcb_screens->root;
 
     xcb_font = xcb_generate_id(xcb_connection);
-    char *fontname = "-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1";
     xcb_open_font(xcb_connection,
                   xcb_font,
                   strlen(fontname),
@@ -219,67 +222,80 @@ void get_atoms() {
     printf("Got Atoms\n");
 }
 
-void destroy_windows() {
-    i3_output *walk;
-    if (outputs == NULL) {
+void destroy_window(i3_output *output) {
+    if (output == NULL) {
         return;
     }
-    SLIST_FOREACH(walk, outputs, slist) {
-        if (walk->bar == XCB_NONE) {
-            continue;
-        }
-        xcb_destroy_window(xcb_connection, walk->bar);
-        walk->bar = XCB_NONE;
+    if (output->bar == XCB_NONE) {
+        return;
     }
+    xcb_destroy_window(xcb_connection, output->bar);
+    output->bar = XCB_NONE;
 }
 
-void create_windows() {
+void reconfig_windows() {
     uint32_t mask;
-    uint32_t values[2];
+    uint32_t values[4];
 
     i3_output *walk;
     SLIST_FOREACH(walk, outputs, slist) {
         if (!walk->active) {
+            destroy_window(walk);
             continue;
         }
-        printf("Creating Window for output %s\n", walk->name);
+        if (walk->bar == XCB_NONE) {
+            printf("Creating Window for output %s\n", walk->name);
 
-        walk->bar = xcb_generate_id(xcb_connection);
-        mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-        values[0] = xcb_screens->black_pixel;
-        values[1] = XCB_EVENT_MASK_EXPOSURE |
-                    XCB_EVENT_MASK_BUTTON_PRESS;
-        xcb_create_window(xcb_connection,
-                          xcb_screens->root_depth,
+            walk->bar = xcb_generate_id(xcb_connection);
+            mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+            values[0] = xcb_screens->black_pixel;
+            values[1] = XCB_EVENT_MASK_EXPOSURE |
+                        XCB_EVENT_MASK_BUTTON_PRESS;
+            xcb_create_window(xcb_connection,
+                              xcb_screens->root_depth,
+                              walk->bar,
+                              xcb_root,
+                              walk->rect.x, walk->rect.y,
+                              walk->rect.w, font_height + 6,
+                              1,
+                              XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                              xcb_screens->root_visual,
+                              mask,
+                              values);
+
+            xcb_change_property(xcb_connection,
+                                XCB_PROP_MODE_REPLACE,
+                                walk->bar,
+                                atoms[_NET_WM_WINDOW_TYPE],
+                                atoms[ATOM],
+                                32,
+                                1,
+                                (unsigned char*) &atoms[_NET_WM_WINDOW_TYPE_DOCK]);
+
+            walk->bargc = xcb_generate_id(xcb_connection);
+            mask = XCB_GC_FONT;
+            values[0] = xcb_font;
+            xcb_create_gc(xcb_connection,
+                          walk->bargc,
                           walk->bar,
-                          xcb_root,
-                          walk->rect.x, walk->rect.y,
-                          walk->rect.w, font_height + 6,
-                          1,
-                          XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                          xcb_screens->root_visual,
                           mask,
                           values);
 
-        xcb_change_property(xcb_connection,
-                            XCB_PROP_MODE_REPLACE,
-                            walk->bar,
-                            atoms[_NET_WM_WINDOW_TYPE],
-                            atoms[ATOM],
-                            32,
-                            1,
-                            (unsigned char*) &atoms[_NET_WM_WINDOW_TYPE_DOCK]);
-
-        walk->bargc = xcb_generate_id(xcb_connection);
-        mask = XCB_GC_FONT;
-        values[0] = xcb_font;
-        xcb_create_gc(xcb_connection,
-                      walk->bargc,
-                      walk->bar,
-                      mask,
-                      values);
-
-        xcb_map_window(xcb_connection, walk->bar);
+            xcb_map_window(xcb_connection, walk->bar);
+        } else {
+            mask = XCB_CONFIG_WINDOW_X |
+                   XCB_CONFIG_WINDOW_Y |
+                   XCB_CONFIG_WINDOW_WIDTH |
+                   XCB_CONFIG_WINDOW_HEIGHT;
+            values[0] = walk->rect.x;
+            values[1] = walk->rect.y;
+            values[2] = walk->rect.w;
+            values[3] = walk->rect.h;
+            xcb_configure_window(xcb_connection,
+                                 walk->bar,
+                                 mask,
+                                 values);
+        }
     }
     xcb_flush(xcb_connection);
 }
@@ -294,7 +310,7 @@ void draw_bars() {
             continue;
         }
         if (outputs_walk->bar == XCB_NONE) {
-            create_windows();
+            reconfig_windows();
         }
         uint32_t color = get_colorpixel("000000");
         xcb_change_gc(xcb_connection,
@@ -319,13 +335,23 @@ void draw_bars() {
                           XCB_GC_FOREGROUND,
                           &color);
 
-            xcb_image_text_8(xcb_connection,
-                             strlen(statusline),
-                             outputs_walk->bar,
-                             outputs_walk->bargc,
-                             outputs_walk->rect.w - get_string_width(statusline) - 4,
-                             font_height + 1,
-                             statusline);
+            int glyph_count;
+            xcb_char2b_t *text = (xcb_char2b_t*) convert_utf8_to_ucs2(statusline, &glyph_count);
+
+            xcb_void_cookie_t cookie;
+            cookie = xcb_image_text_16(xcb_connection,
+                                       glyph_count,
+                                       outputs_walk->bar,
+                                       outputs_walk->bargc,
+                                       outputs_walk->rect.w - get_string_width(text, glyph_count) - 4,
+                                       font_height + 1,
+                                       (xcb_char2b_t*) text);
+
+            xcb_generic_error_t *err = xcb_request_check(xcb_connection, cookie);
+
+            if (err != NULL) {
+                printf("XCB-Error: %d\n", err->error_code);
+            }
         }
         i3_ws *ws_walk;
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
@@ -357,12 +383,12 @@ void draw_bars() {
                           outputs_walk->bargc,
                           XCB_GC_FOREGROUND,
                           &color);
-            xcb_image_text_8(xcb_connection,
-                             strlen(ws_walk->name),
-                             outputs_walk->bar,
-                             outputs_walk->bargc,
-                             i + 5, font_height + 1,
-                             ws_walk->name);
+            xcb_image_text_16(xcb_connection,
+                              ws_walk->name_glyphs,
+                              outputs_walk->bar,
+                              outputs_walk->bargc,
+                              i + 5, font_height + 1,
+                              ws_walk->ucs2_name);
             i += 10 + ws_walk->name_width;
         }
 

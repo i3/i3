@@ -94,32 +94,38 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
         char *output_name;
 
         if (!strcmp(params->cur_key, "name")) {
-                params->workspaces_walk->name = malloc(sizeof(const unsigned char) * (len + 1));
-                strncpy(params->workspaces_walk->name, (const char*) val, len);
-        params->workspaces_walk->name[len] = '\0';
+            params->workspaces_walk->name = malloc(sizeof(const unsigned char) * (len + 1));
+            strncpy(params->workspaces_walk->name, (const char*) val, len);
+            params->workspaces_walk->name[len] = '\0';
 
-        params->workspaces_walk->name_width = get_string_width(params->workspaces_walk->name);
+            int ucs2_len;
+            xcb_char2b_t *ucs2_name = (xcb_char2b_t*) convert_utf8_to_ucs2(params->workspaces_walk->name, &ucs2_len);
+            params->workspaces_walk->ucs2_name = ucs2_name;
+            params->workspaces_walk->name_glyphs = ucs2_len;
+            params->workspaces_walk->name_width = get_string_width(params->workspaces_walk->ucs2_name,
+                                                                   params->workspaces_walk->name_glyphs);
 
-        printf("Got Workspace %s, name_width: %d\n",
-               params->workspaces_walk->name,
-               params->workspaces_walk->name_width);
-                FREE(params->cur_key);
+            printf("Got Workspace %s, name_width: %d, glyphs: %d\n",
+                   params->workspaces_walk->name,
+                   params->workspaces_walk->name_width,
+                   params->workspaces_walk->name_glyphs);
+            FREE(params->cur_key);
 
-                return 1;
+            return 1;
         }
 
         if (!strcmp(params->cur_key, "output")) {
-                output_name = malloc(sizeof(const unsigned char) * (len + 1));
-                strncpy(output_name, (const char*) val, len);
-        output_name[len] = '\0';
-                params->workspaces_walk->output = get_output_by_name(output_name);
+            output_name = malloc(sizeof(const unsigned char) * (len + 1));
+            strncpy(output_name, (const char*) val, len);
+            output_name[len] = '\0';
+            params->workspaces_walk->output = get_output_by_name(output_name);
 
-        TAILQ_INSERT_TAIL(params->workspaces_walk->output->workspaces,
-                  params->workspaces_walk,
-                  tailq);
+            TAILQ_INSERT_TAIL(params->workspaces_walk->output->workspaces,
+                              params->workspaces_walk,
+                              tailq);
 
-                free(output_name);
-                return 1;
+            FREE(output_name);
+            return 1;
         }
 
         return 0;
@@ -128,7 +134,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
 static int workspaces_start_map_cb(void *params_) {
     struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
 
-    i3_ws     *new_workspace = NULL;
+    i3_ws *new_workspace = NULL;
 
     if (params->cur_key == NULL) {
         new_workspace = malloc(sizeof(i3_ws));

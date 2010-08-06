@@ -1,6 +1,8 @@
 #ifndef WORKSPACES_H_
 #define WORKSPACES_H_
 
+#include <xcb/xproto.h>
+
 #include "common.h"
 
 typedef struct i3_ws i3_ws;
@@ -13,6 +15,8 @@ void free_workspaces();
 struct i3_ws {
     int                num;
     char               *name;
+    xcb_char2b_t       *ucs2_name;
+    int                name_glyphs;
     int                name_width;
     bool               visible;
     bool               focused;

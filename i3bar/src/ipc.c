@@ -47,12 +47,10 @@ void got_subscribe_reply(char *reply) {
 }
 
 void got_output_reply(char *reply) {
-    printf("Got Outputs-Data!\nDestroying Windows...\n");
-    destroy_windows();
-    printf("Parsing JSON...\n");
+    printf("Parsing Outputs-JSON...\n");
     parse_outputs_json(reply);
-    printf("Creating_Windows...\n");
-    create_windows();
+    printf("Reconfiguring Windows...\n");
+    reconfig_windows();
 }
 
 handler_t reply_handlers[] = {

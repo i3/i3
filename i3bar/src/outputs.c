@@ -11,6 +11,7 @@ struct outputs_json_params {
     i3_output           *outputs_walk;
     char                *cur_key;
     char                *json;
+    bool                init;
 };
 
 static int outputs_null_cb(void *params_) {
@@ -82,9 +83,11 @@ static int outputs_string_cb(void *params_, const unsigned char *val, unsigned i
         return 0;
     }
 
-    params->outputs_walk->name = malloc(sizeof(const unsigned char) * (len + 1));
-    strncpy(params->outputs_walk->name, (const char*) val, len);
-    params->outputs_walk->name[len] = '\0';
+    char *name = malloc(sizeof(const unsigned char) * (len + 1));
+    strncpy(name, (const char*) val, len);
+    name[len] = '\0';
+
+    params->outputs_walk->name = name;
 
     FREE(params->cur_key);
 
@@ -105,13 +108,25 @@ static int outputs_start_map_cb(void *params_) {
         new_output->workspaces = malloc(sizeof(struct ws_head));
         TAILQ_INIT(new_output->workspaces);
 
-        SLIST_INSERT_HEAD(params->outputs, new_output, slist);
-
-        params->outputs_walk = SLIST_FIRST(params->outputs);
+        params->outputs_walk = new_output;
 
         return 1;
     }
 
+    return 1;
+}
+
+static int outputs_end_map_cb(void *params_) {
+    struct outputs_json_params *params = (struct outputs_json_params*) params_;
+
+    i3_output *target = get_output_by_name(params->outputs_walk->name);
+
+    if (target == NULL) {
+        SLIST_INSERT_HEAD(outputs, params->outputs_walk, slist);
+    } else {
+        target->ws = params->outputs_walk->ws;
+        target->rect = params->outputs_walk->rect;
+    }
     return 1;
 }
 
@@ -135,18 +150,18 @@ yajl_callbacks outputs_callbacks = {
     &outputs_string_cb,
     &outputs_start_map_cb,
     &outputs_map_key_cb,
-    NULL,
+    &outputs_end_map_cb,
     NULL,
     NULL
 };
 
+void init_outputs() {
+    outputs = malloc(sizeof(struct outputs_head));
+    SLIST_INIT(outputs);
+}
+
 void parse_outputs_json(char *json) {
-    /* FIXME: Fasciliate stream-processing, i.e. allow starting to interpret
-     * JSON in chunks */
     struct outputs_json_params params;
-    printf(json);
-    params.outputs = malloc(sizeof(struct outputs_head));
-    SLIST_INIT(params.outputs);
 
     params.outputs_walk = NULL;
     params.cur_key = NULL;
@@ -173,16 +188,13 @@ void parse_outputs_json(char *json) {
     }
 
     yajl_free(handle);
-
-    if (outputs != NULL) {
-        FREE_SLIST(outputs, i3_output);
-    }
-
-    outputs = params.outputs;
 }
 
 i3_output *get_output_by_name(char *name) {
     i3_output *walk;
+    if (name == NULL) {
+        return NULL;
+    }
     SLIST_FOREACH(walk, outputs, slist) {
         if (!strcmp(walk->name, name)) {
             break;

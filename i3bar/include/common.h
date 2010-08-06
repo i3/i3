@@ -22,5 +22,6 @@ struct rect_t {
 #include "util.h"
 #include "workspaces.h"
 #include "xcb.h"
+#include "ucs2_to_utf8.h"
 
 #endif
