@@ -68,6 +68,7 @@ void got_workspace_event(char *event) {
 void got_output_event(char *event) {
     printf("Got Output Event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
+    i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
 }
 
 handler_t event_handlers[] = {
