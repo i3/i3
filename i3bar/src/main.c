@@ -6,10 +6,26 @@
 #include <errno.h>
 #include <ev.h>
 #include <getopt.h>
+#include <glob.h>
 
 #include "common.h"
 
-char *i3_default_sock_path = "/home/mero/.i3/ipc.sock";
+char *i3_default_sock_path = "~/.i3/ipc.sock";
+
+char *expand_path(char *path) {
+    static glob_t globbuf;
+    if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0) {
+        printf("glob() failed");
+        exit(EXIT_FAILURE);
+    }
+    char *result = strdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
+    if (result == NULL) {
+        printf("malloc() failed");
+        exit(EXIT_FAILURE);
+    }
+    globfree(&globbuf);
+    return result;
+}
 
 int main(int argc, char **argv) {
     int opt;
@@ -29,16 +45,13 @@ int main(int argc, char **argv) {
     while ((opt = getopt_long(argc, argv, "s:c:f:h", long_opt, &option_index)) != -1) {
         switch (opt) {
             case 's':
-                socket_path = malloc(strlen(optarg));
-                strcpy(socket_path, optarg);
+                socket_path = expand_path(optarg);
                 break;
             case 'c':
-                command = malloc(strlen(optarg));
-                strcpy(command, optarg);
+                command = strdup(optarg);
                 break;
             case 'f':
-                fontname = malloc(strlen(optarg));
-                strcpy(socket_path, optarg);
+                fontname = strdup(optarg);
                 break;
             default:
                 printf("Usage: %s [-s socket_path] [-c command] [-f font] [-h]\n", argv[0]);
@@ -57,7 +70,7 @@ int main(int argc, char **argv) {
 
     if (socket_path == NULL) {
         printf("No Socket Path Specified, default to %s\n", i3_default_sock_path);
-        socket_path = i3_default_sock_path;
+        socket_path = expand_path(i3_default_sock_path);
     }
 
     main_loop = ev_default_loop(0);
@@ -65,6 +78,8 @@ int main(int argc, char **argv) {
     init_xcb(fontname);
     init_outputs();
     init_connection(socket_path);
+
+    FREE(socket_path);
 
     subscribe_events();
 
