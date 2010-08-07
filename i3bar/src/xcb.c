@@ -9,6 +9,7 @@
 
 #include "common.h"
 
+/* We save the Atoms in an easy to access array, indexed by an enum */
 #define NUM_ATOMS 3
 
 enum {
@@ -19,17 +20,22 @@ enum {
 xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
 xcb_atom_t               atoms[NUM_ATOMS];
 
+/* Variables, that are the same for all functions at all times */
 xcb_connection_t *xcb_connection;
 xcb_screen_t     *xcb_screens;
 xcb_window_t     xcb_root;
 xcb_font_t       xcb_font;
 
+/* Event-Watchers, to interact with the user */
 ev_prepare *xcb_prep;
 ev_check   *xcb_chk;
 ev_io      *xcb_io;
 
-xcb_event_handlers_t xcb_event_handlers;
-
+/*
+ * Converts a colorstring to a colorpixel as expected from xcb_change_gc.
+ * s is assumed to be in the format "rrggbb"
+ *
+ */
 uint32_t get_colorpixel(const char *s) {
     char strings[3][3] = { { s[0], s[1], '\0'} ,
                            { s[2], s[3], '\0'} ,
@@ -40,8 +46,16 @@ uint32_t get_colorpixel(const char *s) {
     return (r << 16 | g << 8 | b);
 }
 
+/*
+ * Handle a button-press-event (i.c. a mouse click on one of our bars).
+ * We determine, wether the click occured on a ws-button or if the scroll-
+ * wheel was used and change the workspace appropriately
+ *
+ */
 void handle_button(xcb_button_press_event_t *event) {
     i3_ws *cur_ws;
+
+    /* Determine, which bar was clicked */
     i3_output *walk;
     xcb_window_t bar = event->event;
     SLIST_FOREACH(walk, outputs, slist) {
@@ -55,6 +69,7 @@ void handle_button(xcb_button_press_event_t *event) {
         return;
     }
 
+    /* TODO: Move this to exern get_ws_for_output() */
     TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
         if (cur_ws->visible) {
             break;
@@ -72,6 +87,8 @@ void handle_button(xcb_button_press_event_t *event) {
 
     switch (event->detail) {
         case 1:
+            /* Left Mousbutton. We determine, which button was clicked
+             * and set cur_ws accordingly */
             TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
                 printf("x = %d\n", x);
                 if (x < cur_ws->name_width + 10) {
@@ -84,17 +101,19 @@ void handle_button(xcb_button_press_event_t *event) {
             }
             break;
         case 4:
-            if (cur_ws == TAILQ_LAST(walk->workspaces, ws_head)) {
-                cur_ws = TAILQ_FIRST(walk->workspaces);
+            /* Mouse wheel down. We select the next ws */
+            if (cur_ws == TAILQ_FIRST(walk->workspaces, ws_head)) {
+                cur_ws = TAILQ_LAST(walk->workspaces);
             } else {
-                cur_ws = TAILQ_NEXT(cur_ws, tailq);
+                cur_ws = TAILQ_PREV(cur_ws, tailq);
             }
             break;
         case 5:
-            if (cur_ws == TAILQ_FIRST(walk->workspaces)) {
-                cur_ws = TAILQ_LAST(walk->workspaces, ws_head);
+            /* Mouse wheel up. We select the previos ws */
+            if (cur_ws == TAILQ_LAST(walk->workspaces)) {
+                cur_ws = TAILQ_FIRST(walk->workspaces, ws_head);
             } else {
-                cur_ws = TAILQ_PREV(cur_ws, ws_head, tailq);
+                cur_ws = TAILQ_NEXT(cur_ws, ws_head, tailq);
             }
             break;
     }
@@ -104,21 +123,42 @@ void handle_button(xcb_button_press_event_t *event) {
     i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, buffer);
 }
 
+/*
+ * An X-Event occured, we determine, what kind and call the appropriate handler
+ *
+ * FIXME: Merge this in ev_chk_cb(), the additional call is superflous
+ *
+ */
 void handle_xcb_event(xcb_generic_event_t *event) {
     switch (event->response_type & ~0x80) {
         case XCB_EXPOSE:
+            /* Expose-events happen, when the window needs to be redrawn */
             draw_bars();
             break;
         case XCB_BUTTON_PRESS:
+            /* Button-press-events are mouse-buttons clicked on one of our bars */
             handle_button((xcb_button_press_event_t*) event);
             break;
     }
 }
 
+/*
+ * This function is called immediately bevor the main loop locks. We flush xcb
+ * then (and only then)
+ *
+ */
 void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revenst) {
     xcb_flush(xcb_connection);
 }
 
+/*
+ * This function is called immediately after the main loop locks, so when one
+ * of the watchers registered an event.
+ * We check wether an X-Event arrived and handle it.
+ *
+ * FIXME: use a while-loop, to account for the xcb buffer
+ *
+ */
 void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
     xcb_generic_event_t *event;
     if ((event = xcb_poll_for_event(xcb_connection)) != NULL) {
@@ -127,11 +167,20 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
     FREE(event);
 }
 
+/*
+ * Dummy Callback. We only need this, so that the Prepare- and Check-Watchers
+ * are triggered
+ *
+ */
 void xcb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
-    /* Dummy Callback. We only need this, so that xcb-events trigger
-     * Prepare- and Check-Watchers */
 }
 
+/*
+ * Calculate the rendered width of a string with the configured font.
+ * The string has to be encoded in ucs2 and glyph_len has to be the length
+ * of the string (in width)
+ *
+ */
 int get_string_width(xcb_char2b_t *string, int glyph_len) {
     xcb_query_text_extents_cookie_t cookie;
     xcb_query_text_extents_reply_t *reply;
@@ -139,7 +188,8 @@ int get_string_width(xcb_char2b_t *string, int glyph_len) {
     int width;
 
     cookie = xcb_query_text_extents(xcb_connection, xcb_font, glyph_len, string);
-    if ((reply = xcb_query_text_extents_reply(xcb_connection, cookie, &error)) == NULL) {
+    reply = xcb_query_text_extents_reply(xcb_connection, cookie, &error);
+    if (reply == NULL) {
         printf("ERROR: Could not get text extents!");
         return 7;
     }
@@ -149,6 +199,10 @@ int get_string_width(xcb_char2b_t *string, int glyph_len) {
     return width;
 }
 
+/*
+ * Initialize xcb and use the specified fontname for text-rendering
+ *
+ */
 void init_xcb(char *fontname) {
     /* FIXME: xcb_connect leaks Memory */
     xcb_connection = xcb_connect(NULL, NULL);
@@ -160,30 +214,35 @@ void init_xcb(char *fontname) {
 
     /* We have to request the atoms we need */
     #define ATOM_DO(name) atom_cookies[name] = xcb_intern_atom(xcb_connection, 0, strlen(#name), #name);
-        #include "xcb_atoms.def"
+    #include "xcb_atoms.def"
 
     xcb_screens = xcb_setup_roots_iterator(xcb_get_setup(xcb_connection)).data;
     xcb_root = xcb_screens->root;
 
+    /* We load and allocate the font */
     xcb_font = xcb_generate_id(xcb_connection);
     xcb_open_font(xcb_connection,
                   xcb_font,
                   strlen(fontname),
                   fontname);
 
+    /* We also need the fontheight to configure our bars accordingly */
     xcb_list_fonts_with_info_cookie_t cookie;
     cookie = xcb_list_fonts_with_info(xcb_connection,
                                       1,
                                       strlen(fontname),
                                       fontname);
+    /* FIXME: push this to the end of init_xcb() */
     xcb_list_fonts_with_info_reply_t *reply;
     reply = xcb_list_fonts_with_info_reply(xcb_connection,
                                            cookie,
                                            NULL);
     font_height = reply->font_ascent + reply->font_descent;
     FREE(reply);
+
     printf("Calculated Font-height: %d\n", font_height);
 
+    /* The varios Watchers to communicate with xcb */
     xcb_io = malloc(sizeof(ev_io));
     xcb_prep = malloc(sizeof(ev_prepare));
     xcb_chk = malloc(sizeof(ev_check));
@@ -196,11 +255,17 @@ void init_xcb(char *fontname) {
     ev_prepare_start(main_loop, xcb_prep);
     ev_check_start(main_loop, xcb_chk);
 
-    /* FIXME: Maybe we can push that further backwards */
+    /* Now we get the atoms and save them in a nice data-structure */
     get_atoms();
 }
 
+/*
+ * Cleanup the xcb-stuff.
+ * Called once, before the program terminates.
+ *
+ */
 void clean_xcb() {
+    /* FIXME: destroy() the bars first */
     xcb_disconnect(xcb_connection);
 
     ev_check_stop(main_loop, xcb_chk);
@@ -212,6 +277,10 @@ void clean_xcb() {
     FREE(xcb_io);
 }
 
+/*
+ * Get the earlier requested atoms and save them in the prepared data-structure
+ *
+ */
 void get_atoms() {
     xcb_intern_atom_reply_t *reply;
     #define ATOM_DO(name) reply = xcb_intern_atom_reply(xcb_connection, atom_cookies[name], NULL); \
@@ -222,6 +291,10 @@ void get_atoms() {
     printf("Got Atoms\n");
 }
 
+/*
+ * Destroy the bar of the specified output
+ *
+ */
 void destroy_window(i3_output *output) {
     if (output == NULL) {
         return;
@@ -233,6 +306,10 @@ void destroy_window(i3_output *output) {
     output->bar = XCB_NONE;
 }
 
+/*
+ * Reconfigure all bars and create new for newly activated outputs
+ *
+ */
 void reconfig_windows() {
     uint32_t mask;
     uint32_t values[4];
@@ -240,6 +317,8 @@ void reconfig_windows() {
     i3_output *walk;
     SLIST_FOREACH(walk, outputs, slist) {
         if (!walk->active) {
+            /* If an output is not active, we destroy it's bar */
+            /* FIXME: Maybe we rather want to unmap? */
             printf("Destroying window for output %s\n", walk->name);
             destroy_window(walk);
             continue;
@@ -249,7 +328,9 @@ void reconfig_windows() {
 
             walk->bar = xcb_generate_id(xcb_connection);
             mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+            /* Black background */
             values[0] = xcb_screens->black_pixel;
+            /* The events we want to receive */
             values[1] = XCB_EVENT_MASK_EXPOSURE |
                         XCB_EVENT_MASK_BUTTON_PRESS;
             xcb_create_window(xcb_connection,
@@ -264,6 +345,7 @@ void reconfig_windows() {
                               mask,
                               values);
 
+            /* We want dock-windows (for now) */
             xcb_change_property(xcb_connection,
                                 XCB_PROP_MODE_REPLACE,
                                 walk->bar,
@@ -273,6 +355,7 @@ void reconfig_windows() {
                                 1,
                                 (unsigned char*) &atoms[_NET_WM_WINDOW_TYPE_DOCK]);
 
+            /* We also want a graphics-context (the "canvas" on which we draw) */
             walk->bargc = xcb_generate_id(xcb_connection);
             mask = XCB_GC_FONT;
             values[0] = xcb_font;
@@ -282,8 +365,10 @@ void reconfig_windows() {
                           mask,
                           values);
 
+            /* We finally map the bar (display it on screen) */
             xcb_map_window(xcb_connection, walk->bar);
         } else {
+            /* We already have a bar, so we just reconfigure it */
             mask = XCB_CONFIG_WINDOW_X |
                    XCB_CONFIG_WINDOW_Y |
                    XCB_CONFIG_WINDOW_WIDTH |
@@ -301,6 +386,10 @@ void reconfig_windows() {
     }
 }
 
+/*
+ * Render the bars, with buttons and statusline
+ *
+ */
 void draw_bars() {
     printf("Drawing Bars...\n");
     int i = 0;

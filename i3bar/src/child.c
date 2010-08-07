@@ -10,22 +10,33 @@
 
 #include "common.h"
 
-ev_io    *child_io;
+/* stdin- and sigchild-watchers */
+ev_io    *stdin_io;
 ev_child *child_sig;
 
+/*
+ * Stop and free() the stdin- and sigchild-watchers
+ *
+ */
 void cleanup() {
-    ev_io_stop(main_loop, child_io);
+    ev_io_stop(main_loop, stdin_io);
     ev_child_stop(main_loop, child_sig);
-    FREE(child_io);
+    FREE(stdin_io);
     FREE(child_sig);
     FREE(statusline);
 }
 
+/*
+ * Since we don't use colors and stuff, we strip the dzen-formatstrings
+ *
+ */
 void strip_dzen_formats(char *buffer) {
     char *src = buffer;
     char *dest = buffer;
     while (*src != '\0') {
+        /* ^ starts a format-string, ) ends it */
         if (*src == '^') {
+            /* We replace the seperators from i3status by pipe-symbols */
             if (!strncmp(src, "^ro", strlen("^ro"))) {
                 *(dest++) = ' ';
                 *(dest++) = '|';
@@ -41,10 +52,16 @@ void strip_dzen_formats(char *buffer) {
             dest++;
         }
     }
+    /* The last character is \n, which xcb cannot display */
     *(--dest) = '\0';
 }
 
-void child_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+/*
+ * Callbalk for stdin. We read a line from stdin, strip dzen-formats and store
+ * the result in statusline
+ *
+ */
+void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     int fd = watcher->fd;
     int n = 0;
     int rec = 0;
@@ -85,11 +102,25 @@ void child_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     draw_bars();
 }
 
+/*
+ * We received a sigchild, meaning, that the child-process terminated.
+ * We simply free the respective data-structures and don't care for input
+ * anymore
+ *
+ */
 void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
-    printf("Child (pid: %d) unexpectedly exited with status %d\n", child_pid, watcher->rstatus);
+    printf("Child (pid: %d) unexpectedly exited with status %d\n",
+           child_pid,
+           watcher->rstatus);
     cleanup();
 }
 
+/*
+ * Start a child-process with the specified command and reroute stdin.
+ * We actually start a $SHELL to execute the command so we don't have to care
+ * about arguments and such
+ *
+ */
 void start_child(char *command) {
     child_pid = 0;
     if (command != NULL) {
@@ -123,9 +154,9 @@ void start_child(char *command) {
 
     fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
 
-    child_io = malloc(sizeof(ev_io));
-    ev_io_init(child_io, &child_io_cb, STDIN_FILENO, EV_READ);
-    ev_io_start(main_loop, child_io);
+    stdin_io = malloc(sizeof(ev_io));
+    ev_io_init(stdin_io, &stdin_io_cb, STDIN_FILENO, EV_READ);
+    ev_io_start(main_loop, stdin_io);
 
     /* We must cleanup, if the child unexpectedly terminates */
     child_sig = malloc(sizeof(ev_io));
@@ -134,6 +165,11 @@ void start_child(char *command) {
 
 }
 
+/*
+ * kill()s the child-prozess (if existend) and closes and
+ * free()s the stdin- and sigchild-watchers
+ *
+ */
 void kill_child() {
     if (child_pid != 0) {
         kill(child_pid, SIGQUIT);

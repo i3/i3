@@ -13,6 +13,10 @@ ev_io *i3_connection;
 
 typedef void(*handler_t)(char*);
 
+/*
+ * Get a connect to the IPC-interface of i3 and return a filedescriptor
+ *
+ */
 int get_ipc_fd(const char *socket_path) {
     int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
     if (sockfd == -1) {
@@ -31,21 +35,39 @@ int get_ipc_fd(const char *socket_path) {
     return sockfd;
 }
 
+/*
+ * Called, when we get a reply to a command from i3.
+ * Since i3 does not give us much feedback on commands, we do not much
+ *
+ */
 void got_command_reply(char *reply) {
     /* FIXME: Error handling for command-replies */
 }
 
+/*
+ * Called, when we get a reply with workspaces-data
+ *
+ */
 void got_workspace_reply(char *reply) {
     printf("Got Workspace-Data!\n");
     parse_workspaces_json(reply);
     draw_bars();
 }
 
+/*
+ * Called, when we get a reply for a subscription.
+ * Since i3 does not give us much feedback on commands, we do not much
+ *
+ */
 void got_subscribe_reply(char *reply) {
     printf("Got Subscribe Reply: %s\n", reply);
     /* FIXME: Error handling for subscribe-commands */
 }
 
+/*
+ * Called, when we get a reply with outputs-data
+ *
+ */
 void got_output_reply(char *reply) {
     printf("Parsing Outputs-JSON...\n");
     parse_outputs_json(reply);
@@ -53,6 +75,7 @@ void got_output_reply(char *reply) {
     reconfig_windows();
 }
 
+/* Data-structure to easily call the reply-handlers later */
 handler_t reply_handlers[] = {
     &got_command_reply,
     &got_workspace_reply,
@@ -60,25 +83,40 @@ handler_t reply_handlers[] = {
     &got_output_reply,
 };
 
+/*
+ * Called, when a workspace-event arrives (i.e. the user changed the workspace)
+ *
+ */
 void got_workspace_event(char *event) {
     printf("Got Workspace Event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
 }
 
+/*
+ * Called, when an output-event arrives (i.e. the screen-configuration changed)
+ *
+ */
 void got_output_event(char *event) {
     printf("Got Output Event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
 }
 
+/* Data-structure to easily call the reply-handlers later */
 handler_t event_handlers[] = {
     &got_workspace_event,
     &got_output_event
 };
 
+/*
+ * Called, when we get a message from i3
+ *
+ */
 void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     printf("Got data!\n");
     int fd = watcher->fd;
+
+    /* First we only read the header, because we know it's length */
     uint32_t header_len = strlen(I3_IPC_MAGIC) + sizeof(uint32_t)*2;
     char *header = malloc(header_len);
     if (header == NULL) {
@@ -108,6 +146,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
         exit(EXIT_FAILURE);
     }
 
+    /* Know we read the rest of the message */
     char *walk = header + strlen(I3_IPC_MAGIC);
     uint32_t size = *((uint32_t*) walk);
     walk += sizeof(uint32_t);
@@ -133,6 +172,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     }
     buffer[size] = '\0';
 
+    /* And call the callback (indexed by the type) */
     if (type & (1 << 31)) {
         type ^= 1 << 31;
         event_handlers[type](buffer);
@@ -144,6 +184,11 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     FREE(buffer);
 }
 
+/*
+ * Sends a Message to i3.
+ * type must be a valid I3_IPC_MESSAGE_TYPE (see i3/ipc.h for further information)
+ *
+ */
 int i3_send_msg(uint32_t type, const char *payload) {
     uint32_t len = 0;
     if (payload != NULL) {
@@ -186,6 +231,11 @@ int i3_send_msg(uint32_t type, const char *payload) {
     return 1;
 }
 
+/*
+ * Initiate a connection to i3.
+ * socket-path must be a valid path to the ipc_socket of i3
+ *
+ */
 int init_connection(const char *socket_path) {
     int sockfd = get_ipc_fd(socket_path);
 
@@ -196,6 +246,10 @@ int init_connection(const char *socket_path) {
     return 1;
 }
 
+/*
+ * Subscribe to all the i3-events, we need
+ *
+ */
 void subscribe_events() {
     i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"workspace\", \"output\" ]");
 }

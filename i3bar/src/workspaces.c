@@ -5,6 +5,7 @@
 
 #include "common.h"
 
+/* A datatype to pass through the callbacks to save the state */
 struct workspaces_json_params {
     struct ws_head *workspaces;
     i3_ws          *workspaces_walk;
@@ -12,6 +13,10 @@ struct workspaces_json_params {
     char           *json;
 };
 
+/*
+ * Parse a booleant-value (visible, focused, urgent)
+ *
+ */
 static int workspaces_boolean_cb(void *params_, bool val) {
     struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
 
@@ -38,6 +43,10 @@ static int workspaces_boolean_cb(void *params_, bool val) {
     return 0;
 }
 
+/*
+ * Parse an integer (num or the rect)
+ *
+ */
 static int workspaces_integer_cb(void *params_, long val) {
     struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
 
@@ -75,6 +84,10 @@ static int workspaces_integer_cb(void *params_, long val) {
     return 0;
 }
 
+/*
+ * Parse a string (name, output)
+ *
+ */
 static int workspaces_string_cb(void *params_, const unsigned char *val, unsigned int len) {
 
         struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
@@ -82,10 +95,12 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
         char *output_name;
 
         if (!strcmp(params->cur_key, "name")) {
+            /* Save the name */
             params->workspaces_walk->name = malloc(sizeof(const unsigned char) * (len + 1));
             strncpy(params->workspaces_walk->name, (const char*) val, len);
             params->workspaces_walk->name[len] = '\0';
 
+            /* Convert the name to ucs2, save it's length in glyphs and calculate it'srendered width */
             int ucs2_len;
             xcb_char2b_t *ucs2_name = (xcb_char2b_t*) convert_utf8_to_ucs2(params->workspaces_walk->name, &ucs2_len);
             params->workspaces_walk->ucs2_name = ucs2_name;
@@ -103,6 +118,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
         }
 
         if (!strcmp(params->cur_key, "output")) {
+            /* We add the ws to the TAILQ of the output, it belongs to */
             output_name = malloc(sizeof(const unsigned char) * (len + 1));
             strncpy(output_name, (const char*) val, len);
             output_name[len] = '\0';
@@ -119,6 +135,10 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
         return 0;
 }
 
+/*
+ * We hit the start of a json-map (rect or a new output)
+ *
+ */
 static int workspaces_start_map_cb(void *params_) {
     struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
 
@@ -141,6 +161,12 @@ static int workspaces_start_map_cb(void *params_) {
     return 1;
 }
 
+/*
+ * Parse a key.
+ *
+ * Essentially we just save it in the parsing-state
+ *
+ */
 static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, unsigned int keyLen) {
     struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
     FREE(params->cur_key);
@@ -156,6 +182,7 @@ static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, uns
     return 1;
 }
 
+/* A datastructure to pass all these callbacks to yajl */
 yajl_callbacks workspaces_callbacks = {
     NULL,
     &workspaces_boolean_cb,
@@ -170,6 +197,10 @@ yajl_callbacks workspaces_callbacks = {
     NULL
 };
 
+/*
+ * Start parsing the received json-string
+ *
+ */
 void parse_workspaces_json(char *json) {
     /* FIXME: Fasciliate stream-processing, i.e. allow starting to interpret
      * JSON in chunks */
@@ -206,6 +237,10 @@ void parse_workspaces_json(char *json) {
     FREE(params.cur_key);
 }
 
+/*
+ * free() all workspace data-structures
+ *
+ */
 void free_workspaces() {
     i3_output *outputs_walk;
     SLIST_FOREACH(outputs_walk, outputs, slist) {

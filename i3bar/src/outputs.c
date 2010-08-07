@@ -6,6 +6,7 @@
 
 #include "common.h"
 
+/* A datatype to pass through the callbacks to save the state */
 struct outputs_json_params {
     struct outputs_head *outputs;
     i3_output           *outputs_walk;
@@ -14,10 +15,15 @@ struct outputs_json_params {
     bool                init;
 };
 
+/*
+ * Parse a null-value (current_workspace)
+ *
+ */
 static int outputs_null_cb(void *params_) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
 
     if (strcmp(params->cur_key, "current_workspace")) {
+        /* FIXME: Is this the correct behavior? */
         return 0;
     }
 
@@ -26,6 +32,10 @@ static int outputs_null_cb(void *params_) {
     return 1;
 }
 
+/*
+ * Parse a booleant-value (active)
+ *
+ */
 static int outputs_boolean_cb(void *params_, bool val) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
 
@@ -40,6 +50,10 @@ static int outputs_boolean_cb(void *params_, bool val) {
     return 1;
 }
 
+/*
+ * Parse an integer (current_workspace or the rect)
+ *
+ */
 static int outputs_integer_cb(void *params_, long val) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
 
@@ -76,6 +90,10 @@ static int outputs_integer_cb(void *params_, long val) {
     return 0;
 }
 
+/*
+ * Parse a string (name)
+ *
+ */
 static int outputs_string_cb(void *params_, const unsigned char *val, unsigned int len) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
 
@@ -94,6 +112,10 @@ static int outputs_string_cb(void *params_, const unsigned char *val, unsigned i
     return 1;
 }
 
+/*
+ * We hit the start of a json-map (rect or a new output)
+ *
+ */
 static int outputs_start_map_cb(void *params_) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
     i3_output *new_output = NULL;
@@ -116,8 +138,13 @@ static int outputs_start_map_cb(void *params_) {
     return 1;
 }
 
+/*
+ * We hit the end of a map (rect or a new output)
+ *
+ */
 static int outputs_end_map_cb(void *params_) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
+    /* FIXME: What is at the end of a rect? */
 
     i3_output *target = get_output_by_name(params->outputs_walk->name);
 
@@ -131,6 +158,12 @@ static int outputs_end_map_cb(void *params_) {
     return 1;
 }
 
+/*
+ * Parse a key.
+ *
+ * Essentially we just save it in the parsing-state
+ *
+ */
 static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, unsigned int keyLen) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
     FREE(params->cur_key);
@@ -142,6 +175,7 @@ static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, unsign
     return 1;
 }
 
+/* A datastructure to pass all these callbacks to yajl */
 yajl_callbacks outputs_callbacks = {
     &outputs_null_cb,
     &outputs_boolean_cb,
@@ -156,11 +190,19 @@ yajl_callbacks outputs_callbacks = {
     NULL
 };
 
+/*
+ * Initiate the output-list
+ *
+ */
 void init_outputs() {
     outputs = malloc(sizeof(struct outputs_head));
     SLIST_INIT(outputs);
 }
 
+/*
+ * Start parsing the received json-string
+ *
+ */
 void parse_outputs_json(char *json) {
     struct outputs_json_params params;
 
@@ -191,6 +233,10 @@ void parse_outputs_json(char *json) {
     yajl_free(handle);
 }
 
+/*
+ * Returns the output with the given name
+ *
+ */
 i3_output *get_output_by_name(char *name) {
     i3_output *walk;
     if (name == NULL) {

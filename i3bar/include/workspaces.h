@@ -9,22 +9,31 @@ typedef struct i3_ws i3_ws;
 
 TAILQ_HEAD(ws_head, i3_ws);
 
+/*
+ * Start parsing the received json-string
+ *
+ */
 void parse_workspaces_json();
+
+/*
+ * free() all workspace data-structures
+ *
+ */
 void free_workspaces();
 
 struct i3_ws {
-    int                num;
-    char               *name;
-    xcb_char2b_t       *ucs2_name;
-    int                name_glyphs;
-    int                name_width;
-    bool               visible;
-    bool               focused;
-    bool               urgent;
-    rect               rect;
-    struct i3_output   *output;
+    int                num;         /* The internal number of the ws */
+    char               *name;       /* The name (in utf8) of the ws */
+    xcb_char2b_t       *ucs2_name;  /* The name (in ucs2) of the ws */
+    int                name_glyphs; /* The length (in glyphs) of the name */
+    int                name_width;  /* The rendered width of the name */
+    bool               visible;     /* If the ws is currently visible on an output */
+    bool               focused;     /* If the ws is currently focused */
+    bool               urgent;      /* If the urgent-hint of the ws is set */
+    rect               rect;        /* The rect of the ws (not used (yet)) */
+    struct i3_output   *output;     /* The current output of the ws */
 
-    TAILQ_ENTRY(i3_ws) tailq;
+    TAILQ_ENTRY(i3_ws) tailq;       /* Pointer for the TAILQ-Macro */
 };
 
 #endif

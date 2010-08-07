@@ -3,12 +3,49 @@
 
 int font_height;
 
+/*
+ * Initialize xcb and use the specified fontname for text-rendering
+ *
+ */
 void init_xcb();
+
+/*
+ * Cleanup the xcb-stuff.
+ * Called once, before the program terminates.
+ *
+ */
 void clean_xcb();
+
+/*
+ * Get the earlier requested atoms and save them in the prepared data-structure
+ *
+ */
 void get_atoms();
-void destroy_windows();
+
+/*
+ * Destroy the bar of the specified output
+ *
+ */
+void destroy_window(i3_output *output);
+
+/*
+ * Reconfigure all bars and create new for newly activated outputs
+ *
+ */
 void reconfig_windows();
+
+/*
+ * Render the bars, with buttons and statusline
+ *
+ */
 void draw_bars();
+
+/*
+ * Calculate the rendered width of a string with the configured font.
+ * The string has to be encoded in ucs2 and glyph_len has to be the length
+ * of the string (in width)
+ *
+ */
 int get_string_width(xcb_char2b_t *string, int glyph_len);
 
 #endif

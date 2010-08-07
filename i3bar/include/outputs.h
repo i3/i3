@@ -10,23 +10,36 @@ typedef struct i3_output i3_output;
 SLIST_HEAD(outputs_head, i3_output);
 struct outputs_head *outputs;
 
+/*
+ * Start parsing the received json-string
+ *
+ */
 void        parse_outputs_json(char* json);
+
+/*
+ * Initiate the output-list
+ *
+ */
 void        init_outputs();
-void        free_outputs();
+
+/*
+ * Returns the output with the given name
+ *
+ */
 i3_output*  get_output_by_name(char* name);
 
 struct i3_output {
-	char*           name;
-	bool            active;
-	int             ws;
-	rect            rect;
+	char*           name;         /* Name of the output */
+	bool            active;       /* If the output is active */
+	int             ws;           /* The number of the currently visible ws */
+	rect            rect;         /* The rect (relative to the root-win) */
 
-	xcb_window_t    bar;
-	xcb_gcontext_t  bargc;
+	xcb_window_t    bar;          /* The id of the bar of the output */
+	xcb_gcontext_t  bargc;        /* The graphical context of the bar */
 
-	struct ws_head  *workspaces;
+	struct ws_head  *workspaces;  /* The workspaces on this output */
 
-	SLIST_ENTRY(i3_output) slist;
+	SLIST_ENTRY(i3_output) slist; /* Pointer for the SLIST-Macro */
 };
 
 #endif
