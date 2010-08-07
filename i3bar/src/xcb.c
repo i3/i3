@@ -137,12 +137,10 @@ void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revenst) {
  * of the watchers registered an event.
  * We check wether an X-Event arrived and handle it.
  *
- * FIXME: use a while-loop, to account for the xcb buffer
- *
  */
 void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
     xcb_generic_event_t *event;
-    if ((event = xcb_poll_for_event(xcb_connection)) == NULL) {
+    while ((event = xcb_poll_for_event(xcb_connection)) == NULL) {
         return;
     }
 
