@@ -1,3 +1,13 @@
+/*
+ * i3bar - an xcb-based status- and ws-bar for i3
+ *
+ * © 2010 Axel Wagner and contributors
+ *
+ * See file LICNSE for license information
+ *
+ * src/workspaces.c: Maintaining the workspace-lists
+ *
+ */
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

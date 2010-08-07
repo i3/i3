@@ -1,3 +1,13 @@
+/*
+ * i3bar - an xcb-based status- and ws-bar for i3
+ *
+ * © 2010 Axel Wagner and contributors
+ *
+ * See file LICNSE for license information
+ *
+ * src/child.c: Getting Input for the statusline
+ *
+ */
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>

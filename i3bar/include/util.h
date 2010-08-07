@@ -1,3 +1,11 @@
+/*
+ * i3bar - an xcb-based status- and ws-bar for i3
+ *
+ * © 2010 Axel Wagner and contributors
+ *
+ * See file LICNSE for license information
+ *
+ */
 #ifndef UTIL_H_
 #define UTIL_H_
 

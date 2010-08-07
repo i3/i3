@@ -1,3 +1,11 @@
+/*
+ * i3bar - an xcb-based status- and ws-bar for i3
+ *
+ * © 2010 Axel Wagner and contributors
+ *
+ * See file LICNSE for license information
+ *
+ */
 #include <stdio.h>
 #include <i3/ipc.h>
 #include <string.h>
