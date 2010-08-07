@@ -39,10 +39,11 @@ int main(int argc, char **argv) {
         { "command", required_argument, 0, 'c' },
         { "font",    required_argument, 0, 'f' },
         { "help",    no_argument,       0, 'h' },
+        { "version", no_argument,       0, 'v' },
         { NULL,      0,                 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "s:c:f:h", long_opt, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "s:c:f:hv", long_opt, &option_index)) != -1) {
         switch (opt) {
             case 's':
                 socket_path = expand_path(optarg);
@@ -53,6 +54,9 @@ int main(int argc, char **argv) {
             case 'f':
                 fontname = strdup(optarg);
                 break;
+            case 'v':
+                printf("i3bar version " I3BAR_VERSION " © 2010 Axel Wagner and contributors\n");
+                exit(EXIT_SUCCESS);
             default:
                 printf("Usage: %s [-s socket_path] [-c command] [-f font] [-h]\n", argv[0]);
                 printf("-s <socket_path>: Connect to i3 via <socket_path>\n");

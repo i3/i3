@@ -14,5 +14,12 @@ src/%.o: src/%.c ${HEADERS}
 	echo "CC $<"
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+install: all
+	echo "INSTALL"
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
+	$(INSTALL) -m 0755 i3bar $(DESTDIR)$(PREFIX)/bin
+
 clean:
 	rm src/*.o
+
+.PHONY: install clean
