@@ -124,25 +124,6 @@ void handle_button(xcb_button_press_event_t *event) {
 }
 
 /*
- * An X-Event occured, we determine, what kind and call the appropriate handler
- *
- * FIXME: Merge this in ev_chk_cb(), the additional call is superflous
- *
- */
-void handle_xcb_event(xcb_generic_event_t *event) {
-    switch (event->response_type & ~0x80) {
-        case XCB_EXPOSE:
-            /* Expose-events happen, when the window needs to be redrawn */
-            draw_bars();
-            break;
-        case XCB_BUTTON_PRESS:
-            /* Button-press-events are mouse-buttons clicked on one of our bars */
-            handle_button((xcb_button_press_event_t*) event);
-            break;
-    }
-}
-
-/*
  * This function is called immediately bevor the main loop locks. We flush xcb
  * then (and only then)
  *
@@ -161,8 +142,19 @@ void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revenst) {
  */
 void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
     xcb_generic_event_t *event;
-    if ((event = xcb_poll_for_event(xcb_connection)) != NULL) {
-        handle_xcb_event(event);
+    if ((event = xcb_poll_for_event(xcb_connection)) == NULL) {
+        return;
+    }
+
+    switch (event->response_type & ~0x80) {
+        case XCB_EXPOSE:
+            /* Expose-events happen, when the window needs to be redrawn */
+            draw_bars();
+            break;
+        case XCB_BUTTON_PRESS:
+            /* Button-press-events are mouse-buttons clicked on one of our bars */
+            handle_button((xcb_button_press_event_t*) event);
+            break;
     }
     FREE(event);
 }
