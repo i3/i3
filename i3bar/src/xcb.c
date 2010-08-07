@@ -102,18 +102,18 @@ void handle_button(xcb_button_press_event_t *event) {
             break;
         case 4:
             /* Mouse wheel down. We select the next ws */
-            if (cur_ws == TAILQ_FIRST(walk->workspaces, ws_head)) {
-                cur_ws = TAILQ_LAST(walk->workspaces);
+            if (cur_ws == TAILQ_FIRST(walk->workspaces)) {
+                cur_ws = TAILQ_LAST(walk->workspaces, ws_head);
             } else {
-                cur_ws = TAILQ_PREV(cur_ws, tailq);
+                cur_ws = TAILQ_PREV(cur_ws, ws_head, tailq);
             }
             break;
         case 5:
             /* Mouse wheel up. We select the previos ws */
-            if (cur_ws == TAILQ_LAST(walk->workspaces)) {
-                cur_ws = TAILQ_FIRST(walk->workspaces, ws_head);
+            if (cur_ws == TAILQ_LAST(walk->workspaces, ws_head)) {
+                cur_ws = TAILQ_FIRST(walk->workspaces);
             } else {
-                cur_ws = TAILQ_NEXT(cur_ws, ws_head, tailq);
+                cur_ws = TAILQ_NEXT(cur_ws, tailq);
             }
             break;
     }
@@ -256,7 +256,12 @@ void init_xcb(char *fontname) {
  *
  */
 void clean_xcb() {
-    /* FIXME: destroy() the bars first */
+    i3_output *walk;
+    SLIST_FOREACH(walk, outputs, slist) {
+        destroy_window(walk);
+    }
+    FREE_SLIST(outputs, i3_output);
+
     xcb_disconnect(xcb_connection);
 
     ev_check_stop(main_loop, xcb_chk);
