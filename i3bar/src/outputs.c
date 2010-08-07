@@ -22,11 +22,6 @@ struct outputs_json_params {
 static int outputs_null_cb(void *params_) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
 
-    if (strcmp(params->cur_key, "current_workspace")) {
-        /* FIXME: Is this the correct behavior? */
-        return 0;
-    }
-
     FREE(params->cur_key);
 
     return 1;
