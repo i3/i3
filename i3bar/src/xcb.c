@@ -222,15 +222,6 @@ void init_xcb(char *fontname) {
                                       1,
                                       strlen(fontname),
                                       fontname);
-    /* FIXME: push this to the end of init_xcb() */
-    xcb_list_fonts_with_info_reply_t *reply;
-    reply = xcb_list_fonts_with_info_reply(xcb_connection,
-                                           cookie,
-                                           NULL);
-    font_height = reply->font_ascent + reply->font_descent;
-    FREE(reply);
-
-    printf("Calculated Font-height: %d\n", font_height);
 
     /* The varios Watchers to communicate with xcb */
     xcb_io = malloc(sizeof(ev_io));
@@ -247,6 +238,16 @@ void init_xcb(char *fontname) {
 
     /* Now we get the atoms and save them in a nice data-structure */
     get_atoms();
+
+    /* Now we calculate the font-height */
+    xcb_list_fonts_with_info_reply_t *reply;
+    reply = xcb_list_fonts_with_info_reply(xcb_connection,
+                                           cookie,
+                                           NULL);
+    font_height = reply->font_ascent + reply->font_descent;
+    FREE(reply);
+
+    printf("Calculated Font-height: %d\n", font_height);
 }
 
 /*
