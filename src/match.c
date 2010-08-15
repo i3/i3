@@ -15,6 +15,17 @@
 #include "all.h"
 
 /*
+ * Initializes the Match data structure. This function is necessary because the
+ * members representing boolean values (like dock) need to be initialized with
+ * -1 instead of 0.
+ *
+ */
+void match_init(Match *match) {
+    memset(match, 0, sizeof(Match));
+    match->dock = -1;
+}
+
+/*
  * Check if a match is empty. This is necessary while parsing commands to see
  * whether the user specified a match at all.
  *
@@ -30,6 +41,7 @@ bool match_is_empty(Match *match) {
             match->instance == NULL &&
             match->id == XCB_NONE &&
             match->con_id == NULL &&
+            match->dock == -1 &&
             match->floating == M_ANY);
 }
 
@@ -51,6 +63,12 @@ bool match_matches_window(Match *match, i3Window *window) {
 
     if (match->id != XCB_NONE && window->id == match->id) {
         LOG("match made by window id (%d)\n", window->id);
+        return true;
+    }
+
+    LOG("match->dock = %d, window->dock = %d\n", match->dock, window->dock);
+    if (match->dock != -1 && window->dock == match->dock) {
+        LOG("match made by dock\n");
         return true;
     }
 

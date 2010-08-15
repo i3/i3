@@ -145,6 +145,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_name_legacy(cwindow, xcb_get_property_reply(conn, title_cookie, NULL));
     window_update_name(cwindow, xcb_get_property_reply(conn, utf8_title_cookie, NULL));
 
+    xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
+    if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DOCK])) {
+        cwindow->dock = true;
+        LOG("this window is a dock\n");
+    }
+
+
     Con *nc;
     Match *match;
 
@@ -175,9 +182,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     nc->window = cwindow;
     x_reinit(nc);
 
-    xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
-    if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DOCK]))
-        LOG("this window is a dock\n");
 
     /* set floating if necessary */
     if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DIALOG]) ||

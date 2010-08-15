@@ -228,6 +228,9 @@ struct Window {
 
     /** Whether the application used _NET_WM_NAME */
     bool uses_net_wm_name;
+
+    /** Whether the window says it is a dock window */
+    bool dock;
 };
 
 struct Match {
@@ -239,6 +242,7 @@ struct Match {
     char *class;
     char *instance;
     char *mark;
+    int dock;
     xcb_window_t id;
     Con *con_id;
     enum { M_ANY = 0, M_TILING, M_FLOATING } floating;

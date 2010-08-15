@@ -296,7 +296,9 @@ int main(int argc, char *argv[]) {
     /* proof-of-concept for assignments */
     Con *ws = workspace_get("3");
 
-    Match *current_swallow = scalloc(sizeof(Match));
+    Match *current_swallow = smalloc(sizeof(Match));
+    match_init(current_swallow);
+
     TAILQ_INSERT_TAIL(&(ws->swallow_head), current_swallow, matches);
 
     current_swallow->insert_where = M_ACTIVE;

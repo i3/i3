@@ -1,3 +1,7 @@
+/*
+ * vim:ts=4:sw=4:expandtab
+ *
+ */
 #include <yajl/yajl_common.h>
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
@@ -16,7 +20,8 @@ static int json_start_map(void *ctx) {
     LOG("start of map\n");
     if (parsing_swallows) {
         LOG("TODO: create new swallow\n");
-        current_swallow = scalloc(sizeof(Match));
+        current_swallow = smalloc(sizeof(Match));
+        match_init(current_swallow);
         TAILQ_INSERT_TAIL(&(json_node->swallow_head), current_swallow, matches);
     } else {
         if (!parsing_rect)
@@ -103,6 +108,9 @@ static int json_int(void *ctx, long val) {
     if (parsing_swallows) {
         if (strcasecmp(last_key, "id") == 0) {
             current_swallow->id = val;
+        }
+        if (strcasecmp(last_key, "dock") == 0) {
+            current_swallow->dock = true;
         }
     }
 
