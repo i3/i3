@@ -215,7 +215,7 @@ struct Window {
     char *class_class;
     char *class_instance;
 
-    /** The name of the window as it will be passod to X11 (in UCS2 if the
+    /** The name of the window as it will be passed to X11 (in UCS2 if the
      * application supports _NET_WM_NAME, in COMPOUND_TEXT otherwise). */
     char *name_x;
 
