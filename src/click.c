@@ -315,7 +315,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         }
 
         /* Set focus in any case */
-        set_focus(conn, client, true);
+        set_focus(conn, client, false);
 
         /* Let’s see if this was on the borders (= resize). If not, we’re done */
         DLOG("press button on x=%d, y=%d\n", event->event_x, event->event_y);
