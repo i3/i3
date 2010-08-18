@@ -184,14 +184,14 @@ void xcb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 int get_string_width(xcb_char2b_t *string, int glyph_len) {
     xcb_query_text_extents_cookie_t cookie;
     xcb_query_text_extents_reply_t *reply;
-    xcb_generic_error_t *error;
+    xcb_generic_error_t *error = NULL;
     int width;
 
     cookie = xcb_query_text_extents(xcb_connection, xcb_font, glyph_len, string);
     reply = xcb_query_text_extents_reply(xcb_connection, cookie, &error);
-    if (reply == NULL) {
-        printf("ERROR: Could not get text extents!");
-        return 7;
+    if (error != NULL) {
+        printf("ERROR: Could not get text extents! XCB-errorcode: %d\n", error->error_code);
+        exit(EXIT_FAILURE);
     }
 
     width = reply->overall_width;
@@ -221,17 +221,26 @@ void init_xcb(char *fontname) {
 
     /* We load and allocate the font */
     xcb_font = xcb_generate_id(xcb_connection);
-    xcb_open_font(xcb_connection,
-                  xcb_font,
-                  strlen(fontname),
-                  fontname);
+    xcb_void_cookie_t open_font_cookie;
+    open_font_cookie = xcb_open_font_checked(xcb_connection,
+                                             xcb_font,
+                                             strlen(fontname),
+                                             fontname);
+
+    xcb_generic_error_t *err = xcb_request_check(xcb_connection,
+                                                 open_font_cookie);
+
+    if (err != NULL) {
+        printf("ERROR: Could not open font! XCB-Error-Code: %d\n", err->error_code);
+        exit(EXIT_FAILURE);
+    }
 
     /* We also need the fontheight to configure our bars accordingly */
-    xcb_list_fonts_with_info_cookie_t cookie;
-    cookie = xcb_list_fonts_with_info(xcb_connection,
-                                      1,
-                                      strlen(fontname),
-                                      fontname);
+    xcb_list_fonts_with_info_cookie_t font_info_cookie;
+    font_info_cookie = xcb_list_fonts_with_info(xcb_connection,
+                                                1,
+                                                strlen(fontname),
+                                                fontname);
 
     /* The varios Watchers to communicate with xcb */
     xcb_io = malloc(sizeof(ev_io));
@@ -252,7 +261,7 @@ void init_xcb(char *fontname) {
     /* Now we calculate the font-height */
     xcb_list_fonts_with_info_reply_t *reply;
     reply = xcb_list_fonts_with_info_reply(xcb_connection,
-                                           cookie,
+                                           font_info_cookie,
                                            NULL);
     font_height = reply->font_ascent + reply->font_descent;
     FREE(reply);
@@ -290,6 +299,10 @@ void clean_xcb() {
 void get_atoms() {
     xcb_intern_atom_reply_t *reply;
     #define ATOM_DO(name) reply = xcb_intern_atom_reply(xcb_connection, atom_cookies[name], NULL); \
+        if (reply == NULL) { \
+            printf("ERROR: Could not get atom %s\n", #name); \
+            exit(EXIT_FAILURE); \
+        } \
         atoms[name] = reply->atom; \
         free(reply);
 
@@ -320,6 +333,9 @@ void reconfig_windows() {
     uint32_t mask;
     uint32_t values[4];
 
+    xcb_void_cookie_t   cookie;
+    xcb_generic_error_t *err;
+
     i3_output *walk;
     SLIST_FOREACH(walk, outputs, slist) {
         if (!walk->active) {
@@ -339,17 +355,21 @@ void reconfig_windows() {
             /* The events we want to receive */
             values[1] = XCB_EVENT_MASK_EXPOSURE |
                         XCB_EVENT_MASK_BUTTON_PRESS;
-            xcb_create_window(xcb_connection,
-                              xcb_screens->root_depth,
-                              walk->bar,
-                              xcb_root,
-                              walk->rect.x, walk->rect.y,
-                              walk->rect.w, font_height + 6,
-                              1,
-                              XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                              xcb_screens->root_visual,
-                              mask,
-                              values);
+            cookie = xcb_create_window_checked(xcb_connection,
+                                               xcb_screens->root_depth,
+                                               walk->bar,
+                                               xcb_root,
+                                               walk->rect.x, walk->rect.y,
+                                               walk->rect.w, font_height + 6,
+                                               1,
+                                               XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                                               xcb_screens->root_visual,
+                                               mask,
+                                               values);
+            if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
+                printf("ERROR: Could not create Window. XCB-errorcode: %d\n", err->error_code);
+                exit(EXIT_FAILURE);
+            }
 
             /* We want dock-windows (for now) */
             xcb_change_property(xcb_connection,
@@ -360,19 +380,33 @@ void reconfig_windows() {
                                 32,
                                 1,
                                 (unsigned char*) &atoms[_NET_WM_WINDOW_TYPE_DOCK]);
+            if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
+                printf("ERROR: Could not set dock mode. XCB-errorcode: %d\n", err->error_code);
+                exit(EXIT_FAILURE);
+            }
 
             /* We also want a graphics-context (the "canvas" on which we draw) */
             walk->bargc = xcb_generate_id(xcb_connection);
             mask = XCB_GC_FONT;
             values[0] = xcb_font;
-            xcb_create_gc(xcb_connection,
-                          walk->bargc,
-                          walk->bar,
-                          mask,
-                          values);
+            cookie = xcb_create_gc_checked(xcb_connection,
+                                           walk->bargc,
+                                           walk->bar,
+                                           mask,
+                                           values);
+
+            if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
+                printf("ERROR: Could not create graphical context. XCB-errorcode: %d\n", err->error_code);
+                exit(EXIT_FAILURE);
+            }
 
             /* We finally map the bar (display it on screen) */
-            xcb_map_window(xcb_connection, walk->bar);
+            cookie = xcb_map_window_checked(xcb_connection, walk->bar);
+
+            if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
+                printf("ERROR: Could not map window. XCB-errorcode: %d\n", err->error_code);
+                exit(EXIT_FAILURE);
+            }
         } else {
             /* We already have a bar, so we just reconfigure it */
             mask = XCB_CONFIG_WINDOW_X |
@@ -384,10 +418,15 @@ void reconfig_windows() {
             values[2] = walk->rect.w;
             values[3] = font_height + 6;
             printf("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
-            xcb_configure_window(xcb_connection,
-                                 walk->bar,
-                                 mask,
-                                 values);
+            cookie = xcb_configure_window_checked(xcb_connection,
+                                                  walk->bar,
+                                                  mask,
+                                                  values);
+
+            if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
+                printf("ERROR: Could not reconfigure window. XCB-errorcode: %d\n", err->error_code);
+                exit(EXIT_FAILURE);
+            }
         }
     }
 }
