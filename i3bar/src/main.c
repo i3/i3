@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
             default:
                 printf("Usage: %s [-s socket_path] [-c command] [-f font] [-h]\n", argv[0]);
                 printf("-s <socket_path>: Connect to i3 via <socket_path>\n");
-                printf("-c <command>: Execute <command> to get sdtin\n");
+                printf("-c <command>: Execute <command> to get stdin\n");
                 printf("-f <font>: Use X-Core-Font <font> for display\n");
                 printf("-h: Display this help-message and exit\n");
                 exit(EXIT_SUCCESS);
