@@ -162,7 +162,7 @@ commands: /* empty */
             TAILQ_REMOVE(&owindows, current, owindows);
             free(current);
         }
-        memset(&current_match, 0, sizeof(Match));
+        match_init(&current_match);
     }
     ;
 
@@ -185,7 +185,7 @@ matchstart:
     '['
     {
         printf("start\n");
-        memset(&current_match, '\0', sizeof(Match));
+        match_init(&current_match);
         TAILQ_INIT(&owindows);
         /* copy all_cons */
         Con *con;
