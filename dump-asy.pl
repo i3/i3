@@ -22,7 +22,7 @@ say $tmp "treeLevelStep = 2cm;";
 sub dump_node {
 	my ($n, $parent) = @_;
 
-    my $o = ($n->{orientation} == 0 ? "h" : "v");
+    my $o = ($n->{orientation} == 0 ? "u" : ($n->{orientation} == 1 ? "h" : "v"));
     my $w = (defined($n->{window}) ? $n->{window} : "N");
     my $na = $n->{name};
     $na =~ s/#/\\#/g;
