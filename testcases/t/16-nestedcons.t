@@ -23,6 +23,7 @@ my $expected = {
     rect => ignore(),
     layout => 0,
     focus => ignore(),
+    focused => 0,
     urgent => 0,
     'floating-nodes' => ignore(),
 };
