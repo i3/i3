@@ -193,13 +193,13 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
         if (inplace_restart) {
                 if (con->window != NULL) {
-                ystr("swallows");
-                y(array_open);
-                y(map_open);
-                ystr("id");
-                y(integer, con->window->id);
-                y(map_close);
-                y(array_close);
+			ystr("swallows");
+			y(array_open);
+			y(map_open);
+			ystr("id");
+			y(integer, con->window->id);
+			y(map_close);
+			y(array_close);
                 }
         }
 
