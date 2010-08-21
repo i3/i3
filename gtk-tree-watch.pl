@@ -12,7 +12,7 @@ use v5.10;
 
 use Gtk2 '-init';
 use Gtk2::SimpleMenu;
-use Glib qw/TRUE FALSE/; 
+use Glib qw/TRUE FALSE/;
 
 my $window = Gtk2::Window->new('toplevel');
 $window->signal_connect('delete_event' => sub { Gtk2->main_quit; });
@@ -93,10 +93,10 @@ sub copy_node {
 	    $cr->rectangle(0, 0, $w, $h);
 	    $cr->fill();
 
-    	    return FALSE;
+        return FALSE;
 	});
 
-    	$box->pack_end($area, 1, 1, 0);
+    $box->pack_end($area, 1, 1, 0);
     }
 }
 
@@ -120,17 +120,17 @@ sub copy_tree {
 
     # convert the tree back to json so we only rebuild/redraw when the tree is changed
     my $json = encode_json($tree);
-    if($json ne $json_prev) {
+    if ($json ne $json_prev) {
         $json_prev = $json;
 
-	# rebuild the tree and the layout
+        # rebuild the tree and the layout
         $tree_store->clear();
-	if(defined($layout_box)) {
-	    $layout_container->remove($layout_box);
-	}
+        if(defined($layout_box)) {
+            $layout_container->remove($layout_box);
+        }
         copy_node($tree);
-    	$layout_container->add($layout_box);
-	$layout_container->show_all();
+        $layout_container->add($layout_box);
+        $layout_container->show_all();
 
         # keep things expanded, otherwise the tree collapses every reload which is more annoying then this :-)
         $tree_view->expand_all();
