@@ -43,6 +43,7 @@ struct i3_output {
 	rect            rect;         /* The rect (relative to the root-win) */
 
 	xcb_window_t    bar;          /* The id of the bar of the output */
+    xcb_pixmap_t    buffer;       /* An extra pixmap for double-buffering */
 	xcb_gcontext_t  bargc;        /* The graphical context of the bar */
 
 	struct ws_head  *workspaces;  /* The workspaces on this output */
