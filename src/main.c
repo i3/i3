@@ -293,17 +293,6 @@ int main(int argc, char *argv[]) {
         tree_init();
     tree_render();
 
-    /* proof-of-concept for assignments */
-    Con *ws = workspace_get("3");
-
-    Match *current_swallow = smalloc(sizeof(Match));
-    match_init(current_swallow);
-
-    TAILQ_INSERT_TAIL(&(ws->swallow_head), current_swallow, matches);
-
-    current_swallow->insert_where = M_ACTIVE;
-    current_swallow->class = strdup("xterm");
-
     struct ev_loop *loop = ev_loop_new(0);
     if (loop == NULL)
             die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
