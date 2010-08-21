@@ -85,7 +85,7 @@ my $old_count = sum_nodes(\@content);
 $i3->command('split v')->recv;
 
 @content = @{get_ws_content($tmp)};
-my $old_count = sum_nodes(\@content);
+$old_count = sum_nodes(\@content);
 
 $i3->command('split v')->recv;
 
