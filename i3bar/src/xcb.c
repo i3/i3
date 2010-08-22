@@ -157,7 +157,7 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
     switch (event->response_type & ~0x80) {
         case XCB_EXPOSE:
             /* Expose-events happen, when the window needs to be redrawn */
-            draw_bars();
+            redraw_bars();
             break;
         case XCB_BUTTON_PRESS:
             /* Button-press-events are mouse-buttons clicked on one of our bars */
@@ -568,4 +568,23 @@ void draw_bars() {
 
         i = 0;
     }
+}
+
+/*
+ * Redraw the bars, i.e. simply copy the buffer to the barwindow
+ *
+ */
+void redraw_bars() {
+    i3_output *outputs_walk;
+    SLIST_FOREACH(outputs_walk, outputs, slist) {
+        xcb_copy_area(xcb_connection,
+                      outputs_walk->buffer,
+                      outputs_walk->bar,
+                      outputs_walk->bargc,
+                      0, 0,
+                      0, 0,
+                      outputs_walk->rect.w,
+                      outputs_walk->rect.h);
+        xcb_flush(xcb_connection);
+    }            
 }

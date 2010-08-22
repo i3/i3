@@ -49,6 +49,12 @@ void reconfig_windows();
 void draw_bars();
 
 /*
+ * Redraw the bars, i.e. simply copy the buffer to the barwindow
+ *
+ */
+void redraw_bars();
+
+/*
  * Calculate the rendered width of a string with the configured font.
  * The string has to be encoded in ucs2 and glyph_len has to be the length
  * of the string (in width)
