@@ -37,38 +37,8 @@ void cleanup() {
 }
 
 /*
- * Since we don't use colors and stuff, we strip the dzen-formatstrings
- *
- */
-void strip_dzen_formats(char *buffer) {
-    char *src = buffer;
-    char *dest = buffer;
-    while (*src != '\0') {
-        /* ^ starts a format-string, ) ends it */
-        if (*src == '^') {
-            /* We replace the seperators from i3status by pipe-symbols */
-            if (!strncmp(src, "^ro", strlen("^ro"))) {
-                *(dest++) = ' ';
-                *(dest++) = '|';
-                *(dest++) = ' ';
-            }
-            while (*src != ')') {
-                src++;
-            }
-            src++;
-        } else {
-            *dest = *src;
-            src++;
-            dest++;
-        }
-    }
-    /* The last character is \n, which xcb cannot display */
-    *(--dest) = '\0';
-}
-
-/*
- * Callbalk for stdin. We read a line from stdin, strip dzen-formats and store
- * the result in statusline
+ * Callbalk for stdin. We read a line from stdin and store the result
+ * in statusline
  *
  */
 void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
@@ -105,7 +75,6 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         FREE(buffer);
         return;
     }
-    strip_dzen_formats(buffer);
     FREE(statusline);
     statusline = buffer;
     printf("%s\n", buffer);
