@@ -13,9 +13,15 @@
 #include <xcb/xcb_event.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <string.h>
 #include <i3/ipc.h>
 #include <ev.h>
+
+#include <X11/Xlib.h>
+#include <X11/XKBlib.h>
+#include <X11/extensions/XKB.h>
 
 #include "common.h"
 
@@ -36,10 +42,15 @@ xcb_screen_t     *xcb_screens;
 xcb_window_t     xcb_root;
 xcb_font_t       xcb_font;
 
+Display          *xkb_dpy;
+int              xkb_event_base;
+int              mod_pressed;
+
 /* Event-Watchers, to interact with the user */
 ev_prepare *xcb_prep;
 ev_check   *xcb_chk;
 ev_io      *xcb_io;
+ev_io      *xkb_io;
 
 /*
  * Converts a colorstring to a colorpixel as expected from xcb_change_gc.
@@ -54,6 +65,54 @@ uint32_t get_colorpixel(const char *s) {
     uint8_t g = strtol(strings[1], NULL, 16);
     uint8_t b = strtol(strings[2], NULL, 16);
     return (r << 16 | g << 8 | b);
+}
+
+/*
+ * Hides all bars (unmaps them)
+ *
+ */
+void hide_bars() {
+    i3_output *walk;
+    SLIST_FOREACH(walk, outputs, slist) {
+        xcb_unmap_window(xcb_connection, walk->bar);
+    }
+}
+
+/*
+ * Unhides all bars (maps them)
+ *
+ */
+void unhide_bars() {
+    i3_output           *walk;
+    xcb_void_cookie_t   cookie;
+    xcb_generic_error_t *err;
+    uint32_t            mask;
+    uint32_t            values[4];
+
+    SLIST_FOREACH(walk, outputs, slist) {
+        if (walk->bar == XCB_NONE) {
+            continue;
+        }
+        mask = XCB_CONFIG_WINDOW_X |
+               XCB_CONFIG_WINDOW_Y |
+               XCB_CONFIG_WINDOW_WIDTH |
+               XCB_CONFIG_WINDOW_HEIGHT;
+        values[0] = walk->rect.x;
+        values[1] = walk->rect.y + walk->rect.h - font_height - 6;
+        values[2] = walk->rect.w;
+        values[3] = font_height + 6;
+        printf("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
+        cookie = xcb_configure_window_checked(xcb_connection,
+                                              walk->bar,
+                                              mask,
+                                              values);
+
+        if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
+            printf("ERROR: Could not reconfigure window. XCB-errorcode: %d\n", err->error_code);
+            exit(EXIT_FAILURE);
+        }
+        xcb_map_window(xcb_connection, walk->bar);
+    }
 }
 
 /*
@@ -176,6 +235,45 @@ void xcb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 }
 
 /*
+ * We need to bind to the modifier per XKB. Sadly, XCB does not implement this
+ *
+ */
+void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+    XkbEvent ev;
+    int modstate;
+
+    printf("Got XKB-Event!\n");
+
+    while (XPending(xkb_dpy)) {
+        XNextEvent(xkb_dpy, (XEvent*)&ev);
+
+        if (ev.type != xkb_event_base) {
+            printf("ERROR: No Xkb-Event!\n");
+            continue;
+        }
+
+        if (ev.any.xkb_type != XkbStateNotify) {
+            printf("ERROR: No State Notify!\n");
+            continue;
+        }
+
+        unsigned int mods = ev.state.mods;
+        modstate = mods & Mod4Mask;
+    }
+
+    if (modstate != mod_pressed) {
+        if (modstate == 0) {
+            printf("Mod4 got released!\n");
+            hide_bars();
+        } else {
+            printf("Mod4 got pressed!\n");
+            unhide_bars();
+        }
+        mod_pressed = modstate;
+    }
+}
+
+/*
  * Calculate the rendered width of a string with the configured font.
  * The string has to be encoded in ucs2 and glyph_len has to be the length
  * of the string (in width)
@@ -242,18 +340,55 @@ void init_xcb(char *fontname) {
                                                 strlen(fontname),
                                                 fontname);
 
+    int xkb_major, xkb_minor, xkb_errbase, xkb_err;
+    xkb_major = XkbMajorVersion;
+    xkb_minor = XkbMinorVersion;
+
+    xkb_dpy = XkbOpenDisplay(":0",
+                             &xkb_event_base,
+                             &xkb_errbase,
+                             &xkb_major,
+                             &xkb_minor,
+                             &xkb_err);
+
+    if (xkb_dpy == NULL) {
+        printf("ERROR: No XKB!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (fcntl(ConnectionNumber(xkb_dpy), F_SETFD, FD_CLOEXEC) == -1) {
+        fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
+        exit(EXIT_FAILURE);
+    }
+
+    int i1;
+    if (!XkbQueryExtension(xkb_dpy, &i1, &xkb_event_base, &xkb_errbase, &xkb_major, &xkb_minor)) {
+        printf("ERROR: XKB not supported by X-server!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (!XkbSelectEvents(xkb_dpy, XkbUseCoreKbd, XkbStateNotifyMask, XkbStateNotifyMask)) {
+        printf("Could not grab Key!\n");
+        exit(EXIT_FAILURE);
+    }
+
     /* The varios Watchers to communicate with xcb */
     xcb_io = malloc(sizeof(ev_io));
     xcb_prep = malloc(sizeof(ev_prepare));
     xcb_chk = malloc(sizeof(ev_check));
+    xkb_io = malloc(sizeof(ev_io));
 
     ev_io_init(xcb_io, &xcb_io_cb, xcb_get_file_descriptor(xcb_connection), EV_READ);
     ev_prepare_init(xcb_prep, &xcb_prep_cb);
     ev_check_init(xcb_chk, &xcb_chk_cb);
+    ev_io_init(xkb_io, &xkb_io_cb, ConnectionNumber(xkb_dpy), EV_READ);
 
     ev_io_start(main_loop, xcb_io);
     ev_prepare_start(main_loop, xcb_prep);
     ev_check_start(main_loop, xcb_chk);
+    ev_io_start(main_loop, xkb_io);
+
+    XFlush(xkb_dpy);
 
     /* Now we get the atoms and save them in a nice data-structure */
     get_atoms();
