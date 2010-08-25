@@ -13,9 +13,15 @@
 #include <xcb/xcb_event.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <string.h>
 #include <i3/ipc.h>
 #include <ev.h>
+
+#include <X11/Xlib.h>
+#include <X11/XKBlib.h>
+#include <X11/extensions/XKB.h>
 
 #include "common.h"
 
@@ -36,10 +42,15 @@ xcb_screen_t     *xcb_screens;
 xcb_window_t     xcb_root;
 xcb_font_t       xcb_font;
 
+Display          *xkb_dpy;
+int              xkb_event_base;
+int              mod_pressed;
+
 /* Event-Watchers, to interact with the user */
 ev_prepare *xcb_prep;
 ev_check   *xcb_chk;
 ev_io      *xcb_io;
+ev_io      *xkb_io;
 
 /*
  * Converts a colorstring to a colorpixel as expected from xcb_change_gc.
@@ -54,6 +65,67 @@ uint32_t get_colorpixel(const char *s) {
     uint8_t g = strtol(strings[1], NULL, 16);
     uint8_t b = strtol(strings[2], NULL, 16);
     return (r << 16 | g << 8 | b);
+}
+
+/*
+ * Hides all bars (unmaps them)
+ *
+ */
+void hide_bars() {
+    if (!config.hide_on_modifier) {
+        return;
+    }
+
+    i3_output *walk;
+    SLIST_FOREACH(walk, outputs, slist) {
+        xcb_unmap_window(xcb_connection, walk->bar);
+    }
+    stop_child();
+}
+
+/*
+ * Unhides all bars (maps them)
+ *
+ */
+void unhide_bars() {
+    if (!config.hide_on_modifier) {
+        return;
+    }
+
+    i3_output           *walk;
+    xcb_void_cookie_t   cookie;
+    xcb_generic_error_t *err;
+    uint32_t            mask;
+    uint32_t            values[5];
+
+    cont_child();
+
+    SLIST_FOREACH(walk, outputs, slist) {
+        if (walk->bar == XCB_NONE) {
+            continue;
+        }
+        mask = XCB_CONFIG_WINDOW_X |
+               XCB_CONFIG_WINDOW_Y |
+               XCB_CONFIG_WINDOW_WIDTH |
+               XCB_CONFIG_WINDOW_HEIGHT |
+               XCB_CONFIG_WINDOW_STACK_MODE;
+        values[0] = walk->rect.x;
+        values[1] = walk->rect.y + walk->rect.h - font_height - 6;
+        values[2] = walk->rect.w;
+        values[3] = font_height + 6;
+        values[4] = XCB_STACK_MODE_ABOVE;
+        printf("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
+        cookie = xcb_configure_window_checked(xcb_connection,
+                                              walk->bar,
+                                              mask,
+                                              values);
+
+        if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
+            printf("ERROR: Could not reconfigure window. XCB-errorcode: %d\n", err->error_code);
+            exit(EXIT_FAILURE);
+        }
+        xcb_map_window(xcb_connection, walk->bar);
+    }
 }
 
 /*
@@ -157,7 +229,7 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
     switch (event->response_type & ~0x80) {
         case XCB_EXPOSE:
             /* Expose-events happen, when the window needs to be redrawn */
-            redraw_bars();
+            draw_bars();
             break;
         case XCB_BUTTON_PRESS:
             /* Button-press-events are mouse-buttons clicked on one of our bars */
@@ -173,6 +245,45 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
  *
  */
 void xcb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+}
+
+/*
+ * We need to bind to the modifier per XKB. Sadly, XCB does not implement this
+ *
+ */
+void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+    XkbEvent ev;
+    int modstate;
+
+    printf("Got XKB-Event!\n");
+
+    while (XPending(xkb_dpy)) {
+        XNextEvent(xkb_dpy, (XEvent*)&ev);
+
+        if (ev.type != xkb_event_base) {
+            printf("ERROR: No Xkb-Event!\n");
+            continue;
+        }
+
+        if (ev.any.xkb_type != XkbStateNotify) {
+            printf("ERROR: No State Notify!\n");
+            continue;
+        }
+
+        unsigned int mods = ev.state.mods;
+        modstate = mods & Mod4Mask;
+    }
+
+    if (modstate != mod_pressed) {
+        if (modstate == 0) {
+            printf("Mod4 got released!\n");
+            hide_bars();
+        } else {
+            printf("Mod4 got pressed!\n");
+            unhide_bars();
+        }
+        mod_pressed = modstate;
+    }
 }
 
 /*
@@ -227,12 +338,59 @@ void init_xcb(char *fontname) {
                                              strlen(fontname),
                                              fontname);
 
+    xcb_generic_error_t *err = xcb_request_check(xcb_connection,
+                                                 open_font_cookie);
+
+    if (err != NULL) {
+        printf("ERROR: Could not open font! XCB-Error-Code: %d\n", err->error_code);
+        exit(EXIT_FAILURE);
+    }
+
     /* We also need the fontheight to configure our bars accordingly */
     xcb_list_fonts_with_info_cookie_t font_info_cookie;
     font_info_cookie = xcb_list_fonts_with_info(xcb_connection,
                                                 1,
                                                 strlen(fontname),
                                                 fontname);
+
+    if (config.hide_on_modifier) {
+        int xkb_major, xkb_minor, xkb_errbase, xkb_err;
+        xkb_major = XkbMajorVersion;
+        xkb_minor = XkbMinorVersion;
+
+        xkb_dpy = XkbOpenDisplay(":0",
+                                 &xkb_event_base,
+                                 &xkb_errbase,
+                                 &xkb_major,
+                                 &xkb_minor,
+                                 &xkb_err);
+
+        if (xkb_dpy == NULL) {
+            printf("ERROR: No XKB!\n");
+            exit(EXIT_FAILURE);
+        }
+
+        if (fcntl(ConnectionNumber(xkb_dpy), F_SETFD, FD_CLOEXEC) == -1) {
+            fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
+            exit(EXIT_FAILURE);
+        }
+
+        int i1;
+        if (!XkbQueryExtension(xkb_dpy, &i1, &xkb_event_base, &xkb_errbase, &xkb_major, &xkb_minor)) {
+            printf("ERROR: XKB not supported by X-server!\n");
+            exit(EXIT_FAILURE);
+        }
+
+        if (!XkbSelectEvents(xkb_dpy, XkbUseCoreKbd, XkbStateNotifyMask, XkbStateNotifyMask)) {
+            printf("Could not grab Key!\n");
+            exit(EXIT_FAILURE);
+        }
+
+        xkb_io = malloc(sizeof(ev_io));
+        ev_io_init(xkb_io, &xkb_io_cb, ConnectionNumber(xkb_dpy), EV_READ);
+        ev_io_start(main_loop, xkb_io);
+        XFlush(xkb_dpy);
+    }
 
     /* The varios Watchers to communicate with xcb */
     xcb_io = malloc(sizeof(ev_io));
@@ -249,14 +407,6 @@ void init_xcb(char *fontname) {
 
     /* Now we get the atoms and save them in a nice data-structure */
     get_atoms();
-
-    xcb_generic_error_t *err = xcb_request_check(xcb_connection,
-                                                 open_font_cookie);
-
-    if (err != NULL) {
-        printf("ERROR: Could not open font! XCB-Error-Code: %d\n", err->error_code);
-        exit(EXIT_FAILURE);
-    }
 
     /* Now we calculate the font-height */
     xcb_list_fonts_with_info_reply_t *reply;
@@ -331,8 +481,9 @@ void destroy_window(i3_output *output) {
  */
 void reconfig_windows() {
     uint32_t mask;
-    uint32_t values[4];
+    uint32_t values[5];
 
+    xcb_void_cookie_t   cookie;
     xcb_generic_error_t *err;
 
     i3_output *walk;
@@ -348,77 +499,63 @@ void reconfig_windows() {
             printf("Creating Window for output %s\n", walk->name);
 
             walk->bar = xcb_generate_id(xcb_connection);
-            walk->buffer = xcb_generate_id(xcb_connection);
-            mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+            mask = XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
             /* Black background */
             values[0] = xcb_screens->black_pixel;
+            /* If hide_on_modifier is set, i3 is not supposed to manage our bar-windows */
+            values[1] = config.hide_on_modifier;
             /* The events we want to receive */
-            values[1] = XCB_EVENT_MASK_EXPOSURE |
+            values[2] = XCB_EVENT_MASK_EXPOSURE |
                         XCB_EVENT_MASK_BUTTON_PRESS;
-
-            xcb_void_cookie_t win_cookie = xcb_create_window_checked(xcb_connection,
-                                                                     xcb_screens->root_depth,
-                                                                     walk->bar,
-                                                                     xcb_root,
-                                                                     walk->rect.x, walk->rect.y,
-                                                                     walk->rect.w, font_height + 6,
-                                                                     1,
-                                                                     XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                                                     xcb_screens->root_visual,
-                                                                     mask,
-                                                                     values);
-            
-            xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                                    xcb_screens->root_depth,
-                                                                    walk->buffer,
-                                                                    walk->bar,
-                                                                    walk->rect.w,
-                                                                    walk->rect.h);
+            cookie = xcb_create_window_checked(xcb_connection,
+                                               xcb_screens->root_depth,
+                                               walk->bar,
+                                               xcb_root,
+                                               walk->rect.x, walk->rect.y,
+                                               walk->rect.w, font_height + 6,
+                                               1,
+                                               XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                                               xcb_screens->root_visual,
+                                               mask,
+                                               values);
+            if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
+                printf("ERROR: Could not create Window. XCB-errorcode: %d\n", err->error_code);
+                exit(EXIT_FAILURE);
+            }
 
             /* We want dock-windows (for now) */
-            xcb_void_cookie_t prop_cookie = xcb_change_property(xcb_connection,
-                                                                XCB_PROP_MODE_REPLACE,
-                                                                walk->bar,
-                                                                atoms[_NET_WM_WINDOW_TYPE],
-                                                                atoms[ATOM],
-                                                                32,
-                                                                1,
-                                                                (unsigned char*) &atoms[_NET_WM_WINDOW_TYPE_DOCK]);
+            xcb_change_property(xcb_connection,
+                                XCB_PROP_MODE_REPLACE,
+                                walk->bar,
+                                atoms[_NET_WM_WINDOW_TYPE],
+                                atoms[ATOM],
+                                32,
+                                1,
+                                (unsigned char*) &atoms[_NET_WM_WINDOW_TYPE_DOCK]);
+            if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
+                printf("ERROR: Could not set dock mode. XCB-errorcode: %d\n", err->error_code);
+                exit(EXIT_FAILURE);
+            }
 
             /* We also want a graphics-context (the "canvas" on which we draw) */
             walk->bargc = xcb_generate_id(xcb_connection);
             mask = XCB_GC_FONT;
             values[0] = xcb_font;
-            xcb_void_cookie_t gc_cookie = xcb_create_gc_checked(xcb_connection,
-                                                                walk->bargc,
-                                                                walk->bar,
-                                                                mask,
-                                                                values);
+            cookie = xcb_create_gc_checked(xcb_connection,
+                                           walk->bargc,
+                                           walk->bar,
+                                           mask,
+                                           values);
 
-            /* We finally map the bar (display it on screen) */
-            xcb_void_cookie_t map_cookie = xcb_map_window_checked(xcb_connection, walk->bar);
-
-            if ((err = xcb_request_check(xcb_connection, win_cookie)) != NULL) {
-                printf("ERROR: Could not create Window. XCB-errorcode: %d\n", err->error_code);
-                exit(EXIT_FAILURE);
-            }
-
-            if ((err = xcb_request_check(xcb_connection, pm_cookie)) != NULL) {
-                printf("ERROR: Could not create Pixmap. XCB-errorcode: %d\n", err->error_code);
-                exit(EXIT_FAILURE);
-            }
- 
-            if ((err = xcb_request_check(xcb_connection, prop_cookie)) != NULL) {
-                printf("ERROR: Could not set dock mode. XCB-errorcode: %d\n", err->error_code);
-                exit(EXIT_FAILURE);
-            }
-
-            if ((err = xcb_request_check(xcb_connection, gc_cookie)) != NULL) {
+            if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
                 printf("ERROR: Could not create graphical context. XCB-errorcode: %d\n", err->error_code);
                 exit(EXIT_FAILURE);
             }
 
-            if ((err = xcb_request_check(xcb_connection, map_cookie)) != NULL) {
+            /* We finally map the bar (display it on screen) */
+            cookie = xcb_map_window_checked(xcb_connection, walk->bar);
+
+            if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
                 printf("ERROR: Could not map window. XCB-errorcode: %d\n", err->error_code);
                 exit(EXIT_FAILURE);
             }
@@ -427,37 +564,24 @@ void reconfig_windows() {
             mask = XCB_CONFIG_WINDOW_X |
                    XCB_CONFIG_WINDOW_Y |
                    XCB_CONFIG_WINDOW_WIDTH |
-                   XCB_CONFIG_WINDOW_HEIGHT;
+                   XCB_CONFIG_WINDOW_HEIGHT |
+                   XCB_CONFIG_WINDOW_STACK_MODE;
             values[0] = walk->rect.x;
             values[1] = walk->rect.y + walk->rect.h - font_height - 6;
             values[2] = walk->rect.w;
             values[3] = font_height + 6;
+            values[4] = XCB_STACK_MODE_ABOVE;
             printf("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
-            xcb_void_cookie_t cfg_cookie = xcb_configure_window_checked(xcb_connection,
-                                                                        walk->bar,
-                                                                        mask,
-                                                                        values);
+            cookie = xcb_configure_window_checked(xcb_connection,
+                                                  walk->bar,
+                                                  mask,
+                                                  values);
 
-            xcb_free_pixmap(xcb_connection, walk->buffer);
-            walk->buffer = xcb_generate_id(xcb_connection);
-
-            xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                                    xcb_screens->root_depth,
-                                                                    walk->buffer,
-                                                                    walk->bar,
-                                                                    walk->rect.w,
-                                                                    walk->rect.h);
-
-            if ((err = xcb_request_check(xcb_connection, cfg_cookie)) != NULL) {
+            if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
                 printf("ERROR: Could not reconfigure window. XCB-errorcode: %d\n", err->error_code);
                 exit(EXIT_FAILURE);
             }
-
-            if ((err = xcb_request_check(xcb_connection, pm_cookie)) != NULL) {
-                printf("ERROR: Could not create Pixmap. XCB-errorcode: %d\n", err->error_code);
-                exit(EXIT_FAILURE);
-            }
-         }
+        }
     }
 }
 
@@ -484,7 +608,7 @@ void draw_bars() {
                       &color);
         xcb_rectangle_t rect = { 0, 0, outputs_walk->rect.w, font_height + 6 };
         xcb_poly_fill_rectangle(xcb_connection,
-                                outputs_walk->buffer,
+                                outputs_walk->bar,
                                 outputs_walk->bargc,
                                 1,
                                 &rect);
@@ -506,7 +630,7 @@ void draw_bars() {
             xcb_void_cookie_t cookie;
             cookie = xcb_image_text_16(xcb_connection,
                                        glyph_count,
-                                       outputs_walk->buffer,
+                                       outputs_walk->bar,
                                        outputs_walk->bargc,
                                        outputs_walk->rect.w - get_string_width(text, glyph_count) - 4,
                                        font_height + 1,
@@ -528,6 +652,8 @@ void draw_bars() {
             if (ws_walk->urgent) {
                 printf("WS %s is urgent!\n", ws_walk->name);
                 color = get_colorpixel("002400");
+                /* The urgent-hint should get noticed, so we unhide the bars shortly */
+                unhide_bars();
             }
             xcb_change_gc(xcb_connection,
                           outputs_walk->bargc,
@@ -539,7 +665,7 @@ void draw_bars() {
                           &color);
             xcb_rectangle_t rect = { i + 1, 1, ws_walk->name_width + 8, font_height + 4 };
             xcb_poly_fill_rectangle(xcb_connection,
-                                    outputs_walk->buffer,
+                                    outputs_walk->bar,
                                     outputs_walk->bargc,
                                     1,
                                     &rect);
@@ -550,41 +676,13 @@ void draw_bars() {
                           &color);
             xcb_image_text_16(xcb_connection,
                               ws_walk->name_glyphs,
-                              outputs_walk->buffer,
+                              outputs_walk->bar,
                               outputs_walk->bargc,
                               i + 5, font_height + 1,
                               ws_walk->ucs2_name);
             i += 10 + ws_walk->name_width;
         }
 
-        xcb_copy_area(xcb_connection,
-                      outputs_walk->buffer,
-                      outputs_walk->bar,
-                      outputs_walk->bargc,
-                      0, 0,
-                      0, 0,
-                      outputs_walk->rect.w,
-                      outputs_walk->rect.h);
-
         i = 0;
     }
-}
-
-/*
- * Redraw the bars, i.e. simply copy the buffer to the barwindow
- *
- */
-void redraw_bars() {
-    i3_output *outputs_walk;
-    SLIST_FOREACH(outputs_walk, outputs, slist) {
-        xcb_copy_area(xcb_connection,
-                      outputs_walk->buffer,
-                      outputs_walk->bar,
-                      outputs_walk->bargc,
-                      0, 0,
-                      0, 0,
-                      outputs_walk->rect.w,
-                      outputs_walk->rect.h);
-        xcb_flush(xcb_connection);
-    }            
 }
