@@ -52,6 +52,8 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         n = read(fd, buffer + rec, buffer_len - rec);
         if (n == -1) {
             if (errno == EAGAIN) {
+                /* remove trailing newline and finish up */
+                buffer[rec-1] = '\0';
                 break;
             }
             printf("ERROR: read() failed!");
@@ -66,6 +68,8 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
                 buffer_len += STDIN_CHUNK_SIZE;
                 FREE(tmp);
             } else {
+                /* remove trailing newline and finish up */
+                buffer[rec-1] = '\0';
                 break;
             }
         }
