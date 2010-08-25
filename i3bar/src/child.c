@@ -176,7 +176,7 @@ void start_child(char *command) {
 }
 
 /*
- * kill()s the child-prozess (if existend) and closes and
+ * kill()s the child-process (if existent) and closes and
  * free()s the stdin- and sigchild-watchers
  *
  */
@@ -185,4 +185,24 @@ void kill_child() {
         kill(child_pid, SIGQUIT);
     }
     cleanup();
+}
+
+/*
+ * Sends a SIGSTOP to the child-process (if existent)
+ *
+ */
+void stop_child() {
+    if (child_pid != 0) {
+        kill(child_pid, SIGSTOP);
+    }
+}
+
+/*
+ * Sends a SIGCONT to the child-process (if existent)
+ *
+ */
+void cont_child() {
+    if (child_pid != 0) {
+        kill(child_pid, SIGCONT);
+    }
 }

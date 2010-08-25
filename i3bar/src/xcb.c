@@ -76,6 +76,7 @@ void hide_bars() {
     SLIST_FOREACH(walk, outputs, slist) {
         xcb_unmap_window(xcb_connection, walk->bar);
     }
+    stop_child();
 }
 
 /*
@@ -88,6 +89,8 @@ void unhide_bars() {
     xcb_generic_error_t *err;
     uint32_t            mask;
     uint32_t            values[4];
+
+    cont_child();
 
     SLIST_FOREACH(walk, outputs, slist) {
         if (walk->bar == XCB_NONE) {
