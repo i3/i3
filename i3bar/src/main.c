@@ -35,6 +35,17 @@ char *expand_path(char *path) {
     return result;
 }
 
+void print_usage(char *elf_name) {
+    printf("Usage: %s [-s sock_path] [-c command] [-m] [-f font] [-h]\n", elf_name);
+    printf("-s <sock_path>\tConnect to i3 via <sock_path>\n");
+    printf("-c <command>\tExecute <command> to get stdin\n");
+    printf("-m\t\tHide the bars, when mod4 is not pressed.\n");
+    printf("\t\tIf -c is specified, the childprocess is sent a SIGSTOP on hiding,\n");
+    printf("\t\tand a SIGCONT on unhiding of the bars\n");
+    printf("-f <font>\tUse X-Core-Font <font> for display\n");
+    printf("-h\t\tDisplay this help-message and exit\n");
+}
+
 int main(int argc, char **argv) {
     int opt;
     int option_index = 0;
@@ -65,12 +76,9 @@ int main(int argc, char **argv) {
             case 'v':
                 printf("i3bar version " I3BAR_VERSION " © 2010 Axel Wagner and contributors\n");
                 exit(EXIT_SUCCESS);
+                break;
             default:
-                printf("Usage: %s [-s socket_path] [-c command] [-f font] [-h]\n", argv[0]);
-                printf("-s <socket_path>: Connect to i3 via <socket_path>\n");
-                printf("-c <command>: Execute <command> to get stdin\n");
-                printf("-f <font>: Use X-Core-Font <font> for display\n");
-                printf("-h: Display this help-message and exit\n");
+                print_usage(argv[0]);
                 exit(EXIT_SUCCESS);
                 break;
         }
