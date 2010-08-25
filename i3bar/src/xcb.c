@@ -484,11 +484,13 @@ void reconfig_windows() {
             printf("Creating Window for output %s\n", walk->name);
 
             walk->bar = xcb_generate_id(xcb_connection);
-            mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+            mask = XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
             /* Black background */
             values[0] = xcb_screens->black_pixel;
+            /* i3 is not supposed to manage our bar-windows */
+            values[1] = 1;
             /* The events we want to receive */
-            values[1] = XCB_EVENT_MASK_EXPOSURE |
+            values[2] = XCB_EVENT_MASK_EXPOSURE |
                         XCB_EVENT_MASK_BUTTON_PRESS;
             cookie = xcb_create_window_checked(xcb_connection,
                                                xcb_screens->root_depth,
