@@ -88,7 +88,7 @@ void unhide_bars() {
     xcb_void_cookie_t   cookie;
     xcb_generic_error_t *err;
     uint32_t            mask;
-    uint32_t            values[4];
+    uint32_t            values[5];
 
     cont_child();
 
@@ -99,11 +99,13 @@ void unhide_bars() {
         mask = XCB_CONFIG_WINDOW_X |
                XCB_CONFIG_WINDOW_Y |
                XCB_CONFIG_WINDOW_WIDTH |
-               XCB_CONFIG_WINDOW_HEIGHT;
+               XCB_CONFIG_WINDOW_HEIGHT |
+               XCB_CONFIG_WINDOW_STACK_MODE;
         values[0] = walk->rect.x;
         values[1] = walk->rect.y + walk->rect.h - font_height - 6;
         values[2] = walk->rect.w;
         values[3] = font_height + 6;
+        values[4] = XCB_STACK_MODE_ABOVE;
         printf("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
         cookie = xcb_configure_window_checked(xcb_connection,
                                               walk->bar,
@@ -469,7 +471,7 @@ void destroy_window(i3_output *output) {
  */
 void reconfig_windows() {
     uint32_t mask;
-    uint32_t values[4];
+    uint32_t values[5];
 
     xcb_void_cookie_t   cookie;
     xcb_generic_error_t *err;
@@ -552,11 +554,13 @@ void reconfig_windows() {
             mask = XCB_CONFIG_WINDOW_X |
                    XCB_CONFIG_WINDOW_Y |
                    XCB_CONFIG_WINDOW_WIDTH |
-                   XCB_CONFIG_WINDOW_HEIGHT;
+                   XCB_CONFIG_WINDOW_HEIGHT |
+                   XCB_CONFIG_WINDOW_STACK_MODE;
             values[0] = walk->rect.x;
             values[1] = walk->rect.y + walk->rect.h - font_height - 6;
             values[2] = walk->rect.w;
             values[3] = font_height + 6;
+            values[4] = XCB_STACK_MODE_ABOVE;
             printf("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
             cookie = xcb_configure_window_checked(xcb_connection,
                                                   walk->bar,
