@@ -638,6 +638,8 @@ void draw_bars() {
             if (ws_walk->urgent) {
                 printf("WS %s is urgent!\n", ws_walk->name);
                 color = get_colorpixel("002400");
+                /* The urgent-hint should get noticed, so we unhide the bars shortly */
+                unhide_bars();
             }
             xcb_change_gc(xcb_connection,
                           outputs_walk->bargc,
