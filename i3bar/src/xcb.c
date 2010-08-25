@@ -72,6 +72,10 @@ uint32_t get_colorpixel(const char *s) {
  *
  */
 void hide_bars() {
+    if (!config.hide_on_modifier) {
+        return;
+    }
+
     i3_output *walk;
     SLIST_FOREACH(walk, outputs, slist) {
         xcb_unmap_window(xcb_connection, walk->bar);
@@ -84,6 +88,10 @@ void hide_bars() {
  *
  */
 void unhide_bars() {
+    if (!config.hide_on_modifier) {
+        return;
+    }
+
     i3_output           *walk;
     xcb_void_cookie_t   cookie;
     xcb_generic_error_t *err;
@@ -345,55 +353,57 @@ void init_xcb(char *fontname) {
                                                 strlen(fontname),
                                                 fontname);
 
-    int xkb_major, xkb_minor, xkb_errbase, xkb_err;
-    xkb_major = XkbMajorVersion;
-    xkb_minor = XkbMinorVersion;
+    if (config.hide_on_modifier) {
+        int xkb_major, xkb_minor, xkb_errbase, xkb_err;
+        xkb_major = XkbMajorVersion;
+        xkb_minor = XkbMinorVersion;
 
-    xkb_dpy = XkbOpenDisplay(":0",
-                             &xkb_event_base,
-                             &xkb_errbase,
-                             &xkb_major,
-                             &xkb_minor,
-                             &xkb_err);
+        xkb_dpy = XkbOpenDisplay(":0",
+                                 &xkb_event_base,
+                                 &xkb_errbase,
+                                 &xkb_major,
+                                 &xkb_minor,
+                                 &xkb_err);
 
-    if (xkb_dpy == NULL) {
-        printf("ERROR: No XKB!\n");
-        exit(EXIT_FAILURE);
-    }
+        if (xkb_dpy == NULL) {
+            printf("ERROR: No XKB!\n");
+            exit(EXIT_FAILURE);
+        }
 
-    if (fcntl(ConnectionNumber(xkb_dpy), F_SETFD, FD_CLOEXEC) == -1) {
-        fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
-        exit(EXIT_FAILURE);
-    }
+        if (fcntl(ConnectionNumber(xkb_dpy), F_SETFD, FD_CLOEXEC) == -1) {
+            fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
+            exit(EXIT_FAILURE);
+        }
 
-    int i1;
-    if (!XkbQueryExtension(xkb_dpy, &i1, &xkb_event_base, &xkb_errbase, &xkb_major, &xkb_minor)) {
-        printf("ERROR: XKB not supported by X-server!\n");
-        exit(EXIT_FAILURE);
-    }
+        int i1;
+        if (!XkbQueryExtension(xkb_dpy, &i1, &xkb_event_base, &xkb_errbase, &xkb_major, &xkb_minor)) {
+            printf("ERROR: XKB not supported by X-server!\n");
+            exit(EXIT_FAILURE);
+        }
 
-    if (!XkbSelectEvents(xkb_dpy, XkbUseCoreKbd, XkbStateNotifyMask, XkbStateNotifyMask)) {
-        printf("Could not grab Key!\n");
-        exit(EXIT_FAILURE);
+        if (!XkbSelectEvents(xkb_dpy, XkbUseCoreKbd, XkbStateNotifyMask, XkbStateNotifyMask)) {
+            printf("Could not grab Key!\n");
+            exit(EXIT_FAILURE);
+        }
+
+        xkb_io = malloc(sizeof(ev_io));
+        ev_io_init(xkb_io, &xkb_io_cb, ConnectionNumber(xkb_dpy), EV_READ);
+        ev_io_start(main_loop, xkb_io);
+        XFlush(xkb_dpy);
     }
 
     /* The varios Watchers to communicate with xcb */
     xcb_io = malloc(sizeof(ev_io));
     xcb_prep = malloc(sizeof(ev_prepare));
     xcb_chk = malloc(sizeof(ev_check));
-    xkb_io = malloc(sizeof(ev_io));
 
     ev_io_init(xcb_io, &xcb_io_cb, xcb_get_file_descriptor(xcb_connection), EV_READ);
     ev_prepare_init(xcb_prep, &xcb_prep_cb);
     ev_check_init(xcb_chk, &xcb_chk_cb);
-    ev_io_init(xkb_io, &xkb_io_cb, ConnectionNumber(xkb_dpy), EV_READ);
 
     ev_io_start(main_loop, xcb_io);
     ev_prepare_start(main_loop, xcb_prep);
     ev_check_start(main_loop, xcb_chk);
-    ev_io_start(main_loop, xkb_io);
-
-    XFlush(xkb_dpy);
 
     /* Now we get the atoms and save them in a nice data-structure */
     get_atoms();
@@ -492,8 +502,8 @@ void reconfig_windows() {
             mask = XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
             /* Black background */
             values[0] = xcb_screens->black_pixel;
-            /* i3 is not supposed to manage our bar-windows */
-            values[1] = 1;
+            /* If hide_on_modifier is set, i3 is not supposed to manage our bar-windows */
+            values[1] = config.hide_on_modifier;
             /* The events we want to receive */
             values[2] = XCB_EVENT_MASK_EXPOSURE |
                         XCB_EVENT_MASK_BUTTON_PRESS;

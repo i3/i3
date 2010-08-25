@@ -53,22 +53,29 @@ int main(int argc, char **argv) {
     char *command = NULL;
     char *fontname = NULL;
 
+    /* Definition of the standard-config */
+    config.hide_on_modifier = 0;
+
     static struct option long_opt[] = {
         { "socket",  required_argument, 0, 's' },
         { "command", required_argument, 0, 'c' },
+        { "hide",    no_argument,       0, 'm' },
         { "font",    required_argument, 0, 'f' },
         { "help",    no_argument,       0, 'h' },
         { "version", no_argument,       0, 'v' },
         { NULL,      0,                 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "s:c:f:hv", long_opt, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "s:c:mf:hv", long_opt, &option_index)) != -1) {
         switch (opt) {
             case 's':
                 socket_path = expand_path(optarg);
                 break;
             case 'c':
                 command = strdup(optarg);
+                break;
+            case 'm':
+                config.hide_on_modifier = 1;
                 break;
             case 'f':
                 fontname = strdup(optarg);

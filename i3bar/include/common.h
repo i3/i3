@@ -25,6 +25,7 @@ struct rect_t {
 
 #include "queue.h"
 #include "child.h"
+#include "config.h"
 #include "ipc.h"
 #include "outputs.h"
 #include "util.h"
