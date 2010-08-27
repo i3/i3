@@ -493,13 +493,18 @@ workspace_name:
 assign:
         TOKASSIGN WHITESPACE window_class WHITESPACE optional_arrow assign_target
         {
-                printf("assignment of %s\n", $<string>3);
+                DLOG("assignment of %s\n", $<string>3);
 
                 struct Assignment *new = $<assignment>6;
-                printf("  to %d\n", new->workspace);
-                printf("  floating = %d\n", new->floating);
-                new->windowclass_title = $<string>3;
-                TAILQ_INSERT_TAIL(&assignments, new, assignments);
+                if (new->floating != ASSIGN_FLOATING_ONLY && new->workspace < 1) {
+                        DLOG("Invalid client assignment, workspace number %d out of range\n", new->workspace);
+                        free(new);
+                } else {
+                        DLOG("  to %d\n", new->workspace);
+                        DLOG("  floating = %d\n", new->floating);
+                        new->windowclass_title = $<string>3;
+                        TAILQ_INSERT_TAIL(&assignments, new, assignments);
+                }
         }
         ;
 
