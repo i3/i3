@@ -13,6 +13,19 @@
 void x_con_init(Con *con);
 
 /**
+ * Moves a child window from Container src to Container dest.
+ *
+ */
+void x_move_win(Con *src, Con *dest);
+
+/**
+ * Reparents the child window of the given container (necessary for sticky
+ * containers). The reparenting happens in the next call of x_push_changes().
+ *
+ */
+void x_reparent_child(Con *con, Con *old);
+
+/**
  * Re-initializes the associated X window state for this container. You have
  * to call this when you assign a client to an empty container to ensure that
  * its state gets updated correctly.

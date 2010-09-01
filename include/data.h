@@ -273,6 +273,11 @@ struct Con {
 
     char *name;
 
+    /* a sticky-group is an identifier which bundles several containers to a
+     * group. The contents are shared between all of them, that is they are
+     * displayed on whichever of the containers is currently visible */
+    char *sticky_group;
+
     /* user-definable mark to jump to this container later */
     char *mark;
 

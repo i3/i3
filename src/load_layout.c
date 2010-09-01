@@ -71,6 +71,10 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
         if (strcasecmp(last_key, "name") == 0) {
             json_node->name = scalloc((len+1) * sizeof(char));
             memcpy(json_node->name, val, len);
+        } else if (strcasecmp(last_key, "sticky_group") == 0) {
+            json_node->sticky_group = scalloc((len+1) * sizeof(char));
+            memcpy(json_node->sticky_group, val, len);
+            LOG("sticky_group of this container is %s\n", json_node->sticky_group);
         }
     }
     return 1;

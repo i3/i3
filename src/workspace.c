@@ -92,6 +92,83 @@ bool workspace_is_visible(Workspace *ws) {
 }
 #endif
 
+/*
+ * XXX: we need to clean up all this recursive walking code.
+ *
+ */
+Con *_get_sticky(Con *con, const char *sticky_group, Con *exclude) {
+    Con *current;
+
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
+        if (current != exclude &&
+            current->sticky_group != NULL &&
+            current->window != NULL &&
+            strcmp(current->sticky_group, sticky_group) == 0)
+            return current;
+
+        Con *recurse = _get_sticky(current, sticky_group, exclude);
+        if (recurse != NULL)
+            return recurse;
+    }
+
+    TAILQ_FOREACH(current, &(con->floating_head), floating_windows) {
+        if (current != exclude &&
+            current->sticky_group != NULL &&
+            current->window != NULL &&
+            strcmp(current->sticky_group, sticky_group) == 0)
+            return current;
+
+        Con *recurse = _get_sticky(current, sticky_group, exclude);
+        if (recurse != NULL)
+            return recurse;
+    }
+
+    return NULL;
+}
+
+/*
+ * Reassigns all child windows in sticky containers. Called when the user
+ * changes workspaces.
+ *
+ * XXX: what about sticky containers which contain containers?
+ *
+ */
+static void workspace_reassign_sticky(Con *con) {
+    Con *current;
+    /* 1: go through all containers */
+
+    /* handle all children and floating windows of this node */
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
+        if (current->sticky_group == NULL) {
+            workspace_reassign_sticky(current);
+            continue;
+        }
+
+        LOG("Ah, this one is sticky: %s / %p\n", current->name, current);
+        /* 2: find a window which we can re-assign */
+        Con *output = con_get_output(current);
+        Con *src = _get_sticky(output, current->sticky_group, current);
+
+        if (src == NULL) {
+            LOG("No window found for this sticky group\n");
+            workspace_reassign_sticky(current);
+            continue;
+        }
+
+        x_move_win(src, current);
+        current->window = src->window;
+        current->mapped = true;
+        src->window = NULL;
+        src->mapped = false;
+
+        x_reparent_child(current, src);
+
+        LOG("re-assigned window from src %p to dest %p\n", src, current);
+    }
+
+    TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
+        workspace_reassign_sticky(current);
+}
 
 /*
  * Switches to the given workspace
@@ -109,6 +186,8 @@ void workspace_show(const char *num) {
     /* disable fullscreen */
     TAILQ_FOREACH(current, &(workspace->parent->nodes_head), nodes)
         current->fullscreen_mode = CF_NONE;
+
+    workspace_reassign_sticky(workspace);
 
     LOG("switching to %p\n", workspace);
     Con *next = workspace;

@@ -18,6 +18,13 @@ static xcb_window_t focused_id = XCB_NONE;
 typedef struct con_state {
     xcb_window_t id;
     bool mapped;
+
+    /* For reparenting, we have a flag (need_reparent) and the X ID of the old
+     * frame this window was in. The latter is necessary because we need to
+     * ignore UnmapNotify events (by changing the window event mask). */
+    bool need_reparent;
+    xcb_window_t old_frame;
+
     Rect rect;
     Rect window_rect;
 
@@ -103,6 +110,47 @@ void x_reinit(Con *con) {
     LOG("resetting state %p to initial\n", state);
     state->initial = true;
     memset(&(state->window_rect), 0, sizeof(Rect));
+}
+
+/*
+ * Reparents the child window of the given container (necessary for sticky
+ * containers). The reparenting happens in the next call of x_push_changes().
+ *
+ */
+void x_reparent_child(Con *con, Con *old) {
+    struct con_state *state;
+    if ((state = state_for_frame(con->frame)) == NULL) {
+        ELOG("window state for con not found\n");
+        return;
+    }
+
+    state->need_reparent = true;
+    state->old_frame = old->frame;
+}
+
+/*
+ * Moves a child window from Container src to Container dest.
+ *
+ */
+void x_move_win(Con *src, Con *dest) {
+    struct con_state *state_src, *state_dest;
+
+    if ((state_src = state_for_frame(src->frame)) == NULL) {
+        ELOG("window state for src not found\n");
+        return;
+    }
+
+    if ((state_dest = state_for_frame(dest->frame)) == NULL) {
+        ELOG("window state for dest not found\n");
+        return;
+    }
+
+    Rect zero;
+    memset(&zero, 0, sizeof(Rect));
+    if (memcmp(&(state_dest->window_rect), &(zero), sizeof(Rect)) == 0) {
+        memcpy(&(state_dest->window_rect), &(state_src->window_rect), sizeof(Rect));
+        LOG("COPYING RECT\n");
+    }
 }
 
 /*
@@ -233,6 +281,29 @@ static void x_push_node(Con *con) {
     LOG("Pushing changes for node %p / %s\n", con, con->name);
     state = state_for_frame(con->frame);
 
+    /* reparent the child window (when the window was moved due to a sticky
+     * container) */
+    if (state->need_reparent && con->window != NULL) {
+        LOG("Reparenting child window\n");
+
+        /* Temporarily set the event masks to XCB_NONE so that we won’t get
+         * UnmapNotify events (otherwise the handler would close the container).
+         * These events are generated automatically when reparenting. */
+        uint32_t values[] = { XCB_NONE };
+        xcb_change_window_attributes(conn, state->old_frame, XCB_CW_EVENT_MASK, values);
+        xcb_change_window_attributes(conn, con->window->id, XCB_CW_EVENT_MASK, values);
+
+        xcb_reparent_window(conn, con->window->id, con->frame, 0, 0);
+
+        values[0] = FRAME_EVENT_MASK;
+        xcb_change_window_attributes(conn, state->old_frame, XCB_CW_EVENT_MASK, values);
+        values[0] = CHILD_EVENT_MASK;
+        xcb_change_window_attributes(conn, con->window->id, XCB_CW_EVENT_MASK, values);
+
+        state->old_frame = XCB_NONE;
+        state->need_reparent = false;
+    }
+
     /* map/unmap if map state changed, also ensure that the child window
      * is changed if we are mapped *and* in initial state (meaning the
      * container was empty before, but now got a child) */
@@ -269,7 +340,8 @@ static void x_push_node(Con *con) {
     }
 
     /* dito, but for child windows */
-    if (memcmp(&(state->window_rect), &(con->window_rect), sizeof(Rect)) != 0) {
+    if (con->window != NULL &&
+        memcmp(&(state->window_rect), &(con->window_rect), sizeof(Rect)) != 0) {
         LOG("setting window rect (%d, %d, %d, %d)\n",
             con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
         xcb_set_window_rect(conn, con->window->id, con->window_rect);
