@@ -458,7 +458,7 @@ workspace:
         {
                 int ws_num = $<number>3;
                 if (ws_num < 1) {
-                        DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
+                        ELOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
                         Workspace *ws = workspace_get(ws_num - 1);
                         ws->preferred_output = $<string>7;
@@ -472,7 +472,7 @@ workspace:
         {
                 int ws_num = $<number>3;
                 if (ws_num < 1) {
-                        DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
+                        ELOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
                 } else {
                         DLOG("workspace name to: %s\n", $<string>5);
                         if ($<string>5 != NULL) {
@@ -501,7 +501,7 @@ assign:
 
                 struct Assignment *new = $<assignment>6;
                 if (new->floating != ASSIGN_FLOATING_ONLY && new->workspace < 1) {
-                        DLOG("Invalid client assignment, workspace number %d out of range\n", new->workspace);
+                        ELOG("Invalid client assignment, workspace number %d out of range\n", new->workspace);
                         free(new);
                 } else {
                         DLOG("  to %d\n", new->workspace);
