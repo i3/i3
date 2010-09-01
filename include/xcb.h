@@ -57,14 +57,14 @@ enum { _NET_SUPPORTED = 0,
         _NET_WM_WINDOW_TYPE_SPLASH,
         _NET_WM_DESKTOP,
         _NET_WM_STRUT_PARTIAL,
+        _NET_CURRENT_DESKTOP,
+        _NET_ACTIVE_WINDOW,
+        _NET_WORKAREA,
         WM_PROTOCOLS,
         WM_DELETE_WINDOW,
         UTF8_STRING,
         WM_STATE,
-        WM_CLIENT_LEADER,
-        _NET_CURRENT_DESKTOP,
-        _NET_ACTIVE_WINDOW,
-        _NET_WORKAREA
+        WM_CLIENT_LEADER
 };
 
 extern unsigned int xcb_numlock_mask;
