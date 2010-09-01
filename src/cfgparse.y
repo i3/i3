@@ -393,18 +393,22 @@ new_container:
         }
         | TOKNEWCONTAINER WHITESPACE TOKSTACKLIMIT WHITESPACE TOKSTACKLIMIT WHITESPACE NUMBER
         {
-                DLOG("stack-limit %d with val %d\n", $<number>5, $<number>7);
-                config.container_stack_limit = $<number>5;
-                config.container_stack_limit_value = $<number>7;
+                if ($<number>7 <= 0) {
+                        ELOG("Invalid stack-limit, need a limit which is > 0\n");
+                } else {
+                        DLOG("stack-limit %d with val %d\n", $<number>5, $<number>7);
+                        config.container_stack_limit = $<number>5;
+                        config.container_stack_limit_value = $<number>7;
 
-                /* See the comment above */
-                Workspace *ws;
-                TAILQ_FOREACH(ws, workspaces, workspaces) {
-                        if (ws->table == NULL)
-                                continue;
-                        Container *con = ws->table[0][0];
-                        con->stack_limit = config.container_stack_limit;
-                        con->stack_limit_value = config.container_stack_limit_value;
+                        /* See the comment above */
+                        Workspace *ws;
+                        TAILQ_FOREACH(ws, workspaces, workspaces) {
+                                if (ws->table == NULL)
+                                        continue;
+                                Container *con = ws->table[0][0];
+                                con->stack_limit = config.container_stack_limit;
+                                con->stack_limit_value = config.container_stack_limit_value;
+                        }
                 }
         }
         ;
