@@ -18,26 +18,42 @@ li {
 </head>
 <body>
 
-<h1>i3lock — a slightly improved version of slock</h1>
+<h1>i3lock — improved screen locker</h1>
 
 <p>
-  i3lock improves slock by making it fork() and therefore combinable with
-  commands to suspend your computer. Additionally, instead of turning off
-  your screen via DPMS and/or displaying a black screen, i3lock displays a
-  white screen so you can see if your computer failed to resume from suspend
-  or if your screen is just locked. Also, when entering a wrong password,
-  i3lock does not call XBell(). This is important because i3lock/slock think
-  you’ve entered a password when resuming from suspend, at least sometimes.
+  i3lock is a simple screen locker like slock. After starting it, you will see
+  a white screen (you can configure the color/an image). You can return to your
+  screen by entering your password.
 </p>
 
-<p>
-  Furthermore, i3lock supports PAM since version 1.0 (that is, LDAP users
-  can use i3lock now, too).
-</p>
+<h2>Improvements</h2>
+
+<ul>
+  <li>
+    i3lock forks, so you can combine it with an alias to suspend to RAM (run
+    "i3lock &amp;&amp; echo mem &gt; /sys/power/state" to get a locked screen
+    after waking up your computer from suspend to RAM)
+  </li>
+  <li>
+    You can specify either a background color or a PNG image which will be
+    displayed while your screen is locked.
+  </li>
+  <li>
+    You can specify whether i3lock should bell upon a wrong password.
+  </li>
+  <li>
+    i3lock uses PAM and therefore is compatible with LDAP etc.
+  </li>
+</ul>
+
 
 <h2>Releases</h2>
 
 <ul>
+  <li>
+    <a href="/i3lock/i3lock-2.0.tar.gz">i3lock-2.0.tar.gz</a> (2010-09-05,
+    <a href="/i3lock/i3lock-2.0.tar.gz.asc">GPG signature</a>)
+  </li>
   <li><a href="/i3lock/i3lock-1.0.tar.gz">i3lock-1.0.tar.gz</a> (2009-05-10,
   <a href="/i3lock/i3lock-1.0.tar.gz.asc">GPG signature</a>)</li>
   <li><a href="/i3lock/i3lock-0.9.tar.gz">i3lock-0.9.tar.gz</a></li>
@@ -63,28 +79,33 @@ li {
 <h2>License</h2>
 
 <pre>
-MIT/X Consortium License
+Copyright © 2010, Michael Stapelberg
+All rights reserved.
 
-© 2006-2008 Anselm R Garbe <garbeam at gmail dot com>
-© 2009 Michael Stapelberg <michael+i3lock at stapelberg dot de>
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the "Software"),
-to deal in the Software without restriction, including without limitation
-the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following conditions:
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
+    * Neither the name of Michael Stapelberg nor the
+      names of contributors may be used to endorse or promote products
+      derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY Michael Stapelberg ''AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL Michael Stapelberg BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </pre>
 
 </body>
