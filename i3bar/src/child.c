@@ -142,7 +142,7 @@ void start_child(char *command) {
     ev_io_start(main_loop, stdin_io);
 
     /* We must cleanup, if the child unexpectedly terminates */
-    child_sig = malloc(sizeof(ev_io));
+    child_sig = malloc(sizeof(ev_child));
     ev_child_init(child_sig, &child_sig_cb, child_pid, 0);
     ev_child_start(main_loop, child_sig);
 
