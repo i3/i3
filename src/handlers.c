@@ -458,8 +458,6 @@ int handle_screen_change(void *prophs, xcb_connection_t *conn,
  *
  */
 int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_notify_event_t *event) {
-        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
-
         add_ignore_event(event->sequence);
 
         Client *client = table_get(&by_child, event->window);

@@ -112,7 +112,6 @@ bool workspace_is_visible(Workspace *ws) {
  */
 void workspace_show(xcb_connection_t *conn, int workspace) {
         bool need_warp = false;
-        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         /* t_ws (to workspace) is just a convenience pointer to the workspace we’re switching to */
         Workspace *t_ws = workspace_get(workspace-1);
 
