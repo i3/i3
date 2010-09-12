@@ -702,6 +702,43 @@ void render_workspace(xcb_connection_t *conn, Output *output, Workspace *r_ws) {
 
         ignore_enter_notify_forall(conn, r_ws, true);
 
+        /* Get the width of the cols */
+        int col_width[r_ws->cols];
+        int unoccupied_x = get_unoccupied_x(r_ws);
+        int default_col_width = unoccupied_x / r_ws->cols;
+        int total_col_width = 0;
+        for (int i = 0; i < r_ws->cols; ++i) {
+                col_width[i] = r_ws->width_factor[i] == 0 ? default_col_width : unoccupied_x * r_ws->width_factor[i];
+                total_col_width += col_width[i];
+        }
+
+        /* Correct rounding errors */
+        int error = r_ws->rect.width - total_col_width, error_index = r_ws->cols - 1;
+        while (error) {
+                ++col_width[error_index];
+                --error;
+                error_index = error_index == 0 ? r_ws->cols - 1 : error_index - 1;
+        }
+
+        /* Get the height of the rows */
+        int row_height[r_ws->rows];
+        int unoccupied_y = get_unoccupied_y(r_ws);
+        int default_row_height = unoccupied_y / r_ws->rows;
+        int total_row_height = 0;
+        for (int i = 0; i < r_ws->rows; ++i) {
+                row_height[i] = r_ws->height_factor[i] == 0 ? default_row_height : unoccupied_y * r_ws->height_factor[i];
+                total_row_height += row_height[i];
+        }
+
+        /* Correct rounding errors */
+        error = workspace_height(r_ws) - total_row_height;
+        error_index = r_ws->rows - 1;
+        while (error) {
+                ++row_height[error_index];
+                --error;
+                error_index = error_index == 0 ? r_ws->rows - 1 : error_index - 1;
+        }
+
         /* Go through the whole table and render what’s necessary */
         FOR_TABLE(r_ws) {
                 Container *container = r_ws->table[cols][rows];
@@ -716,10 +753,7 @@ void render_workspace(xcb_connection_t *conn, Output *output, Workspace *r_ws) {
                 container->width = 0;
 
                 for (int c = 0; c < container->colspan; c++) {
-                        if (r_ws->width_factor[cols+c] == 0)
-                                container->width += (width / r_ws->cols);
-                        else container->width += get_unoccupied_x(r_ws) * r_ws->width_factor[cols+c];
-
+                        container->width += col_width[cols + c];
                         if (single_width == -1)
                                 single_width = container->width;
                 }
@@ -729,10 +763,7 @@ void render_workspace(xcb_connection_t *conn, Output *output, Workspace *r_ws) {
                 container->height = 0;
 
                 for (int c = 0; c < container->rowspan; c++) {
-                        if (r_ws->height_factor[rows+c] == 0)
-                                container->height += (height / r_ws->rows);
-                        else container->height += get_unoccupied_y(r_ws) * r_ws->height_factor[rows+c];
-
+                        container->height += row_height[rows + c];
                         if (single_height == -1)
                                 single_height = container->height;
                 }
