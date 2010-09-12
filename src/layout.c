@@ -39,13 +39,12 @@
  */
 int get_unoccupied_x(Workspace *workspace) {
         double unoccupied = workspace->rect.width;
-        double default_factor = ((float)workspace->rect.width / workspace->cols) / workspace->rect.width;
+        double default_factor = 1.0 / workspace->cols;
 
         DLOG("get_unoccupied_x(), starting with %f, default_factor = %f\n", unoccupied, default_factor);
 
         for (int cols = 0; cols < workspace->cols; cols++) {
                 DLOG("width_factor[%d] = %f, unoccupied = %f\n", cols, workspace->width_factor[cols], unoccupied);
-
                 if (workspace->width_factor[cols] == 0)
                         unoccupied -= workspace->rect.width * default_factor;
         }
@@ -58,7 +57,7 @@ int get_unoccupied_x(Workspace *workspace) {
 int get_unoccupied_y(Workspace *workspace) {
         int height = workspace_height(workspace);
         double unoccupied = height;
-        double default_factor = ((float)height / workspace->rows) / height;
+        double default_factor = 1.0 / workspace->rows;
 
         DLOG("get_unoccupied_y(), starting with %f, default_factor = %f\n", unoccupied, default_factor);
 
