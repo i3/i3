@@ -156,6 +156,32 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
 }
 
 /*
+ * Adjusts the container size factors according to the resizing parameters.
+ * This is an abstraction used by resize_container.
+ */
+static void adjust_container_factors(float *factors, int ws_size, int unoccupied_size,
+                int num_items, int first, int second, int pixels) {
+        /* Find the current sizes */
+        int sizes[num_items];
+        for (int i = 0; i < num_items; ++i)
+                sizes[i] = factors[i] == 0 ? ws_size / num_items : unoccupied_size * factors[i];
+
+        /* Adjust them */
+        sizes[first] += pixels;
+        sizes[second] -= pixels;
+
+        /* Calculate the new unoccupied size */
+        if (factors[first] == 0) unoccupied_size += ws_size / num_items;
+        if (factors[second] == 0) unoccupied_size += ws_size / num_items;
+
+        /* Calculate the new factors */
+        for (int i = 0; i < num_items; ++i) {
+                if (factors[i] != 0 || i == first || i == second)
+                        factors[i] = (float)sizes[i] / unoccupied_size;
+        }
+}
+
+/*
  * Resizes a column/row by the given amount of pixels. Called by
  * resize_graphical_handler (the user clicked) or parse_resize_command (the
  * user issued the command)
@@ -163,161 +189,13 @@ int resize_graphical_handler(xcb_connection_t *conn, Workspace *ws, int first, i
  */
 void resize_container(xcb_connection_t *conn, Workspace *ws, int first, int second,
                       resize_orientation_t orientation, int pixels) {
-
-        /* TODO: refactor this, both blocks are very identical */
         if (orientation == O_VERTICAL) {
-                int default_width = ws->rect.width / ws->cols;
-                int old_unoccupied_x = get_unoccupied_x(ws);
-
-                /* We pre-calculate the unoccupied space to see if we need to adapt sizes before
-                 * doing the resize */
-                int new_unoccupied_x = old_unoccupied_x;
-
-                if (old_unoccupied_x == 0)
-                        old_unoccupied_x = ws->rect.width;
-
-                if (ws->width_factor[first] == 0)
-                        new_unoccupied_x += default_width;
-
-                if (ws->width_factor[second] == 0)
-                        new_unoccupied_x += default_width;
-
-                DLOG("\n\n\n");
-                DLOG("old = %d, new = %d\n", old_unoccupied_x, new_unoccupied_x);
-
-                int cols_without_wf = 0;
-                int old_width, old_second_width;
-                for (int col = 0; col < ws->cols; col++)
-                        if (ws->width_factor[col] == 0)
-                                cols_without_wf++;
-
-                DLOG("old_unoccupied_x = %d\n", old_unoccupied_x);
-
-                DLOG("Updating first (before = %f)\n", ws->width_factor[first]);
-                /* Convert 0 (for default width_factor) to actual numbers */
-                if (ws->width_factor[first] == 0)
-                        old_width = (old_unoccupied_x / max(cols_without_wf, 1));
-                else old_width = ws->width_factor[first] * old_unoccupied_x;
-
-                DLOG("second (before = %f)\n", ws->width_factor[second]);
-                if (ws->width_factor[second] == 0)
-                        old_second_width = (old_unoccupied_x / max(cols_without_wf, 1));
-                else old_second_width = ws->width_factor[second] * old_unoccupied_x;
-
-                DLOG("middle = %f\n", ws->width_factor[first]);
-
-                /* If the space used for customly resized columns has changed we need to adapt the
-                 * other customly resized columns, if any */
-                if (new_unoccupied_x != old_unoccupied_x)
-                        for (int col = 0; col < ws->cols; col++) {
-                                if (ws->width_factor[col] == 0)
-                                        continue;
-
-                                DLOG("Updating other column (%d) (current width_factor = %f)\n", col, ws->width_factor[col]);
-                                ws->width_factor[col] = (ws->width_factor[col] * old_unoccupied_x) / new_unoccupied_x;
-                                DLOG("to %f\n", ws->width_factor[col]);
-                        }
-
-                DLOG("Updating first (before = %f)\n", ws->width_factor[first]);
-                /* Convert 0 (for default width_factor) to actual numbers */
-                if (ws->width_factor[first] == 0)
-                        ws->width_factor[first] = ((float)ws->rect.width / ws->cols) / new_unoccupied_x;
-
-                DLOG("first->width = %d, pixels = %d\n", old_width, pixels);
-                ws->width_factor[first] *= (float)(old_width + pixels) / old_width;
-                DLOG("-> %f\n", ws->width_factor[first]);
-
-
-                DLOG("Updating second (before = %f)\n", ws->width_factor[second]);
-                if (ws->width_factor[second] == 0)
-                        ws->width_factor[second] = ((float)ws->rect.width / ws->cols) / new_unoccupied_x;
-
-                DLOG("middle = %f\n", ws->width_factor[second]);
-                DLOG("second->width = %d, pixels = %d\n", old_second_width, pixels);
-                ws->width_factor[second] *= (float)(old_second_width - pixels) / old_second_width;
-                DLOG("-> %f\n", ws->width_factor[second]);
-
-                DLOG("new unoccupied_x = %d\n", get_unoccupied_x(ws));
-
-                DLOG("\n\n\n");
-        } else {
-                int ws_height = workspace_height(ws);
-                int default_height = ws_height / ws->rows;
-                int old_unoccupied_y = get_unoccupied_y(ws);
-
-                /* We pre-calculate the unoccupied space to see if we need to adapt sizes before
-                 * doing the resize */
-                int new_unoccupied_y = old_unoccupied_y;
-
-                if (old_unoccupied_y == 0)
-                        old_unoccupied_y = ws_height;
-
-                if (ws->height_factor[first] == 0)
-                        new_unoccupied_y += default_height;
-
-                if (ws->height_factor[second] == 0)
-                        new_unoccupied_y += default_height;
-
-                int cols_without_hf = 0;
-                int old_height, old_second_height;
-                for (int row = 0; row < ws->rows; row++)
-                        if (ws->height_factor[row] == 0)
-                                cols_without_hf++;
-
-                DLOG("old_unoccupied_y = %d\n", old_unoccupied_y);
-
-                DLOG("Updating first (before = %f)\n", ws->height_factor[first]);
-
-                /* Convert 0 (for default width_factor) to actual numbers */
-                if (ws->height_factor[first] == 0)
-                        old_height = (old_unoccupied_y / max(cols_without_hf, 1));
-                else old_height = ws->height_factor[first] * old_unoccupied_y;
-
-                DLOG("second (before = %f)\n", ws->height_factor[second]);
-                if (ws->height_factor[second] == 0)
-                        old_second_height = (old_unoccupied_y / max(cols_without_hf, 1));
-                else old_second_height = ws->height_factor[second] * old_unoccupied_y;
-
-                DLOG("middle = %f\n", ws->height_factor[first]);
-
-
-                DLOG("\n\n\n");
-                DLOG("old = %d, new = %d\n", old_unoccupied_y, new_unoccupied_y);
-
-                /* If the space used for customly resized columns has changed we need to adapt the
-                 * other customly resized columns, if any */
-                if (new_unoccupied_y != old_unoccupied_y)
-                        for (int row = 0; row < ws->rows; row++) {
-                                if (ws->height_factor[row] == 0)
-                                        continue;
-
-                                DLOG("Updating other column (%d) (current width_factor = %f)\n", row, ws->height_factor[row]);
-                                ws->height_factor[row] = (ws->height_factor[row] * old_unoccupied_y) / new_unoccupied_y;
-                                DLOG("to %f\n", ws->height_factor[row]);
-                        }
-
-
-                DLOG("Updating first (before = %f)\n", ws->height_factor[first]);
-                /* Convert 0 (for default width_factor) to actual numbers */
-                if (ws->height_factor[first] == 0)
-                        ws->height_factor[first] = ((float)ws_height / ws->rows) / new_unoccupied_y;
-
-                DLOG("first->width = %d, pixels = %d\n", old_height, pixels);
-                ws->height_factor[first] *= (float)(old_height + pixels) / old_height;
-                DLOG("-> %f\n", ws->height_factor[first]);
-
-
-                DLOG("Updating second (before = %f)\n", ws->height_factor[second]);
-                if (ws->height_factor[second] == 0)
-                        ws->height_factor[second] = ((float)ws_height / ws->rows) / new_unoccupied_y;
-                DLOG("middle = %f\n", ws->height_factor[second]);
-                DLOG("second->width = %d, pixels = %d\n", old_second_height, pixels);
-                ws->height_factor[second] *= (float)(old_second_height - pixels) / old_second_height;
-                DLOG("-> %f\n", ws->height_factor[second]);
-
-                DLOG("new unoccupied_y = %d\n", get_unoccupied_y(ws));
-
-                DLOG("\n\n\n");
+                adjust_container_factors(ws->width_factor, ws->rect.width,
+                                get_unoccupied_x(ws), ws->cols, first, second, pixels);
+        }
+        else {
+                adjust_container_factors(ws->height_factor, workspace_height(ws),
+                                get_unoccupied_y(ws), ws->rows, first, second, pixels);
         }
 
         render_layout(conn);
