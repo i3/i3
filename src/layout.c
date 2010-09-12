@@ -135,7 +135,7 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
 
         /* Draw a rectangle in background color around the window */
         if (client->borderless && mode == MODE_DEFAULT)
-                xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+                xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, config.client.background);
         else xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, color->background);
 
         /* In stacking mode, we only render the rect for this specific decoration */
@@ -151,9 +151,9 @@ void decorate_window(xcb_connection_t *conn, Client *client, xcb_drawable_t draw
                 xcb_rectangle_t rect = {0, 0, client->rect.width, client->rect.height};
                 xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
 
-                /* Draw the inner background to have a black frame around clients (such as mplayer)
+                /* Draw the inner background to a frame around clients (such as mplayer)
                    which cannot be resized exactly in our frames and therefore are centered */
-                xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+                xcb_change_gc_single(conn, client->titlegc, XCB_GC_FOREGROUND, config.client.background);
                 if (client->titlebar_position == TITLEBAR_OFF && client->borderless) {
                         xcb_rectangle_t crect = {0, 0, client->rect.width, client->rect.height};
                         xcb_poly_fill_rectangle(conn, client->frame, client->titlegc, 1, &crect);
@@ -547,7 +547,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
                  * amount of windows */
                 if (container->mode == MODE_STACK) {
                         if (container->stack_limit == STACK_LIMIT_COLS && (current_col % 2) != 0) {
-                                xcb_change_gc_single(conn, stack_win->pixmap.gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+                                xcb_change_gc_single(conn, stack_win->pixmap.gc, XCB_GC_FOREGROUND, config.client.background);
 
                                 int offset_x = current_col * (stack_win->rect.width / container->stack_limit_value);
                                 int offset_y = current_row * decoration_height;
@@ -556,7 +556,7 @@ void render_container(xcb_connection_t *conn, Container *container) {
                                                         offset_y + decoration_height };
                                 xcb_poly_fill_rectangle(conn, stack_win->pixmap.id, stack_win->pixmap.gc, 1, &rect);
                         } else if (container->stack_limit == STACK_LIMIT_ROWS && (current_row % 2) != 0) {
-                                xcb_change_gc_single(conn, stack_win->pixmap.gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+                                xcb_change_gc_single(conn, stack_win->pixmap.gc, XCB_GC_FOREGROUND, config.client.background);
 
                                 int offset_x = current_col * wrap;
                                 int offset_y = current_row * decoration_height;

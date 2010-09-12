@@ -367,6 +367,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 x.text = get_colorpixel(conn, ctext); \
         } while (0)
 
+        config.client.background = get_colorpixel(conn, "#000000");
         INIT_COLOR(config.client.focused, "#4c7899", "#285577", "#ffffff");
         INIT_COLOR(config.client.focused_inactive, "#333333", "#5f676a", "#ffffff");
         INIT_COLOR(config.client.unfocused, "#333333", "#222222", "#888888");
