@@ -124,16 +124,13 @@ uint32_t get_colorpixel(const char *s) {
  */
 void refresh_statusline() {
     int glyph_count;
-    uint32_t root_width = xcb_screens->width_in_pixels;
+
     if (statusline == NULL) {
         return;
     }
 
     xcb_char2b_t *text = (xcb_char2b_t*) convert_utf8_to_ucs2(statusline, &glyph_count);
     statusline_width = predict_text_extents(text, glyph_count);
-    int crop_x = MIN(0, ((int32_t)root_width) - ((int32_t)statusline_width));
-    printf("Cropping statusline with %d glyphs at x=%d\n", glyph_count, crop_x);
-    statusline_width = MIN((int32_t)statusline_width, (int32_t)root_width);
 
     xcb_free_pixmap(xcb_connection, statusline_pm);
     statusline_pm = xcb_generate_id(xcb_connection);
