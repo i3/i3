@@ -104,6 +104,31 @@ uint32_t predict_text_extents(xcb_char2b_t *text, uint32_t length) {
 }
 
 /*
+ * Draws text given in UCS-2-encoding to a given drawable and position
+ *
+ */
+void draw_text(xcb_drawable_t drawable, xcb_gcontext_t ctx, int16_t x, int16_t y,
+               xcb_char2b_t *text, uint32_t glyph_count) {
+    int offset = 0;
+    int16_t pos_x = x;
+    while (glyph_count > 0) {
+        uint8_t chunk_size = MIN(255, glyph_count);
+        uint32_t chunk_width = predict_text_extents(text + offset, chunk_size);
+
+        xcb_image_text_16(xcb_connection,
+                          chunk_size,
+                          drawable,
+                          ctx,
+                          pos_x, y,
+                          text + offset);
+
+        offset += chunk_size;
+        pos_x += chunk_width;
+        glyph_count -= chunk_size;
+    }
+}
+
+/*
  * Converts a colorstring to a colorpixel as expected from xcb_change_gc.
  * s is assumed to be in the format "rrggbb"
  *
