@@ -11,6 +11,10 @@
 
 #include "queue.h"
 
+/* Get the maximum/minimum of x and y */
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
+
 /* Securely free p */
 #define FREE(p) do { \
     if (p != NULL) { \
