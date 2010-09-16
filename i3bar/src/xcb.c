@@ -42,15 +42,66 @@ xcb_screen_t     *xcb_screens;
 xcb_window_t     xcb_root;
 xcb_font_t       xcb_font;
 
+/* We need to cache some data to speed up text-width-prediction */
+xcb_query_font_reply_t *font_info;
+xcb_charinfo_t         *font_table;
+
+/* These are only relevant for XKB, which we only need for grabbing modifiers */
 Display          *xkb_dpy;
 int              xkb_event_base;
 int              mod_pressed;
+
+/* Because the statusline is the same on all outputs, we have
+ * global buffer to render it on */
+xcb_gcontext_t   statusline_ctx;
+xcb_pixmap_t     statusline_pm;
+uint32_t         statusline_width;
 
 /* Event-Watchers, to interact with the user */
 ev_prepare *xcb_prep;
 ev_check   *xcb_chk;
 ev_io      *xcb_io;
 ev_io      *xkb_io;
+
+/*
+ * Predicts the length of text based on cached data
+ *
+ */
+uint32_t predict_text_extents(xcb_char2b_t *text, uint32_t length) {
+    /* If we don't have per-character data, return the maximum width */
+    if (font_table == NULL) {
+        return (font_info->max_bounds.character_width * length);
+    }
+
+    uint32_t width = 0;
+    uint32_t i;
+
+    for (i = 0; i < length; i++) {
+        xcb_charinfo_t *info;
+        int row = text[i].byte1;
+        int col = text[i].byte2;
+
+        if (row < font_info->min_byte1 || row > font_info->max_byte1 ||
+            col < font_info->min_char_or_byte2 || col > font_info->max_char_or_byte2) {
+            continue;
+        }
+
+        /* Don't you ask me, how this one works… */
+        info = &font_table[((row - font_info->min_byte1) *
+                            (font_info->max_char_or_byte2 - font_info->min_char_or_byte2 + 1)) +
+                           (col - font_info->min_char_or_byte2)];
+
+        if (info->character_width != 0 ||
+            (info->right_side_bearing |
+             info->left_side_bearing |
+             info->ascent |
+             info->descent) != 0) {
+            width += info->character_width;
+        }
+    }
+
+    return width;
+}
 
 /*
  * Converts a colorstring to a colorpixel as expected from xcb_change_gc.
@@ -65,6 +116,52 @@ uint32_t get_colorpixel(const char *s) {
     uint8_t g = strtol(strings[1], NULL, 16);
     uint8_t b = strtol(strings[2], NULL, 16);
     return (r << 16 | g << 8 | b);
+}
+
+/*
+ * Redraws the statusline to the buffer
+ *
+ */
+void refresh_statusline() {
+    int glyph_count;
+    uint32_t root_width = xcb_screens->width_in_pixels;
+    if (statusline == NULL) {
+        return;
+    }
+
+    xcb_char2b_t *text = (xcb_char2b_t*) convert_utf8_to_ucs2(statusline, &glyph_count);
+    statusline_width = predict_text_extents(text, glyph_count);
+    int crop_x = MIN(0, ((int32_t)root_width) - ((int32_t)statusline_width));
+    printf("Cropping statusline with %d glyphs at x=%d\n", glyph_count, crop_x);
+    statusline_width = MIN((int32_t)statusline_width, (int32_t)root_width);
+
+    xcb_free_pixmap(xcb_connection, statusline_pm);
+    statusline_pm = xcb_generate_id(xcb_connection);
+    xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
+                                                               xcb_screens->root_depth,
+                                                               statusline_pm,
+                                                               xcb_root,
+                                                               statusline_width,
+                                                               font_height);
+
+    xcb_void_cookie_t text_cookie = xcb_image_text_16(xcb_connection,
+                                                      glyph_count,
+                                                      statusline_pm,
+                                                      statusline_ctx,
+                                                      0,
+                                                      font_height,
+                                                      text);
+
+    xcb_generic_error_t *err;
+    if ((err = xcb_request_check(xcb_connection, sl_pm_cookie)) != NULL) {
+        printf("ERROR: Could not allocate statusline-buffer! XCB-error: %d\n", err->error_code);
+        exit(EXIT_FAILURE);
+    }
+
+    if ((err = xcb_request_check(xcb_connection, text_cookie)) != NULL) {
+        printf("ERROR: Could not draw text to buffer! XCB-error: %d\n", err->error_code);
+        exit(EXIT_FAILURE);
+    }
 }
 
 /*
@@ -353,6 +450,10 @@ void init_xcb(char *fontname) {
                                                 strlen(fontname),
                                                 fontname);
 
+    xcb_query_font_cookie_t query_font_cookie;
+    query_font_cookie = xcb_query_font(xcb_connection,
+                                       xcb_font);
+
     if (config.hide_on_modifier) {
         int xkb_major, xkb_minor, xkb_errbase, xkb_err;
         xkb_major = XkbMajorVersion;
@@ -392,6 +493,22 @@ void init_xcb(char *fontname) {
         XFlush(xkb_dpy);
     }
 
+    /* We draw the statusline to a seperate pixmap, because it looks the same on all bars and
+     * this way, we can choose to crop it */
+    statusline_ctx = xcb_generate_id(xcb_connection);
+    uint32_t mask = XCB_GC_FOREGROUND |
+                    XCB_GC_BACKGROUND |
+                    XCB_GC_FONT;
+    uint32_t vals[3] = { xcb_screens->white_pixel, xcb_screens->black_pixel, xcb_font };
+
+    xcb_void_cookie_t sl_ctx_cookie = xcb_create_gc_checked(xcb_connection,
+                                                            statusline_ctx,
+                                                            xcb_root,
+                                                            mask,
+                                                            vals);
+
+    statusline_pm = xcb_generate_id(xcb_connection);
+
     /* The varios Watchers to communicate with xcb */
     xcb_io = malloc(sizeof(ev_io));
     xcb_prep = malloc(sizeof(ev_prepare));
@@ -416,7 +533,27 @@ void init_xcb(char *fontname) {
     font_height = reply->font_ascent + reply->font_descent;
     FREE(reply);
 
+    font_info = xcb_query_font_reply(xcb_connection,
+                                     query_font_cookie,
+                                     &err);
+
+    if (err != NULL) {
+        printf("ERROR: Could not query font! XCB-error: %d\n", err->error_code);
+        exit(EXIT_FAILURE);
+    }
+
+    if (xcb_query_font_char_infos_length(font_info) == 0) {
+        font_table = NULL;
+    } else {
+        font_table = xcb_query_font_char_infos(font_info);
+    }
+
     printf("Calculated Font-height: %d\n", font_height);
+
+    if((err = xcb_request_check(xcb_connection, sl_ctx_cookie)) != NULL) {
+        printf("ERROR: Could not create context for statusline! XCB-error: %d\n", err->error_code);
+        exit(EXIT_FAILURE);
+    }
 }
 
 /*
@@ -605,6 +742,9 @@ void reconfig_windows() {
 void draw_bars() {
     printf("Drawing Bars...\n");
     int i = 0;
+
+    refresh_statusline();
+
     i3_output *outputs_walk;
     SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (!outputs_walk->active) {
@@ -627,34 +767,21 @@ void draw_bars() {
                                 &rect);
         if (statusline != NULL) {
             printf("Printing statusline!\n");
-            xcb_change_gc(xcb_connection,
+
+            xcb_void_cookie_t ca_cookie = xcb_copy_area(xcb_connection,
+                          statusline_pm,
+                          outputs_walk->buffer,
                           outputs_walk->bargc,
-                          XCB_GC_BACKGROUND,
-                          &color);
-            color = get_colorpixel("FFFFFF");
-            xcb_change_gc(xcb_connection,
-                          outputs_walk->bargc,
-                          XCB_GC_FOREGROUND,
-                          &color);
-
-            int glyph_count;
-            xcb_char2b_t *text = (xcb_char2b_t*) convert_utf8_to_ucs2(statusline, &glyph_count);
-
-            xcb_void_cookie_t cookie;
-            cookie = xcb_image_text_16(xcb_connection,
-                                       glyph_count,
-                                       outputs_walk->buffer,
-                                       outputs_walk->bargc,
-                                       outputs_walk->rect.w - get_string_width(text, glyph_count) - 4,
-                                       font_height + 1,
-                                       (xcb_char2b_t*) text);
-
-            xcb_generic_error_t *err = xcb_request_check(xcb_connection, cookie);
-
-            if (err != NULL) {
-                printf("XCB-Error: %d\n", err->error_code);
+                          0, 0,
+                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width)), 1,
+                          (uint16_t)outputs_walk->rect.w, font_height);
+            xcb_generic_error_t *err;
+            if ((err = xcb_request_check(xcb_connection, ca_cookie)) != NULL) {
+                printf("ERROR: Can not copy statusline-buffer! XCB-error: %d\n", err->error_code);
+                free(err);
             }
         }
+
         i3_ws *ws_walk;
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
             printf("Drawing Button for WS %s at x = %d\n", ws_walk->name, i);
