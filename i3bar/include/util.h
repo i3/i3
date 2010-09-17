@@ -44,3 +44,14 @@
         walk = TAILQ_FIRST(l); \
     } \
 } while (0)
+
+/* Use cool logging-macros */
+#define DLOG(fmt, ...) do { \
+    if (config.verbose) { \
+        printf("[%s:%d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+    } \
+} while(0)
+
+#define ELOG(fmt, ...) do { \
+    fprintf(stderr, "[%s:%d] ERROR: " fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+} while(0)

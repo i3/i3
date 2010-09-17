@@ -69,7 +69,7 @@ ev_io      *xkb_io;
 int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
     xcb_generic_error_t *err;
     if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
-        printf("%s:%d - %s. X Error Code: %d", __FILE__, line, err_msg, err->error_code);
+        ELOG("%s. X Error Code: %d\n", err_msg, err->error_code);
         return err->error_code;
     }
     return 0;
@@ -235,7 +235,7 @@ void unhide_bars() {
         values[2] = walk->rect.w;
         values[3] = font_height + 6;
         values[4] = XCB_STACK_MODE_ABOVE;
-        printf("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
+        DLOG("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
         cookie = xcb_configure_window_checked(xcb_connection,
                                               walk->bar,
                                               mask,
@@ -267,11 +267,11 @@ void handle_button(xcb_button_press_event_t *event) {
     }
 
     if (walk == NULL) {
-        printf("Unknown Bar klicked!\n");
+        DLOG("Unknown Bar klicked!\n");
         return;
     }
 
-    /* TODO: Move this to exern get_ws_for_output() */
+    /* TODO: Move this to extern get_ws_for_output() */
     TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
         if (cur_ws->visible) {
             break;
@@ -279,20 +279,20 @@ void handle_button(xcb_button_press_event_t *event) {
     }
 
     if (cur_ws == NULL) {
-        printf("No Workspace active?\n");
+        DLOG("No Workspace active?\n");
         return;
     }
 
     int32_t x = event->event_x;
 
-    printf("Got Button %d\n", event->detail);
+    DLOG("Got Button %d\n", event->detail);
 
     switch (event->detail) {
         case 1:
             /* Left Mousbutton. We determine, which button was clicked
              * and set cur_ws accordingly */
             TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
-                printf("x = %d\n", x);
+                DLOG("x = %d\n", x);
                 if (x < cur_ws->name_width + 10) {
                     break;
                 }
@@ -375,18 +375,18 @@ void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     XkbEvent ev;
     int modstate;
 
-    printf("Got XKB-Event!\n");
+    DLOG("Got XKB-Event!\n");
 
     while (XPending(xkb_dpy)) {
         XNextEvent(xkb_dpy, (XEvent*)&ev);
 
         if (ev.type != xkb_event_base) {
-            printf("ERROR: No Xkb-Event!\n");
+            ELOG("No Xkb-Event!\n");
             continue;
         }
 
         if (ev.any.xkb_type != XkbStateNotify) {
-            printf("ERROR: No State Notify!\n");
+            ELOG("No State Notify!\n");
             continue;
         }
 
@@ -396,10 +396,10 @@ void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 
     if (modstate != mod_pressed) {
         if (modstate == 0) {
-            printf("Mod4 got released!\n");
+            DLOG("Mod4 got released!\n");
             hide_bars();
         } else {
-            printf("Mod4 got pressed!\n");
+            DLOG("Mod4 got pressed!\n");
             unhide_bars();
         }
         mod_pressed = modstate;
@@ -414,10 +414,10 @@ void init_xcb(char *fontname) {
     /* FIXME: xcb_connect leaks Memory */
     xcb_connection = xcb_connect(NULL, NULL);
     if (xcb_connection_has_error(xcb_connection)) {
-        printf("Cannot open display\n");
+        ELOG("Cannot open display\n");
         exit(EXIT_FAILURE);
     }
-    printf("Connected to xcb\n");
+    DLOG("Connected to xcb\n");
 
     /* We have to request the atoms we need */
     #define ATOM_DO(name) atom_cookies[name] = xcb_intern_atom(xcb_connection, 0, strlen(#name), #name);
@@ -456,23 +456,23 @@ void init_xcb(char *fontname) {
                                  &xkb_err);
 
         if (xkb_dpy == NULL) {
-            printf("ERROR: No XKB!\n");
+            ELOG("No XKB!\n");
             exit(EXIT_FAILURE);
         }
 
         if (fcntl(ConnectionNumber(xkb_dpy), F_SETFD, FD_CLOEXEC) == -1) {
-            fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
+            ELOG("Could not set FD_CLOEXEC on xkbdpy\n");
             exit(EXIT_FAILURE);
         }
 
         int i1;
         if (!XkbQueryExtension(xkb_dpy, &i1, &xkb_event_base, &xkb_errbase, &xkb_major, &xkb_minor)) {
-            printf("ERROR: XKB not supported by X-server!\n");
+            ELOG("XKB not supported by X-server!\n");
             exit(EXIT_FAILURE);
         }
 
         if (!XkbSelectEvents(xkb_dpy, XkbUseCoreKbd, XkbStateNotifyMask, XkbStateNotifyMask)) {
-            printf("Could not grab Key!\n");
+            ELOG("Could not grab Key!\n");
             exit(EXIT_FAILURE);
         }
 
@@ -532,7 +532,7 @@ void init_xcb(char *fontname) {
         font_table = xcb_query_font_char_infos(font_info);
     }
 
-    printf("Calculated Font-height: %d\n", font_height);
+    DLOG("Calculated Font-height: %d\n", font_height);
 
     if (xcb_request_failed(sl_ctx_cookie, "Could not create context for statusline")) {
         exit(EXIT_FAILURE);
@@ -571,14 +571,14 @@ void get_atoms() {
     xcb_intern_atom_reply_t *reply;
     #define ATOM_DO(name) reply = xcb_intern_atom_reply(xcb_connection, atom_cookies[name], NULL); \
         if (reply == NULL) { \
-            printf("ERROR: Could not get atom %s\n", #name); \
+            ELOG("Could not get atom %s\n", #name); \
             exit(EXIT_FAILURE); \
         } \
         atoms[name] = reply->atom; \
         free(reply);
 
     #include "xcb_atoms.def"
-    printf("Got Atoms\n");
+    DLOG("Got Atoms\n");
 }
 
 /*
@@ -609,12 +609,12 @@ void reconfig_windows() {
         if (!walk->active) {
             /* If an output is not active, we destroy it's bar */
             /* FIXME: Maybe we rather want to unmap? */
-            printf("Destroying window for output %s\n", walk->name);
+            DLOG("Destroying window for output %s\n", walk->name);
             destroy_window(walk);
             continue;
         }
         if (walk->bar == XCB_NONE) {
-            printf("Creating Window for output %s\n", walk->name);
+            DLOG("Creating Window for output %s\n", walk->name);
 
             walk->bar = xcb_generate_id(xcb_connection);
             walk->buffer = xcb_generate_id(xcb_connection);
@@ -690,7 +690,7 @@ void reconfig_windows() {
             values[2] = walk->rect.w;
             values[3] = font_height + 6;
             values[4] = XCB_STACK_MODE_ABOVE;
-            printf("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
+            DLOG("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
             xcb_void_cookie_t cfg_cookie = xcb_configure_window_checked(xcb_connection,
                                                                         walk->bar,
                                                                         mask,
@@ -707,7 +707,7 @@ void reconfig_windows() {
  *
  */
 void draw_bars() {
-    printf("Drawing Bars...\n");
+    DLOG("Drawing Bars...\n");
     int i = 0;
 
     refresh_statusline();
@@ -715,7 +715,7 @@ void draw_bars() {
     i3_output *outputs_walk;
     SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (!outputs_walk->active) {
-            printf("Output %s inactive, skipping...\n", outputs_walk->name);
+            DLOG("Output %s inactive, skipping...\n", outputs_walk->name);
             continue;
         }
         if (outputs_walk->bar == XCB_NONE) {
@@ -736,7 +736,7 @@ void draw_bars() {
                                 &rect);
 
         if (statusline != NULL) {
-            printf("Printing statusline!\n");
+            DLOG("Printing statusline!\n");
 
             /* Luckily we already prepared a seperate pixmap containing the rendered
              * statusline, we just have to copy the relevant parts to the relevant
@@ -752,13 +752,13 @@ void draw_bars() {
 
         i3_ws *ws_walk;
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
-            printf("Drawing Button for WS %s at x = %d\n", ws_walk->name, i);
+            DLOG("Drawing Button for WS %s at x = %d\n", ws_walk->name, i);
             uint32_t color = get_colorpixel("240000");
             if (ws_walk->visible) {
                 color = get_colorpixel("480000");
             }
             if (ws_walk->urgent) {
-                printf("WS %s is urgent!\n", ws_walk->name);
+                DLOG("WS %s is urgent!\n", ws_walk->name);
                 color = get_colorpixel("002400");
                 /* The urgent-hint should get noticed, so we unhide the bars shortly */
                 unhide_bars();

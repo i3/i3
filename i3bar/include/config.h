@@ -3,6 +3,7 @@
 
 typedef struct config_t {
     int hide_on_modifier;
+    int verbose;
 } config_t;
 
 config_t config;

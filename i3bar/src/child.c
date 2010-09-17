@@ -59,7 +59,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
                 buffer[rec-1] = '\0';
                 break;
             }
-            printf("ERROR: read() failed!");
+            ELOG("read() failed!\n");
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
@@ -80,7 +80,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     }
     FREE(statusline);
     statusline = buffer;
-    printf("%s\n", buffer);
+    DLOG("%s\n", buffer);
     draw_bars();
 }
 
@@ -91,7 +91,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  *
  */
 void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
-    printf("Child (pid: %d) unexpectedly exited with status %d\n",
+    DLOG("Child (pid: %d) unexpectedly exited with status %d\n",
            child_pid,
            watcher->rstatus);
     cleanup();
@@ -111,7 +111,7 @@ void start_child(char *command) {
         child_pid = fork();
         switch (child_pid) {
             case -1:
-                printf("ERROR: Couldn't fork()");
+                ELOG("Couldn't fork()\n");
                 exit(EXIT_FAILURE);
             case 0:
                 /* Child-process. Reroute stdout and start shell */

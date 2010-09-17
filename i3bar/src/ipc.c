@@ -30,7 +30,7 @@ typedef void(*handler_t)(char*);
 int get_ipc_fd(const char *socket_path) {
     int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
     if (sockfd == -1) {
-        printf("ERROR: Could not create Socket!\n");
+        ELOG("Could not create Socket!\n");
         exit(EXIT_FAILURE);
     }
 
@@ -39,7 +39,7 @@ int get_ipc_fd(const char *socket_path) {
     addr.sun_family = AF_LOCAL;
     strcpy(addr.sun_path, socket_path);
     if (connect(sockfd, (const struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
-        printf("ERROR: Could not connct to i3\n");
+        ELOG("Could not connct to i3!\n");
         exit(EXIT_FAILURE);
     }
     return sockfd;
@@ -59,7 +59,7 @@ void got_command_reply(char *reply) {
  *
  */
 void got_workspace_reply(char *reply) {
-    printf("Got Workspace-Data!\n");
+    DLOG("Got Workspace-Data!\n");
     parse_workspaces_json(reply);
     draw_bars();
 }
@@ -70,7 +70,7 @@ void got_workspace_reply(char *reply) {
  *
  */
 void got_subscribe_reply(char *reply) {
-    printf("Got Subscribe Reply: %s\n", reply);
+    DLOG("Got Subscribe Reply: %s\n", reply);
     /* TODO: Error handling for subscribe-commands */
 }
 
@@ -79,9 +79,9 @@ void got_subscribe_reply(char *reply) {
  *
  */
 void got_output_reply(char *reply) {
-    printf("Parsing Outputs-JSON...\n");
+    DLOG("Parsing Outputs-JSON...\n");
     parse_outputs_json(reply);
-    printf("Reconfiguring Windows...\n");
+    DLOG("Reconfiguring Windows...\n");
     reconfig_windows();
 }
 
@@ -98,7 +98,7 @@ handler_t reply_handlers[] = {
  *
  */
 void got_workspace_event(char *event) {
-    printf("Got Workspace Event!\n");
+    DLOG("Got Workspace Event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
 }
 
@@ -107,7 +107,7 @@ void got_workspace_event(char *event) {
  *
  */
 void got_output_event(char *event) {
-    printf("Got Output Event!\n");
+    DLOG("Got Output Event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
 }
@@ -123,14 +123,14 @@ handler_t event_handlers[] = {
  *
  */
 void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
-    printf("Got data!\n");
+    DLOG("Got data!\n");
     int fd = watcher->fd;
 
     /* First we only read the header, because we know it's length */
     uint32_t header_len = strlen(I3_IPC_MAGIC) + sizeof(uint32_t)*2;
     char *header = malloc(header_len);
     if (header == NULL) {
-        printf("ERROR: Could not allocate memory!\n");
+        ELOG("Could not allocate memory!\n");
         exit(EXIT_FAILURE);
     }
 
@@ -140,21 +140,21 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     while (rec < header_len) {
         int n = read(fd, header + rec, header_len - rec);
         if (n == -1) {
-            printf("ERROR: read() failed!\n");
+            ELOG("read() failed!\n");
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
-            printf("ERROR: Nothing to read!\n");
+            ELOG("Nothing to read!\n");
             exit(EXIT_FAILURE);
         }
         rec += n;
     }
 
     if (strncmp(header, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC))) {
-        printf("ERROR: Wrong magic code: %.*s\n Expected: %s\n",
-               (int) strlen(I3_IPC_MAGIC),
-               header,
-               I3_IPC_MAGIC);
+        ELOG("Wrong magic code: %.*s\n Expected: %s\n",
+             (int) strlen(I3_IPC_MAGIC),
+             header,
+             I3_IPC_MAGIC);
         exit(EXIT_FAILURE);
     }
 
@@ -167,7 +167,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
      * of the message */
     char *buffer = malloc(size + 1);
     if (buffer == NULL) {
-        printf("ERROR: Could not allocate memory!\n");
+        ELOG("Could not allocate memory!\n");
         exit(EXIT_FAILURE);
     }
     rec = 0;
@@ -175,11 +175,11 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     while (rec < size) {
         int n = read(fd, buffer + rec, size - rec);
         if (n == -1) {
-            printf("ERROR: read() failed!\n");
+            ELOG("read() failed!\n");
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
-            printf("ERROR: Nothing to read!\n");
+            ELOG("Nothing to read!\n");
             exit(EXIT_FAILURE);
         }
         rec += n;
@@ -216,7 +216,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
      * but we leave it for now */
     char *buffer = malloc(to_write);
     if (buffer == NULL) {
-        printf("ERROR: Could not allocate memory\n");
+        ELOG("Could not allocate memory\n");
         exit(EXIT_FAILURE);
     }
 
@@ -236,7 +236,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
     while (to_write > 0) {
         int n = write(i3_connection->fd, buffer + written, to_write);
         if (n == -1) {
-            printf("ERROR: write() failed!\n");
+            ELOG("write() failed!\n");
             exit(EXIT_FAILURE);
         }
 

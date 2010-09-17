@@ -230,7 +230,7 @@ void parse_outputs_json(char *json) {
         case yajl_status_client_canceled:
         case yajl_status_insufficient_data:
         case yajl_status_error:
-            printf("ERROR: Could not parse outputs-reply!\n");
+            ELOG("Could not parse outputs-reply!\n");
             exit(EXIT_FAILURE);
             break;
     }
