@@ -64,6 +64,17 @@ ev_check   *xcb_chk;
 ev_io      *xcb_io;
 ev_io      *xkb_io;
 
+/* We define xcb_request_failed as a macro to include the relevant line-number */
+#define xcb_request_failed(cookie, err_msg) _xcb_request_failed(cookie, err_msg, __LINE__)
+int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
+    xcb_generic_error_t *err;
+    if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
+        printf("%s:%d - %s. X Error Code: %d", __FILE__, line, err_msg, err->error_code);
+        return err->error_code;
+    }
+    return 0;
+}
+
 /*
  * Predicts the length of text based on cached data.
  * The string has to be encoded in ucs2 and glyph_len has to be the length
@@ -173,9 +184,7 @@ void refresh_statusline() {
 
     draw_text(statusline_pm, statusline_ctx, 0, 0, text, glyph_count);
 
-    xcb_generic_error_t *err;
-    if ((err = xcb_request_check(xcb_connection, sl_pm_cookie)) != NULL) {
-        printf("ERROR: Could not allocate statusline-buffer! XCB-error: %d\n", err->error_code);
+    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer")) {
         exit(EXIT_FAILURE);
     }
 }
@@ -207,7 +216,6 @@ void unhide_bars() {
 
     i3_output           *walk;
     xcb_void_cookie_t   cookie;
-    xcb_generic_error_t *err;
     uint32_t            mask;
     uint32_t            values[5];
 
@@ -233,8 +241,7 @@ void unhide_bars() {
                                               mask,
                                               values);
 
-        if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
-            printf("ERROR: Could not reconfigure window. XCB-errorcode: %d\n", err->error_code);
+        if (xcb_request_failed(cookie, "Could not reconfigure window")) {
             exit(EXIT_FAILURE);
         }
         xcb_map_window(xcb_connection, walk->bar);
@@ -427,14 +434,6 @@ void init_xcb(char *fontname) {
                                              strlen(fontname),
                                              fontname);
 
-    xcb_generic_error_t *err = xcb_request_check(xcb_connection,
-                                                 open_font_cookie);
-
-    if (err != NULL) {
-        printf("ERROR: Could not open font! XCB-Error-Code: %d\n", err->error_code);
-        exit(EXIT_FAILURE);
-    }
-
     /* We need to save info about the font, because we need the fonts height and
      * information about the width of characters */
     xcb_query_font_cookie_t query_font_cookie;
@@ -520,11 +519,10 @@ void init_xcb(char *fontname) {
     /* Now we save the font-infos */
     font_info = xcb_query_font_reply(xcb_connection,
                                      query_font_cookie,
-                                     &err);
+                                     NULL);
     font_height = font_info->font_ascent + font_info->font_descent;
 
-    if (err != NULL) {
-        printf("ERROR: Could not query font! XCB-error: %d\n", err->error_code);
+    if (xcb_request_failed(open_font_cookie, "Could not open font")) {
         exit(EXIT_FAILURE);
     }
 
@@ -536,8 +534,7 @@ void init_xcb(char *fontname) {
 
     printf("Calculated Font-height: %d\n", font_height);
 
-    if((err = xcb_request_check(xcb_connection, sl_ctx_cookie)) != NULL) {
-        printf("ERROR: Could not create context for statusline! XCB-error: %d\n", err->error_code);
+    if (xcb_request_failed(sl_ctx_cookie, "Could not create context for statusline")) {
         exit(EXIT_FAILURE);
     }
 }
@@ -607,8 +604,6 @@ void reconfig_windows() {
     uint32_t mask;
     uint32_t values[5];
 
-    xcb_generic_error_t *err;
-
     i3_output *walk;
     SLIST_FOREACH(walk, outputs, slist) {
         if (!walk->active) {
@@ -676,28 +671,11 @@ void reconfig_windows() {
             /* We finally map the bar (display it on screen) */
             xcb_void_cookie_t map_cookie = xcb_map_window_checked(xcb_connection, walk->bar);
 
-            if ((err = xcb_request_check(xcb_connection, win_cookie)) != NULL) {
-                printf("ERROR: Could not create Window. XCB-errorcode: %d\n", err->error_code);
-                exit(EXIT_FAILURE);
-            }
-
-            if ((err = xcb_request_check(xcb_connection, pm_cookie)) != NULL) {
-                printf("ERROR: Could not create Pixmap. XCB-errorcode: %d\n", err->error_code);
-                exit(EXIT_FAILURE);
-            }
-
-            if ((err = xcb_request_check(xcb_connection, prop_cookie)) != NULL) {
-                printf("ERROR: Could not set dock mode. XCB-errorcode: %d\n", err->error_code);
-                exit(EXIT_FAILURE);
-            }
-
-            if ((err = xcb_request_check(xcb_connection, gc_cookie)) != NULL) {
-                printf("ERROR: Could not create graphical context. XCB-errorcode: %d\n", err->error_code);
-                exit(EXIT_FAILURE);
-            }
-
-            if ((err = xcb_request_check(xcb_connection, map_cookie)) != NULL) {
-                printf("ERROR: Could not map window. XCB-errorcode: %d\n", err->error_code);
+            if (xcb_request_failed(win_cookie,  "Could not create window") ||
+                xcb_request_failed(pm_cookie,   "Could not create pixmap") ||
+                xcb_request_failed(prop_cookie, "Could not set dock mode") ||
+                xcb_request_failed(gc_cookie,   "Could not create graphical context") ||
+                xcb_request_failed(map_cookie,  "Could not map window")) {
                 exit(EXIT_FAILURE);
             }
         } else {
@@ -717,9 +695,7 @@ void reconfig_windows() {
                                                                         walk->bar,
                                                                         mask,
                                                                         values);
-
-            if ((err = xcb_request_check(xcb_connection, cfg_cookie)) != NULL) {
-                printf("ERROR: Could not reconfigure window. XCB-errorcode: %d\n", err->error_code);
+            if (xcb_request_failed(cfg_cookie, "Could not reconfigure window")) {
                 exit(EXIT_FAILURE);
             }
         }
