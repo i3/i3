@@ -111,6 +111,8 @@ void draw_text(xcb_drawable_t drawable, xcb_gcontext_t ctx, int16_t x, int16_t y
                xcb_char2b_t *text, uint32_t glyph_count) {
     int offset = 0;
     int16_t pos_x = x;
+    int16_t font_ascent = font_info->font_ascent;
+
     while (glyph_count > 0) {
         uint8_t chunk_size = MIN(255, glyph_count);
         uint32_t chunk_width = predict_text_extents(text + offset, chunk_size);
@@ -119,7 +121,7 @@ void draw_text(xcb_drawable_t drawable, xcb_gcontext_t ctx, int16_t x, int16_t y
                           chunk_size,
                           drawable,
                           ctx,
-                          pos_x, y,
+                          pos_x, y + font_ascent,
                           text + offset);
 
         offset += chunk_size;
@@ -166,22 +168,11 @@ void refresh_statusline() {
                                                                statusline_width,
                                                                font_height);
 
-    xcb_void_cookie_t text_cookie = xcb_image_text_16(xcb_connection,
-                                                      glyph_count,
-                                                      statusline_pm,
-                                                      statusline_ctx,
-                                                      0,
-                                                      font_height,
-                                                      text);
+    draw_text(statusline_pm, statusline_ctx, 0, 0, text, glyph_count);
 
     xcb_generic_error_t *err;
     if ((err = xcb_request_check(xcb_connection, sl_pm_cookie)) != NULL) {
         printf("ERROR: Could not allocate statusline-buffer! XCB-error: %d\n", err->error_code);
-        exit(EXIT_FAILURE);
-    }
-
-    if ((err = xcb_request_check(xcb_connection, text_cookie)) != NULL) {
-        printf("ERROR: Could not draw text to buffer! XCB-error: %d\n", err->error_code);
         exit(EXIT_FAILURE);
     }
 }
@@ -790,18 +781,13 @@ void draw_bars() {
         if (statusline != NULL) {
             printf("Printing statusline!\n");
 
-            xcb_void_cookie_t ca_cookie = xcb_copy_area(xcb_connection,
+            xcb_copy_area(xcb_connection,
                           statusline_pm,
                           outputs_walk->buffer,
                           outputs_walk->bargc,
-                          0, 0,
-                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width)), 1,
-                          (uint16_t)outputs_walk->rect.w, font_height);
-            xcb_generic_error_t *err;
-            if ((err = xcb_request_check(xcb_connection, ca_cookie)) != NULL) {
-                printf("ERROR: Can not copy statusline-buffer! XCB-error: %d\n", err->error_code);
-                free(err);
-            }
+                          MAX(0, (int16_t)(statusline_width - outputs_walk->rect.w + 4)), 0,
+                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - 4)), 3,
+                          MIN(outputs_walk->rect.w - 4, statusline_width), font_height);
         }
 
         i3_ws *ws_walk;
