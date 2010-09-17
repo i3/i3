@@ -38,7 +38,7 @@ xcb_atom_t               atoms[NUM_ATOMS];
 
 /* Variables, that are the same for all functions at all times */
 xcb_connection_t *xcb_connection;
-xcb_screen_t     *xcb_screens;
+xcb_screen_t     *xcb_screen;
 xcb_window_t     xcb_root;
 xcb_font_t       xcb_font;
 
@@ -165,7 +165,7 @@ void refresh_statusline() {
     xcb_free_pixmap(xcb_connection, statusline_pm);
     statusline_pm = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                               xcb_screens->root_depth,
+                                                               xcb_screen->root_depth,
                                                                statusline_pm,
                                                                xcb_root,
                                                                statusline_width,
@@ -416,8 +416,8 @@ void init_xcb(char *fontname) {
     #define ATOM_DO(name) atom_cookies[name] = xcb_intern_atom(xcb_connection, 0, strlen(#name), #name);
     #include "xcb_atoms.def"
 
-    xcb_screens = xcb_setup_roots_iterator(xcb_get_setup(xcb_connection)).data;
-    xcb_root = xcb_screens->root;
+    xcb_screen = xcb_setup_roots_iterator(xcb_get_setup(xcb_connection)).data;
+    xcb_root = xcb_screen->root;
 
     /* We load and allocate the font */
     xcb_font = xcb_generate_id(xcb_connection);
@@ -489,7 +489,7 @@ void init_xcb(char *fontname) {
     uint32_t mask = XCB_GC_FOREGROUND |
                     XCB_GC_BACKGROUND |
                     XCB_GC_FONT;
-    uint32_t vals[3] = { xcb_screens->white_pixel, xcb_screens->black_pixel, xcb_font };
+    uint32_t vals[3] = { xcb_screen->white_pixel, xcb_screen->black_pixel, xcb_font };
 
     xcb_void_cookie_t sl_ctx_cookie = xcb_create_gc_checked(xcb_connection,
                                                             statusline_ctx,
@@ -624,27 +624,27 @@ void reconfig_windows() {
             walk->buffer = xcb_generate_id(xcb_connection);
             mask = XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
             /* Black background */
-            values[0] = xcb_screens->black_pixel;
+            values[0] = xcb_screen->black_pixel;
             /* If hide_on_modifier is set, i3 is not supposed to manage our bar-windows */
             values[1] = config.hide_on_modifier;
             /* The events we want to receive */
             values[2] = XCB_EVENT_MASK_EXPOSURE |
                         XCB_EVENT_MASK_BUTTON_PRESS;
             xcb_void_cookie_t win_cookie = xcb_create_window_checked(xcb_connection,
-                                                                     xcb_screens->root_depth,
+                                                                     xcb_screen->root_depth,
                                                                      walk->bar,
                                                                      xcb_root,
                                                                      walk->rect.x, walk->rect.y,
                                                                      walk->rect.w, font_height + 6,
                                                                      1,
                                                                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                                                     xcb_screens->root_visual,
+                                                                     xcb_screen->root_visual,
                                                                      mask,
                                                                      values);
 
             /* The double-buffer we use to render stuff off-screen */
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                                    xcb_screens->root_depth,
+                                                                    xcb_screen->root_depth,
                                                                     walk->buffer,
                                                                     walk->bar,
                                                                     walk->rect.w,
