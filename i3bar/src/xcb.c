@@ -563,6 +563,7 @@ void clean_xcb() {
     FREE(xcb_chk);
     FREE(xcb_prep);
     FREE(xcb_io);
+    FREE(font_info);
 }
 
 /*
@@ -809,7 +810,7 @@ void draw_bars() {
                               ws_walk->name_glyphs,
                               outputs_walk->buffer,
                               outputs_walk->bargc,
-                              i + 5, font_height + 1,
+                              i + 5, font_info->font_ascent + 2,
                               ws_walk->ucs2_name);
             i += 10 + ws_walk->name_width;
         }
