@@ -115,8 +115,9 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
             xcb_char2b_t *ucs2_name = (xcb_char2b_t*) convert_utf8_to_ucs2(params->workspaces_walk->name, &ucs2_len);
             params->workspaces_walk->ucs2_name = ucs2_name;
             params->workspaces_walk->name_glyphs = ucs2_len;
-            params->workspaces_walk->name_width = get_string_width(params->workspaces_walk->ucs2_name,
-                                                                   params->workspaces_walk->name_glyphs);
+            params->workspaces_walk->name_width =
+                predict_text_extents(params->workspaces_walk->ucs2_name,
+                params->workspaces_walk->name_glyphs);
 
             printf("Got Workspace %s, name_width: %d, glyphs: %d\n",
                    params->workspaces_walk->name,

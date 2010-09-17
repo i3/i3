@@ -64,7 +64,9 @@ ev_io      *xcb_io;
 ev_io      *xkb_io;
 
 /*
- * Predicts the length of text based on cached data
+ * Predicts the length of text based on cached data.
+ * The string has to be encoded in ucs2 and glyph_len has to be the length
+ * of the string (in glyphs).
  *
  */
 uint32_t predict_text_extents(xcb_char2b_t *text, uint32_t length) {
@@ -394,30 +396,6 @@ void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         }
         mod_pressed = modstate;
     }
-}
-
-/*
- * Calculate the rendered width of a string with the configured font.
- * The string has to be encoded in ucs2 and glyph_len has to be the length
- * of the string (in width)
- *
- */
-int get_string_width(xcb_char2b_t *string, int glyph_len) {
-    xcb_query_text_extents_cookie_t cookie;
-    xcb_query_text_extents_reply_t *reply;
-    xcb_generic_error_t *error = NULL;
-    int width;
-
-    cookie = xcb_query_text_extents(xcb_connection, xcb_font, glyph_len, string);
-    reply = xcb_query_text_extents_reply(xcb_connection, cookie, &error);
-    if (error != NULL) {
-        printf("ERROR: Could not get text extents! XCB-errorcode: %d\n", error->error_code);
-        exit(EXIT_FAILURE);
-    }
-
-    width = reply->overall_width;
-    free(reply);
-    return width;
 }
 
 /*

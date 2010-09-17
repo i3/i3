@@ -55,11 +55,11 @@ void draw_bars();
 void redraw_bars();
 
 /*
- * Calculate the rendered width of a string with the configured font.
+ * Predicts the length of text based on cached data.
  * The string has to be encoded in ucs2 and glyph_len has to be the length
- * of the string (in width)
+ * of the string (in glyphs).
  *
  */
-int get_string_width(xcb_char2b_t *string, int glyph_len);
+uint32_t predict_text_extents(xcb_char2b_t *text, uint32_t length);
 
 #endif
