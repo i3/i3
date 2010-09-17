@@ -1,0 +1,61 @@
+i3bar(1)
+========
+Axel Wagner <mail+i3bar@merovius.de>
+v0.5, September 2010
+
+== NAME
+
+i3bar - xcb-based status- and ws-bar
+
+== SYNOPSIS
+
+*i3bar* [*-s* 'sock_path'] [*-c* 'command'] [*-m*] [*-f* 'font'] [*-V*] [*-h*]
+
+== OPTIONS
+
+*-s, --socket* 'sock_path'::
+Specifies the 'socketpath', via which *i3bar* connects to *i3*(1). If *i3bar* can not connect to *i3*, it will exit. Defaults to '~/.i3/ipc.sock'
+
+*-c, --command* 'command'::
+Execute '<command>' to get 'stdin'. You can also simply pipe into 'stdin', but starting the coomand for itself, *i3bar* is able to send 'SIGCONT' and 'SIGSTOP', when combined with *-m*
+
+*-m, --hide*::
+Hide the bar, when 'mod4' is not pressed. With this, dockmode will not be set, and the bar is out of the way most of the time so you have more room.
+If *-c* is specified, the childprocess is sent a 'SIGSTOP' on hiding and a 'SIGCONT' on unhiding of the bars
+
+*-f, --font* 'font'::
+Specifies a 'X-core-font' to use. You can choose one with *xfontsel*(1). Defaults to '-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1'.
+
+*-V, --verbose*::
+Be (very) verbose with the debug-output. If not set, only errors are reported to 'stderr'
+
+*-h, --help*::
+Display a short help-message and exit
+
+== DESCRIPTION
+
+*i3bar* is an xcb- and libev-based status- and ws-bar. It is best thought of as an replacement for the *i3-wsbar*(1) + *dzen2*(1)-combination. It creates a workspace-bar for every active output ("screen") and displays a piped in statusline rightaligned on every bar.
+
+It does not sample any status-information itself, so you still need a program like *i3status*(1) or *conky*(1) for that.
+
+i3bar does not support any color or other markups, so stdin should be plain utf8, one line at a time. If you use *i3status*(1), you therefore should specify 'output_format = none' in the general-section of it's configfile.
+
+Also, you should disable the internal workspace bar of *i3*(1), when using *i3bar* by specifying 'workspace_bar no' in your *i3*-configfile.
+
+== EXAMPLES
+
+To get a docked bar with some statusinformation, you use
+
+*i3status | i3bar*
+
+If you want it to hide when not needed, you should instead use
+
+*i3bar -c i3status -m*
+
+== SEE ALSO
+
++i3(1)+, +i3-wsbar(1)+, +dzen2(1)+, +i3status(1)+
+
+== AUTHORS
+
+Axel Wagner and contributors

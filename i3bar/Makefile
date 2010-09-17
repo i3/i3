@@ -6,9 +6,16 @@ FILES:=$(wildcard src/*.c)
 FILES:=$(FILES:.c=.o)
 HEADERS:=$(wildcard include/*.h)
 
-all: ${FILES}
+all: i3bar doc
+
+i3bar: ${FILES}
 	echo "LINK"
 	$(CC) -o i3bar ${FILES} ${LDFLAGS}
+
+doc:
+	echo ""
+	echo "SUBDIR doc"
+	$(MAKE) -C doc
 
 src/%.o: src/%.c ${HEADERS}
 	echo "CC $<"
@@ -21,5 +28,6 @@ install: all
 
 clean:
 	rm src/*.o
+	make -C doc clean
 
-.PHONY: install clean
+.PHONY: install clean doc
