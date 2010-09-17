@@ -18,7 +18,10 @@
 
 #include "common.h"
 
-
+/*
+ * Glob path, i.e. expand ~
+ *
+ */
 char *expand_path(char *path) {
     static glob_t globbuf;
     if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0) {
@@ -92,6 +95,9 @@ int main(int argc, char **argv) {
     }
 
     if (fontname == NULL) {
+        /* This is a very restrictive default. More sensefull would be something like
+         * "-misc-*-*-*-*--*-*-*-*-*-*-*-*". But since that produces very ugly results
+         * on my machine, let's stick with this until we have a configfile */
         fontname = "-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1";
     }
 
@@ -108,13 +114,21 @@ int main(int argc, char **argv) {
 
     FREE(socket_path);
 
+    /* We subscribe to the i3-events we need */
     subscribe_events();
 
+    /* We initiate the main-function by requesting infos about the outputs and
+     * workspaces. Everything else (creating the bars, showing the right workspace-
+     * buttons and more) is taken care of by the event-driveniness of the code */
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
 
+    /* The name of this function is actually misleading. Even if no -c is specified,
+     * this function initiates the watchers to listen on stdin and react accordingly */
     start_child(command);
 
+    /* From here on everything should run smooth for itself, just start listening for
+     * events. We stop simply stop the event-loop, when we are finished */
     ev_loop(main_loop, 0);
 
     kill_child();

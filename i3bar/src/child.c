@@ -114,6 +114,7 @@ void start_child(char *command) {
                 printf("ERROR: Couldn't fork()");
                 exit(EXIT_FAILURE);
             case 0:
+                /* Child-process. Reroute stdout and start shell */
                 close(fd[0]);
 
                 dup2(fd[1], STDOUT_FILENO);
@@ -126,6 +127,7 @@ void start_child(char *command) {
                 execl(shell, shell, "-c", command, (char*) NULL);
                 return;
             default:
+                /* Parent-process. Rerout stdin */
                 close(fd[1]);
 
                 dup2(fd[0], STDIN_FILENO);
@@ -134,6 +136,7 @@ void start_child(char *command) {
         }
     }
 
+    /* We set O_NONBLOCK because blocking is evil in event-driven software */
     fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
 
     stdin_io = malloc(sizeof(ev_io));

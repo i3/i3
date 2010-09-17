@@ -441,6 +441,9 @@ void init_xcb(char *fontname) {
     query_font_cookie = xcb_query_font(xcb_connection,
                                        xcb_font);
 
+    /* To grab modifiers without blocking other applications from receiving key-events
+     * involving that modifier, we sadly have to use xkb which is not yet fully supported
+     * in xcb */
     if (config.hide_on_modifier) {
         int xkb_major, xkb_minor, xkb_errbase, xkb_err;
         xkb_major = XkbMajorVersion;
@@ -494,6 +497,8 @@ void init_xcb(char *fontname) {
                                                             mask,
                                                             vals);
 
+    /* We only generate an id for the pixmap, because the width of it is dependent on the
+     * input we get */
     statusline_pm = xcb_generate_id(xcb_connection);
 
     /* The varios Watchers to communicate with xcb */
@@ -512,7 +517,7 @@ void init_xcb(char *fontname) {
     /* Now we get the atoms and save them in a nice data-structure */
     get_atoms();
 
-    /* Now we calculate the font-height */
+    /* Now we save the font-infos */
     font_info = xcb_query_font_reply(xcb_connection,
                                      query_font_cookie,
                                      &err);
@@ -637,6 +642,7 @@ void reconfig_windows() {
                                                                      mask,
                                                                      values);
 
+            /* The double-buffer we use to render stuff off-screen */
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
                                                                     xcb_screens->root_depth,
                                                                     walk->buffer,
@@ -644,7 +650,8 @@ void reconfig_windows() {
                                                                     walk->rect.w,
                                                                     walk->rect.h);
 
-            /* We want dock-windows (for now) */
+            /* We want dock-windows (for now). When override_redirect is set, i3 is ignoring
+             * this one */
             xcb_void_cookie_t prop_cookie = xcb_change_property(xcb_connection,
                                                                 XCB_PROP_MODE_REPLACE,
                                                                 walk->bar,
@@ -653,7 +660,9 @@ void reconfig_windows() {
                                                                 32,
                                                                 1,
                                                                 (unsigned char*) &atoms[_NET_WM_WINDOW_TYPE_DOCK]);
-            /* We also want a graphics-context (the "canvas" on which we draw) */
+
+            /* We also want a graphics-context for the bars (it defines the properties
+             * with which we draw to them) */
             walk->bargc = xcb_generate_id(xcb_connection);
             mask = XCB_GC_FONT;
             values[0] = xcb_font;
@@ -733,8 +742,10 @@ void draw_bars() {
             continue;
         }
         if (outputs_walk->bar == XCB_NONE) {
+            /* Oh shit, an active output without an own bar. Create it now! */
             reconfig_windows();
         }
+        /* First things first: clear the backbuffer */
         uint32_t color = get_colorpixel("000000");
         xcb_change_gc(xcb_connection,
                       outputs_walk->bargc,
@@ -746,9 +757,13 @@ void draw_bars() {
                                 outputs_walk->bargc,
                                 1,
                                 &rect);
+
         if (statusline != NULL) {
             printf("Printing statusline!\n");
 
+            /* Luckily we already prepared a seperate pixmap containing the rendered
+             * statusline, we just have to copy the relevant parts to the relevant
+             * position */
             xcb_copy_area(xcb_connection,
                           statusline_pm,
                           outputs_walk->buffer,

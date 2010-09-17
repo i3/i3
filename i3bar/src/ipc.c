@@ -51,7 +51,7 @@ int get_ipc_fd(const char *socket_path) {
  *
  */
 void got_command_reply(char *reply) {
-    /* FIXME: Error handling for command-replies */
+    /* TODO: Error handling for command-replies */
 }
 
 /*
@@ -71,7 +71,7 @@ void got_workspace_reply(char *reply) {
  */
 void got_subscribe_reply(char *reply) {
     printf("Got Subscribe Reply: %s\n", reply);
-    /* FIXME: Error handling for subscribe-commands */
+    /* TODO: Error handling for subscribe-commands */
 }
 
 /*
@@ -134,6 +134,8 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
         exit(EXIT_FAILURE);
     }
 
+    /* We first parse the fixed-length IPC-header, to know, how much data
+     * we have to expect */
     uint32_t rec = 0;
     while (rec < header_len) {
         int n = read(fd, header + rec, header_len - rec);
@@ -156,11 +158,13 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
         exit(EXIT_FAILURE);
     }
 
-    /* Know we read the rest of the message */
     char *walk = header + strlen(I3_IPC_MAGIC);
     uint32_t size = *((uint32_t*) walk);
     walk += sizeof(uint32_t);
     uint32_t type = *((uint32_t*) walk);
+
+    /* Now that we know, what to expect, we can start read()ing the rest
+     * of the message */
     char *buffer = malloc(size + 1);
     if (buffer == NULL) {
         printf("ERROR: Could not allocate memory!\n");
@@ -205,7 +209,11 @@ int i3_send_msg(uint32_t type, const char *payload) {
         len = strlen(payload);
     }
 
+    /* We are a wellbehaved client and send a proper header first */
     uint32_t to_write = strlen (I3_IPC_MAGIC) + sizeof(uint32_t)*2 + len;
+    /* TODO: I'm not entirely sure if this buffer really has to contain more
+     * than the pure header (why not just write() the payload from *payload?),
+     * but we leave it for now */
     char *buffer = malloc(to_write);
     if (buffer == NULL) {
         printf("ERROR: Could not allocate memory\n");
