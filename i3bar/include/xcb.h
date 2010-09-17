@@ -9,8 +9,6 @@
 #ifndef XCB_H_
 #define XCB_H_
 
-int font_height;
-
 /*
  * Initialize xcb and use the specified fontname for text-rendering
  *

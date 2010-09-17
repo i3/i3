@@ -44,6 +44,7 @@ xcb_font_t       xcb_font;
 
 /* We need to cache some data to speed up text-width-prediction */
 xcb_query_font_reply_t *font_info;
+int                    font_height;
 xcb_charinfo_t         *font_table;
 
 /* These are only relevant for XKB, which we only need for grabbing modifiers */
@@ -434,13 +435,8 @@ void init_xcb(char *fontname) {
         exit(EXIT_FAILURE);
     }
 
-    /* We also need the fontheight to configure our bars accordingly */
-    xcb_list_fonts_with_info_cookie_t font_info_cookie;
-    font_info_cookie = xcb_list_fonts_with_info(xcb_connection,
-                                                1,
-                                                strlen(fontname),
-                                                fontname);
-
+    /* We need to save info about the font, because we need the fonts height and
+     * information about the width of characters */
     xcb_query_font_cookie_t query_font_cookie;
     query_font_cookie = xcb_query_font(xcb_connection,
                                        xcb_font);
@@ -517,16 +513,10 @@ void init_xcb(char *fontname) {
     get_atoms();
 
     /* Now we calculate the font-height */
-    xcb_list_fonts_with_info_reply_t *reply;
-    reply = xcb_list_fonts_with_info_reply(xcb_connection,
-                                           font_info_cookie,
-                                           NULL);
-    font_height = reply->font_ascent + reply->font_descent;
-    FREE(reply);
-
     font_info = xcb_query_font_reply(xcb_connection,
                                      query_font_cookie,
                                      &err);
+    font_height = font_info->font_ascent + font_info->font_descent;
 
     if (err != NULL) {
         printf("ERROR: Could not query font! XCB-error: %d\n", err->error_code);
