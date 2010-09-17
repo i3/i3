@@ -18,7 +18,6 @@
 
 #include "common.h"
 
-char *i3_default_sock_path = "~/.i3/ipc.sock";
 
 char *expand_path(char *path) {
     static glob_t globbuf;
@@ -52,6 +51,7 @@ int main(int argc, char **argv) {
     char *socket_path = NULL;
     char *command = NULL;
     char *fontname = NULL;
+    char *i3_default_sock_path = "~/.i3/ipc.sock";
 
     /* Definition of the standard-config */
     config.hide_on_modifier = 0;
