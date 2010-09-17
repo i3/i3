@@ -13,7 +13,6 @@ typedef struct rect_t rect;
 typedef int bool;
 
 struct ev_loop* main_loop;
-pid_t           child_pid;
 char            *statusline;
 
 struct rect_t {

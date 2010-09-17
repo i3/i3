@@ -20,6 +20,9 @@
 
 #include "common.h"
 
+/* Global variables for child_*() */
+pid_t child_pid;
+
 /* stdin- and sigchild-watchers */
 ev_io    *stdin_io;
 ev_child *child_sig;
