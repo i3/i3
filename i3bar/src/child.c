@@ -61,12 +61,8 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         }
         if (n == 0) {
             if (rec == buffer_len) {
-                char *tmp = buffer;
-                buffer = malloc(buffer_len + STDIN_CHUNK_SIZE);
-                memset(buffer, '\0', buffer_len);
-                strncpy(buffer, tmp, buffer_len);
                 buffer_len += STDIN_CHUNK_SIZE;
-                FREE(tmp);
+                buffer = realloc(buffer, buffer_len);
             } else {
                 /* remove trailing newline and finish up */
                 buffer[rec-1] = '\0';
