@@ -256,7 +256,7 @@ static char *get_config_path() {
         if ((xdg_config_dirs = getenv("XDG_CONFIG_DIRS")) == NULL)
                 xdg_config_dirs = "/etc/xdg";
 
-        char *buf = strdup(xdg_config_dirs);
+        char *buf = sstrdup(xdg_config_dirs);
         char *tok = strtok(buf, ":");
         while (tok != NULL) {
                 tok = resolve_tilde(tok);
@@ -277,7 +277,7 @@ static char *get_config_path() {
         if (path_exists(config_path))
                 return config_path;
 
-        config_path = strdup(SYSCONFDIR "/i3/config");
+        config_path = sstrdup(SYSCONFDIR "/i3/config");
         if (!path_exists(config_path))
                 die("Neither $XDG_CONFIG_HOME/i3/config, nor "
                     "$XDG_CONFIG_DIRS/i3/config, nor ~/.i3/config nor "
