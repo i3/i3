@@ -487,6 +487,21 @@ bar.unfocused::
 bar.urgent::
 	A workspace which has at least one client with an activated urgency hint.
 
+You can also specify the color to be used to paint the background of the client
+windows. This color will be used to paint the window on top of which the client
+will be rendered.
+
+*Syntax*:
+-----------------------
+client.background color
+-----------------------
+
+Only clients that do not cover the whole area of this window expose the color
+used to paint it. If you use a color other than black for your terminals, you
+most likely want to set the client background color to the same color as your
+terminal program's background color to avoid black gaps between the rendered
+area of the termianal and the i3 border.
+
 Colors are in HTML hex format (#rrggbb), see the following example:
 
 *Examples*:
