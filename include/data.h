@@ -283,6 +283,19 @@ struct Con {
 
     double percent;
 
+    /* proportional width/height, calculated from WM_NORMAL_HINTS, used to
+     * apply an aspect ratio to windows (think of MPlayer) */
+    int proportional_width;
+    int proportional_height;
+    /* the wanted size of the window, used in combination with size
+     * increments (see below). */
+    int base_width;
+    int base_height;
+
+    /* minimum increment size specified for the window (in pixels) */
+    int width_increment;
+    int height_increment;
+
     struct Window *window;
 
     /* Should this container be marked urgent? This gets set when the window

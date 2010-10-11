@@ -88,7 +88,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     leader_cookie = xcb_get_any_property_unchecked(conn, false, window, atoms[WM_CLIENT_LEADER], UINT32_MAX);
     title_cookie = xcb_get_any_property_unchecked(conn, false, window, WM_NAME, 128);
     class_cookie = xcb_get_any_property_unchecked(conn, false, window, WM_CLASS, 128);
-
+    /* TODO: also get wm_normal_hints here. implement after we got rid of xcb-event */
 
     geomc = xcb_get_geometry(conn, d);
 

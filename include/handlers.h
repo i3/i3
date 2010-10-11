@@ -158,6 +158,7 @@ int handle_client_message(void *data, xcb_connection_t *conn,
 int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state,
                        xcb_window_t window, xcb_atom_t atom,
                        xcb_get_property_reply_t *property);
+#endif
 
 /**
  * Handles the size hints set by a window, but currently only the part
@@ -171,7 +172,6 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state,
                         xcb_window_t window, xcb_atom_t name,
                         xcb_get_property_reply_t *reply);
 
-#endif
 /**
  * Handles the WM_HINTS property for extracting the urgency state of the window.
  *

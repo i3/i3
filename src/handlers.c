@@ -693,6 +693,7 @@ int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_wi
         ELOG("_NET_WM_WINDOW_TYPE changed, this is not yet implemented.\n");
         return 0;
 }
+#endif
 
 /*
  * Handles the size hints set by a window, but currently only the part necessary for displaying
@@ -703,114 +704,101 @@ int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_wi
  */
 int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t name, xcb_get_property_reply_t *reply) {
-        Client *client = table_get(&by_child, window);
-        if (client == NULL) {
-                DLOG("Received WM_SIZE_HINTS for unknown client\n");
-                return 1;
-        }
-        xcb_size_hints_t size_hints;
-
-        CLIENT_LOG(client);
-
-        /* If the hints were already in this event, use them, if not, request them */
-        if (reply != NULL)
-                xcb_get_wm_size_hints_from_reply(&size_hints, reply);
-        else
-                xcb_get_wm_normal_hints_reply(conn, xcb_get_wm_normal_hints_unchecked(conn, client->child), &size_hints, NULL);
-
-        if ((size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE)) {
-                // TODO: Minimum size is not yet implemented
-                DLOG("Minimum size: %d (width) x %d (height)\n", size_hints.min_width, size_hints.min_height);
-        }
-
-        bool changed = false;
-        if ((size_hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)) {
-                if (size_hints.width_inc > 0 && size_hints.width_inc < 0xFFFF)
-                        if (client->width_increment != size_hints.width_inc) {
-                                client->width_increment = size_hints.width_inc;
-                                changed = true;
-                        }
-                if (size_hints.height_inc > 0 && size_hints.height_inc < 0xFFFF)
-                        if (client->height_increment != size_hints.height_inc) {
-                                client->height_increment = size_hints.height_inc;
-                                changed = true;
-                        }
-
-                if (changed)
-                        DLOG("resize increments changed\n");
-        }
-
-        int base_width = 0, base_height = 0;
-
-        /* base_width/height are the desired size of the window.
-           We check if either the program-specified size or the program-specified
-           min-size is available */
-        if (size_hints.flags & XCB_SIZE_HINT_BASE_SIZE) {
-                base_width = size_hints.base_width;
-                base_height = size_hints.base_height;
-        } else if (size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE) {
-                /* TODO: is this right? icccm says not */
-                base_width = size_hints.min_width;
-                base_height = size_hints.min_height;
-        }
-
-        if (base_width != client->base_width ||
-            base_height != client->base_height) {
-                client->base_width = base_width;
-                client->base_height = base_height;
-                DLOG("client's base_height changed to %d\n", base_height);
-                DLOG("client's base_width changed to %d\n", base_width);
-                changed = true;
-        }
-
-        if (changed) {
-                if (client->fullscreen)
-                        DLOG("Not resizing client, it is in fullscreen mode\n");
-                else {
-                        resize_client(conn, client);
-                        xcb_flush(conn);
-                }
-        }
-
-        /* If no aspect ratio was set or if it was invalid, we ignore the hints */
-        if (!(size_hints.flags & XCB_SIZE_HINT_P_ASPECT) ||
-            (size_hints.min_aspect_num <= 0) ||
-            (size_hints.min_aspect_den <= 0)) {
-                return 1;
-        }
-
-        double width = client->rect.width - base_width;
-        double height = client->rect.height - base_height;
-        /* Convert numerator/denominator to a double */
-        double min_aspect = (double)size_hints.min_aspect_num / size_hints.min_aspect_den;
-        double max_aspect = (double)size_hints.max_aspect_num / size_hints.min_aspect_den;
-
-        DLOG("Aspect ratio set: minimum %f, maximum %f\n", min_aspect, max_aspect);
-        DLOG("width = %f, height = %f\n", width, height);
-
-        /* Sanity checks, this is user-input, in a way */
-        if (max_aspect <= 0 || min_aspect <= 0 || height == 0 || (width / height) <= 0)
-                return 1;
-
-        /* Check if we need to set proportional_* variables using the correct ratio */
-        if ((width / height) < min_aspect) {
-                client->proportional_width = width;
-                client->proportional_height = width / min_aspect;
-        } else if ((width / height) > max_aspect) {
-                client->proportional_width = width;
-                client->proportional_height = width / max_aspect;
-        } else return 1;
-
-        client->force_reconfigure = true;
-
-        if (client->container != NULL) {
-                render_container(conn, client->container);
-                xcb_flush(conn);
-        }
-
+    Con *con = con_by_window_id(window);
+    if (con == NULL) {
+        DLOG("Received WM_NORMAL_HINTS for unknown client\n");
         return 1;
+    }
+
+    xcb_size_hints_t size_hints;
+
+        //CLIENT_LOG(client);
+
+    /* If the hints were already in this event, use them, if not, request them */
+    if (reply != NULL)
+        xcb_get_wm_size_hints_from_reply(&size_hints, reply);
+    else
+        xcb_get_wm_normal_hints_reply(conn, xcb_get_wm_normal_hints_unchecked(conn, con->window->id), &size_hints, NULL);
+
+    if ((size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE)) {
+        // TODO: Minimum size is not yet implemented
+        DLOG("Minimum size: %d (width) x %d (height)\n", size_hints.min_width, size_hints.min_height);
+    }
+
+    bool changed = false;
+    if ((size_hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)) {
+        if (size_hints.width_inc > 0 && size_hints.width_inc < 0xFFFF)
+            if (con->width_increment != size_hints.width_inc) {
+                con->width_increment = size_hints.width_inc;
+                changed = true;
+            }
+        if (size_hints.height_inc > 0 && size_hints.height_inc < 0xFFFF)
+            if (con->height_increment != size_hints.height_inc) {
+                con->height_increment = size_hints.height_inc;
+                changed = true;
+            }
+
+        if (changed)
+            DLOG("resize increments changed\n");
+    }
+
+    int base_width = 0, base_height = 0;
+
+    /* base_width/height are the desired size of the window.
+       We check if either the program-specified size or the program-specified
+       min-size is available */
+    if (size_hints.flags & XCB_SIZE_HINT_BASE_SIZE) {
+        base_width = size_hints.base_width;
+        base_height = size_hints.base_height;
+    } else if (size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE) {
+        /* TODO: is this right? icccm says not */
+        base_width = size_hints.min_width;
+        base_height = size_hints.min_height;
+    }
+
+    if (base_width != con->base_width ||
+        base_height != con->base_height) {
+        con->base_width = base_width;
+        con->base_height = base_height;
+        DLOG("client's base_height changed to %d\n", base_height);
+        DLOG("client's base_width changed to %d\n", base_width);
+        changed = true;
+    }
+
+    /* If no aspect ratio was set or if it was invalid, we ignore the hints */
+    if (!(size_hints.flags & XCB_SIZE_HINT_P_ASPECT) ||
+        (size_hints.min_aspect_num <= 0) ||
+        (size_hints.min_aspect_den <= 0)) {
+        goto render_and_return;
+    }
+
+    /* XXX: do we really use rect here, not window_rect? */
+    double width = con->rect.width - base_width;
+    double height = con->rect.height - base_height;
+    /* Convert numerator/denominator to a double */
+    double min_aspect = (double)size_hints.min_aspect_num / size_hints.min_aspect_den;
+    double max_aspect = (double)size_hints.max_aspect_num / size_hints.min_aspect_den;
+
+    DLOG("Aspect ratio set: minimum %f, maximum %f\n", min_aspect, max_aspect);
+    DLOG("width = %f, height = %f\n", width, height);
+
+    /* Sanity checks, this is user-input, in a way */
+    if (max_aspect <= 0 || min_aspect <= 0 || height == 0 || (width / height) <= 0)
+        goto render_and_return;
+
+    /* Check if we need to set proportional_* variables using the correct ratio */
+    if ((width / height) < min_aspect) {
+        con->proportional_width = width;
+        con->proportional_height = width / min_aspect;
+    } else if ((width / height) > max_aspect) {
+        con->proportional_width = width;
+        con->proportional_height = width / max_aspect;
+    } else goto render_and_return;
+
+render_and_return:
+    tree_render();
+    return 1;
 }
-#endif
 
 /*
  * Handles the WM_HINTS property for extracting the urgency state of the window.

@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <err.h>
 #include <stdint.h>
+#include <math.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>

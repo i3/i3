@@ -47,6 +47,44 @@ void render_con(Con *con) {
         inset->x += 2;
         inset->width -= 2 * 2;
         inset->height -= 2;
+
+        /* Obey the aspect ratio, if any */
+        if (con->proportional_height != 0 &&
+            con->proportional_width != 0) {
+            DLOG("proportional height = %d, width = %d\n", con->proportional_height, con->proportional_width);
+            double new_height = inset->height + 1;
+            int new_width = inset->width;
+
+            while (new_height > inset->height) {
+                new_height = ((double)con->proportional_height / con->proportional_width) * new_width;
+
+                if (new_height > inset->height)
+                    new_width--;
+            }
+            /* Center the window */
+            inset->y += ceil(inset->height / 2) - floor(new_height / 2);
+            inset->x += ceil(inset->width / 2) - floor(new_width / 2);
+
+            inset->height = new_height;
+            inset->width = new_width;
+            DLOG("new_height = %f, new_width = %d\n", new_height, new_width);
+        }
+
+        if (con->height_increment > 1) {
+            int old_height = inset->height;
+            inset->height -= (inset->height - con->base_height) % con->height_increment;
+            DLOG("Lost %d pixel due to client's height_increment (%d px, base_height = %d)\n",
+                old_height - inset->height, con->height_increment, con->base_height);
+        }
+
+        if (con->width_increment > 1) {
+            int old_width = inset->width;
+            inset->width -= (inset->width - con->base_width) % con->width_increment;
+            DLOG("Lost %d pixel due to client's width_increment (%d px, base_width = %d)\n",
+                old_width - inset->width, con->width_increment, con->base_width);
+        }
+
+        DLOG("child will be at %dx%d with size %dx%d\n", inset->x, inset->y, inset->width, inset->height);
     }
 
     /* Check for fullscreen nodes */
