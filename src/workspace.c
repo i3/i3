@@ -175,16 +175,17 @@ void workspace_show(xcb_connection_t *conn, int workspace) {
         Workspace *old_workspace = c_ws;
         c_ws = t_ws->output->current_workspace = workspace_get(workspace-1);
 
-        /* Unmap all clients of the old workspace */
-        workspace_unmap_clients(conn, old_workspace);
-
         current_row = c_ws->current_row;
         current_col = c_ws->current_col;
         DLOG("new current row = %d, current col = %d\n", current_row, current_col);
 
-        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
-
+        /* Map new clients before unmapping old clients to prevent wallpaper flickering */
         workspace_map_clients(conn, c_ws);
+
+        /* Unmap all clients of the old workspace */
+        workspace_unmap_clients(conn, old_workspace);
+
+        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
 
         /* POTENTIAL TO IMPROVE HERE: due to the call to _map_clients first and
          * render_layout afterwards, there is a short flickering on the source
