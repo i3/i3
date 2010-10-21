@@ -10,7 +10,6 @@
  */
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
-#include <xcb/xcb_event.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
