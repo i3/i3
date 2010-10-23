@@ -232,14 +232,20 @@ void switch_mode(xcb_connection_t *conn, const char *new_mode) {
 }
 
 /*
- * Get the path of the first configuration file found. Checks the XDG folders
- * first ($XDG_CONFIG_HOME, $XDG_CONFIG_DIRS), then the traditional paths.
+ * Get the path of the first configuration file found. Checks the home directory
+ * first, then the system directory first, always taking into account the XDG
+ * Base Directory Specification ($XDG_CONFIG_HOME, $XDG_CONFIG_DIRS)
  *
  */
 static char *get_config_path() {
-        /* 1: check for $XDG_CONFIG_HOME/i3/config */
         char *xdg_config_home, *xdg_config_dirs, *config_path;
 
+        /* 1: check the traditional path under the home directory */
+        config_path = resolve_tilde("~/.i3/config");
+        if (path_exists(config_path))
+                return config_path;
+
+        /* 2: check for $XDG_CONFIG_HOME/i3/config */
         if ((xdg_config_home = getenv("XDG_CONFIG_HOME")) == NULL)
                 xdg_config_home = "~/.config";
 
@@ -252,7 +258,12 @@ static char *get_config_path() {
                 return config_path;
         free(config_path);
 
-        /* 2: check for $XDG_CONFIG_DIRS/i3/config */
+        /* 3: check the traditional path under /etc */
+        config_path = SYSCONFDIR "/i3/config";
+        if (path_exists(config_path))
+                return sstrdup(config_path);
+
+        /* 4: check for $XDG_CONFIG_DIRS/i3/config */
         if ((xdg_config_dirs = getenv("XDG_CONFIG_DIRS")) == NULL)
                 xdg_config_dirs = "/etc/xdg";
 
@@ -272,18 +283,9 @@ static char *get_config_path() {
         }
         free(buf);
 
-        /* 3: check traditional paths */
-        config_path = resolve_tilde("~/.i3/config");
-        if (path_exists(config_path))
-                return config_path;
-
-        config_path = sstrdup(SYSCONFDIR "/i3/config");
-        if (!path_exists(config_path))
-                die("Neither $XDG_CONFIG_HOME/i3/config, nor "
-                    "$XDG_CONFIG_DIRS/i3/config, nor ~/.i3/config nor "
-                    SYSCONFDIR "/i3/config exist.");
-
-        return config_path;
+        die("Unable to find the configuration file (looked at "
+                "~/.i3/config, $XDG_CONFIG_HOME/i3/config, "
+                SYSCONFDIR "i3/config and $XDG_CONFIG_DIRS/i3/config)");
 }
 
 /*
