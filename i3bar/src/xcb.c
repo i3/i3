@@ -667,14 +667,17 @@ void reconfig_windows() {
                                                                 mask,
                                                                 values);
 
-            /* We finally map the bar (display it on screen) */
-            xcb_void_cookie_t map_cookie = xcb_map_window_checked(xcb_connection, walk->bar);
+            /* We finally map the bar (display it on screen), unless the modifier-switch is on */
+            xcb_void_cookie_t map_cookie;
+            if (!config.hide_on_modifier) {
+                map_cookie = xcb_map_window_checked(xcb_connection, walk->bar);
+            }
 
             if (xcb_request_failed(win_cookie,  "Could not create window") ||
                 xcb_request_failed(pm_cookie,   "Could not create pixmap") ||
                 xcb_request_failed(prop_cookie, "Could not set dock mode") ||
                 xcb_request_failed(gc_cookie,   "Could not create graphical context") ||
-                xcb_request_failed(map_cookie,  "Could not map window")) {
+                (!config.hide_on_modifier && xcb_request_failed(map_cookie, "Could not map window"))) {
                 exit(EXIT_FAILURE);
             }
         } else {
