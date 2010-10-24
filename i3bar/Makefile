@@ -27,7 +27,11 @@ install: all
 	$(INSTALL) -m 0755 i3bar $(DESTDIR)$(PREFIX)/bin
 
 clean:
-	rm src/*.o
+	rm -f src/*.o
 	make -C doc clean
 
-.PHONY: install clean doc
+distclean: clean
+	rm -f i3bar
+	make -C doc distclean
+
+.PHONY: install clean distclean doc
