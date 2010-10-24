@@ -629,7 +629,7 @@ void reconfig_windows() {
                                                                      xcb_screen->root_depth,
                                                                      walk->bar,
                                                                      xcb_root,
-                                                                     walk->rect.x, walk->rect.y,
+                                                                     walk->rect.x, walk->rect.y + walk->rect.h - font_height - 6,
                                                                      walk->rect.w, font_height + 6,
                                                                      1,
                                                                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
