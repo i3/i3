@@ -9,11 +9,41 @@
 #ifndef XCB_H_
 #define XCB_H_
 
+#include <stdint.h>
+
+struct colors_t {
+    char *bar_fg;
+    char *bar_bg;
+    char *active_ws_fg;
+    char *active_ws_bg;
+    char *inactive_ws_fg;
+    char *inactive_ws_bg;
+    char *urgent_ws_bg;
+    char *urgent_ws_fg;
+};
+
+struct parsed_colors_t {
+    uint32_t bar_fg;
+    uint32_t bar_bg;
+    uint32_t active_ws_fg;
+    uint32_t active_ws_bg;
+    uint32_t inactive_ws_fg;
+    uint32_t inactive_ws_bg;
+    uint32_t urgent_ws_bg;
+    uint32_t urgent_ws_fg;
+};
+
 /*
  * Initialize xcb and use the specified fontname for text-rendering
  *
  */
 void init_xcb();
+
+/*
+ * Initialize the colors
+ *
+ */
+void init_colors(const struct colors_t *colors);
 
 /*
  * Cleanup the xcb-stuff.

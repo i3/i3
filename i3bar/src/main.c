@@ -37,6 +37,49 @@ char *expand_path(char *path) {
     return result;
 }
 
+static void read_color(char **color)
+{
+    int len = strlen(optarg);
+    if (len == 6 || (len == 7 && optarg[0] == '#')) {
+        int offset = len - 6;
+        int good = 1, i;
+        for (i = offset; good && i < 6 + offset; ++i) {
+            char c = optarg[i];
+            if (!(c >= 'a' && c <= 'f')
+                    && !(c >= 'A' && c <= 'F')
+                    && !(c >= '0' && c <= '9')) {
+                good = 0;
+                break;
+            }
+        }
+        if (good) {
+            *color = strdup(optarg + offset);
+            return;
+        }
+    }
+
+    fprintf(stderr, "Bad color value \"%s\"\n", optarg);
+    exit(EXIT_FAILURE);
+}
+
+static void free_colors(struct colors_t *colors)
+{
+#define FREE_COLOR(x) \
+    do { \
+        if (colors->x) \
+            free(colors->x); \
+    } while (0)
+    FREE_COLOR(bar_fg);
+    FREE_COLOR(bar_bg);
+    FREE_COLOR(active_ws_fg);
+    FREE_COLOR(active_ws_bg);
+    FREE_COLOR(inactive_ws_fg);
+    FREE_COLOR(inactive_ws_bg);
+    FREE_COLOR(urgent_ws_fg);
+    FREE_COLOR(urgent_ws_bg);
+#undef FREE_COLOR
+}
+
 void print_usage(char *elf_name) {
     printf("Usage: %s [-s sock_path] [-c command] [-m] [-f font] [-V] [-h]\n", elf_name);
     printf("-s <sock_path>\tConnect to i3 via <sock_path>\n");
@@ -56,22 +99,31 @@ int main(int argc, char **argv) {
     char *command = NULL;
     char *fontname = NULL;
     char *i3_default_sock_path = "~/.i3/ipc.sock";
+    struct colors_t colors = {0,};
 
     /* Definition of the standard-config */
     config.hide_on_modifier = 0;
 
     static struct option long_opt[] = {
-        { "socket",  required_argument, 0, 's' },
-        { "command", required_argument, 0, 'c' },
-        { "hide",    no_argument,       0, 'm' },
-        { "font",    required_argument, 0, 'f' },
-        { "help",    no_argument,       0, 'h' },
-        { "version", no_argument,       0, 'v' },
-        { "verbose", no_argument,       0, 'V' },
-        { NULL,      0,                 0, 0}
+        { "socket",               required_argument, 0, 's' },
+        { "command",              required_argument, 0, 'c' },
+        { "hide",                 no_argument,       0, 'm' },
+        { "font",                 required_argument, 0, 'f' },
+        { "help",                 no_argument,       0, 'h' },
+        { "version",              no_argument,       0, 'v' },
+        { "verbose",              no_argument,       0, 'V' },
+        { "color-bar-fg",         required_argument, 0, 'A' },
+        { "color-bar-bg",         required_argument, 0, 'B' },
+        { "color-active-ws-fg",   required_argument, 0, 'C' },
+        { "color-active-ws-bg",   required_argument, 0, 'D' },
+        { "color-inactive-ws-fg", required_argument, 0, 'E' },
+        { "color-inactive-ws-bg", required_argument, 0, 'F' },
+        { "color-urgent-ws-bg",   required_argument, 0, 'G' },
+        { "color-urgent-ws-fg",   required_argument, 0, 'H' },
+        { NULL,                   0,                 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "s:c:mf:hvV", long_opt, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "s:c:mf:hvV:A:B:C:D:E:F:G:H:", long_opt, &option_index)) != -1) {
         switch (opt) {
             case 's':
                 socket_path = expand_path(optarg);
@@ -91,6 +143,30 @@ int main(int argc, char **argv) {
                 break;
             case 'V':
                 config.verbose = 1;
+                break;
+            case 'A':
+                read_color(&colors.bar_fg);
+                break;
+            case 'B':
+                read_color(&colors.bar_bg);
+                break;
+            case 'C':
+                read_color(&colors.active_ws_fg);
+                break;
+            case 'D':
+                read_color(&colors.active_ws_bg);
+                break;
+            case 'E':
+                read_color(&colors.inactive_ws_fg);
+                break;
+            case 'F':
+                read_color(&colors.inactive_ws_bg);
+                break;
+            case 'G':
+                read_color(&colors.urgent_ws_fg);
+                break;
+            case 'H':
+                read_color(&colors.urgent_ws_bg);
                 break;
             default:
                 print_usage(argv[0]);
@@ -114,6 +190,10 @@ int main(int argc, char **argv) {
     main_loop = ev_default_loop(0);
 
     init_xcb(fontname);
+
+    init_colors(&colors);
+    free_colors(&colors);
+
     init_outputs();
     init_connection(socket_path);
 

@@ -63,6 +63,9 @@ ev_check   *xcb_chk;
 ev_io      *xcb_io;
 ev_io      *xkb_io;
 
+/* The parsed colors */
+struct parsed_colors_t colors;
+
 /* We define xcb_request_failed as a macro to include the relevant line-number */
 #define xcb_request_failed(cookie, err_msg) _xcb_request_failed(cookie, err_msg, __LINE__)
 int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
@@ -245,6 +248,26 @@ void unhide_bars() {
         }
         xcb_map_window(xcb_connection, walk->bar);
     }
+}
+
+/*
+ * Parse the colors into a format that we can use
+ *
+ */
+void init_colors(const struct colors_t *new_colors) {
+#define PARSE_COLOR(name, def) \
+    do { \
+        colors.name = get_colorpixel(new_colors->name ? new_colors->name : def); \
+    } while  (0)
+    PARSE_COLOR(bar_fg, "FFFFFF");
+    PARSE_COLOR(bar_bg, "000000");
+    PARSE_COLOR(active_ws_fg, "FFFFFF");
+    PARSE_COLOR(active_ws_bg, "480000");
+    PARSE_COLOR(inactive_ws_fg, "FFFFFF");
+    PARSE_COLOR(inactive_ws_bg, "240000");
+    PARSE_COLOR(urgent_ws_fg, "FFFFFF");
+    PARSE_COLOR(urgent_ws_bg, "002400");
+#undef PARSE_COLOR
 }
 
 /*
@@ -725,7 +748,7 @@ void draw_bars() {
             reconfig_windows();
         }
         /* First things first: clear the backbuffer */
-        uint32_t color = get_colorpixel("000000");
+        uint32_t color = colors.bar_bg;
         xcb_change_gc(xcb_connection,
                       outputs_walk->bargc,
                       XCB_GC_FOREGROUND,
@@ -755,35 +778,37 @@ void draw_bars() {
         i3_ws *ws_walk;
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
             DLOG("Drawing Button for WS %s at x = %d\n", ws_walk->name, i);
-            uint32_t color = get_colorpixel("240000");
+            uint32_t fg_color = colors.inactive_ws_fg;
+            uint32_t bg_color = colors.inactive_ws_bg;
             if (ws_walk->visible) {
-                color = get_colorpixel("480000");
+                fg_color = colors.active_ws_fg;
+                bg_color = colors.active_ws_bg;
             }
             if (ws_walk->urgent) {
                 DLOG("WS %s is urgent!\n", ws_walk->name);
-                color = get_colorpixel("002400");
+                fg_color = colors.urgent_ws_fg;
+                bg_color = colors.urgent_ws_bg;
                 /* The urgent-hint should get noticed, so we unhide the bars shortly */
                 unhide_bars();
             }
             xcb_change_gc(xcb_connection,
                           outputs_walk->bargc,
                           XCB_GC_FOREGROUND,
-                          &color);
+                          &bg_color);
             xcb_change_gc(xcb_connection,
                           outputs_walk->bargc,
                           XCB_GC_BACKGROUND,
-                          &color);
+                          &bg_color);
             xcb_rectangle_t rect = { i + 1, 1, ws_walk->name_width + 8, font_height + 4 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
                                     1,
                                     &rect);
-            color = get_colorpixel("FFFFFF");
             xcb_change_gc(xcb_connection,
                           outputs_walk->bargc,
                           XCB_GC_FOREGROUND,
-                          &color);
+                          &fg_color);
             xcb_image_text_16(xcb_connection,
                               ws_walk->name_glyphs,
                               outputs_walk->buffer,
