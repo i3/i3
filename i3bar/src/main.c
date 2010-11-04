@@ -187,9 +187,9 @@ int main(int argc, char **argv) {
 
     main_loop = ev_default_loop(0);
 
+    init_colors(&colors);
     init_xcb(fontname);
 
-    init_colors(&colors);
     free_colors(&colors);
 
     init_outputs();
