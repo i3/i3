@@ -42,6 +42,18 @@ i3bar does not support any color or other markups, so stdin should be plain utf8
 
 Also, you should disable the internal workspace bar of *i3*(1), when using *i3bar* by specifying 'workspace_bar no' in your *i3*-configfile.
 
+== COLORS
+
+*i3bar* does not yet support formatting in the displayed statusline. However it does support setting colors for the bar, the workspace-buttons and the statusline.
+
+For now this happens with the following command-line-options:
+
+*--color-bar-fg, --color-bar-bg, --color-active-ws-fg, --color-active-ws-bg, --color-inactive-ws-fg,  --color-inactive-ws-bg, color-urgent-ws-bg, color-urgent-ws-fg*
+
+For each specified option you need to give a HEX-colorcode.
+
+Be advised that this command-line-options are only temporary and are very likely to be removed, when we finally have a config-file.
+
 == EXAMPLES
 
 To get a docked bar with some statusinformation, you use
