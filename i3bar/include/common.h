@@ -24,12 +24,12 @@ struct rect_t {
 
 #include "queue.h"
 #include "child.h"
-#include "config.h"
 #include "ipc.h"
 #include "outputs.h"
 #include "util.h"
 #include "workspaces.h"
 #include "xcb.h"
 #include "ucs2_to_utf8.h"
+#include "config.h"
 
 #endif

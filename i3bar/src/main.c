@@ -37,8 +37,7 @@ char *expand_path(char *path) {
     return result;
 }
 
-static void read_color(char **color)
-{
+static void read_color(char **color) {
     int len = strlen(optarg);
     if (len == 6 || (len == 7 && optarg[0] == '#')) {
         int offset = len - 6;
@@ -62,8 +61,7 @@ static void read_color(char **color)
     exit(EXIT_FAILURE);
 }
 
-static void free_colors(struct colors_t *colors)
-{
+static void free_colors(struct xcb_color_strings_t *colors) {
 #define FREE_COLOR(x) \
     do { \
         if (colors->x) \
@@ -99,7 +97,7 @@ int main(int argc, char **argv) {
     char *command = NULL;
     char *fontname = NULL;
     char *i3_default_sock_path = "~/.i3/ipc.sock";
-    struct colors_t colors = {0,};
+    struct xcb_color_strings_t colors = { NULL, };
 
     /* Definition of the standard-config */
     config.hide_on_modifier = 0;

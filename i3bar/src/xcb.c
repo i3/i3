@@ -64,7 +64,17 @@ ev_io      *xcb_io;
 ev_io      *xkb_io;
 
 /* The parsed colors */
-struct parsed_colors_t colors;
+struct xcb_colors_t {
+    uint32_t bar_fg;
+    uint32_t bar_bg;
+    uint32_t active_ws_fg;
+    uint32_t active_ws_bg;
+    uint32_t inactive_ws_fg;
+    uint32_t inactive_ws_bg;
+    uint32_t urgent_ws_bg;
+    uint32_t urgent_ws_fg;
+};
+struct xcb_colors_t colors;
 
 /* We define xcb_request_failed as a macro to include the relevant line-number */
 #define xcb_request_failed(cookie, err_msg) _xcb_request_failed(cookie, err_msg, __LINE__)
@@ -254,7 +264,7 @@ void unhide_bars() {
  * Parse the colors into a format that we can use
  *
  */
-void init_colors(const struct colors_t *new_colors) {
+void init_colors(const struct xcb_color_strings_t *new_colors) {
 #define PARSE_COLOR(name, def) \
     do { \
         colors.name = get_colorpixel(new_colors->name ? new_colors->name : def); \
