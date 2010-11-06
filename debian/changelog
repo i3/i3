@@ -1,3 +1,9 @@
+i3-wm (3.e-bf1-3) unstable; urgency=low
+
+  * include keyboard-layer{1,2}.png in docs (Closes: #595295)
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Wed, 03 Nov 2010 20:32:42 +0100
+
 i3-wm (3.e-bf1-2) unstable; urgency=low
 
   * debian: call dh_installwm to register as alternative for x-window-manager
