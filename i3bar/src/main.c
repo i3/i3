@@ -233,7 +233,7 @@ int main(int argc, char **argv) {
     /* We listen to SIGTERM/QUIT/INT and try to exit cleanly, by stopping the main-loop.
      * We only need those watchers on the stack, so putting them on the stack saves us
      * some calls to free() */
-    ev_signal sig_term, sig_quit, sig_int, sig_hup;
+    ev_signal sig_term, sig_int, sig_hup;
 
     ev_signal_init(&sig_term, &sig_cb, SIGTERM);
     ev_signal_init(&sig_int, &sig_cb, SIGINT);
