@@ -90,6 +90,26 @@ void print_usage(char *elf_name) {
     printf("-h\t\tDisplay this help-message and exit\n");
 }
 
+/*
+ * We watch various signals, that are there to make our application stop.
+ * If we get one of those, we ev_unloop() and invoke the cleanup-routines
+ * in main() with that
+ *
+ */
+void sig_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
+    switch (watcher->signum) {
+        case SIGTERM:
+            DLOG("Got a SIGTERM, stopping\n");
+            break;
+        case SIGINT:
+            DLOG("Got a SIGINT, stopping\n");
+            break;
+        case SIGHUP:
+            DLOG("Got a SIGHUP, stopping\n");
+    }
+    ev_unloop(main_loop, EVUNLOOP_ALL);
+}
+
 int main(int argc, char **argv) {
     int opt;
     int option_index = 0;
@@ -209,6 +229,19 @@ int main(int argc, char **argv) {
     /* The name of this function is actually misleading. Even if no -c is specified,
      * this function initiates the watchers to listen on stdin and react accordingly */
     start_child(command);
+
+    /* We listen to SIGTERM/QUIT/INT and try to exit cleanly, by stopping the main-loop.
+     * We only need those watchers on the stack, so putting them on the stack saves us
+     * some calls to free() */
+    ev_signal sig_term, sig_quit, sig_int, sig_hup;
+
+    ev_signal_init(&sig_term, &sig_cb, SIGTERM);
+    ev_signal_init(&sig_int, &sig_cb, SIGINT);
+    ev_signal_init(&sig_hup, &sig_cb, SIGHUP);
+
+    ev_signal_start(main_loop, &sig_term);
+    ev_signal_start(main_loop, &sig_int);
+    ev_signal_start(main_loop, &sig_hup);
 
     /* From here on everything should run smooth for itself, just start listening for
      * events. We stop simply stop the event-loop, when we are finished */
