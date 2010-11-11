@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
         { NULL,                   0,                 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "s:c:mf:hvV:A:B:C:D:E:F:G:H:", long_opt, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "s:c:mf:hvVA:B:C:D:E:F:G:H:", long_opt, &option_index)) != -1) {
         switch (opt) {
             case 's':
                 socket_path = expand_path(optarg);
