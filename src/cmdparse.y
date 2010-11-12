@@ -71,6 +71,7 @@ char *parse_cmd(const char *new) {
 
     cmdyy_scan_string(new);
 
+    match_init(&current_match);
     context = scalloc(sizeof(struct context));
     context->filename = "cmd";
     FREE(json_output);
