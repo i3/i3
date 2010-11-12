@@ -190,10 +190,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_SPLASH])) {
         LOG("This window is a dialog window, setting floating\n");
 
+        nc->rect.x = geom->x;
+        nc->rect.y = geom->y;
         /* We respect the geometry wishes of floating windows, as long as they
          * are bigger than our minimal useful size (75x50). */
         nc->rect.width = max(geom->width, 75);
         nc->rect.height = max(geom->height, 50);
+        LOG("geometry = %d x %d\n", nc->rect.width, nc->rect.height);
         floating_enable(nc, false);
     }
 
