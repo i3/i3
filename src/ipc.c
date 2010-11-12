@@ -146,6 +146,9 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         ystr("layout");
         y(integer, con->layout);
 
+        ystr("border");
+        y(integer, con->border_style);
+
         ystr("rect");
         y(map_open);
         ystr("x");
