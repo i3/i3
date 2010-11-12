@@ -79,6 +79,7 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
  */
 int handle_screen_change(void *prophs, xcb_connection_t *conn,
                          xcb_generic_event_t *e);
+#endif
 
 /**
  * Configure requests are received when the application wants to resize
@@ -90,7 +91,7 @@ int handle_screen_change(void *prophs, xcb_connection_t *conn,
  */
 int handle_configure_request(void *prophs, xcb_connection_t *conn,
                              xcb_configure_request_event_t *event);
-#endif
+
 /**
  * Our window decorations were unmapped. That means, the window will be killed
  * now, so we better clean up before.

@@ -129,4 +129,12 @@ int con_orientation(Con *con);
  */
 Con *con_next_focused(Con *con);
 
+/*
+ * Returns a "relative" Rect which contains the amount of pixels that need to
+ * be added to the original Rect to get the final position (obviously the
+ * amount of pixels for normal, 1pixel and borderless are different).
+ *
+ */
+Rect con_border_style_rect(Con *con);
+
 #endif

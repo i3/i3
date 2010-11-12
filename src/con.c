@@ -430,3 +430,20 @@ Con *con_next_focused(Con *con) {
 
     return next;
 }
+
+/*
+ * Returns a "relative" Rect which contains the amount of pixels that need to
+ * be added to the original Rect to get the final position (obviously the
+ * amount of pixels for normal, 1pixel and borderless are different).
+ *
+ */
+Rect con_border_style_rect(Con *con) {
+    if (con->border_style == BS_NORMAL)
+        return (Rect){2, 0, -(2 * 2), -2};
+
+    if (con->border_style == BS_1PIXEL)
+        return (Rect){1, 1, -2, -2};
+
+    if (con->border_style == BS_NONE)
+        return (Rect){0, 0, 0, 0};
+}

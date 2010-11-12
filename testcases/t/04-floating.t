@@ -1,7 +1,7 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use i3test tests => 10;
+use i3test tests => 11;
 use X11::XCB qw(:all);
 use Time::HiRes qw(sleep);
 
@@ -29,8 +29,8 @@ sleep(0.25);
 my ($absolute, $top) = $window->rect;
 
 ok($window->mapped, 'Window is mapped');
-ok($absolute->{width} >= 75, 'i3 raised the width to 75');
-ok($absolute->{height} >= 50, 'i3 raised the height to 50');
+cmp_ok($absolute->{width}, '>=', 75, 'i3 raised the width to 75');
+cmp_ok($absolute->{height}, '>=', 50, 'i3 raised the height to 50');
 
 ok($absolute->{x} != 0 && $absolute->{y} != 0, 'i3 did not map it to (0x0)');
 
@@ -51,10 +51,11 @@ sleep(0.25);
 
 ($absolute, $top) = $window->rect;
 
-ok($absolute->{width} == 80, "i3 let the width at 80");
-ok($absolute->{height} == 90, "i3 let the height at 90");
+cmp_ok($absolute->{width}, '==', 80, "i3 let the width at 80");
+cmp_ok($absolute->{height}, '==', 90, "i3 let the height at 90");
 
-ok($top->{x} == 1 && $top->{y} == 1, "i3 mapped it to (1,1)");
+cmp_ok($top->{x}, '==', 1, 'i3 mapped it to x=1');
+cmp_ok($top->{y}, '==', 1, 'i3 mapped it to y=1');
 
 $window->unmap;
 

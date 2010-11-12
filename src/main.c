@@ -218,6 +218,9 @@ int main(int argc, char *argv[]) {
        for us is _NET_WM_STATE, we honour _NET_WM_STATE_FULLSCREEN */
     xcb_event_set_client_message_handler(&evenths, handle_client_message, NULL);
 
+    /* Configure request = window tried to change size on its own */
+    xcb_event_set_configure_request_handler(&evenths, handle_configure_request, NULL);
+
     /* Setup NetWM atoms */
     #define GET_ATOM(name) \
         do { \

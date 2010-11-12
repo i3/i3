@@ -51,12 +51,8 @@ void render_con(Con *con) {
         /* depending on the border style, the rect of the child window
          * needs to be smaller */
         Rect *inset = &(con->window_rect);
-
-        if (con->border_style == BS_NORMAL)
-            *inset = (Rect){2, 0, con->rect.width - (2 * 2), con->rect.height - 2};
-        else if (con->border_style == BS_1PIXEL)
-            *inset = (Rect){1, 1, con->rect.width - 2, con->rect.height - 1};
-        else *inset = (Rect){0, 0, con->rect.width, con->rect.height};
+        *inset = (Rect){0, 0, con->rect.width, con->rect.height};
+        *inset = rect_add(*inset, con_border_style_rect(con));
 
         /* Obey the aspect ratio, if any */
         if (con->proportional_height != 0 &&

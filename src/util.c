@@ -38,6 +38,13 @@ bool rect_contains(Rect rect, uint32_t x, uint32_t y) {
                 y <= (rect.y + rect.height));
 }
 
+Rect rect_add(Rect a, Rect b) {
+        return (Rect){a.x + b.x,
+                      a.y + b.y,
+                      a.width + b.width,
+                      a.height + b.height};
+}
+
 /*
  * Updates *destination with new_value and returns true if it was changed or false
  * if it was the same

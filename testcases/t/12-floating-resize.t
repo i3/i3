@@ -12,9 +12,6 @@ BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 
-SKIP: {
-    skip "border styles not yet implemented", 14;
-
 my $x = X11::XCB::Connection->new;
 
 my $i3 = i3("/tmp/nestedcons");
@@ -31,7 +28,7 @@ my $window = $x->root->create_child(
     rect => [ 0, 0, 30, 30],
     background_color => '#C0C0C0',
     # replace the type with 'utility' as soon as the coercion works again in X11::XCB
-    type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
+    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
 );
 
 isa_ok($window, 'X11::XCB::Window');
@@ -70,13 +67,11 @@ sub test_resize {
 test_resize;
 
 # Test borderless
-$i3->command('bb')->recv;
+$i3->command('border none')->recv;
 
 test_resize;
 
 # Test with 1-px-border
-$i3->command('bp')->recv;
+$i3->command('border 1pixel')->recv;
 
 test_resize;
-
-}

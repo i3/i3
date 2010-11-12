@@ -274,7 +274,7 @@ int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_eve
     x_push_changes(croot);
     return 1;
 }
-#if 0
+
 /*
  * Configure requests are received when the application wants to resize windows on their own.
  *
@@ -282,108 +282,70 @@ int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_eve
  *
  */
 int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure_request_event_t *event) {
-        DLOG("window 0x%08x wants to be at %dx%d with %dx%d\n",
-            event->window, event->x, event->y, event->width, event->height);
+    Con *con;
 
-        Client *client = table_get(&by_child, event->window);
-        if (client == NULL) {
-                uint32_t mask = 0;
-                uint32_t values[7];
-                int c = 0;
+    DLOG("window 0x%08x wants to be at %dx%d with %dx%d\n",
+        event->window, event->x, event->y, event->width, event->height);
+
+    /* For unmanaged windows, we just execute the configure request. As soon as
+     * it gets mapped, we will take over anyways. */
+    if ((con = con_by_window_id(event->window)) == NULL) {
+        DLOG("Configure request for unmanaged window, can do that.\n");
+
+        uint32_t mask = 0;
+        uint32_t values[7];
+        int c = 0;
 #define COPY_MASK_MEMBER(mask_member, event_member) do { \
-                if (event->value_mask & mask_member) { \
-                        mask |= mask_member; \
-                        values[c++] = event->event_member; \
-                } \
+        if (event->value_mask & mask_member) { \
+                mask |= mask_member; \
+                values[c++] = event->event_member; \
+        } \
 } while (0)
 
-                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_X, x);
-                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_Y, y);
-                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_WIDTH, width);
-                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_HEIGHT, height);
-                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_BORDER_WIDTH, border_width);
-                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_SIBLING, sibling);
-                COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_STACK_MODE, stack_mode);
+        COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_X, x);
+        COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_Y, y);
+        COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_WIDTH, width);
+        COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_HEIGHT, height);
+        COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_BORDER_WIDTH, border_width);
+        COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_SIBLING, sibling);
+        COPY_MASK_MEMBER(XCB_CONFIG_WINDOW_STACK_MODE, stack_mode);
 
-                xcb_configure_window(conn, event->window, mask, values);
-                xcb_flush(conn);
+        xcb_configure_window(conn, event->window, mask, values);
+        xcb_flush(conn);
 
-                return 1;
+        return 1;
+    }
+
+    DLOG("Configure request!\n");
+    if (con_is_floating(con) && con_is_leaf(con)) {
+        /* we actually need to apply the size/position changes to the *parent*
+         * container */
+        Rect bsr = con_border_style_rect(con);
+        if (con->border_style == BS_NORMAL)
+            bsr.height -= 17;
+        con = con->parent;
+        DLOG("Container is a floating leaf node, will do that.\n");
+        if (event->value_mask & XCB_CONFIG_WINDOW_X) {
+            con->rect.x = event->x + (-1) * bsr.x;
+            DLOG("proposed x = %d, new x is %d\n", event->x, con->rect.x);
         }
-
-        if (client->fullscreen) {
-                DLOG("Client is in fullscreen mode\n");
-
-                Rect child_rect = client->workspace->rect;
-                child_rect.x = child_rect.y = 0;
-                fake_configure_notify(conn, child_rect, client->child);
-
-                return 1;
+        if (event->value_mask & XCB_CONFIG_WINDOW_Y) {
+            con->rect.y = event->y + (-1) * bsr.y;
+            DLOG("proposed y = %d, new y is %d\n", event->y, con->rect.y);
         }
-
-        /* Floating clients can be reconfigured */
-        if (client_is_floating(client)) {
-                i3Font *font = load_font(conn, config.font);
-                int mode = (client->container != NULL ? client->container->mode : MODE_DEFAULT);
-                /* TODO: refactor this code. we need a function to translate
-                 * coordinates of child_rect/rect. */
-
-                if (event->value_mask & XCB_CONFIG_WINDOW_X) {
-                        if (mode == MODE_STACK || mode == MODE_TABBED) {
-                                client->rect.x = event->x - 2;
-                        } else {
-                                if (client->titlebar_position == TITLEBAR_OFF && client->borderless)
-                                        client->rect.x = event->x;
-                                else if (client->titlebar_position == TITLEBAR_OFF && !client->borderless)
-                                        client->rect.x = event->x - 1;
-                                else client->rect.x = event->x - 2;
-                        }
-                }
-                if (event->value_mask & XCB_CONFIG_WINDOW_Y) {
-                        if (mode == MODE_STACK || mode == MODE_TABBED) {
-                                client->rect.y = event->y - 2;
-                        } else {
-                                if (client->titlebar_position == TITLEBAR_OFF && client->borderless)
-                                        client->rect.y = event->y;
-                                else if (client->titlebar_position == TITLEBAR_OFF && !client->borderless)
-                                        client->rect.y = event->y - 1;
-                                else client->rect.y = event->y - font->height - 2 - 2;
-                        }
-                }
-                if (event->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
-                        if (mode == MODE_STACK || mode == MODE_TABBED) {
-                                client->rect.width = event->width + 2 + 2;
-                        } else {
-                                if (client->titlebar_position == TITLEBAR_OFF && client->borderless)
-                                        client->rect.width = event->width;
-                                else if (client->titlebar_position == TITLEBAR_OFF && !client->borderless)
-                                        client->rect.width = event->width + (1 + 1);
-                                else client->rect.width = event->width + (2 + 2);
-                        }
-                }
-                if (event->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
-                        if (mode == MODE_STACK || mode == MODE_TABBED) {
-                                client->rect.height = event->height + 2;
-                        } else {
-                                if (client->titlebar_position == TITLEBAR_OFF && client->borderless)
-                                        client->rect.height = event->height;
-                                else if (client->titlebar_position == TITLEBAR_OFF && !client->borderless)
-                                        client->rect.height = event->height + (1 + 1);
-                                else client->rect.height = event->height + (font->height + 2 + 2) + 2;
-                        }
-                }
-
-                DLOG("Accepted new position/size for floating client: (%d, %d) size %d x %d\n",
-                    client->rect.x, client->rect.y, client->rect.width, client->rect.height);
-
-                /* Push the new position/size to X11 */
-                reposition_client(conn, client);
-                resize_client(conn, client);
-                xcb_flush(conn);
-
-                return 1;
+        if (event->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
+            con->rect.width = event->width + (-1) * bsr.width;
+            DLOG("proposed width = %d, new width is %d\n", event->width, con->rect.width);
         }
+        if (event->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
+            con->rect.height = event->height + (-1) * bsr.height;
+            DLOG("proposed height = %d, new height is %d\n", event->height, con->rect.height);
+        }
+        tree_render();
+    }
 
+    return 1;
+#if 0
         /* Dock clients can be reconfigured in their height */
         if (client->dock) {
                 DLOG("Reconfiguring height of this dock client\n");
@@ -413,7 +375,9 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
         fake_absolute_configure_notify(conn, client);
 
         return 1;
+#endif
 }
+#if 0
 
 /*
  * Configuration notifies are only handled because we need to set up ignore for
