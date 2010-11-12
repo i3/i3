@@ -846,6 +846,7 @@ int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_
 
         return 1;
 }
+#endif
 
 /*
  * Handles changes of the WM_CLIENT_LEADER atom which specifies if this is a
@@ -854,25 +855,18 @@ int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_
  */
 int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t name, xcb_get_property_reply_t *prop) {
-        if (prop == NULL) {
-                prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
-                                        false, window, WM_CLIENT_LEADER, WINDOW, 0, 32), NULL);
-                if (prop == NULL)
-                        return 1;
-        }
+    if (prop == NULL) {
+        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
+                                false, window, WM_CLIENT_LEADER, WINDOW, 0, 32), NULL);
+        if (prop == NULL)
+            return 1;
+    }
 
-        Client *client = table_get(&by_child, window);
-        if (client == NULL)
-                return 1;
-
-        xcb_window_t *leader = xcb_get_property_value(prop);
-        if (leader == NULL)
-                return 1;
-
-        DLOG("Client leader changed to %08x\n", *leader);
-
-        client->leader = *leader;
-
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return 1;
+
+    window_update_leader(con->window, prop);
+
+    return 1;
 }
-#endif

@@ -212,6 +212,10 @@ struct xoutput {
 struct Window {
     xcb_window_t id;
 
+    /** Holds the xcb_window_t (just an ID) for the leader window (logical
+     * parent for toolwindows and similar floating windows) */
+    xcb_window_t leader;
+
     char *class_class;
     char *class_instance;
 

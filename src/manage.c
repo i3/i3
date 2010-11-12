@@ -144,6 +144,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL));
     window_update_name_legacy(cwindow, xcb_get_property_reply(conn, title_cookie, NULL));
     window_update_name(cwindow, xcb_get_property_reply(conn, utf8_title_cookie, NULL));
+    window_update_leader(cwindow, xcb_get_property_reply(conn, leader_cookie, NULL));
 
     xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
     if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DOCK])) {
@@ -320,9 +321,6 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
 
                 preply = xcb_get_property_reply(conn, class_cookie, NULL);
                 handle_windowclass_change(NULL, conn, 0, new->child, WM_CLASS, preply);
-
-                preply = xcb_get_property_reply(conn, leader_cookie, NULL);
-                handle_clientleader_change(NULL, conn, 0, new->child, atoms[WM_CLIENT_LEADER], preply);
 
                 /* if WM_CLIENT_LEADER is set, we put the new window on the
                  * same window as its leader. This might be overwritten by

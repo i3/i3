@@ -191,6 +191,7 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
 int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state,
                          xcb_window_t window, xcb_atom_t name,
                          xcb_get_property_reply_t *reply);
+#endif
 
 /**
  * Handles changes of the WM_CLIENT_LEADER atom which specifies if this is a
@@ -200,6 +201,5 @@ int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state,
 int handle_clientleader_change(void *data, xcb_connection_t *conn,
                                uint8_t state, xcb_window_t window,
                                xcb_atom_t name, xcb_get_property_reply_t *prop);
-#endif
 
 #endif

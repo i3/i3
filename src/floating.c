@@ -53,9 +53,18 @@ void floating_enable(Con *con, bool automatic) {
      * to (0, 0), so we push them to a reasonable position
      * (centered over their leader) */
     if (nc->rect.x == 0 && nc->rect.y == 0) {
-        /* TODO: client_leader support */
-        nc->rect.x = 400;
-        nc->rect.y = 400;
+        Con *leader;
+        if (con->window && con->window->leader != XCB_NONE &&
+            (leader = con_by_window_id(con->window->leader)) != NULL) {
+            DLOG("Centering above leader\n");
+            nc->rect.x = leader->rect.x + (leader->rect.width / 2) - (nc->rect.width / 2);
+            nc->rect.y = leader->rect.y + (leader->rect.height / 2) - (nc->rect.height / 2);
+        } else {
+            /* center the window on workspace as fallback */
+            Con *ws = nc->parent;
+            nc->rect.x = ws->rect.x + (ws->rect.width / 2) - (nc->rect.width / 2);
+            nc->rect.y = ws->rect.y + (ws->rect.height / 2) - (nc->rect.height / 2);
+        }
     }
 
     TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);

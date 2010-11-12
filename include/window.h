@@ -24,4 +24,10 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop);
  */
 void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop);
 
+/**
+ * Updates the CLIENT_LEADER (logical parent window).
+ *
+ */
+void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop);
+
 #endif

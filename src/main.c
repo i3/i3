@@ -267,6 +267,9 @@ int main(int argc, char *argv[]) {
     /* Watch WM_NORMAL_HINTS (aspect ratio, size increments, …) */
     xcb_property_set_handler(&prophs, WM_NORMAL_HINTS, UINT_MAX, handle_normal_hints, NULL);
 
+    /* Watch WM_CLIENT_LEADER (= logical parent window for toolbars etc.) */
+    xcb_property_set_handler(&prophs, atoms[WM_CLIENT_LEADER], UINT_MAX, handle_clientleader_change, NULL);
+
     /* Set up the atoms we support */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED], ATOM, 32, 7, atoms);
     /* Set up the window manager’s name */

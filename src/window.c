@@ -96,3 +96,22 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop) {
     win->name_json = strdup(new_name);
     win->name_len = strlen(new_name);
 }
+
+/**
+ * Updates the CLIENT_LEADER (logical parent window).
+ *
+ */
+void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop) {
+    if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+        DLOG("prop == NULL\n");
+        return;
+    }
+
+    xcb_window_t *leader = xcb_get_property_value(prop);
+    if (leader == NULL)
+        return;
+
+    DLOG("Client leader changed to %08x\n", *leader);
+
+    win->leader = *leader;
+}
