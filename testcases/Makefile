@@ -1,5 +1,5 @@
 test:
-	PERL_DL_NONLAZY=1 /usr/bin/perl "-MExtUtils::Command::MM" "-e" "test_harness(1)" -It/lib t/*.t
+	PERL_DL_NONLAZY=1 /usr/bin/perl "-MExtUtils::Command::MM" "-e" "test_harness(1)" -It/lib t/34*.t
 
 all: test
 

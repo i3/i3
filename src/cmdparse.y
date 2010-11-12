@@ -49,8 +49,7 @@ static char *json_output;
 void cmdyyerror(const char *error_message) {
     ELOG("\n");
     ELOG("CMD: %s\n", error_message);
-    ELOG("CMD: in file \"%s\", line %d:\n",
-            context->filename, context->line_number);
+    ELOG("CMD: in command:\n");
     ELOG("CMD:   %s\n", context->line_copy);
     ELOG("CMD:   ");
     for (int c = 1; c <= context->last_column; c++)
@@ -66,9 +65,6 @@ int cmdyywrap() {
 }
 
 char *parse_cmd(const char *new) {
-
-    //const char *new = "[level-up workspace] attach $output, focus";
-
     cmdyy_scan_string(new);
 
     match_init(&current_match);
@@ -76,8 +72,10 @@ char *parse_cmd(const char *new) {
     context->filename = "cmd";
     FREE(json_output);
     if (cmdyyparse() != 0) {
-            fprintf(stderr, "Could not parse configfile\n");
-            exit(1);
+        fprintf(stderr, "Could not parse command\n");
+        FREE(context->line_copy);
+        free(context);
+        return;
     }
     printf("done, json output = %s\n", json_output);
 
