@@ -34,6 +34,11 @@ void floating_enable(Con *con, bool automatic) {
     Con *nc = con_new(NULL);
     nc->parent = con_get_workspace(con);
     nc->rect = con->rect;
+    /* add pixels for the decoration */
+    /* TODO: don’t add them when the user automatically puts new windows into
+     * 1pixel/borderless mode */
+    nc->rect.height += 17 + 2;
+    nc->rect.width += 4;
     nc->orientation = NO_ORIENTATION;
     nc->type = CT_FLOATING_CON;
     TAILQ_INSERT_TAIL(&(nc->parent->floating_head), nc, floating_windows);
@@ -43,8 +48,16 @@ void floating_enable(Con *con, bool automatic) {
     con->old_parent = con->parent;
     con->parent = nc;
     con->floating = FLOATING_USER_ON;
-    nc->rect.x = 400;
-    nc->rect.y = 400;
+
+    /* Some clients (like GIMP’s color picker window) get mapped
+     * to (0, 0), so we push them to a reasonable position
+     * (centered over their leader) */
+    if (nc->rect.x == 0 && nc->rect.y == 0) {
+        /* TODO: client_leader support */
+        nc->rect.x = 400;
+        nc->rect.y = 400;
+    }
+
     TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
     TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
 }
