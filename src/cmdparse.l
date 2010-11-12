@@ -91,6 +91,7 @@ stacked                         { return TOK_STACKED; }
 stacking                        { return TOK_STACKED; }
 tabbed                          { return TOK_TABBED; }
 border                          { return TOK_BORDER; }
+normal                          { return TOK_NORMAL; }
 none                            { return TOK_NONE; }
 1pixel                          { return TOK_1PIXEL; }
 mode                            { return TOK_MODE; }

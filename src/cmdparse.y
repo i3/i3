@@ -109,6 +109,7 @@ char *parse_cmd(const char *new) {
 %token TOK_STACKED "stacked"
 %token TOK_TABBED "tabbed"
 %token TOK_BORDER "border"
+%token TOK_NORMAL "normal"
 %token TOK_NONE "none"
 %token TOK_1PIXEL "1pixel"
 %token TOK_MODE "mode"
@@ -284,8 +285,7 @@ operation:
     | exit
     | restart
     | reload
-    /*
-    | border */
+    | border
     | layout
     | restore
     | move
@@ -478,6 +478,31 @@ window_mode:
     | TOK_TILING    { $<number>$ = TOK_TILING; }
     | TOK_TOGGLE    { $<number>$ = TOK_TOGGLE; }
     ;
+
+border:
+    TOK_BORDER WHITESPACE border_style
+    {
+        printf("border style should be changed to %d\n", $<number>3);
+        owindow *current;
+
+        /* check if the match is empty, not if the result is empty */
+        if (match_is_empty(&current_match))
+            focused->border_style = $<number>3;
+        else {
+            TAILQ_FOREACH(current, &owindows, owindows) {
+                printf("matching: %p / %s\n", current->con, current->con->name);
+                current->con->border_style = $<number>3;
+            }
+        }
+    }
+    ;
+
+border_style:
+    TOK_NORMAL      { $<number>$ = BS_NORMAL; }
+    | TOK_NONE      { $<number>$ = BS_NONE; }
+    | TOK_1PIXEL    { $<number>$ = BS_1PIXEL; }
+    ;
+
 
 level:
     TOK_LEVEL WHITESPACE level_direction

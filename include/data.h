@@ -316,6 +316,7 @@ struct Con {
 
     enum { CF_NONE = 0, CF_OUTPUT = 1, CF_GLOBAL = 2 } fullscreen_mode;
     enum { L_DEFAULT = 0, L_STACKED = 1, L_TABBED = 2 } layout;
+    enum { BS_NORMAL = 0, BS_NONE = 1, BS_1PIXEL = 3 } border_style;
     /** floating? (= not in tiling layout) This cannot be simply a bool
      * because we want to keep track of whether the status was set by the
      * application (by setting _NET_WM_WINDOW_TYPE appropriately) or by the
