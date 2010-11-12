@@ -80,6 +80,7 @@ void workspace_set_name(Workspace *ws, const char *name) {
         else ws->text_width = 0;
         ws->utf8_name = label;
 }
+#endif
 
 /*
  * Returns true if the workspace is currently visible. Especially important for
@@ -87,10 +88,14 @@ void workspace_set_name(Workspace *ws, const char *name) {
  * workspaces.
  *
  */
-bool workspace_is_visible(Workspace *ws) {
-        return (ws->output != NULL && ws->output->current_workspace == ws);
+bool workspace_is_visible(Con *ws) {
+    Con *output = con_get_output(ws);
+    if (output == NULL)
+        return false;
+    Con *fs = con_get_fullscreen_con(output);
+    LOG("workspace visible? fs = %p, ws = %p\n", fs, ws);
+    return (fs == ws);
 }
-#endif
 
 /*
  * XXX: we need to clean up all this recursive walking code.
@@ -197,8 +202,11 @@ void workspace_show(const char *num) {
 
 
     if (TAILQ_EMPTY(&(old->nodes_head))) {
-        LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
-        tree_close(old, false);
+        /* check if this workspace is currently visible */
+        if (!workspace_is_visible(old)) {
+            LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
+            tree_close(old, false);
+        }
     }
 
     con_focus(next);

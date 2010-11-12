@@ -34,6 +34,7 @@ Con *workspace_get(const char *num);
  *
  */
 void workspace_set_name(Workspace *ws, const char *name);
+#endif
 
 /**
  * Returns true if the workspace is currently visible. Especially important for
@@ -41,9 +42,8 @@ void workspace_set_name(Workspace *ws, const char *name);
  * workspaces.
  *
  */
-bool workspace_is_visible(Workspace *ws);
+bool workspace_is_visible(Con *ws);
 
-#endif
 /** Switches to the given workspace */
 void workspace_show(const char *num);
 
