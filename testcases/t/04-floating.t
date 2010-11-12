@@ -22,7 +22,7 @@ my $window = $x->root->create_child(
     rect => [ 0, 0, 30, 30],
     background_color => '#C0C0C0',
     # replace the type with 'utility' as soon as the coercion works again in X11::XCB
-    type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
+    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
 );
 
 isa_ok($window, 'X11::XCB::Window');
@@ -45,7 +45,7 @@ $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 1, 1, 80, 90],
     background_color => '#C0C0C0',
-    type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
+    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
 );
 
 isa_ok($window, 'X11::XCB::Window');
