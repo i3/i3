@@ -4,6 +4,10 @@
 
 #include "all.h"
 
+/* change this to 'true' if you want to have additional borders around every
+ * container (for debugging purposes) */
+static bool show_debug_borders = false;
+
 /*
  * "Renders" the given container (and its children), meaning that all rects are
  * updated correctly. Note that this function does not call any xcb_*
@@ -24,10 +28,15 @@ void render_con(Con *con) {
     /* Copy container rect, subtract container border */
     /* This is the actually usable space inside this container for clients */
     Rect rect = con->rect;
-    rect.x += 2;
-    rect.y += 2;
-    rect.width -= 2 * 2;
-    rect.height -= 2 * 2;
+
+    /* Display a border if this is a leaf node. For container nodes, we don’t
+     * draw borders (except when in debug mode) */
+    if (show_debug_borders) {
+        rect.x += 2;
+        rect.y += 2;
+        rect.width -= 2 * 2;
+        rect.height -= 2 * 2;
+    }
 
     int x = rect.x;
     int y = rect.y;
