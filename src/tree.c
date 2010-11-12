@@ -59,6 +59,7 @@ void tree_init() {
     croot->type = CT_ROOT;
 
     Con *ws;
+    int c = 1;
     /* add the outputs */
     TAILQ_FOREACH(output, &outputs, outputs) {
         if (!output->active)
@@ -72,7 +73,8 @@ void tree_init() {
         /* add a workspace to this output */
         ws = con_new(oc);
         ws->type = CT_WORKSPACE;
-        ws->name = strdup("1");
+        asprintf(&(ws->name), "%d", c);
+        c++;
         ws->fullscreen_mode = CF_OUTPUT;
         ws->orientation = HORIZ;
     }
