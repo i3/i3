@@ -51,11 +51,12 @@ void render_con(Con *con) {
         /* depending on the border style, the rect of the child window
          * needs to be smaller */
         Rect *inset = &(con->window_rect);
-        *inset = (Rect){0, 0, con->rect.width, con->rect.height};
-        /* TODO: different border styles */
-        inset->x += 2;
-        inset->width -= 2 * 2;
-        inset->height -= 2;
+
+        if (con->border_style == BS_NORMAL)
+            *inset = (Rect){2, 0, con->rect.width - (2 * 2), con->rect.height - 2};
+        else if (con->border_style == BS_1PIXEL)
+            *inset = (Rect){1, 1, con->rect.width - 2, con->rect.height - 1};
+        else *inset = (Rect){0, 0, con->rect.width, con->rect.height};
 
         /* Obey the aspect ratio, if any */
         if (con->proportional_height != 0 &&
@@ -131,7 +132,7 @@ void render_con(Con *con) {
             }
 
             /* first we have the decoration, if this is a leaf node */
-            if (con_is_leaf(child)) {
+            if (con_is_leaf(child) && child->border_style == BS_NORMAL) {
                 printf("that child is a leaf node, subtracting deco\n");
                 /* TODO: make a function for relative coords? */
                 child->deco_rect.x = child->rect.x - con->rect.x;
