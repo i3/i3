@@ -41,14 +41,17 @@ Con *con_new(Con *parent) {
     /* TODO: remove window coloring after test-phase */
     LOG("color %s\n", colors[cnt]);
     new->name = strdup(colors[cnt]);
+#if 0
     uint32_t cp = get_colorpixel(colors[cnt]);
     cnt++;
     if ((cnt % (sizeof(colors) / sizeof(char*))) == 0)
         cnt = 0;
+#endif
 
     x_con_init(new);
 
-    xcb_change_window_attributes(conn, new->frame, XCB_CW_BACK_PIXEL, &cp);
+    // TODO: this needs to be integrated into src/x.c and updated on config file reloads
+    xcb_change_window_attributes(conn, new->frame, XCB_CW_BACK_PIXEL, &config.client.background);
 
     TAILQ_INIT(&(new->floating_head));
     TAILQ_INIT(&(new->nodes_head));

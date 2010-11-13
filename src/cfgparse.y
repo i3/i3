@@ -182,6 +182,7 @@ void parse_file(const char *f) {
 %union {
         int number;
         char *string;
+        uint32_t *single_color;
         struct Colortriple *color;
         struct Assignment *assignment;
         struct Binding *binding;
@@ -210,6 +211,7 @@ void parse_file(const char *f) {
 %token TOKSET
 %token TOKIPCSOCKET "ipc_socket"
 %token TOKEXEC "exec"
+%token TOKSINGLECOLOR
 %token TOKCOLOR
 %token TOKARROW "→"
 %token TOKMODE "mode"
@@ -240,6 +242,7 @@ line:
         | assign
         | ipcsocket
         | exec
+        | single_color
         | color
         | terminal
         | font
@@ -569,6 +572,13 @@ font:
         }
         ;
 
+single_color:
+        TOKSINGLECOLOR WHITESPACE colorpixel
+        {
+                uint32_t *dest = $<single_color>1;
+                *dest = $<number>3;
+        }
+        ;
 
 color:
         TOKCOLOR WHITESPACE colorpixel WHITESPACE colorpixel WHITESPACE colorpixel
