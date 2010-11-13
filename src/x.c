@@ -222,30 +222,54 @@ void x_window_kill(xcb_window_t window) {
  *
  */
 void x_draw_decoration(Con *con) {
-    Con *parent;
+    if (!con_is_leaf(con) || (con->type != CT_CON && con->type != CT_FLOATING_CON))
+        return;
 
-    parent = con->parent;
+    /* 1: find out which colors to use */
+    struct Colortriple *color;
+    if (con->urgent)
+        color = &config.client.urgent;
+    else if (con == focused)
+        color = &config.client.focused;
+    else if (con == TAILQ_FIRST(&(con->parent->focus_head)))
+        color = &config.client.focused_inactive;
+    else
+        color = &config.client.unfocused;
 
-    if (con == focused)
-        xcb_change_gc_single(conn, parent->gc, XCB_GC_FOREGROUND, get_colorpixel("#FF0000"));
-    else xcb_change_gc_single(conn, parent->gc, XCB_GC_FOREGROUND, get_colorpixel("#0C0C0C"));
+    Con *parent = con->parent;
+
+    /* 2: draw a rectangle in border color around the client */
+    if (con->border_style != BS_NONE) {
+        xcb_change_gc_single(conn, con->gc, XCB_GC_FOREGROUND, color->background);
+        xcb_rectangle_t rect = { 0, 0, con->rect.width, con->rect.height };
+        xcb_poly_fill_rectangle(conn, con->frame, con->gc, 1, &rect);
+    }
+    if (con->border_style != BS_NORMAL)
+        return;
+
+    /* 3: paint the bar */
+    xcb_change_gc_single(conn, parent->gc, XCB_GC_FOREGROUND, color->background);
     xcb_rectangle_t drect = { con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height };
     xcb_poly_fill_rectangle(conn, parent->frame, parent->gc, 1, &drect);
 
-    if (con->window == NULL)
+    /* 4: draw the two lines in border color */
+    xcb_draw_line(conn, parent->frame, parent->gc, color->border,
+            con->deco_rect.x, /* x */
+            con->deco_rect.y, /* y */
+            con->deco_rect.x + con->deco_rect.width, /* to_x */
+            con->deco_rect.y); /* to_y */
+    xcb_draw_line(conn, parent->frame, parent->gc, color->border,
+            con->deco_rect.x, /* x */
+            con->deco_rect.y + con->deco_rect.height - 1, /* y */
+            con->deco_rect.x + con->deco_rect.width, /* to_x */
+            con->deco_rect.y + con->deco_rect.height - 1); /* to_y */
+
+    /* 5: draw the title */
+    struct Window *win = con->window;
+    if (win == NULL || win ->name_x == NULL)
         return;
-
-    i3Window *win = con->window;
-
-    if (win->name_x == NULL) {
-        LOG("not rendering decoration, not yet known\n");
-        return;
-    }
-
-
-    LOG("should render text %s onto %p / %s\n", win->name_json, parent, parent->name);
-
-    xcb_change_gc_single(conn, parent->gc, XCB_GC_FOREGROUND, get_colorpixel("#FFFFFF"));
+    xcb_change_gc_single(conn, parent->gc, XCB_GC_BACKGROUND, color->background);
+    xcb_change_gc_single(conn, parent->gc, XCB_GC_FOREGROUND, color->text);
     if (win->uses_net_wm_name)
         xcb_image_text_16(
             conn,
