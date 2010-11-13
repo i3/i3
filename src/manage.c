@@ -79,13 +79,14 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
                               utf8_title_cookie, title_cookie,
-                              class_cookie, leader_cookie;
+                              class_cookie, leader_cookie, transient_cookie;
 
     wm_type_cookie = xcb_get_any_property_unchecked(conn, false, window, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
     strut_cookie = xcb_get_any_property_unchecked(conn, false, window, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
     state_cookie = xcb_get_any_property_unchecked(conn, false, window, atoms[_NET_WM_STATE], UINT32_MAX);
     utf8_title_cookie = xcb_get_any_property_unchecked(conn, false, window, atoms[_NET_WM_NAME], 128);
     leader_cookie = xcb_get_any_property_unchecked(conn, false, window, atoms[WM_CLIENT_LEADER], UINT32_MAX);
+    transient_cookie = xcb_get_any_property_unchecked(conn, false, window, WM_TRANSIENT_FOR, UINT32_MAX);
     title_cookie = xcb_get_any_property_unchecked(conn, false, window, WM_NAME, 128);
     class_cookie = xcb_get_any_property_unchecked(conn, false, window, WM_CLASS, 128);
     /* TODO: also get wm_normal_hints here. implement after we got rid of xcb-event */
@@ -145,6 +146,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_name_legacy(cwindow, xcb_get_property_reply(conn, title_cookie, NULL));
     window_update_name(cwindow, xcb_get_property_reply(conn, utf8_title_cookie, NULL));
     window_update_leader(cwindow, xcb_get_property_reply(conn, leader_cookie, NULL));
+    window_update_transient_for(cwindow, xcb_get_property_reply(conn, transient_cookie, NULL));
 
     xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
     if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DOCK])) {
@@ -185,12 +187,19 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
 
     /* set floating if necessary */
+    bool want_floating = false;
     if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DIALOG]) ||
         xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_UTILITY]) ||
         xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_TOOLBAR]) ||
         xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_SPLASH])) {
         LOG("This window is a dialog window, setting floating\n");
+        want_floating = true;
+    }
 
+    if (cwindow->transient_for != XCB_NONE)
+        want_floating = true;
+
+    if (want_floating) {
         nc->rect.x = geom->x;
         nc->rect.y = geom->y;
         /* We respect the geometry wishes of floating windows, as long as they

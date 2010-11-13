@@ -215,6 +215,7 @@ struct Window {
     /** Holds the xcb_window_t (just an ID) for the leader window (logical
      * parent for toolwindows and similar floating windows) */
     xcb_window_t leader;
+    xcb_window_t transient_for;
 
     char *class_class;
     char *class_instance;

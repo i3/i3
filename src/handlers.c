@@ -811,8 +811,6 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
     return 1;
 }
 
-#if 0
-
 /*
  * Handles the transient for hints set by a window, signalizing that this window is a popup window
  * for some other window.
@@ -821,32 +819,33 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
  *
  */
 int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
-                         xcb_atom_t name, xcb_get_property_reply_t *reply) {
-        Client *client = table_get(&by_child, window);
-        if (client == NULL) {
-                DLOG("No such client\n");
-                return 1;
-        }
+                         xcb_atom_t name, xcb_get_property_reply_t *prop) {
+    Con *con;
 
-        xcb_window_t transient_for;
-
-        if (reply != NULL) {
-                if (!xcb_get_wm_transient_for_from_reply(&transient_for, reply))
-                        return 1;
-        } else {
-                if (!xcb_get_wm_transient_for_reply(conn, xcb_get_wm_transient_for_unchecked(conn, window),
-                                                    &transient_for, NULL))
-                        return 1;
-        }
-
-        if (client->floating == FLOATING_AUTO_OFF) {
-                DLOG("This is a popup window, putting into floating\n");
-                toggle_floating_mode(conn, client, true);
-        }
-
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL) {
+        DLOG("No such window\n");
         return 1;
-}
+    }
+
+    if (prop == NULL) {
+        prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
+                                false, window, WM_TRANSIENT_FOR, WINDOW, 0, 32), NULL);
+        if (prop == NULL)
+            return 1;
+    }
+
+    window_update_transient_for(con->window, prop);
+
+    // TODO: put window in floating mode if con->window->transient_for != XCB_NONE:
+#if 0
+    if (client->floating == FLOATING_AUTO_OFF) {
+        DLOG("This is a popup window, putting into floating\n");
+        toggle_floating_mode(conn, client, true);
+    }
 #endif
+
+    return 1;
+}
 
 /*
  * Handles changes of the WM_CLIENT_LEADER atom which specifies if this is a
@@ -855,16 +854,16 @@ int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_
  */
 int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t name, xcb_get_property_reply_t *prop) {
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
+        return 1;
+
     if (prop == NULL) {
         prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
                                 false, window, WM_CLIENT_LEADER, WINDOW, 0, 32), NULL);
         if (prop == NULL)
             return 1;
     }
-
-    Con *con;
-    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
-        return 1;
 
     window_update_leader(con->window, prop);
 

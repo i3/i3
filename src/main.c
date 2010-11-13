@@ -270,6 +270,9 @@ int main(int argc, char *argv[]) {
     /* Watch WM_CLIENT_LEADER (= logical parent window for toolbars etc.) */
     xcb_property_set_handler(&prophs, atoms[WM_CLIENT_LEADER], UINT_MAX, handle_clientleader_change, NULL);
 
+    /* Watch WM_TRANSIENT_FOR property (to which client this popup window belongs) */
+    xcb_property_set_handler(&prophs, WM_TRANSIENT_FOR, UINT_MAX, handle_transient_for, NULL);
+
     /* Set up the atoms we support */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED], ATOM, 32, 7, atoms);
     /* Set up the window manager’s name */

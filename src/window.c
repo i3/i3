@@ -115,3 +115,22 @@ void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop) {
 
     win->leader = *leader;
 }
+
+/**
+ * Updates the TRANSIENT_FOR (logical parent window).
+ *
+ */
+void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop) {
+    if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+        DLOG("prop == NULL\n");
+        return;
+    }
+
+    xcb_window_t transient_for;
+    if (!xcb_get_wm_transient_for_from_reply(&transient_for, prop))
+        return;
+
+    DLOG("Transient for changed to %08x\n", transient_for);
+
+    win->transient_for = transient_for;
+}
