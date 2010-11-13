@@ -25,6 +25,7 @@ my $expected = {
     focus => ignore(),
     focused => 0,
     urgent => 0,
+    border => 0,
     'floating-nodes' => ignore(),
 };
 
