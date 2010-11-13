@@ -222,8 +222,13 @@ void x_window_kill(xcb_window_t window) {
  *
  */
 void x_draw_decoration(Con *con) {
-    if (!con_is_leaf(con) || (con->type != CT_CON && con->type != CT_FLOATING_CON))
+    /* this code needs to run for:
+     *  • leaf containers
+     *  • non-leaf containers which are in a stacking container
+     */
+    if (!con_is_leaf(con) && con->parent->layout != L_STACKED)
         return;
+    DLOG("decoration should be rendered for con %p\n", con);
 
     /* 1: find out which colors to use */
     struct Colortriple *color;
@@ -237,15 +242,48 @@ void x_draw_decoration(Con *con) {
         color = &config.client.unfocused;
 
     Con *parent = con->parent;
+    int border_style = con_border_style(con);
 
     /* 2: draw a rectangle in border color around the client */
-    if (con->border_style != BS_NONE) {
+    if (border_style != BS_NONE && con_is_leaf(con)) {
+        Rect br = con_border_style_rect(con);
+        Rect *r = &(con->rect);
+#if 0
+        DLOG("con->rect spans %d x %d\n", con->rect.width, con->rect.height);
+        DLOG("border_rect spans (%d, %d) with %d x %d\n", border_rect.x, border_rect.y, border_rect.width, border_rect.height);
+        DLOG("window_rect spans (%d, %d) with %d x %d\n", con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
+#endif
+
+        /* This polygon represents the border around the child window (left,
+         * bottom and right part). We don’t just fill the whole rectangle
+         * because some childs are not freely resizable and we want their
+         * background color to "shine through". */
         xcb_change_gc_single(conn, con->gc, XCB_GC_FOREGROUND, color->background);
-        xcb_rectangle_t rect = { 0, 0, con->rect.width, con->rect.height };
-        xcb_poly_fill_rectangle(conn, con->frame, con->gc, 1, &rect);
+        xcb_point_t points[] = {
+            { 0,                          0 },
+            { 0,                          r->height },
+            { r->width,                   r->height },
+            { r->width,                   0 },
+            { r->width + br.width + br.x, 0 },
+            { r->width + br.width + br.x, r->height + br.height + br.y },
+            { br.x,                       r->height + br.height },
+            { br.x,                       0 }
+        };
+        xcb_fill_poly(conn, con->frame, con->gc, XCB_POLY_SHAPE_COMPLEX, XCB_COORD_MODE_ORIGIN, 8, points);
+
+        /* 1pixel border needs an additional line at the top */
+        if (border_style == BS_1PIXEL) {
+            xcb_rectangle_t topline = { br.x, 0, con->rect.width + br.width + br.x, br.y };
+            xcb_poly_fill_rectangle(conn, con->frame, con->gc, 1, &topline);
+        }
     }
-    if (con->border_style != BS_NORMAL)
+
+    /* if this is a borderless/1pixel window, we don’t * need to render the
+     * decoration. */
+    if (border_style != BS_NORMAL) {
+        DLOG("border style not BS_NORMAL, aborting rendering of decoration\n");
         return;
+    }
 
     /* 3: paint the bar */
     xcb_change_gc_single(conn, parent->gc, XCB_GC_FOREGROUND, color->background);
@@ -265,18 +303,49 @@ void x_draw_decoration(Con *con) {
             con->deco_rect.y + con->deco_rect.height - 1); /* to_y */
 
     /* 5: draw the title */
-    struct Window *win = con->window;
-    if (win == NULL || win ->name_x == NULL)
-        return;
     xcb_change_gc_single(conn, parent->gc, XCB_GC_BACKGROUND, color->background);
     xcb_change_gc_single(conn, parent->gc, XCB_GC_FOREGROUND, color->text);
+
+    struct Window *win = con->window;
+    if (win == NULL || win->name_x == NULL) {
+        /* this is a non-leaf container, we need to make up a good description */
+        // TODO: use a good description instead of just "another container"
+        xcb_image_text_8(
+            conn,
+            strlen("another container"),
+            parent->frame,
+            parent->gc,
+            con->deco_rect.x + 2,
+            con->deco_rect.y + 14, /* TODO: hardcoded */
+            "another container"
+        );
+        return;
+    }
+
+    int indent_level = 0,
+        indent_mult = 0;
+    Con *il_parent = con->parent;
+    if (il_parent->type != L_STACKED) {
+        while (1) {
+            DLOG("il_parent = %p, layout = %d\n", il_parent, il_parent->layout);
+            if (il_parent->layout == L_STACKED)
+                indent_level++;
+            if (il_parent->type == CT_WORKSPACE)
+                break;
+            il_parent = il_parent->parent;
+            indent_mult++;
+        }
+    }
+    DLOG("indent_level = %d, indent_mult = %d\n", indent_level, indent_mult);
+    int indent_px = (indent_level * 5) * indent_mult;
+
     if (win->uses_net_wm_name)
         xcb_image_text_16(
             conn,
             win->name_len,
             parent->frame,
             parent->gc,
-            con->deco_rect.x,
+            con->deco_rect.x + 2 + indent_px,
             con->deco_rect.y + 14, /* TODO: hardcoded */
             (xcb_char2b_t*)win->name_x
         );
@@ -286,7 +355,7 @@ void x_draw_decoration(Con *con) {
             win->name_len,
             parent->frame,
             parent->gc,
-            con->deco_rect.x,
+            con->deco_rect.x + 2 + indent_px,
             con->deco_rect.y + 14, /* TODO: hardcoded */
             win->name_x
         );

@@ -135,12 +135,22 @@ int con_orientation(Con *con);
  */
 Con *con_next_focused(Con *con);
 
-/*
+/**
  * Returns a "relative" Rect which contains the amount of pixels that need to
  * be added to the original Rect to get the final position (obviously the
  * amount of pixels for normal, 1pixel and borderless are different).
  *
  */
 Rect con_border_style_rect(Con *con);
+
+/**
+ * Use this function to get a container’s border style. This is important
+ * because when inside a stack, the border style is always BS_NORMAL.
+ * For tabbed mode, the same applies, with one exception: when the container is
+ * borderless and the only element in the tabbed container, the border is not
+ * rendered.
+ *
+ */
+int con_border_style(Con *con);
 
 #endif

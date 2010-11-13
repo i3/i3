@@ -233,7 +233,7 @@ void tree_split(Con *con, orientation_t orientation) {
     /* if we are in a container whose parent contains only one
      * child and has the same orientation like we are trying to
      * set, this operation is a no-op to not confuse the user */
-    if (parent->orientation == orientation &&
+    if (con_orientation(parent) == orientation &&
         TAILQ_NEXT(con, nodes) == TAILQ_END(&(parent->nodes_head))) {
         DLOG("Not splitting the same way again\n");
         return;
@@ -353,6 +353,7 @@ void tree_next(char way, orientation_t orientation) {
     while (!TAILQ_EMPTY(&(next->focus_head)))
         next = TAILQ_FIRST(&(next->focus_head));
 
+    DLOG("focusing %p\n", next);
     con_focus(next);
 }
 

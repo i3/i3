@@ -41,12 +41,10 @@ Con *con_new(Con *parent) {
     /* TODO: remove window coloring after test-phase */
     LOG("color %s\n", colors[cnt]);
     new->name = strdup(colors[cnt]);
-#if 0
-    uint32_t cp = get_colorpixel(colors[cnt]);
+    //uint32_t cp = get_colorpixel(colors[cnt]);
     cnt++;
     if ((cnt % (sizeof(colors) / sizeof(char*))) == 0)
         cnt = 0;
-#endif
 
     x_con_init(new);
 
@@ -453,14 +451,32 @@ Con *con_next_focused(Con *con) {
  *
  */
 Rect con_border_style_rect(Con *con) {
-    if (con->border_style == BS_NORMAL)
+    switch (con_border_style(con)) {
+    case BS_NORMAL:
         return (Rect){2, 0, -(2 * 2), -2};
 
-    if (con->border_style == BS_1PIXEL)
+    case BS_1PIXEL:
         return (Rect){1, 1, -2, -2};
 
-    if (con->border_style == BS_NONE)
+    case BS_NONE:
         return (Rect){0, 0, 0, 0};
 
-    assert(false);
+    default:
+        assert(false);
+    }
+}
+
+/*
+ * Use this function to get a container’s border style. This is important
+ * because when inside a stack, the border style is always BS_NORMAL.
+ * For tabbed mode, the same applies, with one exception: when the container is
+ * borderless and the only element in the tabbed container, the border is not
+ * rendered.
+ *
+ */
+int con_border_style(Con *con) {
+    if (con->parent->layout == L_STACKED)
+        return BS_NORMAL;
+
+    return con->border_style;
 }

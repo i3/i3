@@ -167,8 +167,13 @@ void render_con(Con *con) {
     /* in a stacking container, we ensure the focused client is raised */
     if (con->layout == L_STACKED) {
         Con *foc = TAILQ_FIRST(&(con->focus_head));
-        if (foc != TAILQ_END(&(con->focus_head)))
+        if (foc != TAILQ_END(&(con->focus_head))) {
+            LOG("con %p is stacking, raising %p\n", con, foc);
             x_raise_con(foc);
+            /* by rendering the stacked container again, we handle the case
+             * that we have a non-leaf-container inside the stack. */
+            render_con(foc);
+        }
     }
 
     TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
