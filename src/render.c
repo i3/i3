@@ -19,10 +19,7 @@ static bool show_debug_borders = false;
 void render_con(Con *con) {
     printf("currently rendering node %p / %s / layout %d\n",
             con, con->name, con->layout);
-    int children = 0;
-    Con *child;
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes)
-        children++;
+    int children = con_num_children(con);
     printf("children: %d, orientation = %d\n", children, con->orientation);
 
     /* Copy container rect, subtract container border */
@@ -103,6 +100,7 @@ void render_con(Con *con) {
         return;
     }
 
+    Con *child;
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
 
         /* default layout */

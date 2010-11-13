@@ -7,7 +7,7 @@
 # 3) move a container inside another container
 # 4) move a container in a different direction so that we need to go up in tree
 #
-use i3test tests => 16;
+use i3test tests => 17;
 use X11::XCB qw(:all);
 
 my $i3 = i3("/tmp/nestedcons");
@@ -108,5 +108,21 @@ is(@{$content}, 3, 'three nodes on this workspace');
 $i3->command('move after h')->recv;
 $content = get_ws_content($tmp);
 is(@{$content}, 2, 'two nodes on this workspace');
+
+######################################################################
+# 4) Move a container horizontally when inside a vertical split container.
+#    The container will be moved to the workspace level and the old vsplit
+#    container needs to be closed. Verify that it will be closed.
+######################################################################
+
+my $otmp = get_unused_workspace();
+$i3->command("workspace $otmp")->recv;
+
+$i3->command("open")->recv;
+$i3->command("split v")->recv;
+$i3->command("move after h")->recv;
+
+$content = get_ws_content($otmp);
+is(@{$content}, 1, 'only one nodes on this workspace');
 
 diag( "Testing i3, Perl $], $^X" );

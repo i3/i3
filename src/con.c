@@ -287,6 +287,20 @@ Con *con_for_window(i3Window *window, Match **store_match) {
 }
 
 /*
+ * Returns the number of children of this container.
+ *
+ */
+int con_num_children(Con *con) {
+    Con *child;
+    int children = 0;
+
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+        children++;
+
+    return children;
+}
+
+/*
  * Updates the percent attribute of the children of the given container. This
  * function needs to be called when a window is added or removed from a
  * container.
@@ -294,9 +308,7 @@ Con *con_for_window(i3Window *window, Match **store_match) {
  */
 void con_fix_percent(Con *con, int action) {
     Con *child;
-    int children = 0;
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes)
-        children++;
+    int children = con_num_children(con);
     /* TODO: better document why this math works */
     double fix;
     if (action == WINDOW_ADD)
@@ -446,4 +458,6 @@ Rect con_border_style_rect(Con *con) {
 
     if (con->border_style == BS_NONE)
         return (Rect){0, 0, 0, 0};
+
+    assert(false);
 }

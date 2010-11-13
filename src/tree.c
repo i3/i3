@@ -364,6 +364,7 @@ void tree_next(char way, orientation_t orientation) {
 void tree_move(char way, orientation_t orientation) {
     /* 1: get the first parent with the same orientation */
     Con *parent = focused->parent;
+    Con *old_parent = parent;
     if (focused->type == CT_WORKSPACE)
         return;
     bool level_changed = false;
@@ -430,5 +431,10 @@ void tree_move(char way, orientation_t orientation) {
         else TAILQ_INSERT_BEFORE(next, focused, nodes);
         TAILQ_INSERT_HEAD(&(next->parent->focus_head), focused, focused);
         /* TODO: don’t influence focus handling? */
+    }
+
+    if (con_num_children(old_parent) == 0) {
+        DLOG("Old container empty after moving. Let's close it\n");
+        tree_close(old_parent, false);
     }
 }

@@ -76,6 +76,12 @@ Con *con_by_frame_id(xcb_window_t frame);
 Con *con_for_window(i3Window *window, Match **store_match);
 
 /**
+ * Returns the number of children of this container.
+ *
+ */
+int con_num_children(Con *con);
+
+/**
  * Attaches the given container to the given parent. This happens when moving
  * a container or when inserting a new container at a specific place in the
  * tree.
