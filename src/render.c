@@ -148,7 +148,8 @@ void render_con(Con *con) {
             }
         }
 
-        if (con->layout == L_STACKED) {
+        /* stacked layout */
+        else if (con->layout == L_STACKED) {
             printf("stacked con\n");
             child->rect.x = x;
             child->rect.y = y;
@@ -164,6 +165,23 @@ void render_con(Con *con) {
             child->deco_rect.height = deco_height;
         }
 
+        /* tabbed layout */
+        else if (con->layout == L_TABBED) {
+            printf("tabbed con\n");
+            child->rect.x = x;
+            child->rect.y = y;
+            child->rect.width = rect.width;
+            child->rect.height = rect.height;
+
+            child->deco_rect.width = child->rect.width / children;
+            child->deco_rect.height = deco_height;
+            child->deco_rect.x = x - con->rect.x + i * child->deco_rect.width;
+            child->deco_rect.y = y - con->rect.y;
+
+            child->rect.y += deco_height;
+            child->rect.height -= deco_height;
+        }
+
         printf("child at (%d, %d) with (%d x %d)\n",
                 child->rect.x, child->rect.y, child->rect.width, child->rect.height);
         printf("x now %d, y now %d\n", x, y);
@@ -172,8 +190,8 @@ void render_con(Con *con) {
         i++;
     }
 
-    /* in a stacking container, we ensure the focused client is raised */
-    if (con->layout == L_STACKED) {
+    /* in a stacking or tabbed container, we ensure the focused client is raised */
+    if (con->layout == L_STACKED || con->layout == L_TABBED) {
         Con *foc = TAILQ_FIRST(&(con->focus_head));
         if (foc != TAILQ_END(&(con->focus_head))) {
             LOG("con %p is stacking, raising %p\n", con, foc);
