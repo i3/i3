@@ -403,18 +403,35 @@ static void x_push_node(Con *con) {
     if (state->mapped != con->mapped || (con->mapped && state->initial)) {
         if (!con->mapped) {
             xcb_void_cookie_t cookie;
+            if (con->window != NULL) {
+                /* Set WM_STATE_WITHDRAWN, it seems like Java apps need it */
+                long data[] = { XCB_WM_STATE_WITHDRAWN, XCB_NONE };
+                xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
+                                    atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+            }
+
             cookie = xcb_unmap_window(conn, con->frame);
             LOG("unmapping container (serial %d)\n", cookie.sequence);
             /* Ignore enter_notifies which are generated when unmapping */
             add_ignore_event(cookie.sequence);
         } else {
             xcb_void_cookie_t cookie;
+
+            if (con->window != NULL) {
+                /* Set WM_STATE_NORMAL because GTK applications don’t want to
+                 * drag & drop if we don’t. Also, xprop(1) needs it. */
+                long data[] = { XCB_WM_STATE_NORMAL, XCB_NONE };
+                xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
+                                    atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+            }
+
             if (state->initial && con->window != NULL) {
                 cookie = xcb_map_window(conn, con->window->id);
                 LOG("mapping child window (serial %d)\n", cookie.sequence);
                 /* Ignore enter_notifies which are generated when mapping */
                 add_ignore_event(cookie.sequence);
             }
+
             cookie = xcb_map_window(conn, con->frame);
             LOG("mapping container (serial %d)\n", cookie.sequence);
             /* Ignore enter_notifies which are generated when mapping */
