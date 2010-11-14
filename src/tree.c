@@ -181,10 +181,7 @@ void tree_close(Con *con, bool kill_window) {
 
     if (con_is_floating(con)) {
         DLOG("Container was floating, killing floating container\n");
-
-        TAILQ_REMOVE(&(parent->parent->floating_head), parent, floating_windows);
-        TAILQ_REMOVE(&(parent->parent->focus_head), parent, focused);
-        tree_close(parent, false);
+        tree_close(parent, false, false);
         next = NULL;
     }
 
