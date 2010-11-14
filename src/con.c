@@ -422,9 +422,24 @@ Con *con_next_focused(Con *con) {
     /* floating containers are attached to a workspace, so we focus either the
      * next floating container (if any) or the workspace itself. */
     if (con->type == CT_FLOATING_CON) {
+        DLOG("selecting next for CT_FLOATING_CON\n");
         next = TAILQ_NEXT(con, floating_windows);
-        if (next == TAILQ_END(&(parent->floating_head)))
-            next = con_get_workspace(con);
+        if (next == TAILQ_END(&(parent->floating_head))) {
+            Con *ws = con_get_workspace(con);
+            next = ws;
+            DLOG("no more floating containers for next = %p, restoring workspace focus\n", next);
+            while (next != TAILQ_END(&(ws->focus_head)) && !TAILQ_EMPTY(&(next->focus_head))) {
+                next = TAILQ_FIRST(&(next->focus_head));
+                if (next == con) {
+                    DLOG("skipping container itself, we want the next client\n");
+                    next = TAILQ_NEXT(next, focused);
+                }
+            }
+            if (next == TAILQ_END(&(ws->focus_head))) {
+                DLOG("Focus list empty, returning NULL\n");
+                next = NULL;
+            }
+        }
         return next;
     }
 

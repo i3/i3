@@ -78,6 +78,8 @@ void floating_enable(Con *con, bool automatic) {
 
     TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
     TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
+    // TODO: don’t influence focus handling when Con was not focused before.
+    con_focus(con);
 }
 
 void floating_disable(Con *con, bool automatic) {
@@ -105,6 +107,8 @@ void floating_disable(Con *con, bool automatic) {
     con->floating = FLOATING_USER_OFF;
 
     con_fix_percent(con->parent, WINDOW_ADD);
+    // TODO: don’t influence focus handling when Con was not focused before.
+    con_focus(con);
 }
 
 

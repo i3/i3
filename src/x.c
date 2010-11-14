@@ -372,7 +372,7 @@ static void x_push_node(Con *con) {
     state = state_for_frame(con->frame);
 
     if (state->name != NULL) {
-        DLOG("pushing name %s\n", state->name);
+        DLOG("pushing name %s for con %p\n", state->name, con);
 
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->frame,
                             WM_NAME, STRING, 8, strlen(state->name), state->name);
