@@ -51,6 +51,10 @@ void render_con(Con *con) {
         *inset = (Rect){0, 0, con->rect.width, con->rect.height};
         *inset = rect_add(*inset, con_border_style_rect(con));
 
+        /* Obey x11 border */
+        inset->width -= (2 * con->border_width);
+        inset->height -= (2 * con->border_width);
+
         /* Obey the aspect ratio, if any */
         if (con->proportional_height != 0 &&
             con->proportional_width != 0) {

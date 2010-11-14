@@ -185,6 +185,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     nc->window = cwindow;
     x_reinit(nc);
 
+    nc->border_width = geom->border_width;
+
     char *name;
     asprintf(&name, "[i3 con] container around %p", cwindow);
     x_set_name(nc, name);

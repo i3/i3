@@ -297,6 +297,9 @@ struct Con {
     int base_width;
     int base_height;
 
+    /* the x11 border pixel attribute */
+    int border_width;
+
     /* minimum increment size specified for the window (in pixels) */
     int width_increment;
     int height_increment;
