@@ -299,8 +299,11 @@ void x_draw_decoration(Con *con) {
             con->deco_rect.y + con->deco_rect.height - 1); /* to_y */
 
     /* 5: draw the title */
-    xcb_change_gc_single(conn, parent->gc, XCB_GC_BACKGROUND, color->background);
-    xcb_change_gc_single(conn, parent->gc, XCB_GC_FOREGROUND, color->text);
+    i3Font *font = load_font(conn, config.font);
+    uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
+    uint32_t values[] = { color->text, color->background, font->id };
+    xcb_change_gc(conn, parent->gc, mask, values);
+    int text_offset_y = font->height + (con->deco_rect.height - font->height) / 2 - 1;
 
     struct Window *win = con->window;
     if (win == NULL || win->name_x == NULL) {
@@ -312,7 +315,7 @@ void x_draw_decoration(Con *con) {
             parent->frame,
             parent->gc,
             con->deco_rect.x + 2,
-            con->deco_rect.y + 14, /* TODO: hardcoded */
+            con->deco_rect.y + text_offset_y,
             "another container"
         );
         return;
@@ -342,7 +345,7 @@ void x_draw_decoration(Con *con) {
             parent->frame,
             parent->gc,
             con->deco_rect.x + 2 + indent_px,
-            con->deco_rect.y + 14, /* TODO: hardcoded */
+            con->deco_rect.y + text_offset_y,
             (xcb_char2b_t*)win->name_x
         );
     else
@@ -352,7 +355,7 @@ void x_draw_decoration(Con *con) {
             parent->frame,
             parent->gc,
             con->deco_rect.x + 2 + indent_px,
-            con->deco_rect.y + 14, /* TODO: hardcoded */
+            con->deco_rect.y + text_offset_y,
             win->name_x
         );
 }
