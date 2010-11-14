@@ -372,6 +372,7 @@ void x_draw_decoration(Con *con) {
 static void x_push_node(Con *con) {
     Con *current;
     con_state *state;
+    Rect rect = con->rect;
 
     LOG("Pushing changes for node %p / %s\n", con, con->name);
     state = state_for_frame(con->frame);
@@ -382,6 +383,28 @@ static void x_push_node(Con *con) {
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->frame,
                             WM_NAME, STRING, 8, strlen(state->name), state->name);
         FREE(state->name);
+    }
+
+    if (con->window == NULL) {
+        /* Calculate the height of all window decorations which will be drawn on to
+         * this frame. */
+        uint32_t max_y = 0, max_height = 0;
+        TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
+            DLOG("Child's decoration is %d x %d, from (%d, %d)\n",
+                    current->deco_rect.width, current->deco_rect.height,
+                    current->deco_rect.x, current->deco_rect.y);
+            Rect *dr = &(current->deco_rect);
+            if (dr->y >= max_y && dr->height >= max_height) {
+                max_y = dr->y;
+                max_height = dr->height;
+            }
+        }
+        DLOG("bottom of decorations is %d\n", max_y + max_height);
+        rect.height = max_y + max_height;
+        if (rect.height == 0) {
+            DLOG("Unmapping container because it does not contain anything atm.\n");
+            con->mapped = false;
+        }
     }
 
     /* reparent the child window (when the window was moved due to a sticky
@@ -452,10 +475,10 @@ static void x_push_node(Con *con) {
 
     bool fake_notify = false;
     /* set new position if rect changed */
-    if (memcmp(&(state->rect), &(con->rect), sizeof(Rect)) != 0) {
-        LOG("setting rect (%d, %d, %d, %d)\n", con->rect.x, con->rect.y, con->rect.width, con->rect.height);
-        xcb_set_window_rect(conn, con->frame, con->rect);
-        memcpy(&(state->rect), &(con->rect), sizeof(Rect));
+    if (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0) {
+        LOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
+        xcb_set_window_rect(conn, con->frame, rect);
+        memcpy(&(state->rect), &rect, sizeof(Rect));
         fake_notify = true;
     }
 
