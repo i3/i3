@@ -256,23 +256,17 @@ void x_draw_decoration(Con *con) {
         DLOG("window_rect spans (%d, %d) with %d x %d\n", con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
 #endif
 
-        /* This polygon represents the border around the child window (left,
-         * bottom and right part). We don’t just fill the whole rectangle
-         * because some childs are not freely resizable and we want their
-         * background color to "shine through". */
+        /* These rectangles represents the border around the child window
+         * (left, bottom and right part). We don’t just fill the whole
+         * rectangle because some childs are not freely resizable and we want
+         * their background color to "shine through". */
         xcb_change_gc_single(conn, con->gc, XCB_GC_FOREGROUND, color->background);
-        xcb_point_t points[] = {
-            { 0,                          0 },
-            { 0,                          r->height },
-            { r->width,                   r->height },
-            { r->width,                   0 },
-            { r->width + br.width + br.x, 0 },
-            { r->width + br.width + br.x, r->height + br.height + br.y },
-            { br.x,                       r->height + br.height },
-            { br.x,                       0 }
+        xcb_rectangle_t borders[] = {
+            { 0, 0, br.x, r->height },
+            { 0, r->height + br.height + br.y, r->width, r->height },
+            { r->width + br.width + br.x, 0, r->width, r->height }
         };
-        xcb_fill_poly(conn, con->frame, con->gc, XCB_POLY_SHAPE_COMPLEX, XCB_COORD_MODE_ORIGIN, 8, points);
-
+        xcb_poly_fill_rectangle(conn, con->frame, con->gc, 3, borders);
         /* 1pixel border needs an additional line at the top */
         if (border_style == BS_1PIXEL) {
             xcb_rectangle_t topline = { br.x, 0, con->rect.width + br.width + br.x, br.y };
