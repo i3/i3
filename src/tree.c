@@ -240,11 +240,11 @@ void tree_split(Con *con, orientation_t orientation) {
 
     Con *parent = con->parent;
     /* if we are in a container whose parent contains only one
-     * child and has the same orientation like we are trying to
-     * set, this operation is a no-op to not confuse the user */
-    if (con_orientation(parent) == orientation &&
-        TAILQ_NEXT(con, nodes) == TAILQ_END(&(parent->nodes_head))) {
-        DLOG("Not splitting the same way again\n");
+     * child (its split functionality is unused so far), we just change the
+     * orientation (more intuitive than splitting again) */
+    if (con_num_children(parent) == 1) {
+        parent->orientation = orientation;
+        DLOG("Just changing orientation of existing container\n");
         return;
     }
 
