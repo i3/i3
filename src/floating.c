@@ -95,7 +95,7 @@ void floating_disable(Con *con, bool automatic) {
     /* 2: kill parent container */
     TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
     TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
-    tree_close(con->parent, false);
+    tree_close(con->parent, false, false);
 
     /* 3: re-attach to previous parent */
     con->parent = con->old_parent;

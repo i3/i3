@@ -143,7 +143,7 @@ static void fix_floating_parent(Con *con, Con *vanishing) {
  * Closes the given container including all children
  *
  */
-void tree_close(Con *con, bool kill_window) {
+void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     Con *parent = con->parent;
 
     /* check floating clients and adjust old_parent if necessary */
@@ -158,7 +158,8 @@ void tree_close(Con *con, bool kill_window) {
      * in their parent’s nodes_head */
     while (!TAILQ_EMPTY(&(con->nodes_head))) {
         child = TAILQ_FIRST(&(con->nodes_head));
-        tree_close(child, kill_window);
+        DLOG("killing child=%p\n", child);
+        tree_close(child, kill_window, true);
     }
 
     if (con->window != NULL) {
@@ -199,12 +200,13 @@ void tree_close(Con *con, bool kill_window) {
     con_focus(next);
 
     /* check if the parent container is empty now and close it */
-    if (parent->type != CT_WORKSPACE &&
+    if (!dont_kill_parent &&
+        parent->type != CT_WORKSPACE &&
         TAILQ_EMPTY(&(parent->nodes_head))) {
         DLOG("Closing empty parent container\n");
         /* TODO: check if this container would swallow any other client and
          * don’t close it automatically. */
-        tree_close(parent, false);
+        tree_close(parent, false, false);
     }
 }
 
@@ -220,7 +222,7 @@ void tree_close_con() {
     }
 
     /* Kill con */
-    tree_close(focused, true);
+    tree_close(focused, true, false);
 }
 
 /*
@@ -443,6 +445,6 @@ void tree_move(char way, orientation_t orientation) {
 
     if (con_num_children(old_parent) == 0) {
         DLOG("Old container empty after moving. Let's close it\n");
-        tree_close(old_parent, false);
+        tree_close(old_parent, false, false);
     }
 }

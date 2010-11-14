@@ -76,7 +76,7 @@ void tree_move(char way, orientation_t orientation);
  * Closes the given container including all children
  *
  */
-void tree_close(Con *con, bool kill_window);
+void tree_close(Con *con, bool kill_window, bool dont_kill_parent);
 
 /**
  * Loads tree from ~/.i3/_restart.json (used for in-place restarts).

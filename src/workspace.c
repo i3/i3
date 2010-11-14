@@ -209,7 +209,7 @@ void workspace_show(const char *num) {
         /* check if this workspace is currently visible */
         if (!workspace_is_visible(old)) {
             LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
-            tree_close(old, false);
+            tree_close(old, false, false);
         }
     }
 
