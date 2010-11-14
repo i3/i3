@@ -65,4 +65,12 @@ void x_push_changes(Con *con);
  */
 void x_raise_con(Con *con);
 
+/**
+ * Sets the WM_NAME property (so, no UTF8, but used only for debugging anyways)
+ * of the given name. Used for properly tagging the windows for easily spotting
+ * i3 windows in xwininfo -root -all.
+ *
+ */
+void x_set_name(Con *con, const char *name);
+
 #endif

@@ -39,6 +39,10 @@ Con *workspace_get(const char *num) {
         output = con_get_output(focused);
         LOG("got output %p\n", output);
         workspace = con_new(output);
+        char *name;
+        asprintf(&name, "[i3 con] workspace %s", num);
+        x_set_name(workspace, name);
+        free(name);
         workspace->type = CT_WORKSPACE;
         workspace->name = strdup(num);
         workspace->orientation = HORIZ;

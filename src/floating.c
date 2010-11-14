@@ -32,7 +32,16 @@ void floating_enable(Con *con, bool automatic) {
     /* 2: create a new container to render the decoration on, add
      * it as a floating window to the workspace */
     Con *nc = con_new(NULL);
+    /* we need to set the parent afterwards instead of passing it as an
+     * argument to con_new() because nc would be inserted into the tiling layer
+     * otherwise. */
     nc->parent = con_get_workspace(con);
+
+    char *name;
+    asprintf(&name, "[i3 con] floatingcon around %p", con);
+    x_set_name(nc, name);
+    free(name);
+
     nc->rect = con->rect;
     /* add pixels for the decoration */
     /* TODO: don’t add them when the user automatically puts new windows into

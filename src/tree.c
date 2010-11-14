@@ -70,11 +70,21 @@ void tree_init() {
         oc->type = CT_OUTPUT;
         oc->rect = output->rect;
 
+        char *name;
+        asprintf(&name, "[i3 con] output %s", oc->name);
+        x_set_name(oc, name);
+        free(name);
+
         /* add a workspace to this output */
         ws = con_new(oc);
         ws->type = CT_WORKSPACE;
         asprintf(&(ws->name), "%d", c);
         c++;
+
+        asprintf(&name, "[i3 con] workspace %s", ws->name);
+        x_set_name(ws, name);
+        free(name);
+
         ws->fullscreen_mode = CF_OUTPUT;
         ws->orientation = HORIZ;
     }

@@ -30,6 +30,8 @@ typedef struct con_state {
 
     bool initial;
 
+    char *name;
+
     CIRCLEQ_ENTRY(con_state) state;
     CIRCLEQ_ENTRY(con_state) old_state;
 } con_state;
@@ -374,6 +376,14 @@ static void x_push_node(Con *con) {
     LOG("Pushing changes for node %p / %s\n", con, con->name);
     state = state_for_frame(con->frame);
 
+    if (state->name != NULL) {
+        DLOG("pushing name %s\n", state->name);
+
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->frame,
+                            WM_NAME, STRING, 8, strlen(state->name), state->name);
+        FREE(state->name);
+    }
+
     /* reparent the child window (when the window was moved due to a sticky
      * container) */
     if (state->need_reparent && con->window != NULL) {
@@ -542,4 +552,22 @@ void x_raise_con(Con *con) {
     LOG("found state entry, moving to top\n");
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_INSERT_HEAD(&state_head, state, state);
+}
+
+/*
+ * Sets the WM_NAME property (so, no UTF8, but used only for debugging anyways)
+ * of the given name. Used for properly tagging the windows for easily spotting
+ * i3 windows in xwininfo -root -all.
+ *
+ */
+void x_set_name(Con *con, const char *name) {
+    struct con_state *state;
+
+    if ((state = state_for_frame(con->frame)) == NULL) {
+        ELOG("window state not found\n");
+        return;
+    }
+
+    FREE(state->name);
+    state->name = sstrdup(name);
 }
