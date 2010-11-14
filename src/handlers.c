@@ -342,11 +342,14 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
 
     DLOG("Configure request!\n");
     if (con_is_floating(con) && con_is_leaf(con)) {
+        /* find the height for the decorations */
+        i3Font *font = load_font(conn, config.font);
+        int deco_height = font->height + 5;
         /* we actually need to apply the size/position changes to the *parent*
          * container */
         Rect bsr = con_border_style_rect(con);
         if (con->border_style == BS_NORMAL)
-            bsr.height -= 17;
+            bsr.height -= deco_height;
         con = con->parent;
         DLOG("Container is a floating leaf node, will do that.\n");
         if (event->value_mask & XCB_CONFIG_WINDOW_X) {

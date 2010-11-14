@@ -42,11 +42,15 @@ void floating_enable(Con *con, bool automatic) {
     x_set_name(nc, name);
     free(name);
 
+    /* find the height for the decorations */
+    i3Font *font = load_font(conn, config.font);
+    int deco_height = font->height + 5;
+
     nc->rect = con->rect;
     /* add pixels for the decoration */
     /* TODO: don’t add them when the user automatically puts new windows into
      * 1pixel/borderless mode */
-    nc->rect.height += 17 + 2;
+    nc->rect.height += deco_height + 4;
     nc->rect.width += 4;
     nc->orientation = NO_ORIENTATION;
     nc->type = CT_FLOATING_CON;

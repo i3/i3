@@ -104,6 +104,10 @@ void render_con(Con *con) {
         return;
     }
 
+    /* find the height for the decorations */
+    i3Font *font = load_font(conn, config.font);
+    int deco_height = font->height + 5;
+
     Con *child;
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
 
@@ -136,11 +140,11 @@ void render_con(Con *con) {
                 child->deco_rect.x = child->rect.x - con->rect.x;
                 child->deco_rect.y = child->rect.y - con->rect.y;
 
-                child->rect.y += 17;
-                child->rect.height -= 17;
+                child->rect.y += deco_height;
+                child->rect.height -= deco_height;
 
                 child->deco_rect.width = child->rect.width;
-                child->deco_rect.height = 17;
+                child->deco_rect.height = deco_height;
             }
         }
 
@@ -151,13 +155,13 @@ void render_con(Con *con) {
             child->rect.width = rect.width;
             child->rect.height = rect.height;
 
-            child->rect.y += (17 * children);
-            child->rect.height -= (17 * children);
+            child->rect.y += (deco_height * children);
+            child->rect.height -= (deco_height * children);
 
             child->deco_rect.x = x - con->rect.x;
-            child->deco_rect.y = y - con->rect.y + (i * 17);
+            child->deco_rect.y = y - con->rect.y + (i * deco_height);
             child->deco_rect.width = child->rect.width;
-            child->deco_rect.height = 17;
+            child->deco_rect.height = deco_height;
         }
 
         printf("child at (%d, %d) with (%d x %d)\n",
