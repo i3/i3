@@ -58,6 +58,7 @@ void cmdyyerror(const char *error_message) {
         else printf(" ");
     printf("\n");
     ELOG("\n");
+    context->compact_error = sstrdup(error_message);
 }
 
 int cmdyywrap() {
@@ -73,13 +74,17 @@ char *parse_cmd(const char *new) {
     FREE(json_output);
     if (cmdyyparse() != 0) {
         fprintf(stderr, "Could not parse command\n");
+        asprintf(&json_output, "{\"success\":false, \"error\":\"%s at position %d\"}",
+                 context->compact_error, context->first_column);
         FREE(context->line_copy);
+        FREE(context->compact_error);
         free(context);
-        return;
+        return json_output;
     }
     printf("done, json output = %s\n", json_output);
 
     FREE(context->line_copy);
+    FREE(context->compact_error);
     free(context);
     return json_output;
 }

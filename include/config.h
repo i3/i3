@@ -35,6 +35,8 @@ struct context {
         char *line_copy;
         const char *filename;
 
+        const char *compact_error;
+
         /* These are the same as in YYLTYPE */
         int first_column;
         int last_column;
