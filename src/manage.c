@@ -200,7 +200,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         want_floating = true;
     }
 
-    if (cwindow->transient_for != XCB_NONE || cwindow->leader != XCB_NONE)
+    if (cwindow->transient_for != XCB_NONE ||
+        (cwindow->leader != XCB_NONE && cwindow->leader != cwindow->id))
         want_floating = true;
 
     if (want_floating) {
