@@ -127,7 +127,7 @@ struct Config {
         } bar;
 };
 
-char *glob_path(const char *path);
+char *resolve_tilde(const char *path);
 bool path_exists(const char *path);
 
 /**

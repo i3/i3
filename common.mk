@@ -20,6 +20,7 @@ CFLAGS += -Wunused-value
 CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include
 CFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
+CFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
 
 LDFLAGS += -lm
 LDFLAGS += -lxcb-event

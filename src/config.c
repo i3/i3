@@ -22,32 +22,37 @@
 Config config;
 struct modes_head modes;
 
+
 /*
  * This function resolves ~ in pathnames.
+ * It may resolve wildcards in the first part of the path, but if no match
+ * or multiple matches are found, it just returns a copy of path as given.
  *
  */
-char *glob_path(const char *path) {
+char *resolve_tilde(const char *path) {
         static glob_t globbuf;
-        if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0)
-                die("glob() failed");
-        char *result = sstrdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
-        globfree(&globbuf);
+        char *head, *tail, *result;
 
-        /* If the file does not exist yet, we still may need to resolve tilde,
-         * so call wordexp */
-        if (strcmp(result, path) == 0) {
-                wordexp_t we;
-                wordexp(path, &we, WRDE_NOCMD);
-                if (we.we_wordc > 0) {
-                        free(result);
-                        result = sstrdup(we.we_wordv[0]);
-                }
-                wordfree(&we);
+        tail = strchr(path, '/');
+        head = strndup(path, tail ? tail - path : strlen(path));
+
+        int res = glob(head, GLOB_TILDE, NULL, &globbuf);
+        free(head);
+        /* no match, or many wildcard matches are bad */
+        if (res == GLOB_NOMATCH || globbuf.gl_pathc != 1)
+                result = sstrdup(path);
+        else if (res != 0) {
+                die("glob() failed");
+        } else {
+                head = globbuf.gl_pathv[0];
+                result = scalloc(strlen(head) + (tail ? strlen(tail) : 0) + 1);
+                strncpy(result, head, strlen(head));
+                strncat(result, tail, strlen(tail));
         }
+        globfree(&globbuf);
 
         return result;
 }
-
 
 /*
  * Checks if the given path exists by calling stat().
@@ -205,18 +210,24 @@ void switch_mode(xcb_connection_t *conn, const char *new_mode) {
 }
 
 /*
- * Get the path of the first configuration file found. Checks the XDG folders
- * first ($XDG_CONFIG_HOME, $XDG_CONFIG_DIRS), then the traditional paths.
+ * Get the path of the first configuration file found. Checks the home directory
+ * first, then the system directory first, always taking into account the XDG
+ * Base Directory Specification ($XDG_CONFIG_HOME, $XDG_CONFIG_DIRS)
  *
  */
 static char *get_config_path() {
-        /* 1: check for $XDG_CONFIG_HOME/i3/config */
         char *xdg_config_home, *xdg_config_dirs, *config_path;
 
+        /* 1: check the traditional path under the home directory */
+        config_path = resolve_tilde("~/.i3/config");
+        if (path_exists(config_path))
+                return config_path;
+
+        /* 2: check for $XDG_CONFIG_HOME/i3/config */
         if ((xdg_config_home = getenv("XDG_CONFIG_HOME")) == NULL)
                 xdg_config_home = "~/.config";
 
-        xdg_config_home = glob_path(xdg_config_home);
+        xdg_config_home = resolve_tilde(xdg_config_home);
         if (asprintf(&config_path, "%s/i3/config", xdg_config_home) == -1)
                 die("asprintf() failed");
         free(xdg_config_home);
@@ -225,14 +236,19 @@ static char *get_config_path() {
                 return config_path;
         free(config_path);
 
-        /* 2: check for $XDG_CONFIG_DIRS/i3/config */
+        /* 3: check the traditional path under /etc */
+        config_path = SYSCONFDIR "/i3/config";
+        if (path_exists(config_path))
+                return sstrdup(config_path);
+
+        /* 4: check for $XDG_CONFIG_DIRS/i3/config */
         if ((xdg_config_dirs = getenv("XDG_CONFIG_DIRS")) == NULL)
                 xdg_config_dirs = "/etc/xdg";
 
-        char *buf = strdup(xdg_config_dirs);
+        char *buf = sstrdup(xdg_config_dirs);
         char *tok = strtok(buf, ":");
         while (tok != NULL) {
-                tok = glob_path(tok);
+                tok = resolve_tilde(tok);
                 if (asprintf(&config_path, "%s/i3/config", tok) == -1)
                         die("asprintf() failed");
                 free(tok);
@@ -245,18 +261,9 @@ static char *get_config_path() {
         }
         free(buf);
 
-        /* 3: check traditional paths */
-        config_path = glob_path("~/.i3/config");
-        if (path_exists(config_path))
-                return config_path;
-
-        config_path = strdup("/etc/i3/config");
-        if (!path_exists(config_path))
-                die("Neither $XDG_CONFIG_HOME/i3/config, nor "
-                    "$XDG_CONFIG_DIRS/i3/config, nor ~/.i3/config nor "
-                    "/etc/i3/config exist.");
-
-        return config_path;
+        die("Unable to find the configuration file (looked at "
+                "~/.i3/config, $XDG_CONFIG_HOME/i3/config, "
+                SYSCONFDIR "i3/config and $XDG_CONFIG_DIRS/i3/config)");
 }
 
 /*
