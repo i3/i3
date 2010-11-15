@@ -408,6 +408,9 @@ int con_orientation(Con *con) {
     if (con->layout == L_STACKED)
         return VERT;
 
+    if (con->layout == L_TABBED)
+        return HORIZ;
+
     return con->orientation;
 }
 
