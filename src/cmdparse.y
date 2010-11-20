@@ -144,6 +144,7 @@ char *parse_cmd(const char *new) {
 %token TOK_PX "px"
 %token TOK_OR "or"
 %token TOK_PPT "ppt"
+%token TOK_NOP "nop"
 
 %token TOK_CLASS "class"
 %token TOK_ID "id"
@@ -306,6 +307,7 @@ operation:
     | level
     | mark
     | resize
+    | nop
     ;
 
 exec:
@@ -605,6 +607,16 @@ mark:
             }
         }
 
+        free($<string>3);
+    }
+    ;
+
+nop:
+    TOK_NOP WHITESPACE STR
+    {
+        printf("-------------------------------------------------\n");
+        printf("  NOP: %s\n", $<string>3);
+        printf("-------------------------------------------------\n");
         free($<string>3);
     }
     ;

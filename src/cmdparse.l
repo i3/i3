@@ -120,6 +120,7 @@ grow                            { return TOK_GROW; }
 px                              { return TOK_PX; }
 or                              { return TOK_OR; }
 ppt                             { return TOK_PPT; }
+nop                             { BEGIN(WANT_WS_STRING); return TOK_NOP; }
 restore                         { BEGIN(WANT_WS_STRING); return TOK_RESTORE; }
 mark                            { BEGIN(WANT_WS_STRING); return TOK_MARK; }
 
