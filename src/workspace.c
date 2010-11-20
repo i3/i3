@@ -205,7 +205,7 @@ void workspace_show(const char *num) {
         next = TAILQ_FIRST(&(next->focus_head));
 
 
-    if (TAILQ_EMPTY(&(old->nodes_head))) {
+    if (TAILQ_EMPTY(&(old->nodes_head)) && TAILQ_EMPTY(&(old->floating_head))) {
         /* check if this workspace is currently visible */
         if (!workspace_is_visible(old)) {
             LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
