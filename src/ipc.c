@@ -239,7 +239,6 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 }
 
 IPC_HANDLER(tree) {
-        printf("tree\n");
         yajl_gen gen = yajl_gen_alloc(NULL, NULL);
         dump_node(gen, croot, false);
 
@@ -252,68 +251,66 @@ IPC_HANDLER(tree) {
 
 }
 
-#if 0
 /*
  * Formats the reply message for a GET_WORKSPACES request and sends it to the
  * client
  *
  */
 IPC_HANDLER(get_workspaces) {
-        Workspace *ws;
+    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+    y(array_open);
 
-        Client *last_focused = SLIST_FIRST(&(c_ws->focus_stack));
-        if (last_focused == SLIST_END(&(c_ws->focus_stack)))
-                last_focused = NULL;
+    Con *focused_ws = con_get_workspace(focused);
 
-        yajl_gen gen = yajl_gen_alloc(NULL, NULL);
-        y(array_open);
+    Con *output;
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        Con *ws;
+        TAILQ_FOREACH(ws, &(output->nodes_head), nodes) {
+            assert(ws->type == CT_WORKSPACE);
+            y(map_open);
 
-        TAILQ_FOREACH(ws, workspaces, workspaces) {
-                if (ws->output == NULL)
-                        continue;
+            ystr("num");
+            y(integer, con_num_children(ws));
 
-                y(map_open);
-                ystr("num");
-                y(integer, ws->num + 1);
+            ystr("name");
+            ystr(ws->name);
 
-                ystr("name");
-                ystr(ws->utf8_name);
+            ystr("visible");
+            y(bool, workspace_is_visible(ws));
 
-                ystr("visible");
-                y(bool, ws->output->current_workspace == ws);
+            ystr("focused");
+            y(bool, ws == focused_ws);
 
-                ystr("focused");
-                y(bool, c_ws == ws);
+            ystr("rect");
+            y(map_open);
+            ystr("x");
+            y(integer, ws->rect.x);
+            ystr("y");
+            y(integer, ws->rect.y);
+            ystr("width");
+            y(integer, ws->rect.width);
+            ystr("height");
+            y(integer, ws->rect.height);
+            y(map_close);
 
-                ystr("rect");
-                y(map_open);
-                ystr("x");
-                y(integer, ws->rect.x);
-                ystr("y");
-                y(integer, ws->rect.y);
-                ystr("width");
-                y(integer, ws->rect.width);
-                ystr("height");
-                y(integer, ws->rect.height);
-                y(map_close);
+            ystr("output");
+            ystr(output->name);
 
-                ystr("output");
-                ystr(ws->output->name);
+            ystr("urgent");
+            y(bool, ws->urgent);
 
-                ystr("urgent");
-                y(bool, ws->urgent);
-
-                y(map_close);
+            y(map_close);
         }
+    }
 
-        y(array_close);
+    y(array_close);
 
-        const unsigned char *payload;
-        unsigned int length;
-        y(get_buf, &payload, &length);
+    const unsigned char *payload;
+    unsigned int length;
+    y(get_buf, &payload, &length);
 
-        ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_WORKSPACES, length);
-        y(free);
+    ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_WORKSPACES, length);
+    y(free);
 }
 
 /*
@@ -322,48 +319,50 @@ IPC_HANDLER(get_workspaces) {
  *
  */
 IPC_HANDLER(get_outputs) {
-        Output *output;
+    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+    y(array_open);
 
-        yajl_gen gen = yajl_gen_alloc(NULL, NULL);
-        y(array_open);
+    Output *output;
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        y(map_open);
 
-        TAILQ_FOREACH(output, &outputs, outputs) {
-                y(map_open);
+        ystr("name");
+        ystr(output->name);
 
-                ystr("name");
-                ystr(output->name);
+        ystr("active");
+        y(bool, output->active);
 
-                ystr("active");
-                y(bool, output->active);
+        ystr("rect");
+        y(map_open);
+        ystr("x");
+        y(integer, output->rect.x);
+        ystr("y");
+        y(integer, output->rect.y);
+        ystr("width");
+        y(integer, output->rect.width);
+        ystr("height");
+        y(integer, output->rect.height);
+        y(map_close);
 
-                ystr("rect");
-                y(map_open);
-                ystr("x");
-                y(integer, output->rect.x);
-                ystr("y");
-                y(integer, output->rect.y);
-                ystr("width");
-                y(integer, output->rect.width);
-                ystr("height");
-                y(integer, output->rect.height);
-                y(map_close);
+        /*
+         * XXX
+         * No idea how to handle this, where should we get this data from?
+         * I think we might need to keep a reference to the CT_OUTPUT Con in Output
+         */
+        ystr("current_workspace");
+        y(null);
 
-                ystr("current_workspace");
-                if (output->current_workspace == NULL)
-                        y(null);
-                else y(integer, output->current_workspace->num + 1);
+        y(map_close);
+    }
 
-                y(map_close);
-        }
+    y(array_close);
 
-        y(array_close);
+    const unsigned char *payload;
+    unsigned int length;
+    y(get_buf, &payload, &length);
 
-        const unsigned char *payload;
-        unsigned int length;
-        y(get_buf, &payload, &length);
-
-        ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_OUTPUTS, length);
-        y(free);
+    ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_OUTPUTS, length);
+    y(free);
 }
 
 /*
@@ -441,12 +440,14 @@ IPC_HANDLER(subscribe) {
         ipc_send_message(fd, (const unsigned char*)reply,
                          I3_IPC_REPLY_TYPE_SUBSCRIBE, strlen(reply));
 }
-#endif
 
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[2] = {
+handler_t handlers[5] = {
         handle_command,
+        handle_get_workspaces,
+        handle_subscribe,
+        handle_get_outputs,
         handle_tree
 };
 
