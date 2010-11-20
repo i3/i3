@@ -3,7 +3,7 @@
 # Regression test: Floating windows were not correctly unmapped when switching
 # to a different workspace.
 
-use i3test tests => 5;
+use i3test tests => 4;
 use X11::XCB qw(:all);
 use Time::HiRes qw(sleep);
 
@@ -21,19 +21,6 @@ $i3->command("workspace $tmp")->recv;
 #############################################################################
 
 my $x = X11::XCB::Connection->new;
-
-# FIXME: we open a tiling container as long as t/37* is not done (should swap positions with t/36* then)
-my $twindow = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#C0C0C0',
-);
-
-isa_ok($twindow, 'X11::XCB::Window');
-
-$twindow->map;
-
-sleep 0.25;
 
 # Create a floating window which is smaller than the minimum enforced size of i3
 my $window = $x->root->create_child(
