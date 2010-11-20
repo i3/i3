@@ -130,6 +130,10 @@ int main(int argc, char *argv[]) {
                 } else if (o == 't') {
                         if (strcasecmp(optarg, "command") == 0)
                                 message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
+                        else if (strcasecmp(optarg, "get_workspaces") == 0)
+                                message_type = I3_IPC_MESSAGE_TYPE_GET_WORKSPACES;
+                        else if (strcasecmp(optarg, "get_outputs") == 0)
+                                message_type = I3_IPC_MESSAGE_TYPE_GET_OUTPUTS;
                         else if (strcasecmp(optarg, "tree") == 0)
                                 message_type = I3_IPC_MESSAGE_TYPE_GET_TREE;
                         else {
@@ -140,10 +144,10 @@ int main(int argc, char *argv[]) {
                 } else if (o == 'q') {
                         quiet = true;
                 } else if (o == 'v') {
-                        printf("i3-msg " I3_VERSION);
+                        printf("i3-msg " I3_VERSION "\n");
                         return 0;
                 } else if (o == 'h') {
-                        printf("i3-msg " I3_VERSION);
+                        printf("i3-msg " I3_VERSION "\n");
                         printf("i3-msg [-s <socket>] [-t <type>] <message>\n");
                         return 0;
                 }
