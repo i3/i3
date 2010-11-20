@@ -594,7 +594,7 @@ int ipc_create_socket(const char *filename) {
         free(copy);
 
         /* Unlink the unix domain socket before */
-        unlink(filename);
+        unlink(resolved);
 
         if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
                 perror("socket()");
