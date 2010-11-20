@@ -216,6 +216,8 @@ void workspace_show(const char *num) {
     con_focus(next);
     workspace->fullscreen_mode = CF_OUTPUT;
     LOG("focused now = %p / %s\n", focused, focused->name);
+
+    ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
 #if 0
 
         /* Check if the workspace has not been used yet */
