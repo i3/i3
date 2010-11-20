@@ -439,8 +439,8 @@ Con *con_next_focused(Con *con) {
                 }
             }
             if (next == TAILQ_END(&(ws->focus_head))) {
-                DLOG("Focus list empty, returning NULL\n");
-                next = NULL;
+                DLOG("Focus list empty, returning ws\n");
+                next = ws;
             }
         }
         return next;
