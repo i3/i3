@@ -210,6 +210,7 @@ void workspace_show(const char *num) {
         if (!workspace_is_visible(old)) {
             LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
             tree_close(old, false, false);
+            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"empty\"}");
         }
     }
 
