@@ -338,6 +338,12 @@ struct Con {
         FLOATING_USER_ON = 3
     } floating;
 
+    /** This counter contains the number of UnmapNotify events for this
+     * container (or, more precisely, for its ->frame) which should be ignored.
+     * UnmapNotify events need to be ignored when they are caused by i3 itself,
+     * for example when reparenting or when unmapping the window on a workspace
+     * change. */
+    uint8_t ignore_unmap;
 
     TAILQ_ENTRY(Con) nodes;
     TAILQ_ENTRY(Con) focused;

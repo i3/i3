@@ -425,6 +425,10 @@ static void x_push_node(Con *con) {
 
         state->old_frame = XCB_NONE;
         state->need_reparent = false;
+
+        con->ignore_unmap++;
+        DLOG("ignore_unmap for reparenting of con %p (win 0x%08x) is now %d\n",
+                con, con->window->id, con->ignore_unmap);
     }
 
     /* map/unmap if map state changed, also ensure that the child window
@@ -442,6 +446,11 @@ static void x_push_node(Con *con) {
 
             cookie = xcb_unmap_window(conn, con->frame);
             LOG("unmapping container (serial %d)\n", cookie.sequence);
+            /* we need to increase ignore_unmap for this container (if it contains a window) and for every window "under" this one which contains a window */
+            if (con->window != NULL) {
+                con->ignore_unmap++;
+                DLOG("ignore_unmap for con %p (frame 0x%08x) now %d\n", con, con->frame, con->ignore_unmap);
+            }
             /* Ignore enter_notifies which are generated when unmapping */
             add_ignore_event(cookie.sequence);
         } else {
