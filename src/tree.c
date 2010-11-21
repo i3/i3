@@ -104,6 +104,10 @@ Con *tree_open_con(Con *con) {
          * the new container needs to be opened as a leaf of the workspace. */
         if (con->type == CT_OUTPUT)
             con = focused;
+        /* If the currently focused container is a floating container, we
+         * attach the new container to the workspace */
+        if (con->type == CT_FLOATING_CON)
+            con = con->parent;
     }
 
     assert(con != NULL);

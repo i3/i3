@@ -70,14 +70,24 @@ Con *con_new(Con *parent) {
  */
 void con_attach(Con *con, Con *parent) {
     con->parent = parent;
-    Con *current = TAILQ_FIRST(&(parent->focus_head));
+    Con *loop;
+    Con *current = NULL;
 
-    if (current == TAILQ_END(&(parent->focus_head)))
-        TAILQ_INSERT_TAIL(&(parent->nodes_head), con, nodes);
-    else {
-        DLOG("inserting after\n");
-        TAILQ_INSERT_AFTER(&(parent->nodes_head), current, con, nodes);
+    /* Get the first tiling container in focus stack */
+    TAILQ_FOREACH(loop, &(parent->focus_head), focused) {
+        if (loop->type == CT_FLOATING_CON)
+            continue;
+        current = loop;
+        break;
     }
+
+    /* Insert the container after the tiling container, if found */
+    if (current) {
+        DLOG("Inserting con = %p after last focused tiling con %p\n",
+             con, current);
+        TAILQ_INSERT_AFTER(&(parent->nodes_head), current, con, nodes);
+    } else TAILQ_INSERT_TAIL(&(parent->nodes_head), con, nodes);
+
     /* We insert to the TAIL because con_focus() will correct this.
      * This way, we have the option to insert Cons without having
      * to focus them. */
