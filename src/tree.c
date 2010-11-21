@@ -69,6 +69,7 @@ void tree_init() {
         oc->name = strdup(output->name);
         oc->type = CT_OUTPUT;
         oc->rect = output->rect;
+        output->con = oc;
 
         char *name;
         asprintf(&name, "[i3 con] output %s", oc->name);

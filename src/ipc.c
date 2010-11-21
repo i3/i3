@@ -343,13 +343,11 @@ IPC_HANDLER(get_outputs) {
         y(integer, output->rect.height);
         y(map_close);
 
-        /*
-         * XXX
-         * No idea how to handle this, where should we get this data from?
-         * I think we might need to keep a reference to the CT_OUTPUT Con in Output
-         */
         ystr("current_workspace");
-        y(null);
+        Con *ws = NULL;
+        if (output->con && (ws = con_get_fullscreen_con(output->con)))
+            ystr(ws->name);
+        else y(null);
 
         y(map_close);
     }

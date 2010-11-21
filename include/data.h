@@ -186,6 +186,9 @@ struct xoutput {
     /** Name of the output */
     char *name;
 
+    /** Pointer to the Con which represents this output */
+    Con *con;
+
     /** Whether the output is currently active (has a CRTC attached with a
      * valid mode) */
     bool active;
