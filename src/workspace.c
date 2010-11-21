@@ -38,14 +38,28 @@ Con *workspace_get(const char *num) {
         LOG("need to create this one\n");
         output = con_get_output(focused);
         LOG("got output %p\n", output);
-        workspace = con_new(output);
+        /* We need to attach this container after setting its type. con_attach
+         * will handle CT_WORKSPACEs differently */
+        workspace = con_new(NULL);
         char *name;
         asprintf(&name, "[i3 con] workspace %s", num);
         x_set_name(workspace, name);
         free(name);
         workspace->type = CT_WORKSPACE;
         workspace->name = strdup(num);
+        /* We set ->num to the number if this workspace’s name consists only of
+         * a positive number. Otherwise it’s a named ws and num will be -1. */
+        char *end;
+        long parsed_num = strtol(num, &end, 10);
+        if (parsed_num == LONG_MIN ||
+            parsed_num == LONG_MAX ||
+            parsed_num < 0 ||
+            (end && *end != '\0'))
+            workspace->num = -1;
+        else workspace->num = parsed_num;
+        LOG("num = %d\n", workspace->num);
         workspace->orientation = HORIZ;
+        con_attach(workspace, output);
 
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
     }

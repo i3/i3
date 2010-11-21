@@ -77,10 +77,12 @@ void tree_init() {
         free(name);
 
         /* add a workspace to this output */
-        ws = con_new(oc);
+        ws = con_new(NULL);
         ws->type = CT_WORKSPACE;
+        ws->num = c;
         asprintf(&(ws->name), "%d", c);
         c++;
+        con_attach(ws, oc);
 
         asprintf(&name, "[i3 con] workspace %s", ws->name);
         x_set_name(ws, name);

@@ -281,6 +281,10 @@ struct Con {
 
     char *name;
 
+    /** the workspace number, if this Con is of type CT_WORKSPACE and the
+     * workspace is not a named workspace (for named workspaces, num == -1) */
+    int num;
+
     /* a sticky-group is an identifier which bundles several containers to a
      * group. The contents are shared between all of them, that is they are
      * displayed on whichever of the containers is currently visible */

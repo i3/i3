@@ -72,6 +72,35 @@ void con_attach(Con *con, Con *parent) {
     con->parent = parent;
     Con *loop;
     Con *current = NULL;
+    struct nodes_head *nodes_head = &(parent->nodes_head);
+
+    /* Workspaces are handled differently: they need to be inserted at the
+     * right position. */
+    if (con->type == CT_WORKSPACE) {
+        DLOG("it's a workspace. num = %d\n", con->num);
+        if (con->num == -1 || TAILQ_EMPTY(nodes_head)) {
+            TAILQ_INSERT_TAIL(nodes_head, con, nodes);
+        } else {
+            current = TAILQ_FIRST(nodes_head);
+            if (con->num < current->num) {
+                /* we need to insert the container at the beginning */
+                TAILQ_INSERT_HEAD(nodes_head, con, nodes);
+                return;
+            }
+            while (current->num != -1 && con->num > current->num) {
+                current = TAILQ_NEXT(current, nodes);
+                if (current == TAILQ_END(nodes_head)) {
+                    current = NULL;
+                    break;
+                }
+            }
+            /* we need to insert con after current, if current is not NULL */
+            if (current)
+                TAILQ_INSERT_BEFORE(current, con, nodes);
+            else TAILQ_INSERT_TAIL(nodes_head, con, nodes);
+        }
+        goto add_to_focus_head;
+    }
 
     /* Get the first tiling container in focus stack */
     TAILQ_FOREACH(loop, &(parent->focus_head), focused) {
@@ -85,9 +114,10 @@ void con_attach(Con *con, Con *parent) {
     if (current) {
         DLOG("Inserting con = %p after last focused tiling con %p\n",
              con, current);
-        TAILQ_INSERT_AFTER(&(parent->nodes_head), current, con, nodes);
-    } else TAILQ_INSERT_TAIL(&(parent->nodes_head), con, nodes);
+        TAILQ_INSERT_AFTER(nodes_head, current, con, nodes);
+    } else TAILQ_INSERT_TAIL(nodes_head, con, nodes);
 
+add_to_focus_head:
     /* We insert to the TAIL because con_focus() will correct this.
      * This way, we have the option to insert Cons without having
      * to focus them. */

@@ -10,7 +10,7 @@ use List::Util qw(first);
 use v5.10;
 
 use Exporter ();
-our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws get_focused open_empty_con);
+our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window);
 
 BEGIN {
     my $window_count = 0;
