@@ -134,11 +134,11 @@ int main(int argc, char *argv[]) {
                                 message_type = I3_IPC_MESSAGE_TYPE_GET_WORKSPACES;
                         else if (strcasecmp(optarg, "get_outputs") == 0)
                                 message_type = I3_IPC_MESSAGE_TYPE_GET_OUTPUTS;
-                        else if (strcasecmp(optarg, "tree") == 0)
+                        else if (strcasecmp(optarg, "get_tree") == 0)
                                 message_type = I3_IPC_MESSAGE_TYPE_GET_TREE;
                         else {
                                 printf("Unknown message type\n");
-                                printf("Known types: command, get_workspaces\n");
+                                printf("Known types: command, get_workspaces, get_outputs, get_tree\n");
                                 exit(EXIT_FAILURE);
                         }
                 } else if (o == 'q') {
