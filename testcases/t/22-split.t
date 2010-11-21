@@ -76,7 +76,7 @@ sub sum_nodes {
     return 0 if !@{$nodes};
 
     my @children = (map { @{$_->{nodes}} } @{$nodes},
-                    map { @{$_->{'floating-nodes'}} } @{$nodes});
+                    map { @{$_->{'floating_nodes'}} } @{$nodes});
 
     return @{$nodes} + sum_nodes(\@children);
 }

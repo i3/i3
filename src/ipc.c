@@ -206,7 +206,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         }
         y(array_close);
 
-        ystr("floating-nodes");
+        ystr("floating_nodes");
         y(array_open);
         TAILQ_FOREACH(node, &(con->floating_head), floating_windows) {
                 dump_node(gen, node, inplace_restart);

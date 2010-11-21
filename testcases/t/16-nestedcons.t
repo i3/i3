@@ -26,7 +26,7 @@ my $expected = {
     focused => 0,
     urgent => 0,
     border => 0,
-    'floating-nodes' => ignore(),
+    'floating_nodes' => ignore(),
 };
 
 cmp_deeply($tree, $expected, 'root node OK');

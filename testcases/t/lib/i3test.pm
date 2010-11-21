@@ -112,7 +112,7 @@ sub get_focused {
         $lf = $focused[0];
         last unless defined($con->{focus});
         @focused = @{$con->{focus}};
-        @cons = grep { $_->{id} == $lf } (@{$con->{nodes}}, @{$con->{'floating-nodes'}});
+        @cons = grep { $_->{id} == $lf } (@{$con->{nodes}}, @{$con->{'floating_nodes'}});
         $con = $cons[0];
     }
 
