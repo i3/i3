@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include <i3/ipc.h>
 #include <yajl/yajl_parse.h>
 
@@ -101,6 +102,22 @@ static int outputs_integer_cb(void *params_, long val) {
  */
 static int outputs_string_cb(void *params_, const unsigned char *val, unsigned int len) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
+
+    if (!strcmp(params->cur_key, "current_workspace")) {
+        char *copy = malloc(sizeof(const unsigned char) * (len + 1));
+        strncpy(copy, (const char*) val, len);
+        copy[len] = '\0';
+
+        char *end;
+        errno = 0;
+        long parsed_num = strtol(copy, &end, 10);
+        if (errno == 0 &&
+            (end && *end == '\0'))
+            params->outputs_walk->ws = parsed_num;
+        free(copy);
+        FREE(params->cur_key);
+        return 1;
+    }
 
     if (strcmp(params->cur_key, "name")) {
         return 0;
