@@ -11,7 +11,7 @@ use v5.10;
 
 my $i3 = i3("/tmp/nestedcons");
 
-my $tree = $i3->get_workspaces->recv;
+my $tree = $i3->get_tree->recv;
 
 my $tmp = File::Temp->new(UNLINK => 0, SUFFIX => '.asy');
 

@@ -116,7 +116,7 @@ my $layout_container = Gtk2::HBox->new(0, 0);
 $layout_sw->add_with_viewport($layout_container);
 
 sub copy_tree {
-    my $tree = $i3->get_workspaces->recv;
+    my $tree = $i3->get_tree->recv;
 
     # convert the tree back to json so we only rebuild/redraw when the tree is changed
     my $json = encode_json($tree);

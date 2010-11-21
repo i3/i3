@@ -10,7 +10,7 @@ my $i3 = i3("/tmp/nestedcons");
 # Request tree
 ####################
 
-my $tree = $i3->get_workspaces->recv;
+my $tree = $i3->get_tree->recv;
 
 my $expected = {
     fullscreen_mode => 0,

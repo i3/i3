@@ -32,7 +32,7 @@ is(get_focused($tmp), $floating, 'floating window focused');
 sleep 1;
 $i3->command('mode toggle')->recv;
 
-my $tree = $i3->get_workspaces->recv;
+my $tree = $i3->get_tree->recv;
 my @nodes = @{$tree->{nodes}};
 ok(@nodes > 0, 'i3 still lives');
 

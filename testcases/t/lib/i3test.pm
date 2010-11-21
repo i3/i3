@@ -63,7 +63,7 @@ sub open_empty_con {
 sub get_workspace_names {
     my $i3 = i3("/tmp/nestedcons");
     # TODO: use correct command as soon as AnyEvent::i3 is updated
-    my $tree = $i3->get_workspaces->recv;
+    my $tree = $i3->get_tree->recv;
     my @workspaces = map { @{$_->{nodes}} } @{$tree->{nodes}};
     [ map { $_->{name} } @workspaces ]
 }
@@ -78,7 +78,7 @@ sub get_unused_workspace {
 sub get_ws {
     my ($name) = @_;
     my $i3 = i3("/tmp/nestedcons");
-    my $tree = $i3->get_workspaces->recv;
+    my $tree = $i3->get_tree->recv;
     my @ws = map { @{$_->{nodes}} } @{$tree->{nodes}};
 
     # as there can only be one workspace with this name, we can safely
@@ -100,7 +100,7 @@ sub get_ws_content {
 sub get_focused {
     my ($ws) = @_;
     my $i3 = i3("/tmp/nestedcons");
-    my $tree = $i3->get_workspaces->recv;
+    my $tree = $i3->get_tree->recv;
 
     my @ws = map { @{$_->{nodes}} } @{$tree->{nodes}};
     my @cons = grep { $_->{name} eq $ws } @ws;

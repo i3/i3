@@ -16,7 +16,7 @@ sub fullscreen_windows {
 }
 
 # get the output of this workspace
-my $tree = $i3->get_workspaces->recv;
+my $tree = $i3->get_tree->recv;
 my @outputs = @{$tree->{nodes}};
 my $output = first { defined(first { $_->{name} eq $tmp } @{$_->{nodes}}) } @outputs;
 
