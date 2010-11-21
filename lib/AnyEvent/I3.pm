@@ -15,11 +15,11 @@ AnyEvent::I3 - communicate with the i3 window manager
 
 =cut
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =head1 SYNOPSIS
 
@@ -64,9 +64,10 @@ use constant TYPE_COMMAND => 0;
 use constant TYPE_GET_WORKSPACES => 1;
 use constant TYPE_SUBSCRIBE => 2;
 use constant TYPE_GET_OUTPUTS => 3;
+use constant TYPE_GET_TREE => 4;
 
 our %EXPORT_TAGS = ( 'all' => [
-    qw(i3 TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS)
+    qw(i3 TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS TYPE_GET_TREE)
 ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
@@ -321,6 +322,23 @@ sub get_outputs {
 
     $self->message(TYPE_GET_OUTPUTS)
 }
+
+=head2 get_tree
+
+Gets the layout tree from i3 (tree branch only).
+
+    my $tree = i3->get_tree->recv;
+    say Dumper($tree);
+
+=cut
+sub get_tree {
+    my ($self) = @_;
+
+    $self->_ensure_connection;
+
+    $self->message(TYPE_GET_TREE)
+}
+
 
 =head2 command($content)
 
