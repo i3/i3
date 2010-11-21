@@ -331,7 +331,7 @@ void tree_render() {
     Con *output;
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         printf("output %p / %s\n", output, output->name);
-        render_con(output);
+        render_con(output, false);
     }
     x_push_changes(croot);
     printf("-- END RENDERING --\n");

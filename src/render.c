@@ -16,7 +16,7 @@ static bool show_debug_borders = false;
  * updated in X11.
  *
  */
-void render_con(Con *con) {
+void render_con(Con *con, bool render_fullscreen) {
     printf("currently rendering node %p / %s / layout %d\n",
             con, con->name, con->layout);
     int children = con_num_children(con);
@@ -49,7 +49,8 @@ void render_con(Con *con) {
          * needs to be smaller */
         Rect *inset = &(con->window_rect);
         *inset = (Rect){0, 0, con->rect.width, con->rect.height};
-        *inset = rect_add(*inset, con_border_style_rect(con));
+        if (!render_fullscreen)
+            *inset = rect_add(*inset, con_border_style_rect(con));
 
         /* Obey x11 border */
         inset->width -= (2 * con->border_width);
@@ -100,7 +101,7 @@ void render_con(Con *con) {
         LOG("got fs node: %p\n", fullscreen);
         fullscreen->rect = rect;
         x_raise_con(fullscreen);
-        render_con(fullscreen);
+        render_con(fullscreen, true);
         return;
     }
 
@@ -186,7 +187,7 @@ void render_con(Con *con) {
                 child->rect.x, child->rect.y, child->rect.width, child->rect.height);
         printf("x now %d, y now %d\n", x, y);
         x_raise_con(child);
-        render_con(child);
+        render_con(child, false);
         i++;
     }
 
@@ -198,7 +199,7 @@ void render_con(Con *con) {
             x_raise_con(foc);
             /* by rendering the stacked container again, we handle the case
              * that we have a non-leaf-container inside the stack. */
-            render_con(foc);
+            render_con(foc, false);
         }
     }
 
@@ -206,7 +207,7 @@ void render_con(Con *con) {
         LOG("render floating:\n");
         LOG("floating child at (%d,%d) with %d x %d\n", child->rect.x, child->rect.y, child->rect.width, child->rect.height);
         x_raise_con(child);
-        render_con(child);
+        render_con(child, false);
     }
 
     printf("-- level up\n");

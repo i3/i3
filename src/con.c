@@ -503,6 +503,12 @@ Rect con_border_style_rect(Con *con) {
  *
  */
 int con_border_style(Con *con) {
+    Con *fs = con_get_fullscreen_con(con->parent);
+    if (fs == con) {
+        DLOG("this one is fullscreen! overriding BS_NONE\n");
+        return BS_NONE;
+    }
+
     if (con->parent->layout == L_STACKED)
         return BS_NORMAL;
 

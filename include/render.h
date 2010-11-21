@@ -13,6 +13,6 @@
  * updated in X11.
  *
  */
-void render_con(Con *con);
+void render_con(Con *con, bool render_fullscreen);
 
 #endif
