@@ -338,5 +338,14 @@ int main(int argc, char *argv[]) {
 
     manage_existing_windows(root);
 
+    /* Autostarting exec-lines */
+    if (autostart) {
+        struct Autostart *exec;
+        TAILQ_FOREACH(exec, &autostarts, autostarts) {
+            LOG("auto-starting %s\n", exec->command);
+            start_application(exec->command);
+        }
+    }
+
     ev_loop(loop, 0);
 }
