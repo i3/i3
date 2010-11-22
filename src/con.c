@@ -85,19 +85,19 @@ void con_attach(Con *con, Con *parent) {
             if (con->num < current->num) {
                 /* we need to insert the container at the beginning */
                 TAILQ_INSERT_HEAD(nodes_head, con, nodes);
-                return;
-            }
-            while (current->num != -1 && con->num > current->num) {
-                current = TAILQ_NEXT(current, nodes);
-                if (current == TAILQ_END(nodes_head)) {
-                    current = NULL;
-                    break;
+            } else {
+                while (current->num != -1 && con->num > current->num) {
+                    current = TAILQ_NEXT(current, nodes);
+                    if (current == TAILQ_END(nodes_head)) {
+                        current = NULL;
+                        break;
+                    }
                 }
+                /* we need to insert con after current, if current is not NULL */
+                if (current)
+                    TAILQ_INSERT_BEFORE(current, con, nodes);
+                else TAILQ_INSERT_TAIL(nodes_head, con, nodes);
             }
-            /* we need to insert con after current, if current is not NULL */
-            if (current)
-                TAILQ_INSERT_BEFORE(current, con, nodes);
-            else TAILQ_INSERT_TAIL(nodes_head, con, nodes);
         }
         goto add_to_focus_head;
     }
