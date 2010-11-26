@@ -539,7 +539,6 @@ void x_push_changes(Con *con) {
         if (prev != old_prev)
             order_changed = true;
         if ((state->initial || order_changed) && prev != CIRCLEQ_END(&state_head)) {
-            state->initial = false;
             LOG("Stacking 0x%08x above 0x%08x\n", prev->id, state->id);
             uint32_t mask = 0;
             mask |= XCB_CONFIG_WINDOW_SIBLING;
@@ -548,6 +547,7 @@ void x_push_changes(Con *con) {
 
             xcb_configure_window(conn, prev->id, mask, values);
         }
+        state->initial = false;
     }
 
     xcb_window_t to_focus = focused->frame;
