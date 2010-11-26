@@ -153,4 +153,12 @@ Rect con_border_style_rect(Con *con);
  */
 int con_border_style(Con *con);
 
+/**
+ * This function changes the layout of a given container. Use it to handle
+ * special cases like changing a whole workspace to stacked/tabbed (creates a
+ * new split container before).
+ *
+ */
+void con_set_layout(Con *con, int layout);
+
 #endif

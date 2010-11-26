@@ -574,11 +574,11 @@ layout:
 
         /* check if the match is empty, not if the result is empty */
         if (match_is_empty(&current_match))
-            focused->parent->layout = $<number>3;
+            con_set_layout(focused->parent, $<number>3);
         else {
             TAILQ_FOREACH(current, &owindows, owindows) {
                 printf("matching: %p / %s\n", current->con, current->con->name);
-                current->con->layout = $<number>3;
+                con_set_layout(current->con, $<number>3);
             }
         }
 

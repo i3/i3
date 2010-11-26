@@ -544,3 +544,47 @@ int con_border_style(Con *con) {
 
     return con->border_style;
 }
+
+/*
+ * This function changes the layout of a given container. Use it to handle
+ * special cases like changing a whole workspace to stacked/tabbed (creates a
+ * new split container before).
+ *
+ */
+void con_set_layout(Con *con, int layout) {
+    /* When the container type is CT_WORKSPACE, the user wants to change the
+     * whole workspace into stacked/tabbed mode. To do this and still allow
+     * intuitive operations (like level-up and then opening a new window), we
+     * need to create a new split container. */
+    if (con->type == CT_WORKSPACE) {
+        DLOG("Creating new split container\n");
+        /* 1: create a new split container */
+        Con *new = con_new(NULL);
+        new->parent = con;
+
+        /* 2: set the requested layout on the split con */
+        new->layout = layout;
+
+        /* 3: While the layout is irrelevant in stacked/tabbed mode, it needs
+         * to be set. Otherwise, this con will not be interpreted as a split
+         * container. */
+        new->orientation = HORIZ;
+
+        /* 4: move the existing cons of this workspace below the new con */
+        DLOG("Moving cons\n");
+        Con *child;
+        while (!TAILQ_EMPTY(&(con->nodes_head))) {
+            child = TAILQ_FIRST(&(con->nodes_head));
+            con_detach(child);
+            con_attach(child, new);
+        }
+
+        /* 4: attach the new split container to the workspace */
+        DLOG("Attaching new split to ws\n");
+        con_attach(new, con);
+
+        return;
+    }
+
+    con->layout = layout;
+}
