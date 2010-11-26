@@ -609,6 +609,9 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
         return 1;
     }
 
+    if (parent->window)
+        x_draw_decoration(parent);
+
     TAILQ_FOREACH(con, &(parent->nodes_head), nodes) {
         LOG("expose for con %p / %s\n", con, con->name);
         if (con->window)
