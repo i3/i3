@@ -191,9 +191,12 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn,
     if (event_is_ignored(event->sequence))
         return 1;
 
+    bool enter_child = false;
     /* Get container by frame or by child window */
-    if ((con = con_by_frame_id(event->event)) == NULL)
+    if ((con = con_by_frame_id(event->event)) == NULL) {
         con = con_by_window_id(event->event);
+        enter_child = true;
+    }
 
     /* If not, then the user moved his cursor to the root window. In that case, we adjust c_ws */
     if (con == NULL) {
@@ -203,7 +206,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn,
     }
 
     /* see if the user entered the window on a certain window decoration */
-    int layout = con->layout;
+    int layout = (enter_child ? con->parent->layout : con->layout);
     Con *child;
     TAILQ_FOREACH(child, &(con->nodes_head), nodes)
         if (rect_contains(child->deco_rect, event->event_x, event->event_y)) {
