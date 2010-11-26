@@ -82,7 +82,7 @@ void x_con_init(Con *con) {
     values[1] = FRAME_EVENT_MASK;
 
     Rect dims = { -15, -15, 10, 10 };
-    con->frame = create_window(conn, dims, XCB_WINDOW_CLASS_INPUT_OUTPUT, -1, false, mask, values);
+    con->frame = create_window(conn, dims, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
     con->gc = xcb_generate_id(conn);
     xcb_create_gc(conn, con->gc, con->frame, 0, 0);
 

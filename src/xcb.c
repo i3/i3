@@ -80,40 +80,45 @@ uint32_t get_colorpixel(char *hex) {
  * for errors.
  *
  */
-xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class, int cursor,
-                           bool map, uint32_t mask, uint32_t *values) {
-        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
-        xcb_window_t result = xcb_generate_id(conn);
-        xcb_cursor_t cursor_id = xcb_generate_id(conn);
+xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class,
+        enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values) {
+    xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
+    xcb_window_t result = xcb_generate_id(conn);
+    xcb_cursor_t cursor_id = xcb_generate_id(conn);
 
-        /* If the window class is XCB_WINDOW_CLASS_INPUT_ONLY, depth has to be 0 */
-        uint16_t depth = (window_class == XCB_WINDOW_CLASS_INPUT_ONLY ? 0 : XCB_COPY_FROM_PARENT);
+    /* If the window class is XCB_WINDOW_CLASS_INPUT_ONLY, depth has to be 0 */
+    uint16_t depth = (window_class == XCB_WINDOW_CLASS_INPUT_ONLY ? 0 : XCB_COPY_FROM_PARENT);
 
-        xcb_create_window(conn,
-                          depth,
-                          result, /* the window id */
-                          root, /* parent == root */
-                          dims.x, dims.y, dims.width, dims.height, /* dimensions */
-                          0, /* border = 0, we draw our own */
-                          window_class,
-                          XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
-                          mask,
-                          values);
+    xcb_create_window(conn,
+            depth,
+            result, /* the window id */
+            root, /* parent == root */
+            dims.x, dims.y, dims.width, dims.height, /* dimensions */
+            0, /* border = 0, we draw our own */
+            window_class,
+            XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
+            mask,
+            values);
 
-        /* Set the cursor */
+    /* Set the cursor */
+    if (xcursor_supported) {
+        mask = XCB_CW_CURSOR;
+        values[0] = xcursor_get_cursor(cursor);
+        xcb_change_window_attributes(conn, result, mask, values);
+    } else {
         i3Font *cursor_font = load_font(conn, "cursor");
+        int xcb_cursor = xcursor_get_xcb_cursor(cursor);
         xcb_create_glyph_cursor(conn, cursor_id, cursor_font->id, cursor_font->id,
-                        (cursor == -1 ? XCB_CURSOR_LEFT_PTR : cursor),
-                        (cursor == -1 ? XCB_CURSOR_LEFT_PTR : cursor) + 1,
-                        0, 0, 0, 65535, 65535, 65535);
+                xcb_cursor, xcb_cursor + 1, 0, 0, 0, 65535, 65535, 65535);
         xcb_change_window_attributes(conn, result, XCB_CW_CURSOR, &cursor_id);
         xcb_free_cursor(conn, cursor_id);
+    }
 
-        /* Map the window (= make it visible) */
-        if (map)
-                xcb_map_window(conn, result);
+    /* Map the window (= make it visible) */
+    if (map)
+        xcb_map_window(conn, result);
 
-        return result;
+    return result;
 }
 
 /*

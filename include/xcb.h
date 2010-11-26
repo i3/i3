@@ -12,6 +12,7 @@
 #define _XCB_H
 
 #include "data.h"
+#include "xcursor.h"
 
 #define _NET_WM_STATE_REMOVE    0
 #define _NET_WM_STATE_ADD       1
@@ -94,7 +95,7 @@ uint32_t get_colorpixel(char *hex);
  *
  */
 xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class,
-                           int cursor, bool map, uint32_t mask, uint32_t *values);
+        enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values);
 
 /**
  * Changes a single value in the graphic context (so one doesn’t have to

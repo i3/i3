@@ -51,5 +51,6 @@
 #include "window.h"
 #include "match.h"
 #include "cmdparse.h"
+#include "xcursor.h"
 
 #endif

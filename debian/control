@@ -3,7 +3,7 @@ Section: utils
 Priority: extra
 Maintainer: Michael Stapelberg <michael@stapelberg.de>
 DM-Upload-Allowed: yes
-Build-Depends: debhelper (>= 5), libx11-dev, libxcb-aux0-dev (>= 0.3.3), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-randr0-dev, libxcb-event1-dev (>= 0.3.3), libxcb-property1-dev (>= 0.3.3), libxcb-atom1-dev (>= 0.3.3), libxcb-icccm1-dev (>= 0.3.3), asciidoc (>= 8.4.4), xmlto, docbook-xml, pkg-config, libev-dev, flex, bison, libyajl-dev
+Build-Depends: debhelper (>= 5), libx11-dev, libxcb-aux0-dev (>= 0.3.3), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-randr0-dev, libxcb-event1-dev (>= 0.3.3), libxcb-property1-dev (>= 0.3.3), libxcb-atom1-dev (>= 0.3.3), libxcb-icccm1-dev (>= 0.3.3), libxcursor-dev, asciidoc (>= 8.4.4), xmlto, docbook-xml, pkg-config, libev-dev, flex, bison, libyajl-dev
 Standards-Version: 3.8.3
 Homepage: http://i3.zekjur.net/
 

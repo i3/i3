@@ -2,6 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  */
 #include <ev.h>
+#include <fcntl.h>
 #include <limits.h>
 #include "all.h"
 
@@ -23,6 +24,9 @@ uint8_t root_depth;
 
 xcb_key_symbols_t *keysyms;
 
+/* Those are our connections to X11 for use with libXcursor and XKB */
+Display *xlibdpy, *xkbdpy;
+
 /* The list of key bindings */
 struct bindings_head *bindings;
 
@@ -31,6 +35,10 @@ struct autostarts_head autostarts = TAILQ_HEAD_INITIALIZER(autostarts);
 
 /* The list of assignments */
 struct assignments_head assignments = TAILQ_HEAD_INITIALIZER(assignments);
+
+/* We hope that those are supported and set them to true */
+bool xcursor_supported = true;
+bool xkb_supported = true;
 
 /*
  * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
@@ -194,6 +202,22 @@ int main(int argc, char *argv[]) {
     REQUEST_ATOM(_NET_CURRENT_DESKTOP);
     REQUEST_ATOM(_NET_ACTIVE_WINDOW);
     REQUEST_ATOM(_NET_WORKAREA);
+
+    /* Initialize the Xlib connection */
+    xlibdpy = xkbdpy = XOpenDisplay(NULL);
+
+    /* Try to load the X cursors and initialize the XKB extension */
+    if (xlibdpy == NULL) {
+        ELOG("ERROR: XOpenDisplay() failed, disabling libXcursor/XKB support\n");
+        xcursor_supported = false;
+        xkb_supported = false;
+    } else if (fcntl(ConnectionNumber(xlibdpy), F_SETFD, FD_CLOEXEC) == -1) {
+        ELOG("Could not set FD_CLOEXEC on xkbdpy\n");
+        return 1;
+    } else {
+        xcursor_load_cursors();
+        /*init_xkb();*/
+    }
 
     memset(&evenths, 0, sizeof(xcb_event_handlers_t));
     memset(&prophs, 0, sizeof(xcb_property_handlers_t));
