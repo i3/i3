@@ -1,5 +1,5 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
  *
@@ -237,74 +237,78 @@ static bool floating_mod_on_tiled_client(xcb_connection_t *conn, Client *client,
 #endif
 
 int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
-        Con *con;
-        LOG("Button %d pressed on window 0x%08x\n", event->state, event->event);
+    Con *con;
+    LOG("Button %d pressed on window 0x%08x\n", event->state, event->event);
 
-        con = con_by_window_id(event->event);
-        bool border_click = false;
-        if (con == NULL) {
-                con = con_by_frame_id(event->event);
-                border_click = true;
-        }
-        LOG("border_click = %d\n", border_click);
+    con = con_by_window_id(event->event);
+    bool border_click = false;
+    if (con == NULL) {
+        con = con_by_frame_id(event->event);
+        border_click = true;
+    }
+    LOG("border_click = %d\n", border_click);
         //if (con && con->type == CT_FLOATING_CON)
                 //con = TAILQ_FIRST(&(con->nodes_head));
 
-        /* See if this was a click with the configured modifier. If so, we need
-         * to move around the client if it was floating. if not, we just process
-         * as usual. */
-        LOG("state = %d, floating_modifier = %d\n", event->state, config.floating_modifier);
-        if (border_click ||
-            (config.floating_modifier != 0 &&
-             (event->state & config.floating_modifier) == config.floating_modifier)) {
-                if (con == NULL) {
-                        LOG("Not handling, floating_modifier was pressed and no client found\n");
-                        return 1;
-                }
-                LOG("handling\n");
+    /* See if this was a click with the configured modifier. If so, we need
+     * to move around the client if it was floating. if not, we just process
+     * as usual. */
+    LOG("state = %d, floating_modifier = %d\n", event->state, config.floating_modifier);
+    if (border_click ||
+        (config.floating_modifier != 0 &&
+         (event->state & config.floating_modifier) == config.floating_modifier)) {
+        if (con == NULL) {
+            LOG("Not handling, floating_modifier was pressed and no client found\n");
+            return 1;
+        }
+        LOG("handling\n");
 #if 0
-                if (con->fullscreen) {
-                        LOG("Not handling, client is in fullscreen mode\n");
-                        return 1;
-                }
-#endif
-                if ((border_click && con->type == CT_FLOATING_CON) ||
-                    (!border_click && con_is_floating(con))) {
-                        /* floating operations are always on the container around
-                         * the "payload container", so make sure we use the right one */
-                        Con *floatingcon = (border_click ? con : con->parent);
-                        LOG("button %d pressed\n", event->detail);
-                        if (event->detail == 1) {
-                                LOG("left mouse button, dragging\n");
-                                floating_drag_window(floatingcon, event);
-                        } 
-                        else if (event->detail == 3) {
-                                bool proportional = (event->state & BIND_SHIFT);
-                                DLOG("right mouse button\n");
-                                floating_resize_window(floatingcon, proportional, event);
-                        }
-                        return 1;
-                }
-
-#if 0
-                if (!floating_mod_on_tiled_client(conn, client, event)) {
-#endif
-                        xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
-                        xcb_flush(conn);
-#if 0
-                }
-#endif
-
+        if (con->fullscreen) {
+                LOG("Not handling, client is in fullscreen mode\n");
                 return 1;
         }
+#endif
+        if ((border_click && con->type == CT_FLOATING_CON) ||
+            (!border_click && con_is_floating(con))) {
+            /* floating operations are always on the container around
+             * the "payload container", so make sure we use the right one */
+            Con *floatingcon = (border_click ? con : con->parent);
+            LOG("button %d pressed\n", event->detail);
+            if (event->detail == 1) {
+                LOG("left mouse button, dragging\n");
+                floating_drag_window(floatingcon, event);
+            }
+            else if (event->detail == 3) {
+                bool proportional = (event->state & BIND_SHIFT);
+                DLOG("right mouse button\n");
+                floating_resize_window(floatingcon, proportional, event);
+            }
+            return 1;
+        }
 
-        /* click to focus */
-        con_focus(con);
-        tree_render();
+        if (con->layout == L_STACKED) {
+            DLOG("stacked!\n");
+        }
 
-        xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
-        xcb_flush(conn);
-        return 0;
+#if 0
+        if (!floating_mod_on_tiled_client(conn, client, event)) {
+#endif
+            xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
+            xcb_flush(conn);
+#if 0
+        }
+#endif
+
+        return 1;
+    }
+
+    /* click to focus */
+    con_focus(con);
+    tree_render();
+
+    xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
+    xcb_flush(conn);
+    return 0;
 #if 0
         if (client == NULL) {
                 /* The client was neither on a client’s titlebar nor on a client itself, maybe on a stack_window? */
