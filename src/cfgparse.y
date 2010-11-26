@@ -113,8 +113,8 @@ void parse_file(const char *f) {
         SLIST_FOREACH(current, &variables, variables) {
                 int extra = (strlen(current->value) - strlen(current->key));
                 char *next;
-                for (next = buf;
-                     (next = strcasestr(buf + (next - buf), current->key)) != NULL;
+                for (next = bufcopy;
+                     (next = strcasestr(bufcopy + (next - bufcopy), current->key)) != NULL;
                      next += strlen(current->key)) {
                         *next = '_';
                         extra_bytes += extra;
