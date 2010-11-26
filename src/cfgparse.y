@@ -119,14 +119,21 @@ void parse_file(const char *f) {
          * how much extra bytes it requires when replaced. */
         struct Variable *current, *nearest;
         int extra_bytes = 0;
+        /* We need to copy the buffer because we need to invalidate the
+         * variables (otherwise we will count them twice, which is bad when
+         * 'extra' is negative) */
+        char *bufcopy = sstrdup(buf);
         SLIST_FOREACH(current, &variables, variables) {
                 int extra = (strlen(current->value) - strlen(current->key));
                 char *next;
                 for (next = buf;
                      (next = strcasestr(buf + (next - buf), current->key)) != NULL;
-                     next += strlen(current->key))
+                     next += strlen(current->key)) {
+                        *next = '_';
                         extra_bytes += extra;
+                }
         }
+        FREE(bufcopy);
 
         /* Then, allocate a new buffer and copy the file over to the new one,
          * but replace occurences of our variables */
