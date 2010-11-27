@@ -435,6 +435,25 @@ static void x_push_node(Con *con) {
                 con, con->window->id, con->ignore_unmap);
     }
 
+    bool fake_notify = false;
+    /* set new position if rect changed */
+    if (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0) {
+        LOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
+        xcb_set_window_rect(conn, con->frame, rect);
+        memcpy(&(state->rect), &rect, sizeof(Rect));
+        fake_notify = true;
+    }
+
+    /* dito, but for child windows */
+    if (con->window != NULL &&
+        memcmp(&(state->window_rect), &(con->window_rect), sizeof(Rect)) != 0) {
+        LOG("setting window rect (%d, %d, %d, %d)\n",
+            con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
+        xcb_set_window_rect(conn, con->window->id, con->window_rect);
+        memcpy(&(state->window_rect), &(con->window_rect), sizeof(Rect));
+        fake_notify = true;
+    }
+
     /* map/unmap if map state changed, also ensure that the child window
      * is changed if we are mapped *and* in initial state (meaning the
      * container was empty before, but now got a child) */
@@ -481,25 +500,6 @@ static void x_push_node(Con *con) {
             add_ignore_event(cookie.sequence);
         }
         state->mapped = con->mapped;
-    }
-
-    bool fake_notify = false;
-    /* set new position if rect changed */
-    if (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0) {
-        LOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
-        xcb_set_window_rect(conn, con->frame, rect);
-        memcpy(&(state->rect), &rect, sizeof(Rect));
-        fake_notify = true;
-    }
-
-    /* dito, but for child windows */
-    if (con->window != NULL &&
-        memcmp(&(state->window_rect), &(con->window_rect), sizeof(Rect)) != 0) {
-        LOG("setting window rect (%d, %d, %d, %d)\n",
-            con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
-        xcb_set_window_rect(conn, con->window->id, con->window_rect);
-        memcpy(&(state->rect), &(con->rect), sizeof(Rect));
-        fake_notify = true;
     }
 
     if (fake_notify) {
