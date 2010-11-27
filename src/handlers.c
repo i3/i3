@@ -324,8 +324,8 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
         int c = 0;
 #define COPY_MASK_MEMBER(mask_member, event_member) do { \
         if (event->value_mask & mask_member) { \
-                mask |= mask_member; \
-                values[c++] = event->event_member; \
+            mask |= mask_member; \
+            values[c++] = event->event_member; \
         } \
 } while (0)
 
