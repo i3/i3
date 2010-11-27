@@ -665,12 +665,18 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
 int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message_event_t *event) {
     LOG("ClientMessage for window 0x%08x\n", event->window);
     if (event->type == atoms[_NET_WM_STATE]) {
-        if (event->format != 32 || event->data.data32[1] != atoms[_NET_WM_STATE_FULLSCREEN])
+        if (event->format != 32 || event->data.data32[1] != atoms[_NET_WM_STATE_FULLSCREEN]) {
+            DLOG("atom in clientmessage is %d, fullscreen is %d\n",
+                    event->data.data32[1], atoms[_NET_WM_STATE_FULLSCREEN]);
+            DLOG("not about fullscreen atom\n");
             return 0;
+        }
 
         Con *con = con_by_window_id(event->window);
-        if (con == NULL)
+        if (con == NULL) {
+            DLOG("Could not get window for client message\n");
             return 0;
+        }
 
         /* Check if the fullscreen state should be toggled */
         if ((con->fullscreen_mode != CF_NONE &&
@@ -678,8 +684,10 @@ int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message
               event->data.data32[0] == _NET_WM_STATE_TOGGLE)) ||
             (con->fullscreen_mode == CF_NONE &&
              (event->data.data32[0] == _NET_WM_STATE_ADD ||
-              event->data.data32[0] == _NET_WM_STATE_TOGGLE)))
-                con_toggle_fullscreen(con);
+              event->data.data32[0] == _NET_WM_STATE_TOGGLE))) {
+            DLOG("toggling fullscreen\n");
+            con_toggle_fullscreen(con);
+        }
 
         tree_render();
         x_push_changes(croot);
