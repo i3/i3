@@ -617,6 +617,14 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
         if (con->window)
             x_draw_decoration(con);
     }
+
+    /* We also need to render the decorations of other Cons nearby the Con
+     * itself to not get overlapping decorations */
+    TAILQ_FOREACH(con, &(parent->parent->nodes_head), nodes) {
+        LOG("expose for con %p / %s\n", con, con->name);
+        if (con->window)
+            x_draw_decoration(con);
+    }
     xcb_flush(conn);
 
     return 1;
