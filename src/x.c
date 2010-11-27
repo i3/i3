@@ -391,16 +391,12 @@ static void x_push_node(Con *con) {
          * this frame. */
         uint32_t max_y = 0, max_height = 0;
         TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
-            DLOG("Child's decoration is %d x %d, from (%d, %d)\n",
-                    current->deco_rect.width, current->deco_rect.height,
-                    current->deco_rect.x, current->deco_rect.y);
             Rect *dr = &(current->deco_rect);
             if (dr->y >= max_y && dr->height >= max_height) {
                 max_y = dr->y;
                 max_height = dr->height;
             }
         }
-        DLOG("bottom of decorations is %d\n", max_y + max_height);
         rect.height = max_y + max_height;
         if (rect.height == 0) {
             DLOG("Unmapping container because it does not contain anything atm.\n");
@@ -618,7 +614,6 @@ void x_raise_con(Con *con) {
     LOG("raising in new stack: %p / %s\n", con, con->name);
     state = state_for_frame(con->frame);
 
-    LOG("found state entry, moving to top\n");
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_INSERT_HEAD(&state_head, state, state);
 }

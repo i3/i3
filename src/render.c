@@ -40,7 +40,6 @@ void render_con(Con *con, bool render_fullscreen) {
 
     int i = 0;
 
-    printf("mapped = true\n");
     con->mapped = true;
 
     /* if this container contains a window, set the coordinates */

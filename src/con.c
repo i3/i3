@@ -232,7 +232,6 @@ struct bfs_entry {
 Con *con_get_fullscreen_con(Con *con) {
     Con *current, *child;
 
-    LOG("looking for fullscreen node\n");
     /* TODO: is breadth-first-search really appropriate? (check as soon as
      * fullscreen levels and fullscreen for containers is implemented) */
     TAILQ_HEAD(bfs_head, bfs_entry) bfs_head = TAILQ_HEAD_INITIALIZER(bfs_head);
@@ -243,7 +242,6 @@ Con *con_get_fullscreen_con(Con *con) {
     while (!TAILQ_EMPTY(&bfs_head)) {
         entry = TAILQ_FIRST(&bfs_head);
         current = entry->con;
-        LOG("checking %p\n", current);
         if (current != con && current->fullscreen_mode != CF_NONE) {
             /* empty the queue */
             while (!TAILQ_EMPTY(&bfs_head)) {
@@ -254,7 +252,6 @@ Con *con_get_fullscreen_con(Con *con) {
             return current;
         }
 
-        LOG("deleting from queue\n");
         TAILQ_REMOVE(&bfs_head, entry, entries);
         free(entry);
 

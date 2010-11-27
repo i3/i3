@@ -298,21 +298,17 @@ void level_down() {
 
 static void mark_unmapped(Con *con) {
     Con *current;
-    DLOG("marking container %p unmapped\n", con);
 
     con->mapped = false;
     TAILQ_FOREACH(current, &(con->nodes_head), nodes)
         mark_unmapped(current);
     if (con->type == CT_WORKSPACE) {
         TAILQ_FOREACH(current, &(con->floating_head), floating_windows) {
-            DLOG("Marking unmapped for floating %p\n", current);
             current->mapped = false;
             Con *child = TAILQ_FIRST(&(current->nodes_head));
-            DLOG("  unmapping floating child %p\n", child);
             child->mapped = false;
         }
     }
-    DLOG("mark_unmapped done\n");
 }
 
 /*
