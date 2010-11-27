@@ -46,7 +46,7 @@ src/cfgparse.yy.o: src/cfgparse.l src/cfgparse.y.o ${HEADERS}
 
 src/cmdparse.yy.o: src/cmdparse.l src/cmdparse.y.o ${HEADERS}
 	echo "LEX $<"
-	flex -P cmdyy -i -o$(@:.o=.c) $<
+	flex -Pcmdyy -i -o$(@:.o=.c) $<
 	$(CC) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cmdparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
 
 
