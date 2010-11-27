@@ -454,51 +454,33 @@ static void x_push_node(Con *con) {
         fake_notify = true;
     }
 
-    /* map/unmap if map state changed, also ensure that the child window
+    /* Map if map state changed, also ensure that the child window
      * is changed if we are mapped *and* in initial state (meaning the
-     * container was empty before, but now got a child) */
-    if (state->mapped != con->mapped || (con->mapped && state->initial)) {
-        if (!con->mapped) {
-            xcb_void_cookie_t cookie;
-            if (con->window != NULL) {
-                /* Set WM_STATE_WITHDRAWN, it seems like Java apps need it */
-                long data[] = { XCB_WM_STATE_WITHDRAWN, XCB_NONE };
-                xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
-                                    atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
-            }
+     * container was empty before, but now got a child). Unmaps are handled in
+     * x_push_node_unmaps(). */
+    if ((state->mapped != con->mapped || (con->mapped && state->initial)) &&
+        con->mapped) {
+        xcb_void_cookie_t cookie;
 
-            cookie = xcb_unmap_window(conn, con->frame);
-            LOG("unmapping container (serial %d)\n", cookie.sequence);
-            /* we need to increase ignore_unmap for this container (if it contains a window) and for every window "under" this one which contains a window */
-            if (con->window != NULL) {
-                con->ignore_unmap++;
-                DLOG("ignore_unmap for con %p (frame 0x%08x) now %d\n", con, con->frame, con->ignore_unmap);
-            }
-            /* Ignore enter_notifies which are generated when unmapping */
-            add_ignore_event(cookie.sequence);
-        } else {
-            xcb_void_cookie_t cookie;
+        if (con->window != NULL) {
+            /* Set WM_STATE_NORMAL because GTK applications don’t want to
+             * drag & drop if we don’t. Also, xprop(1) needs it. */
+            long data[] = { XCB_WM_STATE_NORMAL, XCB_NONE };
+            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
+                                atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+        }
 
-            if (con->window != NULL) {
-                /* Set WM_STATE_NORMAL because GTK applications don’t want to
-                 * drag & drop if we don’t. Also, xprop(1) needs it. */
-                long data[] = { XCB_WM_STATE_NORMAL, XCB_NONE };
-                xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
-                                    atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
-            }
-
-            if (state->initial && con->window != NULL) {
-                cookie = xcb_map_window(conn, con->window->id);
-                LOG("mapping child window (serial %d)\n", cookie.sequence);
-                /* Ignore enter_notifies which are generated when mapping */
-                add_ignore_event(cookie.sequence);
-            }
-
-            cookie = xcb_map_window(conn, con->frame);
-            LOG("mapping container (serial %d)\n", cookie.sequence);
+        if (state->initial && con->window != NULL) {
+            cookie = xcb_map_window(conn, con->window->id);
+            LOG("mapping child window (serial %d)\n", cookie.sequence);
             /* Ignore enter_notifies which are generated when mapping */
             add_ignore_event(cookie.sequence);
         }
+
+        cookie = xcb_map_window(conn, con->frame);
+        LOG("mapping container (serial %d)\n", cookie.sequence);
+        /* Ignore enter_notifies which are generated when mapping */
+        add_ignore_event(cookie.sequence);
         state->mapped = con->mapped;
     }
 
@@ -516,6 +498,57 @@ static void x_push_node(Con *con) {
 
     if (con->type != CT_ROOT && con->type != CT_OUTPUT)
         x_draw_decoration(con);
+}
+
+/*
+ * Same idea as in x_push_node(), but this function only unmaps windows. It is
+ * necessary to split this up to handle new fullscreen clients properly: The
+ * new window needs to be mapped and focus needs to be set *before* the
+ * underlying windows are unmapped. Otherwise, focus will revert to the
+ * PointerRoot and will then be set to the new window, generating unnecessary
+ * FocusIn/FocusOut events.
+ *
+ */
+static void x_push_node_unmaps(Con *con) {
+    Con *current;
+    con_state *state;
+
+    LOG("Pushing changes (with unmaps) for node %p / %s\n", con, con->name);
+    state = state_for_frame(con->frame);
+
+    /* map/unmap if map state changed, also ensure that the child window
+     * is changed if we are mapped *and* in initial state (meaning the
+     * container was empty before, but now got a child) */
+    if ((state->mapped != con->mapped || (con->mapped && state->initial)) &&
+        !con->mapped) {
+        xcb_void_cookie_t cookie;
+        if (con->window != NULL) {
+            /* Set WM_STATE_WITHDRAWN, it seems like Java apps need it */
+            long data[] = { XCB_WM_STATE_WITHDRAWN, XCB_NONE };
+            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
+                                atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+        }
+
+        cookie = xcb_unmap_window(conn, con->frame);
+        LOG("unmapping container (serial %d)\n", cookie.sequence);
+        /* we need to increase ignore_unmap for this container (if it
+         * contains a window) and for every window "under" this one which
+         * contains a window */
+        if (con->window != NULL) {
+            con->ignore_unmap++;
+            DLOG("ignore_unmap for con %p (frame 0x%08x) now %d\n", con, con->frame, con->ignore_unmap);
+        }
+        /* Ignore enter_notifies which are generated when unmapping */
+        add_ignore_event(cookie.sequence);
+        state->mapped = con->mapped;
+    }
+
+    /* handle all children and floating windows of this node */
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes)
+        x_push_node_unmaps(current);
+
+    TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
+        x_push_node_unmaps(current);
 }
 
 /*
@@ -557,10 +590,13 @@ void x_push_changes(Con *con) {
     if (focused_id != to_focus) {
         LOG("Updating focus (focused: %p / %s)\n", focused, focused->name);
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, XCB_CURRENT_TIME);
+        focused_id = to_focus;
     }
 
     xcb_flush(conn);
     LOG("\n\n ENDING CHANGES\n\n");
+
+    x_push_node_unmaps(con);
 
     /* save the current stack as old stack */
     CIRCLEQ_FOREACH(state, &state_head, state) {
