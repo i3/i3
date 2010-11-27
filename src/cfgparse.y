@@ -217,6 +217,7 @@ void parse_file(const char *f) {
 %token TOKASSIGN "assign"
 %token TOKSET
 %token TOKIPCSOCKET "ipc_socket"
+%token TOKRESTARTSTATE "restart_state"
 %token TOKEXEC "exec"
 %token TOKSINGLECOLOR
 %token TOKCOLOR
@@ -248,6 +249,7 @@ line:
         | workspace
         | assign
         | ipcsocket
+        | restart_state
         | exec
         | single_color
         | color
@@ -551,6 +553,13 @@ ipcsocket:
         TOKIPCSOCKET WHITESPACE STR
         {
                 config.ipc_socket_path = $<string>3;
+        }
+        ;
+
+restart_state:
+        TOKRESTARTSTATE WHITESPACE STR
+        {
+                config.restart_state_path = $<string>3;
         }
         ;
 

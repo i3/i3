@@ -91,6 +91,7 @@ assign                          { BEGIN(ASSIGN_COND); return TOKASSIGN; }
 set[^\n]*                       { return TOKCOMMENT; }
 ipc-socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
 ipc_socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
+restart_state                   { BEGIN(BIND_AWS_COND); return TOKRESTARTSTATE; }
 new_container                   { return TOKNEWCONTAINER; }
 new_window                      { return TOKNEWWINDOW; }
 focus_follows_mouse             { return TOKFOCUSFOLLOWSMOUSE; }

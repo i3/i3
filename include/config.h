@@ -89,6 +89,7 @@ struct Config {
         const char *font;
 
         const char *ipc_socket_path;
+        const char *restart_state_path;
 
         int container_mode;
         int container_stack_limit;

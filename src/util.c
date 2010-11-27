@@ -375,7 +375,7 @@ void store_restart_layout() {
         unsigned int length;
         y(get_buf, &payload, &length);
 
-        char *globbed = resolve_tilde("~/.i3/_restart.json");
+        char *globbed = resolve_tilde(config.restart_state_path);
         int fd = open(globbed, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
         free(globbed);
         if (fd == -1) {

@@ -14,7 +14,7 @@ struct all_cons_head all_cons = TAILQ_HEAD_INITIALIZER(all_cons);
  *
  */
 bool tree_restore() {
-    char *globbed = resolve_tilde("~/.i3/_restart.json");
+    char *globbed = resolve_tilde(config.restart_state_path);
 
     if (!path_exists(globbed)) {
         LOG("%s does not exist, not restoring tree\n", globbed);
@@ -27,7 +27,11 @@ bool tree_restore() {
     focused = croot;
 
     tree_append_json(globbed);
-    char *old_restart = resolve_tilde("~/.i3/_restart.json.old");
+
+    size_t path_len = strlen(config.restart_state_path);
+    char *old_restart = malloc(path_len + 5);
+    strncpy(old_restart, config.restart_state_path, path_len + 5);
+    strncat(old_restart, ".old", path_len + 5);
     unlink(old_restart);
     rename(globbed, old_restart);
     free(globbed);
