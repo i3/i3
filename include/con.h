@@ -86,8 +86,12 @@ int con_num_children(Con *con);
  * a container or when inserting a new container at a specific place in the
  * tree.
  *
+ * ignore_focus is to just insert the Con at the end (useful when creating a
+ * new split container *around* some containers, that is, detaching and
+ * attaching them in order without wanting to mess with the focus in between).
+ *
  */
-void con_attach(Con *con, Con *parent);
+void con_attach(Con *con, Con *parent, bool ignore_focus);
 
 /**
  * Detaches the given container from its current parent

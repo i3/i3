@@ -57,7 +57,7 @@ Con *con_new(Con *parent) {
     TAILQ_INIT(&(new->swallow_head));
 
     if (parent != NULL)
-        con_attach(new, parent);
+        con_attach(new, parent, false);
 
     return new;
 }
@@ -67,8 +67,12 @@ Con *con_new(Con *parent) {
  * a container or when inserting a new container at a specific place in the
  * tree.
  *
+ * ignore_focus is to just insert the Con at the end (useful when creating a
+ * new split container *around* some containers, that is, detaching and
+ * attaching them in order without wanting to mess with the focus in between).
+ *
  */
-void con_attach(Con *con, Con *parent) {
+void con_attach(Con *con, Con *parent, bool ignore_focus) {
     con->parent = parent;
     Con *loop;
     Con *current = NULL;
@@ -102,12 +106,14 @@ void con_attach(Con *con, Con *parent) {
         goto add_to_focus_head;
     }
 
-    /* Get the first tiling container in focus stack */
-    TAILQ_FOREACH(loop, &(parent->focus_head), focused) {
-        if (loop->type == CT_FLOATING_CON)
-            continue;
-        current = loop;
-        break;
+    if (!ignore_focus) {
+        /* Get the first tiling container in focus stack */
+        TAILQ_FOREACH(loop, &(parent->focus_head), focused) {
+            if (loop->type == CT_FLOATING_CON)
+                continue;
+            current = loop;
+            break;
+        }
     }
 
     /* Insert the container after the tiling container, if found */
@@ -428,7 +434,7 @@ void con_move_to_workspace(Con *con, Con *workspace) {
     DLOG("Re-attaching container to %p / %s\n", next, next->name);
     /* 4: re-attach the con to the parent of this focused container */
     con_detach(con);
-    con_attach(con, next);
+    con_attach(con, next, false);
 
     /* 5: keep focus on the current workspace */
     con_focus(focus_next);
@@ -577,12 +583,12 @@ void con_set_layout(Con *con, int layout) {
         while (!TAILQ_EMPTY(&(con->nodes_head))) {
             child = TAILQ_FIRST(&(con->nodes_head));
             con_detach(child);
-            con_attach(child, new);
+            con_attach(child, new, true);
         }
 
         /* 4: attach the new split container to the workspace */
         DLOG("Attaching new split to ws\n");
-        con_attach(new, con);
+        con_attach(new, con, false);
 
         if (old_focused)
             con_focus(old_focused);

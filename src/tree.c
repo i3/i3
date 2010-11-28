@@ -86,7 +86,7 @@ void tree_init() {
         ws->num = c;
         asprintf(&(ws->name), "%d", c);
         c++;
-        con_attach(ws, oc);
+        con_attach(ws, oc, false);
 
         asprintf(&name, "[i3 con] workspace %s", ws->name);
         x_set_name(ws, name);
@@ -269,7 +269,7 @@ void tree_split(Con *con, orientation_t orientation) {
     new->orientation = orientation;
 
     /* 3: add it as a child to the new Con */
-    con_attach(con, new);
+    con_attach(con, new, false);
 }
 
 /*

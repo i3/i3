@@ -59,7 +59,7 @@ Con *workspace_get(const char *num) {
         else workspace->num = parsed_num;
         LOG("num = %d\n", workspace->num);
         workspace->orientation = HORIZ;
-        con_attach(workspace, output);
+        con_attach(workspace, output, false);
 
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
     }
