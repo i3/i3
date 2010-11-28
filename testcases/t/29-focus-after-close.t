@@ -15,19 +15,20 @@ $i3->command("workspace $tmp")->recv;
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
 my $first = open_empty_con($i3);
+my $second = open_empty_con($i3);
 
 $i3->command('split v')->recv;
 
 my ($nodes, $focus) = get_ws_content($tmp);
 
-is($nodes->[0]->{focused}, 0, 'split container not focused');
+is($nodes->[1]->{focused}, 0, 'split container not focused');
 $i3->command('level up')->recv;
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[0]->{focused}, 1, 'split container focused after level up');
+is($nodes->[1]->{focused}, 1, 'split container focused after level up');
 
-my $second = open_empty_con($i3);
+my $third = open_empty_con($i3);
 
-isnt($first, $second, 'different container focused');
+isnt(get_focused($tmp), $second, 'different container focused');
 
 # We have the following layout now (con is focused):
 # .----------------.
@@ -47,8 +48,8 @@ $i3->command('kill')->recv;
 # sleep is missing. why?
 sleep 0.25;
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[0]->{nodes}->[0]->{id}, $first, 'first container found');
-is($nodes->[0]->{nodes}->[0]->{focused}, 1, 'first container focused');
+is($nodes->[1]->{nodes}->[0]->{id}, $second, 'second container found');
+is($nodes->[1]->{nodes}->[0]->{focused}, 1, 'second container focused');
 
 ##############################################################
 # another case, using a slightly different layout (regression)
