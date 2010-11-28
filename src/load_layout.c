@@ -12,6 +12,7 @@
 
 static char *last_key;
 static Con *json_node;
+static Con *to_focus;
 static bool parsing_swallows;
 static bool parsing_rect;
 struct Match *current_swallow;
@@ -94,6 +95,9 @@ static int json_int(void *ctx, long val) {
     if (strcasecmp(last_key, "fullscreen_mode") == 0) {
         json_node->fullscreen_mode = val;
     }
+    if (strcasecmp(last_key, "focused") == 0) {
+        to_focus = json_node;
+    }
 
     if (parsing_rect) {
         if (strcasecmp(last_key, "x") == 0)
@@ -154,6 +158,7 @@ void tree_append_json(const char *filename) {
     hand = yajl_alloc(&callbacks, NULL, NULL, (void*)g);
     yajl_status stat;
     json_node = focused;
+    to_focus = NULL;
     setlocale(LC_NUMERIC, "C");
     stat = yajl_parse(hand, (const unsigned char*)buf, n);
     if (stat != yajl_status_ok &&
@@ -168,5 +173,6 @@ void tree_append_json(const char *filename) {
     yajl_parse_complete(hand);
 
     fclose(f);
-    //con_focus(json_node);
+    if (to_focus)
+        con_focus(to_focus);
 }

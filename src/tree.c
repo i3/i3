@@ -44,7 +44,6 @@ bool tree_restore() {
     printf("out = %p\n", out);
     Con *ws = TAILQ_FIRST(&(out->nodes_head));
     printf("ws = %p\n", ws);
-    con_focus(ws);
 
     return true;
 }
