@@ -567,6 +567,10 @@ void con_set_layout(Con *con, int layout) {
          * container. */
         new->orientation = HORIZ;
 
+        Con *old_focused = TAILQ_FIRST(&(con->focus_head));
+        if (old_focused == TAILQ_END(&(con->focus_head)))
+            old_focused = NULL;
+
         /* 4: move the existing cons of this workspace below the new con */
         DLOG("Moving cons\n");
         Con *child;
@@ -579,6 +583,9 @@ void con_set_layout(Con *con, int layout) {
         /* 4: attach the new split container to the workspace */
         DLOG("Attaching new split to ws\n");
         con_attach(new, con);
+
+        if (old_focused)
+            con_focus(old_focused);
 
         return;
     }
