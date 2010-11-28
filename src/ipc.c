@@ -155,6 +155,20 @@ IPC_HANDLER(command) {
                      I3_IPC_REPLY_TYPE_COMMAND, strlen(reply));
 }
 
+static void dump_rect(yajl_gen gen, const char *name, Rect r) {
+    ystr(name);
+    y(map_open);
+    ystr("x");
+    y(integer, r.x);
+    ystr("y");
+    y(integer, r.y);
+    ystr("width");
+    y(integer, r.width);
+    ystr("height");
+    y(integer, r.height);
+    y(map_close);
+}
+
 void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(map_open);
     ystr("id");
@@ -178,17 +192,8 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("border");
     y(integer, con->border_style);
 
-    ystr("rect");
-    y(map_open);
-    ystr("x");
-    y(integer, con->rect.x);
-    ystr("y");
-    y(integer, con->rect.y);
-    ystr("width");
-    y(integer, con->rect.width);
-    ystr("height");
-    y(integer, con->rect.height);
-    y(map_close);
+    dump_rect(gen, "rect", con->rect);
+    dump_rect(gen, "window_rect", con->window_rect);
 
     ystr("name");
     ystr(con->name);

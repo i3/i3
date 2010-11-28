@@ -15,6 +15,7 @@ static Con *json_node;
 static Con *to_focus;
 static bool parsing_swallows;
 static bool parsing_rect;
+static bool parsing_window_rect;
 struct Match *current_swallow;
 
 static int json_start_map(void *ctx) {
@@ -25,7 +26,7 @@ static int json_start_map(void *ctx) {
         match_init(current_swallow);
         TAILQ_INSERT_TAIL(&(json_node->swallow_head), current_swallow, matches);
     } else {
-        if (!parsing_rect)
+        if (!parsing_rect && !parsing_window_rect)
             json_node = con_new(json_node);
     }
     return 1;
@@ -33,10 +34,12 @@ static int json_start_map(void *ctx) {
 
 static int json_end_map(void *ctx) {
     LOG("end of map\n");
-    if (!parsing_swallows && !parsing_rect)
+    if (!parsing_swallows && !parsing_rect && !parsing_window_rect)
         json_node = json_node->parent;
     if (parsing_rect)
         parsing_rect = false;
+    if (parsing_window_rect)
+        parsing_window_rect = false;
     return 1;
 }
 
@@ -56,6 +59,8 @@ static int json_key(void *ctx, const unsigned char *val, unsigned int len) {
     }
     if (strcasecmp(last_key, "rect") == 0)
         parsing_rect = true;
+    if (strcasecmp(last_key, "window_rect") == 0)
+        parsing_window_rect = true;
     return 1;
 }
 
@@ -99,19 +104,19 @@ static int json_int(void *ctx, long val) {
         to_focus = json_node;
     }
 
-    if (parsing_rect) {
+    if (parsing_rect || parsing_window_rect) {
+        Rect *r = (parsing_rect ? &(json_node->rect) : &(json_node->window_rect));
         if (strcasecmp(last_key, "x") == 0)
-            json_node->rect.x = val;
+            r->x = val;
         else if (strcasecmp(last_key, "y") == 0)
-            json_node->rect.y = val;
+            r->y = val;
         else if (strcasecmp(last_key, "width") == 0)
-            json_node->rect.width = val;
+            r->width = val;
         else if (strcasecmp(last_key, "height") == 0)
-            json_node->rect.height = val;
+            r->height = val;
         else printf("WARNING: unknown key %s in rect\n", last_key);
         printf("rect now: (%d, %d, %d, %d)\n",
-                json_node->rect.x, json_node->rect.y,
-                json_node->rect.width, json_node->rect.height);
+                r->x, r->y, r->width, r->height);
     }
     if (parsing_swallows) {
         if (strcasecmp(last_key, "id") == 0) {
@@ -159,6 +164,8 @@ void tree_append_json(const char *filename) {
     yajl_status stat;
     json_node = focused;
     to_focus = NULL;
+    parsing_rect = false;
+    parsing_window_rect = false;
     setlocale(LC_NUMERIC, "C");
     stat = yajl_parse(hand, (const unsigned char*)buf, n);
     if (stat != yajl_status_ok &&
