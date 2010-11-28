@@ -382,11 +382,10 @@ void con_toggle_fullscreen(Con *con) {
             LOG("Not entering fullscreen mode, container (%p/%s) "
                 "already is in fullscreen mode\n",
                 fullscreen, fullscreen->name);
-            return;
+        } else {
+            /* 2: enable fullscreen */
+            con->fullscreen_mode = CF_OUTPUT;
         }
-
-        /* 2: enable fullscreen */
-        con->fullscreen_mode = CF_OUTPUT;
     } else {
         /* 1: disable fullscreen */
         con->fullscreen_mode = CF_NONE;
