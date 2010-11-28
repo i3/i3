@@ -263,6 +263,9 @@ int handle_motion_notify(void *ignored, xcb_connection_t *conn, xcb_motion_notif
         return 1;
     }
 
+    if (con->layout != L_DEFAULT)
+        return 1;
+
     /* see over which rect the user is */
     Con *current;
     TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
