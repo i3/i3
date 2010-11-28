@@ -52,12 +52,12 @@ sleep(0.25);
 ($absolute, $top) = $window->rect;
 
 cmp_ok($absolute->{width}, '==', 80, "i3 let the width at 80");
-cmp_ok($absolute->{height}, '==', 90, "i3 let the height at 90");
+cmp_ok($absolute->{height}, '==', 92, "i3 let the height at 90");
 
 # We need to compare the position with decorations due to the way
 # we do decoration rendering (on the parent frame) in the tree branch
 cmp_ok($top->{x}, '==', 1, 'i3 mapped it to x=1');
-cmp_ok($top->{y}, '==', 18, 'i3 mapped it to y=18');
+cmp_ok($top->{y}, '==', 19, 'i3 mapped it to y=18');
 
 $window->unmap;
 
