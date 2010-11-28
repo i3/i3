@@ -650,10 +650,8 @@ resize:
         } else {
             LOG("tiling resize\n");
             /* get the default percentage */
-            int children = 0;
+            int children = con_num_children(focused->parent);
             Con *other;
-            TAILQ_FOREACH(other, &(focused->parent->nodes_head), nodes)
-                children++;
             LOG("ins. %d children\n", children);
             double percentage = 1.0 / children;
             LOG("default percentage = %f\n", percentage);
