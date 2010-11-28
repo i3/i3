@@ -95,7 +95,7 @@ static int json_int(void *ctx, long val) {
     if (strcasecmp(last_key, "fullscreen_mode") == 0) {
         json_node->fullscreen_mode = val;
     }
-    if (strcasecmp(last_key, "focused") == 0) {
+    if (strcasecmp(last_key, "focused") == 0 && val == 1) {
         to_focus = json_node;
     }
 
