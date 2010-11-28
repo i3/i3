@@ -10,6 +10,9 @@ BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 
+SKIP: {
+    skip "Dock clients not yet implemented", 1;
+
 my $x = X11::XCB::Connection->new;
 
 #####################################################################
@@ -51,3 +54,4 @@ sleep 0.25;
 
 
 diag( "Testing i3, Perl $], $^X" );
+}
