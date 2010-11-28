@@ -21,6 +21,7 @@ my $expected = {
     type => 0,
     id => ignore(),
     rect => ignore(),
+    window_rect => ignore(),
     layout => 0,
     focus => ignore(),
     focused => 0,
