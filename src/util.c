@@ -1,9 +1,9 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009 Michael Stapelberg and contributors
+ * © 2009-2010 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -24,25 +24,25 @@
 static iconv_t conversion_descriptor = 0;
 
 int min(int a, int b) {
-        return (a < b ? a : b);
+    return (a < b ? a : b);
 }
 
 int max(int a, int b) {
-        return (a > b ? a : b);
+    return (a > b ? a : b);
 }
 
 bool rect_contains(Rect rect, uint32_t x, uint32_t y) {
-        return (x >= rect.x &&
-                x <= (rect.x + rect.width) &&
-                y >= rect.y &&
-                y <= (rect.y + rect.height));
+    return (x >= rect.x &&
+            x <= (rect.x + rect.width) &&
+            y >= rect.y &&
+            y <= (rect.y + rect.height));
 }
 
 Rect rect_add(Rect a, Rect b) {
-        return (Rect){a.x + b.x,
-                      a.y + b.y,
-                      a.width + b.width,
-                      a.height + b.height};
+    return (Rect){a.x + b.x,
+                  a.y + b.y,
+                  a.width + b.width,
+                  a.height + b.height};
 }
 
 /*
@@ -51,9 +51,9 @@ Rect rect_add(Rect a, Rect b) {
  *
  */
 bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
-        uint32_t old_value = *destination;
+    uint32_t old_value = *destination;
 
-        return ((*destination = new_value) != old_value);
+    return ((*destination = new_value) != old_value);
 }
 
 /*
@@ -62,27 +62,27 @@ bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
  *
  */
 void *smalloc(size_t size) {
-        void *result = malloc(size);
-        exit_if_null(result, "Error: out of memory (malloc(%zd))\n", size);
-        return result;
+    void *result = malloc(size);
+    exit_if_null(result, "Error: out of memory (malloc(%zd))\n", size);
+    return result;
 }
 
 void *scalloc(size_t size) {
-        void *result = calloc(size, 1);
-        exit_if_null(result, "Error: out of memory (calloc(%zd))\n", size);
-        return result;
+    void *result = calloc(size, 1);
+    exit_if_null(result, "Error: out of memory (calloc(%zd))\n", size);
+    return result;
 }
 
 void *srealloc(void *ptr, size_t size) {
-        void *result = realloc(ptr, size);
-        exit_if_null(result, "Error: out memory (realloc(%zd))\n", size);
-        return result;
+    void *result = realloc(ptr, size);
+    exit_if_null(result, "Error: out memory (realloc(%zd))\n", size);
+    return result;
 }
 
 char *sstrdup(const char *str) {
-        char *result = strdup(str);
-        exit_if_null(result, "Error: out of memory (strdup())\n");
-        return result;
+    char *result = strdup(str);
+    exit_if_null(result, "Error: out of memory (strdup())\n");
+    return result;
 }
 
 /*
@@ -96,25 +96,25 @@ char *sstrdup(const char *str) {
  *
  */
 void start_application(const char *command) {
-        LOG("executing: %s\n", command);
+    LOG("executing: %s\n", command);
+    if (fork() == 0) {
+        /* Child process */
+        setsid();
         if (fork() == 0) {
-                /* Child process */
-                setsid();
-                if (fork() == 0) {
-                        /* Stores the path of the shell */
-                        static const char *shell = NULL;
+            /* Stores the path of the shell */
+            static const char *shell = NULL;
 
-                        if (shell == NULL)
-                                if ((shell = getenv("SHELL")) == NULL)
-                                        shell = "/bin/sh";
+            if (shell == NULL)
+                if ((shell = getenv("SHELL")) == NULL)
+                    shell = "/bin/sh";
 
-                        /* This is the child */
-                        execl(shell, shell, "-c", command, (void*)NULL);
-                        /* not reached */
-                }
-                exit(0);
+            /* This is the child */
+            execl(shell, shell, "-c", command, (void*)NULL);
+            /* not reached */
         }
-        wait(0);
+        exit(0);
+    }
+    wait(0);
 }
 
 /*
@@ -123,12 +123,12 @@ void start_application(const char *command) {
  *
  */
 void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_message) {
-        xcb_generic_error_t *error = xcb_request_check(conn, cookie);
-        if (error != NULL) {
-                fprintf(stderr, "ERROR: %s (X error %d)\n", err_message , error->error_code);
-                xcb_disconnect(conn);
-                exit(-1);
-        }
+    xcb_generic_error_t *error = xcb_request_check(conn, cookie);
+    if (error != NULL) {
+        fprintf(stderr, "ERROR: %s (X error %d)\n", err_message , error->error_code);
+        xcb_disconnect(conn);
+        exit(-1);
+    }
 }
 
 /*
@@ -139,40 +139,40 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_mes
  *
  */
 char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
-        size_t input_size = strlen(input) + 1;
-        /* UCS-2 consumes exactly two bytes for each glyph */
-        int buffer_size = input_size * 2;
+    size_t input_size = strlen(input) + 1;
+    /* UCS-2 consumes exactly two bytes for each glyph */
+    int buffer_size = input_size * 2;
 
-        char *buffer = smalloc(buffer_size);
-        size_t output_size = buffer_size;
-        /* We need to use an additional pointer, because iconv() modifies it */
-        char *output = buffer;
+    char *buffer = smalloc(buffer_size);
+    size_t output_size = buffer_size;
+    /* We need to use an additional pointer, because iconv() modifies it */
+    char *output = buffer;
 
-        /* We convert the input into UCS-2 big endian */
+    /* We convert the input into UCS-2 big endian */
+    if (conversion_descriptor == 0) {
+        conversion_descriptor = iconv_open("UCS-2BE", "UTF-8");
         if (conversion_descriptor == 0) {
-                conversion_descriptor = iconv_open("UCS-2BE", "UTF-8");
-                if (conversion_descriptor == 0) {
-                        fprintf(stderr, "error opening the conversion context\n");
-                        exit(1);
-                }
+            fprintf(stderr, "error opening the conversion context\n");
+            exit(1);
         }
+    }
 
-        /* Get the conversion descriptor back to original state */
-        iconv(conversion_descriptor, NULL, NULL, NULL, NULL);
+    /* Get the conversion descriptor back to original state */
+    iconv(conversion_descriptor, NULL, NULL, NULL, NULL);
 
-        /* Convert our text */
-        int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
-        if (rc == (size_t)-1) {
-                perror("Converting to UCS-2 failed");
-                if (real_strlen != NULL)
-                        *real_strlen = 0;
-                return NULL;
-        }
-
+    /* Convert our text */
+    int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
+    if (rc == (size_t)-1) {
+        perror("Converting to UCS-2 failed");
         if (real_strlen != NULL)
-                *real_strlen = ((buffer_size - output_size) / 2) - 1;
+            *real_strlen = 0;
+        return NULL;
+    }
 
-        return buffer;
+    if (real_strlen != NULL)
+        *real_strlen = ((buffer_size - output_size) / 2) - 1;
+
+    return buffer;
 }
 #if 0
 
@@ -348,62 +348,62 @@ done:
  *
  */
 static char **append_argument(char **original, char *argument) {
-        int num_args;
-        for (num_args = 0; original[num_args] != NULL; num_args++) {
-                DLOG("original argument: \"%s\"\n", original[num_args]);
-                /* If the argument is already present we return the original pointer */
-                if (strcmp(original[num_args], argument) == 0)
-                        return original;
-        }
-        /* Copy the original array */
-        char **result = smalloc((num_args+2) * sizeof(char*));
-        memcpy(result, original, num_args * sizeof(char*));
-        result[num_args] = argument;
-        result[num_args+1] = NULL;
+    int num_args;
+    for (num_args = 0; original[num_args] != NULL; num_args++) {
+        DLOG("original argument: \"%s\"\n", original[num_args]);
+        /* If the argument is already present we return the original pointer */
+        if (strcmp(original[num_args], argument) == 0)
+            return original;
+    }
+    /* Copy the original array */
+    char **result = smalloc((num_args+2) * sizeof(char*));
+    memcpy(result, original, num_args * sizeof(char*));
+    result[num_args] = argument;
+    result[num_args+1] = NULL;
 
-        return result;
+    return result;
 }
 
 #define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
 #define ystr(str) yajl_gen_string(gen, (unsigned char*)str, strlen(str))
 
 void store_restart_layout() {
-        yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
 
-        dump_node(gen, croot, true);
+    dump_node(gen, croot, true);
 
-        const unsigned char *payload;
-        unsigned int length;
-        y(get_buf, &payload, &length);
+    const unsigned char *payload;
+    unsigned int length;
+    y(get_buf, &payload, &length);
 
-        char *globbed = resolve_tilde(config.restart_state_path);
-        int fd = open(globbed, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-        free(globbed);
-        if (fd == -1) {
-                perror("open()");
-                return;
+    char *globbed = resolve_tilde(config.restart_state_path);
+    int fd = open(globbed, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    free(globbed);
+    if (fd == -1) {
+        perror("open()");
+        return;
+    }
+
+    int written = 0;
+    while (written < length) {
+        int n = write(fd, payload + written, length - written);
+        /* TODO: correct error-handling */
+        if (n == -1) {
+            perror("write()");
+            return;
         }
-
-        int written = 0;
-        while (written < length) {
-                int n = write(fd, payload + written, length - written);
-                /* TODO: correct error-handling */
-                if (n == -1) {
-                        perror("write()");
-                        return;
-                }
-                if (n == 0) {
-                        printf("write == 0?\n");
-                        return;
-                }
-                written += n;
-                printf("written: %d of %d\n", written, length);
+        if (n == 0) {
+            printf("write == 0?\n");
+            return;
         }
-        close(fd);
+        written += n;
+        printf("written: %d of %d\n", written, length);
+    }
+    close(fd);
 
-        printf("layout: %.*s\n", length, payload);
+    printf("layout: %.*s\n", length, payload);
 
-        y(free);
+    y(free);
 }
 
 /*
@@ -412,17 +412,17 @@ void store_restart_layout() {
  *
  */
 void i3_restart() {
-        store_restart_layout();
-        restore_geometry();
+    store_restart_layout();
+    restore_geometry();
 
-        ipc_shutdown();
+    ipc_shutdown();
 
-        LOG("restarting \"%s\"...\n", start_argv[0]);
-        /* make sure -a is in the argument list or append it */
-        start_argv = append_argument(start_argv, "-a");
+    LOG("restarting \"%s\"...\n", start_argv[0]);
+    /* make sure -a is in the argument list or append it */
+    start_argv = append_argument(start_argv, "-a");
 
-        execvp(start_argv[0], start_argv);
-        /* not reached */
+    execvp(start_argv[0], start_argv);
+    /* not reached */
 }
 
 #if 0
