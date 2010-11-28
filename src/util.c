@@ -99,6 +99,7 @@ void start_application(const char *command) {
         LOG("executing: %s\n", command);
         if (fork() == 0) {
                 /* Child process */
+                setsid();
                 if (fork() == 0) {
                         /* Stores the path of the shell */
                         static const char *shell = NULL;
