@@ -28,16 +28,13 @@ isnt($first, $second, 'two different containers opened');
 ##############################################################
 
 $i3->command('layout stacking')->recv;
-my ($nodes, $focus) = get_ws_content($tmp);
-is($focus->[0], $second, 'second container still focused');
+is(get_focused($tmp), $second, 'second container still focused');
 
 $i3->command('next v')->recv;
-($nodes, $focus) = get_ws_content($tmp);
-is($focus->[0], $first, 'first container focused');
+is(get_focused($tmp), $first, 'first container focused');
 
 $i3->command('prev v')->recv;
-($nodes, $focus) = get_ws_content($tmp);
-is($focus->[0], $second, 'second container focused again');
+is(get_focused($tmp), $second, 'second container focused again');
 
 ##############################################################
 # now change the orientation to horizontal and cycle
@@ -48,12 +45,10 @@ $i3->command('split h')->recv;
 $i3->command('level down')->recv;
 
 $i3->command('next v')->recv;
-($nodes, $focus) = get_ws_content($tmp);
-is($focus->[0], $first, 'first container focused');
+is(get_focused($tmp), $first, 'first container focused');
 
 $i3->command('prev v')->recv;
-($nodes, $focus) = get_ws_content($tmp);
-is($focus->[0], $second, 'second container focused again');
+is(get_focused($tmp), $second, 'second container focused again');
 
 
 diag( "Testing i3, Perl $], $^X" );
