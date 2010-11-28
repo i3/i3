@@ -1,3 +1,6 @@
+/*
+ * vim:ts=4:sw=4:expandtab
+ */
 #ifndef _XCURSOR_CURSOR_H
 #define _XCURSOR_CURSOR_H
 
