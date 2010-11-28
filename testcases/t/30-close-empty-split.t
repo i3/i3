@@ -14,6 +14,8 @@ $i3->command("workspace $tmp")->recv;
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
 my $first = open_empty_con($i3);
+my $second = open_empty_con($i3);
+$i3->command(qq|[con_id="$first"] focus|)->recv;
 
 $i3->command('split v')->recv;
 
