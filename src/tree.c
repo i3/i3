@@ -396,11 +396,47 @@ void tree_move(char way, orientation_t orientation) {
         return;
     bool level_changed = false;
     while (con_orientation(parent) != orientation) {
-        LOG("need to go one level further up\n");
-        /* if the current parent is an output, we are at a workspace
-         * and the orientation still does not match */
-        if (parent->type == CT_WORKSPACE)
-            return;
+        DLOG("need to go one level further up\n");
+        /* If the current parent is an output, we are at a workspace
+         * and the orientation still does not match. In this case, we split the
+         * workspace to have the same look & feel as in older i3 releases. */
+        if (parent->type == CT_WORKSPACE) {
+            DLOG("Arrived at workspace, splitting...\n");
+            /* 1: create a new split container */
+            Con *new = con_new(NULL);
+            new->parent = parent;
+
+            /* 2: copy layout and orientation from workspace */
+            new->layout = parent->layout;
+            new->orientation = parent->orientation;
+
+            Con *old_focused = TAILQ_FIRST(&(parent->focus_head));
+            if (old_focused == TAILQ_END(&(parent->focus_head)))
+                old_focused = NULL;
+
+            /* 3: move the existing cons of this workspace below the new con */
+            DLOG("Moving cons\n");
+            Con *child;
+            while (!TAILQ_EMPTY(&(parent->nodes_head))) {
+                child = TAILQ_FIRST(&(parent->nodes_head));
+                con_detach(child);
+                con_attach(child, new, true);
+            }
+
+            /* 4: switch workspace orientation */
+            parent->orientation = orientation;
+
+            /* 4: attach the new split container to the workspace */
+            DLOG("Attaching new split to ws\n");
+            con_attach(new, parent, false);
+
+            if (old_focused)
+                con_focus(old_focused);
+
+            level_changed = true;
+
+            break;
+        }
         parent = parent->parent;
         level_changed = true;
     }
