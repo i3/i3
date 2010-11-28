@@ -394,6 +394,8 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
         tree_render();
     }
 
+    fake_absolute_configure_notify(con);
+
     return 1;
 #if 0
         /* Dock clients can be reconfigured in their height */
