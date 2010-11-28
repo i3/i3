@@ -29,9 +29,9 @@ bool tree_restore() {
     tree_append_json(globbed);
 
     size_t path_len = strlen(config.restart_state_path);
-    char *old_restart = malloc(path_len + 5);
-    strncpy(old_restart, config.restart_state_path, path_len + 5);
-    strncat(old_restart, ".old", path_len + 5);
+    char *old_restart = smalloc(path_len + strlen(".old") + 1);
+    strncpy(old_restart, config.restart_state_path, path_len + strlen(".old") + 1);
+    strncat(old_restart, ".old", strlen(".old") + 1);
     unlink(old_restart);
     rename(globbed, old_restart);
     free(globbed);
