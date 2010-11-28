@@ -415,7 +415,7 @@ void i3_restart() {
         store_restart_layout();
         restore_geometry();
 
-        //ipc_shutdown();
+        ipc_shutdown();
 
         LOG("restarting \"%s\"...\n", start_argv[0]);
         /* make sure -a is in the argument list or append it */
