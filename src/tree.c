@@ -394,6 +394,7 @@ void tree_move(char way, orientation_t orientation) {
     Con *old_parent = parent;
     if (focused->type == CT_WORKSPACE)
         return;
+    bool level_changed = false;
     while (con_orientation(parent) != orientation) {
         DLOG("need to go one level further up\n");
         /* If the current parent is an output, we are at a workspace
@@ -432,9 +433,12 @@ void tree_move(char way, orientation_t orientation) {
             if (old_focused)
                 con_focus(old_focused);
 
+            level_changed = true;
+
             break;
         }
         parent = parent->parent;
+        level_changed = true;
     }
     Con *current = TAILQ_FIRST(&(parent->focus_head));
     assert(current != TAILQ_END(&(parent->focus_head)));
@@ -448,12 +452,18 @@ void tree_move(char way, orientation_t orientation) {
          * if it is a leaf node, we move the focused one left to it. However,
          * for split containers, we descend into it. */
         next = TAILQ_NEXT(next, nodes);
-        if (next == TAILQ_END(&(next->parent->nodes_head)) || con_is_leaf(next)) {
+        if (next == TAILQ_END(&(next->parent->nodes_head))) {
+            if (focused == current)
+                return;
             next = current;
         } else {
-            /* if this is a split container, we need to go down */
-            while (!TAILQ_EMPTY(&(next->focus_head)))
-                next = TAILQ_FIRST(&(next->focus_head));
+            if (level_changed && con_is_leaf(next)) {
+                next = current;
+            } else {
+                /* if this is a split container, we need to go down */
+                while (!TAILQ_EMPTY(&(next->focus_head)))
+                    next = TAILQ_FIRST(&(next->focus_head));
+            }
         }
 
         con_detach(focused);
@@ -466,13 +476,19 @@ void tree_move(char way, orientation_t orientation) {
         LOG("i would insert it before %p / %s\n", current, current->name);
         bool gone_down = false;
         next = TAILQ_PREV(next, nodes_head, nodes);
-        if (next == TAILQ_END(&(next->parent->nodes_head)) || con_is_leaf(next)) {
+        if (next == TAILQ_END(&(next->parent->nodes_head))) {
+            if (focused == current)
+                return;
             next = current;
         } else {
-            /* if this is a split container, we need to go down */
-            while (!TAILQ_EMPTY(&(next->focus_head))) {
-                gone_down = true;
-                next = TAILQ_FIRST(&(next->focus_head));
+            if (level_changed && con_is_leaf(next)) {
+                next = current;
+            } else {
+                /* if this is a split container, we need to go down */
+                while (!TAILQ_EMPTY(&(next->focus_head))) {
+                    gone_down = true;
+                    next = TAILQ_FIRST(&(next->focus_head));
+                }
             }
         }
 
