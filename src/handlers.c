@@ -243,7 +243,6 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn,
 
     return 1;
 }
-#if 0
 
 /*
  * When the user moves the mouse but does not change the active window
@@ -252,16 +251,37 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn,
  *
  */
 int handle_motion_notify(void *ignored, xcb_connection_t *conn, xcb_motion_notify_event_t *event) {
-        /* Skip events where the pointer was over a child window, we are only
-         * interested in events on the root window. */
-        if (event->child != 0)
-                return 1;
-
-        check_crossing_screen_boundary(event->root_x, event->root_y);
-
+    /* Skip events where the pointer was over a child window, we are only
+     * interested in events on the root window. */
+    if (event->child != 0)
         return 1;
+
+    Con *con;
+    if ((con = con_by_frame_id(event->event)) == NULL) {
+        /* TODO; handle root window: */
+        //check_crossing_screen_boundary(event->root_x, event->root_y);
+        return 1;
+    }
+
+    /* see over which rect the user is */
+    Con *current;
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes) {
+        if (!rect_contains(current->deco_rect, event->event_x, event->event_y))
+            continue;
+
+        /* We found the rect, let’s see if this window is focused */
+        if (TAILQ_FIRST(&(con->focus_head)) == current)
+            return 1;
+
+        con_focus(current);
+        x_push_changes(croot);
+        return 1;
+    }
+
+    return 1;
 }
 
+#if 0
 /*
  * Called when the keyboard mapping changes (for example by using Xmodmap),
  * we need to update our key bindings then (re-translate symbols).

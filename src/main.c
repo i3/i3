@@ -211,6 +211,8 @@ int main(int argc, char *argv[]) {
 
     xcb_event_set_expose_handler(&evenths, handle_expose_event, NULL);
 
+    xcb_event_set_motion_notify_handler(&evenths, handle_motion_notify, NULL);
+
     /* Enter window = user moved his mouse over the window */
     xcb_event_set_enter_notify_handler(&evenths, handle_enter_notify, NULL);
 

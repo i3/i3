@@ -37,6 +37,7 @@
 /** The XCB_CW_EVENT_MASK for its frame */
 #define FRAME_EVENT_MASK (XCB_EVENT_MASK_BUTTON_PRESS |          /* …mouse is pressed/released */ \
                           XCB_EVENT_MASK_BUTTON_RELEASE | \
+                          XCB_EVENT_MASK_POINTER_MOTION |        /* …mouse is moved */ \
                           XCB_EVENT_MASK_EXPOSURE |              /* …our window needs to be redrawn */ \
                           XCB_EVENT_MASK_STRUCTURE_NOTIFY |      /* …the frame gets destroyed */ \
                           XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | /* …the application tries to resize itself */ \
