@@ -18,6 +18,7 @@ static xcb_window_t focused_id = XCB_NONE;
 typedef struct con_state {
     xcb_window_t id;
     bool mapped;
+    bool child_mapped;
 
     /* For reparenting, we have a flag (need_reparent) and the X ID of the old
      * frame this window was in. The latter is necessary because we need to
@@ -111,6 +112,7 @@ void x_reinit(Con *con) {
 
     LOG("resetting state %p to initial\n", state);
     state->initial = true;
+    state->child_mapped = false;
     memset(&(state->window_rect), 0, sizeof(Rect));
 }
 
@@ -466,11 +468,12 @@ static void x_push_node(Con *con) {
                                 atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
         }
 
-        if (state->initial && con->window != NULL) {
+        if (!state->child_mapped && con->window != NULL) {
             cookie = xcb_map_window(conn, con->window->id);
             LOG("mapping child window (serial %d)\n", cookie.sequence);
             /* Ignore enter_notifies which are generated when mapping */
             add_ignore_event(cookie.sequence);
+            state->child_mapped = true;
         }
 
         cookie = xcb_map_window(conn, con->frame);
