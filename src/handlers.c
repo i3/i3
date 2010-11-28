@@ -371,8 +371,10 @@ int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure
         /* we actually need to apply the size/position changes to the *parent*
          * container */
         Rect bsr = con_border_style_rect(con);
-        if (con->border_style == BS_NORMAL)
+        if (con->border_style == BS_NORMAL) {
+            bsr.y += deco_height;
             bsr.height -= deco_height;
+        }
         con = con->parent;
         DLOG("Container is a floating leaf node, will do that.\n");
         if (event->value_mask & XCB_CONFIG_WINDOW_X) {
