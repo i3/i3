@@ -496,6 +496,11 @@ void tree_move(char way, orientation_t orientation) {
         /* TODO: don’t influence focus handling? */
     }
 
+    /* We need to call con_focus() to fix the focus stack "above" the container
+     * we just inserted the focused container into (otherwise, the parent
+     * container(s) would still point to the old container(s)). */
+    con_focus(focused);
+
     if (con_num_children(old_parent) == 0) {
         DLOG("Old container empty after moving. Let's close it\n");
         tree_close(old_parent, false, false);
