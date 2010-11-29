@@ -10,7 +10,7 @@ use List::Util qw(first);
 use v5.10;
 
 use Exporter ();
-our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window);
+our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window cmd);
 
 BEGIN {
     my $window_count = 0;
@@ -117,6 +117,10 @@ sub get_focused {
     }
 
     return $lf;
+}
+
+sub cmd {
+    i3("/tmp/nestedcons")->command(@_)->recv
 }
 
 1
