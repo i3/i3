@@ -99,18 +99,4 @@ void workspace_map_clients(xcb_connection_t *conn, Workspace *ws);
  */
 void workspace_update_urgent_flag(Con *ws);
 
-#if 0
-/*
- * Returns the width of the workspace.
- *
- */
-int workspace_width(Workspace *ws);
-
-/*
- * Returns the effective height of the workspace (without the internal bar and
- * without dock clients).
- *
- */
-int workspace_height(Workspace *ws);
-#endif
 #endif
