@@ -1,5 +1,5 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
  *
@@ -22,37 +22,37 @@ unsigned int xcb_numlock_mask;
  *
  */
 i3Font *load_font(xcb_connection_t *conn, const char *pattern) {
-        /* Check if we got the font cached */
-        i3Font *font;
-        TAILQ_FOREACH(font, &cached_fonts, fonts)
-                if (strcmp(font->pattern, pattern) == 0)
-                        return font;
+    /* Check if we got the font cached */
+    i3Font *font;
+    TAILQ_FOREACH(font, &cached_fonts, fonts)
+        if (strcmp(font->pattern, pattern) == 0)
+            return font;
 
-        i3Font *new = smalloc(sizeof(i3Font));
-        xcb_void_cookie_t font_cookie;
-        xcb_list_fonts_with_info_cookie_t info_cookie;
+    i3Font *new = smalloc(sizeof(i3Font));
+    xcb_void_cookie_t font_cookie;
+    xcb_list_fonts_with_info_cookie_t info_cookie;
 
-        /* Send all our requests first */
-        new->id = xcb_generate_id(conn);
-        font_cookie = xcb_open_font_checked(conn, new->id, strlen(pattern), pattern);
-        info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
+    /* Send all our requests first */
+    new->id = xcb_generate_id(conn);
+    font_cookie = xcb_open_font_checked(conn, new->id, strlen(pattern), pattern);
+    info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
 
-        check_error(conn, font_cookie, "Could not open font");
+    check_error(conn, font_cookie, "Could not open font");
 
-        /* Get information (height/name) for this font */
-        xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(conn, info_cookie, NULL);
-        exit_if_null(reply, "Could not load font \"%s\"\n", pattern);
+    /* Get information (height/name) for this font */
+    xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(conn, info_cookie, NULL);
+    exit_if_null(reply, "Could not load font \"%s\"\n", pattern);
 
-        if (asprintf(&(new->name), "%.*s", xcb_list_fonts_with_info_name_length(reply),
-                                           xcb_list_fonts_with_info_name(reply)) == -1)
-                die("asprintf() failed\n");
-        new->pattern = sstrdup(pattern);
-        new->height = reply->font_ascent + reply->font_descent;
+    if (asprintf(&(new->name), "%.*s", xcb_list_fonts_with_info_name_length(reply),
+                                       xcb_list_fonts_with_info_name(reply)) == -1)
+        die("asprintf() failed\n");
+    new->pattern = sstrdup(pattern);
+    new->height = reply->font_ascent + reply->font_descent;
 
-        /* Insert into cache */
-        TAILQ_INSERT_TAIL(&cached_fonts, new, fonts);
+    /* Insert into cache */
+    TAILQ_INSERT_TAIL(&cached_fonts, new, fonts);
 
-        return new;
+    return new;
 }
 
 /*
@@ -65,14 +65,14 @@ i3Font *load_font(xcb_connection_t *conn, const char *pattern) {
  *
  */
 uint32_t get_colorpixel(char *hex) {
-        char strgroups[3][3] = {{hex[1], hex[2], '\0'},
-                                {hex[3], hex[4], '\0'},
-                                {hex[5], hex[6], '\0'}};
-        uint32_t rgb16[3] = {(strtol(strgroups[0], NULL, 16)),
-                             (strtol(strgroups[1], NULL, 16)),
-                             (strtol(strgroups[2], NULL, 16))};
+    char strgroups[3][3] = {{hex[1], hex[2], '\0'},
+                            {hex[3], hex[4], '\0'},
+                            {hex[5], hex[6], '\0'}};
+    uint32_t rgb16[3] = {(strtol(strgroups[0], NULL, 16)),
+                         (strtol(strgroups[1], NULL, 16)),
+                         (strtol(strgroups[2], NULL, 16))};
 
-        return (rgb16[0] << 16) + (rgb16[1] << 8) + rgb16[2];
+    return (rgb16[0] << 16) + (rgb16[1] << 8) + rgb16[2];
 }
 
 /*
@@ -126,7 +126,7 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
  *
  */
 void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t mask, uint32_t value) {
-        xcb_change_gc(conn, gc, mask, &value);
+    xcb_change_gc(conn, gc, mask, &value);
 }
 
 /*
@@ -135,9 +135,9 @@ void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t ma
  */
 void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t to_x, uint32_t to_y) {
-        xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, colorpixel);
-        xcb_point_t points[] = {{x, y}, {to_x, to_y}};
-        xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, drawable, gc, 2, points);
+    xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, colorpixel);
+    xcb_point_t points[] = {{x, y}, {to_x, to_y}};
+    xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, drawable, gc, 2, points);
 }
 
 /*
@@ -146,9 +146,9 @@ void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext
  */
 void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
-        xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, colorpixel);
-        xcb_rectangle_t rect = {x, y, width, height};
-        xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
+    xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, colorpixel);
+    xcb_rectangle_t rect = {x, y, width, height};
+    xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
 }
 
 /*
@@ -158,23 +158,23 @@ void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext
  *
  */
 void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window) {
-        xcb_configure_notify_event_t generated_event;
+    xcb_configure_notify_event_t generated_event;
 
-        generated_event.event = window;
-        generated_event.window = window;
-        generated_event.response_type = XCB_CONFIGURE_NOTIFY;
+    generated_event.event = window;
+    generated_event.window = window;
+    generated_event.response_type = XCB_CONFIGURE_NOTIFY;
 
-        generated_event.x = r.x;
-        generated_event.y = r.y;
-        generated_event.width = r.width;
-        generated_event.height = r.height;
+    generated_event.x = r.x;
+    generated_event.y = r.y;
+    generated_event.width = r.width;
+    generated_event.height = r.height;
 
-        generated_event.border_width = 0;
-        generated_event.above_sibling = XCB_NONE;
-        generated_event.override_redirect = false;
+    generated_event.border_width = 0;
+    generated_event.above_sibling = XCB_NONE;
+    generated_event.override_redirect = false;
 
-        xcb_send_event(conn, false, window, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (char*)&generated_event);
-        xcb_flush(conn);
+    xcb_send_event(conn, false, window, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (char*)&generated_event);
+    xcb_flush(conn);
 }
 
 /*
@@ -183,16 +183,16 @@ void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window) 
  *
  */
 void fake_absolute_configure_notify(Con *con) {
-        Rect absolute;
-        if (con->window == NULL)
-                return;
+    Rect absolute;
+    if (con->window == NULL)
+        return;
 
-        absolute.x = con->rect.x + con->window_rect.x;
-        absolute.y = con->rect.y + con->window_rect.y;
-        absolute.width = con->window_rect.width;
-        absolute.height = con->window_rect.height;
+    absolute.x = con->rect.x + con->window_rect.x;
+    absolute.y = con->rect.y + con->window_rect.y;
+    absolute.width = con->window_rect.width;
+    absolute.height = con->window_rect.height;
 
-        fake_configure_notify(conn, absolute, con->window->id);
+    fake_configure_notify(conn, absolute, con->window->id);
 }
 
 /*
@@ -200,53 +200,53 @@ void fake_absolute_configure_notify(Con *con) {
  *
  */
 void xcb_get_numlock_mask(xcb_connection_t *conn) {
-        xcb_key_symbols_t *keysyms;
-        xcb_get_modifier_mapping_cookie_t cookie;
-        xcb_get_modifier_mapping_reply_t *reply;
-        xcb_keycode_t *modmap;
-        int mask, i;
-        const int masks[8] = { XCB_MOD_MASK_SHIFT,
-                               XCB_MOD_MASK_LOCK,
-                               XCB_MOD_MASK_CONTROL,
-                               XCB_MOD_MASK_1,
-                               XCB_MOD_MASK_2,
-                               XCB_MOD_MASK_3,
-                               XCB_MOD_MASK_4,
-                               XCB_MOD_MASK_5 };
+    xcb_key_symbols_t *keysyms;
+    xcb_get_modifier_mapping_cookie_t cookie;
+    xcb_get_modifier_mapping_reply_t *reply;
+    xcb_keycode_t *modmap;
+    int mask, i;
+    const int masks[8] = { XCB_MOD_MASK_SHIFT,
+                           XCB_MOD_MASK_LOCK,
+                           XCB_MOD_MASK_CONTROL,
+                           XCB_MOD_MASK_1,
+                           XCB_MOD_MASK_2,
+                           XCB_MOD_MASK_3,
+                           XCB_MOD_MASK_4,
+                           XCB_MOD_MASK_5 };
 
-        /* Request the modifier map */
-        cookie = xcb_get_modifier_mapping_unchecked(conn);
+    /* Request the modifier map */
+    cookie = xcb_get_modifier_mapping_unchecked(conn);
 
-        /* Get the keysymbols */
-        keysyms = xcb_key_symbols_alloc(conn);
+    /* Get the keysymbols */
+    keysyms = xcb_key_symbols_alloc(conn);
 
-        if ((reply = xcb_get_modifier_mapping_reply(conn, cookie, NULL)) == NULL) {
-                xcb_key_symbols_free(keysyms);
-                return;
-        }
+    if ((reply = xcb_get_modifier_mapping_reply(conn, cookie, NULL)) == NULL) {
+        xcb_key_symbols_free(keysyms);
+        return;
+    }
 
-        modmap = xcb_get_modifier_mapping_keycodes(reply);
+    modmap = xcb_get_modifier_mapping_keycodes(reply);
 
-        /* Get the keycode for numlock */
+    /* Get the keycode for numlock */
 #ifdef OLD_XCB_KEYSYMS_API
-        xcb_keycode_t numlock = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
+    xcb_keycode_t numlock = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
 #else
-        /* For now, we only use the first keysymbol. */
-        xcb_keycode_t *numlock_syms = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
-        if (numlock_syms == NULL)
-                return;
-        xcb_keycode_t numlock = *numlock_syms;
-        free(numlock_syms);
+    /* For now, we only use the first keysymbol. */
+    xcb_keycode_t *numlock_syms = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
+    if (numlock_syms == NULL)
+        return;
+    xcb_keycode_t numlock = *numlock_syms;
+    free(numlock_syms);
 #endif
 
-        /* Check all modifiers (Mod1-Mod5, Shift, Control, Lock) */
-        for (mask = 0; mask < 8; mask++)
-                for (i = 0; i < reply->keycodes_per_modifier; i++)
-                        if (modmap[(mask * reply->keycodes_per_modifier) + i] == numlock)
-                                xcb_numlock_mask = masks[mask];
+    /* Check all modifiers (Mod1-Mod5, Shift, Control, Lock) */
+    for (mask = 0; mask < 8; mask++)
+        for (i = 0; i < reply->keycodes_per_modifier; i++)
+            if (modmap[(mask * reply->keycodes_per_modifier) + i] == numlock)
+                xcb_numlock_mask = masks[mask];
 
-        xcb_key_symbols_free(keysyms);
-        free(reply);
+    xcb_key_symbols_free(keysyms);
+    free(reply);
 }
 
 /*
@@ -254,8 +254,8 @@ void xcb_get_numlock_mask(xcb_connection_t *conn) {
  *
  */
 void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
-        uint32_t values[] = { XCB_STACK_MODE_ABOVE };
-        xcb_configure_window(conn, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
+    uint32_t values[] = { XCB_STACK_MODE_ABOVE };
+    xcb_configure_window(conn, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
 }
 
 /*
@@ -266,28 +266,28 @@ void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
  *
  */
 void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap) {
-        DLOG("preparing pixmap\n");
+    DLOG("preparing pixmap\n");
 
-        /* If the Rect did not change, the pixmap does not need to be recreated */
-        if (memcmp(&(pixmap->rect), pixmap->referred_rect, sizeof(Rect)) == 0)
-                return;
+    /* If the Rect did not change, the pixmap does not need to be recreated */
+    if (memcmp(&(pixmap->rect), pixmap->referred_rect, sizeof(Rect)) == 0)
+        return;
 
-        memcpy(&(pixmap->rect), pixmap->referred_rect, sizeof(Rect));
+    memcpy(&(pixmap->rect), pixmap->referred_rect, sizeof(Rect));
 
-        if (pixmap->id == 0 || pixmap->gc == 0) {
-                DLOG("Creating new pixmap...\n");
-                pixmap->id = xcb_generate_id(conn);
-                pixmap->gc = xcb_generate_id(conn);
-        } else {
-                DLOG("Re-creating this pixmap...\n");
-                xcb_free_gc(conn, pixmap->gc);
-                xcb_free_pixmap(conn, pixmap->id);
-        }
+    if (pixmap->id == 0 || pixmap->gc == 0) {
+        DLOG("Creating new pixmap...\n");
+        pixmap->id = xcb_generate_id(conn);
+        pixmap->gc = xcb_generate_id(conn);
+    } else {
+        DLOG("Re-creating this pixmap...\n");
+        xcb_free_gc(conn, pixmap->gc);
+        xcb_free_pixmap(conn, pixmap->id);
+    }
 
-        xcb_create_pixmap(conn, root_depth, pixmap->id,
-                          pixmap->referred_drawable, pixmap->rect.width, pixmap->rect.height);
+    xcb_create_pixmap(conn, root_depth, pixmap->id,
+                      pixmap->referred_drawable, pixmap->rect.width, pixmap->rect.height);
 
-        xcb_create_gc(conn, pixmap->gc, pixmap->id, 0, 0);
+    xcb_create_gc(conn, pixmap->gc, pixmap->id, 0, 0);
 }
 
 /*
@@ -296,26 +296,26 @@ void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap)
  *
  */
 int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *text, int length) {
-        i3Font *font = load_font(conn, font_pattern);
+    i3Font *font = load_font(conn, font_pattern);
 
-        xcb_query_text_extents_cookie_t cookie;
-        xcb_query_text_extents_reply_t *reply;
-        xcb_generic_error_t *error;
-        int width;
+    xcb_query_text_extents_cookie_t cookie;
+    xcb_query_text_extents_reply_t *reply;
+    xcb_generic_error_t *error;
+    int width;
 
-        cookie = xcb_query_text_extents(conn, font->id, length, (xcb_char2b_t*)text);
-        if ((reply = xcb_query_text_extents_reply(conn, cookie, &error)) == NULL) {
-                ELOG("Could not get text extents (X error code %d)\n",
-                     error->error_code);
-                /* We return the rather safe guess of 7 pixels, because a
-                 * rendering error is better than a crash. Plus, the user will
-                 * see the error in his log. */
-                return 7;
-        }
+    cookie = xcb_query_text_extents(conn, font->id, length, (xcb_char2b_t*)text);
+    if ((reply = xcb_query_text_extents_reply(conn, cookie, &error)) == NULL) {
+        ELOG("Could not get text extents (X error code %d)\n",
+             error->error_code);
+        /* We return the rather safe guess of 7 pixels, because a
+         * rendering error is better than a crash. Plus, the user will
+         * see the error in his log. */
+        return 7;
+    }
 
-        width = reply->overall_width;
-        free(reply);
-        return width;
+    width = reply->overall_width;
+    free(reply);
+    return width;
 }
 
 /*
@@ -323,15 +323,15 @@ int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *t
  *
  */
 void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r) {
-        xcb_void_cookie_t cookie;
-        cookie = xcb_configure_window(conn, window,
-                             XCB_CONFIG_WINDOW_X |
-                             XCB_CONFIG_WINDOW_Y |
-                             XCB_CONFIG_WINDOW_WIDTH |
-                             XCB_CONFIG_WINDOW_HEIGHT,
-                             &(r.x));
-        /* ignore events which are generated because we configured a window */
-        add_ignore_event(cookie.sequence);
+    xcb_void_cookie_t cookie;
+    cookie = xcb_configure_window(conn, window,
+                         XCB_CONFIG_WINDOW_X |
+                         XCB_CONFIG_WINDOW_Y |
+                         XCB_CONFIG_WINDOW_WIDTH |
+                         XCB_CONFIG_WINDOW_HEIGHT,
+                         &(r.x));
+    /* ignore events which are generated because we configured a window */
+    add_ignore_event(cookie.sequence);
 }
 
 /*
