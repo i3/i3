@@ -267,7 +267,11 @@ void tree_split(Con *con, orientation_t orientation) {
     new->parent = parent;
     new->orientation = orientation;
 
-    /* 3: add it as a child to the new Con */
+    /* 3: swap 'percent' (resize factor) */
+    new->percent = con->percent;
+    con->percent = 0.0;
+
+    /* 4: add it as a child to the new Con */
     con_attach(con, new, false);
 }
 
