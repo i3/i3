@@ -108,28 +108,40 @@ void render_con(Con *con, bool render_fullscreen) {
     i3Font *font = load_font(conn, config.font);
     int deco_height = font->height + 5;
 
+    /* precalculate the sizes to be able to correct rounding errors */
+    int sizes[children];
+    if (con->layout == L_DEFAULT && children > 0) {
+        Con *child;
+        int i = 0, assigned = 0;
+        int total = con->orientation == HORIZ ? rect.width : rect.height;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            double percentage = child->percent > 0.0 ? child->percent : 1.0 / children;
+            assigned += sizes[i++] = percentage * total;
+        }
+        while (assigned < total) {
+            for (i = 0; i < children && assigned < total; ++i) {
+                ++sizes[i];
+                ++assigned;
+            }
+        }
+    }
+
     Con *child;
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
 
         /* default layout */
         if (con->layout == L_DEFAULT) {
-            double percentage = 1.0 / children;
-            if (child->percent > 0.0)
-                percentage = child->percent;
-            printf("child %p / %s requests percentage %f\n",
-                    child, child->name, percentage);
-
             if (con->orientation == HORIZ) {
                 child->rect.x = x;
                 child->rect.y = y;
-                child->rect.width = percentage * rect.width;
+                child->rect.width = sizes[i];
                 child->rect.height = rect.height;
                 x += child->rect.width;
             } else {
                 child->rect.x = x;
                 child->rect.y = y;
                 child->rect.width = rect.width;
-                child->rect.height = percentage * rect.height;
+                child->rect.height = sizes[i];
                 y += child->rect.height;
             }
 
