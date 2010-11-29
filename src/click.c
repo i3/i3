@@ -309,15 +309,82 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         }
 #endif
 
-        return 1;
+        //return 1;
     }
 
     /* click to focus */
     con_focus(con);
     tree_render();
 
-    xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
-    xcb_flush(conn);
+    Con *clicked_into = NULL;
+
+    Con *child;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
+            continue;
+
+        clicked_into = child;
+        break;
+    }
+
+    /* check if this was a click on the window border (and on which one) */
+    Rect bsr = con_border_style_rect(con);
+    DLOG("BORDER x = %d, y = %d for con %p, window 0x%08x, border_click = %d, clicked_into = %p\n",
+            event->event_x, event->event_y, con, event->event, border_click, clicked_into);
+    DLOG("checks for right >= %d\n", con->window_rect.x + con->window_rect.width);
+    Con *first = NULL, *second = NULL;
+    if (clicked_into) {
+        DLOG("BORDER top\n");
+        second = clicked_into;
+        first = TAILQ_PREV(clicked_into, nodes_head, nodes);
+
+        if (first == TAILQ_END(&(con->parent->nodes_head))) {
+            DLOG("cannot go further\n");
+            return 0;
+        }
+
+        resize_graphical_handler(first, second, VERT, event);
+    } else if (event->event_x >= 0 && event->event_x <= bsr.x &&
+        event->event_y >= bsr.y && event->event_y <= con->rect.height + bsr.height) {
+        DLOG("BORDER left\n");
+        second = con;
+        first = TAILQ_PREV(con, nodes_head, nodes);
+        if (first == TAILQ_END(&(con->parent->nodes_head))) {
+            DLOG("cannot go further\n");
+            return 0;
+        }
+
+        resize_graphical_handler(first, second, HORIZ, event);
+    } else if (event->event_x >= (con->window_rect.x + con->window_rect.width) &&
+        event->event_y >= bsr.y && event->event_y <= con->rect.height + bsr.height) {
+        DLOG("BORDER right\n");
+        first = con;
+        second = TAILQ_NEXT(con, nodes);
+        if (second == TAILQ_END(&(con->parent->nodes_head))) {
+            DLOG("cannot go further\n");
+            return 0;
+        }
+
+        resize_graphical_handler(first, second, HORIZ, event);
+    } else if (event->event_y >= (con->window_rect.y + con->window_rect.height)) {
+        DLOG("BORDER bottom\n");
+
+        first = con;
+        second = TAILQ_NEXT(con, nodes);
+        if (second == TAILQ_END(&(con->parent->nodes_head))) {
+            DLOG("cannot go further\n");
+            return 0;
+        }
+
+        resize_graphical_handler(first, second, VERT, event);
+    } else {
+        /* No border click, replay the click */
+        xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
+        xcb_flush(conn);
+    }
+
+    tree_render();
+
     return 0;
 #if 0
         if (client == NULL) {

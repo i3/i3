@@ -52,5 +52,6 @@
 #include "match.h"
 #include "cmdparse.h"
 #include "xcursor.h"
+#include "resize.h"
 
 #endif
