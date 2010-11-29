@@ -106,22 +106,27 @@ void con_attach(Con *con, Con *parent, bool ignore_focus) {
         goto add_to_focus_head;
     }
 
-    if (!ignore_focus) {
-        /* Get the first tiling container in focus stack */
-        TAILQ_FOREACH(loop, &(parent->focus_head), focused) {
-            if (loop->type == CT_FLOATING_CON)
-                continue;
-            current = loop;
-            break;
+    if (con->type == CT_FLOATING_CON) {
+        DLOG("Inserting into floating containers\n");
+        TAILQ_INSERT_TAIL(&(parent->floating_head), con, floating_windows);
+    } else {
+        if (!ignore_focus) {
+            /* Get the first tiling container in focus stack */
+            TAILQ_FOREACH(loop, &(parent->focus_head), focused) {
+                if (loop->type == CT_FLOATING_CON)
+                    continue;
+                current = loop;
+                break;
+            }
         }
-    }
 
-    /* Insert the container after the tiling container, if found */
-    if (current) {
-        DLOG("Inserting con = %p after last focused tiling con %p\n",
-             con, current);
-        TAILQ_INSERT_AFTER(nodes_head, current, con, nodes);
-    } else TAILQ_INSERT_TAIL(nodes_head, con, nodes);
+        /* Insert the container after the tiling container, if found */
+        if (current) {
+            DLOG("Inserting con = %p after last focused tiling con %p\n",
+                 con, current);
+            TAILQ_INSERT_AFTER(nodes_head, current, con, nodes);
+        } else TAILQ_INSERT_TAIL(nodes_head, con, nodes);
+    }
 
 add_to_focus_head:
     /* We insert to the TAIL because con_focus() will correct this.
