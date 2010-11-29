@@ -115,7 +115,6 @@ void floating_disable(Con *con, bool automatic) {
     con_focus(con);
 }
 
-
 /*
  * Toggles floating mode for the given container.
  *
@@ -124,249 +123,27 @@ void floating_disable(Con *con, bool automatic) {
  *
  */
 void toggle_floating_mode(Con *con, bool automatic) {
-        //i3Font *font = load_font(conn, config.font);
+    /* see if the client is already floating */
+    if (con_is_floating(con)) {
+        LOG("already floating, re-setting to tiling\n");
 
-        /* see if the client is already floating */
-        if (con_is_floating(con)) {
-                LOG("already floating, re-setting to tiling\n");
+        floating_disable(con, automatic);
+        return;
+    }
 
-                floating_disable(con, automatic);
-                return;
-        }
-
-        floating_enable(con, automatic);
-
-
-#if 0
-        if (client->dock) {
-                DLOG("Not putting dock client into floating mode\n");
-                return;
-        }
-
-        if (con == NULL) {
-                DLOG("This client is already in floating (container == NULL), re-inserting\n");
-                Client *next_tiling;
-                Workspace *ws = client->workspace;
-                SLIST_FOREACH(next_tiling, &(ws->focus_stack), focus_clients)
-                        if (!client_is_floating(next_tiling))
-                                break;
-                /* If there are no tiling clients on this workspace, there can only be one
-                 * container: the first one */
-                if (next_tiling == TAILQ_END(&(ws->focus_stack)))
-                        con = ws->table[0][0];
-                else con = next_tiling->container;
-
-                /* Remove the client from the list of floating clients */
-                TAILQ_REMOVE(&(ws->floating_clients), client, floating_clients);
-
-                DLOG("destination container = %p\n", con);
-                Client *old_focused = con->currently_focused;
-                /* Preserve position/size */
-                memcpy(&(client->floating_rect), &(client->rect), sizeof(Rect));
-
-                client->floating = FLOATING_USER_OFF;
-                client->container = con;
-
-                if (old_focused != NULL && !old_focused->dock)
-                        CIRCLEQ_INSERT_AFTER(&(con->clients), old_focused, client, clients);
-                else CIRCLEQ_INSERT_TAIL(&(con->clients), client, clients);
-
-                DLOG("Re-inserted the window.\n");
-                con->currently_focused = client;
-
-                client_set_below_floating(conn, client);
-
-                render_container(conn, con);
-                xcb_flush(conn);
-
-                return;
-        }
-
-        DLOG("Entering floating for client %08x\n", client->child);
-
-        /* Remove the client of its container */
-        client_remove_from_container(conn, client, con, false);
-        client->container = NULL;
-
-        /* Add the client to the list of floating clients for its workspace */
-        TAILQ_INSERT_TAIL(&(client->workspace->floating_clients), client, floating_clients);
-
-        if (con->currently_focused == client) {
-                DLOG("Need to re-adjust currently_focused\n");
-                /* Get the next client in the focus stack for this particular container */
-                con->currently_focused = get_last_focused_client(conn, con, NULL);
-        }
-
-        if (automatic)
-                client->floating = FLOATING_AUTO_ON;
-        else client->floating = FLOATING_USER_ON;
-
-        /* Initialize the floating position from the position in tiling mode, if this
-         * client never was floating (x == -1) */
-        if (client->floating_rect.x == -1) {
-                /* Copy over the position */
-                client->floating_rect.x = client->rect.x;
-                client->floating_rect.y = client->rect.y;
-
-                /* Copy size the other direction */
-                client->child_rect.width = client->floating_rect.width;
-                client->child_rect.height = client->floating_rect.height;
-
-                client->rect.width = client->child_rect.width + 2 + 2;
-                client->rect.height = client->child_rect.height + (font->height + 2 + 2) + 2;
-
-                DLOG("copying size from tiling (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
-                                client->floating_rect.width, client->floating_rect.height);
-        } else {
-                /* If the client was already in floating before we restore the old position / size */
-                DLOG("using: (%d, %d) size (%d, %d)\n", client->floating_rect.x, client->floating_rect.y,
-                        client->floating_rect.width, client->floating_rect.height);
-                memcpy(&(client->rect), &(client->floating_rect), sizeof(Rect));
-        }
-
-        /* Raise the client */
-        xcb_raise_window(conn, client->frame);
-        reposition_client(conn, client);
-        resize_client(conn, client);
-        /* redecorate_window flushes */
-        redecorate_window(conn, client);
-
-        /* Re-render the tiling layout of this container */
-        render_container(conn, con);
-        xcb_flush(conn);
-#endif
+    floating_enable(con, automatic);
 }
 
-#if 0
-/*
- * Removes the floating client from its workspace and attaches it to the new workspace.
- * This is centralized here because it may happen if you move it via keyboard and
- * if you move it using your mouse.
- *
- */
-void floating_assign_to_workspace(Client *client, Workspace *new_workspace) {
-        /* Remove from focus stack and list of floating clients */
-        SLIST_REMOVE(&(client->workspace->focus_stack), client, Client, focus_clients);
-        TAILQ_REMOVE(&(client->workspace->floating_clients), client, floating_clients);
-
-        if (client->workspace->fullscreen_client == client)
-                client->workspace->fullscreen_client = NULL;
-
-        /* Insert into destination focus stack and list of floating clients */
-        client->workspace = new_workspace;
-        SLIST_INSERT_HEAD(&(client->workspace->focus_stack), client, focus_clients);
-        TAILQ_INSERT_TAIL(&(client->workspace->floating_clients), client, floating_clients);
-        if (client->fullscreen)
-                client->workspace->fullscreen_client = client;
-}
-
-/*
- * This is an ugly data structure which we need because there is no standard
- * way of having nested functions (only available as a gcc extension at the
- * moment, clang doesn’t support it) or blocks (only available as a clang
- * extension and only on Mac OS X systems at the moment).
- *
- */
-struct resize_callback_params {
-        border_t border;
-        xcb_button_press_event_t *event;
-};
-
-DRAGGING_CB(resize_callback) {
-        struct resize_callback_params *params = extra;
-        xcb_button_press_event_t *event = params->event;
-        switch (params->border) {
-                case BORDER_RIGHT: {
-                        int new_width = old_rect->width + (new_x - event->root_x);
-                        if ((new_width < 0) ||
-                            (new_width < client_min_width(client) && client->rect.width >= new_width))
-                                return;
-                        client->rect.width = new_width;
-                        break;
-                }
-
-                case BORDER_BOTTOM: {
-                        int new_height = old_rect->height + (new_y - event->root_y);
-                        if ((new_height < 0) ||
-                            (new_height < client_min_height(client) && client->rect.height >= new_height))
-                                return;
-                        client->rect.height = old_rect->height + (new_y - event->root_y);
-                        break;
-                }
-
-                case BORDER_TOP: {
-                        int new_height = old_rect->height + (event->root_y - new_y);
-                        if ((new_height < 0) ||
-                            (new_height < client_min_height(client) && client->rect.height >= new_height))
-                                return;
-
-                        client->rect.y = old_rect->y + (new_y - event->root_y);
-                        client->rect.height = new_height;
-                        break;
-                }
-
-                case BORDER_LEFT: {
-                        int new_width = old_rect->width + (event->root_x - new_x);
-                        if ((new_width < 0) ||
-                            (new_width < client_min_width(client) && client->rect.width >= new_width))
-                                return;
-                        client->rect.x = old_rect->x + (new_x - event->root_x);
-                        client->rect.width = new_width;
-                        break;
-                }
-        }
-
-        /* Push the new position/size to X11 */
-        reposition_client(conn, client);
-        resize_client(conn, client);
-        xcb_flush(conn);
-}
-
-
-/*
- * Called whenever the user clicks on a border (not the titlebar!) of a floating window.
- * Determines on which border the user clicked and launches the drag_pointer function
- * with the resize_callback.
- *
- */
-int floating_border_click(xcb_connection_t *conn, Client *client, xcb_button_press_event_t *event) {
-        DLOG("floating border click\n");
-
-        border_t border;
-
-        if (event->event_y < 2)
-                border = BORDER_TOP;
-        else if (event->event_y >= (client->rect.height - 2))
-                border = BORDER_BOTTOM;
-        else if (event->event_x <= 2)
-                border = BORDER_LEFT;
-        else if (event->event_x >= (client->rect.width - 2))
-                border = BORDER_RIGHT;
-        else {
-                DLOG("Not on any border, not doing anything.\n");
-                return 1;
-        }
-
-        DLOG("border = %d\n", border);
-
-        struct resize_callback_params params = { border, event };
-
-        drag_pointer(conn, client, event, XCB_NONE, border, resize_callback, &params);
-
-        return 1;
-}
-
-#endif
 DRAGGING_CB(drag_window_callback) {
-        struct xcb_button_press_event_t *event = extra;
+    struct xcb_button_press_event_t *event = extra;
 
-        /* Reposition the client correctly while moving */
-        con->rect.x = old_rect->x + (new_x - event->root_x);
-        con->rect.y = old_rect->y + (new_y - event->root_y);
-        /* TODO: don’t re-render the whole tree just because we change
-         * coordinates of a floating window */
-        tree_render();
-        x_push_changes(croot);
+    /* Reposition the client correctly while moving */
+    con->rect.x = old_rect->x + (new_x - event->root_x);
+    con->rect.y = old_rect->y + (new_y - event->root_y);
+    /* TODO: don’t re-render the whole tree just because we change
+     * coordinates of a floating window */
+    tree_render();
+    x_push_changes(croot);
 }
 
 /*
@@ -375,10 +152,10 @@ DRAGGING_CB(drag_window_callback) {
  *
  */
 void floating_drag_window(Con *con, xcb_button_press_event_t *event) {
-        DLOG("floating_drag_window\n");
+    DLOG("floating_drag_window\n");
 
-        drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback, event);
-        tree_render();
+    drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback, event);
+    tree_render();
 }
 
 /*
@@ -409,11 +186,11 @@ DRAGGING_CB(resize_window_callback) {
     /* First guess: We resize by exactly the amount the mouse moved,
      * taking into account in which corner the client was grabbed */
     if (corner & BORDER_LEFT)
-            dest_width = old_rect->width - (new_x - event->root_x);
+        dest_width = old_rect->width - (new_x - event->root_x);
     else dest_width = old_rect->width + (new_x - event->root_x);
 
     if (corner & BORDER_TOP)
-            dest_height = old_rect->height - (new_y - event->root_y);
+        dest_height = old_rect->height - (new_y - event->root_y);
     else dest_height = old_rect->height + (new_y - event->root_y);
 
     /* TODO: minimum window size */
@@ -425,17 +202,17 @@ DRAGGING_CB(resize_window_callback) {
 
     /* User wants to keep proportions, so we may have to adjust our values */
     if (params->proportional) {
-            dest_width = max(dest_width, (int) (dest_height * ratio));
-            dest_height = max(dest_height, (int) (dest_width / ratio));
+        dest_width = max(dest_width, (int) (dest_height * ratio));
+        dest_height = max(dest_height, (int) (dest_width / ratio));
     }
 
     /* If not the lower right corner is grabbed, we must also reposition
      * the client by exactly the amount we resized it */
     if (corner & BORDER_LEFT)
-            dest_x = old_rect->x + (old_rect->width - dest_width);
+        dest_x = old_rect->x + (old_rect->width - dest_width);
 
     if (corner & BORDER_TOP)
-            dest_y = old_rect->y + (old_rect->height - dest_height);
+        dest_y = old_rect->y + (old_rect->height - dest_height);
 
     con->rect = (Rect) { dest_x, dest_y, dest_width, dest_height };
 
@@ -460,11 +237,11 @@ void floating_resize_window(Con *con, bool proportional,
     border_t corner = 0;
 
     if (event->event_x <= (con->rect.width / 2))
-            corner |= BORDER_LEFT;
+        corner |= BORDER_LEFT;
     else corner |= BORDER_RIGHT;
 
     if (event->event_y <= (con->rect.height / 2))
-            corner |= BORDER_TOP;
+        corner |= BORDER_TOP;
     else corner |= BORDER_RIGHT;
 
     struct resize_window_callback_params params = { corner, proportional, event };
@@ -483,81 +260,81 @@ void floating_resize_window(Con *con, bool proportional,
 void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
                 confine_to, border_t border, callback_t callback, void *extra)
 {
-        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
-        uint32_t new_x, new_y;
-        Rect old_rect;
-        if (con != NULL)
-                memcpy(&old_rect, &(con->rect), sizeof(Rect));
+    xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
+    uint32_t new_x, new_y;
+    Rect old_rect;
+    if (con != NULL)
+        memcpy(&old_rect, &(con->rect), sizeof(Rect));
 
-        /* Grab the pointer */
-        /* TODO: returncode */
-        xcb_grab_pointer(conn, 
-                        false,               /* get all pointer events specified by the following mask */
-                        root,                /* grab the root window */
-                        XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION, /* which events to let through */
-                        XCB_GRAB_MODE_ASYNC, /* pointer events should continue as normal */
-                        XCB_GRAB_MODE_ASYNC, /* keyboard mode */
-                        confine_to,          /* confine_to = in which window should the cursor stay */
-                        XCB_NONE,            /* don’t display a special cursor */
-                        XCB_CURRENT_TIME);
+    /* Grab the pointer */
+    /* TODO: returncode */
+    xcb_grab_pointer(conn, 
+                     false,               /* get all pointer events specified by the following mask */
+                     root,                /* grab the root window */
+                     XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION, /* which events to let through */
+                     XCB_GRAB_MODE_ASYNC, /* pointer events should continue as normal */
+                     XCB_GRAB_MODE_ASYNC, /* keyboard mode */
+                     confine_to,          /* confine_to = in which window should the cursor stay */
+                     XCB_NONE,            /* don’t display a special cursor */
+                     XCB_CURRENT_TIME);
 
-        /* Go into our own event loop */
-        xcb_flush(conn);
+    /* Go into our own event loop */
+    xcb_flush(conn);
 
-        xcb_generic_event_t *inside_event, *last_motion_notify = NULL;
-        /* I’ve always wanted to have my own eventhandler… */
-        while ((inside_event = xcb_wait_for_event(conn))) {
-                /* We now handle all events we can get using xcb_poll_for_event */
-                do {
-                        /* Same as get_event_handler in xcb */
-                        int nr = inside_event->response_type;
-                        if (nr == 0) {
-                                /* An error occured */
-                                //handle_event(NULL, conn, inside_event);
-                                free(inside_event);
-                                continue;
-                        }
-                        assert(nr < 256);
-                        nr &= XCB_EVENT_RESPONSE_TYPE_MASK;
-                        assert(nr >= 2);
+    xcb_generic_event_t *inside_event, *last_motion_notify = NULL;
+    /* I’ve always wanted to have my own eventhandler… */
+    while ((inside_event = xcb_wait_for_event(conn))) {
+        /* We now handle all events we can get using xcb_poll_for_event */
+        do {
+            /* Same as get_event_handler in xcb */
+            int nr = inside_event->response_type;
+            if (nr == 0) {
+                /* An error occured */
+                //handle_event(NULL, conn, inside_event);
+                free(inside_event);
+                continue;
+            }
+            assert(nr < 256);
+            nr &= XCB_EVENT_RESPONSE_TYPE_MASK;
+            assert(nr >= 2);
 
-                        switch (nr) {
-                                case XCB_BUTTON_RELEASE:
-                                        goto done;
+            switch (nr) {
+                case XCB_BUTTON_RELEASE:
+                    goto done;
 
-                                case XCB_MOTION_NOTIFY:
-                                        /* motion_notify events are saved for later */
-                                        FREE(last_motion_notify);
-                                        last_motion_notify = inside_event;
-                                        break;
+                case XCB_MOTION_NOTIFY:
+                    /* motion_notify events are saved for later */
+                    FREE(last_motion_notify);
+                    last_motion_notify = inside_event;
+                    break;
 
-                                case XCB_UNMAP_NOTIFY:
-                                        DLOG("Unmap-notify, aborting\n");
-                                        xcb_event_handle(&evenths, inside_event);
-                                        goto done;
+                case XCB_UNMAP_NOTIFY:
+                    DLOG("Unmap-notify, aborting\n");
+                    xcb_event_handle(&evenths, inside_event);
+                    goto done;
 
-                                default:
-                                        DLOG("Passing to original handler\n");
-                                        /* Use original handler */
-                                        xcb_event_handle(&evenths, inside_event);
-                                        break;
-                        }
-                        if (last_motion_notify != inside_event)
-                                free(inside_event);
-                } while ((inside_event = xcb_poll_for_event(conn)) != NULL);
+                default:
+                    DLOG("Passing to original handler\n");
+                    /* Use original handler */
+                    xcb_event_handle(&evenths, inside_event);
+                    break;
+            }
+            if (last_motion_notify != inside_event)
+                free(inside_event);
+        } while ((inside_event = xcb_poll_for_event(conn)) != NULL);
 
-                if (last_motion_notify == NULL)
-                        continue;
+        if (last_motion_notify == NULL)
+            continue;
 
-                new_x = ((xcb_motion_notify_event_t*)last_motion_notify)->root_x;
-                new_y = ((xcb_motion_notify_event_t*)last_motion_notify)->root_y;
+        new_x = ((xcb_motion_notify_event_t*)last_motion_notify)->root_x;
+        new_y = ((xcb_motion_notify_event_t*)last_motion_notify)->root_y;
 
-                callback(con, &old_rect, new_x, new_y, extra);
-                FREE(last_motion_notify);
-        }
+        callback(con, &old_rect, new_x, new_y, extra);
+        FREE(last_motion_notify);
+    }
 done:
-        xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
-        xcb_flush(conn);
+    xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
+    xcb_flush(conn);
 }
 
 #if 0
