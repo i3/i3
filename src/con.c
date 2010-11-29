@@ -415,6 +415,11 @@ void con_toggle_fullscreen(Con *con) {
  *
  */
 void con_move_to_workspace(Con *con, Con *workspace) {
+    if (con_is_floating(con)) {
+        DLOG("Using FLOATINGCON instead\n");
+        con = con->parent;
+    }
+
     /* 1: save the container which is going to be focused after the current
      * container is moved away */
     Con *focus_next = con_next_focused(con);
