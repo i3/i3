@@ -19,15 +19,24 @@ static bool parsing_window_rect;
 struct Match *current_swallow;
 
 static int json_start_map(void *ctx) {
-    LOG("start of map\n");
+    LOG("start of map, last_key = %s\n", last_key);
     if (parsing_swallows) {
         LOG("TODO: create new swallow\n");
         current_swallow = smalloc(sizeof(Match));
         match_init(current_swallow);
         TAILQ_INSERT_TAIL(&(json_node->swallow_head), current_swallow, matches);
     } else {
-        if (!parsing_rect && !parsing_window_rect)
-            json_node = con_new(json_node);
+        if (!parsing_rect && !parsing_window_rect) {
+            if (last_key && strcasecmp(last_key, "floating_nodes") == 0) {
+                Con *ws = con_get_workspace(json_node);
+                json_node = con_new(NULL);
+                json_node->parent = ws;
+                TAILQ_INSERT_TAIL(&(ws->floating_head), json_node, floating_windows);
+                TAILQ_INSERT_TAIL(&(ws->focus_head), json_node, focused);
+            } else {
+                json_node = con_new(json_node);
+            }
+        }
     }
     return 1;
 }
