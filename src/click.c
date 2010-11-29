@@ -286,30 +286,18 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
             return 1;
         }
 
-        if (con->layout == L_STACKED || con->layout == L_TABBED) {
-            DLOG("stacked! click is on %d, %d\n", event->event_x, event->event_y);
-            Con *child;
-            TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-                if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
-                    continue;
+        DLOG("border click on non-floating container at %d, %d\n", event->event_x, event->event_y);
+        Con *child;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
+                continue;
 
-                con_focus(child);
-                break;
-            }
-            tree_render();
-            return 1;
+            con_focus(child);
+            break;
         }
 
-#if 0
-        if (!floating_mod_on_tiled_client(conn, client, event)) {
-#endif
-            xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
-            xcb_flush(conn);
-#if 0
-        }
-#endif
-
-        //return 1;
+        tree_render();
+        return 1;
     }
 
     /* click to focus */
