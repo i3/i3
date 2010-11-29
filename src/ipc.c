@@ -180,6 +180,9 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("orientation");
     y(integer, con->orientation);
 
+    ystr("percent");
+    y(double, con->percent);
+
     ystr("urgent");
     y(integer, con->urgent);
 
@@ -244,8 +247,10 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 }
 
 IPC_HANDLER(tree) {
+    setlocale(LC_NUMERIC, "C");
     yajl_gen gen = yajl_gen_alloc(NULL, NULL);
     dump_node(gen, croot, false);
+    setlocale(LC_NUMERIC, "");
 
     const unsigned char *payload;
     unsigned int length;

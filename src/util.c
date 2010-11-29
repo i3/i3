@@ -368,9 +368,12 @@ static char **append_argument(char **original, char *argument) {
 #define ystr(str) yajl_gen_string(gen, (unsigned char*)str, strlen(str))
 
 void store_restart_layout() {
+    setlocale(LC_NUMERIC, "C");
     yajl_gen gen = yajl_gen_alloc(NULL, NULL);
 
     dump_node(gen, croot, true);
+
+    setlocale(LC_NUMERIC, "");
 
     const unsigned char *payload;
     unsigned int length;
