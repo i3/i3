@@ -26,8 +26,8 @@ static int num_screens;
 static Output *get_screen_at(int x, int y) {
     Output *output;
     TAILQ_FOREACH(output, &outputs, outputs)
-            if (output->rect.x == x && output->rect.y == y)
-                    return output;
+        if (output->rect.x == x && output->rect.y == y)
+            return output;
 
     return NULL;
 }
@@ -100,10 +100,10 @@ void xinerama_init() {
         reply = xcb_xinerama_is_active_reply(conn, xcb_xinerama_is_active(conn), NULL);
 
         if (reply == NULL || !reply->state) {
-                DLOG("Xinerama is not active (in your X-Server), disabling.\n");
-                disable_randr(conn);
+            DLOG("Xinerama is not active (in your X-Server), disabling.\n");
+            disable_randr(conn);
         } else
-                query_screens(conn);
+            query_screens(conn);
 
         FREE(reply);
     }
