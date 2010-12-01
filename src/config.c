@@ -22,47 +22,6 @@
 Config config;
 struct modes_head modes;
 
-
-/*
- * This function resolves ~ in pathnames.
- * It may resolve wildcards in the first part of the path, but if no match
- * or multiple matches are found, it just returns a copy of path as given.
- *
- */
-char *resolve_tilde(const char *path) {
-        static glob_t globbuf;
-        char *head, *tail, *result;
-
-        tail = strchr(path, '/');
-        head = strndup(path, tail ? tail - path : strlen(path));
-
-        int res = glob(head, GLOB_TILDE, NULL, &globbuf);
-        free(head);
-        /* no match, or many wildcard matches are bad */
-        if (res == GLOB_NOMATCH || globbuf.gl_pathc != 1)
-                result = sstrdup(path);
-        else if (res != 0) {
-                die("glob() failed");
-        } else {
-                head = globbuf.gl_pathv[0];
-                result = scalloc(strlen(head) + (tail ? strlen(tail) : 0) + 1);
-                strncpy(result, head, strlen(head));
-                strncat(result, tail, strlen(tail));
-        }
-        globfree(&globbuf);
-
-        return result;
-}
-
-/*
- * Checks if the given path exists by calling stat().
- *
- */
-bool path_exists(const char *path) {
-        struct stat buf;
-        return (stat(path, &buf) == 0);
-}
-
 /**
  * Ungrabs all keys, to be called before re-grabbing the keys because of a
  * mapping_notify event or a configuration file reload

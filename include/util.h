@@ -104,6 +104,20 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie,
 char *convert_utf8_to_ucs2(char *input, int *real_strlen);
 
 /*
+ * This function resolves ~ in pathnames.
+ * It may resolve wildcards in the first part of the path, but if no match
+ * or multiple matches are found, it just returns a copy of path as given.
+ *
+ */
+char *resolve_tilde(const char *path);
+
+/*
+ * Checks if the given path exists by calling stat().
+ *
+ */
+bool path_exists(const char *path);
+
+/*
  * Restart i3 in-place
  * appends -a to argument list to disable autostart
  *
