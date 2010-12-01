@@ -103,59 +103,11 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie,
  */
 char *convert_utf8_to_ucs2(char *input, int *real_strlen);
 
-#if 0
-/**
- * Returns the client which comes next in focus stack (= was selected before) for
- * the given container, optionally excluding the given client.
- *
- */
-Client *get_last_focused_client(xcb_connection_t *conn, Container *container,
-                                Client *exclude);
-#endif
-
-#if 0
-/**
- * Sets the given client as focused by updating the data structures correctly,
- * updating the X input focus and finally re-decorating both windows (to
- * signalize the user the new focus situation)
- *
- */
-void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways);
-
-/**
- * Called when the user switches to another mode or when the container is
- * destroyed and thus needs to be cleaned up.
- *
- */
-void leave_stack_mode(xcb_connection_t *conn, Container *container);
-
-/**
- * Switches the layout of the given container taking care of the necessary
- * house-keeping
- *
- */
-void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode);
-
-/**
- * Gets the first matching client for the given window class/window title.
- * If the paramater specific is set to a specific client, only this one
- * will be checked.
- *
- */
-Client *get_matching_client(xcb_connection_t *conn,
-                            const char *window_classtitle, Client *specific);
-#endif
-
 /*
  * Restart i3 in-place
  * appends -a to argument list to disable autostart
  *
  */
 void i3_restart();
-
-#if defined(__OpenBSD__)
-/* OpenBSD does not provide memmem(), so we provide FreeBSD’s implementation */
-void *memmem(const void *l, size_t l_len, const void *s, size_t s_len);
-#endif
 
 #endif
