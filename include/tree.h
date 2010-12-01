@@ -82,6 +82,6 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent);
  * Loads tree from ~/.i3/_restart.json (used for in-place restarts).
  *
  */
-bool tree_restore();
+bool tree_restore(const char *path);
 
 #endif

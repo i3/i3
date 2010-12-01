@@ -16,8 +16,8 @@
 #if defined(__OpenBSD__)
 #include <sys/cdefs.h>
 #endif
-
 #include <fcntl.h>
+#include <pwd.h>
 
 #include "all.h"
 
@@ -238,10 +238,29 @@ static char **append_argument(char **original, char *argument) {
     return result;
 }
 
+/*
+ * Returns the name of a temporary file with the specified prefix.
+ *
+ */
+char *get_process_filename(const char *prefix)
+{
+    struct passwd *pw = getpwuid(getuid());
+    const char *username = pw ? pw->pw_name : "unknown";
+    char *filename;
+    int res = asprintf(&filename, "/tmp/%s-%s.%d", prefix, username, getpid());
+    if (res == -1) {
+        perror("asprintf()");
+        return NULL;
+    }
+    else {
+        return filename;
+    }
+}
+
 #define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
 #define ystr(str) yajl_gen_string(gen, (unsigned char*)str, strlen(str))
 
-void store_restart_layout() {
+char *store_restart_layout() {
     setlocale(LC_NUMERIC, "C");
     yajl_gen gen = yajl_gen_alloc(NULL, NULL);
 
@@ -253,12 +272,22 @@ void store_restart_layout() {
     unsigned int length;
     y(get_buf, &payload, &length);
 
-    char *globbed = resolve_tilde(config.restart_state_path);
-    int fd = open(globbed, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-    free(globbed);
+    /* create a temporary file if one hasn't been specified, or just
+     * resolve the tildes in the specified path */
+    char *filename;
+    if (config.restart_state_path == NULL) {
+        filename = get_process_filename("i3-restart-state");
+        if (!filename)
+            return NULL;
+    } else {
+        filename = resolve_tilde(config.restart_state_path);
+    }
+
+    int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         perror("open()");
-        return;
+        free(filename);
+        return NULL;
     }
 
     int written = 0;
@@ -267,11 +296,13 @@ void store_restart_layout() {
         /* TODO: correct error-handling */
         if (n == -1) {
             perror("write()");
-            return;
+            free(filename);
+            return NULL;
         }
         if (n == 0) {
             printf("write == 0?\n");
-            return;
+            free(filename);
+            return NULL;
         }
         written += n;
         printf("written: %d of %d\n", written, length);
@@ -281,6 +312,8 @@ void store_restart_layout() {
     printf("layout: %.*s\n", length, payload);
 
     y(free);
+
+    return filename;
 }
 
 /*
@@ -289,7 +322,7 @@ void store_restart_layout() {
  *
  */
 void i3_restart() {
-    store_restart_layout();
+    char *restart_filename = store_restart_layout();
     restore_geometry();
 
     ipc_shutdown();
@@ -297,6 +330,33 @@ void i3_restart() {
     LOG("restarting \"%s\"...\n", start_argv[0]);
     /* make sure -a is in the argument list or append it */
     start_argv = append_argument(start_argv, "-a");
+
+    /* replace -r <file> so that the layout is restored */
+    if (restart_filename != NULL) {
+        /* create the new argv */
+        int num_args;
+        for (num_args = 0; start_argv[num_args] != NULL; num_args++);
+        char **new_argv = scalloc((num_args + 3) * sizeof(char*));
+
+        /* copy the arguments, but skip the ones we'll replace */
+        int write_index = 0;
+        bool skip_next = false;
+        for (int i = 0; i < num_args; ++i) {
+            if (skip_next)
+                skip_next = false;
+            else if (!strcmp(start_argv[i], "-r"))
+                skip_next = true;
+            else
+                new_argv[write_index++] = start_argv[i];
+        }
+
+        /* add the arguments we'll replace */
+        new_argv[write_index++] = "--restart";
+        new_argv[write_index++] = restart_filename;
+
+        /* swap the argvs */
+        start_argv = new_argv;
+    }
 
     execvp(start_argv[0], start_argv);
     /* not reached */

@@ -76,6 +76,8 @@ int main(int argc, char *argv[]) {
     int screens;
     char *override_configpath = NULL;
     bool autostart = true;
+    char *layout_path = NULL;
+    bool delete_layout_path;
     bool only_check_config = false;
     bool force_xinerama = false;
     xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
@@ -84,6 +86,8 @@ int main(int argc, char *argv[]) {
         {"config", required_argument, 0, 'c'},
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
+        {"layout", required_argument, 0, 'L'},
+        {"restart", required_argument, 0, 0},
         {"force-xinerama", no_argument, 0, 0},
         {0, 0, 0, 0}
     };
@@ -97,11 +101,15 @@ int main(int argc, char *argv[]) {
 
     start_argv = argv;
 
-    while ((opt = getopt_long(argc, argv, "c:Cvahld:V", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "c:CvaL:hld:V", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'a':
                 LOG("Autostart disabled using -a\n");
                 autostart = false;
+                break;
+            case 'L':
+                layout_path = sstrdup(optarg);
+                delete_layout_path = false;
                 break;
             case 'c':
                 override_configpath = sstrdup(optarg);
@@ -132,12 +140,17 @@ int main(int argc, char *argv[]) {
                          "Please check if your driver really does not support RandR "
                          "and disable this option as soon as you can.\n");
                     break;
+                } else if (strcmp(long_options[option_index].name, "restart") == 0) {
+                    layout_path = sstrdup(optarg);
+                    delete_layout_path = true;
+                    break;
                 }
                 /* fall-through */
             default:
                 fprintf(stderr, "Usage: %s [-c configfile] [-d loglevel] [-a] [-v] [-V] [-C]\n", argv[0]);
                 fprintf(stderr, "\n");
                 fprintf(stderr, "-a: disable autostart\n");
+                fprintf(stderr, "-L <layoutfile>: load the layout from <layoutfile>\n");
                 fprintf(stderr, "-v: display version and exit\n");
                 fprintf(stderr, "-V: enable verbose mode\n");
                 fprintf(stderr, "-d <loglevel>: enable debug loglevel <loglevel>\n");
@@ -327,7 +340,15 @@ int main(int argc, char *argv[]) {
 #endif
     }
 
-    if (!tree_restore())
+    bool needs_tree_init = true;
+    if (layout_path) {
+        LOG("Trying to restore the layout from %s...", layout_path);
+        needs_tree_init = !tree_restore(layout_path);
+        if (delete_layout_path)
+            unlink(layout_path);
+        free(layout_path);
+    }
+    if (needs_tree_init)
         tree_init();
     tree_render();
 

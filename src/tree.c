@@ -13,8 +13,8 @@ struct all_cons_head all_cons = TAILQ_HEAD_INITIALIZER(all_cons);
  * Loads tree from ~/.i3/_restart.json (used for in-place restarts).
  *
  */
-bool tree_restore() {
-    char *globbed = resolve_tilde(config.restart_state_path);
+bool tree_restore(const char *path) {
+    char *globbed = resolve_tilde(path);
 
     if (!path_exists(globbed)) {
         LOG("%s does not exist, not restoring tree\n", globbed);
@@ -27,15 +27,6 @@ bool tree_restore() {
     focused = croot;
 
     tree_append_json(globbed);
-
-    size_t path_len = strlen(config.restart_state_path);
-    char *old_restart = smalloc(path_len + strlen(".old") + 1);
-    strncpy(old_restart, config.restart_state_path, path_len + strlen(".old") + 1);
-    strncat(old_restart, ".old", strlen(".old") + 1);
-    unlink(old_restart);
-    rename(globbed, old_restart);
-    free(globbed);
-    free(old_restart);
 
     printf("appended tree, using new root\n");
     croot = TAILQ_FIRST(&(croot->nodes_head));

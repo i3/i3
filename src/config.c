@@ -323,7 +323,6 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         INIT_COLOR(config.bar.unfocused, "#333333", "#222222", "#888888");
         INIT_COLOR(config.bar.urgent, "#2f343a", "#900000", "#ffffff");
 
-        config.restart_state_path = "~/.i3/_restart.json";
         config.default_border = BS_NORMAL;
 
         parse_configuration(override_configpath);
