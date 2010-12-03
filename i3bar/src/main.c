@@ -181,10 +181,10 @@ int main(int argc, char **argv) {
                 read_color(&colors.inactive_ws_bg);
                 break;
             case 'G':
-                read_color(&colors.urgent_ws_fg);
+                read_color(&colors.urgent_ws_bg);
                 break;
             case 'H':
-                read_color(&colors.urgent_ws_bg);
+                read_color(&colors.urgent_ws_fg);
                 break;
             default:
                 print_usage(argv[0]);
