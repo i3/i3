@@ -68,7 +68,6 @@ install: all
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/include/i3
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/share/xsessions
 	$(INSTALL) -m 0755 i3 $(DESTDIR)$(PREFIX)/bin/
-	$(INSTALL) -m 0755 i3-wsbar $(DESTDIR)$(PREFIX)/bin/
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)$(SYSCONFDIR)/i3/config
 	$(INSTALL) -m 0644 i3.welcome $(DESTDIR)$(SYSCONFDIR)/i3/welcome
 	$(INSTALL) -m 0644 i3.desktop $(DESTDIR)$(PREFIX)/share/xsessions/
