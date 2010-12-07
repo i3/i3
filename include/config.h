@@ -107,7 +107,8 @@ struct Config {
          * comes with i3. Thus, you can turn it off entirely. */
         bool disable_workspace_bar;
 
-        const char *default_border;
+        /** The default border style for new windows. */
+        border_style_t default_border;
 
         /** The modifier which needs to be pressed in combination with your mouse
          * buttons to do things with floating windows (move, resize) */

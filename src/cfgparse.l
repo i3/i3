@@ -94,6 +94,9 @@ ipc_socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
 restart_state                   { BEGIN(BIND_AWS_COND); return TOKRESTARTSTATE; }
 new_container                   { return TOKNEWCONTAINER; }
 new_window                      { return TOKNEWWINDOW; }
+normal                          { return TOK_NORMAL; }
+none                            { return TOK_NONE; }
+1pixel                          { return TOK_1PIXEL; }
 focus_follows_mouse             { return TOKFOCUSFOLLOWSMOUSE; }
 workspace_bar                   { return TOKWORKSPACEBAR; }
 default                         { /* yylval.number = MODE_DEFAULT; */return TOKCONTAINERMODE; }

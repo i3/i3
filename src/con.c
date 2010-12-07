@@ -35,6 +35,7 @@ Con *con_new(Con *parent) {
     TAILQ_INSERT_TAIL(&all_cons, new, all_cons);
     new->type = CT_CON;
     new->name = strdup("");
+    new->border_style = config.default_border;
     static int cnt = 0;
     LOG("opening window %d\n", cnt);
 
@@ -553,6 +554,9 @@ int con_border_style(Con *con) {
 
     if (con->parent->layout == L_STACKED)
         return BS_NORMAL;
+
+    if (con->parent->layout == L_TABBED && con->border_style != BS_NORMAL)
+        return con_num_children(con->parent) == 1 ? con->border_style : BS_NORMAL;
 
     return con->border_style;
 }

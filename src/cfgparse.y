@@ -225,6 +225,9 @@ void parse_file(const char *f) {
 %token TOKMODE "mode"
 %token TOKNEWCONTAINER "new_container"
 %token TOKNEWWINDOW "new_window"
+%token TOK_NORMAL "normal"
+%token TOK_NONE "none"
+%token TOK_1PIXEL "1pixel"
 %token TOKFOCUSFOLLOWSMOUSE "focus_follows_mouse"
 %token TOKWORKSPACEBAR "workspace_bar"
 %token TOKCONTAINERMODE "default/stacking/tabbed"
@@ -411,11 +414,17 @@ new_container:
         ;
 
 new_window:
-        TOKNEWWINDOW WHITESPACE WORD
+        TOKNEWWINDOW WHITESPACE border_style
         {
-                DLOG("new windows should start in mode %s\n", $<string>3);
-                config.default_border = sstrdup($<string>3);
+                DLOG("new windows should start with border style %d\n", $<number>3);
+                config.default_border = $<number>3;
         }
+        ;
+
+border_style:
+        TOK_NORMAL      { $<number>$ = BS_NORMAL; }
+        | TOK_NONE      { $<number>$ = BS_NONE; }
+        | TOK_1PIXEL    { $<number>$ = BS_1PIXEL; }
         ;
 
 bool:
