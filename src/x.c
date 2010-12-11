@@ -589,10 +589,15 @@ void x_push_changes(Con *con) {
     if (focused->window != NULL)
         to_focus = focused->window->id;
 
+    DLOG("focused_id = 0x%08x, to_focus = 0x%08x\n", focused_id, to_focus);
     if (focused_id != to_focus) {
-        LOG("Updating focus (focused: %p / %s)\n", focused, focused->name);
-        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, XCB_CURRENT_TIME);
-        focused_id = to_focus;
+        if (!focused->mapped) {
+            DLOG("Not updating focus (to %p / %s), focused window is not mapped.\n", focused, focused->name);
+        } else {
+            LOG("Updating focus (focused: %p / %s)\n", focused, focused->name);
+            xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, XCB_CURRENT_TIME);
+            focused_id = to_focus;
+        }
     }
 
     xcb_flush(conn);
