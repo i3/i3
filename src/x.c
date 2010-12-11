@@ -168,6 +168,9 @@ void x_con_kill(Con *con) {
     state = state_for_frame(con->frame);
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_REMOVE(&old_state_head, state, old_state);
+
+    /* Invalidate focused_id to correctly focus new windows with the same ID */
+    focused_id = XCB_NONE;
 }
 
 /*
