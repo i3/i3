@@ -1,8 +1,13 @@
+v0.6
+=====
+- Add manpage
+- Implement hide-on-modifier
+- Custom colors can be set from the commandline
+- Use double-buffering
 - Bugfix: Correctly render long text
 - Bugfix: Don't segfault on SIGCHILD
-- Implement hide-on-modifier
-- Use double-buffering
-
+- Bugfix: Double-fork() to avoid zombies
+- Some minor bugfixes
 
 v0.5
 =====
