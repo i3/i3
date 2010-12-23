@@ -1,3 +1,4 @@
 i3bar
 *.o
 core
+doc/i3bar.1

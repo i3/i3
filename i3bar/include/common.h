@@ -13,7 +13,6 @@ typedef struct rect_t rect;
 typedef int bool;
 
 struct ev_loop* main_loop;
-pid_t           child_pid;
 char            *statusline;
 
 struct rect_t {
@@ -31,5 +30,6 @@ struct rect_t {
 #include "workspaces.h"
 #include "xcb.h"
 #include "ucs2_to_utf8.h"
+#include "config.h"
 
 #endif

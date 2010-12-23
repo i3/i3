@@ -14,7 +14,7 @@ CFLAGS += -DI3BAR_VERSION=\"${GIT_VERSION}\"
 LDFLAGS += -lev
 LDFLAGS += -lyajl
 LDFLAGS += -lxcb
-LDFLAGS += -lxcb-atom
+LDFLAGS += -lX11
 LDFLAGS += -L/usr/local/lib
 
 ifeq ($(DEBUG),1)

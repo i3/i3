@@ -9,13 +9,33 @@
 #ifndef XCB_H_
 #define XCB_H_
 
-int font_height;
+#include <stdint.h>
+//#include "outputs.h"
+
+struct xcb_color_strings_t {
+    char *bar_fg;
+    char *bar_bg;
+    char *active_ws_fg;
+    char *active_ws_bg;
+    char *inactive_ws_fg;
+    char *inactive_ws_bg;
+    char *urgent_ws_bg;
+    char *urgent_ws_fg;
+};
+
+typedef struct xcb_colors_t xcb_colors_t;
 
 /*
  * Initialize xcb and use the specified fontname for text-rendering
  *
  */
 void init_xcb();
+
+/*
+ * Initialize the colors
+ *
+ */
+void init_colors(const struct xcb_color_strings_t *colors);
 
 /*
  * Cleanup the xcb-stuff.
@@ -49,11 +69,17 @@ void reconfig_windows();
 void draw_bars();
 
 /*
- * Calculate the rendered width of a string with the configured font.
- * The string has to be encoded in ucs2 and glyph_len has to be the length
- * of the string (in width)
+ * Redraw the bars, i.e. simply copy the buffer to the barwindow
  *
  */
-int get_string_width(xcb_char2b_t *string, int glyph_len);
+void redraw_bars();
+
+/*
+ * Predicts the length of text based on cached data.
+ * The string has to be encoded in ucs2 and glyph_len has to be the length
+ * of the string (in glyphs).
+ *
+ */
+uint32_t predict_text_extents(xcb_char2b_t *text, uint32_t length);
 
 #endif

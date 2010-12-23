@@ -26,4 +26,16 @@ void start_child(char *command);
  */
 void kill_child();
 
+/*
+ * Sends a SIGSTOP to the child-process (if existent)
+ *
+ */
+void stop_child();
+
+/*
+ * Sends a SIGCONT to the child-process (if existent)
+ *
+ */
+void cont_child();
+
 #endif

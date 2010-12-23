@@ -6,9 +6,16 @@ FILES:=$(wildcard src/*.c)
 FILES:=$(FILES:.c=.o)
 HEADERS:=$(wildcard include/*.h)
 
-all: ${FILES}
+all: i3bar doc
+
+i3bar: ${FILES}
 	echo "LINK"
 	$(CC) -o i3bar ${FILES} ${LDFLAGS}
+
+doc:
+	echo ""
+	echo "SUBDIR doc"
+	$(MAKE) -C doc
 
 src/%.o: src/%.c ${HEADERS}
 	echo "CC $<"
@@ -20,6 +27,11 @@ install: all
 	$(INSTALL) -m 0755 i3bar $(DESTDIR)$(PREFIX)/bin
 
 clean:
-	rm src/*.o
+	rm -f src/*.o
+	make -C doc clean
 
-.PHONY: install clean
+distclean: clean
+	rm -f i3bar
+	make -C doc distclean
+
+.PHONY: install clean distclean doc

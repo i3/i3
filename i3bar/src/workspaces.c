@@ -115,13 +115,14 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
             xcb_char2b_t *ucs2_name = (xcb_char2b_t*) convert_utf8_to_ucs2(params->workspaces_walk->name, &ucs2_len);
             params->workspaces_walk->ucs2_name = ucs2_name;
             params->workspaces_walk->name_glyphs = ucs2_len;
-            params->workspaces_walk->name_width = get_string_width(params->workspaces_walk->ucs2_name,
-                                                                   params->workspaces_walk->name_glyphs);
+            params->workspaces_walk->name_width =
+                predict_text_extents(params->workspaces_walk->ucs2_name,
+                params->workspaces_walk->name_glyphs);
 
-            printf("Got Workspace %s, name_width: %d, glyphs: %d\n",
-                   params->workspaces_walk->name,
-                   params->workspaces_walk->name_width,
-                   params->workspaces_walk->name_glyphs);
+            DLOG("Got Workspace %s, name_width: %d, glyphs: %d\n",
+                 params->workspaces_walk->name,
+                 params->workspaces_walk->name_width,
+                 params->workspaces_walk->name_glyphs);
             FREE(params->cur_key);
 
             return 1;
@@ -183,7 +184,7 @@ static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, uns
 
     params->cur_key = malloc(sizeof(unsigned char) * (keyLen + 1));
     if (params->cur_key == NULL) {
-        printf("ERROR: Could not allocate memory!\n");
+        ELOG("Could not allocate memory!\n");
         exit(EXIT_FAILURE);
     }
     strncpy(params->cur_key, (const char*) keyVal, keyLen);
@@ -237,7 +238,7 @@ void parse_workspaces_json(char *json) {
         case yajl_status_client_canceled:
         case yajl_status_insufficient_data:
         case yajl_status_error:
-            printf("ERROR: Could not parse workspaces-reply!\n");
+            ELOG("Could not parse workspaces-reply!\n");
             exit(EXIT_FAILURE);
             break;
     }

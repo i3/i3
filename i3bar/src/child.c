@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <sys/wait.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
@@ -19,6 +20,9 @@
 #include <ev.h>
 
 #include "common.h"
+
+/* Global variables for child_*() */
+pid_t child_pid;
 
 /* stdin- and sigchild-watchers */
 ev_io    *stdin_io;
@@ -37,38 +41,8 @@ void cleanup() {
 }
 
 /*
- * Since we don't use colors and stuff, we strip the dzen-formatstrings
- *
- */
-void strip_dzen_formats(char *buffer) {
-    char *src = buffer;
-    char *dest = buffer;
-    while (*src != '\0') {
-        /* ^ starts a format-string, ) ends it */
-        if (*src == '^') {
-            /* We replace the seperators from i3status by pipe-symbols */
-            if (!strncmp(src, "^ro", strlen("^ro"))) {
-                *(dest++) = ' ';
-                *(dest++) = '|';
-                *(dest++) = ' ';
-            }
-            while (*src != ')') {
-                src++;
-            }
-            src++;
-        } else {
-            *dest = *src;
-            src++;
-            dest++;
-        }
-    }
-    /* The last character is \n, which xcb cannot display */
-    *(--dest) = '\0';
-}
-
-/*
- * Callbalk for stdin. We read a line from stdin, strip dzen-formats and store
- * the result in statusline
+ * Callbalk for stdin. We read a line from stdin and store the result
+ * in statusline
  *
  */
 void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
@@ -82,20 +56,20 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         n = read(fd, buffer + rec, buffer_len - rec);
         if (n == -1) {
             if (errno == EAGAIN) {
+                /* remove trailing newline and finish up */
+                buffer[rec-1] = '\0';
                 break;
             }
-            printf("ERROR: read() failed!");
+            ELOG("read() failed!\n");
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
             if (rec == buffer_len) {
-                char *tmp = buffer;
-                buffer = malloc(buffer_len + STDIN_CHUNK_SIZE);
-                memset(buffer, '\0', buffer_len);
-                strncpy(buffer, tmp, buffer_len);
                 buffer_len += STDIN_CHUNK_SIZE;
-                FREE(tmp);
+                buffer = realloc(buffer, buffer_len);
             } else {
+                /* remove trailing newline and finish up */
+                buffer[rec-1] = '\0';
                 break;
             }
         }
@@ -105,10 +79,9 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         FREE(buffer);
         return;
     }
-    strip_dzen_formats(buffer);
     FREE(statusline);
     statusline = buffer;
-    printf("%s\n", buffer);
+    DLOG("%s\n", buffer);
     draw_bars();
 }
 
@@ -119,7 +92,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  *
  */
 void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
-    printf("Child (pid: %d) unexpectedly exited with status %d\n",
+    DLOG("Child (pid: %d) unexpectedly exited with status %d\n",
            child_pid,
            watcher->rstatus);
     cleanup();
@@ -128,40 +101,69 @@ void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
 /*
  * Start a child-process with the specified command and reroute stdin.
  * We actually start a $SHELL to execute the command so we don't have to care
- * about arguments and such
+ * about arguments and such.
+ * We also double-fork() to avoid zombies and pass the pid of the child through a
+ * temporary pipe back to i3bar
  *
  */
 void start_child(char *command) {
     child_pid = 0;
     if (command != NULL) {
-        int fd[2];
+        int fd[2], tmp[2];
+        /* This pipe will be used to communicate between e.g. i3status and i3bar */
         pipe(fd);
-        child_pid = fork();
-        switch (child_pid) {
+        /* We also need this temporary pipe to get back the pid of i3status */
+        pipe(tmp);
+        switch (fork()) {
             case -1:
-                printf("ERROR: Couldn't fork()");
+                ELOG("Couldn't fork()\n");
                 exit(EXIT_FAILURE);
             case 0:
-                close(fd[0]);
+                /* Double-fork(), so the child gets reparented to init */
+                switch(child_pid = fork()) {
+                    case -1:
+                        ELOG("Couldn't fork() twice\n");
+                        exit(EXIT_FAILURE);
+                    case 0:
+                        /* Child-process. Reroute stdout and start shell */
+                        close(fd[0]);
 
-                dup2(fd[1], STDOUT_FILENO);
+                        dup2(fd[1], STDOUT_FILENO);
 
-                static const char *shell = NULL;
+                        static const char *shell = NULL;
 
-                if ((shell = getenv("SHELL")) == NULL)
-                    shell = "/bin/sh";
+                        if ((shell = getenv("SHELL")) == NULL)
+                            shell = "/bin/sh";
 
-                execl(shell, shell, "-c", command, (char*) NULL);
-                return;
+                        execl(shell, shell, "-c", command, (char*) NULL);
+                        return;
+                    default:
+                        /* Temporary parent. We tell i3bar about the pid of i3status and exit */
+                        write(tmp[1], &child_pid, sizeof(int));
+                        close(tmp[0]);
+                        close(tmp[1]);
+                        exit(EXIT_SUCCESS);
+                    }
             default:
+                /* Parent-process. Rerout stdin */
                 close(fd[1]);
 
                 dup2(fd[0], STDIN_FILENO);
 
+                /* We also need to get the pid of i3status from the temporary pipe */
+                size_t rec = 0;
+                while (rec < sizeof(int)) {
+                    rec += read(tmp[0], &child_pid, sizeof(int) - rec);
+                }
+                /* The temporary pipe is no longer needed */
+                close(tmp[0]);
+                close(tmp[1]);
                 break;
         }
     }
+    wait(0);
 
+    /* We set O_NONBLOCK because blocking is evil in event-driven software */
     fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
 
     stdin_io = malloc(sizeof(ev_io));
@@ -176,13 +178,33 @@ void start_child(char *command) {
 }
 
 /*
- * kill()s the child-prozess (if existend) and closes and
+ * kill()s the child-process (if existent) and closes and
  * free()s the stdin- and sigchild-watchers
  *
  */
 void kill_child() {
     if (child_pid != 0) {
-        kill(child_pid, SIGQUIT);
+        kill(child_pid, SIGTERM);
     }
     cleanup();
+}
+
+/*
+ * Sends a SIGSTOP to the child-process (if existent)
+ *
+ */
+void stop_child() {
+    if (child_pid != 0) {
+        kill(child_pid, SIGSTOP);
+    }
+}
+
+/*
+ * Sends a SIGCONT to the child-process (if existent)
+ *
+ */
+void cont_child() {
+    if (child_pid != 0) {
+        kill(child_pid, SIGCONT);
+    }
 }
