@@ -636,8 +636,6 @@ void reconfig_windows() {
     uint32_t mask;
     uint32_t values[5];
 
-    xcb_generic_error_t *err;
-
     i3_output *walk;
     SLIST_FOREACH(walk, outputs, slist) {
         if (!walk->active) {
