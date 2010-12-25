@@ -216,7 +216,7 @@ screen you are currently on.
 A workspace is identified by its number. Basically, you could think of
 workspaces as different desks in your office, if you like the desktop
 methaphor. They just contain different sets of windows and are completely
-separate of each other. Other window managers also call this ``Virtual
+seperate of each other. Other window managers also call this ``Virtual
 desktops''.
 
 === The layout table
@@ -264,7 +264,7 @@ should be chosen for those:
 == Startup (src/mainx.c, main())
 
  * Establish the xcb connection
- * Check for XKB extension on the separate X connection
+ * Check for XKB extension on the seperate X connection
  * Check for Xinerama screens
  * Grab the keycodes for which bindings exist
  * Manage all existing windows

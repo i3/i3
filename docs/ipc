@@ -3,7 +3,7 @@ IPC interface (interprocess communication)
 Michael Stapelberg <michael+i3@stapelberg.de>
 March 2010
 
-This document describes how to interface with i3 from a separate process. This
+This document describes how to interface with i3 from a seperate process. This
 is useful for example to remote-control i3 (to write test cases for example) or
 to get various information like the current workspaces to implement an external
 workspace bar.
@@ -241,7 +241,7 @@ situation can happen: You send a GET_WORKSPACES request but you receive a
 "workspace" event before receiving the reply to GET_WORKSPACES. If your
 program does not want to cope which such kinds of race conditions (an
 event based library may not have a problem here), I suggest you create a
-separate connection to receive events.
+seperate connection to receive events.
 
 === Subscribing to events
 

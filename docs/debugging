@@ -14,7 +14,7 @@ debugging and/or need further help, do not hesitate to contact us!
 
 i3 spits out much information onto stdout, if told so. To have a clearly
 defined place where log files will be saved, you should redirect stdout and
-stderr in xsession. While you’re at it, putting each run of i3 in a separate
+stderr in xsession. While you’re at it, putting each run of i3 in a seperate
 log file with date/time in it is a good idea to not get confused about the
 different log files later on.
 

@@ -556,7 +556,7 @@ simple -- it does not provide a way to display custom text and it does not
 offer advanced customization features. This is intended because we do not
 want to duplicate functionality of tools like +dzen2+, +xmobar+ and so on
 (they render bars, we manage windows). Instead, there is an option which will
-turn off the internal bar completely, so that you can use a separate program to
+turn off the internal bar completely, so that you can use a seperate program to
 display it (see +i3-wsbar+, a sample implementation of such a program):
 
 *Syntax*:
