@@ -1,3 +1,5 @@
+- Bugfix: Recover from closed socket
+
 v0.6
 =====
 - Add manpage

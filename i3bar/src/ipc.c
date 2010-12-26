@@ -19,30 +19,40 @@
 
 #include "common.h"
 
-ev_io *i3_connection;
+ev_io      i3_connection;
+ev_timer   reconn;
+
+const char *sock_path;
 
 typedef void(*handler_t)(char*);
 
 /*
- * Get a connect to the IPC-interface of i3 and return a filedescriptor
+ * Retry to connect.
  *
  */
-int get_ipc_fd(const char *socket_path) {
-    int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
-    if (sockfd == -1) {
-        ELOG("Could not create Socket!\n");
-        exit(EXIT_FAILURE);
+void retry_connection(struct ev_loop *loop, ev_timer *w, int events) {
+    static int retries = 8;
+    if (init_connection(sock_path) == 0) {
+        if (retries == 0) {
+            ELOG("Retried 8 times - connection failed!\n");
+            exit(EXIT_FAILURE);
+        }
+        retries--;
+        return;
     }
+    retries = 8;
+    ev_timer_stop(loop, w);
+    subscribe_events();
+    reconfig_windows();
+}
 
-    struct sockaddr_un addr;
-    memset(&addr, 0, sizeof(struct sockaddr_un));
-    addr.sun_family = AF_LOCAL;
-    strcpy(addr.sun_path, socket_path);
-    if (connect(sockfd, (const struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
-        ELOG("Could not connct to i3!\n");
-        exit(EXIT_FAILURE);
-    }
-    return sockfd;
+/*
+ * Schedule a reconnect
+ *
+ */
+void reconnect() {
+    ev_timer_init(&reconn, retry_connection, 0.25, 0.25);
+    ev_timer_start(main_loop, &reconn);
 }
 
 /*
@@ -144,8 +154,12 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
-            ELOG("Nothing to read!\n");
-            exit(EXIT_FAILURE);
+            /* EOF received. We try to recover a few times, because most likely
+             * i3 just restarted */
+            ELOG("EOF received, try to recover...\n");
+            destroy_connection();
+            reconnect();
+            return;
         }
         rec += n;
     }
@@ -167,8 +181,12 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
      * of the message */
     char *buffer = malloc(size + 1);
     if (buffer == NULL) {
-        ELOG("Could not allocate memory!\n");
-        exit(EXIT_FAILURE);
+        /* EOF received. We try to recover a few times, because most likely
+         * i3 just restarted */
+        ELOG("EOF received, try to recover...\n");
+        destroy_connection();
+        reconnect();
+        return;
     }
     rec = 0;
 
@@ -234,7 +252,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
     uint32_t written = 0;
 
     while (to_write > 0) {
-        int n = write(i3_connection->fd, buffer + written, to_write);
+        int n = write(i3_connection.fd, buffer + written, to_write);
         if (n == -1) {
             ELOG("write() failed!\n");
             exit(EXIT_FAILURE);
@@ -255,13 +273,34 @@ int i3_send_msg(uint32_t type, const char *payload) {
  *
  */
 int init_connection(const char *socket_path) {
-    int sockfd = get_ipc_fd(socket_path);
+    sock_path = socket_path;
+    int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        ELOG("Could not create Socket!\n");
+        exit(EXIT_FAILURE);
+    }
 
-    i3_connection = malloc(sizeof(ev_io));
-    ev_io_init(i3_connection, &got_data, sockfd, EV_READ);
-    ev_io_start(main_loop, i3_connection);
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(struct sockaddr_un));
+    addr.sun_family = AF_LOCAL;
+    strcpy(addr.sun_path, sock_path);
+    if (connect(sockfd, (const struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
+        ELOG("Could not connct to i3!\n");
+        reconnect();
+        return 0;
+    }
 
+    ev_io_init(&i3_connection, &got_data, sockfd, EV_READ);
+    ev_io_start(main_loop, &i3_connection);
     return 1;
+}
+
+/*
+ * Destroy the connection to i3.
+ */
+void destroy_connection() {
+    close(i3_connection.fd);
+    ev_io_stop(main_loop, &i3_connection);
 }
 
 /*
