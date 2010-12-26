@@ -215,8 +215,6 @@ int main(int argc, char **argv) {
     init_outputs();
     init_connection(socket_path);
 
-    FREE(socket_path);
-
     /* We subscribe to the i3-events we need */
     subscribe_events();
 
@@ -248,6 +246,8 @@ int main(int argc, char **argv) {
     ev_loop(main_loop, 0);
 
     kill_child();
+
+    FREE(socket_path);
 
     FREE(statusline);
 
