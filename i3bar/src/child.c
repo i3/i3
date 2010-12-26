@@ -12,7 +12,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <signal.h>
-#include <sys/wait.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
@@ -101,67 +100,41 @@ void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
 /*
  * Start a child-process with the specified command and reroute stdin.
  * We actually start a $SHELL to execute the command so we don't have to care
- * about arguments and such.
- * We also double-fork() to avoid zombies and pass the pid of the child through a
- * temporary pipe back to i3bar
+ * about arguments and such
  *
  */
 void start_child(char *command) {
     child_pid = 0;
     if (command != NULL) {
-        int fd[2], tmp[2];
-        /* This pipe will be used to communicate between e.g. i3status and i3bar */
+        int fd[2];
         pipe(fd);
-        /* We also need this temporary pipe to get back the pid of i3status */
-        pipe(tmp);
-        switch (fork()) {
+        child_pid = fork();
+        switch (child_pid) {
             case -1:
                 ELOG("Couldn't fork()\n");
                 exit(EXIT_FAILURE);
             case 0:
-                /* Double-fork(), so the child gets reparented to init */
-                switch(child_pid = fork()) {
-                    case -1:
-                        ELOG("Couldn't fork() twice\n");
-                        exit(EXIT_FAILURE);
-                    case 0:
-                        /* Child-process. Reroute stdout and start shell */
-                        close(fd[0]);
+                /* Child-process. Reroute stdout and start shell */
+                close(fd[0]);
 
-                        dup2(fd[1], STDOUT_FILENO);
+                dup2(fd[1], STDOUT_FILENO);
 
-                        static const char *shell = NULL;
+                static const char *shell = NULL;
 
-                        if ((shell = getenv("SHELL")) == NULL)
-                            shell = "/bin/sh";
+                if ((shell = getenv("SHELL")) == NULL)
+                    shell = "/bin/sh";
 
-                        execl(shell, shell, "-c", command, (char*) NULL);
-                        return;
-                    default:
-                        /* Temporary parent. We tell i3bar about the pid of i3status and exit */
-                        write(tmp[1], &child_pid, sizeof(int));
-                        close(tmp[0]);
-                        close(tmp[1]);
-                        exit(EXIT_SUCCESS);
-                    }
+                execl(shell, shell, "-c", command, (char*) NULL);
+                return;
             default:
                 /* Parent-process. Rerout stdin */
                 close(fd[1]);
 
                 dup2(fd[0], STDIN_FILENO);
 
-                /* We also need to get the pid of i3status from the temporary pipe */
-                size_t rec = 0;
-                while (rec < sizeof(int)) {
-                    rec += read(tmp[0], &child_pid, sizeof(int) - rec);
-                }
-                /* The temporary pipe is no longer needed */
-                close(tmp[0]);
-                close(tmp[1]);
                 break;
         }
     }
-    wait(0);
 
     /* We set O_NONBLOCK because blocking is evil in event-driven software */
     fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
