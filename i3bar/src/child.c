@@ -157,6 +157,7 @@ void start_child(char *command) {
  */
 void kill_child() {
     if (child_pid != 0) {
+        kill(child_pid, SIGCONT);
         kill(child_pid, SIGTERM);
     }
     cleanup();
