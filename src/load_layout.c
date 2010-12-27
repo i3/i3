@@ -34,7 +34,9 @@ static int json_start_map(void *ctx) {
                 TAILQ_INSERT_TAIL(&(ws->floating_head), json_node, floating_windows);
                 TAILQ_INSERT_TAIL(&(ws->focus_head), json_node, focused);
             } else {
-                json_node = con_new(json_node);
+                Con *parent = json_node;
+                json_node = con_new(NULL);
+                json_node->parent = parent;
             }
         }
     }
@@ -43,8 +45,11 @@ static int json_start_map(void *ctx) {
 
 static int json_end_map(void *ctx) {
     LOG("end of map\n");
-    if (!parsing_swallows && !parsing_rect && !parsing_window_rect)
+    if (!parsing_swallows && !parsing_rect && !parsing_window_rect) {
+        LOG("attaching\n");
+        con_attach(json_node, json_node->parent, false);
         json_node = json_node->parent;
+    }
     if (parsing_rect)
         parsing_rect = false;
     if (parsing_window_rect)
@@ -112,6 +117,9 @@ static int json_int(void *ctx, long val) {
     if (strcasecmp(last_key, "focused") == 0 && val == 1) {
         to_focus = json_node;
     }
+
+    if (strcasecmp(last_key, "num") == 0)
+        json_node->num = val;
 
     if (parsing_rect || parsing_window_rect) {
         Rect *r = (parsing_rect ? &(json_node->rect) : &(json_node->window_rect));

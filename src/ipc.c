@@ -201,6 +201,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("name");
     ystr(con->name);
 
+    if (con->type == CT_WORKSPACE) {
+        ystr("num");
+        y(integer, con->num);
+    }
+
     ystr("window");
     if (con->window)
         y(integer, con->window->id);
