@@ -190,8 +190,10 @@ void render_con(Con *con, bool render_fullscreen) {
             child->deco_rect.x = x - con->rect.x + i * child->deco_rect.width;
             child->deco_rect.y = y - con->rect.y;
 
-            child->rect.y += deco_height;
-            child->rect.height -= deco_height;
+            if (children > 1 || (child->border_style != BS_1PIXEL && child->border_style != BS_NONE)) {
+                child->rect.y += deco_height;
+                child->rect.height -= deco_height;
+            }
         }
 
         printf("child at (%d, %d) with (%d x %d)\n",
