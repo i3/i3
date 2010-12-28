@@ -145,6 +145,7 @@ static void fix_floating_parent(Con *con, Con *vanishing) {
  *
  */
 void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
+    bool was_mapped = con->mapped;
     Con *parent = con->parent;
 
     /* check floating clients and adjust old_parent if necessary */
@@ -196,9 +197,13 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     if (!next)
         return;
 
-    DLOG("focusing %p / %s\n", next, next->name);
-    /* TODO: check if the container (or one of its children) was focused */
-    con_focus(next);
+    if (was_mapped) {
+        DLOG("focusing %p / %s\n", next, next->name);
+        /* TODO: check if the container (or one of its children) was focused */
+        con_focus(next);
+    } else {
+        DLOG("not focusing, was not mapped\n");
+    }
 
     /* check if the parent container is empty now and close it */
     if (!dont_kill_parent &&
