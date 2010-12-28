@@ -140,6 +140,13 @@ int con_orientation(Con *con);
 Con *con_next_focused(Con *con);
 
 /**
+ * Get the next/previous container in the specified orientation. This may
+ * travel up until it finds a container with suitable orientation.
+ *
+ */
+Con *con_get_next(Con *con, char way, orientation_t orientation);
+
+/**
  * Returns a "relative" Rect which contains the amount of pixels that need to
  * be added to the original Rect to get the final position (obviously the
  * amount of pixels for normal, 1pixel and borderless are different).

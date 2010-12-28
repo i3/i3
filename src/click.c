@@ -238,7 +238,7 @@ static bool floating_mod_on_tiled_client(xcb_connection_t *conn, Client *client,
 
 int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
     Con *con;
-    LOG("Button %d pressed on window 0x%08x\n", event->state, event->event);
+    DLOG("Button %d pressed on window 0x%08x\n", event->state, event->event);
 
     con = con_by_window_id(event->event);
     bool border_click = false;
@@ -246,14 +246,14 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         con = con_by_frame_id(event->event);
         border_click = true;
     }
-    LOG("border_click = %d\n", border_click);
+    DLOG("border_click = %d\n", border_click);
         //if (con && con->type == CT_FLOATING_CON)
                 //con = TAILQ_FIRST(&(con->nodes_head));
 
     /* See if this was a click with the configured modifier. If so, we need
      * to move around the client if it was floating. if not, we just process
      * as usual. */
-    LOG("state = %d, floating_modifier = %d\n", event->state, config.floating_modifier);
+    DLOG("state = %d, floating_modifier = %d\n", event->state, config.floating_modifier);
     if (border_click ||
         (config.floating_modifier != 0 &&
          (event->state & config.floating_modifier) == config.floating_modifier)) {
@@ -261,7 +261,7 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
             LOG("Not handling, floating_modifier was pressed and no client found\n");
             return 1;
         }
-        LOG("handling\n");
+        DLOG("handling\n");
 #if 0
         if (con->fullscreen) {
                 LOG("Not handling, client is in fullscreen mode\n");
@@ -285,24 +285,10 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
             }
             return 1;
         }
-
-        DLOG("border click on non-floating container at %d, %d\n", event->event_x, event->event_y);
-        Con *child;
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-            if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
-                continue;
-
-            con_focus(child);
-            break;
-        }
-
-        tree_render();
-        return 1;
     }
 
     /* click to focus */
     con_focus(con);
-    tree_render();
 
     Con *clicked_into = NULL;
 
@@ -312,65 +298,56 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
             continue;
 
         clicked_into = child;
+        con_focus(child);
         break;
     }
+
+    tree_render();
 
     /* check if this was a click on the window border (and on which one) */
     Rect bsr = con_border_style_rect(con);
     DLOG("BORDER x = %d, y = %d for con %p, window 0x%08x, border_click = %d, clicked_into = %p\n",
             event->event_x, event->event_y, con, event->event, border_click, clicked_into);
     DLOG("checks for right >= %d\n", con->window_rect.x + con->window_rect.width);
+    /* TODO: das problem ist, dass TAILQ_PREV etc. nicht die orientation beachtet. */
     Con *first = NULL, *second = NULL;
     if (clicked_into) {
         DLOG("BORDER top\n");
         second = clicked_into;
-        first = TAILQ_PREV(clicked_into, nodes_head, nodes);
-
-        if (first == TAILQ_END(&(con->parent->nodes_head))) {
-            DLOG("cannot go further\n");
-            return 0;
-        }
-
-        resize_graphical_handler(first, second, VERT, event);
+        if ((first = con_get_next(clicked_into, 'p', VERT)) != NULL)
+            resize_graphical_handler(first, second, VERT, event);
     } else if (event->event_x >= 0 && event->event_x <= bsr.x &&
         event->event_y >= bsr.y && event->event_y <= con->rect.height + bsr.height) {
         DLOG("BORDER left\n");
         second = con;
-        first = TAILQ_PREV(con, nodes_head, nodes);
-        if (first == TAILQ_END(&(con->parent->nodes_head))) {
-            DLOG("cannot go further\n");
-            return 0;
-        }
-
-        resize_graphical_handler(first, second, HORIZ, event);
+        if ((first = con_get_next(con, 'p', HORIZ)) != NULL)
+            resize_graphical_handler(first, second, HORIZ, event);
     } else if (event->event_x >= (con->window_rect.x + con->window_rect.width) &&
         event->event_y >= bsr.y && event->event_y <= con->rect.height + bsr.height) {
         DLOG("BORDER right\n");
         first = con;
-        second = TAILQ_NEXT(con, nodes);
-        if (second == TAILQ_END(&(con->parent->nodes_head))) {
-            DLOG("cannot go further\n");
-            return 0;
-        }
-
-        resize_graphical_handler(first, second, HORIZ, event);
+        if ((second = con_get_next(con, 'n', HORIZ)) != NULL)
+            resize_graphical_handler(first, second, HORIZ, event);
     } else if (event->event_y >= (con->window_rect.y + con->window_rect.height)) {
         DLOG("BORDER bottom\n");
 
         first = con;
-        second = TAILQ_NEXT(con, nodes);
-        if (second == TAILQ_END(&(con->parent->nodes_head))) {
-            DLOG("cannot go further\n");
-            return 0;
-        }
-
-        resize_graphical_handler(first, second, VERT, event);
+        if ((second = con_get_next(con, 'n', VERT)) != NULL)
+            resize_graphical_handler(first, second, VERT, event);
     } else {
+        /* Set first and second to NULL to trigger a replay of the event */
+        first = second = NULL;
+    }
+
+    if (first == NULL || second == NULL) {
+        DLOG("Replaying click\n");
         /* No border click, replay the click */
         xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
         xcb_flush(conn);
+        return 0;
     }
 
+    DLOG("After resize handler, rendering\n");
     tree_render();
 
     return 0;
