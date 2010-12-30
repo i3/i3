@@ -140,6 +140,16 @@ static void fix_floating_parent(Con *con, Con *vanishing) {
         fix_floating_parent(child, vanishing);
 }
 
+static bool _is_con_mapped(Con *con) {
+    Con *child;
+
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+        if (_is_con_mapped(child))
+            return true;
+
+    return con->mapped;
+}
+
 /*
  * Closes the given container including all children
  *
@@ -147,6 +157,13 @@ static void fix_floating_parent(Con *con, Con *vanishing) {
 void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     bool was_mapped = con->mapped;
     Con *parent = con->parent;
+
+    if (!was_mapped) {
+        /* Even if the container itself is not mapped, its children may be
+         * mapped (for example split containers don't have a mapped window on
+         * their own but usually contain mapped children). */
+        was_mapped = _is_con_mapped(con);
+    }
 
     /* check floating clients and adjust old_parent if necessary */
     fix_floating_parent(croot, con);
@@ -230,6 +247,10 @@ void tree_close_con() {
         LOG("Cannot close workspace\n");
         return;
     }
+
+    /* There *should* be no possibility to focus outputs / root container */
+    assert(focused->type != CT_OUTPUT);
+    assert(focused->type != CT_ROOT);
 
     /* Kill con */
     tree_close(focused, true, false);
