@@ -40,11 +40,12 @@ static int raised_signal;
 static char *crash_text[] = {
     "i3 just crashed.",
     "To debug this problem, either attach gdb now",
-    "or press 'e' to exit and get a core-dump.",
-    "If you want to keep your session,",
-    "press 'r' to restart i3 in-place."
+    "or press",
+    "- 'e' to exit and get a core-dump,",
+    "- 'r' to restart i3 in-place or",
+    "- 'f' to forget the current layout and restart"
 };
-static int crash_text_longest = 1;
+static int crash_text_longest = 5;
 
 /*
  * Draw the window containing the info text
@@ -99,7 +100,10 @@ static int sig_handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_p
     }
 
     if (sym == 'r')
-        i3_restart();
+        i3_restart(false);
+
+    if (sym == 'f')
+        i3_restart(true);
 
     return 1;
 }

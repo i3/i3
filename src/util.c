@@ -321,8 +321,9 @@ char *store_restart_layout() {
  * appends -a to argument list to disable autostart
  *
  */
-void i3_restart() {
-    char *restart_filename = store_restart_layout();
+void i3_restart(bool forget_layout) {
+    char *restart_filename = forget_layout ? NULL : store_restart_layout();
+
     restore_geometry();
 
     ipc_shutdown();

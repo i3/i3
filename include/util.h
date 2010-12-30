@@ -122,6 +122,6 @@ bool path_exists(const char *path);
  * appends -a to argument list to disable autostart
  *
  */
-void i3_restart();
+void i3_restart(bool forget_layout);
 
 #endif

@@ -340,7 +340,7 @@ restart:
     TOK_RESTART
     {
         printf("restarting i3\n");
-        i3_restart();
+        i3_restart(false);
     }
     ;
 
