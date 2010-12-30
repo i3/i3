@@ -180,7 +180,11 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     x_con_kill(con);
 
     con_detach(con);
-    con_fix_percent(parent, WINDOW_REMOVE);
+    if (con->type != CT_FLOATING_CON) {
+        /* If the container is *not* floating, we might need to re-distribute
+         * percentage values for the resized containers. */
+        con_fix_percent(parent, WINDOW_REMOVE);
+    }
 
     if (con_is_floating(con)) {
         DLOG("Container was floating, killing floating container\n");
