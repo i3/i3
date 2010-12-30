@@ -50,17 +50,17 @@ static int crash_text_longest = 1;
  * Draw the window containing the info text
  *
  */
-static int sig_draw_window(xcb_connection_t *conn, xcb_window_t win, int width, int height, int font_height) {
+static int sig_draw_window(xcb_window_t win, int width, int height, int font_height) {
         /* re-draw the background */
         xcb_rectangle_t border = { 0, 0, width, height},
                         inner = { 2, 2, width - 4, height - 4};
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FF0000"));
+        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel("#FF0000"));
         xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel("#000000"));
         xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
         /* restore font color */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FFFFFF"));
+        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel("#FFFFFF"));
 
         for (int i = 0; i < sizeof(crash_text) / sizeof(char*); i++) {
                 int text_len = strlen(crash_text[i]);
@@ -156,8 +156,6 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         sigaction(sig, &action, NULL);
         raised_signal = sig;
 
-        xcb_connection_t *conn = global_conn;
-
         /* setup event handler for key presses */
         xcb_event_handlers_t sig_evenths;
         memset(&sig_evenths, 0, sizeof(xcb_event_handlers_t));
@@ -200,7 +198,7 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
                 xcb_grab_pointer(conn, false, win, XCB_NONE, XCB_GRAB_MODE_ASYNC,
                                  XCB_GRAB_MODE_ASYNC, win, XCB_NONE, XCB_CURRENT_TIME);
 
-                sig_draw_window(conn, win, width, height, font->height);
+                sig_draw_window(win, width, height, font->height);
                 xcb_flush(conn);
         }
 

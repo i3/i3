@@ -385,6 +385,12 @@ int main(int argc, char *argv[]) {
 
     manage_existing_windows(root);
 
+    setup_signal_handler();
+
+    /* Ignore SIGPIPE to survive errors when an IPC client disconnects
+     * while we are sending him a message */
+    signal(SIGPIPE, SIG_IGN);
+
     /* Autostarting exec-lines */
     if (autostart) {
         struct Autostart *exec;
