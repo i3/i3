@@ -157,6 +157,7 @@ void con_detach(Con *con) {
  */
 void con_focus(Con *con) {
     assert(con != NULL);
+    DLOG("con_focus = %p\n", con);
 
     /* 1: set focused-pointer to the new con */
     /* 2: exchange the position of the container in focus stack of the parent all the way up */
@@ -170,6 +171,7 @@ void con_focus(Con *con) {
         con->urgent = false;
         workspace_update_urgent_flag(con_get_workspace(con));
     }
+    DLOG("con_focus done = %p\n", con);
 }
 
 /*
@@ -285,6 +287,25 @@ bool con_is_floating(Con *con) {
     assert(con != NULL);
     LOG("checking if con %p is floating\n", con);
     return (con->floating >= FLOATING_AUTO_ON);
+}
+
+/*
+ * Checks if the given container is either floating or inside some floating
+ * container. It returns the FLOATING_CON container.
+ *
+ */
+Con *con_inside_floating(Con *con) {
+    assert(con != NULL);
+    if (con->type == CT_FLOATING_CON)
+        return con;
+
+    if (con->floating >= FLOATING_AUTO_ON)
+        return con->parent;
+
+    if (con->type == CT_WORKSPACE)
+        return NULL;
+
+    return con_inside_floating(con->parent);
 }
 
 /*

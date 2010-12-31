@@ -172,6 +172,16 @@ void toggle_floating_mode(Con *con, bool automatic) {
     floating_enable(con, automatic);
 }
 
+/*
+ * Raises the given container in the list of floating containers
+ *
+ */
+void floating_raise_con(Con *con) {
+    DLOG("Raising floating con %p / %s\n", con, con->name);
+    TAILQ_REMOVE(&(con->parent->floating_head), con, floating_windows);
+    TAILQ_INSERT_TAIL(&(con->parent->floating_head), con, floating_windows);
+}
+
 DRAGGING_CB(drag_window_callback) {
     struct xcb_button_press_event_t *event = extra;
 

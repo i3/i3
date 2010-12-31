@@ -53,6 +53,12 @@ void floating_disable(Con *con, bool automatic);
  */
 void toggle_floating_mode(Con *con, bool automatic);
 
+/**
+ * Raises the given container in the list of floating containers
+ *
+ */
+void floating_raise_con(Con *con);
+
 #if 0
 /**
  * Removes the floating client from its workspace and attaches it to the new

@@ -55,6 +55,13 @@ Con *con_get_fullscreen_con(Con *con);
 bool con_is_floating(Con *con);
 
 /**
+ * Checks if the given container is either floating or inside some floating
+ * container. It returns the FLOATING_CON container.
+ *
+ */
+Con *con_inside_floating(Con *con);
+
+/**
  * Returns the container with the given client window ID or NULL if no such
  * container exists.
  *

@@ -237,26 +237,47 @@ static bool floating_mod_on_tiled_client(xcb_connection_t *conn, Client *client,
 #endif
 
 int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
+    /* TODO: dragging floating windows by grabbing their decoration does not
+     * work right now. We need to somehow recognize that special case: either
+     * we check if the con with the clicked decoration is the only con inside
+     * its parent (so that you can only drag single floating windows, not
+     * floating containers with multiple windows) *or* we somehow find out
+     * which decoration(s) are at the top and enable grabbing for them while
+     * resizing for the others. Maybe we could process the resizing parameters
+     * first and check if resizing is possible: if yes, resize, if not, drag.
+     *
+     * Also raise on click on decoration is not working. */
     Con *con;
     DLOG("Button %d pressed on window 0x%08x\n", event->state, event->event);
 
     con = con_by_window_id(event->event);
-    bool border_click = false;
-    if (con == NULL) {
+    bool border_click = (con == NULL);
+    const uint32_t mod = config.floating_modifier;
+    bool mod_pressed = (mod != 0 && (event->state & mod) == mod);
+
+    if (border_click)
         con = con_by_frame_id(event->event);
-        border_click = true;
+
+    DLOG("border_click = %d, mod_pressed = %d\n", border_click, mod_pressed);
+
+    Con *clicked_into = NULL;
+
+    Con *child;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
+            continue;
+
+        clicked_into = child;
+        break;
     }
-    DLOG("border_click = %d\n", border_click);
-        //if (con && con->type == CT_FLOATING_CON)
-                //con = TAILQ_FIRST(&(con->nodes_head));
+
+    DLOG("clicked_into = %p\n", clicked_into);
 
     /* See if this was a click with the configured modifier. If so, we need
      * to move around the client if it was floating. if not, we just process
      * as usual. */
     DLOG("state = %d, floating_modifier = %d\n", event->state, config.floating_modifier);
-    if (border_click ||
-        (config.floating_modifier != 0 &&
-         (event->state & config.floating_modifier) == config.floating_modifier)) {
+    if (border_click || mod_pressed) {
         if (con == NULL) {
             LOG("Not handling, floating_modifier was pressed and no client found\n");
             return 1;
@@ -268,11 +289,10 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
                 return 1;
         }
 #endif
+        Con *floatingcon = con;
         if ((border_click && con->type == CT_FLOATING_CON) ||
-            (!border_click && con_is_floating(con))) {
-            /* floating operations are always on the container around
-             * the "payload container", so make sure we use the right one */
-            Con *floatingcon = (border_click ? con : con->parent);
+            ((floatingcon = con_inside_floating(con)) != NULL &&
+             clicked_into == NULL)) {
             LOG("button %d pressed\n", event->detail);
             if (event->detail == 1) {
                 LOG("left mouse button, dragging\n");
@@ -287,22 +307,22 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         }
     }
 
-    /* click to focus */
-    con_focus(con);
+    /* click to focus, either on the clicked window or its child if thas was a
+     * click into a child decoration */
+    con_focus((clicked_into ? clicked_into : con));
 
-    Con *clicked_into = NULL;
-
-    Con *child;
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-        if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
-            continue;
-
-        clicked_into = child;
-        con_focus(child);
-        break;
-    }
+    /* for floating containers, we also want to raise them on click */
+    Con *floatingcon = con_inside_floating(con);
+    if (floatingcon != NULL)
+        floating_raise_con(floatingcon);
 
     tree_render();
+
+    /* if we clicked into a child decoration on a stacked/tabbed container, we
+     * are done and don’t want to resize */
+    if (clicked_into &&
+        (con->layout == L_STACKED || con->layout == L_TABBED))
+        return 1;
 
     /* check if this was a click on the window border (and on which one) */
     Rect bsr = con_border_style_rect(con);
