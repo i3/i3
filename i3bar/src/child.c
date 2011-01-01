@@ -74,7 +74,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         }
         rec += n;
     }
-    if (strlen(buffer) == 0) {
+    if (*buffer == '\0') {
         FREE(buffer);
         return;
     }
