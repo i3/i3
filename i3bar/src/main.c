@@ -30,7 +30,7 @@ char *expand_path(char *path) {
     }
     char *result = strdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
     if (result == NULL) {
-        ELOG("malloc() failed\n");
+        ELOG("malloc() failed: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
     globfree(&globbuf);

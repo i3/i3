@@ -59,7 +59,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
                 buffer[rec-1] = '\0';
                 break;
             }
-            ELOG("read() failed!\n");
+            ELOG("read() failed!: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
@@ -111,7 +111,7 @@ void start_child(char *command) {
         child_pid = fork();
         switch (child_pid) {
             case -1:
-                ELOG("Couldn't fork()\n");
+                ELOG("Couldn't fork(): %s\n", strerror(errno));
                 exit(EXIT_FAILURE);
             case 0:
                 /* Child-process. Reroute stdout and start shell */

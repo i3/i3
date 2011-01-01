@@ -17,6 +17,7 @@
 #include <string.h>
 #include <i3/ipc.h>
 #include <ev.h>
+#include <errno.h>
 
 #include <X11/Xlib.h>
 #include <X11/XKBlib.h>
@@ -493,7 +494,7 @@ void init_xcb(char *fontname) {
         }
 
         if (fcntl(ConnectionNumber(xkb_dpy), F_SETFD, FD_CLOEXEC) == -1) {
-            ELOG("Could not set FD_CLOEXEC on xkbdpy\n");
+            ELOG("Could not set FD_CLOEXEC on xkbdpy: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
 
