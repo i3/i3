@@ -9,7 +9,7 @@ i3-input - interactively take a command for i3 window manager
 
 == SYNOPSIS
 
-i3-input [-s <socket>] [-p <prefix>] [-l <limit>] [-P <prompt>] [-v]
+i3-input [-s <socket>] [-p <prefix>] [-l <limit>] [-P <prompt>] [-f <font>] [-v]
 
 == DESCRIPTION
 
