@@ -285,7 +285,7 @@ int init_connection(const char *socket_path) {
     addr.sun_family = AF_LOCAL;
     strcpy(addr.sun_path, sock_path);
     if (connect(sockfd, (const struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
-        ELOG("Could not connct to i3!\n");
+        ELOG("Could not connect to i3!\n");
         reconnect();
         return 0;
     }
