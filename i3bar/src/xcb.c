@@ -552,11 +552,12 @@ void init_xcb(char *fontname) {
     font_info = xcb_query_font_reply(xcb_connection,
                                      query_font_cookie,
                                      NULL);
-    font_height = font_info->font_ascent + font_info->font_descent;
 
     if (xcb_request_failed(open_font_cookie, "Could not open font")) {
         exit(EXIT_FAILURE);
     }
+
+    font_height = font_info->font_ascent + font_info->font_descent;
 
     if (xcb_query_font_char_infos_length(font_info) == 0) {
         font_table = NULL;
