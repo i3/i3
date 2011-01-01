@@ -251,11 +251,12 @@ int main(int argc, char *argv[]) {
                 {"limit", required_argument, 0, 'l'},
                 {"prompt", required_argument, 0, 'P'},
                 {"prefix", required_argument, 0, 'p'},
+                {"font", required_argument, 0, 'f'},
                 {"help", no_argument, 0, 'h'},
                 {0, 0, 0, 0}
         };
 
-        char *options_string = "s:p:P:l:vh";
+        char *options_string = "s:p:P:f:l:vh";
 
         while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
                 switch (o) {
@@ -274,9 +275,12 @@ int main(int argc, char *argv[]) {
                         case 'P':
                                 prompt = strdup(optarg);
                                 break;
+                        case 'f':
+                                pattern = strdup(optarg);
+                                break;
                         case 'h':
                                 printf("i3-input " I3_VERSION);
-                                printf("i3-input [-s <socket>] [-p <prefix>] [-l <limit>] [-P <prompt>] [-v]\n");
+                                printf("i3-input [-s <socket>] [-p <prefix>] [-l <limit>] [-P <prompt>] [-f <font>] [-v]\n");
                                 return 0;
                 }
         }
