@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <errno.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <i3/ipc.h>
@@ -140,7 +141,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     uint32_t header_len = strlen(I3_IPC_MAGIC) + sizeof(uint32_t)*2;
     char *header = malloc(header_len);
     if (header == NULL) {
-        ELOG("Could not allocate memory!\n");
+        ELOG("Could not allocate memory: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -150,7 +151,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     while (rec < header_len) {
         int n = read(fd, header + rec, header_len - rec);
         if (n == -1) {
-            ELOG("read() failed!\n");
+            ELOG("read() failed: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
@@ -193,7 +194,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     while (rec < size) {
         int n = read(fd, buffer + rec, size - rec);
         if (n == -1) {
-            ELOG("read() failed!\n");
+            ELOG("read() failed: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
@@ -234,7 +235,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
      * but we leave it for now */
     char *buffer = malloc(to_write);
     if (buffer == NULL) {
-        ELOG("Could not allocate memory\n");
+        ELOG("Could not allocate memory: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -254,7 +255,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
     while (to_write > 0) {
         int n = write(i3_connection.fd, buffer + written, to_write);
         if (n == -1) {
-            ELOG("write() failed!\n");
+            ELOG("write() failed: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
 
@@ -276,7 +277,7 @@ int init_connection(const char *socket_path) {
     sock_path = socket_path;
     int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
     if (sockfd == -1) {
-        ELOG("Could not create Socket!\n");
+        ELOG("Could not create Socket: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -285,7 +286,7 @@ int init_connection(const char *socket_path) {
     addr.sun_family = AF_LOCAL;
     strcpy(addr.sun_path, sock_path);
     if (connect(sockfd, (const struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
-        ELOG("Could not connect to i3!\n");
+        ELOG("Could not connect to i3: %s\n", strerror(errno));
         reconnect();
         return 0;
     }

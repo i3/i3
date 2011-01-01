@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include <yajl/yajl_parse.h>
 
 #include "common.h"
@@ -184,7 +185,7 @@ static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, uns
 
     params->cur_key = malloc(sizeof(unsigned char) * (keyLen + 1));
     if (params->cur_key == NULL) {
-        ELOG("Could not allocate memory!\n");
+        ELOG("Could not allocate memory: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
     strncpy(params->cur_key, (const char*) keyVal, keyLen);
