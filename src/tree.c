@@ -218,7 +218,7 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     if (!next)
         return;
 
-    if (was_mapped) {
+    if (was_mapped || con == focused) {
         DLOG("focusing %p / %s\n", next, next->name);
         /* TODO: check if the container (or one of its children) was focused */
         con_focus(next);
