@@ -27,6 +27,9 @@ pid_t child_pid;
 ev_io    *stdin_io;
 ev_child *child_sig;
 
+/* The buffer statusline points to */
+char *statusline_buffer = NULL;
+
 /*
  * Stop and free() the stdin- and sigchild-watchers
  *
@@ -36,7 +39,7 @@ void cleanup() {
     ev_child_stop(main_loop, child_sig);
     FREE(stdin_io);
     FREE(child_sig);
-    FREE(statusline);
+    FREE(statusline_buffer);
 }
 
 /*
@@ -50,7 +53,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     int rec = 0;
     int buffer_len = STDIN_CHUNK_SIZE;
     char *buffer = malloc(buffer_len);
-    memset(buffer, '\0', buffer_len);
+    buffer[0] = '\0';
     while(1) {
         n = read(fd, buffer + rec, buffer_len - rec);
         if (n == -1) {
@@ -67,8 +70,10 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
                 buffer_len += STDIN_CHUNK_SIZE;
                 buffer = realloc(buffer, buffer_len);
             } else {
-                /* remove trailing newline and finish up */
-                buffer[rec-1] = '\0';
+                if (rec != 0) {
+                    /* remove trailing newline and finish up */
+                    buffer[rec-1] = '\0';
+                }
                 break;
             }
         }
@@ -78,9 +83,13 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         FREE(buffer);
         return;
     }
-    FREE(statusline);
-    statusline = buffer;
-    DLOG("%s\n", buffer);
+    FREE(statusline_buffer);
+    statusline = statusline_buffer = buffer;
+    for (n = 0; buffer[n] != '\0'; ++n) {
+        if (buffer[n] == '\n')
+            statusline = &buffer[n + 1];
+    }
+    DLOG("%s\n", statusline);
     draw_bars();
 }
 

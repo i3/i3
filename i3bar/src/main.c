@@ -249,7 +249,7 @@ int main(int argc, char **argv) {
 
     FREE(socket_path);
 
-    FREE(statusline);
+    FREE(statusline_buffer);
 
     clean_xcb();
     ev_default_destroy();
