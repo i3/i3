@@ -34,7 +34,6 @@ Con *con_new(Con *parent) {
     Con *new = scalloc(sizeof(Con));
     TAILQ_INSERT_TAIL(&all_cons, new, all_cons);
     new->type = CT_CON;
-    new->name = strdup("");
     new->border_style = config.default_border;
     static int cnt = 0;
     LOG("opening window %d\n", cnt);
