@@ -193,6 +193,10 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
             /* TODO: client_unmap to set state to withdrawn */
 
         }
+        FREE(con->window->class_class);
+        FREE(con->window->class_instance);
+        FREE(con->window->name_x);
+        FREE(con->window->name_json);
         free(con->window);
     }
 
