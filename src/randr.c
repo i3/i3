@@ -227,7 +227,6 @@ void disable_randr(xcb_connection_t *conn) {
 void output_init_con(Output *output) {
     Con *con = NULL, *current;
     bool reused = false;
-    static int c = 1;
 
     DLOG("init_con for output %s\n", output->name);
 
@@ -266,11 +265,33 @@ void output_init_con(Output *output) {
     /* add a workspace to this output */
     Con *ws = con_new(NULL);
     ws->type = CT_WORKSPACE;
-    /* TODO: don't just number workspaces, but get the next assigned one / unused one */
+
+    /* get the next unused workspace number */
+    DLOG("Getting next unused workspace\n");
+    int c = 0;
+    bool exists = true;
+    while (exists) {
+        Con *out, *current;
+
+        c++;
+
+        FREE(ws->name);
+        asprintf(&(ws->name), "%d", c);
+
+        exists = false;
+        TAILQ_FOREACH(out, &(croot->nodes_head), nodes) {
+            TAILQ_FOREACH(current, &(out->nodes_head), nodes) {
+                if (strcasecmp(current->name, ws->name) != 0)
+                    continue;
+
+                exists = true;
+                break;
+            }
+        }
+
+        DLOG("result for ws %s / %d: exists = %d\n", ws->name, c, exists);
+    }
     ws->num = c;
-    FREE(ws->name);
-    asprintf(&(ws->name), "%d", c);
-    c++;
     con_attach(ws, con, false);
 
     asprintf(&name, "[i3 con] workspace %s", ws->name);

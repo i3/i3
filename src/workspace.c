@@ -26,7 +26,7 @@ Con *workspace_get(const char *num) {
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         TAILQ_FOREACH(current, &(output->nodes_head), nodes) {
             if (strcasecmp(current->name, num) != 0)
-                    continue;
+                continue;
 
             workspace = current;
             break;
