@@ -46,7 +46,8 @@ Con *workspace_get(const char *num) {
         x_set_name(workspace, name);
         free(name);
         workspace->type = CT_WORKSPACE;
-        workspace->name = strdup(num);
+        FREE(workspace->name);
+        workspace->name = sstrdup(num);
         /* We set ->num to the number if this workspace’s name consists only of
          * a positive number. Otherwise it’s a named ws and num will be -1. */
         char *end;

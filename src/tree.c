@@ -49,6 +49,7 @@ void tree_init() {
     Output *output;
 
     croot = con_new(NULL);
+    FREE(croot->name);
     croot->name = "root";
     croot->type = CT_ROOT;
 
@@ -60,6 +61,7 @@ void tree_init() {
             continue;
 
         Con *oc = con_new(croot);
+        FREE(oc->name);
         oc->name = strdup(output->name);
         oc->type = CT_OUTPUT;
         oc->rect = output->rect;
@@ -74,6 +76,7 @@ void tree_init() {
         ws = con_new(NULL);
         ws->type = CT_WORKSPACE;
         ws->num = c;
+        FREE(ws->name);
         asprintf(&(ws->name), "%d", c);
         c++;
         con_attach(ws, oc, false);
