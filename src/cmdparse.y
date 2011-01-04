@@ -315,6 +315,7 @@ exec:
     {
         printf("should execute %s\n", $<string>3);
         start_application($<string>3);
+        free($<string>3);
     }
     ;
 
@@ -540,6 +541,7 @@ move:
         printf("should move window to workspace %s\n", $<string>5);
         /* get the workspace */
         Con *ws = workspace_get($<string>5);
+        free($<string>5);
 
         /* check if the match is empty, not if the result is empty */
         if (match_is_empty(&current_match))
@@ -563,6 +565,7 @@ restore:
     {
         printf("restoring \"%s\"\n", $<string>3);
         tree_append_json($<string>3);
+        free($<string>3);
     }
     ;
 
