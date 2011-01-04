@@ -325,21 +325,6 @@ int main(int argc, char *argv[]) {
     translate_keysyms();
     grab_all_keys(conn, false);
 
-    int randr_base;
-    if (force_xinerama) {
-        xinerama_init();
-    } else {
-        DLOG("Checking for XRandR...\n");
-        randr_init(&randr_base);
-
-#if 0
-        xcb_event_set_handler(&evenths,
-                              randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY,
-                              handle_screen_change,
-                              NULL);
-#endif
-    }
-
     bool needs_tree_init = true;
     if (layout_path) {
         LOG("Trying to restore the layout from %s...", layout_path);
@@ -350,6 +335,20 @@ int main(int argc, char *argv[]) {
     }
     if (needs_tree_init)
         tree_init();
+
+    int randr_base;
+    if (force_xinerama) {
+        xinerama_init();
+    } else {
+        DLOG("Checking for XRandR...\n");
+        randr_init(&randr_base);
+
+        xcb_event_set_handler(&evenths,
+                              randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY,
+                              handle_screen_change,
+                              NULL);
+    }
+
     tree_render();
 
     struct ev_loop *loop = ev_loop_new(0);

@@ -428,6 +428,7 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
 
         return 1;
 }
+#endif
 
 /*
  * Gets triggered upon a RandR screen change event, that is when the user
@@ -436,15 +437,14 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
  */
 int handle_screen_change(void *prophs, xcb_connection_t *conn,
                          xcb_generic_event_t *e) {
-        DLOG("RandR screen change\n");
+    DLOG("RandR screen change\n");
 
-        randr_query_outputs(conn);
+    randr_query_outputs();
 
-        ipc_send_event("output", I3_IPC_EVENT_OUTPUT, "{\"change\":\"unspecified\"}");
+    ipc_send_event("output", I3_IPC_EVENT_OUTPUT, "{\"change\":\"unspecified\"}");
 
-        return 1;
+    return 1;
 }
-#endif
 
 /*
  * Our window decorations were unmapped. That means, the window will be killed

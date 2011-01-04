@@ -71,6 +71,7 @@ int handle_map_request(void *prophs, xcb_connection_t *conn,
  *
  */
 int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_notify_event_t *event);
+#endif
 
 /**
  * Gets triggered upon a RandR screen change event, that is when the user
@@ -79,7 +80,6 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
  */
 int handle_screen_change(void *prophs, xcb_connection_t *conn,
                          xcb_generic_event_t *e);
-#endif
 
 /**
  * Configure requests are received when the application wants to resize

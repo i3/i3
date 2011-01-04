@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009-2010 Michael Stapelberg and contributors
+ * © 2009-2011 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -70,6 +70,7 @@ static void query_screens(xcb_connection_t *conn) {
             if (s->rect.x == 0 && s->rect.y == 0)
                     TAILQ_INSERT_HEAD(&outputs, s, outputs);
             else TAILQ_INSERT_TAIL(&outputs, s, outputs);
+            output_init_con(s);
             num_screens++;
         }
 

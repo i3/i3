@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009-2010 Michael Stapelberg and contributors
+ * © 2009-2011 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -216,6 +216,74 @@ void disable_randr(xcb_connection_t *conn) {
 }
 
 /*
+ * Initializes a CT_OUTPUT Con (searches existing ones from inplace restart
+ * before) to use for the given Output.
+ *
+ * XXX: for assignments, we probably need to move workspace creation from here
+ * to after the loop in randr_query_outputs().
+ *
+ */
+void output_init_con(Output *output) {
+    Con *con = NULL, *current;
+    bool reused = false;
+    static int c = 1;
+
+    DLOG("init_con for output %s\n", output->name);
+
+    /* Search for a Con with that name directly below the root node. There
+     * might be one from a restored layout. */
+    TAILQ_FOREACH(current, &(croot->nodes_head), nodes) {
+        if (strcmp(current->name, output->name) != 0)
+            continue;
+
+        con = current;
+        reused = true;
+        DLOG("Using existing con %p / %s\n", con, con->name);
+        break;
+    }
+
+    if (con == NULL) {
+        con = con_new(croot);
+        FREE(con->name);
+        con->name = sstrdup(output->name);
+        con->type = CT_OUTPUT;
+    }
+    con->rect = output->rect;
+    output->con = con;
+
+    char *name;
+    asprintf(&name, "[i3 con] output %s", con->name);
+    x_set_name(con, name);
+    free(name);
+
+    if (reused) {
+        DLOG("Not adding workspace, this was a reused con\n");
+        return;
+    }
+    DLOG("Now adding a workspace\n");
+
+    /* add a workspace to this output */
+    Con *ws = con_new(NULL);
+    ws->type = CT_WORKSPACE;
+    /* TODO: don't just number workspaces, but get the next assigned one / unused one */
+    ws->num = c;
+    FREE(ws->name);
+    asprintf(&(ws->name), "%d", c);
+    c++;
+    con_attach(ws, con, false);
+
+    asprintf(&name, "[i3 con] workspace %s", ws->name);
+    x_set_name(ws, name);
+    free(name);
+
+    ws->fullscreen_mode = CF_OUTPUT;
+    ws->orientation = HORIZ;
+
+    /* TODO: Set focus in main.c */
+    con_focus(ws);
+}
+
+/*
  * This function needs to be called when changing the mode of an output when
  * it already has some workspaces (or a bar window) assigned.
  *
@@ -227,9 +295,12 @@ void disable_randr(xcb_connection_t *conn) {
  *
  */
 static void output_change_mode(xcb_connection_t *conn, Output *output) {
-    i3Font *font = load_font(conn, config.font);
+    //i3Font *font = load_font(conn, config.font);
 
-    DLOG("Output mode changed, reconfiguring bar, updating workspaces\n");
+    DLOG("Output mode changed, updating rect\n");
+    assert(output->con != NULL);
+    output->con->rect = output->rect;
+#if 0
     Rect bar_rect = {output->rect.x,
                      output->rect.y + output->rect.height - (font->height + 6),
                      output->rect.x + output->rect.width,
@@ -237,7 +308,6 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
 
     xcb_set_window_rect(conn, output->bar, bar_rect);
 
-#if 0
         /* go through all workspaces and set force_reconfigure */
         TAILQ_FOREACH(ws, workspaces, workspaces) {
                 if (ws->output != output)
@@ -442,31 +512,47 @@ void randr_query_outputs() {
             if ((first = get_first_output()) == NULL)
                     die("No usable outputs available\n");
 
-            //bool needs_init = (first->current_workspace == NULL);
-
-#if 0
-            TAILQ_FOREACH(ws, workspaces, workspaces) {
-                    if (ws->output != output)
-                            continue;
-
-                    workspace_assign_to(ws, first, true);
-                    if (!needs_init)
-                            continue;
-                    //initialize_output(conn, first, ws);
-                    needs_init = false;
+            /* We need to move the workspaces from the disappearing output to the first output */
+            /* 1: Get the con to focus next, if the disappearing ws is focused */
+            Con *next = NULL;
+            if (TAILQ_FIRST(&(croot->focus_head)) == output->con) {
+                DLOG("This output (%p) was focused! Getting next\n", output->con);
+                next = con_next_focused(output->con);
+                DLOG("next = %p\n", next);
             }
 
-            Client *dock;
-            while (!SLIST_EMPTY(&(output->dock_clients))) {
-                    dock = SLIST_FIRST(&(output->dock_clients));
-                    SLIST_REMOVE_HEAD(&(output->dock_clients), dock_clients);
-                    SLIST_INSERT_HEAD(&(first->dock_clients), dock, dock_clients);
+            /* 2: iterate through workspaces and re-assign them */
+            Con *current;
+            while (!TAILQ_EMPTY(&(output->con->nodes_head))) {
+                current = TAILQ_FIRST(&(output->con->nodes_head));
+                DLOG("Detaching current = %p / %s\n", current, current->name);
+                con_detach(current);
+                DLOG("Re-attaching current = %p / %s\n", current, current->name);
+                con_attach(current, first->con, false);
+                DLOG("Done, next\n");
+            }
+            DLOG("re-attached all workspaces\n");
+
+            if (next) {
+                DLOG("now focusing next = %p\n", next);
+                con_focus(next);
             }
 
-#endif
-            //output->current_workspace = NULL;
+            DLOG("destroying disappearing con %p\n", output->con);
+            tree_close(output->con, false, true);
+            DLOG("Done. Should be fine now\n");
+            output->con = NULL;
+
             output->to_be_disabled = false;
-        } else if (output->changed) {
+        }
+
+        if (output->active && output->con == NULL) {
+            DLOG("Need to initialize a Con for output %s\n", output->name);
+            output_init_con(output);
+            output->changed = false;
+        }
+
+        if (output->changed) {
             output_change_mode(conn, output);
             output->changed = false;
         }
@@ -504,7 +590,7 @@ void randr_init(int *event_base) {
     extreply = xcb_get_extension_data(conn, &xcb_randr_id);
     if (!extreply->present)
         disable_randr(conn);
-    else randr_query_outputs(conn);
+    else randr_query_outputs();
 
     if (event_base != NULL)
         *event_base = extreply->first_event;

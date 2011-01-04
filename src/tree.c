@@ -40,56 +40,15 @@ bool tree_restore(const char *path) {
 }
 
 /*
- * Initializes the tree by creating the root node, adding all RandR outputs
- * to the tree (that means randr_init() has to be called before) and
- * assigning a workspace to each RandR output.
+ * Initializes the tree by creating the root node. The CT_OUTPUT Cons below the
+ * root node are created in randr.c for each Output.
  *
  */
 void tree_init() {
-    Output *output;
-
     croot = con_new(NULL);
     FREE(croot->name);
     croot->name = "root";
     croot->type = CT_ROOT;
-
-    Con *ws;
-    int c = 1;
-    /* add the outputs */
-    TAILQ_FOREACH(output, &outputs, outputs) {
-        if (!output->active)
-            continue;
-
-        Con *oc = con_new(croot);
-        FREE(oc->name);
-        oc->name = strdup(output->name);
-        oc->type = CT_OUTPUT;
-        oc->rect = output->rect;
-        output->con = oc;
-
-        char *name;
-        asprintf(&name, "[i3 con] output %s", oc->name);
-        x_set_name(oc, name);
-        free(name);
-
-        /* add a workspace to this output */
-        ws = con_new(NULL);
-        ws->type = CT_WORKSPACE;
-        ws->num = c;
-        FREE(ws->name);
-        asprintf(&(ws->name), "%d", c);
-        c++;
-        con_attach(ws, oc, false);
-
-        asprintf(&name, "[i3 con] workspace %s", ws->name);
-        x_set_name(ws, name);
-        free(name);
-
-        ws->fullscreen_mode = CF_OUTPUT;
-        ws->orientation = HORIZ;
-    }
-
-    con_focus(ws);
 }
 
 /*

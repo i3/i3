@@ -202,6 +202,7 @@ struct xoutput {
     /** x, y, width, height */
     Rect rect;
 
+#if 0
     /** The bar window */
     xcb_window_t bar;
     xcb_gcontext_t bargc;
@@ -209,6 +210,7 @@ struct xoutput {
     /** Contains all clients with _NET_WM_WINDOW_TYPE ==
      * _NET_WM_WINDOW_TYPE_DOCK */
     SLIST_HEAD(dock_clients_head, Client) dock_clients;
+#endif
 
     TAILQ_ENTRY(xoutput) outputs;
 };

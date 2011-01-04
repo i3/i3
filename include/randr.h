@@ -32,6 +32,16 @@ void randr_init(int *event_base);
 void disable_randr(xcb_connection_t *conn);
 
 /**
+ * Initializes a CT_OUTPUT Con (searches existing ones from inplace restart
+ * before) to use for the given Output.
+ *
+ * XXX: for assignments, we probably need to move workspace creation from here
+ * to after the loop in randr_query_outputs().
+ *
+ */
+void output_init_con(Output *output);
+
+/**
  * Initializes the specified output, assigning the specified workspace to it.
  *
  */
