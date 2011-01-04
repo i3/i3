@@ -173,6 +173,7 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
 
     /* Get the container which is next focused */
     Con *next = con_next_focused(con);
+    DLOG("next = %p, focused = %p\n", next, focused);
 
     DLOG("closing %p, kill_window = %d\n", con, kill_window);
     Con *child;
@@ -211,9 +212,18 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     }
 
     if (con_is_floating(con)) {
+        Con *ws = con_get_workspace(con);
         DLOG("Container was floating, killing floating container\n");
         tree_close(parent, false, false);
-        next = NULL;
+        DLOG("parent container killed\n");
+        if (con == focused) {
+            DLOG("This is the focused container, i need to find another one to focus. I start looking at ws = %p\n", ws);
+            next = con_next_focused(ws);
+            dont_kill_parent = true;
+            DLOG("Alright, focusing %p\n", next);
+        } else {
+            next = NULL;
+        }
     }
 
     free(con->name);
@@ -222,8 +232,10 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
 
     /* in the case of floating windows, we already focused another container
      * when closing the parent, so we can exit now. */
-    if (!next)
+    if (!next) {
+        DLOG("No next container, i will just exit now\n");
         return;
+    }
 
     if (was_mapped || con == focused) {
         DLOG("focusing %p / %s\n", next, next->name);
