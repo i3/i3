@@ -26,9 +26,9 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop) {
     FREE(win->class_instance);
     FREE(win->class_class);
 
-    win->class_instance = strdup(new_class);
+    win->class_instance = sstrdup(new_class);
     if ((strlen(new_class) + 1) < xcb_get_property_value_length(prop))
-        win->class_class = strdup(new_class + strlen(new_class) + 1);
+        win->class_class = sstrdup(new_class + strlen(new_class) + 1);
     else win->class_class = NULL;
     LOG("WM_CLASS changed to %s (instance), %s (class)\n",
         win->class_instance, win->class_class);
@@ -93,7 +93,7 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop) {
     FREE(win->name_x);
     FREE(win->name_json);
     win->name_x = new_name;
-    win->name_json = strdup(new_name);
+    win->name_json = sstrdup(new_name);
     win->name_len = strlen(new_name);
 }
 
