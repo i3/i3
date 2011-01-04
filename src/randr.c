@@ -1,5 +1,5 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
  *
@@ -36,12 +36,12 @@ static bool randr_disabled = false;
  *
  */
 static Output *get_output_by_id(xcb_randr_output_t id) {
-        Output *output;
-        TAILQ_FOREACH(output, &outputs, outputs)
-                if (output->id == id)
-                        return output;
+    Output *output;
+    TAILQ_FOREACH(output, &outputs, outputs)
+        if (output->id == id)
+            return output;
 
-        return NULL;
+    return NULL;
 }
 
 /*
@@ -49,13 +49,13 @@ static Output *get_output_by_id(xcb_randr_output_t id) {
  *
  */
 Output *get_output_by_name(const char *name) {
-        Output *output;
-        TAILQ_FOREACH(output, &outputs, outputs)
-                if (output->active &&
-                    strcasecmp(output->name, name) == 0)
-                        return output;
+    Output *output;
+    TAILQ_FOREACH(output, &outputs, outputs)
+        if (output->active &&
+            strcasecmp(output->name, name) == 0)
+            return output;
 
-        return NULL;
+    return NULL;
 }
 
 /*
@@ -63,13 +63,13 @@ Output *get_output_by_name(const char *name) {
  *
  */
 Output *get_first_output() {
-        Output *output;
+    Output *output;
 
-        TAILQ_FOREACH(output, &outputs, outputs)
-                if (output->active)
-                        return output;
+    TAILQ_FOREACH(output, &outputs, outputs)
+        if (output->active)
+            return output;
 
-        return NULL;
+    return NULL;
 }
 
 /*
@@ -78,18 +78,18 @@ Output *get_first_output() {
  *
  */
 Output *get_output_containing(int x, int y) {
-        Output *output;
-        TAILQ_FOREACH(output, &outputs, outputs) {
-                if (!output->active)
-                        continue;
-                DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
-                                x, y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
-                if (x >= output->rect.x && x < (output->rect.x + output->rect.width) &&
-                    y >= output->rect.y && y < (output->rect.y + output->rect.height))
-                        return output;
-        }
+    Output *output;
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (!output->active)
+            continue;
+        DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
+                        x, y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
+        if (x >= output->rect.x && x < (output->rect.x + output->rect.width) &&
+            y >= output->rect.y && y < (output->rect.y + output->rect.height))
+            return output;
+    }
 
-        return NULL;
+    return NULL;
 }
 
 /*
@@ -101,43 +101,43 @@ Output *get_output_containing(int x, int y) {
  *
  */
 Output *get_output_most(direction_t direction, Output *current) {
-        Output *output, *candidate = NULL;
-        int position = 0;
-        TAILQ_FOREACH(output, &outputs, outputs) {
-                if (!output->active)
-                        continue;
+    Output *output, *candidate = NULL;
+    int position = 0;
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (!output->active)
+            continue;
 
-                /* Repeated calls of WIN determine the winner of the comparison */
-                #define WIN(variable, condition) \
-                        if (variable condition) { \
-                                candidate = output; \
-                                position = variable; \
-                        } \
-                        break;
+        /* Repeated calls of WIN determine the winner of the comparison */
+        #define WIN(variable, condition) \
+            if (variable condition) { \
+                candidate = output; \
+                position = variable; \
+            } \
+            break;
 
-                if (((direction == D_UP) || (direction == D_DOWN)) &&
-                    (current->rect.x != output->rect.x))
-                        continue;
+        if (((direction == D_UP) || (direction == D_DOWN)) &&
+            (current->rect.x != output->rect.x))
+            continue;
 
-                if (((direction == D_LEFT) || (direction == D_RIGHT)) &&
-                    (current->rect.y != output->rect.y))
-                        continue;
+        if (((direction == D_LEFT) || (direction == D_RIGHT)) &&
+            (current->rect.y != output->rect.y))
+            continue;
 
-                switch (direction) {
-                        case D_UP:
-                                WIN(output->rect.y, <= position);
-                        case D_DOWN:
-                                WIN(output->rect.y, >= position);
-                        case D_LEFT:
-                                WIN(output->rect.x, <= position);
-                        case D_RIGHT:
-                                WIN(output->rect.x, >= position);
-                }
+        switch (direction) {
+            case D_UP:
+                WIN(output->rect.y, <= position);
+            case D_DOWN:
+                WIN(output->rect.y, >= position);
+            case D_LEFT:
+                WIN(output->rect.x, <= position);
+            case D_RIGHT:
+                WIN(output->rect.x, >= position);
         }
+    }
 
-        assert(candidate != NULL);
+    assert(candidate != NULL);
 
-        return candidate;
+    return candidate;
 }
 
 #if 0
@@ -197,22 +197,22 @@ void initialize_output(xcb_connection_t *conn, Output *output, Workspace *worksp
  *
  */
 void disable_randr(xcb_connection_t *conn) {
-        xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
+    xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
 
-        DLOG("RandR extension unusable, disabling.\n");
+    DLOG("RandR extension unusable, disabling.\n");
 
-        Output *s = scalloc(sizeof(Output));
+    Output *s = scalloc(sizeof(Output));
 
-        s->active = true;
-        s->rect.x = 0;
-        s->rect.y = 0;
-        s->rect.width = root_screen->width_in_pixels;
-        s->rect.height = root_screen->height_in_pixels;
-        s->name = "xroot-0";
+    s->active = true;
+    s->rect.x = 0;
+    s->rect.y = 0;
+    s->rect.width = root_screen->width_in_pixels;
+    s->rect.height = root_screen->height_in_pixels;
+    s->name = "xroot-0";
 
-        TAILQ_INSERT_TAIL(&outputs, s, outputs);
+    TAILQ_INSERT_TAIL(&outputs, s, outputs);
 
-        randr_disabled = true;
+    randr_disabled = true;
 }
 
 /*
@@ -227,15 +227,15 @@ void disable_randr(xcb_connection_t *conn) {
  *
  */
 static void output_change_mode(xcb_connection_t *conn, Output *output) {
-        i3Font *font = load_font(conn, config.font);
+    i3Font *font = load_font(conn, config.font);
 
-        DLOG("Output mode changed, reconfiguring bar, updating workspaces\n");
-        Rect bar_rect = {output->rect.x,
-                         output->rect.y + output->rect.height - (font->height + 6),
-                         output->rect.x + output->rect.width,
-                         font->height + 6};
+    DLOG("Output mode changed, reconfiguring bar, updating workspaces\n");
+    Rect bar_rect = {output->rect.x,
+                     output->rect.y + output->rect.height - (font->height + 6),
+                     output->rect.x + output->rect.width,
+                     font->height + 6};
 
-        xcb_set_window_rect(conn, output->bar, bar_rect);
+    xcb_set_window_rect(conn, output->bar, bar_rect);
 
 #if 0
         /* go through all workspaces and set force_reconfigure */
@@ -286,65 +286,65 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
 static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
                           xcb_randr_get_output_info_reply_t *output,
                           xcb_timestamp_t cts, resources_reply *res) {
-        /* each CRT controller has a position in which we are interested in */
-        crtc_info *crtc;
+    /* each CRT controller has a position in which we are interested in */
+    crtc_info *crtc;
 
-        Output *new = get_output_by_id(id);
-        bool existing = (new != NULL);
+    Output *new = get_output_by_id(id);
+    bool existing = (new != NULL);
+    if (!existing)
+        new = scalloc(sizeof(Output));
+    new->id = id;
+    FREE(new->name);
+    asprintf(&new->name, "%.*s",
+            xcb_randr_get_output_info_name_length(output),
+            xcb_randr_get_output_info_name(output));
+
+    DLOG("found output with name %s\n", new->name);
+
+    /* Even if no CRTC is used at the moment, we store the output so that
+     * we do not need to change the list ever again (we only update the
+     * position/size) */
+    if (output->crtc == XCB_NONE) {
         if (!existing)
-                new = scalloc(sizeof(Output));
-        new->id = id;
-        FREE(new->name);
-        asprintf(&new->name, "%.*s",
-                        xcb_randr_get_output_info_name_length(output),
-                        xcb_randr_get_output_info_name(output));
+            TAILQ_INSERT_TAIL(&outputs, new, outputs);
+        else if (new->active)
+            new->to_be_disabled = true;
+        return;
+    }
 
-        DLOG("found output with name %s\n", new->name);
+    xcb_randr_get_crtc_info_cookie_t icookie;
+    icookie = xcb_randr_get_crtc_info(conn, output->crtc, cts);
+    if ((crtc = xcb_randr_get_crtc_info_reply(conn, icookie, NULL)) == NULL) {
+        DLOG("Skipping output %s: could not get CRTC (%p)\n",
+             new->name, crtc);
+        free(new);
+        return;
+    }
 
-        /* Even if no CRTC is used at the moment, we store the output so that
-         * we do not need to change the list ever again (we only update the
-         * position/size) */
-        if (output->crtc == XCB_NONE) {
-                if (!existing)
-                        TAILQ_INSERT_TAIL(&outputs, new, outputs);
-                else if (new->active)
-                        new->to_be_disabled = true;
-                return;
-        }
+    bool updated = update_if_necessary(&(new->rect.x), crtc->x) |
+                   update_if_necessary(&(new->rect.y), crtc->y) |
+                   update_if_necessary(&(new->rect.width), crtc->width) |
+                   update_if_necessary(&(new->rect.height), crtc->height);
+    free(crtc);
+    new->active = (new->rect.width != 0 && new->rect.height != 0);
+    if (!new->active) {
+        DLOG("width/height 0/0, disabling output\n");
+        return;
+    }
 
-        xcb_randr_get_crtc_info_cookie_t icookie;
-        icookie = xcb_randr_get_crtc_info(conn, output->crtc, cts);
-        if ((crtc = xcb_randr_get_crtc_info_reply(conn, icookie, NULL)) == NULL) {
-                DLOG("Skipping output %s: could not get CRTC (%p)\n",
-                     new->name, crtc);
-                free(new);
-                return;
-        }
+    DLOG("mode: %dx%d+%d+%d\n", new->rect.width, new->rect.height,
+                                new->rect.x, new->rect.y);
 
-        bool updated = update_if_necessary(&(new->rect.x), crtc->x) |
-                       update_if_necessary(&(new->rect.y), crtc->y) |
-                       update_if_necessary(&(new->rect.width), crtc->width) |
-                       update_if_necessary(&(new->rect.height), crtc->height);
-        free(crtc);
-        new->active = (new->rect.width != 0 && new->rect.height != 0);
-        if (!new->active) {
-                DLOG("width/height 0/0, disabling output\n");
-                return;
-        }
+    /* If we don’t need to change an existing output or if the output
+     * does not exist in the first place, the case is simple: we either
+     * need to insert the new output or we are done. */
+    if (!updated || !existing) {
+        if (!existing)
+            TAILQ_INSERT_TAIL(&outputs, new, outputs);
+        return;
+    }
 
-        DLOG("mode: %dx%d+%d+%d\n", new->rect.width, new->rect.height,
-                                    new->rect.x, new->rect.y);
-
-        /* If we don’t need to change an existing output or if the output
-         * does not exist in the first place, the case is simple: we either
-         * need to insert the new output or we are done. */
-        if (!updated || !existing) {
-                if (!existing)
-                        TAILQ_INSERT_TAIL(&outputs, new, outputs);
-                return;
-        }
-
-        new->changed = true;
+    new->changed = true;
 }
 
 /*
@@ -352,145 +352,145 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
  *
  */
 void randr_query_outputs() {
-        Output *output, *other, *first;
-        xcb_randr_get_screen_resources_current_cookie_t rcookie;
-        resources_reply *res;
-        /* timestamp of the configuration so that we get consistent replies to all
-         * requests (if the configuration changes between our different calls) */
-        xcb_timestamp_t cts;
+    Output *output, *other, *first;
+    xcb_randr_get_screen_resources_current_cookie_t rcookie;
+    resources_reply *res;
+    /* timestamp of the configuration so that we get consistent replies to all
+     * requests (if the configuration changes between our different calls) */
+    xcb_timestamp_t cts;
 
-        /* an output is VGA-1, LVDS-1, etc. (usually physical video outputs) */
-        xcb_randr_output_t *randr_outputs;
+    /* an output is VGA-1, LVDS-1, etc. (usually physical video outputs) */
+    xcb_randr_output_t *randr_outputs;
 
-        if (randr_disabled)
-                return;
+    if (randr_disabled)
+        return;
 
-        /* Get screen resources (crtcs, outputs, modes) */
-        rcookie = xcb_randr_get_screen_resources_current(conn, root);
-        if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL) {
-                disable_randr(conn);
-                return;
+    /* Get screen resources (crtcs, outputs, modes) */
+    rcookie = xcb_randr_get_screen_resources_current(conn, root);
+    if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL) {
+        disable_randr(conn);
+        return;
+    }
+    cts = res->config_timestamp;
+
+    int len = xcb_randr_get_screen_resources_current_outputs_length(res);
+    randr_outputs = xcb_randr_get_screen_resources_current_outputs(res);
+
+    /* Request information for each output */
+    xcb_randr_get_output_info_cookie_t ocookie[len];
+    for (int i = 0; i < len; i++)
+        ocookie[i] = xcb_randr_get_output_info(conn, randr_outputs[i], cts);
+
+    /* Loop through all outputs available for this X11 screen */
+    for (int i = 0; i < len; i++) {
+        xcb_randr_get_output_info_reply_t *output;
+
+        if ((output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL)) == NULL)
+            continue;
+
+        handle_output(conn, randr_outputs[i], output, cts, res);
+        free(output);
+    }
+
+    free(res);
+    /* Check for clones, disable the clones and reduce the mode to the
+     * lowest common mode */
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (!output->active || output->to_be_disabled)
+            continue;
+        DLOG("output %p, position (%d, %d), checking for clones\n",
+                output, output->rect.x, output->rect.y);
+
+        for (other = output;
+             other != TAILQ_END(&outputs);
+             other = TAILQ_NEXT(other, outputs)) {
+            if (other == output || !other->active || other->to_be_disabled)
+                continue;
+
+            if (other->rect.x != output->rect.x ||
+                other->rect.y != output->rect.y)
+                continue;
+
+            DLOG("output %p has the same position, his mode = %d x %d\n",
+                            other, other->rect.width, other->rect.height);
+            uint32_t width = min(other->rect.width, output->rect.width);
+            uint32_t height = min(other->rect.height, output->rect.height);
+
+            if (update_if_necessary(&(output->rect.width), width) |
+                update_if_necessary(&(output->rect.height), height))
+                output->changed = true;
+
+            update_if_necessary(&(other->rect.width), width);
+            update_if_necessary(&(other->rect.height), height);
+
+            DLOG("disabling output %p (%s)\n", other, other->name);
+            other->to_be_disabled = true;
+
+            DLOG("new output mode %d x %d, other mode %d x %d\n",
+                            output->rect.width, output->rect.height,
+                            other->rect.width, other->rect.height);
         }
-        cts = res->config_timestamp;
+    }
 
-        int len = xcb_randr_get_screen_resources_current_outputs_length(res);
-        randr_outputs = xcb_randr_get_screen_resources_current_outputs(res);
+    /* Handle outputs which have a new mode or are disabled now (either
+     * because the user disabled them or because they are clones) */
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (output->to_be_disabled) {
+            output->active = false;
+            DLOG("Output %s disabled, re-assigning workspaces/docks\n", output->name);
 
-        /* Request information for each output */
-        xcb_randr_get_output_info_cookie_t ocookie[len];
-        for (int i = 0; i < len; i++)
-                ocookie[i] = xcb_randr_get_output_info(conn, randr_outputs[i], cts);
+            if ((first = get_first_output()) == NULL)
+                    die("No usable outputs available\n");
 
-        /* Loop through all outputs available for this X11 screen */
-        for (int i = 0; i < len; i++) {
-                xcb_randr_get_output_info_reply_t *output;
-
-                if ((output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL)) == NULL)
-                        continue;
-
-                handle_output(conn, randr_outputs[i], output, cts, res);
-                free(output);
-        }
-
-        free(res);
-        /* Check for clones, disable the clones and reduce the mode to the
-         * lowest common mode */
-        TAILQ_FOREACH(output, &outputs, outputs) {
-                if (!output->active || output->to_be_disabled)
-                        continue;
-                DLOG("output %p, position (%d, %d), checking for clones\n",
-                        output, output->rect.x, output->rect.y);
-
-                for (other = output;
-                     other != TAILQ_END(&outputs);
-                     other = TAILQ_NEXT(other, outputs)) {
-                        if (other == output || !other->active || other->to_be_disabled)
-                                continue;
-
-                        if (other->rect.x != output->rect.x ||
-                            other->rect.y != output->rect.y)
-                                continue;
-
-                        DLOG("output %p has the same position, his mode = %d x %d\n",
-                                        other, other->rect.width, other->rect.height);
-                        uint32_t width = min(other->rect.width, output->rect.width);
-                        uint32_t height = min(other->rect.height, output->rect.height);
-
-                        if (update_if_necessary(&(output->rect.width), width) |
-                            update_if_necessary(&(output->rect.height), height))
-                                output->changed = true;
-
-                        update_if_necessary(&(other->rect.width), width);
-                        update_if_necessary(&(other->rect.height), height);
-
-                        DLOG("disabling output %p (%s)\n", other, other->name);
-                        other->to_be_disabled = true;
-
-                        DLOG("new output mode %d x %d, other mode %d x %d\n",
-                                        output->rect.width, output->rect.height,
-                                        other->rect.width, other->rect.height);
-                }
-        }
-
-        /* Handle outputs which have a new mode or are disabled now (either
-         * because the user disabled them or because they are clones) */
-        TAILQ_FOREACH(output, &outputs, outputs) {
-                if (output->to_be_disabled) {
-                        output->active = false;
-                        DLOG("Output %s disabled, re-assigning workspaces/docks\n", output->name);
-
-                        if ((first = get_first_output()) == NULL)
-                                die("No usable outputs available\n");
-
-                        //bool needs_init = (first->current_workspace == NULL);
+            //bool needs_init = (first->current_workspace == NULL);
 
 #if 0
-                        TAILQ_FOREACH(ws, workspaces, workspaces) {
-                                if (ws->output != output)
-                                        continue;
+            TAILQ_FOREACH(ws, workspaces, workspaces) {
+                    if (ws->output != output)
+                            continue;
 
-                                workspace_assign_to(ws, first, true);
-                                if (!needs_init)
-                                        continue;
-                                //initialize_output(conn, first, ws);
-                                needs_init = false;
-                        }
+                    workspace_assign_to(ws, first, true);
+                    if (!needs_init)
+                            continue;
+                    //initialize_output(conn, first, ws);
+                    needs_init = false;
+            }
 
-                        Client *dock;
-                        while (!SLIST_EMPTY(&(output->dock_clients))) {
-                                dock = SLIST_FIRST(&(output->dock_clients));
-                                SLIST_REMOVE_HEAD(&(output->dock_clients), dock_clients);
-                                SLIST_INSERT_HEAD(&(first->dock_clients), dock, dock_clients);
-                        }
+            Client *dock;
+            while (!SLIST_EMPTY(&(output->dock_clients))) {
+                    dock = SLIST_FIRST(&(output->dock_clients));
+                    SLIST_REMOVE_HEAD(&(output->dock_clients), dock_clients);
+                    SLIST_INSERT_HEAD(&(first->dock_clients), dock, dock_clients);
+            }
 
 #endif
-                        //output->current_workspace = NULL;
-                        output->to_be_disabled = false;
-                } else if (output->changed) {
-                        output_change_mode(conn, output);
-                        output->changed = false;
-                }
+            //output->current_workspace = NULL;
+            output->to_be_disabled = false;
+        } else if (output->changed) {
+            output_change_mode(conn, output);
+            output->changed = false;
         }
+    }
 
-        if (TAILQ_EMPTY(&outputs)) {
-                ELOG("No outputs found via RandR, disabling\n");
-                disable_randr(conn);
-        }
+    if (TAILQ_EMPTY(&outputs)) {
+        ELOG("No outputs found via RandR, disabling\n");
+        disable_randr(conn);
+    }
 
-        //ewmh_update_workarea();
+    //ewmh_update_workarea();
 
 #if 0
-        /* Just go through each active output and associate one workspace */
-        TAILQ_FOREACH(output, &outputs, outputs) {
-                if (!output->active || output->current_workspace != NULL)
-                        continue;
-                ws = get_first_workspace_for_output(output);
-                initialize_output(conn, output, ws);
-        }
+    /* Just go through each active output and associate one workspace */
+    TAILQ_FOREACH(output, &outputs, outputs) {
+            if (!output->active || output->current_workspace != NULL)
+                    continue;
+            ws = get_first_workspace_for_output(output);
+            initialize_output(conn, output, ws);
+    }
 #endif
 
-        /* render_layout flushes */
-        tree_render();
+    /* render_layout flushes */
+    tree_render();
 }
 
 /*
@@ -499,21 +499,21 @@ void randr_query_outputs() {
  *
  */
 void randr_init(int *event_base) {
-        const xcb_query_extension_reply_t *extreply;
+    const xcb_query_extension_reply_t *extreply;
 
-        extreply = xcb_get_extension_data(conn, &xcb_randr_id);
-        if (!extreply->present)
-                disable_randr(conn);
-        else randr_query_outputs(conn);
+    extreply = xcb_get_extension_data(conn, &xcb_randr_id);
+    if (!extreply->present)
+        disable_randr(conn);
+    else randr_query_outputs(conn);
 
-        if (event_base != NULL)
-                *event_base = extreply->first_event;
+    if (event_base != NULL)
+        *event_base = extreply->first_event;
 
-        xcb_randr_select_input(conn, root,
-                XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE |
-                XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE |
-                XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE |
-                XCB_RANDR_NOTIFY_MASK_OUTPUT_PROPERTY);
+    xcb_randr_select_input(conn, root,
+            XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE |
+            XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE |
+            XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE |
+            XCB_RANDR_NOTIFY_MASK_OUTPUT_PROPERTY);
 
-        xcb_flush(conn);
+    xcb_flush(conn);
 }
