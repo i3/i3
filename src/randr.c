@@ -534,36 +534,38 @@ void randr_query_outputs() {
             if ((first = get_first_output()) == NULL)
                     die("No usable outputs available\n");
 
-            /* We need to move the workspaces from the disappearing output to the first output */
-            /* 1: Get the con to focus next, if the disappearing ws is focused */
-            Con *next = NULL;
-            if (TAILQ_FIRST(&(croot->focus_head)) == output->con) {
-                DLOG("This output (%p) was focused! Getting next\n", output->con);
-                next = con_next_focused(output->con);
-                DLOG("next = %p\n", next);
-            }
+            if (output->con != NULL) {
+                /* We need to move the workspaces from the disappearing output to the first output */
+                /* 1: Get the con to focus next, if the disappearing ws is focused */
+                Con *next = NULL;
+                if (TAILQ_FIRST(&(croot->focus_head)) == output->con) {
+                    DLOG("This output (%p) was focused! Getting next\n", output->con);
+                    next = con_next_focused(output->con);
+                    DLOG("next = %p\n", next);
+                }
 
-            /* 2: iterate through workspaces and re-assign them */
-            Con *current;
-            while (!TAILQ_EMPTY(&(output->con->nodes_head))) {
-                current = TAILQ_FIRST(&(output->con->nodes_head));
-                DLOG("Detaching current = %p / %s\n", current, current->name);
-                con_detach(current);
-                DLOG("Re-attaching current = %p / %s\n", current, current->name);
-                con_attach(current, first->con, false);
-                DLOG("Done, next\n");
-            }
-            DLOG("re-attached all workspaces\n");
+                /* 2: iterate through workspaces and re-assign them */
+                Con *current;
+                while (!TAILQ_EMPTY(&(output->con->nodes_head))) {
+                    current = TAILQ_FIRST(&(output->con->nodes_head));
+                    DLOG("Detaching current = %p / %s\n", current, current->name);
+                    con_detach(current);
+                    DLOG("Re-attaching current = %p / %s\n", current, current->name);
+                    con_attach(current, first->con, false);
+                    DLOG("Done, next\n");
+                }
+                DLOG("re-attached all workspaces\n");
 
-            if (next) {
-                DLOG("now focusing next = %p\n", next);
-                con_focus(next);
-            }
+                if (next) {
+                    DLOG("now focusing next = %p\n", next);
+                    con_focus(next);
+                }
 
-            DLOG("destroying disappearing con %p\n", output->con);
-            tree_close(output->con, false, true);
-            DLOG("Done. Should be fine now\n");
-            output->con = NULL;
+                DLOG("destroying disappearing con %p\n", output->con);
+                tree_close(output->con, false, true);
+                DLOG("Done. Should be fine now\n");
+                output->con = NULL;
+            }
 
             output->to_be_disabled = false;
         }
