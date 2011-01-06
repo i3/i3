@@ -132,6 +132,10 @@ void start_child(char *command) {
 
                 dup2(fd[0], STDIN_FILENO);
 
+                /* If hide-on-modifier is set, we start of by sending the
+                 * child a SIGSTOP, because the bars aren't mapped at start */
+                stop_child();
+
                 break;
         }
     }
