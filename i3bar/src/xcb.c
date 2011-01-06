@@ -727,12 +727,28 @@ void reconfig_windows() {
             values[2] = walk->rect.w;
             values[3] = font_height + 6;
             values[4] = XCB_STACK_MODE_ABOVE;
+
+            DLOG("Destroying buffer for output %s", walk->name);
+            xcb_free_pixmap(xcb_connection, walk->buffer);
+
             DLOG("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
             xcb_void_cookie_t cfg_cookie = xcb_configure_window_checked(xcb_connection,
                                                                         walk->bar,
                                                                         mask,
                                                                         values);
+
+            DLOG("Recreating buffer for output %s", walk->name);
+            xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
+                                                                    xcb_screen->root_depth,
+                                                                    walk->buffer,
+                                                                    walk->bar,
+                                                                    walk->rect.w,
+                                                                    walk->rect.h);
+
             if (xcb_request_failed(cfg_cookie, "Could not reconfigure window")) {
+                exit(EXIT_FAILURE);
+            }
+            if (xcb_request_failed(pm_cookie,  "Could not create pixmap")) {
                 exit(EXIT_FAILURE);
             }
         }
