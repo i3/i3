@@ -201,12 +201,21 @@ static void workspace_reassign_sticky(Con *con) {
 void workspace_show(const char *num) {
     Con *workspace, *current, *old;
 
-    old = con_get_workspace(focused);
-
     workspace = workspace_get(num);
+
+    /* disable fullscreen for the other workspaces and get the workspace we are
+     * currently on. */
+    TAILQ_FOREACH(current, &(workspace->parent->nodes_head), nodes) {
+        if (current->fullscreen_mode == CF_OUTPUT)
+            old = current;
+        current->fullscreen_mode = CF_NONE;
+    }
+
+    /* enable fullscreen for the target workspace. If it happens to be the
+     * same one we are currently on anyways, we can stop here. */
+    workspace->fullscreen_mode = CF_OUTPUT;
     if (workspace == old)
         return;
-    workspace->fullscreen_mode = CF_OUTPUT;
     /* disable fullscreen */
     TAILQ_FOREACH(current, &(workspace->parent->nodes_head), nodes)
         current->fullscreen_mode = CF_NONE;
