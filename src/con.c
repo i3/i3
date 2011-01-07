@@ -273,6 +273,12 @@ Con *con_get_fullscreen_con(Con *con) {
             entry->con = child;
             TAILQ_INSERT_TAIL(&bfs_head, entry, entries);
         }
+
+        TAILQ_FOREACH(child, &(current->floating_head), floating_windows) {
+            entry = smalloc(sizeof(struct bfs_entry));
+            entry->con = child;
+            TAILQ_INSERT_TAIL(&bfs_head, entry, entries);
+        }
     }
 
     return NULL;
