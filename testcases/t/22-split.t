@@ -12,10 +12,10 @@ my $tmp = get_unused_workspace();
 $i3->command("workspace $tmp")->recv;
 
 my $ws = get_ws($tmp);
-is($ws->{orientation}, 1, 'orientation horizontal by default');
+is($ws->{orientation}, 'horizontal', 'orientation horizontal by default');
 $i3->command('split v')->recv;
 $ws = get_ws($tmp);
-is($ws->{orientation}, 2, 'split v changes workspace orientation');
+is($ws->{orientation}, 'vertical', 'split v changes workspace orientation');
 
 ######################################################################
 # Open two containers, split, open another container. Then verify
@@ -45,7 +45,7 @@ $second = $content->[1];
 
 is(@{$first->{nodes}}, 0, 'first container has no children');
 isnt($second->{name}, $old_name, 'second container was replaced');
-is($second->{orientation}, 1, 'orientation is horizontal');
+is($second->{orientation}, 'horizontal', 'orientation is horizontal');
 is(@{$second->{nodes}}, 2, 'second container has 2 children');
 is($second->{nodes}->[0]->{name}, $old_name, 'found old second container');
 
@@ -61,10 +61,10 @@ $tmp = get_unused_workspace();
 $i3->command("workspace $tmp")->recv;
 
 $ws = get_ws($tmp);
-is($ws->{orientation}, 1, 'orientation horizontal by default');
+is($ws->{orientation}, 'horizontal', 'orientation horizontal by default');
 $i3->command('split v')->recv;
 $ws = get_ws($tmp);
-is($ws->{orientation}, 2, 'split v changes workspace orientation');
+is($ws->{orientation}, 'vertical', 'split v changes workspace orientation');
 
 $i3->command('open')->recv;
 my @content = @{get_ws_content($tmp)};

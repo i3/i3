@@ -178,7 +178,17 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(integer, con->type);
 
     ystr("orientation");
-    y(integer, con->orientation);
+    switch (con->orientation) {
+        case NO_ORIENTATION:
+            ystr("none");
+            break;
+        case HORIZ:
+            ystr("horizontal");
+            break;
+        case VERT:
+            ystr("vertical");
+            break;
+    }
 
     ystr("percent");
     y(double, con->percent);
