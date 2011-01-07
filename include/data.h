@@ -42,7 +42,7 @@ typedef struct Window i3Window;
  *****************************************************************************/
 typedef enum { D_LEFT, D_RIGHT, D_UP, D_DOWN } direction_t;
 typedef enum { NO_ORIENTATION = 0, HORIZ, VERT } orientation_t;
-typedef enum { BS_NORMAL = 0, BS_NONE = 1, BS_1PIXEL = 3 } border_style_t;
+typedef enum { BS_NORMAL = 0, BS_NONE = 1, BS_1PIXEL = 2 } border_style_t;
 
 enum {
     BIND_NONE = 0,
