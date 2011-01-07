@@ -177,7 +177,12 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
         DLOG("parent container killed\n");
         if (con == focused) {
             DLOG("This is the focused container, i need to find another one to focus. I start looking at ws = %p\n", ws);
-            next = con_next_focused(ws);
+            next = ws;
+            /* now go down the focus stack as far as
+             * possible, excluding the current container */
+            while (!TAILQ_EMPTY(&(next->focus_head)))
+                next = TAILQ_FIRST(&(next->focus_head));
+
             dont_kill_parent = true;
             DLOG("Alright, focusing %p\n", next);
         } else {
