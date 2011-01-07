@@ -99,7 +99,6 @@ void floating_enable(Con *con, bool automatic) {
     TAILQ_INSERT_TAIL(&(nc->parent->focus_head), nc, focused);
 
     /* 3: attach the child to the new parent container */
-    con->old_parent = con->parent;
     con->parent = nc;
     con->floating = FLOATING_USER_ON;
 
@@ -134,8 +133,6 @@ void floating_disable(Con *con, bool automatic) {
         return;
     }
 
-    assert(con->old_parent != NULL);
-
     /* 1: detach from parent container */
     TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
     TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
@@ -146,7 +143,7 @@ void floating_disable(Con *con, bool automatic) {
     tree_close(con->parent, false, false);
 
     /* 3: re-attach to previous parent */
-    con->parent = con->old_parent;
+    con->parent = con_get_workspace(con);
     TAILQ_INSERT_TAIL(&(con->parent->nodes_head), con, nodes);
     TAILQ_INSERT_TAIL(&(con->parent->focus_head), con, focused);
 

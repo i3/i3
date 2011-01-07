@@ -81,27 +81,6 @@ Con *tree_open_con(Con *con) {
     return new;
 }
 
-/*
- * vanishing is the container that is about to be closed (so any floating
- * client which has old_parent == vanishing needs to be "re-parented").
- *
- */
-static void fix_floating_parent(Con *con, Con *vanishing) {
-    Con *child;
-
-    if (con->old_parent == vanishing) {
-        LOG("Fixing vanishing old_parent (%p) of container %p to be %p\n",
-                vanishing, con, vanishing->parent);
-        con->old_parent = vanishing->parent;
-    }
-
-    TAILQ_FOREACH(child, &(con->floating_head), floating_windows)
-        fix_floating_parent(child, vanishing);
-
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes)
-        fix_floating_parent(child, vanishing);
-}
-
 static bool _is_con_mapped(Con *con) {
     Con *child;
 
@@ -126,9 +105,6 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
          * their own but usually contain mapped children). */
         was_mapped = _is_con_mapped(con);
     }
-
-    /* check floating clients and adjust old_parent if necessary */
-    fix_floating_parent(croot, con);
 
     /* Get the container which is next focused */
     Con *next = con_next_focused(con);
