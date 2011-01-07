@@ -467,12 +467,21 @@ void con_move_to_workspace(Con *con, Con *workspace) {
     if (next->type != CT_WORKSPACE)
         next = next->parent;
 
+    /* 4: if the target container is floating, we get the workspace instead.
+     * Only tiling windows need to get inserted next to the current container.
+     * */
+    Con *floatingcon = con_inside_floating(next);
+    if (floatingcon != NULL) {
+        DLOG("floatingcon, going up even further\n");
+        next = floatingcon->parent;
+    }
+
     DLOG("Re-attaching container to %p / %s\n", next, next->name);
-    /* 4: re-attach the con to the parent of this focused container */
+    /* 5: re-attach the con to the parent of this focused container */
     con_detach(con);
     con_attach(con, next, false);
 
-    /* 5: keep focus on the current workspace */
+    /* 6: keep focus on the current workspace */
     con_focus(focus_next);
 }
 
