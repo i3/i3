@@ -17,6 +17,8 @@
 extern xcb_connection_t *conn;
 
 void floating_enable(Con *con, bool automatic) {
+    bool set_focus = true;
+
     if (con_is_floating(con)) {
         LOG("Container is already in floating mode, not doing anything.\n");
         return;
@@ -58,6 +60,7 @@ void floating_enable(Con *con, bool automatic) {
             con_focus(old_focused);
 
         con = new;
+        set_focus = false;
     }
 
     /* 1: detach the container from its parent */
@@ -121,7 +124,8 @@ void floating_enable(Con *con, bool automatic) {
     TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
     TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
     // TODO: don’t influence focus handling when Con was not focused before.
-    con_focus(con);
+    if (set_focus)
+        con_focus(con);
 }
 
 void floating_disable(Con *con, bool automatic) {
