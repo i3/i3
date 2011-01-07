@@ -84,4 +84,19 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent);
  */
 bool tree_restore(const char *path);
 
+/**
+ * tree_flatten() removes pairs of redundant split containers, e.g.:
+ *       [workspace, horizontal]
+ *   [v-split]           [child3]
+ *   [h-split]
+ * [child1] [child2]
+ * In this example, the v-split and h-split container are redundant.
+ * Such a situation can be created by moving containers in a direction which is
+ * not the orientation of their parent container. i3 needs to create a new
+ * split container then and if you move containers this way multiple times,
+ * redundant chains of split-containers can be the result.
+ *
+ */
+void tree_flatten(Con *child);
+
 #endif

@@ -669,6 +669,8 @@ void con_set_layout(Con *con, int layout) {
         if (old_focused)
             con_focus(old_focused);
 
+        tree_flatten(croot);
+
         return;
     }
 
