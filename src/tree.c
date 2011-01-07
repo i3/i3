@@ -326,7 +326,7 @@ void tree_render() {
     if (croot == NULL)
         return;
 
-    printf("-- BEGIN RENDERING --\n");
+    DLOG("-- BEGIN RENDERING --\n");
     /* Reset map state for all nodes in tree */
     /* TODO: a nicer method to walk all nodes would be good, maybe? */
     mark_unmapped(croot);
@@ -335,11 +335,11 @@ void tree_render() {
     /* We start rendering at an output */
     Con *output;
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        printf("output %p / %s\n", output, output->name);
+        DLOG("output %p / %s\n", output, output->name);
         render_con(output, false);
     }
     x_push_changes(croot);
-    printf("-- END RENDERING --\n");
+    DLOG("-- END RENDERING --\n");
 }
 
 /*

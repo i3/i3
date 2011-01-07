@@ -93,7 +93,7 @@ void x_con_init(Con *con) {
     state->initial = true;
     CIRCLEQ_INSERT_HEAD(&state_head, state, state);
     CIRCLEQ_INSERT_HEAD(&old_state_head, state, old_state);
-    LOG("adding new state for window id 0x%08x\n", state->id);
+    DLOG("adding new state for window id 0x%08x\n", state->id);
 }
 
 /*
@@ -110,7 +110,7 @@ void x_reinit(Con *con) {
         return;
     }
 
-    LOG("resetting state %p to initial\n", state);
+    DLOG("resetting state %p to initial\n", state);
     state->initial = true;
     state->child_mapped = false;
     memset(&(state->window_rect), 0, sizeof(Rect));
@@ -153,7 +153,7 @@ void x_move_win(Con *src, Con *dest) {
     memset(&zero, 0, sizeof(Rect));
     if (memcmp(&(state_dest->window_rect), &(zero), sizeof(Rect)) == 0) {
         memcpy(&(state_dest->window_rect), &(state_src->window_rect), sizeof(Rect));
-        LOG("COPYING RECT\n");
+        DLOG("COPYING RECT\n");
     }
 }
 
@@ -382,7 +382,7 @@ static void x_push_node(Con *con) {
     con_state *state;
     Rect rect = con->rect;
 
-    LOG("Pushing changes for node %p / %s\n", con, con->name);
+    DLOG("Pushing changes for node %p / %s\n", con, con->name);
     state = state_for_frame(con->frame);
 
     if (state->name != NULL) {
@@ -414,7 +414,7 @@ static void x_push_node(Con *con) {
     /* reparent the child window (when the window was moved due to a sticky
      * container) */
     if (state->need_reparent && con->window != NULL) {
-        LOG("Reparenting child window\n");
+        DLOG("Reparenting child window\n");
 
         /* Temporarily set the event masks to XCB_NONE so that we won’t get
          * UnmapNotify events (otherwise the handler would close the container).
@@ -441,7 +441,7 @@ static void x_push_node(Con *con) {
     bool fake_notify = false;
     /* set new position if rect changed */
     if (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0) {
-        LOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
+        DLOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
         xcb_set_window_rect(conn, con->frame, rect);
         memcpy(&(state->rect), &rect, sizeof(Rect));
         fake_notify = true;
@@ -450,7 +450,7 @@ static void x_push_node(Con *con) {
     /* dito, but for child windows */
     if (con->window != NULL &&
         memcmp(&(state->window_rect), &(con->window_rect), sizeof(Rect)) != 0) {
-        LOG("setting window rect (%d, %d, %d, %d)\n",
+        DLOG("setting window rect (%d, %d, %d, %d)\n",
             con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
         xcb_set_window_rect(conn, con->window->id, con->window_rect);
         memcpy(&(state->window_rect), &(con->window_rect), sizeof(Rect));
@@ -475,21 +475,21 @@ static void x_push_node(Con *con) {
 
         if (!state->child_mapped && con->window != NULL) {
             cookie = xcb_map_window(conn, con->window->id);
-            LOG("mapping child window (serial %d)\n", cookie.sequence);
+            DLOG("mapping child window (serial %d)\n", cookie.sequence);
             /* Ignore enter_notifies which are generated when mapping */
             add_ignore_event(cookie.sequence);
             state->child_mapped = true;
         }
 
         cookie = xcb_map_window(conn, con->frame);
-        LOG("mapping container (serial %d)\n", cookie.sequence);
+        DLOG("mapping container (serial %d)\n", cookie.sequence);
         /* Ignore enter_notifies which are generated when mapping */
         add_ignore_event(cookie.sequence);
         state->mapped = con->mapped;
     }
 
     if (fake_notify) {
-        LOG("Sending fake configure notify\n");
+        DLOG("Sending fake configure notify\n");
         fake_absolute_configure_notify(con);
     }
 
@@ -517,7 +517,7 @@ static void x_push_node_unmaps(Con *con) {
     Con *current;
     con_state *state;
 
-    LOG("Pushing changes (with unmaps) for node %p / %s\n", con, con->name);
+    DLOG("Pushing changes (with unmaps) for node %p / %s\n", con, con->name);
     state = state_for_frame(con->frame);
 
     /* map/unmap if map state changed, also ensure that the child window
@@ -534,7 +534,7 @@ static void x_push_node_unmaps(Con *con) {
         }
 
         cookie = xcb_unmap_window(conn, con->frame);
-        LOG("unmapping container (serial %d)\n", cookie.sequence);
+        DLOG("unmapping container (serial %d)\n", cookie.sequence);
         /* we need to increase ignore_unmap for this container (if it
          * contains a window) and for every window "under" this one which
          * contains a window */
@@ -563,20 +563,20 @@ static void x_push_node_unmaps(Con *con) {
 void x_push_changes(Con *con) {
     con_state *state;
 
-    LOG("\n\n PUSHING CHANGES\n\n");
+    DLOG("\n\n PUSHING CHANGES\n\n");
     x_push_node(con);
 
-    LOG("-- PUSHING WINDOW STACK --\n");
+    DLOG("-- PUSHING WINDOW STACK --\n");
     bool order_changed = false;
     /* X11 correctly represents the stack if we push it from bottom to top */
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
-        LOG("stack: 0x%08x\n", state->id);
+        DLOG("stack: 0x%08x\n", state->id);
         con_state *prev = CIRCLEQ_PREV(state, state);
         con_state *old_prev = CIRCLEQ_PREV(state, old_state);
         if (prev != old_prev)
             order_changed = true;
         if ((state->initial || order_changed) && prev != CIRCLEQ_END(&state_head)) {
-            LOG("Stacking 0x%08x above 0x%08x\n", prev->id, state->id);
+            DLOG("Stacking 0x%08x above 0x%08x\n", prev->id, state->id);
             uint32_t mask = 0;
             mask |= XCB_CONFIG_WINDOW_SIBLING;
             mask |= XCB_CONFIG_WINDOW_STACK_MODE;
@@ -596,14 +596,14 @@ void x_push_changes(Con *con) {
         if (!focused->mapped) {
             DLOG("Not updating focus (to %p / %s), focused window is not mapped.\n", focused, focused->name);
         } else {
-            LOG("Updating focus (focused: %p / %s)\n", focused, focused->name);
+            DLOG("Updating focus (focused: %p / %s)\n", focused, focused->name);
             xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, XCB_CURRENT_TIME);
             focused_id = to_focus;
         }
     }
 
     xcb_flush(conn);
-    LOG("\n\n ENDING CHANGES\n\n");
+    DLOG("\n\n ENDING CHANGES\n\n");
 
     x_push_node_unmaps(con);
 
@@ -613,7 +613,7 @@ void x_push_changes(Con *con) {
         CIRCLEQ_INSERT_TAIL(&old_state_head, state, old_state);
     }
     CIRCLEQ_FOREACH(state, &old_state_head, old_state) {
-        LOG("old stack: 0x%08x\n", state->id);
+        DLOG("old stack: 0x%08x\n", state->id);
     }
 }
 
@@ -624,7 +624,7 @@ void x_push_changes(Con *con) {
  */
 void x_raise_con(Con *con) {
     con_state *state;
-    LOG("raising in new stack: %p / %s\n", con, con->name);
+    DLOG("raising in new stack: %p / %s\n", con, con->name);
     state = state_for_frame(con->frame);
 
     CIRCLEQ_REMOVE(&state_head, state, state);

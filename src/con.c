@@ -36,10 +36,10 @@ Con *con_new(Con *parent) {
     new->type = CT_CON;
     new->border_style = config.default_border;
     static int cnt = 0;
-    LOG("opening window %d\n", cnt);
+    DLOG("opening window %d\n", cnt);
 
     /* TODO: remove window coloring after test-phase */
-    LOG("color %s\n", colors[cnt]);
+    DLOG("color %s\n", colors[cnt]);
     new->name = strdup(colors[cnt]);
     //uint32_t cp = get_colorpixel(colors[cnt]);
     cnt++;
@@ -290,7 +290,7 @@ Con *con_get_fullscreen_con(Con *con) {
  */
 bool con_is_floating(Con *con) {
     assert(con != NULL);
-    LOG("checking if con %p is floating\n", con);
+    DLOG("checking if con %p is floating\n", con);
     return (con->floating >= FLOATING_AUTO_ON);
 }
 
@@ -347,8 +347,8 @@ Con *con_by_frame_id(xcb_window_t frame) {
 Con *con_for_window(i3Window *window, Match **store_match) {
     Con *con;
     Match *match;
-    LOG("searching con for window %p\n", window);
-    LOG("class == %s\n", window->class_class);
+    DLOG("searching con for window %p\n", window);
+    DLOG("class == %s\n", window->class_class);
 
     TAILQ_FOREACH(con, &all_cons, all_cons)
         TAILQ_FOREACH(match, &(con->swallow_head), matches) {
@@ -406,7 +406,7 @@ void con_fix_percent(Con *con, int action) {
  */
 void con_toggle_fullscreen(Con *con) {
     Con *workspace, *fullscreen;
-    LOG("toggling fullscreen for %p / %s\n", con, con->name);
+    DLOG("toggling fullscreen for %p / %s\n", con, con->name);
     if (con->fullscreen_mode == CF_NONE) {
         /* 1: check if there already is a fullscreen con */
         workspace = con_get_workspace(con);
@@ -422,7 +422,7 @@ void con_toggle_fullscreen(Con *con) {
         /* 1: disable fullscreen */
         con->fullscreen_mode = CF_NONE;
     }
-    LOG("mode now: %d\n", con->fullscreen_mode);
+    DLOG("mode now: %d\n", con->fullscreen_mode);
 
     /* update _NET_WM_STATE if this container has a window */
     /* TODO: when a window is assigned to a container which is already
@@ -551,7 +551,7 @@ Con *con_get_next(Con *con, char way, orientation_t orientation) {
     /* 1: get the first parent with the same orientation */
     Con *cur = con;
     while (con_orientation(cur->parent) != orientation) {
-        LOG("need to go one level further up\n");
+        DLOG("need to go one level further up\n");
         if (cur->parent->type == CT_WORKSPACE) {
             LOG("that's a workspace, we can't go further up\n");
             return NULL;

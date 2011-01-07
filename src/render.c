@@ -17,10 +17,10 @@ static bool show_debug_borders = false;
  *
  */
 void render_con(Con *con, bool render_fullscreen) {
-    printf("currently rendering node %p / %s / layout %d\n",
+    DLOG("currently rendering node %p / %s / layout %d\n",
             con, con->name, con->layout);
     int children = con_num_children(con);
-    printf("children: %d, orientation = %d\n", children, con->orientation);
+    DLOG("children: %d, orientation = %d\n", children, con->orientation);
 
     /* Copy container rect, subtract container border */
     /* This is the actually usable space inside this container for clients */
@@ -97,7 +97,7 @@ void render_con(Con *con, bool render_fullscreen) {
     /* Check for fullscreen nodes */
     Con *fullscreen = con_get_fullscreen_con(con);
     if (fullscreen) {
-        LOG("got fs node: %p\n", fullscreen);
+        DLOG("got fs node: %p\n", fullscreen);
         fullscreen->rect = rect;
         x_raise_con(fullscreen);
         render_con(fullscreen, true);
@@ -147,7 +147,7 @@ void render_con(Con *con, bool render_fullscreen) {
 
             /* first we have the decoration, if this is a leaf node */
             if (con_is_leaf(child) && child->border_style == BS_NORMAL) {
-                printf("that child is a leaf node, subtracting deco\n");
+                DLOG("that child is a leaf node, subtracting deco\n");
                 /* TODO: make a function for relative coords? */
                 child->deco_rect.x = child->rect.x - con->rect.x;
                 child->deco_rect.y = child->rect.y - con->rect.y;
@@ -162,7 +162,7 @@ void render_con(Con *con, bool render_fullscreen) {
 
         /* stacked layout */
         else if (con->layout == L_STACKED) {
-            printf("stacked con\n");
+            DLOG("stacked con\n");
             child->rect.x = x;
             child->rect.y = y;
             child->rect.width = rect.width;
@@ -179,7 +179,7 @@ void render_con(Con *con, bool render_fullscreen) {
 
         /* tabbed layout */
         else if (con->layout == L_TABBED) {
-            printf("tabbed con\n");
+            DLOG("tabbed con\n");
             child->rect.x = x;
             child->rect.y = y;
             child->rect.width = rect.width;
@@ -196,9 +196,9 @@ void render_con(Con *con, bool render_fullscreen) {
             }
         }
 
-        printf("child at (%d, %d) with (%d x %d)\n",
+        DLOG("child at (%d, %d) with (%d x %d)\n",
                 child->rect.x, child->rect.y, child->rect.width, child->rect.height);
-        printf("x now %d, y now %d\n", x, y);
+        DLOG("x now %d, y now %d\n", x, y);
         x_raise_con(child);
         render_con(child, false);
         i++;
@@ -208,7 +208,7 @@ void render_con(Con *con, bool render_fullscreen) {
     if (con->layout == L_STACKED || con->layout == L_TABBED) {
         Con *foc = TAILQ_FIRST(&(con->focus_head));
         if (foc != TAILQ_END(&(con->focus_head))) {
-            LOG("con %p is stacking, raising %p\n", con, foc);
+            DLOG("con %p is stacking, raising %p\n", con, foc);
             x_raise_con(foc);
             /* by rendering the stacked container again, we handle the case
              * that we have a non-leaf-container inside the stack. */
@@ -217,11 +217,11 @@ void render_con(Con *con, bool render_fullscreen) {
     }
 
     TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
-        LOG("render floating:\n");
-        LOG("floating child at (%d,%d) with %d x %d\n", child->rect.x, child->rect.y, child->rect.width, child->rect.height);
+        DLOG("render floating:\n");
+        DLOG("floating child at (%d,%d) with %d x %d\n", child->rect.x, child->rect.y, child->rect.width, child->rect.height);
         x_raise_con(child);
         render_con(child, false);
     }
 
-    printf("-- level up\n");
+    DLOG("-- level up\n");
 }

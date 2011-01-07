@@ -50,12 +50,12 @@ void manage_existing_windows(xcb_window_t root) {
  *
  */
 void restore_geometry() {
-    LOG("Restoring geometry\n");
+    DLOG("Restoring geometry\n");
 
     Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons)
         if (con->window) {
-            printf("placing window at %d %d\n", con->rect.x, con->rect.y);
+            DLOG("placing window at %d %d\n", con->rect.x, con->rect.y);
             xcb_reparent_window(conn, con->window->id, root,
                                 con->rect.x, con->rect.y);
         }
@@ -75,7 +75,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     xcb_get_geometry_reply_t *geom;
     xcb_get_window_attributes_reply_t *attr = 0;
 
-    printf("---> looking at window 0x%08x\n", window);
+    DLOG("---> looking at window 0x%08x\n", window);
 
     xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
                               utf8_title_cookie, title_cookie,
@@ -96,33 +96,33 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     /* Check if the window is mapped (it could be not mapped when intializing and
        calling manage_window() for every window) */
     if ((attr = xcb_get_window_attributes_reply(conn, cookie, 0)) == NULL) {
-        LOG("Could not get attributes\n");
+        DLOG("Could not get attributes\n");
         return;
     }
 
     if (needs_to_be_mapped && attr->map_state != XCB_MAP_STATE_VIEWABLE) {
-        LOG("map_state unviewable\n");
+        DLOG("map_state unviewable\n");
         goto out;
     }
 
     /* Don’t manage clients with the override_redirect flag */
-    LOG("override_redirect is %d\n", attr->override_redirect);
+    DLOG("override_redirect is %d\n", attr->override_redirect);
     if (attr->override_redirect)
         goto out;
 
     /* Check if the window is already managed */
     if (con_by_window_id(window) != NULL) {
-        LOG("already managed (by con %p)\n", con_by_window_id(window));
+        DLOG("already managed (by con %p)\n", con_by_window_id(window));
         goto out;
     }
 
     /* Get the initial geometry (position, size, …) */
     if ((geom = xcb_get_geometry_reply(conn, geomc, 0)) == NULL) {
-        LOG("could not get geometry\n");
+        DLOG("could not get geometry\n");
         goto out;
     }
 
-    LOG("reparenting!\n");
+    DLOG("reparenting!\n");
     uint32_t mask = 0;
     uint32_t values[1];
 
@@ -172,7 +172,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         if (match != NULL && match->insert_where == M_ACTIVE) {
             /* We need to go down the focus stack starting from nc */
             while (TAILQ_FIRST(&(nc->focus_head)) != TAILQ_END(&(nc->focus_head))) {
-                printf("walking down one step...\n");
+                DLOG("walking down one step...\n");
                 nc = TAILQ_FIRST(&(nc->focus_head));
             }
             /* We need to open a new con */
@@ -215,7 +215,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
          * are bigger than our minimal useful size (75x50). */
         nc->rect.width = max(geom->width, 75);
         nc->rect.height = max(geom->height, 50);
-        LOG("geometry = %d x %d\n", nc->rect.width, nc->rect.height);
+        DLOG("geometry = %d x %d\n", nc->rect.width, nc->rect.height);
         floating_enable(nc, false);
     }
 
