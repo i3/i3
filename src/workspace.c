@@ -211,14 +211,17 @@ void workspace_show(const char *num) {
         current->fullscreen_mode = CF_NONE;
     }
 
+    /* Check if the the currently focused con is on the same Output as the
+     * workspace we chose as 'old'. If not, use the workspace of the currently
+     * focused con */
+    if (con_get_workspace(focused)->parent != old->parent)
+        old = con_get_workspace(focused);
+
     /* enable fullscreen for the target workspace. If it happens to be the
      * same one we are currently on anyways, we can stop here. */
     workspace->fullscreen_mode = CF_OUTPUT;
     if (workspace == old)
         return;
-    /* disable fullscreen */
-    TAILQ_FOREACH(current, &(workspace->parent->nodes_head), nodes)
-        current->fullscreen_mode = CF_NONE;
 
     workspace_reassign_sticky(workspace);
 
