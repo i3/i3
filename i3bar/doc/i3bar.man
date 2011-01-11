@@ -54,6 +54,14 @@ For each specified option you need to give a HEX-colorcode.
 
 Be advised that this command-line-options are only temporary and are very likely to be removed, when we finally have a config-file.
 
+== ENVIRONMENT
+
+=== I3SOCK
+
+If no ipc-socket is specified on the commandline, this variable is used
+to determine the path, at wich the unix domain socket is expected, on which
+to connect to i3.
+
 == EXAMPLES
 
 To get a docked bar with some statusinformation, you use

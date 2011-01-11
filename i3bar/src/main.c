@@ -113,7 +113,7 @@ void sig_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
 int main(int argc, char **argv) {
     int opt;
     int option_index = 0;
-    char *socket_path = NULL;
+    char *socket_path = getenv("I3SOCK");
     char *command = NULL;
     char *fontname = NULL;
     char *i3_default_sock_path = "~/.i3/ipc.sock";
@@ -246,8 +246,6 @@ int main(int argc, char **argv) {
     ev_loop(main_loop, 0);
 
     kill_child();
-
-    FREE(socket_path);
 
     FREE(statusline_buffer);
 
