@@ -99,8 +99,6 @@ int main(int argc, char *argv[]) {
     if (!isatty(fileno(stdout)))
         setbuf(stdout, NULL);
 
-    config.ipc_socket_path = getenv("I3SOCK");
-
     start_argv = argv;
 
     while ((opt = getopt_long(argc, argv, "c:CvaL:hld:V", long_options, &option_index)) != -1) {
@@ -178,6 +176,10 @@ int main(int argc, char *argv[]) {
     if (only_check_config) {
         LOG("Done checking configuration file. Exiting.\n");
         exit(0);
+    }
+
+    if (config.ipc_socket_path == NULL) {
+        config.ipc_socket_path = getenv("I3SOCK");
     }
 
     xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
