@@ -24,6 +24,14 @@ future (staying backwards-compatible, of course).
 i3-msg "bp" # Use 1-px border for current client
 ------------------------------------------------
 
+== ENVIRONMENT
+
+=== I3SOCK
+
+If no ipc-socket is specified on the commandline, this variable is used
+to determine the path, at wich the unix domain socket is expected, on which
+to connect to i3.
+
 == SEE ALSO
 
 i3(1)

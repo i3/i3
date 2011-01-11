@@ -23,6 +23,14 @@ mark/goto command.
 i3-input -p 'mark ' -l 1 -P 'Mark: '
 ------------------------------------------------
 
+== ENVIRONMENT
+
+=== I3SOCK
+
+If no ipc-socket is specified on the commandline, this variable is used
+to determine the path, at wich the unix domain socket is expected, on which
+to connect to i3.
+
 == SEE ALSO
 
 i3(1)

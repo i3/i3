@@ -282,6 +282,14 @@ echo "Starting at $(date)" >> ~/.i3/logfile
 exec /usr/bin/i3 >> ~/.i3/logfile
 -------------------------------------------------------------
 
+== ENVIRONMENT
+
+=== I3SOCK
+
+If no ipc-socket is specified in the configfile, this variable is used
+to determine the path, at wich the unix domain socket is created, on which
+i3 listenes to incoming connections.
+
 == TODO
 
 There is still lot of work to do. Please check our bugtracker for up-to-date

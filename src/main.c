@@ -99,6 +99,8 @@ int main(int argc, char *argv[]) {
     if (!isatty(fileno(stdout)))
         setbuf(stdout, NULL);
 
+    config.ipc_socket_path = getenv("I3SOCK");
+
     start_argv = argv;
 
     while ((opt = getopt_long(argc, argv, "c:CvaL:hld:V", long_options, &option_index)) != -1) {

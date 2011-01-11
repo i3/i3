@@ -241,7 +241,10 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 }
 
 int main(int argc, char *argv[]) {
-        char *socket_path = "/tmp/i3-ipc.sock";
+        char *socket_path;
+        if ((socket_path = getenv("I3SOCK")) == NULL) {
+                socket_path = "/tmp/i3-ipc.sock";
+        }
         char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
         int o, option_index = 0;
 

@@ -11,8 +11,12 @@ workspace bar.
 The method of choice for IPC in our case is a unix socket because it has very
 little overhead on both sides and is usually available without headaches in
 most languages. In the default configuration file, no ipc-socket path is
-specified and thus no socket is created. The standard path (which +i3-msg+ and
-+i3-input+ use) is +/tmp/i3-ipc.sock+.
+specified and thus no socket is created. Alternatively you can set the
+environment-variable +I3SOCK+. Setting a path in the configfile will override
++I3SOCK+.
+
++i3-msg+ and +i3-input+ will use +I3SOCK+ to connect to i3, unless -s is passed.
+If neither is given, they will default to +/tmp/i3-ipc.sock+.
 
 == Establishing a connection
 

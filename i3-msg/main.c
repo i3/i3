@@ -107,7 +107,10 @@ static void ipc_recv_message(int sockfd, uint32_t message_type,
 }
 
 int main(int argc, char *argv[]) {
-        char *socket_path = "/tmp/i3-ipc.sock";
+        char *socket_path;
+        if ((socket_path = getenv("I3SOCK")) == NULL) {
+            socket_path = "/tmp/i3-ipc.sock";
+        }
         int o, option_index = 0;
         int message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
         char *payload = "";

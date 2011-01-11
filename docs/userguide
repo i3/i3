@@ -521,6 +521,8 @@ programs to get information from i3, such as the current workspaces
 To enable it, you have to configure a path where the unix socket will be
 stored. The default path is +/tmp/i3-ipc.sock+.
 
+You can override the default path through the environment-variable +I3SOCK+.
+
 *Examples*:
 ----------------------------
 ipc-socket /tmp/i3-ipc.sock
