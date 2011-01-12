@@ -261,21 +261,25 @@ int main(int argc, char *argv[]) {
         while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
                 switch (o) {
                         case 's':
+                                FREE(socket_path);
                                 socket_path = strdup(optarg);
                                 break;
                         case 'v':
                                 printf("i3-input " I3_VERSION);
                                 return 0;
                         case 'p':
+                                FREE(command_prefix);
                                 command_prefix = strdup(optarg);
                                 break;
                         case 'l':
                                 limit = atoi(optarg);
                                 break;
                         case 'P':
+                                FREE(prompt);
                                 prompt = strdup(optarg);
                                 break;
                         case 'f':
+                                FREE(pattern);
                                 pattern = strdup(optarg);
                                 break;
                         case 'h':

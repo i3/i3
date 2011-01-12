@@ -108,10 +108,12 @@ int main(int argc, char *argv[]) {
                 autostart = false;
                 break;
             case 'L':
+                FREE(layout_path);
                 layout_path = sstrdup(optarg);
                 delete_layout_path = false;
                 break;
             case 'c':
+                FREE(override_configpath);
                 override_configpath = sstrdup(optarg);
                 break;
             case 'C':
@@ -141,6 +143,7 @@ int main(int argc, char *argv[]) {
                          "and disable this option as soon as you can.\n");
                     break;
                 } else if (strcmp(long_options[option_index].name, "restart") == 0) {
+                    FREE(layout_path);
                     layout_path = sstrdup(optarg);
                     delete_layout_path = true;
                     break;

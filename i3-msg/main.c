@@ -126,6 +126,8 @@ int main(int argc, char *argv[]) {
 
         while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
                 if (o == 's') {
+                        if (socket_path != NULL)
+                                free(socket_path);
                         socket_path = strdup(optarg);
                 } else if (o == 't') {
                         if (strcasecmp(optarg, "command") == 0)
