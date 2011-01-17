@@ -290,11 +290,10 @@ static void mark_unmapped(Con *con) {
     TAILQ_FOREACH(current, &(con->nodes_head), nodes)
         mark_unmapped(current);
     if (con->type == CT_WORKSPACE) {
-        TAILQ_FOREACH(current, &(con->floating_head), floating_windows) {
-            current->mapped = false;
-            Con *child = TAILQ_FIRST(&(current->nodes_head));
-            child->mapped = false;
-        }
+        /* We need to call mark_unmapped on floating nodes aswell since we can
+         * make containers floating. */
+        TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
+            mark_unmapped(current);
     }
 }
 
