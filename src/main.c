@@ -71,6 +71,74 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
     }
 }
 
+
+/*
+ * When using xmodmap to change the keyboard mapping, this event
+ * is only sent via XKB. Therefore, we need this special handler.
+ *
+ */
+static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
+    DLOG("Handling XKB event\n");
+    XkbEvent ev;
+
+    /* When using xmodmap, every change (!) gets an own event.
+     * Therefore, we just read all events and only handle the
+     * mapping_notify once. */
+    bool mapping_changed = false;
+    while (XPending(xkbdpy)) {
+        XNextEvent(xkbdpy, (XEvent*)&ev);
+        /* While we should never receive a non-XKB event,
+         * better do sanity checking */
+        if (ev.type != xkb_event_base)
+            continue;
+
+        if (ev.any.xkb_type == XkbMapNotify) {
+            mapping_changed = true;
+            continue;
+        }
+
+        if (ev.any.xkb_type != XkbStateNotify) {
+            ELOG("Unknown XKB event received (type %d)\n", ev.any.xkb_type);
+            continue;
+        }
+
+        /* See The XKB Extension: Library Specification, section 14.1 */
+        /* We check if the current group (each group contains
+         * two levels) has been changed. Mode_switch activates
+         * group XkbGroup2Index */
+        if (xkb_current_group == ev.state.group)
+            continue;
+
+        xkb_current_group = ev.state.group;
+
+        if (ev.state.group == XkbGroup2Index) {
+            DLOG("Mode_switch enabled\n");
+            grab_all_keys(conn, true);
+        }
+
+        if (ev.state.group == XkbGroup1Index) {
+            DLOG("Mode_switch disabled\n");
+            ungrab_all_keys(conn);
+            grab_all_keys(conn, false);
+        }
+    }
+
+    if (!mapping_changed)
+        return;
+
+    DLOG("Keyboard mapping changed, updating keybindings\n");
+    xcb_key_symbols_free(keysyms);
+    keysyms = xcb_key_symbols_alloc(conn);
+
+    xcb_get_numlock_mask(conn);
+
+    ungrab_all_keys(conn);
+    DLOG("Re-grabbing...\n");
+    translate_keysyms();
+    grab_all_keys(conn, (xkb_current_group == XkbGroup2Index));
+    DLOG("Done\n");
+}
+
 int main(int argc, char *argv[]) {
     //parse_cmd("[ foo ] attach, attach ; focus");
     int screens;
@@ -239,6 +307,31 @@ int main(int argc, char *argv[]) {
         /*init_xkb();*/
     }
 
+    if (xkb_supported) {
+        int errBase,
+            major = XkbMajorVersion,
+            minor = XkbMinorVersion;
+
+        if (fcntl(ConnectionNumber(xkbdpy), F_SETFD, FD_CLOEXEC) == -1) {
+            fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
+            return 1;
+        }
+
+        int i1;
+        if (!XkbQueryExtension(xkbdpy,&i1,&xkb_event_base,&errBase,&major,&minor)) {
+            fprintf(stderr, "XKB not supported by X-server\n");
+            return 1;
+        }
+        /* end of ugliness */
+
+        if (!XkbSelectEvents(xkbdpy, XkbUseCoreKbd,
+                             XkbMapNotifyMask | XkbStateNotifyMask,
+                             XkbMapNotifyMask | XkbStateNotifyMask)) {
+            fprintf(stderr, "Could not set XKB event mask\n");
+            return 1;
+        }
+    }
+
     memset(&evenths, 0, sizeof(xcb_event_handlers_t));
     memset(&prophs, 0, sizeof(xcb_property_handlers_t));
 
@@ -375,11 +468,21 @@ int main(int argc, char *argv[]) {
     }
 
     struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
+    struct ev_io *xkb = scalloc(sizeof(struct ev_io));
     struct ev_check *xcb_check = scalloc(sizeof(struct ev_check));
     struct ev_prepare *xcb_prepare = scalloc(sizeof(struct ev_prepare));
 
     ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
     ev_io_start(loop, xcb_watcher);
+
+
+    if (xkb_supported) {
+        ev_io_init(xkb, xkb_got_event, ConnectionNumber(xkbdpy), EV_READ);
+        ev_io_start(loop, xkb);
+
+        /* Flush the buffer so that libev can properly get new events */
+        XFlush(xkbdpy);
+    }
 
     ev_check_init(xcb_check, xcb_check_cb);
     ev_check_start(loop, xcb_check);
