@@ -168,13 +168,15 @@ void render_con(Con *con, bool render_fullscreen) {
             child->rect.width = rect.width;
             child->rect.height = rect.height;
 
-            child->rect.y += (deco_height * children);
-            child->rect.height -= (deco_height * children);
-
             child->deco_rect.x = x - con->rect.x;
             child->deco_rect.y = y - con->rect.y + (i * deco_height);
             child->deco_rect.width = child->rect.width;
             child->deco_rect.height = deco_height;
+
+            if (children > 1 || (child->border_style != BS_1PIXEL && child->border_style != BS_NONE)) {
+                child->rect.y += (deco_height * children);
+                child->rect.height -= (deco_height * children);
+            }
         }
 
         /* tabbed layout */

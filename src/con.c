@@ -625,10 +625,10 @@ int con_border_style(Con *con) {
     }
 
     if (con->parent->layout == L_STACKED)
-        return BS_NORMAL;
+        return (con_num_children(con->parent) == 1 ? con->border_style : BS_NORMAL);
 
     if (con->parent->layout == L_TABBED && con->border_style != BS_NORMAL)
-        return con_num_children(con->parent) == 1 ? con->border_style : BS_NORMAL;
+        return (con_num_children(con->parent) == 1 ? con->border_style : BS_NORMAL);
 
     return con->border_style;
 }
