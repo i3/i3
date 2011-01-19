@@ -1,7 +1,7 @@
 Release notes for i3 v3.ε-bf2
 -----------------------------
 
-This is the second bugfix release (bf1) for version 3.ε of i3. Current
+This is the second bugfix release (bf2) for version 3.ε of i3. Current
 development focuses on the tree branch which contains a major refactoring.
 Because (as usual) there are still bugs in the stable versions, though, we
 felt it was a good idea to have this bugfix release.
