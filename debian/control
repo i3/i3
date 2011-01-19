@@ -25,7 +25,7 @@ Section: x11
 Depends: ${shlibs:Depends}, ${misc:Depends}, x11-utils
 Provides: x-window-manager
 Suggests: rxvt-unicode | x-terminal-emulator
-Recommends: xfonts-base, libanyevent-i3-perl, libanyevent-perl, libipc-run-perl
+Recommends: xfonts-base, libanyevent-i3-perl, libanyevent-perl, libipc-run-perl, libtry-tiny-perl
 Description: an improved dynamic tiling window manager
  Key features of i3 are good support of multi-monitor setups (workspaces are
  assigned to virtual screens, i3 does the right thing when attaching new

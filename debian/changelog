@@ -1,3 +1,22 @@
+i3-wm (3.e-bf2-1) unstable; urgency=low
+
+  * Bugfix: Don’t crash when a dock client starts up with nonsense coordinates
+    (Closes: #610143)
+  * Bugfix: i3-wsbar: properly catch errors when writing to child processes
+  * Bugfix: Render decorations of single window in tabbed/stacked container
+  * Bugfix: Don't draw stacked decors overlapping a fs window
+  * Bugfix: Replay unhandled pointer events
+  * Bugfix: Validate the ws number for client assignment
+  * Bugfix: use the global root variable, don’t get the first one
+  * Bugfix: Opera flash plugin no longer prevents in-page focus changing
+  * Support for custom bg colors for clients
+  * Bugfix: Fix possible rounding errors
+  * Bugfix: Don’t setup event handler when RandR base event is not set
+  * Bugfix: Properly call init_workspaces() when RandR is known but not present
+  * Bugfix: Correctly count variables when parsing the configfile
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Wed, 19 Jan 2011 21:24:38 +0100
+
 i3-wm (3.e-bf1-3) unstable; urgency=low
 
   * include keyboard-layer{1,2}.png in docs (Closes: #595295)
