@@ -525,7 +525,7 @@ void tree_flatten(Con *con) {
 
     /* Ensure it got only one child */
     child = TAILQ_FIRST(&(con->nodes_head));
-    if (TAILQ_NEXT(child, nodes) != NULL)
+    if (child == NULL || TAILQ_NEXT(child, nodes) != NULL)
         goto recurse;
 
     /* The child must have a different orientation than the con but the same as
