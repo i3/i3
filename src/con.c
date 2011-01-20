@@ -478,11 +478,21 @@ void con_move_to_workspace(Con *con, Con *workspace) {
 
     DLOG("Re-attaching container to %p / %s\n", next, next->name);
     /* 5: re-attach the con to the parent of this focused container */
+    Con *parent = con->parent;
     con_detach(con);
     con_attach(con, next, false);
 
     /* 6: keep focus on the current workspace */
     con_focus(focus_next);
+
+    /* 7: check if the parent container is empty now and close it */
+    if (parent->type != CT_WORKSPACE &&
+        TAILQ_EMPTY(&(parent->nodes_head))) {
+        DLOG("Closing empty parent container\n");
+        /* TODO: check if this container would swallow any other client and
+         * don’t close it automatically. */
+        tree_close(parent, false, false);
+    }
 }
 
 /*
