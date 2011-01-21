@@ -95,6 +95,17 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             json_node->sticky_group = scalloc((len+1) * sizeof(char));
             memcpy(json_node->sticky_group, val, len);
             LOG("sticky_group of this container is %s\n", json_node->sticky_group);
+        } else if (strcasecmp(last_key, "orientation") == 0) {
+            char *buf = NULL;
+            asprintf(&buf, "%.*s", len, val);
+            if (strcasecmp(buf, "none") == 0)
+                json_node->orientation = NO_ORIENTATION;
+            else if (strcasecmp(buf, "horizontal") == 0)
+                json_node->orientation = HORIZ;
+            else if (strcasecmp(buf, "vertical") == 0)
+                json_node->orientation = VERT;
+            else LOG("Unhandled orientation: %s\n", buf);
+            free(buf);
         }
     }
     return 1;
@@ -102,9 +113,6 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
 
 static int json_int(void *ctx, long val) {
     LOG("int %d for key %s\n", val, last_key);
-    if (strcasecmp(last_key, "orientation") == 0) {
-        json_node->orientation = val;
-    }
     if (strcasecmp(last_key, "layout") == 0) {
         json_node->layout = val;
     }
