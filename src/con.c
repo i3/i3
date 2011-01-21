@@ -406,6 +406,12 @@ void con_fix_percent(Con *con, int action) {
  */
 void con_toggle_fullscreen(Con *con) {
     Con *workspace, *fullscreen;
+
+    if (con->type == CT_WORKSPACE) {
+        DLOG("You cannot make a workspace fullscreen.\n");
+        return;
+    }
+
     DLOG("toggling fullscreen for %p / %s\n", con, con->name);
     if (con->fullscreen_mode == CF_NONE) {
         /* 1: check if there already is a fullscreen con */
