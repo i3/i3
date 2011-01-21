@@ -559,12 +559,15 @@ static void x_push_node_unmaps(Con *con) {
  * Pushes all changes (state of each node, see x_push_node() and the window
  * stack) to X11.
  *
+ * NOTE: We need to push the stack first so that the windows have the correct
+ * stacking order. This is relevant for workspace switching where we map the
+ * windows because mapping may generate EnterNotify events. When they are
+ * generated in the wrong order, this will cause focus problems when switching
+ * workspaces.
+ *
  */
 void x_push_changes(Con *con) {
     con_state *state;
-
-    DLOG("\n\n PUSHING CHANGES\n\n");
-    x_push_node(con);
 
     DLOG("-- PUSHING WINDOW STACK --\n");
     bool order_changed = false;
@@ -586,6 +589,9 @@ void x_push_changes(Con *con) {
         }
         state->initial = false;
     }
+
+    DLOG("\n\n PUSHING CHANGES\n\n");
+    x_push_node(con);
 
     xcb_window_t to_focus = focused->frame;
     if (focused->window != NULL)
