@@ -192,6 +192,8 @@ void fake_absolute_configure_notify(Con *con) {
     absolute.width = con->window_rect.width;
     absolute.height = con->window_rect.height;
 
+    DLOG("fake rect = (%d, %d, %d, %d)\n", absolute.x, absolute.y, absolute.width, absolute.height);
+
     fake_configure_notify(conn, absolute, con->window->id);
 }
 

@@ -87,12 +87,14 @@ void floating_enable(Con *con, bool automatic) {
     i3Font *font = load_font(conn, config.font);
     int deco_height = font->height + 5;
 
+    DLOG("Original rect: (%d, %d) with %d x %d\n", con->rect.x, con->rect.y, con->rect.width, con->rect.height);
     nc->rect = con->rect;
     /* add pixels for the decoration */
     /* TODO: don’t add them when the user automatically puts new windows into
      * 1pixel/borderless mode */
     nc->rect.height += deco_height + 4;
     nc->rect.width += 4;
+    DLOG("Floating rect: (%d, %d) with %d x %d\n", nc->rect.x, nc->rect.y, nc->rect.width, nc->rect.height);
     nc->orientation = NO_ORIENTATION;
     nc->type = CT_FLOATING_CON;
     TAILQ_INSERT_TAIL(&(nc->parent->floating_head), nc, floating_windows);
@@ -119,6 +121,10 @@ void floating_enable(Con *con, bool automatic) {
             nc->rect.y = ws->rect.y + (ws->rect.height / 2) - (nc->rect.height / 2);
         }
     }
+
+    /* render the cons to get initial window_rect correct */
+    render_con(nc, false);
+    render_con(con, false);
 
     TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
     TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
