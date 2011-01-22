@@ -118,10 +118,11 @@ void render_con(Con *con, bool render_fullscreen) {
             double percentage = child->percent > 0.0 ? child->percent : 1.0 / children;
             assigned += sizes[i++] = percentage * total;
         }
-        while (assigned < total) {
+        int signal = assigned < total ? 1 : -1;
+        while (assigned != total) {
             for (i = 0; i < children && assigned < total; ++i) {
-                ++sizes[i];
-                ++assigned;
+                sizes[i] += signal;
+                assigned += signal;
             }
         }
     }
