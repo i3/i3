@@ -10,6 +10,7 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h> /* Defines uint32_t, required by cfgparse.tab.h */
 #include "cfgparse.tab.h"
 #include <xcb/xcb.h>
 
