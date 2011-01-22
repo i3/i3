@@ -14,7 +14,7 @@ i3bar - xcb-based status- and ws-bar
 == OPTIONS
 
 *-s, --socket* 'sock_path'::
-Specifies the 'socketpath', via which *i3bar* connects to *i3*(1). If *i3bar* can not connect to *i3*, it will exit. Defaults to '~/.i3/ipc.sock'
+Specifies the 'socketpath', via which *i3bar* connects to *i3*(1). If *i3bar* can not connect to *i3*, it will exit. Defaults to '/tmp/i3-ipc.sock'
 
 *-c, --command* 'command'::
 Execute '<command>' to get 'stdin'. You can also simply pipe into 'stdin', but starting the coomand for itself, *i3bar* is able to send 'SIGCONT' and 'SIGSTOP', when combined with *-m*

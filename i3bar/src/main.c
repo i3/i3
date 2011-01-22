@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
     char *socket_path = getenv("I3SOCK");
     char *command = NULL;
     char *fontname = NULL;
-    char *i3_default_sock_path = "~/.i3/ipc.sock";
+    char *i3_default_sock_path = "/tmp/i3-ipc.sock";
     struct xcb_color_strings_t colors = { NULL, };
 
     /* Definition of the standard-config */
