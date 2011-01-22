@@ -713,9 +713,10 @@ void render_workspace(xcb_connection_t *conn, Output *output, Workspace *r_ws) {
 
         /* Correct rounding errors */
         int error = r_ws->rect.width - total_col_width, error_index = r_ws->cols - 1;
+        int signal = error < 0 ? 1 : -1;
         while (error) {
-                ++col_width[error_index];
-                --error;
+                col_width[error_index] -= signal;
+                error += signal;
                 error_index = error_index == 0 ? r_ws->cols - 1 : error_index - 1;
         }
 
@@ -732,9 +733,10 @@ void render_workspace(xcb_connection_t *conn, Output *output, Workspace *r_ws) {
         /* Correct rounding errors */
         error = workspace_height(r_ws) - total_row_height;
         error_index = r_ws->rows - 1;
+        signal = error < 0 ? 1 : -1;
         while (error) {
-                ++row_height[error_index];
-                --error;
+                row_height[error_index] -= signal;
+                error += signal;
                 error_index = error_index == 0 ? r_ws->rows - 1 : error_index - 1;
         }
 
