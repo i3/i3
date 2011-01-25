@@ -254,7 +254,6 @@ int main(int argc, char **argv) {
     ev_default_destroy();
 
     free_workspaces();
-    FREE_SLIST(outputs, i3_output);
 
     return 0;
 }
