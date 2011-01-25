@@ -385,17 +385,38 @@ int con_num_children(Con *con) {
 void con_fix_percent(Con *con, int action) {
     Con *child;
     int children = con_num_children(con);
-    /* TODO: better document why this math works */
-    double fix;
-    if (action == WINDOW_ADD)
-        fix = (1.0 - (1.0 / (children+1)));
-    else
-        fix = 1.0 / (1.0 - (1.0 / (children+1)));
 
+    // calculate how much we have distributed and how many containers
+    // with a percentage set we have
+    double total = 0.0;
+    int children_with_percent = 0;
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-        if (child->percent <= 0.0)
-            continue;
-        child->percent *= fix;
+        if (child->percent > 0.0) {
+            total += child->percent;
+            ++children_with_percent;
+        }
+    }
+
+    // if there were children without a percentage set, set to a value that
+    // will make those children proportional to all others
+    if (children_with_percent != children) {
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            if (child->percent <= 0.0) {
+                if (children_with_percent == 0)
+                    total += (child->percent = 1.0);
+                else total += (child->percent = total / children_with_percent);
+            }
+        }
+    }
+
+    // if we got a zero, just distribute the space equally, otherwise
+    // distribute according to the proportions we got
+    if (total == 0.0) {
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+            child->percent = 1.0 / children;
+    } else if (total != 1.0) {
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+            child->percent /= total;
     }
 }
 
