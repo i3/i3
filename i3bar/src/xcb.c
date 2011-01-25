@@ -197,6 +197,8 @@ void refresh_statusline() {
 
     draw_text(statusline_pm, statusline_ctx, 0, 0, text, glyph_count);
 
+    FREE(text);
+
     if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer")) {
         exit(EXIT_FAILURE);
     }
