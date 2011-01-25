@@ -71,11 +71,13 @@ Con *tree_open_con(Con *con) {
 
     assert(con != NULL);
 
-    /* 3: re-calculate child->percent for each child */
+    /* 3. create the container and attach it to its parent */
+    Con *new = con_new(con);
+
+    /* 4: re-calculate child->percent for each child */
     con_fix_percent(con, WINDOW_ADD);
 
-    /* 4: add a new container leaf to this con */
-    Con *new = con_new(con);
+    /* 5: focus the new container */
     con_focus(new);
 
     return new;
