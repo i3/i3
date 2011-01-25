@@ -258,8 +258,14 @@ void free_workspaces() {
     if (outputs == NULL) {
         return;
     }
+    i3_ws     *ws_walk;
+
     SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (outputs_walk->workspaces != NULL && !TAILQ_EMPTY(outputs_walk->workspaces)) {
+            TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
+                FREE(ws_walk->name);
+                FREE(ws_walk->ucs2_name);
+            }
             FREE_TAILQ(outputs_walk->workspaces, i3_ws);
         }
     }
