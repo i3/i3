@@ -250,7 +250,7 @@ void parse_workspaces_json(char *json) {
 }
 
 /*
- * free() all workspace data-structures
+ * free() all workspace data-structures. Does not free() the heads of the tailqueues.
  *
  */
 void free_workspaces() {
