@@ -107,11 +107,14 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
 
     DLOG("Done, pixels = %d\n", pixels);
 
+    // if we got thus far, the containers must have
+    // percentages associated with them
+    assert(first->percent > 0.0);
+    assert(second->percent > 0.0);
+
+    // calculate the new percentage for the first container
     double new_percent, difference;
-    int children = con_num_children(first->parent);
-    double percent = 1.0 / children;
-    if (first->percent > 0.0)
-        percent = first->percent;
+    double percent = first->percent;
     DLOG("percent = %f\n", percent);
     int original = (orientation == HORIZ ? first->rect.width : first->rect.height);
     DLOG("original = %d\n", original);
@@ -119,15 +122,15 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     difference = percent - new_percent;
     DLOG("difference = %f\n", difference);
     DLOG("new percent = %f\n", new_percent);
-
     first->percent = new_percent;
 
-    double s_percent = 1.0 / children;
-    if (second->percent > 0.0)
-        s_percent = second->percent;
-
+    // calculate the new percentage for the second container
+    double s_percent = second->percent;
     second->percent = s_percent + difference;
     DLOG("second->percent = %f\n", second->percent);
+
+    // now we must make sure that the sum of the percentages remain 1.0
+    con_fix_percent(first->parent);
 
     return 0;
 }
