@@ -255,6 +255,9 @@ void parse_workspaces_json(char *json) {
  */
 void free_workspaces() {
     i3_output *outputs_walk;
+    if (outputs == NULL) {
+        return;
+    }
     SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (outputs_walk->workspaces != NULL && !TAILQ_EMPTY(outputs_walk->workspaces)) {
             FREE_TAILQ(outputs_walk->workspaces, i3_ws);
