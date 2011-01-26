@@ -579,9 +579,10 @@ void init_xcb(char *fontname) {
  *
  */
 void clean_xcb() {
-    i3_output *walk;
-    SLIST_FOREACH(walk, outputs, slist) {
-        destroy_window(walk);
+    i3_output *o_walk;
+    SLIST_FOREACH(o_walk, outputs, slist) {
+        destroy_window(o_walk);
+        FREE_TAILQ(o_walk->workspaces, i3_ws);
     }
     FREE_SLIST(outputs, i3_output);
 
