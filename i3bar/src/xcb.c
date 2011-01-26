@@ -585,8 +585,10 @@ void clean_xcb() {
     SLIST_FOREACH(o_walk, outputs, slist) {
         destroy_window(o_walk);
         FREE_TAILQ(o_walk->workspaces, i3_ws);
+        FREE(o_walk->workspaces);
     }
     FREE_SLIST(outputs, i3_output);
+    FREE(outputs);
 
     xcb_disconnect(xcb_connection);
 
