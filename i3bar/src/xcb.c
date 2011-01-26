@@ -586,6 +586,7 @@ void clean_xcb() {
         destroy_window(o_walk);
         FREE_TAILQ(o_walk->workspaces, i3_ws);
         FREE(o_walk->workspaces);
+        FREE(o_walk->name);
     }
     FREE_SLIST(outputs, i3_output);
     FREE(outputs);
