@@ -227,6 +227,7 @@ int main(int argc, char **argv) {
     /* The name of this function is actually misleading. Even if no -c is specified,
      * this function initiates the watchers to listen on stdin and react accordingly */
     start_child(command);
+    FREE(command);
 
     /* We listen to SIGTERM/QUIT/INT and try to exit cleanly, by stopping the main-loop.
      * We only need those watchers on the stack, so putting them on the stack saves us
