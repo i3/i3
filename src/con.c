@@ -382,7 +382,7 @@ int con_num_children(Con *con) {
  * container.
  *
  */
-void con_fix_percent(Con *con, int action) {
+void con_fix_percent(Con *con) {
     Con *child;
     int children = con_num_children(con);
 

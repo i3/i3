@@ -75,7 +75,7 @@ Con *tree_open_con(Con *con) {
     Con *new = con_new(con);
 
     /* 4: re-calculate child->percent for each child */
-    con_fix_percent(con, WINDOW_ADD);
+    con_fix_percent(con);
 
     /* 5: focus the new container */
     con_focus(new);
@@ -145,7 +145,7 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     if (con->type != CT_FLOATING_CON) {
         /* If the container is *not* floating, we might need to re-distribute
          * percentage values for the resized containers. */
-        con_fix_percent(parent, WINDOW_REMOVE);
+        con_fix_percent(parent);
     }
 
     if (con_is_floating(con)) {

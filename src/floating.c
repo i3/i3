@@ -68,7 +68,7 @@ void floating_enable(Con *con, bool automatic) {
     TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
     TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
 
-    con_fix_percent(con->parent, WINDOW_REMOVE);
+    con_fix_percent(con->parent);
 
     /* 2: create a new container to render the decoration on, add
      * it as a floating window to the workspace */
@@ -155,7 +155,7 @@ void floating_disable(Con *con, bool automatic) {
 
     con->floating = FLOATING_USER_OFF;
 
-    con_fix_percent(con->parent, WINDOW_ADD);
+    con_fix_percent(con->parent);
     // TODO: don’t influence focus handling when Con was not focused before.
     con_focus(con);
 }
