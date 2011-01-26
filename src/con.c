@@ -509,10 +509,14 @@ void con_move_to_workspace(Con *con, Con *workspace) {
     con_detach(con);
     con_attach(con, next, false);
 
-    /* 6: keep focus on the current workspace */
+    /* 6: fix the percentages */
+    con_fix_percent(parent);
+    con_fix_percent(next);
+
+    /* 7: keep focus on the current workspace */
     con_focus(focus_next);
 
-    /* 7: check if the parent container is empty now and close it */
+    /* 8: check if the parent container is empty now and close it */
     if (parent->type != CT_WORKSPACE &&
         TAILQ_EMPTY(&(parent->nodes_head))) {
         DLOG("Closing empty parent container\n");

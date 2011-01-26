@@ -411,9 +411,13 @@ void tree_move(char way, orientation_t orientation) {
             /* 4: switch workspace orientation */
             parent->orientation = orientation;
 
-            /* 4: attach the new split container to the workspace */
+            /* 5: attach the new split container to the workspace */
             DLOG("Attaching new split to ws\n");
             con_attach(new, parent, false);
+
+            /* 6: fix the percentages */
+            con_fix_percent(new);
+            con_fix_percent(parent);
 
             if (old_focused)
                 con_focus(old_focused);
@@ -452,6 +456,7 @@ void tree_move(char way, orientation_t orientation) {
         }
 
         con_detach(focused);
+        con_fix_percent(focused->parent);
         focused->parent = next->parent;
 
         TAILQ_INSERT_AFTER(&(next->parent->nodes_head), next, focused, nodes);
@@ -478,6 +483,7 @@ void tree_move(char way, orientation_t orientation) {
         }
 
         con_detach(focused);
+        con_fix_percent(focused);
         focused->parent = next->parent;
 
         /* After going down in the tree, we insert the container *after*
@@ -491,6 +497,14 @@ void tree_move(char way, orientation_t orientation) {
         /* TODO: don’t influence focus handling? */
     }
 
+    /* fix the percentages in the container we moved to */
+    int children = con_num_children(next->parent);
+    if (children == 1)
+        focused->percent = 1.0;
+    else
+        focused->percent = 1.0 / (children - 1);
+    con_fix_percent(next->parent);
+
     /* We need to call con_focus() to fix the focus stack "above" the container
      * we just inserted the focused container into (otherwise, the parent
      * container(s) would still point to the old container(s)). */
@@ -499,6 +513,10 @@ void tree_move(char way, orientation_t orientation) {
     if (con_num_children(old_parent) == 0) {
         DLOG("Old container empty after moving. Let's close it\n");
         tree_close(old_parent, false, false);
+    }
+    else {
+        /* fix the percentages in the container we moved from */
+        con_fix_percent(old_parent);
     }
 
     tree_flatten(croot);
