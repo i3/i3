@@ -102,6 +102,7 @@ void floating_enable(Con *con, bool automatic) {
 
     /* 3: attach the child to the new parent container */
     con->parent = nc;
+    con->percent = 1.0;
     con->floating = FLOATING_USER_ON;
 
     /* Some clients (like GIMP’s color picker window) get mapped
