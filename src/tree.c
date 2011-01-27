@@ -155,11 +155,8 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
         DLOG("parent container killed\n");
         if (con == focused) {
             DLOG("This is the focused container, i need to find another one to focus. I start looking at ws = %p\n", ws);
-            next = ws;
-            /* now go down the focus stack as far as
-             * possible, excluding the current container */
-            while (!TAILQ_EMPTY(&(next->focus_head)))
-                next = TAILQ_FIRST(&(next->focus_head));
+            /* go down the focus stack as far as possible */
+            next = con_descend_focused(ws);
 
             dont_kill_parent = true;
             DLOG("Alright, focusing %p\n", next);
@@ -361,11 +358,7 @@ void tree_next(char way, orientation_t orientation) {
     /* 3: focus choice comes in here. at the moment we will go down
      * until we find a window */
     /* TODO: check for window, atm we only go down as far as possible */
-    while (!TAILQ_EMPTY(&(next->focus_head)))
-        next = TAILQ_FIRST(&(next->focus_head));
-
-    DLOG("focusing %p\n", next);
-    con_focus(next);
+    con_focus(con_descend_focused(next));
 }
 
 /*
@@ -450,8 +443,7 @@ void tree_move(char way, orientation_t orientation) {
                 next = current;
             } else {
                 /* if this is a split container, we need to go down */
-                while (!TAILQ_EMPTY(&(next->focus_head)))
-                    next = TAILQ_FIRST(&(next->focus_head));
+                next = con_descend_focused(next);
             }
         }
 

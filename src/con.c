@@ -483,12 +483,8 @@ void con_move_to_workspace(Con *con, Con *workspace) {
      * container is moved away */
     Con *focus_next = con_next_focused(con);
 
-    /* 2: get the focused container of this workspace by going down as far as
-     * possible */
-    Con *next = workspace;
-
-    while (!TAILQ_EMPTY(&(next->focus_head)))
-        next = TAILQ_FIRST(&(next->focus_head));
+    /* 2: get the focused container of this workspace */
+    Con *next = con_descend_focused(workspace);
 
     /* 3: we go up one level, but only when next is a normal container */
     if (next->type != CT_WORKSPACE)

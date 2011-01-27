@@ -210,11 +210,8 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn,
 
     if (config.disable_focus_follows_mouse)
         return 1;
-    Con *next = con;
-    while (!TAILQ_EMPTY(&(next->focus_head)))
-        next = TAILQ_FIRST(&(next->focus_head));
 
-    con_focus(next);
+    con_focus(con_descend_focused(con));
     x_push_changes(croot);
 
     return 1;

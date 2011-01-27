@@ -226,11 +226,7 @@ void workspace_show(const char *num) {
     workspace_reassign_sticky(workspace);
 
     LOG("switching to %p\n", workspace);
-    Con *next = workspace;
-
-    while (!TAILQ_EMPTY(&(next->focus_head)))
-        next = TAILQ_FIRST(&(next->focus_head));
-
+    Con *next = con_descend_focused(workspace);
 
     if (TAILQ_EMPTY(&(old->nodes_head)) && TAILQ_EMPTY(&(old->floating_head))) {
         /* check if this workspace is currently visible */
