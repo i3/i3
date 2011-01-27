@@ -341,6 +341,11 @@ void tree_next(char way, orientation_t orientation) {
     Con *current = TAILQ_FIRST(&(parent->focus_head));
     assert(current != TAILQ_END(&(parent->focus_head)));
 
+    if (TAILQ_EMPTY(&(parent->nodes_head))) {
+        DLOG("Nothing to focus here, move along...\n");
+        return;
+    }
+
     /* 2: chose next (or previous) */
     Con *next;
     if (way == 'n') {
