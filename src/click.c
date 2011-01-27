@@ -329,13 +329,17 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
     DLOG("BORDER x = %d, y = %d for con %p, window 0x%08x, border_click = %d, clicked_into = %p\n",
             event->event_x, event->event_y, con, event->event, border_click, clicked_into);
     DLOG("checks for right >= %d\n", con->window_rect.x + con->window_rect.width);
-    /* TODO: das problem ist, dass TAILQ_PREV etc. nicht die orientation beachtet. */
     Con *first = NULL, *second = NULL;
     if (clicked_into) {
         DLOG("BORDER top\n");
-        second = clicked_into;
-        if ((first = con_get_next(clicked_into, 'p', VERT)) != NULL)
+        if ((first = con_get_next(clicked_into, 'p', VERT)) != NULL) {
+            /* instead of setting second = clicked_into we get the container
+             * below the one which con_get_next returned. This way, if
+             * clicked_into is inside another split-con, we get the correct
+             * parent to work with. */
+            second = TAILQ_NEXT(first, nodes);
             resize_graphical_handler(first, second, VERT, event);
+        }
     } else if (event->event_x >= 0 && event->event_x <= bsr.x &&
         event->event_y >= bsr.y && event->event_y <= con->rect.height + bsr.height) {
         DLOG("BORDER left\n");
