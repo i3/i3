@@ -245,6 +245,10 @@ int main(int argc, char *argv[]) {
     if (xcb_connection_has_error(conn))
         errx(EXIT_FAILURE, "Cannot open display\n");
 
+    xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
+    root = root_screen->root;
+    root_depth = root_screen->root_depth;
+
     load_configuration(conn, override_configpath, false);
     if (only_check_config) {
         LOG("Done checking configuration file. Exiting.\n");
@@ -254,10 +258,6 @@ int main(int argc, char *argv[]) {
     if (config.ipc_socket_path == NULL) {
         config.ipc_socket_path = getenv("I3SOCK");
     }
-
-    xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
-    root = root_screen->root;
-    root_depth = root_screen->root_depth;
 
     uint32_t mask = XCB_CW_EVENT_MASK;
     uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
