@@ -384,7 +384,13 @@ void tree_move(char way, orientation_t orientation) {
          * and the orientation still does not match. In this case, we split the
          * workspace to have the same look & feel as in older i3 releases. */
         if (parent->type == CT_WORKSPACE) {
-            DLOG("Arrived at workspace, splitting...\n");
+            DLOG("Arrived at workspace\n");
+            /* In case of moving a window out of a floating con, there might be
+             * not a single tiling container. Makes no sense to split then, so
+             * just use the workspace as target */
+            if (TAILQ_EMPTY(&(parent->nodes_head)))
+                break;
+
             /* 1: create a new split container */
             Con *new = con_new(NULL);
             new->parent = parent;
@@ -430,77 +436,89 @@ void tree_move(char way, orientation_t orientation) {
     Con *current = TAILQ_FIRST(&(parent->focus_head));
     assert(current != TAILQ_END(&(parent->focus_head)));
 
-    /* 2: chose next (or previous) */
-    Con *next = current;
-    if (way == 'n') {
-        LOG("i would insert it after %p / %s\n", next, next->name);
-
-        /* Have a look at the next container: If there is no next container or
-         * if it is a leaf node, we move the focused one left to it. However,
-         * for split containers, we descend into it. */
-        next = TAILQ_NEXT(next, nodes);
-        if (next == TAILQ_END(&(next->parent->nodes_head))) {
-            if (focused == current)
-                return;
-            next = current;
-        } else {
-            if (level_changed && con_is_leaf(next)) {
-                next = current;
-            } else {
-                /* if this is a split container, we need to go down */
-                next = con_descend_focused(next);
-            }
-        }
-
+    /* If we have no tiling cons (when moving a window out of a floating con to
+     * an otherwise empty workspace for example), we just attach the window to
+     * the workspace. */
+    if (TAILQ_EMPTY(&(parent->nodes_head))) {
         con_detach(focused);
         con_fix_percent(focused->parent);
-        focused->parent = next->parent;
+        focused->parent = parent;
 
-        TAILQ_INSERT_AFTER(&(next->parent->nodes_head), next, focused, nodes);
-        TAILQ_INSERT_HEAD(&(next->parent->focus_head), focused, focused);
-        /* TODO: don’t influence focus handling? */
+        TAILQ_INSERT_HEAD(&(parent->nodes_head), focused, nodes);
+        TAILQ_INSERT_HEAD(&(parent->focus_head), focused, focused);
     } else {
-        LOG("i would insert it before %p / %s\n", current, current->name);
-        bool gone_down = false;
-        next = TAILQ_PREV(next, nodes_head, nodes);
-        if (next == TAILQ_END(&(next->parent->nodes_head))) {
-            if (focused == current)
-                return;
-            next = current;
-        } else {
-            if (level_changed && con_is_leaf(next)) {
+        /* 2: chose next (or previous) */
+        Con *next = current;
+        if (way == 'n') {
+            LOG("i would insert it after %p / %s\n", next, next->name);
+
+            /* Have a look at the next container: If there is no next container or
+             * if it is a leaf node, we move the focused one left to it. However,
+             * for split containers, we descend into it. */
+            next = TAILQ_NEXT(next, nodes);
+            if (next == TAILQ_END(&(next->parent->nodes_head))) {
+                if (focused == current)
+                    return;
                 next = current;
             } else {
-                /* if this is a split container, we need to go down */
-                while (!TAILQ_EMPTY(&(next->focus_head))) {
-                    gone_down = true;
-                    next = TAILQ_FIRST(&(next->focus_head));
+                if (level_changed && con_is_leaf(next)) {
+                    next = current;
+                } else {
+                    /* if this is a split container, we need to go down */
+                    next = con_descend_focused(next);
                 }
             }
-        }
 
-        con_detach(focused);
-        con_fix_percent(focused);
-        focused->parent = next->parent;
+            con_detach(focused);
+            con_fix_percent(focused->parent);
+            focused->parent = next->parent;
 
-        /* After going down in the tree, we insert the container *after*
-         * the currently focused one even though the command used "before".
-         * This is to keep the user experience clear, since the before/after
-         * only signifies the direction of the movement on top-level */
-        if (gone_down)
             TAILQ_INSERT_AFTER(&(next->parent->nodes_head), next, focused, nodes);
-        else TAILQ_INSERT_BEFORE(next, focused, nodes);
-        TAILQ_INSERT_HEAD(&(next->parent->focus_head), focused, focused);
-        /* TODO: don’t influence focus handling? */
+            TAILQ_INSERT_HEAD(&(next->parent->focus_head), focused, focused);
+            /* TODO: don’t influence focus handling? */
+        } else {
+            LOG("i would insert it before %p / %s\n", current, current->name);
+            bool gone_down = false;
+            next = TAILQ_PREV(next, nodes_head, nodes);
+            if (next == TAILQ_END(&(next->parent->nodes_head))) {
+                if (focused == current)
+                    return;
+                next = current;
+            } else {
+                if (level_changed && con_is_leaf(next)) {
+                    next = current;
+                } else {
+                    /* if this is a split container, we need to go down */
+                    while (!TAILQ_EMPTY(&(next->focus_head))) {
+                        gone_down = true;
+                        next = TAILQ_FIRST(&(next->focus_head));
+                    }
+                }
+            }
+
+            con_detach(focused);
+            con_fix_percent(focused);
+            focused->parent = next->parent;
+
+            /* After going down in the tree, we insert the container *after*
+             * the currently focused one even though the command used "before".
+             * This is to keep the user experience clear, since the before/after
+             * only signifies the direction of the movement on top-level */
+            if (gone_down)
+                TAILQ_INSERT_AFTER(&(next->parent->nodes_head), next, focused, nodes);
+            else TAILQ_INSERT_BEFORE(next, focused, nodes);
+            TAILQ_INSERT_HEAD(&(next->parent->focus_head), focused, focused);
+            /* TODO: don’t influence focus handling? */
+        }
     }
 
     /* fix the percentages in the container we moved to */
-    int children = con_num_children(next->parent);
+    int children = con_num_children(focused->parent);
     if (children == 1)
         focused->percent = 1.0;
     else
         focused->percent = 1.0 / (children - 1);
-    con_fix_percent(next->parent);
+    con_fix_percent(focused->parent);
 
     /* We need to call con_focus() to fix the focus stack "above" the container
      * we just inserted the focused container into (otherwise, the parent
