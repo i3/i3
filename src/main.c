@@ -148,6 +148,7 @@ int main(int argc, char *argv[]) {
     bool delete_layout_path;
     bool only_check_config = false;
     bool force_xinerama = false;
+    bool disable_signalhandler = false;
     xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
     static struct option long_options[] = {
         {"no-autostart", no_argument, 0, 'a'},
@@ -157,6 +158,7 @@ int main(int argc, char *argv[]) {
         {"layout", required_argument, 0, 'L'},
         {"restart", required_argument, 0, 0},
         {"force-xinerama", no_argument, 0, 0},
+        {"disable-signalhandler", no_argument, 0, 0},
         {0, 0, 0, 0}
     };
     int option_index = 0, opt;
@@ -189,7 +191,7 @@ int main(int argc, char *argv[]) {
                 only_check_config = true;
                 break;
             case 'v':
-                printf("i3 version " I3_VERSION " © 2009 Michael Stapelberg and contributors\n");
+                printf("i3 version " I3_VERSION " © 2009-2011 Michael Stapelberg and contributors\n");
                 exit(EXIT_SUCCESS);
             case 'V':
                 set_verbosity(true);
@@ -209,6 +211,9 @@ int main(int argc, char *argv[]) {
                          "of screens, so you cannot configure displays at runtime. "
                          "Please check if your driver really does not support RandR "
                          "and disable this option as soon as you can.\n");
+                    break;
+                } else if (strcmp(long_options[option_index].name, "disable-signalhandler") == 0) {
+                    disable_signalhandler = true;
                     break;
                 } else if (strcmp(long_options[option_index].name, "restart") == 0) {
                     FREE(layout_path);
@@ -494,7 +499,8 @@ int main(int argc, char *argv[]) {
 
     manage_existing_windows(root);
 
-    setup_signal_handler();
+    if (!disable_signalhandler)
+        setup_signal_handler();
 
     /* Ignore SIGPIPE to survive errors when an IPC client disconnects
      * while we are sending him a message */
