@@ -198,6 +198,7 @@ struct xoutput {
      * two stages) */
     bool changed;
     bool to_be_disabled;
+    bool primary;
 
     /** x, y, width, height */
     Rect rect;

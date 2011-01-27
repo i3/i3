@@ -24,6 +24,9 @@ typedef xcb_randr_get_crtc_info_reply_t crtc_info;
 typedef xcb_randr_mode_info_t mode_info;
 typedef xcb_randr_get_screen_resources_current_reply_t resources_reply;
 
+/* Pointer to the result of the query for primary output */
+xcb_randr_get_output_primary_reply_t *primary;
+
 /* Stores all outputs available in your current session. */
 struct outputs_head outputs = TAILQ_HEAD_INITIALIZER(outputs);
 
@@ -386,6 +389,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
     if (!existing)
         new = scalloc(sizeof(Output));
     new->id = id;
+    new->primary = (primary && primary->output == id);
     FREE(new->name);
     asprintf(&new->name, "%.*s",
             xcb_randr_get_output_info_name_length(output),
@@ -397,9 +401,11 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
      * we do not need to change the list ever again (we only update the
      * position/size) */
     if (output->crtc == XCB_NONE) {
-        if (!existing)
-            TAILQ_INSERT_TAIL(&outputs, new, outputs);
-        else if (new->active)
+        if (!existing) {
+            if (new->primary)
+                TAILQ_INSERT_HEAD(&outputs, new, outputs);
+            else TAILQ_INSERT_TAIL(&outputs, new, outputs);
+        } else if (new->active)
             new->to_be_disabled = true;
         return;
     }
@@ -431,8 +437,11 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
      * does not exist in the first place, the case is simple: we either
      * need to insert the new output or we are done. */
     if (!updated || !existing) {
-        if (!existing)
-            TAILQ_INSERT_TAIL(&outputs, new, outputs);
+        if (!existing) {
+            if (new->primary)
+                TAILQ_INSERT_HEAD(&outputs, new, outputs);
+            else TAILQ_INSERT_TAIL(&outputs, new, outputs);
+        }
         return;
     }
 
@@ -445,8 +454,10 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
  */
 void randr_query_outputs() {
     Output *output, *other, *first;
+    xcb_randr_get_output_primary_cookie_t pcookie;
     xcb_randr_get_screen_resources_current_cookie_t rcookie;
     resources_reply *res;
+
     /* timestamp of the configuration so that we get consistent replies to all
      * requests (if the configuration changes between our different calls) */
     xcb_timestamp_t cts;
@@ -457,8 +468,13 @@ void randr_query_outputs() {
     if (randr_disabled)
         return;
 
-    /* Get screen resources (crtcs, outputs, modes) */
+    /* Get screen resources (primary output, crtcs, outputs, modes) */
     rcookie = xcb_randr_get_screen_resources_current(conn, root);
+    pcookie = xcb_randr_get_output_primary(conn, root);
+
+    if ((primary = xcb_randr_get_output_primary_reply(conn, pcookie, NULL)) == NULL)
+        ELOG("Could not get RandR primary output\n");
+    else DLOG("primary output is %08x\n", primary->output);
     if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL) {
         disable_randr(conn);
         return;
@@ -484,14 +500,13 @@ void randr_query_outputs() {
         free(output);
     }
 
-    free(res);
     /* Check for clones, disable the clones and reduce the mode to the
      * lowest common mode */
     TAILQ_FOREACH(output, &outputs, outputs) {
         if (!output->active || output->to_be_disabled)
             continue;
-        DLOG("output %p, position (%d, %d), checking for clones\n",
-                output, output->rect.x, output->rect.y);
+        DLOG("output %p / %s, position (%d, %d), checking for clones\n",
+                output, output->name, output->rect.x, output->rect.y);
 
         for (other = output;
              other != TAILQ_END(&outputs);
@@ -568,6 +583,7 @@ void randr_query_outputs() {
             }
 
             output->to_be_disabled = false;
+            output->changed = false;
         }
 
         if (output->active && output->con == NULL) {
@@ -599,8 +615,25 @@ void randr_query_outputs() {
     }
 #endif
 
+    /* Focus the primary screen, if possible */
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (!output->primary || !output->con)
+            continue;
+
+        DLOG("Focusing primary output %s\n", output->name);
+        Con *next = output->con;
+        while (!TAILQ_EMPTY(&(next->focus_head)))
+            next = TAILQ_FIRST(&(next->focus_head));
+
+        DLOG("focusing %p\n", next);
+        con_focus(next);
+    }
+
     /* render_layout flushes */
     tree_render();
+
+    FREE(res);
+    FREE(primary);
 }
 
 /*
