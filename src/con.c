@@ -627,6 +627,18 @@ Con *con_get_next(Con *con, char way, orientation_t orientation) {
     return next;
 }
 
+/*
+ * Returns the focused con inside this client, descending the tree as far as
+ * possible. This comes in handy when attaching a con to a workspace at the
+ * currently focused position, for example.
+ *
+ */
+Con *con_descend_focused(Con *con) {
+    Con *next = con;
+    while (!TAILQ_EMPTY(&(next->focus_head)))
+        next = TAILQ_FIRST(&(next->focus_head));
+    return next;
+}
 
 /*
  * Returns a "relative" Rect which contains the amount of pixels that need to

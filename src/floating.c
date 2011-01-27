@@ -149,8 +149,10 @@ void floating_disable(Con *con, bool automatic) {
     TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
     tree_close(con->parent, false, false);
 
-    /* 3: re-attach to previous parent */
-    con->parent = con_get_workspace(con);
+    /* 3: re-attach to the parent of the currently focused con on the workspace
+     * this floating con was on */
+    Con *focused = con_descend_focused(con_get_workspace(con));
+    con->parent = focused->parent;
 
     /* XXX: We adjust the percentage value to start with a fair value. Floating
      * cons always have 1.0 as percent which doesn’t work so well when
