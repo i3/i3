@@ -438,7 +438,7 @@ void tree_move(char way, orientation_t orientation) {
     /* If we have no tiling cons (when moving a window out of a floating con to
      * an otherwise empty workspace for example), we just attach the window to
      * the workspace. */
-    bool fix_percent = 0;
+    bool fix_percent = false;
     if (TAILQ_EMPTY(&(parent->nodes_head))) {
         con_detach(focused);
         con_fix_percent(focused->parent);
@@ -473,7 +473,7 @@ void tree_move(char way, orientation_t orientation) {
             if (focused->parent != next->parent) {
                 con_fix_percent(focused->parent);
                 focused->parent = next->parent;
-                fix_percent = 1;
+                fix_percent = true;
             }
 
             TAILQ_INSERT_AFTER(&(next->parent->nodes_head), next, focused, nodes);
@@ -503,7 +503,7 @@ void tree_move(char way, orientation_t orientation) {
             if (focused->parent != next->parent) {
                 con_fix_percent(focused->parent);
                 focused->parent = next->parent;
-                fix_percent = 1;
+                fix_percent = true;
             }
 
             /* After going down in the tree, we insert the container *after*
@@ -597,6 +597,7 @@ void tree_flatten(Con *con) {
         TAILQ_INSERT_BEFORE(con, current, nodes);
         DLOG("attaching to focus list\n");
         TAILQ_INSERT_TAIL(&(parent->focus_head), current, focused);
+        current->percent = con->percent;
     }
     DLOG("re-attached all\n");
 
