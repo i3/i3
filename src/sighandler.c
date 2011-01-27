@@ -220,6 +220,7 @@ void setup_signal_handler() {
     sigemptyset(&action.sa_mask);
 
     if (sigaction(SIGSEGV, &action, NULL) == -1 ||
+        sigaction(SIGABRT, &action, NULL) == -1 ||
         sigaction(SIGFPE, &action, NULL) == -1)
         ELOG("Could not setup signal handler");
 }
