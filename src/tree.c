@@ -420,7 +420,6 @@ void tree_move(char way, orientation_t orientation) {
             con_attach(new, parent, false);
 
             /* 6: fix the percentages */
-            con_fix_percent(new);
             con_fix_percent(parent);
 
             if (old_focused)
@@ -439,6 +438,7 @@ void tree_move(char way, orientation_t orientation) {
     /* If we have no tiling cons (when moving a window out of a floating con to
      * an otherwise empty workspace for example), we just attach the window to
      * the workspace. */
+    bool fix_percent = 0;
     if (TAILQ_EMPTY(&(parent->nodes_head))) {
         con_detach(focused);
         con_fix_percent(focused->parent);
@@ -470,8 +470,11 @@ void tree_move(char way, orientation_t orientation) {
             }
 
             con_detach(focused);
-            con_fix_percent(focused->parent);
-            focused->parent = next->parent;
+            if (focused->parent != next->parent) {
+                con_fix_percent(focused->parent);
+                focused->parent = next->parent;
+                fix_percent = 1;
+            }
 
             TAILQ_INSERT_AFTER(&(next->parent->nodes_head), next, focused, nodes);
             TAILQ_INSERT_HEAD(&(next->parent->focus_head), focused, focused);
@@ -497,8 +500,11 @@ void tree_move(char way, orientation_t orientation) {
             }
 
             con_detach(focused);
-            con_fix_percent(focused);
-            focused->parent = next->parent;
+            if (focused->parent != next->parent) {
+                con_fix_percent(focused->parent);
+                focused->parent = next->parent;
+                fix_percent = 1;
+            }
 
             /* After going down in the tree, we insert the container *after*
              * the currently focused one even though the command used "before".
@@ -513,12 +519,14 @@ void tree_move(char way, orientation_t orientation) {
     }
 
     /* fix the percentages in the container we moved to */
-    int children = con_num_children(focused->parent);
-    if (children == 1)
-        focused->percent = 1.0;
-    else
-        focused->percent = 1.0 / (children - 1);
-    con_fix_percent(focused->parent);
+    if (fix_percent) {
+        int children = con_num_children(focused->parent);
+        if (children == 1)
+            focused->percent = 1.0;
+        else
+            focused->percent = 1.0 / (children - 1);
+        con_fix_percent(focused->parent);
+    }
 
     /* We need to call con_focus() to fix the focus stack "above" the container
      * we just inserted the focused container into (otherwise, the parent
@@ -528,8 +536,7 @@ void tree_move(char way, orientation_t orientation) {
     if (con_num_children(old_parent) == 0) {
         DLOG("Old container empty after moving. Let's close it\n");
         tree_close(old_parent, false, false);
-    }
-    else {
+    } else if (level_changed) {
         /* fix the percentages in the container we moved from */
         con_fix_percent(old_parent);
     }
