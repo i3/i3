@@ -82,7 +82,6 @@ uint32_t get_colorpixel(char *hex) {
  */
 xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class,
         enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values) {
-    xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
     xcb_window_t result = xcb_generate_id(conn);
     xcb_cursor_t cursor_id = xcb_generate_id(conn);
 

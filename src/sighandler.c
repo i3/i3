@@ -113,7 +113,6 @@ static int sig_handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_p
  *
  */
 static xcb_window_t open_input_window(xcb_connection_t *conn, Rect screen_rect, uint32_t width, uint32_t height) {
-    xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
     xcb_window_t win = xcb_generate_id(conn);
 
     uint32_t mask = 0;

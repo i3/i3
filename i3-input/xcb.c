@@ -86,7 +86,6 @@ uint32_t get_mod_mask(xcb_connection_t *conn, uint32_t keycode) {
  *
  */
 xcb_window_t open_input_window(xcb_connection_t *conn, uint32_t width, uint32_t height) {
-        xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
         xcb_window_t win = xcb_generate_id(conn);
         //xcb_cursor_t cursor_id = xcb_generate_id(conn);
 

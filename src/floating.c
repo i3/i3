@@ -325,7 +325,6 @@ void floating_resize_window(Con *con, bool proportional,
 void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
                 confine_to, border_t border, callback_t callback, void *extra)
 {
-    xcb_window_t root = xcb_setup_roots_iterator(xcb_get_setup(conn)).data->root;
     uint32_t new_x, new_y;
     Rect old_rect;
     if (con != NULL)

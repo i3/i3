@@ -50,6 +50,7 @@ static char *command_prefix;
 static char *prompt;
 static int prompt_len;
 static int limit;
+xcb_window_t root;
 
 /*
  * Concats the glyphs (either UCS-2 or UTF-8) to a single string, suitable for
@@ -302,6 +303,9 @@ int main(int argc, char *argv[]) {
         if (xcb_connection_has_error(conn))
                 die("Cannot open display\n");
 
+        xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
+        root = root_screen->root;
+
         /* Set up event handlers for key press and key release */
         xcb_event_handlers_t evenths;
         memset(&evenths, 0, sizeof(xcb_event_handlers_t));
@@ -320,8 +324,6 @@ int main(int argc, char *argv[]) {
         win = open_input_window(conn, 500, font_height + 8);
 
         /* Create pixmap */
-        xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
-
         pixmap = xcb_generate_id(conn);
         pixmap_gc = xcb_generate_id(conn);
         xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, 500, font_height + 8);

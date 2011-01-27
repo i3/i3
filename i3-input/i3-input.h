@@ -12,6 +12,8 @@
 } \
 while (0)
 
+extern xcb_window_t root;
+
 char *convert_ucs_to_utf8(char *input);
 char *convert_utf8_to_ucs2(char *input, int *real_strlen);
 uint32_t get_colorpixel(xcb_connection_t *conn, char *hex);
