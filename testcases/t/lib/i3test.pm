@@ -2,6 +2,7 @@ package i3test;
 # vim:ts=4:sw=4:expandtab
 
 use File::Temp qw(tmpnam);
+use Test::Builder;
 use X11::XCB::Rect;
 use X11::XCB::Window;
 use X11::XCB qw(:all);
@@ -10,7 +11,9 @@ use List::Util qw(first);
 use v5.10;
 
 use Exporter ();
-our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window cmd);
+our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window cmd does_i3_live);
+
+my $tester = Test::Builder->new();
 
 BEGIN {
     my $window_count = 0;
@@ -121,6 +124,14 @@ sub get_focused {
 
 sub cmd {
     i3("/tmp/nestedcons")->command(@_)->recv
+}
+
+sub does_i3_live {
+    my $tree = i3('/tmp/nestedcons')->get_tree->recv;
+    my @nodes = @{$tree->{nodes}};
+    my $ok = (@nodes > 0);
+    $tester->ok($ok, 'i3 still lives');
+    return $ok;
 }
 
 1
