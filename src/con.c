@@ -507,6 +507,7 @@ void con_move_to_workspace(Con *con, Con *workspace) {
 
     /* 6: fix the percentages */
     con_fix_percent(parent);
+    con->percent = 0.0;
     con_fix_percent(next);
 
     /* 7: keep focus on the current workspace */
