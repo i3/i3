@@ -303,3 +303,5 @@ Ruby::
 	http://github.com/badboy/i3-ipc
 Perl::
 	http://search.cpan.org/search?query=AnyEvent::I3
+Python::
+	http://github.com/thepub/i3ipc
