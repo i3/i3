@@ -448,6 +448,7 @@ void tree_move(char way, orientation_t orientation) {
         con_detach(focused);
         con_fix_percent(focused->parent);
         focused->parent = parent;
+        fix_percent = true;
 
         TAILQ_INSERT_HEAD(&(parent->nodes_head), focused, nodes);
         TAILQ_INSERT_HEAD(&(parent->focus_head), focused, focused);
@@ -526,11 +527,12 @@ void tree_move(char way, orientation_t orientation) {
     /* fix the percentages in the container we moved to */
     if (fix_percent) {
         int children = con_num_children(focused->parent);
-        if (children == 1)
+        if (children == 1) {
             focused->percent = 1.0;
-        else
+        } else {
             focused->percent = 1.0 / (children - 1);
-        con_fix_percent(focused->parent);
+            con_fix_percent(focused->parent);
+        }
     }
 
     /* We need to call con_focus() to fix the focus stack "above" the container
