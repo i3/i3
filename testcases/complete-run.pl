@@ -12,7 +12,7 @@ use TAP::Harness;
 use TAP::Parser::Aggregator;
 use File::Basename qw(basename);
 
-my $i3cmd = "export DISPLAY=:0; exec " . abs_path("../i3") . " -V -d all --disable-sighandler -c " . abs_path("../i3.config");
+my $i3cmd = "export DISPLAY=:0; exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c " . abs_path("../i3.config");
 
 # 1: get a list of all testcases
 my $curdir = getcwd();
