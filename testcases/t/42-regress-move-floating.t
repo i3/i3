@@ -14,6 +14,4 @@ cmd 'open';
 cmd 'mode toggle';
 cmd "move workspace $otmp";
 
-my $tree = i3('/tmp/nestedcons')->get_tree->recv;
-my @nodes = @{$tree->{nodes}};
-ok(@nodes > 0, 'i3 still lives');
+does_i3_live;

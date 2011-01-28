@@ -5,12 +5,8 @@
 #
 use i3test tests => 1;
 
-my $i3 = i3("/tmp/nestedcons");
+cmd 'blargh!';
 
-$i3->command("blargh!")->recv;
-
-my $tree = $i3->get_tree->recv;
-my @nodes = @{$tree->{nodes}};
-ok(@nodes > 0, 'i3 still lives');
+does_i3_live;
 
 diag( "Testing i3, Perl $], $^X" );

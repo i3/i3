@@ -7,19 +7,14 @@
 use i3test tests => 1;
 use X11::XCB qw(:all);
 
-my $i3 = i3("/tmp/nestedcons");
-
 my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+cmd "workspace $tmp";
 
-$i3->command('open')->recv;
-$i3->command('mode toggle')->recv;
-$i3->command('kill')->recv;
-$i3->command('kill')->recv;
+cmd 'open';
+cmd 'mode toggle';
+cmd 'kill';
+cmd 'kill';
 
-
-my $tree = $i3->get_tree->recv;
-my @nodes = @{$tree->{nodes}};
-ok(@nodes > 0, 'i3 still lives');
+does_i3_live;
 
 diag( "Testing i3, Perl $], $^X" );
