@@ -329,38 +329,48 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
     DLOG("BORDER x = %d, y = %d for con %p, window 0x%08x, border_click = %d, clicked_into = %p\n",
             event->event_x, event->event_y, con, event->event, border_click, clicked_into);
     DLOG("checks for right >= %d\n", con->window_rect.x + con->window_rect.width);
-    Con *first = NULL, *second = NULL;
+    char way = '\0';
+    int orientation;
     if (clicked_into) {
         DLOG("BORDER top\n");
-        if ((first = con_get_next(clicked_into, 'p', VERT)) != NULL) {
-            /* instead of setting second = clicked_into we get the container
-             * below the one which con_get_next returned. This way, if
-             * clicked_into is inside another split-con, we get the correct
-             * parent to work with. */
-            second = TAILQ_NEXT(first, nodes);
-            resize_graphical_handler(first, second, VERT, event);
-        }
+        way = 'p';
+        orientation = VERT;
     } else if (event->event_x >= 0 && event->event_x <= bsr.x &&
         event->event_y >= bsr.y && event->event_y <= con->rect.height + bsr.height) {
         DLOG("BORDER left\n");
-        second = con;
-        if ((first = con_get_next(con, 'p', HORIZ)) != NULL)
-            resize_graphical_handler(first, second, HORIZ, event);
+        way = 'p';
+        orientation = HORIZ;
     } else if (event->event_x >= (con->window_rect.x + con->window_rect.width) &&
         event->event_y >= bsr.y && event->event_y <= con->rect.height + bsr.height) {
         DLOG("BORDER right\n");
-        first = con;
-        if ((second = con_get_next(con, 'n', HORIZ)) != NULL)
-            resize_graphical_handler(first, second, HORIZ, event);
+        way = 'n';
+        orientation = HORIZ;
     } else if (event->event_y >= (con->window_rect.y + con->window_rect.height)) {
         DLOG("BORDER bottom\n");
+        way = 'n';
+        orientation = VERT;
+    }
 
-        first = con;
-        if ((second = con_get_next(con, 'n', VERT)) != NULL)
-            resize_graphical_handler(first, second, VERT, event);
-    } else {
-        /* Set first and second to NULL to trigger a replay of the event */
-        first = second = NULL;
+    /* look for a parent container with the right orientation */
+    Con *first = NULL, *second = NULL;
+    if (way != '\0') {
+        Con *resize_con = clicked_into ? clicked_into : con;
+        while (resize_con->type != CT_WORKSPACE &&
+            resize_con->parent->orientation != orientation)
+            resize_con = resize_con->parent;
+        if (resize_con->type != CT_WORKSPACE &&
+            resize_con->parent->orientation == orientation) {
+            first = resize_con;
+            second = (way == 'n') ? TAILQ_NEXT(first, nodes) : TAILQ_PREV(first, nodes_head, nodes);
+            if (second == TAILQ_END(&(first->nodes_head))) {
+                second = NULL;
+            }
+            else if (way == 'p') {
+                Con *tmp = first;
+                first = second;
+                second = tmp;
+            }
+        }
     }
 
     if (first == NULL || second == NULL) {
@@ -369,6 +379,11 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
         xcb_flush(conn);
         return 0;
+    }
+    else {
+        assert(first != second);
+        assert(first->parent == second->parent);
+        resize_graphical_handler(first, second, orientation, event);
     }
 
     DLOG("After resize handler, rendering\n");
