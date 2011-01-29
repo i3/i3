@@ -1,0 +1,192 @@
+Tree branch: Migrating
+======================
+Michael Stapelberg <michael+i3@stapelberg.de>
+November 2010
+
+== Introduction
+
+The tree branch (referring to a branch of i3 in the git repository) is the new
+version of i3. Due to the very deep changes and heavy refactoring of the source
+source, we decided to develop it in a seperate branch (instead of using the
+next/master-branch system like before).
+
+== Current status
+
+Currently, the code is mostly working. Some of the i3 core developers have been
+using the tree branch version for a few weeks now. So, if you are eager to try
+out the new features and help us find bugs, give it a try!
+
+At the same time, a word of warning is appropriate: This version of i3 might
+crash unexpectedly, so please be careful with important data (do not work for
+two days without saving…).
+
+== Getting the latest tree branch version
+
+Check out the latest version:
+---------------------------------------------
+$ git clone -b tree git://code.stapelberg.de/i3
+---------------------------------------------
+
+Then build and install it (has the same dependencies as the latest stable i3
+version):
+-----------------------------
+$ cd i3
+$ make
+$ sudo cp i3 /usr/bin/i3-tree
+-----------------------------
+
+…and execute +i3-tree+ instead of +i3+ in your Xsession.
+
+*IMPORTANT:* Please note that configuration file compatibility is not yet done.
+So, make sure you use/customize the provided +i3.config+ file.
+
+== Tree
+
+The most important change and reason for the name is that i3 stores all
+information about the X11 outputs, workspaces and layout of the windows on them
+in a tree. The root node is the X11 root window, followed by the X11 outputs,
+then workspaces and finally the windows themselve. In previous versions of i3
+we had multiple lists (of outputs, workspaces) and a table for each workspace.
+That approach turned out to be complicated to use (snapping), understand and
+implement.
+
+=== The tree consists of Containers
+
+The building blocks of our tree are so called +Containers+. A +Container+ can
+host a window (meaning an X11 window, one that you can actually see and use,
+like a browser). Alternatively, it could contain one or more +Containers+. A
+simple example is the workspace: When you start i3 with a single monitor, a
+single workspace and you open two terminal windows, you will end up with a tree
+like this:
+
+image::tree-layout2.png["layout2",float="right"]
+image::tree-shot4.png["shot4",title="Two terminals on standard workspace"]
+
+=== Orientation and Split Containers
+
+[[OrientationSplit]]
+
+It is only natural to use so-called +Split Containers+ in order to build a
+layout when using a tree as data structure. In i3, every +Container+ has an
+orientation (horizontal, vertical or unspecified). So, in our example with the
+workspace, the default orientation of the workspace +Container+ is horizontal
+(most monitors are widescreen nowadays). If you change the orientation to
+vertical (+Alt+v+ in the default config) and *then* open two terminals, i3 will
+configure your windows like this:
+
+image::tree-shot2.png["shot2",title="Vertical Workspace Orientation"]
+
+An interesting new feature of the tree branch is the ability to split anything:
+Let’s assume you have two terminals on a workspace (with horizontal
+orientation), focus is on the right terminal. Now you want to open another
+terminal window below the current one. If you would just open a new terminal
+window, it would show up to the right due to the horizontal workspace
+orientation. Instead, press +Alt+v+ to create a +Vertical Split Container+ (to
+open a +Horizontal Split Container+, use +Alt+h+). Now you can open a new
+terminal and it will open below the current one:
+
+image::tree-layout1.png["Layout",float="right"]
+image::tree-shot1.png["shot",title="Vertical Split Container"]
+
+unfloat::[]
+
+You probably guessed it already: There is no limit on how deep your hierarchy
+of splits can be.
+
+=== Level up
+
+Let’s stay with our example from above. We have a terminal on the left and two
+vertically split terminals on the right, focus is on the bottom right one. When
+you open a new terminal, it will open below the current one.
+
+So, how can you open a new terminal window to the *right* of the current one?
+The solution is to use +level up+, which will focus the +Parent Container+ of
+the current +Container+. In this case, you would focus the +Vertical Split
+Container+ which is *inside* the horizontally oriented workspace. Thus, now new
+windows will be opened to the right of the +Vertical Split Container+:
+
+image::tree-shot3.png["shot3",title="Level Up, then open new terminal"]
+
+== Commands
+
+The authoritive reference for commands is +src/cmdparse.y+. You can also find
+most commands in +i3.config+. Here comes a short overview over the important
+commands:
+
+=== Manipulating layout
+
+-------------------------------
+layout <default|stacked|tabbed>
+-------------------------------
+
+=== Changing Focus
+
+--------------------------
+next <horizontal|vertical>
+prev <horizontal|vertical>
+--------------------------
+
+.Examples:
+-------------------------
+bindsym Mod1+Left prev h
+bindsym Mod1+Right next h
+bindsym Mod1+Down next v
+bindsym Mod1+Up prev v
+-------------------------
+
+=== Moving
+
+-----------------------------------------
+move <before|after> <horizontal|vertical>
+-----------------------------------------
+
+.Examples:
+-----------------------------------------
+bindsym Mod1+Shift+Left move before h
+bindsym Mod1+Shift+Right move after h
+bindsym Mod1+Shift+Down move before v
+bindsym Mod1+Shift+Up move after v
+-----------------------------------------
+
+=== Changing workspace
+
+---------------------------
+workspace <name>
+---------------------------
+
+.Examples:
+---------------------------
+bindsym Mod1+1 workspace 1
+bindsym Mod1+2 workspace 2
+…
+---------------------------
+
+=== Moving Containers to workspaces
+
+---------------------
+move workspace <name>
+---------------------
+
+-------------------------------------
+bindsym Mod1+Shift+1 move workspace 1
+bindsym Mod1+Shift+2 move workspace 2
+…
+-------------------------------------
+
+=== Changing border style
+
+---------------------------
+border <normal|none|1pixel>
+---------------------------
+
+=== Changing container mode
+
+-----------------------------
+mode <tiling|floating|toggle>
+-----------------------------
+
+== The rest
+
+What is not mentioned here explicitly is either unchanged and can be read in
+the http://i3.zekjur.net/docs/userguide.html[i3 User’s Guide] or it is not yet
+implemented.
