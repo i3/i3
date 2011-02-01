@@ -6,7 +6,7 @@
 #
 use X11::XCB qw(:all);
 use Time::HiRes qw(sleep);
-use i3test tests => 2;
+use i3test tests => 3;
 
 BEGIN {
     use_ok('X11::XCB::Window');
@@ -21,6 +21,8 @@ my $left = open_standard_window($x);
 sleep 0.25;
 my $mid = open_standard_window($x);
 sleep 0.25;
+my $right = open_standard_window($x);
+sleep 0.25;
 
 # go to workspace level
 cmd 'level up';
@@ -31,6 +33,13 @@ cmd 'mode toggle';
 sleep 0.25;
 
 # move the con outside the floating con
+cmd 'move before v';
+sleep 0.25;
+
+does_i3_live;
+
+# move another con outside
+cmd '[id="' . $mid->id . '"] focus';
 cmd 'move before v';
 sleep 0.25;
 
