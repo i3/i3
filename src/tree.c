@@ -396,6 +396,20 @@ void tree_move(char way, orientation_t orientation) {
             if (TAILQ_EMPTY(&(parent->nodes_head)))
                 break;
 
+            /* Check if there are any other cons at all. If not, there is no
+             * point in creating a new split con and changing workspace
+             * orientation. Instead, the operation is a no-op. */
+            Con *child;
+            bool other_container = false;
+            TAILQ_FOREACH(child, &(parent->nodes_head), nodes)
+                if (child != focused)
+                    other_container = true;
+
+            if (!other_container) {
+                DLOG("No other container found, we are not creating this split container.\n");
+                return;
+            }
+
             /* 1: create a new split container */
             Con *new = con_new(NULL);
             new->parent = parent;
@@ -410,7 +424,6 @@ void tree_move(char way, orientation_t orientation) {
 
             /* 3: move the existing cons of this workspace below the new con */
             DLOG("Moving cons\n");
-            Con *child;
             while (!TAILQ_EMPTY(&(parent->nodes_head))) {
                 child = TAILQ_FIRST(&(parent->nodes_head));
                 con_detach(child);
