@@ -515,10 +515,14 @@ void con_move_to_workspace(Con *con, Con *workspace) {
     con->percent = 0.0;
     con_fix_percent(next);
 
-    /* 7: keep focus on the current workspace */
+    /* 7: focus the con on the target workspace (the X focus is only updated by
+     * calling tree_render(), so for the "real" focus this is a no-op) */
+    con_focus(con);
+
+    /* 8: keep focus on the current workspace */
     con_focus(focus_next);
 
-    /* 8: check if the parent container is empty now and close it */
+    /* 9: check if the parent container is empty now and close it */
     if (parent->type != CT_WORKSPACE &&
         TAILQ_EMPTY(&(parent->nodes_head))) {
         DLOG("Closing empty parent container\n");
