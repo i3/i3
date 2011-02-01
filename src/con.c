@@ -474,6 +474,11 @@ void con_toggle_fullscreen(Con *con) {
  *
  */
 void con_move_to_workspace(Con *con, Con *workspace) {
+    if (con->type == CT_WORKSPACE) {
+        DLOG("Moving workspaces is not yet implemented.\n");
+        return;
+    }
+
     if (con_is_floating(con)) {
         DLOG("Using FLOATINGCON instead\n");
         con = con->parent;
