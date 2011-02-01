@@ -197,7 +197,7 @@ void tree_append_json(const char *filename) {
         stat != yajl_status_insufficient_data)
     {
         unsigned char * str = yajl_get_error(hand, 1, (const unsigned char*)buf, n);
-        fprintf(stderr, (const char *) str);
+        fprintf(stderr, "%s\n", (const char *) str);
         yajl_free_error(hand, str);
     }
 

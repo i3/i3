@@ -262,8 +262,8 @@ criteria:
     {
         printf("criteria: id = %s\n", $<string>3);
         /* TODO: correctly parse number */
-        current_match.con_id = atoi($<string>3);
-        printf("id as int = %d\n", current_match.con_id);
+        current_match.con_id = (Con*)atoi($<string>3);
+        printf("id as int = %p\n", current_match.con_id);
     }
     | TOK_ID '=' STR
     {
@@ -360,8 +360,8 @@ focus:
         printf("should focus\n");
         if (match_is_empty(&current_match)) {
             /* TODO: better error message */
-            LOG("Error: The foucs command requires you to use some criteria.\n");
-            return;
+            LOG("Error: The focus command requires you to use some criteria.\n");
+            break;
         }
 
         /* TODO: warning if the match contains more than one entry. does not
@@ -406,7 +406,7 @@ open:
     {
         printf("opening new container\n");
         Con *con = tree_open_con(NULL);
-        asprintf(&json_output, "{\"success\":true, \"id\":%d}", (long int)con);
+        asprintf(&json_output, "{\"success\":true, \"id\":%ld}", (long int)con);
     }
     ;
 
