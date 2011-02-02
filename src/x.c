@@ -233,12 +233,14 @@ void x_window_kill(xcb_window_t window) {
 void x_draw_decoration(Con *con) {
     /* This code needs to run for:
      *  • leaf containers
-     *  • non-leaf containers which are in a stacking container
+     *  • non-leaf containers which are in a stacked/tabbed container
      *
      * It does not need to run for:
      *  • floating containers (they don’t have a decoration)
      */
-    if ((!con_is_leaf(con) && con->parent->layout != L_STACKED) ||
+    if ((!con_is_leaf(con) &&
+         con->parent->layout != L_STACKED &&
+         con->parent->layout != L_TABBED) ||
         con->type == CT_FLOATING_CON)
         return;
     DLOG("decoration should be rendered for con %p\n", con);
