@@ -143,7 +143,9 @@ void start_child(char *command) {
 
                 /* If hide-on-modifier is set, we start of by sending the
                  * child a SIGSTOP, because the bars aren't mapped at start */
-                stop_child();
+                if (config.hide_on_modifier) {
+                    stop_child();
+                }
 
                 break;
         }
