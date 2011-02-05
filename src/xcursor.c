@@ -17,17 +17,17 @@ static const int xcb_cursors[XCURSOR_CURSOR_MAX] = {
     XCB_CURSOR_SB_V_DOUBLE_ARROW
 };
 
-static Cursor load_cursor(const char *name, int font) {
+static Cursor load_cursor(const char *name) {
     Cursor c = XcursorLibraryLoadCursor(xlibdpy, name);
     if (c == None)
-        c = XCreateFontCursor(xlibdpy, font);
+        xcursor_supported = false;
     return c;
 }
 
 void xcursor_load_cursors() {
-    cursors[XCURSOR_CURSOR_POINTER] = load_cursor("left_ptr", XC_left_ptr);
-    cursors[XCURSOR_CURSOR_RESIZE_HORIZONTAL] = load_cursor("sb_h_double_arrow", XC_sb_h_double_arrow);
-    cursors[XCURSOR_CURSOR_RESIZE_VERTICAL] = load_cursor("sb_v_double_arrow", XC_sb_v_double_arrow);
+    cursors[XCURSOR_CURSOR_POINTER] = load_cursor("left_ptr");
+    cursors[XCURSOR_CURSOR_RESIZE_HORIZONTAL] = load_cursor("sb_h_double_arrow");
+    cursors[XCURSOR_CURSOR_RESIZE_VERTICAL] = load_cursor("sb_v_double_arrow");
 }
 
 Cursor xcursor_get_cursor(enum xcursor_cursor_t c) {
