@@ -1,5 +1,7 @@
 INSTALL=install
+ifndef DEBUG
 DEBUG=1
+endif
 PREFIX=/usr
 
 # The escaping is absurd, but we need to escape for shell, sed, make, define
