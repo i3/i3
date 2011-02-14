@@ -78,6 +78,12 @@ void floating_enable(Con *con, bool automatic) {
      * otherwise. */
     nc->parent = con_get_workspace(con);
 
+    /* check if the parent container is empty and close it if so */
+    if ((con->parent->type == CT_CON || con->parent->type == CT_FLOATING_CON) && con_num_children(con->parent) == 0) {
+        DLOG("Old container empty after setting this child to floating, closing\n");
+        tree_close(con->parent, false, false);
+    }
+
     char *name;
     asprintf(&name, "[i3 con] floatingcon around %p", con);
     x_set_name(nc, name);
