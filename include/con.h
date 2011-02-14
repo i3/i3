@@ -42,7 +42,11 @@ Con *con_get_output(Con *con);
  */
 Con *con_get_workspace(Con *con);
 
-
+/**
+ * Searches parenst of the given 'con' until it reaches one with the specified
+ * 'orientation'. Aborts when it comes across a floating_con.
+ *
+ */
 Con *con_parent_with_orientation(Con *con, orientation_t orientation);
 
 /**

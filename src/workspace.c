@@ -488,6 +488,12 @@ void workspace_update_urgent_flag(Con *ws) {
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"urgent\"}");
 }
 
+/*
+ * 'Forces' workspace orientation by moving all cons into a new split-con with
+ * the same orientation as the workspace and then changing the workspace
+ * orientation.
+ *
+ */
 void ws_force_orientation(Con *ws, orientation_t orientation) {
     /* 1: create a new split container */
     Con *split = con_new(NULL);

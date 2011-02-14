@@ -99,6 +99,12 @@ void workspace_map_clients(xcb_connection_t *conn, Workspace *ws);
  */
 void workspace_update_urgent_flag(Con *ws);
 
+/**
+ * 'Forces' workspace orientation by moving all cons into a new split-con with
+ * the same orientation as the workspace and then changing the workspace
+ * orientation.
+ *
+ */
 void ws_force_orientation(Con *ws, orientation_t orientation);
 
 #endif

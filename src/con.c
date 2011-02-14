@@ -230,6 +230,11 @@ Con *con_get_workspace(Con *con) {
     return result;
 }
 
+/*
+ * Searches parenst of the given 'con' until it reaches one with the specified
+ * 'orientation'. Aborts when it comes across a floating_con.
+ *
+ */
 Con *con_parent_with_orientation(Con *con, orientation_t orientation) {
     DLOG("Searching for parent of Con %p with orientation %d\n", con, orientation);
     Con *parent = con->parent;
@@ -759,6 +764,12 @@ void con_set_layout(Con *con, int layout) {
     con->layout = layout;
 }
 
+/*
+ * Callback which will be called when removing a child from the given con.
+ * Kills the container if it is empty and replaces it with the child if there
+ * is exactly one child.
+ *
+ */
 static void con_on_remove_child(Con *con) {
     DLOG("on_remove_child\n");
 
