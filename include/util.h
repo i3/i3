@@ -34,6 +34,8 @@
 } \
 while (0)
 
+#define CALL(obj, member, ...) obj->member(obj, ## __VA_ARGS__)
+
 int min(int a, int b);
 int max(int a, int b);
 bool rect_contains(Rect rect, uint32_t x, uint32_t y);

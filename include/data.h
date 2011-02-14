@@ -358,6 +358,9 @@ struct Con {
     TAILQ_ENTRY(Con) focused;
     TAILQ_ENTRY(Con) all_cons;
     TAILQ_ENTRY(Con) floating_windows;
+
+    /** callbacks */
+    void(*on_remove_child)(Con *);
 };
 
 #endif

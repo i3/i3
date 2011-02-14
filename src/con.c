@@ -24,6 +24,8 @@ char *colors[] = {
     "#aa00aa"
 };
 
+static void con_on_remove_child(Con *con);
+
 /*
  * Create a new container (and attach it to the given parent, if not NULL).
  * This function initializes the data structures and creates the appropriate
@@ -32,6 +34,7 @@ char *colors[] = {
  */
 Con *con_new(Con *parent) {
     Con *new = scalloc(sizeof(Con));
+    new->on_remove_child = con_on_remove_child;
     TAILQ_INSERT_TAIL(&all_cons, new, all_cons);
     new->type = CT_CON;
     new->border_style = config.default_border;
@@ -522,14 +525,7 @@ void con_move_to_workspace(Con *con, Con *workspace) {
     /* 8: keep focus on the current workspace */
     con_focus(focus_next);
 
-    /* 9: check if the parent container is empty now and close it */
-    if (parent->type != CT_WORKSPACE &&
-        TAILQ_EMPTY(&(parent->nodes_head))) {
-        DLOG("Closing empty parent container\n");
-        /* TODO: check if this container would swallow any other client and
-         * don’t close it automatically. */
-        tree_close(parent, false, false);
-    }
+    CALL(parent, on_remove_child);
 }
 
 /*
@@ -743,4 +739,18 @@ void con_set_layout(Con *con, int layout) {
     }
 
     con->layout = layout;
+}
+
+static void con_on_remove_child(Con *con) {
+    /* Nothing to do for workspaces */
+    if (con->type == CT_WORKSPACE)
+        return;
+
+    /* TODO: check if this container would swallow any other client and
+     * don’t close it automatically. */
+    DLOG("on_remove_child\n");
+    if (con_num_children(con) == 0) {
+        DLOG("Container empty, closing\n");
+        tree_close(con, false, false);
+    }
 }

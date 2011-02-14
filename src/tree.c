@@ -190,14 +190,8 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     }
 
     /* check if the parent container is empty now and close it */
-    if (!dont_kill_parent &&
-        parent->type != CT_WORKSPACE &&
-        TAILQ_EMPTY(&(parent->nodes_head))) {
-        DLOG("Closing empty parent container\n");
-        /* TODO: check if this container would swallow any other client and
-         * don’t close it automatically. */
-        tree_close(parent, false, false);
-    }
+    if (!dont_kill_parent)
+        CALL(parent, on_remove_child);
 }
 
 /*
@@ -504,6 +498,8 @@ void tree_move(char way, orientation_t orientation) {
                 fix_percent = true;
             }
 
+            CALL(con->parent, on_remove_child);
+
             TAILQ_INSERT_AFTER(&(next->parent->nodes_head), next, con, nodes);
             TAILQ_INSERT_HEAD(&(next->parent->focus_head), con, focused);
             /* TODO: don’t influence focus handling? */
@@ -567,13 +563,11 @@ void tree_move(char way, orientation_t orientation) {
      * container(s) would still point to the old container(s)). */
     con_focus(con);
 
-    if (con_num_children(old_parent) == 0) {
-        DLOG("Old container empty after moving. Let's close it\n");
-        tree_close(old_parent, false, false);
-    } else if (level_changed) {
-        /* fix the percentages in the container we moved from */
+    /* fix the percentages in the container we moved from */
+    if (level_changed)
         con_fix_percent(old_parent);
-    }
+
+    CALL(old_parent, on_remove_child);
 
     tree_flatten(croot);
 }
