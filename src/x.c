@@ -337,7 +337,7 @@ void x_draw_decoration(Con *con) {
     int indent_level = 0,
         indent_mult = 0;
     Con *il_parent = con->parent;
-    if (il_parent->type != L_STACKED) {
+    if (il_parent->layout != L_STACKED) {
         while (1) {
             DLOG("il_parent = %p, layout = %d\n", il_parent, il_parent->layout);
             if (il_parent->layout == L_STACKED)
