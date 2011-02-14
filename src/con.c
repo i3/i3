@@ -230,6 +230,24 @@ Con *con_get_workspace(Con *con) {
     return result;
 }
 
+Con *con_parent_with_orientation(Con *con, orientation_t orientation) {
+    DLOG("Searching for parent of Con %p with orientation %d\n", con, orientation);
+    Con *parent = con->parent;
+    if (parent->type == CT_FLOATING_CON)
+        return NULL;
+    while (con_orientation(parent) != orientation) {
+        DLOG("Need to go one level further up\n");
+        parent = parent->parent;
+        /* Abort when we reach a floating con */
+        if (parent && parent->type == CT_FLOATING_CON)
+            parent = NULL;
+        if (parent == NULL)
+            break;
+    }
+    DLOG("Result: %p\n", parent);
+    return parent;
+}
+
 /*
  * helper data structure for the breadth-first-search in
  * con_get_fullscreen_con()
@@ -742,15 +760,44 @@ void con_set_layout(Con *con, int layout) {
 }
 
 static void con_on_remove_child(Con *con) {
+    DLOG("on_remove_child\n");
+
     /* Nothing to do for workspaces */
-    if (con->type == CT_WORKSPACE)
+    if (con->type == CT_WORKSPACE || con->type == CT_OUTPUT || con->type == CT_ROOT) {
+        DLOG("not handling, type = %d\n", con->type);
         return;
+    }
 
     /* TODO: check if this container would swallow any other client and
      * don’t close it automatically. */
-    DLOG("on_remove_child\n");
-    if (con_num_children(con) == 0) {
+    int children = con_num_children(con);
+    if (children == 0) {
         DLOG("Container empty, closing\n");
         tree_close(con, false, false);
+        return;
+    }
+
+    /* If we did not close the container, check if we have only a single child left */
+    if (children == 1) {
+        Con *child = TAILQ_FIRST(&(con->nodes_head));
+        Con *parent = con->parent;
+        DLOG("Container has only one child, replacing con %p with child %p\n", con, child);
+
+        /* TODO: refactor it into con_swap */
+        TAILQ_REPLACE(&(parent->nodes_head), con, child, nodes);
+        TAILQ_REPLACE(&(parent->focus_head), con, child, focused);
+        if (focused == con)
+            focused = child;
+        child->parent = parent;
+        child->percent = 0.0;
+        con_fix_percent(parent);
+
+        con->parent = NULL;
+        x_con_kill(con);
+        free(con->name);
+        TAILQ_REMOVE(&all_cons, con, all_cons);
+        free(con);
+
+        return;
     }
 }

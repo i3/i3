@@ -42,6 +42,9 @@ Con *con_get_output(Con *con);
  */
 Con *con_get_workspace(Con *con);
 
+
+Con *con_parent_with_orientation(Con *con, orientation_t orientation);
+
 /**
  * Returns the first fullscreen node below this node.
  *

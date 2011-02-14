@@ -487,3 +487,36 @@ void workspace_update_urgent_flag(Con *ws) {
     if (old_flag != ws->urgent)
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"urgent\"}");
 }
+
+void ws_force_orientation(Con *ws, orientation_t orientation) {
+    /* 1: create a new split container */
+    Con *split = con_new(NULL);
+    split->parent = ws;
+
+    /* 2: copy layout and orientation from workspace */
+    split->layout = ws->layout;
+    split->orientation = ws->orientation;
+
+    Con *old_focused = TAILQ_FIRST(&(ws->focus_head));
+
+    /* 3: move the existing cons of this workspace below the new con */
+    DLOG("Moving cons\n");
+    while (!TAILQ_EMPTY(&(ws->nodes_head))) {
+        Con *child = TAILQ_FIRST(&(ws->nodes_head));
+        con_detach(child);
+        con_attach(child, split, true);
+    }
+
+    /* 4: switch workspace orientation */
+    ws->orientation = orientation;
+
+    /* 5: attach the new split container to the workspace */
+    DLOG("Attaching new split to ws\n");
+    con_attach(split, ws, false);
+
+    /* 6: fix the percentages */
+    con_fix_percent(ws);
+
+    if (old_focused)
+        con_focus(old_focused);
+}

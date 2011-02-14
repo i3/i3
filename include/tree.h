@@ -66,13 +66,6 @@ void tree_close_con();
 void tree_next(char way, orientation_t orientation);
 
 /**
- * Moves the current container in the given way (next/previous) and given
- * orientation (horizontal/vertical).
- *
- */
-void tree_move(char way, orientation_t orientation);
-
-/**
  * Closes the given container including all children
  *
  */

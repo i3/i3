@@ -112,8 +112,6 @@ up                              { return TOK_UP; }
 down                            { return TOK_DOWN; }
 left                            { return TOK_LEFT; }
 right                           { return TOK_RIGHT; }
-before                          { return TOK_BEFORE; }
-after                           { return TOK_AFTER; }
 resize                          { return TOK_RESIZE; }
 shrink                          { return TOK_SHRINK; }
 grow                            { return TOK_GROW; }

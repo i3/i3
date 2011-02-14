@@ -54,5 +54,6 @@
 #include "xcursor.h"
 #include "resize.h"
 #include "sighandler.h"
+#include "move.h"
 
 #endif

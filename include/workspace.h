@@ -99,4 +99,6 @@ void workspace_map_clients(xcb_connection_t *conn, Workspace *ws);
  */
 void workspace_update_urgent_flag(Con *ws);
 
+void ws_force_orientation(Con *ws, orientation_t orientation);
+
 #endif
