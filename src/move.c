@@ -109,33 +109,22 @@ void tree_move(int direction) {
     if (same_orientation == con->parent) {
         DLOG("We are in the same container\n");
         Con *swap;
-        /* TODO: TAILQ_SWAP? */
-        if (direction == TOK_LEFT || direction == TOK_UP) {
-            if (!(swap = TAILQ_PREV(con, nodes_head, nodes)))
-                return;
+        if (!(swap = (direction == TOK_LEFT || direction == TOK_UP ?
+                      TAILQ_PREV(con, nodes_head, nodes) :
+                      TAILQ_NEXT(con, nodes))))
+            return;
 
-            if (!con_is_leaf(swap)) {
-                insert_con_into(con, con_descend_focused(swap), AFTER);
-                goto end;
-            }
-
-            /* the container right of the current one is a normal one. */
-            con_detach(con);
-            TAILQ_INSERT_BEFORE(swap, con, nodes);
-            TAILQ_INSERT_HEAD(&(swap->parent->focus_head), con, focused);
-        } else {
-            if (!(swap = TAILQ_NEXT(con, nodes)))
-                return;
-
-            if (!con_is_leaf(swap)) {
-                insert_con_into(con, con_descend_focused(swap), AFTER);
-                goto end;
-            }
-
-            con_detach(con);
-            TAILQ_INSERT_AFTER(&(swap->parent->nodes_head), swap, con, nodes);
-            TAILQ_INSERT_HEAD(&(swap->parent->focus_head), con, focused);
+        if (!con_is_leaf(swap)) {
+            insert_con_into(con, con_descend_focused(swap), AFTER);
+            goto end;
         }
+        if (direction == TOK_LEFT || direction == TOK_UP)
+            TAILQ_SWAP(swap, con, &(swap->parent->nodes_head), nodes);
+        else TAILQ_SWAP(con, swap, &(swap->parent->nodes_head), nodes);
+
+        TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
+        TAILQ_INSERT_HEAD(&(swap->parent->focus_head), con, focused);
+
         DLOG("Swapped.\n");
         return;
     }
