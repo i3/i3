@@ -365,7 +365,7 @@ void handle_button(xcb_button_press_event_t *event) {
  * then (and only then)
  *
  */
-void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revenst) {
+void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revents) {
     xcb_flush(xcb_connection);
 }
 
