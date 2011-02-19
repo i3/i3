@@ -329,7 +329,8 @@ void tree_next(char way, orientation_t orientation) {
     /* 1: get the first parent with the same orientation */
     Con *parent = focused->parent;
     while (focused->type != CT_WORKSPACE &&
-           con_orientation(parent) != orientation) {
+           (con_orientation(parent) != orientation ||
+            con_num_children(parent) == 1)) {
         LOG("need to go one level further up\n");
         /* if the current parent is an output, we are at a workspace
          * and the orientation still does not match */
