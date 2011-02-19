@@ -787,28 +787,4 @@ static void con_on_remove_child(Con *con) {
         tree_close(con, false, false);
         return;
     }
-
-    /* If we did not close the container, check if we have only a single child left */
-    if (children == 1) {
-        Con *child = TAILQ_FIRST(&(con->nodes_head));
-        Con *parent = con->parent;
-        DLOG("Container has only one child, replacing con %p with child %p\n", con, child);
-
-        /* TODO: refactor it into con_swap */
-        TAILQ_REPLACE(&(parent->nodes_head), con, child, nodes);
-        TAILQ_REPLACE(&(parent->focus_head), con, child, focused);
-        if (focused == con)
-            focused = child;
-        child->parent = parent;
-        child->percent = 0.0;
-        con_fix_percent(parent);
-
-        con->parent = NULL;
-        x_con_kill(con);
-        free(con->name);
-        TAILQ_REMOVE(&all_cons, con, all_cons);
-        free(con);
-
-        return;
-    }
 }

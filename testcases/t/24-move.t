@@ -109,7 +109,7 @@ is(@{$content}, 3, 'three nodes on this workspace');
 # will be replaced by the con itself, so we will still have 3 nodes
 $i3->command('move right')->recv;
 $content = get_ws_content($tmp);
-is(@{$content}, 3, 'two nodes on this workspace');
+is(@{$content}, 2, 'two nodes on this workspace');
 
 ######################################################################
 # 4) We create two v-split containers on the workspace, then we move
