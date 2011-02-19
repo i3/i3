@@ -87,47 +87,59 @@ void tree_move(int direction) {
     orientation_t o = (direction == TOK_LEFT || direction == TOK_RIGHT ? HORIZ : VERT);
 
     Con *same_orientation = con_parent_with_orientation(con, o);
-    /* There is no parent container with the same orientation */
-    if (!same_orientation) {
-        if (con_is_floating(con)) {
-            /* this is a floating con, we just disable floating */
-            floating_disable(con, true);
-            return;
+    /* The do {} while is used to 'restart' at this point with a different
+     * same_orientation, see the very last lines before the end of this block
+     * */
+    do {
+        /* There is no parent container with the same orientation */
+        if (!same_orientation) {
+            if (con_is_floating(con)) {
+                /* this is a floating con, we just disable floating */
+                floating_disable(con, true);
+                return;
+            }
+            if (con_inside_floating(con)) {
+                /* 'con' should be moved out of a floating container */
+                DLOG("Inside floating, moving to workspace\n");
+                attach_to_workspace(con, con_get_workspace(con));
+                goto end;
+            }
+            DLOG("Force-changing orientation\n");
+            ws_force_orientation(con_get_workspace(con), o);
+            same_orientation = con_parent_with_orientation(con, o);
         }
-        if (con_inside_floating(con)) {
-            /* 'con' should be moved out of a floating container */
-            DLOG("Inside floating, moving to workspace\n");
-            attach_to_workspace(con, con_get_workspace(con));
-            goto end;
+
+        /* easy case: the move is within this container */
+        if (same_orientation == con->parent) {
+            DLOG("We are in the same container\n");
+            Con *swap;
+            if ((swap = (direction == TOK_LEFT || direction == TOK_UP ?
+                          TAILQ_PREV(con, nodes_head, nodes) :
+                          TAILQ_NEXT(con, nodes)))) {
+                if (!con_is_leaf(swap)) {
+                    insert_con_into(con, con_descend_focused(swap), AFTER);
+                    goto end;
+                }
+                if (direction == TOK_LEFT || direction == TOK_UP)
+                    TAILQ_SWAP(swap, con, &(swap->parent->nodes_head), nodes);
+                else TAILQ_SWAP(con, swap, &(swap->parent->nodes_head), nodes);
+
+                TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
+                TAILQ_INSERT_HEAD(&(swap->parent->focus_head), con, focused);
+
+                DLOG("Swapped.\n");
+                return;
+            }
+
+            /* If there was no con with which we could swap the current one, search
+             * again, but starting one level higher. If we are on the workspace
+             * level, don’t do that. The result would be a force change of
+             * workspace orientation, which is not necessary. */
+            if (con->parent == con_get_workspace(con))
+                return;
+            same_orientation = con_parent_with_orientation(con->parent, o);
         }
-        DLOG("Force-changing orientation\n");
-        ws_force_orientation(con_get_workspace(con), o);
-        same_orientation = con_parent_with_orientation(con, o);
-    }
-
-    /* easy case: the move is within this container */
-    if (same_orientation == con->parent) {
-        DLOG("We are in the same container\n");
-        Con *swap;
-        if (!(swap = (direction == TOK_LEFT || direction == TOK_UP ?
-                      TAILQ_PREV(con, nodes_head, nodes) :
-                      TAILQ_NEXT(con, nodes))))
-            return;
-
-        if (!con_is_leaf(swap)) {
-            insert_con_into(con, con_descend_focused(swap), AFTER);
-            goto end;
-        }
-        if (direction == TOK_LEFT || direction == TOK_UP)
-            TAILQ_SWAP(swap, con, &(swap->parent->nodes_head), nodes);
-        else TAILQ_SWAP(con, swap, &(swap->parent->nodes_head), nodes);
-
-        TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
-        TAILQ_INSERT_HEAD(&(swap->parent->focus_head), con, focused);
-
-        DLOG("Swapped.\n");
-        return;
-    }
+    } while (same_orientation == NULL);
 
     /* this time, we have to move to another container */
     /* This is the container *above* 'con' which is inside 'same_orientation' */
