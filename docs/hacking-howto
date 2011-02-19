@@ -1,12 +1,14 @@
 Hacking i3: How To
 ==================
 Michael Stapelberg <michael+i3@stapelberg.de>
-December 2009
+February 2010
 
 This document is intended to be the first thing you read before looking and/or
 touching i3’s source code. It should contain all important information to help
 you understand why things are like they are. If it does not mention something
 you find necessary, please do not hesitate to contact me.
+
+PLEASE BEWARE THAT THIS DOCUMENT IS ONLY PARTIALLY UPDATED FOR -tree YET!
 
 == Window Managers
 
@@ -484,6 +486,131 @@ The other commands are to be combined with a direction. The directions are h,
 j, k and l, like in vim (h = left, j = down, k = up, l = right). When you just
 specify the direction keys, i3 will move the focus in that direction. You can
 provide "m" or "s" before the direction to move a window respectively or snap.
+
+== Moving containers
+
+The movement code is pretty delicate. You need to consider all cases before
+making any changes or before being able to fully understand how it works.
+
+=== Case 1: Moving inside the same container
+
+The reference layout for this case is a single workspace in horizontal
+orientation with two containers on it. Focus is on the left container (1).
+
+
+[width="15%",cols="^,^"]
+|========
+| 1 | 2
+|========
+
+When moving the left window to the right (command +move right+), tree_move will
+look for a container with horizontal orientation and finds the parent of the
+left container, that is, the workspace. Afterwards, it runs the code branch
+commented with "the easy case": it calls TAILQ_NEXT to get the container right
+of the current one and swaps both containers.
+
+=== Case 2: Move a container into a split container
+
+The reference layout for this case is a horizontal workspace with two
+containers. The right container is a v-split with two containers. Focus is on
+the left container (1).
+
+[width="15%",cols="^,^"]
+|========
+1.2+^.^| 1 | 2
+| 3
+|========
+
+When moving to the right (command +move right+), i3 will work like in case 1
+("the easy case"). However, as the right container is not a leaf container, but
+a v-split, the left container (1) will be inserted at the right position (below
+2, assuming that 2 is focused inside the v-split) by calling +insert_con_into+.
+
++insert_con_into+ detaches the container from its parent and inserts it
+before/after the given target container. Afterwards, the on_remove_child
+callback is called on the old parent container which will then be closed, if
+empty.
+
+Afterwards, +con_focus+ will be called to fix the focus stack and the tree will
+be flattened.
+
+=== Case 3: Moving to non-existant top/bottom
+
+Like in case 1, the reference layout for this case is a single workspace in
+horizontal orientation with two containers on it. Focus is on the left
+container:
+
+[width="15%",cols="^,^"]
+|========
+| 1 | 2
+|========
+
+This time however, the command is +move up+ or +move down+. tree_move will look
+for a container with vertical orientation. As it will not find any,
++same_orientation+ is NULL and therefore i3 will perform a forced orientation
+change on the workspace by creating a new h-split container, moving the
+workspace contents into it and then changing the workspace orientation to
+vertical. Now it will again search for parent containers with vertical
+orientation and it will find the workspace.
+
+This time, the easy case code path will not be run as we are not moving inside
+the same container. Instead, +insert_con_into+ will be called with the focused
+container and the container above/below the current one (on the level of
++same_orientation+).
+
+Now, +con_focus+ will be called to fix the focus stack and the tree will be
+flattened.
+
+=== Case 4: Moving to existant top/bottom
+
+The reference layout for this case is a vertical workspace with two containers.
+The bottom one is a h-split containing two containers (1 and 2). Focus is on
+the bottom left container (1).
+
+[width="15%",cols="^,^"]
+|========
+2+| 3
+| 1 | 2
+|========
+
+This case is very much like case 3, only this time the forced workspace
+orientation change does not need to be performed because the workspace already
+is in vertical orientation.
+
+=== Case 5: Moving in one-child h-split
+
+The reference layout for this case is a horizontal workspace with two
+containers having a v-split on the left side with a one-child h-split on the
+bottom. Focus is on the bottom left container (2(h)):
+
+[width="15%",cols="^,^"]
+|========
+| 1 1.2+^.^| 3
+| 2(h)
+|========
+
+In this case, +same_orientation+ will be set to the h-split container around
+the focused container. However, when trying the easy case, the next/previous
+container +swap+ will be NULL. Therefore, i3 will search again for a
++same_orientation+ container, this time starting from the parent of the h-split
+container.
+
+After determining a new +same_orientation+ container (if it is NULL, the
+orientation will be force-changed), this case is equivalent to case 2 or case
+4.
+
+
+=== Case 6: Floating containers
+
+The reference layout for this case is a horizontal workspace with two
+containers plus one floating h-split container. Focus is on the floating
+container.
+
+TODO: nice illustration. table not possible?
+
+When moving up/down, the container needs to leave the floating container and it
+needs to be placed on the workspace (at workspace level). This is accomplished
+by calling the function +attach_to_workspace+.
 
 == Gotchas
 
