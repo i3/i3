@@ -10,9 +10,6 @@ BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
 }
 
-SKIP: {
-    skip "Dock clients not yet implemented", 1;
-
 my $x = X11::XCB::Connection->new;
 
 #####################################################################
@@ -30,7 +27,7 @@ my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30],
     background_color => '#FF0000',
-    type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
 );
 
 $window->map;
@@ -44,7 +41,7 @@ my $fwindow = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30],
     background_color => '#FF0000',
-    type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
 );
 
 $fwindow->transient_for($window);
@@ -54,4 +51,3 @@ sleep 0.25;
 
 
 diag( "Testing i3, Perl $], $^X" );
-}
