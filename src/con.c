@@ -226,7 +226,6 @@ Con *con_get_workspace(Con *con) {
     Con *result = con;
     while (result != NULL && result->type != CT_WORKSPACE)
         result = result->parent;
-    assert(result != NULL);
     return result;
 }
 
@@ -694,6 +693,8 @@ Rect con_border_style_rect(Con *con) {
  * borderless and the only element in the tabbed container, the border is not
  * rendered.
  *
+ * For children of a CT_DOCKAREA, the border style is always none.
+ *
  */
 int con_border_style(Con *con) {
     Con *fs = con_get_fullscreen_con(con->parent);
@@ -707,6 +708,9 @@ int con_border_style(Con *con) {
 
     if (con->parent->layout == L_TABBED && con->border_style != BS_NORMAL)
         return (con_num_children(con->parent) == 1 ? con->border_style : BS_NORMAL);
+
+    if (con->parent->type == CT_DOCKAREA)
+        return BS_NONE;
 
     return con->border_style;
 }
@@ -773,8 +777,12 @@ void con_set_layout(Con *con, int layout) {
 static void con_on_remove_child(Con *con) {
     DLOG("on_remove_child\n");
 
-    /* Nothing to do for workspaces */
-    if (con->type == CT_WORKSPACE || con->type == CT_OUTPUT || con->type == CT_ROOT) {
+    /* Every container 'above' (in the hierarchy) the workspace content should
+     * not be closed when the last child was removed */
+    if (con->type == CT_WORKSPACE ||
+        con->type == CT_OUTPUT ||
+        con->type == CT_ROOT ||
+        con->type == CT_DOCKAREA) {
         DLOG("not handling, type = %d\n", con->type);
         return;
     }

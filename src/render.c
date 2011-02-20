@@ -9,6 +9,73 @@
 static bool show_debug_borders = false;
 
 /*
+ * Renders a container with layout L_OUTPUT. In this layout, all CT_DOCKAREAs
+ * get the height of their content and the remaining CT_CON gets the rest.
+ *
+ */
+static void render_l_output(Con *con) {
+    Con *child, *dockchild;
+
+    int x = con->rect.x;
+    int y = con->rect.y;
+    int height = con->rect.height;
+    DLOG("Available height: %d\n", height);
+
+    /* First pass: determine the height of all CT_DOCKAREAs (the sum of their
+     * children) and figure out how many pixels we have left for the rest */
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        if (child->type != CT_DOCKAREA)
+            continue;
+
+        child->rect.height = 0;
+        TAILQ_FOREACH(dockchild, &(child->nodes_head), nodes)
+            child->rect.height += dockchild->geometry.height;
+        DLOG("This dockarea's height: %d\n", child->rect.height);
+
+        height -= child->rect.height;
+    }
+
+    DLOG("Remaining: %d\n", height);
+
+    /* Second pass: Set the widths/heights */
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        if (child->type == CT_CON) {
+            if (height == -1) {
+                DLOG("More than one CT_CON on output container\n");
+                assert(false);
+            }
+            child->rect.x = x;
+            child->rect.y = y;
+            child->rect.width = con->rect.width;
+            child->rect.height = height;
+            height = -1;
+        }
+
+        else if (child->type != CT_DOCKAREA) {
+            DLOG("Child %p of type %d is inside the OUTPUT con\n", child, child->type);
+            assert(false);
+        }
+
+        child->rect.x = x;
+        child->rect.y = y;
+        child->rect.width = con->rect.width;
+
+        child->deco_rect.x = 0;
+        child->deco_rect.y = 0;
+        child->deco_rect.width = 0;
+        child->deco_rect.height = 0;
+
+        y += child->rect.height;
+
+        DLOG("child at (%d, %d) with (%d x %d)\n",
+                child->rect.x, child->rect.y, child->rect.width, child->rect.height);
+        DLOG("x now %d, y now %d\n", x, y);
+        x_raise_con(child);
+        render_con(child, false);
+    }
+}
+
+/*
  * "Renders" the given container (and its children), meaning that all rects are
  * updated correctly. Note that this function does not call any xcb_*
  * functions, so the changes are completely done in memory only (and
@@ -95,7 +162,7 @@ void render_con(Con *con, bool render_fullscreen) {
     }
 
     /* Check for fullscreen nodes */
-    Con *fullscreen = con_get_fullscreen_con(con);
+    Con *fullscreen = (con->type == CT_OUTPUT ? NULL : con_get_fullscreen_con(con));
     if (fullscreen) {
         DLOG("got fs node: %p\n", fullscreen);
         fullscreen->rect = rect;
@@ -130,6 +197,11 @@ void render_con(Con *con, bool render_fullscreen) {
         }
     }
 
+    if (con->layout == L_OUTPUT) {
+        render_l_output(con);
+    } else {
+
+        /* FIXME: refactor this into separate functions: */
     Con *child;
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
 
@@ -202,6 +274,21 @@ void render_con(Con *con, bool render_fullscreen) {
             }
         }
 
+        /* dockarea layout */
+        else if (con->layout == L_DOCKAREA) {
+            DLOG("dockarea con\n");
+            child->rect.x = x;
+            child->rect.y = y;
+            child->rect.width = rect.width;
+            child->rect.height = child->geometry.height;
+
+            child->deco_rect.x = 0;
+            child->deco_rect.y = 0;
+            child->deco_rect.width = 0;
+            child->deco_rect.height = 0;
+            y += child->rect.height;
+        }
+
         DLOG("child at (%d, %d) with (%d x %d)\n",
                 child->rect.x, child->rect.y, child->rect.width, child->rect.height);
         DLOG("x now %d, y now %d\n", x, y);
@@ -221,7 +308,9 @@ void render_con(Con *con, bool render_fullscreen) {
             render_con(foc, false);
         }
     }
+    }
 
+    Con *child;
     TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
         DLOG("render floating:\n");
         DLOG("floating child at (%d,%d) with %d x %d\n", child->rect.x, child->rect.y, child->rect.width, child->rect.height);

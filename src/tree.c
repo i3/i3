@@ -55,18 +55,21 @@ void tree_init() {
  * Opens an empty container in the current container
  *
  */
-Con *tree_open_con(Con *con) {
+Con *tree_open_con(Con *con, bool focus_it) {
     if (con == NULL) {
         /* every focusable Con has a parent (outputs have parent root) */
         con = focused->parent;
         /* If the parent is an output, we are on a workspace. In this case,
          * the new container needs to be opened as a leaf of the workspace. */
-        if (con->type == CT_OUTPUT)
+        if (con->parent->type == CT_OUTPUT && con->type != CT_DOCKAREA) {
             con = focused;
+        }
+
         /* If the currently focused container is a floating container, we
          * attach the new container to the workspace */
         if (con->type == CT_FLOATING_CON)
             con = con->parent;
+        DLOG("con = %p\n", con);
     }
 
     assert(con != NULL);
@@ -78,7 +81,8 @@ Con *tree_open_con(Con *con) {
     con_fix_percent(con);
 
     /* 5: focus the new container */
-    con_focus(new);
+    if (focus_it)
+        con_focus(new);
 
     return new;
 }

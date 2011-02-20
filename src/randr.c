@@ -250,6 +250,7 @@ void output_init_con(Output *output) {
         FREE(con->name);
         con->name = sstrdup(output->name);
         con->type = CT_OUTPUT;
+        con->layout = L_OUTPUT;
     }
     con->rect = output->rect;
     output->con = con;
@@ -257,12 +258,43 @@ void output_init_con(Output *output) {
     char *name;
     asprintf(&name, "[i3 con] output %s", con->name);
     x_set_name(con, name);
-    free(name);
+    FREE(name);
 
     if (reused) {
         DLOG("Not adding workspace, this was a reused con\n");
         return;
     }
+
+    DLOG("Changing layout, adding top/bottom dockarea\n");
+    Con *topdock = con_new(NULL);
+    topdock->type = CT_DOCKAREA;
+    topdock->layout = L_DOCKAREA;
+    topdock->orientation = VERT;
+    /* this container swallows dock clients */
+    Match *match = scalloc(sizeof(Match));
+    match_init(match);
+    match->dock = true;
+    match->insert_where = M_BELOW;
+    TAILQ_INSERT_TAIL(&(topdock->swallow_head), match, matches);
+
+    topdock->name = sstrdup("topdock");
+
+    asprintf(&name, "[i3 con] top dockarea %s", con->name);
+    x_set_name(topdock, name);
+    FREE(name);
+    DLOG("attaching\n");
+    con_attach(topdock, con, false);
+
+    DLOG("adding main content container\n");
+    Con *content = con_new(NULL);
+    content->type = CT_CON;
+    content->name = sstrdup("content");
+
+    asprintf(&name, "[i3 con] content %s", con->name);
+    x_set_name(content, name);
+    FREE(name);
+    con_attach(content, con, false);
+
     DLOG("Now adding a workspace\n");
 
     /* add a workspace to this output */
@@ -295,7 +327,7 @@ void output_init_con(Output *output) {
         DLOG("result for ws %s / %d: exists = %d\n", ws->name, c, exists);
     }
     ws->num = c;
-    con_attach(ws, con, false);
+    con_attach(ws, content, false);
 
     asprintf(&name, "[i3 con] workspace %s", ws->name);
     x_set_name(ws, name);

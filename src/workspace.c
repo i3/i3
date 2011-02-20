@@ -18,18 +18,23 @@
  *
  */
 Con *workspace_get(const char *num) {
-    Con *output, *workspace = NULL, *current;
+    Con *output, *workspace = NULL, *current, *child;
 
     /* TODO: could that look like this in the future?
     GET_MATCHING_NODE(workspace, croot, strcasecmp(current->name, num) != 0);
     */
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         TAILQ_FOREACH(current, &(output->nodes_head), nodes) {
-            if (strcasecmp(current->name, num) != 0)
+            if (current->type != CT_CON)
                 continue;
 
-            workspace = current;
-            break;
+            TAILQ_FOREACH(child, &(current->nodes_head), nodes) {
+                if (strcasecmp(child->name, num) != 0)
+                    continue;
+
+                workspace = child;
+                break;
+            }
         }
     }
 
@@ -37,7 +42,15 @@ Con *workspace_get(const char *num) {
     if (workspace == NULL) {
         LOG("need to create this one\n");
         output = con_get_output(focused);
-        LOG("got output %p\n", output);
+        Con *child, *content = NULL;
+        TAILQ_FOREACH(child, &(output->nodes_head), nodes) {
+            if (child->type == CT_CON) {
+                content = child;
+                break;
+            }
+        }
+        assert(content != NULL);
+        LOG("got output %p with child %p\n", output, content);
         /* We need to attach this container after setting its type. con_attach
          * will handle CT_WORKSPACEs differently */
         workspace = con_new(NULL);
@@ -60,7 +73,7 @@ Con *workspace_get(const char *num) {
         else workspace->num = parsed_num;
         LOG("num = %d\n", workspace->num);
         workspace->orientation = HORIZ;
-        con_attach(workspace, output, false);
+        con_attach(workspace, content, false);
 
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
     }
@@ -214,8 +227,9 @@ void workspace_show(const char *num) {
     /* Check if the the currently focused con is on the same Output as the
      * workspace we chose as 'old'. If not, use the workspace of the currently
      * focused con */
-    if (con_get_workspace(focused)->parent != old->parent)
-        old = con_get_workspace(focused);
+    Con *ws = con_get_workspace(focused);
+    if (ws && ws->parent != old->parent)
+        old = ws;
 
     /* enable fullscreen for the target workspace. If it happens to be the
      * same one we are currently on anyways, we can stop here. */
@@ -228,7 +242,7 @@ void workspace_show(const char *num) {
     LOG("switching to %p\n", workspace);
     Con *next = con_descend_focused(workspace);
 
-    if (TAILQ_EMPTY(&(old->nodes_head)) && TAILQ_EMPTY(&(old->floating_head))) {
+    if (old && TAILQ_EMPTY(&(old->nodes_head)) && TAILQ_EMPTY(&(old->floating_head))) {
         /* check if this workspace is currently visible */
         if (!workspace_is_visible(old)) {
             LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);

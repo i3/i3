@@ -3,6 +3,7 @@
 
 use i3test tests => 7;
 use List::MoreUtils qw(all none);
+use List::Util qw(first);
 
 my $i3 = i3("/tmp/nestedcons");
 
@@ -41,8 +42,9 @@ ok((all { $_->{type} == 1 } @nodes), 'all nodes are of type CT_OUTPUT');
 ok((none { defined($_->{window}) } @nodes), 'no CT_OUTPUT contains a window');
 ok((all { @{$_->{nodes}} > 0 } @nodes), 'all nodes have at least one leaf (workspace)');
 my @workspaces;
-for my $ws (map { @{$_->{nodes}} } @nodes) {
-    push @workspaces, $ws;
+for my $ws (@nodes) {
+    my $content = first { $_->{type} == 2 } @{$ws->{nodes}};
+    @workspaces = (@workspaces, @{$content->{nodes}});
 }
 
 ok((all { $_->{type} == 4 } @workspaces), 'all workspaces are of type CT_WORKSPACE');

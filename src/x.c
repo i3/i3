@@ -342,7 +342,7 @@ void x_draw_decoration(Con *con) {
             DLOG("il_parent = %p, layout = %d\n", il_parent, il_parent->layout);
             if (il_parent->layout == L_STACKED)
                 indent_level++;
-            if (il_parent->type == CT_WORKSPACE)
+            if (il_parent->type == CT_WORKSPACE || il_parent->type == CT_DOCKAREA || il_parent->type == CT_OUTPUT)
                 break;
             il_parent = il_parent->parent;
             indent_mult++;

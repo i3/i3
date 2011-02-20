@@ -18,7 +18,15 @@ sub fullscreen_windows {
 # get the output of this workspace
 my $tree = $i3->get_tree->recv;
 my @outputs = @{$tree->{nodes}};
-my $output = first { defined(first { $_->{name} eq $tmp } @{$_->{nodes}}) } @outputs;
+my $output;
+for my $o (@outputs) {
+    # get the first CT_CON of each output
+    my $content = first { $_->{type} == 2 } @{$o->{nodes}};
+    if (defined(first { $_->{name} eq $tmp } @{$content->{nodes}})) {
+        $output = $o;
+        last;
+    }
+}
 
 BEGIN {
     use_ok('X11::XCB::Window');

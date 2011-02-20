@@ -263,23 +263,40 @@ struct Match {
 
     enum { M_USER = 0, M_RESTART } source;
 
-    /* wo das fenster eingefügt werden soll. bei here wird es direkt
-     * diesem Con zugewiesen, also layout saving. bei active ist es
-     * ein assignment, welches an der momentan fokussierten stelle einfügt */
-    enum { M_HERE = 0, M_ACTIVE } insert_where;
+    /* Where the window looking for a match should be inserted:
+     *
+     * M_HERE   = the matched container will be replaced by the window
+     *            (layout saving)
+     * M_ACTIVE = the window will be inserted next to the currently focused
+     *            container below the matched container
+     *            (assignments)
+     * M_BELOW  = the window will be inserted as a child of the matched container
+     *            (dockareas)
+     *
+     */
+    enum { M_HERE = 0, M_ACTIVE, M_BELOW } insert_where;
 
     TAILQ_ENTRY(Match) matches;
 };
 
 struct Con {
     bool mapped;
-    enum { CT_ROOT = 0, CT_OUTPUT = 1, CT_CON = 2, CT_FLOATING_CON = 3, CT_WORKSPACE = 4 } type;
+    enum {
+        CT_ROOT = 0,
+        CT_OUTPUT = 1,
+        CT_CON = 2,
+        CT_FLOATING_CON = 3,
+        CT_WORKSPACE = 4,
+        CT_DOCKAREA = 5
+    } type;
     orientation_t orientation;
     struct Con *parent;
 
     struct Rect rect;
     struct Rect window_rect;
     struct Rect deco_rect;
+    /** the geometry this window requested when getting mapped */
+    struct Rect geometry;
 
     char *name;
 
@@ -332,7 +349,7 @@ struct Con {
     TAILQ_HEAD(swallow_head, Match) swallow_head;
 
     enum { CF_NONE = 0, CF_OUTPUT = 1, CF_GLOBAL = 2 } fullscreen_mode;
-    enum { L_DEFAULT = 0, L_STACKED = 1, L_TABBED = 2 } layout;
+    enum { L_DEFAULT = 0, L_STACKED = 1, L_TABBED = 2, L_DOCKAREA = 3, L_OUTPUT = 4 } layout;
     border_style_t border_style;
     /** floating? (= not in tiling layout) This cannot be simply a bool
      * because we want to keep track of whether the status was set by the

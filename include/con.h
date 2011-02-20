@@ -182,6 +182,8 @@ Rect con_border_style_rect(Con *con);
  * borderless and the only element in the tabbed container, the border is not
  * rendered.
  *
+ * For children of a CT_DOCKAREA, the border style is always none.
+ *
  */
 int con_border_style(Con *con);
 

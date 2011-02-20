@@ -288,44 +288,47 @@ IPC_HANDLER(get_workspaces) {
 
     Con *output;
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        Con *ws;
-        TAILQ_FOREACH(ws, &(output->nodes_head), nodes) {
-            assert(ws->type == CT_WORKSPACE);
-            y(map_open);
+        Con *child;
+        TAILQ_FOREACH(child, &(output->nodes_head), nodes) {
+            Con *ws;
+            TAILQ_FOREACH(ws, &(child->nodes_head), nodes) {
+                assert(ws->type == CT_WORKSPACE);
+                y(map_open);
 
-            ystr("num");
-            if (ws->num == -1)
-                y(null);
-            else y(integer, ws->num);
+                ystr("num");
+                if (ws->num == -1)
+                    y(null);
+                else y(integer, ws->num);
 
-            ystr("name");
-            ystr(ws->name);
+                ystr("name");
+                ystr(ws->name);
 
-            ystr("visible");
-            y(bool, workspace_is_visible(ws));
+                ystr("visible");
+                y(bool, workspace_is_visible(ws));
 
-            ystr("focused");
-            y(bool, ws == focused_ws);
+                ystr("focused");
+                y(bool, ws == focused_ws);
 
-            ystr("rect");
-            y(map_open);
-            ystr("x");
-            y(integer, ws->rect.x);
-            ystr("y");
-            y(integer, ws->rect.y);
-            ystr("width");
-            y(integer, ws->rect.width);
-            ystr("height");
-            y(integer, ws->rect.height);
-            y(map_close);
+                ystr("rect");
+                y(map_open);
+                ystr("x");
+                y(integer, ws->rect.x);
+                ystr("y");
+                y(integer, ws->rect.y);
+                ystr("width");
+                y(integer, ws->rect.width);
+                ystr("height");
+                y(integer, ws->rect.height);
+                y(map_close);
 
-            ystr("output");
-            ystr(output->name);
+                ystr("output");
+                ystr(output->name);
 
-            ystr("urgent");
-            y(bool, ws->urgent);
+                ystr("urgent");
+                y(bool, ws->urgent);
 
-            y(map_close);
+                y(map_close);
+            }
         }
     }
 

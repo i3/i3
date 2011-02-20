@@ -167,8 +167,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             LOG("using current container, focused = %p, focused->name = %s\n",
                             focused, focused->name);
             nc = focused;
-        } else nc = tree_open_con(NULL);
+        } else nc = tree_open_con(NULL, true);
     } else {
+        /* M_ACTIVE are assignments */
         if (match != NULL && match->insert_where == M_ACTIVE) {
             /* We need to go down the focus stack starting from nc */
             while (TAILQ_FIRST(&(nc->focus_head)) != TAILQ_END(&(nc->focus_head))) {
@@ -178,9 +179,16 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             /* We need to open a new con */
             /* TODO: make a difference between match-once containers (directly assign
              * cwindow) and match-multiple (tree_open_con first) */
-            nc = tree_open_con(nc->parent);
+            nc = tree_open_con(nc->parent, true);
+        }
+
+        /* M_BELOW inserts the new window as a child of the one which was
+         * matched (e.g. dock areas) */
+        else if (match != NULL && match->insert_where == M_BELOW) {
+            nc = tree_open_con(nc, !cwindow->dock);
         }
     }
+
     DLOG("new container = %p\n", nc);
     nc->window = cwindow;
     x_reinit(nc);
@@ -207,6 +215,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
          cwindow->leader != cwindow->id &&
          con_by_window_id(cwindow->leader) != NULL))
         want_floating = true;
+
+    nc->geometry = (Rect){ geom->x, geom->y, geom->width, geom->height };
 
     if (want_floating) {
         nc->rect.x = geom->x;
