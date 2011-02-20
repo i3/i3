@@ -290,6 +290,9 @@ IPC_HANDLER(get_workspaces) {
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         Con *child;
         TAILQ_FOREACH(child, &(output->nodes_head), nodes) {
+            if (child->type != CT_CON)
+                continue;
+
             Con *ws;
             TAILQ_FOREACH(ws, &(child->nodes_head), nodes) {
                 assert(ws->type == CT_WORKSPACE);
