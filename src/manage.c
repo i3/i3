@@ -216,6 +216,10 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
          con_by_window_id(cwindow->leader) != NULL))
         want_floating = true;
 
+    /* dock clients cannot be floating, that makes no sense */
+    if (cwindow->dock)
+        want_floating = false;
+
     nc->geometry = (Rect){ geom->x, geom->y, geom->width, geom->height };
 
     if (want_floating) {
