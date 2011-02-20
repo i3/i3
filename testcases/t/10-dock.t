@@ -1,7 +1,7 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use i3test tests => 2;
+use i3test;
 use X11::XCB qw(:all);
 use Time::HiRes qw(sleep);
 use List::Util qw(first);
@@ -11,6 +11,23 @@ BEGIN {
 }
 
 my $x = X11::XCB::Connection->new;
+my $i3 = i3("/tmp/nestedcons");
+
+#####################################################################
+# verify that there is no dock window yet
+#####################################################################
+
+my $tree = $i3->get_tree->recv;
+my @outputs = @{$tree->{nodes}};
+# Children of all dockareas
+my @docked;
+for my $output (@outputs) {
+    @docked = (@docked, map { @{$_->{nodes}} }
+                        grep { $_->{type} == 5 }
+                        @{$output->{nodes}});
+}
+
+is(@docked, 0, 'no dock clients yet');
 
 #####################################################################
 # Create a dock window and see if it gets managed
@@ -36,6 +53,34 @@ sleep 0.25;
 
 my $rect = $window->rect;
 is($rect->width, $primary->rect->width, 'dock client is as wide as the screen');
+is($rect->height, 30, 'height is unchanged');
+
+#####################################################################
+# check that we can find it in the layout tree at the expected position
+#####################################################################
+
+$tree = $i3->get_tree->recv;
+@outputs = @{$tree->{nodes}};
+@docked;
+for my $output (@outputs) {
+    @docked = (@docked, map { @{$_->{nodes}} }
+                        grep { $_->{type} == 5 }
+                        @{$output->{nodes}});
+}
+
+is(@docked, 1, 'one dock client found');
+
+# verify the position/size
+my $docknode = $docked[0];
+
+is($docknode->{rect}->{x}, 0, 'dock node placed at x=0');
+is($docknode->{rect}->{y}, 0, 'dock node placed at y=0');
+is($docknode->{rect}->{width}, $primary->rect->width, 'dock node as wide as the screen');
+is($docknode->{rect}->{height}, 30, 'dock node has unchanged height');
+
+#####################################################################
+# regression test: transient dock client
+#####################################################################
 
 my $fwindow = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
@@ -49,5 +94,6 @@ $fwindow->map;
 
 sleep 0.25;
 
+does_i3_live;
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

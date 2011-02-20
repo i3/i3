@@ -26,7 +26,7 @@ sub import {
     my $class = shift;
     my $pkg = caller;
     eval "package $pkg;
-use Test::More qw(@_);
+use Test::More" . (@_ > 0 ? " qw(@_)" : "") . ";
 use Test::Exception;
 use Data::Dumper;
 use AnyEvent::I3;
