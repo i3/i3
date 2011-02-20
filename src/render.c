@@ -21,6 +21,37 @@ static void render_l_output(Con *con) {
     int height = con->rect.height;
     DLOG("Available height: %d\n", height);
 
+    /* Find the content container and ensure that there is exactly one. Also
+     * check for any non-CT_DOCKAREA clients. */
+    Con *content = NULL;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        if (child->type == CT_CON) {
+            if (content != NULL) {
+                DLOG("More than one CT_CON on output container\n");
+                assert(false);
+            }
+            content = child;
+        } else if (child->type != CT_DOCKAREA) {
+            DLOG("Child %p of type %d is inside the OUTPUT con\n", child, child->type);
+            assert(false);
+        }
+    }
+
+    assert(content != NULL);
+
+    /* We need to find out if there is a fullscreen con on the current workspace
+     * and take the short-cut to render it directly (the user does not want to
+     * see the dockareas in that case) */
+    Con *ws = con_get_fullscreen_con(content);
+    Con *fullscreen = con_get_fullscreen_con(ws);
+    if (fullscreen) {
+        DLOG("got fs node: %p\n", fullscreen);
+        fullscreen->rect = con->rect;
+        x_raise_con(fullscreen);
+        render_con(fullscreen, true);
+        return;
+    }
+
     /* First pass: determine the height of all CT_DOCKAREAs (the sum of their
      * children) and figure out how many pixels we have left for the rest */
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
@@ -40,20 +71,10 @@ static void render_l_output(Con *con) {
     /* Second pass: Set the widths/heights */
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
         if (child->type == CT_CON) {
-            if (height == -1) {
-                DLOG("More than one CT_CON on output container\n");
-                assert(false);
-            }
             child->rect.x = x;
             child->rect.y = y;
             child->rect.width = con->rect.width;
             child->rect.height = height;
-            height = -1;
-        }
-
-        else if (child->type != CT_DOCKAREA) {
-            DLOG("Child %p of type %d is inside the OUTPUT con\n", child, child->type);
-            assert(false);
         }
 
         child->rect.x = x;
