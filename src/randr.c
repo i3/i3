@@ -306,7 +306,7 @@ void output_init_con(Output *output) {
     int c = 0;
     bool exists = true;
     while (exists) {
-        Con *out, *current;
+        Con *out, *current, *child;
 
         c++;
 
@@ -316,11 +316,16 @@ void output_init_con(Output *output) {
         exists = false;
         TAILQ_FOREACH(out, &(croot->nodes_head), nodes) {
             TAILQ_FOREACH(current, &(out->nodes_head), nodes) {
-                if (strcasecmp(current->name, ws->name) != 0)
+                if (current->type != CT_CON)
                     continue;
 
-                exists = true;
-                break;
+                TAILQ_FOREACH(child, &(current->nodes_head), nodes) {
+                    if (strcasecmp(child->name, ws->name) != 0)
+                        continue;
+
+                    exists = true;
+                    break;
+                }
             }
         }
 
