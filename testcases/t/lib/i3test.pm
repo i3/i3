@@ -8,6 +8,7 @@ use X11::XCB::Window;
 use X11::XCB qw(:all);
 use AnyEvent::I3;
 use List::Util qw(first);
+use List::MoreUtils qw(lastval);
 use v5.10;
 
 use Exporter ();
@@ -130,14 +131,24 @@ sub get_focused {
 }
 
 sub get_dock_clients {
+    my $which = shift;
+
     my $tree = i3("/tmp/nestedcons")->get_tree->recv;
     my @outputs = @{$tree->{nodes}};
     # Children of all dockareas
     my @docked;
     for my $output (@outputs) {
-        @docked = (@docked, map { @{$_->{nodes}} }
-                            grep { $_->{type} == 5 }
-                            @{$output->{nodes}});
+        if (!defined($which)) {
+            @docked = (@docked, map { @{$_->{nodes}} }
+                                grep { $_->{type} == 5 }
+                                @{$output->{nodes}});
+        } elsif ($which eq 'top') {
+            my $first = first { $_->{type} == 5 } @{$output->{nodes}};
+            @docked = (@docked, @{$first->{nodes}});
+        } elsif ($which eq 'bottom') {
+            my $last = lastval { $_->{type} == 5 } @{$output->{nodes}};
+            @docked = (@docked, @{$last->{nodes}});
+        }
     }
     return @docked;
 }
