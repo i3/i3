@@ -207,6 +207,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     dump_rect(gen, "rect", con->rect);
     dump_rect(gen, "window_rect", con->window_rect);
+    dump_rect(gen, "geometry", con->geometry);
 
     ystr("name");
     ystr(con->name);
@@ -224,8 +225,10 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("nodes");
     y(array_open);
     Con *node;
-    TAILQ_FOREACH(node, &(con->nodes_head), nodes) {
-        dump_node(gen, node, inplace_restart);
+    if (con->type != CT_DOCKAREA || !inplace_restart) {
+        TAILQ_FOREACH(node, &(con->nodes_head), nodes) {
+            dump_node(gen, node, inplace_restart);
+        }
     }
     y(array_close);
 
@@ -246,17 +249,31 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("fullscreen_mode");
     y(integer, con->fullscreen_mode);
 
+    ystr("swallows");
+    y(array_open);
+    Match *match;
+    TAILQ_FOREACH(match, &(con->swallow_head), matches) {
+        if (match->dock != -1) {
+            y(map_open);
+            ystr("dock");
+            y(integer, match->dock);
+            ystr("insert_where");
+            y(integer, match->insert_where);
+            y(map_close);
+        }
+
+        /* TODO: the other swallow keys */
+    }
+
     if (inplace_restart) {
         if (con->window != NULL) {
-            ystr("swallows");
-            y(array_open);
             y(map_open);
             ystr("id");
             y(integer, con->window->id);
             y(map_close);
-            y(array_close);
         }
     }
+    y(array_close);
 
     y(map_close);
 }

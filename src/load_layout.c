@@ -16,6 +16,7 @@ static Con *to_focus;
 static bool parsing_swallows;
 static bool parsing_rect;
 static bool parsing_window_rect;
+static bool parsing_geometry;
 struct Match *current_swallow;
 
 static int json_start_map(void *ctx) {
@@ -26,7 +27,7 @@ static int json_start_map(void *ctx) {
         match_init(current_swallow);
         TAILQ_INSERT_TAIL(&(json_node->swallow_head), current_swallow, matches);
     } else {
-        if (!parsing_rect && !parsing_window_rect) {
+        if (!parsing_rect && !parsing_window_rect && !parsing_geometry) {
             if (last_key && strcasecmp(last_key, "floating_nodes") == 0) {
                 Con *ws = con_get_workspace(json_node);
                 json_node = con_new(NULL);
@@ -45,7 +46,7 @@ static int json_start_map(void *ctx) {
 
 static int json_end_map(void *ctx) {
     LOG("end of map\n");
-    if (!parsing_swallows && !parsing_rect && !parsing_window_rect) {
+    if (!parsing_swallows && !parsing_rect && !parsing_window_rect && !parsing_geometry) {
         LOG("attaching\n");
         con_attach(json_node, json_node->parent, false);
         json_node = json_node->parent;
@@ -54,6 +55,8 @@ static int json_end_map(void *ctx) {
         parsing_rect = false;
     if (parsing_window_rect)
         parsing_window_rect = false;
+    if (parsing_geometry)
+        parsing_geometry = false;
     return 1;
 }
 
@@ -75,6 +78,8 @@ static int json_key(void *ctx, const unsigned char *val, unsigned int len) {
         parsing_rect = true;
     if (strcasecmp(last_key, "window_rect") == 0)
         parsing_window_rect = true;
+    if (strcasecmp(last_key, "geometry") == 0)
+        parsing_geometry = true;
     return 1;
 }
 
@@ -129,8 +134,13 @@ static int json_int(void *ctx, long val) {
     if (strcasecmp(last_key, "num") == 0)
         json_node->num = val;
 
-    if (parsing_rect || parsing_window_rect) {
-        Rect *r = (parsing_rect ? &(json_node->rect) : &(json_node->window_rect));
+    if (parsing_rect || parsing_window_rect || parsing_geometry) {
+        Rect *r;
+        if (parsing_rect)
+            r = &(json_node->rect);
+        else if (parsing_window_rect)
+            r = &(json_node->window_rect);
+        else r = &(json_node->geometry);
         if (strcasecmp(last_key, "x") == 0)
             r->x = val;
         else if (strcasecmp(last_key, "y") == 0)
@@ -148,7 +158,10 @@ static int json_int(void *ctx, long val) {
             current_swallow->id = val;
         }
         if (strcasecmp(last_key, "dock") == 0) {
-            current_swallow->dock = true;
+            current_swallow->dock = val;
+        }
+        if (strcasecmp(last_key, "insert_where") == 0) {
+            current_swallow->insert_where = val;
         }
     }
 
@@ -191,6 +204,7 @@ void tree_append_json(const char *filename) {
     to_focus = NULL;
     parsing_rect = false;
     parsing_window_rect = false;
+    parsing_geometry = false;
     setlocale(LC_NUMERIC, "C");
     stat = yajl_parse(hand, (const unsigned char*)buf, n);
     if (stat != yajl_status_ok &&
