@@ -79,10 +79,11 @@ static void free_colors(struct xcb_color_strings_t *colors) {
 }
 
 void print_usage(char *elf_name) {
-    printf("Usage: %s [-s sock_path] [-c command] [-m] [-f font] [-V] [-h]\n", elf_name);
+    printf("Usage: %s [-s sock_path] [-c command] [-m|-d[pos]] [-f font] [-V] [-h]\n", elf_name);
     printf("-s <sock_path>\tConnect to i3 via <sock_path>\n");
     printf("-c <command>\tExecute <command> to get stdin\n");
     printf("-m\t\tHide the bars, when mod4 is not pressed.\n");
+    printf("-d[<pos>]\tEnable dockmode. <pos> is \"top\" or \"bottom\". Default is bottom\n");
     printf("\t\tIf -c is specified, the childprocess is sent a SIGSTOP on hiding,\n");
     printf("\t\tand a SIGCONT on unhiding of the bars\n");
     printf("-f <font>\tUse X-Core-Font <font> for display\n");
@@ -121,11 +122,13 @@ int main(int argc, char **argv) {
 
     /* Definition of the standard-config */
     config.hide_on_modifier = 0;
+    config.dockpos = DOCKPOS_NONE;
 
     static struct option long_opt[] = {
         { "socket",               required_argument, 0, 's' },
         { "command",              required_argument, 0, 'c' },
         { "hide",                 no_argument,       0, 'm' },
+        { "dock",                 optional_argument, 0, 'd' },
         { "font",                 required_argument, 0, 'f' },
         { "help",                 no_argument,       0, 'h' },
         { "version",              no_argument,       0, 'v' },
@@ -141,7 +144,7 @@ int main(int argc, char **argv) {
         { NULL,                   0,                 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "s:c:mf:hvVA:B:C:D:E:F:G:H:", long_opt, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "s:c:d::mf:hvVA:B:C:D:E:F:G:H:", long_opt, &option_index)) != -1) {
         switch (opt) {
             case 's':
                 socket_path = expand_path(optarg);
@@ -151,6 +154,20 @@ int main(int argc, char **argv) {
                 break;
             case 'm':
                 config.hide_on_modifier = 1;
+                break;
+            case 'd':
+                if (optarg == NULL) {
+                    config.dockpos = DOCKPOS_BOT;
+                    break;
+                }
+                if (!strcmp(optarg, "top")) {
+                    config.dockpos = DOCKPOS_TOP;
+                } else if (!strcmp(optarg, "bottom")) {
+                    config.dockpos = DOCKPOS_BOT;
+                } else {
+                    print_usage(argv[0]);
+                    exit(EXIT_FAILURE);
+                }
                 break;
             case 'f':
                 fontname = strdup(optarg);
@@ -203,6 +220,15 @@ int main(int argc, char **argv) {
     if (socket_path == NULL) {
         ELOG("No Socket Path Specified, default to %s\n", i3_default_sock_path);
         socket_path = expand_path(i3_default_sock_path);
+    }
+
+    if (config.dockpos != DOCKPOS_NONE) {
+        if (config.hide_on_modifier) {
+            ELOG("--dock and --hide are mutually exclusive!\n");
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        config.hide_on_modifier = 1;
     }
 
     main_loop = ev_default_loop(0);

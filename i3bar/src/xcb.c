@@ -10,6 +10,7 @@
  */
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
+#include <xcb/xcb_atom.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -688,14 +689,56 @@ void reconfig_windows() {
 
             /* We want dock-windows (for now). When override_redirect is set, i3 is ignoring
              * this one */
-            xcb_void_cookie_t prop_cookie = xcb_change_property(xcb_connection,
+            xcb_void_cookie_t dock_cookie = xcb_change_property(xcb_connection,
                                                                 XCB_PROP_MODE_REPLACE,
                                                                 walk->bar,
                                                                 atoms[_NET_WM_WINDOW_TYPE],
-                                                                atoms[ATOM],
+                                                                XCB_ATOM_ATOM,
                                                                 32,
                                                                 1,
                                                                 (unsigned char*) &atoms[_NET_WM_WINDOW_TYPE_DOCK]);
+
+            /* We need to tell i3, where to reserve space for i3bar */
+            /* left, right, top, bottom, left_start_y, left_end_y,
+             * right_start_y, right_end_y, top_start_x, top_end_x, bottom_start_x,
+             * bottom_end_x */
+            /* A local struct to save the strut_partial property */
+            struct {
+                uint32_t left;
+                uint32_t right;
+                uint32_t top;
+                uint32_t bottom;
+                uint32_t left_start_y;
+                uint32_t left_end_y;
+                uint32_t right_start_y;
+                uint32_t right_end_y;
+                uint32_t top_start_x;
+                uint32_t top_end_x;
+                uint32_t bottom_start_x;
+                uint32_t bottom_end_x;
+            } __attribute__((__packed__)) strut_partial = {0,};
+            switch (config.dockpos) {
+                case DOCKPOS_NONE:
+                    break;
+                case DOCKPOS_TOP:
+                    strut_partial.top = font_height + 6;
+                    strut_partial.top_start_x = walk->rect.x;
+                    strut_partial.top_end_x = walk->rect.x + walk->rect.w;
+                    break;
+                case DOCKPOS_BOT:
+                    strut_partial.bottom = font_height + 6;
+                    strut_partial.bottom_start_x = walk->rect.x;
+                    strut_partial.bottom_end_x = walk->rect.x + walk->rect.w;
+                    break;
+            }
+            xcb_void_cookie_t strut_cookie = xcb_change_property(xcb_connection,
+                                                                 XCB_PROP_MODE_REPLACE,
+                                                                 walk->bar,
+                                                                 atoms[_NET_WM_STRUT_PARTIAL],
+                                                                 XCB_ATOM_CARDINAL,
+                                                                 32,
+                                                                 12,
+                                                                 &strut_partial);
 
             /* We also want a graphics-context for the bars (it defines the properties
              * with which we draw to them) */
@@ -714,10 +757,11 @@ void reconfig_windows() {
                 map_cookie = xcb_map_window_checked(xcb_connection, walk->bar);
             }
 
-            if (xcb_request_failed(win_cookie,  "Could not create window") ||
-                xcb_request_failed(pm_cookie,   "Could not create pixmap") ||
-                xcb_request_failed(prop_cookie, "Could not set dock mode") ||
-                xcb_request_failed(gc_cookie,   "Could not create graphical context") ||
+            if (xcb_request_failed(win_cookie,   "Could not create window") ||
+                xcb_request_failed(pm_cookie,    "Could not create pixmap") ||
+                xcb_request_failed(dock_cookie,  "Could not set dock mode") ||
+                xcb_request_failed(strut_cookie, "Could not set strut")     ||
+                xcb_request_failed(gc_cookie,    "Could not create graphical context") ||
                 (!config.hide_on_modifier && xcb_request_failed(map_cookie, "Could not map window"))) {
                 exit(EXIT_FAILURE);
             }

@@ -9,7 +9,7 @@ i3bar - xcb-based status- and ws-bar
 
 == SYNOPSIS
 
-*i3bar* [*-s* 'sock_path'] [*-c* 'command'] [*-m*] [*-f* 'font'] [*-V*] [*-h*]
+*i3bar* [*-s* 'sock_path'] [*-c* 'command'] [*-m*|*-d*['pos']] [*-f* 'font'] [*-V*] [*-h*]
 
 == OPTIONS
 
@@ -21,7 +21,12 @@ Execute '<command>' to get 'stdin'. You can also simply pipe into 'stdin', but s
 
 *-m, --hide*::
 Hide the bar, when 'mod4' is not pressed. With this, dockmode will not be set, and the bar is out of the way most of the time so you have more room.
-If *-c* is specified, the childprocess is sent a 'SIGSTOP' on hiding and a 'SIGCONT' on unhiding of the bars
+If *-c* is specified, the childprocess is sent a 'SIGSTOP' on hiding and a 'SIGCONT' on unhiding of the bars.
+This is the default behavior of i3bar.
+
+*-d*['pos']*, --dock*[*=*'pos']::
+Put i3bar in dockmode. This will reserve some space for it, so it does not overlap other clients.
+You can specify either *bottom* (default) or *top* as 'pos'.
 
 *-f, --font* 'font'::
 Specifies a 'X-core-font' to use. You can choose one with *xfontsel*(1). Defaults to '-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1'.
@@ -66,11 +71,15 @@ to connect to i3.
 
 To get a docked bar with some statusinformation, you use
 
-*i3status | i3bar*
+*i3status | i3bar --dock*
 
-If you want it to hide when not needed, you should instead use
+If you rather have it displayed at the top of the screen, you use
 
-*i3bar -c i3status -m*
+*i3status | i3bar --dock=top*
+
+If you want it to hide when not needed, you should instead simply use
+
+*i3bar -c i3status*
 
 == SEE ALSO
 

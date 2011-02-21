@@ -1,3 +1,5 @@
+- Implement different dock-positions
+- Hide-on-modifier is now the default behavior
 - Bugfix: Recover from closed socket
 
 v0.6
