@@ -17,16 +17,8 @@ my $i3 = i3("/tmp/nestedcons");
 # verify that there is no dock window yet
 #####################################################################
 
-my $tree = $i3->get_tree->recv;
-my @outputs = @{$tree->{nodes}};
 # Children of all dockareas
-my @docked;
-for my $output (@outputs) {
-    @docked = (@docked, map { @{$_->{nodes}} }
-                        grep { $_->{type} == 5 }
-                        @{$output->{nodes}});
-}
-
+my @docked = get_dock_clients;
 is(@docked, 0, 'no dock clients yet');
 
 #####################################################################
@@ -59,15 +51,7 @@ is($rect->height, 30, 'height is unchanged');
 # check that we can find it in the layout tree at the expected position
 #####################################################################
 
-$tree = $i3->get_tree->recv;
-@outputs = @{$tree->{nodes}};
-@docked;
-for my $output (@outputs) {
-    @docked = (@docked, map { @{$_->{nodes}} }
-                        grep { $_->{type} == 5 }
-                        @{$output->{nodes}});
-}
-
+@docked = get_dock_clients;
 is(@docked, 1, 'one dock client found');
 
 # verify the position/size

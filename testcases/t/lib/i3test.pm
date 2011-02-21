@@ -11,7 +11,7 @@ use List::Util qw(first);
 use v5.10;
 
 use Exporter ();
-our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window cmd does_i3_live);
+our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live);
 
 my $tester = Test::Builder->new();
 
@@ -127,6 +127,19 @@ sub get_focused {
     }
 
     return $lf;
+}
+
+sub get_dock_clients {
+    my $tree = i3("/tmp/nestedcons")->get_tree->recv;
+    my @outputs = @{$tree->{nodes}};
+    # Children of all dockareas
+    my @docked;
+    for my $output (@outputs) {
+        @docked = (@docked, map { @{$_->{nodes}} }
+                            grep { $_->{type} == 5 }
+                            @{$output->{nodes}});
+    }
+    return @docked;
 }
 
 sub cmd {
