@@ -55,7 +55,11 @@ void restore_geometry() {
     Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons)
         if (con->window) {
-            DLOG("placing window at %d %d\n", con->rect.x, con->rect.y);
+            DLOG("Re-adding X11 border of %d px\n", con->border_width);
+            con->window_rect.width += (2 * con->border_width);
+            con->window_rect.height += (2 * con->border_width);
+            xcb_set_window_rect(conn, con->window->id, con->window_rect);
+            DLOG("placing window %08x at %d %d\n", con->window->id, con->rect.x, con->rect.y);
             xcb_reparent_window(conn, con->window->id, root,
                                 con->rect.x, con->rect.y);
         }
@@ -154,6 +158,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         LOG("this window is a dock\n");
     }
 
+    DLOG("Initial geometry: (%d, %d, %d, %d)\n", geom->x, geom->y, geom->width, geom->height);
 
     Con *nc;
     Match *match;

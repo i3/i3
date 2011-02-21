@@ -140,6 +140,7 @@ void render_con(Con *con, bool render_fullscreen) {
             *inset = rect_add(*inset, con_border_style_rect(con));
 
         /* Obey x11 border */
+        DLOG("X11 border: %d\n", con->border_width);
         inset->width -= (2 * con->border_width);
         inset->height -= (2 * con->border_width);
 
