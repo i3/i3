@@ -18,39 +18,26 @@
  *
  */
 Con *workspace_get(const char *num) {
-    Con *output, *workspace = NULL, *current, *child;
+    Con *output, *workspace = NULL, *child;
 
     /* TODO: could that look like this in the future?
     GET_MATCHING_NODE(workspace, croot, strcasecmp(current->name, num) != 0);
     */
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        TAILQ_FOREACH(current, &(output->nodes_head), nodes) {
-            if (current->type != CT_CON)
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
+        TAILQ_FOREACH(child, &(output_get_content(output)->nodes_head), nodes) {
+            if (strcasecmp(child->name, num) != 0)
                 continue;
 
-            TAILQ_FOREACH(child, &(current->nodes_head), nodes) {
-                if (strcasecmp(child->name, num) != 0)
-                    continue;
-
-                workspace = child;
-                break;
-            }
+            workspace = child;
+            break;
         }
-    }
 
     LOG("getting ws %s\n", num);
     if (workspace == NULL) {
         LOG("need to create this one\n");
         output = con_get_output(focused);
-        Con *child, *content = NULL;
-        TAILQ_FOREACH(child, &(output->nodes_head), nodes) {
-            if (child->type == CT_CON) {
-                content = child;
-                break;
-            }
-        }
-        assert(content != NULL);
-        LOG("got output %p with child %p\n", output, content);
+        Con *content = output_get_content(output);
+        LOG("got output %p with content %p\n", output, content);
         /* We need to attach this container after setting its type. con_attach
          * will handle CT_WORKSPACEs differently */
         workspace = con_new(NULL);
