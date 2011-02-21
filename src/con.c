@@ -332,7 +332,7 @@ Con *con_inside_floating(Con *con) {
     if (con->floating >= FLOATING_AUTO_ON)
         return con->parent;
 
-    if (con->type == CT_WORKSPACE)
+    if (con->type == CT_WORKSPACE || con->type == CT_OUTPUT)
         return NULL;
 
     return con_inside_floating(con->parent);
