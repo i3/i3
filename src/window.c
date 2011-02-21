@@ -106,7 +106,7 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop) {
     win->name_len = strlen(new_name);
 }
 
-/**
+/*
  * Updates the CLIENT_LEADER (logical parent window).
  *
  */
@@ -125,7 +125,7 @@ void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop) {
     win->leader = *leader;
 }
 
-/**
+/*
  * Updates the TRANSIENT_FOR (logical parent window).
  *
  */
@@ -142,4 +142,24 @@ void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop) 
     DLOG("Transient for changed to %08x\n", transient_for);
 
     win->transient_for = transient_for;
+}
+
+/*
+ * Updates the _NET_WM_STRUT_PARTIAL (reserved pixels at the screen edges)
+ *
+ */
+void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop) {
+    if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+        DLOG("prop == NULL\n");
+        return;
+    }
+
+    uint32_t *strut;
+    if (!(strut = xcb_get_property_value(prop)))
+        return;
+
+    DLOG("Reserved pixels changed to: left = %d, right = %d, top = %d, bottom = %d\n",
+         strut[0], strut[1], strut[2], strut[3]);
+
+    win->reserved = (struct reservedpx){ strut[0], strut[1], strut[2], strut[3] };
 }

@@ -151,11 +151,39 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_name(cwindow, xcb_get_property_reply(conn, utf8_title_cookie, NULL));
     window_update_leader(cwindow, xcb_get_property_reply(conn, leader_cookie, NULL));
     window_update_transient_for(cwindow, xcb_get_property_reply(conn, transient_cookie, NULL));
+    window_update_strut_partial(cwindow, xcb_get_property_reply(conn, strut_cookie, NULL));
+
+    /* Where to start searching for a container that swallows the new one? */
+    Con *search_at = croot;
 
     xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
     if (xcb_reply_contains_atom(reply, atoms[_NET_WM_WINDOW_TYPE_DOCK])) {
-        cwindow->dock = true;
-        LOG("this window is a dock\n");
+        LOG("This window is of type dock\n");
+        Output *output = get_output_containing(geom->x, geom->y);
+        if (output != NULL) {
+            DLOG("Starting search at output %s\n", output->name);
+            search_at = output->con;
+        }
+
+        /* find out the desired position of this dock window */
+        if (cwindow->reserved.top > 0 && cwindow->reserved.bottom == 0) {
+            DLOG("Top dock client\n");
+            cwindow->dock = W_DOCK_TOP;
+        } else if (cwindow->reserved.top == 0 && cwindow->reserved.bottom > 0) {
+            DLOG("Bottom dock client\n");
+            cwindow->dock = W_DOCK_BOTTOM;
+        } else {
+            DLOG("Ignoring invalid reserved edges (_NET_WM_STRUT_PARTIAL), using position as fallback:\n");
+            if (geom->y < (search_at->rect.height / 2)) {
+                DLOG("geom->y = %d < rect.height / 2 = %d, it is a top dock client\n",
+                     geom->y, (search_at->rect.height / 2));
+                cwindow->dock = W_DOCK_TOP;
+            } else {
+                DLOG("geom->y = %d >= rect.height / 2 = %d, it is a bottom dock client\n",
+                     geom->y, (search_at->rect.height / 2));
+                cwindow->dock = W_DOCK_BOTTOM;
+            }
+        }
     }
 
     DLOG("Initial geometry: (%d, %d, %d, %d)\n", geom->x, geom->y, geom->width, geom->height);
@@ -167,15 +195,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     /* TODO: two matches for one container */
 
     /* See if any container swallows this new window */
-    Con *search_at = croot;
-    if (cwindow->dock) {
-        /* for dock windows, we start the search at the appropriate output */
-        Output *output = get_output_containing(geom->x, geom->y);
-        if (output != NULL) {
-            DLOG("Starting search at output %s\n", output->name);
-            search_at = output->con;
-        }
-    }
     nc = con_for_window(search_at, cwindow, &match);
     if (nc == NULL) {
         if (focused->type == CT_CON && con_accepts_window(focused)) {

@@ -273,7 +273,7 @@ void output_init_con(Output *output) {
     /* this container swallows dock clients */
     Match *match = scalloc(sizeof(Match));
     match_init(match);
-    match->dock = true;
+    match->dock = M_DOCK_TOP;
     match->insert_where = M_BELOW;
     TAILQ_INSERT_TAIL(&(topdock->swallow_head), match, matches);
 
@@ -285,6 +285,8 @@ void output_init_con(Output *output) {
     DLOG("attaching\n");
     con_attach(topdock, con, false);
 
+    /* content container */
+
     DLOG("adding main content container\n");
     Con *content = con_new(NULL);
     content->type = CT_CON;
@@ -294,6 +296,26 @@ void output_init_con(Output *output) {
     x_set_name(content, name);
     FREE(name);
     con_attach(content, con, false);
+
+    /* bottom dock container */
+    Con *bottomdock = con_new(NULL);
+    bottomdock->type = CT_DOCKAREA;
+    bottomdock->layout = L_DOCKAREA;
+    bottomdock->orientation = VERT;
+    /* this container swallows dock clients */
+    match = scalloc(sizeof(Match));
+    match_init(match);
+    match->dock = M_DOCK_BOTTOM;
+    match->insert_where = M_BELOW;
+    TAILQ_INSERT_TAIL(&(bottomdock->swallow_head), match, matches);
+
+    bottomdock->name = sstrdup("bottomdock");
+
+    asprintf(&name, "[i3 con] bottom dockarea %s", con->name);
+    x_set_name(bottomdock, name);
+    FREE(name);
+    DLOG("attaching\n");
+    con_attach(bottomdock, con, false);
 
     DLOG("Now adding a workspace\n");
 

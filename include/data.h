@@ -76,6 +76,18 @@ struct Rect {
 } __attribute__((packed));
 
 /**
+ * Stores the reserved pixels on each screen edge read from a
+ * _NET_WM_STRUT_PARTIAL.
+ *
+ */
+struct reservedpx {
+    uint32_t left;
+    uint32_t right;
+    uint32_t top;
+    uint32_t bottom;
+};
+
+/**
  * Used for the cache of colorpixels.
  *
  */
@@ -242,7 +254,10 @@ struct Window {
     bool uses_net_wm_name;
 
     /** Whether the window says it is a dock window */
-    bool dock;
+    enum { W_NODOCK = 0, W_DOCK_TOP = 1, W_DOCK_BOTTOM = 2 } dock;
+
+    /** Pixels the window reserves. left/right/top/bottom */
+    struct reservedpx reserved;
 };
 
 struct Match {
@@ -254,7 +269,13 @@ struct Match {
     char *class;
     char *instance;
     char *mark;
-    int dock;
+    enum {
+        M_DONTCHECK = -1,
+        M_NODOCK = 0,
+        M_DOCK_ANY = 1,
+        M_DOCK_TOP = 2,
+        M_DOCK_BOTTOM = 3
+    } dock;
     xcb_window_t id;
     Con *con_id;
     enum { M_ANY = 0, M_TILING, M_FLOATING } floating;

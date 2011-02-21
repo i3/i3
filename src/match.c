@@ -67,7 +67,12 @@ bool match_matches_window(Match *match, i3Window *window) {
     }
 
     LOG("match->dock = %d, window->dock = %d\n", match->dock, window->dock);
-    if (match->dock != -1 && window->dock == match->dock) {
+    if (match->dock != -1 &&
+        ((window->dock == W_DOCK_TOP && match->dock == M_DOCK_TOP) ||
+         (window->dock == W_DOCK_BOTTOM && match->dock == M_DOCK_BOTTOM) ||
+         ((window->dock == W_DOCK_TOP || window->dock == W_DOCK_BOTTOM) &&
+          match->dock == M_DOCK_ANY) ||
+         (window->dock == W_NODOCK && match->dock == M_NODOCK))) {
         LOG("match made by dock\n");
         return true;
     }

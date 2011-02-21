@@ -36,4 +36,10 @@ void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop);
  */
 void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop);
 
+/**
+ * Updates the _NET_WM_STRUT_PARTIAL (reserved pixels at the screen edges)
+ *
+ */
+void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop);
+
 #endif
