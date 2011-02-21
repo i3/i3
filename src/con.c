@@ -365,24 +365,41 @@ Con *con_by_frame_id(xcb_window_t frame) {
 }
 
 /*
- * Returns the first container which wants to swallow this window
+ * Returns the first container below 'con' which wants to swallow this window
  * TODO: priority
  *
  */
-Con *con_for_window(i3Window *window, Match **store_match) {
-    Con *con;
+Con *con_for_window(Con *con, i3Window *window, Match **store_match) {
+    Con *child;
     Match *match;
-    DLOG("searching con for window %p\n", window);
+    DLOG("searching con for window %p starting at con %p\n", window, con);
     DLOG("class == %s\n", window->class_class);
 
-    TAILQ_FOREACH(con, &all_cons, all_cons)
-        TAILQ_FOREACH(match, &(con->swallow_head), matches) {
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH(match, &(child->swallow_head), matches) {
             if (!match_matches_window(match, window))
                 continue;
             if (store_match != NULL)
                 *store_match = match;
-            return con;
+            return child;
         }
+        Con *result = con_for_window(child, window, store_match);
+        if (result != NULL)
+            return result;
+    }
+
+    TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
+        TAILQ_FOREACH(match, &(child->swallow_head), matches) {
+            if (!match_matches_window(match, window))
+                continue;
+            if (store_match != NULL)
+                *store_match = match;
+            return child;
+        }
+        Con *result = con_for_window(child, window, store_match);
+        if (result != NULL)
+            return result;
+    }
 
     return NULL;
 }

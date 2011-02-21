@@ -160,8 +160,18 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     /* TODO: assignments */
     /* TODO: two matches for one container */
+
     /* See if any container swallows this new window */
-    nc = con_for_window(cwindow, &match);
+    Con *search_at = croot;
+    if (cwindow->dock) {
+        /* for dock windows, we start the search at the appropriate output */
+        Output *output = get_output_containing(geom->x, geom->y);
+        if (output != NULL) {
+            DLOG("Starting search at output %s\n", output->name);
+            search_at = output->con;
+        }
+    }
+    nc = con_for_window(search_at, cwindow, &match);
     if (nc == NULL) {
         if (focused->type == CT_CON && con_accepts_window(focused)) {
             LOG("using current container, focused = %p, focused->name = %s\n",

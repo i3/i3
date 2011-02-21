@@ -83,11 +83,11 @@ Con *con_by_window_id(xcb_window_t window);
 Con *con_by_frame_id(xcb_window_t frame);
 
 /**
- * Returns the first container which wants to swallow this window
+ * Returns the first container below 'con' which wants to swallow this window
  * TODO: priority
  *
  */
-Con *con_for_window(i3Window *window, Match **store_match);
+Con *con_for_window(Con *con, i3Window *window, Match **store_match);
 
 /**
  * Returns the number of children of this container.
