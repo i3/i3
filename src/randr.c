@@ -584,7 +584,9 @@ void randr_query_outputs() {
             DLOG("Output %s disabled, re-assigning workspaces/docks\n", output->name);
 
             if ((first = get_first_output()) == NULL)
-                    die("No usable outputs available\n");
+                die("No usable outputs available\n");
+
+            Con *first_content = output_get_content(first->con);
 
             if (output->con != NULL) {
                 /* We need to move the workspaces from the disappearing output to the first output */
@@ -598,12 +600,13 @@ void randr_query_outputs() {
 
                 /* 2: iterate through workspaces and re-assign them */
                 Con *current;
-                while (!TAILQ_EMPTY(&(output->con->nodes_head))) {
-                    current = TAILQ_FIRST(&(output->con->nodes_head));
+                Con *old_content = output_get_content(output->con);
+                while (!TAILQ_EMPTY(&(old_content->nodes_head))) {
+                    current = TAILQ_FIRST(&(old_content->nodes_head));
                     DLOG("Detaching current = %p / %s\n", current, current->name);
                     con_detach(current);
                     DLOG("Re-attaching current = %p / %s\n", current, current->name);
-                    con_attach(current, first->con, false);
+                    con_attach(current, first_content, false);
                     DLOG("Done, next\n");
                 }
                 DLOG("re-attached all workspaces\n");
