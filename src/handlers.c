@@ -751,7 +751,6 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         con->base_height = base_height;
         DLOG("client's base_height changed to %d\n", base_height);
         DLOG("client's base_width changed to %d\n", base_width);
-        changed = true;
     }
 
     /* If no aspect ratio was set or if it was invalid, we ignore the hints */

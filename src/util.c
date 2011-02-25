@@ -199,7 +199,8 @@ char *resolve_tilde(const char *path) {
                 head = globbuf.gl_pathv[0];
                 result = scalloc(strlen(head) + (tail ? strlen(tail) : 0) + 1);
                 strncpy(result, head, strlen(head));
-                strncat(result, tail, strlen(tail));
+                if (tail)
+                    strncat(result, tail, strlen(tail));
         }
         globfree(&globbuf);
 
@@ -353,7 +354,7 @@ void i3_restart(bool forget_layout) {
 
         /* add the arguments we'll replace */
         new_argv[write_index++] = "--restart";
-        new_argv[write_index++] = restart_filename;
+        new_argv[write_index] = restart_filename;
 
         /* swap the argvs */
         start_argv = new_argv;
