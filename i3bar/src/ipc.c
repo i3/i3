@@ -248,7 +248,8 @@ int i3_send_msg(uint32_t type, const char *payload) {
     memcpy(walk, &type, sizeof(uint32_t));
     walk += sizeof(uint32_t);
 
-    strncpy(walk, payload, len);
+    if (payload != NULL)
+        strncpy(walk, payload, len);
 
     uint32_t written = 0;
 
