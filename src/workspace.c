@@ -199,7 +199,7 @@ static void workspace_reassign_sticky(Con *con) {
  *
  */
 void workspace_show(const char *num) {
-    Con *workspace, *current, *old;
+    Con *workspace, *current, *old = NULL;
 
     workspace = workspace_get(num);
 
@@ -210,6 +210,7 @@ void workspace_show(const char *num) {
             old = current;
         current->fullscreen_mode = CF_NONE;
     }
+    assert(old != NULL);
 
     /* Check if the the currently focused con is on the same Output as the
      * workspace we chose as 'old'. If not, use the workspace of the currently

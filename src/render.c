@@ -200,6 +200,7 @@ void render_con(Con *con, bool render_fullscreen) {
     /* precalculate the sizes to be able to correct rounding errors */
     int sizes[children];
     if (con->layout == L_DEFAULT && children > 0) {
+        assert(!TAILQ_EMPTY(&con->nodes_head));
         Con *child;
         int i = 0, assigned = 0;
         int total = con->orientation == HORIZ ? rect.width : rect.height;
@@ -226,6 +227,7 @@ void render_con(Con *con, bool render_fullscreen) {
         /* FIXME: refactor this into separate functions: */
     Con *child;
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        assert(children > 0);
 
         /* default layout */
         if (con->layout == L_DEFAULT) {
