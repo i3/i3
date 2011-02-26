@@ -51,7 +51,7 @@ xcb_charinfo_t         *font_table;
 /* These are only relevant for XKB, which we only need for grabbing modifiers */
 Display          *xkb_dpy;
 int              xkb_event_base;
-int              mod_pressed;
+int              mod_pressed = 0;
 
 /* Because the statusline is the same on all outputs, we have
  * global buffer to render it on */
@@ -409,7 +409,7 @@ void xcb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  */
 void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     XkbEvent ev;
-    int modstate;
+    int modstate = 0;
 
     DLOG("Got XKB-Event!\n");
 
