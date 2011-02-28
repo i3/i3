@@ -158,7 +158,11 @@ void floating_disable(Con *con, bool automatic) {
     /* 3: re-attach to the parent of the currently focused con on the workspace
      * this floating con was on */
     Con *focused = con_descend_focused(con_get_workspace(con));
-    con->parent = focused->parent;
+    /* if there is no other container on this workspace, focused will be the
+     * workspace itself */
+    if (focused->type == CT_WORKSPACE)
+        con->parent = focused;
+    else con->parent = focused->parent;
 
     /* XXX: We adjust the percentage value to start with a fair value. Floating
      * cons always have 1.0 as percent which doesn’t work so well when
