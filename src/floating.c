@@ -164,11 +164,8 @@ void floating_disable(Con *con, bool automatic) {
         con->parent = focused;
     else con->parent = focused->parent;
 
-    /* XXX: We adjust the percentage value to start with a fair value. Floating
-     * cons always have 1.0 as percent which doesn’t work so well when
-     * re-inserting (the formerly floating con would get 50% of the target
-     * con). */
-    con->percent = (1.0 / con_num_children(con->parent));
+    /* con_fix_percent will adjust the percent value */
+    con->percent = 0.0;
 
     TAILQ_INSERT_TAIL(&(con->parent->nodes_head), con, nodes);
     TAILQ_INSERT_TAIL(&(con->parent->focus_head), con, focused);
