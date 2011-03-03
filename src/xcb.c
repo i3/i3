@@ -347,7 +347,7 @@ bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom) {
     if ((atoms = xcb_get_property_value(prop)) == NULL)
         return false;
 
-    for (int i = 0; i < xcb_get_property_value_length(prop); i++)
+    for (int i = 0; i < xcb_get_property_value_length(prop) / (prop->format / 8); i++)
         if (atoms[i] == atom)
             return true;
 
