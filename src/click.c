@@ -307,6 +307,13 @@ int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_
         }
     }
 
+    if ((clicked_into ? clicked_into->parent->type : con->parent->type) == CT_DOCKAREA) {
+        DLOG("Not handling, this client is inside a dockarea\n");
+        xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
+        xcb_flush(conn);
+        return 0;
+    }
+
     /* click to focus, either on the clicked window or its child if thas was a
      * click into a child decoration */
     con_focus((clicked_into ? clicked_into : con));

@@ -181,6 +181,11 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn,
         return 1;
     }
 
+    if (con->parent->type == CT_DOCKAREA) {
+        DLOG("Ignoring, this is a dock client\n");
+        return 1;
+    }
+
     /* see if the user entered the window on a certain window decoration */
     int layout = (enter_child ? con->parent->layout : con->layout);
     Con *child;
