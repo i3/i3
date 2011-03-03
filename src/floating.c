@@ -30,6 +30,10 @@ void floating_enable(Con *con, bool automatic) {
      * are children of the workspace. */
     if (con->type == CT_WORKSPACE) {
         LOG("This is a workspace, creating new container around content\n");
+        if (con_num_children(con) == 0) {
+            LOG("Workspace is empty, aborting\n");
+            return;
+        }
         /* TODO: refactor this with src/con.c:con_set_layout */
         Con *new = con_new(NULL);
         new->parent = con;
