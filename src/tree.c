@@ -268,8 +268,9 @@ void tree_split(Con *con, orientation_t orientation) {
  */
 void level_up() {
     /* We can focus up to the workspace, but not any higher in the tree */
-    if (focused->parent->type != CT_CON &&
-        focused->parent->type != CT_WORKSPACE) {
+    if ((focused->parent->type != CT_CON &&
+        focused->parent->type != CT_WORKSPACE) ||
+        focused->type == CT_WORKSPACE) {
         printf("cannot go up\n");
         return;
     }
