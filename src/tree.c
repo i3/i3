@@ -184,7 +184,12 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
         if (kill_window || !dont_kill_parent || con == focused) {
             DLOG("focusing %p / %s\n", next, next->name);
             /* TODO: check if the container (or one of its children) was focused */
-            con_focus(next);
+            if (next->type == CT_DOCKAREA) {
+                /* Instead of focusing the dockarea, we need to restore focus to the workspace */
+                con_focus(con_descend_focused(output_get_content(next->parent)));
+            } else {
+                con_focus(next);
+            }
         }
         else {
             DLOG("not focusing because we're not killing anybody");
