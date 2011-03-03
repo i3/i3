@@ -102,8 +102,6 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
     return 1;
 }
 
-#if 0
-
 /*
  * Called with coordinates of an enter_notify event or motion_notify event
  * to check if the user crossed virtual screen boundaries and adjust the
@@ -111,41 +109,30 @@ int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_
  *
  */
 static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
-        Output *output;
+    Output *output;
 
-        if ((output = get_output_containing(x, y)) == NULL) {
-                ELOG("ERROR: No such screen\n");
-                return;
-        }
-        if (output == c_ws->output)
-                return;
+    /* If the user disable focus follows mouse, we have nothing to do here */
+    if (config.disable_focus_follows_mouse)
+        return;
 
-        c_ws->current_row = current_row;
-        c_ws->current_col = current_col;
-        c_ws = output->current_workspace;
-        current_row = c_ws->current_row;
-        current_col = c_ws->current_col;
-        DLOG("We're now on output %p\n", output);
+    if ((output = get_output_containing(x, y)) == NULL) {
+        ELOG("ERROR: No such screen\n");
+        return;
+    }
 
-        /* While usually this function is only called when the user switches
-         * to a different output using his mouse (and thus the output is
-         * empty), it may be that the following race condition occurs:
-         * 1) the user actives a new output (say VGA1).
-         * 2) the cursor is sent to the first pixel of the new VGA1, thus
-         *    generating an enter_notify for the screen (the enter_notify
-         *    is not yet received by i3).
-         * 3) i3 requeries screen configuration and maps a workspace onto the
-         *    new output.
-         * 4) the enter_notify event arrives and c_ws is set to the new
-         *    workspace but the existing windows on the new workspace are not
-         *    focused.
-         *
-         * Therefore, we re-set the focus here to be sure it’s correct. */
-        Client *first_client = SLIST_FIRST(&(c_ws->focus_stack));
-        if (first_client != NULL)
-                set_focus(global_conn, first_client, true);
+    if (output->con == NULL) {
+        ELOG("ERROR: The screen is not recognized by i3 (no container associated)\n");
+        return;
+    }
+
+    /* Focus the output on which the user moved his cursor */
+    Con *old_focused = focused;
+    con_focus(con_descend_focused(output_get_content(output->con)));
+
+    /* If the focus changed, we re-render to get updated decorations */
+    if (old_focused != focused)
+        tree_render();
 }
-#endif
 
 /*
  * When the user moves the mouse pointer onto a window, this callback gets called.
@@ -177,7 +164,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn,
     /* If not, then the user moved his cursor to the root window. In that case, we adjust c_ws */
     if (con == NULL) {
         DLOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
-        //check_crossing_screen_boundary(event->root_x, event->root_y);
+        check_crossing_screen_boundary(event->root_x, event->root_y);
         return 1;
     }
 
@@ -236,8 +223,7 @@ int handle_motion_notify(void *ignored, xcb_connection_t *conn, xcb_motion_notif
 
     Con *con;
     if ((con = con_by_frame_id(event->event)) == NULL) {
-        /* TODO; handle root window: */
-        //check_crossing_screen_boundary(event->root_x, event->root_y);
+        check_crossing_screen_boundary(event->root_x, event->root_y);
         return 1;
     }
 
