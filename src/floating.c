@@ -98,7 +98,10 @@ void floating_enable(Con *con, bool automatic) {
     int deco_height = font->height + 5;
 
     DLOG("Original rect: (%d, %d) with %d x %d\n", con->rect.x, con->rect.y, con->rect.width, con->rect.height);
-    nc->rect = con->rect;
+    nc->rect = con->geometry;
+    /* Raise the width/height to at least 75x50 (minimum size for windows) */
+    nc->rect.width = max(nc->rect.width, 75);
+    nc->rect.height = max(nc->rect.height, 50);
     /* add pixels for the decoration */
     /* TODO: don’t add them when the user automatically puts new windows into
      * 1pixel/borderless mode */

@@ -254,16 +254,15 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (cwindow->dock)
         want_floating = false;
 
+    /* Store the requested geometry. The width/height gets raised to at least
+     * 75x50 when entering floating mode, which is the minimum size for a
+     * window to be useful (smaller windows are usually overlays/toolbars/…
+     * which are not managed by the wm anyways). We store the original geometry
+     * here because it’s used for dock clients. */
     nc->geometry = (Rect){ geom->x, geom->y, geom->width, geom->height };
 
     if (want_floating) {
-        nc->rect.x = geom->x;
-        nc->rect.y = geom->y;
-        /* We respect the geometry wishes of floating windows, as long as they
-         * are bigger than our minimal useful size (75x50). */
-        nc->rect.width = max(geom->width, 75);
-        nc->rect.height = max(geom->height, 50);
-        DLOG("geometry = %d x %d\n", nc->rect.width, nc->rect.height);
+        DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);
         floating_enable(nc, false);
     }
 
