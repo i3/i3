@@ -1,0 +1,72 @@
+#!perl
+# vim:ts=4:sw=4:expandtab
+#
+# Regression test for closing one of multiple dock clients
+#
+use X11::XCB qw(:all);
+use Time::HiRes qw(sleep);
+use i3test;
+
+BEGIN {
+    use_ok('X11::XCB::Window');
+}
+
+my $x = X11::XCB::Connection->new;
+my $i3 = i3("/tmp/nestedcons");
+
+my $tmp = get_unused_workspace;
+cmd "workspace $tmp";
+
+#####################################################################
+# verify that there is no dock window yet
+#####################################################################
+
+# Children of all dockareas
+my @docked = get_dock_clients;
+
+is(@docked, 0, 'no dock clients yet');
+
+#####################################################################
+# open a dock client
+#####################################################################
+
+my $first = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30],
+    background_color => '#FF0000',
+    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+);
+
+$first->map;
+
+sleep 0.25;
+
+#####################################################################
+# Open a second dock client
+#####################################################################
+
+my $second = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30],
+    background_color => '#FF0000',
+    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+);
+
+$second->map;
+
+sleep 0.25;
+
+#####################################################################
+# Kill the second dock client
+#####################################################################
+cmd "nop destroying dock client";
+$second->destroy;
+
+#####################################################################
+# Now issue a focus command
+#####################################################################
+cmd 'next v';
+
+does_i3_live;
+
+done_testing;

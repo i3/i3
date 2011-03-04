@@ -617,6 +617,12 @@ Con *con_next_focused(Con *con) {
         return next;
     }
 
+    /* dock clients cannot be focused, so we focus the workspace instead */
+    if (con->parent->type == CT_DOCKAREA) {
+        DLOG("selecting workspace for dock client\n");
+        return con_descend_focused(output_get_content(con->parent->parent));
+    }
+
     /* try to focus the next container on the same level as this one */
     next = TAILQ_NEXT(con, focused);
 
