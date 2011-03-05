@@ -612,6 +612,21 @@ When moving up/down, the container needs to leave the floating container and it
 needs to be placed on the workspace (at workspace level). This is accomplished
 by calling the function +attach_to_workspace+.
 
+== Click handling
+
+Without much ado, here is the list of cases which need to be considered:
+
+* click to focus (tiling + floating) and raise (floating)
+* click to focus/raise when in stacked/tabbed mode
+* floating_modifier + left mouse button to drag a floating con
+* floating_modifier + right mouse button to resize a floating con
+* click on decoration in a floating con to either initiate a resize (if there
+  is more than one child in the floating con) or to drag the
+  floating con (if it’s the one at the top).
+* click on border in a floating con to resize the floating con
+* floating_modifier + right mouse button to resize a tiling con
+* click on border/decoration to resize a tiling con
+
 == Gotchas
 
 * Forgetting to call `xcb_flush(conn);` after sending a request. This usually
