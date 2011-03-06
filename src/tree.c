@@ -55,7 +55,7 @@ void tree_init() {
  * Opens an empty container in the current container
  *
  */
-Con *tree_open_con(Con *con, bool focus_it) {
+Con *tree_open_con(Con *con) {
     if (con == NULL) {
         /* every focusable Con has a parent (outputs have parent root) */
         con = focused->parent;
@@ -79,10 +79,6 @@ Con *tree_open_con(Con *con, bool focus_it) {
 
     /* 4: re-calculate child->percent for each child */
     con_fix_percent(con);
-
-    /* 5: focus the new container */
-    if (focus_it)
-        con_focus(new);
 
     return new;
 }

@@ -24,7 +24,7 @@ void tree_init();
  * Opens an empty container in the current container
  *
  */
-Con *tree_open_con(Con *con, bool focus_it);
+Con *tree_open_con(Con *con);
 
 /**
  * Splits (horizontally or vertically) the given container by creating a new

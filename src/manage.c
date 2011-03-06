@@ -201,7 +201,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             LOG("using current container, focused = %p, focused->name = %s\n",
                             focused, focused->name);
             nc = focused;
-        } else nc = tree_open_con(NULL, true);
+        } else nc = tree_open_con(NULL);
     } else {
         /* M_ACTIVE are assignments */
         if (match != NULL && match->insert_where == M_ACTIVE) {
@@ -213,13 +213,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             /* We need to open a new con */
             /* TODO: make a difference between match-once containers (directly assign
              * cwindow) and match-multiple (tree_open_con first) */
-            nc = tree_open_con(nc->parent, true);
+            nc = tree_open_con(nc->parent);
         }
 
         /* M_BELOW inserts the new window as a child of the one which was
          * matched (e.g. dock areas) */
         else if (match != NULL && match->insert_where == M_BELOW) {
-            nc = tree_open_con(nc, !cwindow->dock);
+            nc = tree_open_con(nc);
         }
     }
 
@@ -233,6 +233,18 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     asprintf(&name, "[i3 con] container around %p", cwindow);
     x_set_name(nc, name);
     free(name);
+
+    Con *ws = con_get_workspace(nc);
+    Con *fs = (ws ? con_get_fullscreen_con(ws) : NULL);
+
+    if (fs == NULL) {
+        DLOG("Not in fullscreen mode, focusing\n");
+        if (!cwindow->dock)
+            con_focus(nc);
+        else DLOG("dock, not focusing\n");
+    } else {
+        DLOG("fs = %p, ws = %p, not focusing\n", fs, ws);
+    }
 
     /* set floating if necessary */
     bool want_floating = false;
@@ -251,13 +263,10 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         LOG("This window is transiert for another window, setting floating\n");
         want_floating = true;
 
-        if (config.popup_during_fullscreen == PDF_LEAVE_FULLSCREEN) {
-            Con *ws, *fs;
-            if ((ws = con_get_workspace(nc)) &&
-                (fs = con_get_fullscreen_con(ws))) {
-                LOG("There is a fullscreen window, leaving fullscreen mode\n");
-                con_toggle_fullscreen(fs);
-            }
+        if (config.popup_during_fullscreen == PDF_LEAVE_FULLSCREEN &&
+            fs != NULL) {
+            LOG("There is a fullscreen window, leaving fullscreen mode\n");
+            con_toggle_fullscreen(fs);
         }
     }
 
