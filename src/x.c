@@ -603,9 +603,6 @@ void x_push_changes(Con *con) {
     }
     DLOG("Done, EnterNotify re-enabled\n");
 
-    free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
-
-
     DLOG("\n\n PUSHING CHANGES\n\n");
     x_push_node(con);
 
