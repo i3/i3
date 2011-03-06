@@ -323,13 +323,17 @@ void render_con(Con *con, bool render_fullscreen) {
 
     /* in a stacking or tabbed container, we ensure the focused client is raised */
     if (con->layout == L_STACKED || con->layout == L_TABBED) {
-        Con *foc = TAILQ_FIRST(&(con->focus_head));
-        if (foc != TAILQ_END(&(con->focus_head))) {
-            DLOG("con %p is stacking, raising %p\n", con, foc);
-            x_raise_con(foc);
-            /* by rendering the stacked container again, we handle the case
-             * that we have a non-leaf-container inside the stack. */
-            render_con(foc, false);
+        DLOG("stacked/tabbed, raising focused reverse\n");
+        TAILQ_FOREACH_REVERSE(child, &(con->focus_head), focus_head, focused)
+            x_raise_con(child);
+        DLOG("done\n");
+        if ((child = TAILQ_FIRST(&(con->focus_head)))) {
+            DLOG("con %p is stacking, raising %p\n", con, child);
+            /* By rendering the stacked container again, we handle the case
+             * that we have a non-leaf-container inside the stack. In that
+             * case, the children of the non-leaf-container need to be raised
+             * aswell. */
+            render_con(child, false);
         }
     }
     }
