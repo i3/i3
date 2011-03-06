@@ -32,8 +32,7 @@
    while rendering the layout) */
 /** The XCB_CW_EVENT_MASK for the child (= real window) */
 #define CHILD_EVENT_MASK (XCB_EVENT_MASK_PROPERTY_CHANGE | \
-                          XCB_EVENT_MASK_STRUCTURE_NOTIFY | \
-                          XCB_EVENT_MASK_ENTER_WINDOW)
+                          XCB_EVENT_MASK_STRUCTURE_NOTIFY)
 
 /** The XCB_CW_EVENT_MASK for its frame */
 #define FRAME_EVENT_MASK (XCB_EVENT_MASK_BUTTON_PRESS |          /* …mouse is pressed/released */ \
