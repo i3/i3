@@ -9,6 +9,7 @@ use X11::XCB qw(:all);
 use AnyEvent::I3;
 use List::Util qw(first);
 use List::MoreUtils qw(lastval);
+use Time::HiRes qw(sleep);
 use v5.10;
 
 use Exporter ();
@@ -41,12 +42,14 @@ use warnings;
 }
 
 sub open_standard_window {
-    my ($x) = @_;
+    my ($x, $color) = @_;
+
+    $color ||= '#c0c0c0';
 
     my $window = $x->root->create_child(
         class => WINDOW_CLASS_INPUT_OUTPUT,
         rect => [ 0, 0, 30, 30 ],
-        background_color => '#C0C0C0',
+        background_color => $color,
     );
 
     $window->name('Window ' . counter_window());

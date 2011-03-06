@@ -244,6 +244,12 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         else DLOG("dock, not focusing\n");
     } else {
         DLOG("fs = %p, ws = %p, not focusing\n", fs, ws);
+        /* Insert the new container in focus stack *after* the currently
+         * focused (fullscreen) con. This way, the new container will be
+         * focused after we return from fullscreen mode */
+        Con *first = TAILQ_FIRST(&(nc->parent->focus_head));
+        TAILQ_REMOVE(&(nc->parent->focus_head), nc, focused);
+        TAILQ_INSERT_AFTER(&(nc->parent->focus_head), first, nc, focused);
     }
 
     /* set floating if necessary */
