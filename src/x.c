@@ -571,6 +571,12 @@ void x_push_changes(Con *con) {
     con_state *state;
 
     DLOG("-- PUSHING WINDOW STACK --\n");
+    DLOG("Disabling EnterNotify\n");
+    uint32_t values[1] = { XCB_NONE };
+    CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
+        xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
+    }
+    DLOG("Done, EnterNotify disabled\n");
     bool order_changed = false;
     /* X11 correctly represents the stack if we push it from bottom to top */
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
@@ -590,6 +596,15 @@ void x_push_changes(Con *con) {
         }
         state->initial = false;
     }
+    DLOG("Re-enabling EnterNotify\n");
+    values[0] = FRAME_EVENT_MASK;
+    CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
+        xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
+    }
+    DLOG("Done, EnterNotify re-enabled\n");
+
+    free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
+
 
     DLOG("\n\n PUSHING CHANGES\n\n");
     x_push_node(con);
@@ -631,8 +646,8 @@ void x_push_changes(Con *con) {
  */
 void x_raise_con(Con *con) {
     con_state *state;
-    DLOG("raising in new stack: %p / %s\n", con, con->name);
     state = state_for_frame(con->frame);
+    DLOG("raising in new stack: %p / %s / %s / xid %08x\n", con, con->name, con->window ? con->window->name_json : "", state->id);
 
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_INSERT_HEAD(&state_head, state, state);
