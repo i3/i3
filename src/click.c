@@ -39,9 +39,12 @@ static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press
     Con *first = NULL, *second = NULL;
     Con *resize_con = con;
     while (resize_con->type != CT_WORKSPACE &&
-        resize_con->parent->orientation != orientation)
+           resize_con->type != CT_FLOATING_CON &&
+           resize_con->parent->orientation != orientation)
         resize_con = resize_con->parent;
+
     if (resize_con->type != CT_WORKSPACE &&
+        resize_con->type != CT_FLOATING_CON &&
         resize_con->parent->orientation == orientation) {
         first = resize_con;
         second = (way == 'n') ? TAILQ_NEXT(first, nodes) : TAILQ_PREV(first, nodes_head, nodes);
