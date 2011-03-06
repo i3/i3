@@ -252,9 +252,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         want_floating = true;
 
         if (config.popup_during_fullscreen == PDF_LEAVE_FULLSCREEN) {
-            Con *ws = con_get_workspace(nc);
-            Con *fs = con_get_fullscreen_con(ws);
-            if (fs != NULL) {
+            Con *ws, *fs;
+            if ((ws = con_get_workspace(nc)) &&
+                (fs = con_get_fullscreen_con(ws))) {
                 LOG("There is a fullscreen window, leaving fullscreen mode\n");
                 con_toggle_fullscreen(fs);
             }
