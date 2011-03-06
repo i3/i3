@@ -204,7 +204,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn,
         return 1;
 
     con_focus(con_descend_focused(con));
-    x_push_changes(croot);
+    tree_render();
 
     return 1;
 }
