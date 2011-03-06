@@ -127,6 +127,12 @@ struct Config {
                 struct Colortriple unfocused;
                 struct Colortriple urgent;
         } bar;
+
+        /** What should happen when a new popup is opened during fullscreen mode */
+        enum {
+                PDF_LEAVE_FULLSCREEN = 0,
+                PDF_IGNORE = 1
+        } popup_during_fullscreen;
 };
 
 /**

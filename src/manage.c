@@ -247,8 +247,19 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (cwindow->transient_for != XCB_NONE ||
         (cwindow->leader != XCB_NONE &&
          cwindow->leader != cwindow->id &&
-         con_by_window_id(cwindow->leader) != NULL))
+         con_by_window_id(cwindow->leader) != NULL)) {
+        LOG("This window is transiert for another window, setting floating\n");
         want_floating = true;
+
+        if (config.popup_during_fullscreen == PDF_LEAVE_FULLSCREEN) {
+            Con *ws = con_get_workspace(nc);
+            Con *fs = con_get_fullscreen_con(ws);
+            if (fs != NULL) {
+                LOG("There is a fullscreen window, leaving fullscreen mode\n");
+                con_toggle_fullscreen(fs);
+            }
+        }
+    }
 
     /* dock clients cannot be floating, that makes no sense */
     if (cwindow->dock)

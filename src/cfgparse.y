@@ -233,6 +233,9 @@ void parse_file(const char *f) {
 %token TOKWORKSPACEBAR "workspace_bar"
 %token TOKCONTAINERMODE "default/stacking/tabbed"
 %token TOKSTACKLIMIT "stack-limit"
+%token TOK_POPUP_DURING_FULLSCREEN "popup_during_fullscreen"
+%token TOK_IGNORE "ignore"
+%token TOK_LEAVE_FULLSCREEN "leave_fullscreen"
 
 %%
 
@@ -260,6 +263,7 @@ line:
         | terminal
         | font
         | comment
+        | popup_during_fullscreen
         ;
 
 comment:
@@ -640,4 +644,17 @@ binding_modifier:
         MODIFIER        { $<number>$ = $<number>1; }
         | TOKCONTROL    { $<number>$ = BIND_CONTROL; }
         | TOKSHIFT      { $<number>$ = BIND_SHIFT; }
+        ;
+
+popup_during_fullscreen:
+        TOK_POPUP_DURING_FULLSCREEN WHITESPACE popup_setting
+        {
+                DLOG("popup_during_fullscreen setting: %d\n", $<number>3);
+                config.popup_during_fullscreen = $<number>3;
+        }
+        ;
+
+popup_setting:
+        TOK_IGNORE              { $<number>$ = PDF_IGNORE; }
+        | TOK_LEAVE_FULLSCREEN  { $<number>$ = PDF_LEAVE_FULLSCREEN; }
         ;
