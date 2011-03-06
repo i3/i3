@@ -150,6 +150,10 @@ static int route_click(Con *con, xcb_button_press_event_t *event, bool mod_press
     DLOG("--> OUTCOME = %p\n", con);
     DLOG("type = %d, name = %s\n", con->type, con->name);
 
+    /* don’t handle dockarea cons, they must not be focused */
+    if (con->parent->type == CT_DOCKAREA)
+        goto done;
+
     /* get the floating con */
     Con *floatingcon = con_inside_floating(con);
     const bool proportional = (event->state & BIND_SHIFT);
