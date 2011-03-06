@@ -195,4 +195,11 @@ int con_border_style(Con *con);
  */
 void con_set_layout(Con *con, int layout);
 
+/**
+ * Determines the minimum size of the given con by looking at its children (for
+ * split/stacked/tabbed cons). Will be called when resizing floating cons
+ *
+ */
+Rect con_minimum_size(Con *con);
+
 #endif

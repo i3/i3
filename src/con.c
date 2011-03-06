@@ -820,3 +820,61 @@ static void con_on_remove_child(Con *con) {
         return;
     }
 }
+
+/*
+ * Determines the minimum size of the given con by looking at its children (for
+ * split/stacked/tabbed cons). Will be called when resizing floating cons
+ *
+ */
+Rect con_minimum_size(Con *con) {
+    DLOG("Determining minimum size for con %p\n", con);
+
+    if (con_is_leaf(con)) {
+        DLOG("leaf node, returning 75x50\n");
+        return (Rect){ 0, 0, 75, 50 };
+    }
+
+    if (con->type == CT_FLOATING_CON) {
+        DLOG("floating con\n");
+        Con *child = TAILQ_FIRST(&(con->nodes_head));
+        return con_minimum_size(child);
+    }
+
+    if (con->layout == L_STACKED || con->layout == L_TABBED) {
+        uint32_t max_width = 0, max_height = 0, deco_height = 0;
+        Con *child;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            Rect min = con_minimum_size(child);
+            deco_height += child->deco_rect.height;
+            max_width = max(max_width, min.width);
+            max_height = max(max_height, min.height);
+        }
+        DLOG("stacked/tabbed now, returning %d x %d + deco_rect = %d\n",
+             max_width, max_height, deco_height);
+        return (Rect){ 0, 0, max_width, max_height + deco_height };
+    }
+
+    /* For horizontal/vertical split containers we sum up the width (h-split)
+     * or height (v-split) and use the maximum of the height (h-split) or width
+     * (v-split) as minimum size. */
+    if (con->orientation == HORIZ || con->orientation == VERT) {
+        uint32_t width = 0, height = 0;
+        Con *child;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            Rect min = con_minimum_size(child);
+            if (con->orientation == HORIZ) {
+                width += min.width;
+                height = max(height, min.height);
+            } else {
+                height += min.height;
+                width = max(width, min.width);
+            }
+        }
+        DLOG("split container, returning width = %d x height = %d\n", width, height);
+        return (Rect){ 0, 0, width, height };
+    }
+
+    ELOG("Unhandled case, type = %d, layout = %d, orientation = %d\n",
+         con->type, con->layout, con->orientation);
+    assert(false);
+}

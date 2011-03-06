@@ -284,12 +284,10 @@ DRAGGING_CB(resize_window_callback) {
         dest_height = old_rect->height - (new_y - event->root_y);
     else dest_height = old_rect->height + (new_y - event->root_y);
 
-    /* TODO: minimum window size */
-#if 0
     /* Obey minimum window size */
-    dest_width = max(dest_width, client_min_width(client));
-    dest_height = max(dest_height, client_min_height(client));
-#endif
+    Rect minimum = con_minimum_size(con);
+    dest_width = max(dest_width, minimum.width);
+    dest_height = max(dest_height, minimum.height);
 
     /* User wants to keep proportions, so we may have to adjust our values */
     if (params->proportional) {
