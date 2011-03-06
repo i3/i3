@@ -98,7 +98,19 @@ void floating_enable(Con *con, bool automatic) {
     int deco_height = font->height + 5;
 
     DLOG("Original rect: (%d, %d) with %d x %d\n", con->rect.x, con->rect.y, con->rect.width, con->rect.height);
+    Rect zero = { 0, 0, 0, 0 };
     nc->rect = con->geometry;
+    /* If the geometry was not set (split containers), we need to determine a
+     * sensible one by combining the geometry of all children */
+    if (memcmp(&(nc->rect), &zero, sizeof(Rect)) == 0) {
+        DLOG("Geometry not set, combining children\n");
+        Con *child;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            DLOG("child geometry: %d x %d\n", child->geometry.width, child->geometry.height);
+            nc->rect.width += child->geometry.width;
+            nc->rect.height = max(nc->rect.height, child->geometry.height);
+        }
+    }
     /* Raise the width/height to at least 75x50 (minimum size for windows) */
     nc->rect.width = max(nc->rect.width, 75);
     nc->rect.height = max(nc->rect.height, 50);

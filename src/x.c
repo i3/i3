@@ -149,8 +149,7 @@ void x_move_win(Con *src, Con *dest) {
         return;
     }
 
-    Rect zero;
-    memset(&zero, 0, sizeof(Rect));
+    Rect zero = { 0, 0, 0, 0 };
     if (memcmp(&(state_dest->window_rect), &(zero), sizeof(Rect)) == 0) {
         memcpy(&(state_dest->window_rect), &(state_src->window_rect), sizeof(Rect));
         DLOG("COPYING RECT\n");
