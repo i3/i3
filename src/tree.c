@@ -123,9 +123,10 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     }
 
     if (con->window != NULL) {
-        if (kill_window)
+        if (kill_window) {
             x_window_kill(con->window->id);
-        else {
+            return;
+        } else {
             /* un-parent the window */
             xcb_reparent_window(conn, con->window->id, root, 0, 0);
             /* TODO: client_unmap to set state to withdrawn */
