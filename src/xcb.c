@@ -37,7 +37,29 @@ i3Font *load_font(xcb_connection_t *conn, const char *pattern) {
     font_cookie = xcb_open_font_checked(conn, new->id, strlen(pattern), pattern);
     info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
 
-    check_error(conn, font_cookie, "Could not open font");
+    /* Check for errors. If errors, fall back to default font. */
+    xcb_generic_error_t *error = xcb_request_check(conn, font_cookie);
+
+    /* If we fail to open font, fall back to 'fixed'. If opening 'fixed' fails fall back to '-misc-*' */
+    if (error != NULL) {
+        ELOG("Could not open font %s (X error %d). Reverting to backup font.\n", pattern, error->error_code);
+        pattern = "fixed";
+        font_cookie = xcb_open_font_checked(conn, new->id, strlen(pattern), pattern);
+        info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
+
+        /* Check if we managed to open 'fixed' */
+        xcb_generic_error_t *error = xcb_request_check(conn, font_cookie);
+
+        /* Fall back to '-misc-*' if opening 'fixed' fails. */
+        if (error != NULL) {
+            ELOG("Could not open fallback font '%s', trying with '-misc-*'\n",pattern);
+            pattern = "-misc-*";
+            font_cookie = xcb_open_font_checked(conn, new->id, strlen(pattern), pattern);
+            info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
+
+            check_error(conn, font_cookie, "Could open neither requested font nor fallback (fixed or -misc-*");
+        }
+    }
 
     /* Get information (height/name) for this font */
     xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(conn, info_cookie, NULL);
