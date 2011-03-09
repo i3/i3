@@ -1,7 +1,7 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use i3test tests => 5;
+use i3test;
 use X11::XCB qw(:all);
 
 BEGIN {
@@ -30,4 +30,4 @@ isa_ok($new_rect, 'X11::XCB::Rect');
 
 is_deeply($new_rect, $original_rect, "window untouched");
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

@@ -4,12 +4,9 @@
 # Regression test for using level-up to get to the 'content'-container and
 # toggle floating
 #
-use Time::HiRes qw(sleep);
 use i3test;
 
-my $tmp = get_unused_workspace;
-cmd "workspace $tmp";
-
+fresh_workspace;
 
 cmd 'open';
 cmd 'level up';

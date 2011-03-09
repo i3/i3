@@ -1,9 +1,8 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use i3test tests => 6;
+use i3test;
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
 
 BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
@@ -12,21 +11,20 @@ BEGIN {
 my $x = X11::XCB::Connection->new;
 
 my $i3 = i3("/tmp/nestedcons");
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+my $tmp = fresh_workspace;
 
 #####################################################################
 # Create two windows and make sure focus switching works
 #####################################################################
 
 # Change mode of the container to "default" for following tests
-$i3->command('layout default')->recv;
-$i3->command('split v')->recv;
+cmd 'layout default';
+cmd 'split v';
 
-my $top = i3test::open_standard_window($x);
-my $mid = i3test::open_standard_window($x);
-my $bottom = i3test::open_standard_window($x);
-sleep(0.25);
+my $top = open_standard_window($x);
+my $mid = open_standard_window($x);
+my $bottom = open_standard_window($x);
+sleep 0.25;
 
 diag("top id = " . $top->id);
 diag("mid id = " . $mid->id);
@@ -106,4 +104,4 @@ is($focus, $top->id, "Top window focused (wrapping to the bottom works)");
 #is($focus, $right->id, "right window focused");
 
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

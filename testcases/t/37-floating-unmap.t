@@ -3,9 +3,8 @@
 # Regression test: Floating windows were not correctly unmapped when switching
 # to a different workspace.
 
-use i3test tests => 4;
+use i3test;
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
 
 BEGIN {
     use_ok('X11::XCB::Window');
@@ -13,8 +12,7 @@ BEGIN {
 
 my $i3 = i3("/tmp/nestedcons");
 
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+my $tmp = fresh_workspace;
 
 #############################################################################
 # 1: open a floating window, get it mapped
@@ -41,11 +39,12 @@ ok($window->mapped, 'Window is mapped');
 
 # switch to a different workspace, see if the window is still mapped?
 
-my $otmp = get_unused_workspace();
-$i3->command("workspace $otmp")->recv;
+my $otmp = fresh_workspace;
 
 sleep 0.25;
 
 ok(!$window->mapped, 'Window is not mapped after switching ws');
 
-$i3->command("nop testcase done")->recv;
+cmd "nop testcase done";
+
+done_testing;

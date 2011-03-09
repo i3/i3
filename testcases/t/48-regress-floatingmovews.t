@@ -5,8 +5,7 @@
 # another workspace.
 #
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
-use i3test tests => 2;
+use i3test;
 
 BEGIN {
     use_ok('X11::XCB::Window');
@@ -14,8 +13,7 @@ BEGIN {
 
 my $x = X11::XCB::Connection->new;
 
-my $tmp = get_unused_workspace;
-cmd "workspace $tmp";
+my $tmp = fresh_workspace;
 
 # open a tiling window on the first workspace
 open_standard_window($x);
@@ -23,8 +21,7 @@ sleep 0.25;
 my $first = get_focused($tmp);
 
 # on a different ws, open a floating window
-my $otmp = get_unused_workspace;
-cmd "workspace $otmp";
+my $otmp = fresh_workspace;
 open_standard_window($x);
 sleep 0.25;
 my $float = get_focused($otmp);
@@ -37,3 +34,5 @@ sleep 0.25;
 
 # switch to the first ws and check focus
 is(get_focused($tmp), $float, 'floating client correctly focused');
+
+done_testing;

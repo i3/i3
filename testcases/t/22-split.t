@@ -3,17 +3,14 @@
 #
 # Tests splitting
 #
-use i3test tests => 14;
+use i3test;
 use X11::XCB qw(:all);
 
-my $i3 = i3("/tmp/nestedcons");
-
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+my $tmp = fresh_workspace;
 
 my $ws = get_ws($tmp);
 is($ws->{orientation}, 'horizontal', 'orientation horizontal by default');
-$i3->command('split v')->recv;
+cmd 'split v';
 $ws = get_ws($tmp);
 is($ws->{orientation}, 'vertical', 'split v changes workspace orientation');
 
@@ -21,8 +18,8 @@ is($ws->{orientation}, 'vertical', 'split v changes workspace orientation');
 # Open two containers, split, open another container. Then verify
 # the layout is like we expect it to be
 ######################################################################
-$i3->command('open')->recv;
-$i3->command('open')->recv;
+cmd 'open';
+cmd 'open';
 my $content = get_ws_content($tmp);
 
 is(@{$content}, 2, 'two containers on workspace level');
@@ -34,8 +31,8 @@ is(@{$second->{nodes}}, 0, 'second container has no children (yet)');
 my $old_name = $second->{name};
 
 
-$i3->command('split h')->recv;
-$i3->command('open')->recv;
+cmd 'split h';
+cmd 'open';
 
 $content = get_ws_content($tmp);
 
@@ -57,16 +54,15 @@ is($second->{nodes}->[0]->{name}, $old_name, 'found old second container');
 # Test splitting multiple times without actually creating windows
 ######################################################################
 
-$tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+$tmp = fresh_workspace;
 
 $ws = get_ws($tmp);
 is($ws->{orientation}, 'horizontal', 'orientation horizontal by default');
-$i3->command('split v')->recv;
+cmd 'split v';
 $ws = get_ws($tmp);
 is($ws->{orientation}, 'vertical', 'split v changes workspace orientation');
 
-$i3->command('open')->recv;
+cmd 'open';
 my @content = @{get_ws_content($tmp)};
 
 # recursively sums up all nodes and their children
@@ -82,15 +78,15 @@ sub sum_nodes {
 }
 
 my $old_count = sum_nodes(\@content);
-$i3->command('split v')->recv;
+cmd 'split v';
 
 @content = @{get_ws_content($tmp)};
 $old_count = sum_nodes(\@content);
 
-$i3->command('split v')->recv;
+cmd 'split v';
 
 @content = @{get_ws_content($tmp)};
 my $count = sum_nodes(\@content);
 is($count, $old_count, 'not more windows after splitting again');
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

@@ -3,8 +3,7 @@
 #
 # Checks if the 'move workspace' command works correctly
 #
-use i3test tests => 11;
-use Time::HiRes qw(sleep);
+use i3test;
 
 my $i3 = i3("/tmp/nestedcons");
 
@@ -60,4 +59,4 @@ $ws = get_ws($tmp2);
 is(@{$ws->{nodes}}, 0, 'no nodes on workspace');
 is(@{$ws->{floating_nodes}}, 1, 'one floating node on workspace');
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

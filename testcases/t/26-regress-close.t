@@ -4,11 +4,9 @@
 # Regression: closing of floating clients did crash i3 when closing the
 # container which contained this client.
 #
-use i3test tests => 1;
-use X11::XCB qw(:all);
+use i3test;
 
-my $tmp = get_unused_workspace();
-cmd "workspace $tmp";
+fresh_workspace;
 
 cmd 'open';
 cmd 'mode toggle';
@@ -17,4 +15,4 @@ cmd 'kill';
 
 does_i3_live;
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

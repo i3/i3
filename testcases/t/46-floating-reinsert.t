@@ -3,7 +3,7 @@
 #
 use X11::XCB qw(:all);
 use Time::HiRes qw(sleep);
-use i3test tests => 5;
+use i3test;
 
 BEGIN {
     use_ok('X11::XCB::Window');
@@ -11,8 +11,7 @@ BEGIN {
 
 my $x = X11::XCB::Connection->new;
 
-my $tmp = get_unused_workspace;
-cmd "workspace $tmp";
+my $tmp = fresh_workspace;
 
 my $left = open_standard_window($x);
 sleep 0.25;
@@ -60,3 +59,5 @@ cmd 'mode toggle';
 my ($nodes, $focus) = get_ws_content($tmp);
 
 is(@{$nodes->[1]->{nodes}}, 3, 'three windows in split con after mode toggle');
+
+done_testing;

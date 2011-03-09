@@ -1,7 +1,7 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use i3test tests => 7;
+use i3test;
 use List::MoreUtils qw(all none);
 use List::Util qw(first);
 
@@ -65,4 +65,4 @@ $i3->command('open')->recv;
 #diag(Dumper($tree));
 
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

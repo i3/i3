@@ -1,9 +1,8 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 # Tests resizing tiling containers
-use i3test tests => 6;
+use i3test;
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
 
 BEGIN {
     use_ok('X11::XCB::Window');
@@ -11,8 +10,7 @@ BEGIN {
 
 my $x = X11::XCB::Connection->new;
 
-my $tmp = get_unused_workspace();
-cmd "workspace $tmp";
+my $tmp = fresh_workspace;
 
 cmd 'split v';
 
@@ -47,3 +45,5 @@ cmd 'split h';
 
 is($nodes->[0]->{percent}, 0.25, 'top window got only 25%');
 is($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
+
+done_testing;

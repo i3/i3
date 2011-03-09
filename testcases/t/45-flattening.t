@@ -11,12 +11,11 @@
 # This testcase checks that the tree is properly flattened after moving.
 #
 use X11::XCB qw(:all);
-use i3test tests => 2;
+use i3test;
 
 my $x = X11::XCB::Connection->new;
 
-my $tmp = get_unused_workspace;
-cmd "workspace $tmp";
+my $tmp = fresh_workspace;
 
 my $left = open_standard_window($x);
 sleep 0.25;
@@ -31,3 +30,5 @@ my $ws = get_ws($tmp);
 
 is($ws->{orientation}, 'horizontal', 'workspace orientation is horizontal');
 is(@{$ws->{nodes}}, 3, 'all three windows on workspace level');
+
+done_testing;

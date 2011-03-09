@@ -1,9 +1,8 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use i3test tests => 7;
+use i3test;
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
 
 BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
@@ -12,8 +11,7 @@ BEGIN {
 my $x = X11::XCB::Connection->new;
 my $i3 = i3("/tmp/nestedcons");
 
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+my $tmp = fresh_workspace;
 
 ####################################################################################
 # first part: test if a floating window will be correctly positioned above its leader
@@ -114,11 +112,10 @@ $window->map;
 sleep 0.25;
 
 #########################################################################
-# Switch workspace to 10 and open a child window. It should be positioned
-# on workspace 9.
+# Switch to a different workspace and open a child window. It should be opened
+# on the old workspace.
 #########################################################################
-my $otmp = get_unused_workspace();
-$i3->command("workspace $otmp")->recv;
+fresh_workspace;
 
 my $child = $x->root->create_child(
 class => WINDOW_CLASS_INPUT_OUTPUT,
@@ -135,8 +132,10 @@ sleep 0.25;
 isnt($x->input_focus, $child->id, "Child window focused");
 
 # Switch back
-$i3->command("workspace $tmp")->recv;
+cmd "workspace $tmp";
 
 is($x->input_focus, $child->id, "Child window focused");
 
 }
+
+done_testing;

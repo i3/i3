@@ -6,7 +6,7 @@
 #
 use X11::XCB qw(:all);
 use Time::HiRes qw(sleep);
-use i3test tests => 3;
+use i3test;
 
 BEGIN {
     use_ok('X11::XCB::Window');
@@ -14,8 +14,7 @@ BEGIN {
 
 my $x = X11::XCB::Connection->new;
 
-my $tmp = get_unused_workspace;
-cmd "workspace $tmp";
+my $tmp = fresh_workspace;
 
 my $left = open_standard_window($x);
 sleep 0.25;
@@ -44,3 +43,5 @@ cmd 'move before v';
 sleep 0.25;
 
 does_i3_live;
+
+done_testing;

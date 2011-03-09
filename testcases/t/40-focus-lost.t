@@ -2,7 +2,7 @@
 # vim:ts=4:sw=4:expandtab
 # Regression: Check if the focus stays the same when switching the layout
 # bug introduced by 77d0d42ed2d7ac8cafe267c92b35a81c1b9491eb
-use i3test tests => 4;
+use i3test;
 use X11::XCB qw(:all);
 use Time::HiRes qw(sleep);
 
@@ -23,8 +23,7 @@ sub check_order {
     cmp_deeply(\@nums, \@sorted, $msg);
 }
 
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+my $tmp = fresh_workspace;
 
 my $left = open_standard_window($x);
 sleep 0.25;
@@ -37,10 +36,12 @@ diag("left = " . $left->id . ", mid = " . $mid->id . ", right = " . $right->id);
 
 is($x->input_focus, $right->id, 'Right window focused');
 
-$i3->command('prev h')->recv;
+cmd 'prev h';
 
 is($x->input_focus, $mid->id, 'Mid window focused');
 
-$i3->command('layout stacked')->recv;
+cmd 'layout stacked';
 
 is($x->input_focus, $mid->id, 'Mid window focused');
+
+done_testing;

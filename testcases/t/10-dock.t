@@ -3,7 +3,6 @@
 
 use i3test;
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
 use List::Util qw(first);
 
 BEGIN {

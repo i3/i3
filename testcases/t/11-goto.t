@@ -3,7 +3,6 @@
 
 use i3test tests => 6;
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
 use Digest::SHA1 qw(sha1_base64);
 
 BEGIN {
@@ -13,20 +12,19 @@ BEGIN {
 my $x = X11::XCB::Connection->new;
 
 my $i3 = i3("/tmp/nestedcons");
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+fresh_workspace;
 
-$i3->command('split h')->recv;
+cmd 'split h';
 
 #####################################################################
 # Create two windows and make sure focus switching works
 #####################################################################
 
-my $top = i3test::open_standard_window($x);
+my $top = open_standard_window($x);
 sleep 0.25;
-my $mid = i3test::open_standard_window($x);
+my $mid = open_standard_window($x);
 sleep 0.25;
-my $bottom = i3test::open_standard_window($x);
+my $bottom = open_standard_window($x);
 sleep 0.25;
 
 diag("top id = " . $top->id);
@@ -40,7 +38,7 @@ diag("bottom id = " . $bottom->id);
 sub focus_after {
     my $msg = shift;
 
-    $i3->command($msg)->recv;
+    cmd $msg;
     return $x->input_focus;
 }
 
@@ -67,3 +65,4 @@ is($focus, $top->id, "Top window focused");
 $focus = focus_after(qq|[con_mark="$random_mark"] focus|);
 is($focus, $mid->id, "goto worked");
 
+done_testing;

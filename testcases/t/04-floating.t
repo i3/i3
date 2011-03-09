@@ -1,9 +1,8 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use i3test tests => 11;
+use i3test;
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
 
 BEGIN {
     use_ok('X11::XCB::Window');
@@ -24,7 +23,7 @@ isa_ok($window, 'X11::XCB::Window');
 
 $window->map;
 
-sleep(0.25);
+sleep 0.25;
 
 my ($absolute, $top) = $window->rect;
 
@@ -47,7 +46,7 @@ isa_ok($window, 'X11::XCB::Window');
 
 $window->map;
 
-sleep(0.25);
+sleep 0.25;
 
 ($absolute, $top) = $window->rect;
 
@@ -61,4 +60,4 @@ cmp_ok($top->{y}, '==', 19, 'i3 mapped it to y=18');
 
 $window->unmap;
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

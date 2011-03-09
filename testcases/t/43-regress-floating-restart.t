@@ -3,12 +3,9 @@
 #
 # Regression: floating windows are tiling after restarting, closing them crashes i3
 #
-use i3test tests => 1;
-use Time::HiRes qw(sleep);
-use X11::XCB qw(:all);
+use i3test;
 
-my $tmp = get_unused_workspace();
-cmd "workspace $tmp";
+my $tmp = fresh_workspace;
 
 cmd 'open';
 cmd 'mode toggle';
@@ -22,3 +19,5 @@ does_i3_live;
 
 my $ws = get_ws($tmp);
 diag('ws = ' . Dumper($ws));
+
+done_testing;

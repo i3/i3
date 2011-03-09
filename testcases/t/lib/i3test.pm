@@ -13,7 +13,7 @@ use Time::HiRes qw(sleep);
 use v5.10;
 
 use Exporter ();
-our @EXPORT = qw(get_workspace_names get_unused_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live);
+our @EXPORT = qw(get_workspace_names get_unused_workspace fresh_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live);
 
 my $tester = Test::Builder->new();
 
@@ -86,6 +86,12 @@ sub get_unused_workspace {
     my $tmp;
     do { $tmp = tmpnam() } while ($tmp ~~ @names);
     $tmp
+}
+
+sub fresh_workspace {
+    my $unused = get_unused_workspace;
+    cmd("workspace $unused");
+    $unused
 }
 
 sub get_ws {

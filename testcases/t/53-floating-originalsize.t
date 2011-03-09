@@ -3,12 +3,10 @@
 #
 # Test if the requested width/height is set after making the window floating.
 #
-use Time::HiRes qw(sleep);
 use X11::XCB qw(:all);
 use i3test;
 
-my $tmp = get_unused_workspace;
-cmd "workspace $tmp";
+my $tmp = fresh_workspace;
 
 my $x = X11::XCB::Connection->new;
 

@@ -1,15 +1,13 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use i3test tests => 24;
+use i3test;
 use X11::XCB qw(:all);
 use List::Util qw(first);
-use Time::HiRes qw(sleep);
 
 my $i3 = i3("/tmp/nestedcons");
 
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+my $tmp = fresh_workspace;
 
 sub fullscreen_windows {
     scalar grep { $_->{fullscreen_mode} != 0 } @{get_ws_content($tmp)}
@@ -52,20 +50,20 @@ is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
 
 $window->map;
 
-sleep(0.25);
+sleep 0.25;
 
 # open another container to make the window get only half of the screen
-$i3->command('open')->recv;
+cmd 'open';
 
 my $new_rect = $window->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned");
 $original_rect = $new_rect;
 
-sleep(0.25);
+sleep 0.25;
 
 $window->fullscreen(1);
 
-sleep(0.25);
+sleep 0.25;
 
 $new_rect = $window->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned after fullscreen");
@@ -89,7 +87,7 @@ $window->unmap;
 
 # open another container because the empty one will swallow the window we
 # map in a second
-$i3->command('open')->recv;
+cmd 'open';
 
 $original_rect = X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30);
 $window = $x->root->create_child(
@@ -129,7 +127,7 @@ my $swindow = $x->root->create_child(
 );
 
 $swindow->map;
-sleep(0.25);
+sleep 0.25;
 
 ok(!$swindow->mapped, 'window not mapped while fullscreen window active');
 
@@ -158,16 +156,15 @@ sleep 0.25;
 
 is(fullscreen_windows(), 0, 'amount of fullscreen windows after disabling');
 
-$i3->command('fullscreen')->recv;
+cmd 'fullscreen';
 
 is(fullscreen_windows(), 1, 'amount of fullscreen windows after fullscreen command');
 
-$i3->command('fullscreen')->recv;
+cmd 'fullscreen';
 
 is(fullscreen_windows(), 0, 'amount of fullscreen windows after fullscreen command');
 
 # clean up the workspace so that it will be cleaned when switching away
-$i3->command('kill')->recv for (@{get_ws_content($tmp)});
+cmd 'kill' for (@{get_ws_content($tmp)});
 
-
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

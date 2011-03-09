@@ -3,13 +3,10 @@
 #
 # Tests all kinds of matching methods
 #
-use i3test tests => 4;
+use i3test;
 use X11::XCB qw(:all);
 
-my $i3 = i3("/tmp/nestedcons");
-
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+my $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
@@ -39,8 +36,8 @@ my $win = $content->[0];
 ######################################################################
 # TODO: use PCRE expressions
 # TODO: specify more match types
-$i3->command(q|[class="*"] kill|)->recv;
-$i3->command(q|[con_id="99999"] kill|)->recv;
+cmd q|[class="*"] kill|;
+cmd q|[con_id="99999"] kill|;
 
 $content = get_ws_content($tmp);
 ok(@{$content} == 1, 'window still there');
@@ -48,7 +45,7 @@ ok(@{$content} == 1, 'window still there');
 # now kill the window
 cmd 'nop now killing the window';
 my $id = $win->{id};
-$i3->command(qq|[con_id="$id"] kill|)->recv;
+cmd qq|[con_id="$id"] kill|;
 
 # give i3 some time to pick up the UnmapNotify event
 sleep 0.25;
@@ -59,4 +56,4 @@ ok(@{$content} == 0, 'window killed');
 
 # TODO: same test, but with pcre expressions
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

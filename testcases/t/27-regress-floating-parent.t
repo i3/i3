@@ -3,43 +3,39 @@
 #
 # Regression: make a container floating, kill its parent, make it tiling again
 #
-use i3test tests => 4;
-use X11::XCB qw(:all);
+use i3test;
 
-my $i3 = i3("/tmp/nestedcons");
+my $tmp = fresh_workspace;
 
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
-
-$i3->command('open')->recv;
+cmd 'open';
 my $left = get_focused($tmp);
-$i3->command('open')->recv;
+cmd 'open';
 my $old = get_focused($tmp);
-$i3->command('split v')->recv;
-$i3->command('open')->recv;
+cmd 'split v';
+cmd 'open';
 my $floating = get_focused($tmp);
 diag("focused floating: " . get_focused($tmp));
-$i3->command('mode toggle')->recv;
+cmd 'mode toggle';
 # TODO: eliminate this race conditition
 sleep 1;
 
 # kill old container
-$i3->command(qq|[con_id="$old"] focus|)->recv;
+cmd qq|[con_id="$old"] focus|;
 is(get_focused($tmp), $old, 'old container focused');
-$i3->command('kill')->recv;
+cmd 'kill';
 
 # kill left container
-$i3->command(qq|[con_id="$left"] focus|)->recv;
+cmd qq|[con_id="$left"] focus|;
 is(get_focused($tmp), $left, 'old container focused');
-$i3->command('kill')->recv;
+cmd 'kill';
 
 # focus floating window, make it tiling again
-$i3->command(qq|[con_id="$floating"] focus|)->recv;
+cmd qq|[con_id="$floating"] focus|;
 is(get_focused($tmp), $floating, 'floating window focused');
 
 sleep 1;
-$i3->command('mode toggle')->recv;
+cmd 'mode toggle';
 
 does_i3_live;
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

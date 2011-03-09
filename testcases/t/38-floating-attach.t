@@ -3,7 +3,7 @@
 # Regression test: New windows were attached to the container of a floating window
 # if only a floating window is present on the workspace.
 
-use i3test tests => 7;
+use i3test;
 use X11::XCB qw(:all);
 use Time::HiRes qw(sleep);
 
@@ -13,8 +13,7 @@ BEGIN {
 
 my $i3 = i3("/tmp/nestedcons");
 
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+my $tmp = fresh_workspace;
 
 #############################################################################
 # 1: open a floating window, get it mapped
@@ -61,3 +60,5 @@ sleep 0.25;
 ($nodes, $focus) = get_ws_content($tmp);
 
 is(@{$nodes}, 1, 'one tiling node');
+
+done_testing;

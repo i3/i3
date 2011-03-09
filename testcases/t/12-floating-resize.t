@@ -4,9 +4,8 @@
 # the workspace to be empty).
 # TODO: skip it by default?
 
-use i3test tests => 15;
+use i3test;
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
 
 BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
@@ -14,9 +13,7 @@ BEGIN {
 
 my $x = X11::XCB::Connection->new;
 
-my $i3 = i3("/tmp/nestedcons");
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+fresh_workspace;
 
 #####################################################################
 # Create a floating window and see if resizing works
@@ -67,11 +64,13 @@ sub test_resize {
 test_resize;
 
 # Test borderless
-$i3->command('border none')->recv;
+cmd 'border none';
 
 test_resize;
 
 # Test with 1-px-border
-$i3->command('border 1pixel')->recv;
+cmd 'border 1pixel';
 
 test_resize;
+
+done_testing;

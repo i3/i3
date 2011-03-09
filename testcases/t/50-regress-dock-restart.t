@@ -4,7 +4,6 @@
 # Regression test for inplace restarting with dock clients
 #
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
 use i3test;
 
 BEGIN {
@@ -14,8 +13,7 @@ BEGIN {
 my $x = X11::XCB::Connection->new;
 my $i3 = i3("/tmp/nestedcons");
 
-my $tmp = get_unused_workspace;
-cmd "workspace $tmp";
+my $tmp = fresh_workspace;
 
 #####################################################################
 # verify that there is no dock window yet

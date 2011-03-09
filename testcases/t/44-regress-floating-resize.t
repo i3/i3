@@ -6,13 +6,10 @@
 # workspace as if a tiling container was closed, leading to the containers
 # taking much more space than they possibly could.
 #
-use i3test tests => 1;
-use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
+use i3test;
 use List::Util qw(sum);
 
-my $tmp = get_unused_workspace();
-cmd "workspace $tmp";
+my $tmp = fresh_workspace;
 
 cmd 'exec /usr/bin/urxvt';
 sleep 0.5;
@@ -36,3 +33,5 @@ sleep 0.5;
 my $new_sum = sum map { $_->{rect}->{width} } @{$nodes};
 
 is($old_sum, $new_sum, 'combined container width is still equal');
+
+done_testing;

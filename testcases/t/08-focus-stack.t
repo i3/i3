@@ -3,9 +3,8 @@
 # Checks if the focus is correctly restored, when creating a floating client
 # over an unfocused tiling client and destroying the floating one again.
 
-use i3test tests => 4;
+use i3test;
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
 
 BEGIN {
     use_ok('X11::XCB::Window') or BAIL_OUT('Could not load X11::XCB::Window');
@@ -14,13 +13,11 @@ BEGIN {
 my $x = X11::XCB::Connection->new;
 
 my $i3 = i3("/tmp/nestedcons");
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+fresh_workspace;
 
-
-$i3->command('split h')->recv;
-my $tiled_left = i3test::open_standard_window($x);
-my $tiled_right = i3test::open_standard_window($x);
+cmd 'split h';
+my $tiled_left = open_standard_window($x);
+my $tiled_right = open_standard_window($x);
 
 sleep 0.25;
 
@@ -49,4 +46,4 @@ sleep 0.25;
 
 is($x->input_focus, $focus, 'Focus correctly restored');
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

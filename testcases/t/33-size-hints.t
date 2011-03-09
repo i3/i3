@@ -3,15 +3,13 @@
 #
 # Checks if size hints are interpreted correctly.
 #
-use i3test tests => 2;
-use Time::HiRes qw(sleep);
+use i3test;
 
 my $i3 = i3("/tmp/nestedcons");
 
 my $x = X11::XCB::Connection->new;
 
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+my $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
@@ -41,4 +39,4 @@ my $ar = $rect->width / $rect->height;
 diag("Aspect ratio = $ar");
 ok(($ar > 1.90) && ($ar < 2.10), 'Aspect ratio about 2.0');
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

@@ -3,26 +3,24 @@
 #
 # Check if the focus is correctly restored after closing windows.
 #
-use i3test tests => 9;
+use i3test;
 use List::Util qw(first);
-use Time::HiRes qw(sleep);
 
 my $i3 = i3("/tmp/nestedcons");
 
-my $tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+my $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
 my $first = open_empty_con($i3);
 my $second = open_empty_con($i3);
 
-$i3->command('split v')->recv;
+cmd 'split v';
 
 my ($nodes, $focus) = get_ws_content($tmp);
 
 is($nodes->[1]->{focused}, 0, 'split container not focused');
-$i3->command('level up')->recv;
+cmd 'level up';
 ($nodes, $focus) = get_ws_content($tmp);
 is($nodes->[1]->{focused}, 1, 'split container focused after level up');
 
@@ -43,7 +41,7 @@ isnt(get_focused($tmp), $second, 'different container focused');
 # when closing $second
 ##############################################################
 
-$i3->command('kill')->recv;
+cmd 'kill';
 # TODO: this testcase sometimes has different outcomes when the
 # sleep is missing. why?
 sleep 0.25;
@@ -55,20 +53,19 @@ is($nodes->[1]->{nodes}->[0]->{focused}, 1, 'second container focused');
 # another case, using a slightly different layout (regression)
 ##############################################################
 
-$tmp = get_unused_workspace();
-$i3->command("workspace $tmp")->recv;
+$tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-$i3->command('split v')->recv;
+cmd 'split v';
 $first = open_empty_con($i3);
 my $bottom = open_empty_con($i3);
 
-$i3->command('prev v')->recv;
-$i3->command('split h')->recv;
+cmd 'prev v';
+cmd 'split h';
 my $middle = open_empty_con($i3);
 my $right = open_empty_con($i3);
-$i3->command('next v')->recv;
+cmd 'next v';
 
 # We have the following layout now (second is focused):
 # .----------------------------.
@@ -82,7 +79,7 @@ $i3->command('next v')->recv;
 # `----------------------------'
 
 # Check if the focus is restored to $right when we close $second
-$i3->command('kill')->recv;
+cmd 'kill';
 
 is(get_focused($tmp), $right, 'top right container focused (in focus stack)');
 
@@ -98,4 +95,4 @@ is($tr->{focused}, 1, 'top right container really has focus');
 
 # TODO: add test code as soon as I can reproduce it
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;
