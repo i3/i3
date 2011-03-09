@@ -46,9 +46,14 @@ $content = get_ws_content($tmp);
 ok(@{$content} == 1, 'window still there');
 
 # now kill the window
+cmd 'nop now killing the window';
 my $id = $win->{id};
 $i3->command(qq|[con_id="$id"] kill|)->recv;
 
+# give i3 some time to pick up the UnmapNotify event
+sleep 0.25;
+
+cmd 'nop checking if its gone';
 $content = get_ws_content($tmp);
 ok(@{$content} == 0, 'window killed');
 
