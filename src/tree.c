@@ -264,11 +264,17 @@ void tree_split(Con *con, orientation_t orientation) {
  *
  */
 void level_up() {
+    /* We cannot go up when we are in fullscreen mode at the moment, that would
+     * be totally not intuitive */
+    if (focused->fullscreen_mode != CF_NONE) {
+        LOG("Currently in fullscreen, not going up\n");
+        return;
+    }
     /* We can focus up to the workspace, but not any higher in the tree */
     if ((focused->parent->type != CT_CON &&
         focused->parent->type != CT_WORKSPACE) ||
         focused->type == CT_WORKSPACE) {
-        printf("cannot go up\n");
+        LOG("Cannot go up any further\n");
         return;
     }
     con_focus(focused->parent);
