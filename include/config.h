@@ -86,7 +86,7 @@ struct Mode {
  */
 struct Config {
         const char *terminal;
-        const char *font;
+        i3Font font;
 
         const char *ipc_socket_path;
         const char *restart_state_path;

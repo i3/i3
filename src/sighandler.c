@@ -165,16 +165,14 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
     xcb_event_handlers_init(conn, &sig_evenths);
     xcb_event_set_key_press_handler(&sig_evenths, sig_handle_key_press, NULL);
 
-    i3Font *font = load_font(conn, config.font);
-
     /* width and height of the popup window, so that the text fits in */
     int crash_text_num = sizeof(crash_text) / sizeof(char*);
-    int height = 13 + (crash_text_num * font->height);
+    int height = 13 + (crash_text_num * config.font.height);
 
     /* calculate width for longest text */
     int text_len = strlen(crash_text[crash_text_longest]);
     char *longest_text = convert_utf8_to_ucs2(crash_text[crash_text_longest], &text_len);
-    int font_width = predict_text_width(conn, config.font, longest_text, text_len);
+    int font_width = predict_text_width(longest_text, text_len);
     int width = font_width + 20;
 
     /* Open a popup window on each virtual screen */
@@ -192,7 +190,7 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
 
         /* Create graphics context */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font->id);
+        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, config.font.id);
 
         /* Grab the keyboard to get all input */
         xcb_grab_keyboard(conn, false, win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
@@ -201,7 +199,7 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         xcb_grab_pointer(conn, false, win, XCB_NONE, XCB_GRAB_MODE_ASYNC,
                          XCB_GRAB_MODE_ASYNC, win, XCB_NONE, XCB_CURRENT_TIME);
 
-        sig_draw_window(win, width, height, font->height);
+        sig_draw_window(win, width, height, config.font.height);
         xcb_flush(conn);
     }
 

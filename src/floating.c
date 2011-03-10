@@ -94,8 +94,7 @@ void floating_enable(Con *con, bool automatic) {
     free(name);
 
     /* find the height for the decorations */
-    i3Font *font = load_font(conn, config.font);
-    int deco_height = font->height + 5;
+    int deco_height = config.font.height + 5;
 
     DLOG("Original rect: (%d, %d) with %d x %d\n", con->rect.x, con->rect.y, con->rect.width, con->rect.height);
     Rect zero = { 0, 0, 0, 0 };

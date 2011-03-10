@@ -17,24 +17,19 @@ TAILQ_HEAD(cached_fonts_head, Font) cached_fonts = TAILQ_HEAD_INITIALIZER(cached
 unsigned int xcb_numlock_mask;
 
 /*
- * Loads a font for usage, getting its height. This function is used very often, so it
- * maintains a cache.
+ * Loads a font for usage, also getting its height. If fallback is true,
+ * i3 loads 'fixed' or '-misc-*' if the font cannot be found instead of
+ * exiting.
  *
  */
-i3Font *load_font(xcb_connection_t *conn, const char *pattern) {
-    /* Check if we got the font cached */
-    i3Font *font;
-    TAILQ_FOREACH(font, &cached_fonts, fonts)
-        if (strcmp(font->pattern, pattern) == 0)
-            return font;
-
-    i3Font *new = smalloc(sizeof(i3Font));
+i3Font load_font(const char *pattern, bool fallback) {
+    i3Font new;
     xcb_void_cookie_t font_cookie;
     xcb_list_fonts_with_info_cookie_t info_cookie;
 
     /* Send all our requests first */
-    new->id = xcb_generate_id(conn);
-    font_cookie = xcb_open_font_checked(conn, new->id, strlen(pattern), pattern);
+    new.id = xcb_generate_id(conn);
+    font_cookie = xcb_open_font_checked(conn, new.id, strlen(pattern), pattern);
     info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
 
     /* Check for errors. If errors, fall back to default font. */
@@ -44,7 +39,7 @@ i3Font *load_font(xcb_connection_t *conn, const char *pattern) {
     if (error != NULL) {
         ELOG("Could not open font %s (X error %d). Reverting to backup font.\n", pattern, error->error_code);
         pattern = "fixed";
-        font_cookie = xcb_open_font_checked(conn, new->id, strlen(pattern), pattern);
+        font_cookie = xcb_open_font_checked(conn, new.id, strlen(pattern), pattern);
         info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
 
         /* Check if we managed to open 'fixed' */
@@ -54,7 +49,7 @@ i3Font *load_font(xcb_connection_t *conn, const char *pattern) {
         if (error != NULL) {
             ELOG("Could not open fallback font '%s', trying with '-misc-*'\n",pattern);
             pattern = "-misc-*";
-            font_cookie = xcb_open_font_checked(conn, new->id, strlen(pattern), pattern);
+            font_cookie = xcb_open_font_checked(conn, new.id, strlen(pattern), pattern);
             info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
 
             check_error(conn, font_cookie, "Could open neither requested font nor fallback (fixed or -misc-*");
@@ -65,14 +60,7 @@ i3Font *load_font(xcb_connection_t *conn, const char *pattern) {
     xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(conn, info_cookie, NULL);
     exit_if_null(reply, "Could not load font \"%s\"\n", pattern);
 
-    if (asprintf(&(new->name), "%.*s", xcb_list_fonts_with_info_name_length(reply),
-                                       xcb_list_fonts_with_info_name(reply)) == -1)
-        die("asprintf() failed\n");
-    new->pattern = sstrdup(pattern);
-    new->height = reply->font_ascent + reply->font_descent;
-
-    /* Insert into cache */
-    TAILQ_INSERT_TAIL(&cached_fonts, new, fonts);
+    new.height = reply->font_ascent + reply->font_descent;
 
     return new;
 }
@@ -127,9 +115,9 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
         values[0] = xcursor_get_cursor(cursor);
         xcb_change_window_attributes(conn, result, mask, values);
     } else {
-        i3Font *cursor_font = load_font(conn, "cursor");
+        i3Font cursor_font = load_font("cursor", false);
         int xcb_cursor = xcursor_get_xcb_cursor(cursor);
-        xcb_create_glyph_cursor(conn, cursor_id, cursor_font->id, cursor_font->id,
+        xcb_create_glyph_cursor(conn, cursor_id, cursor_font.id, cursor_font.id,
                 xcb_cursor, xcb_cursor + 1, 0, 0, 0, 65535, 65535, 65535);
         xcb_change_window_attributes(conn, result, XCB_CW_CURSOR, &cursor_id);
         xcb_free_cursor(conn, cursor_id);
@@ -318,15 +306,13 @@ void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap)
  * length (amount of glyphs) using the given font.
  *
  */
-int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *text, int length) {
-    i3Font *font = load_font(conn, font_pattern);
-
+int predict_text_width(char *text, int length) {
     xcb_query_text_extents_cookie_t cookie;
     xcb_query_text_extents_reply_t *reply;
     xcb_generic_error_t *error;
     int width;
 
-    cookie = xcb_query_text_extents(conn, font->id, length, (xcb_char2b_t*)text);
+    cookie = xcb_query_text_extents(conn, config.font.id, length, (xcb_char2b_t*)text);
     if ((reply = xcb_query_text_extents_reply(conn, cookie, &error)) == NULL) {
         ELOG("Could not get text extents (X error code %d)\n",
              error->error_code);

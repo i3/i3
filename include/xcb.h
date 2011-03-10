@@ -71,11 +71,12 @@ enum { _NET_SUPPORTED = 0,
 extern unsigned int xcb_numlock_mask;
 
 /**
- * Loads a font for usage, getting its height. This function is used very
- * often, so it maintains a cache.
+ * Loads a font for usage, also getting its height. If fallback is true,
+ * i3 loads 'fixed' or '-misc-*' if the font cannot be found instead of
+ * exiting.
  *
  */
-i3Font *load_font(xcb_connection_t *conn, const char *pattern);
+i3Font load_font(const char *pattern, bool fallback);
 
 /**
  * Returns the colorpixel to use for the given hex color (think of HTML).
@@ -162,8 +163,7 @@ void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap)
  * real length (amount of glyphs) using the given font.
  *
  */
-int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *text,
-                       int length);
+int predict_text_width(char *text, int length);
 
 /**
  * Configures the given window to have the size/position specified by given rect

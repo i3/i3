@@ -332,7 +332,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 grab_all_keys(conn, false);
         }
 
-        REQUIRED_OPTION(font);
+        if (config.font.id == 0) {
+                ELOG("You did not specify required configuration option \"font\"\n");
+                config.font = load_font("fixed", true);
+        }
 
 #if 0
         /* Set an empty name for every workspace which got no name */

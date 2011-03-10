@@ -597,8 +597,8 @@ terminal:
 font:
         TOKFONT WHITESPACE STR
         {
-                config.font = $<string>3;
-                printf("font %s\n", config.font);
+                config.font = load_font($<string>3, true);
+                printf("font %s\n", $<string>3);
         }
         ;
 

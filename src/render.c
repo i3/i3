@@ -194,8 +194,7 @@ void render_con(Con *con, bool render_fullscreen) {
     }
 
     /* find the height for the decorations */
-    i3Font *font = load_font(conn, config.font);
-    int deco_height = font->height + 5;
+    int deco_height = config.font.height + 5;
 
     /* precalculate the sizes to be able to correct rounding errors */
     int sizes[children];

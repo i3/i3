@@ -173,10 +173,6 @@ struct Autostart {
  *
  */
 struct Font {
-    /** The name of the font, that is what the pattern resolves to */
-    char *name;
-    /** A copy of the pattern to build a cache */
-    char *pattern;
     /** The height of the font, built from font_ascent + font_descent */
     int height;
     /** The xcb-id for the font */

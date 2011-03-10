@@ -311,11 +311,10 @@ void x_draw_decoration(Con *con) {
             con->deco_rect.y + con->deco_rect.height - 1); /* to_y */
 
     /* 5: draw the title */
-    i3Font *font = load_font(conn, config.font);
     uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-    uint32_t values[] = { color->text, color->background, font->id };
+    uint32_t values[] = { color->text, color->background, config.font.id };
     xcb_change_gc(conn, parent->gc, mask, values);
-    int text_offset_y = font->height + (con->deco_rect.height - font->height) / 2 - 1;
+    int text_offset_y = config.font.height + (con->deco_rect.height - config.font.height) / 2 - 1;
 
     struct Window *win = con->window;
     if (win == NULL || win->name_x == NULL) {
