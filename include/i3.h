@@ -1,5 +1,5 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
  *
@@ -17,11 +17,10 @@
 
 #include "queue.h"
 #include "data.h"
+#include "xcb.h"
 
 #ifndef _I3_H
 #define _I3_H
-
-#define NUM_ATOMS 21
 
 extern xcb_connection_t *conn;
 extern xcb_key_symbols_t *keysyms;
