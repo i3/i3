@@ -1,5 +1,5 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
  *
@@ -232,15 +232,22 @@ static char *get_config_path() {
  *
  */
 static void parse_configuration(const char *override_configpath) {
-        if (override_configpath != NULL) {
-                parse_file(override_configpath);
-                return;
-        }
+    static const char *saved_configpath = NULL;
 
-        char *path = get_config_path();
-        DLOG("Parsing configfile %s\n", path);
-        parse_file(path);
-        free(path);
+    if (override_configpath != NULL) {
+        saved_configpath = override_configpath;
+        parse_file(override_configpath);
+        return;
+    }
+    else if (saved_configpath != NULL) {
+        parse_file(saved_configpath);
+        return;
+    }
+
+    char *path = get_config_path();
+    DLOG("Parsing configfile %s\n", path);
+    parse_file(path);
+    free(path);
 }
 
 /*
