@@ -537,7 +537,7 @@ move:
 
         printf("should move window to workspace %s\n", $<string>5);
         /* get the workspace */
-        Con *ws = workspace_get($<string>5);
+        Con *ws = workspace_get($<string>5, NULL);
         free($<string>5);
 
         /* check if the match is empty, not if the result is empty */

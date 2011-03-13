@@ -17,7 +17,7 @@
  * memory and initializing the data structures correctly).
  *
  */
-Con *workspace_get(const char *num) {
+Con *workspace_get(const char *num, bool *created) {
     Con *output, *workspace = NULL, *child;
 
     /* TODO: could that look like this in the future?
@@ -63,6 +63,11 @@ Con *workspace_get(const char *num) {
         con_attach(workspace, content, false);
 
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
+        if (created != NULL)
+            *created = true;
+    }
+    else if (created != NULL) {
+        *created = false;
     }
 
     //ewmh_update_workarea();
@@ -201,7 +206,7 @@ static void workspace_reassign_sticky(Con *con) {
 void workspace_show(const char *num) {
     Con *workspace, *current, *old = NULL;
 
-    workspace = workspace_get(num);
+    workspace = workspace_get(num, NULL);
 
     /* disable fullscreen for the other workspaces and get the workspace we are
      * currently on. */
@@ -454,7 +459,7 @@ Workspace *get_first_workspace_for_output(Output *output) {
                 int last_ws = 0;
                 TAILQ_FOREACH(ws, workspaces, workspaces)
                         last_ws = ws->num;
-                result = workspace_get(last_ws + 1);
+                result = workspace_get(last_ws + 1, NULL);
         }
 
         workspace_initialize(result, output, false);

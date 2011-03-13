@@ -22,8 +22,11 @@
  * creating the workspace if necessary (by allocating the necessary amount of
  * memory and initializing the data structures correctly).
  *
+ * If created is not NULL, *created will be set to whether or not the
+ * workspace has just been created.
+ *
  */
-Con *workspace_get(const char *num);
+Con *workspace_get(const char *num, bool *created);
 
 #if 0
 /**
