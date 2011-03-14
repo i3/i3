@@ -22,7 +22,6 @@ extern int cmdyyparse(void);
 extern FILE *cmdyyin;
 YY_BUFFER_STATE cmdyy_scan_string(const char *);
 
-static struct bindings_head *current_bindings;
 static struct context *context;
 static Match current_match;
 
