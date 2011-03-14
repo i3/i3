@@ -175,7 +175,8 @@ void floating_disable(Con *con, bool automatic) {
 
     /* 3: re-attach to the parent of the currently focused con on the workspace
      * this floating con was on */
-    Con *focused = con_descend_focused(con_get_workspace(con));
+    Con *focused = con_descend_tiling_focused(con_get_workspace(con));
+
     /* if there is no other container on this workspace, focused will be the
      * workspace itself */
     if (focused->type == CT_WORKSPACE)

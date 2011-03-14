@@ -695,6 +695,32 @@ Con *con_descend_focused(Con *con) {
 }
 
 /*
+ * Returns the focused con inside this client, descending the tree as far as
+ * possible. This comes in handy when attaching a con to a workspace at the
+ * currently focused position, for example.
+ *
+ * Works like con_descend_focused but considers only tiling cons.
+ *
+ */
+Con *con_descend_tiling_focused(Con *con) {
+    Con *next = con;
+    Con *before;
+    Con *child;
+    do {
+        before = next;
+        TAILQ_FOREACH(child, &(next->focus_head), focused) {
+            if (child->type == CT_FLOATING_CON)
+                continue;
+
+            next = child;
+            break;
+        }
+    } while (before != next);
+    return next;
+}
+
+
+/*
  * Returns a "relative" Rect which contains the amount of pixels that need to
  * be added to the original Rect to get the final position (obviously the
  * amount of pixels for normal, 1pixel and borderless are different).
