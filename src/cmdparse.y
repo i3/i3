@@ -277,7 +277,6 @@ criteria:
     ;
 
 operations:
-    operation
     | operation optwhitespace
     | operations ',' optwhitespace operation
     ;
