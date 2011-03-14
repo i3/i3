@@ -484,7 +484,11 @@ void init_xcb(char *fontname) {
         xkb_major = XkbMajorVersion;
         xkb_minor = XkbMinorVersion;
 
-        xkb_dpy = XkbOpenDisplay(":0",
+        char *dispname = getenv("DISPLAY");
+        if (dispname == NULL) {
+            dispname = ":0";
+        }
+        xkb_dpy = XkbOpenDisplay(dispname,
                                  &xkb_event_base,
                                  &xkb_errbase,
                                  &xkb_major,
