@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <limits.h>
 
 #include "all.h"
 
@@ -259,16 +260,32 @@ criteria:
     | TOK_CON_ID '=' STR
     {
         printf("criteria: id = %s\n", $<string>3);
-        /* TODO: correctly parse number */
-        current_match.con_id = (Con*)atoi($<string>3);
-        printf("id as int = %p\n", current_match.con_id);
+        char *end;
+        long parsed = strtol($<string>3, &end, 10);
+        if (parsed == LONG_MIN ||
+            parsed == LONG_MAX ||
+            parsed < 0 ||
+            (end && *end != '\0')) {
+            ELOG("Could not parse con id \"%s\"\n", $<string>3);
+        } else {
+            current_match.con_id = (Con*)parsed;
+            printf("id as int = %p\n", current_match.con_id);
+        }
     }
     | TOK_ID '=' STR
     {
         printf("criteria: window id = %s\n", $<string>3);
-        /* TODO: correctly parse number */
-        current_match.id = atoi($<string>3);
-        printf("window id as int = %d\n", current_match.id);
+        char *end;
+        long parsed = strtol($<string>3, &end, 10);
+        if (parsed == LONG_MIN ||
+            parsed == LONG_MAX ||
+            parsed < 0 ||
+            (end && *end != '\0')) {
+            ELOG("Could not parse window id \"%s\"\n", $<string>3);
+        } else {
+            current_match.id = parsed;
+            printf("window id as int = %d\n", current_match.id);
+        }
     }
     | TOK_MARK '=' STR
     {
