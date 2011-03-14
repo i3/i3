@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <signal.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -35,11 +36,13 @@ char *statusline_buffer = NULL;
  *
  */
 void cleanup() {
-    ev_io_stop(main_loop, stdin_io);
-    ev_child_stop(main_loop, child_sig);
-    FREE(stdin_io);
-    FREE(child_sig);
-    FREE(statusline_buffer);
+    if (stdin_io != NULL) {
+        ev_io_stop(main_loop, stdin_io);
+        ev_child_stop(main_loop, child_sig);
+        FREE(stdin_io);
+        FREE(child_sig);
+        FREE(statusline_buffer);
+    }
 }
 
 /*
@@ -174,8 +177,11 @@ void kill_child() {
     if (child_pid != 0) {
         kill(child_pid, SIGCONT);
         kill(child_pid, SIGTERM);
+        int status;
+        waitpid(child_pid, &status, 0);
+        child_pid = 0;
+        cleanup();
     }
-    cleanup();
 }
 
 /*
