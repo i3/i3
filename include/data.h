@@ -177,8 +177,6 @@ struct Font {
     int height;
     /** The xcb-id for the font */
     xcb_font_t id;
-
-    TAILQ_ENTRY(Font) fonts;
 };
 
 

@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
     char *override_configpath = NULL;
     bool autostart = true;
     char *layout_path = NULL;
-    bool delete_layout_path;
+    bool delete_layout_path = false;
     bool only_check_config = false;
     bool force_xinerama = false;
     bool disable_signalhandler = false;

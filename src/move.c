@@ -153,7 +153,7 @@ void tree_move(int direction) {
     if (direction == TOK_UP || direction == TOK_LEFT) {
         position = BEFORE;
         next = TAILQ_PREV(above, nodes_head, nodes);
-    } else if (direction == TOK_DOWN || direction == TOK_RIGHT) {
+    } else {
         position = AFTER;
         next = TAILQ_NEXT(above, nodes);
     }
