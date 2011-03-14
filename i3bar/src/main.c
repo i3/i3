@@ -156,6 +156,7 @@ int main(int argc, char **argv) {
                 config.hide_on_modifier = 1;
                 break;
             case 'd':
+                config.hide_on_modifier = 0;
                 if (optarg == NULL) {
                     config.dockpos = DOCKPOS_BOT;
                     break;
