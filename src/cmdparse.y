@@ -153,8 +153,8 @@ char *parse_cmd(const char *new) {
 
 %%
 
-commands: /* empty */
-    | commands optwhitespace ';' optwhitespace command
+commands:
+    commands optwhitespace ';' optwhitespace command
     | command
     {
         owindow *current;
