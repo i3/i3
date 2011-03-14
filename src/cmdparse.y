@@ -90,6 +90,7 @@ char *parse_cmd(const char *new) {
 
 %}
 
+%expect 4
 %error-verbose
 %lex-param { struct context *context }
 
