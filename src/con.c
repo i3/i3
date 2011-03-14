@@ -623,12 +623,18 @@ Con *con_next_focused(Con *con) {
         return con_descend_focused(output_get_content(con->parent->parent));
     }
 
-    /* try to focus the next container on the same level as this one */
-    next = TAILQ_NEXT(con, focused);
-
-    /* if that was not possible, go up to its parent */
-    if (next == TAILQ_END(&(parent->nodes_head)))
-        next = con->parent;
+    /* if 'con' is not the first entry in the focus stack, use the first one as
+     * it’s currently focused already */
+    Con *first = TAILQ_FIRST(&(con->parent->focus_head));
+    if (first != con) {
+        DLOG("Using first entry %p\n", first);
+        next = first;
+    } else {
+        /* try to focus the next container on the same level as this one or fall
+         * back to its parent */
+        if (!(next = TAILQ_NEXT(con, focused)))
+            next = con->parent;
+    }
 
     /* now go down the focus stack as far as
      * possible, excluding the current container */
