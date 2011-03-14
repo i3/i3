@@ -417,6 +417,9 @@ int main(int argc, char *argv[]) {
     /* Watch WM_TRANSIENT_FOR property (to which client this popup window belongs) */
     xcb_property_set_handler(&prophs, WM_TRANSIENT_FOR, UINT_MAX, handle_transient_for, NULL);
 
+    /* Mapping notify = keyboard mapping changed (Xmodmap), re-grab bindings */
+    xcb_event_set_mapping_notify_handler(&evenths, handle_mapping_notify, NULL);
+
     /* Set up the atoms we support */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED], ATOM, 32, 7, atoms);
     /* Set up the window manager’s name */

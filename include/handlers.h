@@ -41,7 +41,6 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn,
 int handle_motion_notify(void *ignored, xcb_connection_t *conn,
                          xcb_motion_notify_event_t *event);
 
-#if 0
 /**
  * Called when the keyboard mapping changes (for example by using Xmodmap),
  * we need to update our key bindings then (re-translate symbols).
@@ -49,6 +48,7 @@ int handle_motion_notify(void *ignored, xcb_connection_t *conn,
  */
 int handle_mapping_notify(void *ignored, xcb_connection_t *conn,
                           xcb_mapping_notify_event_t *event);
+#if 0
 
 /**
  * Checks if the button press was on a stack window, handles focus setting and

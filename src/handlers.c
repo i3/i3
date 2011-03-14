@@ -251,30 +251,28 @@ int handle_motion_notify(void *ignored, xcb_connection_t *conn, xcb_motion_notif
     return 1;
 }
 
-#if 0
 /*
  * Called when the keyboard mapping changes (for example by using Xmodmap),
  * we need to update our key bindings then (re-translate symbols).
  *
  */
 int handle_mapping_notify(void *ignored, xcb_connection_t *conn, xcb_mapping_notify_event_t *event) {
-        if (event->request != XCB_MAPPING_KEYBOARD &&
-            event->request != XCB_MAPPING_MODIFIER)
-                return 0;
-
-        DLOG("Received mapping_notify for keyboard or modifier mapping, re-grabbing keys\n");
-        xcb_refresh_keyboard_mapping(keysyms, event);
-
-        xcb_get_numlock_mask(conn);
-
-        ungrab_all_keys(conn);
-        translate_keysyms();
-        grab_all_keys(conn, false);
-
+    if (event->request != XCB_MAPPING_KEYBOARD &&
+        event->request != XCB_MAPPING_MODIFIER)
         return 0;
+
+    DLOG("Received mapping_notify for keyboard or modifier mapping, re-grabbing keys\n");
+    xcb_refresh_keyboard_mapping(keysyms, event);
+
+    xcb_get_numlock_mask(conn);
+
+    ungrab_all_keys(conn);
+    translate_keysyms();
+    grab_all_keys(conn, false);
+
+    return 0;
 }
 
-#endif
 /*
  * A new window appeared on the screen (=was mapped), so let’s manage it.
  *
