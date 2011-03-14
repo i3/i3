@@ -24,6 +24,8 @@ void ewmh_update_current_desktop() {
     Con *focused_ws = con_get_workspace(focused);
     Con *output;
     uint32_t idx = 0;
+    /* We count to get the index of this workspace because named workspaces
+     * don’t have the ->num property */
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         Con *ws;
         TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
