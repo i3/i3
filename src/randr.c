@@ -665,7 +665,7 @@ void randr_query_outputs() {
         disable_randr(conn);
     }
 
-    //ewmh_update_workarea();
+    ewmh_update_workarea();
 
 #if 0
     /* Just go through each active output and associate one workspace */

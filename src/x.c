@@ -616,6 +616,7 @@ void x_push_changes(Con *con) {
         } else {
             DLOG("Updating focus (focused: %p / %s)\n", focused, focused->name);
             xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, XCB_CURRENT_TIME);
+            ewmh_update_active_window(to_focus);
             focused_id = to_focus;
         }
     }

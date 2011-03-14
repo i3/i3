@@ -70,8 +70,6 @@ Con *workspace_get(const char *num, bool *created) {
         *created = false;
     }
 
-    //ewmh_update_workarea();
-
     return workspace;
 }
 
@@ -206,7 +204,8 @@ static void workspace_reassign_sticky(Con *con) {
 void workspace_show(const char *num) {
     Con *workspace, *current, *old = NULL;
 
-    workspace = workspace_get(num, NULL);
+    bool changed_num_workspaces;
+    workspace = workspace_get(num, &changed_num_workspaces);
 
     /* disable fullscreen for the other workspaces and get the workspace we are
      * currently on. */
@@ -241,12 +240,18 @@ void workspace_show(const char *num) {
             LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
             tree_close(old, false, false);
             ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"empty\"}");
+            changed_num_workspaces = true;
         }
     }
 
     con_focus(next);
     workspace->fullscreen_mode = CF_OUTPUT;
     LOG("focused now = %p / %s\n", focused, focused->name);
+
+    /* Update the EWMH hints */
+    if (changed_num_workspaces)
+        ewmh_update_workarea();
+    ewmh_update_current_desktop();
 
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
 #if 0

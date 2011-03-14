@@ -56,5 +56,6 @@
 #include "sighandler.h"
 #include "move.h"
 #include "output.h"
+#include "ewmh.h"
 
 #endif
