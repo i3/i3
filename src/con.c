@@ -794,7 +794,11 @@ void con_set_layout(Con *con, int layout) {
         /* 3: While the layout is irrelevant in stacked/tabbed mode, it needs
          * to be set. Otherwise, this con will not be interpreted as a split
          * container. */
-        new->orientation = HORIZ;
+        if (config.default_orientation == NO_ORIENTATION) {
+            new->orientation = (con->rect.height > con->rect.width) ? VERT : HORIZ;
+        } else {
+            new->orientation = config.default_orientation;
+        }
 
         Con *old_focused = TAILQ_FIRST(&(con->focus_head));
         if (old_focused == TAILQ_END(&(con->focus_head)))

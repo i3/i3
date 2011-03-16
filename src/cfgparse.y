@@ -224,6 +224,10 @@ void parse_file(const char *f) {
 %token TOKCOLOR
 %token TOKARROW "→"
 %token TOKMODE "mode"
+%token TOK_ORIENTATION "new_container_orientation"
+%token TOK_HORIZ "horizontal"
+%token TOK_VERT "vertical"
+%token TOK_AUTO "auto"
 %token TOKNEWCONTAINER "new_container"
 %token TOKNEWWINDOW "new_window"
 %token TOK_NORMAL "normal"
@@ -249,6 +253,7 @@ line:
         bindline
         | mode
         | floating_modifier
+        | orientation
         | new_container
         | new_window
         | focus_follows_mouse
@@ -371,6 +376,20 @@ floating_modifier:
                 DLOG("floating modifier = %d\n", $<number>3);
                 config.floating_modifier = $<number>3;
         }
+        ;
+
+orientation:
+        TOK_ORIENTATION WHITESPACE direction
+        {
+                DLOG("New containers should start with split direction %d\n", $<number>3);
+                config.default_orientation = $<number>3;
+        }
+        ;
+
+direction:
+        TOK_HORIZ       { $<number>$ = HORIZ; }
+        | TOK_VERT      { $<number>$ = VERT; }
+        | TOK_AUTO      { $<number>$ = NO_ORIENTATION; }
         ;
 
 new_container:

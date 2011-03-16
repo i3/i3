@@ -92,6 +92,10 @@ set[^\n]*                       { return TOKCOMMENT; }
 ipc-socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
 ipc_socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
 restart_state                   { BEGIN(BIND_AWS_COND); return TOKRESTARTSTATE; }
+new_container_orientation       { return TOK_ORIENTATION; }
+horizontal                      { return TOK_HORIZ; }
+vertical                        { return TOK_VERT; }
+auto                            { return TOK_AUTO; }
 new_container                   { return TOKNEWCONTAINER; }
 new_window                      { return TOKNEWWINDOW; }
 normal                          { return TOK_NORMAL; }

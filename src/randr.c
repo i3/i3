@@ -361,7 +361,17 @@ void output_init_con(Output *output) {
     free(name);
 
     ws->fullscreen_mode = CF_OUTPUT;
-    ws->orientation = HORIZ;
+
+    /* If default_orientation is set to NO_ORIENTATION we determine
+     * orientation depending on output resolution. */
+    if (config.default_orientation == NO_ORIENTATION) {
+        ws->orientation = (output->rect.height > output->rect.width) ? VERT : HORIZ;
+        DLOG("Auto orientation. Workspace size set to (%d,%d), setting orientation to %d.\n",
+             output->rect.width, output->rect.height, ws->orientation);
+    } else {
+        ws->orientation = config.default_orientation;
+    }
+
 
     /* TODO: Set focus in main.c */
     con_focus(ws);
@@ -384,6 +394,30 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
     DLOG("Output mode changed, updating rect\n");
     assert(output->con != NULL);
     output->con->rect = output->rect;
+
+    Con *current,*workspace,*child;
+
+    /* Point current to the container of the workspaces */
+    current = output->con->nodes_head.tqh_first->nodes.tqe_next;
+
+    /* If default_orientation is NO_ORIENTATION, we change the orientation of
+     * the workspaces and their childs depending on output resolution. This is
+     * only done for workspaces with maximum one child. */
+    if (config.default_orientation == NO_ORIENTATION) {
+        TAILQ_FOREACH(workspace, &(current->nodes_head), nodes) {
+
+            /* Check if this workspace has <= 1 childs. */
+            child = workspace->nodes_head.tqh_first;
+            if (child != NULL)
+                if (child->nodes.tqe_next == NULL) {
+                    workspace->orientation = (output->rect.height > output->rect.width) ? VERT : HORIZ;
+                    DLOG("Setting workspace [%d,%s]'s orientation to %d.\n", workspace->num, workspace->name, workspace->orientation);
+                    child->orientation = workspace->orientation;
+                    DLOG("Setting child [%d,%s]'s orientation to %d.\n", child->num, child->name, child->orientation);
+                }
+        }
+    }
+
 #if 0
     Rect bar_rect = {output->rect.x,
                      output->rect.y + output->rect.height - (font->height + 6),

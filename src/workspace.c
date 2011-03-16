@@ -59,7 +59,18 @@ Con *workspace_get(const char *num, bool *created) {
             workspace->num = -1;
         else workspace->num = parsed_num;
         LOG("num = %d\n", workspace->num);
-        workspace->orientation = HORIZ;
+
+        /* If default_orientation is set to NO_ORIENTATION we
+         * determine workspace orientation from workspace size.
+         * Otherwise we just set the orientation to default_orientation. */
+        if (config.default_orientation == NO_ORIENTATION) {
+            workspace->orientation = (output->rect.height > output->rect.width) ? VERT : HORIZ;
+            DLOG("Auto orientation. Output resolution set to (%d,%d), setting orientation to %d.\n",
+                 workspace->rect.width, workspace->rect.height, workspace->orientation);
+        } else {
+            workspace->orientation = config.default_orientation;
+        }
+
         con_attach(workspace, content, false);
 
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
