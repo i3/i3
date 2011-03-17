@@ -67,6 +67,7 @@ enum {
     _NET_CURRENT_DESKTOP,
     _NET_ACTIVE_WINDOW,
     _NET_WORKAREA,
+    WM_TAKE_FOCUS,
     NUM_ATOMS
 };
 

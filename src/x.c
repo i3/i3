@@ -616,6 +616,22 @@ void x_push_changes(Con *con) {
         } else {
             DLOG("Updating focus (focused: %p / %s)\n", focused, focused->name);
             xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, XCB_CURRENT_TIME);
+
+            /* TODO: check if that client acccepts WM_TAKE_FOCUS at all */
+            xcb_client_message_event_t ev;
+
+            memset(&ev, 0, sizeof(xcb_client_message_event_t));
+
+            ev.response_type = XCB_CLIENT_MESSAGE;
+            ev.window = to_focus;
+            ev.type = atoms[WM_PROTOCOLS];
+            ev.format = 32;
+            ev.data.data32[0] = atoms[WM_TAKE_FOCUS];
+            ev.data.data32[1] = XCB_CURRENT_TIME;
+
+            DLOG("Sending WM_TAKE_FOCUS to the client\n");
+            xcb_send_event(conn, false, to_focus, XCB_EVENT_MASK_NO_EVENT, (char*)&ev);
+
             ewmh_update_active_window(to_focus);
             focused_id = to_focus;
         }

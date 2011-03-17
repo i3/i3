@@ -295,6 +295,7 @@ int main(int argc, char *argv[]) {
     REQUEST_ATOM(_NET_CURRENT_DESKTOP);
     REQUEST_ATOM(_NET_ACTIVE_WINDOW);
     REQUEST_ATOM(_NET_WORKAREA);
+    REQUEST_ATOM(WM_TAKE_FOCUS);
 
     /* Initialize the Xlib connection */
     xlibdpy = xkbdpy = XOpenDisplay(NULL);
@@ -398,6 +399,7 @@ int main(int argc, char *argv[]) {
     GET_ATOM(_NET_CURRENT_DESKTOP);
     GET_ATOM(_NET_ACTIVE_WINDOW);
     GET_ATOM(_NET_WORKAREA);
+    GET_ATOM(WM_TAKE_FOCUS);
 
     /* Watch _NET_WM_NAME (title of the window encoded in UTF-8) */
     xcb_property_set_handler(&prophs, atoms[_NET_WM_NAME], 128, handle_windowname_change, NULL);
