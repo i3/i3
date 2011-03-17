@@ -127,6 +127,12 @@ Client *get_last_focused_client(xcb_connection_t *conn, Container *container,
                                 Client *exclude);
 
 /**
+ * Sends WM_TAKE_FOCUS to the client
+ *
+ */
+void take_focus(xcb_connection_t *conn, Client *client);
+
+/**
  * Sets the given client as focused by updating the data structures correctly,
  * updating the X input focus and finally re-decorating both windows (to
  * signalize the user the new focus situation)

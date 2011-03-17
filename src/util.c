@@ -222,6 +222,25 @@ Client *get_last_focused_client(xcb_connection_t *conn, Container *container, Cl
         return NULL;
 }
 
+/*
+ * Sends WM_TAKE_FOCUS to the client
+ *
+ */
+void take_focus(xcb_connection_t *conn, Client *client) {
+    xcb_client_message_event_t ev;
+
+    memset(&ev, 0, sizeof(xcb_client_message_event_t));
+
+    ev.response_type = XCB_CLIENT_MESSAGE;
+    ev.window = client->child;
+    ev.type = atoms[WM_PROTOCOLS];
+    ev.format = 32;
+    ev.data.data32[0] = atoms[WM_TAKE_FOCUS];
+    ev.data.data32[1] = XCB_CURRENT_TIME;
+
+    DLOG("Sending WM_TAKE_FOCUS to the client\n");
+    xcb_send_event(conn, false, client->child, XCB_EVENT_MASK_NO_EVENT, (char*)&ev);
+}
 
 /*
  * Sets the given client as focused by updating the data structures correctly,
@@ -261,6 +280,7 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         CLIENT_LOG(client);
         /* Set focus to the entered window, and flush xcb buffer immediately */
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
+        take_focus(conn, client);
         ewmh_update_active_window(client->child);
         //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);
 

@@ -64,7 +64,8 @@ enum { _NET_SUPPORTED = 0,
         WM_CLIENT_LEADER,
         _NET_CURRENT_DESKTOP,
         _NET_ACTIVE_WINDOW,
-        _NET_WORKAREA
+        _NET_WORKAREA,
+        WM_TAKE_FOCUS
 };
 
 extern unsigned int xcb_numlock_mask;

@@ -512,6 +512,7 @@ map:
                         }
                         if (new->container == CUR_CELL || client_is_floating(new)) {
                                 xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
+                                take_focus(conn, new);
                                 ewmh_update_active_window(new->child);
                         }
                 }

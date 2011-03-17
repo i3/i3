@@ -326,6 +326,7 @@ int main(int argc, char *argv[], char *env[]) {
         REQUEST_ATOM(_NET_CURRENT_DESKTOP);
         REQUEST_ATOM(_NET_ACTIVE_WINDOW);
         REQUEST_ATOM(_NET_WORKAREA);
+        REQUEST_ATOM(WM_TAKE_FOCUS);
 
         /* TODO: this has to be more beautiful somewhen */
         int major, minor, error;
@@ -491,6 +492,7 @@ int main(int argc, char *argv[], char *env[]) {
         GET_ATOM(_NET_CURRENT_DESKTOP);
         GET_ATOM(_NET_ACTIVE_WINDOW);
         GET_ATOM(_NET_WORKAREA);
+        GET_ATOM(WM_TAKE_FOCUS);
 
         xcb_property_set_handler(&prophs, atoms[_NET_WM_WINDOW_TYPE], UINT_MAX, handle_window_type, NULL);
         /* TODO: In order to comply with EWMH, we have to watch _NET_WM_STRUT_PARTIAL */
