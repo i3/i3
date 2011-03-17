@@ -395,26 +395,27 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
     assert(output->con != NULL);
     output->con->rect = output->rect;
 
-    Con *current,*workspace,*child;
+    Con *content, *workspace, *child;
 
-    /* Point current to the container of the workspaces */
-    current = output->con->nodes_head.tqh_first->nodes.tqe_next;
+    /* Point content to the container of the workspaces */
+    content = output_get_content(output->con);
 
     /* If default_orientation is NO_ORIENTATION, we change the orientation of
      * the workspaces and their childs depending on output resolution. This is
      * only done for workspaces with maximum one child. */
     if (config.default_orientation == NO_ORIENTATION) {
-        TAILQ_FOREACH(workspace, &(current->nodes_head), nodes) {
+        TAILQ_FOREACH(workspace, &(content->nodes_head), nodes) {
+            /* Workspaces with more than one child are left untouched because
+             * we do not want to change an existing layout. */
+            if (con_num_children(workspace) > 1)
+                continue;
 
-            /* Check if this workspace has <= 1 childs. */
-            child = workspace->nodes_head.tqh_first;
-            if (child != NULL)
-                if (child->nodes.tqe_next == NULL) {
-                    workspace->orientation = (output->rect.height > output->rect.width) ? VERT : HORIZ;
-                    DLOG("Setting workspace [%d,%s]'s orientation to %d.\n", workspace->num, workspace->name, workspace->orientation);
-                    child->orientation = workspace->orientation;
-                    DLOG("Setting child [%d,%s]'s orientation to %d.\n", child->num, child->name, child->orientation);
-                }
+            workspace->orientation = (output->rect.height > output->rect.width) ? VERT : HORIZ;
+            DLOG("Setting workspace [%d,%s]'s orientation to %d.\n", workspace->num, workspace->name, workspace->orientation);
+            if ((child = TAILQ_FIRST(&(workspace->nodes_head)))) {
+                child->orientation = workspace->orientation;
+                DLOG("Setting child [%d,%s]'s orientation to %d.\n", child->num, child->name, child->orientation);
+            }
         }
     }
 
