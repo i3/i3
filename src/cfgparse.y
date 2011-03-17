@@ -224,7 +224,7 @@ void parse_file(const char *f) {
 %token TOKCOLOR
 %token TOKARROW "→"
 %token TOKMODE "mode"
-%token TOK_ORIENTATION "new_container_orientation"
+%token TOK_ORIENTATION "default_orientation"
 %token TOK_HORIZ "horizontal"
 %token TOK_VERT "vertical"
 %token TOK_AUTO "auto"
