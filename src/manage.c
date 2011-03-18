@@ -477,6 +477,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                 redecorate_window(conn, new);
         }
 
+        new->needs_take_focus = client_supports_protocol(conn, new, A_WM_TAKE_FOCUS);
         new->initialized = true;
 
         /* Check if the window already got the fullscreen hint set */
@@ -512,7 +513,8 @@ map:
                         }
                         if (new->container == CUR_CELL || client_is_floating(new)) {
                                 xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, new->child, XCB_CURRENT_TIME);
-                                take_focus(conn, new);
+                                if (new->needs_take_focus)
+                                        take_focus(conn, new);
                                 ewmh_update_active_window(new->child);
                         }
                 }

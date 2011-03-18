@@ -74,7 +74,7 @@ void client_warp_pointer_into(xcb_connection_t *conn, Client *client) {
  * Returns true if the client supports the given protocol atom (like WM_DELETE_WINDOW)
  *
  */
-static bool client_supports_protocol(xcb_connection_t *conn, Client *client, xcb_atom_t atom) {
+bool client_supports_protocol(xcb_connection_t *conn, Client *client, xcb_atom_t atom) {
         xcb_get_property_cookie_t cookie;
         xcb_icccm_get_wm_protocols_reply_t protocols;
         bool result = false;

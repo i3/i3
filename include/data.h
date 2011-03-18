@@ -444,6 +444,9 @@ struct Client {
          * one. Therefore, this flag is set when reparenting. */
         bool awaiting_useless_unmap;
 
+        /* Whether the client needs WM_TAKE_FOCUS */
+        bool needs_take_focus;
+
         /* XCB contexts */
         xcb_window_t frame;             /**< Our window: The frame around the
                                          * client */

@@ -280,7 +280,8 @@ void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways) {
         CLIENT_LOG(client);
         /* Set focus to the entered window, and flush xcb buffer immediately */
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->child, XCB_CURRENT_TIME);
-        take_focus(conn, client);
+        if (client->needs_take_focus)
+                take_focus(conn, client);
         ewmh_update_active_window(client->child);
         //xcb_warp_pointer(conn, XCB_NONE, client->child, 0, 0, 0, 0, 10, 10);
 

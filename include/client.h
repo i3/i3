@@ -32,6 +32,12 @@ void client_remove_from_container(xcb_connection_t *conn, Client *client,
 void client_warp_pointer_into(xcb_connection_t *conn, Client *client);
 
 /**
+ * Returns true if the client supports the given protocol atom (like WM_DELETE_WINDOW)
+ *
+ */
+bool client_supports_protocol(xcb_connection_t *conn, Client *client, xcb_atom_t atom);
+
+/**
  * Kills the given window using WM_DELETE_WINDOW or xcb_kill_window
  *
  */
