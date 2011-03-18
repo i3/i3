@@ -306,14 +306,6 @@ int main(int argc, char *argv[]) {
         xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
         root = root_screen->root;
 
-        /* Set up event handlers for key press and key release */
-        xcb_event_handlers_t evenths;
-        memset(&evenths, 0, sizeof(xcb_event_handlers_t));
-        xcb_event_handlers_init(conn, &evenths);
-        xcb_event_set_key_press_handler(&evenths, handle_key_press, NULL);
-        xcb_event_set_key_release_handler(&evenths, handle_key_release, NULL);
-        xcb_event_set_expose_handler(&evenths, handle_expose, NULL);
-
         modeswitchmask = get_mod_mask(conn, XK_Mode_switch);
         numlockmask = get_mod_mask(conn, XK_Num_Lock);
 	symbols = xcb_key_symbols_alloc(conn);
@@ -359,7 +351,32 @@ int main(int argc, char *argv[]) {
 
         xcb_flush(conn);
 
-        xcb_event_wait_for_event_loop(&evenths);
+        xcb_generic_event_t *event;
+        while ((event = xcb_wait_for_event(conn)) != NULL) {
+                if (event->response_type == 0) {
+                        fprintf(stderr, "X11 Error received! sequence %x\n", event->sequence);
+                        continue;
+                }
+
+                /* Strip off the highest bit (set if the event is generated) */
+                int type = (event->response_type & 0x7F);
+
+                switch (type) {
+                        case XCB_KEY_PRESS:
+                                handle_key_press(NULL, conn, (xcb_key_press_event_t*)event);
+                                break;
+
+                        case XCB_KEY_RELEASE:
+                                handle_key_release(NULL, conn, (xcb_key_release_event_t*)event);
+                                break;
+
+                        case XCB_EXPOSE:
+                                handle_expose(NULL, conn, (xcb_expose_event_t*)event);
+                                break;
+                }
+
+                free(event);
+        }
 
         return 0;
 }
