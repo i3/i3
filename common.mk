@@ -27,7 +27,6 @@ CFLAGS += -Wall
 # We don’t want unused-parameter because of the use of many callbacks
 CFLAGS += -Wunused-value
 CFLAGS += -Iinclude
-CFLAGS += -I/usr/local/include
 CFLAGS += $(call cflags_for_lib, xcb-keysyms)
 ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
 CFLAGS += -DXCB_COMPAT
@@ -64,7 +63,6 @@ LDFLAGS += $(call ldflags_for_lib, xcursor, Xcursor)
 LDFLAGS += $(call ldflags_for_lib, x11, X11)
 LDFLAGS += $(call ldflags_for_lib, yajl, yajl)
 LDFLAGS += $(call ldflags_for_lib, libev, ev)
-LDFLAGS += -L/usr/local/lib -L/usr/pkg/lib
 
 ifeq ($(UNAME),NetBSD)
 # We need -idirafter instead of -I to prefer the system’s iconv over GNU libiconv
