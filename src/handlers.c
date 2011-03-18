@@ -13,6 +13,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <limits.h>
+
+/* Contains compatibility definitions for old libxcb versions */
+#ifdef XCB_COMPAT
+#include "xcb_compat.h"
+#endif
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_atom.h>
@@ -22,7 +28,7 @@
 #include <X11/XKBlib.h>
 
 #include "i3.h"
-#include "debug.h"
+#include "handlers.h"
 #include "table.h"
 #include "layout.h"
 #include "commands.h"
@@ -40,6 +46,8 @@
 #include "log.h"
 #include "container.h"
 #include "ipc.h"
+
+int randr_base = -1;
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -81,6 +89,154 @@ static bool event_is_ignored(const int sequence) {
 
         return false;
 }
+
+ /*
+ * Takes an xcb_generic_event_t and calls the appropriate handler, based on the
+ * event type.
+ *
+ */
+void handle_event(int type, xcb_generic_event_t *event) {
+    /* XXX: remove the NULL and conn parameters as soon as this version of libxcb is required */
+
+    if (randr_base > -1 &&
+        type == randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY) {
+        handle_screen_change(NULL, global_conn, event);
+        return;
+    }
+
+    switch (type) {
+        case XCB_KEY_PRESS:
+            handle_key_press(NULL, global_conn, (xcb_key_press_event_t*)event);
+            break;
+
+        case XCB_BUTTON_PRESS:
+            handle_button_press(NULL, global_conn, (xcb_button_press_event_t*)event);
+            break;
+
+        case XCB_MAP_REQUEST:
+            handle_map_request(NULL, global_conn, (xcb_map_request_event_t*)event);
+            break;
+
+        case XCB_UNMAP_NOTIFY:
+            handle_unmap_notify_event(NULL, global_conn, (xcb_unmap_notify_event_t*)event);
+            break;
+
+        case XCB_DESTROY_NOTIFY:
+            handle_destroy_notify_event(NULL, global_conn, (xcb_destroy_notify_event_t*)event);
+            break;
+
+        case XCB_EXPOSE:
+            handle_expose_event(NULL, global_conn, (xcb_expose_event_t*)event);
+            break;
+
+        case XCB_MOTION_NOTIFY:
+            handle_motion_notify(NULL, global_conn, (xcb_motion_notify_event_t*)event);
+            break;
+
+        /* Enter window = user moved his mouse over the window */
+        case XCB_ENTER_NOTIFY:
+            handle_enter_notify(NULL, global_conn, (xcb_enter_notify_event_t*)event);
+            break;
+
+        /* Client message are sent to the root window. The only interesting
+         * client message for us is _NET_WM_STATE, we honour
+         * _NET_WM_STATE_FULLSCREEN */
+        case XCB_CLIENT_MESSAGE:
+            handle_client_message(NULL, global_conn, (xcb_client_message_event_t*)event);
+            break;
+
+        /* Configure request = window tried to change size on its own */
+        case XCB_CONFIGURE_REQUEST:
+            handle_configure_request(NULL, global_conn, (xcb_configure_request_event_t*)event);
+            break;
+
+        case XCB_CONFIGURE_NOTIFY:
+            handle_configure_event(NULL, global_conn, (xcb_configure_notify_event_t*)event);
+            break;
+
+        /* Mapping notify = keyboard mapping changed (Xmodmap), re-grab bindings */
+        case XCB_MAPPING_NOTIFY:
+            handle_mapping_notify(NULL, global_conn, (xcb_mapping_notify_event_t*)event);
+            break;
+
+        case XCB_PROPERTY_NOTIFY:
+            DLOG("Property notify\n");
+            xcb_property_notify_event_t *e = (xcb_property_notify_event_t*)event;
+            property_notify(e->state, e->window, e->atom);
+            break;
+
+        default:
+            DLOG("Unhandled event of type %d\n", type);
+            break;
+    }
+}
+
+typedef int (*cb_property_handler_t)(void *data, xcb_connection_t *c, uint8_t state, xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *property);
+
+struct property_handler_t {
+    xcb_atom_t atom;
+    uint32_t long_len;
+    cb_property_handler_t cb;
+};
+
+static struct property_handler_t property_handlers[] = {
+    { 0, 128, handle_windowname_change },
+    { 0, UINT_MAX, handle_hints },
+    { 0, 128, handle_windowname_change_legacy },
+    { 0, UINT_MAX, handle_normal_hints },
+    { 0, UINT_MAX, handle_clientleader_change },
+    { 0, UINT_MAX, handle_transient_for },
+    { 0, UINT_MAX, handle_windowclass_change }
+};
+#define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
+
+/*
+ * Sets the appropriate atoms for the property handlers after the atoms were
+ * received from X11
+ *
+ */
+void property_handlers_init() {
+    property_handlers[0].atom = A__NET_WM_NAME;
+    property_handlers[1].atom = A_WM_HINTS;
+    property_handlers[2].atom = A_WM_NAME;
+    property_handlers[3].atom = A_WM_NORMAL_HINTS;
+    property_handlers[4].atom = A_WM_CLIENT_LEADER;
+    property_handlers[5].atom = A_WM_TRANSIENT_FOR;
+    property_handlers[6].atom = A_WM_CLASS;
+}
+
+/*
+ * Requests the property and invokes the appropriate callback.
+ *
+ */
+int property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {
+    struct property_handler_t *handler = NULL;
+    xcb_get_property_reply_t *propr = NULL;
+    int ret;
+
+    for (int c = 0; c < sizeof(property_handlers) / sizeof(struct property_handler_t); c++) {
+        if (property_handlers[c].atom != atom)
+            continue;
+
+        handler = &property_handlers[c];
+        break;
+    }
+
+    if (handler == NULL) {
+        DLOG("Unhandled property notify for atom %d (0x%08x)\n", atom, atom);
+        return 0;
+    }
+
+    if (state != XCB_PROPERTY_DELETE) {
+        xcb_get_property_cookie_t cookie = xcb_get_property(global_conn, 0, window, atom, XCB_GET_PROPERTY_TYPE_ANY, 0, handler->long_len);
+        propr = xcb_get_property_reply(global_conn, cookie, 0);
+    }
+
+    ret = handler->cb(NULL, global_conn, state, window, atom, propr);
+    FREE(propr);
+    return ret;
+}
+
 
 /*
  * There was a key press. We compare this key code with our bindings table and pass
@@ -271,7 +427,7 @@ int handle_mapping_notify(void *ignored, xcb_connection_t *conn, xcb_mapping_not
  * A new window appeared on the screen (=was mapped), so let’s manage it.
  *
  */
-int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_event_t *event) {
+int handle_map_request(void *invalid, xcb_connection_t *conn, xcb_map_request_event_t *event) {
         xcb_get_window_attributes_cookie_t cookie;
 
         cookie = xcb_get_window_attributes_unchecked(conn, event->window);
@@ -279,7 +435,7 @@ int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_eve
         DLOG("window = 0x%08x, serial is %d.\n", event->window, event->sequence);
         add_ignore_event(event->sequence);
 
-        manage_window(prophs, conn, event->window, cookie, false);
+        manage_window(conn, event->window, cookie, false);
         return 1;
 }
 
@@ -836,8 +992,8 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
  *
  */
 int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message_event_t *event) {
-        if (event->type == atoms[_NET_WM_STATE]) {
-                if (event->format != 32 || event->data.data32[1] != atoms[_NET_WM_STATE_FULLSCREEN])
+        if (event->type == A__NET_WM_STATE) {
+                if (event->format != 32 || event->data.data32[1] != A__NET_WM_STATE_FULLSCREEN)
                         return 0;
 
                 Client *client = table_get(&by_child, event->window);
@@ -888,17 +1044,17 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
 
         /* If the hints were already in this event, use them, if not, request them */
         if (reply != NULL)
-                xcb_get_wm_size_hints_from_reply(&size_hints, reply);
+                xcb_icccm_get_wm_size_hints_from_reply(&size_hints, reply);
         else
-                xcb_get_wm_normal_hints_reply(conn, xcb_get_wm_normal_hints_unchecked(conn, client->child), &size_hints, NULL);
+                xcb_icccm_get_wm_normal_hints_reply(conn, xcb_icccm_get_wm_normal_hints_unchecked(conn, client->child), &size_hints, NULL);
 
-        if ((size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE)) {
+        if ((size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE)) {
                 // TODO: Minimum size is not yet implemented
                 DLOG("Minimum size: %d (width) x %d (height)\n", size_hints.min_width, size_hints.min_height);
         }
 
         bool changed = false;
-        if ((size_hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)) {
+        if ((size_hints.flags & XCB_ICCCM_SIZE_HINT_P_RESIZE_INC)) {
                 if (size_hints.width_inc > 0 && size_hints.width_inc < 0xFFFF)
                         if (client->width_increment != size_hints.width_inc) {
                                 client->width_increment = size_hints.width_inc;
@@ -919,10 +1075,10 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         /* base_width/height are the desired size of the window.
            We check if either the program-specified size or the program-specified
            min-size is available */
-        if (size_hints.flags & XCB_SIZE_HINT_BASE_SIZE) {
+        if (size_hints.flags & XCB_ICCCM_SIZE_HINT_BASE_SIZE) {
                 base_width = size_hints.base_width;
                 base_height = size_hints.base_height;
-        } else if (size_hints.flags & XCB_SIZE_HINT_P_MIN_SIZE) {
+        } else if (size_hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE) {
                 /* TODO: is this right? icccm says not */
                 base_width = size_hints.min_width;
                 base_height = size_hints.min_height;
@@ -947,7 +1103,7 @@ int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
         }
 
         /* If no aspect ratio was set or if it was invalid, we ignore the hints */
-        if (!(size_hints.flags & XCB_SIZE_HINT_P_ASPECT) ||
+        if (!(size_hints.flags & XCB_ICCCM_SIZE_HINT_P_ASPECT) ||
             (size_hints.min_aspect_num <= 0) ||
             (size_hints.min_aspect_den <= 0)) {
                 return 1;
@@ -996,13 +1152,13 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
                 DLOG("Received WM_HINTS for unknown client\n");
                 return 1;
         }
-        xcb_wm_hints_t hints;
+        xcb_icccm_wm_hints_t hints;
 
         if (reply != NULL) {
-                if (!xcb_get_wm_hints_from_reply(&hints, reply))
+                if (!xcb_icccm_get_wm_hints_from_reply(&hints, reply))
                         return 1;
         } else {
-                if (!xcb_get_wm_hints_reply(conn, xcb_get_wm_hints_unchecked(conn, client->child), &hints, NULL))
+                if (!xcb_icccm_get_wm_hints_reply(conn, xcb_icccm_get_wm_hints_unchecked(conn, client->child), &hints, NULL))
                         return 1;
         }
 
@@ -1013,7 +1169,7 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
         }
 
         /* Update the flag on the client directly */
-        client->urgent = (xcb_wm_hints_get_urgency(&hints) != 0);
+        client->urgent = (xcb_icccm_wm_hints_get_urgency(&hints) != 0);
         CLIENT_LOG(client);
         LOG("Urgency flag changed to %d\n", client->urgent);
 
@@ -1050,10 +1206,10 @@ int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_
         xcb_window_t transient_for;
 
         if (reply != NULL) {
-                if (!xcb_get_wm_transient_for_from_reply(&transient_for, reply))
+                if (!xcb_icccm_get_wm_transient_for_from_reply(&transient_for, reply))
                         return 1;
         } else {
-                if (!xcb_get_wm_transient_for_reply(conn, xcb_get_wm_transient_for_unchecked(conn, window),
+                if (!xcb_icccm_get_wm_transient_for_reply(conn, xcb_icccm_get_wm_transient_for_unchecked(conn, window),
                                                     &transient_for, NULL))
                         return 1;
         }
@@ -1075,7 +1231,7 @@ int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state
                         xcb_atom_t name, xcb_get_property_reply_t *prop) {
         if (prop == NULL) {
                 prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
-                                        false, window, WM_CLIENT_LEADER, WINDOW, 0, 32), NULL);
+                                        false, window, A_WM_CLIENT_LEADER, A_WINDOW, 0, 32), NULL);
                 if (prop == NULL)
                         return 1;
         }

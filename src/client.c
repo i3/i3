@@ -15,6 +15,11 @@
 #include <assert.h>
 #include <limits.h>
 
+/* Contains compatibility definitions for old libxcb versions */
+#ifdef XCB_COMPAT
+#include "xcb_compat.h"
+#endif
+
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
 
@@ -71,11 +76,11 @@ void client_warp_pointer_into(xcb_connection_t *conn, Client *client) {
  */
 static bool client_supports_protocol(xcb_connection_t *conn, Client *client, xcb_atom_t atom) {
         xcb_get_property_cookie_t cookie;
-        xcb_get_wm_protocols_reply_t protocols;
+        xcb_icccm_get_wm_protocols_reply_t protocols;
         bool result = false;
 
-        cookie = xcb_get_wm_protocols_unchecked(conn, client->child, atoms[WM_PROTOCOLS]);
-        if (xcb_get_wm_protocols_reply(conn, cookie, &protocols, NULL) != 1)
+        cookie = xcb_icccm_get_wm_protocols_unchecked(conn, client->child, A_WM_PROTOCOLS);
+        if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) != 1)
                 return false;
 
         /* Check if the client’s protocols have the requested atom set */
@@ -83,7 +88,7 @@ static bool client_supports_protocol(xcb_connection_t *conn, Client *client, xcb
                 if (protocols.atoms[i] == atom)
                         result = true;
 
-        xcb_get_wm_protocols_reply_wipe(&protocols);
+        xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
 
         return result;
 }
@@ -94,7 +99,7 @@ static bool client_supports_protocol(xcb_connection_t *conn, Client *client, xcb
  */
 void client_kill(xcb_connection_t *conn, Client *window) {
         /* If the client does not support WM_DELETE_WINDOW, we kill it the hard way */
-        if (!client_supports_protocol(conn, window, atoms[WM_DELETE_WINDOW])) {
+        if (!client_supports_protocol(conn, window, A_WM_DELETE_WINDOW)) {
                 LOG("Killing window the hard way\n");
                 xcb_kill_client(conn, window->child);
                 return;
@@ -106,9 +111,9 @@ void client_kill(xcb_connection_t *conn, Client *window) {
 
         ev.response_type = XCB_CLIENT_MESSAGE;
         ev.window = window->child;
-        ev.type = atoms[WM_PROTOCOLS];
+        ev.type = A_WM_PROTOCOLS;
         ev.format = 32;
-        ev.data.data32[0] = atoms[WM_DELETE_WINDOW];
+        ev.data.data32[0] = A_WM_DELETE_WINDOW;
         ev.data.data32[1] = XCB_CURRENT_TIME;
 
         LOG("Sending WM_DELETE to the client\n");
@@ -229,8 +234,8 @@ void client_enter_fullscreen(xcb_connection_t *conn, Client *client, bool global
         xcb_configure_window(conn, client->frame, XCB_CONFIG_WINDOW_STACK_MODE, values);
 
         /* Update _NET_WM_STATE */
-        values[0] = atoms[_NET_WM_STATE_FULLSCREEN];
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, atoms[_NET_WM_STATE], ATOM, 32, 1, values);
+        values[0] = A__NET_WM_STATE_FULLSCREEN;
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, A__NET_WM_STATE, A_ATOM, 32, 1, values);
 
         fake_configure_notify(conn, r, client->child);
 
@@ -267,7 +272,7 @@ void client_leave_fullscreen(xcb_connection_t *conn, Client *client) {
         }
 
         /* Update _NET_WM_STATE */
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, atoms[_NET_WM_STATE], ATOM, 32, 0, NULL);
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, A__NET_WM_STATE, A_ATOM, 32, 0, NULL);
 
         xcb_flush(conn);
 }
@@ -401,8 +406,8 @@ void client_change_border(xcb_connection_t *conn, Client *client, char border_ty
  */
 void client_unmap(xcb_connection_t *conn, Client *client) {
         /* Set WM_STATE_WITHDRAWN, it seems like Java apps need it */
-        long data[] = { XCB_WM_STATE_WITHDRAWN, XCB_NONE };
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+        long data[] = { XCB_ICCCM_WM_STATE_WITHDRAWN, XCB_NONE };
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, A_WM_STATE, A_WM_STATE, 32, 2, data);
 
         xcb_unmap_window(conn, client->frame);
 }
@@ -414,8 +419,8 @@ void client_unmap(xcb_connection_t *conn, Client *client) {
 void client_map(xcb_connection_t *conn, Client *client) {
         /* Set WM_STATE_NORMAL because GTK applications don’t want to drag & drop if we don’t.
          * Also, xprop(1) needs that to work. */
-        long data[] = { XCB_WM_STATE_NORMAL, XCB_NONE };
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+        long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->child, A_WM_STATE, A_WM_STATE, 32, 2, data);
 
         xcb_map_window(conn, client->frame);
 }

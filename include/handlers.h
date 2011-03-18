@@ -13,6 +13,28 @@
 
 #include <xcb/randr.h>
 
+extern int randr_base;
+
+/**
+ * Takes an xcb_generic_event_t and calls the appropriate handler, based on the
+ * event type.
+ *
+ */
+void handle_event(int type, xcb_generic_event_t *event);
+
+/**
+ * Requests the property and invokes the appropriate callback.
+ *
+ */
+int property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom);
+
+/**
+ * Sets the appropriate atoms for the property handlers after the atoms were
+ * received from X11
+ *
+ */
+void property_handlers_init();
+
 /**
  * There was a key press. We compare this key code with our bindings table and
  * pass the bound action to parse_command().

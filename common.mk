@@ -40,8 +40,13 @@ LDFLAGS += -lm
 LDFLAGS += -lxcb-event
 LDFLAGS += -lxcb-property
 LDFLAGS += -lxcb-keysyms
+ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
+CFLAGS += -DXCB_COMPAT
 LDFLAGS += -lxcb-atom
 LDFLAGS += -lxcb-aux
+else
+LDFLAGS += -lxcb-util
+endif
 LDFLAGS += -lxcb-icccm
 LDFLAGS += -lxcb-xinerama
 LDFLAGS += -lxcb-randr

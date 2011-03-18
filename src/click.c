@@ -19,6 +19,11 @@
 #include <stdbool.h>
 #include <math.h>
 
+/* Contains compatibility definitions for old libxcb versions */
+#ifdef XCB_COMPAT
+#include "xcb_compat.h"
+#endif
+
 #include <xcb/xcb.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_icccm.h>

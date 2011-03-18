@@ -15,7 +15,6 @@
 #include <assert.h>
 
 #include <xcb/xcb.h>
-#include <xcb/xcb_event.h>
 
 #include "i3.h"
 #include "data.h"

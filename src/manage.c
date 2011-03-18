@@ -37,7 +37,7 @@
  * Go through all existing windows (if the window manager is restarted) and manage them
  *
  */
-void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *prophs, xcb_window_t root) {
+void manage_existing_windows(xcb_connection_t *conn, xcb_window_t root) {
         xcb_query_tree_reply_t *reply;
         int i, len;
         xcb_window_t *children;
@@ -57,7 +57,7 @@ void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t *pr
 
         /* Call manage_window with the attributes for every window */
         for (i = 0; i < len; ++i)
-                manage_window(prophs, conn, children[i], cookies[i], true);
+                manage_window(conn, children[i], cookies[i], true);
 
         free(reply);
         free(cookies);
@@ -89,7 +89,7 @@ void restore_geometry(xcb_connection_t *conn) {
  * Do some sanity checks and then reparent the window.
  *
  */
-void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
+void manage_window(xcb_connection_t *conn,
                    xcb_window_t window, xcb_get_window_attributes_cookie_t cookie,
                    bool needs_to_be_mapped) {
         xcb_drawable_t d = { window };
@@ -127,13 +127,13 @@ void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
                         geom->border_width);
 
         /* Generate callback events for every property we watch */
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_CLASS);
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NAME);
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_NORMAL_HINTS);
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_HINTS);
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, WM_TRANSIENT_FOR);
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[WM_CLIENT_LEADER]);
-        xcb_property_changed(prophs, XCB_PROPERTY_NEW_VALUE, window, atoms[_NET_WM_NAME]);
+        property_notify(XCB_PROPERTY_NEW_VALUE, window, A_WM_CLASS);
+        property_notify(XCB_PROPERTY_NEW_VALUE, window, A_WM_NAME);
+        property_notify(XCB_PROPERTY_NEW_VALUE, window, A_WM_NORMAL_HINTS);
+        property_notify(XCB_PROPERTY_NEW_VALUE, window, A_WM_HINTS);
+        property_notify(XCB_PROPERTY_NEW_VALUE, window, A_WM_TRANSIENT_FOR);
+        property_notify(XCB_PROPERTY_NEW_VALUE, window, A_WM_CLIENT_LEADER);
+        property_notify(XCB_PROPERTY_NEW_VALUE, window, A__NET_WM_NAME);
 
         free(geom);
 out:
@@ -167,13 +167,13 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         xcb_change_window_attributes(conn, child, mask, values);
 
         /* Place requests for properties ASAP */
-        wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_WINDOW_TYPE], UINT32_MAX);
-        strut_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STRUT_PARTIAL], UINT32_MAX);
-        state_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_STATE], UINT32_MAX);
-        utf8_title_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[_NET_WM_NAME], 128);
-        leader_cookie = xcb_get_any_property_unchecked(conn, false, child, atoms[WM_CLIENT_LEADER], UINT32_MAX);
-        title_cookie = xcb_get_any_property_unchecked(conn, false, child, WM_NAME, 128);
-        class_cookie = xcb_get_any_property_unchecked(conn, false, child, WM_CLASS, 128);
+        wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, A__NET_WM_WINDOW_TYPE, UINT32_MAX);
+        strut_cookie = xcb_get_any_property_unchecked(conn, false, child, A__NET_WM_STRUT_PARTIAL, UINT32_MAX);
+        state_cookie = xcb_get_any_property_unchecked(conn, false, child, A__NET_WM_STATE, UINT32_MAX);
+        utf8_title_cookie = xcb_get_any_property_unchecked(conn, false, child, A__NET_WM_NAME, 128);
+        leader_cookie = xcb_get_any_property_unchecked(conn, false, child, A_WM_CLIENT_LEADER, UINT32_MAX);
+        title_cookie = xcb_get_any_property_unchecked(conn, false, child, A_WM_NAME, 128);
+        class_cookie = xcb_get_any_property_unchecked(conn, false, child, A_WM_CLASS, 128);
 
         Client *new = table_get(&by_child, child);
 
@@ -270,7 +270,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         xcb_get_property_reply_t *preply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
         if (preply != NULL && preply->value_len > 0 && (atom = xcb_get_property_value(preply))) {
                 for (int i = 0; i < xcb_get_property_value_length(preply); i++)
-                        if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]) {
+                        if (atom[i] == A__NET_WM_WINDOW_TYPE_DOCK) {
                                 DLOG("Window is a dock.\n");
                                 Output *t_out = get_output_containing(x, y);
                                 if (t_out == NULL)
@@ -289,10 +289,10 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                                 /* If it’s a dock we can’t make it float, so we break */
                                 new->floating = FLOATING_AUTO_OFF;
                                 break;
-                        } else if (atom[i] == atoms[_NET_WM_WINDOW_TYPE_DIALOG] ||
-                                   atom[i] == atoms[_NET_WM_WINDOW_TYPE_UTILITY] ||
-                                   atom[i] == atoms[_NET_WM_WINDOW_TYPE_TOOLBAR] ||
-                                   atom[i] == atoms[_NET_WM_WINDOW_TYPE_SPLASH]) {
+                        } else if (atom[i] == A__NET_WM_WINDOW_TYPE_DIALOG ||
+                                   atom[i] == A__NET_WM_WINDOW_TYPE_UTILITY ||
+                                   atom[i] == A__NET_WM_WINDOW_TYPE_TOOLBAR ||
+                                   atom[i] == A__NET_WM_WINDOW_TYPE_SPLASH) {
                                 /* Set the dialog window to automatically floating, will be used below */
                                 new->floating = FLOATING_AUTO_ON;
                                 DLOG("dialog/utility/toolbar/splash window, automatically floating\n");
@@ -337,16 +337,16 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
                  * changes. It is important that the client was already inserted into the by_child table,
                  * because the callbacks won’t work otherwise. */
                 preply = xcb_get_property_reply(conn, utf8_title_cookie, NULL);
-                handle_windowname_change(NULL, conn, 0, new->child, atoms[_NET_WM_NAME], preply);
+                handle_windowname_change(NULL, conn, 0, new->child, A__NET_WM_NAME, preply);
 
                 preply = xcb_get_property_reply(conn, title_cookie, NULL);
-                handle_windowname_change_legacy(NULL, conn, 0, new->child, WM_NAME, preply);
+                handle_windowname_change_legacy(NULL, conn, 0, new->child, A_WM_NAME, preply);
 
                 preply = xcb_get_property_reply(conn, class_cookie, NULL);
-                handle_windowclass_change(NULL, conn, 0, new->child, WM_CLASS, preply);
+                handle_windowclass_change(NULL, conn, 0, new->child, A_WM_CLASS, preply);
 
                 preply = xcb_get_property_reply(conn, leader_cookie, NULL);
-                handle_clientleader_change(NULL, conn, 0, new->child, atoms[WM_CLIENT_LEADER], preply);
+                handle_clientleader_change(NULL, conn, 0, new->child, A_WM_CLIENT_LEADER, preply);
 
                 /* if WM_CLIENT_LEADER is set, we put the new window on the
                  * same window as its leader. This might be overwritten by
@@ -485,7 +485,7 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
             (state = xcb_get_property_value(preply)) != NULL)
                 /* Check all set _NET_WM_STATEs */
                 for (int i = 0; i < xcb_get_property_value_length(preply); i++) {
-                        if (state[i] != atoms[_NET_WM_STATE_FULLSCREEN])
+                        if (state[i] != A__NET_WM_STATE_FULLSCREEN)
                                 continue;
                         /* If the window got the fullscreen state, we just toggle fullscreen
                            and don’t event bother to redraw the layout – that would not change

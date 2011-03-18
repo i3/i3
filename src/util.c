@@ -233,9 +233,9 @@ void take_focus(xcb_connection_t *conn, Client *client) {
 
     ev.response_type = XCB_CLIENT_MESSAGE;
     ev.window = client->child;
-    ev.type = atoms[WM_PROTOCOLS];
+    ev.type = A_WM_PROTOCOLS;
     ev.format = 32;
-    ev.data.data32[0] = atoms[WM_TAKE_FOCUS];
+    ev.data.data32[0] = A_WM_TAKE_FOCUS;
     ev.data.data32[1] = XCB_CURRENT_TIME;
 
     DLOG("Sending WM_TAKE_FOCUS to the client\n");

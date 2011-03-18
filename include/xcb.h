@@ -43,30 +43,9 @@
                           XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |   /* …subwindows get notifies */ \
                           XCB_EVENT_MASK_ENTER_WINDOW)           /* …user moves cursor inside our window */
 
-
-enum { _NET_SUPPORTED = 0,
-        _NET_SUPPORTING_WM_CHECK,
-        _NET_WM_NAME,
-        _NET_WM_STATE_FULLSCREEN,
-        _NET_WM_STATE,
-        _NET_WM_WINDOW_TYPE,
-        _NET_WM_WINDOW_TYPE_DOCK,
-        _NET_WM_WINDOW_TYPE_DIALOG,
-        _NET_WM_WINDOW_TYPE_UTILITY,
-        _NET_WM_WINDOW_TYPE_TOOLBAR,
-        _NET_WM_WINDOW_TYPE_SPLASH,
-        _NET_WM_DESKTOP,
-        _NET_WM_STRUT_PARTIAL,
-        WM_PROTOCOLS,
-        WM_DELETE_WINDOW,
-        UTF8_STRING,
-        WM_STATE,
-        WM_CLIENT_LEADER,
-        _NET_CURRENT_DESKTOP,
-        _NET_ACTIVE_WINDOW,
-        _NET_WORKAREA,
-        WM_TAKE_FOCUS
-};
+#define xmacro(atom) xcb_atom_t A_ ## atom;
+#include "atoms.xmacro"
+#undef xmacro
 
 extern unsigned int xcb_numlock_mask;
 

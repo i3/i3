@@ -15,19 +15,18 @@
 #include <assert.h>
 
 #include <xcb/xcb.h>
-#include <xcb/xcb_event.h>
 
 #include "i3.h"
 #include "config.h"
 #include "data.h"
 #include "util.h"
 #include "xcb.h"
-#include "debug.h"
 #include "layout.h"
 #include "client.h"
 #include "floating.h"
 #include "workspace.h"
 #include "log.h"
+#include "handlers.h"
 
 /*
  * Toggles floating mode for the given client.
@@ -404,19 +403,15 @@ void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event
         while ((inside_event = xcb_wait_for_event(conn))) {
                 /* We now handle all events we can get using xcb_poll_for_event */
                 do {
-                        /* Same as get_event_handler in xcb */
-                        int nr = inside_event->response_type;
-                        if (nr == 0) {
-                                /* An error occured */
-                                handle_event(NULL, conn, inside_event);
+                        /* skip x11 errors */
+                        if (inside_event->response_type == 0) {
                                 free(inside_event);
                                 continue;
                         }
-                        assert(nr < 256);
-                        nr &= XCB_EVENT_RESPONSE_TYPE_MASK;
-                        assert(nr >= 2);
+                        /* Strip off the highest bit (set if the event is generated) */
+                        int type = (inside_event->response_type & 0x7F);
 
-                        switch (nr) {
+                        switch (type) {
                                 case XCB_BUTTON_RELEASE:
                                         goto done;
 
@@ -428,13 +423,13 @@ void drag_pointer(xcb_connection_t *conn, Client *client, xcb_button_press_event
 
                                 case XCB_UNMAP_NOTIFY:
                                         DLOG("Unmap-notify, aborting\n");
-                                        xcb_event_handle(&evenths, inside_event);
+                                        handle_event(type, inside_event);
                                         goto done;
 
                                 default:
                                         DLOG("Passing to original handler\n");
                                         /* Use original handler */
-                                        xcb_event_handle(&evenths, inside_event);
+                                        handle_event(type, inside_event);
                                         break;
                         }
                         if (last_motion_notify != inside_event)

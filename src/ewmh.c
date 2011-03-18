@@ -31,7 +31,7 @@
 void ewmh_update_current_desktop() {
         uint32_t current_desktop = c_ws->num;
         xcb_change_property(global_conn, XCB_PROP_MODE_REPLACE, root,
-                            atoms[_NET_CURRENT_DESKTOP], CARDINAL, 32, 1,
+                            A__NET_CURRENT_DESKTOP, A_CARDINAL, 32, 1,
                             &current_desktop);
 }
 
@@ -44,7 +44,7 @@ void ewmh_update_current_desktop() {
  */
 void ewmh_update_active_window(xcb_window_t window) {
         xcb_change_property(global_conn, XCB_PROP_MODE_REPLACE, root,
-                            atoms[_NET_ACTIVE_WINDOW], WINDOW, 32, 1, &window);
+                            A__NET_ACTIVE_WINDOW, A_WINDOW, 32, 1, &window);
 }
 
 /*
@@ -95,7 +95,7 @@ void ewmh_update_workarea() {
                 memcpy(&last_rect, &(ws->rect), sizeof(Rect));
         }
         xcb_change_property(global_conn, XCB_PROP_MODE_REPLACE, root,
-                            atoms[_NET_WORKAREA], CARDINAL, 32,
+                            A__NET_WORKAREA, A_CARDINAL, 32,
                             num_workspaces * (sizeof(Rect) / sizeof(uint32_t)),
                             workarea);
         free(workarea);

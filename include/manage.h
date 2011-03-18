@@ -20,8 +20,7 @@
  * manage them
  *
  */
-void manage_existing_windows(xcb_connection_t *conn, xcb_property_handlers_t
-                             *prophs, xcb_window_t root);
+void manage_existing_windows(xcb_connection_t *conn, xcb_window_t root);
 
 /**
  * Restores the geometry of each window by reparenting it to the root window
@@ -37,7 +36,7 @@ void restore_geometry(xcb_connection_t *conn);
  * Do some sanity checks and then reparent the window.
  *
  */
-void manage_window(xcb_property_handlers_t *prophs, xcb_connection_t *conn,
+void manage_window(xcb_connection_t *conn,
                    xcb_window_t window,
                    xcb_get_window_attributes_cookie_t cookie,
                    bool needs_to_be_mapped);
