@@ -15,9 +15,6 @@ extern Con *focused;
 char **start_argv;
 
 xcb_connection_t *conn;
-xcb_event_handlers_t evenths;
-xcb_property_handlers_t prophs;
-xcb_atom_t atoms[NUM_ATOMS];
 
 xcb_window_t root;
 uint8_t root_depth;
@@ -66,8 +63,17 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
     xcb_generic_event_t *event;
 
     while ((event = xcb_poll_for_event(conn)) != NULL) {
-            xcb_event_handle(&evenths, event);
-            free(event);
+        if (event->response_type == 0) {
+            ELOG("X11 Error received! sequence %x\n", event->sequence);
+            continue;
+        }
+
+        /* Strip off the highest bit (set if the event is generated) */
+        int type = (event->response_type & 0x7F);
+
+        handle_event(type, event);
+
+        free(event);
     }
 }
 
@@ -149,7 +155,6 @@ int main(int argc, char *argv[]) {
     bool only_check_config = false;
     bool force_xinerama = false;
     bool disable_signalhandler = false;
-    xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
     static struct option long_options[] = {
         {"no-autostart", no_argument, 0, 'a'},
         {"config", required_argument, 0, 'c'},
@@ -272,30 +277,10 @@ int main(int argc, char *argv[]) {
     check_error(conn, cookie, "Another window manager seems to be running");
 
     /* Place requests for the atoms we need as soon as possible */
-    #define REQUEST_ATOM(name) atom_cookies[name] = xcb_intern_atom(conn, 0, strlen(#name), #name);
-
-    REQUEST_ATOM(_NET_SUPPORTED);
-    REQUEST_ATOM(_NET_WM_STATE_FULLSCREEN);
-    REQUEST_ATOM(_NET_SUPPORTING_WM_CHECK);
-    REQUEST_ATOM(_NET_WM_NAME);
-    REQUEST_ATOM(_NET_WM_STATE);
-    REQUEST_ATOM(_NET_WM_WINDOW_TYPE);
-    REQUEST_ATOM(_NET_WM_DESKTOP);
-    REQUEST_ATOM(_NET_WM_WINDOW_TYPE_DOCK);
-    REQUEST_ATOM(_NET_WM_WINDOW_TYPE_DIALOG);
-    REQUEST_ATOM(_NET_WM_WINDOW_TYPE_UTILITY);
-    REQUEST_ATOM(_NET_WM_WINDOW_TYPE_TOOLBAR);
-    REQUEST_ATOM(_NET_WM_WINDOW_TYPE_SPLASH);
-    REQUEST_ATOM(_NET_WM_STRUT_PARTIAL);
-    REQUEST_ATOM(WM_PROTOCOLS);
-    REQUEST_ATOM(WM_DELETE_WINDOW);
-    REQUEST_ATOM(UTF8_STRING);
-    REQUEST_ATOM(WM_STATE);
-    REQUEST_ATOM(WM_CLIENT_LEADER);
-    REQUEST_ATOM(_NET_CURRENT_DESKTOP);
-    REQUEST_ATOM(_NET_ACTIVE_WINDOW);
-    REQUEST_ATOM(_NET_WORKAREA);
-    REQUEST_ATOM(WM_TAKE_FOCUS);
+    #define xmacro(atom) \
+        xcb_intern_atom_cookie_t atom ## _cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
+    #include "atoms.xmacro"
+    #undef xmacro
 
     /* Initialize the Xlib connection */
     xlibdpy = xkbdpy = XOpenDisplay(NULL);
@@ -338,95 +323,32 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    memset(&evenths, 0, sizeof(xcb_event_handlers_t));
-    memset(&prophs, 0, sizeof(xcb_property_handlers_t));
-
-    xcb_event_handlers_init(conn, &evenths);
-    xcb_property_handlers_init(&prophs, &evenths);
-    xcb_event_set_key_press_handler(&evenths, handle_key_press, NULL);
-
-    xcb_event_set_button_press_handler(&evenths, handle_button_press, NULL);
-
-    xcb_event_set_map_request_handler(&evenths, handle_map_request, NULL);
-
-    xcb_event_set_unmap_notify_handler(&evenths, handle_unmap_notify_event, NULL);
-    xcb_event_set_destroy_notify_handler(&evenths, handle_destroy_notify_event, NULL);
-
-    xcb_event_set_expose_handler(&evenths, handle_expose_event, NULL);
-
-    xcb_event_set_motion_notify_handler(&evenths, handle_motion_notify, NULL);
-
-    /* Enter window = user moved his mouse over the window */
-    xcb_event_set_enter_notify_handler(&evenths, handle_enter_notify, NULL);
-
-    /* Client message are sent to the root window. The only interesting client message
-       for us is _NET_WM_STATE, we honour _NET_WM_STATE_FULLSCREEN */
-    xcb_event_set_client_message_handler(&evenths, handle_client_message, NULL);
-
-    /* Configure request = window tried to change size on its own */
-    xcb_event_set_configure_request_handler(&evenths, handle_configure_request, NULL);
-
     /* Setup NetWM atoms */
-    #define GET_ATOM(name) \
+    #define xmacro(name) \
         do { \
-            xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, atom_cookies[name], NULL); \
+            xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name ## _cookie, NULL); \
             if (!reply) { \
                 ELOG("Could not get atom " #name "\n"); \
                 exit(-1); \
             } \
-            atoms[name] = reply->atom; \
+            A_ ## name = reply->atom; \
             free(reply); \
-        } while (0)
+        } while (0);
+    #include "atoms.xmacro"
+    #undef xmacro
 
-    GET_ATOM(_NET_SUPPORTED);
-    GET_ATOM(_NET_WM_STATE_FULLSCREEN);
-    GET_ATOM(_NET_SUPPORTING_WM_CHECK);
-    GET_ATOM(_NET_WM_NAME);
-    GET_ATOM(_NET_WM_STATE);
-    GET_ATOM(_NET_WM_WINDOW_TYPE);
-    GET_ATOM(_NET_WM_DESKTOP);
-    GET_ATOM(_NET_WM_WINDOW_TYPE_DOCK);
-    GET_ATOM(_NET_WM_WINDOW_TYPE_DIALOG);
-    GET_ATOM(_NET_WM_WINDOW_TYPE_UTILITY);
-    GET_ATOM(_NET_WM_WINDOW_TYPE_TOOLBAR);
-    GET_ATOM(_NET_WM_WINDOW_TYPE_SPLASH);
-    GET_ATOM(_NET_WM_STRUT_PARTIAL);
-    GET_ATOM(WM_PROTOCOLS);
-    GET_ATOM(WM_DELETE_WINDOW);
-    GET_ATOM(UTF8_STRING);
-    GET_ATOM(WM_STATE);
-    GET_ATOM(WM_CLIENT_LEADER);
-    GET_ATOM(_NET_CURRENT_DESKTOP);
-    GET_ATOM(_NET_ACTIVE_WINDOW);
-    GET_ATOM(_NET_WORKAREA);
-    GET_ATOM(WM_TAKE_FOCUS);
-
-    /* Watch _NET_WM_NAME (title of the window encoded in UTF-8) */
-    xcb_property_set_handler(&prophs, atoms[_NET_WM_NAME], 128, handle_windowname_change, NULL);
-
-    /* Watch WM_HINTS (contains the urgent property) */
-    xcb_property_set_handler(&prophs, WM_HINTS, UINT_MAX, handle_hints, NULL);
-
-    /* Watch WM_NAME (title of the window encoded in COMPOUND_TEXT) */
-    xcb_watch_wm_name(&prophs, 128, handle_windowname_change_legacy, NULL);
-
-    /* Watch WM_NORMAL_HINTS (aspect ratio, size increments, …) */
-    xcb_property_set_handler(&prophs, WM_NORMAL_HINTS, UINT_MAX, handle_normal_hints, NULL);
-
-    /* Watch WM_CLIENT_LEADER (= logical parent window for toolbars etc.) */
-    xcb_property_set_handler(&prophs, atoms[WM_CLIENT_LEADER], UINT_MAX, handle_clientleader_change, NULL);
-
-    /* Watch WM_TRANSIENT_FOR property (to which client this popup window belongs) */
-    xcb_property_set_handler(&prophs, WM_TRANSIENT_FOR, UINT_MAX, handle_transient_for, NULL);
-
-    /* Mapping notify = keyboard mapping changed (Xmodmap), re-grab bindings */
-    xcb_event_set_mapping_notify_handler(&evenths, handle_mapping_notify, NULL);
+    property_handlers_init();
 
     /* Set up the atoms we support */
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTED], ATOM, 32, 7, atoms);
+    xcb_atom_t supported_atoms[] = {
+#define xmacro(atom) A_ ## atom,
+#include "atoms.xmacro"
+#undef xmacro
+    };
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, A_ATOM, 32, 7, supported_atoms);
     /* Set up the window manager’s name */
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_SUPPORTING_WM_CHECK], WINDOW, 32, 1, &root);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, atoms[_NET_WM_NAME], atoms[UTF8_STRING], 8, strlen("i3"), "i3");
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTING_WM_CHECK, A_WINDOW, 32, 1, &root);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
 
     keysyms = xcb_key_symbols_alloc(conn);
 
@@ -446,17 +368,11 @@ int main(int argc, char *argv[]) {
     if (needs_tree_init)
         tree_init();
 
-    int randr_base;
     if (force_xinerama) {
         xinerama_init();
     } else {
         DLOG("Checking for XRandR...\n");
         randr_init(&randr_base);
-
-        xcb_event_set_handler(&evenths,
-                              randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY,
-                              handle_screen_change,
-                              NULL);
     }
 
     tree_render();

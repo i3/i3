@@ -26,9 +26,13 @@
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
-#include <xcb/xcb_event.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
+
+/* Contains compatibility definitions for old libxcb versions */
+#ifdef XCB_COMPAT
+#include "xcb_compat.h"
+#endif
 
 #include "util.h"
 #include "ipc.h"

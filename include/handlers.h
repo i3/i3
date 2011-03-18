@@ -13,8 +13,23 @@
 
 #include <xcb/randr.h>
 
+extern int randr_base;
 
 void add_ignore_event(const int sequence);
+
+/**
+ * Takes an xcb_generic_event_t and calls the appropriate handler, based on the
+ * event type.
+ *
+ */
+void handle_event(int type, xcb_generic_event_t *event);
+
+/**
+ * Sets the appropriate atoms for the property handlers after the atoms were
+ * received from X11
+ *
+ */
+void property_handlers_init();
 
 /**
  * There was a key press. We compare this key code with our bindings table and

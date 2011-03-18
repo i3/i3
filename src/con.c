@@ -504,10 +504,10 @@ void con_toggle_fullscreen(Con *con) {
     unsigned int num = 0;
 
     if (con->fullscreen_mode != CF_NONE)
-        values[num++] = atoms[_NET_WM_STATE_FULLSCREEN];
+        values[num++] = A__NET_WM_STATE_FULLSCREEN;
 
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
-                        atoms[_NET_WM_STATE], ATOM, 32, num, values);
+                        A__NET_WM_STATE, A_ATOM, 32, num, values);
 }
 
 /*

@@ -136,7 +136,7 @@ void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop) 
     }
 
     xcb_window_t transient_for;
-    if (!xcb_get_wm_transient_for_from_reply(&transient_for, prop))
+    if (!xcb_icccm_get_wm_transient_for_from_reply(&transient_for, prop))
         return;
 
     DLOG("Transient for changed to %08x\n", transient_for);

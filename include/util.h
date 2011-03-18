@@ -8,7 +8,6 @@
  * See file LICENSE for license information.
  *
  */
-#include <xcb/xcb.h>
 #include <err.h>
 
 #include "data.h"

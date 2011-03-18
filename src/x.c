@@ -180,11 +180,11 @@ void x_con_kill(Con *con) {
  */
 static bool window_supports_protocol(xcb_window_t window, xcb_atom_t atom) {
     xcb_get_property_cookie_t cookie;
-    xcb_get_wm_protocols_reply_t protocols;
+    xcb_icccm_get_wm_protocols_reply_t protocols;
     bool result = false;
 
-    cookie = xcb_get_wm_protocols_unchecked(conn, window, atoms[WM_PROTOCOLS]);
-    if (xcb_get_wm_protocols_reply(conn, cookie, &protocols, NULL) != 1)
+    cookie = xcb_icccm_get_wm_protocols_unchecked(conn, window, A_WM_PROTOCOLS);
+    if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) != 1)
         return false;
 
     /* Check if the client’s protocols have the requested atom set */
@@ -192,7 +192,7 @@ static bool window_supports_protocol(xcb_window_t window, xcb_atom_t atom) {
         if (protocols.atoms[i] == atom)
             result = true;
 
-    xcb_get_wm_protocols_reply_wipe(&protocols);
+    xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
 
     return result;
 }
@@ -203,7 +203,7 @@ static bool window_supports_protocol(xcb_window_t window, xcb_atom_t atom) {
  */
 void x_window_kill(xcb_window_t window) {
     /* if this window does not support WM_DELETE_WINDOW, we kill it the hard way */
-    if (!window_supports_protocol(window, atoms[WM_DELETE_WINDOW])) {
+    if (!window_supports_protocol(window, A_WM_DELETE_WINDOW)) {
         LOG("Killing window the hard way\n");
         xcb_kill_client(conn, window);
         return;
@@ -215,9 +215,9 @@ void x_window_kill(xcb_window_t window) {
 
     ev.response_type = XCB_CLIENT_MESSAGE;
     ev.window = window;
-    ev.type = atoms[WM_PROTOCOLS];
+    ev.type = A_WM_PROTOCOLS;
     ev.format = 32;
-    ev.data.data32[0] = atoms[WM_DELETE_WINDOW];
+    ev.data.data32[0] = A_WM_DELETE_WINDOW;
     ev.data.data32[1] = XCB_CURRENT_TIME;
 
     LOG("Sending WM_DELETE to the client\n");
@@ -389,7 +389,7 @@ static void x_push_node(Con *con) {
         DLOG("pushing name %s for con %p\n", state->name, con);
 
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->frame,
-                            WM_NAME, STRING, 8, strlen(state->name), state->name);
+                            A_WM_NAME, A_STRING, 8, strlen(state->name), state->name);
         FREE(state->name);
     }
 
@@ -468,9 +468,9 @@ static void x_push_node(Con *con) {
         if (con->window != NULL) {
             /* Set WM_STATE_NORMAL because GTK applications don’t want to
              * drag & drop if we don’t. Also, xprop(1) needs it. */
-            long data[] = { XCB_WM_STATE_NORMAL, XCB_NONE };
+            long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };
             xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
-                                atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+                                A_WM_STATE, A_WM_STATE, 32, 2, data);
         }
 
         if (!state->child_mapped && con->window != NULL) {
@@ -528,9 +528,9 @@ static void x_push_node_unmaps(Con *con) {
         xcb_void_cookie_t cookie;
         if (con->window != NULL) {
             /* Set WM_STATE_WITHDRAWN, it seems like Java apps need it */
-            long data[] = { XCB_WM_STATE_WITHDRAWN, XCB_NONE };
+            long data[] = { XCB_ICCCM_WM_STATE_WITHDRAWN, XCB_NONE };
             xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
-                                atoms[WM_STATE], atoms[WM_STATE], 32, 2, data);
+                                A_WM_STATE, A_WM_STATE, 32, 2, data);
         }
 
         cookie = xcb_unmap_window(conn, con->frame);
@@ -624,9 +624,9 @@ void x_push_changes(Con *con) {
 
             ev.response_type = XCB_CLIENT_MESSAGE;
             ev.window = to_focus;
-            ev.type = atoms[WM_PROTOCOLS];
+            ev.type = A_WM_PROTOCOLS;
             ev.format = 32;
-            ev.data.data32[0] = atoms[WM_TAKE_FOCUS];
+            ev.data.data32[0] = A_WM_TAKE_FOCUS;
             ev.data.data32[1] = XCB_CURRENT_TIME;
 
             DLOG("Sending WM_TAKE_FOCUS to the client\n");

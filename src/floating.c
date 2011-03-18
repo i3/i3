@@ -374,19 +374,15 @@ void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
     while ((inside_event = xcb_wait_for_event(conn))) {
         /* We now handle all events we can get using xcb_poll_for_event */
         do {
-            /* Same as get_event_handler in xcb */
-            int nr = inside_event->response_type;
-            if (nr == 0) {
-                /* An error occured */
-                //handle_event(NULL, conn, inside_event);
+            /* skip x11 errors */
+            if (inside_event->response_type == 0) {
                 free(inside_event);
                 continue;
             }
-            assert(nr < 256);
-            nr &= XCB_EVENT_RESPONSE_TYPE_MASK;
-            assert(nr >= 2);
+            /* Strip off the highest bit (set if the event is generated) */
+            int type = (inside_event->response_type & 0x7F);
 
-            switch (nr) {
+            switch (type) {
                 case XCB_BUTTON_RELEASE:
                     goto done;
 
@@ -398,13 +394,13 @@ void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
 
                 case XCB_UNMAP_NOTIFY:
                     DLOG("Unmap-notify, aborting\n");
-                    xcb_event_handle(&evenths, inside_event);
+                    handle_event(type, inside_event);
                     goto done;
 
                 default:
                     DLOG("Passing to original handler\n");
                     /* Use original handler */
-                    xcb_event_handle(&evenths, inside_event);
+                    handle_event(type, inside_event);
                     break;
             }
             if (last_motion_notify != inside_event)

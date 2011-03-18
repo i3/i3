@@ -26,12 +26,7 @@
 
 #include <X11/keysym.h>
 
-#include "i3.h"
-#include "util.h"
-#include "xcb.h"
-#include "log.h"
-#include "config.h"
-#include "randr.h"
+#include "all.h"
 
 static xcb_gcontext_t pixmap_gc;
 static xcb_pixmap_t pixmap;
@@ -159,12 +154,6 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
     sigaction(sig, &action, NULL);
     raised_signal = sig;
 
-    /* setup event handler for key presses */
-    xcb_event_handlers_t sig_evenths;
-    memset(&sig_evenths, 0, sizeof(xcb_event_handlers_t));
-    xcb_event_handlers_init(conn, &sig_evenths);
-    xcb_event_set_key_press_handler(&sig_evenths, sig_handle_key_press, NULL);
-
     /* width and height of the popup window, so that the text fits in */
     int crash_text_num = sizeof(crash_text) / sizeof(char*);
     int height = 13 + (crash_text_num * config.font.height);
@@ -203,7 +192,16 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         xcb_flush(conn);
     }
 
-    xcb_event_wait_for_event_loop(&sig_evenths);
+    xcb_generic_event_t *event;
+    /* Yay, more own eventhandlers… */
+    while ((event = xcb_wait_for_event(conn))) {
+        /* Strip off the highest bit (set if the event is generated) */
+        int type = (event->response_type & 0x7F);
+        if (type == XCB_KEY_PRESS) {
+            sig_handle_key_press(NULL, conn, (xcb_key_press_event_t*)event);
+        }
+        free(event);
+    }
 }
 
 /*

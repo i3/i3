@@ -7,7 +7,6 @@
  * include/data.h: This file defines all data structures used by i3
  *
  */
-#include <xcb/xcb.h>
 #include <xcb/randr.h>
 #include <xcb/xcb_atom.h>
 #include <stdbool.h>

@@ -11,6 +11,10 @@ endif
 GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch $(shell [ -f .git/HEAD ] && sed 's/ref: refs\/heads\/\(.*\)/\\\\\\"\1\\\\\\"/g' .git/HEAD || echo 'unknown'))"
 VERSION:=$(shell git describe --tags --abbrev=0)
 
+ifeq ($(shell which pkg-config 2>/dev/null 1>/dev/null || echo 1),1)
+$(error "pkg-config was not found")
+endif
+
 # An easier way to get CFLAGS and LDFLAGS falling back in case there's
 # no pkg-config support for certain libraries
 cflags_for_lib = $(shell pkg-config --silence-errors --cflags $(1))
@@ -24,11 +28,14 @@ CFLAGS += -Wall
 CFLAGS += -Wunused-value
 CFLAGS += -Iinclude
 CFLAGS += -I/usr/local/include
-CFLAGS += $(call cflags_for_lib, xcb-event)
-CFLAGS += $(call cflags_for_lib, xcb-property)
 CFLAGS += $(call cflags_for_lib, xcb-keysyms)
+ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
+CFLAGS += -DXCB_COMPAT
 CFLAGS += $(call cflags_for_lib, xcb-atom)
 CFLAGS += $(call cflags_for_lib, xcb-aux)
+else
+CFLAGS += $(call cflags_for_lib, xcb-util)
+endif
 CFLAGS += $(call cflags_for_lib, xcb-icccm)
 CFLAGS += $(call cflags_for_lib, xcb-xinerama)
 CFLAGS += $(call cflags_for_lib, xcb-randr)
@@ -44,8 +51,12 @@ LDFLAGS += -lm
 LDFLAGS += $(call ldflags_for_lib, xcb-event, xcb-event)
 LDFLAGS += $(call ldflags_for_lib, xcb-property, xcb-property)
 LDFLAGS += $(call ldflags_for_lib, xcb-keysyms, xcb-keysyms)
+ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
 LDFLAGS += $(call ldflags_for_lib, xcb-atom, xcb-atom)
 LDFLAGS += $(call ldflags_for_lib, xcb-aux, xcb-aux)
+else
+LDFLAGS += $(call ldflags_for_lib, xcb-util)
+endif
 LDFLAGS += $(call ldflags_for_lib, xcb-icccm, xcb-icccm)
 LDFLAGS += $(call ldflags_for_lib, xcb-xinerama, xcb-xinerama)
 LDFLAGS += $(call ldflags_for_lib, xcb-randr, xcb-randr)
