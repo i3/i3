@@ -49,7 +49,6 @@ CFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
 
 LDFLAGS += -lm
 LDFLAGS += $(call ldflags_for_lib, xcb-event, xcb-event)
-LDFLAGS += $(call ldflags_for_lib, xcb-property, xcb-property)
 LDFLAGS += $(call ldflags_for_lib, xcb-keysyms, xcb-keysyms)
 ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
 LDFLAGS += $(call ldflags_for_lib, xcb-atom, xcb-atom)
