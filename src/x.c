@@ -258,13 +258,37 @@ void x_draw_decoration(Con *con) {
     Con *parent = con->parent;
     int border_style = con_border_style(con);
 
-    /* 2: draw a rectangle in border color around the client */
+    /* 2: draw the client.background, but only for the parts around the client_rect */
+    Rect *r = &(con->rect);
+    Rect *w = &(con->window_rect);
+
+    xcb_rectangle_t background[] = {
+        /* top area */
+        { 0, con->deco_rect.height, r->width, w->y },
+        /* bottom area */
+        { 0, (w->y + w->height), r->width, r->height - (w->y + w->height) },
+        /* right area */
+        { w->width, con->deco_rect.height, r->width - (w->x + w->width), r->height }
+    };
+#if 0
+    for (int i = 0; i < 3; i++)
+        DLOG("rect is (%d, %d) with %d x %d\n",
+                background[i].x,
+                background[i].y,
+                background[i].width,
+                background[i].height
+            );
+#endif
+
+    xcb_change_gc_single(conn, con->gc, XCB_GC_FOREGROUND, config.client.background);
+    xcb_poly_fill_rectangle(conn, con->frame, con->gc, sizeof(background) / sizeof(xcb_rectangle_t), background);
+
+    /* 3: draw a rectangle in border color around the client */
     if (border_style != BS_NONE && con_is_leaf(con)) {
         Rect br = con_border_style_rect(con);
-        Rect *r = &(con->rect);
 #if 0
         DLOG("con->rect spans %d x %d\n", con->rect.width, con->rect.height);
-        DLOG("border_rect spans (%d, %d) with %d x %d\n", border_rect.x, border_rect.y, border_rect.width, border_rect.height);
+        DLOG("border_rect spans (%d, %d) with %d x %d\n", br.x, br.y, br.width, br.height);
         DLOG("window_rect spans (%d, %d) with %d x %d\n", con->window_rect.x, con->window_rect.y, con->window_rect.width, con->window_rect.height);
 #endif
 
@@ -293,12 +317,12 @@ void x_draw_decoration(Con *con) {
         return;
     }
 
-    /* 3: paint the bar */
+    /* 4: paint the bar */
     xcb_change_gc_single(conn, parent->gc, XCB_GC_FOREGROUND, color->background);
     xcb_rectangle_t drect = { con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height };
     xcb_poly_fill_rectangle(conn, parent->frame, parent->gc, 1, &drect);
 
-    /* 4: draw the two lines in border color */
+    /* 5: draw the two lines in border color */
     xcb_draw_line(conn, parent->frame, parent->gc, color->border,
             con->deco_rect.x, /* x */
             con->deco_rect.y, /* y */
@@ -310,7 +334,7 @@ void x_draw_decoration(Con *con) {
             con->deco_rect.x + con->deco_rect.width, /* to_x */
             con->deco_rect.y + con->deco_rect.height - 1); /* to_y */
 
-    /* 5: draw the title */
+    /* 6: draw the title */
     uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
     uint32_t values[] = { color->text, color->background, config.font.id };
     xcb_change_gc(conn, parent->gc, mask, values);
