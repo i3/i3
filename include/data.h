@@ -246,6 +246,9 @@ struct Window {
     /** Whether the application used _NET_WM_NAME */
     bool uses_net_wm_name;
 
+    /** Whether the application needs to receive WM_TAKE_FOCUS */
+    bool needs_take_focus;
+
     /** Whether the window says it is a dock window */
     enum { W_NODOCK = 0, W_DOCK_TOP = 1, W_DOCK_BOTTOM = 2 } dock;
 

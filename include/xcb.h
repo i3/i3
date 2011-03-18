@@ -117,6 +117,12 @@ void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window);
 void fake_absolute_configure_notify(Con *con);
 
 /**
+ * Sends the WM_TAKE_FOCUS ClientMessage to the given window
+ *
+ */
+void send_take_focus(xcb_window_t window);
+
+/**
  * Finds out which modifier mask is the one for numlock, as the user may
  * change this.
  *

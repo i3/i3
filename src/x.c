@@ -178,7 +178,7 @@ void x_con_kill(Con *con) {
  * Returns true if the client supports the given protocol atom (like WM_DELETE_WINDOW)
  *
  */
-static bool window_supports_protocol(xcb_window_t window, xcb_atom_t atom) {
+bool window_supports_protocol(xcb_window_t window, xcb_atom_t atom) {
     xcb_get_property_cookie_t cookie;
     xcb_icccm_get_wm_protocols_reply_t protocols;
     bool result = false;
@@ -618,19 +618,10 @@ void x_push_changes(Con *con) {
             xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, XCB_CURRENT_TIME);
 
             /* TODO: check if that client acccepts WM_TAKE_FOCUS at all */
-            xcb_client_message_event_t ev;
-
-            memset(&ev, 0, sizeof(xcb_client_message_event_t));
-
-            ev.response_type = XCB_CLIENT_MESSAGE;
-            ev.window = to_focus;
-            ev.type = A_WM_PROTOCOLS;
-            ev.format = 32;
-            ev.data.data32[0] = A_WM_TAKE_FOCUS;
-            ev.data.data32[1] = XCB_CURRENT_TIME;
-
-            DLOG("Sending WM_TAKE_FOCUS to the client\n");
-            xcb_send_event(conn, false, to_focus, XCB_EVENT_MASK_NO_EVENT, (char*)&ev);
+            if (focused->window != NULL &&
+                focused->window->needs_take_focus) {
+                send_take_focus(to_focus);
+            }
 
             ewmh_update_active_window(to_focus);
             focused_id = to_focus;

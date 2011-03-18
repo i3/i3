@@ -40,6 +40,12 @@ void x_reinit(Con *con);
 void x_con_kill(Con *con);
 
 /**
+ * Returns true if the client supports the given protocol atom (like WM_DELETE_WINDOW)
+ *
+ */
+bool window_supports_protocol(xcb_window_t window, xcb_atom_t atom);
+
+/**
  * Kills the given X11 window using WM_DELETE_WINDOW (if supported).
  *
  */

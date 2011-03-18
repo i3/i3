@@ -156,6 +156,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_transient_for(cwindow, xcb_get_property_reply(conn, transient_cookie, NULL));
     window_update_strut_partial(cwindow, xcb_get_property_reply(conn, strut_cookie, NULL));
 
+    /* check if the window needs WM_TAKE_FOCUS */
+    cwindow->needs_take_focus = window_supports_protocol(cwindow->id, A_WM_TAKE_FOCUS);
+
     /* Where to start searching for a container that swallows the new one? */
     Con *search_at = croot;
 

@@ -207,6 +207,26 @@ void fake_absolute_configure_notify(Con *con) {
 }
 
 /*
+ * Sends the WM_TAKE_FOCUS ClientMessage to the given window
+ *
+ */
+void send_take_focus(xcb_window_t window) {
+    xcb_client_message_event_t ev;
+
+    memset(&ev, 0, sizeof(xcb_client_message_event_t));
+
+    ev.response_type = XCB_CLIENT_MESSAGE;
+    ev.window = window;
+    ev.type = A_WM_PROTOCOLS;
+    ev.format = 32;
+    ev.data.data32[0] = A_WM_TAKE_FOCUS;
+    ev.data.data32[1] = XCB_CURRENT_TIME;
+
+    DLOG("Sending WM_TAKE_FOCUS to the client\n");
+    xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char*)&ev);
+}
+
+/*
  * Finds out which modifier mask is the one for numlock, as the user may change this.
  *
  */
