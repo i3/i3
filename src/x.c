@@ -617,7 +617,6 @@ void x_push_changes(Con *con) {
             DLOG("Updating focus (focused: %p / %s)\n", focused, focused->name);
             xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, XCB_CURRENT_TIME);
 
-            /* TODO: check if that client acccepts WM_TAKE_FOCUS at all */
             if (focused->window != NULL &&
                 focused->window->needs_take_focus) {
                 send_take_focus(to_focus);
