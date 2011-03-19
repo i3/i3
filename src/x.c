@@ -637,6 +637,8 @@ void x_push_changes(Con *con) {
     if (focused_id != to_focus) {
         if (!focused->mapped) {
             DLOG("Not updating focus (to %p / %s), focused window is not mapped.\n", focused, focused->name);
+            /* Invalidate focused_id to correctly focus new windows with the same ID */
+            focused_id = XCB_NONE;
         } else {
             DLOG("Updating focus (focused: %p / %s)\n", focused, focused->name);
             xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, to_focus, XCB_CURRENT_TIME);
