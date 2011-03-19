@@ -205,6 +205,9 @@ void hide_bars() {
 
     i3_output *walk;
     SLIST_FOREACH(walk, outputs, slist) {
+        if (!walk->active) {
+            continue;
+        }
         xcb_unmap_window(xcb_connection, walk->bar);
     }
     stop_child();
