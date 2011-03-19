@@ -27,11 +27,10 @@
 #include "common.h"
 
 /* We save the Atoms in an easy to access array, indexed by an enum */
-#define NUM_ATOMS 3
-
 enum {
     #define ATOM_DO(name) name,
     #include "xcb_atoms.def"
+    NUM_ATOMS
 };
 
 xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
