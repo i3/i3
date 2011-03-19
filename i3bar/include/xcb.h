@@ -57,6 +57,12 @@ void get_atoms();
 void destroy_window(i3_output *output);
 
 /*
+ * Reallocate the statusline-buffer
+ *
+ */
+void realloc_sl_buffer();
+
+/*
  * Reconfigure all bars and create new for newly activated outputs
  *
  */

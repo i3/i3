@@ -93,6 +93,7 @@ void got_output_reply(char *reply) {
     DLOG("Parsing Outputs-JSON...\n");
     parse_outputs_json(reply);
     DLOG("Reconfiguring Windows...\n");
+    realloc_sl_buffer();
     reconfig_windows();
 }
 
