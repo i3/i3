@@ -951,6 +951,9 @@ void draw_bars() {
 void redraw_bars() {
     i3_output *outputs_walk;
     SLIST_FOREACH(outputs_walk, outputs, slist) {
+        if (!outputs_walk->active) {
+            continue;
+        }
         xcb_copy_area(xcb_connection,
                       outputs_walk->buffer,
                       outputs_walk->bar,
