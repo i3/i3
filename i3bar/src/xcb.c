@@ -186,22 +186,10 @@ void refresh_statusline() {
     xcb_char2b_t *text = (xcb_char2b_t*) convert_utf8_to_ucs2(statusline, &glyph_count);
     statusline_width = predict_text_extents(text, glyph_count);
 
-    xcb_free_pixmap(xcb_connection, statusline_pm);
-    statusline_pm = xcb_generate_id(xcb_connection);
-    xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                               xcb_screen->root_depth,
-                                                               statusline_pm,
-                                                               xcb_root,
-                                                               statusline_width,
-                                                               font_height);
-
+    xcb_clear_area(xcb_connection, 0, statusline_pm, 0, 0, xcb_screen->width_in_pixels, font_height);
     draw_text(statusline_pm, statusline_ctx, 0, 0, text, glyph_count);
 
     FREE(text);
-
-    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer")) {
-        exit(EXIT_FAILURE);
-    }
 }
 
 /*
@@ -531,9 +519,14 @@ void init_xcb(char *fontname) {
                                                             mask,
                                                             vals);
 
-    /* We only generate an id for the pixmap, because the width of it is dependent on the
-     * input we get */
     statusline_pm = xcb_generate_id(xcb_connection);
+    xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
+                                                               xcb_screen->root_depth,
+                                                               statusline_pm,
+                                                               xcb_root,
+                                                               xcb_screen->width_in_pixels,
+                                                               xcb_screen->height_in_pixels);
+
 
     /* The varios Watchers to communicate with xcb */
     xcb_io = malloc(sizeof(ev_io));
@@ -569,6 +562,10 @@ void init_xcb(char *fontname) {
     }
 
     DLOG("Calculated Font-height: %d\n", font_height);
+
+    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer")) {
+        exit(EXIT_FAILURE);
+    }
 
     if (xcb_request_failed(sl_ctx_cookie, "Could not create context for statusline")) {
         exit(EXIT_FAILURE);
@@ -634,6 +631,25 @@ void destroy_window(i3_output *output) {
     }
     xcb_destroy_window(xcb_connection, output->bar);
     output->bar = XCB_NONE;
+}
+
+/*
+ * Reallocate the statusline-buffer
+ *
+ */
+void realloc_sl_buffer() {
+    xcb_free_pixmap(xcb_connection, statusline_pm);
+    statusline_pm = xcb_generate_id(xcb_connection);
+    xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
+                                                               xcb_screen->root_depth,
+                                                               statusline_pm,
+                                                               xcb_root,
+                                                               xcb_screen->width_in_pixels,
+                                                               xcb_screen->height_in_pixels);
+    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer")) {
+        exit(EXIT_FAILURE);
+    }
+
 }
 
 /*
