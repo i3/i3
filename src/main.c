@@ -350,6 +350,10 @@ int main(int argc, char *argv[]) {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTING_WM_CHECK, A_WINDOW, 32, 1, &root);
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
 
+    /* Set up i3 specific atoms like I3_SOCKET_PATH and I3_CONFIG_PATH */
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_SOCKET_PATH, A_UTF8_STRING, 8, strlen(config.ipc_socket_path), config.ipc_socket_path);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_CONFIG_PATH, A_UTF8_STRING, 8, strlen(saved_configpath), saved_configpath);
+
     keysyms = xcb_key_symbols_alloc(conn);
 
     xcb_get_numlock_mask(conn);

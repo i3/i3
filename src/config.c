@@ -19,6 +19,7 @@
 
 #include "all.h"
 
+const char *saved_configpath = NULL;
 Config config;
 struct modes_head modes;
 
@@ -232,7 +233,6 @@ static char *get_config_path() {
  *
  */
 static void parse_configuration(const char *override_configpath) {
-    static const char *saved_configpath = NULL;
 
     if (override_configpath != NULL) {
         saved_configpath = override_configpath;
