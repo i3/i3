@@ -227,13 +227,6 @@ void workspace_show(const char *num) {
     }
     assert(old != NULL);
 
-    /* Check if the the currently focused con is on the same Output as the
-     * workspace we chose as 'old'. If not, use the workspace of the currently
-     * focused con */
-    Con *ws = con_get_workspace(focused);
-    if (ws && ws->parent != old->parent)
-        old = ws;
-
     /* enable fullscreen for the target workspace. If it happens to be the
      * same one we are currently on anyways, we can stop here. */
     workspace->fullscreen_mode = CF_OUTPUT;
