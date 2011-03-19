@@ -29,7 +29,7 @@ typedef struct xcb_colors_t xcb_colors_t;
  * Initialize xcb and use the specified fontname for text-rendering
  *
  */
-void init_xcb();
+char *init_xcb();
 
 /*
  * Initialize the colors

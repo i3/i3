@@ -19,6 +19,7 @@
 #include <i3/ipc.h>
 #include <ev.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <X11/Xlib.h>
 #include <X11/XKBlib.h>
@@ -445,7 +446,7 @@ void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  * Initialize xcb and use the specified fontname for text-rendering
  *
  */
-void init_xcb(char *fontname) {
+char *init_xcb(char *fontname) {
     /* FIXME: xcb_connect leaks Memory */
     xcb_connection = xcb_connect(NULL, NULL);
     if (xcb_connection_has_error(xcb_connection)) {
@@ -555,6 +556,26 @@ void init_xcb(char *fontname) {
     /* Now we get the atoms and save them in a nice data-structure */
     get_atoms();
 
+    xcb_get_property_cookie_t path_cookie;
+    path_cookie = xcb_get_property_unchecked(xcb_connection,
+                                   0,
+                                   xcb_root,
+                                   atoms[I3_SOCKET_PATH],
+                                   XCB_GET_PROPERTY_TYPE_ANY,
+                                   0, PATH_MAX);
+
+    /* We check, if i3 set it's socket-path */
+    xcb_get_property_reply_t *path_reply = xcb_get_property_reply(xcb_connection,
+                                                                  path_cookie,
+                                                                  NULL);
+    char *path = NULL;
+    if (path_reply) {
+        int len = xcb_get_property_value_length(path_reply);
+        if (len != 0) {
+            path = strndup(xcb_get_property_value(path_reply), len);
+        }
+    }
+
     /* Now we save the font-infos */
     font_info = xcb_query_font_reply(xcb_connection,
                                      query_font_cookie,
@@ -577,6 +598,8 @@ void init_xcb(char *fontname) {
     if (xcb_request_failed(sl_ctx_cookie, "Could not create context for statusline")) {
         exit(EXIT_FAILURE);
     }
+
+    return path;
 }
 
 /*

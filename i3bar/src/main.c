@@ -218,11 +218,6 @@ int main(int argc, char **argv) {
         fontname = "-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1";
     }
 
-    if (socket_path == NULL) {
-        ELOG("No Socket Path Specified, default to %s\n", i3_default_sock_path);
-        socket_path = expand_path(i3_default_sock_path);
-    }
-
     if (config.dockpos != DOCKPOS_NONE) {
         if (config.hide_on_modifier) {
             ELOG("--dock and --hide are mutually exclusive!\n");
@@ -235,7 +230,16 @@ int main(int argc, char **argv) {
     main_loop = ev_default_loop(0);
 
     init_colors(&colors);
-    init_xcb(fontname);
+    char *atom_sock_path = init_xcb(fontname);
+
+    if (socket_path == NULL) {
+        socket_path = atom_sock_path;
+    }
+
+    if (socket_path == NULL) {
+        ELOG("No Socket Path Specified, default to %s\n", i3_default_sock_path);
+        socket_path = expand_path(i3_default_sock_path);
+    }
 
     free_colors(&colors);
 
