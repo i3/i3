@@ -346,6 +346,7 @@ reload:
     {
         printf("reloading\n");
         load_configuration(conn, NULL, true);
+        x_set_i3_atoms();
         /* Send an IPC event just in case the ws names have changed */
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"reload\"}");
     }

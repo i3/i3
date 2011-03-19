@@ -79,4 +79,10 @@ void x_raise_con(Con *con);
  */
 void x_set_name(Con *con, const char *name);
 
+/**
+ * Sets up i3 specific atoms (I3_SOCKET_PATH and I3_CONFIG_PATH)
+ *
+ */
+void x_set_i3_atoms();
+
 #endif

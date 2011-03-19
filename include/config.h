@@ -22,7 +22,7 @@
 #include "i3.h"
 
 typedef struct Config Config;
-extern const char *current_configpath;
+extern char *current_configpath;
 extern Config config;
 extern SLIST_HEAD(modes_head, Mode) modes;
 
