@@ -651,6 +651,12 @@ void x_push_changes(Con *con) {
         }
     }
 
+    if (focused_id == XCB_NONE) {
+        DLOG("Still no window focused, better set focus to the root window\n");
+        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
+        focused_id = root;
+    }
+
     xcb_flush(conn);
     DLOG("\n\n ENDING CHANGES\n\n");
 
