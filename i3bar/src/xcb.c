@@ -55,6 +55,7 @@ int              mod_pressed = 0;
 /* Because the statusline is the same on all outputs, we have
  * global buffer to render it on */
 xcb_gcontext_t   statusline_ctx;
+xcb_gcontext_t   statusline_clear;
 xcb_pixmap_t     statusline_pm;
 uint32_t         statusline_width;
 
@@ -82,7 +83,7 @@ struct xcb_colors_t colors;
 int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
     xcb_generic_error_t *err;
     if ((err = xcb_request_check(xcb_connection, cookie)) != NULL) {
-        ELOG("%s. X Error Code: %d\n", err_msg, err->error_code);
+        fprintf(stderr, "[%s:%d] ERROR: %s. X Error Code: %d\n", __FILE__, line, err_msg, err->error_code);
         return err->error_code;
     }
     return 0;
@@ -186,7 +187,8 @@ void refresh_statusline() {
     xcb_char2b_t *text = (xcb_char2b_t*) convert_utf8_to_ucs2(statusline, &glyph_count);
     statusline_width = predict_text_extents(text, glyph_count);
 
-    xcb_clear_area(xcb_connection, 0, statusline_pm, 0, 0, xcb_screen->width_in_pixels, font_height);
+    xcb_rectangle_t rect = { 0, 0, xcb_screen->width_in_pixels, font_height };
+    xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_clear, 1, &rect);
     draw_text(statusline_pm, statusline_ctx, 0, 0, text, glyph_count);
 
     FREE(text);
@@ -507,12 +509,19 @@ void init_xcb(char *fontname) {
 
     /* We draw the statusline to a seperate pixmap, because it looks the same on all bars and
      * this way, we can choose to crop it */
-    statusline_ctx = xcb_generate_id(xcb_connection);
-    uint32_t mask = XCB_GC_FOREGROUND |
-                    XCB_GC_BACKGROUND |
-                    XCB_GC_FONT;
-    uint32_t vals[3] = { colors.bar_fg, colors.bar_bg, xcb_font };
+    uint32_t mask = XCB_GC_FOREGROUND;
+    uint32_t vals[3] = { colors.bar_bg, colors.bar_bg, xcb_font };
 
+    statusline_clear = xcb_generate_id(xcb_connection);
+    xcb_void_cookie_t clear_ctx_cookie = xcb_create_gc_checked(xcb_connection,
+                                                               statusline_clear,
+                                                               xcb_root,
+                                                               mask,
+                                                               vals);
+
+    mask |= XCB_GC_BACKGROUND | XCB_GC_FONT;
+    vals[0] = colors.bar_fg;
+    statusline_ctx = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_ctx_cookie = xcb_create_gc_checked(xcb_connection,
                                                             statusline_ctx,
                                                             xcb_root,
@@ -563,11 +572,9 @@ void init_xcb(char *fontname) {
 
     DLOG("Calculated Font-height: %d\n", font_height);
 
-    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer")) {
-        exit(EXIT_FAILURE);
-    }
-
-    if (xcb_request_failed(sl_ctx_cookie, "Could not create context for statusline")) {
+    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer") ||
+        xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline-buffer-clearcontext") ||
+        xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline-buffer-context")) {
         exit(EXIT_FAILURE);
     }
 }
@@ -646,7 +653,30 @@ void realloc_sl_buffer() {
                                                                xcb_root,
                                                                xcb_screen->width_in_pixels,
                                                                xcb_screen->height_in_pixels);
-    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer")) {
+
+    uint32_t mask = XCB_GC_FOREGROUND;
+    uint32_t vals[3] = { colors.bar_bg, colors.bar_bg, xcb_font };
+    xcb_free_gc(xcb_connection, statusline_clear);
+    statusline_clear = xcb_generate_id(xcb_connection);
+    xcb_void_cookie_t clear_ctx_cookie = xcb_create_gc_checked(xcb_connection,
+                                                               statusline_clear,
+                                                               xcb_root,
+                                                               mask,
+                                                               vals);
+
+    mask |= XCB_GC_BACKGROUND | XCB_GC_FONT;
+    vals[0] = colors.bar_fg;
+    statusline_ctx = xcb_generate_id(xcb_connection);
+    xcb_free_gc(xcb_connection, statusline_ctx);
+    xcb_void_cookie_t sl_ctx_cookie = xcb_create_gc_checked(xcb_connection,
+                                                            statusline_ctx,
+                                                            xcb_root,
+                                                            mask,
+                                                            vals);
+
+    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer") ||
+        xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline-buffer-clearcontext") ||
+        xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline-buffer-context")) {
         exit(EXIT_FAILURE);
     }
 
