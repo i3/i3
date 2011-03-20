@@ -5,6 +5,9 @@
 #ifndef _X_H
 #define _X_H
 
+/** Stores the X11 window ID of the currently focused window */
+extern xcb_window_t focused_id;
+
 /**
  * Initializes the X11 part for the given container. Called exactly once for
  * every container from con_new().

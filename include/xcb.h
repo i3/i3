@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009-2011 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -32,7 +32,8 @@
    while rendering the layout) */
 /** The XCB_CW_EVENT_MASK for the child (= real window) */
 #define CHILD_EVENT_MASK (XCB_EVENT_MASK_PROPERTY_CHANGE | \
-                          XCB_EVENT_MASK_STRUCTURE_NOTIFY)
+                          XCB_EVENT_MASK_STRUCTURE_NOTIFY | \
+                          XCB_EVENT_MASK_FOCUS_CHANGE)
 
 /** The XCB_CW_EVENT_MASK for its frame */
 #define FRAME_EVENT_MASK (XCB_EVENT_MASK_BUTTON_PRESS |          /* …mouse is pressed/released */ \
