@@ -643,6 +643,9 @@ void randr_query_outputs() {
             if ((first = get_first_output()) == NULL)
                 die("No usable outputs available\n");
 
+            /* TODO: refactor the following code into a nice function. maybe
+             * use an on_destroy callback which is implement differently for
+             * different container types (CT_CONTENT vs. CT_DOCKAREA)? */
             Con *first_content = output_get_content(first->con);
 
             if (output->con != NULL) {
@@ -671,6 +674,26 @@ void randr_query_outputs() {
                 if (next) {
                     DLOG("now focusing next = %p\n", next);
                     con_focus(next);
+                }
+
+                /* 3: move the dock clients to the first output */
+                Con *child;
+                TAILQ_FOREACH(child, &(output->con->nodes_head), nodes) {
+                    if (child->type != CT_DOCKAREA)
+                        continue;
+                    DLOG("Handling dock con %p\n", child);
+                    Con *dock;
+                    while (!TAILQ_EMPTY(&(child->nodes_head))) {
+                        dock = TAILQ_FIRST(&(child->nodes_head));
+                        Con *nc;
+                        Match *match;
+                        nc = con_for_window(first->con, dock->window, &match);
+                        DLOG("Moving dock client %p to nc %p\n", dock, nc);
+                        con_detach(dock);
+                        DLOG("Re-attaching\n");
+                        con_attach(dock, nc, false);
+                        DLOG("Done\n");
+                    }
                 }
 
                 DLOG("destroying disappearing con %p\n", output->con);
