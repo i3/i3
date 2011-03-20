@@ -20,6 +20,8 @@
 
 #include "all.h"
 
+char *current_socketpath = NULL;
+
 /* Shorter names for all those yajl_gen_* functions */
 #define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
 #define ystr(str) yajl_gen_string(gen, (unsigned char*)str, strlen(str))
@@ -626,6 +628,9 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
 int ipc_create_socket(const char *filename) {
     int sockfd;
 
+    FREE(current_socketpath);
+    current_socketpath = NULL;
+
     char *resolved = resolve_tilde(filename);
     DLOG("Creating IPC-socket at %s\n", resolved);
     char *copy = sstrdup(resolved);
@@ -655,13 +660,14 @@ int ipc_create_socket(const char *filename) {
         return -1;
     }
 
-    free(resolved);
     set_nonblock(sockfd);
 
     if (listen(sockfd, 5) < 0) {
         perror("listen()");
+        free(resolved);
         return -1;
     }
 
+    current_socketpath = resolved;
     return sockfd;
 }

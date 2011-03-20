@@ -783,8 +783,8 @@ void x_set_name(Con *con, const char *name) {
  */
 void x_set_i3_atoms() {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_SOCKET_PATH, A_UTF8_STRING, 8,
-                        (config.ipc_socket_path != NULL ? strlen(config.ipc_socket_path) : 0),
-                        config.ipc_socket_path);
+                        (current_socketpath == NULL ? 0 : strlen(current_socketpath)),
+                        current_socketpath);
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_CONFIG_PATH, A_UTF8_STRING, 8,
                         strlen(current_configpath), current_configpath);
 }

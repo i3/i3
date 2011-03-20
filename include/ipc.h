@@ -22,6 +22,8 @@
 
 #include "i3/ipc.h"
 
+extern char *current_socketpath;
+
 typedef struct ipc_client {
         int fd;
 
