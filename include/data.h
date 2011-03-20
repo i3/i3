@@ -113,16 +113,6 @@ struct deco_render_params {
     xcb_font_t font;
 };
 
-/**
- * Used for the cache of colorpixels.
- *
- */
-struct Colorpixel {
-    uint32_t pixel;
-    char *hex;
-    SLIST_ENTRY(Colorpixel) colorpixels;
-};
-
 struct Ignore_Event {
     int sequence;
     time_t added;
