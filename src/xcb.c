@@ -290,38 +290,6 @@ void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
 }
 
 /*
- *
- * Prepares the given Cached_Pixmap for usage (checks whether the size of the
- * object this pixmap is related to (e.g. a window) has changed and re-creates
- * the pixmap if so).
- *
- */
-void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap) {
-    DLOG("preparing pixmap\n");
-
-    /* If the Rect did not change, the pixmap does not need to be recreated */
-    if (memcmp(&(pixmap->rect), pixmap->referred_rect, sizeof(Rect)) == 0)
-        return;
-
-    memcpy(&(pixmap->rect), pixmap->referred_rect, sizeof(Rect));
-
-    if (pixmap->id == 0 || pixmap->gc == 0) {
-        DLOG("Creating new pixmap...\n");
-        pixmap->id = xcb_generate_id(conn);
-        pixmap->gc = xcb_generate_id(conn);
-    } else {
-        DLOG("Re-creating this pixmap...\n");
-        xcb_free_gc(conn, pixmap->gc);
-        xcb_free_pixmap(conn, pixmap->id);
-    }
-
-    xcb_create_pixmap(conn, root_depth, pixmap->id,
-                      pixmap->referred_drawable, pixmap->rect.width, pixmap->rect.height);
-
-    xcb_create_gc(conn, pixmap->gc, pixmap->id, 0, 0);
-}
-
-/*
  * Query the width of the given text (16-bit characters, UCS) with given real
  * length (amount of glyphs) using the given font.
  *

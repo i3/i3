@@ -167,6 +167,7 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     }
 
     free(con->name);
+    FREE(con->deco_render_params);
     TAILQ_REMOVE(&all_cons, con, all_cons);
     free(con);
 

@@ -66,6 +66,7 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop) {
     win->name_json = new_name;
     win->name_x = ucs2_name;
     win->name_len = len;
+    win->name_x_changed = true;
     LOG("_NET_WM_NAME changed to \"%s\"\n", win->name_json);
 
     win->uses_net_wm_name = true;
@@ -104,6 +105,7 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop) {
     win->name_x = new_name;
     win->name_json = sstrdup(new_name);
     win->name_len = strlen(new_name);
+    win->name_x_changed = true;
 }
 
 /*

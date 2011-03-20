@@ -87,6 +87,33 @@ struct reservedpx {
 };
 
 /**
+ * Stores a width/height pair, used as part of deco_render_params to check
+ * whether the rects width/height have changed.
+ *
+ */
+struct width_height {
+    uint32_t w;
+    uint32_t h;
+};
+
+/**
+ * Stores the parameters for rendering a window decoration. This structure is
+ * cached in every Con and no re-rendering will be done if the parameters have
+ * not changed (only the pixmaps will be copied).
+ *
+ */
+struct deco_render_params {
+    struct Colortriple *color;
+    int border_style;
+    struct width_height con_rect;
+    struct width_height con_window_rect;
+    struct width_height con_deco_rect;
+    uint32_t background;
+    bool con_is_leaf;
+    xcb_font_t font;
+};
+
+/**
  * Used for the cache of colorpixels.
  *
  */
@@ -94,22 +121,6 @@ struct Colorpixel {
     uint32_t pixel;
     char *hex;
     SLIST_ENTRY(Colorpixel) colorpixels;
-};
-
-struct Cached_Pixmap {
-    xcb_pixmap_t id;
-
-    /* We’re going to paint on it, so a graphics context will be needed */
-    xcb_gcontext_t gc;
-
-    /* The rect with which the pixmap was created */
-    Rect rect;
-
-    /* The rect of the object to which this pixmap belongs. Necessary to
-     * find out when we need to re-create the pixmap. */
-    Rect *referred_rect;
-
-    xcb_drawable_t referred_drawable;
 };
 
 struct Ignore_Event {
@@ -236,6 +247,9 @@ struct Window {
      * application supports _NET_WM_NAME, in COMPOUND_TEXT otherwise). */
     char *name_x;
 
+    /** Flag to force re-rendering the decoration upon changes */
+    bool name_x_changed;
+
     /** The name of the window as used in JSON (in UTF-8 if the application
      * supports _NET_WM_NAME, in COMPOUND_TEXT otherwise) */
     char *name_json;
@@ -353,9 +367,14 @@ struct Con {
      * inside this container (if any) sets the urgency hint, for example. */
     bool urgent;
 
-    /* ids/gc for the frame window */
+    /* ids/pixmap/graphics context for the frame window */
     xcb_window_t frame;
-    xcb_gcontext_t gc;
+    xcb_pixmap_t pixmap;
+    xcb_gcontext_t pm_gc;
+    bool pixmap_recreated;
+
+    /** Cache for the decoration rendering */
+    struct deco_render_params *deco_render_params;
 
     /* Only workspace-containers can have floating clients */
     TAILQ_HEAD(floating_head, Con) floating_head;

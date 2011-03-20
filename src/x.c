@@ -84,8 +84,6 @@ void x_con_init(Con *con) {
 
     Rect dims = { -15, -15, 10, 10 };
     con->frame = create_window(conn, dims, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
-    con->gc = xcb_generate_id(conn);
-    xcb_create_gc(conn, con->gc, con->frame, 0, 0);
 
     struct con_state *state = scalloc(sizeof(struct con_state));
     state->id = con->frame;
@@ -230,6 +228,7 @@ void x_window_kill(xcb_window_t window) {
  *
  */
 void x_draw_decoration(Con *con) {
+    const Con *parent = con->parent;
     /* This code needs to run for:
      *  • leaf containers
      *  • non-leaf containers which are in a stacked/tabbed container
@@ -238,30 +237,61 @@ void x_draw_decoration(Con *con) {
      *  • floating containers (they don’t have a decoration)
      */
     if ((!con_is_leaf(con) &&
-         con->parent->layout != L_STACKED &&
-         con->parent->layout != L_TABBED) ||
+         parent->layout != L_STACKED &&
+         parent->layout != L_TABBED) ||
         con->type == CT_FLOATING_CON)
         return;
     DLOG("decoration should be rendered for con %p\n", con);
 
-    /* 1: find out which colors to use */
-    struct Colortriple *color;
+    /* Skip containers whose height is 0 (for example empty dockareas) */
+    if (con->rect.height == 0) {
+        DLOG("height == 0, not rendering\n");
+        return;
+    }
+
+    /* 1: build deco_params and compare with cache */
+    struct deco_render_params *p = scalloc(sizeof(struct deco_render_params));
+
+    /* find out which colors to use */
     if (con->urgent)
-        color = &config.client.urgent;
+        p->color = &config.client.urgent;
     else if (con == focused)
-        color = &config.client.focused;
-    else if (con == TAILQ_FIRST(&(con->parent->focus_head)))
-        color = &config.client.focused_inactive;
+        p->color = &config.client.focused;
+    else if (con == TAILQ_FIRST(&(parent->focus_head)))
+        p->color = &config.client.focused_inactive;
     else
-        color = &config.client.unfocused;
+        p->color = &config.client.unfocused;
 
-    Con *parent = con->parent;
-    int border_style = con_border_style(con);
+    p->border_style = con_border_style(con);
 
-    /* 2: draw the client.background, but only for the parts around the client_rect */
     Rect *r = &(con->rect);
     Rect *w = &(con->window_rect);
+    p->con_rect = (struct width_height){ r->width, r->height };
+    p->con_window_rect = (struct width_height){ w->width, w->height };
+    p->con_deco_rect = (struct width_height){ con->deco_rect.width, con->deco_rect.height };
+    p->background = config.client.background;
+    p->con_is_leaf = con_is_leaf(con);
+    p->font = config.font.id;
 
+    if (con->deco_render_params != NULL &&
+        (con->window == NULL || !con->window->name_x_changed) &&
+        !con->parent->pixmap_recreated &&
+        memcmp(p, con->deco_render_params, sizeof(struct deco_render_params)) == 0) {
+        DLOG("CACHE HIT, copying existing pixmaps\n");
+        free(p);
+        goto copy_pixmaps;
+    }
+
+    DLOG("CACHE MISS\n");
+    FREE(con->deco_render_params);
+    con->deco_render_params = p;
+
+    if (con->window != NULL && con->window->name_x_changed)
+        con->window->name_x_changed = false;
+
+    con->parent->pixmap_recreated = false;
+
+    /* 2: draw the client.background, but only for the parts around the client_rect */
     xcb_rectangle_t background[] = {
         /* top area */
         { 0, con->deco_rect.height, r->width, w->y },
@@ -280,11 +310,11 @@ void x_draw_decoration(Con *con) {
             );
 #endif
 
-    xcb_change_gc_single(conn, con->gc, XCB_GC_FOREGROUND, config.client.background);
-    xcb_poly_fill_rectangle(conn, con->frame, con->gc, sizeof(background) / sizeof(xcb_rectangle_t), background);
+    xcb_change_gc_single(conn, con->pm_gc, XCB_GC_FOREGROUND, config.client.background);
+    xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, sizeof(background) / sizeof(xcb_rectangle_t), background);
 
     /* 3: draw a rectangle in border color around the client */
-    if (border_style != BS_NONE && con_is_leaf(con)) {
+    if (p->border_style != BS_NONE && p->con_is_leaf) {
         Rect br = con_border_style_rect(con);
 #if 0
         DLOG("con->rect spans %d x %d\n", con->rect.width, con->rect.height);
@@ -296,48 +326,53 @@ void x_draw_decoration(Con *con) {
          * (left, bottom and right part). We don’t just fill the whole
          * rectangle because some childs are not freely resizable and we want
          * their background color to "shine through". */
-        xcb_change_gc_single(conn, con->gc, XCB_GC_FOREGROUND, color->background);
+        xcb_change_gc_single(conn, con->pm_gc, XCB_GC_FOREGROUND, p->color->background);
         xcb_rectangle_t borders[] = {
             { 0, 0, br.x, r->height },
             { 0, r->height + br.height + br.y, r->width, r->height },
             { r->width + br.width + br.x, 0, r->width, r->height }
         };
-        xcb_poly_fill_rectangle(conn, con->frame, con->gc, 3, borders);
+        xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 3, borders);
         /* 1pixel border needs an additional line at the top */
-        if (border_style == BS_1PIXEL) {
+        if (p->border_style == BS_1PIXEL) {
             xcb_rectangle_t topline = { br.x, 0, con->rect.width + br.width + br.x, br.y };
-            xcb_poly_fill_rectangle(conn, con->frame, con->gc, 1, &topline);
+            xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &topline);
         }
     }
 
     /* if this is a borderless/1pixel window, we don’t * need to render the
      * decoration. */
-    if (border_style != BS_NORMAL) {
+    if (p->border_style != BS_NORMAL) {
         DLOG("border style not BS_NORMAL, aborting rendering of decoration\n");
-        return;
+        goto copy_pixmaps;
     }
 
     /* 4: paint the bar */
-    xcb_change_gc_single(conn, parent->gc, XCB_GC_FOREGROUND, color->background);
+    xcb_change_gc_single(conn, parent->pm_gc, XCB_GC_FOREGROUND, p->color->background);
+            free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
     xcb_rectangle_t drect = { con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height };
-    xcb_poly_fill_rectangle(conn, parent->frame, parent->gc, 1, &drect);
+            free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
+    xcb_poly_fill_rectangle(conn, parent->pixmap, parent->pm_gc, 1, &drect);
+            free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
 
     /* 5: draw the two lines in border color */
-    xcb_draw_line(conn, parent->frame, parent->gc, color->border,
+    xcb_draw_line(conn, parent->pixmap, parent->pm_gc, p->color->border,
             con->deco_rect.x, /* x */
             con->deco_rect.y, /* y */
             con->deco_rect.x + con->deco_rect.width, /* to_x */
             con->deco_rect.y); /* to_y */
-    xcb_draw_line(conn, parent->frame, parent->gc, color->border,
+            free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
+    xcb_draw_line(conn, parent->pixmap, parent->pm_gc, p->color->border,
             con->deco_rect.x, /* x */
             con->deco_rect.y + con->deco_rect.height - 1, /* y */
             con->deco_rect.x + con->deco_rect.width, /* to_x */
             con->deco_rect.y + con->deco_rect.height - 1); /* to_y */
+            free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
 
     /* 6: draw the title */
     uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-    uint32_t values[] = { color->text, color->background, config.font.id };
-    xcb_change_gc(conn, parent->gc, mask, values);
+    uint32_t values[] = { p->color->text, p->color->background, config.font.id };
+    xcb_change_gc(conn, parent->pm_gc, mask, values);
     int text_offset_y = config.font.height + (con->deco_rect.height - config.font.height) / 2 - 1;
 
     struct Window *win = con->window;
@@ -347,13 +382,14 @@ void x_draw_decoration(Con *con) {
         xcb_image_text_8(
             conn,
             strlen("another container"),
-            parent->frame,
-            parent->gc,
+            parent->pixmap,
+            parent->pm_gc,
             con->deco_rect.x + 2,
             con->deco_rect.y + text_offset_y,
             "another container"
         );
-        return;
+
+        goto copy_pixmaps;
     }
 
     int indent_level = 0,
@@ -377,8 +413,8 @@ void x_draw_decoration(Con *con) {
         xcb_image_text_16(
             conn,
             win->name_len,
-            parent->frame,
-            parent->gc,
+            parent->pixmap,
+            parent->pm_gc,
             con->deco_rect.x + 2 + indent_px,
             con->deco_rect.y + text_offset_y,
             (xcb_char2b_t*)win->name_x
@@ -387,12 +423,16 @@ void x_draw_decoration(Con *con) {
         xcb_image_text_8(
             conn,
             win->name_len,
-            parent->frame,
-            parent->gc,
+            parent->pixmap,
+            parent->pm_gc,
             con->deco_rect.x + 2 + indent_px,
             con->deco_rect.y + text_offset_y,
             win->name_x
         );
+
+copy_pixmaps:
+    xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
+    xcb_copy_area(conn, parent->pixmap, parent->frame, parent->pm_gc, 0, 0, 0, 0, parent->rect.width, parent->rect.height);
 }
 
 /*
@@ -467,6 +507,25 @@ static void x_push_node(Con *con) {
     if (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0) {
         DLOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
         xcb_set_window_rect(conn, con->frame, rect);
+
+        /* As the pixmap only depends on the size and not on the position, it
+         * is enough to check if width/height have changed */
+        if (state->rect.width != rect.width ||
+            state->rect.height != rect.height) {
+            DLOG("CACHE: creating new pixmap\n");
+            if (con->pixmap == 0) {
+                con->pixmap = xcb_generate_id(conn);
+                con->pm_gc = xcb_generate_id(conn);
+            } else {
+                xcb_free_pixmap(conn, con->pixmap);
+                xcb_free_gc(conn, con->pm_gc);
+            }
+            xcb_create_pixmap(conn, root_depth, con->pixmap, con->frame, rect.width, rect.height);
+                free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
+            xcb_create_gc(conn, con->pm_gc, con->pixmap, 0, 0);
+                free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
+            con->pixmap_recreated = true;
+        }
         memcpy(&(state->rect), &rect, sizeof(Rect));
         fake_notify = true;
     }
