@@ -75,6 +75,8 @@ static void free_colors(struct xcb_color_strings_t *colors) {
     FREE_COLOR(inactive_ws_bg);
     FREE_COLOR(urgent_ws_fg);
     FREE_COLOR(urgent_ws_bg);
+    FREE_COLOR(focus_ws_fg);
+    FREE_COLOR(focus_ws_bg);
 #undef FREE_COLOR
 }
 
@@ -141,10 +143,12 @@ int main(int argc, char **argv) {
         { "color-inactive-ws-bg", required_argument, 0, 'F' },
         { "color-urgent-ws-bg",   required_argument, 0, 'G' },
         { "color-urgent-ws-fg",   required_argument, 0, 'H' },
+        { "color-focus-ws-bg",    required_argument, 0, 'I' },
+        { "color-focus-ws-fg",    required_argument, 0, 'J' },
         { NULL,                   0,                 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "s:c:d::mf:hvVA:B:C:D:E:F:G:H:", long_opt, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "s:c:d::mf:hvVA:B:C:D:E:F:G:H:I:J:", long_opt, &option_index)) != -1) {
         switch (opt) {
             case 's':
                 socket_path = expand_path(optarg);
@@ -203,6 +207,12 @@ int main(int argc, char **argv) {
                 break;
             case 'H':
                 read_color(&colors.urgent_ws_fg);
+                break;
+            case 'I':
+                read_color(&colors.focus_ws_bg);
+                break;
+            case 'J':
+                read_color(&colors.focus_ws_fg);
                 break;
             default:
                 print_usage(argv[0]);

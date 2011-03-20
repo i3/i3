@@ -53,7 +53,7 @@ Also, you should disable the internal workspace bar of *i3*(1), when using *i3ba
 
 For now this happens with the following command-line-options:
 
-*--color-bar-fg, --color-bar-bg, --color-active-ws-fg, --color-active-ws-bg, --color-inactive-ws-fg,  --color-inactive-ws-bg, color-urgent-ws-bg, color-urgent-ws-fg*
+*--color-bar-fg, --color-bar-bg, --color-active-ws-fg, --color-active-ws-bg, --color-inactive-ws-fg,  --color-inactive-ws-bg, --color-urgent-ws-bg, --color-urgent-ws-fg, --color-focus-ws-fg, --color-focus-ws-bg*
 
 For each specified option you need to give a HEX-colorcode.
 

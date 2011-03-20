@@ -76,6 +76,8 @@ struct xcb_colors_t {
     uint32_t inactive_ws_bg;
     uint32_t urgent_ws_bg;
     uint32_t urgent_ws_fg;
+    uint32_t focus_ws_bg;
+    uint32_t focus_ws_fg;
 };
 struct xcb_colors_t colors;
 
@@ -276,6 +278,8 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR(inactive_ws_bg, "240000");
     PARSE_COLOR(urgent_ws_fg, "FFFFFF");
     PARSE_COLOR(urgent_ws_bg, "002400");
+    PARSE_COLOR(focus_ws_fg, "FFFFFF");
+    PARSE_COLOR(focus_ws_bg, "480000");
 #undef PARSE_COLOR
 }
 
@@ -939,8 +943,13 @@ void draw_bars() {
             uint32_t fg_color = colors.inactive_ws_fg;
             uint32_t bg_color = colors.inactive_ws_bg;
             if (ws_walk->visible) {
-                fg_color = colors.active_ws_fg;
-                bg_color = colors.active_ws_bg;
+                if (!ws_walk->focused) {
+                    fg_color = colors.active_ws_fg;
+                    bg_color = colors.active_ws_bg;
+                } else {
+                    fg_color = colors.focus_ws_fg;
+                    bg_color = colors.focus_ws_bg;
+                }
             }
             if (ws_walk->urgent) {
                 DLOG("WS %s is urgent!\n", ws_walk->name);
