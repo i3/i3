@@ -527,6 +527,9 @@ void con_move_to_workspace(Con *con, Con *workspace) {
         con = con->parent;
     }
 
+    Con *source_output = con_get_output(con),
+        *dest_output = con_get_output(workspace);
+
     /* 1: save the container which is going to be focused after the current
      * container is moved away */
     Con *focus_next = con_next_focused(con);
@@ -562,8 +565,15 @@ void con_move_to_workspace(Con *con, Con *workspace) {
      * calling tree_render(), so for the "real" focus this is a no-op) */
     con_focus(con);
 
-    /* 8: keep focus on the current workspace */
-    con_focus(focus_next);
+    /* 8: when moving to a visible workspace on a different output, we keep the
+     * con focused. Otherwise, we leave the focus on the current workspace as we
+     * don’t want to focus invisible workspaces */
+    if (source_output != dest_output &&
+        workspace_is_visible(workspace)) {
+        DLOG("Moved to a different output, focusing target");
+    } else {
+        con_focus(focus_next);
+    }
 
     CALL(parent, on_remove_child);
 }
