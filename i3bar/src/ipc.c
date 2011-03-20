@@ -138,7 +138,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     DLOG("Got data!\n");
     int fd = watcher->fd;
 
-    /* First we only read the header, because we know it's length */
+    /* First we only read the header, because we know its length */
     uint32_t header_len = strlen(I3_IPC_MAGIC) + sizeof(uint32_t)*2;
     char *header = malloc(header_len);
     if (header == NULL) {
