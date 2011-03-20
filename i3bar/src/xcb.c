@@ -958,14 +958,12 @@ void draw_bars() {
                 /* The urgent-hint should get noticed, so we unhide the bars shortly */
                 unhide_bars();
             }
+            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+            uint32_t vals[] = { bg_color, bg_color };
             xcb_change_gc(xcb_connection,
                           outputs_walk->bargc,
-                          XCB_GC_FOREGROUND,
-                          &bg_color);
-            xcb_change_gc(xcb_connection,
-                          outputs_walk->bargc,
-                          XCB_GC_BACKGROUND,
-                          &bg_color);
+                          mask,
+                          vals);
             xcb_rectangle_t rect = { i + 1, 1, ws_walk->name_width + 8, font_height + 4 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
