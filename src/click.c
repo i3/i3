@@ -243,7 +243,7 @@ done:
  * Then, route_click is called on the appropriate con.
  *
  */
-int handle_button_press(void *ignored, xcb_connection_t *conn, xcb_button_press_event_t *event) {
+int handle_button_press(xcb_button_press_event_t *event) {
     Con *con;
     DLOG("Button %d pressed on window 0x%08x\n", event->state, event->event);
 

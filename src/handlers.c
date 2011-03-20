@@ -16,9 +16,6 @@
 
 int randr_base = -1;
 
-/* forward declaration for property_notify */
-static int property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom);
-
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
    changing workspaces */
@@ -64,153 +61,13 @@ static bool event_is_ignored(const int sequence) {
     return false;
 }
 
-/*
- * Takes an xcb_generic_event_t and calls the appropriate handler, based on the
- * event type.
- *
- */
-void handle_event(int type, xcb_generic_event_t *event) {
-    /* XXX: remove the NULL and conn parameters as soon as this version of libxcb is required */
-
-    if (randr_base > -1 &&
-        type == randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY) {
-        handle_screen_change(NULL, conn, event);
-        return;
-    }
-
-    switch (type) {
-        case XCB_KEY_PRESS:
-            handle_key_press(NULL, conn, (xcb_key_press_event_t*)event);
-            break;
-
-        case XCB_BUTTON_PRESS:
-            handle_button_press(NULL, conn, (xcb_button_press_event_t*)event);
-            break;
-
-        case XCB_MAP_REQUEST:
-            handle_map_request(NULL, conn, (xcb_map_request_event_t*)event);
-            break;
-
-        case XCB_UNMAP_NOTIFY:
-            handle_unmap_notify_event(NULL, conn, (xcb_unmap_notify_event_t*)event);
-            break;
-
-        case XCB_DESTROY_NOTIFY:
-            handle_destroy_notify_event(NULL, conn, (xcb_destroy_notify_event_t*)event);
-            break;
-
-        case XCB_EXPOSE:
-            handle_expose_event(NULL, conn, (xcb_expose_event_t*)event);
-            break;
-
-        case XCB_MOTION_NOTIFY:
-            handle_motion_notify(NULL, conn, (xcb_motion_notify_event_t*)event);
-            break;
-
-        /* Enter window = user moved his mouse over the window */
-        case XCB_ENTER_NOTIFY:
-            handle_enter_notify(NULL, conn, (xcb_enter_notify_event_t*)event);
-            break;
-
-        /* Client message are sent to the root window. The only interesting
-         * client message for us is _NET_WM_STATE, we honour
-         * _NET_WM_STATE_FULLSCREEN */
-        case XCB_CLIENT_MESSAGE:
-            handle_client_message(NULL, conn, (xcb_client_message_event_t*)event);
-            break;
-
-        /* Configure request = window tried to change size on its own */
-        case XCB_CONFIGURE_REQUEST:
-            handle_configure_request(NULL, conn, (xcb_configure_request_event_t*)event);
-            break;
-
-        /* Mapping notify = keyboard mapping changed (Xmodmap), re-grab bindings */
-        case XCB_MAPPING_NOTIFY:
-            handle_mapping_notify(NULL, conn, (xcb_mapping_notify_event_t*)event);
-            break;
-
-        case XCB_FOCUS_IN:
-            handle_focus_in(NULL, conn, (xcb_focus_in_event_t*)event);
-            break;
-
-        case XCB_PROPERTY_NOTIFY:
-            DLOG("Property notify\n");
-            xcb_property_notify_event_t *e = (xcb_property_notify_event_t*)event;
-            property_notify(e->state, e->window, e->atom);
-            break;
-
-        default:
-            DLOG("Unhandled event of type %d\n", type);
-            break;
-    }
-}
-
-typedef int (*cb_property_handler_t)(void *data, xcb_connection_t *c, uint8_t state, xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *property);
-
-struct property_handler_t {
-    xcb_atom_t atom;
-    uint32_t long_len;
-    cb_property_handler_t cb;
-};
-
-static struct property_handler_t property_handlers[] = {
-    { 0, 128, handle_windowname_change },
-    { 0, UINT_MAX, handle_hints },
-    { 0, 128, handle_windowname_change_legacy },
-    { 0, UINT_MAX, handle_normal_hints },
-    { 0, UINT_MAX, handle_clientleader_change },
-    { 0, UINT_MAX, handle_transient_for }
-};
-#define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
-
-/*
- * Sets the appropriate atoms for the property handlers after the atoms were
- * received from X11
- *
- */
-void property_handlers_init() {
-    property_handlers[0].atom = A__NET_WM_NAME;
-    property_handlers[1].atom = A_WM_HINTS;
-    property_handlers[2].atom = A_WM_NAME;
-    property_handlers[3].atom = A_WM_NORMAL_HINTS;
-    property_handlers[4].atom = A_WM_CLIENT_LEADER;
-    property_handlers[5].atom = A_WM_TRANSIENT_FOR;
-}
-
-static int property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {
-    struct property_handler_t *handler = NULL;
-    xcb_get_property_reply_t *propr = NULL;
-    int ret;
-
-    for (int c = 0; c < sizeof(property_handlers) / sizeof(struct property_handler_t); c++) {
-        if (property_handlers[c].atom != atom)
-            continue;
-
-        handler = &property_handlers[c];
-        break;
-    }
-
-    if (handler == NULL) {
-        DLOG("Unhandled property notify for atom %d (0x%08x)\n", atom, atom);
-        return 0;
-    }
-
-    if (state != XCB_PROPERTY_DELETE) {
-        xcb_get_property_cookie_t cookie = xcb_get_property(conn, 0, window, atom, XCB_GET_PROPERTY_TYPE_ANY, 0, handler->long_len);
-        propr = xcb_get_property_reply(conn, cookie, 0);
-    }
-
-    ret = handler->cb(NULL, conn, state, window, atom, propr);
-    FREE(propr);
-    return ret;
-}
 
 /*
  * There was a key press. We compare this key code with our bindings table and pass
  * the bound action to parse_command().
  *
  */
-int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
+static int handle_key_press(xcb_key_press_event_t *event) {
     DLOG("Keypress %d, state raw = %d\n", event->detail, event->state);
 
     /* Remove the numlock bit, all other bits are modifiers we can bind to */
@@ -284,8 +141,7 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
  * When the user moves the mouse pointer onto a window, this callback gets called.
  *
  */
-int handle_enter_notify(void *ignored, xcb_connection_t *conn,
-                        xcb_enter_notify_event_t *event) {
+static int handle_enter_notify(xcb_enter_notify_event_t *event) {
     Con *con;
 
     DLOG("enter_notify for %08x, mode = %d, detail %d, serial %d\n",
@@ -361,7 +217,7 @@ int handle_enter_notify(void *ignored, xcb_connection_t *conn,
  * and crossing virtual screen boundaries), this callback gets called.
  *
  */
-int handle_motion_notify(void *ignored, xcb_connection_t *conn, xcb_motion_notify_event_t *event) {
+static int handle_motion_notify(xcb_motion_notify_event_t *event) {
     /* Skip events where the pointer was over a child window, we are only
      * interested in events on the root window. */
     if (event->child != 0)
@@ -402,7 +258,7 @@ int handle_motion_notify(void *ignored, xcb_connection_t *conn, xcb_motion_notif
  * we need to update our key bindings then (re-translate symbols).
  *
  */
-int handle_mapping_notify(void *ignored, xcb_connection_t *conn, xcb_mapping_notify_event_t *event) {
+static int handle_mapping_notify(xcb_mapping_notify_event_t *event) {
     if (event->request != XCB_MAPPING_KEYBOARD &&
         event->request != XCB_MAPPING_MODIFIER)
         return 0;
@@ -423,7 +279,7 @@ int handle_mapping_notify(void *ignored, xcb_connection_t *conn, xcb_mapping_not
  * A new window appeared on the screen (=was mapped), so let’s manage it.
  *
  */
-int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_event_t *event) {
+static int handle_map_request(xcb_map_request_event_t *event) {
     xcb_get_window_attributes_cookie_t cookie;
 
     cookie = xcb_get_window_attributes_unchecked(conn, event->window);
@@ -442,7 +298,7 @@ int handle_map_request(void *prophs, xcb_connection_t *conn, xcb_map_request_eve
  * We generate a synthethic configure notify event to signalize the client its "new" position.
  *
  */
-int handle_configure_request(void *prophs, xcb_connection_t *conn, xcb_configure_request_event_t *event) {
+static int handle_configure_request(xcb_configure_request_event_t *event) {
     Con *con;
 
     DLOG("window 0x%08x wants to be at %dx%d with %dx%d\n",
@@ -566,8 +422,7 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
  * changes the screen configuration in any way (mode, position, …)
  *
  */
-int handle_screen_change(void *prophs, xcb_connection_t *conn,
-                         xcb_generic_event_t *e) {
+static int handle_screen_change(xcb_generic_event_t *e) {
     DLOG("RandR screen change\n");
 
     randr_query_outputs();
@@ -582,7 +437,7 @@ int handle_screen_change(void *prophs, xcb_connection_t *conn,
  * now, so we better clean up before.
  *
  */
-int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_notify_event_t *event) {
+static int handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
 
     /* FIXME: we cannot ignore this sequence because more UnmapNotifys with the same sequence
      * numbers but different window IDs may follow */
@@ -666,7 +521,7 @@ int handle_unmap_notify_event(void *data, xcb_connection_t *conn, xcb_unmap_noti
  * important fields in the event data structure).
  *
  */
-int handle_destroy_notify_event(void *data, xcb_connection_t *conn, xcb_destroy_notify_event_t *event) {
+static int handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
     DLOG("destroy notify for 0x%08x, 0x%08x\n", event->event, event->window);
 
     xcb_unmap_notify_event_t unmap;
@@ -674,14 +529,14 @@ int handle_destroy_notify_event(void *data, xcb_connection_t *conn, xcb_destroy_
     unmap.event = event->event;
     unmap.window = event->window;
 
-    return handle_unmap_notify_event(NULL, conn, &unmap);
+    return handle_unmap_notify_event(&unmap);
 }
 
 /*
  * Called when a window changes its title
  *
  */
-int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
+static int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
                                 xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
     Con *con;
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
@@ -699,7 +554,7 @@ int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t state,
  * window_update_name_legacy().
  *
  */
-int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t state,
+static int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t state,
                                 xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
     Con *con;
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
@@ -716,7 +571,7 @@ int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, uint8_t 
  * Updates the client’s WM_CLASS property
  *
  */
-int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
+static int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
                              xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
     Con *con;
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
@@ -731,7 +586,7 @@ int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t state,
  * Expose event means we should redraw our windows (= title bar)
  *
  */
-int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *event) {
+static int handle_expose_event(xcb_expose_event_t *event) {
     Con *parent, *con;
 
     /* event->count is the number of minimum remaining expose events for this
@@ -771,7 +626,7 @@ int handle_expose_event(void *data, xcb_connection_t *conn, xcb_expose_event_t *
  * Handle client messages (EWMH)
  *
  */
-int handle_client_message(void *data, xcb_connection_t *conn, xcb_client_message_event_t *event) {
+static int handle_client_message(xcb_client_message_event_t *event) {
     LOG("ClientMessage for window 0x%08x\n", event->window);
     if (event->type == A__NET_WM_STATE) {
         if (event->format != 32 || event->data.data32[1] != A__NET_WM_STATE_FULLSCREEN) {
@@ -825,7 +680,7 @@ int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state, xcb_wi
  * See ICCCM 4.1.2.3 for more details
  *
  */
-int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+static int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t name, xcb_get_property_reply_t *reply) {
     Con *con = con_by_window_id(window);
     if (con == NULL) {
@@ -926,7 +781,7 @@ render_and_return:
  * Handles the WM_HINTS property for extracting the urgency state of the window.
  *
  */
-int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+static int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                   xcb_atom_t name, xcb_get_property_reply_t *reply) {
     Con *con = con_by_window_id(window);
     if (con == NULL) {
@@ -976,7 +831,7 @@ int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t
  * See ICCCM 4.1.2.6 for more details
  *
  */
-int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+static int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                          xcb_atom_t name, xcb_get_property_reply_t *prop) {
     Con *con;
 
@@ -1010,7 +865,7 @@ int handle_transient_for(void *data, xcb_connection_t *conn, uint8_t state, xcb_
  * toolwindow (or similar) and to which window it belongs (logical parent).
  *
  */
-int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
+static int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state, xcb_window_t window,
                         xcb_atom_t name, xcb_get_property_reply_t *prop) {
     Con *con;
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
@@ -1034,7 +889,7 @@ int handle_clientleader_change(void *data, xcb_connection_t *conn, uint8_t state
  * decorations accordingly.
  *
  */
-int handle_focus_in(void *data, xcb_connection_t *conn, xcb_focus_in_event_t *event) {
+static int handle_focus_in(xcb_focus_in_event_t *event) {
     DLOG("focus change in, for window 0x%08x\n", event->event);
     Con *con;
     if ((con = con_by_window_id(event->event)) == NULL || con->window == NULL)
@@ -1057,4 +912,143 @@ int handle_focus_in(void *data, xcb_connection_t *conn, xcb_focus_in_event_t *ev
     focused_id = event->event;
     x_push_changes(croot);
     return 1;
+}
+
+typedef int (*cb_property_handler_t)(void *data, xcb_connection_t *c, uint8_t state, xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *property);
+
+struct property_handler_t {
+    xcb_atom_t atom;
+    uint32_t long_len;
+    cb_property_handler_t cb;
+};
+
+static struct property_handler_t property_handlers[] = {
+    { 0, 128, handle_windowname_change },
+    { 0, UINT_MAX, handle_hints },
+    { 0, 128, handle_windowname_change_legacy },
+    { 0, UINT_MAX, handle_normal_hints },
+    { 0, UINT_MAX, handle_clientleader_change },
+    { 0, UINT_MAX, handle_transient_for }
+};
+#define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
+
+/*
+ * Sets the appropriate atoms for the property handlers after the atoms were
+ * received from X11
+ *
+ */
+void property_handlers_init() {
+    property_handlers[0].atom = A__NET_WM_NAME;
+    property_handlers[1].atom = A_WM_HINTS;
+    property_handlers[2].atom = A_WM_NAME;
+    property_handlers[3].atom = A_WM_NORMAL_HINTS;
+    property_handlers[4].atom = A_WM_CLIENT_LEADER;
+    property_handlers[5].atom = A_WM_TRANSIENT_FOR;
+}
+
+static int property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {
+    struct property_handler_t *handler = NULL;
+    xcb_get_property_reply_t *propr = NULL;
+    int ret;
+
+    for (int c = 0; c < sizeof(property_handlers) / sizeof(struct property_handler_t); c++) {
+        if (property_handlers[c].atom != atom)
+            continue;
+
+        handler = &property_handlers[c];
+        break;
+    }
+
+    if (handler == NULL) {
+        DLOG("Unhandled property notify for atom %d (0x%08x)\n", atom, atom);
+        return 0;
+    }
+
+    if (state != XCB_PROPERTY_DELETE) {
+        xcb_get_property_cookie_t cookie = xcb_get_property(conn, 0, window, atom, XCB_GET_PROPERTY_TYPE_ANY, 0, handler->long_len);
+        propr = xcb_get_property_reply(conn, cookie, 0);
+    }
+
+    ret = handler->cb(NULL, conn, state, window, atom, propr);
+    FREE(propr);
+    return ret;
+}
+
+/*
+ * Takes an xcb_generic_event_t and calls the appropriate handler, based on the
+ * event type.
+ *
+ */
+void handle_event(int type, xcb_generic_event_t *event) {
+    if (randr_base > -1 &&
+        type == randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY) {
+        handle_screen_change(event);
+        return;
+    }
+
+    switch (type) {
+        case XCB_KEY_PRESS:
+            handle_key_press((xcb_key_press_event_t*)event);
+            break;
+
+        case XCB_BUTTON_PRESS:
+            handle_button_press((xcb_button_press_event_t*)event);
+            break;
+
+        case XCB_MAP_REQUEST:
+            handle_map_request((xcb_map_request_event_t*)event);
+            break;
+
+        case XCB_UNMAP_NOTIFY:
+            handle_unmap_notify_event((xcb_unmap_notify_event_t*)event);
+            break;
+
+        case XCB_DESTROY_NOTIFY:
+            handle_destroy_notify_event((xcb_destroy_notify_event_t*)event);
+            break;
+
+        case XCB_EXPOSE:
+            handle_expose_event((xcb_expose_event_t*)event);
+            break;
+
+        case XCB_MOTION_NOTIFY:
+            handle_motion_notify((xcb_motion_notify_event_t*)event);
+            break;
+
+        /* Enter window = user moved his mouse over the window */
+        case XCB_ENTER_NOTIFY:
+            handle_enter_notify((xcb_enter_notify_event_t*)event);
+            break;
+
+        /* Client message are sent to the root window. The only interesting
+         * client message for us is _NET_WM_STATE, we honour
+         * _NET_WM_STATE_FULLSCREEN */
+        case XCB_CLIENT_MESSAGE:
+            handle_client_message((xcb_client_message_event_t*)event);
+            break;
+
+        /* Configure request = window tried to change size on its own */
+        case XCB_CONFIGURE_REQUEST:
+            handle_configure_request((xcb_configure_request_event_t*)event);
+            break;
+
+        /* Mapping notify = keyboard mapping changed (Xmodmap), re-grab bindings */
+        case XCB_MAPPING_NOTIFY:
+            handle_mapping_notify((xcb_mapping_notify_event_t*)event);
+            break;
+
+        case XCB_FOCUS_IN:
+            handle_focus_in((xcb_focus_in_event_t*)event);
+            break;
+
+        case XCB_PROPERTY_NOTIFY:
+            DLOG("Property notify\n");
+            xcb_property_notify_event_t *e = (xcb_property_notify_event_t*)event;
+            property_notify(e->state, e->window, e->atom);
+            break;
+
+        default:
+            DLOG("Unhandled event of type %d\n", type);
+            break;
+    }
 }
