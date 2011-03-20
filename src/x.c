@@ -283,6 +283,12 @@ void x_draw_decoration(Con *con) {
     }
 
     DLOG("CACHE MISS\n");
+    Con *next = con;
+    while ((next = TAILQ_NEXT(next, nodes))) {
+        DLOG("Also invalidating cache of %p\n", next);
+        FREE(next->deco_render_params);
+    }
+
     FREE(con->deco_render_params);
     con->deco_render_params = p;
 
