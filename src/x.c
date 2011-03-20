@@ -349,11 +349,8 @@ void x_draw_decoration(Con *con) {
 
     /* 4: paint the bar */
     xcb_change_gc_single(conn, parent->pm_gc, XCB_GC_FOREGROUND, p->color->background);
-            free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
     xcb_rectangle_t drect = { con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height };
-            free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
     xcb_poly_fill_rectangle(conn, parent->pixmap, parent->pm_gc, 1, &drect);
-            free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
 
     /* 5: draw the two lines in border color */
     xcb_draw_line(conn, parent->pixmap, parent->pm_gc, p->color->border,
@@ -361,13 +358,11 @@ void x_draw_decoration(Con *con) {
             con->deco_rect.y, /* y */
             con->deco_rect.x + con->deco_rect.width, /* to_x */
             con->deco_rect.y); /* to_y */
-            free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
     xcb_draw_line(conn, parent->pixmap, parent->pm_gc, p->color->border,
             con->deco_rect.x, /* x */
             con->deco_rect.y + con->deco_rect.height - 1, /* y */
             con->deco_rect.x + con->deco_rect.width, /* to_x */
             con->deco_rect.y + con->deco_rect.height - 1); /* to_y */
-            free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
 
     /* 6: draw the title */
     uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
@@ -521,9 +516,7 @@ static void x_push_node(Con *con) {
                 xcb_free_gc(conn, con->pm_gc);
             }
             xcb_create_pixmap(conn, root_depth, con->pixmap, con->frame, rect.width, rect.height);
-                free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
             xcb_create_gc(conn, con->pm_gc, con->pixmap, 0, 0);
-                free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
             con->pixmap_recreated = true;
         }
         memcpy(&(state->rect), &rect, sizeof(Rect));
