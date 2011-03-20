@@ -230,8 +230,10 @@ void workspace_show(const char *num) {
     /* enable fullscreen for the target workspace. If it happens to be the
      * same one we are currently on anyways, we can stop here. */
     workspace->fullscreen_mode = CF_OUTPUT;
-    if (workspace == old)
+    if (workspace == con_get_workspace(focused)) {
+        DLOG("Not switching, already there.\n");
         return;
+    }
 
     workspace_reassign_sticky(workspace);
 
