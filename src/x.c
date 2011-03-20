@@ -268,7 +268,7 @@ void x_draw_decoration(Con *con) {
     Rect *w = &(con->window_rect);
     p->con_rect = (struct width_height){ r->width, r->height };
     p->con_window_rect = (struct width_height){ w->width, w->height };
-    p->con_deco_rect = (struct width_height){ con->deco_rect.width, con->deco_rect.height };
+    p->con_deco_rect = con->deco_rect;
     p->background = config.client.background;
     p->con_is_leaf = con_is_leaf(con);
     p->font = config.font.id;

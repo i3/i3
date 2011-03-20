@@ -107,7 +107,7 @@ struct deco_render_params {
     int border_style;
     struct width_height con_rect;
     struct width_height con_window_rect;
-    struct width_height con_deco_rect;
+    Rect con_deco_rect;
     uint32_t background;
     bool con_is_leaf;
     xcb_font_t font;
