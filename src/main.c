@@ -260,11 +260,12 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    if (config.ipc_socket_path == NULL) {
+    if (config.ipc_socket_path == NULL)
         config.ipc_socket_path = getenv("I3SOCK");
-        if (config.ipc_socket_path == NULL)
-            config.ipc_socket_path = get_process_filename("i3-ipc-socket");
-    }
+
+    /* Fall back to a file name in /tmp/ based on the PID */
+    if (config.ipc_socket_path == NULL)
+        config.ipc_socket_path = get_process_filename("i3-ipc-socket");
 
     uint32_t mask = XCB_CW_EVENT_MASK;
     uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |

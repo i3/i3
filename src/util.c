@@ -243,8 +243,7 @@ static char **append_argument(char **original, char *argument) {
  * Returns the name of a temporary file with the specified prefix.
  *
  */
-char *get_process_filename(const char *prefix)
-{
+char *get_process_filename(const char *prefix) {
     struct passwd *pw = getpwuid(getuid());
     const char *username = pw ? pw->pw_name : "unknown";
     char *filename;
@@ -253,9 +252,8 @@ char *get_process_filename(const char *prefix)
         perror("asprintf()");
         return NULL;
     }
-    else {
-        return filename;
-    }
+
+    return filename;
 }
 
 #define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
