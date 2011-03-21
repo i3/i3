@@ -225,8 +225,6 @@ void unhide_bars() {
         return;
     }
 
-    draw_bars();
-
     i3_output           *walk;
     xcb_void_cookie_t   cookie;
     uint32_t            mask;
@@ -891,9 +889,6 @@ void reconfig_windows() {
  *
  */
 void draw_bars() {
-    if (config.hide_on_modifier && !mod_pressed) {
-        return;
-    }
     DLOG("Drawing Bars...\n");
     int i = 0;
 
