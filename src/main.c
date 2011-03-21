@@ -262,6 +262,8 @@ int main(int argc, char *argv[]) {
 
     if (config.ipc_socket_path == NULL) {
         config.ipc_socket_path = getenv("I3SOCK");
+        if (config.ipc_socket_path == NULL)
+            config.ipc_socket_path = get_process_filename("i3-ipc-socket");
     }
 
     uint32_t mask = XCB_CW_EVENT_MASK;
@@ -382,15 +384,13 @@ int main(int argc, char *argv[]) {
             die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
 
     /* Create the UNIX domain socket for IPC */
-    if (config.ipc_socket_path != NULL) {
-        int ipc_socket = ipc_create_socket(config.ipc_socket_path);
-        if (ipc_socket == -1) {
-            ELOG("Could not create the IPC socket, IPC disabled\n");
-        } else {
-            struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
-            ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
-            ev_io_start(loop, ipc_io);
-        }
+    int ipc_socket = ipc_create_socket(config.ipc_socket_path);
+    if (ipc_socket == -1) {
+        ELOG("Could not create the IPC socket, IPC disabled\n");
+    } else {
+        struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
+        ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
+        ev_io_start(loop, ipc_io);
     }
 
     /* Set up i3 specific atoms like I3_SOCKET_PATH and I3_CONFIG_PATH */
