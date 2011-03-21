@@ -629,7 +629,6 @@ int ipc_create_socket(const char *filename) {
     int sockfd;
 
     FREE(current_socketpath);
-    current_socketpath = NULL;
 
     char *resolved = resolve_tilde(filename);
     DLOG("Creating IPC-socket at %s\n", resolved);
