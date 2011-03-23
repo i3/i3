@@ -235,7 +235,9 @@ void parse_file(const char *f) {
 %token TOK_1PIXEL "1pixel"
 %token TOKFOCUSFOLLOWSMOUSE "focus_follows_mouse"
 %token TOKWORKSPACEBAR "workspace_bar"
-%token TOKCONTAINERMODE "default/stacking/tabbed"
+%token TOK_DEFAULT "default"
+%token TOK_STACKING "stacking"
+%token TOK_TABBED "tabbed"
 %token TOKSTACKLIMIT "stack-limit"
 %token TOK_POPUP_DURING_FULLSCREEN "popup_during_fullscreen"
 %token TOK_IGNORE "ignore"
@@ -393,10 +395,10 @@ direction:
         ;
 
 new_container:
-        TOKNEWCONTAINER WHITESPACE TOKCONTAINERMODE
+        TOKNEWCONTAINER WHITESPACE layout_mode
         {
                 DLOG("new containers will be in mode %d\n", $<number>3);
-                config.container_mode = $<number>3;
+                config.default_layout = $<number>3;
 
 #if 0
                 /* We also need to change the layout of the already existing
@@ -436,6 +438,12 @@ new_container:
 #endif
         }
         ;
+
+layout_mode:
+      TOK_DEFAULT       { $<number>$ = L_DEFAULT; }
+      | TOK_STACKING    { $<number>$ = L_STACKED; }
+      | TOK_TABBED      { $<number>$ = L_TABBED; }
+      ;
 
 new_window:
         TOKNEWWINDOW WHITESPACE border_style

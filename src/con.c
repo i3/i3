@@ -59,8 +59,16 @@ Con *con_new(Con *parent) {
     TAILQ_INIT(&(new->focus_head));
     TAILQ_INIT(&(new->swallow_head));
 
-    if (parent != NULL)
-        con_attach(new, parent, false);
+    if (parent != NULL) {
+        /* Set layout of ws if this is the first child of the ws. */
+        if (parent->type == CT_WORKSPACE && con_is_leaf(parent)) {
+            con_set_layout(new, config.default_layout);
+            con_attach(new, parent, false);
+            con_set_layout(parent, config.default_layout);
+        } else {
+            con_attach(new, parent, false);
+        }
+    }
 
     return new;
 }

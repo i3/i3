@@ -92,7 +92,7 @@ struct Config {
         const char *ipc_socket_path;
         const char *restart_state_path;
 
-        int container_mode;
+        int default_layout;
         int container_stack_limit;
         int container_stack_limit_value;
 

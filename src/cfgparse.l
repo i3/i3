@@ -106,9 +106,10 @@ workspace_bar                   { return TOKWORKSPACEBAR; }
 popup_during_fullscreen         { return TOK_POPUP_DURING_FULLSCREEN; }
 ignore                          { return TOK_IGNORE; }
 leave_fullscreen                { return TOK_LEAVE_FULLSCREEN; }
-default                         { /* yylval.number = MODE_DEFAULT; */return TOKCONTAINERMODE; }
-stacking                        { /* yylval.number = MODE_STACK; */return TOKCONTAINERMODE; }
-tabbed                          { /* yylval.number = MODE_TABBED; */return TOKCONTAINERMODE; }
+default                         { /* yylval.number = MODE_DEFAULT; */return TOK_DEFAULT; }
+stacking                        { /* yylval.number = MODE_STACK; */return TOK_STACKING; }
+stacked                         { return TOK_STACKING; }
+tabbed                          { /* yylval.number = MODE_TABBED; */return TOK_TABBED; }
 stack-limit                     { return TOKSTACKLIMIT; }
 cols                            { /* yylval.number = STACK_LIMIT_COLS; */return TOKSTACKLIMIT; }
 rows                            { /* yylval.number = STACK_LIMIT_ROWS; */return TOKSTACKLIMIT; }
