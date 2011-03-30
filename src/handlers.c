@@ -896,6 +896,12 @@ static int handle_focus_in(xcb_focus_in_event_t *event) {
         return 1;
     DLOG("That is con %p / %s\n", con, con->name);
 
+    if (event->mode == XCB_NOTIFY_MODE_GRAB ||
+        event->mode == XCB_NOTIFY_MODE_UNGRAB) {
+        DLOG("FocusIn event for grab/ungrab, ignoring\n");
+        return 1;
+    }
+
     if (event->detail == XCB_NOTIFY_DETAIL_POINTER) {
         DLOG("notify detail is pointer, ignoring this event\n");
         return 1;
