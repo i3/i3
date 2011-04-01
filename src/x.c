@@ -581,7 +581,7 @@ static void x_push_node(Con *con) {
     TAILQ_FOREACH(current, &(con->focus_head), focused)
         x_push_node(current);
 
-    if (con->type != CT_ROOT && con->type != CT_OUTPUT)
+    if (con->type != CT_ROOT && con->type != CT_OUTPUT && con->mapped)
         x_draw_decoration(con);
 }
 
