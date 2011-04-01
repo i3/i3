@@ -117,6 +117,17 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         goto out;
     }
 
+    uint32_t mask = 0;
+    uint32_t values[1];
+
+    /* Set a temporary event mask for the new window, consisting only of
+     * PropertyChange. We need to be notified of PropertyChanges because the
+     * client can change its properties *after* we requested them but *before*
+     * we actually reparented it and have set our final event mask. */
+    mask = XCB_CW_EVENT_MASK;
+    values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE;
+    xcb_change_window_attributes(conn, window, mask, values);
+
 #define GET_PROPERTY(atom, len) xcb_get_property_unchecked(conn, false, window, atom, XCB_GET_PROPERTY_TYPE_ANY, 0, len)
 
     wm_type_cookie = GET_PROPERTY(A__NET_WM_WINDOW_TYPE, UINT32_MAX);
@@ -130,8 +141,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     /* TODO: also get wm_normal_hints here. implement after we got rid of xcb-event */
 
     DLOG("reparenting!\n");
-    uint32_t mask = 0;
-    uint32_t values[1];
 
     i3Window *cwindow = scalloc(sizeof(i3Window));
     cwindow->id = window;
