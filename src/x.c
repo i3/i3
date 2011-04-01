@@ -575,11 +575,10 @@ static void x_push_node(Con *con) {
         fake_absolute_configure_notify(con);
     }
 
-    /* handle all children and floating windows of this node */
-    TAILQ_FOREACH(current, &(con->nodes_head), nodes)
-        x_push_node(current);
-
-    TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
+    /* Handle all children and floating windows of this node. We recurse
+     * in focus order to display the focused client in a stack first when
+     * switching workspaces (reduces flickering). */
+    TAILQ_FOREACH(current, &(con->focus_head), focused)
         x_push_node(current);
 
     if (con->type != CT_ROOT && con->type != CT_OUTPUT)
