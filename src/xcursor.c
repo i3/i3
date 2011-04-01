@@ -28,6 +28,8 @@ void xcursor_load_cursors() {
     cursors[XCURSOR_CURSOR_POINTER] = load_cursor("left_ptr");
     cursors[XCURSOR_CURSOR_RESIZE_HORIZONTAL] = load_cursor("sb_h_double_arrow");
     cursors[XCURSOR_CURSOR_RESIZE_VERTICAL] = load_cursor("sb_v_double_arrow");
+
+    XFlush(xlibdpy);
 }
 
 Cursor xcursor_get_cursor(enum xcursor_cursor_t c) {
