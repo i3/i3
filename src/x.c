@@ -510,9 +510,12 @@ static void x_push_node(Con *con) {
         xcb_set_window_rect(conn, con->frame, rect);
 
         /* As the pixmap only depends on the size and not on the position, it
-         * is enough to check if width/height have changed */
-        if (state->rect.width != rect.width ||
-            state->rect.height != rect.height) {
+         * is enough to check if width/height have changed. Also, we don’t
+         * create a pixmap at all when the window is actually not visible
+         * (height == 0). */
+        if (rect.height > 0 &&
+            (state->rect.width != rect.width ||
+            state->rect.height != rect.height)) {
             DLOG("CACHE: creating new pixmap\n");
             if (con->pixmap == 0) {
                 con->pixmap = xcb_generate_id(conn);
