@@ -231,10 +231,10 @@ DRAGGING_CB(drag_window_callback) {
     /* Reposition the client correctly while moving */
     con->rect.x = old_rect->x + (new_x - event->root_x);
     con->rect.y = old_rect->y + (new_y - event->root_y);
-    /* TODO: don’t re-render the whole tree just because we change
-     * coordinates of a floating window */
-    tree_render();
-    x_push_changes(croot);
+
+    render_con(con, false);
+    x_push_node(con, true);
+    xcb_flush(conn);
 }
 
 /*

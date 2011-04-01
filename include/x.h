@@ -61,6 +61,14 @@ void x_window_kill(xcb_window_t window);
 void x_draw_decoration(Con *con);
 
 /**
+ * This function pushes the properties of each node of the layout tree to
+ * X11 if they have changed (like the map state, position of the window, …).
+ * It recursively traverses all children of the given node.
+ *
+ */
+void x_push_node(Con *con, bool skip_decoration);
+
+/**
  * Pushes all changes (state of each node, see x_push_node() and the window
  * stack) to X11.
  *

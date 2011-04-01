@@ -442,7 +442,7 @@ copy_pixmaps:
  * It recursively traverses all children of the given node.
  *
  */
-static void x_push_node(Con *con) {
+void x_push_node(Con *con, bool skip_decoration) {
     Con *current;
     con_state *state;
     Rect rect = con->rect;
@@ -582,9 +582,11 @@ static void x_push_node(Con *con) {
      * in focus order to display the focused client in a stack first when
      * switching workspaces (reduces flickering). */
     TAILQ_FOREACH(current, &(con->focus_head), focused)
-        x_push_node(current);
+        x_push_node(current, skip_decoration);
 
-    if (con->type != CT_ROOT && con->type != CT_OUTPUT && con->mapped)
+    if (!skip_decoration &&
+        (con->type != CT_ROOT && con->type != CT_OUTPUT) &&
+        con->mapped)
         x_draw_decoration(con);
 }
 
@@ -687,7 +689,7 @@ void x_push_changes(Con *con) {
     DLOG("Done, EnterNotify re-enabled\n");
 
     DLOG("\n\n PUSHING CHANGES\n\n");
-    x_push_node(con);
+    x_push_node(con, false);
 
     xcb_window_t to_focus = focused->frame;
     if (focused->window != NULL)
