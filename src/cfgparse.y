@@ -228,7 +228,7 @@ void parse_file(const char *f) {
 %token TOK_HORIZ "horizontal"
 %token TOK_VERT "vertical"
 %token TOK_AUTO "auto"
-%token TOKNEWCONTAINER "new_container"
+%token TOK_WORKSPACE_LAYOUT "workspace_layout"
 %token TOKNEWWINDOW "new_window"
 %token TOK_NORMAL "normal"
 %token TOK_NONE "none"
@@ -256,7 +256,7 @@ line:
         | mode
         | floating_modifier
         | orientation
-        | new_container
+        | workspace_layout
         | new_window
         | focus_follows_mouse
         | workspace_bar
@@ -394,8 +394,8 @@ direction:
         | TOK_AUTO      { $<number>$ = NO_ORIENTATION; }
         ;
 
-new_container:
-        TOKNEWCONTAINER WHITESPACE layout_mode
+workspace_layout:
+        TOK_WORKSPACE_LAYOUT WHITESPACE layout_mode
         {
                 DLOG("new containers will be in mode %d\n", $<number>3);
                 config.default_layout = $<number>3;
@@ -419,7 +419,7 @@ new_container:
                 }
 #endif
         }
-        | TOKNEWCONTAINER WHITESPACE TOKSTACKLIMIT WHITESPACE TOKSTACKLIMIT WHITESPACE NUMBER
+        | TOK_WORKSPACE_LAYOUT WHITESPACE TOKSTACKLIMIT WHITESPACE TOKSTACKLIMIT WHITESPACE NUMBER
         {
                 DLOG("stack-limit %d with val %d\n", $<number>5, $<number>7);
                 config.container_stack_limit = $<number>5;

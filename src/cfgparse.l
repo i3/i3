@@ -96,7 +96,7 @@ default_orientation             { return TOK_ORIENTATION; }
 horizontal                      { return TOK_HORIZ; }
 vertical                        { return TOK_VERT; }
 auto                            { return TOK_AUTO; }
-new_container                   { return TOKNEWCONTAINER; }
+workspace_layout                { return TOK_WORKSPACE_LAYOUT; }
 new_window                      { return TOKNEWWINDOW; }
 normal                          { return TOK_NORMAL; }
 none                            { return TOK_NONE; }
