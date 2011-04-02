@@ -60,8 +60,11 @@ Con *con_new(Con *parent) {
     TAILQ_INIT(&(new->swallow_head));
 
     if (parent != NULL) {
-        /* Set layout of ws if this is the first child of the ws. */
-        if (parent->type == CT_WORKSPACE && con_is_leaf(parent)) {
+        /* Set layout of ws if this is the first child of the ws and the user
+         * wanted something different than the default layout. */
+        if (parent->type == CT_WORKSPACE &&
+            con_is_leaf(parent) &&
+            config.default_layout != L_DEFAULT) {
             con_set_layout(new, config.default_layout);
             con_attach(new, parent, false);
             con_set_layout(parent, config.default_layout);
