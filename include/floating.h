@@ -59,6 +59,13 @@ void toggle_floating_mode(Con *con, bool automatic);
  */
 void floating_raise_con(Con *con);
 
+/**
+ * Checks if con’s coordinates are within its workspace and re-assigns it to
+ * the actual workspace if not.
+ *
+ */
+bool floating_maybe_reassign_ws(Con *con);
+
 #if 0
 /**
  * Removes the floating client from its workspace and attaches it to the new
