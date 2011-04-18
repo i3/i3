@@ -256,7 +256,7 @@ keysyms.
 *Syntax*:
 ----------------------------------
 bindsym [Modifiers+]keysym command
-bind [Modifiers+]keycode command
+bindcode [Modifiers+]keycode command
 ----------------------------------
 
 *Examples*:
@@ -268,7 +268,7 @@ bindsym Mod1+f f
 bindsym Mod1+Shift+r restart
 
 # Notebook-specific hotkeys
-bind 214 exec /home/michael/toggle_beamer.sh
+bindcode 214 exec /home/michael/toggle_beamer.sh
 --------------------------------
 
 Available Modifiers:
@@ -680,7 +680,7 @@ mode "resize" {
         bindsym d resize right +10
         bindsym Shift+d resize right -10
 
-        bind 36 mode default
+        bindcode 36 mode default
 }
 
 # Enter resize mode

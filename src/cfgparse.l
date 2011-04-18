@@ -33,7 +33,7 @@ int yycolumn = 1;
 
 EOL	(\r?\n)
 
-%s BIND_COND
+%s BINDCODE_COND
 %s BINDSYM_COND
 %s BIND_AWS_COND
 %s BINDSYM_AWS_COND
@@ -73,7 +73,8 @@ EOL	(\r?\n)
 <COLOR_COND>[0-9a-fA-F]+        { yylval.string = strdup(yytext); return HEX; }
 [0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
 mode                            { return TOKMODE; }
-bind                            { BEGIN(BIND_COND); return TOKBIND; }
+bind                            { BEGIN(BINDCODE_COND); return TOKBINDCODE; }
+bindcode                        { BEGIN(BINDCODE_COND); return TOKBINDCODE; }
 bindsym                         { BEGIN(BINDSYM_COND); return TOKBINDSYM; }
 floating_modifier               { BEGIN(INITIAL); return TOKFLOATING_MODIFIER; }
 workspace                       { BEGIN(INITIAL); return TOKWORKSPACE; }
@@ -138,7 +139,7 @@ shift                           { return TOKSHIFT; }
                                   BEGIN(INITIAL);
                                   yy_push_state(BUFFER_LINE);
                                 }
-<BIND_COND>[ \t]+               { BEGIN(BIND_AWS_COND); return WHITESPACE; }
+<BINDCODE_COND>[ \t]+           { BEGIN(BIND_AWS_COND); return WHITESPACE; }
 <BINDSYM_COND>[ \t]+            { BEGIN(BINDSYM_AWS_COND); return WHITESPACE; }
 <BIND_AWS_COND>[ \t]+           { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
 <BINDSYM_AWS_COND>[ \t]+        { BEGIN(BIND_A2WS_COND); return WHITESPACE; }

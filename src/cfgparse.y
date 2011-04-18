@@ -202,7 +202,7 @@ void parse_file(const char *f) {
 %token <string>STR_NG "<string (non-greedy)>"
 %token <string>HEX "<hex>"
 %token <string>OUTPUT "<RandR output>"
-%token TOKBIND
+%token TOKBINDCODE
 %token TOKTERMINAL
 %token TOKCOMMENT "<comment>"
 %token TOKFONT "font"
@@ -289,14 +289,14 @@ bindline:
         ;
 
 binding:
-        TOKBIND WHITESPACE bind                 { $<binding>$ = $<binding>3; }
+        TOKBINDCODE WHITESPACE bindcode         { $<binding>$ = $<binding>3; }
         | TOKBINDSYM WHITESPACE bindsym         { $<binding>$ = $<binding>3; }
         ;
 
-bind:
+bindcode:
         binding_modifiers NUMBER WHITESPACE command
         {
-                printf("\tFound binding mod%d with key %d and command %s\n", $<number>1, $2, $<string>4);
+                printf("\tFound keycode binding mod%d with key %d and command %s\n", $<number>1, $2, $<string>4);
                 Binding *new = scalloc(sizeof(Binding));
 
                 new->keycode = $<number>2;
@@ -310,7 +310,7 @@ bind:
 bindsym:
         binding_modifiers word_or_number WHITESPACE command
         {
-                printf("\tFound symbolic mod%d with key %s and command %s\n", $<number>1, $<string>2, $<string>4);
+                printf("\tFound keysym binding mod%d with key %s and command %s\n", $<number>1, $<string>2, $<string>4);
                 Binding *new = scalloc(sizeof(Binding));
 
                 new->symbol = $<string>2;
