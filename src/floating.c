@@ -235,6 +235,30 @@ DRAGGING_CB(drag_window_callback) {
     render_con(con, false);
     x_push_node(con, true);
     xcb_flush(conn);
+
+    /* Check if we cross workspace boundaries while moving */
+    Output *output = get_output_containing(
+        con->rect.x + (con->rect.width / 2),
+        con->rect.y + (con->rect.height / 2));
+
+    if (!output) {
+        ELOG("No output found at destination coordinates?\n");
+        return;
+    }
+
+    if (con_get_output(con) == output->con) {
+        DLOG("still the same ws\n");
+        return;
+    }
+
+    DLOG("Need to re-assign!\n");
+
+    Con *content = output_get_content(output->con);
+    Con *ws = TAILQ_FIRST(&(content->nodes_head));
+    DLOG("Moving con %p / %s to workspace %p / %s\n", con, con->name, ws, ws->name);
+    con_move_to_workspace(con, ws);
+    con_focus(con_descend_focused(con));
+    tree_render();
 }
 
 /*
