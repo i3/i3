@@ -260,12 +260,13 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    if (config.ipc_socket_path == NULL)
-        config.ipc_socket_path = getenv("I3SOCK");
-
-    /* Fall back to a file name in /tmp/ based on the PID */
-    if (config.ipc_socket_path == NULL)
-        config.ipc_socket_path = get_process_filename("i3-ipc-socket");
+    if (config.ipc_socket_path == NULL) {
+        /* Fall back to a file name in /tmp/ based on the PID */
+        if ((config.ipc_socket_path = getenv("I3SOCK")) == NULL)
+            config.ipc_socket_path = get_process_filename("ipc-socket");
+        else
+            config.ipc_socket_path = sstrdup(config.ipc_socket_path);
+    }
 
     uint32_t mask = XCB_CW_EVENT_MASK;
     uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
@@ -389,6 +390,7 @@ int main(int argc, char *argv[]) {
     if (ipc_socket == -1) {
         ELOG("Could not create the IPC socket, IPC disabled\n");
     } else {
+        free(config.ipc_socket_path);
         struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
         ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
         ev_io_start(loop, ipc_io);

@@ -244,15 +244,35 @@ static char **append_argument(char **original, char *argument) {
  *
  */
 char *get_process_filename(const char *prefix) {
-    struct passwd *pw = getpwuid(getuid());
-    const char *username = pw ? pw->pw_name : "unknown";
+    char *dir = getenv("XDG_RUNTIME_DIR");
+    if (dir == NULL) {
+        struct passwd *pw = getpwuid(getuid());
+        const char *username = pw ? pw->pw_name : "unknown";
+        if (asprintf(&dir, "/tmp/i3-%s", username) == -1) {
+            perror("asprintf()");
+            return NULL;
+        }
+    } else {
+        char *tmp;
+        if (asprintf(&tmp, "%s/i3", dir) == -1) {
+            perror("asprintf()");
+            return NULL;
+        }
+        dir = tmp;
+    }
+    if (!path_exists(dir)) {
+        if (mkdir(dir, 0700) == -1) {
+            perror("mkdir()");
+            return NULL;
+        }
+    }
     char *filename;
-    int res = asprintf(&filename, "/tmp/%s-%s.%d", prefix, username, getpid());
-    if (res == -1) {
+    if (asprintf(&filename, "%s/%s.%d", dir, prefix, getpid()) == -1) {
         perror("asprintf()");
-        return NULL;
+        filename = NULL;
     }
 
+    free(dir);
     return filename;
 }
 
@@ -275,7 +295,7 @@ char *store_restart_layout() {
      * resolve the tildes in the specified path */
     char *filename;
     if (config.restart_state_path == NULL) {
-        filename = get_process_filename("i3-restart-state");
+        filename = get_process_filename("restart-state");
         if (!filename)
             return NULL;
     } else {
