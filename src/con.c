@@ -549,8 +549,10 @@ void con_move_to_workspace(Con *con, Con *workspace) {
     Con *next = con_descend_focused(workspace);
 
     /* 3: we go up one level, but only when next is a normal container */
-    if (next->type != CT_WORKSPACE)
+    if (next->type != CT_WORKSPACE) {
+        DLOG("next originally = %p / %s / type %d\n", next, next->name, next->type);
         next = next->parent;
+    }
 
     /* 4: if the target container is floating, we get the workspace instead.
      * Only tiling windows need to get inserted next to the current container.
@@ -559,6 +561,12 @@ void con_move_to_workspace(Con *con, Con *workspace) {
     if (floatingcon != NULL) {
         DLOG("floatingcon, going up even further\n");
         next = floatingcon->parent;
+    }
+
+    if (con->type == CT_FLOATING_CON) {
+        Con *ws = con_get_workspace(next);
+        DLOG("This is a floating window, using workspace %p / %s\n", ws, ws->name);
+        next = ws;
     }
 
     DLOG("Re-attaching container to %p / %s\n", next, next->name);
@@ -581,7 +589,7 @@ void con_move_to_workspace(Con *con, Con *workspace) {
      * don’t want to focus invisible workspaces */
     if (source_output != dest_output &&
         workspace_is_visible(workspace)) {
-        DLOG("Moved to a different output, focusing target");
+        DLOG("Moved to a different output, focusing target\n");
     } else {
         con_focus(focus_next);
     }
