@@ -157,7 +157,19 @@ void floating_enable(Con *con, bool automatic) {
     if (set_focus)
         con_focus(con);
 
-    floating_maybe_reassign_ws(nc);
+    /* Check if we need to re-assign it to a different workspace because of its
+     * coordinates and exit if that was done successfully. */
+    if (floating_maybe_reassign_ws(nc))
+        return;
+
+    /* Sanitize coordinates: Check if they are on any output */
+    if (get_output_containing(nc->rect.x, nc->rect.y) != NULL)
+        return;
+
+    ELOG("No output found at destination coordinates, centering floating window on current ws\n");
+    Con *ws = nc->parent;
+    nc->rect.x = ws->rect.x + (ws->rect.width / 2) - (nc->rect.width / 2);
+    nc->rect.y = ws->rect.y + (ws->rect.height / 2) - (nc->rect.height / 2);
 }
 
 void floating_disable(Con *con, bool automatic) {
