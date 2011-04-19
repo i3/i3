@@ -115,6 +115,7 @@ struct deco_render_params {
 
 struct Ignore_Event {
     int sequence;
+    int response_type;
     time_t added;
 
     SLIST_ENTRY(Ignore_Event) ignore_events;

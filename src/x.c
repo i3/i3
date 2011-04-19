@@ -564,14 +564,14 @@ void x_push_node(Con *con, bool skip_decoration) {
             cookie = xcb_map_window(conn, con->window->id);
             DLOG("mapping child window (serial %d)\n", cookie.sequence);
             /* Ignore enter_notifies which are generated when mapping */
-            add_ignore_event(cookie.sequence);
+            add_ignore_event(cookie.sequence, 0);
             state->child_mapped = true;
         }
 
         cookie = xcb_map_window(conn, con->frame);
         DLOG("mapping container (serial %d)\n", cookie.sequence);
         /* Ignore enter_notifies which are generated when mapping */
-        add_ignore_event(cookie.sequence);
+        add_ignore_event(cookie.sequence, 0);
         state->mapped = con->mapped;
     }
 
@@ -631,7 +631,7 @@ static void x_push_node_unmaps(Con *con) {
             DLOG("ignore_unmap for con %p (frame 0x%08x) now %d\n", con, con->frame, con->ignore_unmap);
         }
         /* Ignore enter_notifies which are generated when unmapping */
-        add_ignore_event(cookie.sequence);
+        add_ignore_event(cookie.sequence, 0);
         state->mapped = con->mapped;
     }
 

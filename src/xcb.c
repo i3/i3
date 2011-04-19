@@ -328,7 +328,7 @@ void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r) {
                          XCB_CONFIG_WINDOW_HEIGHT,
                          &(r.x));
     /* ignore events which are generated because we configured a window */
-    add_ignore_event(cookie.sequence);
+    add_ignore_event(cookie.sequence, 0);
 }
 
 /*

@@ -21,10 +21,11 @@ int randr_base = -1;
    changing workspaces */
 static SLIST_HEAD(ignore_head, Ignore_Event) ignore_events;
 
-void add_ignore_event(const int sequence) {
+void add_ignore_event(const int sequence, const int response_type) {
     struct Ignore_Event *event = smalloc(sizeof(struct Ignore_Event));
 
     event->sequence = sequence;
+    event->response_type = response_type;
     event->added = time(NULL);
 
     SLIST_INSERT_HEAD(&ignore_events, event, ignore_events);
@@ -34,7 +35,7 @@ void add_ignore_event(const int sequence) {
  * Checks if the given sequence is ignored and returns true if so.
  *
  */
-static bool event_is_ignored(const int sequence) {
+static bool event_is_ignored(const int sequence, const int response_type) {
     struct Ignore_Event *event;
     time_t now = time(NULL);
     for (event = SLIST_FIRST(&ignore_events); event != SLIST_END(&ignore_events);) {
@@ -48,6 +49,10 @@ static bool event_is_ignored(const int sequence) {
 
     SLIST_FOREACH(event, &ignore_events, ignore_events) {
         if (event->sequence != sequence)
+            continue;
+
+        if (event->response_type != 0 &&
+            event->response_type != response_type)
             continue;
 
         /* instead of removing a sequence number we better wait until it gets
@@ -153,8 +158,10 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
     }
     /* Some events are not interesting, because they were not generated
      * actively by the user, but by reconfiguration of windows */
-    if (event_is_ignored(event->sequence))
+    if (event_is_ignored(event->sequence, XCB_ENTER_NOTIFY)) {
+        DLOG("Event ignored\n");
         return 1;
+    }
 
     bool enter_child = false;
     /* Get container by frame or by child window */
@@ -285,7 +292,7 @@ static int handle_map_request(xcb_map_request_event_t *event) {
     cookie = xcb_get_window_attributes_unchecked(conn, event->window);
 
     DLOG("window = 0x%08x, serial is %d.\n", event->window, event->sequence);
-    add_ignore_event(event->sequence);
+    add_ignore_event(event->sequence, 0);
 
     manage_window(event->window, cookie, false);
     x_push_changes(croot);
@@ -438,12 +445,9 @@ static int handle_screen_change(xcb_generic_event_t *e) {
  *
  */
 static int handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
-
-    /* FIXME: we cannot ignore this sequence because more UnmapNotifys with the same sequence
-     * numbers but different window IDs may follow */
     /* we need to ignore EnterNotify events which will be generated because a
      * different window is visible now */
-    //add_ignore_event(event->sequence);
+    add_ignore_event(event->sequence, XCB_ENTER_NOTIFY);
 
     DLOG("UnmapNotify for 0x%08x (received from 0x%08x), serial %d\n", event->window, event->event, event->sequence);
     Con *con = con_by_window_id(event->window);

@@ -15,7 +15,7 @@
 
 extern int randr_base;
 
-void add_ignore_event(const int sequence);
+void add_ignore_event(const int sequence, const int response_type);
 
 /**
  * Takes an xcb_generic_event_t and calls the appropriate handler, based on the
