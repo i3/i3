@@ -14,6 +14,7 @@ typedef struct config_t {
     dockpos_t    dockpos;
     int          verbose;
     xcb_colors_t *colors;
+    int          disable_ws;
 } config_t;
 
 config_t config;

@@ -744,8 +744,10 @@ void reconfig_windows() {
             /* If hide_on_modifier is set, i3 is not supposed to manage our bar-windows */
             values[1] = config.hide_on_modifier;
             /* The events we want to receive */
-            values[2] = XCB_EVENT_MASK_EXPOSURE |
-                        XCB_EVENT_MASK_BUTTON_PRESS;
+            values[2] = XCB_EVENT_MASK_EXPOSURE;
+            if (!config.disable_ws) {
+                values[2] |= XCB_EVENT_MASK_BUTTON_PRESS;
+            }
             xcb_void_cookie_t win_cookie = xcb_create_window_checked(xcb_connection,
                                                                      xcb_screen->root_depth,
                                                                      walk->bar,
@@ -932,6 +934,10 @@ void draw_bars() {
                           MIN(outputs_walk->rect.w - 4, statusline_width), font_height);
         }
 
+        if (config.disable_ws) {
+            continue;
+        }
+
         i3_ws *ws_walk;
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
             DLOG("Drawing Button for WS %s at x = %d\n", ws_walk->name, i);
@@ -978,10 +984,10 @@ void draw_bars() {
             i += 10 + ws_walk->name_width;
         }
 
-        redraw_bars();
-
         i = 0;
     }
+
+    redraw_bars();
 }
 
 /*

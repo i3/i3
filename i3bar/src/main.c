@@ -89,6 +89,7 @@ void print_usage(char *elf_name) {
     printf("\t\tIf -c is specified, the childprocess is sent a SIGSTOP on hiding,\n");
     printf("\t\tand a SIGCONT on unhiding of the bars\n");
     printf("-f <font>\tUse X-Core-Font <font> for display\n");
+    printf("-w\t\tDisable workspace-buttons\n");
     printf("-V\t\tBe (very) verbose with the debug-output\n");
     printf("-h\t\tDisplay this help-message and exit\n");
 }
@@ -125,6 +126,7 @@ int main(int argc, char **argv) {
     /* Definition of the standard-config */
     config.hide_on_modifier = 0;
     config.dockpos = DOCKPOS_NONE;
+    config.disable_ws = 0;
 
     static struct option long_opt[] = {
         { "socket",               required_argument, 0, 's' },
@@ -132,6 +134,7 @@ int main(int argc, char **argv) {
         { "hide",                 no_argument,       0, 'm' },
         { "dock",                 optional_argument, 0, 'd' },
         { "font",                 required_argument, 0, 'f' },
+        { "nows",                 no_argument,       0, 'w' },
         { "help",                 no_argument,       0, 'h' },
         { "version",              no_argument,       0, 'v' },
         { "verbose",              no_argument,       0, 'V' },
@@ -148,7 +151,7 @@ int main(int argc, char **argv) {
         { NULL,                   0,                 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "s:c:d::mf:hvVA:B:C:D:E:F:G:H:I:J:", long_opt, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "s:c:d::mf:whvVA:B:C:D:E:F:G:H:I:J:", long_opt, &option_index)) != -1) {
         switch (opt) {
             case 's':
                 socket_path = expand_path(optarg);
@@ -176,6 +179,9 @@ int main(int argc, char **argv) {
                 break;
             case 'f':
                 fontname = strdup(optarg);
+                break;
+            case 'w':
+                config.disable_ws = 1;
                 break;
             case 'v':
                 printf("i3bar version " I3BAR_VERSION " © 2010 Axel Wagner and contributors\n");
@@ -263,7 +269,9 @@ int main(int argc, char **argv) {
      * workspaces. Everything else (creating the bars, showing the right workspace-
      * buttons and more) is taken care of by the event-driveniness of the code */
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
-    i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
+    if (!config.disable_ws) {
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
+    }
 
     /* The name of this function is actually misleading. Even if no -c is specified,
      * this function initiates the watchers to listen on stdin and react accordingly */
