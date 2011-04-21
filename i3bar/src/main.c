@@ -81,11 +81,11 @@ static void free_colors(struct xcb_color_strings_t *colors) {
 }
 
 void print_usage(char *elf_name) {
-    printf("Usage: %s [-s sock_path] [-c command] [-m|-d [pos]] [-f font] [-V] [-h]\n", elf_name);
+    printf("Usage: %s [-s sock_path] [-c command] [-m|-d[pos]] [-f font] [-V] [-h]\n", elf_name);
     printf("-s <sock_path>\tConnect to i3 via <sock_path>\n");
     printf("-c <command>\tExecute <command> to get stdin\n");
     printf("-m\t\tHide the bars, when mod4 is not pressed.\n");
-    printf("-d [<pos>]\tEnable dockmode. <pos> is \"top\" or \"bottom\". Default is bottom\n");
+    printf("-d[<pos>]\tEnable dockmode. <pos> is \"top\" or \"bottom\". Default is bottom\n");
     printf("\t\tIf -c is specified, the childprocess is sent a SIGSTOP on hiding,\n");
     printf("\t\tand a SIGCONT on unhiding of the bars\n");
     printf("-f <font>\tUse X-Core-Font <font> for display\n");
@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
         { NULL,                   0,                 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "s:c:d:mf:whvVA:B:C:D:E:F:G:H:I:J:", long_opt, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "s:c:d::mf:whvVA:B:C:D:E:F:G:H:I:J:", long_opt, &option_index)) != -1) {
         switch (opt) {
             case 's':
                 socket_path = expand_path(optarg);
