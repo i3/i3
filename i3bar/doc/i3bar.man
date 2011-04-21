@@ -9,7 +9,7 @@ i3bar - xcb-based status- and ws-bar
 
 == SYNOPSIS
 
-*i3bar* [*-s* 'sock_path'] [*-c* 'command'] [*-m*|*-d*['pos']] [*-f* 'font'] [*-V*] [*-h*]
+*i3bar* [*-s* 'sock_path'] [*-c* 'command'] [*-m*|*-d* ['pos']] [*-f* 'font'] [*-V*] [*-h*]
 
 == OPTIONS
 
@@ -24,7 +24,7 @@ Hide the bar, when 'mod4' is not pressed. With this, dockmode will not be set, a
 If *-c* is specified, the childprocess is sent a 'SIGSTOP' on hiding and a 'SIGCONT' on unhiding of the bars.
 This is the default behavior of i3bar.
 
-*-d*['pos']*, --dock*[*=*'pos']::
+*-d* \['pos']*, --dock*[*=*'pos']::
 Put i3bar in dockmode. This will reserve some space for it, so it does not overlap other clients.
 You can specify either *bottom* (default) or *top* as 'pos'.
 
