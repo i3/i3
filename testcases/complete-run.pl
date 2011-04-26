@@ -6,24 +6,26 @@ use warnings;
 use v5.10;
 use DateTime;
 use Data::Dumper;
-use Cwd qw(abs_path getcwd);
+use Cwd qw(abs_path);
 use Proc::Background;
 use TAP::Harness;
 use TAP::Parser::Aggregator;
 use File::Basename qw(basename);
 
+# reads in a whole file
+sub slurp {
+    open my $fh, '<', shift;
+    local $/;
+    <$fh>;
+}
+
 my $i3cmd = "export DISPLAY=:0; exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c " . abs_path("../i3.config");
 
 # 1: get a list of all testcases
-my $curdir = getcwd();
 my @testfiles = @ARGV;
 
-# if no files were passed on command line, run all tests
-if (@testfiles == 0) {
-    chdir "t";
-    push @testfiles, "t/$_" while (<*.t>);
-    chdir $curdir;
-}
+# if no files were passed on command line, run all tests from t/
+@testfiles = <t/*.t> if @testfiles == 0;
 
 # 2: create an output directory for this test-run
 my $outdir = "testsuite-";
@@ -44,11 +46,12 @@ $aggregator->start();
 for my $t (@testfiles) {
     my $logpath = "$outdir/i3-log-for-" . basename($t);
     my $cmd = "$i3cmd >$logpath 2>&1";
+    my $dont_start = (slurp($t) =~ /# !NO_I3_INSTANCE!/);
 
-    my $process = Proc::Background->new($cmd);
+    my $process = Proc::Background->new($cmd) unless $dont_start;
     say "testing $t with logfile $logpath";
     $harness->aggregate_tests($aggregator, [ $t ]);
-    kill(9, $process->pid) or die "could not kill i3";
+    kill(9, $process->pid) or die "could not kill i3" unless $dont_start;
 }
 $aggregator->stop();
 
