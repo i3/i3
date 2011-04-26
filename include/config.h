@@ -89,7 +89,7 @@ struct Config {
         const char *terminal;
         i3Font font;
 
-        const char *ipc_socket_path;
+        char *ipc_socket_path;
         const char *restart_state_path;
 
         int default_layout;
