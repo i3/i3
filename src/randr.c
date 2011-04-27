@@ -633,6 +633,18 @@ void randr_query_outputs() {
         }
     }
 
+    /* Ensure that all outputs which are active also have a con. This is
+     * necessary because in the next step, a clone might get disabled. Example:
+     * LVDS1 active, VGA1 gets activated as a clone of LVDS1 (has no con).
+     * LVDS1 gets disabled. */
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (output->active && output->con == NULL) {
+            DLOG("Need to initialize a Con for output %s\n", output->name);
+            output_init_con(output);
+            output->changed = false;
+        }
+    }
+
     /* Handle outputs which have a new mode or are disabled now (either
      * because the user disabled them or because they are clones) */
     TAILQ_FOREACH(output, &outputs, outputs) {
@@ -703,12 +715,6 @@ void randr_query_outputs() {
             }
 
             output->to_be_disabled = false;
-            output->changed = false;
-        }
-
-        if (output->active && output->con == NULL) {
-            DLOG("Need to initialize a Con for output %s\n", output->name);
-            output_init_con(output);
             output->changed = false;
         }
 
