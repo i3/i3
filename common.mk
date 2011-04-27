@@ -80,6 +80,10 @@ ifeq ($(UNAME),FreeBSD)
 LDFLAGS += -liconv
 endif
 
+# Fallback for libyajl 1 which did not include yajl_version.h. We need
+# YAJL_MAJOR from that file to decide which code path should be used.
+CFLAGS += -idirafter yajl-fallback
+
 ifneq (,$(filter Linux GNU GNU/%, $(UNAME)))
 CFLAGS += -D_GNU_SOURCE
 endif

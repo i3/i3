@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009-2010 Michael Stapelberg and contributors
+ * © 2009-2011 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -18,6 +18,7 @@
 #endif
 #include <fcntl.h>
 #include <pwd.h>
+#include <yajl/yajl_version.h>
 
 #include "all.h"
 
@@ -281,14 +282,22 @@ char *get_process_filename(const char *prefix) {
 
 char *store_restart_layout() {
     setlocale(LC_NUMERIC, "C");
+#if YAJL_MAJOR >= 2
+    yajl_gen gen = yajl_gen_alloc(NULL);
+#else
     yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+#endif
 
     dump_node(gen, croot, true);
 
     setlocale(LC_NUMERIC, "");
 
     const unsigned char *payload;
+#if YAJL_MAJOR >= 2
+    size_t length;
+#else
     unsigned int length;
+#endif
     y(get_buf, &payload, &length);
 
     /* create a temporary file if one hasn't been specified, or just
@@ -324,11 +333,17 @@ char *store_restart_layout() {
             return NULL;
         }
         written += n;
+#if YAJL_MAJOR >= 2
+        printf("written: %d of %zd\n", written, length);
+#else
         printf("written: %d of %d\n", written, length);
+#endif
     }
     close(fd);
 
-    printf("layout: %.*s\n", length, payload);
+    if (length > 0) {
+        printf("layout: %.*s\n", (int)length, payload);
+    }
 
     y(free);
 

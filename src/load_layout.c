@@ -5,6 +5,7 @@
 #include <yajl/yajl_common.h>
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
+#include <yajl/yajl_version.h>
 
 #include "all.h"
 
@@ -66,8 +67,16 @@ static int json_end_array(void *ctx) {
     return 1;
 }
 
+#if YAJL_MAJOR < 2
 static int json_key(void *ctx, const unsigned char *val, unsigned int len) {
-    LOG("key: %.*s\n", len, val);
+#else
+static int json_key(void *ctx, const unsigned char *val, size_t len) {
+    if (len < 0) {
+        LOG("Invalid key, len = %zd\n", len);
+        return 1;
+    }
+#endif
+    LOG("key: %.*s\n", (int)len, val);
     FREE(last_key);
     last_key = scalloc((len+1) * sizeof(char));
     memcpy(last_key, val, len);
@@ -83,7 +92,15 @@ static int json_key(void *ctx, const unsigned char *val, unsigned int len) {
     return 1;
 }
 
+#if YAJL_MAJOR >= 2
+static int json_string(void *ctx, const unsigned char *val, size_t len) {
+#else
 static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
+#endif
+    if (len < 0) {
+        LOG("Invalid string for key %s\n", last_key);
+        return 1;
+    }
     LOG("string: %.*s for key %s\n", len, val, last_key);
     if (parsing_swallows) {
         /* TODO: the other swallowing keys */
@@ -102,7 +119,7 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             LOG("sticky_group of this container is %s\n", json_node->sticky_group);
         } else if (strcasecmp(last_key, "orientation") == 0) {
             char *buf = NULL;
-            asprintf(&buf, "%.*s", len, val);
+            asprintf(&buf, "%.*s", (int)len, val);
             if (strcasecmp(buf, "none") == 0)
                 json_node->orientation = NO_ORIENTATION;
             else if (strcasecmp(buf, "horizontal") == 0)
@@ -116,7 +133,11 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
     return 1;
 }
 
+#if YAJL_MAJOR >= 2
+static int json_int(void *ctx, long long val) {
+#else
 static int json_int(void *ctx, long val) {
+#endif
     LOG("int %d for key %s\n", val, last_key);
     if (strcasecmp(last_key, "layout") == 0) {
         json_node->layout = val;
@@ -197,8 +218,13 @@ void tree_append_json(const char *filename) {
     callbacks.yajl_map_key = json_key;
     callbacks.yajl_integer = json_int;
     callbacks.yajl_double = json_double;
+#if YAJL_MAJOR >= 2
+    g = yajl_gen_alloc(NULL);
+    hand = yajl_alloc(&callbacks, NULL, (void*)g);
+#else
     g = yajl_gen_alloc(NULL, NULL);
     hand = yajl_alloc(&callbacks, NULL, NULL, (void*)g);
+#endif
     yajl_status stat;
     json_node = focused;
     to_focus = NULL;
@@ -207,8 +233,7 @@ void tree_append_json(const char *filename) {
     parsing_geometry = false;
     setlocale(LC_NUMERIC, "C");
     stat = yajl_parse(hand, (const unsigned char*)buf, n);
-    if (stat != yajl_status_ok &&
-        stat != yajl_status_insufficient_data)
+    if (stat != yajl_status_ok)
     {
         unsigned char * str = yajl_get_error(hand, 1, (const unsigned char*)buf, n);
         fprintf(stderr, "%s\n", (const char *) str);
@@ -216,7 +241,11 @@ void tree_append_json(const char *filename) {
     }
 
     setlocale(LC_NUMERIC, "");
+#if YAJL_MAJOR >= 2
+    yajl_complete_parse(hand);
+#else
     yajl_parse_complete(hand);
+#endif
 
     fclose(f);
     if (to_focus)
