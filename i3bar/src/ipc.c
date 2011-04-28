@@ -20,8 +20,8 @@
 
 #include "common.h"
 
-ev_io      i3_connection;
-ev_timer   reconn;
+ev_io      *i3_connection;
+ev_timer   *reconn = NULL;
 
 const char *sock_path;
 
@@ -52,8 +52,14 @@ void retry_connection(struct ev_loop *loop, ev_timer *w, int events) {
  *
  */
 void reconnect() {
-    ev_timer_init(&reconn, retry_connection, 0.25, 0.25);
-    ev_timer_start(main_loop, &reconn);
+    if (reconn == NULL) {
+        if ((reconn = malloc(sizeof(ev_timer))) == NULL) {
+            ELOG("malloc() failed: %s\n", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+    }
+    ev_timer_init(reconn, retry_connection, 0.25, 0.25);
+    ev_timer_start(main_loop, reconn);
 }
 
 /*
@@ -257,7 +263,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
     uint32_t written = 0;
 
     while (to_write > 0) {
-        int n = write(i3_connection.fd, buffer + written, to_write);
+        int n = write(i3_connection->fd, buffer + written, to_write);
         if (n == -1) {
             ELOG("write() failed: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
@@ -295,8 +301,13 @@ int init_connection(const char *socket_path) {
         return 0;
     }
 
-    ev_io_init(&i3_connection, &got_data, sockfd, EV_READ);
-    ev_io_start(main_loop, &i3_connection);
+    i3_connection = malloc(sizeof(ev_io));
+    if (i3_connection == NULL) {
+        ELOG("malloc() failed: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    ev_io_init(i3_connection, &got_data, sockfd, EV_READ);
+    ev_io_start(main_loop, i3_connection);
     return 1;
 }
 
@@ -304,8 +315,8 @@ int init_connection(const char *socket_path) {
  * Destroy the connection to i3.
  */
 void destroy_connection() {
-    close(i3_connection.fd);
-    ev_io_stop(main_loop, &i3_connection);
+    close(i3_connection->fd);
+    ev_io_stop(main_loop, i3_connection);
 }
 
 /*
