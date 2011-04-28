@@ -304,8 +304,13 @@ IPC_HANDLER(get_outputs) {
  * Callback for the YAJL parser (will be called when a string is parsed).
  *
  */
+#if YAJL_MAJOR >= 2
+static int add_subscription(void *extra, const unsigned char *s,
+                            size_t len) {
+#else
 static int add_subscription(void *extra, const unsigned char *s,
                             unsigned int len) {
+#endif
         ipc_client *client = extra;
 
         DLOG("should add subscription to extra %p, sub %.*s\n", client, len, s);
