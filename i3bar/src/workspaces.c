@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <yajl/yajl_parse.h>
+#include <yajl/yajl_version.h>
 
 #include "common.h"
 
@@ -58,7 +59,11 @@ static int workspaces_boolean_cb(void *params_, bool val) {
  * Parse an integer (num or the rect)
  *
  */
+#if YAJL_MAJOR >= 2
+static int workspaces_integer_cb(void *params_, long long val) {
+#else
 static int workspaces_integer_cb(void *params_, long val) {
+#endif
     struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
 
     if (!strcmp(params->cur_key, "num")) {
@@ -99,8 +104,11 @@ static int workspaces_integer_cb(void *params_, long val) {
  * Parse a string (name, output)
  *
  */
+#if YAJL_MAJOR >= 2
+static int workspaces_string_cb(void *params_, const unsigned char *val, size_t len) {
+#else
 static int workspaces_string_cb(void *params_, const unsigned char *val, unsigned int len) {
-
+#endif
         struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
 
         char *output_name;
@@ -179,7 +187,11 @@ static int workspaces_start_map_cb(void *params_) {
  * Essentially we just save it in the parsing-state
  *
  */
+#if YAJL_MAJOR >= 2
+static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
+#else
 static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, unsigned int keyLen) {
+#endif
     struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
     FREE(params->cur_key);
 
@@ -225,10 +237,14 @@ void parse_workspaces_json(char *json) {
     params.json = json;
 
     yajl_handle handle;
-    yajl_parser_config parse_conf = { 0, 0 };
     yajl_status state;
+#if YAJL_MAJOR < 2
+    yajl_parser_config parse_conf = { 0, 0 };
 
     handle = yajl_alloc(&workspaces_callbacks, &parse_conf, NULL, (void*) &params);
+#else
+    handle = yajl_alloc(&workspaces_callbacks, NULL, (void*) &params);
+#endif
 
     state = yajl_parse(handle, (const unsigned char*) json, strlen(json));
 
@@ -237,7 +253,9 @@ void parse_workspaces_json(char *json) {
         case yajl_status_ok:
             break;
         case yajl_status_client_canceled:
+#if YAJL_MAJOR < 2
         case yajl_status_insufficient_data:
+#endif
         case yajl_status_error:
             ELOG("Could not parse workspaces-reply!\n");
             exit(EXIT_FAILURE);

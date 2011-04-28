@@ -7,6 +7,10 @@ PREFIX=/usr
 # The escaping is absurd, but we need to escape for shell, sed, make, define
 GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch $(shell [ -f .git/HEAD ] && sed 's/ref: refs\/heads\/\(.*\)/\\\\\\"\1\\\\\\"/g' .git/HEAD || echo 'unknown'))"
 
+# Fallback for libyajl 1 which did not include yajl_version.h. We need
+# YAJL_MAJOR from that file to decide which code path should be used.
+CFLAGS += -idirafter yajl-fallback
+
 CFLAGS += -Wall
 CFLAGS += -pipe
 CFLAGS += -Iinclude
