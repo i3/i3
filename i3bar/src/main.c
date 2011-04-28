@@ -232,15 +232,22 @@ int main(int argc, char **argv) {
     /* We listen to SIGTERM/QUIT/INT and try to exit cleanly, by stopping the main-loop.
      * We only need those watchers on the stack, so putting them on the stack saves us
      * some calls to free() */
-    ev_signal sig_term, sig_int, sig_hup;
+    ev_signal *sig_term = malloc(sizeof(ev_signal));
+    ev_signal *sig_int = malloc(sizeof(ev_signal));
+    ev_signal *sig_hup = malloc(sizeof(ev_signal));
 
-    ev_signal_init(&sig_term, &sig_cb, SIGTERM);
-    ev_signal_init(&sig_int, &sig_cb, SIGINT);
-    ev_signal_init(&sig_hup, &sig_cb, SIGHUP);
+    if (sig_term == NULL || sig_int == NULL || sig_hup == NULL) {
+        ELOG("malloc() failed: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
 
-    ev_signal_start(main_loop, &sig_term);
-    ev_signal_start(main_loop, &sig_int);
-    ev_signal_start(main_loop, &sig_hup);
+    ev_signal_init(sig_term, &sig_cb, SIGTERM);
+    ev_signal_init(sig_int, &sig_cb, SIGINT);
+    ev_signal_init(sig_hup, &sig_cb, SIGHUP);
+
+    ev_signal_start(main_loop, sig_term);
+    ev_signal_start(main_loop, sig_int);
+    ev_signal_start(main_loop, sig_hup);
 
     /* From here on everything should run smooth for itself, just start listening for
      * events. We stop simply stop the event-loop, when we are finished */
