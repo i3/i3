@@ -597,7 +597,8 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
         n -= strlen(I3_IPC_MAGIC);
 
         /* The next 32 bit after the magic are the message size */
-        uint32_t message_size = *((uint32_t*)message);
+        uint32_t message_size;
+        memcpy(&message_size, (uint32_t*)message, sizeof(uint32_t));
         message += sizeof(uint32_t);
         n -= sizeof(uint32_t);
 
@@ -607,7 +608,8 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
         }
 
         /* The last 32 bits of the header are the message type */
-        uint32_t message_type = *((uint32_t*)message);
+        uint32_t message_type;
+        memcpy(&message_type, (uint32_t*)message, sizeof(uint32_t));
         message += sizeof(uint32_t);
         n -= sizeof(uint32_t);
 
