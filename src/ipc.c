@@ -443,10 +443,6 @@ static int add_subscription(void *extra, const unsigned char *s,
 #else
 static int add_subscription(void *extra, const unsigned char *s,
                             size_t len) {
-    if (len < 0) {
-        DLOG("Invalid subscription with len %zd\n", len);
-        return 1;
-    }
 #endif
     ipc_client *client = extra;
 

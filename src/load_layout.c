@@ -71,10 +71,6 @@ static int json_end_array(void *ctx) {
 static int json_key(void *ctx, const unsigned char *val, unsigned int len) {
 #else
 static int json_key(void *ctx, const unsigned char *val, size_t len) {
-    if (len < 0) {
-        LOG("Invalid key, len = %zd\n", len);
-        return 1;
-    }
 #endif
     LOG("key: %.*s\n", (int)len, val);
     FREE(last_key);
@@ -97,10 +93,6 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
 #else
 static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
 #endif
-    if (len < 0) {
-        LOG("Invalid string for key %s\n", last_key);
-        return 1;
-    }
     LOG("string: %.*s for key %s\n", len, val, last_key);
     if (parsing_swallows) {
         /* TODO: the other swallowing keys */
