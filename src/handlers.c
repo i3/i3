@@ -815,6 +815,8 @@ static int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
 
     workspace_update_urgent_flag(con_get_workspace(con));
 
+    tree_render();
+
 #if 0
     /* If the workspace this client is on is not visible, we need to redraw
      * the workspace bar */
