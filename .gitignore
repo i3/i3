@@ -4,7 +4,7 @@ loglevels.tmp
 *.swp
 testcases/testsuite-*
 testcases/latest
-src/*.output
-src/*.tab.c
-src/*.tab.h
-src/*.yy.c
+*.output
+*.tab.c
+*.tab.h
+*.yy.c
