@@ -442,7 +442,7 @@ update_pixmaps:
  * It recursively traverses all children of the given node.
  *
  */
-void x_push_node(Con *con, bool skip_decoration) {
+void x_push_node(Con *con) {
     Con *current;
     con_state *state;
     Rect rect = con->rect;
@@ -584,10 +584,25 @@ void x_push_node(Con *con, bool skip_decoration) {
      * in focus order to display the focused client in a stack first when
      * switching workspaces (reduces flickering). */
     TAILQ_FOREACH(current, &(con->focus_head), focused)
-        x_push_node(current, skip_decoration);
+        x_push_node(current);
+}
 
-    if (!skip_decoration &&
-        (con->type != CT_ROOT && con->type != CT_OUTPUT) &&
+/*
+ * Recursively calls x_draw_decoration. This cannot be done in x_push_node
+ * because x_push_node uses focus order to recurse (see the comment above)
+ * while drawing the decoration needs to happen in the actual order.
+ *
+ */
+static void x_deco_recurse(Con *con) {
+    Con *current;
+
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes)
+        x_deco_recurse(current);
+
+    TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
+        x_deco_recurse(current);
+
+    if ((con->type != CT_ROOT && con->type != CT_OUTPUT) &&
         con->mapped)
         x_draw_decoration(con);
 }
@@ -691,7 +706,8 @@ void x_push_changes(Con *con) {
     DLOG("Done, EnterNotify re-enabled\n");
 
     DLOG("\n\n PUSHING CHANGES\n\n");
-    x_push_node(con, false);
+    x_push_node(con);
+    x_deco_recurse(con);
 
     xcb_window_t to_focus = focused->frame;
     if (focused->window != NULL)

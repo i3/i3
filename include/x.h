@@ -66,7 +66,7 @@ void x_draw_decoration(Con *con);
  * It recursively traverses all children of the given node.
  *
  */
-void x_push_node(Con *con, bool skip_decoration);
+void x_push_node(Con *con);
 
 /**
  * Pushes all changes (state of each node, see x_push_node() and the window

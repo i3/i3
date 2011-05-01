@@ -277,7 +277,7 @@ DRAGGING_CB(drag_window_callback) {
     con->rect.y = old_rect->y + (new_y - event->root_y);
 
     render_con(con, false);
-    x_push_node(con, true);
+    x_push_node(con);
     xcb_flush(conn);
 
     /* Check if we cross workspace boundaries while moving */
