@@ -23,6 +23,8 @@
 #include <stdint.h>
 #include <getopt.h>
 #include <limits.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -45,6 +47,7 @@ while (0)
 enum { STEP_WELCOME, STEP_GENERATE } current_step = STEP_WELCOME;
 enum { MOD_ALT, MOD_SUPER } modifier = MOD_SUPER;
 
+static char *config_path = "/tmp/wizout/i3.config";
 static xcb_connection_t *conn;
 static uint32_t font_id;
 static uint32_t font_bold_id;
@@ -270,6 +273,22 @@ int main(int argc, char *argv[]) {
                 return 0;
         }
     }
+
+    /* Check if the destination config file does not exist but the path is
+     * writable. If not, exit now, this program is not useful in that case. */
+    struct stat stbuf;
+    if (stat(config_path, &stbuf) == 0) {
+        printf("The config file \"%s\" already exists. Exiting.\n", config_path);
+        return 0;
+    }
+
+    int fd;
+    if ((fd = open(config_path, O_CREAT | O_RDWR, 0644)) == -1) {
+        printf("Cannot open file \"%s\" for writing: %s. Exiting.\n", config_path, strerror(errno));
+        return 0;
+    }
+    close(fd);
+    unlink(config_path);
 
     if (socket_path == NULL)
         socket_path = socket_path_from_x11();
