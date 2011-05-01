@@ -305,14 +305,16 @@ void x_draw_decoration(Con *con) {
     /* 2: draw the client.background, but only for the parts around the client_rect */
     xcb_rectangle_t background[] = {
         /* top area */
-        { 0, deco_rect.height, r->width, w->y },
+        { 0, 0, r->width, w->y },
         /* bottom area */
         { 0, (w->y + w->height), r->width, r->height - (w->y + w->height) },
+        /* left area */
+        { 0, 0, w->x, r->height },
         /* right area */
-        { w->width, deco_rect.height, r->width - (w->x + w->width), r->height }
+        { w->x + w->width, 0, r->width - (w->x + w->width), r->height }
     };
 #if 0
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 4; i++)
         DLOG("rect is (%d, %d) with %d x %d\n",
                 background[i].x,
                 background[i].y,
