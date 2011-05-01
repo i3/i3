@@ -297,14 +297,19 @@ void x_draw_decoration(Con *con) {
 
     con->parent->pixmap_recreated = false;
 
+    /* If the con is in fullscreen mode, the decoration height we work with is set to 0 */
+    Rect deco_rect = con->deco_rect;
+    if (con_get_fullscreen_con(con->parent) == con)
+        deco_rect.height = 0;
+
     /* 2: draw the client.background, but only for the parts around the client_rect */
     xcb_rectangle_t background[] = {
         /* top area */
-        { 0, con->deco_rect.height, r->width, w->y },
+        { 0, deco_rect.height, r->width, w->y },
         /* bottom area */
         { 0, (w->y + w->height), r->width, r->height - (w->y + w->height) },
         /* right area */
-        { w->width, con->deco_rect.height, r->width - (w->x + w->width), r->height }
+        { w->width, deco_rect.height, r->width - (w->x + w->width), r->height }
     };
 #if 0
     for (int i = 0; i < 3; i++)
