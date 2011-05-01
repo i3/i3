@@ -78,6 +78,7 @@ Mod3                            { yylval.number = (1 << 5); return MODIFIER; }
 Mod4                            { yylval.number = (1 << 6); return MODIFIER; }
 Mod5                            { yylval.number = (1 << 7); return MODIFIER; }
 Mode_switch                     { yylval.number = (1 << 8); return MODIFIER; }
+$mod                     	{ yylval.number = (1 << 9); return TOKMODVAR; }
 control                         { return TOKCONTROL; }
 ctrl                            { return TOKCONTROL; }
 shift                           { return TOKSHIFT; }
