@@ -147,12 +147,13 @@ void floating_enable(Con *con, bool automatic) {
         }
     }
 
+    TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
+    TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
+
     /* render the cons to get initial window_rect correct */
     render_con(nc, false);
     render_con(con, false);
 
-    TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
-    TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
     // TODO: don’t influence focus handling when Con was not focused before.
     if (set_focus)
         con_focus(con);
