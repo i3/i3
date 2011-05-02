@@ -22,4 +22,10 @@ bool match_is_empty(Match *match);
  */
 bool match_matches_window(Match *match, i3Window *window);
 
+/**
+ * Returns the first match in 'assignments' that matches the given window.
+ *
+ */
+Match *match_by_assignment(i3Window *window);
+
 #endif

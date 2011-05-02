@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * A "match" is a data structure which acts like a mask or expression to match
  * certain windows or not. For example, when using commands, you can specify a
@@ -82,3 +82,19 @@ bool match_matches_window(Match *match, i3Window *window) {
     return false;
 }
 
+/*
+ * Returns the first match in 'assignments' that matches the given window.
+ *
+ */
+Match *match_by_assignment(i3Window *window) {
+    Match *match;
+
+    TAILQ_FOREACH(match, &assignments, assignments) {
+        if (!match_matches_window(match, window))
+            continue;
+        DLOG("got a matching assignment (to %s)\n", match->target_ws);
+        return match;
+    }
+
+    return NULL;
+}

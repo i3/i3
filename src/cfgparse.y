@@ -192,7 +192,7 @@ void parse_file(const char *f) {
         char *string;
         uint32_t *single_color;
         struct Colortriple *color;
-        struct Assignment *assignment;
+        Match *match;
         struct Binding *binding;
 }
 
@@ -539,30 +539,40 @@ workspace_name:
 assign:
         TOKASSIGN WHITESPACE window_class WHITESPACE optional_arrow assign_target
         {
-#if 0
                 printf("assignment of %s\n", $<string>3);
 
-                struct Assignment *new = $<assignment>6;
-                printf("  to %d\n", new->workspace);
-                printf("  floating = %d\n", new->floating);
-                new->windowclass_title = $<string>3;
-                TAILQ_INSERT_TAIL(&assignments, new, assignments);
-#endif
+                struct Match *match = $<match>6;
+
+                char *separator = NULL;
+                if ((separator = strchr($<string>3, '/')) != NULL) {
+                        *(separator++) = '\0';
+                        match->title = sstrdup(separator);
+                }
+                if (*$<string>3 != '\0')
+                        match->class = sstrdup($<string>3);
+                free($<string>3);
+
+                printf("  class = %s\n", match->class);
+                printf("  title = %s\n", match->title);
+                if (match->insert_where == M_ASSIGN_WS)
+                        printf("  to ws %s\n", match->target_ws);
+                TAILQ_INSERT_TAIL(&assignments, match, assignments);
         }
         ;
 
 assign_target:
         NUMBER
         {
-#if 0
-                struct Assignment *new = scalloc(sizeof(struct Assignment));
-                new->workspace = $<number>1;
-                new->floating = ASSIGN_FLOATING_NO;
-                $<assignment>$ = new;
-#endif
+                /* TODO: named workspaces */
+                Match *match = smalloc(sizeof(Match));
+                match_init(match);
+                match->insert_where = M_ASSIGN_WS;
+                asprintf(&(match->target_ws), "%d", $<number>1);
+                $<match>$ = match;
         }
         | '~'
         {
+                /* TODO: compatiblity */
 #if 0
                 struct Assignment *new = scalloc(sizeof(struct Assignment));
                 new->floating = ASSIGN_FLOATING_ONLY;
@@ -571,6 +581,7 @@ assign_target:
         }
         | '~' NUMBER
         {
+                /* TODO: compatiblity */
 #if 0
                 struct Assignment *new = scalloc(sizeof(struct Assignment));
                 new->workspace = $<number>2;

@@ -11,13 +11,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-#include "cfgparse.tab.h"
 #include <xcb/xcb.h>
 
 #include "data.h"
 #include "config.h"
 #include "log.h"
 #include "util.h"
+
+#include "cfgparse.tab.h"
 
 int yycolumn = 1;
 

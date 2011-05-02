@@ -34,6 +34,7 @@
 #include "xcb_compat.h"
 #endif
 
+#include "data.h"
 #include "util.h"
 #include "ipc.h"
 #include "tree.h"

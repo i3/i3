@@ -285,20 +285,21 @@ struct Match {
 
     enum { M_USER = 0, M_RESTART } source;
 
+    char *target_ws;
+
     /* Where the window looking for a match should be inserted:
      *
      * M_HERE   = the matched container will be replaced by the window
      *            (layout saving)
-     * M_ACTIVE = the window will be inserted next to the currently focused
-     *            container below the matched container
-     *            (assignments)
+     * M_ASSIGN_WS = the matched container will be inserted in the target_ws.
      * M_BELOW  = the window will be inserted as a child of the matched container
      *            (dockareas)
      *
      */
-    enum { M_HERE = 0, M_ACTIVE, M_BELOW } insert_where;
+    enum { M_HERE = 0, M_ASSIGN_WS, M_BELOW } insert_where;
 
     TAILQ_ENTRY(Match) matches;
+    TAILQ_ENTRY(Match) assignments;
 };
 
 struct Con {

@@ -203,38 +203,36 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     DLOG("Initial geometry: (%d, %d, %d, %d)\n", geom->x, geom->y, geom->width, geom->height);
 
-    Con *nc;
+    Con *nc = NULL;
     Match *match;
 
-    /* TODO: assignments */
-    /* TODO: two matches for one container */
-
-    /* See if any container swallows this new window */
-    nc = con_for_window(search_at, cwindow, &match);
-    if (nc == NULL) {
-        if (focused->type == CT_CON && con_accepts_window(focused)) {
-            LOG("using current container, focused = %p, focused->name = %s\n",
-                            focused, focused->name);
-            nc = focused;
-        } else nc = tree_open_con(NULL);
-    } else {
-        /* M_ACTIVE are assignments */
-        if (match != NULL && match->insert_where == M_ACTIVE) {
-            /* We need to go down the focus stack starting from nc */
-            while (TAILQ_FIRST(&(nc->focus_head)) != TAILQ_END(&(nc->focus_head))) {
-                DLOG("walking down one step...\n");
-                nc = TAILQ_FIRST(&(nc->focus_head));
-            }
-            /* We need to open a new con */
-            /* TODO: make a difference between match-once containers (directly assign
-             * cwindow) and match-multiple (tree_open_con first) */
-            nc = tree_open_con(nc->parent);
+    /* check assignments first */
+    if ((match = match_by_assignment(cwindow))) {
+        DLOG("Assignment matches (%p)\n", match);
+        if (match->insert_where == M_ASSIGN_WS) {
+            nc = con_descend_focused(workspace_get(match->target_ws, NULL));
+            DLOG("focused on ws %s: %p / %s\n", match->target_ws, nc, nc->name);
+            if (nc->type == CT_WORKSPACE)
+                nc = tree_open_con(nc);
+            else nc = tree_open_con(nc->parent);
         }
+    } else {
+        /* TODO: two matches for one container */
 
-        /* M_BELOW inserts the new window as a child of the one which was
-         * matched (e.g. dock areas) */
-        else if (match != NULL && match->insert_where == M_BELOW) {
-            nc = tree_open_con(nc);
+        /* See if any container swallows this new window */
+        nc = con_for_window(search_at, cwindow, &match);
+        if (nc == NULL) {
+            if (focused->type == CT_CON && con_accepts_window(focused)) {
+                LOG("using current container, focused = %p, focused->name = %s\n",
+                                focused, focused->name);
+                nc = focused;
+            } else nc = tree_open_con(NULL);
+        } else {
+            /* M_BELOW inserts the new window as a child of the one which was
+             * matched (e.g. dock areas) */
+            if (match != NULL && match->insert_where == M_BELOW) {
+                nc = tree_open_con(nc);
+            }
         }
     }
 
