@@ -183,9 +183,11 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     }
 
     char *walk = header + strlen(I3_IPC_MAGIC);
-    uint32_t size = *((uint32_t*) walk);
+    uint32_t size;
+    memcpy(&size, (uint32_t*)walk, sizeof(uint32_t));
     walk += sizeof(uint32_t);
-    uint32_t type = *((uint32_t*) walk);
+    uint32_t type;
+    memcpy(&type, (uint32_t*)walk, sizeof(uint32_t));
 
     /* Now that we know, what to expect, we can start read()ing the rest
      * of the message */
