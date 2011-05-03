@@ -167,13 +167,14 @@ void reparent_window(xcb_connection_t *conn, xcb_window_t child,
         xcb_change_window_attributes(conn, child, mask, values);
 
         /* Place requests for properties ASAP */
-        wm_type_cookie = xcb_get_any_property_unchecked(conn, false, child, A__NET_WM_WINDOW_TYPE, UINT32_MAX);
-        strut_cookie = xcb_get_any_property_unchecked(conn, false, child, A__NET_WM_STRUT_PARTIAL, UINT32_MAX);
-        state_cookie = xcb_get_any_property_unchecked(conn, false, child, A__NET_WM_STATE, UINT32_MAX);
-        utf8_title_cookie = xcb_get_any_property_unchecked(conn, false, child, A__NET_WM_NAME, 128);
-        leader_cookie = xcb_get_any_property_unchecked(conn, false, child, A_WM_CLIENT_LEADER, UINT32_MAX);
-        title_cookie = xcb_get_any_property_unchecked(conn, false, child, A_WM_NAME, 128);
-        class_cookie = xcb_get_any_property_unchecked(conn, false, child, A_WM_CLASS, 128);
+#define GET_PROPERTY(atom, len) xcb_get_property_unchecked(conn, false, child, atom, XCB_GET_PROPERTY_TYPE_ANY, 0, len)
+        wm_type_cookie = GET_PROPERTY(A__NET_WM_WINDOW_TYPE, UINT32_MAX);
+        strut_cookie = GET_PROPERTY(A__NET_WM_STRUT_PARTIAL, UINT32_MAX);
+        state_cookie = GET_PROPERTY(A__NET_WM_STATE, UINT32_MAX);
+        utf8_title_cookie = GET_PROPERTY(A__NET_WM_NAME, 128);
+        leader_cookie = GET_PROPERTY(A_WM_CLIENT_LEADER, UINT32_MAX);
+        title_cookie = GET_PROPERTY(A_WM_NAME, 128);
+        class_cookie = GET_PROPERTY(A_WM_CLASS, 128);
 
         Client *new = table_get(&by_child, child);
 

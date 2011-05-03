@@ -38,7 +38,6 @@ endif
 
 LDFLAGS += -lm
 LDFLAGS += -lxcb-event
-LDFLAGS += -lxcb-property
 LDFLAGS += -lxcb-keysyms
 ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
 CFLAGS += -DXCB_COMPAT
