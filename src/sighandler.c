@@ -156,12 +156,6 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
 
         xcb_connection_t *conn = global_conn;
 
-        /* setup event handler for key presses */
-        xcb_event_handlers_t sig_evenths;
-        memset(&sig_evenths, 0, sizeof(xcb_event_handlers_t));
-        xcb_event_handlers_init(conn, &sig_evenths);
-        xcb_event_set_key_press_handler(&sig_evenths, sig_handle_key_press, NULL);
-
         i3Font *font = load_font(conn, config.font);
 
         /* width and height of the popup window, so that the text fits in */
@@ -202,7 +196,16 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
                 xcb_flush(conn);
         }
 
-        xcb_event_wait_for_event_loop(&sig_evenths);
+        xcb_generic_event_t *event;
+        /* Yay, more own eventhandlers… */
+        while ((event = xcb_wait_for_event(conn))) {
+                /* Strip off the highest bit (set if the event is generated) */
+                int type = (event->response_type & 0x7F);
+                if (type == XCB_KEY_PRESS) {
+                        sig_handle_key_press(NULL, conn, (xcb_key_press_event_t*)event);
+                }
+                free(event);
+        }
 }
 
 /*

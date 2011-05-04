@@ -26,7 +26,6 @@
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
-#include <xcb/xcb_event.h>
 #include <xcb/xcb_keysyms.h>
 
 #include <X11/keysym.h>

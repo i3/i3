@@ -37,12 +37,12 @@ CFLAGS += -DOLD_XCB_KEYSYMS_API
 endif
 
 LDFLAGS += -lm
-LDFLAGS += -lxcb-event
 LDFLAGS += -lxcb-keysyms
 ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
 CFLAGS += -DXCB_COMPAT
 LDFLAGS += -lxcb-atom
 LDFLAGS += -lxcb-aux
+LDFLAGS += -lxcb-event
 else
 LDFLAGS += -lxcb-util
 endif

@@ -9,7 +9,6 @@
  *
  */
 #include <xcb/xcb.h>
-#include <xcb/xcb_property.h>
 #include <xcb/xcb_keysyms.h>
 
 #include <X11/XKBlib.h>
