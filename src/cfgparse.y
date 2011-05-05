@@ -1,6 +1,6 @@
 %{
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  */
 #include <sys/types.h>
@@ -25,160 +25,160 @@ static struct context *context;
 //int yydebug = 1;
 
 void yyerror(const char *error_message) {
-        ELOG("\n");
-        ELOG("CONFIG: %s\n", error_message);
-        ELOG("CONFIG: in file \"%s\", line %d:\n",
-                context->filename, context->line_number);
-        ELOG("CONFIG:   %s\n", context->line_copy);
-        ELOG("CONFIG:   ");
-        for (int c = 1; c <= context->last_column; c++)
-                if (c >= context->first_column)
-                        printf("^");
-                else printf(" ");
-        printf("\n");
-        ELOG("\n");
+    ELOG("\n");
+    ELOG("CONFIG: %s\n", error_message);
+    ELOG("CONFIG: in file \"%s\", line %d:\n",
+        context->filename, context->line_number);
+    ELOG("CONFIG:   %s\n", context->line_copy);
+    ELOG("CONFIG:   ");
+    for (int c = 1; c <= context->last_column; c++)
+        if (c >= context->first_column)
+            printf("^");
+        else printf(" ");
+    printf("\n");
+    ELOG("\n");
 }
 
 int yywrap() {
-        return 1;
+    return 1;
 }
 
 void parse_file(const char *f) {
-        SLIST_HEAD(variables_head, Variable) variables = SLIST_HEAD_INITIALIZER(&variables);
-        int fd, ret, read_bytes = 0;
-        struct stat stbuf;
-        char *buf;
-        FILE *fstr;
-        char buffer[1026], key[512], value[512];
+    SLIST_HEAD(variables_head, Variable) variables = SLIST_HEAD_INITIALIZER(&variables);
+    int fd, ret, read_bytes = 0;
+    struct stat stbuf;
+    char *buf;
+    FILE *fstr;
+    char buffer[1026], key[512], value[512];
 
-        if ((fd = open(f, O_RDONLY)) == -1)
-                die("Could not open configuration file: %s\n", strerror(errno));
+    if ((fd = open(f, O_RDONLY)) == -1)
+        die("Could not open configuration file: %s\n", strerror(errno));
 
-        if (fstat(fd, &stbuf) == -1)
-                die("Could not fstat file: %s\n", strerror(errno));
+    if (fstat(fd, &stbuf) == -1)
+        die("Could not fstat file: %s\n", strerror(errno));
 
-        buf = scalloc((stbuf.st_size + 1) * sizeof(char));
-        while (read_bytes < stbuf.st_size) {
-                if ((ret = read(fd, buf + read_bytes, (stbuf.st_size - read_bytes))) < 0)
-                        die("Could not read(): %s\n", strerror(errno));
-                read_bytes += ret;
+    buf = scalloc((stbuf.st_size + 1) * sizeof(char));
+    while (read_bytes < stbuf.st_size) {
+        if ((ret = read(fd, buf + read_bytes, (stbuf.st_size - read_bytes))) < 0)
+            die("Could not read(): %s\n", strerror(errno));
+        read_bytes += ret;
+    }
+
+    if (lseek(fd, 0, SEEK_SET) == (off_t)-1)
+        die("Could not lseek: %s\n", strerror(errno));
+
+    if ((fstr = fdopen(fd, "r")) == NULL)
+        die("Could not fdopen: %s\n", strerror(errno));
+
+    while (!feof(fstr)) {
+        if (fgets(buffer, 1024, fstr) == NULL) {
+            if (feof(fstr))
+                break;
+            die("Could not read configuration file\n");
         }
 
-        if (lseek(fd, 0, SEEK_SET) == (off_t)-1)
-                die("Could not lseek: %s\n", strerror(errno));
+        /* sscanf implicitly strips whitespace. Also, we skip comments and empty lines. */
+        if (sscanf(buffer, "%s %[^\n]", key, value) < 1 ||
+            key[0] == '#' || strlen(key) < 3)
+            continue;
 
-        if ((fstr = fdopen(fd, "r")) == NULL)
-                die("Could not fdopen: %s\n", strerror(errno));
+        if (strcasecmp(key, "set") == 0) {
+            if (value[0] != '$')
+                die("Malformed variable assignment, name has to start with $\n");
 
-        while (!feof(fstr)) {
-                if (fgets(buffer, 1024, fstr) == NULL) {
-                        if (feof(fstr))
-                                break;
-                        die("Could not read configuration file\n");
-                }
+            /* get key/value for this variable */
+            char *v_key = value, *v_value;
+            if ((v_value = strstr(value, " ")) == NULL)
+                die("Malformed variable assignment, need a value\n");
 
-                /* sscanf implicitly strips whitespace. Also, we skip comments and empty lines. */
-                if (sscanf(buffer, "%s %[^\n]", key, value) < 1 ||
-                    key[0] == '#' || strlen(key) < 3)
-                        continue;
+            *(v_value++) = '\0';
 
-                if (strcasecmp(key, "set") == 0) {
-                        if (value[0] != '$')
-                                die("Malformed variable assignment, name has to start with $\n");
-
-                        /* get key/value for this variable */
-                        char *v_key = value, *v_value;
-                        if ((v_value = strstr(value, " ")) == NULL)
-                                die("Malformed variable assignment, need a value\n");
-
-                        *(v_value++) = '\0';
-
-                        struct Variable *new = scalloc(sizeof(struct Variable));
-                        new->key = sstrdup(v_key);
-                        new->value = sstrdup(v_value);
-                        SLIST_INSERT_HEAD(&variables, new, variables);
-                        DLOG("Got new variable %s = %s\n", v_key, v_value);
-                        continue;
-                }
+            struct Variable *new = scalloc(sizeof(struct Variable));
+            new->key = sstrdup(v_key);
+            new->value = sstrdup(v_value);
+            SLIST_INSERT_HEAD(&variables, new, variables);
+            DLOG("Got new variable %s = %s\n", v_key, v_value);
+            continue;
         }
-        fclose(fstr);
+    }
+    fclose(fstr);
 
-        /* For every custom variable, see how often it occurs in the file and
-         * how much extra bytes it requires when replaced. */
-        struct Variable *current, *nearest;
-        int extra_bytes = 0;
-        /* We need to copy the buffer because we need to invalidate the
-         * variables (otherwise we will count them twice, which is bad when
-         * 'extra' is negative) */
-        char *bufcopy = sstrdup(buf);
+    /* For every custom variable, see how often it occurs in the file and
+     * how much extra bytes it requires when replaced. */
+    struct Variable *current, *nearest;
+    int extra_bytes = 0;
+    /* We need to copy the buffer because we need to invalidate the
+     * variables (otherwise we will count them twice, which is bad when
+     * 'extra' is negative) */
+    char *bufcopy = sstrdup(buf);
+    SLIST_FOREACH(current, &variables, variables) {
+        int extra = (strlen(current->value) - strlen(current->key));
+        char *next;
+        for (next = bufcopy;
+             (next = strcasestr(bufcopy + (next - bufcopy), current->key)) != NULL;
+             next += strlen(current->key)) {
+            *next = '_';
+            extra_bytes += extra;
+        }
+    }
+    FREE(bufcopy);
+
+    /* Then, allocate a new buffer and copy the file over to the new one,
+     * but replace occurences of our variables */
+    char *walk = buf, *destwalk;
+    char *new = smalloc((stbuf.st_size + extra_bytes + 1) * sizeof(char));
+    destwalk = new;
+    while (walk < (buf + stbuf.st_size)) {
+        /* Find the next variable */
+        SLIST_FOREACH(current, &variables, variables)
+            current->next_match = strcasestr(walk, current->key);
+        nearest = NULL;
+        int distance = stbuf.st_size;
         SLIST_FOREACH(current, &variables, variables) {
-                int extra = (strlen(current->value) - strlen(current->key));
-                char *next;
-                for (next = bufcopy;
-                     (next = strcasestr(bufcopy + (next - bufcopy), current->key)) != NULL;
-                     next += strlen(current->key)) {
-                        *next = '_';
-                        extra_bytes += extra;
-                }
+            if (current->next_match == NULL)
+                continue;
+            if ((current->next_match - walk) < distance) {
+                distance = (current->next_match - walk);
+                nearest = current;
+            }
         }
-        FREE(bufcopy);
-
-        /* Then, allocate a new buffer and copy the file over to the new one,
-         * but replace occurences of our variables */
-        char *walk = buf, *destwalk;
-        char *new = smalloc((stbuf.st_size + extra_bytes + 1) * sizeof(char));
-        destwalk = new;
-        while (walk < (buf + stbuf.st_size)) {
-                /* Find the next variable */
-                SLIST_FOREACH(current, &variables, variables)
-                        current->next_match = strcasestr(walk, current->key);
-                nearest = NULL;
-                int distance = stbuf.st_size;
-                SLIST_FOREACH(current, &variables, variables) {
-                        if (current->next_match == NULL)
-                                continue;
-                        if ((current->next_match - walk) < distance) {
-                                distance = (current->next_match - walk);
-                                nearest = current;
-                        }
-                }
-                if (nearest == NULL) {
-                        /* If there are no more variables, we just copy the rest */
-                        strncpy(destwalk, walk, (buf + stbuf.st_size) - walk);
-                        destwalk += (buf + stbuf.st_size) - walk;
-                        *destwalk = '\0';
-                        break;
-                } else {
-                        /* Copy until the next variable, then copy its value */
-                        strncpy(destwalk, walk, distance);
-                        strncpy(destwalk + distance, nearest->value, strlen(nearest->value));
-                        walk += distance + strlen(nearest->key);
-                        destwalk += distance + strlen(nearest->value);
-                }
+        if (nearest == NULL) {
+            /* If there are no more variables, we just copy the rest */
+            strncpy(destwalk, walk, (buf + stbuf.st_size) - walk);
+            destwalk += (buf + stbuf.st_size) - walk;
+            *destwalk = '\0';
+            break;
+        } else {
+            /* Copy until the next variable, then copy its value */
+            strncpy(destwalk, walk, distance);
+            strncpy(destwalk + distance, nearest->value, strlen(nearest->value));
+            walk += distance + strlen(nearest->key);
+            destwalk += distance + strlen(nearest->value);
         }
+    }
 
-        yy_scan_string(new);
+    yy_scan_string(new);
 
-        context = scalloc(sizeof(struct context));
-        context->filename = f;
+    context = scalloc(sizeof(struct context));
+    context->filename = f;
 
-        if (yyparse() != 0) {
-                fprintf(stderr, "Could not parse configfile\n");
-                exit(1);
-        }
+    if (yyparse() != 0) {
+        fprintf(stderr, "Could not parse configfile\n");
+        exit(1);
+    }
 
-        FREE(context->line_copy);
-        free(context);
-        free(new);
-        free(buf);
+    FREE(context->line_copy);
+    free(context);
+    free(new);
+    free(buf);
 
-        while (!SLIST_EMPTY(&variables)) {
-                current = SLIST_FIRST(&variables);
-                FREE(current->key);
-                FREE(current->value);
-                SLIST_REMOVE_HEAD(&variables, variables);
-                FREE(current);
-        }
+    while (!SLIST_EMPTY(&variables)) {
+        current = SLIST_FIRST(&variables);
+        FREE(current->key);
+        FREE(current->value);
+        SLIST_REMOVE_HEAD(&variables, variables);
+        FREE(current);
+    }
 }
 
 %}
@@ -188,12 +188,12 @@ void parse_file(const char *f) {
 %lex-param { struct context *context }
 
 %union {
-        int number;
-        char *string;
-        uint32_t *single_color;
-        struct Colortriple *color;
-        Match *match;
-        struct Binding *binding;
+    int number;
+    char *string;
+    uint32_t *single_color;
+    struct Colortriple *color;
+    Match *match;
+    struct Binding *binding;
 }
 
 %token <number>NUMBER "<number>"
@@ -246,453 +246,453 @@ void parse_file(const char *f) {
 %%
 
 lines: /* empty */
-        | lines WHITESPACE line
-        | lines error
-        | lines line
-        ;
+    | lines WHITESPACE line
+    | lines error
+    | lines line
+    ;
 
 line:
-        bindline
-        | mode
-        | floating_modifier
-        | orientation
-        | workspace_layout
-        | new_window
-        | focus_follows_mouse
-        | workspace_bar
-        | workspace
-        | assign
-        | ipcsocket
-        | restart_state
-        | exec
-        | single_color
-        | color
-        | terminal
-        | font
-        | comment
-        | popup_during_fullscreen
-        ;
+    bindline
+    | mode
+    | floating_modifier
+    | orientation
+    | workspace_layout
+    | new_window
+    | focus_follows_mouse
+    | workspace_bar
+    | workspace
+    | assign
+    | ipcsocket
+    | restart_state
+    | exec
+    | single_color
+    | color
+    | terminal
+    | font
+    | comment
+    | popup_during_fullscreen
+    ;
 
 comment:
-        TOKCOMMENT
-        ;
+    TOKCOMMENT
+    ;
 
 command:
-        STR
-        ;
+    STR
+    ;
 
 bindline:
-        binding
-        {
-                TAILQ_INSERT_TAIL(bindings, $<binding>1, bindings);
-        }
-        ;
+    binding
+    {
+        TAILQ_INSERT_TAIL(bindings, $<binding>1, bindings);
+    }
+    ;
 
 binding:
-        TOKBINDCODE WHITESPACE bindcode         { $<binding>$ = $<binding>3; }
-        | TOKBINDSYM WHITESPACE bindsym         { $<binding>$ = $<binding>3; }
-        ;
+    TOKBINDCODE WHITESPACE bindcode         { $<binding>$ = $<binding>3; }
+    | TOKBINDSYM WHITESPACE bindsym         { $<binding>$ = $<binding>3; }
+    ;
 
 bindcode:
-        binding_modifiers NUMBER WHITESPACE command
-        {
-                printf("\tFound keycode binding mod%d with key %d and command %s\n", $<number>1, $2, $<string>4);
-                Binding *new = scalloc(sizeof(Binding));
+    binding_modifiers NUMBER WHITESPACE command
+    {
+        printf("\tFound keycode binding mod%d with key %d and command %s\n", $<number>1, $2, $<string>4);
+        Binding *new = scalloc(sizeof(Binding));
 
-                new->keycode = $<number>2;
-                new->mods = $<number>1;
-                new->command = $<string>4;
+        new->keycode = $<number>2;
+        new->mods = $<number>1;
+        new->command = $<string>4;
 
-                $<binding>$ = new;
-        }
-        ;
+        $<binding>$ = new;
+    }
+    ;
 
 bindsym:
-        binding_modifiers word_or_number WHITESPACE command
-        {
-                printf("\tFound keysym binding mod%d with key %s and command %s\n", $<number>1, $<string>2, $<string>4);
-                Binding *new = scalloc(sizeof(Binding));
+    binding_modifiers word_or_number WHITESPACE command
+    {
+        printf("\tFound keysym binding mod%d with key %s and command %s\n", $<number>1, $<string>2, $<string>4);
+        Binding *new = scalloc(sizeof(Binding));
 
-                new->symbol = $<string>2;
-                new->mods = $<number>1;
-                new->command = $<string>4;
+        new->symbol = $<string>2;
+        new->mods = $<number>1;
+        new->command = $<string>4;
 
-                $<binding>$ = new;
-        }
-        ;
+        $<binding>$ = new;
+    }
+    ;
 
 word_or_number:
-        WORD
-        | NUMBER
-        {
-                asprintf(&$<string>$, "%d", $1);
-        }
-        ;
+    WORD
+    | NUMBER
+    {
+        asprintf(&$<string>$, "%d", $1);
+    }
+    ;
 
 mode:
-        TOKMODE WHITESPACE QUOTEDSTRING WHITESPACE '{' modelines '}'
-        {
-                if (strcasecmp($<string>3, "default") == 0) {
-                        printf("You cannot use the name \"default\" for your mode\n");
-                        exit(1);
-                }
-                printf("\t now in mode %s\n", $<string>3);
-                printf("\t current bindings = %p\n", current_bindings);
-                Binding *binding;
-                TAILQ_FOREACH(binding, current_bindings, bindings) {
-                        printf("got binding on mods %d, keycode %d, symbol %s, command %s\n",
-                                        binding->mods, binding->keycode, binding->symbol, binding->command);
-                }
-
-                struct Mode *mode = scalloc(sizeof(struct Mode));
-                mode->name = $<string>3;
-                mode->bindings = current_bindings;
-                current_bindings = NULL;
-                SLIST_INSERT_HEAD(&modes, mode, modes);
+    TOKMODE WHITESPACE QUOTEDSTRING WHITESPACE '{' modelines '}'
+    {
+        if (strcasecmp($<string>3, "default") == 0) {
+            printf("You cannot use the name \"default\" for your mode\n");
+            exit(1);
         }
-        ;
+        printf("\t now in mode %s\n", $<string>3);
+        printf("\t current bindings = %p\n", current_bindings);
+        Binding *binding;
+        TAILQ_FOREACH(binding, current_bindings, bindings) {
+            printf("got binding on mods %d, keycode %d, symbol %s, command %s\n",
+                            binding->mods, binding->keycode, binding->symbol, binding->command);
+        }
+
+        struct Mode *mode = scalloc(sizeof(struct Mode));
+        mode->name = $<string>3;
+        mode->bindings = current_bindings;
+        current_bindings = NULL;
+        SLIST_INSERT_HEAD(&modes, mode, modes);
+    }
+    ;
 
 
 modelines:
-        /* empty */
-        | modelines modeline
-        ;
+    /* empty */
+    | modelines modeline
+    ;
 
 modeline:
-        WHITESPACE
-        | comment
-        | binding
-        {
-                if (current_bindings == NULL) {
-                        current_bindings = scalloc(sizeof(struct bindings_head));
-                        TAILQ_INIT(current_bindings);
-                }
-
-                TAILQ_INSERT_TAIL(current_bindings, $<binding>1, bindings);
+    WHITESPACE
+    | comment
+    | binding
+    {
+        if (current_bindings == NULL) {
+            current_bindings = scalloc(sizeof(struct bindings_head));
+            TAILQ_INIT(current_bindings);
         }
-        ;
+
+        TAILQ_INSERT_TAIL(current_bindings, $<binding>1, bindings);
+    }
+    ;
 
 floating_modifier:
-        TOKFLOATING_MODIFIER WHITESPACE binding_modifiers
-        {
-                DLOG("floating modifier = %d\n", $<number>3);
-                config.floating_modifier = $<number>3;
-        }
-        ;
+    TOKFLOATING_MODIFIER WHITESPACE binding_modifiers
+    {
+        DLOG("floating modifier = %d\n", $<number>3);
+        config.floating_modifier = $<number>3;
+    }
+    ;
 
 orientation:
-        TOK_ORIENTATION WHITESPACE direction
-        {
-                DLOG("New containers should start with split direction %d\n", $<number>3);
-                config.default_orientation = $<number>3;
-        }
-        ;
+    TOK_ORIENTATION WHITESPACE direction
+    {
+        DLOG("New containers should start with split direction %d\n", $<number>3);
+        config.default_orientation = $<number>3;
+    }
+    ;
 
 direction:
-        TOK_HORIZ       { $<number>$ = HORIZ; }
-        | TOK_VERT      { $<number>$ = VERT; }
-        | TOK_AUTO      { $<number>$ = NO_ORIENTATION; }
-        ;
+    TOK_HORIZ       { $<number>$ = HORIZ; }
+    | TOK_VERT      { $<number>$ = VERT; }
+    | TOK_AUTO      { $<number>$ = NO_ORIENTATION; }
+    ;
 
 workspace_layout:
-        TOK_WORKSPACE_LAYOUT WHITESPACE layout_mode
-        {
-                DLOG("new containers will be in mode %d\n", $<number>3);
-                config.default_layout = $<number>3;
+    TOK_WORKSPACE_LAYOUT WHITESPACE layout_mode
+    {
+        DLOG("new containers will be in mode %d\n", $<number>3);
+        config.default_layout = $<number>3;
 
 #if 0
-                /* We also need to change the layout of the already existing
-                 * workspaces here. Workspaces may exist at this point because
-                 * of the other directives which are modifying workspaces
-                 * (setting the preferred screen or name). While the workspace
-                 * objects are already created, they have never been used.
-                 * Thus, the user very likely awaits the default container mode
-                 * to trigger in this case, regardless of where it is inside
-                 * his configuration file. */
-                Workspace *ws;
-                TAILQ_FOREACH(ws, workspaces, workspaces) {
-                        if (ws->table == NULL)
-                                continue;
-                        switch_layout_mode(global_conn,
-                                           ws->table[0][0],
-                                           config.container_mode);
-                }
-#endif
+        /* We also need to change the layout of the already existing
+         * workspaces here. Workspaces may exist at this point because
+         * of the other directives which are modifying workspaces
+         * (setting the preferred screen or name). While the workspace
+         * objects are already created, they have never been used.
+         * Thus, the user very likely awaits the default container mode
+         * to trigger in this case, regardless of where it is inside
+         * his configuration file. */
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
+                if (ws->table == NULL)
+                        continue;
+                switch_layout_mode(global_conn,
+                                   ws->table[0][0],
+                                   config.container_mode);
         }
-        | TOK_WORKSPACE_LAYOUT WHITESPACE TOKSTACKLIMIT WHITESPACE TOKSTACKLIMIT WHITESPACE NUMBER
-        {
-                DLOG("stack-limit %d with val %d\n", $<number>5, $<number>7);
-                config.container_stack_limit = $<number>5;
-                config.container_stack_limit_value = $<number>7;
+#endif
+    }
+    | TOK_WORKSPACE_LAYOUT WHITESPACE TOKSTACKLIMIT WHITESPACE TOKSTACKLIMIT WHITESPACE NUMBER
+    {
+        DLOG("stack-limit %d with val %d\n", $<number>5, $<number>7);
+        config.container_stack_limit = $<number>5;
+        config.container_stack_limit_value = $<number>7;
 
 #if 0
-                /* See the comment above */
-                Workspace *ws;
-                TAILQ_FOREACH(ws, workspaces, workspaces) {
-                        if (ws->table == NULL)
-                                continue;
-                        Container *con = ws->table[0][0];
-                        con->stack_limit = config.container_stack_limit;
-                        con->stack_limit_value = config.container_stack_limit_value;
-                }
-#endif
+        /* See the comment above */
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces) {
+                if (ws->table == NULL)
+                        continue;
+                Container *con = ws->table[0][0];
+                con->stack_limit = config.container_stack_limit;
+                con->stack_limit_value = config.container_stack_limit_value;
         }
-        ;
+#endif
+    }
+    ;
 
 layout_mode:
-      TOK_DEFAULT       { $<number>$ = L_DEFAULT; }
-      | TOK_STACKING    { $<number>$ = L_STACKED; }
-      | TOK_TABBED      { $<number>$ = L_TABBED; }
-      ;
+    TOK_DEFAULT       { $<number>$ = L_DEFAULT; }
+    | TOK_STACKING    { $<number>$ = L_STACKED; }
+    | TOK_TABBED      { $<number>$ = L_TABBED; }
+    ;
 
 new_window:
-        TOKNEWWINDOW WHITESPACE border_style
-        {
-                DLOG("new windows should start with border style %d\n", $<number>3);
-                config.default_border = $<number>3;
-        }
-        ;
+    TOKNEWWINDOW WHITESPACE border_style
+    {
+        DLOG("new windows should start with border style %d\n", $<number>3);
+        config.default_border = $<number>3;
+    }
+    ;
 
 border_style:
-        TOK_NORMAL      { $<number>$ = BS_NORMAL; }
-        | TOK_NONE      { $<number>$ = BS_NONE; }
-        | TOK_1PIXEL    { $<number>$ = BS_1PIXEL; }
-        ;
+    TOK_NORMAL      { $<number>$ = BS_NORMAL; }
+    | TOK_NONE      { $<number>$ = BS_NONE; }
+    | TOK_1PIXEL    { $<number>$ = BS_1PIXEL; }
+    ;
 
 bool:
-        NUMBER
-        {
-                $<number>$ = ($<number>1 == 1);
-        }
-        | WORD
-        {
-                DLOG("checking word \"%s\"\n", $<string>1);
-                $<number>$ = (strcasecmp($<string>1, "yes") == 0 ||
-                              strcasecmp($<string>1, "true") == 0 ||
-                              strcasecmp($<string>1, "on") == 0 ||
-                              strcasecmp($<string>1, "enable") == 0 ||
-                              strcasecmp($<string>1, "active") == 0);
-        }
-        ;
+    NUMBER
+    {
+        $<number>$ = ($<number>1 == 1);
+    }
+    | WORD
+    {
+        DLOG("checking word \"%s\"\n", $<string>1);
+        $<number>$ = (strcasecmp($<string>1, "yes") == 0 ||
+                      strcasecmp($<string>1, "true") == 0 ||
+                      strcasecmp($<string>1, "on") == 0 ||
+                      strcasecmp($<string>1, "enable") == 0 ||
+                      strcasecmp($<string>1, "active") == 0);
+    }
+    ;
 
 focus_follows_mouse:
-        TOKFOCUSFOLLOWSMOUSE WHITESPACE bool
-        {
-                DLOG("focus follows mouse = %d\n", $<number>3);
-                config.disable_focus_follows_mouse = !($<number>3);
-        }
-        ;
+    TOKFOCUSFOLLOWSMOUSE WHITESPACE bool
+    {
+        DLOG("focus follows mouse = %d\n", $<number>3);
+        config.disable_focus_follows_mouse = !($<number>3);
+    }
+    ;
 
 workspace_bar:
-        TOKWORKSPACEBAR WHITESPACE bool
-        {
-                DLOG("workspace bar = %d\n", $<number>3);
-                config.disable_workspace_bar = !($<number>3);
-        }
-        ;
+    TOKWORKSPACEBAR WHITESPACE bool
+    {
+        DLOG("workspace bar = %d\n", $<number>3);
+        config.disable_workspace_bar = !($<number>3);
+    }
+    ;
 
 workspace:
-        TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKOUTPUT WHITESPACE OUTPUT optional_workspace_name
-        {
-                int ws_num = $<number>3;
-                if (ws_num < 1) {
-                        DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
-                } else {
+    TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKOUTPUT WHITESPACE OUTPUT optional_workspace_name
+    {
+        int ws_num = $<number>3;
+        if (ws_num < 1) {
+            DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
+        } else {
 #if 0
-                        Workspace *ws = workspace_get(ws_num - 1);
-                        ws->preferred_output = $<string>7;
-                        if ($<string>8 != NULL) {
-                                workspace_set_name(ws, $<string>8);
-                                free($<string>8);
-                        }
+            Workspace *ws = workspace_get(ws_num - 1);
+            ws->preferred_output = $<string>7;
+            if ($<string>8 != NULL) {
+                    workspace_set_name(ws, $<string>8);
+                    free($<string>8);
+            }
 #endif
-                }
         }
-        | TOKWORKSPACE WHITESPACE NUMBER WHITESPACE workspace_name
-        {
-                int ws_num = $<number>3;
-                if (ws_num < 1) {
-                        DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
-                } else {
-                        DLOG("workspace name to: %s\n", $<string>5);
+    }
+    | TOKWORKSPACE WHITESPACE NUMBER WHITESPACE workspace_name
+    {
+        int ws_num = $<number>3;
+        if (ws_num < 1) {
+            DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
+        } else {
+            DLOG("workspace name to: %s\n", $<string>5);
 #if 0
-                        if ($<string>5 != NULL) {
-                                workspace_set_name(workspace_get(ws_num - 1), $<string>5);
-                                free($<string>5);
-                        }
+            if ($<string>5 != NULL) {
+                    workspace_set_name(workspace_get(ws_num - 1), $<string>5);
+                    free($<string>5);
+            }
 #endif
-                }
         }
-        ;
+    }
+    ;
 
 optional_workspace_name:
-        /* empty */                     { $<string>$ = NULL; }
-        | WHITESPACE workspace_name     { $<string>$ = $<string>2; }
-        ;
+    /* empty */                     { $<string>$ = NULL; }
+    | WHITESPACE workspace_name     { $<string>$ = $<string>2; }
+    ;
 
 workspace_name:
-        QUOTEDSTRING         { $<string>$ = $<string>1; }
-        | STR                { $<string>$ = $<string>1; }
-        | WORD               { $<string>$ = $<string>1; }
-        ;
+    QUOTEDSTRING         { $<string>$ = $<string>1; }
+    | STR                { $<string>$ = $<string>1; }
+    | WORD               { $<string>$ = $<string>1; }
+    ;
 
 assign:
-        TOKASSIGN WHITESPACE window_class WHITESPACE optional_arrow assign_target
-        {
-                printf("assignment of %s\n", $<string>3);
+    TOKASSIGN WHITESPACE window_class WHITESPACE optional_arrow assign_target
+    {
+        printf("assignment of %s\n", $<string>3);
 
-                struct Match *match = $<match>6;
+        struct Match *match = $<match>6;
 
-                char *separator = NULL;
-                if ((separator = strchr($<string>3, '/')) != NULL) {
-                        *(separator++) = '\0';
-                        match->title = sstrdup(separator);
-                }
-                if (*$<string>3 != '\0')
-                        match->class = sstrdup($<string>3);
-                free($<string>3);
-
-                printf("  class = %s\n", match->class);
-                printf("  title = %s\n", match->title);
-                if (match->insert_where == M_ASSIGN_WS)
-                        printf("  to ws %s\n", match->target_ws);
-                TAILQ_INSERT_TAIL(&assignments, match, assignments);
+        char *separator = NULL;
+        if ((separator = strchr($<string>3, '/')) != NULL) {
+            *(separator++) = '\0';
+            match->title = sstrdup(separator);
         }
-        ;
+        if (*$<string>3 != '\0')
+            match->class = sstrdup($<string>3);
+        free($<string>3);
+
+        printf("  class = %s\n", match->class);
+        printf("  title = %s\n", match->title);
+        if (match->insert_where == M_ASSIGN_WS)
+            printf("  to ws %s\n", match->target_ws);
+        TAILQ_INSERT_TAIL(&assignments, match, assignments);
+    }
+    ;
 
 assign_target:
-        NUMBER
-        {
-                /* TODO: named workspaces */
-                Match *match = smalloc(sizeof(Match));
-                match_init(match);
-                match->insert_where = M_ASSIGN_WS;
-                asprintf(&(match->target_ws), "%d", $<number>1);
-                $<match>$ = match;
-        }
-        | '~'
-        {
-                /* TODO: compatiblity */
+    NUMBER
+    {
+        /* TODO: named workspaces */
+        Match *match = smalloc(sizeof(Match));
+        match_init(match);
+        match->insert_where = M_ASSIGN_WS;
+        asprintf(&(match->target_ws), "%d", $<number>1);
+        $<match>$ = match;
+    }
+    | '~'
+    {
+        /* TODO: compatiblity */
 #if 0
-                struct Assignment *new = scalloc(sizeof(struct Assignment));
-                new->floating = ASSIGN_FLOATING_ONLY;
-                $<assignment>$ = new;
+        struct Assignment *new = scalloc(sizeof(struct Assignment));
+        new->floating = ASSIGN_FLOATING_ONLY;
+        $<assignment>$ = new;
 #endif
-        }
-        | '~' NUMBER
-        {
-                /* TODO: compatiblity */
+    }
+    | '~' NUMBER
+    {
+        /* TODO: compatiblity */
 #if 0
-                struct Assignment *new = scalloc(sizeof(struct Assignment));
-                new->workspace = $<number>2;
-                new->floating = ASSIGN_FLOATING;
-                $<assignment>$ = new;
+        struct Assignment *new = scalloc(sizeof(struct Assignment));
+        new->workspace = $<number>2;
+        new->floating = ASSIGN_FLOATING;
+        $<assignment>$ = new;
 #endif
-        }
-        ;
+    }
+    ;
 
 window_class:
-        QUOTEDSTRING
-        | STR_NG
-        ;
+    QUOTEDSTRING
+    | STR_NG
+    ;
 
 optional_arrow:
-        /* NULL */
-        | TOKARROW WHITESPACE
-        ;
+    /* NULL */
+    | TOKARROW WHITESPACE
+    ;
 
 ipcsocket:
-        TOKIPCSOCKET WHITESPACE STR
-        {
-                config.ipc_socket_path = $<string>3;
-        }
-        ;
+    TOKIPCSOCKET WHITESPACE STR
+    {
+        config.ipc_socket_path = $<string>3;
+    }
+    ;
 
 restart_state:
-        TOKRESTARTSTATE WHITESPACE STR
-        {
-                config.restart_state_path = $<string>3;
-        }
-        ;
+    TOKRESTARTSTATE WHITESPACE STR
+    {
+        config.restart_state_path = $<string>3;
+    }
+    ;
 
 exec:
-        TOKEXEC WHITESPACE STR
-        {
-                struct Autostart *new = smalloc(sizeof(struct Autostart));
-                new->command = $<string>3;
-                TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
-        }
-        ;
+    TOKEXEC WHITESPACE STR
+    {
+        struct Autostart *new = smalloc(sizeof(struct Autostart));
+        new->command = $<string>3;
+        TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
+    }
+    ;
 
 terminal:
-        TOKTERMINAL WHITESPACE STR
-        {
-                ELOG("The terminal option is DEPRECATED and has no effect. "
-                    "Please remove it from your configuration file.\n");
-        }
-        ;
+    TOKTERMINAL WHITESPACE STR
+    {
+        ELOG("The terminal option is DEPRECATED and has no effect. "
+            "Please remove it from your configuration file.\n");
+    }
+    ;
 
 font:
-        TOKFONT WHITESPACE STR
-        {
-                config.font = load_font($<string>3, true);
-                printf("font %s\n", $<string>3);
-        }
-        ;
+    TOKFONT WHITESPACE STR
+    {
+        config.font = load_font($<string>3, true);
+        printf("font %s\n", $<string>3);
+    }
+    ;
 
 single_color:
-        TOKSINGLECOLOR WHITESPACE colorpixel
-        {
-                uint32_t *dest = $<single_color>1;
-                *dest = $<number>3;
-        }
-        ;
+    TOKSINGLECOLOR WHITESPACE colorpixel
+    {
+        uint32_t *dest = $<single_color>1;
+        *dest = $<number>3;
+    }
+    ;
 
 color:
-        TOKCOLOR WHITESPACE colorpixel WHITESPACE colorpixel WHITESPACE colorpixel
-        {
-                struct Colortriple *dest = $<color>1;
+    TOKCOLOR WHITESPACE colorpixel WHITESPACE colorpixel WHITESPACE colorpixel
+    {
+        struct Colortriple *dest = $<color>1;
 
-                dest->border = $<number>3;
-                dest->background = $<number>5;
-                dest->text = $<number>7;
-        }
-        ;
+        dest->border = $<number>3;
+        dest->background = $<number>5;
+        dest->text = $<number>7;
+    }
+    ;
 
 colorpixel:
-        '#' HEX
-        {
-                char *hex;
-                if (asprintf(&hex, "#%s", $<string>2) == -1)
-                        die("asprintf()");
-                $<number>$ = get_colorpixel(hex);
-                free(hex);
-        }
-        ;
+    '#' HEX
+    {
+        char *hex;
+        if (asprintf(&hex, "#%s", $<string>2) == -1)
+            die("asprintf()");
+        $<number>$ = get_colorpixel(hex);
+        free(hex);
+    }
+    ;
 
 
 binding_modifiers:
-        /* NULL */                               { $<number>$ = 0; }
-        | binding_modifier
-        | binding_modifiers '+' binding_modifier { $<number>$ = $<number>1 | $<number>3; }
-        | binding_modifiers '+'                  { $<number>$ = $<number>1; }
-        ;
+    /* NULL */                               { $<number>$ = 0; }
+    | binding_modifier
+    | binding_modifiers '+' binding_modifier { $<number>$ = $<number>1 | $<number>3; }
+    | binding_modifiers '+'                  { $<number>$ = $<number>1; }
+    ;
 
 binding_modifier:
-        MODIFIER        { $<number>$ = $<number>1; }
-        | TOKCONTROL    { $<number>$ = BIND_CONTROL; }
-        | TOKSHIFT      { $<number>$ = BIND_SHIFT; }
-        ;
+    MODIFIER        { $<number>$ = $<number>1; }
+    | TOKCONTROL    { $<number>$ = BIND_CONTROL; }
+    | TOKSHIFT      { $<number>$ = BIND_SHIFT; }
+    ;
 
 popup_during_fullscreen:
-        TOK_POPUP_DURING_FULLSCREEN WHITESPACE popup_setting
-        {
-                DLOG("popup_during_fullscreen setting: %d\n", $<number>3);
-                config.popup_during_fullscreen = $<number>3;
-        }
-        ;
+    TOK_POPUP_DURING_FULLSCREEN WHITESPACE popup_setting
+    {
+        DLOG("popup_during_fullscreen setting: %d\n", $<number>3);
+        config.popup_during_fullscreen = $<number>3;
+    }
+    ;
 
 popup_setting:
-        TOK_IGNORE              { $<number>$ = PDF_IGNORE; }
-        | TOK_LEAVE_FULLSCREEN  { $<number>$ = PDF_LEAVE_FULLSCREEN; }
-        ;
+    TOK_IGNORE              { $<number>$ = PDF_IGNORE; }
+    | TOK_LEAVE_FULLSCREEN  { $<number>$ = PDF_LEAVE_FULLSCREEN; }
+    ;
