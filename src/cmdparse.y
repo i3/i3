@@ -101,57 +101,66 @@ char *parse_cmd(const char *new) {
     int number;
 }
 
-%token TOK_ATTACH "attach"
-%token TOK_EXEC "exec"
-%token TOK_EXIT "exit"
-%token TOK_RELOAD "reload"
-%token TOK_RESTART "restart"
-%token TOK_KILL "kill"
-%token TOK_FULLSCREEN "fullscreen"
-%token TOK_GLOBAL "global"
-%token TOK_LAYOUT "layout"
-%token TOK_DEFAULT "default"
-%token TOK_STACKED "stacked"
-%token TOK_TABBED "tabbed"
-%token TOK_BORDER "border"
-%token TOK_NORMAL "normal"
-%token TOK_NONE "none"
-%token TOK_1PIXEL "1pixel"
-%token TOK_MODE "mode"
-%token TOK_TILING "tiling"
-%token TOK_FLOATING "floating"
-%token TOK_WORKSPACE "workspace"
-%token TOK_TOGGLE "toggle"
-%token TOK_FOCUS "focus"
-%token TOK_MOVE "move"
-%token TOK_OPEN "open"
-%token TOK_NEXT "next"
-%token TOK_PREV "prev"
-%token TOK_SPLIT "split"
-%token TOK_HORIZONTAL "horizontal"
-%token TOK_VERTICAL "vertical"
-%token TOK_LEVEL "level"
-%token TOK_UP "up"
-%token TOK_DOWN "down"
-%token TOK_LEFT "left"
-%token TOK_RIGHT "right"
-%token TOK_RESTORE "restore"
-%token TOK_MARK "mark"
-%token TOK_RESIZE "resize"
-%token TOK_GROW "grow"
-%token TOK_SHRINK "shrink"
-%token TOK_PX "px"
-%token TOK_OR "or"
-%token TOK_PPT "ppt"
-%token TOK_NOP "nop"
+%token              TOK_ATTACH          "attach"
+%token              TOK_EXEC            "exec"
+%token              TOK_EXIT            "exit"
+%token              TOK_RELOAD          "reload"
+%token              TOK_RESTART         "restart"
+%token              TOK_KILL            "kill"
+%token              TOK_FULLSCREEN      "fullscreen"
+%token              TOK_GLOBAL          "global"
+%token              TOK_LAYOUT          "layout"
+%token              TOK_DEFAULT         "default"
+%token              TOK_STACKED         "stacked"
+%token              TOK_TABBED          "tabbed"
+%token              TOK_BORDER          "border"
+%token              TOK_NORMAL          "normal"
+%token              TOK_NONE            "none"
+%token              TOK_1PIXEL          "1pixel"
+%token              TOK_MODE            "mode"
+%token              TOK_TILING          "tiling"
+%token              TOK_FLOATING        "floating"
+%token              TOK_WORKSPACE       "workspace"
+%token              TOK_TOGGLE          "toggle"
+%token              TOK_FOCUS           "focus"
+%token              TOK_MOVE            "move"
+%token              TOK_OPEN            "open"
+%token              TOK_NEXT            "next"
+%token              TOK_PREV            "prev"
+%token              TOK_SPLIT           "split"
+%token              TOK_HORIZONTAL      "horizontal"
+%token              TOK_VERTICAL        "vertical"
+%token              TOK_LEVEL           "level"
+%token              TOK_UP              "up"
+%token              TOK_DOWN            "down"
+%token              TOK_LEFT            "left"
+%token              TOK_RIGHT           "right"
+%token              TOK_RESTORE         "restore"
+%token              TOK_MARK            "mark"
+%token              TOK_RESIZE          "resize"
+%token              TOK_GROW            "grow"
+%token              TOK_SHRINK          "shrink"
+%token              TOK_PX              "px"
+%token              TOK_OR              "or"
+%token              TOK_PPT             "ppt"
+%token              TOK_NOP             "nop"
 
-%token TOK_CLASS "class"
-%token TOK_ID "id"
-%token TOK_CON_ID "con_id"
+%token              TOK_CLASS           "class"
+%token              TOK_ID              "id"
+%token              TOK_CON_ID          "con_id"
 
-%token WHITESPACE "<whitespace>"
-%token STR "<string>"
-%token NUMBER "<number>"
+%token              WHITESPACE          "<whitespace>"
+%token  <string>    STR                 "<string>"
+%token  <number>    NUMBER              "<number>"
+
+%type   <number>    direction
+%type   <chr>       level_direction
+%type   <number>    window_mode
+%type   <number>    border_style
+%type   <number>    layout_mode
+%type   <number>    resize_px
+%type   <number>    resize_way
+%type   <number>    resize_tiling
 
 %%
 
@@ -254,19 +263,19 @@ matchend:
 criteria:
     TOK_CLASS '=' STR
     {
-        printf("criteria: class = %s\n", $<string>3);
-        current_match.class = $<string>3;
+        printf("criteria: class = %s\n", $3);
+        current_match.class = $3;
     }
     | TOK_CON_ID '=' STR
     {
-        printf("criteria: id = %s\n", $<string>3);
+        printf("criteria: id = %s\n", $3);
         char *end;
-        long parsed = strtol($<string>3, &end, 10);
+        long parsed = strtol($3, &end, 10);
         if (parsed == LONG_MIN ||
             parsed == LONG_MAX ||
             parsed < 0 ||
             (end && *end != '\0')) {
-            ELOG("Could not parse con id \"%s\"\n", $<string>3);
+            ELOG("Could not parse con id \"%s\"\n", $3);
         } else {
             current_match.con_id = (Con*)parsed;
             printf("id as int = %p\n", current_match.con_id);
@@ -274,14 +283,14 @@ criteria:
     }
     | TOK_ID '=' STR
     {
-        printf("criteria: window id = %s\n", $<string>3);
+        printf("criteria: window id = %s\n", $3);
         char *end;
-        long parsed = strtol($<string>3, &end, 10);
+        long parsed = strtol($3, &end, 10);
         if (parsed == LONG_MIN ||
             parsed == LONG_MAX ||
             parsed < 0 ||
             (end && *end != '\0')) {
-            ELOG("Could not parse window id \"%s\"\n", $<string>3);
+            ELOG("Could not parse window id \"%s\"\n", $3);
         } else {
             current_match.id = parsed;
             printf("window id as int = %d\n", current_match.id);
@@ -289,8 +298,8 @@ criteria:
     }
     | TOK_MARK '=' STR
     {
-        printf("criteria: mark = %s\n", $<string>3);
-        current_match.mark = $<string>3;
+        printf("criteria: mark = %s\n", $3);
+        current_match.mark = $3;
     }
     ;
 
@@ -327,9 +336,9 @@ operation:
 exec:
     TOK_EXEC WHITESPACE STR
     {
-        printf("should execute %s\n", $<string>3);
-        start_application($<string>3);
-        free($<string>3);
+        printf("should execute %s\n", $3);
+        start_application($3);
+        free($3);
     }
     ;
 
@@ -410,9 +419,9 @@ kill:
 workspace:
     TOK_WORKSPACE WHITESPACE STR
     {
-        printf("should switch to workspace %s\n", $<string>3);
-        workspace_show($<string>3);
-        free($<string>3);
+        printf("should switch to workspace %s\n", $3);
+        workspace_show($3);
+        free($3);
     }
     ;
 
@@ -449,8 +458,8 @@ next:
     TOK_NEXT WHITESPACE direction
     {
         /* TODO: use matches */
-        printf("should select next window in direction %c\n", $<chr>3);
-        tree_next('n', ($<chr>3 == 'v' ? VERT : HORIZ));
+        printf("should select next window in direction %c\n", $3);
+        tree_next('n', ($3 == 'v' ? VERT : HORIZ));
     }
     ;
 
@@ -458,8 +467,8 @@ prev:
     TOK_PREV WHITESPACE direction
     {
         /* TODO: use matches */
-        printf("should select prev window in direction %c\n", $<chr>3);
-        tree_next('p', ($<chr>3 == 'v' ? VERT : HORIZ));
+        printf("should select prev window in direction %c\n", $3);
+        tree_next('p', ($3 == 'v' ? VERT : HORIZ));
     }
     ;
 
@@ -467,27 +476,27 @@ split:
     TOK_SPLIT WHITESPACE direction
     {
         /* TODO: use matches */
-        printf("splitting in direction %c\n", $<chr>3);
-        tree_split(focused, ($<chr>3 == 'v' ? VERT : HORIZ));
+        printf("splitting in direction %c\n", $3);
+        tree_split(focused, ($3 == 'v' ? VERT : HORIZ));
     }
     ;
 
 direction:
-    TOK_HORIZONTAL  { $<chr>$ = 'h'; }
-    | 'h'           { $<chr>$ = 'h'; }
-    | TOK_VERTICAL  { $<chr>$ = 'v'; }
-    | 'v'           { $<chr>$ = 'v'; }
+    TOK_HORIZONTAL  { $$ = 'h'; }
+    | 'h'           { $$ = 'h'; }
+    | TOK_VERTICAL  { $$ = 'v'; }
+    | 'v'           { $$ = 'v'; }
     ;
 
 mode:
     TOK_MODE WHITESPACE window_mode
     {
-        if ($<number>3 == TOK_TOGGLE) {
+        if ($3 == TOK_TOGGLE) {
             printf("should toggle mode\n");
             toggle_floating_mode(focused, false);
         } else {
-            printf("should switch mode to %s\n", ($<number>3 == TOK_FLOATING ? "floating" : "tiling"));
-            if ($<number>3 == TOK_FLOATING) {
+            printf("should switch mode to %s\n", ($3 == TOK_FLOATING ? "floating" : "tiling"));
+            if ($3 == TOK_FLOATING) {
                 floating_enable(focused, false);
             } else {
                 floating_disable(focused, false);
@@ -497,65 +506,65 @@ mode:
     ;
 
 window_mode:
-    TOK_FLOATING    { $<number>$ = TOK_FLOATING; }
-    | TOK_TILING    { $<number>$ = TOK_TILING; }
-    | TOK_TOGGLE    { $<number>$ = TOK_TOGGLE; }
+    TOK_FLOATING    { $$ = TOK_FLOATING; }
+    | TOK_TILING    { $$ = TOK_TILING; }
+    | TOK_TOGGLE    { $$ = TOK_TOGGLE; }
     ;
 
 border:
     TOK_BORDER WHITESPACE border_style
     {
-        printf("border style should be changed to %d\n", $<number>3);
+        printf("border style should be changed to %d\n", $3);
         owindow *current;
 
         /* check if the match is empty, not if the result is empty */
         if (match_is_empty(&current_match))
-            focused->border_style = $<number>3;
+            focused->border_style = $3;
         else {
             TAILQ_FOREACH(current, &owindows, owindows) {
                 printf("matching: %p / %s\n", current->con, current->con->name);
-                current->con->border_style = $<number>3;
+                current->con->border_style = $3;
             }
         }
     }
     ;
 
 border_style:
-    TOK_NORMAL      { $<number>$ = BS_NORMAL; }
-    | TOK_NONE      { $<number>$ = BS_NONE; }
-    | TOK_1PIXEL    { $<number>$ = BS_1PIXEL; }
+    TOK_NORMAL      { $$ = BS_NORMAL; }
+    | TOK_NONE      { $$ = BS_NONE; }
+    | TOK_1PIXEL    { $$ = BS_1PIXEL; }
     ;
 
 
 level:
     TOK_LEVEL WHITESPACE level_direction
     {
-        printf("level %c\n", $<chr>3);
-        if ($<chr>3 == 'u')
+        printf("level %c\n", $3);
+        if ($3 == 'u')
             level_up();
         else level_down();
     }
     ;
 
 level_direction:
-    TOK_UP     { $<chr>$ = 'u'; }
-    | TOK_DOWN { $<chr>$ = 'd'; }
+    TOK_UP     { $$ = 'u'; }
+    | TOK_DOWN { $$ = 'd'; }
     ;
 
 move:
     TOK_MOVE WHITESPACE direction
     {
-        printf("moving in direction %d\n", $<number>3);
-        tree_move($<number>3);
+        printf("moving in direction %d\n", $3);
+        tree_move($3);
     }
     | TOK_MOVE WHITESPACE TOK_WORKSPACE WHITESPACE STR
     {
         owindow *current;
 
-        printf("should move window to workspace %s\n", $<string>5);
+        printf("should move window to workspace %s\n", $5);
         /* get the workspace */
-        Con *ws = workspace_get($<string>5, NULL);
-        free($<string>5);
+        Con *ws = workspace_get($5, NULL);
+        free($5);
 
         /* check if the match is empty, not if the result is empty */
         if (match_is_empty(&current_match))
@@ -572,25 +581,25 @@ move:
 restore:
     TOK_RESTORE WHITESPACE STR
     {
-        printf("restoring \"%s\"\n", $<string>3);
-        tree_append_json($<string>3);
-        free($<string>3);
+        printf("restoring \"%s\"\n", $3);
+        tree_append_json($3);
+        free($3);
     }
     ;
 
 layout:
     TOK_LAYOUT WHITESPACE layout_mode
     {
-        printf("changing layout to %d\n", $<number>3);
+        printf("changing layout to %d\n", $3);
         owindow *current;
 
         /* check if the match is empty, not if the result is empty */
         if (match_is_empty(&current_match))
-            con_set_layout(focused->parent, $<number>3);
+            con_set_layout(focused->parent, $3);
         else {
             TAILQ_FOREACH(current, &owindows, owindows) {
                 printf("matching: %p / %s\n", current->con, current->con->name);
-                con_set_layout(current->con, $<number>3);
+                con_set_layout(current->con, $3);
             }
         }
 
@@ -598,24 +607,24 @@ layout:
     ;
 
 layout_mode:
-    TOK_DEFAULT   { $<number>$ = L_DEFAULT; }
-    | TOK_STACKED { $<number>$ = L_STACKED; }
-    | TOK_TABBED  { $<number>$ = L_TABBED; }
+    TOK_DEFAULT   { $$ = L_DEFAULT; }
+    | TOK_STACKED { $$ = L_STACKED; }
+    | TOK_TABBED  { $$ = L_TABBED; }
     ;
 
 mark:
     TOK_MARK WHITESPACE STR
     {
-        printf("marking window with str %s\n", $<string>3);
+        printf("marking window with str %s\n", $3);
         owindow *current;
 
         /* check if the match is empty, not if the result is empty */
         if (match_is_empty(&current_match))
-            focused->mark = sstrdup($<string>3);
+            focused->mark = sstrdup($3);
         else {
             TAILQ_FOREACH(current, &owindows, owindows) {
                 printf("matching: %p / %s\n", current->con, current->con->name);
-                current->con->mark = sstrdup($<string>3);
+                current->con->mark = sstrdup($3);
             }
         }
 
@@ -627,9 +636,9 @@ nop:
     TOK_NOP WHITESPACE STR
     {
         printf("-------------------------------------------------\n");
-        printf("  NOP: %s\n", $<string>3);
+        printf("  NOP: %s\n", $3);
         printf("-------------------------------------------------\n");
-        free($<string>3);
+        free($3);
     }
     ;
 
@@ -637,11 +646,11 @@ resize:
     TOK_RESIZE WHITESPACE resize_way WHITESPACE direction resize_px resize_tiling
     {
         /* resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt] */
-        printf("resizing in way %d, direction %d, px %d or ppt %d\n", $<number>3, $<number>5, $<number>6, $<number>7);
-        int direction = $<number>5;
-        int px = $<number>6;
-        int ppt = $<number>7;
-        if ($<number>3 == TOK_SHRINK) {
+        printf("resizing in way %d, direction %d, px %d or ppt %d\n", $3, $5, $6, $7);
+        int direction = $5;
+        int px = $6;
+        int ppt = $7;
+        if ($3 == TOK_SHRINK) {
             px *= -1;
             ppt *= -1;
         }
@@ -694,33 +703,33 @@ resize:
 resize_px:
     /* empty */
     {
-        $<number>$ = 10;
+        $$ = 10;
     }
     | WHITESPACE NUMBER WHITESPACE TOK_PX
     {
-        $<number>$ = $<number>2;
+        $$ = $2;
     }
     ;
 
 resize_tiling:
     /* empty */
     {
-        $<number>$ = 10;
+        $$ = 10;
     }
     | WHITESPACE TOK_OR WHITESPACE NUMBER WHITESPACE TOK_PPT
     {
-        $<number>$ = $<number>4;
+        $$ = $4;
     }
     ;
 
 resize_way:
-    TOK_GROW        { $<number>$ = TOK_GROW; }
-    | TOK_SHRINK    { $<number>$ = TOK_SHRINK; }
+    TOK_GROW        { $$ = TOK_GROW; }
+    | TOK_SHRINK    { $$ = TOK_SHRINK; }
     ;
 
 direction:
-    TOK_UP          { $<number>$ = TOK_UP; }
-    | TOK_DOWN      { $<number>$ = TOK_DOWN; }
-    | TOK_LEFT      { $<number>$ = TOK_LEFT; }
-    | TOK_RIGHT     { $<number>$ = TOK_RIGHT; }
+    TOK_UP          { $$ = TOK_UP; }
+    | TOK_DOWN      { $$ = TOK_DOWN; }
+    | TOK_LEFT      { $$ = TOK_LEFT; }
+    | TOK_RIGHT     { $$ = TOK_RIGHT; }
     ;
