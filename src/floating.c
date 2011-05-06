@@ -360,7 +360,7 @@ void floating_resize_window(xcb_connection_t *conn, Client *client,
 
         if (event->event_y <= (client->rect.height / 2))
                 corner |= BORDER_TOP;
-        else corner |= BORDER_RIGHT;
+        else corner |= BORDER_BOTTOM;
 
         struct resize_window_callback_params params = { corner, proportional, event };
 
