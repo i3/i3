@@ -381,7 +381,7 @@ void floating_resize_window(Con *con, bool proportional,
 
     if (event->event_y <= (con->rect.height / 2))
         corner |= BORDER_TOP;
-    else corner |= BORDER_RIGHT;
+    else corner |= BORDER_BOTTOM;
 
     struct resize_window_callback_params params = { corner, proportional, event };
 
