@@ -11,6 +11,9 @@ use Proc::Background;
 use TAP::Harness;
 use TAP::Parser::Aggregator;
 use File::Basename qw(basename);
+use AnyEvent::I3 qw(:all);
+use Try::Tiny;
+use Getopt::Long;
 
 # reads in a whole file
 sub slurp {
@@ -18,6 +21,12 @@ sub slurp {
     local $/;
     <$fh>;
 }
+
+my $coverage_testing = 0;
+
+my $result = GetOptions(
+    "coverage-testing" => \$coverage_testing
+);
 
 my $i3cmd = "export DISPLAY=:0; exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c " . abs_path("../i3.config");
 
@@ -51,7 +60,24 @@ for my $t (@testfiles) {
     my $process = Proc::Background->new($cmd) unless $dont_start;
     say "testing $t with logfile $logpath";
     $harness->aggregate_tests($aggregator, [ $t ]);
-    kill(9, $process->pid) or die "could not kill i3" unless $dont_start;
+
+    # Don’t bother killing i3 when we haven’t started it
+    next if $dont_start;
+
+    # When measuring code coverage, try to exit i3 cleanly (otherwise, .gcda
+    # files are not written) and fallback to killing it
+    if ($coverage_testing) {
+        my $exited = 0;
+        try {
+            say "Exiting i3 cleanly...";
+            i3("/tmp/nestedcons")->command('exit')->recv;
+            $exited = 1;
+        };
+        next if $exited;
+    }
+
+    say "Killing i3";
+    kill(9, $process->pid) or die "could not kill i3";
 }
 $aggregator->stop();
 
