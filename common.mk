@@ -1,5 +1,6 @@
 UNAME=$(shell uname)
 DEBUG=1
+COVERAGE=0
 INSTALL=install
 PREFIX=/usr
 ifeq ($(PREFIX),/usr)
@@ -95,6 +96,11 @@ CFLAGS += -g3
 else
 CFLAGS += -O2
 CFLAGS += -freorder-blocks-and-partition
+endif
+
+ifeq ($(COVERAGE),1)
+CFLAGS += -fprofile-arcs -ftest-coverage
+LDFLAGS += -lgcov
 endif
 
 # Don’t print command lines which are run
