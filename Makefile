@@ -95,7 +95,8 @@ dist: distclean
 	rm -rf i3-${VERSION}
 
 clean:
-	rm -f src/*.o src/cfgparse.tab.{c,h} src/cfgparse.yy.c src/cfgparse.output src/cmdparse.tab.{c,h} src/cmdparse.yy.c src/cmdparse.output loglevels.tmp include/loglevels.h
+	rm -f src/*.o src/*.gcno src/cfgparse.tab.{c,h} src/cfgparse.yy.c src/cfgparse.output src/cmdparse.tab.{c,h} src/cmdparse.yy.c src/cmdparse.output loglevels.tmp include/loglevels.h
+	(which lcov >/dev/null && lcov -d . --zerocounters) || true
 	$(MAKE) -C docs clean
 	$(MAKE) -C man clean
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg clean
@@ -105,3 +106,9 @@ distclean: clean
 	rm -f i3
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg distclean
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-input distclean
+
+coverage:
+	rm -f /tmp/i3-coverage.info
+	rm -rf /tmp/i3-coverage
+	lcov -d . -b . --capture -o /tmp/i3-coverage.info
+	genhtml -o /tmp/i3-coverage/ /tmp/i3-coverage.info
