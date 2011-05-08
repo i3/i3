@@ -20,4 +20,4 @@ A list of changes follows:
  * Bugfix: Fix possible rounding errors (when rounding up)
  * Make i3 compatible with latest xcb and yajl
 
--- Michael Stapelberg, 2011-05-03
+-- Michael Stapelberg, 2011-05-08

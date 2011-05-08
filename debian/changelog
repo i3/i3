@@ -5,7 +5,7 @@ i3-wm (3.e-bf3-1) unstable; urgency=low
   * Bugfix: Fix possible rounding errors (when rounding up)
   * Make i3 compatible with latest xcb and yajl
 
- -- Michael Stapelberg <michael@stapelberg.de>  Tue, 03 May 2011 22:53:19 +0200
+ -- Michael Stapelberg <michael@stapelberg.de>  Sun, 08 May 2011 14:09:22 +0200
 
 i3-wm (3.e-bf2-1) unstable; urgency=low
 
