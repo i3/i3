@@ -66,10 +66,12 @@ void tree_close_con();
 void tree_next(char way, orientation_t orientation);
 
 /**
- * Closes the given container including all children
+ * Closes the given container including all children.
+ * Returns true if the container was killed or false if just WM_DELETE was sent
+ * and the window is expected to kill itself.
  *
  */
-void tree_close(Con *con, bool kill_window, bool dont_kill_parent);
+bool tree_close(Con *con, bool kill_window, bool dont_kill_parent);
 
 /**
  * Loads tree from ~/.i3/_restart.json (used for in-place restarts).

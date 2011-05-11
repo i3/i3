@@ -94,10 +94,12 @@ static bool _is_con_mapped(Con *con) {
 }
 
 /*
- * Closes the given container including all children
+ * Closes the given container including all children.
+ * Returns true if the container was killed or false if just WM_DELETE was sent
+ * and the window is expected to kill itself.
  *
  */
-void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
+bool tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     bool was_mapped = con->mapped;
     Con *parent = con->parent;
 
@@ -113,19 +115,27 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     DLOG("next = %p, focused = %p\n", next, focused);
 
     DLOG("closing %p, kill_window = %d\n", con, kill_window);
-    Con *child;
+    Con *child, *nextchild;
+    bool abort_kill = false;
     /* We cannot use TAILQ_FOREACH because the children get deleted
      * in their parent’s nodes_head */
-    while (!TAILQ_EMPTY(&(con->nodes_head))) {
-        child = TAILQ_FIRST(&(con->nodes_head));
+    for (child = TAILQ_FIRST(&(con->nodes_head)); child; ) {
+        nextchild = TAILQ_NEXT(child, nodes);
         DLOG("killing child=%p\n", child);
-        tree_close(child, kill_window, true);
+        if (!tree_close(child, kill_window, true))
+            abort_kill = true;
+        child = nextchild;
+    }
+
+    if (abort_kill) {
+        DLOG("One of the children could not be killed immediately (WM_DELETE sent), aborting.\n");
+        return false;
     }
 
     if (con->window != NULL) {
         if (kill_window) {
             x_window_kill(con->window->id);
-            return;
+            return false;
         } else {
             /* un-parent the window */
             xcb_reparent_window(conn, con->window->id, root, 0, 0);
@@ -175,7 +185,7 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
      * when closing the parent, so we can exit now. */
     if (!next) {
         DLOG("No next container, i will just exit now\n");
-        return;
+        return true;
     }
 
     if (was_mapped || con == focused) {
@@ -199,6 +209,8 @@ void tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     /* check if the parent container is empty now and close it */
     if (!dont_kill_parent)
         CALL(parent, on_remove_child);
+
+    return true;
 }
 
 /*
