@@ -813,7 +813,11 @@ static int handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_w
     //CLIENT_LOG(con);
     LOG("Urgency flag changed to %d\n", con->urgent);
 
-    workspace_update_urgent_flag(con_get_workspace(con));
+    Con *ws;
+    /* Set the urgency flag on the workspace, if a workspace could be found
+     * (for dock clients, that is not the case). */
+    if ((ws = con_get_workspace(con)) != NULL)
+        workspace_update_urgent_flag(ws);
 
     tree_render();
 
