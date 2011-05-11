@@ -120,6 +120,17 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
                 json_node->orientation = VERT;
             else LOG("Unhandled orientation: %s\n", buf);
             free(buf);
+        } else if (strcasecmp(last_key, "border") == 0) {
+            char *buf = NULL;
+            asprintf(&buf, "%.*s", (int)len, val);
+            if (strcasecmp(buf, "none") == 0)
+                json_node->border_style = BS_NONE;
+            else if (strcasecmp(buf, "1pixel") == 0)
+                json_node->border_style = BS_1PIXEL;
+            else if (strcasecmp(buf, "normal") == 0)
+                json_node->border_style = BS_NORMAL;
+            else LOG("Unhandled \"border\": %s\n", buf);
+            free(buf);
         }
     }
     return 1;
