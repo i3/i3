@@ -206,7 +206,17 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(integer, con->layout);
 
     ystr("border");
-    y(integer, con->border_style);
+    switch (con->border_style) {
+        case BS_NORMAL:
+            ystr("normal");
+            break;
+        case BS_NONE:
+            ystr("none");
+            break;
+        case BS_1PIXEL:
+            ystr("1pixel");
+            break;
+    }
 
     dump_rect(gen, "rect", con->rect);
     dump_rect(gen, "window_rect", con->window_rect);
