@@ -303,28 +303,30 @@ void x_draw_decoration(Con *con) {
         deco_rect.height = 0;
 
     /* 2: draw the client.background, but only for the parts around the client_rect */
-    xcb_rectangle_t background[] = {
-        /* top area */
-        { 0, 0, r->width, w->y },
-        /* bottom area */
-        { 0, (w->y + w->height), r->width, r->height - (w->y + w->height) },
-        /* left area */
-        { 0, 0, w->x, r->height },
-        /* right area */
-        { w->x + w->width, 0, r->width - (w->x + w->width), r->height }
-    };
+    if (con->window != NULL) {
+        xcb_rectangle_t background[] = {
+            /* top area */
+            { 0, 0, r->width, w->y },
+            /* bottom area */
+            { 0, (w->y + w->height), r->width, r->height - (w->y + w->height) },
+            /* left area */
+            { 0, 0, w->x, r->height },
+            /* right area */
+            { w->x + w->width, 0, r->width - (w->x + w->width), r->height }
+        };
 #if 0
-    for (int i = 0; i < 4; i++)
-        DLOG("rect is (%d, %d) with %d x %d\n",
-                background[i].x,
-                background[i].y,
-                background[i].width,
-                background[i].height
-            );
+        for (int i = 0; i < 4; i++)
+            DLOG("rect is (%d, %d) with %d x %d\n",
+                    background[i].x,
+                    background[i].y,
+                    background[i].width,
+                    background[i].height
+                );
 #endif
 
-    xcb_change_gc_single(conn, con->pm_gc, XCB_GC_FOREGROUND, config.client.background);
-    xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, sizeof(background) / sizeof(xcb_rectangle_t), background);
+        xcb_change_gc_single(conn, con->pm_gc, XCB_GC_FOREGROUND, config.client.background);
+        xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, sizeof(background) / sizeof(xcb_rectangle_t), background);
+    }
 
     /* 3: draw a rectangle in border color around the client */
     if (p->border_style != BS_NONE && p->con_is_leaf) {
