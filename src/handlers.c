@@ -184,19 +184,14 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
 
     /* see if the user entered the window on a certain window decoration */
     int layout = (enter_child ? con->parent->layout : con->layout);
-    Con *child;
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes)
-        if (rect_contains(child->deco_rect, event->event_x, event->event_y)) {
-            LOG("using child %p / %s instead!\n", child, child->name);
-            con = child;
-            break;
-        }
-
-    /* for stacked/tabbed layout we do not want to change focus when the user
-     * enters the window at the decoration of any child window. */
-    if (layout == L_STACKED || layout == L_TABBED) {
-        con = TAILQ_FIRST(&(con->parent->focus_head));
-        LOG("using focused %p / %s instead\n", con, con->name);
+    if (layout == L_DEFAULT) {
+        Con *child;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes)
+            if (rect_contains(child->deco_rect, event->event_x, event->event_y)) {
+                LOG("using child %p / %s instead!\n", child, child->name);
+                con = child;
+                break;
+            }
     }
 
 #if 0
