@@ -49,7 +49,7 @@ static int json_end_map(void *ctx) {
     LOG("end of map\n");
     if (!parsing_swallows && !parsing_rect && !parsing_window_rect && !parsing_geometry) {
         LOG("attaching\n");
-        con_attach(json_node, json_node->parent, false);
+        con_attach(json_node, json_node->parent, true);
         json_node = json_node->parent;
     }
     if (parsing_rect)
