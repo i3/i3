@@ -30,6 +30,27 @@ multiple_cmds("kill\t ;\tkill");
 multiple_cmds("kill\t ;\t kill");
 multiple_cmds("kill \t ; \t kill");
 
+#####################################################################
+# test if un-quoted strings are handled correctly
+#####################################################################
+
+$tmp = fresh_workspace;
+cmd 'open';
+my $unused = get_unused_workspace;
+ok(!($unused ~~ @{get_workspace_names()}), 'workspace does not exist yet');
+cmd "move workspace $unused; nop parser test";
+ok(($unused ~~ @{get_workspace_names()}), 'workspace exists after moving');
+
+#####################################################################
+# quote the workspace name and use a ; (command separator) in its name
+#####################################################################
+
+$unused = get_unused_workspace;
+$unused .= ';a';
+ok(!($unused ~~ @{get_workspace_names()}), 'workspace does not exist yet');
+cmd qq|move workspace "$unused"; nop parser test|;
+ok(($unused ~~ @{get_workspace_names()}), 'workspace exists after moving');
+
 # TODO: need a non-invasive command before implementing a test which uses ','
 
 done_testing;

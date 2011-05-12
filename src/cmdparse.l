@@ -65,16 +65,16 @@ EOL (\r?\n)
     cmdyycolumn = 1;
 }
 
-<WANT_STRING>[^\n]+             { BEGIN(INITIAL); cmdyylval.string = sstrdup(yytext); return STR; }
 <WANT_WS_STRING>[ \t]*          { BEGIN(WANT_STRING); return WHITESPACE; }
-<WANT_QSTRING>\"[^\"]+\"        {
+<WANT_STRING>\"[^\"]+\"         {
                                   BEGIN(INITIAL);
                                   /* strip quotes */
                                   char *copy = sstrdup(yytext+1);
                                   copy[strlen(copy)-1] = '\0';
                                   cmdyylval.string = copy;
                                   return STR;
-                                }
+                                 }
+<WANT_STRING>[^;\n]+             { BEGIN(INITIAL); cmdyylval.string = sstrdup(yytext); return STR; }
 
 [ \t]*                          { return WHITESPACE; }
 attach                          { return TOK_ATTACH; }
