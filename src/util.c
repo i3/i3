@@ -379,7 +379,8 @@ void i3_restart(bool forget_layout) {
         for (int i = 0; i < num_args; ++i) {
             if (skip_next)
                 skip_next = false;
-            else if (!strcmp(start_argv[i], "-r"))
+            else if (!strcmp(start_argv[i], "-r") ||
+                     !strcmp(start_argv[i], "--restart"))
                 skip_next = true;
             else
                 new_argv[write_index++] = start_argv[i];
