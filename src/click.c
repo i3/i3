@@ -160,23 +160,35 @@ static int route_click(Con *con, xcb_button_press_event_t *event, bool mod_press
     /* get the floating con */
     Con *floatingcon = con_inside_floating(con);
     const bool proportional = (event->state & BIND_SHIFT);
-
-    /* 1: focus this con */
-    con_focus(con);
-
     const bool in_stacked = (con->parent->layout == L_STACKED || con->parent->layout == L_TABBED);
 
-    /* 2: for floating containers, we also want to raise them on click */
+    /* 1: see if the user scrolled on the decoration of a stacked/tabbed con */
+    if (in_stacked &&
+        dest == CLICK_DECORATION &&
+        (event->detail == XCB_BUTTON_INDEX_4 ||
+         event->detail == XCB_BUTTON_INDEX_5)) {
+        DLOG("Scrolling on a window decoration\n");
+        orientation_t orientation = (con->parent->layout == L_STACKED ? VERT : HORIZ);
+        if (event->detail == XCB_BUTTON_INDEX_4)
+            tree_next('p', orientation);
+        else tree_next('n', orientation);
+        goto done;
+    }
+
+    /* 2: focus this con */
+    con_focus(con);
+
+    /* 3: for floating containers, we also want to raise them on click */
     if (floatingcon != NULL) {
         floating_raise_con(floatingcon);
 
-        /* 3: floating_modifier plus left mouse button drags */
+        /* 4: floating_modifier plus left mouse button drags */
         if (mod_pressed && event->detail == 1) {
             floating_drag_window(floatingcon, event);
             return 1;
         }
 
-        /* 3: resize (floating) if this was a click on the left/right/bottom
+        /* 5: resize (floating) if this was a click on the left/right/bottom
          * border. also try resizing (tiling) if it was a click on the top
          * border, but continue if that does not work */
         if (mod_pressed && event->detail == 3) {
@@ -198,7 +210,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, bool mod_press
             return 1;
         }
 
-        /* 4: dragging, if this was a click on a decoration (which did not lead
+        /* 6: dragging, if this was a click on a decoration (which did not lead
          * to a resize) */
         if (!in_stacked && dest == CLICK_DECORATION) {
             floating_drag_window(floatingcon, event);
@@ -217,12 +229,12 @@ static int route_click(Con *con, xcb_button_press_event_t *event, bool mod_press
         goto done;
     }
 
-    /* 3: floating modifier pressed, initiate a resize */
+    /* 7: floating modifier pressed, initiate a resize */
     if (mod_pressed && event->detail == 3) {
         if (floating_mod_on_tiled_client(con, event))
             return 1;
     }
-    /* 4: otherwise, check for border/decoration clicks and resize */
+    /* 8: otherwise, check for border/decoration clicks and resize */
     else if (dest == CLICK_BORDER || dest == CLICK_DECORATION) {
         DLOG("Should trry resizing (tiling)\n");
         tiling_resize(con, event, dest);
