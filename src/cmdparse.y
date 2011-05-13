@@ -91,7 +91,7 @@ char *parse_cmd(const char *new) {
 
 %}
 
-%expect 4
+%expect 5
 %error-verbose
 %lex-param { struct context *context }
 
@@ -107,6 +107,8 @@ char *parse_cmd(const char *new) {
 %token              TOK_RELOAD          "reload"
 %token              TOK_RESTART         "restart"
 %token              TOK_KILL            "kill"
+%token              TOK_WINDOW          "window"
+%token              TOK_CLIENT          "client"
 %token              TOK_FULLSCREEN      "fullscreen"
 %token              TOK_GLOBAL          "global"
 %token              TOK_LAYOUT          "layout"
@@ -161,6 +163,7 @@ char *parse_cmd(const char *new) {
 %type   <number>    resize_px
 %type   <number>    resize_way
 %type   <number>    resize_tiling
+%type   <number>    optional_kill_mode
 
 %%
 
@@ -398,22 +401,28 @@ focus:
     ;
 
 kill:
-    TOK_KILL
+    TOK_KILL optional_kill_mode
     {
         owindow *current;
 
         printf("killing!\n");
         /* check if the match is empty, not if the result is empty */
         if (match_is_empty(&current_match))
-            tree_close_con();
+            tree_close_con($2);
         else {
             TAILQ_FOREACH(current, &owindows, owindows) {
                 printf("matching: %p / %s\n", current->con, current->con->name);
-                tree_close(current->con, true, false);
+                tree_close(current->con, $2, false);
             }
         }
 
     }
+    ;
+
+optional_kill_mode:
+    /* empty */             { $$ = KILL_WINDOW; }
+    | WHITESPACE TOK_WINDOW { $$ = KILL_WINDOW; }
+    | WHITESPACE TOK_CLIENT { $$ = KILL_CLIENT; }
     ;
 
 workspace:

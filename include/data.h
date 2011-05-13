@@ -43,6 +43,10 @@ typedef enum { D_LEFT, D_RIGHT, D_UP, D_DOWN } direction_t;
 typedef enum { NO_ORIENTATION = 0, HORIZ, VERT } orientation_t;
 typedef enum { BS_NORMAL = 0, BS_NONE = 1, BS_1PIXEL = 2 } border_style_t;
 
+/** parameter to specify whether tree_close() and x_window_kill() should kill
+ * only this specific window or the whole X11 client */
+typedef enum { DONT_KILL_WINDOW = 0, KILL_WINDOW = 1, KILL_CLIENT = 2 } kill_window_t;
+
 enum {
     BIND_NONE = 0,
     BIND_SHIFT = XCB_MOD_MASK_SHIFT,        /* (1 << 0) */

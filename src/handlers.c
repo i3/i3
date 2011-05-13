@@ -466,7 +466,7 @@ static int handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
         return 1;
     }
 
-    tree_close(con, false, false);
+    tree_close(con, DONT_KILL_WINDOW, false);
     tree_render();
     x_push_changes(croot);
     return 1;

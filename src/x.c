@@ -199,11 +199,16 @@ bool window_supports_protocol(xcb_window_t window, xcb_atom_t atom) {
  * Kills the given X11 window using WM_DELETE_WINDOW (if supported).
  *
  */
-void x_window_kill(xcb_window_t window) {
+void x_window_kill(xcb_window_t window, kill_window_t kill_window) {
     /* if this window does not support WM_DELETE_WINDOW, we kill it the hard way */
     if (!window_supports_protocol(window, A_WM_DELETE_WINDOW)) {
-        LOG("Killing window the hard way\n");
-        xcb_kill_client(conn, window);
+        if (kill_window == KILL_WINDOW) {
+            LOG("Killing specific window 0x%08x\n", window);
+            xcb_destroy_window(conn, window);
+        } else {
+            LOG("Killing the X11 client which owns window 0x%08x\n", window);
+            xcb_kill_client(conn, window);
+        }
         return;
     }
 

@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * cmdparse.l: the lexer for commands you send to i3 (or bind on keys)
  *
@@ -92,6 +92,8 @@ exit                            { return TOK_EXIT; }
 reload                          { return TOK_RELOAD; }
 restart                         { return TOK_RESTART; }
 kill                            { return TOK_KILL; }
+window                          { return TOK_WINDOW; }
+client                          { return TOK_CLIENT; }
 fullscreen                      { return TOK_FULLSCREEN; }
 global                          { return TOK_GLOBAL; }
 layout                          { return TOK_LAYOUT; }

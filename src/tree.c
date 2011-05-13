@@ -99,7 +99,7 @@ static bool _is_con_mapped(Con *con) {
  * and the window is expected to kill itself.
  *
  */
-bool tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
+bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent) {
     bool was_mapped = con->mapped;
     Con *parent = con->parent;
 
@@ -133,8 +133,8 @@ bool tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     }
 
     if (con->window != NULL) {
-        if (kill_window) {
-            x_window_kill(con->window->id);
+        if (kill_window != DONT_KILL_WINDOW) {
+            x_window_kill(con->window->id, kill_window);
             return false;
         } else {
             /* un-parent the window */
@@ -165,7 +165,7 @@ bool tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     if (con_is_floating(con)) {
         Con *ws = con_get_workspace(con);
         DLOG("Container was floating, killing floating container\n");
-        tree_close(parent, false, false);
+        tree_close(parent, DONT_KILL_WINDOW, false);
         DLOG("parent container killed\n");
         if (con == focused) {
             DLOG("This is the focused container, i need to find another one to focus. I start looking at ws = %p\n", ws);
@@ -192,7 +192,7 @@ bool tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
     }
 
     if (was_mapped || con == focused) {
-        if (kill_window || !dont_kill_parent || con == focused) {
+        if ((kill_window != DONT_KILL_WINDOW) || !dont_kill_parent || con == focused) {
             DLOG("focusing %p / %s\n", next, next->name);
             /* TODO: check if the container (or one of its children) was focused */
             if (next->type == CT_DOCKAREA) {
@@ -220,7 +220,7 @@ bool tree_close(Con *con, bool kill_window, bool dont_kill_parent) {
  * Closes the current container using tree_close().
  *
  */
-void tree_close_con() {
+void tree_close_con(kill_window_t kill_window) {
     assert(focused != NULL);
     if (focused->type == CT_WORKSPACE) {
         LOG("Cannot close workspace\n");
@@ -232,7 +232,7 @@ void tree_close_con() {
     assert(focused->type != CT_ROOT);
 
     /* Kill con */
-    tree_close(focused, true, false);
+    tree_close(focused, kill_window, false);
 }
 
 /*
@@ -463,7 +463,7 @@ void tree_flatten(Con *con) {
 
     /* 4: close the redundant cons */
     DLOG("closing redundant cons\n");
-    tree_close(con, false, true);
+    tree_close(con, DONT_KILL_WINDOW, true);
 
     /* Well, we got to abort the recursion here because we destroyed the
      * container. However, if tree_flatten() is called sufficiently often,

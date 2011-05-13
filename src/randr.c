@@ -709,7 +709,7 @@ void randr_query_outputs() {
                 }
 
                 DLOG("destroying disappearing con %p\n", output->con);
-                tree_close(output->con, false, true);
+                tree_close(output->con, DONT_KILL_WINDOW, true);
                 DLOG("Done. Should be fine now\n");
                 output->con = NULL;
             }

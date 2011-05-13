@@ -56,7 +56,7 @@ void tree_render();
  * Closes the current container using tree_close().
  *
  */
-void tree_close_con();
+void tree_close_con(kill_window_t kill_window);
 
 /**
  * Changes focus in the given way (next/previous) and given orientation
@@ -71,7 +71,7 @@ void tree_next(char way, orientation_t orientation);
  * and the window is expected to kill itself.
  *
  */
-bool tree_close(Con *con, bool kill_window, bool dont_kill_parent);
+bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent);
 
 /**
  * Loads tree from ~/.i3/_restart.json (used for in-place restarts).

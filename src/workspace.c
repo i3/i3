@@ -244,7 +244,7 @@ void workspace_show(const char *num) {
         /* check if this workspace is currently visible */
         if (!workspace_is_visible(old)) {
             LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
-            tree_close(old, false, false);
+            tree_close(old, DONT_KILL_WINDOW, false);
             ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"empty\"}");
             changed_num_workspaces = true;
         }
