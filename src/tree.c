@@ -66,9 +66,13 @@ Con *tree_open_con(Con *con) {
         }
 
         /* If the currently focused container is a floating container, we
-         * attach the new container to the workspace */
-        if (con->type == CT_FLOATING_CON)
-            con = con->parent;
+         * attach the new container to the currently focused spot in its
+         * workspace. */
+        if (con->type == CT_FLOATING_CON) {
+            con = con_descend_tiling_focused(con->parent);
+            if (con->type != CT_WORKSPACE)
+                con = con->parent;
+        }
         DLOG("con = %p\n", con);
     }
 
