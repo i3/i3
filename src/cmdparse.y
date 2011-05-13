@@ -421,6 +421,7 @@ kill:
 
 optional_kill_mode:
     /* empty */             { $$ = KILL_WINDOW; }
+    | WHITESPACE            { $$ = KILL_WINDOW; }
     | WHITESPACE TOK_WINDOW { $$ = KILL_WINDOW; }
     | WHITESPACE TOK_CLIENT { $$ = KILL_CLIENT; }
     ;
