@@ -74,6 +74,15 @@ EOL (\r?\n)
                                   cmdyylval.string = copy;
                                   return STR;
                                  }
+<WANT_QSTRING>\"[^\"]+\"         {
+                                  BEGIN(INITIAL);
+                                  /* strip quotes */
+                                  char *copy = sstrdup(yytext+1);
+                                  copy[strlen(copy)-1] = '\0';
+                                  cmdyylval.string = copy;
+                                  return STR;
+                                 }
+
 <WANT_STRING>[^;\n]+             { BEGIN(INITIAL); cmdyylval.string = sstrdup(yytext); return STR; }
 
 [ \t]*                          { return WHITESPACE; }
