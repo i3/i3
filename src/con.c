@@ -642,6 +642,10 @@ Con *con_next_focused(Con *con) {
                 DLOG("Focus list empty, returning ws\n");
                 next = ws;
             }
+        } else {
+            /* Instead of returning the next CT_FLOATING_CON, we descend it to
+             * get an actual window to focus. */
+            next = con_descend_focused(next);
         }
         return next;
     }
