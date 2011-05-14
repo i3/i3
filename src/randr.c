@@ -143,57 +143,6 @@ Output *get_output_most(direction_t direction, Output *current) {
     return candidate;
 }
 
-#if 0
-/*
- * Initializes the specified output, assigning the specified workspace to it.
- *
- */
-void initialize_output(xcb_connection_t *conn, Output *output, Workspace *workspace) {
-        i3Font *font = load_font(conn, config.font);
-
-        workspace->output = output;
-        output->current_workspace = workspace;
-
-        /* Copy rect for the workspace */
-        memcpy(&(workspace->rect), &(output->rect), sizeof(Rect));
-
-        /* Map clients on the workspace, if any */
-        workspace_map_clients(conn, workspace);
-
-        /* Create a bar window on each output */
-        if (!config.disable_workspace_bar) {
-                Rect bar_rect = {output->rect.x,
-                                 output->rect.y + output->rect.height - (font->height + 6),
-                                 output->rect.x + output->rect.width,
-                                 font->height + 6};
-                uint32_t mask = XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
-                uint32_t values[] = {1, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS};
-                output->bar = create_window(conn, bar_rect, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_CURSOR_LEFT_PTR, true, mask, values);
-                output->bargc = xcb_generate_id(conn);
-                xcb_create_gc(conn, output->bargc, output->bar, 0, 0);
-        }
-
-        SLIST_INIT(&(output->dock_clients));
-
-        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
-        DLOG("initialized output at (%d, %d) with %d x %d\n",
-                        output->rect.x, output->rect.y, output->rect.width, output->rect.height);
-
-        DLOG("assigning configured workspaces to this output...\n");
-        Workspace *ws;
-        TAILQ_FOREACH(ws, workspaces, workspaces) {
-                if (ws == workspace)
-                        continue;
-                if (ws->preferred_output == NULL ||
-                    get_output_by_name(ws->preferred_output) != output)
-                        continue;
-
-                DLOG("assigning ws %d\n", ws->num + 1);
-                workspace_assign_to(ws, output, true);
-        }
-}
-#endif
-
 /*
  * Disables RandR support by creating exactly one output with the size of the
  * X11 screen.
@@ -492,50 +441,6 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
             }
         }
     }
-
-#if 0
-    Rect bar_rect = {output->rect.x,
-                     output->rect.y + output->rect.height - (font->height + 6),
-                     output->rect.x + output->rect.width,
-                     font->height + 6};
-
-    xcb_set_window_rect(conn, output->bar, bar_rect);
-
-        /* go through all workspaces and set force_reconfigure */
-        TAILQ_FOREACH(ws, workspaces, workspaces) {
-                if (ws->output != output)
-                        continue;
-
-                SLIST_FOREACH(client, &(ws->focus_stack), focus_clients) {
-                        client->force_reconfigure = true;
-                        if (!client_is_floating(client))
-                                continue;
-                        /* For floating clients we need to translate the
-                         * coordinates (old workspace to new workspace) */
-                        DLOG("old: (%x, %x)\n", client->rect.x, client->rect.y);
-                        client->rect.x -= ws->rect.x;
-                        client->rect.y -= ws->rect.y;
-                        client->rect.x += ws->output->rect.x;
-                        client->rect.y += ws->output->rect.y;
-                        DLOG("new: (%x, %x)\n", client->rect.x, client->rect.y);
-                }
-
-                /* Update dimensions from output */
-                memcpy(&(ws->rect), &(ws->output->rect), sizeof(Rect));
-
-                /* Update the dimensions of a fullscreen client, if any */
-                if (ws->fullscreen_client != NULL) {
-                        DLOG("Updating fullscreen client size\n");
-                        client = ws->fullscreen_client;
-                        Rect r = ws->rect;
-                        xcb_set_window_rect(conn, client->frame, r);
-
-                        r.x = 0;
-                        r.y = 0;
-                        xcb_set_window_rect(conn, client->child, r);
-                }
-        }
-#endif
 }
 
 /*
