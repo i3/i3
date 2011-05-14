@@ -223,9 +223,6 @@ void disable_randr(xcb_connection_t *conn) {
  * Initializes a CT_OUTPUT Con (searches existing ones from inplace restart
  * before) to use for the given Output.
  *
- * XXX: for assignments, we probably need to move workspace creation from here
- * to after the loop in randr_query_outputs().
- *
  */
 void output_init_con(Output *output) {
     Con *con = NULL, *current;
@@ -316,7 +313,81 @@ void output_init_con(Output *output) {
     FREE(name);
     DLOG("attaching\n");
     con_attach(bottomdock, con, false);
+}
 
+/*
+ * Initializes at least one workspace for this output, trying the following
+ * steps until there is at least one workspace:
+ *
+ * • Move existing workspaces, which are assigned to be on the given output, to
+ *   the output.
+ * • Create the first assigned workspace for this output.
+ * • Create the first unused workspace.
+ *
+ */
+static void init_ws_for_output(Output *output, Con *content) {
+    char *name;
+
+    /* go through all assignments and move the existing workspaces to this output */
+    struct Workspace_Assignment *assignment;
+    TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+        if (strcmp(assignment->output, output->name) != 0)
+            continue;
+
+        /* check if this workspace actually exists */
+        Con *workspace = NULL, *out;
+        TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
+            GREP_FIRST(workspace, output_get_content(out),
+                       !strcasecmp(child->name, assignment->name));
+        if (workspace == NULL)
+            continue;
+
+        /* check that this workspace is not already attached (that means the
+         * user configured this assignment twice) */
+        Con *workspace_out = con_get_output(workspace);
+        if (workspace_out == output->con) {
+            LOG("Workspace \"%s\" assigned to output \"%s\", but it is already "
+                "there. Do you have two assignment directives for the same "
+                "workspace in your configuration file?\n",
+                workspace->name, output->name);
+            continue;
+        }
+
+        /* if so, move it over */
+        LOG("Moving workspace \"%s\" from output \"%s\" to \"%s\" due to assignment\n",
+            workspace->name, workspace_out->name, output->name);
+        DLOG("Detaching workspace = %p / %s\n", workspace, workspace->name);
+        con_detach(workspace);
+        DLOG("Re-attaching current = %p / %s\n", workspace, workspace->name);
+        con_attach(workspace, content, false);
+        DLOG("Done, next\n");
+    }
+
+    /* if a workspace exists, we are done now */
+    if (!TAILQ_EMPTY(&(content->nodes_head))) {
+        /* ensure that one of the workspaces is actually visible (in fullscreen
+         * mode), if they were invisible before, this might not be the case. */
+        Con *visible = NULL;
+        GREP_FIRST(visible, content, child->fullscreen_mode == CF_OUTPUT);
+        if (!visible) {
+            visible = TAILQ_FIRST(&(content->nodes_head));
+            workspace_show(visible->name);
+        }
+        return;
+    }
+
+    /* otherwise, we create the first assigned ws for this output */
+    TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+        if (strcmp(assignment->output, output->name) != 0)
+            continue;
+
+        LOG("Initializing first assigned workspace \"%s\" for output \"%s\"\n",
+            assignment->name, assignment->output);
+        workspace_show(assignment->name);
+        return;
+    }
+
+    /* if there is still no workspace, we create the first free workspace */
     DLOG("Now adding a workspace\n");
 
     /* add a workspace to this output */
@@ -731,15 +802,16 @@ void randr_query_outputs() {
 
     ewmh_update_workarea();
 
-#if 0
-    /* Just go through each active output and associate one workspace */
+    /* Just go through each active output and assign one workspace */
     TAILQ_FOREACH(output, &outputs, outputs) {
-            if (!output->active || output->current_workspace != NULL)
-                    continue;
-            ws = get_first_workspace_for_output(output);
-            initialize_output(conn, output, ws);
+        if (!output->active)
+            continue;
+        Con *content = output_get_content(output->con);
+        if (!TAILQ_EMPTY(&(content->nodes_head)))
+            continue;
+        DLOG("Should add ws for output %s\n", output->name);
+        init_ws_for_output(output, content);
     }
-#endif
 
     /* Focus the primary screen, if possible */
     TAILQ_FOREACH(output, &outputs, outputs) {

@@ -517,14 +517,18 @@ workspace:
         if (ws_num < 1) {
             DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
         } else {
-#if 0
-            Workspace *ws = workspace_get(ws_num - 1);
-            ws->preferred_output = $<string>7;
-            if ($<string>8 != NULL) {
-                    workspace_set_name(ws, $<string>8);
-                    free($<string>8);
+            char *ws_name = NULL;
+            if ($8 == NULL) {
+                asprintf(&ws_name, "%d", ws_num);
+            } else {
+                ws_name = $8;
             }
-#endif
+
+            DLOG("Should assign workspace %s to output %s\n", ws_name, $7);
+            struct Workspace_Assignment *assignment = scalloc(sizeof(struct Workspace_Assignment));
+            assignment->name = ws_name;
+            assignment->output = $7;
+            TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
         }
     }
     | TOKWORKSPACE WHITESPACE NUMBER WHITESPACE workspace_name

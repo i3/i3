@@ -27,6 +27,7 @@ extern int xkb_current_group;
 extern TAILQ_HEAD(bindings_head, Binding) *bindings;
 extern TAILQ_HEAD(autostarts_head, Autostart) autostarts;
 extern TAILQ_HEAD(assignments_head, Match) assignments;
+extern TAILQ_HEAD(ws_assignments_head, Workspace_Assignment) ws_assignments;
 extern SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins;
 extern uint8_t root_depth;
 extern bool xcursor_supported, xkb_supported;

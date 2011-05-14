@@ -18,24 +18,25 @@
  *
  */
 Con *workspace_get(const char *num, bool *created) {
-    Con *output, *workspace = NULL, *child;
+    Con *output, *workspace = NULL;
 
-    /* TODO: could that look like this in the future?
-    GET_MATCHING_NODE(workspace, croot, strcasecmp(current->name, num) != 0);
-    */
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-        TAILQ_FOREACH(child, &(output_get_content(output)->nodes_head), nodes) {
-            if (strcasecmp(child->name, num) != 0)
+        GREP_FIRST(workspace, output_get_content(output), !strcasecmp(child->name, num));
+
+    if (workspace == NULL) {
+        LOG("Creating new workspace \"%s\"\n", num);
+        /* unless an assignment is found, we will create this workspace on the current output */
+        output = con_get_output(focused);
+        /* look for assignments */
+        struct Workspace_Assignment *assignment;
+        TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+            if (strcmp(assignment->name, num) != 0)
                 continue;
 
-            workspace = child;
+            LOG("Found workspace assignment to output \"%s\"\n", assignment->output);
+            GREP_FIRST(output, croot, !strcmp(child->name, assignment->output));
             break;
         }
-
-    LOG("getting ws %s\n", num);
-    if (workspace == NULL) {
-        LOG("need to create this one\n");
-        output = con_get_output(focused);
         Con *content = output_get_content(output);
         LOG("got output %p with content %p\n", output, content);
         /* We need to attach this container after setting its type. con_attach
@@ -225,7 +226,6 @@ void workspace_show(const char *num) {
             old = current;
         current->fullscreen_mode = CF_NONE;
     }
-    assert(old != NULL);
 
     /* enable fullscreen for the target workspace. If it happens to be the
      * same one we are currently on anyways, we can stop here. */

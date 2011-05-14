@@ -117,6 +117,17 @@ struct deco_render_params {
     xcb_font_t font;
 };
 
+/**
+ * Stores which workspace (by name) goes to which output.
+ *
+ */
+struct Workspace_Assignment {
+    char *name;
+    char *output;
+
+    TAILQ_ENTRY(Workspace_Assignment) ws_assignments;
+};
+
 struct Ignore_Event {
     int sequence;
     int response_type;
