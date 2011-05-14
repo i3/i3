@@ -461,7 +461,7 @@ void x_push_node(Con *con) {
     con_state *state;
     Rect rect = con->rect;
 
-    DLOG("Pushing changes for node %p / %s\n", con, con->name);
+    //DLOG("Pushing changes for node %p / %s\n", con, con->name);
     state = state_for_frame(con->frame);
 
     if (state->name != NULL) {
@@ -634,7 +634,7 @@ static void x_push_node_unmaps(Con *con) {
     Con *current;
     con_state *state;
 
-    DLOG("Pushing changes (with unmaps) for node %p / %s\n", con, con->name);
+    //DLOG("Pushing changes (with unmaps) for node %p / %s\n", con, con->name);
     state = state_for_frame(con->frame);
 
     /* map/unmap if map state changed, also ensure that the child window
@@ -687,16 +687,16 @@ void x_push_changes(Con *con) {
     con_state *state;
 
     DLOG("-- PUSHING WINDOW STACK --\n");
-    DLOG("Disabling EnterNotify\n");
+    //DLOG("Disabling EnterNotify\n");
     uint32_t values[1] = { XCB_NONE };
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
         xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
     }
-    DLOG("Done, EnterNotify disabled\n");
+    //DLOG("Done, EnterNotify disabled\n");
     bool order_changed = false;
     /* X11 correctly represents the stack if we push it from bottom to top */
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
-        DLOG("stack: 0x%08x\n", state->id);
+        //DLOG("stack: 0x%08x\n", state->id);
         con_state *prev = CIRCLEQ_PREV(state, state);
         con_state *old_prev = CIRCLEQ_PREV(state, old_state);
         if (prev != old_prev)
@@ -712,12 +712,12 @@ void x_push_changes(Con *con) {
         }
         state->initial = false;
     }
-    DLOG("Re-enabling EnterNotify\n");
+    //DLOG("Re-enabling EnterNotify\n");
     values[0] = FRAME_EVENT_MASK;
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
         xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
     }
-    DLOG("Done, EnterNotify re-enabled\n");
+    //DLOG("Done, EnterNotify re-enabled\n");
 
     DLOG("\n\n PUSHING CHANGES\n\n");
     x_push_node(con);
@@ -774,9 +774,9 @@ void x_push_changes(Con *con) {
         CIRCLEQ_REMOVE(&old_state_head, state, old_state);
         CIRCLEQ_INSERT_TAIL(&old_state_head, state, old_state);
     }
-    CIRCLEQ_FOREACH(state, &old_state_head, old_state) {
-        DLOG("old stack: 0x%08x\n", state->id);
-    }
+    //CIRCLEQ_FOREACH(state, &old_state_head, old_state) {
+    //    DLOG("old stack: 0x%08x\n", state->id);
+    //}
 
     xcb_flush(conn);
 }
@@ -789,7 +789,7 @@ void x_push_changes(Con *con) {
 void x_raise_con(Con *con) {
     con_state *state;
     state = state_for_frame(con->frame);
-    DLOG("raising in new stack: %p / %s / %s / xid %08x\n", con, con->name, con->window ? con->window->name_json : "", state->id);
+    //DLOG("raising in new stack: %p / %s / %s / xid %08x\n", con, con->name, con->window ? con->window->name_json : "", state->id);
 
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_INSERT_HEAD(&state_head, state, state);
