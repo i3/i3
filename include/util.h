@@ -25,6 +25,21 @@
 #define FOR_TABLE(workspace) \
                         for (int cols = 0; cols < (workspace)->cols; cols++) \
                                 for (int rows = 0; rows < (workspace)->rows; rows++)
+
+#define NODES_FOREACH(head) \
+    for (Con *child = (Con*)-1; (child == (Con*)-1) && ((child = 0), true);) \
+        TAILQ_FOREACH(child, &((head)->nodes_head), nodes)
+
+/* greps the ->nodes of the given head and returns the first node that matches the given condition */
+#define GREP_FIRST(dest, head, condition) \
+    NODES_FOREACH(head) { \
+        if (!(condition)) \
+            continue; \
+        \
+        (dest) = child; \
+        break; \
+    }
+
 #define FREE(pointer) do { \
         if (pointer != NULL) { \
                 free(pointer); \
