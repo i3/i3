@@ -213,6 +213,7 @@ void disable_randr(xcb_connection_t *conn) {
     s->rect.height = root_screen->height_in_pixels;
     s->name = "xroot-0";
     output_init_con(s);
+    init_ws_for_output(s, output_get_content(s->con));
 
     TAILQ_INSERT_TAIL(&outputs, s, outputs);
 
@@ -325,7 +326,7 @@ void output_init_con(Output *output) {
  * • Create the first unused workspace.
  *
  */
-static void init_ws_for_output(Output *output, Con *content) {
+void init_ws_for_output(Output *output, Con *content) {
     char *name;
 
     /* go through all assignments and move the existing workspaces to this output */
@@ -371,6 +372,7 @@ static void init_ws_for_output(Output *output, Con *content) {
         GREP_FIRST(visible, content, child->fullscreen_mode == CF_OUTPUT);
         if (!visible) {
             visible = TAILQ_FIRST(&(content->nodes_head));
+            focused = content;
             workspace_show(visible->name);
         }
         return;
@@ -383,6 +385,7 @@ static void init_ws_for_output(Output *output, Con *content) {
 
         LOG("Initializing first assigned workspace \"%s\" for output \"%s\"\n",
             assignment->name, assignment->output);
+        focused = content;
         workspace_show(assignment->name);
         return;
     }
