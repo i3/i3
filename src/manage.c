@@ -158,9 +158,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
 
     /* update as much information as possible so far (some replies may be NULL) */
-    window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL));
-    window_update_name_legacy(cwindow, xcb_get_property_reply(conn, title_cookie, NULL));
-    window_update_name(cwindow, xcb_get_property_reply(conn, utf8_title_cookie, NULL));
+    window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL), true);
+    window_update_name_legacy(cwindow, xcb_get_property_reply(conn, title_cookie, NULL), true);
+    window_update_name(cwindow, xcb_get_property_reply(conn, utf8_title_cookie, NULL), true);
     window_update_leader(cwindow, xcb_get_property_reply(conn, leader_cookie, NULL));
     window_update_transient_for(cwindow, xcb_get_property_reply(conn, transient_cookie, NULL));
     window_update_strut_partial(cwindow, xcb_get_property_reply(conn, strut_cookie, NULL));
@@ -329,6 +329,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
      * be correctly reparented to their most closest living ancestor (=
      * cleanup) */
     xcb_change_save_set(conn, XCB_SET_MODE_INSERT, window);
+
+    /* Check if any assignments match */
+    run_assignments(cwindow);
 
     tree_render();
 

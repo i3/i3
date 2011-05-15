@@ -37,6 +37,8 @@ struct assignments_head assignments = TAILQ_HEAD_INITIALIZER(assignments);
  * output) */
 struct ws_assignments_head ws_assignments = TAILQ_HEAD_INITIALIZER(ws_assignments);
 
+struct real_assignments_head real_assignments = TAILQ_HEAD_INITIALIZER(real_assignments);
+
 /* We hope that those are supported and set them to true */
 bool xcursor_supported = true;
 bool xkb_supported = true;

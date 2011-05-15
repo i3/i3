@@ -66,6 +66,12 @@ bool match_matches_window(Match *match, i3Window *window) {
         return true;
     }
 
+    /* TODO: pcre match */
+    if (match->title != NULL && window->name_json != NULL && strcasecmp(match->title, window->name_json) == 0) {
+        LOG("match made by title (%s)\n", window->name_json);
+        return true;
+    }
+
     LOG("match->dock = %d, window->dock = %d\n", match->dock, window->dock);
     if (match->dock != -1 &&
         ((window->dock == W_DOCK_TOP && match->dock == M_DOCK_TOP) ||

@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
 #include "all.h"
@@ -12,7 +12,7 @@
  * given window.
  *
  */
-void window_update_class(i3Window *win, xcb_get_property_reply_t *prop) {
+void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
         DLOG("empty property, not updating\n");
         return;
@@ -32,6 +32,11 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop) {
     else win->class_class = NULL;
     LOG("WM_CLASS changed to %s (instance), %s (class)\n",
         win->class_instance, win->class_class);
+
+    if (before_mgmt)
+        return;
+
+    run_assignments(win);
 }
 
 /*
@@ -39,7 +44,7 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop) {
  * window. Further updates using window_update_name_legacy will be ignored.
  *
  */
-void window_update_name(i3Window *win, xcb_get_property_reply_t *prop) {
+void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
         DLOG("_NET_WM_NAME not specified, not changing\n");
         return;
@@ -70,6 +75,11 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop) {
     LOG("_NET_WM_NAME changed to \"%s\"\n", win->name_json);
 
     win->uses_net_wm_name = true;
+
+    if (before_mgmt)
+        return;
+
+    run_assignments(win);
 }
 
 /*
@@ -79,7 +89,7 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop) {
  * window_update_name()).
  *
  */
-void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop) {
+void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
         DLOG("prop == NULL\n");
         return;
@@ -106,6 +116,11 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop) {
     win->name_json = sstrdup(new_name);
     win->name_len = strlen(new_name);
     win->name_x_changed = true;
+
+    if (before_mgmt)
+        return;
+
+    run_assignments(win);
 }
 
 /*

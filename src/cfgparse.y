@@ -7,8 +7,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <limits.h>
 
 #include "all.h"
+
+static Match current_match;
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(struct context *context);
@@ -242,6 +245,13 @@ void parse_file(const char *f) {
 %token                  TOK_POPUP_DURING_FULLSCREEN "popup_during_fullscreen"
 %token                  TOK_IGNORE                  "ignore"
 %token                  TOK_LEAVE_FULLSCREEN        "leave_fullscreen"
+%token                  TOK_FOR_WINDOW              "for_window"
+
+%token              TOK_MARK            "mark"
+%token              TOK_CLASS           "class"
+%token              TOK_ID              "id"
+%token              TOK_CON_ID          "con_id"
+%token              TOK_TITLE           "title"
 
 %type   <binding>       binding
 %type   <binding>       bindcode
@@ -272,6 +282,7 @@ lines: /* empty */
 
 line:
     bindline
+    | for_window
     | mode
     | floating_modifier
     | orientation
@@ -290,6 +301,10 @@ line:
     | font
     | comment
     | popup_during_fullscreen
+    ;
+
+optwhitespace:
+    | WHITESPACE
     ;
 
 comment:
@@ -339,6 +354,90 @@ bindsym:
         $$ = new;
     }
     ;
+
+for_window:
+    TOK_FOR_WINDOW WHITESPACE match WHITESPACE command
+    {
+        printf("\t should execute command %s for the criteria mentioned above\n", $5);
+        Assignment *assignment = scalloc(sizeof(Assignment));
+        assignment->type = A_COMMAND;
+        assignment->match = current_match;
+        assignment->dest.command = $5;
+        TAILQ_INSERT_TAIL(&real_assignments, assignment, real_assignments);
+    }
+    ;
+
+match:
+    | matchstart optwhitespace criteria optwhitespace matchend
+    {
+        printf("match parsed\n");
+    }
+    ;
+
+matchstart:
+    '['
+    {
+        printf("start\n");
+        match_init(&current_match);
+    }
+    ;
+
+matchend:
+    ']'
+    {
+        printf("match specification finished\n");
+    }
+    ;
+
+criteria:
+    TOK_CLASS '=' STR
+    {
+        printf("criteria: class = %s\n", $3);
+        current_match.class = $3;
+    }
+    | TOK_CON_ID '=' STR
+    {
+        printf("criteria: id = %s\n", $3);
+        char *end;
+        long parsed = strtol($3, &end, 10);
+        if (parsed == LONG_MIN ||
+            parsed == LONG_MAX ||
+            parsed < 0 ||
+            (end && *end != '\0')) {
+            ELOG("Could not parse con id \"%s\"\n", $3);
+        } else {
+            current_match.con_id = (Con*)parsed;
+            printf("id as int = %p\n", current_match.con_id);
+        }
+    }
+    | TOK_ID '=' STR
+    {
+        printf("criteria: window id = %s\n", $3);
+        char *end;
+        long parsed = strtol($3, &end, 10);
+        if (parsed == LONG_MIN ||
+            parsed == LONG_MAX ||
+            parsed < 0 ||
+            (end && *end != '\0')) {
+            ELOG("Could not parse window id \"%s\"\n", $3);
+        } else {
+            current_match.id = parsed;
+            printf("window id as int = %d\n", current_match.id);
+        }
+    }
+    | TOK_MARK '=' STR
+    {
+        printf("criteria: mark = %s\n", $3);
+        current_match.mark = $3;
+    }
+    | TOK_TITLE '=' STR
+    {
+        printf("criteria: title = %s\n", $3);
+        current_match.title = $3;
+    }
+    ;
+
+
 
 word_or_number:
     WORD

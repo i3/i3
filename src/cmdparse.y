@@ -3,7 +3,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * cmdparse.y: the parser for commands you send to i3 (or bind on keys)
  *
@@ -80,6 +80,7 @@ int cmdyywrap() {
 }
 
 char *parse_cmd(const char *new) {
+    LOG("COMMAND: *%s*\n", new);
     cmdyy_scan_string(new);
 
     match_init(&current_match);
@@ -512,15 +513,21 @@ direction:
 mode:
     TOK_MODE WHITESPACE window_mode
     {
-        if ($3 == TOK_TOGGLE) {
-            printf("should toggle mode\n");
-            toggle_floating_mode(focused, false);
-        } else {
-            printf("should switch mode to %s\n", ($3 == TOK_FLOATING ? "floating" : "tiling"));
-            if ($3 == TOK_FLOATING) {
-                floating_enable(focused, false);
+        HANDLE_EMPTY_MATCH;
+
+        owindow *current;
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            printf("matching: %p / %s\n", current->con, current->con->name);
+            if ($3 == TOK_TOGGLE) {
+                printf("should toggle mode\n");
+                toggle_floating_mode(current->con, false);
             } else {
-                floating_disable(focused, false);
+                printf("should switch mode to %s\n", ($3 == TOK_FLOATING ? "floating" : "tiling"));
+                if ($3 == TOK_FLOATING) {
+                    floating_enable(current->con, false);
+                } else {
+                    floating_disable(current->con, false);
+                }
             }
         }
     }
@@ -608,11 +615,14 @@ layout:
         printf("changing layout to %d\n", $3);
         owindow *current;
 
-        HANDLE_EMPTY_MATCH;
-
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            con_set_layout(current->con, $3);
+        /* check if the match is empty, not if the result is empty */
+        if (match_is_empty(&current_match))
+            con_set_layout(focused->parent, $3);
+        else {
+            TAILQ_FOREACH(current, &owindows, owindows) {
+                printf("matching: %p / %s\n", current->con, current->con->name);
+                con_set_layout(current->con, $3);
+            }
         }
     }
     ;

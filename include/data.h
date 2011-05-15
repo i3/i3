@@ -33,6 +33,7 @@ typedef struct Rect Rect;
 typedef struct xoutput Output;
 typedef struct Con Con;
 typedef struct Match Match;
+typedef struct Assignment Assignment;
 typedef struct Window i3Window;
 
 
@@ -274,11 +275,14 @@ struct Window {
 
     /** Pixels the window reserves. left/right/top/bottom */
     struct reservedpx reserved;
+
+    /** Pointers to the Assignments which were already ran for this Window
+     * (assignments run only once) */
+    uint32_t nr_assignments;
+    Assignment **ran_assignments;
 };
 
 struct Match {
-    enum { M_WINDOW, M_CON } what;
-
     char *title;
     int title_len;
     char *application;
@@ -296,10 +300,6 @@ struct Match {
     Con *con_id;
     enum { M_ANY = 0, M_TILING, M_FLOATING } floating;
 
-    enum { M_GLOBAL = 0, M_OUTPUT, M_WORKSPACE } levels;
-
-    enum { M_USER = 0, M_RESTART } source;
-
     char *target_ws;
 
     /* Where the window looking for a match should be inserted:
@@ -315,6 +315,29 @@ struct Match {
 
     TAILQ_ENTRY(Match) matches;
     TAILQ_ENTRY(Match) assignments;
+};
+
+struct Assignment {
+    /** type of this assignment:
+     *
+     * A_COMMAND = run the specified command for the matching window
+     * A_TO_WORKSPACE = assign the matching window to the specified workspace
+     * A_TO_OUTPUT = assign the matching window to the specified output
+     *
+     */
+    enum { A_COMMAND = 0, A_TO_WORKSPACE = 1, A_TO_OUTPUT = 2 } type;
+
+    /** the criteria to check if a window matches */
+    Match match;
+
+    /** destination workspace/output/command, depending on the type */
+    union {
+        char *command;
+        char *workspace;
+        char *output;
+    } dest;
+
+    TAILQ_ENTRY(Assignment) real_assignments;
 };
 
 struct Con {

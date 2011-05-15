@@ -6,14 +6,14 @@
  * given window.
  *
  */
-void window_update_class(i3Window *win, xcb_get_property_reply_t *prop);
+void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt);
 
 /**
  * Updates the name by using _NET_WM_NAME (encoded in UTF-8) for the given
  * window. Further updates using window_update_name_legacy will be ignored.
  *
  */
-void window_update_name(i3Window *win, xcb_get_property_reply_t *prop);
+void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt);
 
 /**
  * Updates the name by using WM_NAME (encoded in COMPOUND_TEXT). We do not
@@ -22,7 +22,7 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop);
  * window_update_name()).
  *
  */
-void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop);
+void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt);
 
 /**
  * Updates the CLIENT_LEADER (logical parent window).

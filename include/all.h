@@ -62,5 +62,6 @@
 #include "move.h"
 #include "output.h"
 #include "ewmh.h"
+#include "assignments.h"
 
 #endif

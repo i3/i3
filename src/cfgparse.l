@@ -43,6 +43,9 @@ EOL	(\r?\n)
 %s COLOR_COND
 %s OUTPUT_COND
 %s OUTPUT_AWS_COND
+%s WANT_QSTRING
+%s FOR_WINDOW_COND
+%s REQUIRE_WS
 %x BUFFER_LINE
 
 %%
@@ -68,6 +71,16 @@ EOL	(\r?\n)
 }
 
 
+<FOR_WINDOW_COND>"]"             { yy_pop_state(); return ']'; }
+<REQUIRE_WS>[ \t]*               { yy_pop_state(); return WHITESPACE; }
+<WANT_QSTRING>\"[^\"]+\"         {
+                                  yy_pop_state();
+                                  /* strip quotes */
+                                  char *copy = sstrdup(yytext+1);
+                                  copy[strlen(copy)-1] = '\0';
+                                  yylval.string = copy;
+                                  return STR;
+                                 }
 <BIND_A2WS_COND>[^\n]+          { BEGIN(INITIAL); yylval.string = strdup(yytext); return STR; }
 <OUTPUT_AWS_COND>[a-zA-Z0-9_-]+ { yylval.string = strdup(yytext); return OUTPUT; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
@@ -108,6 +121,18 @@ workspace_bar                   { return TOKWORKSPACEBAR; }
 popup_during_fullscreen         { return TOK_POPUP_DURING_FULLSCREEN; }
 ignore                          { return TOK_IGNORE; }
 leave_fullscreen                { return TOK_LEAVE_FULLSCREEN; }
+for_window                      {
+                                  /* Example: for_window [class="urxvt"] border none
+                                   *
+                                   * First, we wait for the ']' that finishes a match (FOR_WINDOW_COND)
+                                   * Then, we require a whitespace (REQUIRE_WS)
+                                   * And the rest of the line is parsed as a string
+                                   */
+                                  yy_push_state(BIND_A2WS_COND);
+                                  yy_push_state(REQUIRE_WS);
+                                  yy_push_state(FOR_WINDOW_COND);
+                                  return TOK_FOR_WINDOW;
+                                }
 default                         { /* yylval.number = MODE_DEFAULT; */return TOK_DEFAULT; }
 stacking                        { /* yylval.number = MODE_STACK; */return TOK_STACKING; }
 stacked                         { return TOK_STACKING; }
@@ -134,6 +159,13 @@ control                         { return TOKCONTROL; }
 ctrl                            { return TOKCONTROL; }
 shift                           { return TOKSHIFT; }
 →                               { return TOKARROW; }
+
+class                           { yy_push_state(WANT_QSTRING); return TOK_CLASS; }
+id                              { yy_push_state(WANT_QSTRING); return TOK_ID; }
+con_id                          { yy_push_state(WANT_QSTRING); return TOK_CON_ID; }
+con_mark                        { yy_push_state(WANT_QSTRING); return TOK_MARK; }
+title                           { yy_push_state(WANT_QSTRING); return TOK_TITLE; }
+
 {EOL}                           {
                                   FREE(context->line_copy);
                                   context->line_number++;

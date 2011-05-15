@@ -541,7 +541,7 @@ static int handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t 
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return 1;
 
-    window_update_name(con->window, prop);
+    window_update_name(con->window, prop, false);
 
     x_push_changes(croot);
 
@@ -559,7 +559,7 @@ static int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, u
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return 1;
 
-    window_update_name_legacy(con->window, prop);
+    window_update_name_legacy(con->window, prop, false);
 
     x_push_changes(croot);
 
@@ -576,7 +576,7 @@ static int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return 1;
 
-    window_update_class(con->window, prop);
+    window_update_class(con->window, prop, false);
 
     return 0;
 }
