@@ -17,6 +17,20 @@
 
 #include "all.h"
 
+/** When the command did not include match criteria (!), we use the currently
+ * focused command. Do not confuse this case with a command which included
+ * criteria but which did not match any windows. This macro has to be called in
+ * every command.
+ */
+#define HANDLE_EMPTY_MATCH do { \
+    if (match_is_empty(&current_match)) { \
+        owindow *ow = smalloc(sizeof(owindow)); \
+        ow->con = focused; \
+        TAILQ_INIT(&owindows); \
+        TAILQ_INSERT_TAIL(&owindows, ow, owindows); \
+    } \
+} while (0)
+
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int cmdyylex(struct context *context);
 extern int cmdyyparse(void);
@@ -451,16 +465,13 @@ fullscreen:
         printf("toggling fullscreen\n");
         owindow *current;
 
-        /* check if the match is empty, not if the result is empty */
-        if (match_is_empty(&current_match))
-            con_toggle_fullscreen(focused);
-        else {
-            TAILQ_FOREACH(current, &owindows, owindows) {
-                printf("matching: %p / %s\n", current->con, current->con->name);
-                con_toggle_fullscreen(current->con);
-            }
-        }
 
+        HANDLE_EMPTY_MATCH;
+
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            printf("matching: %p / %s\n", current->con, current->con->name);
+            con_toggle_fullscreen(current->con);
+        }
     }
     ;
 
@@ -527,14 +538,11 @@ border:
         printf("border style should be changed to %d\n", $3);
         owindow *current;
 
-        /* check if the match is empty, not if the result is empty */
-        if (match_is_empty(&current_match))
-            focused->border_style = $3;
-        else {
-            TAILQ_FOREACH(current, &owindows, owindows) {
-                printf("matching: %p / %s\n", current->con, current->con->name);
-                current->con->border_style = $3;
-            }
+        HANDLE_EMPTY_MATCH;
+
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            printf("matching: %p / %s\n", current->con, current->con->name);
+            current->con->border_style = $3;
         }
     }
     ;
@@ -576,14 +584,11 @@ move:
         Con *ws = workspace_get($5, NULL);
         free($5);
 
-        /* check if the match is empty, not if the result is empty */
-        if (match_is_empty(&current_match))
-            con_move_to_workspace(focused, ws);
-        else {
-            TAILQ_FOREACH(current, &owindows, owindows) {
-                printf("matching: %p / %s\n", current->con, current->con->name);
-                con_move_to_workspace(current->con, ws);
-            }
+        HANDLE_EMPTY_MATCH;
+
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            printf("matching: %p / %s\n", current->con, current->con->name);
+            con_move_to_workspace(current->con, ws);
         }
     }
     ;
@@ -603,16 +608,12 @@ layout:
         printf("changing layout to %d\n", $3);
         owindow *current;
 
-        /* check if the match is empty, not if the result is empty */
-        if (match_is_empty(&current_match))
-            con_set_layout(focused->parent, $3);
-        else {
-            TAILQ_FOREACH(current, &owindows, owindows) {
-                printf("matching: %p / %s\n", current->con, current->con->name);
-                con_set_layout(current->con, $3);
-            }
-        }
+        HANDLE_EMPTY_MATCH;
 
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            printf("matching: %p / %s\n", current->con, current->con->name);
+            con_set_layout(current->con, $3);
+        }
     }
     ;
 
@@ -628,14 +629,11 @@ mark:
         printf("marking window with str %s\n", $3);
         owindow *current;
 
-        /* check if the match is empty, not if the result is empty */
-        if (match_is_empty(&current_match))
-            focused->mark = sstrdup($3);
-        else {
-            TAILQ_FOREACH(current, &owindows, owindows) {
-                printf("matching: %p / %s\n", current->con, current->con->name);
-                current->con->mark = sstrdup($3);
-            }
+        HANDLE_EMPTY_MATCH;
+
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            printf("matching: %p / %s\n", current->con, current->con->name);
+            current->con->mark = sstrdup($3);
         }
 
         free($<string>3);
