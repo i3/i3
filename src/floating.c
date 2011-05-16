@@ -179,6 +179,8 @@ void floating_disable(Con *con, bool automatic) {
         return;
     }
 
+    Con *ws = con_get_workspace(con);
+
     /* 1: detach from parent container */
     TAILQ_REMOVE(&(con->parent->nodes_head), con, nodes);
     TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
@@ -190,7 +192,7 @@ void floating_disable(Con *con, bool automatic) {
 
     /* 3: re-attach to the parent of the currently focused con on the workspace
      * this floating con was on */
-    Con *focused = con_descend_tiling_focused(con_get_workspace(con));
+    Con *focused = con_descend_tiling_focused(ws);
 
     /* if there is no other container on this workspace, focused will be the
      * workspace itself */
