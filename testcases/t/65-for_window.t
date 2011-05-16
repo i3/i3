@@ -120,4 +120,41 @@ sleep 0.25;
 @content = @{get_ws_content($tmp)};
 is($content[0]->{border}, 'normal', 'still normal border');
 
+$window->unmap;
+sleep 0.25;
+
+@content = @{get_ws_content($tmp)};
+cmp_ok(@content, '==', 0, 'no more nodes');
+
+##############################################################
+# 3: match on the title, set border style *and* a mark
+##############################################################
+
+$window = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#00ff00',
+);
+
+$window->name('special mark title');
+$window->map;
+sleep 0.25;
+
+@content = @{get_ws_content($tmp)};
+cmp_ok(@content, '==', 1, 'one node on this workspace now');
+is($content[0]->{border}, 'none', 'no border');
+
+my $other = open_standard_window($x);
+
+@content = @{get_ws_content($tmp)};
+cmp_ok(@content, '==', 2, 'two nodes');
+is($content[0]->{border}, 'none', 'no border');
+is($content[1]->{border}, 'normal', 'normal border');
+ok(!$content[0]->{focused}, 'first one not focused');
+
+cmd qq|[con_mark="bleh"] focus|;
+
+@content = @{get_ws_content($tmp)};
+ok($content[0]->{focused}, 'first node focused');
+
 done_testing;
