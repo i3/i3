@@ -94,7 +94,6 @@ EOL (\r?\n)
 <EAT_WHITESPACE>[ \t]*          { yy_pop_state(); }
 
 [ \t]*                          { /* ignore whitespace */ ; }
-attach                          { return TOK_ATTACH; }
 exec                            { WS_STRING; return TOK_EXEC; }
 exit                            { return TOK_EXIT; }
 reload                          { return TOK_RELOAD; }
