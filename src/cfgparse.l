@@ -1,13 +1,13 @@
+/*
+ * vim:ts=4:sw=4:expandtab
+ *
+ */
 %option nounput
 %option noinput
 %option noyy_top_state
 %option stack
 
 %{
-/*
- * vim:ts=4:sw=4:expandtab
- *
- */
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -25,9 +25,9 @@ int yycolumn = 1;
 #define YY_DECL int yylex (struct context *context)
 
 #define YY_USER_ACTION { \
-        context->first_column = yycolumn; \
-        context->last_column = yycolumn+yyleng-1; \
-        yycolumn += yyleng; \
+    context->first_column = yycolumn; \
+    context->last_column = yycolumn+yyleng-1; \
+    yycolumn += yyleng; \
 }
 
 /* macro to first eat whitespace, then expect a string */
@@ -38,7 +38,7 @@ int yycolumn = 1;
 
 %}
 
-EOL	(\r?\n)
+EOL     (\r?\n)
 
 %s WANT_STRING
 %s WANT_QSTRING
@@ -52,24 +52,24 @@ EOL	(\r?\n)
 
 %%
 
-	{
-		/* This is called when a new line is lexed. We only want the
-		 * first line to match to go into state BUFFER_LINE */
-		if (context->line_number == 0) {
-			context->line_number = 1;
-			BEGIN(INITIAL);
-			yy_push_state(BUFFER_LINE);
-		}
-	}
+    {
+        /* This is called when a new line is lexed. We only want the
+         * first line to match to go into state BUFFER_LINE */
+        if (context->line_number == 0) {
+            context->line_number = 1;
+            BEGIN(INITIAL);
+            yy_push_state(BUFFER_LINE);
+        }
+    }
 
 <BUFFER_LINE>^[^\r\n]*/{EOL}? {
-	/* save whole line */
-	context->line_copy = sstrdup(yytext);
+    /* save whole line */
+    context->line_copy = sstrdup(yytext);
 
-	yyless(0);
-	yy_pop_state();
-	yy_set_bol(true);
-	yycolumn = 1;
+    yyless(0);
+    yy_pop_state();
+    yy_set_bol(true);
+    yycolumn = 1;
 }
 
 
@@ -84,7 +84,7 @@ EOL	(\r?\n)
                                   return STR;
                                 }
 <WANT_STRING>[^\n]+             { BEGIN(INITIAL); yylval.string = sstrdup(yytext); return STR; }
-<OUTPUT_COND>[a-zA-Z0-9_-]+ { yylval.string = sstrdup(yytext); return OUTPUT; }
+<OUTPUT_COND>[a-zA-Z0-9_-]+     { yylval.string = sstrdup(yytext); return OUTPUT; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
 <COLOR_COND>[0-9a-fA-F]+        { yylval.string = sstrdup(yytext); return HEX; }
 [0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
@@ -174,8 +174,8 @@ title                           { yy_push_state(WANT_QSTRING); return TOK_TITLE;
                                   BEGIN(INITIAL);
                                   yy_push_state(BUFFER_LINE);
                                 }
-<BINDSYM_COND>[ \t]+		{ BEGIN(WANT_STRING); }
-<OUTPUT_COND>[ \t]+         { BEGIN(WANT_STRING); }
+<BINDSYM_COND>[ \t]+            { BEGIN(WANT_STRING); }
+<OUTPUT_COND>[ \t]+             { BEGIN(WANT_STRING); }
 [ \t]+                          { /* ignore whitespace */ ; }
 \"[^\"]+\"                      {
                                   /* if ASSIGN_COND then */
@@ -187,14 +187,14 @@ title                           { yy_push_state(WANT_QSTRING); return TOK_TITLE;
                                   return QUOTEDSTRING;
                                 }
 <ASSIGN_COND>[^ \t]+            { BEGIN(INITIAL); yylval.string = sstrdup(yytext); return STR_NG; }
-<BINDSYM_COND>[a-zA-Z0-9_]+ { yylval.string = sstrdup(yytext); return WORD; }
+<BINDSYM_COND>[a-zA-Z0-9_]+     { yylval.string = sstrdup(yytext); return WORD; }
 [a-zA-Z]+                       { yylval.string = sstrdup(yytext); return WORD; }
 .                               { return (int)yytext[0]; }
 
 <<EOF>> {
-        while (yy_start_stack_ptr > 0)
-                yy_pop_state();
-        yyterminate();
+    while (yy_start_stack_ptr > 0)
+        yy_pop_state();
+    yyterminate();
 }
 
 %%
