@@ -162,6 +162,8 @@ void x_con_kill(Con *con) {
     con_state *state;
 
     xcb_destroy_window(conn, con->frame);
+    xcb_free_pixmap(conn, con->pixmap);
+    xcb_free_gc(conn, con->pm_gc);
     state = state_for_frame(con->frame);
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_REMOVE(&old_state_head, state, old_state);
