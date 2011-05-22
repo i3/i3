@@ -72,7 +72,7 @@ EOL	(\r?\n)
 
 
 <FOR_WINDOW_COND>"]"             { yy_pop_state(); return ']'; }
-<REQUIRE_WS>[ \t]*               { yy_pop_state(); return WHITESPACE; }
+<REQUIRE_WS>[ \t]*               { yy_pop_state(); }
 <WANT_QSTRING>\"[^\"]+\"         {
                                   yy_pop_state();
                                   /* strip quotes */
@@ -172,13 +172,13 @@ title                           { yy_push_state(WANT_QSTRING); return TOK_TITLE;
                                   BEGIN(INITIAL);
                                   yy_push_state(BUFFER_LINE);
                                 }
-<BINDCODE_COND>[ \t]+           { BEGIN(BIND_AWS_COND); return WHITESPACE; }
-<BINDSYM_COND>[ \t]+            { BEGIN(BINDSYM_AWS_COND); return WHITESPACE; }
-<BIND_AWS_COND>[ \t]+           { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
-<BINDSYM_AWS_COND>[ \t]+        { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
-<OUTPUT_COND>[ \t]+             { BEGIN(OUTPUT_AWS_COND); return WHITESPACE; }
-<OUTPUT_AWS_COND>[ \t]+         { BEGIN(BIND_A2WS_COND); return WHITESPACE; }
-[ \t]+                          { return WHITESPACE; }
+<BINDCODE_COND>[ \t]+           { BEGIN(BIND_AWS_COND); }
+<BINDSYM_COND>[ \t]+            { BEGIN(BINDSYM_AWS_COND); }
+<BIND_AWS_COND>[ \t]+           { BEGIN(BIND_A2WS_COND); }
+<BINDSYM_AWS_COND>[ \t]+        { BEGIN(BIND_A2WS_COND); }
+<OUTPUT_COND>[ \t]+             { BEGIN(OUTPUT_AWS_COND); }
+<OUTPUT_AWS_COND>[ \t]+         { BEGIN(BIND_A2WS_COND); }
+[ \t]+                          { /* ignore whitespace */ ; }
 \"[^\"]+\"                      {
                                   /* if ASSIGN_COND then */
                                   BEGIN(INITIAL);

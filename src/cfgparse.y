@@ -186,7 +186,6 @@ void parse_file(const char *f) {
 
 %}
 
-%expect 1
 %error-verbose
 %lex-param { struct context *context }
 
@@ -213,7 +212,6 @@ void parse_file(const char *f) {
 %token  <number>        MODIFIER                    "<modifier>"
 %token                  TOKCONTROL                  "control"
 %token                  TOKSHIFT                    "shift"
-%token                  WHITESPACE                  "<whitespace>"
 %token                  TOKFLOATING_MODIFIER        "floating_modifier"
 %token  <string>        QUOTEDSTRING                "<quoted string>"
 %token                  TOKWORKSPACE                "workspace"
@@ -275,7 +273,6 @@ void parse_file(const char *f) {
 %%
 
 lines: /* empty */
-    | lines WHITESPACE line
     | lines error
     | lines line
     ;
@@ -303,10 +300,6 @@ line:
     | popup_during_fullscreen
     ;
 
-optwhitespace:
-    | WHITESPACE
-    ;
-
 comment:
     TOKCOMMENT
     ;
@@ -323,52 +316,52 @@ bindline:
     ;
 
 binding:
-    TOKBINDCODE WHITESPACE bindcode         { $$ = $3; }
-    | TOKBINDSYM WHITESPACE bindsym         { $$ = $3; }
+    TOKBINDCODE bindcode         { $$ = $2; }
+    | TOKBINDSYM bindsym         { $$ = $2; }
     ;
 
 bindcode:
-    binding_modifiers NUMBER WHITESPACE command
+    binding_modifiers NUMBER command
     {
-        printf("\tFound keycode binding mod%d with key %d and command %s\n", $1, $2, $4);
+        printf("\tFound keycode binding mod%d with key %d and command %s\n", $1, $2, $3);
         Binding *new = scalloc(sizeof(Binding));
 
         new->keycode = $2;
         new->mods = $1;
-        new->command = $4;
+        new->command = $3;
 
         $$ = new;
     }
     ;
 
 bindsym:
-    binding_modifiers word_or_number WHITESPACE command
+    binding_modifiers word_or_number command
     {
-        printf("\tFound keysym binding mod%d with key %s and command %s\n", $1, $2, $4);
+        printf("\tFound keysym binding mod%d with key %s and command %s\n", $1, $2, $3);
         Binding *new = scalloc(sizeof(Binding));
 
         new->symbol = $2;
         new->mods = $1;
-        new->command = $4;
+        new->command = $3;
 
         $$ = new;
     }
     ;
 
 for_window:
-    TOK_FOR_WINDOW WHITESPACE match WHITESPACE command
+    TOK_FOR_WINDOW match command
     {
-        printf("\t should execute command %s for the criteria mentioned above\n", $5);
+        printf("\t should execute command %s for the criteria mentioned above\n", $3);
         Assignment *assignment = scalloc(sizeof(Assignment));
         assignment->type = A_COMMAND;
         assignment->match = current_match;
-        assignment->dest.command = $5;
+        assignment->dest.command = $3;
         TAILQ_INSERT_TAIL(&real_assignments, assignment, real_assignments);
     }
     ;
 
 match:
-    | matchstart optwhitespace criteria optwhitespace matchend
+    | matchstart criteria matchend
     {
         printf("match parsed\n");
     }
@@ -448,13 +441,13 @@ word_or_number:
     ;
 
 mode:
-    TOKMODE WHITESPACE QUOTEDSTRING WHITESPACE '{' modelines '}'
+    TOKMODE QUOTEDSTRING '{' modelines '}'
     {
-        if (strcasecmp($3, "default") == 0) {
+        if (strcasecmp($2, "default") == 0) {
             printf("You cannot use the name \"default\" for your mode\n");
             exit(1);
         }
-        printf("\t now in mode %s\n", $3);
+        printf("\t now in mode %s\n", $2);
         printf("\t current bindings = %p\n", current_bindings);
         Binding *binding;
         TAILQ_FOREACH(binding, current_bindings, bindings) {
@@ -463,7 +456,7 @@ mode:
         }
 
         struct Mode *mode = scalloc(sizeof(struct Mode));
-        mode->name = $3;
+        mode->name = $2;
         mode->bindings = current_bindings;
         current_bindings = NULL;
         SLIST_INSERT_HEAD(&modes, mode, modes);
@@ -477,8 +470,7 @@ modelines:
     ;
 
 modeline:
-    WHITESPACE
-    | comment
+    comment
     | binding
     {
         if (current_bindings == NULL) {
@@ -491,18 +483,18 @@ modeline:
     ;
 
 floating_modifier:
-    TOKFLOATING_MODIFIER WHITESPACE binding_modifiers
+    TOKFLOATING_MODIFIER binding_modifiers
     {
-        DLOG("floating modifier = %d\n", $3);
-        config.floating_modifier = $3;
+        DLOG("floating modifier = %d\n", $2);
+        config.floating_modifier = $2;
     }
     ;
 
 orientation:
-    TOK_ORIENTATION WHITESPACE direction
+    TOK_ORIENTATION direction
     {
-        DLOG("New containers should start with split direction %d\n", $3);
-        config.default_orientation = $3;
+        DLOG("New containers should start with split direction %d\n", $2);
+        config.default_orientation = $2;
     }
     ;
 
@@ -513,10 +505,10 @@ direction:
     ;
 
 workspace_layout:
-    TOK_WORKSPACE_LAYOUT WHITESPACE layout_mode
+    TOK_WORKSPACE_LAYOUT layout_mode
     {
-        DLOG("new containers will be in mode %d\n", $3);
-        config.default_layout = $3;
+        DLOG("new containers will be in mode %d\n", $2);
+        config.default_layout = $2;
 
 #if 0
         /* We also need to change the layout of the already existing
@@ -537,11 +529,11 @@ workspace_layout:
         }
 #endif
     }
-    | TOK_WORKSPACE_LAYOUT WHITESPACE TOKSTACKLIMIT WHITESPACE TOKSTACKLIMIT WHITESPACE NUMBER
+    | TOK_WORKSPACE_LAYOUT TOKSTACKLIMIT TOKSTACKLIMIT NUMBER
     {
-        DLOG("stack-limit %d with val %d\n", $5, $7);
-        config.container_stack_limit = $5;
-        config.container_stack_limit_value = $7;
+        DLOG("stack-limit %d with val %d\n", $3, $4);
+        config.container_stack_limit = $3;
+        config.container_stack_limit_value = $4;
 
 #if 0
         /* See the comment above */
@@ -564,10 +556,10 @@ layout_mode:
     ;
 
 new_window:
-    TOKNEWWINDOW WHITESPACE border_style
+    TOKNEWWINDOW border_style
     {
-        DLOG("new windows should start with border style %d\n", $3);
-        config.default_border = $3;
+        DLOG("new windows should start with border style %d\n", $2);
+        config.default_border = $2;
     }
     ;
 
@@ -594,53 +586,53 @@ bool:
     ;
 
 focus_follows_mouse:
-    TOKFOCUSFOLLOWSMOUSE WHITESPACE bool
+    TOKFOCUSFOLLOWSMOUSE bool
     {
-        DLOG("focus follows mouse = %d\n", $3);
-        config.disable_focus_follows_mouse = !($3);
+        DLOG("focus follows mouse = %d\n", $2);
+        config.disable_focus_follows_mouse = !($2);
     }
     ;
 
 workspace_bar:
-    TOKWORKSPACEBAR WHITESPACE bool
+    TOKWORKSPACEBAR bool
     {
-        DLOG("workspace bar = %d\n", $3);
-        config.disable_workspace_bar = !($3);
+        DLOG("workspace bar = %d\n", $2);
+        config.disable_workspace_bar = !($2);
     }
     ;
 
 workspace:
-    TOKWORKSPACE WHITESPACE NUMBER WHITESPACE TOKOUTPUT WHITESPACE OUTPUT optional_workspace_name
+    TOKWORKSPACE NUMBER TOKOUTPUT OUTPUT optional_workspace_name
     {
-        int ws_num = $3;
+        int ws_num = $2;
         if (ws_num < 1) {
             DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
         } else {
             char *ws_name = NULL;
-            if ($8 == NULL) {
+            if ($5 == NULL) {
                 asprintf(&ws_name, "%d", ws_num);
             } else {
-                ws_name = $8;
+                ws_name = $5;
             }
 
-            DLOG("Should assign workspace %s to output %s\n", ws_name, $7);
+            DLOG("Should assign workspace %s to output %s\n", ws_name, $4);
             struct Workspace_Assignment *assignment = scalloc(sizeof(struct Workspace_Assignment));
             assignment->name = ws_name;
-            assignment->output = $7;
+            assignment->output = $4;
             TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
         }
     }
-    | TOKWORKSPACE WHITESPACE NUMBER WHITESPACE workspace_name
+    | TOKWORKSPACE NUMBER workspace_name
     {
-        int ws_num = $3;
+        int ws_num = $2;
         if (ws_num < 1) {
             DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
         } else {
-            DLOG("workspace name to: %s\n", $5);
+            DLOG("workspace name to: %s\n", $3);
 #if 0
-            if ($<string>5 != NULL) {
-                    workspace_set_name(workspace_get(ws_num - 1), $<string>5);
-                    free($<string>5);
+            if ($<string>3 != NULL) {
+                    workspace_set_name(workspace_get(ws_num - 1), $<string>3);
+                    free($<string>3);
             }
 #endif
         }
@@ -648,8 +640,8 @@ workspace:
     ;
 
 optional_workspace_name:
-    /* empty */                     { $$ = NULL; }
-    | WHITESPACE workspace_name     { $$ = $2; }
+    /* empty */          { $$ = NULL; }
+    | workspace_name     { $$ = $1; }
     ;
 
 workspace_name:
@@ -659,20 +651,20 @@ workspace_name:
     ;
 
 assign:
-    TOKASSIGN WHITESPACE window_class WHITESPACE optional_arrow assign_target
+    TOKASSIGN window_class optional_arrow assign_target
     {
-        printf("assignment of %s\n", $3);
+        printf("assignment of %s\n", $2);
 
-        struct Match *match = $6;
+        struct Match *match = $4;
 
         char *separator = NULL;
-        if ((separator = strchr($3, '/')) != NULL) {
+        if ((separator = strchr($2, '/')) != NULL) {
             *(separator++) = '\0';
             match->title = sstrdup(separator);
         }
-        if (*$3 != '\0')
-            match->class = sstrdup($3);
-        free($3);
+        if (*$2 != '\0')
+            match->class = sstrdup($2);
+        free($2);
 
         printf("  class = %s\n", match->class);
         printf("  title = %s\n", match->title);
@@ -720,34 +712,34 @@ window_class:
 
 optional_arrow:
     /* NULL */
-    | TOKARROW WHITESPACE
+    | TOKARROW
     ;
 
 ipcsocket:
-    TOKIPCSOCKET WHITESPACE STR
+    TOKIPCSOCKET STR
     {
-        config.ipc_socket_path = $3;
+        config.ipc_socket_path = $2;
     }
     ;
 
 restart_state:
-    TOKRESTARTSTATE WHITESPACE STR
+    TOKRESTARTSTATE STR
     {
-        config.restart_state_path = $3;
+        config.restart_state_path = $2;
     }
     ;
 
 exec:
-    TOKEXEC WHITESPACE STR
+    TOKEXEC STR
     {
         struct Autostart *new = smalloc(sizeof(struct Autostart));
-        new->command = $3;
+        new->command = $2;
         TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
     }
     ;
 
 terminal:
-    TOKTERMINAL WHITESPACE STR
+    TOKTERMINAL STR
     {
         ELOG("The terminal option is DEPRECATED and has no effect. "
             "Please remove it from your configuration file.\n");
@@ -755,29 +747,29 @@ terminal:
     ;
 
 font:
-    TOKFONT WHITESPACE STR
+    TOKFONT STR
     {
-        config.font = load_font($3, true);
-        printf("font %s\n", $3);
+        config.font = load_font($2, true);
+        printf("font %s\n", $2);
     }
     ;
 
 single_color:
-    TOKSINGLECOLOR WHITESPACE colorpixel
+    TOKSINGLECOLOR colorpixel
     {
         uint32_t *dest = $1;
-        *dest = $3;
+        *dest = $2;
     }
     ;
 
 color:
-    TOKCOLOR WHITESPACE colorpixel WHITESPACE colorpixel WHITESPACE colorpixel
+    TOKCOLOR colorpixel colorpixel colorpixel
     {
         struct Colortriple *dest = $1;
 
-        dest->border = $3;
-        dest->background = $5;
-        dest->text = $7;
+        dest->border = $2;
+        dest->background = $3;
+        dest->text = $4;
     }
     ;
 
@@ -807,10 +799,10 @@ binding_modifier:
     ;
 
 popup_during_fullscreen:
-    TOK_POPUP_DURING_FULLSCREEN WHITESPACE popup_setting
+    TOK_POPUP_DURING_FULLSCREEN popup_setting
     {
-        DLOG("popup_during_fullscreen setting: %d\n", $3);
-        config.popup_during_fullscreen = $3;
+        DLOG("popup_during_fullscreen setting: %d\n", $2);
+        config.popup_during_fullscreen = $2;
     }
     ;
 
