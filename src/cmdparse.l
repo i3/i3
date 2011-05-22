@@ -30,14 +30,20 @@ int cmdyycolumn = 1;
     cmdyycolumn += yyleng; \
 }
 
+/* macro to first eat whitespace, then expect a string */
+#define WS_STRING do { \
+    yy_push_state(WANT_STRING); \
+    yy_push_state(EAT_WHITESPACE); \
+} while (0)
+
 %}
 
 EOL (\r?\n)
 
 /* handle everything up to \n as a string */
 %s WANT_STRING
-/* first expect a whitespace, then a string */
-%s WANT_WS_STRING
+/* eat a whitespace, then go to the next state on the stack */
+%s EAT_WHITESPACE
 /* handle a quoted string or everything up to the next whitespace */
 %s WANT_QSTRING
 
@@ -65,7 +71,6 @@ EOL (\r?\n)
     cmdyycolumn = 1;
 }
 
-<WANT_WS_STRING>[ \t]*          { BEGIN(WANT_STRING); return WHITESPACE; }
 <WANT_STRING>\"[^\"]+\"         {
                                   BEGIN(INITIAL);
                                   /* strip quotes */
@@ -73,21 +78,24 @@ EOL (\r?\n)
                                   copy[strlen(copy)-1] = '\0';
                                   cmdyylval.string = copy;
                                   return STR;
-                                 }
-<WANT_QSTRING>\"[^\"]+\"         {
+                                }
+<WANT_QSTRING>\"[^\"]+\"        {
                                   BEGIN(INITIAL);
                                   /* strip quotes */
                                   char *copy = sstrdup(yytext+1);
                                   copy[strlen(copy)-1] = '\0';
                                   cmdyylval.string = copy;
                                   return STR;
-                                 }
+                                }
 
-<WANT_STRING>[^;\n]+             { BEGIN(INITIAL); cmdyylval.string = sstrdup(yytext); return STR; }
+<WANT_STRING>[^;\n]+            { BEGIN(INITIAL); cmdyylval.string = sstrdup(yytext); return STR; }
 
-[ \t]*                          { return WHITESPACE; }
+<EAT_WHITESPACE>[;\n]           { BEGIN(INITIAL); return ';'; }
+<EAT_WHITESPACE>[ \t]*          { yy_pop_state(); }
+
+[ \t]*                          { /* ignore whitespace */ ; }
 attach                          { return TOK_ATTACH; }
-exec                            { BEGIN(WANT_WS_STRING); return TOK_EXEC; }
+exec                            { WS_STRING; return TOK_EXEC; }
 exit                            { return TOK_EXIT; }
 reload                          { return TOK_RELOAD; }
 restart                         { return TOK_RESTART; }
@@ -109,7 +117,7 @@ mode                            { return TOK_MODE; }
 tiling                          { return TOK_TILING; }
 floating                        { return TOK_FLOATING; }
 toggle                          { return TOK_TOGGLE; }
-workspace                       { BEGIN(WANT_WS_STRING); return TOK_WORKSPACE; }
+workspace                       { WS_STRING; return TOK_WORKSPACE; }
 focus                           { return TOK_FOCUS; }
 move                            { return TOK_MOVE; }
 open                            { return TOK_OPEN; }
@@ -129,9 +137,9 @@ grow                            { return TOK_GROW; }
 px                              { return TOK_PX; }
 or                              { return TOK_OR; }
 ppt                             { return TOK_PPT; }
-nop                             { BEGIN(WANT_WS_STRING); return TOK_NOP; }
-restore                         { BEGIN(WANT_WS_STRING); return TOK_RESTORE; }
-mark                            { BEGIN(WANT_WS_STRING); return TOK_MARK; }
+nop                             { WS_STRING; return TOK_NOP; }
+restore                         { WS_STRING; return TOK_RESTORE; }
+mark                            { WS_STRING; return TOK_MARK; }
 
 class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
 id                              { BEGIN(WANT_QSTRING); return TOK_ID; }

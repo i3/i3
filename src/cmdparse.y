@@ -106,7 +106,6 @@ char *parse_cmd(const char *new) {
 
 %}
 
-%expect 5
 %error-verbose
 %lex-param { struct context *context }
 
@@ -116,7 +115,6 @@ char *parse_cmd(const char *new) {
     int number;
 }
 
-%token              TOK_ATTACH          "attach"
 %token              TOK_EXEC            "exec"
 %token              TOK_EXIT            "exit"
 %token              TOK_RELOAD          "reload"
@@ -166,7 +164,6 @@ char *parse_cmd(const char *new) {
 %token              TOK_ID              "id"
 %token              TOK_CON_ID          "con_id"
 
-%token              WHITESPACE          "<whitespace>"
 %token  <string>    STR                 "<string>"
 %token  <number>    NUMBER              "<number>"
 
@@ -183,7 +180,7 @@ char *parse_cmd(const char *new) {
 %%
 
 commands:
-    commands optwhitespace ';' optwhitespace command
+    commands ';' command
     | command
     {
         owindow *current;
@@ -198,16 +195,12 @@ commands:
     }
     ;
 
-optwhitespace:
-    | WHITESPACE
-    ;
-
 command:
-    match optwhitespace operations
+    match operations
     ;
 
 match:
-    | matchstart optwhitespace criteria optwhitespace matchend
+    | matchstart criteria matchend
     {
         printf("match parsed\n");
     }
@@ -322,8 +315,8 @@ criteria:
     ;
 
 operations:
-    operation optwhitespace
-    | operations ',' optwhitespace operation
+    operation
+    | operations ',' operation
     ;
 
 operation:
@@ -336,7 +329,6 @@ operation:
     | restore
     | move
     | workspace
-    | attach
     | focus
     | kill
     | open
@@ -352,11 +344,11 @@ operation:
     ;
 
 exec:
-    TOK_EXEC WHITESPACE STR
+    TOK_EXEC STR
     {
-        printf("should execute %s\n", $3);
-        start_application($3);
-        free($3);
+        printf("should execute %s\n", $2);
+        start_application($2);
+        free($2);
     }
     ;
 
@@ -384,13 +376,6 @@ restart:
     {
         printf("restarting i3\n");
         i3_restart(false);
-    }
-    ;
-
-attach:
-    TOK_ATTACH
-    {
-        printf("should attach\n");
     }
     ;
 
@@ -436,17 +421,16 @@ kill:
 
 optional_kill_mode:
     /* empty */             { $$ = KILL_WINDOW; }
-    | WHITESPACE            { $$ = KILL_WINDOW; }
-    | WHITESPACE TOK_WINDOW { $$ = KILL_WINDOW; }
-    | WHITESPACE TOK_CLIENT { $$ = KILL_CLIENT; }
+    | TOK_WINDOW { $$ = KILL_WINDOW; }
+    | TOK_CLIENT { $$ = KILL_CLIENT; }
     ;
 
 workspace:
-    TOK_WORKSPACE WHITESPACE STR
+    TOK_WORKSPACE STR
     {
-        printf("should switch to workspace %s\n", $3);
-        workspace_show($3);
-        free($3);
+        printf("should switch to workspace %s\n", $2);
+        workspace_show($2);
+        free($2);
     }
     ;
 
@@ -477,29 +461,29 @@ fullscreen:
     ;
 
 next:
-    TOK_NEXT WHITESPACE direction
+    TOK_NEXT direction
     {
         /* TODO: use matches */
-        printf("should select next window in direction %c\n", $3);
-        tree_next('n', ($3 == 'v' ? VERT : HORIZ));
+        printf("should select next window in direction %c\n", $2);
+        tree_next('n', ($2 == 'v' ? VERT : HORIZ));
     }
     ;
 
 prev:
-    TOK_PREV WHITESPACE direction
+    TOK_PREV direction
     {
         /* TODO: use matches */
-        printf("should select prev window in direction %c\n", $3);
-        tree_next('p', ($3 == 'v' ? VERT : HORIZ));
+        printf("should select prev window in direction %c\n", $2);
+        tree_next('p', ($2 == 'v' ? VERT : HORIZ));
     }
     ;
 
 split:
-    TOK_SPLIT WHITESPACE direction
+    TOK_SPLIT direction
     {
         /* TODO: use matches */
-        printf("splitting in direction %c\n", $3);
-        tree_split(focused, ($3 == 'v' ? VERT : HORIZ));
+        printf("splitting in direction %c\n", $2);
+        tree_split(focused, ($2 == 'v' ? VERT : HORIZ));
     }
     ;
 
@@ -511,19 +495,19 @@ direction:
     ;
 
 mode:
-    TOK_MODE WHITESPACE window_mode
+    TOK_MODE window_mode
     {
         HANDLE_EMPTY_MATCH;
 
         owindow *current;
         TAILQ_FOREACH(current, &owindows, owindows) {
             printf("matching: %p / %s\n", current->con, current->con->name);
-            if ($3 == TOK_TOGGLE) {
+            if ($2 == TOK_TOGGLE) {
                 printf("should toggle mode\n");
                 toggle_floating_mode(current->con, false);
             } else {
-                printf("should switch mode to %s\n", ($3 == TOK_FLOATING ? "floating" : "tiling"));
-                if ($3 == TOK_FLOATING) {
+                printf("should switch mode to %s\n", ($2 == TOK_FLOATING ? "floating" : "tiling"));
+                if ($2 == TOK_FLOATING) {
                     floating_enable(current->con, false);
                 } else {
                     floating_disable(current->con, false);
@@ -540,16 +524,16 @@ window_mode:
     ;
 
 border:
-    TOK_BORDER WHITESPACE border_style
+    TOK_BORDER border_style
     {
-        printf("border style should be changed to %d\n", $3);
+        printf("border style should be changed to %d\n", $2);
         owindow *current;
 
         HANDLE_EMPTY_MATCH;
 
         TAILQ_FOREACH(current, &owindows, owindows) {
             printf("matching: %p / %s\n", current->con, current->con->name);
-            current->con->border_style = $3;
+            current->con->border_style = $2;
         }
     }
     ;
@@ -562,10 +546,10 @@ border_style:
 
 
 level:
-    TOK_LEVEL WHITESPACE level_direction
+    TOK_LEVEL level_direction
     {
-        printf("level %c\n", $3);
-        if ($3 == 'u')
+        printf("level %c\n", $2);
+        if ($2 == 'u')
             level_up();
         else level_down();
     }
@@ -577,19 +561,19 @@ level_direction:
     ;
 
 move:
-    TOK_MOVE WHITESPACE direction
+    TOK_MOVE direction
     {
-        printf("moving in direction %d\n", $3);
-        tree_move($3);
+        printf("moving in direction %d\n", $2);
+        tree_move($2);
     }
-    | TOK_MOVE WHITESPACE TOK_WORKSPACE WHITESPACE STR
+    | TOK_MOVE TOK_WORKSPACE STR
     {
         owindow *current;
 
-        printf("should move window to workspace %s\n", $5);
+        printf("should move window to workspace %s\n", $3);
         /* get the workspace */
-        Con *ws = workspace_get($5, NULL);
-        free($5);
+        Con *ws = workspace_get($3, NULL);
+        free($3);
 
         HANDLE_EMPTY_MATCH;
 
@@ -601,27 +585,27 @@ move:
     ;
 
 restore:
-    TOK_RESTORE WHITESPACE STR
+    TOK_RESTORE STR
     {
-        printf("restoring \"%s\"\n", $3);
-        tree_append_json($3);
-        free($3);
+        printf("restoring \"%s\"\n", $2);
+        tree_append_json($2);
+        free($2);
     }
     ;
 
 layout:
-    TOK_LAYOUT WHITESPACE layout_mode
+    TOK_LAYOUT layout_mode
     {
-        printf("changing layout to %d\n", $3);
+        printf("changing layout to %d\n", $2);
         owindow *current;
 
         /* check if the match is empty, not if the result is empty */
         if (match_is_empty(&current_match))
-            con_set_layout(focused->parent, $3);
+            con_set_layout(focused->parent, $2);
         else {
             TAILQ_FOREACH(current, &owindows, owindows) {
                 printf("matching: %p / %s\n", current->con, current->con->name);
-                con_set_layout(current->con, $3);
+                con_set_layout(current->con, $2);
             }
         }
     }
@@ -634,41 +618,41 @@ layout_mode:
     ;
 
 mark:
-    TOK_MARK WHITESPACE STR
+    TOK_MARK STR
     {
-        printf("marking window with str %s\n", $3);
+        printf("marking window with str %s\n", $2);
         owindow *current;
 
         HANDLE_EMPTY_MATCH;
 
         TAILQ_FOREACH(current, &owindows, owindows) {
             printf("matching: %p / %s\n", current->con, current->con->name);
-            current->con->mark = sstrdup($3);
+            current->con->mark = sstrdup($2);
         }
 
-        free($<string>3);
+        free($<string>2);
     }
     ;
 
 nop:
-    TOK_NOP WHITESPACE STR
+    TOK_NOP STR
     {
         printf("-------------------------------------------------\n");
-        printf("  NOP: %s\n", $3);
+        printf("  NOP: %s\n", $2);
         printf("-------------------------------------------------\n");
-        free($3);
+        free($2);
     }
     ;
 
 resize:
-    TOK_RESIZE WHITESPACE resize_way WHITESPACE direction resize_px resize_tiling
+    TOK_RESIZE resize_way direction resize_px resize_tiling
     {
         /* resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt] */
-        printf("resizing in way %d, direction %d, px %d or ppt %d\n", $3, $5, $6, $7);
-        int direction = $5;
-        int px = $6;
-        int ppt = $7;
-        if ($3 == TOK_SHRINK) {
+        printf("resizing in way %d, direction %d, px %d or ppt %d\n", $2, $3, $4, $5);
+        int direction = $3;
+        int px = $4;
+        int ppt = $5;
+        if ($2 == TOK_SHRINK) {
             px *= -1;
             ppt *= -1;
         }
@@ -723,9 +707,9 @@ resize_px:
     {
         $$ = 10;
     }
-    | WHITESPACE NUMBER WHITESPACE TOK_PX
+    | NUMBER TOK_PX
     {
-        $$ = $2;
+        $$ = $1;
     }
     ;
 
@@ -734,9 +718,9 @@ resize_tiling:
     {
         $$ = 10;
     }
-    | WHITESPACE TOK_OR WHITESPACE NUMBER WHITESPACE TOK_PPT
+    | TOK_OR NUMBER TOK_PPT
     {
-        $$ = $4;
+        $$ = $2;
     }
     ;
 
