@@ -5,7 +5,7 @@
 
 %{
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  */
 #include <stdio.h>
@@ -30,22 +30,24 @@ int yycolumn = 1;
         yycolumn += yyleng; \
 }
 
+/* macro to first eat whitespace, then expect a string */
+#define WS_STRING do { \
+    yy_push_state(WANT_STRING); \
+    yy_push_state(EAT_WHITESPACE); \
+} while (0)
+
 %}
 
 EOL	(\r?\n)
 
-%s BINDCODE_COND
+%s WANT_STRING
+%s WANT_QSTRING
 %s BINDSYM_COND
-%s BIND_AWS_COND
-%s BINDSYM_AWS_COND
-%s BIND_A2WS_COND
 %s ASSIGN_COND
 %s COLOR_COND
 %s OUTPUT_COND
-%s OUTPUT_AWS_COND
-%s WANT_QSTRING
 %s FOR_WINDOW_COND
-%s REQUIRE_WS
+%s EAT_WHITESPACE
 %x BUFFER_LINE
 
 %%
@@ -62,7 +64,7 @@ EOL	(\r?\n)
 
 <BUFFER_LINE>^[^\r\n]*/{EOL}? {
 	/* save whole line */
-	context->line_copy = strdup(yytext);
+	context->line_copy = sstrdup(yytext);
 
 	yyless(0);
 	yy_pop_state();
@@ -71,42 +73,42 @@ EOL	(\r?\n)
 }
 
 
-<FOR_WINDOW_COND>"]"             { yy_pop_state(); return ']'; }
-<REQUIRE_WS>[ \t]*               { yy_pop_state(); }
-<WANT_QSTRING>\"[^\"]+\"         {
+<FOR_WINDOW_COND>"]"            { yy_pop_state(); return ']'; }
+<EAT_WHITESPACE>[ \t]*          { yy_pop_state(); }
+<WANT_QSTRING>\"[^\"]+\"        {
                                   yy_pop_state();
                                   /* strip quotes */
                                   char *copy = sstrdup(yytext+1);
                                   copy[strlen(copy)-1] = '\0';
                                   yylval.string = copy;
                                   return STR;
-                                 }
-<BIND_A2WS_COND>[^\n]+          { BEGIN(INITIAL); yylval.string = strdup(yytext); return STR; }
-<OUTPUT_AWS_COND>[a-zA-Z0-9_-]+ { yylval.string = strdup(yytext); return OUTPUT; }
+                                }
+<WANT_STRING>[^\n]+             { BEGIN(INITIAL); yylval.string = sstrdup(yytext); return STR; }
+<OUTPUT_COND>[a-zA-Z0-9_-]+ { yylval.string = sstrdup(yytext); return OUTPUT; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
-<COLOR_COND>[0-9a-fA-F]+        { yylval.string = strdup(yytext); return HEX; }
+<COLOR_COND>[0-9a-fA-F]+        { yylval.string = sstrdup(yytext); return HEX; }
 [0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
 mode                            { return TOKMODE; }
-bind                            { BEGIN(BINDCODE_COND); return TOKBINDCODE; }
-bindcode                        { BEGIN(BINDCODE_COND); return TOKBINDCODE; }
-bindsym                         { BEGIN(BINDSYM_COND); return TOKBINDSYM; }
+bind                            { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
+bindcode                        { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
+bindsym                         { yy_push_state(BINDSYM_COND); yy_push_state(EAT_WHITESPACE); return TOKBINDSYM; }
 floating_modifier               { BEGIN(INITIAL); return TOKFLOATING_MODIFIER; }
 workspace                       { BEGIN(INITIAL); return TOKWORKSPACE; }
-output                          { BEGIN(OUTPUT_COND); return TOKOUTPUT; }
+output                          { yy_push_state(OUTPUT_COND); yy_push_state(EAT_WHITESPACE); return TOKOUTPUT; }
 screen                          {
                                   /* for compatibility until v3.φ */
                                   ELOG("Assignments to screens are DEPRECATED and will not work. " \
                                        "Please replace them with assignments to outputs.\n");
-                                  BEGIN(OUTPUT_COND);
+                                  yy_push_state(OUTPUT_COND); yy_push_state(EAT_WHITESPACE);
                                   return TOKOUTPUT;
                                 }
-terminal                        { BEGIN(BIND_AWS_COND); return TOKTERMINAL; }
-font                            { BEGIN(BIND_AWS_COND); return TOKFONT; }
+terminal                        { WS_STRING; return TOKTERMINAL; }
+font                            { WS_STRING; return TOKFONT; }
 assign                          { BEGIN(ASSIGN_COND); return TOKASSIGN; }
 set[^\n]*                       { return TOKCOMMENT; }
-ipc-socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
-ipc_socket                      { BEGIN(BIND_AWS_COND); return TOKIPCSOCKET; }
-restart_state                   { BEGIN(BIND_AWS_COND); return TOKRESTARTSTATE; }
+ipc-socket                      { WS_STRING; return TOKIPCSOCKET; }
+ipc_socket                      { WS_STRING; return TOKIPCSOCKET; }
+restart_state                   { WS_STRING; return TOKRESTARTSTATE; }
 default_orientation             { return TOK_ORIENTATION; }
 horizontal                      { return TOK_HORIZ; }
 vertical                        { return TOK_VERT; }
@@ -125,11 +127,11 @@ for_window                      {
                                   /* Example: for_window [class="urxvt"] border none
                                    *
                                    * First, we wait for the ']' that finishes a match (FOR_WINDOW_COND)
-                                   * Then, we require a whitespace (REQUIRE_WS)
+                                   * Then, we require a whitespace (EAT_WHITESPACE)
                                    * And the rest of the line is parsed as a string
                                    */
-                                  yy_push_state(BIND_A2WS_COND);
-                                  yy_push_state(REQUIRE_WS);
+                                  yy_push_state(WANT_STRING);
+                                  yy_push_state(EAT_WHITESPACE);
                                   yy_push_state(FOR_WINDOW_COND);
                                   return TOK_FOR_WINDOW;
                                 }
@@ -140,7 +142,7 @@ tabbed                          { /* yylval.number = MODE_TABBED; */return TOK_T
 stack-limit                     { return TOKSTACKLIMIT; }
 cols                            { /* yylval.number = STACK_LIMIT_COLS; */return TOKSTACKLIMIT; }
 rows                            { /* yylval.number = STACK_LIMIT_ROWS; */return TOKSTACKLIMIT; }
-exec                            { BEGIN(BIND_AWS_COND); return TOKEXEC; }
+exec                            { WS_STRING; return TOKEXEC; }
 client.background               { BEGIN(COLOR_COND); yylval.single_color = &config.client.background; return TOKSINGLECOLOR; }
 client.focused                  { BEGIN(COLOR_COND); yylval.color = &config.client.focused; return TOKCOLOR; }
 client.focused_inactive         { BEGIN(COLOR_COND); yylval.color = &config.client.focused_inactive; return TOKCOLOR; }
@@ -172,25 +174,21 @@ title                           { yy_push_state(WANT_QSTRING); return TOK_TITLE;
                                   BEGIN(INITIAL);
                                   yy_push_state(BUFFER_LINE);
                                 }
-<BINDCODE_COND>[ \t]+           { BEGIN(BIND_AWS_COND); }
-<BINDSYM_COND>[ \t]+            { BEGIN(BINDSYM_AWS_COND); }
-<BIND_AWS_COND>[ \t]+           { BEGIN(BIND_A2WS_COND); }
-<BINDSYM_AWS_COND>[ \t]+        { BEGIN(BIND_A2WS_COND); }
-<OUTPUT_COND>[ \t]+             { BEGIN(OUTPUT_AWS_COND); }
-<OUTPUT_AWS_COND>[ \t]+         { BEGIN(BIND_A2WS_COND); }
+<BINDSYM_COND>[ \t]+		{ BEGIN(WANT_STRING); }
+<OUTPUT_COND>[ \t]+         { BEGIN(WANT_STRING); }
 [ \t]+                          { /* ignore whitespace */ ; }
 \"[^\"]+\"                      {
                                   /* if ASSIGN_COND then */
                                   BEGIN(INITIAL);
                                   /* yylval will be the string, but without quotes */
-                                  char *copy = strdup(yytext+1);
+                                  char *copy = sstrdup(yytext+1);
                                   copy[strlen(copy)-1] = '\0';
                                   yylval.string = copy;
                                   return QUOTEDSTRING;
                                 }
-<ASSIGN_COND>[^ \t]+            { BEGIN(INITIAL); yylval.string = strdup(yytext); return STR_NG; }
-<BINDSYM_AWS_COND>[a-zA-Z0-9_]+ { yylval.string = strdup(yytext); return WORD; }
-[a-zA-Z]+                       { yylval.string = strdup(yytext); return WORD; }
+<ASSIGN_COND>[^ \t]+            { BEGIN(INITIAL); yylval.string = sstrdup(yytext); return STR_NG; }
+<BINDSYM_COND>[a-zA-Z0-9_]+ { yylval.string = sstrdup(yytext); return WORD; }
+[a-zA-Z]+                       { yylval.string = sstrdup(yytext); return WORD; }
 .                               { return (int)yytext[0]; }
 
 <<EOF>> {
