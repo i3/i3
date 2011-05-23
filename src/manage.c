@@ -205,17 +205,19 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     Con *nc = NULL;
     Match *match;
+    Assignment *assignment;
 
     /* check assignments first */
-    if ((match = match_by_assignment(cwindow))) {
+    if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE | A_TO_OUTPUT))) {
         DLOG("Assignment matches (%p)\n", match);
-        if (match->insert_where == M_ASSIGN_WS) {
-            nc = con_descend_focused(workspace_get(match->target_ws, NULL));
-            DLOG("focused on ws %s: %p / %s\n", match->target_ws, nc, nc->name);
+        if (assignment->type == A_TO_WORKSPACE) {
+            nc = con_descend_focused(workspace_get(assignment->dest.workspace, NULL));
+            DLOG("focused on ws %s: %p / %s\n", assignment->dest.workspace, nc, nc->name);
             if (nc->type == CT_WORKSPACE)
                 nc = tree_open_con(nc);
             else nc = tree_open_con(nc->parent);
         }
+        /* TODO: handle assignments with type == A_TO_OUTPUT */
     } else {
         /* TODO: two matches for one container */
 

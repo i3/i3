@@ -12,4 +12,10 @@
  */
 void run_assignments(i3Window *window);
 
+/**
+ * Returns the first matching assignment for the given window.
+ *
+ */
+Assignment *assignment_for(i3Window *window, int type);
+
 #endif

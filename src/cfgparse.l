@@ -44,6 +44,7 @@ EOL     (\r?\n)
 %s WANT_QSTRING
 %s BINDSYM_COND
 %s ASSIGN_COND
+%s ASSIGN_TARGET_COND
 %s COLOR_COND
 %s OUTPUT_COND
 %s FOR_WINDOW_COND
@@ -87,6 +88,8 @@ EOL     (\r?\n)
 <OUTPUT_COND>[a-zA-Z0-9_-]+     { yylval.string = sstrdup(yytext); return OUTPUT; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
 <COLOR_COND>[0-9a-fA-F]+        { yylval.string = sstrdup(yytext); return HEX; }
+<ASSIGN_TARGET_COND>[ \t]*→[ \t]*     { BEGIN(WANT_STRING); }
+<ASSIGN_TARGET_COND>[ \t]+      { BEGIN(WANT_STRING); }
 [0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
 mode                            { return TOKMODE; }
 bind                            { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
@@ -104,7 +107,7 @@ screen                          {
                                 }
 terminal                        { WS_STRING; return TOKTERMINAL; }
 font                            { WS_STRING; return TOKFONT; }
-assign                          { BEGIN(ASSIGN_COND); return TOKASSIGN; }
+assign                          { yy_push_state(ASSIGN_TARGET_COND); yy_push_state(ASSIGN_COND); return TOKASSIGN; }
 set[^\n]*                       { return TOKCOMMENT; }
 ipc-socket                      { WS_STRING; return TOKIPCSOCKET; }
 ipc_socket                      { WS_STRING; return TOKIPCSOCKET; }
@@ -160,7 +163,6 @@ Mode_switch                     { yylval.number = BIND_MODE_SWITCH; return MODIF
 control                         { return TOKCONTROL; }
 ctrl                            { return TOKCONTROL; }
 shift                           { return TOKSHIFT; }
-→                               { return TOKARROW; }
 
 class                           { yy_push_state(WANT_QSTRING); return TOK_CLASS; }
 id                              { yy_push_state(WANT_QSTRING); return TOK_ID; }
@@ -179,14 +181,16 @@ title                           { yy_push_state(WANT_QSTRING); return TOK_TITLE;
 [ \t]+                          { /* ignore whitespace */ ; }
 \"[^\"]+\"                      {
                                   /* if ASSIGN_COND then */
-                                  BEGIN(INITIAL);
+                                  if (yy_start_stack_ptr > 0)
+                                      yy_pop_state();
+                                  else BEGIN(INITIAL);
                                   /* yylval will be the string, but without quotes */
                                   char *copy = sstrdup(yytext+1);
                                   copy[strlen(copy)-1] = '\0';
                                   yylval.string = copy;
                                   return QUOTEDSTRING;
                                 }
-<ASSIGN_COND>[^ \t]+            { BEGIN(INITIAL); yylval.string = sstrdup(yytext); return STR_NG; }
+<ASSIGN_COND>[^ \t\"]+          { BEGIN(ASSIGN_TARGET_COND); yylval.string = sstrdup(yytext); return STR_NG; }
 <BINDSYM_COND>[a-zA-Z0-9_]+     { yylval.string = sstrdup(yytext); return WORD; }
 [a-zA-Z]+                       { yylval.string = sstrdup(yytext); return WORD; }
 .                               { return (int)yytext[0]; }

@@ -17,15 +17,15 @@ void match_init(Match *match);
 bool match_is_empty(Match *match);
 
 /**
+ * Copies the data of a match from src to dest.
+ *
+ */
+void match_copy(Match *dest, Match *src);
+
+/**
  * Check if a match data structure matches the given window.
  *
  */
 bool match_matches_window(Match *match, i3Window *window);
-
-/**
- * Returns the first match in 'assignments' that matches the given window.
- *
- */
-Match *match_by_assignment(i3Window *window);
 
 #endif

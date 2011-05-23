@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * include/data.h: This file defines all data structures used by i3
  *
@@ -300,8 +300,6 @@ struct Match {
     Con *con_id;
     enum { M_ANY = 0, M_TILING, M_FLOATING } floating;
 
-    char *target_ws;
-
     /* Where the window looking for a match should be inserted:
      *
      * M_HERE   = the matched container will be replaced by the window
@@ -314,9 +312,16 @@ struct Match {
     enum { M_HERE = 0, M_ASSIGN_WS, M_BELOW } insert_where;
 
     TAILQ_ENTRY(Match) matches;
-    TAILQ_ENTRY(Match) assignments;
 };
 
+/**
+ * An Assignment makes specific windows go to a specific workspace/output or
+ * run a command for that window. With this mechanism, the user can -- for
+ * example -- make specific windows floating or assign his browser to workspace
+ * "www". Checking if a window is assigned works by comparing the Match data
+ * structure with the window (see match_matches_window()).
+ *
+ */
 struct Assignment {
     /** type of this assignment:
      *
@@ -324,8 +329,17 @@ struct Assignment {
      * A_TO_WORKSPACE = assign the matching window to the specified workspace
      * A_TO_OUTPUT = assign the matching window to the specified output
      *
+     * While the type is a bitmask, only one value can be set at a time. It is
+     * a bitmask to allow filtering for multiple types, for example in the
+     * assignment_for() function.
+     *
      */
-    enum { A_COMMAND = 0, A_TO_WORKSPACE = 1, A_TO_OUTPUT = 2 } type;
+    enum {
+        A_ANY          = 0,
+        A_COMMAND      = (1 << 0),
+        A_TO_WORKSPACE = (1 << 1),
+        A_TO_OUTPUT    = (1 << 2)
+    } type;
 
     /** the criteria to check if a window matches */
     Match match;
@@ -337,7 +351,7 @@ struct Assignment {
         char *output;
     } dest;
 
-    TAILQ_ENTRY(Assignment) real_assignments;
+    TAILQ_ENTRY(Assignment) assignments;
 };
 
 struct Con {

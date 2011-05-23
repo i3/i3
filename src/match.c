@@ -46,6 +46,25 @@ bool match_is_empty(Match *match) {
 }
 
 /*
+ * Copies the data of a match from src to dest.
+ *
+ */
+void match_copy(Match *dest, Match *src) {
+    memcpy(dest, src, sizeof(Match));
+
+#define STRDUP(field) do { \
+    if (src->field != NULL) \
+        dest->field = sstrdup(src->field); \
+} while (0)
+
+    STRDUP(title);
+    STRDUP(mark);
+    STRDUP(application);
+    STRDUP(class);
+    STRDUP(instance);
+}
+
+/*
  * Check if a match data structure matches the given window.
  *
  */
@@ -86,21 +105,4 @@ bool match_matches_window(Match *match, i3Window *window) {
     LOG("window %d (%s) could not be matched\n", window->id, window->class_class);
 
     return false;
-}
-
-/*
- * Returns the first match in 'assignments' that matches the given window.
- *
- */
-Match *match_by_assignment(i3Window *window) {
-    Match *match;
-
-    TAILQ_FOREACH(match, &assignments, assignments) {
-        if (!match_matches_window(match, window))
-            continue;
-        DLOG("got a matching assignment (to %s)\n", match->target_ws);
-        return match;
-    }
-
-    return NULL;
 }

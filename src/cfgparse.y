@@ -268,7 +268,6 @@ void parse_file(const char *f) {
 %type   <string>        optional_workspace_name
 %type   <string>        workspace_name
 %type   <string>        window_class
-%type   <match>         assign_target
 
 %%
 
@@ -356,7 +355,7 @@ for_window:
         assignment->type = A_COMMAND;
         assignment->match = current_match;
         assignment->dest.command = $3;
-        TAILQ_INSERT_TAIL(&real_assignments, assignment, real_assignments);
+        TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
     }
     ;
 
@@ -651,68 +650,60 @@ workspace_name:
     ;
 
 assign:
-    TOKASSIGN window_class optional_arrow assign_target
+    TOKASSIGN window_class STR
     {
-        printf("assignment of %s\n", $2);
+        printf("assignment of %s to *%s*\n", $2, $3);
+        char *workspace = $3;
+        char *criteria = $2;
 
-        struct Match *match = $4;
+        Assignment *assignment = scalloc(sizeof(Assignment));
+        Match *match = &(assignment->match);
+        match_init(match);
 
         char *separator = NULL;
-        if ((separator = strchr($2, '/')) != NULL) {
+        if ((separator = strchr(criteria, '/')) != NULL) {
             *(separator++) = '\0';
             match->title = sstrdup(separator);
         }
-        if (*$2 != '\0')
-            match->class = sstrdup($2);
-        free($2);
+        if (*criteria != '\0')
+            match->class = sstrdup(criteria);
+        free(criteria);
 
         printf("  class = %s\n", match->class);
         printf("  title = %s\n", match->title);
-        if (match->insert_where == M_ASSIGN_WS)
-            printf("  to ws %s\n", match->target_ws);
-        TAILQ_INSERT_TAIL(&assignments, match, assignments);
-    }
-    ;
 
-assign_target:
-    NUMBER
-    {
-        /* TODO: named workspaces */
-        Match *match = smalloc(sizeof(Match));
-        match_init(match);
-        match->insert_where = M_ASSIGN_WS;
-        asprintf(&(match->target_ws), "%d", $1);
-        $$ = match;
-    }
-    | '~'
-    {
-        /* TODO: compatiblity */
-#if 0
-        struct Assignment *new = scalloc(sizeof(struct Assignment));
-        new->floating = ASSIGN_FLOATING_ONLY;
-        $<assignment>$ = new;
-#endif
-    }
-    | '~' NUMBER
-    {
-        /* TODO: compatiblity */
-#if 0
-        struct Assignment *new = scalloc(sizeof(struct Assignment));
-        new->workspace = $<number>2;
-        new->floating = ASSIGN_FLOATING;
-        $<assignment>$ = new;
-#endif
+        /* Compatibility with older versions: If the assignment target starts
+         * with ~, we create the equivalent of:
+         *
+         * for_window [class="foo"] mode floating
+         */
+        if (*workspace == '~') {
+            workspace++;
+            if (*workspace == '\0') {
+                /* This assignment was *only* for floating */
+                assignment->type = A_COMMAND;
+                assignment->dest.command = sstrdup("mode floating");
+                TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
+                break;
+            } else {
+                /* Create a new assignment and continue afterwards */
+                Assignment *floating = scalloc(sizeof(Assignment));
+                match_copy(&(floating->match), match);
+                floating->type = A_COMMAND;
+                floating->dest.command = sstrdup("mode floating");
+                TAILQ_INSERT_TAIL(&assignments, floating, assignments);
+            }
+        }
+
+        assignment->type = A_TO_WORKSPACE;
+        assignment->dest.workspace = workspace;
+        TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
     }
     ;
 
 window_class:
     QUOTEDSTRING
     | STR_NG
-    ;
-
-optional_arrow:
-    /* NULL */
-    | TOKARROW
     ;
 
 ipcsocket:

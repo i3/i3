@@ -17,7 +17,7 @@ void run_assignments(i3Window *window) {
 
     /* Check if any assignments match */
     Assignment *current;
-    TAILQ_FOREACH(current, &real_assignments, real_assignments) {
+    TAILQ_FOREACH(current, &assignments, assignments) {
         if (!match_matches_window(&(current->match), window))
             continue;
 
@@ -47,4 +47,22 @@ void run_assignments(i3Window *window) {
         window->ran_assignments = srealloc(window->ran_assignments, sizeof(Assignment*) * window->nr_assignments);
         window->ran_assignments[window->nr_assignments-1] = current;
     }
+}
+
+/*
+ * Returns the first matching assignment for the given window.
+ *
+ */
+Assignment *assignment_for(i3Window *window, int type) {
+    Assignment *assignment;
+
+    TAILQ_FOREACH(assignment, &assignments, assignments) {
+        if ((type != A_ANY && (assignment->type & type) == 0) ||
+            !match_matches_window(&(assignment->match), window))
+            continue;
+        DLOG("got a matching assignment (to %s)\n", assignment->dest.workspace);
+        return assignment;
+    }
+
+    return NULL;
 }
