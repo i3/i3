@@ -10,10 +10,11 @@ use AnyEvent::I3;
 use List::Util qw(first);
 use List::MoreUtils qw(lastval);
 use Time::HiRes qw(sleep);
+use Try::Tiny;
 use v5.10;
 
 use Exporter ();
-our @EXPORT = qw(get_workspace_names get_unused_workspace fresh_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live);
+our @EXPORT = qw(get_workspace_names get_unused_workspace fresh_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live exit_gracefully);
 
 my $tester = Test::Builder->new();
 
@@ -173,6 +174,23 @@ sub does_i3_live {
     my $ok = (@nodes > 0);
     $tester->ok($ok, 'i3 still lives');
     return $ok;
+}
+
+# Tries to exit i3 gracefully (with the 'exit' cmd) or kills the PID if that fails
+sub exit_gracefully {
+    my ($pid, $socketpath) = @_;
+    $socketpath ||= '/tmp/nestedcons';
+
+    my $exited = 0;
+    try {
+        say "Exiting i3 cleanly...";
+        i3($socketpath)->command('exit')->recv;
+        $exited = 1;
+    };
+
+    if (!$exited) {
+        kill(9, $pid) or die "could not kill i3";
+    }
 }
 
 1

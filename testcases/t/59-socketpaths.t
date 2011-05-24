@@ -34,7 +34,9 @@ ok(-d $folder, "folder $folder exists");
 my $socketpath = "$folder/ipc-socket." . $process->pid;
 ok(-S $socketpath, "file $socketpath exists and is a socket");
 
-kill(9, $process->pid) or die "could not kill i3";
+exit_gracefully($process->pid, $socketpath);
+
+sleep 0.25;
 
 #####################################################################
 # XDG_RUNTIME_DIR case: socket gets created in $XDG_RUNTIME_DIR/i3/ipc-socket.<pid>
@@ -52,7 +54,9 @@ ok(-d "$rtdir/i3", "$rtdir/i3 exists and is a directory");
 $socketpath = "$rtdir/i3/ipc-socket." . $process->pid;
 ok(-S $socketpath, "file $socketpath exists and is a socket");
 
-kill(9, $process->pid) or die "could not kill i3";
+exit_gracefully($process->pid, $socketpath);
+
+sleep 0.25;
 
 #####################################################################
 # configuration file case: socket gets placed whereever we specify
@@ -73,6 +77,6 @@ sleep 1;
 
 ok(-S $socketpath, "file $socketpath exists and is a socket");
 
-kill(9, $process->pid) or die "could not kill i3";
+exit_gracefully($process->pid, $socketpath);
 
 done_testing;
