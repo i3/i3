@@ -57,7 +57,7 @@ sub set_wm_class {
 
     $x->change_property(
         PROP_MODE_REPLACE,
-        $window->id,
+        $id,
         $atomname->id,
         $atomtype->id,
         8,
