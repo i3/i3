@@ -207,34 +207,35 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     Match *match;
     Assignment *assignment;
 
-    /* check assignments first */
-    if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE | A_TO_OUTPUT))) {
-        DLOG("Assignment matches (%p)\n", match);
-        if (assignment->type == A_TO_WORKSPACE) {
-            nc = con_descend_focused(workspace_get(assignment->dest.workspace, NULL));
-            DLOG("focused on ws %s: %p / %s\n", assignment->dest.workspace, nc, nc->name);
-            if (nc->type == CT_WORKSPACE)
-                nc = tree_open_con(nc);
-            else nc = tree_open_con(nc->parent);
-        }
-        /* TODO: handle assignments with type == A_TO_OUTPUT */
-    } else {
-        /* TODO: two matches for one container */
+    /* TODO: two matches for one container */
 
-        /* See if any container swallows this new window */
-        nc = con_for_window(search_at, cwindow, &match);
-        if (nc == NULL) {
+    /* See if any container swallows this new window */
+    nc = con_for_window(search_at, cwindow, &match);
+    if (nc == NULL) {
+        /* If not, check if it is assigned to a specific workspace / output */
+        if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE | A_TO_OUTPUT))) {
+            DLOG("Assignment matches (%p)\n", match);
+            if (assignment->type == A_TO_WORKSPACE) {
+                nc = con_descend_focused(workspace_get(assignment->dest.workspace, NULL));
+                DLOG("focused on ws %s: %p / %s\n", assignment->dest.workspace, nc, nc->name);
+                if (nc->type == CT_WORKSPACE)
+                    nc = tree_open_con(nc);
+                else nc = tree_open_con(nc->parent);
+            }
+        /* TODO: handle assignments with type == A_TO_OUTPUT */
+        } else {
+            /* If not, insert it at the currently focused position */
             if (focused->type == CT_CON && con_accepts_window(focused)) {
                 LOG("using current container, focused = %p, focused->name = %s\n",
                                 focused, focused->name);
                 nc = focused;
             } else nc = tree_open_con(NULL);
-        } else {
-            /* M_BELOW inserts the new window as a child of the one which was
-             * matched (e.g. dock areas) */
-            if (match != NULL && match->insert_where == M_BELOW) {
-                nc = tree_open_con(nc);
-            }
+        }
+    } else {
+        /* M_BELOW inserts the new window as a child of the one which was
+         * matched (e.g. dock areas) */
+        if (match != NULL && match->insert_where == M_BELOW) {
+            nc = tree_open_con(nc);
         }
     }
 
