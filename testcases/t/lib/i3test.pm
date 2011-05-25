@@ -29,8 +29,7 @@ sub import {
     my $class = shift;
     my $pkg = caller;
     eval "package $pkg;
-use Test::More" . (@_ > 0 ? " qw(@_)" : "") . ";
-use Test::Exception;
+use Test::Most" . (@_ > 0 ? " qw(@_)" : "") . ";
 use Data::Dumper;
 use AnyEvent::I3;
 use Time::HiRes qw(sleep);
