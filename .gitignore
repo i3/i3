@@ -8,3 +8,4 @@ testcases/latest
 *.tab.c
 *.tab.h
 *.yy.c
+*.tar.bz2*
