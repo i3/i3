@@ -4,12 +4,12 @@
 # Tests if the WM_TAKE_FOCUS protocol is correctly handled by i3
 #
 use X11::XCB qw(:all);
-use EV;
-use AnyEvent;
 use i3test;
 use v5.10;
 
 BEGIN {
+    use_ok('EV');
+    use_ok('AnyEvent');
     use_ok('X11::XCB::Window');
     use_ok('X11::XCB::Event::Generic');
     use_ok('X11::XCB::Event::MapNotify');
@@ -59,6 +59,8 @@ subtest 'Window without WM_TAKE_FOCUS', sub {
 
     my $result = $cv->recv;
     ok($result, 'cv result');
+
+    done_testing;
 };
 
 subtest 'Window with WM_TAKE_FOCUS', sub {
@@ -105,6 +107,8 @@ subtest 'Window with WM_TAKE_FOCUS', sub {
         my ($data, $time) = unpack("L2", $result);
         is($data, $x->atom(name => 'WM_TAKE_FOCUS')->id, 'first uint32_t contains WM_TAKE_FOCUS atom');
     }
+
+    done_testing;
 };
 
 
