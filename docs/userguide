@@ -1,12 +1,18 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael+i3@stapelberg.de>
-March 2010
+May 2011
+
+*********************************************************************************
+This document is not yet finished. The tree branch is still in development. The
+information provided here should be correct, just not complete yet.
+*********************************************************************************
 
 This document contains all the information you need to configure and use the i3
-window manager. If it does not, please contact me on IRC, Jabber or E-Mail and
-I’ll help you out.
+window manager. If it does not, please contact us on IRC (preferred) or post your
+question(s) on the mailing list.
 
+//////////////////////////////////////////////////////////////////////////////
 == Default keybindings
 
 For the "too long; didn’t read" people, here is an overview of the default
@@ -26,42 +32,48 @@ you can also use keysymbols, see <<keybindings>>).
 
 The red keys are the modifiers you need to press (by default), the blue keys
 are your homerow.
+//////////////////////////////////////////////////////////////////////////////
 
 == Using i3
+
+Throughout this guide, the keyword +mod+ will be used to refer to the
+configured modifier. This is the windows key (mod4) by default, with alt (mod1)
+being a popular alternative.
 
 === Opening terminals and moving around
 
 One very basic operation is opening a new terminal. By default, the keybinding
-for this is Mod1+Enter, that is Alt+Enter in the default configuration. By
-pressing Mod1+Enter, a new terminal will be opened.  It will fill the whole
+for this is mod+Enter, that is Win+Enter in the default configuration. By
+pressing mod+Enter, a new terminal will be opened.  It will fill the whole
 space available on your screen.
 
 image:single_terminal.png[Single terminal]
 
-It is important to keep in mind that i3 uses a table to manage your windows. At
-the moment, you have exactly one column and one row which leaves you with one
-cell. In this cell there is a container, which is where your new terminal is
-opened.
-
-If you now open another terminal, you still have only one cell. However, the
-container in that cell holds both of your terminals. So, a container is just a
-group of clients with a specific layout. Containers can be resized by adjusting
-the size of the cell that holds them.
+If you now open another terminal, i3 will place it next to the current one,
+splitting the screen size in half. Depending on your monitor, i3 will put the
+new window right to the old window (for widescreen) or below the old window
+(rotated displays).
 
 image:two_terminals.png[Two terminals]
 
 To move the focus between the two terminals, you use the direction keys which
 you may know from the editor +vi+. However, in i3, your homerow is used for
 these keys (in +vi+, the keys are shifted to the left by one for compatibility
-with most keyboard layouts). Therefore, +Mod1+J+ is left, +Mod1+K+ is down,
-+Mod1+L+ is up and `Mod1+;` is right. So, to switch between the terminals,
-use +Mod1+K+ or +Mod1+L+.
+with most keyboard layouts). Therefore, +mod+J+ is left, +mod+K+ is down,
++mod+L+ is up and `mod+;` is right. So, to switch between the terminals,
+use +mod+K+ or +mod+L+.
 
-To create a new row/column (and a new cell), you can simply move a terminal (or
-any other window) in the direction you want to expand your table. So, let’s
-expand the table to the right by pressing `Mod1+Shift+;`.
+At the moment, your workspace is split (it contains two terminals) in a
+specific direction (horizontal by default). Every window can be split
+horizontally or vertically again, just like the workspace. The terminology is
+"window" for a container that actually contains an X11 window (like a terminal
+or browser) and "split container" for containers that consist of one or more
+windows.
 
-image:two_columns.png[Two columns]
+TODO: picture of the tree
+
+To split a window vertically, press +mod+v+. To split it horizontally, press
++mod+h+.
 
 === Changing container modes
 
@@ -85,15 +97,19 @@ image:modes.png[Container modes]
 === Toggling fullscreen mode for a window
 
 To display a window fullscreen or to go out of fullscreen mode again, press
-+Mod1+f+.
++mod+f+.
+
+/////////////////////////////////////////////////////////////////////////////
+TODO: not yet implemented
 
 There is also a global fullscreen mode in i3 in which the client will use all
-available outputs. To use it, or to get out of it again, press +Mod1+Shift+f+.
+available outputs. To use it, or to get out of it again, press +mod+Shift+f+.
+/////////////////////////////////////////////////////////////////////////////
 
 === Opening other applications
 
 Aside from opening applications from a terminal, you can also use the handy
-+dmenu+ which is opened by pressing +Mod1+v+ by default. Just type the name
++dmenu+ which is opened by pressing +mod+p+ by default. Just type the name
 (or a part of it) of the application which you want to open. The application
 typed has to be in your +$PATH+ for this to work.
 
@@ -115,7 +131,7 @@ depends on the application.
 
 Workspaces are an easy way to group a set of windows. By default, you are on
 the first workspace, as the bar on the bottom left indicates. To switch to
-another workspace, press +Mod1+num+ where +num+ is the number of the workspace
+another workspace, press +mod+num+ where +num+ is the number of the workspace
 you want to use. If the workspace does not exist yet, it will be created.
 
 A common paradigm is to put the web browser on one workspace, communication
@@ -129,18 +145,15 @@ focus to that screen.
 
 === Moving windows to workspaces
 
-To move a window to another workspace, simply press +Mod1+Shift+num+ where
+To move a window to another workspace, simply press +mod+Shift+num+ where
 +num+ is (like when switching workspaces) the number of the target workspace.
 Similarly to switching workspaces, the target workspace will be created if
 it does not yet exist.
 
-=== Resizing columns/rows
+=== Resizing
 
-To resize columns or rows, just grab the border between the two columns/rows
-and move it to the wanted size. Please keep in mind that each cell of the table
-holds a +container+ and thus you cannot horizontally resize single windows.  If
-you need applications with different horizontal sizes, place them in seperate
-cells one above the other.
+The easiest way to resize a container is by using the mouse: Grab the border
+and move it to the wanted size.
 
 See <<resizingconfig>> for how to configure i3 to be able to resize
 columns/rows with your keyboard.
@@ -148,35 +161,21 @@ columns/rows with your keyboard.
 === Restarting i3 inplace
 
 To restart i3 inplace (and thus get into a clean state if there is a bug, or
-to upgrade to a newer version of i3) you can use +Mod1+Shift+r+. Be aware,
-though, that this kills your current layout and all the windows you have opened
-will be put in a default container in only one cell. Saving layouts will be
-implemented in a later version.
+to upgrade to a newer version of i3) you can use +mod+Shift+r+.
 
 === Exiting i3
 
-To cleanly exit i3 without killing your X server, you can use +Mod1+Shift+e+.
-
-=== Snapping
-
-Snapping is a mechanism to increase/decrease the colspan/rowspan of a container.
-Colspan/rowspan is the number of columns/rows a specific cell of the table
-consumes. This is easier explained by giving an example, so take the following
-layout:
-
-image:snapping.png[Snapping example]
-
-To use the full size of your screen, you can now snap container 3 downwards
-by pressing +Mod1+Control+k+ (or snap container 2 rightwards).
+To cleanly exit i3 without killing your X server, you can use +mod+Shift+e+.
 
 === Floating
 
 Floating mode is the opposite of tiling mode. The position and size of a window
 are not managed by i3, but by you. Using this mode violates the tiling
 paradigm but can be useful for some corner cases like "Save as" dialog
-windows, or toolbar windows (GIMP or similar).
+windows, or toolbar windows (GIMP or similar). Those windows usually set the
+appropriate hint and are opened in floating mode by default.
 
-You can enable floating mode for a window by pressing +Mod1+Shift+Space+. By
+You can enable floating mode for a window by pressing +mod+Shift+Space+. By
 dragging the window’s titlebar with your mouse you can move the window
 around. By grabbing the borders and moving them you can resize the window. You
 can also do that by using the <<floating_modifier>>.
@@ -184,6 +183,74 @@ can also do that by using the <<floating_modifier>>.
 For resizing floating windows with your keyboard, see <<resizingconfig>>.
 
 Floating windows are always on top of tiling windows.
+
+== Tree
+
+The most important change and reason for the name is that i3 stores all
+information about the X11 outputs, workspaces and layout of the windows on them
+in a tree. The root node is the X11 root window, followed by the X11 outputs,
+then workspaces and finally the windows themselve. In previous versions of i3
+we had multiple lists (of outputs, workspaces) and a table for each workspace.
+That approach turned out to be complicated to use (snapping), understand and
+implement.
+
+=== The tree consists of Containers
+
+The building blocks of our tree are so called +Containers+. A +Container+ can
+host a window (meaning an X11 window, one that you can actually see and use,
+like a browser). Alternatively, it could contain one or more +Containers+. A
+simple example is the workspace: When you start i3 with a single monitor, a
+single workspace and you open two terminal windows, you will end up with a tree
+like this:
+
+image::tree-layout2.png["layout2",float="right"]
+image::tree-shot4.png["shot4",title="Two terminals on standard workspace"]
+
+=== Orientation and Split Containers
+
+[[OrientationSplit]]
+
+It is only natural to use so-called +Split Containers+ in order to build a
+layout when using a tree as data structure. In i3, every +Container+ has an
+orientation (horizontal, vertical or unspecified). So, in our example with the
+workspace, the default orientation of the workspace +Container+ is horizontal
+(most monitors are widescreen nowadays). If you change the orientation to
+vertical (+Alt+v+ in the default config) and *then* open two terminals, i3 will
+configure your windows like this:
+
+image::tree-shot2.png["shot2",title="Vertical Workspace Orientation"]
+
+An interesting new feature of the tree branch is the ability to split anything:
+Let’s assume you have two terminals on a workspace (with horizontal
+orientation), focus is on the right terminal. Now you want to open another
+terminal window below the current one. If you would just open a new terminal
+window, it would show up to the right due to the horizontal workspace
+orientation. Instead, press +Alt+v+ to create a +Vertical Split Container+ (to
+open a +Horizontal Split Container+, use +Alt+h+). Now you can open a new
+terminal and it will open below the current one:
+
+image::tree-layout1.png["Layout",float="right"]
+image::tree-shot1.png["shot",title="Vertical Split Container"]
+
+unfloat::[]
+
+You probably guessed it already: There is no limit on how deep your hierarchy
+of splits can be.
+
+=== Level up
+
+Let’s stay with our example from above. We have a terminal on the left and two
+vertically split terminals on the right, focus is on the bottom right one. When
+you open a new terminal, it will open below the current one.
+
+So, how can you open a new terminal window to the *right* of the current one?
+The solution is to use +level up+, which will focus the +Parent Container+ of
+the current +Container+. In this case, you would focus the +Vertical Split
+Container+ which is *inside* the horizontally oriented workspace. Thus, now new
+windows will be opened to the right of the +Vertical Split Container+:
+
+image::tree-shot3.png["shot3",title="Level Up, then open new terminal"]
+
 
 == Configuring i3
 
@@ -220,6 +287,9 @@ i3 uses X core fonts (not Xft) for rendering window titles and the internal
 workspace bar. You can use +xfontsel(1)+ to generate such a font description.
 To see special characters (Unicode), you need to use a font which supports
 the ISO-10646 encoding.
+
+If i3 cannot open the configured font, it will output an error in the logfile
+and fall back to a working font.
 
 *Syntax*:
 ------------------------------
@@ -308,7 +378,11 @@ floating_modifier <Modifiers>
 floating_modifier Mod1
 --------------------------------
 
+////////////////////////////////////////////////////////////////////////
 === Layout mode for new containers
+
+TODO: this is workspace_layout. but workspace_layout only works for the first
+con, right?
 
 This option determines in which mode new containers will start. See also
 <<stack-limit>>.
@@ -323,6 +397,7 @@ new_container stack-limit <cols|rows> <value>
 ---------------------
 new_container tabbed
 ---------------------
+////////////////////////////////////////////////////////////////////////
 
 === Border style for new windows
 
@@ -330,12 +405,12 @@ This option determines which border style new windows will have.
 
 *Syntax*:
 ---------------------------------------------
-new_window <bp|bn|bb>
+new_window <normal|1pixel|borderless>
 ---------------------------------------------
 
 *Examples*:
 ---------------------
-new_window bp
+new_window 1pixel
 ---------------------
 
 === Variables
@@ -380,21 +455,21 @@ not be put onto any workspace, but will be set floating on the current one.
 
 *Syntax*:
 ------------------------------------------------------------
-assign ["]window class[/window title]["] [→] [~ | workspace]
+assign ["]window class[/window title]["] [→] [workspace]
 ------------------------------------------------------------
 
 *Examples*:
 ----------------------
 assign urxvt 2
 assign urxvt → 2
+assign urxvt → work
 assign "urxvt" → 2
 assign "urxvt/VIM" → 3
-assign "gecko" → ~4
-assign "xv/MPlayer" → ~
+assign "gecko" → 4
 ----------------------
 
 Note that the arrow is not required, it just looks good :-). If you decide to
-use it, it has to be a UTF-8 encoded arrow, not "->" or something like that.
+use it, it has to be a UTF-8 encoded arrow, not `->` or something like that.
 
 === Automatically starting applications on i3 startup
 
@@ -409,7 +484,7 @@ exec command
 
 *Examples*:
 --------------------------------
-exec sudo i3status | dzen2 -dock
+exec i3status | dzen2 -dock
 --------------------------------
 
 [[workspace_screen]]
@@ -436,26 +511,6 @@ available outputs by running +xrandr --current+.
 workspace 1 output LVDS1
 workspace 5 output VGA1
 ---------------------------
-
-=== Named workspaces
-
-If you always have a certain arrangement of workspaces, you might want to give
-them names (of course UTF-8 is supported):
-
-*Syntax*:
----------------------------------------
-workspace <number> <name>
-workspace <number> output <output> name
----------------------------------------
-
-For more details about the 'output' part of this command, see above.
-
-*Examples*:
---------------------------
-workspace 1 www
-workspace 2 work
-workspace 3 i ♥ workspaces
---------------------------
 
 === Changing colors
 
@@ -549,107 +604,73 @@ focus_follows_mouse <yes|no>
 focus_follows_mouse no
 ----------------------
 
-=== Internal workspace bar
-
-The internal workspace bar (the thing at the bottom of your screen) is very
-simple -- it does not provide a way to display custom text and it does not
-offer advanced customization features. This is intended because we do not
-want to duplicate functionality of tools like +dzen2+, +xmobar+ and so on
-(they render bars, we manage windows). Instead, there is an option which will
-turn off the internal bar completely, so that you can use a separate program to
-display it (see +i3-wsbar+, a sample implementation of such a program):
-
-*Syntax*:
-----------------------
-workspace_bar <yes|no>
-----------------------
-
-*Examples*:
-----------------
-workspace_bar no
-----------------
-
 == List of commands
 
 === Manipulating layout
 
-To change the layout of the current container to stacking, use +s+, for default
-use +d+ and for tabbed, use +T+. To make the current client (!) fullscreen,
-use +f+, to make it span all outputs, use +fg+, to make it floating (or
-tiling again) use +t+:
+To change the layout of the current container to stacking, use +layout
+stacking+, for default use +layout default+ and for tabbed, use +layout
+tabbed+. To make the current client (!) fullscreen, use +fullscreen+, to make
+it floating (or tiling again) use +mode floating+ respectively +mode tiling+
+(or +mode toggle+):
 
 *Examples*:
 --------------
-bindsym Mod1+s s
-bindsym Mod1+l d
-bindsym Mod1+w T
+bindsym Mod1+s layout stacking
+bindsym Mod1+l layout default
+bindsym Mod1+w layout tabbed
 
 # Toggle fullscreen
-bindsym Mod1+f f
-
-# Toggle global fullscreen
-bindsym Mod1+Shift+f fg
+bindsym Mod1+f fullscreen
 
 # Toggle floating/tiling
-bindsym Mod1+t t
+bindsym Mod1+t mode toggle
 --------------
 
-=== Focusing/Moving/Snapping clients/containers/screens
+=== Focusing/Moving containers
 
-To change the focus, use one of the +h+, +j+, +k+ and +l+ commands, meaning
-left, down, up, right (respectively). To focus a container, prefix it with
-+wc+. To focus a screen, prefix it with +ws+.
+To change the focus, use one of the +prev h+, +next v+, +prev v+ and +next h+
+commands, meaning left, down, up, right (respectively).
 
-The same principle applies for moving and snapping: just prefix the command
-with +m+ when moving and with +s+ when snapping:
+For moving, use +move left+, +move right+, +move down+ and +move up+.
 
 *Examples*:
 ----------------------
 # Focus clients on the left, bottom, top, right:
-bindsym Mod1+j h
-bindsym Mod1+k j
-bindsym Mod1+j k
-bindsym Mod1+semicolon l
+bindsym Mod1+j prev h
+bindsym Mod1+k next v
+bindsym Mod1+j prev v
+bindsym Mod1+semicolon next h
 
 # Move client to the left, bottom, top, right:
-bindsym Mod1+j mh
-bindsym Mod1+k mj
-bindsym Mod1+j mk
-bindsym Mod1+semicolon ml
-
-# Snap client to the left, bottom, top, right:
-bindsym Mod1+j sh
-bindsym Mod1+k sj
-bindsym Mod1+j sk
-bindsym Mod1+semicolon sl
-
-# Focus container on the left, bottom, top, right:
-bindsym Mod3+j wch
-…
+bindsym Mod1+j move left
+bindsym Mod1+k move down
+bindsym Mod1+j move up
+bindsym Mod1+semicolon move right
 ----------------------
 
-=== Changing workspaces/moving clients to workspaces
+=== Changing workspaces/moving containers to workspaces
 
-To change to a specific workspace, the command is just the number of the
-workspace, e.g. +1+ or +3+. To move the current client to a specific workspace,
-prefix the number with an +m+.
+To change to a specific workspace, use the +workspace+ command, followed by the
+number or name of the workspace. To move containers, use +move workspace+.
+
+//////////////////////////////////////////////////////////////////////////////
+TODO: not yet implemented
 
 You can also switch to the next and previous workspace with the commands +nw+
 and +pw+, which is handy, for example, if you have workspace 1, 3, 4 and 9 and
 you want to cycle through them with a single key combination.
+//////////////////////////////////////////////////////////////////////////////
 
 *Examples*:
 -------------------------
-bindsym Mod1+1 1
-bindsym Mod1+2 2
+bindsym Mod1+1 workspace 1
+bindsym Mod1+2 workspace 2
 ...
 
-bindsym Mod1+Shift+1 m1
-bindsym Mod1+Shift+2 m2
+bindsym Mod1+Shift+1 move workspace 1
+bindsym Mod1+Shift+2 move workspace 2
 ...
-
-bindsym Mod1+o nw
-bindsym Mod1+p pw
 -------------------------
 
 [[resizingconfig]]
@@ -659,6 +680,8 @@ bindsym Mod1+p pw
 If you want to resize columns/rows using your keyboard, you can use the
 +resize+ command, I recommend using it inside a so called +mode+:
 
+///////////////////////////////////////////////////////////////////////
+TODO: mode is not yet implemented
 .Example: Configuration file, defining a mode for resizing
 ----------------------------------------------------------------------
 mode "resize" {
@@ -668,17 +691,17 @@ mode "resize" {
         # when pressing left, the window is resized so that it has
         # more space on its left
 
-        bindsym n resize left -10
-        bindsym Shift+n resize left +10
+        bindsym j resize shrink left
+        bindsym Shift+j resize grow left
 
-        bindsym r resize bottom +10
-        bindsym Shift+r resize bottom -10
+        bindsym k resize grow bottom
+        bindsym Shift+k resize shrink bottom
 
-        bindsym t resize top -10
-        bindsym Shift+t resize top +10
+        bindsym l resize shrink top
+        bindsym Shift+l resize grow top
 
-        bindsym d resize right +10
-        bindsym Shift+d resize right -10
+        bindsym semicolon resize grow right
+        bindsym Shift+semicolon resize shrink right
 
         bindcode 36 mode default
 }
@@ -687,29 +710,28 @@ mode "resize" {
 bindsym Mod1+r mode resize
 ----------------------------------------------------------------------
 
+///////////////////////////////////////////////////////////////////////
+
 === Jumping to specific windows
 
 Often when in a multi-monitor environment, you want to quickly jump to a
 specific window. For example, while working on workspace 3 you may want to
 jump to your mail client to email your boss that you’ve achieved some
 important goal. Instead of figuring out how to navigate to your mailclient,
-it would be more convenient to have a shortcut.
+it would be more convenient to have a shortcut. You can use the +focus+ command
+for that.
 
 *Syntax*:
 ----------------------------------------------------
-jump ["]window class[/window title]["]
-jump workspace [ column row ]
+[class="class"] focus
+[title="title"] focus
 ----------------------------------------------------
 
-You can either use the same matching algorithm as in the +assign+ command
-(see above) or you can specify the position of the client if you always use
-the same layout.
-
 *Examples*:
---------------------------------------
+------------------------------------------------
 # Get me to the next open VIM instance
-bindsym Mod1+a jump "urxvt/VIM"
---------------------------------------
+bindsym Mod1+a [class="urxvt" title="VIM"] focus
+------------------------------------------------
 
 === VIM-like marks (mark/goto)
 
@@ -728,11 +750,13 @@ for this purpose: It lets you input a command and sends the command to i3. It
 can also prefix this command and display a custom prompt for the input dialog.
 
 *Syntax*:
------------------
+------------------------------
 mark <identifier>
-goto <identifier>
------------------
+[con_mark="identifier"] focus
+------------------------------
 
+///////////////////////////////////////////////////////////////////
+TODO: make i3-input replace %s
 *Examples*:
 ---------------------------------------
 # Read 1 character and mark the current window with this character
@@ -744,7 +768,10 @@ bindsym Mod1+g exec i3-input -p 'goto ' -l 1 -P 'Goto: '
 
 Alternatively, if you do not want to mess with +i3-input+, you could create
 seperate bindings for a specific set of labels and then only use those labels.
+///////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////
+TODO: not yet implemented
 === Traveling the focus stack
 
 This mechanism can be thought of as the opposite of the +jump+ command.
@@ -767,29 +794,36 @@ tiling::
 ft::
 	If the current window is floating, the next tiling window will be
        selected; and vice-versa.
+///////////////////////////////////////////////////////////////////////////////
 
 === Changing border style
 
-To change the border of the current client, you can use +bn+ to use the normal
-border (including window title), +bp+ to use a 1-pixel border (no window title)
-and +bb+ to make the client borderless. There is also +bt+ which will toggle
-the different border styles.
+To change the border of the current client, you can use +border normal+ to use the normal
+border (including window title), +border 1pixel+ to use a 1-pixel border (no window title)
+and +border none+ to make the client borderless.
+
+////////////////////////////////////////////////////////////////////////////
+TODO: not yet implemented
+There is also +border toggle+ which will toggle the different border styles.
+////////////////////////////////////////////////////////////////////////////
 
 *Examples*:
-------------------
-bindsym Mod1+t bn
-bindsym Mod1+y bp
-bindsym Mod1+u bb
-------------------
+----------------------------
+bindsym Mod1+t border normal
+bindsym Mod1+y border 1pixel
+bindsym Mod1+u border none
+----------------------------
 
 [[stack-limit]]
 
+///////////////////////////////////////////////////////////////////////////////
+TODO: not yet implemented
 === Changing the stack-limit of a container
 
 If you have a single container with a lot of windows inside it (say, more than
 10), the default layout of a stacking container can get a little unhandy.
-Depending on your screen’s size, you might end up seeing only half of the
-titlebars for each window in the container.
+Depending on your screen’s size, you might end up with only half of the title
+lines being actually used, wasting a lot of screen space.
 
 Using the +stack-limit+ command, you can limit the number of rows or columns
 in a stacking container. i3 will create columns or rows (depending on what
@@ -810,6 +844,7 @@ stack-limit rows 5
 -------------------
 
 image:stacklimit.png[Container limited to two columns]
+///////////////////////////////////////////////////////////////////////////////
 
 === Reloading/Restarting/Exiting
 
