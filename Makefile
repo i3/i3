@@ -80,7 +80,7 @@ dist: distclean
 	[ ! -e i3-${VERSION}.tar.bz2 ] || rm i3-${VERSION}.tar.bz2
 	mkdir i3-${VERSION}
 	cp DEPENDS GOALS LICENSE PACKAGE-MAINTAINER TODO RELEASE-NOTES-${VERSION} i3.config i3.desktop i3.welcome pseudo-doc.doxygen Makefile i3-${VERSION}
-	cp -r src i3-msg include man i3-${VERSION}
+	cp -r src i3-msg yajl-fallback include man i3-${VERSION}
 	# Only copy toplevel documentation (important stuff)
 	mkdir i3-${VERSION}/docs
 	find docs -maxdepth 1 -type f ! -name "*.xcf" -exec cp '{}' i3-${VERSION}/docs \;
