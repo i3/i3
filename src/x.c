@@ -507,7 +507,7 @@ void x_push_node(Con *con) {
         }
         rect.height = max_y + max_height;
         if (rect.height == 0) {
-            DLOG("Unmapping container because it does not contain anything atm.\n");
+            DLOG("Unmapping container %p because it does not contain anything.\n", con);
             con->mapped = false;
         }
     }
@@ -553,7 +553,9 @@ void x_push_node(Con *con) {
         if (rect.height > 0 &&
             (state->rect.width != rect.width ||
             state->rect.height != rect.height)) {
-            DLOG("CACHE: creating new pixmap\n");
+            DLOG("CACHE: creating new pixmap for con %p (old: %d x %d, new: %d x %d)\n",
+                    con, state->rect.width, state->rect.height,
+                    rect.width, rect.height);
             if (con->pixmap == 0) {
                 con->pixmap = xcb_generate_id(conn);
                 con->pm_gc = xcb_generate_id(conn);
@@ -564,6 +566,8 @@ void x_push_node(Con *con) {
             xcb_create_pixmap(conn, root_depth, con->pixmap, con->frame, rect.width, rect.height);
             xcb_create_gc(conn, con->pm_gc, con->pixmap, 0, 0);
 
+            con->pixmap_recreated = true;
+
             /* Render the decoration now to make the correct decoration visible
              * from the very first moment. Later calls will be cached, so this
              * doesn’t hurt performance. */
@@ -571,7 +575,6 @@ void x_push_node(Con *con) {
 
             uint32_t values[] = { con->pixmap };
             xcb_change_window_attributes(conn, con->frame, XCB_CW_BACK_PIXMAP, values);
-            con->pixmap_recreated = true;
         }
 
         DLOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
