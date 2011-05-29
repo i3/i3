@@ -739,6 +739,7 @@ static int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state
         con->base_height = base_height;
         DLOG("client's base_height changed to %d\n", base_height);
         DLOG("client's base_width changed to %d\n", base_width);
+        changed = true;
     }
 
     /* If no aspect ratio was set or if it was invalid, we ignore the hints */
@@ -764,15 +765,24 @@ static int handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t state
 
     /* Check if we need to set proportional_* variables using the correct ratio */
     if ((width / height) < min_aspect) {
-        con->proportional_width = width;
-        con->proportional_height = width / min_aspect;
+        if (con->proportional_width != width ||
+            con->proportional_height != (width / min_aspect)) {
+            con->proportional_width = width;
+            con->proportional_height = width / min_aspect;
+            changed = true;
+        }
     } else if ((width / height) > max_aspect) {
-        con->proportional_width = width;
-        con->proportional_height = width / max_aspect;
+        if (con->proportional_width != width ||
+            con->proportional_height != (width / max_aspect)) {
+            con->proportional_width = width;
+            con->proportional_height = width / max_aspect;
+            changed = true;
+        }
     } else goto render_and_return;
 
 render_and_return:
-    tree_render();
+    if (changed)
+        tree_render();
     return 1;
 }
 
