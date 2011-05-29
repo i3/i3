@@ -235,7 +235,7 @@ void x_window_kill(xcb_window_t window, kill_window_t kill_window) {
  *
  */
 void x_draw_decoration(Con *con) {
-    const Con *parent = con->parent;
+    Con *parent = con->parent;
     /* This code needs to run for:
      *  • leaf containers
      *  • non-leaf containers which are in a stacked/tabbed container
@@ -282,7 +282,8 @@ void x_draw_decoration(Con *con) {
 
     if (con->deco_render_params != NULL &&
         (con->window == NULL || !con->window->name_x_changed) &&
-        !con->parent->pixmap_recreated &&
+        !parent->pixmap_recreated &&
+        !con->pixmap_recreated &&
         memcmp(p, con->deco_render_params, sizeof(struct deco_render_params)) == 0) {
         DLOG("CACHE HIT, not re-rendering\n");
         free(p);
@@ -302,11 +303,12 @@ void x_draw_decoration(Con *con) {
     if (con->window != NULL && con->window->name_x_changed)
         con->window->name_x_changed = false;
 
-    con->parent->pixmap_recreated = false;
+    parent->pixmap_recreated = false;
+    con->pixmap_recreated = false;
 
     /* If the con is in fullscreen mode, the decoration height we work with is set to 0 */
     Rect deco_rect = con->deco_rect;
-    if (con_get_fullscreen_con(con->parent) == con)
+    if (con_get_fullscreen_con(parent) == con)
         deco_rect.height = 0;
 
     /* 2: draw the client.background, but only for the parts around the client_rect */
@@ -411,7 +413,7 @@ void x_draw_decoration(Con *con) {
 
     int indent_level = 0,
         indent_mult = 0;
-    Con *il_parent = con->parent;
+    Con *il_parent = parent;
     if (il_parent->layout != L_STACKED) {
         while (1) {
             DLOG("il_parent = %p, layout = %d\n", il_parent, il_parent->layout);
