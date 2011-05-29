@@ -322,6 +322,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     mask = XCB_CW_EVENT_MASK;
     values[0] = CHILD_EVENT_MASK;
     xcb_change_window_attributes(conn, window, mask, values);
+    xcb_flush(conn);
 
     reply = xcb_get_property_reply(conn, state_cookie, NULL);
     if (xcb_reply_contains_atom(reply, A__NET_WM_STATE_FULLSCREEN))
