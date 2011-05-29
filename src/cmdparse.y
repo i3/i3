@@ -397,6 +397,8 @@ focus:
             LOG("focusing %p / %s\n", current->con, current->con->name);
             con_focus(current->con);
         }
+
+        tree_render();
     }
     ;
 
@@ -416,6 +418,7 @@ kill:
             }
         }
 
+        tree_render();
     }
     ;
 
@@ -431,6 +434,8 @@ workspace:
         printf("should switch to workspace %s\n", $2);
         workspace_show($2);
         free($2);
+
+        tree_render();
     }
     ;
 
@@ -441,6 +446,8 @@ open:
         Con *con = tree_open_con(NULL);
         con_focus(con);
         asprintf(&json_output, "{\"success\":true, \"id\":%ld}", (long int)con);
+
+        tree_render();
     }
     ;
 
@@ -457,6 +464,8 @@ fullscreen:
             printf("matching: %p / %s\n", current->con, current->con->name);
             con_toggle_fullscreen(current->con);
         }
+
+        tree_render();
     }
     ;
 
@@ -466,6 +475,8 @@ next:
         /* TODO: use matches */
         printf("should select next window in direction %c\n", $2);
         tree_next('n', ($2 == 'v' ? VERT : HORIZ));
+
+        tree_render();
     }
     ;
 
@@ -475,6 +486,8 @@ prev:
         /* TODO: use matches */
         printf("should select prev window in direction %c\n", $2);
         tree_next('p', ($2 == 'v' ? VERT : HORIZ));
+
+        tree_render();
     }
     ;
 
@@ -484,6 +497,8 @@ split:
         /* TODO: use matches */
         printf("splitting in direction %c\n", $2);
         tree_split(focused, ($2 == 'v' ? VERT : HORIZ));
+
+        tree_render();
     }
     ;
 
@@ -514,6 +529,8 @@ mode:
                 }
             }
         }
+
+        tree_render();
     }
     ;
 
@@ -535,6 +552,8 @@ border:
             printf("matching: %p / %s\n", current->con, current->con->name);
             current->con->border_style = $2;
         }
+
+        tree_render();
     }
     ;
 
@@ -552,6 +571,8 @@ level:
         if ($2 == 'u')
             level_up();
         else level_down();
+
+        tree_render();
     }
     ;
 
@@ -565,6 +586,8 @@ move:
     {
         printf("moving in direction %d\n", $2);
         tree_move($2);
+
+        tree_render();
     }
     | TOK_MOVE TOK_WORKSPACE STR
     {
@@ -581,6 +604,8 @@ move:
             printf("matching: %p / %s\n", current->con, current->con->name);
             con_move_to_workspace(current->con, ws);
         }
+
+        tree_render();
     }
     ;
 
@@ -590,6 +615,7 @@ restore:
         printf("restoring \"%s\"\n", $2);
         tree_append_json($2);
         free($2);
+        tree_render();
     }
     ;
 
@@ -608,6 +634,8 @@ layout:
                 con_set_layout(current->con, $2);
             }
         }
+
+        tree_render();
     }
     ;
 
@@ -631,6 +659,8 @@ mark:
         }
 
         free($<string>2);
+
+        tree_render();
     }
     ;
 
@@ -699,6 +729,8 @@ resize:
             LOG("focused->percent after = %f\n", focused->percent);
             LOG("other->percent after = %f\n", other->percent);
         }
+
+        tree_render();
     }
     ;
 

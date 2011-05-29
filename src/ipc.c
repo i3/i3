@@ -148,7 +148,6 @@ IPC_HANDLER(command) {
     strncpy(command, (const char*)message, message_size);
     LOG("IPC: received: *%s*\n", command);
     const char *reply = parse_cmd((const char*)command);
-    tree_render();
     free(command);
 
     /* If no reply was provided, we just use the default success message */
