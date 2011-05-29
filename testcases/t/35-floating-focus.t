@@ -59,9 +59,9 @@ is($x->input_focus, $second->id, 'second con still focused after killing third')
 
 $tmp = fresh_workspace;
 
-$first = open_standard_window($x);    # window 2
-$second = open_standard_window($x);   # window 3
-my $third = open_standard_window($x); # window 4
+$first = open_standard_window($x);    # window 5
+$second = open_standard_window($x);   # window 6
+my $third = open_standard_window($x); # window 7
 
 is($x->input_focus, $third->id, 'last container focused');
 
