@@ -306,11 +306,31 @@ void init_ws_for_output(Output *output, Con *content) {
         /* if so, move it over */
         LOG("Moving workspace \"%s\" from output \"%s\" to \"%s\" due to assignment\n",
             workspace->name, workspace_out->name, output->name);
-        DLOG("Detaching workspace = %p / %s\n", workspace, workspace->name);
+
+        /* if the workspace is currently visible on that output, we need to
+         * switch to a different workspace - otherwise the output would end up
+         * with no active workspace */
+        bool visible = workspace_is_visible(workspace);
+        Con *previous = NULL;
+        if (visible && (previous = TAILQ_NEXT(workspace, focused))) {
+            LOG("Switching to previously used workspace \"%s\" on output \"%s\"\n",
+                previous->name, workspace_out->name);
+            workspace_show(previous->name);
+        }
+
         con_detach(workspace);
-        DLOG("Re-attaching current = %p / %s\n", workspace, workspace->name);
         con_attach(workspace, content, false);
-        DLOG("Done, next\n");
+
+        /* In case the workspace we just moved was visible but there was no
+         * other workspace to switch to, we need to initialize the source
+         * output aswell */
+        if (visible && previous == NULL) {
+            LOG("There is no workspace left on \"%s\", re-initializing\n",
+                workspace_out->name);
+            init_ws_for_output(get_output_by_name(workspace_out->name),
+                               output_get_content(workspace_out));
+            DLOG("Done re-initializing, continuing with \"%s\"\n", output->name);
+        }
     }
 
     /* if a workspace exists, we are done now */
