@@ -453,6 +453,26 @@ update_pixmaps:
 }
 
 /*
+ * Recursively calls x_draw_decoration. This cannot be done in x_push_node
+ * because x_push_node uses focus order to recurse (see the comment above)
+ * while drawing the decoration needs to happen in the actual order.
+ *
+ */
+static void x_deco_recurse(Con *con) {
+    Con *current;
+
+    TAILQ_FOREACH(current, &(con->nodes_head), nodes)
+        x_deco_recurse(current);
+
+    TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
+        x_deco_recurse(current);
+
+    if ((con->type != CT_ROOT && con->type != CT_OUTPUT) &&
+        con->mapped)
+        x_draw_decoration(con);
+}
+
+/*
  * This function pushes the properties of each node of the layout tree to
  * X11 if they have changed (like the map state, position of the window, …).
  * It recursively traverses all children of the given node.
@@ -522,8 +542,9 @@ void x_push_node(Con *con) {
     bool fake_notify = false;
     /* set new position if rect changed */
     if (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0) {
-        DLOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
-        xcb_set_window_rect(conn, con->frame, rect);
+        /* We first create the new pixmap, then render to it, set it as the
+         * background and only afterwards change the window size. This reduces
+         * flickering. */
 
         /* As the pixmap only depends on the size and not on the position, it
          * is enough to check if width/height have changed. Also, we don’t
@@ -542,10 +563,20 @@ void x_push_node(Con *con) {
             }
             xcb_create_pixmap(conn, root_depth, con->pixmap, con->frame, rect.width, rect.height);
             xcb_create_gc(conn, con->pm_gc, con->pixmap, 0, 0);
+
+            /* Render the decoration now to make the correct decoration visible
+             * from the very first moment. Later calls will be cached, so this
+             * doesn’t hurt performance. */
+            x_deco_recurse(con);
+
             uint32_t values[] = { con->pixmap };
             xcb_change_window_attributes(conn, con->frame, XCB_CW_BACK_PIXMAP, values);
             con->pixmap_recreated = true;
         }
+
+        DLOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
+        xcb_set_window_rect(conn, con->frame, rect);
+
         memcpy(&(state->rect), &rect, sizeof(Rect));
         fake_notify = true;
     }
@@ -601,26 +632,6 @@ void x_push_node(Con *con) {
      * switching workspaces (reduces flickering). */
     TAILQ_FOREACH(current, &(con->focus_head), focused)
         x_push_node(current);
-}
-
-/*
- * Recursively calls x_draw_decoration. This cannot be done in x_push_node
- * because x_push_node uses focus order to recurse (see the comment above)
- * while drawing the decoration needs to happen in the actual order.
- *
- */
-static void x_deco_recurse(Con *con) {
-    Con *current;
-
-    TAILQ_FOREACH(current, &(con->nodes_head), nodes)
-        x_deco_recurse(current);
-
-    TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
-        x_deco_recurse(current);
-
-    if ((con->type != CT_ROOT && con->type != CT_OUTPUT) &&
-        con->mapped)
-        x_draw_decoration(con);
 }
 
 /*
