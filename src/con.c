@@ -32,11 +32,12 @@ static void con_on_remove_child(Con *con);
  * X11 IDs using x_con_init().
  *
  */
-Con *con_new(Con *parent) {
+Con *con_new(Con *parent, i3Window *window) {
     Con *new = scalloc(sizeof(Con));
     new->on_remove_child = con_on_remove_child;
     TAILQ_INSERT_TAIL(&all_cons, new, all_cons);
     new->type = CT_CON;
+    new->window = window;
     new->border_style = config.default_border;
     static int cnt = 0;
     DLOG("opening window %d\n", cnt);
@@ -59,19 +60,8 @@ Con *con_new(Con *parent) {
     TAILQ_INIT(&(new->focus_head));
     TAILQ_INIT(&(new->swallow_head));
 
-    if (parent != NULL) {
-        /* Set layout of ws if this is the first child of the ws and the user
-         * wanted something different than the default layout. */
-        if (parent->type == CT_WORKSPACE &&
-            con_is_leaf(parent) &&
-            config.default_layout != L_DEFAULT) {
-            con_set_layout(new, config.default_layout);
-            con_attach(new, parent, false);
-            con_set_layout(parent, config.default_layout);
-        } else {
-            con_attach(new, parent, false);
-        }
-    }
+    if (parent != NULL)
+        con_attach(new, parent, false);
 
     return new;
 }
@@ -91,6 +81,7 @@ void con_attach(Con *con, Con *parent, bool ignore_focus) {
     Con *loop;
     Con *current = NULL;
     struct nodes_head *nodes_head = &(parent->nodes_head);
+    struct focus_head *focus_head = &(parent->focus_head);
 
     /* Workspaces are handled differently: they need to be inserted at the
      * right position. */
@@ -134,6 +125,26 @@ void con_attach(Con *con, Con *parent, bool ignore_focus) {
             }
         }
 
+        /* When the container is not a split container (but contains a window)
+         * and is attached to a workspace, we check if the user configured a
+         * workspace_layout. This is done in workspace_attach_to, which will
+         * provide us with the container to which we should attach (either the
+         * workspace or a new split container with the configured
+         * workspace_layout).
+         */
+        if (con->window != NULL && parent->type == CT_WORKSPACE) {
+            DLOG("Parent is a workspace. Applying default layout...\n");
+            Con *target = workspace_attach_to(parent);
+
+            /* Attach the original con to this new split con instead */
+            nodes_head = &(target->nodes_head);
+            focus_head = &(target->focus_head);
+            con->parent = target;
+            current = NULL;
+
+            DLOG("done\n");
+        }
+
         /* Insert the container after the tiling container, if found.
          * When adding to a CT_OUTPUT, just append one after another. */
         if (current && parent->type != CT_OUTPUT) {
@@ -147,7 +158,7 @@ add_to_focus_head:
     /* We insert to the TAIL because con_focus() will correct this.
      * This way, we have the option to insert Cons without having
      * to focus them. */
-    TAILQ_INSERT_TAIL(&(parent->focus_head), con, focused);
+    TAILQ_INSERT_TAIL(focus_head, con, focused);
 }
 
 /*
@@ -818,7 +829,7 @@ void con_set_layout(Con *con, int layout) {
     if (con->type == CT_WORKSPACE) {
         DLOG("Creating new split container\n");
         /* 1: create a new split container */
-        Con *new = con_new(NULL);
+        Con *new = con_new(NULL, NULL);
         new->parent = con;
 
         /* 2: set the requested layout on the split con */

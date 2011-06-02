@@ -443,7 +443,7 @@ open:
     TOK_OPEN
     {
         printf("opening new container\n");
-        Con *con = tree_open_con(NULL);
+        Con *con = tree_open_con(NULL, NULL);
         con_focus(con);
         asprintf(&json_output, "{\"success\":true, \"id\":%ld}", (long int)con);
 

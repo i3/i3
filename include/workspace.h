@@ -109,4 +109,16 @@ void workspace_update_urgent_flag(Con *ws);
  */
 void ws_force_orientation(Con *ws, orientation_t orientation);
 
+/**
+ * Called when a new con (with a window, not an empty or split con) should be
+ * attached to the workspace (for example when managing a new window or when
+ * moving an existing window to the workspace level).
+ *
+ * Depending on the workspace_layout setting, this function either returns the
+ * workspace itself (default layout) or creates a new stacked/tabbed con and
+ * returns that.
+ *
+ */
+Con *workspace_attach_to(Con *ws);
+
 #endif

@@ -32,12 +32,12 @@ static int json_start_map(void *ctx) {
             if (last_key && strcasecmp(last_key, "floating_nodes") == 0) {
                 DLOG("New floating_node\n");
                 Con *ws = con_get_workspace(json_node);
-                json_node = con_new(NULL);
+                json_node = con_new(NULL, NULL);
                 json_node->parent = ws;
                 DLOG("Parent is workspace = %p\n", ws);
             } else {
                 Con *parent = json_node;
-                json_node = con_new(NULL);
+                json_node = con_new(NULL, NULL);
                 json_node->parent = parent;
             }
         }

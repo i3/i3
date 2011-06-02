@@ -41,7 +41,7 @@ Con *workspace_get(const char *num, bool *created) {
         LOG("got output %p with content %p\n", output, content);
         /* We need to attach this container after setting its type. con_attach
          * will handle CT_WORKSPACEs differently */
-        workspace = con_new(NULL);
+        workspace = con_new(NULL, NULL);
         char *name;
         asprintf(&name, "[i3 con] workspace %s", num);
         x_set_name(workspace, name);
@@ -266,7 +266,7 @@ void workspace_update_urgent_flag(Con *ws) {
  */
 void ws_force_orientation(Con *ws, orientation_t orientation) {
     /* 1: create a new split container */
-    Con *split = con_new(NULL);
+    Con *split = con_new(NULL, NULL);
     split->parent = ws;
 
     /* 2: copy layout and orientation from workspace */
@@ -295,4 +295,46 @@ void ws_force_orientation(Con *ws, orientation_t orientation) {
 
     if (old_focused)
         con_focus(old_focused);
+}
+
+/*
+ * Called when a new con (with a window, not an empty or split con) should be
+ * attached to the workspace (for example when managing a new window or when
+ * moving an existing window to the workspace level).
+ *
+ * Depending on the workspace_layout setting, this function either returns the
+ * workspace itself (default layout) or creates a new stacked/tabbed con and
+ * returns that.
+ *
+ */
+Con *workspace_attach_to(Con *ws) {
+    DLOG("Attaching a window to workspace %p / %s\n", ws, ws->name);
+
+    if (config.default_layout == L_DEFAULT) {
+        DLOG("Default layout, just attaching it to the workspace itself.\n");
+        return ws;
+    }
+
+    DLOG("Non-default layout, creating a new split container\n");
+    /* 1: create a new split container */
+    Con *new = con_new(NULL, NULL);
+    new->parent = ws;
+
+    /* 2: set the requested layout on the split con */
+    new->layout = config.default_layout;
+
+    /* 3: While the layout is irrelevant in stacked/tabbed mode, it needs
+     * to be set. Otherwise, this con will not be interpreted as a split
+     * container. */
+    if (config.default_orientation == NO_ORIENTATION) {
+        new->orientation = (ws->rect.height > ws->rect.width) ? VERT : HORIZ;
+    } else {
+        new->orientation = config.default_orientation;
+    }
+
+    /* 4: attach the new split container to the workspace */
+    DLOG("Attaching new split %p to workspace %p\n", new, ws);
+    con_attach(new, ws, false);
+
+    return new;
 }

@@ -24,7 +24,7 @@ void tree_init();
  * Opens an empty container in the current container
  *
  */
-Con *tree_open_con(Con *con);
+Con *tree_open_con(Con *con, i3Window *window);
 
 /**
  * Splits (horizontally or vertically) the given container by creating a new

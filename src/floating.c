@@ -35,7 +35,7 @@ void floating_enable(Con *con, bool automatic) {
             return;
         }
         /* TODO: refactor this with src/con.c:con_set_layout */
-        Con *new = con_new(NULL);
+        Con *new = con_new(NULL, NULL);
         new->parent = con;
         new->orientation = con->orientation;
 
@@ -76,7 +76,7 @@ void floating_enable(Con *con, bool automatic) {
 
     /* 2: create a new container to render the decoration on, add
      * it as a floating window to the workspace */
-    Con *nc = con_new(NULL);
+    Con *nc = con_new(NULL, NULL);
     /* we need to set the parent afterwards instead of passing it as an
      * argument to con_new() because nc would be inserted into the tiling layer
      * otherwise. */

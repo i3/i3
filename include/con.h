@@ -7,7 +7,7 @@
  * X11 IDs using x_con_init().
  *
  */
-Con *con_new(Con *parent);
+Con *con_new(Con *parent, i3Window *window);
 
 /**
  * Sets input focus to the given container. Will be updated in X11 in the next

@@ -193,7 +193,7 @@ void output_init_con(Output *output) {
     }
 
     if (con == NULL) {
-        con = con_new(croot);
+        con = con_new(croot, NULL);
         FREE(con->name);
         con->name = sstrdup(output->name);
         con->type = CT_OUTPUT;
@@ -213,7 +213,7 @@ void output_init_con(Output *output) {
     }
 
     DLOG("Changing layout, adding top/bottom dockarea\n");
-    Con *topdock = con_new(NULL);
+    Con *topdock = con_new(NULL, NULL);
     topdock->type = CT_DOCKAREA;
     topdock->layout = L_DOCKAREA;
     topdock->orientation = VERT;
@@ -235,7 +235,7 @@ void output_init_con(Output *output) {
     /* content container */
 
     DLOG("adding main content container\n");
-    Con *content = con_new(NULL);
+    Con *content = con_new(NULL, NULL);
     content->type = CT_CON;
     content->name = sstrdup("content");
 
@@ -245,7 +245,7 @@ void output_init_con(Output *output) {
     con_attach(content, con, false);
 
     /* bottom dock container */
-    Con *bottomdock = con_new(NULL);
+    Con *bottomdock = con_new(NULL, NULL);
     bottomdock->type = CT_DOCKAREA;
     bottomdock->layout = L_DOCKAREA;
     bottomdock->orientation = VERT;
@@ -363,7 +363,7 @@ void init_ws_for_output(Output *output, Con *content) {
     DLOG("Now adding a workspace\n");
 
     /* add a workspace to this output */
-    Con *ws = con_new(NULL);
+    Con *ws = con_new(NULL, NULL);
     ws->type = CT_WORKSPACE;
 
     /* get the next unused workspace number */

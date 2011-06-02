@@ -23,7 +23,7 @@ bool tree_restore(const char *path) {
     }
 
     /* TODO: refactor the following */
-    croot = con_new(NULL);
+    croot = con_new(NULL, NULL);
     focused = croot;
 
     tree_append_json(globbed);
@@ -45,7 +45,7 @@ bool tree_restore(const char *path) {
  *
  */
 void tree_init() {
-    croot = con_new(NULL);
+    croot = con_new(NULL, NULL);
     FREE(croot->name);
     croot->name = "root";
     croot->type = CT_ROOT;
@@ -55,7 +55,7 @@ void tree_init() {
  * Opens an empty container in the current container
  *
  */
-Con *tree_open_con(Con *con) {
+Con *tree_open_con(Con *con, i3Window *window) {
     if (con == NULL) {
         /* every focusable Con has a parent (outputs have parent root) */
         con = focused->parent;
@@ -79,7 +79,7 @@ Con *tree_open_con(Con *con) {
     assert(con != NULL);
 
     /* 3. create the container and attach it to its parent */
-    Con *new = con_new(con);
+    Con *new = con_new(con, window);
 
     /* 4: re-calculate child->percent for each child */
     con_fix_percent(con);
@@ -265,7 +265,7 @@ void tree_split(Con *con, orientation_t orientation) {
     DLOG("Splitting in orientation %d\n", orientation);
 
     /* 2: replace it with a new Con */
-    Con *new = con_new(NULL);
+    Con *new = con_new(NULL, NULL);
     TAILQ_REPLACE(&(parent->nodes_head), con, new, nodes);
     TAILQ_REPLACE(&(parent->focus_head), con, new, focused);
     new->parent = parent;
