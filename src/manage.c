@@ -264,8 +264,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
          * focused (fullscreen) con. This way, the new container will be
          * focused after we return from fullscreen mode */
         Con *first = TAILQ_FIRST(&(nc->parent->focus_head));
-        TAILQ_REMOVE(&(nc->parent->focus_head), nc, focused);
-        TAILQ_INSERT_AFTER(&(nc->parent->focus_head), first, nc, focused);
+        if (first != nc) {
+            /* We only modify the focus stack if the container is not already
+             * the first one. This can happen when existing containers swallow
+             * new windows, for example when restarting. */
+            TAILQ_REMOVE(&(nc->parent->focus_head), nc, focused);
+            TAILQ_INSERT_AFTER(&(nc->parent->focus_head), first, nc, focused);
+        }
     }
 
     /* set floating if necessary */
