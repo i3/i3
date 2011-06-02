@@ -202,7 +202,23 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(integer, (con == focused));
 
     ystr("layout");
-    y(integer, con->layout);
+    switch (con->layout) {
+        case L_DEFAULT:
+            ystr("default");
+            break;
+        case L_STACKED:
+            ystr("stacked");
+            break;
+        case L_TABBED:
+            ystr("tabbed");
+            break;
+        case L_DOCKAREA:
+            ystr("dockarea");
+            break;
+        case L_OUTPUT:
+            ystr("output");
+            break;
+    }
 
     ystr("border");
     switch (con->border_style) {
