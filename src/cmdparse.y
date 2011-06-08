@@ -162,6 +162,7 @@ char *parse_cmd(const char *new) {
 %token              TOK_CLASS           "class"
 %token              TOK_ID              "id"
 %token              TOK_CON_ID          "con_id"
+%token              TOK_TITLE           "title"
 
 %token  <string>    STR                 "<string>"
 %token  <number>    NUMBER              "<number>"
@@ -271,6 +272,11 @@ matchend:
     ;
 
 criteria:
+    criteria criterion
+    | criterion
+    ;
+
+criterion:
     TOK_CLASS '=' STR
     {
         printf("criteria: class = %s\n", $3);
@@ -310,6 +316,11 @@ criteria:
     {
         printf("criteria: mark = %s\n", $3);
         current_match.mark = $3;
+    }
+    | TOK_TITLE '=' STR
+    {
+        printf("criteria: title = %s\n", $3);
+        current_match.title = $3;
     }
     ;
 
@@ -381,19 +392,25 @@ focus:
     {
         owindow *current;
 
-        printf("should focus\n");
         if (match_is_empty(&current_match)) {
-            /* TODO: better error message */
-            LOG("Error: The focus command requires you to use some criteria.\n");
+            ELOG("You have to specify which window/container should be focused.\n");
+            ELOG("Example: [class=\"urxvt\" title=\"irssi\"] focus\n");
+
+            asprintf(&json_output, "{\"success\":false, \"error\":\"You have to "
+                     "specify which window/container should be focused\"}");
             break;
         }
 
-        /* TODO: warning if the match contains more than one entry. does not
-         * make so much sense when focusing */
+        int count = 0;
         TAILQ_FOREACH(current, &owindows, owindows) {
             LOG("focusing %p / %s\n", current->con, current->con->name);
             con_focus(current->con);
+            count++;
         }
+
+        if (count > 1)
+            LOG("WARNING: Your criteria for the focus command matches %d containers, "
+                "while only exactly one container can be focused at a time.\n", count);
 
         tree_render();
     }

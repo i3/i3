@@ -1,7 +1,7 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use i3test tests => 6;
+use i3test;
 use X11::XCB qw(:all);
 use Digest::SHA1 qw(sha1_base64);
 
@@ -64,5 +64,14 @@ is($focus, $top->id, "Top window focused");
 
 $focus = focus_after(qq|[con_mark="$random_mark"] focus|);
 is($focus, $mid->id, "goto worked");
+
+# check that we can specify multiple criteria
+
+$focus = focus_after('focus left');
+is($focus, $top->id, "Top window focused");
+
+$focus = focus_after(qq|[con_mark="$random_mark" con_mark="$random_mark"] focus|);
+is($focus, $mid->id, "goto worked");
+
 
 done_testing;

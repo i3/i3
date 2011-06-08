@@ -143,6 +143,7 @@ class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
 id                              { BEGIN(WANT_QSTRING); return TOK_ID; }
 con_id                          { BEGIN(WANT_QSTRING); return TOK_CON_ID; }
 con_mark                        { BEGIN(WANT_QSTRING); return TOK_MARK; }
+title                           { BEGIN(WANT_QSTRING); return TOK_TITLE; }
 
 [0-9]+                          { cmdyylval.number = atoi(yytext); return NUMBER; }
 
