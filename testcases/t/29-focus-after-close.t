@@ -64,11 +64,11 @@ cmd 'split v';
 $first = open_empty_con($i3);
 my $bottom = open_empty_con($i3);
 
-cmd 'prev v';
+cmd 'focus up';
 cmd 'split h';
 my $middle = open_empty_con($i3);
 my $right = open_empty_con($i3);
-cmd 'next v';
+cmd 'focus down';
 
 # We have the following layout now (second is focused):
 # .----------------------------.

@@ -121,11 +121,11 @@ cmd "open";
 cmd "open";
 cmd "split v";
 cmd "open";
-cmd "prev h";
+cmd 'focus left';
 cmd "split v";
 cmd "open";
 cmd "move right";
-cmd "prev h";
+cmd 'focus left';
 cmd "move right";
 
 $content = get_ws_content($otmp);

@@ -28,10 +28,10 @@ isnt($first, $second, 'two different containers opened');
 cmd 'layout stacking';
 is(get_focused($tmp), $second, 'second container still focused');
 
-cmd 'next v';
+cmd 'focus down';
 is(get_focused($tmp), $first, 'first container focused');
 
-cmd 'prev v';
+cmd 'focus up';
 is(get_focused($tmp), $second, 'second container focused again');
 
 ##############################################################
@@ -42,10 +42,10 @@ cmd 'level up';
 cmd 'split h';
 cmd 'level down';
 
-cmd 'next v';
+cmd 'focus down';
 is(get_focused($tmp), $first, 'first container focused');
 
-cmd 'prev v';
+cmd 'focus up';
 is(get_focused($tmp), $second, 'second container focused again');
 
 

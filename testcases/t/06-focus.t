@@ -44,20 +44,20 @@ sub focus_after {
 $focus = $x->input_focus;
 is($focus, $bottom->id, "Latest window focused");
 
-$focus = focus_after("prev v");
+$focus = focus_after('focus up');
 is($focus, $mid->id, "Middle window focused");
 
-$focus = focus_after("prev v");
+$focus = focus_after('focus up');
 is($focus, $top->id, "Top window focused");
 
 #####################################################################
 # Test focus wrapping
 #####################################################################
 
-$focus = focus_after("prev v");
+$focus = focus_after('focus up');
 is($focus, $bottom->id, "Bottom window focused (wrapping to the top works)");
 
-$focus = focus_after("next v");
+$focus = focus_after('focus down');
 is($focus, $top->id, "Top window focused (wrapping to the bottom works)");
 
 ###############################################

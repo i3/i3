@@ -36,7 +36,7 @@ diag("left = " . $left->id . ", mid = " . $mid->id . ", right = " . $right->id);
 
 is($x->input_focus, $right->id, 'Right window focused');
 
-cmd 'prev h';
+cmd 'focus left';
 
 is($x->input_focus, $mid->id, 'Mid window focused');
 

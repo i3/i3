@@ -45,7 +45,7 @@ sub focus_after {
 $focus = $x->input_focus;
 is($focus, $bottom->id, "Latest window focused");
 
-$focus = focus_after("prev h");
+$focus = focus_after('focus left');
 is($focus, $mid->id, "Middle window focused");
 
 #####################################################################
@@ -59,7 +59,7 @@ is($focus, $mid->id, "focus unchanged");
 
 $i3->command("mark $random_mark")->recv;
 
-$focus = focus_after("prev h");
+$focus = focus_after('focus left');
 is($focus, $top->id, "Top window focused");
 
 $focus = focus_after(qq|[con_mark="$random_mark"] focus|);

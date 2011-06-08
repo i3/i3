@@ -140,7 +140,6 @@ char *parse_cmd(const char *new) {
 %token              TOK_FOCUS           "focus"
 %token              TOK_MOVE            "move"
 %token              TOK_OPEN            "open"
-%token              TOK_NEXT            "next"
 %token              TOK_PREV            "prev"
 %token              TOK_SPLIT           "split"
 %token              TOK_HORIZONTAL      "horizontal"
@@ -333,8 +332,6 @@ operation:
     | kill
     | open
     | fullscreen
-    | next
-    | prev
     | split
     | mode
     | level
@@ -396,6 +393,33 @@ focus:
         TAILQ_FOREACH(current, &owindows, owindows) {
             LOG("focusing %p / %s\n", current->con, current->con->name);
             con_focus(current->con);
+        }
+
+        tree_render();
+    }
+    | TOK_FOCUS direction
+    {
+        int direction = $2;
+        switch (direction) {
+            case TOK_LEFT:
+                LOG("Focusing left\n");
+                tree_next('p', HORIZ);
+                break;
+            case TOK_RIGHT:
+                LOG("Focusing right\n");
+                tree_next('n', HORIZ);
+                break;
+            case TOK_UP:
+                LOG("Focusing up\n");
+                tree_next('p', VERT);
+                break;
+            case TOK_DOWN:
+                LOG("Focusing down\n");
+                tree_next('n', VERT);
+                break;
+            default:
+                ELOG("Invalid focus direction (%d)\n", direction);
+                break;
         }
 
         tree_render();
@@ -464,28 +488,6 @@ fullscreen:
             printf("matching: %p / %s\n", current->con, current->con->name);
             con_toggle_fullscreen(current->con);
         }
-
-        tree_render();
-    }
-    ;
-
-next:
-    TOK_NEXT direction
-    {
-        /* TODO: use matches */
-        printf("should select next window in direction %c\n", $2);
-        tree_next('n', ($2 == 'v' ? VERT : HORIZ));
-
-        tree_render();
-    }
-    ;
-
-prev:
-    TOK_PREV direction
-    {
-        /* TODO: use matches */
-        printf("should select prev window in direction %c\n", $2);
-        tree_next('p', ($2 == 'v' ? VERT : HORIZ));
 
         tree_render();
     }

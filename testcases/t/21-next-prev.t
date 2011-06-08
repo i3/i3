@@ -8,23 +8,23 @@ use i3test;
 my $tmp = fresh_workspace;
 
 ######################################################################
-# Open one container, verify that 'next v' and 'next h' do nothing
+# Open one container, verify that 'focus down' and 'focus right' do nothing
 ######################################################################
 cmd 'open';
 
 my ($nodes, $focus) = get_ws_content($tmp);
 my $old_focused = $focus->[0];
 
-cmd 'next v';
+cmd 'focus down';
 ($nodes, $focus) = get_ws_content($tmp);
 is($focus->[0], $old_focused, 'focus did not change with only one con');
 
-cmd 'next h';
+cmd 'focus right';
 ($nodes, $focus) = get_ws_content($tmp);
 is($focus->[0], $old_focused, 'focus did not change with only one con');
 
 ######################################################################
-# Open another container, verify that 'next h' switches
+# Open another container, verify that 'focus right' switches
 ######################################################################
 my $left = $old_focused;
 
@@ -38,43 +38,31 @@ cmd 'open';
 isnt($old_focused, $focus->[0], 'new container is focused');
 my $right = $focus->[0];
 
-cmd 'next h';
+cmd 'focus right';
 ($nodes, $focus) = get_ws_content($tmp);
 isnt($focus->[0], $right, 'focus did change');
 is($focus->[0], $left, 'left container focused (wrapping)');
 
-cmd 'next h';
+cmd 'focus right';
 ($nodes, $focus) = get_ws_content($tmp);
 is($focus->[0], $mid, 'middle container focused');
 
-cmd 'next h';
+cmd 'focus right';
 ($nodes, $focus) = get_ws_content($tmp);
 is($focus->[0], $right, 'right container focused');
 
-cmd 'prev h';
+cmd 'focus left';
 ($nodes, $focus) = get_ws_content($tmp);
 is($focus->[0], $mid, 'middle container focused');
 
-cmd 'prev h';
+cmd 'focus left';
 ($nodes, $focus) = get_ws_content($tmp);
 is($focus->[0], $left, 'left container focused');
 
-cmd 'prev h';
+cmd 'focus left';
 ($nodes, $focus) = get_ws_content($tmp);
 is($focus->[0], $right, 'right container focused');
 
-
-######################################################################
-# Test synonyms (horizontal/vertical instead of h/v)
-######################################################################
-
-cmd 'prev horizontal';
-($nodes, $focus) = get_ws_content($tmp);
-is($focus->[0], $mid, 'middle container focused');
-
-cmd 'next horizontal';
-($nodes, $focus) = get_ws_content($tmp);
-is($focus->[0], $right, 'right container focused');
 
 ######################################################################
 # Test focus command

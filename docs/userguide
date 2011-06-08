@@ -629,23 +629,22 @@ bindsym Mod1+t mode toggle
 
 === Focusing/Moving containers
 
-To change the focus, use one of the +prev h+, +next v+, +prev v+ and +next h+
-commands, meaning left, down, up, right (respectively).
+To change the focus, use the focus command: +focus left+, +focus right+, +focus down+ and +focus up+.
 
 For moving, use +move left+, +move right+, +move down+ and +move up+.
 
 *Examples*:
 ----------------------
 # Focus clients on the left, bottom, top, right:
-bindsym Mod1+j prev h
-bindsym Mod1+k next v
-bindsym Mod1+j prev v
-bindsym Mod1+semicolon next h
+bindsym Mod1+j focus left
+bindsym Mod1+k focus down
+bindsym Mod1+l focus up
+bindsym Mod1+semicolon focus right
 
 # Move client to the left, bottom, top, right:
 bindsym Mod1+j move left
 bindsym Mod1+k move down
-bindsym Mod1+j move up
+bindsym Mod1+l move up
 bindsym Mod1+semicolon move right
 ----------------------
 
