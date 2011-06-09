@@ -79,16 +79,16 @@ ok(@content == 1, 'one con at workspace level');
 is($content[0]->{layout}, 'stacked', 'layout stacked');
 
 #####################################################################
-# 3: level up, open two new cons, check that they end up in a stacked
+# 3: focus parent, open two new cons, check that they end up in a stacked
 # con
 #####################################################################
 
-cmd 'level up';
+cmd 'focus parent';
 my $right_top = open_standard_window($x);
 my $right_bot = open_standard_window($x);
 
 @content = @{get_ws_content($tmp)};
-is(@content, 2, 'two cons at workspace level after level up');
+is(@content, 2, 'two cons at workspace level after focus parent');
 is($content[0]->{layout}, 'stacked', 'layout stacked');
 is($content[1]->{layout}, 'stacked', 'layout stacked');
 

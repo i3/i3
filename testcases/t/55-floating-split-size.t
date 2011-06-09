@@ -48,7 +48,7 @@ sleep 0.25;
 # Set the parent to floating
 #####################################################################
 cmd 'nop setting floating';
-cmd 'level up';
+cmd 'focus parent';
 cmd 'mode floating';
 
 #####################################################################

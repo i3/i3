@@ -75,7 +75,7 @@ is($content->[0]->{id}, $first, 'first container unmodified');
 # |       |        |       |
 # --------------------------
 cmd 'split v';
-cmd 'level up';
+cmd 'focus parent';
 cmd 'open';
 
 $content = get_ws_content($tmp);

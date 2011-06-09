@@ -23,9 +23,9 @@ cmd 'split v';
 my ($nodes, $focus) = get_ws_content($tmp);
 
 is($nodes->[1]->{focused}, 0, 'split container not focused');
-cmd 'level up';
+cmd 'focus parent';
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[1]->{focused}, 1, 'split container focused after level up');
+is($nodes->[1]->{focused}, 1, 'split container focused after focus parent');
 
 my $third = open_empty_con($i3);
 

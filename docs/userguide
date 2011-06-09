@@ -237,19 +237,19 @@ unfloat::[]
 You probably guessed it already: There is no limit on how deep your hierarchy
 of splits can be.
 
-=== Level up
+=== Focus parent
 
 Let’s stay with our example from above. We have a terminal on the left and two
 vertically split terminals on the right, focus is on the bottom right one. When
 you open a new terminal, it will open below the current one.
 
 So, how can you open a new terminal window to the *right* of the current one?
-The solution is to use +level up+, which will focus the +Parent Container+ of
+The solution is to use +focus parent+, which will focus the +Parent Container+ of
 the current +Container+. In this case, you would focus the +Vertical Split
 Container+ which is *inside* the horizontally oriented workspace. Thus, now new
 windows will be opened to the right of the +Vertical Split Container+:
 
-image::tree-shot3.png["shot3",title="Level Up, then open new terminal"]
+image::tree-shot3.png["shot3",title="Focus parent, then open new terminal"]
 
 
 == Configuring i3

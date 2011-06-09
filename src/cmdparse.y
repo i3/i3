@@ -144,11 +144,12 @@ char *parse_cmd(const char *new) {
 %token              TOK_SPLIT           "split"
 %token              TOK_HORIZONTAL      "horizontal"
 %token              TOK_VERTICAL        "vertical"
-%token              TOK_LEVEL           "level"
 %token              TOK_UP              "up"
 %token              TOK_DOWN            "down"
 %token              TOK_LEFT            "left"
 %token              TOK_RIGHT           "right"
+%token              TOK_PARENT          "parent"
+%token              TOK_CHILD           "child"
 %token              TOK_RESTORE         "restore"
 %token              TOK_MARK            "mark"
 %token              TOK_RESIZE          "resize"
@@ -168,7 +169,7 @@ char *parse_cmd(const char *new) {
 %token  <number>    NUMBER              "<number>"
 
 %type   <number>    direction
-%type   <chr>       level_direction
+%type   <number>    level
 %type   <number>    window_mode
 %type   <number>    border_style
 %type   <number>    layout_mode
@@ -345,7 +346,6 @@ operation:
     | fullscreen
     | split
     | mode
-    | level
     | mark
     | resize
     | nop
@@ -441,6 +441,19 @@ focus:
 
         tree_render();
     }
+    | TOK_FOCUS level
+    {
+        if ($2 == TOK_PARENT)
+            level_up();
+        else level_down();
+
+        tree_render();
+    }
+    ;
+
+level:
+    TOK_PARENT  { $$ = TOK_PARENT; }
+    | TOK_CHILD { $$ = TOK_CHILD;  }
     ;
 
 kill:
@@ -580,24 +593,6 @@ border_style:
     TOK_NORMAL      { $$ = BS_NORMAL; }
     | TOK_NONE      { $$ = BS_NONE; }
     | TOK_1PIXEL    { $$ = BS_1PIXEL; }
-    ;
-
-
-level:
-    TOK_LEVEL level_direction
-    {
-        printf("level %c\n", $2);
-        if ($2 == 'u')
-            level_up();
-        else level_down();
-
-        tree_render();
-    }
-    ;
-
-level_direction:
-    TOK_UP     { $$ = 'u'; }
-    | TOK_DOWN { $$ = 'd'; }
     ;
 
 move:

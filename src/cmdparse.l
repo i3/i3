@@ -124,11 +124,12 @@ prev                            { return TOK_PREV; }
 split                           { return TOK_SPLIT; }
 horizontal                      { return TOK_HORIZONTAL; }
 vertical                        { return TOK_VERTICAL; }
-level                           { return TOK_LEVEL; }
 up                              { return TOK_UP; }
 down                            { return TOK_DOWN; }
 left                            { return TOK_LEFT; }
 right                           { return TOK_RIGHT; }
+parent                          { return TOK_PARENT; }
+child                           { return TOK_CHILD; }
 resize                          { return TOK_RESIZE; }
 shrink                          { return TOK_SHRINK; }
 grow                            { return TOK_GROW; }

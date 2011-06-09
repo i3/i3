@@ -38,9 +38,9 @@ is(get_focused($tmp), $second, 'second container focused again');
 # now change the orientation to horizontal and cycle
 ##############################################################
 
-cmd 'level up';
+cmd 'focus parent';
 cmd 'split h';
-cmd 'level down';
+cmd 'focus child';
 
 cmd 'focus down';
 is(get_focused($tmp), $first, 'first container focused');
