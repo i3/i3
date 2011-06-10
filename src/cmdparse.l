@@ -137,7 +137,7 @@ px                              { return TOK_PX; }
 or                              { return TOK_OR; }
 ppt                             { return TOK_PPT; }
 nop                             { WS_STRING; return TOK_NOP; }
-restore                         { WS_STRING; return TOK_RESTORE; }
+append_layout                   { WS_STRING; return TOK_APPEND_LAYOUT; }
 mark                            { WS_STRING; return TOK_MARK; }
 
 enable                          { return TOK_ENABLE; }

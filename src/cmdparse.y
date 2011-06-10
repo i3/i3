@@ -152,7 +152,7 @@ char *parse_cmd(const char *new) {
 %token              TOK_RIGHT           "right"
 %token              TOK_PARENT          "parent"
 %token              TOK_CHILD           "child"
-%token              TOK_RESTORE         "restore"
+%token              TOK_APPEND_LAYOUT   "append_layout"
 %token              TOK_MARK            "mark"
 %token              TOK_RESIZE          "resize"
 %token              TOK_GROW            "grow"
@@ -339,7 +339,7 @@ operation:
     | reload
     | border
     | layout
-    | restore
+    | append_layout
     | move
     | workspace
     | focus
@@ -625,8 +625,8 @@ move:
     }
     ;
 
-restore:
-    TOK_RESTORE STR
+append_layout:
+    TOK_APPEND_LAYOUT STR
     {
         printf("restoring \"%s\"\n", $2);
         tree_append_json($2);
