@@ -135,6 +135,8 @@ char *parse_cmd(const char *new) {
 %token              TOK_MODE            "mode"
 %token              TOK_TILING          "tiling"
 %token              TOK_FLOATING        "floating"
+%token              TOK_ENABLE          "enable"
+%token              TOK_DISABLE         "disable"
 %token              TOK_WORKSPACE       "workspace"
 %token              TOK_TOGGLE          "toggle"
 %token              TOK_FOCUS           "focus"
@@ -170,7 +172,7 @@ char *parse_cmd(const char *new) {
 
 %type   <number>    direction
 %type   <number>    level
-%type   <number>    window_mode
+%type   <number>    boolean
 %type   <number>    border_style
 %type   <number>    layout_mode
 %type   <number>    resize_px
@@ -345,7 +347,7 @@ operation:
     | open
     | fullscreen
     | split
-    | mode
+    | floating
     | mark
     | resize
     | nop
@@ -541,8 +543,8 @@ direction:
     | 'v'           { $$ = 'v'; }
     ;
 
-mode:
-    TOK_MODE window_mode
+floating:
+    TOK_FLOATING boolean
     {
         HANDLE_EMPTY_MATCH;
 
@@ -554,7 +556,7 @@ mode:
                 toggle_floating_mode(current->con, false);
             } else {
                 printf("should switch mode to %s\n", ($2 == TOK_FLOATING ? "floating" : "tiling"));
-                if ($2 == TOK_FLOATING) {
+                if ($2 == TOK_ENABLE) {
                     floating_enable(current->con, false);
                 } else {
                     floating_disable(current->con, false);
@@ -566,10 +568,10 @@ mode:
     }
     ;
 
-window_mode:
-    TOK_FLOATING    { $$ = TOK_FLOATING; }
-    | TOK_TILING    { $$ = TOK_TILING; }
-    | TOK_TOGGLE    { $$ = TOK_TOGGLE; }
+boolean:
+    TOK_ENABLE    { $$ = TOK_ENABLE; }
+    | TOK_DISABLE { $$ = TOK_DISABLE; }
+    | TOK_TOGGLE  { $$ = TOK_TOGGLE; }
     ;
 
 border:

@@ -47,7 +47,7 @@ $tmp2 = get_unused_workspace();
 cmd "workspace $tmp";
 
 cmd "open";
-cmd "mode toggle";
+cmd "floating toggle";
 
 my $ws = get_ws($tmp);
 is(@{$ws->{nodes}}, 0, 'no nodes on workspace');

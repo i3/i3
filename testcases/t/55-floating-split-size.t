@@ -49,7 +49,7 @@ sleep 0.25;
 #####################################################################
 cmd 'nop setting floating';
 cmd 'focus parent';
-cmd 'mode floating';
+cmd 'floating enable';
 
 #####################################################################
 # Get geometry of the first floating node (the split container)

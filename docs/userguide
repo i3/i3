@@ -611,8 +611,8 @@ focus_follows_mouse no
 To change the layout of the current container to stacking, use +layout
 stacking+, for default use +layout default+ and for tabbed, use +layout
 tabbed+. To make the current client (!) fullscreen, use +fullscreen+, to make
-it floating (or tiling again) use +mode floating+ respectively +mode tiling+
-(or +mode toggle+):
+it floating (or tiling again) use +floating enable+ respectively +floating disable+
+(or +floating toggle+):
 
 *Examples*:
 --------------
@@ -624,7 +624,7 @@ bindsym Mod1+w layout tabbed
 bindsym Mod1+f fullscreen
 
 # Toggle floating/tiling
-bindsym Mod1+t mode toggle
+bindsym Mod1+t floating toggle
 --------------
 
 === Focusing/Moving containers

@@ -29,7 +29,7 @@ ok($window->mapped, 'Window is mapped');
 cmp_ok($absolute->{width}, '>', 400, 'i3 raised the width');
 cmp_ok($absolute->{height}, '>', 150, 'i3 raised the height');
 
-cmd 'mode toggle';
+cmd 'floating toggle';
 sleep 0.25;
 
 ($absolute, $top) = $window->rect;

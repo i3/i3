@@ -140,6 +140,13 @@ nop                             { WS_STRING; return TOK_NOP; }
 restore                         { WS_STRING; return TOK_RESTORE; }
 mark                            { WS_STRING; return TOK_MARK; }
 
+enable                          { return TOK_ENABLE; }
+true                            { return TOK_ENABLE; }
+yes                             { return TOK_ENABLE; }
+disable                         { return TOK_DISABLE; }
+false                           { return TOK_DISABLE; }
+no                              { return TOK_DISABLE; }
+
 class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
 id                              { BEGIN(WANT_QSTRING); return TOK_ID; }
 con_id                          { BEGIN(WANT_QSTRING); return TOK_CON_ID; }

@@ -54,10 +54,10 @@ is(@{$nodes->[1]->{nodes}}, 2, 'two windows in split con');
 # 2: make it tiling, see where it ends up
 #############################################################################
 
-cmd 'mode toggle';
+cmd 'floating toggle';
 
 my ($nodes, $focus) = get_ws_content($tmp);
 
-is(@{$nodes->[1]->{nodes}}, 3, 'three windows in split con after mode toggle');
+is(@{$nodes->[1]->{nodes}}, 3, 'three windows in split con after floating toggle');
 
 done_testing;
