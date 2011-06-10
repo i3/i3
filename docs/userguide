@@ -378,26 +378,26 @@ floating_modifier <Modifiers>
 floating_modifier Mod1
 --------------------------------
 
-////////////////////////////////////////////////////////////////////////
 === Layout mode for new containers
 
-TODO: this is workspace_layout. but workspace_layout only works for the first
-con, right?
-
-This option determines in which mode new containers will start. See also
-<<stack-limit>>.
+This option determines in which mode new containers on workspace level will
+start.
+///////////////////////////////
+See also <<stack-limit>>.
+//////////////////////////////
 
 *Syntax*:
 ---------------------------------------------
-new_container <default|stacking|tabbed>
-new_container stack-limit <cols|rows> <value>
+workspace_layout <default|stacking|tabbed>
 ---------------------------------------------
+/////////////////////////////////////////////
+new_container stack-limit <cols|rows> <value>
+/////////////////////////////////////////////
 
 *Examples*:
 ---------------------
-new_container tabbed
+workspace_layout tabbed
 ---------------------
-////////////////////////////////////////////////////////////////////////
 
 === Border style for new windows
 
