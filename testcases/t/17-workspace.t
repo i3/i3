@@ -4,6 +4,7 @@
 # Tests whether we can switch to a non-existant workspace
 # (necessary for further tests)
 #
+use List::Util qw(first);
 use i3test;
 
 sub workspace_exists {
@@ -31,5 +32,90 @@ ok(!workspace_exists($tmp), 'old workspace cleaned up');
 cmd "workspace $otmp";
 cmd "workspace $otmp";
 ok(workspace_exists($otmp), 'other workspace still exists');
+
+
+#####################################################################
+# check if the workspace next / prev commands work
+#####################################################################
+
+cmd 'workspace next';
+
+ok(!workspace_exists('next'), 'workspace "next" does not exist');
+
+cmd "workspace $tmp";
+cmd 'open';
+
+ok(workspace_exists($tmp), 'workspace created');
+
+cmd "workspace $otmp";
+cmd 'open';
+
+ok(workspace_exists($tmp), 'workspace tmp still exists');
+ok(workspace_exists($otmp), 'workspace otmp created');
+
+sub focused_ws_con {
+    my $i3 = i3("/tmp/nestedcons");
+    my $tree = $i3->get_tree->recv;
+    my @outputs = @{$tree->{nodes}};
+    my @cons;
+    for my $output (@outputs) {
+        # get the first CT_CON of each output
+        my $content = first { $_->{type} == 2 } @{$output->{nodes}};
+        my @focused = @{$content->{focus}};
+        return first { $_->{id} == $focused[0] } @{$content->{nodes}};
+    }
+}
+
+sub focused_ws {
+    my $con = focused_ws_con;
+    return $con->{name};
+}
+
+is(focused_ws(), $otmp, 'focused workspace is otmp');
+
+cmd 'workspace prev';
+is(focused_ws(), $tmp, 'focused workspace is tmp after workspace prev');
+
+cmd 'workspace next';
+is(focused_ws(), $otmp, 'focused workspace is otmp after workspace next');
+
+
+#####################################################################
+# check that wrapping works
+#####################################################################
+
+cmd 'workspace next';
+is(focused_ws(), '1', 'focused workspace is 1 after workspace next');
+
+cmd 'workspace next';
+is(focused_ws(), $tmp, 'focused workspace is tmp after workspace next');
+
+cmd 'workspace next';
+is(focused_ws(), $otmp, 'focused workspace is otmp after workspace next');
+
+
+cmd 'workspace prev';
+is(focused_ws(), $tmp, 'focused workspace is tmp after workspace prev');
+
+cmd 'workspace prev';
+is(focused_ws(), '1', 'focused workspace is tmp after workspace prev');
+
+cmd 'workspace prev';
+is(focused_ws(), $otmp, 'focused workspace is otmp after workspace prev');
+
+
+#####################################################################
+# check if we can change to "next" / "prev"
+#####################################################################
+
+cmd 'workspace "next"';
+
+ok(workspace_exists('next'), 'workspace "next" exists');
+is(focused_ws(), 'next', 'now on workspace next');
+
+cmd 'workspace "prev"';
+
+ok(workspace_exists('prev'), 'workspace "prev" exists');
+is(focused_ws(), 'prev', 'now on workspace prev');
 
 done_testing;

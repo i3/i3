@@ -142,6 +142,7 @@ char *parse_cmd(const char *new) {
 %token              TOK_FOCUS           "focus"
 %token              TOK_MOVE            "move"
 %token              TOK_OPEN            "open"
+%token              TOK_NEXT            "next"
 %token              TOK_PREV            "prev"
 %token              TOK_SPLIT           "split"
 %token              TOK_HORIZONTAL      "horizontal"
@@ -487,7 +488,17 @@ optional_kill_mode:
     ;
 
 workspace:
-    TOK_WORKSPACE STR
+    TOK_WORKSPACE TOK_NEXT
+    {
+        workspace_next();
+        tree_render();
+    }
+    | TOK_WORKSPACE TOK_PREV
+    {
+        workspace_prev();
+        tree_render();
+    }
+    | TOK_WORKSPACE STR
     {
         printf("should switch to workspace %s\n", $2);
         workspace_show($2);

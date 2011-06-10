@@ -653,13 +653,10 @@ bindsym Mod1+semicolon move right
 To change to a specific workspace, use the +workspace+ command, followed by the
 number or name of the workspace. To move containers, use +move workspace+.
 
-//////////////////////////////////////////////////////////////////////////////
-TODO: not yet implemented
-
-You can also switch to the next and previous workspace with the commands +nw+
-and +pw+, which is handy, for example, if you have workspace 1, 3, 4 and 9 and
-you want to cycle through them with a single key combination.
-//////////////////////////////////////////////////////////////////////////////
+You can also switch to the next and previous workspace with the commands
++workspace next+ and +workspace prev+, which is handy, for example, if you have
+workspace 1, 3, 4 and 9 and you want to cycle through them with a single key
+combination.
 
 *Examples*:
 -------------------------

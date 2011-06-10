@@ -71,6 +71,11 @@ EOL (\r?\n)
     cmdyycolumn = 1;
 }
 
+    /* the next/prev tokens are here to recognize them *before* handling
+     * strings ('workspace' command) */
+next                            { return TOK_NEXT; }
+prev                            { return TOK_PREV; }
+
 <WANT_STRING>\"[^\"]+\"         {
                                   BEGIN(INITIAL);
                                   /* strip quotes */
@@ -120,7 +125,6 @@ workspace                       { WS_STRING; return TOK_WORKSPACE; }
 focus                           { return TOK_FOCUS; }
 move                            { return TOK_MOVE; }
 open                            { return TOK_OPEN; }
-prev                            { return TOK_PREV; }
 split                           { return TOK_SPLIT; }
 horizontal                      { return TOK_HORIZONTAL; }
 vertical                        { return TOK_VERTICAL; }

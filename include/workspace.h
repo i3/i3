@@ -49,6 +49,18 @@ bool workspace_is_visible(Con *ws);
 /** Switches to the given workspace */
 void workspace_show(const char *num);
 
+/**
+ * Focuses the next workspace.
+ *
+ */
+void workspace_next();
+
+/**
+ * Focuses the previous workspace.
+ *
+ */
+void workspace_prev();
+
 #if 0
 /**
  * Assigns the given workspace to the given screen by correctly updating its

@@ -231,6 +231,32 @@ void workspace_show(const char *num) {
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
 }
 
+/*
+ * Focuses the next workspace.
+ *
+ */
+void workspace_next() {
+    Con *ws = con_get_workspace(focused);
+    Con *next = TAILQ_NEXT(ws, nodes);
+    if (!next)
+        next = TAILQ_FIRST(&(ws->parent->nodes_head));
+
+    workspace_show(next->name);
+}
+
+/*
+ * Focuses the previous workspace.
+ *
+ */
+void workspace_prev() {
+    Con *ws = con_get_workspace(focused);
+    Con *prev = TAILQ_PREV(ws, nodes_head, nodes);
+    if (!prev)
+        prev = TAILQ_LAST(&(ws->parent->nodes_head), nodes_head);
+
+    workspace_show(prev->name);
+}
+
 static bool get_urgency_flag(Con *con) {
     Con *child;
     TAILQ_FOREACH(child, &(con->nodes_head), nodes)
