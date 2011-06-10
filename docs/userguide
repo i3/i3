@@ -674,13 +674,11 @@ bindsym Mod1+Shift+2 move workspace 2
 
 [[resizingconfig]]
 
-=== Resizing columns/rows
+=== Resizing containers/windows
 
-If you want to resize columns/rows using your keyboard, you can use the
+If you want to resize containers/windows using your keyboard, you can use the
 +resize+ command, I recommend using it inside a so called +mode+:
 
-///////////////////////////////////////////////////////////////////////
-TODO: mode is not yet implemented
 .Example: Configuration file, defining a mode for resizing
 ----------------------------------------------------------------------
 mode "resize" {
@@ -706,10 +704,8 @@ mode "resize" {
 }
 
 # Enter resize mode
-bindsym Mod1+r mode resize
+bindsym Mod1+r mode "resize"
 ----------------------------------------------------------------------
-
-///////////////////////////////////////////////////////////////////////
 
 === Jumping to specific windows
 
