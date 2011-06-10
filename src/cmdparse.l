@@ -112,7 +112,7 @@ border                          { return TOK_BORDER; }
 normal                          { return TOK_NORMAL; }
 none                            { return TOK_NONE; }
 1pixel                          { return TOK_1PIXEL; }
-mode                            { return TOK_MODE; }
+mode                            { BEGIN(WANT_QSTRING); return TOK_MODE; }
 tiling                          { return TOK_TILING; }
 floating                        { return TOK_FLOATING; }
 toggle                          { return TOK_TOGGLE; }

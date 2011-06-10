@@ -150,7 +150,7 @@ void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch) {
  * Switches the key bindings to the given mode, if the mode exists
  *
  */
-void switch_mode(xcb_connection_t *conn, const char *new_mode) {
+void switch_mode(const char *new_mode) {
         struct Mode *mode;
 
         LOG("Switching to mode %s\n", new_mode);

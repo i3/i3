@@ -352,6 +352,7 @@ operation:
     | mark
     | resize
     | nop
+    | mode
     ;
 
 exec:
@@ -783,4 +784,11 @@ direction:
     | TOK_DOWN      { $$ = TOK_DOWN; }
     | TOK_LEFT      { $$ = TOK_LEFT; }
     | TOK_RIGHT     { $$ = TOK_RIGHT; }
+    ;
+
+mode:
+    TOK_MODE STR
+    {
+        switch_mode($2);
+    }
     ;
