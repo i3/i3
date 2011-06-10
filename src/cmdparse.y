@@ -171,6 +171,7 @@ char *parse_cmd(const char *new) {
 %token  <number>    NUMBER              "<number>"
 
 %type   <number>    direction
+%type   <number>    split_direction
 %type   <number>    level
 %type   <number>    boolean
 %type   <number>    border_style
@@ -526,7 +527,7 @@ fullscreen:
     ;
 
 split:
-    TOK_SPLIT direction
+    TOK_SPLIT split_direction
     {
         /* TODO: use matches */
         printf("splitting in direction %c\n", $2);
@@ -536,7 +537,7 @@ split:
     }
     ;
 
-direction:
+split_direction:
     TOK_HORIZONTAL  { $$ = 'h'; }
     | 'h'           { $$ = 'h'; }
     | TOK_VERTICAL  { $$ = 'v'; }
