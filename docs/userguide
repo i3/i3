@@ -794,10 +794,7 @@ To change the border of the current client, you can use +border normal+ to use t
 border (including window title), +border 1pixel+ to use a 1-pixel border (no window title)
 and +border none+ to make the client borderless.
 
-////////////////////////////////////////////////////////////////////////////
-TODO: not yet implemented
 There is also +border toggle+ which will toggle the different border styles.
-////////////////////////////////////////////////////////////////////////////
 
 *Examples*:
 ----------------------------
