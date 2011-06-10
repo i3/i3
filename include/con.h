@@ -53,7 +53,7 @@ Con *con_parent_with_orientation(Con *con, orientation_t orientation);
  * Returns the first fullscreen node below this node.
  *
  */
-Con *con_get_fullscreen_con(Con *con);
+Con *con_get_fullscreen_con(Con *con, int fullscreen_mode);
 
 /**
  * Returns true if the node is floating.
@@ -126,7 +126,7 @@ void con_fix_percent(Con *con);
  * entered when there already is a fullscreen container on this workspace.
  *
  */
-void con_toggle_fullscreen(Con *con);
+void con_toggle_fullscreen(Con *con, int fullscreen_mode);
 
 /**
  * Moves the given container to the currently focused container on the given

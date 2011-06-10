@@ -251,7 +251,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     free(name);
 
     Con *ws = con_get_workspace(nc);
-    Con *fs = (ws ? con_get_fullscreen_con(ws) : NULL);
+    Con *fs = (ws ? con_get_fullscreen_con(ws, CF_OUTPUT) : NULL);
+    if (fs == NULL)
+        fs = con_get_fullscreen_con(croot, CF_GLOBAL);
 
     if (fs == NULL) {
         DLOG("Not in fullscreen mode, focusing\n");
@@ -293,7 +295,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         if (config.popup_during_fullscreen == PDF_LEAVE_FULLSCREEN &&
             fs != NULL) {
             LOG("There is a fullscreen window, leaving fullscreen mode\n");
-            con_toggle_fullscreen(fs);
+            con_toggle_fullscreen(fs, CF_OUTPUT);
         }
     }
 
@@ -331,7 +333,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     reply = xcb_get_property_reply(conn, state_cookie, NULL);
     if (xcb_reply_contains_atom(reply, A__NET_WM_STATE_FULLSCREEN))
-        con_toggle_fullscreen(nc);
+        con_toggle_fullscreen(nc, CF_OUTPUT);
 
     /* Put the client inside the save set. Upon termination (whether killed or
      * normal exit does not matter) of the window manager, these clients will

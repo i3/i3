@@ -290,7 +290,7 @@ struct bfs_entry {
  * Returns the first fullscreen node below this node.
  *
  */
-Con *con_get_fullscreen_con(Con *con) {
+Con *con_get_fullscreen_con(Con *con, int fullscreen_mode) {
     Con *current, *child;
 
     /* TODO: is breadth-first-search really appropriate? (check as soon as
@@ -303,7 +303,7 @@ Con *con_get_fullscreen_con(Con *con) {
     while (!TAILQ_EMPTY(&bfs_head)) {
         entry = TAILQ_FIRST(&bfs_head);
         current = entry->con;
-        if (current != con && current->fullscreen_mode != CF_NONE) {
+        if (current != con && current->fullscreen_mode == fullscreen_mode) {
             /* empty the queue */
             while (!TAILQ_EMPTY(&bfs_head)) {
                 entry = TAILQ_FIRST(&bfs_head);
@@ -490,7 +490,7 @@ void con_fix_percent(Con *con) {
  * entered when there already is a fullscreen container on this workspace.
  *
  */
-void con_toggle_fullscreen(Con *con) {
+void con_toggle_fullscreen(Con *con, int fullscreen_mode) {
     Con *workspace, *fullscreen;
 
     if (con->type == CT_WORKSPACE) {
@@ -501,19 +501,27 @@ void con_toggle_fullscreen(Con *con) {
     DLOG("toggling fullscreen for %p / %s\n", con, con->name);
     if (con->fullscreen_mode == CF_NONE) {
         /* 1: check if there already is a fullscreen con */
-        workspace = con_get_workspace(con);
-        if ((fullscreen = con_get_fullscreen_con(workspace)) != NULL) {
+        if (fullscreen_mode == CF_GLOBAL)
+            fullscreen = con_get_fullscreen_con(croot, CF_GLOBAL);
+        else {
+            workspace = con_get_workspace(con);
+            fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
+        }
+        if (fullscreen != NULL) {
             LOG("Not entering fullscreen mode, container (%p/%s) "
                 "already is in fullscreen mode\n",
                 fullscreen, fullscreen->name);
-        } else {
-            /* 2: enable fullscreen */
-            con->fullscreen_mode = CF_OUTPUT;
+            goto update_netwm_state;
         }
+
+        /* 2: enable fullscreen */
+        con->fullscreen_mode = fullscreen_mode;
     } else {
         /* 1: disable fullscreen */
         con->fullscreen_mode = CF_NONE;
     }
+
+update_netwm_state:
     DLOG("mode now: %d\n", con->fullscreen_mode);
 
     /* update _NET_WM_STATE if this container has a window */
@@ -797,7 +805,7 @@ Rect con_border_style_rect(Con *con) {
  *
  */
 int con_border_style(Con *con) {
-    Con *fs = con_get_fullscreen_con(con->parent);
+    Con *fs = con_get_fullscreen_con(con->parent, CF_OUTPUT);
     if (fs == con) {
         DLOG("this one is fullscreen! overriding BS_NONE\n");
         return BS_NONE;

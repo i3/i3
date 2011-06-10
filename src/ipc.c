@@ -437,7 +437,7 @@ IPC_HANDLER(get_outputs) {
 
         ystr("current_workspace");
         Con *ws = NULL;
-        if (output->con && (ws = con_get_fullscreen_con(output->con)))
+        if (output->con && (ws = con_get_fullscreen_con(output->con, CF_OUTPUT)))
             ystr(ws->name);
         else y(null);
 

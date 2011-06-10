@@ -95,7 +95,7 @@ bool workspace_is_visible(Con *ws) {
     Con *output = con_get_output(ws);
     if (output == NULL)
         return false;
-    Con *fs = con_get_fullscreen_con(output);
+    Con *fs = con_get_fullscreen_con(output, CF_OUTPUT);
     LOG("workspace visible? fs = %p, ws = %p\n", fs, ws);
     return (fs == ws);
 }

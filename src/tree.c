@@ -13,7 +13,7 @@ struct all_cons_head all_cons = TAILQ_HEAD_INITIALIZER(all_cons);
  * Loads tree from ~/.i3/_restart.json (used for in-place restarts).
  *
  */
-bool tree_restore(const char *path) {
+bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
     char *globbed = resolve_tilde(path);
 
     if (!path_exists(globbed)) {
@@ -24,6 +24,12 @@ bool tree_restore(const char *path) {
 
     /* TODO: refactor the following */
     croot = con_new(NULL, NULL);
+    croot->rect = (Rect){
+        geometry->x,
+        geometry->y,
+        geometry->width,
+        geometry->height
+    };
     focused = croot;
 
     tree_append_json(globbed);
@@ -44,11 +50,17 @@ bool tree_restore(const char *path) {
  * root node are created in randr.c for each Output.
  *
  */
-void tree_init() {
+void tree_init(xcb_get_geometry_reply_t *geometry) {
     croot = con_new(NULL, NULL);
     FREE(croot->name);
     croot->name = "root";
     croot->type = CT_ROOT;
+    croot->rect = (Rect){
+        geometry->x,
+        geometry->y,
+        geometry->width,
+        geometry->height
+    };
 }
 
 /*
@@ -343,12 +355,8 @@ void tree_render() {
     mark_unmapped(croot);
     croot->mapped = true;
 
-    /* We start rendering at an output */
-    Con *output;
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        DLOG("output %p / %s\n", output, output->name);
-        render_con(output, false);
-    }
+    render_con(croot, false);
+
     x_push_changes(croot);
     DLOG("-- END RENDERING --\n");
 }

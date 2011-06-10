@@ -42,8 +42,8 @@ static void render_l_output(Con *con) {
     /* We need to find out if there is a fullscreen con on the current workspace
      * and take the short-cut to render it directly (the user does not want to
      * see the dockareas in that case) */
-    Con *ws = con_get_fullscreen_con(content);
-    Con *fullscreen = con_get_fullscreen_con(ws);
+    Con *ws = con_get_fullscreen_con(content, CF_OUTPUT);
+    Con *fullscreen = con_get_fullscreen_con(ws, CF_OUTPUT);
     if (fullscreen) {
         DLOG("got fs node: %p\n", fullscreen);
         fullscreen->rect = con->rect;
@@ -185,7 +185,10 @@ void render_con(Con *con, bool render_fullscreen) {
     }
 
     /* Check for fullscreen nodes */
-    Con *fullscreen = (con->type == CT_OUTPUT ? NULL : con_get_fullscreen_con(con));
+    Con *fullscreen = NULL;
+    if (con->type != CT_OUTPUT) {
+        fullscreen = con_get_fullscreen_con(con, (con->type == CT_ROOT ? CF_GLOBAL : CF_OUTPUT));
+    }
     if (fullscreen) {
         DLOG("got fs node: %p\n", fullscreen);
         fullscreen->rect = rect;
@@ -222,6 +225,12 @@ void render_con(Con *con, bool render_fullscreen) {
 
     if (con->layout == L_OUTPUT) {
         render_l_output(con);
+    } else if (con->type == CT_ROOT) {
+        DLOG("Root node, rendering outputs\n");
+        Con *child;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            render_con(child, false);
+        }
     } else {
 
         /* FIXME: refactor this into separate functions: */

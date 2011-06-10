@@ -257,6 +257,7 @@ int main(int argc, char *argv[]) {
     xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
     root_depth = root_screen->root_depth;
+    xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);
 
     load_configuration(conn, override_configpath, false);
     if (only_check_config) {
@@ -283,6 +284,13 @@ int main(int argc, char *argv[]) {
     xcb_void_cookie_t cookie;
     cookie = xcb_change_window_attributes_checked(conn, root, mask, values);
     check_error(conn, cookie, "Another window manager seems to be running");
+
+    xcb_get_geometry_reply_t *greply = xcb_get_geometry_reply(conn, gcookie, NULL);
+    if (greply == NULL) {
+        ELOG("Could not get geometry of the root window, exiting\n");
+        return 1;
+    }
+    DLOG("root geometry reply: (%d, %d) %d x %d\n", greply->x, greply->y, greply->width, greply->height);
 
     /* Place requests for the atoms we need as soon as possible */
     #define xmacro(atom) \
@@ -368,13 +376,15 @@ int main(int argc, char *argv[]) {
     bool needs_tree_init = true;
     if (layout_path) {
         LOG("Trying to restore the layout from %s...", layout_path);
-        needs_tree_init = !tree_restore(layout_path);
+        needs_tree_init = !tree_restore(layout_path, greply);
         if (delete_layout_path)
             unlink(layout_path);
         free(layout_path);
     }
     if (needs_tree_init)
-        tree_init();
+        tree_init(greply);
+
+    free(greply);
 
     if (force_xinerama) {
         xinerama_init();

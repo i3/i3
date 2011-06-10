@@ -308,7 +308,7 @@ void x_draw_decoration(Con *con) {
 
     /* If the con is in fullscreen mode, the decoration height we work with is set to 0 */
     Rect deco_rect = con->deco_rect;
-    if (con_get_fullscreen_con(parent) == con)
+    if (con_get_fullscreen_con(parent, CF_OUTPUT) == con)
         deco_rect.height = 0;
 
     /* 2: draw the client.background, but only for the parts around the client_rect */

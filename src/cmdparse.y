@@ -173,6 +173,7 @@ char *parse_cmd(const char *new) {
 
 %type   <number>    direction
 %type   <number>    split_direction
+%type   <number>    fullscreen_mode
 %type   <number>    level
 %type   <number>    boolean
 %type   <number>    border_style
@@ -521,21 +522,25 @@ open:
     ;
 
 fullscreen:
-    TOK_FULLSCREEN
+    TOK_FULLSCREEN fullscreen_mode
     {
-        printf("toggling fullscreen\n");
+        printf("toggling fullscreen, mode = %s\n", ($2 == CF_OUTPUT ? "normal" : "global"));
         owindow *current;
-
 
         HANDLE_EMPTY_MATCH;
 
         TAILQ_FOREACH(current, &owindows, owindows) {
             printf("matching: %p / %s\n", current->con, current->con->name);
-            con_toggle_fullscreen(current->con);
+            con_toggle_fullscreen(current->con, $2);
         }
 
         tree_render();
     }
+    ;
+
+fullscreen_mode:
+    /* empty */  { $$ = CF_OUTPUT; }
+    | TOK_GLOBAL { $$ = CF_GLOBAL; }
     ;
 
 split:

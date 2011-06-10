@@ -18,7 +18,7 @@ extern struct all_cons_head all_cons;
  * assigning a workspace to each RandR output.
  *
  */
-void tree_init();
+void tree_init(xcb_get_geometry_reply_t *geometry);
 
 /**
  * Opens an empty container in the current container
@@ -77,7 +77,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent);
  * Loads tree from ~/.i3/_restart.json (used for in-place restarts).
  *
  */
-bool tree_restore(const char *path);
+bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry);
 
 /**
  * tree_flatten() removes pairs of redundant split containers, e.g.:
