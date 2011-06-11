@@ -198,6 +198,7 @@ void output_init_con(Output *output) {
         con->name = sstrdup(output->name);
         con->type = CT_OUTPUT;
         con->layout = L_OUTPUT;
+        con_fix_percent(croot);
     }
     con->rect = output->rect;
     output->con = con;
