@@ -111,6 +111,16 @@ struct Config {
          * comes with i3. Thus, you can turn it off entirely. */
         bool disable_workspace_bar;
 
+        /** Think of the following layout: Horizontal workspace with a tabbed
+         * con on the left of the screen and a terminal on the right of the
+         * screen. You are in the second container in the tabbed container and
+         * focus to the right. By default, i3 will set focus to the terminal on
+         * the right. If you are in the first container in the tabbed container
+         * however, focusing to the left will wrap. This option forces i3 to
+         * always wrap, which will result in you having to use "focus parent"
+         * more often. */
+        bool force_focus_wrapping;
+
         /** The default border style for new windows. */
         border_style_t default_border;
 

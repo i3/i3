@@ -235,6 +235,7 @@ void parse_file(const char *f) {
 %token                  TOK_NONE                    "none"
 %token                  TOK_1PIXEL                  "1pixel"
 %token                  TOKFOCUSFOLLOWSMOUSE        "focus_follows_mouse"
+%token                  TOK_FORCE_FOCUS_WRAPPING    "force_focus_wrapping"
 %token                  TOKWORKSPACEBAR             "workspace_bar"
 %token                  TOK_DEFAULT                 "default"
 %token                  TOK_STACKING                "stacking"
@@ -285,6 +286,7 @@ line:
     | workspace_layout
     | new_window
     | focus_follows_mouse
+    | force_focus_wrapping
     | workspace_bar
     | workspace
     | assign
@@ -589,6 +591,14 @@ focus_follows_mouse:
     {
         DLOG("focus follows mouse = %d\n", $2);
         config.disable_focus_follows_mouse = !($2);
+    }
+    ;
+
+force_focus_wrapping:
+    TOK_FORCE_FOCUS_WRAPPING bool
+    {
+        DLOG("force focus wrapping = %d\n", $2);
+        config.force_focus_wrapping = $2;
     }
     ;
 

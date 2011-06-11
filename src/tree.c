@@ -362,49 +362,71 @@ void tree_render() {
 }
 
 /*
- * Changes focus in the given way (next/previous) and given orientation
- * (horizontal/vertical).
+ * Recursive function to walk the tree until a con can be found to focus.
  *
  */
-void tree_next(char way, orientation_t orientation) {
-    /* 1: get the first parent with the same orientation */
-    Con *parent = focused->parent;
-    while (focused->type != CT_WORKSPACE &&
-           (con_orientation(parent) != orientation ||
-            con_num_children(parent) == 1)) {
-        LOG("need to go one level further up\n");
-        /* if the current parent is an output, we are at a workspace
-         * and the orientation still does not match */
-        if (parent->type == CT_WORKSPACE)
-            return;
-        parent = parent->parent;
+static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap) {
+    /* Stop recursing at workspaces */
+    if (con->type == CT_WORKSPACE)
+        return false;
+
+    if (con->type == CT_FLOATING_CON) {
+        /* TODO: implement focus for floating windows */
+        return false;
     }
+
+    Con *parent = con->parent;
+
+    /* If the orientation does not match or there is no other con to focus, we
+     * need to go higher in the hierarchy */
+    if (con_orientation(parent) != orientation ||
+        con_num_children(parent) == 1)
+        return _tree_next(parent, way, orientation, wrap);
+
     Con *current = TAILQ_FIRST(&(parent->focus_head));
-    assert(current != TAILQ_END(&(parent->focus_head)));
-
+    /* TODO: when can the following happen (except for floating windows, which
+     * are handled above)? */
     if (TAILQ_EMPTY(&(parent->nodes_head))) {
-        DLOG("Nothing to focus here, move along...\n");
-        return;
+        DLOG("nothing to focus\n");
+        return false;
     }
 
-    /* 2: chose next (or previous) */
     Con *next;
-    if (way == 'n') {
+    if (way == 'n')
         next = TAILQ_NEXT(current, nodes);
-        /* if we are at the end of the list, we need to wrap */
-        if (next == TAILQ_END(&(parent->nodes_head)))
+    else next = TAILQ_PREV(current, nodes_head, nodes);
+
+    if (!next) {
+        if (!config.force_focus_wrapping) {
+            /* If there is no next/previous container, we check if we can focus one
+             * when going higher (without wrapping, though). If so, we are done, if
+             * not, we wrap */
+            if (_tree_next(parent, way, orientation, false))
+                return true;
+
+            if (!wrap)
+                return false;
+        }
+
+        if (way == 'n')
             next = TAILQ_FIRST(&(parent->nodes_head));
-    } else {
-        next = TAILQ_PREV(current, nodes_head, nodes);
-        /* if we are at the end of the list, we need to wrap */
-        if (next == TAILQ_END(&(parent->nodes_head)))
-            next = TAILQ_LAST(&(parent->nodes_head), nodes_head);
+        else next = TAILQ_LAST(&(parent->nodes_head), nodes_head);
     }
 
     /* 3: focus choice comes in here. at the moment we will go down
      * until we find a window */
     /* TODO: check for window, atm we only go down as far as possible */
     con_focus(con_descend_focused(next));
+    return true;
+}
+
+/*
+ * Changes focus in the given way (next/previous) and given orientation
+ * (horizontal/vertical).
+ *
+ */
+void tree_next(char way, orientation_t orientation) {
+    _tree_next(focused, way, orientation, true);
 }
 
 /*

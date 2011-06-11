@@ -122,6 +122,7 @@ normal                          { return TOK_NORMAL; }
 none                            { return TOK_NONE; }
 1pixel                          { return TOK_1PIXEL; }
 focus_follows_mouse             { return TOKFOCUSFOLLOWSMOUSE; }
+force_focus_wrapping            { return TOK_FORCE_FOCUS_WRAPPING; }
 workspace_bar                   { return TOKWORKSPACEBAR; }
 popup_during_fullscreen         { return TOK_POPUP_DURING_FULLSCREEN; }
 ignore                          { return TOK_IGNORE; }
