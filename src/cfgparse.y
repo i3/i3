@@ -692,7 +692,7 @@ assign:
             if (*workspace == '\0') {
                 /* This assignment was *only* for floating */
                 assignment->type = A_COMMAND;
-                assignment->dest.command = sstrdup("mode floating");
+                assignment->dest.command = sstrdup("floating enable");
                 TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
                 break;
             } else {
@@ -700,7 +700,7 @@ assign:
                 Assignment *floating = scalloc(sizeof(Assignment));
                 match_copy(&(floating->match), match);
                 floating->type = A_COMMAND;
-                floating->dest.command = sstrdup("mode floating");
+                floating->dest.command = sstrdup("floating enable");
                 TAILQ_INSERT_TAIL(&assignments, floating, assignments);
             }
         }

@@ -162,4 +162,50 @@ ok(@{get_ws_content('targetws')} == 2, 'two containers on targetws');
 
 exit_gracefully($process->pid);
 
+#####################################################################
+# start a window and see that it gets assigned to a workspace which has content
+# already, next to the existing node.
+#####################################################################
+
+($fh, $tmpfile) = tempfile();
+say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
+say $fh "ipc-socket /tmp/nestedcons";
+say $fh q|assign "special" → ~|;
+close($fh);
+
+diag("Starting i3");
+$i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
+$process = Proc::Background->new($i3cmd);
+sleep 1;
+
+diag("pid = " . $process->pid);
+
+$tmp = fresh_workspace;
+
+ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
+my $workspaces = get_workspace_names;
+ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
+
+my $window = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#0000ff',
+);
+
+$window->_create;
+set_wm_class($window->id, 'special', 'special');
+$window->name('special window');
+$window->map;
+sleep 0.25;
+
+my $content = get_ws($tmp);
+ok(@{$content->{nodes}} == 0, 'no tiling cons');
+ok(@{$content->{floating_nodes}} == 1, 'one floating con');
+
+$window->destroy;
+
+exit_gracefully($process->pid);
+
+sleep 0.25;
+
 done_testing;
