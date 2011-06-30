@@ -18,8 +18,8 @@ my $second = open_standard_window($x);
 
 is($x->input_focus, $second->id, 'second window focused');
 
-cmd 'mode floating';
-cmd 'mode tiling';
+cmd 'floating enable';
+cmd 'floating disable';
 
 is($x->input_focus, $second->id, 'second window still focused after mode toggle');
 
@@ -36,13 +36,13 @@ my $third = open_standard_window($x); # window 4
 
 is($x->input_focus, $third->id, 'last container focused');
 
-cmd 'mode floating';
+cmd 'floating enable';
 
 cmd '[id="' . $second->id . '"] focus';
 
 is($x->input_focus, $second->id, 'second con focused');
 
-cmd 'mode floating';
+cmd 'floating enable';
 
 # now kill the third one (it's floating). focus should stay unchanged
 cmd '[id="' . $third->id . '"] kill';
@@ -65,13 +65,13 @@ my $third = open_standard_window($x); # window 7
 
 is($x->input_focus, $third->id, 'last container focused');
 
-cmd 'mode floating';
+cmd 'floating enable';
 
 cmd '[id="' . $second->id . '"] focus';
 
 is($x->input_focus, $second->id, 'second con focused');
 
-cmd 'mode floating';
+cmd 'floating enable';
 
 # now kill the second one. focus should fall back to the third one, which is
 # also floating
