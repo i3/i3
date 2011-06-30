@@ -59,9 +59,9 @@ is($x->input_focus, $second->id, 'second con still focused after killing third')
 
 $tmp = fresh_workspace;
 
-$first = open_standard_window($x);    # window 5
-$second = open_standard_window($x);   # window 6
-my $third = open_standard_window($x); # window 7
+$first = open_standard_window($x, '#ff0000');    # window 5
+$second = open_standard_window($x, '#00ff00');   # window 6
+my $third = open_standard_window($x, '#0000ff'); # window 7
 
 is($x->input_focus, $third->id, 'last container focused');
 
@@ -80,6 +80,44 @@ cmd 'kill';
 sleep 0.25;
 
 is($x->input_focus, $third->id, 'third con focused');
+
+cmd 'kill';
+
+sleep 0.25;
+
+is($x->input_focus, $first->id, 'first con focused after killing all floating cons');
+
+#############################################################################
+# 4: same test as 3, but with another split con
+#############################################################################
+
+$tmp = fresh_workspace;
+
+$first = open_standard_window($x, '#ff0000');    # window 5
+cmd 'split v';
+cmd 'layout stacked';
+$second = open_standard_window($x, '#00ff00');   # window 6
+$third = open_standard_window($x, '#0000ff'); # window 7
+
+is($x->input_focus, $third->id, 'last container focused');
+
+cmd 'floating enable';
+
+cmd '[id="' . $second->id . '"] focus';
+
+is($x->input_focus, $second->id, 'second con focused');
+
+cmd 'floating enable';
+
+sleep 0.5;
+
+# now kill the second one. focus should fall back to the third one, which is
+# also floating
+cmd 'kill';
+
+sleep 0.25;
+
+is($x->input_focus, $third->id, 'second con focused');
 
 cmd 'kill';
 

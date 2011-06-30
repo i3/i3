@@ -646,7 +646,12 @@ Con *con_next_focused(Con *con) {
     if (con->type == CT_FLOATING_CON) {
         DLOG("selecting next for CT_FLOATING_CON\n");
         next = TAILQ_NEXT(con, floating_windows);
-        if (next == TAILQ_END(&(parent->floating_head))) {
+        DLOG("next = %p\n", next);
+        if (!next) {
+            next = TAILQ_PREV(con, floating_head, floating_windows);
+            DLOG("using prev, next = %p\n", next);
+        }
+        if (!next) {
             Con *ws = con_get_workspace(con);
             next = ws;
             DLOG("no more floating containers for next = %p, restoring workspace focus\n", next);
