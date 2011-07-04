@@ -121,6 +121,7 @@ mode                            { BEGIN(WANT_QSTRING); return TOK_MODE; }
 tiling                          { return TOK_TILING; }
 floating                        { return TOK_FLOATING; }
 toggle                          { return TOK_TOGGLE; }
+mode_toggle                     { return TOK_MODE_TOGGLE; }
 workspace                       { WS_STRING; return TOK_WORKSPACE; }
 focus                           { return TOK_FOCUS; }
 move                            { return TOK_MOVE; }

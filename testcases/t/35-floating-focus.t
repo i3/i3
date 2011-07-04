@@ -125,4 +125,50 @@ sleep 0.25;
 
 is($x->input_focus, $first->id, 'first con focused after killing all floating cons');
 
+#############################################################################
+# 5: see if the 'focus tiling' and 'focus floating' commands work
+#############################################################################
+
+$tmp = fresh_workspace;
+
+$first = open_standard_window($x, '#ff0000');    # window 8
+$second = open_standard_window($x, '#00ff00');   # window 9
+
+is($x->input_focus, $second->id, 'second container focused');
+
+cmd 'floating enable';
+
+is($x->input_focus, $second->id, 'second container focused');
+
+cmd 'focus tiling';
+
+sleep 0.25;
+
+is($x->input_focus, $first->id, 'first (tiling) container focused');
+
+cmd 'focus floating';
+
+sleep 0.25;
+
+is($x->input_focus, $second->id, 'second (floating) container focused');
+
+cmd 'focus floating';
+
+sleep 0.25;
+
+is($x->input_focus, $second->id, 'second (floating) container still focused');
+
+cmd 'focus mode_toggle';
+
+sleep 0.25;
+
+is($x->input_focus, $first->id, 'first (tiling) container focused');
+
+cmd 'focus mode_toggle';
+
+sleep 0.25;
+
+is($x->input_focus, $second->id, 'second (floating) container focused');
+
+
 done_testing;

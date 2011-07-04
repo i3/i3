@@ -135,6 +135,7 @@ char *parse_cmd(const char *new) {
 %token              TOK_MODE            "mode"
 %token              TOK_TILING          "tiling"
 %token              TOK_FLOATING        "floating"
+%token              TOK_MODE_TOGGLE     "mode_toggle"
 %token              TOK_ENABLE          "enable"
 %token              TOK_DISABLE         "disable"
 %token              TOK_WORKSPACE       "workspace"
@@ -175,6 +176,7 @@ char *parse_cmd(const char *new) {
 %type   <number>    split_direction
 %type   <number>    fullscreen_mode
 %type   <number>    level
+%type   <number>    window_mode
 %type   <number>    boolean
 %type   <number>    border_style
 %type   <number>    layout_mode
@@ -447,6 +449,38 @@ focus:
 
         tree_render();
     }
+    | TOK_FOCUS window_mode
+    {
+        printf("should focus: ");
+
+        if ($2 == TOK_TILING)
+            printf("tiling\n");
+        else if ($2 == TOK_FLOATING)
+            printf("floating\n");
+        else printf("mode toggle\n");
+
+        Con *ws = con_get_workspace(focused);
+        Con *current;
+        if (ws != NULL) {
+            int to_focus = $2;
+            if ($2 == TOK_MODE_TOGGLE) {
+                current = TAILQ_FIRST(&(ws->focus_head));
+                if (current->type == CT_FLOATING_CON)
+                    to_focus = TOK_TILING;
+                else to_focus = TOK_FLOATING;
+            }
+            TAILQ_FOREACH(current, &(ws->focus_head), focused) {
+                if ((to_focus == TOK_FLOATING && current->type != CT_FLOATING_CON) ||
+                    (to_focus == TOK_TILING && current->type == CT_FLOATING_CON))
+                    continue;
+
+                con_focus(con_descend_focused(current));
+                break;
+            }
+        }
+
+        tree_render();
+    }
     | TOK_FOCUS level
     {
         if ($2 == TOK_PARENT)
@@ -455,6 +489,12 @@ focus:
 
         tree_render();
     }
+    ;
+
+window_mode:
+    TOK_TILING        { $$ = TOK_TILING; }
+    | TOK_FLOATING    { $$ = TOK_FLOATING; }
+    | TOK_MODE_TOGGLE { $$ = TOK_MODE_TOGGLE; }
     ;
 
 level:

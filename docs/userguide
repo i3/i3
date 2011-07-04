@@ -627,6 +627,20 @@ bindsym Mod1+t floating toggle
 
 To change the focus, use the focus command: +focus left+, +focus right+, +focus down+ and +focus up+.
 
+There are a few special parameters you can use for the focus command:
+
+parent::
+	Sets focus to the +Parent Container+ of the current +Container+.
+child::
+	The opposite of +focus parent+, sets the focus to the last focused
+	child container.
+floating::
+	Sets focus to the last focused floating container.
+tiling::
+	Sets focus to the last focused tiling container.
+mode_toggle::
+	Toggles between floating/tiling containers.
+
 For moving, use +move left+, +move right+, +move down+ and +move up+.
 
 *Examples*:
@@ -636,6 +650,12 @@ bindsym Mod1+j focus left
 bindsym Mod1+k focus down
 bindsym Mod1+l focus up
 bindsym Mod1+semicolon focus right
+
+# Focus parent container
+bindsym Mod1+u focus parent
+
+# Focus last floating/tiling container
+bindsym Mod1+g focus mode_toggle
 
 # Move client to the left, bottom, top, right:
 bindsym Mod1+j move left
@@ -757,32 +777,6 @@ bindsym Mod1+g exec i3-input -p 'goto ' -l 1 -P 'Goto: '
 Alternatively, if you do not want to mess with +i3-input+, you could create
 seperate bindings for a specific set of labels and then only use those labels.
 ///////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////
-TODO: not yet implemented
-=== Traveling the focus stack
-
-This mechanism can be thought of as the opposite of the +jump+ command.
-It travels the focus stack and jumps to the window which had focus previously.
-
-*Syntax*:
---------------
-focus [number] | floating | tiling | ft
---------------
-
-Where +number+ by default is 1 meaning that the next client in the focus stack
-will be selected.
-
-The special values have the following meaning:
-
-floating::
-	The next floating window is selected.
-tiling::
-	The next tiling window is selected.
-ft::
-	If the current window is floating, the next tiling window will be
-       selected; and vice-versa.
-///////////////////////////////////////////////////////////////////////////////
 
 === Changing border style
 
