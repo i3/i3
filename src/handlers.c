@@ -439,9 +439,10 @@ static int handle_screen_change(xcb_generic_event_t *e) {
  *
  */
 static int handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
+    // XXX: this is commented out because in src/x.c we disable EnterNotify events
     /* we need to ignore EnterNotify events which will be generated because a
      * different window is visible now */
-    add_ignore_event(event->sequence, XCB_ENTER_NOTIFY);
+    //add_ignore_event(event->sequence, XCB_ENTER_NOTIFY);
 
     DLOG("UnmapNotify for 0x%08x (received from 0x%08x), serial %d\n", event->window, event->event, event->sequence);
     Con *con = con_by_window_id(event->window);

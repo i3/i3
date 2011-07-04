@@ -18,6 +18,7 @@ xcb_window_t focused_id = XCB_NONE;
 typedef struct con_state {
     xcb_window_t id;
     bool mapped;
+    bool unmap_now;
     bool child_mapped;
 
     /* For reparenting, we have a flag (need_reparent) and the X ID of the old
@@ -78,9 +79,9 @@ void x_con_init(Con *con) {
     mask |= XCB_CW_OVERRIDE_REDIRECT;
     values[0] = 1;
 
-    /* We want to know when… */
+    /* see include/xcb.h for the FRAME_EVENT_MASK */
     mask |= XCB_CW_EVENT_MASK;
-    values[1] = FRAME_EVENT_MASK;
+    values[1] = FRAME_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
 
     Rect dims = { -15, -15, 10, 10 };
     con->frame = create_window(conn, dims, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
@@ -612,20 +613,28 @@ void x_push_node(Con *con) {
                                 A_WM_STATE, A_WM_STATE, 32, 2, data);
         }
 
+        uint32_t values[1];
         if (!state->child_mapped && con->window != NULL) {
             cookie = xcb_map_window(conn, con->window->id);
+
+            /* We are interested in EnterNotifys as soon as the window is
+             * mapped */
+            values[0] = CHILD_EVENT_MASK;
+            xcb_change_window_attributes(conn, con->window->id, XCB_CW_EVENT_MASK, values);
             DLOG("mapping child window (serial %d)\n", cookie.sequence);
-            /* Ignore enter_notifies which are generated when mapping */
-            add_ignore_event(cookie.sequence, 0);
             state->child_mapped = true;
         }
 
         cookie = xcb_map_window(conn, con->frame);
-        DLOG("mapping container (serial %d)\n", cookie.sequence);
-        /* Ignore enter_notifies which are generated when mapping */
-        add_ignore_event(cookie.sequence, 0);
+
+        values[0] = FRAME_EVENT_MASK;
+        xcb_change_window_attributes(conn, con->frame, XCB_CW_EVENT_MASK, values);
+
+        DLOG("mapping container %08x (serial %d)\n", con->frame, cookie.sequence);
         state->mapped = con->mapped;
     }
+
+    state->unmap_now = (state->mapped != con->mapped) && !con->mapped;
 
     if (fake_notify) {
         DLOG("Sending fake configure notify\n");
@@ -658,8 +667,7 @@ static void x_push_node_unmaps(Con *con) {
     /* map/unmap if map state changed, also ensure that the child window
      * is changed if we are mapped *and* in initial state (meaning the
      * container was empty before, but now got a child) */
-    if ((state->mapped != con->mapped || (con->mapped && state->initial)) &&
-        !con->mapped) {
+    if (state->unmap_now) {
         xcb_void_cookie_t cookie;
         if (con->window != NULL) {
             /* Set WM_STATE_WITHDRAWN, it seems like Java apps need it */
@@ -677,8 +685,6 @@ static void x_push_node_unmaps(Con *con) {
             con->ignore_unmap++;
             DLOG("ignore_unmap for con %p (frame 0x%08x) now %d\n", con, con->frame, con->ignore_unmap);
         }
-        /* Ignore enter_notifies which are generated when unmapping */
-        add_ignore_event(cookie.sequence, 0);
         state->mapped = con->mapped;
     }
 
@@ -731,8 +737,10 @@ void x_push_changes(Con *con) {
         state->initial = false;
     }
     //DLOG("Re-enabling EnterNotify\n");
-    values[0] = FRAME_EVENT_MASK;
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
+        values[0] = FRAME_EVENT_MASK;
+        if (!state->mapped)
+            values[0] &= ~XCB_EVENT_MASK_ENTER_WINDOW;
         xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
     }
     //DLOG("Done, EnterNotify re-enabled\n");
@@ -785,6 +793,21 @@ void x_push_changes(Con *con) {
     xcb_flush(conn);
     DLOG("\n\n ENDING CHANGES\n\n");
 
+    /* Disable EnterWindow events for windows which will be unmapped in
+     * x_push_node_unmaps() now. Unmapping windows happens when switching
+     * workspaces. We want to avoid getting EnterNotifies during that phase
+     * because they would screw up our focus. One of these cases is having a
+     * stack with two windows. If the first window is focused and gets
+     * unmapped, the second one appears under the cursor and therefore gets an
+     * EnterNotify event. */
+    values[0] = FRAME_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
+    CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
+        if (!state->unmap_now)
+            continue;
+        xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
+    }
+
+    /* Push all pending unmaps */
     x_push_node_unmaps(con);
 
     /* save the current stack as old stack */

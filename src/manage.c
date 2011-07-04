@@ -117,16 +117,14 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         goto out;
     }
 
-    uint32_t mask = 0;
     uint32_t values[1];
 
     /* Set a temporary event mask for the new window, consisting only of
      * PropertyChange. We need to be notified of PropertyChanges because the
      * client can change its properties *after* we requested them but *before*
      * we actually reparented it and have set our final event mask. */
-    mask = XCB_CW_EVENT_MASK;
     values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE;
-    xcb_change_window_attributes(conn, window, mask, values);
+    xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, values);
 
 #define GET_PROPERTY(atom, len) xcb_get_property_unchecked(conn, false, window, atom, XCB_GET_PROPERTY_TYPE_ANY, 0, len)
 
@@ -326,9 +324,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         goto out;
     }
 
-    mask = XCB_CW_EVENT_MASK;
-    values[0] = CHILD_EVENT_MASK;
-    xcb_change_window_attributes(conn, window, mask, values);
+    values[0] = CHILD_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
+    xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, values);
     xcb_flush(conn);
 
     reply = xcb_get_property_reply(conn, state_cookie, NULL);
