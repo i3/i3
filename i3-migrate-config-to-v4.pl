@@ -129,6 +129,7 @@ for my $line (@lines) {
     # bar colors are obsolete, need to be configured in i3bar
     if ($statement =~ /^bar\./) {
         print "# XXX: REMOVED $statement, configure i3bar instead.\n";
+        print "# Old line: $line\n";
         next;
     }
 
