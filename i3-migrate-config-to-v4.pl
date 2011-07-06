@@ -83,6 +83,21 @@ if (!need_to_convert()) {
     exit 1;
 }
 
+# first pass: get workspace names
+for my $line (@lines) {
+    next if $line =~ /^#/ || $line =~ /^$/;
+
+    my ($statement, $parameters) = ($line =~ /([a-zA-Z._-]+)(.*)/);
+
+    # skip everything but workspace lines
+    next unless defined($statement) and $statement eq 'workspace';
+
+    my ($number, $params) = ($parameters =~ /[ \t]+([0-9]+) (.+)/);
+
+    # save workspace name (unless the line is actually a workspace assignment)
+    $workspace_names{$number} = $params unless $params =~ /^output/;
+}
+
 for my $line (@lines) {
     # directly use comments and empty lines
     if ($line =~ /^#/ || $line =~ /^$/) {
@@ -141,8 +156,7 @@ for my $line (@lines) {
             print "$line\n";
             next;
         } else {
-            print "# XXX: workspace name will end up in the bindings, see below\n";
-            $workspace_names{$number} = $params;
+            print "# XXX: workspace name will end up in the corresponding bindings.\n";
             next;
         }
     }

@@ -297,6 +297,15 @@ $output = migrate_config($input);
 ok(!line_exists($output, qr|^workspace|), 'workspace name not present');
 ok(line_exists($output, qr|^bindsym Mod1\+3 workspace work|), 'named workspace in bindings');
 
+# The same, but in reverse order
+$input = <<EOT;
+    bindsym Mod1+3 3
+    workspace 3 work
+EOT
+$output = migrate_config($input);
+ok(!line_exists($output, qr|^workspace|), 'workspace name not present');
+ok(line_exists($output, qr|^bindsym Mod1\+3 workspace work|), 'named workspace in bindings');
+
 $output = migrate_config('bindsym Mod1+3 3');
 ok(line_exists($output, qr|^bindsym Mod1\+3 workspace 3|), 'workspace changed');
 
