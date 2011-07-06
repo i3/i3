@@ -70,7 +70,7 @@ sub need_to_convert {
                     $command =~ /^floating/ ||
                     $command =~ /^workspace/ ||
                     $command =~ /^focus (left|right|up|down)/ ||
-                    $command =~ /^border (normal|1pixel|borderless)/;
+                    $command =~ /^border (normal|1pixel|none)/;
     }
 
     return 1;
@@ -127,10 +127,10 @@ for my $line (@lines) {
         next;
     }
 
-    # new_window changed the parameters from bb to borderless etc.
+    # new_window changed the parameters from bb to none etc.
     if ($statement eq 'new_window') {
         if ($parameters =~ /bb/) {
-            print "new_window borderless\n";
+            print "new_window none\n";
         } elsif ($parameters =~ /bp/) {
             print "new_window 1pixel\n";
         } elsif ($parameters =~ /bn/) {
@@ -216,7 +216,7 @@ sub convert_command {
         qr/^ml/ => 'move right',
         qr/^bn/ => 'border normal',
         qr/^bp/ => 'border 1pixel',
-        qr/^bb/ => 'border borderless',
+        qr/^bb/ => 'border none',
         qr/^pw/ => 'workspace prev',
         qr/^nw/ => 'workspace next',
     );

@@ -112,14 +112,14 @@ $output = migrate_config($input);
 ok(line_exists($output, qr|^workspace_layout stacking$|), 'new_container changed');
 ok(line_exists($output, qr|REMOVED workspace_bar|), 'workspace_bar removed');
 ok(!line_exists($output, qr|^workspace_bar|), 'no workspace_bar in the output');
-ok(line_exists($output, qr|^new_window borderless$|), 'new_window changed');
+ok(line_exists($output, qr|^new_window none$|), 'new_window changed');
 
 #####################################################################
 # check whether new_window's parameters get changed correctly
 #####################################################################
 
 $output = migrate_config('new_window bb');
-ok(line_exists($output, qr|^new_window borderless$|), 'new_window bb changed');
+ok(line_exists($output, qr|^new_window none$|), 'new_window bb changed');
 
 $output = migrate_config('new_window bn');
 ok(line_exists($output, qr|^new_window normal$|), 'new_window bn changed');
@@ -212,7 +212,7 @@ ok(line_exists($output, qr|^bindsym Mod1\+s move up$|), 'mk replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s move right$|), 'ml replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s border normal$|), 'bn replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s border 1pixel$|), 'bp replaced');
-ok(line_exists($output, qr|^bindsym Mod1\+s border borderless$|), 'bb replaced');
+ok(line_exists($output, qr|^bindsym Mod1\+s border none$|), 'bb replaced');
 ok(line_exists($output, qr|^#.*with container.*obsolete.*wch$|), 'with container removed');
 ok(line_exists($output, qr|^#.*with container.*obsolete.*wcml$|), 'with container removed');
 ok(line_exists($output, qr|^bindsym Mod1\+k kill$|), 'kill unchanged');
