@@ -65,6 +65,7 @@ $input = <<EOT;
     client.focused_inactive #FF0000 #FF0000 #FF0000
     client.unfocused #00FF00 #00FF00 #00FF00
     client.urgent #0000FF #0000FF #0000FF
+    client.background #000000
 EOT
 
 $output = migrate_config($input);
@@ -80,6 +81,7 @@ ok(line_exists($output, qr|^client\.focused #2F343A #900000 #FFFFFF$|), 'client.
 ok(line_exists($output, qr|^client\.focused_inactive #FF0000 #FF0000 #FF0000$|), 'client.focused_inactive unchanged');
 ok(line_exists($output, qr|^client\.unfocused #00FF00 #00FF00 #00FF00$|), 'client.unfocused unchanged');
 ok(line_exists($output, qr|^client\.urgent #0000FF #0000FF #0000FF$|), 'client.urgent unchanged');
+ok(line_exists($output, qr|^client\.background #000000$|), 'client.background unchanged');
 
 #####################################################################
 # check whether the bar colors get removed properly

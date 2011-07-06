@@ -41,6 +41,7 @@ my @unchanged = qw(
     client.focused_inactive
     client.unfocused
     client.urgent
+    client.background
 );
 
 my %workspace_names;
