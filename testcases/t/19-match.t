@@ -56,4 +56,64 @@ ok(@{$content} == 0, 'window killed');
 
 # TODO: same test, but with pcre expressions
 
+######################################################################
+# check that multiple criteria work are checked with a logical AND,
+# not a logical OR (that is, matching is not cancelled after the first
+# criterion matches).
+######################################################################
+
+$tmp = fresh_workspace;
+
+# TODO: move to X11::XCB
+sub set_wm_class {
+    my ($id, $class, $instance) = @_;
+
+    # Add a _NET_WM_STRUT_PARTIAL hint
+    my $atomname = $x->atom(name => 'WM_CLASS');
+    my $atomtype = $x->atom(name => 'STRING');
+
+    $x->change_property(
+        PROP_MODE_REPLACE,
+        $id,
+        $atomname->id,
+        $atomtype->id,
+        8,
+        length($class) + length($instance) + 2,
+        "$instance\x00$class\x00"
+    );
+}
+
+my $left = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#0000ff',
+);
+
+$left->_create;
+set_wm_class($left->id, 'special', 'special');
+$left->name('left');
+$left->map;
+sleep 0.25;
+
+my $right = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#0000ff',
+);
+
+$right->_create;
+set_wm_class($right->id, 'special', 'special');
+$right->name('right');
+$right->map;
+sleep 0.25;
+
+# two windows should be here
+$content = get_ws_content($tmp);
+ok(@{$content} == 2, 'two windows opened');
+
+cmd '[class="special" title="left"] kill';
+
+$content = get_ws_content($tmp);
+is(@{$content}, 1, 'one window still there');
+
 done_testing;

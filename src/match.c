@@ -69,40 +69,66 @@ void match_copy(Match *dest, Match *src) {
  *
  */
 bool match_matches_window(Match *match, i3Window *window) {
+    LOG("checking window %d (%s)\n", window->id, window->class_class);
+
     /* TODO: pcre, full matching, … */
-    if (match->class != NULL && window->class_class != NULL && strcasecmp(match->class, window->class_class) == 0) {
-        LOG("match made by window class (%s)\n", window->class_class);
-        return true;
+    if (match->class != NULL) {
+        if (window->class_class != NULL && strcasecmp(match->class, window->class_class) == 0) {
+            LOG("window class matches (%s)\n", window->class_class);
+        } else {
+            LOG("window class does not match\n");
+            return false;
+        }
     }
 
-    if (match->instance != NULL && window->class_instance != NULL && strcasecmp(match->instance, window->class_instance) == 0) {
-        LOG("match made by window instance (%s)\n", window->class_instance);
-        return true;
+    if (match->instance != NULL) {
+        if (window->class_instance != NULL && strcasecmp(match->instance, window->class_instance) == 0) {
+            LOG("window instance matches (%s)\n", window->class_instance);
+        } else {
+            LOG("window instance does not match\n");
+            return false;
+        }
     }
 
-    if (match->id != XCB_NONE && window->id == match->id) {
-        LOG("match made by window id (%d)\n", window->id);
-        return true;
+    if (match->id != XCB_NONE) {
+        if (window->id == match->id) {
+            LOG("match made by window id (%d)\n", window->id);
+        } else {
+            LOG("window id does not match\n");
+            return false;
+        }
     }
 
     /* TODO: pcre match */
-    if (match->title != NULL && window->name_json != NULL && strcasecmp(match->title, window->name_json) == 0) {
-        LOG("match made by title (%s)\n", window->name_json);
-        return true;
+    if (match->title != NULL) {
+        if (window->name_json != NULL && strcasecmp(match->title, window->name_json) == 0) {
+            LOG("title matches (%s)\n", window->name_json);
+        } else {
+            LOG("title does not match\n");
+            return false;
+        }
     }
 
-    LOG("match->dock = %d, window->dock = %d\n", match->dock, window->dock);
-    if (match->dock != -1 &&
-        ((window->dock == W_DOCK_TOP && match->dock == M_DOCK_TOP) ||
+    if (match->dock != -1) {
+        LOG("match->dock = %d, window->dock = %d\n", match->dock, window->dock);
+        if ((window->dock == W_DOCK_TOP && match->dock == M_DOCK_TOP) ||
          (window->dock == W_DOCK_BOTTOM && match->dock == M_DOCK_BOTTOM) ||
          ((window->dock == W_DOCK_TOP || window->dock == W_DOCK_BOTTOM) &&
           match->dock == M_DOCK_ANY) ||
-         (window->dock == W_NODOCK && match->dock == M_NODOCK))) {
-        LOG("match made by dock\n");
-        return true;
+         (window->dock == W_NODOCK && match->dock == M_NODOCK)) {
+            LOG("dock status matches\n");
+        } else {
+            LOG("dock status does not match\n");
+            return false;
+        }
     }
 
-    LOG("window %d (%s) could not be matched\n", window->id, window->class_class);
+    /* We don’t check the mark because this function is not even called when
+     * the mark would have matched - it is checked in cmdparse.y itself */
+    if (match->mark != NULL) {
+        LOG("mark does not match\n");
+        return false;
+    }
 
-    return false;
+    return true;
 }
