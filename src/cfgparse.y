@@ -65,6 +65,7 @@ static int detect_version(char *buf) {
 
         /* check for some v4-only statements */
         if (strncasecmp(line, "bindcode", strlen("bindcode")) == 0 ||
+            strncasecmp(line, "force_focus_wrapping", strlen("force_focus_wrapping")) == 0 ||
             strncasecmp(line, "# i3 config file (v4)", strlen("# i3 config file (v4)")) == 0 ||
             strncasecmp(line, "workspace_layout", strlen("workspace_layout")) == 0) {
             printf("deciding for version 4 due to this line: %.*s\n", (int)(walk-line), line);

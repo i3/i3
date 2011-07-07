@@ -60,7 +60,9 @@ sub need_to_convert {
 
     for my $line (@lines) {
         # only v4 configfiles can use bindcode or workspace_layout
-        return 0 if $line =~ /^bindcode/ || $line =~ /^workspace_layout/;
+        return 0 if $line =~ /^bindcode/ ||
+                    $line =~ /^workspace_layout/ ||
+                    $line =~ /^force_focus_wrapping/;
 
         # have a look at bindings
         next unless $line =~ /^bind/;
