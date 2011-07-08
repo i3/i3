@@ -185,6 +185,7 @@ $input = <<EOT;
     bindsym Mod1+s bn
     bindsym Mod1+s bp
     bindsym Mod1+s bb
+    bindsym Mod1+s bt
 
     bindsym Mod1+j wch
     bindsym Mod1+j wcml
@@ -213,6 +214,7 @@ ok(line_exists($output, qr|^bindsym Mod1\+s move right$|), 'ml replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s border normal$|), 'bn replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s border 1pixel$|), 'bp replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s border none$|), 'bb replaced');
+ok(line_exists($output, qr|^bindsym Mod1\+s border toggle$|), 'bt replaced');
 ok(line_exists($output, qr|^#.*with container.*obsolete.*wch$|), 'with container removed');
 ok(line_exists($output, qr|^#.*with container.*obsolete.*wcml$|), 'with container removed');
 ok(line_exists($output, qr|^bindsym Mod1\+k kill$|), 'kill unchanged');

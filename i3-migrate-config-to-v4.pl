@@ -219,6 +219,7 @@ sub convert_command {
         qr/^bn/ => 'border normal',
         qr/^bp/ => 'border 1pixel',
         qr/^bb/ => 'border none',
+        qr/^bt/ => 'border toggle',
         qr/^pw/ => 'workspace prev',
         qr/^nw/ => 'workspace next',
     );
