@@ -38,8 +38,12 @@ char *statusline_buffer = NULL;
 void cleanup() {
     if (stdin_io != NULL) {
         ev_io_stop(main_loop, stdin_io);
-        ev_child_stop(main_loop, child_sig);
         FREE(stdin_io);
+        FREE(statusline_buffer);
+    }
+
+    if (child_sig != NULL) {
+        ev_child_stop(main_loop, child_sig);
         FREE(child_sig);
         FREE(statusline_buffer);
     }
@@ -69,18 +73,23 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
-            if (rec == buffer_len) {
-                buffer_len += STDIN_CHUNK_SIZE;
-                buffer = realloc(buffer, buffer_len);
-            } else {
-                if (rec != 0) {
-                    /* remove trailing newline and finish up */
-                    buffer[rec-1] = '\0';
-                }
-                break;
+            if (rec != 0) {
+                /* remove trailing newline and finish up */
+                buffer[rec-1] = '\0';
             }
+
+            /* end of file, kill the watcher */
+            DLOG("stdin: EOF\n");
+            ev_io_stop(loop, watcher);
+            FREE(stdin_io);
+            break;
         }
         rec += n;
+
+        if (rec == buffer_len) {
+            buffer_len += STDIN_CHUNK_SIZE;
+            buffer = realloc(buffer, buffer_len);
+	    }
     }
     if (*buffer == '\0') {
         FREE(buffer);
