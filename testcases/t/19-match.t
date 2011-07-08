@@ -113,6 +113,8 @@ ok(@{$content} == 2, 'two windows opened');
 
 cmd '[class="special" title="left"] kill';
 
+sleep 0.25;
+
 $content = get_ws_content($tmp);
 is(@{$content}, 1, 'one window still there');
 
