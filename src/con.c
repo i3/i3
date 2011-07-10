@@ -52,9 +52,6 @@ Con *con_new(Con *parent, i3Window *window) {
 
     x_con_init(new);
 
-    // TODO: this needs to be integrated into src/x.c and updated on config file reloads
-    xcb_change_window_attributes(conn, new->frame, XCB_CW_BACK_PIXEL, &config.client.background);
-
     TAILQ_INIT(&(new->floating_head));
     TAILQ_INIT(&(new->nodes_head));
     TAILQ_INIT(&(new->focus_head));
