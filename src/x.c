@@ -286,9 +286,9 @@ void x_draw_decoration(Con *con) {
         !parent->pixmap_recreated &&
         !con->pixmap_recreated &&
         memcmp(p, con->deco_render_params, sizeof(struct deco_render_params)) == 0) {
-        DLOG("CACHE HIT, not re-rendering\n");
+        DLOG("CACHE HIT, copying existing pixmaps\n");
         free(p);
-        return;
+        goto copy_pixmaps;
     }
 
     DLOG("CACHE MISS\n");
@@ -369,7 +369,7 @@ void x_draw_decoration(Con *con) {
      * decoration. */
     if (p->border_style != BS_NORMAL) {
         DLOG("border style not BS_NORMAL, aborting rendering of decoration\n");
-        goto update_pixmaps;
+        goto copy_pixmaps;
     }
 
     /* 4: paint the bar */
@@ -409,7 +409,7 @@ void x_draw_decoration(Con *con) {
             "another container"
         );
 
-        goto update_pixmaps;
+        goto copy_pixmaps;
     }
 
     int indent_level = 0,
@@ -450,9 +450,9 @@ void x_draw_decoration(Con *con) {
             win->name_x
         );
 
-update_pixmaps:
-    xcb_clear_area(conn, false, con->frame, 0, 0, con->rect.width, con->rect.height);
-    xcb_clear_area(conn, false, parent->frame, 0, 0, parent->rect.width, parent->rect.height);
+copy_pixmaps:
+    xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
+    xcb_copy_area(conn, parent->pixmap, parent->frame, parent->pm_gc, 0, 0, 0, 0, parent->rect.width, parent->rect.height);
 }
 
 /*
@@ -575,9 +575,6 @@ void x_push_node(Con *con) {
              * from the very first moment. Later calls will be cached, so this
              * doesn’t hurt performance. */
             x_deco_recurse(con);
-
-            uint32_t values[] = { con->pixmap };
-            xcb_change_window_attributes(conn, con->frame, XCB_CW_BACK_PIXMAP, values);
         }
 
         DLOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
