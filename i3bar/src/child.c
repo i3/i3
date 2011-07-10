@@ -45,7 +45,6 @@ void cleanup() {
     if (child_sig != NULL) {
         ev_child_stop(main_loop, child_sig);
         FREE(child_sig);
-        FREE(statusline_buffer);
     }
 }
 
@@ -80,8 +79,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 
             /* end of file, kill the watcher */
             DLOG("stdin: EOF\n");
-            ev_io_stop(loop, watcher);
-            FREE(stdin_io);
+            cleanup();
             break;
         }
         rec += n;
