@@ -257,6 +257,14 @@ void x_draw_decoration(Con *con) {
         return;
     }
 
+    /* Skip containers whose pixmap has not yet been created (can happen when
+     * decoration rendering happens recursively for a window for which
+     * x_push_node() was not yet called) */
+    if (con->pixmap == XCB_NONE) {
+        DLOG("pixmap not yet created, not rendering\n");
+        return;
+    }
+
     /* 1: build deco_params and compare with cache */
     struct deco_render_params *p = scalloc(sizeof(struct deco_render_params));
 
@@ -602,7 +610,8 @@ void x_push_node(Con *con) {
          * fast as possible) */
         xcb_flush(conn);
         xcb_set_window_rect(conn, con->frame, rect);
-        xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
+        if (con->pixmap != XCB_NONE)
+            xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
         xcb_flush(conn);
 
         memcpy(&(state->rect), &rect, sizeof(Rect));
@@ -653,7 +662,8 @@ void x_push_node(Con *con) {
         xcb_change_window_attributes(conn, con->frame, XCB_CW_EVENT_MASK, values);
 
         /* copy the pixmap contents to the frame window immediately after mapping */
-        xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
+        if (con->pixmap != XCB_NONE)
+            xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
         xcb_flush(conn);
 
         DLOG("mapping container %08x (serial %d)\n", con->frame, cookie.sequence);
