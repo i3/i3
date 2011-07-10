@@ -460,7 +460,7 @@ copy_pixmaps:
  * while drawing the decoration needs to happen in the actual order.
  *
  */
-static void x_deco_recurse(Con *con) {
+void x_deco_recurse(Con *con) {
     Con *current;
     bool leaf = TAILQ_EMPTY(&(con->nodes_head)) &&
                 TAILQ_EMPTY(&(con->floating_head));

@@ -61,6 +61,14 @@ void x_window_kill(xcb_window_t window, kill_window_t kill_window);
 void x_draw_decoration(Con *con);
 
 /**
+ * Recursively calls x_draw_decoration. This cannot be done in x_push_node
+ * because x_push_node uses focus order to recurse (see the comment above)
+ * while drawing the decoration needs to happen in the actual order.
+ *
+ */
+void x_deco_recurse(Con *con);
+
+/**
  * This function pushes the properties of each node of the layout tree to
  * X11 if they have changed (like the map state, position of the window, …).
  * It recursively traverses all children of the given node.

@@ -586,7 +586,7 @@ static int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t
  *
  */
 static int handle_expose_event(xcb_expose_event_t *event) {
-    Con *parent, *con;
+    Con *parent;
 
     /* event->count is the number of minimum remaining expose events for this
      * window, so we skip all events but the last one */
@@ -600,22 +600,8 @@ static int handle_expose_event(xcb_expose_event_t *event) {
         return 1;
     }
 
-    if (parent->window)
-        x_draw_decoration(parent);
-
-    TAILQ_FOREACH(con, &(parent->nodes_head), nodes) {
-        DLOG("expose for con %p / %s\n", con, con->name);
-        if (con->window)
-            x_draw_decoration(con);
-    }
-
-    /* We also need to render the decorations of other Cons nearby the Con
-     * itself to not get overlapping decorations */
-    TAILQ_FOREACH(con, &(parent->parent->nodes_head), nodes) {
-        DLOG("expose for con %p / %s\n", con, con->name);
-        if (con->window)
-            x_draw_decoration(con);
-    }
+    /* re-render the parent (recursively, if it’s a split con) */
+    x_deco_recurse(parent);
     xcb_flush(conn);
 
     return 1;
