@@ -641,6 +641,10 @@ void x_push_node(Con *con) {
         values[0] = FRAME_EVENT_MASK;
         xcb_change_window_attributes(conn, con->frame, XCB_CW_EVENT_MASK, values);
 
+        /* copy the pixmap contents to the frame window immediately after mapping */
+        xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
+        xcb_flush(conn);
+
         DLOG("mapping container %08x (serial %d)\n", con->frame, cookie.sequence);
         state->mapped = con->mapped;
     }
