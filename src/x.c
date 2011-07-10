@@ -452,7 +452,6 @@ void x_draw_decoration(Con *con) {
 
 copy_pixmaps:
     xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
-    xcb_copy_area(conn, parent->pixmap, parent->frame, parent->pm_gc, 0, 0, 0, 0, parent->rect.width, parent->rect.height);
 }
 
 /*
@@ -463,12 +462,20 @@ copy_pixmaps:
  */
 static void x_deco_recurse(Con *con) {
     Con *current;
+    bool leaf = TAILQ_EMPTY(&(con->nodes_head)) &&
+                TAILQ_EMPTY(&(con->floating_head));
+    con_state *state = state_for_frame(con->frame);
 
-    TAILQ_FOREACH(current, &(con->nodes_head), nodes)
-        x_deco_recurse(current);
+    if (!leaf) {
+        TAILQ_FOREACH(current, &(con->nodes_head), nodes)
+            x_deco_recurse(current);
 
-    TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
-        x_deco_recurse(current);
+        TAILQ_FOREACH(current, &(con->floating_head), floating_windows)
+            x_deco_recurse(current);
+
+        if (state->mapped)
+            xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
+    }
 
     if ((con->type != CT_ROOT && con->type != CT_OUTPUT) &&
         con->mapped)
