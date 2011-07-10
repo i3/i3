@@ -75,6 +75,7 @@ install: all
 	$(INSTALL) -m 0644 include/i3/ipc.h $(DESTDIR)$(PREFIX)/include/i3/
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg install
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-input install
+	$(MAKE) TOPDIR=$(TOPDIR) -C i3-nagbar install
 
 dist: distclean
 	[ ! -d i3-${VERSION} ] || rm -rf i3-${VERSION}
