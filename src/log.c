@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include "util.h"
 #include "log.h"
@@ -89,7 +90,13 @@ void vlog(char *fmt, va_list args) {
     struct tm *tmp = localtime(&t);
     /* Generate time prefix */
     strftime(timebuf, sizeof(timebuf), "%x %X - ", tmp);
+#ifdef DEBUG_TIMING
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    printf("%s%d.%d - ", timebuf, tv.tv_sec, tv.tv_usec);
+#else
     printf("%s", timebuf);
+#endif
     vprintf(fmt, args);
 }
 
