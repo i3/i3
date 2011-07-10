@@ -578,10 +578,15 @@ void x_push_node(Con *con) {
 
             con->pixmap_recreated = true;
 
-            /* Render the decoration now to make the correct decoration visible
-             * from the very first moment. Later calls will be cached, so this
-             * doesn’t hurt performance. */
-            x_deco_recurse(con);
+            /* Don’t render the decoration for windows inside a stack which are
+             * not visible right now */
+            if (!con->parent ||
+                con->parent->layout != L_STACKED ||
+                TAILQ_FIRST(&(con->parent->focus_head)) == con)
+                /* Render the decoration now to make the correct decoration visible
+                 * from the very first moment. Later calls will be cached, so this
+                 * doesn’t hurt performance. */
+                x_deco_recurse(con);
         }
 
         DLOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
