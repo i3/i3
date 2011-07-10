@@ -10,16 +10,21 @@ packages for them.
 Please make sure the manpage for i3 will be properly created and installed
 in your package.
 
+Also please provide the path to a suitable terminal emulator which is installed
+as a dependency of your package (e.g. urxvt). On systems which have a special
+commend to launch the best available terminal emulator, please use this one
+(e.g. x-terminal-emulator on debian).
+
 On debian, this looks like this:
 
 	# Compilation
-	$(MAKE)
+	$(MAKE) TERM_EMU=x-terminal-emulator
 	$(MAKE) -C man
 
 	# Installation
 	$(MAKE) DESTDIR=$(CURDIR)/debian/i3-wm/ install
 	mkdir -p $(CURDIR)/debian/i3-wm/usr/share/man/man1
-	cp man/i3.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
+	cp man/*.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
 
 If you have any questions, ideas, hints, problems or whatever, please do not
 hesitate to contact me. I will help you out. Just drop me an E-Mail (find the
