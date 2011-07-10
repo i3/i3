@@ -585,7 +585,14 @@ void x_push_node(Con *con) {
         }
 
         DLOG("setting rect (%d, %d, %d, %d)\n", rect.x, rect.y, rect.width, rect.height);
+        /* flush to ensure that the following commands are sent in a single
+         * buffer and will be processed directly afterwards (the contents of a
+         * window get lost when resizing it, therefore we want to provide it as
+         * fast as possible) */
+        xcb_flush(conn);
         xcb_set_window_rect(conn, con->frame, rect);
+        xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
+        xcb_flush(conn);
 
         memcpy(&(state->rect), &rect, sizeof(Rect));
         fake_notify = true;
