@@ -19,6 +19,8 @@ xcb_connection_t *conn;
 xcb_window_t root;
 uint8_t root_depth;
 
+struct ev_loop *main_loop;
+
 xcb_key_symbols_t *keysyms;
 
 /* Those are our connections to X11 for use with libXcursor and XKB */
@@ -178,6 +180,8 @@ int main(int argc, char *argv[]) {
     if (!isatty(fileno(stdout)))
         setbuf(stdout, NULL);
 
+    init_logging();
+
     start_argv = argv;
 
     while ((opt = getopt_long(argc, argv, "c:CvaL:hld:V", long_options, &option_index)) != -1) {
@@ -253,6 +257,13 @@ int main(int argc, char *argv[]) {
     conn = xcb_connect(NULL, &screens);
     if (xcb_connection_has_error(conn))
         errx(EXIT_FAILURE, "Cannot open display\n");
+
+    /* Initialize the libev event loop. This needs to be done before loading
+     * the config file because the parser will install an ev_child watcher
+     * for the nagbar when config errors are found. */
+    main_loop = EV_DEFAULT;
+    if (main_loop == NULL)
+            die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
 
     xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
@@ -395,10 +406,6 @@ int main(int argc, char *argv[]) {
 
     tree_render();
 
-    struct ev_loop *loop = ev_loop_new(0);
-    if (loop == NULL)
-            die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
-
     /* Create the UNIX domain socket for IPC */
     int ipc_socket = ipc_create_socket(config.ipc_socket_path);
     if (ipc_socket == -1) {
@@ -407,7 +414,7 @@ int main(int argc, char *argv[]) {
         free(config.ipc_socket_path);
         struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
         ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
-        ev_io_start(loop, ipc_io);
+        ev_io_start(main_loop, ipc_io);
     }
 
     /* Set up i3 specific atoms like I3_SOCKET_PATH and I3_CONFIG_PATH */
@@ -419,22 +426,22 @@ int main(int argc, char *argv[]) {
     struct ev_prepare *xcb_prepare = scalloc(sizeof(struct ev_prepare));
 
     ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
-    ev_io_start(loop, xcb_watcher);
+    ev_io_start(main_loop, xcb_watcher);
 
 
     if (xkb_supported) {
         ev_io_init(xkb, xkb_got_event, ConnectionNumber(xkbdpy), EV_READ);
-        ev_io_start(loop, xkb);
+        ev_io_start(main_loop, xkb);
 
         /* Flush the buffer so that libev can properly get new events */
         XFlush(xkbdpy);
     }
 
     ev_check_init(xcb_check, xcb_check_cb);
-    ev_check_start(loop, xcb_check);
+    ev_check_start(main_loop, xcb_check);
 
     ev_prepare_init(xcb_prepare, xcb_prepare_cb);
-    ev_prepare_start(loop, xcb_prepare);
+    ev_prepare_start(main_loop, xcb_prepare);
 
     xcb_flush(conn);
 
@@ -456,5 +463,5 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    ev_loop(loop, 0);
+    ev_loop(main_loop, 0);
 }

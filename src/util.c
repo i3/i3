@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <pwd.h>
 #include <yajl/yajl_version.h>
+#include <libgen.h>
 
 #include "all.h"
 
@@ -116,6 +117,53 @@ void start_application(const char *command) {
         exit(0);
     }
     wait(0);
+}
+
+/*
+ * exec()s an i3 utility, for example the config file migration script or
+ * i3-nagbar. This function first searches $PATH for the given utility named,
+ * then falls back to the dirname() of the i3 executable path and then falls
+ * back to the dirname() of the target of /proc/self/exe (on linux).
+ *
+ * This function should be called after fork()ing.
+ *
+ * The first argument of the given argv vector will be overwritten with the
+ * executable name, so pass NULL.
+ *
+ * If the utility cannot be found in any of these locations, it exits with
+ * return code 2.
+ *
+ */
+void exec_i3_utility(char *name, char *argv[]) {
+    /* start the migration script, search PATH first */
+    char *migratepath = name;
+    argv[0] = migratepath;
+    execvp(migratepath, argv);
+
+    /* if the script is not in path, maybe the user installed to a strange
+     * location and runs the i3 binary with an absolute path. We use
+     * argv[0]’s dirname */
+    char *pathbuf = strdup(start_argv[0]);
+    char *dir = dirname(pathbuf);
+    asprintf(&migratepath, "%s/%s", dir, name);
+    argv[0] = migratepath;
+    execvp(migratepath, argv);
+
+#if defined(__linux__)
+    /* on linux, we have one more fall-back: dirname(/proc/self/exe) */
+    char buffer[BUFSIZ];
+    if (readlink("/proc/self/exe", buffer, BUFSIZ) == -1) {
+        warn("could not read /proc/self/exe");
+        exit(1);
+    }
+    dir = dirname(buffer);
+    asprintf(&migratepath, "%s/%s", dir, name);
+    argv[0] = migratepath;
+    execvp(migratepath, argv);
+#endif
+
+    warn("Could not start %s", name);
+    exit(2);
 }
 
 /*
@@ -357,6 +405,8 @@ char *store_restart_layout() {
  */
 void i3_restart(bool forget_layout) {
     char *restart_filename = forget_layout ? NULL : store_restart_layout();
+
+    kill_configerror_nagbar(true);
 
     restore_geometry();
 

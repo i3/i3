@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "util.h"
 #include "log.h"
@@ -23,6 +24,23 @@
 
 static uint64_t loglevel = 0;
 static bool verbose = true;
+static FILE *errorfile;
+char *errorfilename;
+
+/*
+ * Initializes logging by creating an error logfile in /tmp (or
+ * XDG_RUNTIME_DIR, see get_process_filename()).
+ *
+ */
+void init_logging() {
+    errorfilename = get_process_filename("errorlog");
+    if (errorfilename == NULL) {
+        ELOG("Could not initialize errorlog\n");
+        return;
+    }
+
+    errorfile = fopen(errorfilename, "w");
+}
 
 /*
  * Set verbosity of i3. If verbose is set to true, informative messages will
@@ -100,6 +118,12 @@ void errorlog(char *fmt, ...) {
 
     va_start(args, fmt);
     vlog(fmt, args);
+    va_end(args);
+
+    /* also log to the error logfile, if opened */
+    va_start(args, fmt);
+    vfprintf(errorfile, fmt, args);
+    fflush(errorfile);
     va_end(args);
 }
 

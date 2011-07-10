@@ -380,6 +380,7 @@ reload:
     TOK_RELOAD
     {
         printf("reloading\n");
+        kill_configerror_nagbar(false);
         load_configuration(conn, NULL, true);
         x_set_i3_atoms();
         /* Send an IPC event just in case the ws names have changed */

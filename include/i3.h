@@ -32,5 +32,6 @@ extern SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins;
 extern uint8_t root_depth;
 extern bool xcursor_supported, xkb_supported;
 extern xcb_window_t root;
+extern struct ev_loop *main_loop;
 
 #endif

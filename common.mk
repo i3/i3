@@ -8,6 +8,7 @@ SYSCONFDIR=/etc
 else
 SYSCONFDIR=$(PREFIX)/etc
 endif
+TERM_EMU=xterm
 # The escaping is absurd, but we need to escape for shell, sed, make, define
 GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch $(shell [ -f .git/HEAD ] && sed 's/ref: refs\/heads\/\(.*\)/\\\\\\"\1\\\\\\"/g' .git/HEAD || echo 'unknown'))"
 VERSION:=$(shell git describe --tags --abbrev=0)
@@ -46,6 +47,7 @@ CFLAGS += $(call cflags_for_lib, yajl)
 CFLAGS += $(call cflags_for_lib, libev)
 CFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
 CFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
+CFLAGS += -DTERM_EMU=\"$(TERM_EMU)\"
 
 LDFLAGS += -lm
 LDFLAGS += $(call ldflags_for_lib, xcb-event, xcb-event)

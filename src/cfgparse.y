@@ -9,9 +9,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <libgen.h>
 
 #include "all.h"
+
+static pid_t configerror_pid = -1;
 
 static Match current_match;
 
@@ -30,17 +31,18 @@ static struct context *context;
 //int yydebug = 1;
 
 void yyerror(const char *error_message) {
+    context->has_errors = true;
+
     ELOG("\n");
     ELOG("CONFIG: %s\n", error_message);
     ELOG("CONFIG: in file \"%s\", line %d:\n",
         context->filename, context->line_number);
     ELOG("CONFIG:   %s\n", context->line_copy);
-    ELOG("CONFIG:   ");
+    char buffer[context->last_column+1];
+    buffer[context->last_column] = '\0';
     for (int c = 1; c <= context->last_column; c++)
-        if (c >= context->first_column)
-            printf("^");
-        else printf(" ");
-    printf("\n");
+        buffer[c-1] = (c >= context->first_column ? '^' : ' ');
+    ELOG("CONFIG:   %s\n", buffer);
     ELOG("\n");
 }
 
@@ -146,32 +148,11 @@ static char *migrate_config(char *input, off_t size) {
         close(readpipe[0]);
         dup2(readpipe[1], 1);
 
-        /* start the migration script, search PATH first */
-        char *migratepath = "i3-migrate-config-to-v4.pl";
-        execlp(migratepath, migratepath, NULL);
-
-        /* if the script is not in path, maybe the user installed to a strange
-         * location and runs the i3 binary with an absolute path. We use
-         * argv[0]’s dirname */
-        char *pathbuf = strdup(start_argv[0]);
-        char *dir = dirname(pathbuf);
-        asprintf(&migratepath, "%s/%s", dir, "i3-migrate-config-to-v4.pl");
-        execlp(migratepath, migratepath, NULL);
-
-#if defined(__linux__)
-        /* on linux, we have one more fall-back: dirname(/proc/self/exe) */
-        char buffer[BUFSIZ];
-        if (readlink("/proc/self/exe", buffer, BUFSIZ) == -1) {
-            warn("could not read /proc/self/exe");
-            exit(1);
-        }
-        dir = dirname(buffer);
-        asprintf(&migratepath, "%s/%s", dir, "i3-migrate-config-to-v4.pl");
-        execlp(migratepath, migratepath, NULL);
-#endif
-
-        warn("Could not start i3-migrate-config-to-v4.pl");
-        exit(2);
+        static char *argv[] = {
+            NULL, /* will be replaced by the executable path */
+            NULL
+        };
+        exec_i3_utility("i3-migrate-config-to-v4.pl", argv);
     }
 
     /* parent */
@@ -235,6 +216,98 @@ static char *migrate_config(char *input, off_t size) {
     }
 
     return converted;
+}
+
+/*
+ * Handler which will be called when we get a SIGCHLD for the nagbar, meaning
+ * it exited (or could not be started, depending on the exit code).
+ *
+ */
+static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
+    ev_child_stop(EV_A_ watcher);
+    if (!WIFEXITED(watcher->rstatus)) {
+        fprintf(stderr, "ERROR: i3-nagbar did not exit normally.\n");
+        return;
+    }
+
+    int exitcode = WEXITSTATUS(watcher->rstatus);
+    printf("i3-nagbar process exited with status %d\n", exitcode);
+    if (exitcode == 2) {
+        fprintf(stderr, "ERROR: i3-nagbar could not be found. Is it correctly installed on your system?\n");
+    }
+
+    configerror_pid = -1;
+}
+
+/*
+ * Starts an i3-nagbar process which alerts the user that his configuration
+ * file contains one or more errors. Also offers two buttons: One to launch an
+ * $EDITOR on the config file and another one to launch a $PAGER on the error
+ * logfile.
+ *
+ */
+static void start_configerror_nagbar(const char *config_path) {
+    fprintf(stderr, "Would start i3-nagscreen now\n");
+    configerror_pid = fork();
+    if (configerror_pid == -1) {
+        warn("Could not fork()");
+        return;
+    }
+
+    /* child */
+    if (configerror_pid == 0) {
+        char *editaction,
+             *pageraction;
+        if (asprintf(&editaction, TERM_EMU " -e $EDITOR \"%s\"", config_path) == -1)
+            exit(1);
+        if (asprintf(&pageraction, TERM_EMU " -e $PAGER \"%s\"", errorfilename) == -1)
+            exit(1);
+        char *argv[] = {
+            NULL, /* will be replaced by the executable path */
+            "-m",
+            "You have an error in your i3 config file!",
+            "-b",
+            "edit config",
+            editaction,
+            (errorfilename ? "-b" : NULL),
+            "show errors",
+            pageraction,
+            NULL
+        };
+        exec_i3_utility("i3-nagbar", argv);
+    }
+
+    /* parent */
+    /* install a child watcher */
+    ev_child *child = smalloc(sizeof(ev_child));
+    ev_child_init(child, &nagbar_exited, configerror_pid, 0);
+    ev_child_start(main_loop, child);
+}
+
+/*
+ * Kills the configerror i3-nagbar process, if any.
+ *
+ * Called when reloading/restarting.
+ *
+ * If wait_for_it is set (restarting), this function will waitpid(), otherwise,
+ * ev is assumed to handle it (reloading).
+ *
+ */
+void kill_configerror_nagbar(bool wait_for_it) {
+    if (configerror_pid == -1)
+        return;
+
+    if (kill(configerror_pid, SIGTERM) == -1)
+        warn("kill(configerror_nagbar) failed");
+
+    if (!wait_for_it)
+        return;
+
+    /* When restarting, we don’t enter the ev main loop anymore and after the
+     * exec(), our old pid is no longer watched. So, ev won’t handle SIGCHLD
+     * for us and we would end up with a <defunct> process. Therefore we
+     * waitpid() here. */
+    waitpid(configerror_pid, NULL, 0);
 }
 
 void parse_file(const char *f) {
@@ -388,6 +461,10 @@ void parse_file(const char *f) {
     if (yyparse() != 0) {
         fprintf(stderr, "Could not parse configfile\n");
         exit(1);
+    }
+
+    if (context->has_errors) {
+        start_configerror_nagbar(f);
     }
 
     FREE(context->line_copy);

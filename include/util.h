@@ -103,6 +103,23 @@ char *sstrdup(const char *str);
 void start_application(const char *command);
 
 /**
+ * exec()s an i3 utility, for example the config file migration script or
+ * i3-nagbar. This function first searches $PATH for the given utility named,
+ * then falls back to the dirname() of the i3 executable path and then falls
+ * back to the dirname() of the target of /proc/self/exe (on linux).
+ *
+ * This function should be called after fork()ing.
+ *
+ * The first argument of the given argv vector will be overwritten with the
+ * executable name, so pass NULL.
+ *
+ * If the utility cannot be found in any of these locations, it exits with
+ * return code 2.
+ *
+ */
+void exec_i3_utility(char *name, char *argv[]);
+
+/**
  * Checks a generic cookie for errors and quits with the given message if
  * there was an error.
  *
