@@ -729,7 +729,8 @@ void x_push_changes(Con *con) {
     //DLOG("Disabling EnterNotify\n");
     uint32_t values[1] = { XCB_NONE };
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
-        xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
+        if (state->mapped)
+            xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
     }
     //DLOG("Done, EnterNotify disabled\n");
     bool order_changed = false;
@@ -752,11 +753,10 @@ void x_push_changes(Con *con) {
         state->initial = false;
     }
     //DLOG("Re-enabling EnterNotify\n");
+    values[0] = FRAME_EVENT_MASK;
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
-        values[0] = FRAME_EVENT_MASK;
-        if (!state->mapped)
-            values[0] &= ~XCB_EVENT_MASK_ENTER_WINDOW;
-        xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
+        if (state->mapped)
+            xcb_change_window_attributes(conn, state->id, XCB_CW_EVENT_MASK, values);
     }
     //DLOG("Done, EnterNotify re-enabled\n");
 
