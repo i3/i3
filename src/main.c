@@ -70,7 +70,9 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
 
     while ((event = xcb_poll_for_event(conn)) != NULL) {
         if (event->response_type == 0) {
-            ELOG("X11 Error received! sequence %x\n", event->sequence);
+            if (event_is_ignored(event->sequence, 0))
+                DLOG("Expected X11 Error received for sequence %x\n", event->sequence);
+            else ELOG("X11 Error received! sequence %x\n", event->sequence);
             continue;
         }
 

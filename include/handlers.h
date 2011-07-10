@@ -15,7 +15,21 @@
 
 extern int randr_base;
 
+/**
+ * Adds the given sequence to the list of events which are ignored.
+ * If this ignore should only affect a specific response_type, pass
+ * response_type, otherwise, pass -1.
+ *
+ * Every ignored sequence number gets garbage collected after 5 seconds.
+ *
+ */
 void add_ignore_event(const int sequence, const int response_type);
+
+/**
+ * Checks if the given sequence is ignored and returns true if so.
+ *
+ */
+bool event_is_ignored(const int sequence, const int response_type);
 
 /**
  * Takes an xcb_generic_event_t and calls the appropriate handler, based on the

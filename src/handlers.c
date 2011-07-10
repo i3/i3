@@ -21,6 +21,14 @@ int randr_base = -1;
    changing workspaces */
 static SLIST_HEAD(ignore_head, Ignore_Event) ignore_events;
 
+/*
+ * Adds the given sequence to the list of events which are ignored.
+ * If this ignore should only affect a specific response_type, pass
+ * response_type, otherwise, pass -1.
+ *
+ * Every ignored sequence number gets garbage collected after 5 seconds.
+ *
+ */
 void add_ignore_event(const int sequence, const int response_type) {
     struct Ignore_Event *event = smalloc(sizeof(struct Ignore_Event));
 
@@ -35,7 +43,7 @@ void add_ignore_event(const int sequence, const int response_type) {
  * Checks if the given sequence is ignored and returns true if so.
  *
  */
-static bool event_is_ignored(const int sequence, const int response_type) {
+bool event_is_ignored(const int sequence, const int response_type) {
     struct Ignore_Event *event;
     time_t now = time(NULL);
     for (event = SLIST_FIRST(&ignore_events); event != SLIST_END(&ignore_events);) {
@@ -51,7 +59,7 @@ static bool event_is_ignored(const int sequence, const int response_type) {
         if (event->sequence != sequence)
             continue;
 
-        if (event->response_type != 0 &&
+        if (event->response_type != -1 &&
             event->response_type != response_type)
             continue;
 
@@ -286,7 +294,7 @@ static int handle_map_request(xcb_map_request_event_t *event) {
     cookie = xcb_get_window_attributes_unchecked(conn, event->window);
 
     DLOG("window = 0x%08x, serial is %d.\n", event->window, event->sequence);
-    add_ignore_event(event->sequence, 0);
+    add_ignore_event(event->sequence, -1);
 
     manage_window(event->window, cookie, false);
     x_push_changes(croot);

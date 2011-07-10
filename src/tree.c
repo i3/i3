@@ -153,13 +153,23 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent) {
             x_window_kill(con->window->id, kill_window);
             return false;
         } else {
+            xcb_void_cookie_t cookie;
             /* un-parent the window */
-            xcb_reparent_window(conn, con->window->id, root, 0, 0);
+            cookie = xcb_reparent_window(conn, con->window->id, root, 0, 0);
+
+            /* Ignore X11 errors for the ReparentWindow request.
+             * X11 Errors are returned when the window was already destroyed */
+            add_ignore_event(cookie.sequence, 0);
+
             /* We are no longer handling this window, thus set WM_STATE to
              * WM_STATE_WITHDRAWN (see ICCCM 4.1.3.1) */
             long data[] = { XCB_ICCCM_WM_STATE_WITHDRAWN, XCB_NONE };
-            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
-                                A_WM_STATE, A_WM_STATE, 32, 2, data);
+            cookie = xcb_change_property(conn, XCB_PROP_MODE_REPLACE,
+                        con->window->id, A_WM_STATE, A_WM_STATE, 32, 2, data);
+
+            /* Ignore X11 errors for the ReparentWindow request.
+             * X11 Errors are returned when the window was already destroyed */
+            add_ignore_event(cookie.sequence, 0);
         }
         FREE(con->window->class_class);
         FREE(con->window->class_instance);
