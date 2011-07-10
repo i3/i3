@@ -574,7 +574,13 @@ void x_push_node(Con *con) {
                 xcb_free_gc(conn, con->pm_gc);
             }
             xcb_create_pixmap(conn, root_depth, con->pixmap, con->frame, rect.width, rect.height);
-            xcb_create_gc(conn, con->pm_gc, con->pixmap, 0, 0);
+            /* For the graphics context, we disable GraphicsExposure events.
+             * Those will be sent when a CopyArea request cannot be fulfilled
+             * properly due to parts of the source being unmapped or otherwise
+             * unavailable. Since we always copy from pixmaps to windows, this
+             * is not a concern for us. */
+            uint32_t values[] = { 0 };
+            xcb_create_gc(conn, con->pm_gc, con->pixmap, XCB_GC_GRAPHICS_EXPOSURES, values);
 
             con->pixmap_recreated = true;
 
