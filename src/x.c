@@ -558,8 +558,9 @@ void x_push_node(Con *con) {
     }
 
     bool fake_notify = false;
-    /* set new position if rect changed */
-    if (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0) {
+    /* Set new position if rect changed (and if height > 0) */
+    if (memcmp(&(state->rect), &rect, sizeof(Rect)) != 0 &&
+        rect.height > 0) {
         /* We first create the new pixmap, then render to it, set it as the
          * background and only afterwards change the window size. This reduces
          * flickering. */
@@ -568,8 +569,7 @@ void x_push_node(Con *con) {
          * is enough to check if width/height have changed. Also, we don’t
          * create a pixmap at all when the window is actually not visible
          * (height == 0). */
-        if (rect.height > 0 &&
-            (state->rect.width != rect.width ||
+        if ((state->rect.width != rect.width ||
             state->rect.height != rect.height)) {
             DLOG("CACHE: creating new pixmap for con %p (old: %d x %d, new: %d x %d)\n",
                     con, state->rect.width, state->rect.height,
