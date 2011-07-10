@@ -377,17 +377,17 @@ void x_draw_decoration(Con *con) {
     xcb_rectangle_t drect = { con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height };
     xcb_poly_fill_rectangle(conn, parent->pixmap, parent->pm_gc, 1, &drect);
 
-    /* 5: draw the two lines in border color */
-    xcb_draw_line(conn, parent->pixmap, parent->pm_gc, p->color->border,
-            con->deco_rect.x, /* x */
-            con->deco_rect.y, /* y */
-            con->deco_rect.x + con->deco_rect.width, /* to_x */
-            con->deco_rect.y); /* to_y */
-    xcb_draw_line(conn, parent->pixmap, parent->pm_gc, p->color->border,
-            con->deco_rect.x, /* x */
-            con->deco_rect.y + con->deco_rect.height - 1, /* y */
-            con->deco_rect.x + con->deco_rect.width, /* to_x */
-            con->deco_rect.y + con->deco_rect.height - 1); /* to_y */
+    /* 5: draw two unconnected lines in border color */
+    xcb_change_gc_single(conn, parent->pm_gc, XCB_GC_FOREGROUND, p->color->border);
+    Rect *dr = &(con->deco_rect);
+    xcb_segment_t segments[] = {
+        { dr->x,             dr->y,
+          dr->x + dr->width, dr->y },
+
+        { dr->x,             dr->y + dr->height - 1,
+          dr->x + dr->width, dr->y + dr->height - 1 }
+    };
+    xcb_poly_segment(conn, parent->pixmap, parent->pm_gc, 2, segments);
 
     /* 6: draw the title */
     uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
