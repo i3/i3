@@ -86,14 +86,16 @@ char *rewrite_binding(const char *bindingline) {
 static char *modifier_to_string(int modifiers) {
     //printf("should convert %d to string\n", modifiers);
     if (modifiers == (1 << 3))
-        return strdup("Mod1");
+        return strdup("$mod+");
     else if (modifiers == ((1 << 3) | (1 << 0)))
-        return strdup("Mod1+shift");
+        return strdup("$mod+Shift+");
     else if (modifiers == (1 << 9))
-        return strdup("$mod");
+        return strdup("$mod+");
     else if (modifiers == ((1 << 9) | (1 << 0)))
-        return strdup("$mod+shift");
-    else return strdup("UNKNOWN");
+        return strdup("$mod+Shift+");
+    else if (modifiers == (1 << 0))
+        return strdup("Shift+");
+    else return strdup("");
 }
 
 %}
@@ -139,7 +141,7 @@ bindcode:
         char *str = XKeysymToString(sym);
         char *modifiers = modifier_to_string($<number>3);
         // TODO: modifier to string
-        asprintf(&(context->result), "bindsym %s+%s %s\n", modifiers, str, $<string>6);
+        asprintf(&(context->result), "bindsym %s%s %s\n", modifiers, str, $<string>6);
         free(modifiers);
     }
     ;
