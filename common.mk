@@ -10,7 +10,7 @@ SYSCONFDIR=$(PREFIX)/etc
 endif
 TERM_EMU=xterm
 # The escaping is absurd, but we need to escape for shell, sed, make, define
-GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch $(shell [ -f .git/HEAD ] && sed 's/ref: refs\/heads\/\(.*\)/\\\\\\"\1\\\\\\"/g' .git/HEAD || echo 'unknown'))"
+GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch $(shell [ -f $(TOPDIR)/.git/HEAD ] && sed 's/ref: refs\/heads\/\(.*\)/\\\\\\"\1\\\\\\"/g' $(TOPDIR)/.git/HEAD || echo 'unknown'))"
 VERSION:=$(shell git describe --tags --abbrev=0)
 
 ifeq ($(shell which pkg-config 2>/dev/null 1>/dev/null || echo 1),1)
