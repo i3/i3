@@ -1,0 +1,143 @@
+# WARNING
+# WARNING: This configuration file is a template for the i3-config-wizard to
+# WARNING: generate a config which uses keysyms in your current layout. It does
+# WARNING: not get loaded by i3. Please do not change it.
+# WARNING
+
+set $mod Mod1
+
+# font for window titles. ISO 10646 = Unicode
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+# Use Mouse+$mod to drag floating windows to their wanted position
+floating_modifier $mod
+
+# start a terminal
+bindcode $mod+36 exec /usr/bin/urxvt
+
+# kill focused window
+bindcode $mod+Shift+24 kill
+
+# start dmenu (a program launcher)
+bindcode $mod+40 exec /usr/bin/dmenu_run
+
+# change focus
+bindcode $mod+44 focus left
+bindcode $mod+45 focus down
+bindcode $mod+46 focus up
+bindcode $mod+47 focus right
+
+# alternatively, you can use the cursor keys:
+bindcode $mod+113 focus left
+bindcode $mod+116 focus down
+bindcode $mod+111 focus up
+bindcode $mod+114 focus right
+
+# move focused window
+bindcode $mod+Shift+44 move left
+bindcode $mod+Shift+45 move down
+bindcode $mod+Shift+46 move up
+bindcode $mod+Shift+47 move right
+
+# alternatively, you can use the cursor keys:
+bindcode $mod+Shift+113 move left
+bindcode $mod+Shift+116 move down
+bindcode $mod+Shift+111 move up
+bindcode $mod+Shift+114 move right
+
+# split in horizontal orientation
+bindcode $mod+43 split h
+
+# split in vertical orientation
+bindcode $mod+55 split v
+
+# enter fullscreen mode for the focused container
+bindcode $mod+41 fullscreen
+
+# change container layout (stacked, tabbed, default)
+bindcode $mod+39 layout stacking
+bindcode $mod+25 layout tabbed
+bindcode $mod+26 layout default
+
+# toggle tiling / floating
+bindcode $mod+Shift+65 floating toggle
+
+# change focus between tiling / floating windows
+bindcode $mod+65 focus mode_toggle
+
+# focus the parent container
+bindcode $mod+38 focus parent
+
+# focus the child container
+#bindcode $mod+d focus child
+
+# switch to workspace
+bindcode $mod+10 workspace 1
+bindcode $mod+11 workspace 2
+bindcode $mod+12 workspace 3
+bindcode $mod+13 workspace 4
+bindcode $mod+14 workspace 5
+bindcode $mod+15 workspace 6
+bindcode $mod+16 workspace 7
+bindcode $mod+17 workspace 8
+bindcode $mod+18 workspace 9
+bindcode $mod+19 workspace 10
+
+# move focused container to workspace
+bindcode $mod+Shift+10 move workspace 1
+bindcode $mod+Shift+11 move workspace 2
+bindcode $mod+Shift+12 move workspace 3
+bindcode $mod+Shift+13 move workspace 4
+bindcode $mod+Shift+14 move workspace 5
+bindcode $mod+Shift+15 move workspace 6
+bindcode $mod+Shift+16 move workspace 7
+bindcode $mod+Shift+17 move workspace 8
+bindcode $mod+Shift+18 move workspace 9
+bindcode $mod+Shift+19 move workspace 10
+
+# reload the configuration file
+bindcode $mod+Shift+54 reload
+# restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
+bindcode $mod+Shift+27 restart
+# exit i3 (logs you out of your X session)
+bindcode $mod+Shift+26 exit
+
+# resize window (you can also use the mouse for that)
+mode "resize" {
+        # These bindings trigger as soon as you enter the resize mode
+
+        # They resize the border in the direction you pressed, e.g.
+        # when pressing left, the window is resized so that it has
+        # more space on its left
+
+        bindcode 44 resize shrink left 10 px or 10 ppt
+        bindcode Shift+44 resize grow   left 10 px or 10 ppt
+
+        bindcode 45 resize shrink down 10 px or 10 ppt
+        bindcode Shift+45 resize grow   down 10 px or 10 ppt
+
+        bindcode 46 resize shrink up 10 px or 10 ppt
+        bindcode Shift+46 resize grow   up 10 px or 10 ppt
+
+        bindcode 47 resize shrink right 10 px or 10 ppt
+        bindcode Shift+47 resize grow   right 10 px or 10 ppt
+
+        # same bindings, but for the arrow keys
+        bindcode 113 resize shrink left 10 px or 10 ppt
+        bindcode Shift+113 resize grow   left 10 px or 10 ppt
+
+        bindcode 116 resize shrink down 10 px or 10 ppt
+        bindcode Shift+116 resize grow   down 10 px or 10 ppt
+
+        bindcode 111 resize shrink up 10 px or 10 ppt
+        bindcode Shift+111 resize grow   up 10 px or 10 ppt
+
+        bindcode 114 resize shrink right 10 px or 10 ppt
+        bindcode Shift+114 resize grow   right 10 px or 10 ppt
+
+        # back to normal: Enter or Escape
+        bindcode 36 mode "default"
+        bindcode 9 mode "default"
+}
+
+bindcode $mod+27 mode "resize"
