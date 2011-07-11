@@ -345,11 +345,12 @@ void render_con(Con *con, bool render_fullscreen) {
             render_con(child, false);
         }
 
-        /* Raise the stack con itself. This will put the stack decoration on
-         * top of every stack window. That way, when a new window is opened in
-         * the stack, the old window will not obscure part of the decoration
-         * (it’s unmapped afterwards). */
-        x_raise_con(con);
+        if (children != 1)
+            /* Raise the stack con itself. This will put the stack decoration on
+             * top of every stack window. That way, when a new window is opened in
+             * the stack, the old window will not obscure part of the decoration
+             * (it’s unmapped afterwards). */
+            x_raise_con(con);
     }
     }
 
