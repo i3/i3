@@ -26,6 +26,7 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <glob.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -55,7 +56,7 @@ while (0)
 enum { STEP_WELCOME, STEP_GENERATE } current_step = STEP_WELCOME;
 enum { MOD_ALT, MOD_SUPER } modifier = MOD_SUPER;
 
-static char *config_path = "/tmp/wizout/i3.config";
+static char *config_path;
 static xcb_connection_t *conn;
 static uint32_t font_id;
 static uint32_t font_bold_id;
@@ -71,6 +72,38 @@ Display *dpy;
 
 char *rewrite_binding(const char *bindingline);
 static void finish();
+
+/*
+ * This function resolves ~ in pathnames.
+ * It may resolve wildcards in the first part of the path, but if no match
+ * or multiple matches are found, it just returns a copy of path as given.
+ *
+ */
+static char *resolve_tilde(const char *path) {
+    static glob_t globbuf;
+    char *head, *tail, *result;
+
+    tail = strchr(path, '/');
+    head = strndup(path, tail ? tail - path : strlen(path));
+
+    int res = glob(head, GLOB_TILDE, NULL, &globbuf);
+    free(head);
+    /* no match, or many wildcard matches are bad */
+    if (res == GLOB_NOMATCH || globbuf.gl_pathc != 1)
+        result = strdup(path);
+    else if (res != 0) {
+        err(1, "glob() failed");
+    } else {
+        head = globbuf.gl_pathv[0];
+        result = calloc(1, strlen(head) + (tail ? strlen(tail) : 0) + 1);
+        strncpy(result, head, strlen(head));
+        if (tail)
+            strncat(result, tail, strlen(tail));
+    }
+    globfree(&globbuf);
+
+    return result;
+}
 
 /*
  * Try to get the socket path from X11 and return NULL if it doesn’t work.
@@ -294,6 +327,7 @@ static void finish() {
 }
 
 int main(int argc, char *argv[]) {
+    config_path = resolve_tilde("~/.i3/config");
     socket_path = getenv("I3SOCK");
     char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
     char *patternbold = "-misc-fixed-bold-r-normal--13-120-75-75-C-70-iso10646-1";
@@ -319,10 +353,10 @@ int main(int argc, char *argv[]) {
                 socket_path = strdup(optarg);
                 break;
             case 'v':
-                printf("i3-config-wizard " I3_VERSION);
+                printf("i3-config-wizard " I3_VERSION "\n");
                 return 0;
             case 'h':
-                printf("i3-config-wizard " I3_VERSION);
+                printf("i3-config-wizard " I3_VERSION "\n");
                 printf("i3-config-wizard [-s <socket>] [-v]\n");
                 return 0;
         }
@@ -335,6 +369,13 @@ int main(int argc, char *argv[]) {
         printf("The config file \"%s\" already exists. Exiting.\n", config_path);
         return 0;
     }
+
+    /* Create ~/.i3 if it does not yet exist */
+    char *config_dir = resolve_tilde("~/.i3");
+    if (stat(config_dir, &stbuf) != 0)
+        if (mkdir(config_dir, 0755) == -1)
+            err(1, "mkdir(%s) failed", config_dir);
+    free(config_dir);
 
     int fd;
     if ((fd = open(config_path, O_CREAT | O_RDWR, 0644)) == -1) {
