@@ -35,6 +35,12 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 
+/* We need SYSCONFDIR for the path to the keycode config template, so raise an
+ * error if it’s not defined for whatever reason */
+#ifndef SYSCONFDIR
+#error "SYSCONFDIR not defined"
+#endif
+
 #define FREE(pointer) do { \
     if (pointer != NULL) { \
         free(pointer); \
@@ -217,9 +223,9 @@ static void finish() {
     if (!(dpy = XOpenDisplay(NULL)))
         errx(1, "Could not connect to X11");
 
-    FILE *kc_config = fopen("../i3.config.kc", "r");
+    FILE *kc_config = fopen(SYSCONFDIR "/i3/config.keycodes", "r");
     if (kc_config == NULL)
-        err(1, "Could not open input file \"%s\"", "../i3.config.kc");
+        err(1, "Could not open input file \"%s\"", SYSCONFDIR "/i3/config.keycodes");
 
     FILE *ks_config = fopen(config_path, "w");
     if (ks_config == NULL)
