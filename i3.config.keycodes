@@ -4,6 +4,10 @@
 # WARNING: not get loaded by i3. Please do not change it.
 # WARNING
 
+# i3 config file (v4)
+#
+# Please see http://i3wm.org/docs/userguide.html for a complete reference!
+
 set $mod Mod1
 
 # font for window titles. ISO 10646 = Unicode

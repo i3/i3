@@ -276,7 +276,6 @@ static void finish() {
     fputs("# Should you change your keyboard layout somewhen, delete\n", ks_config);
     fputs("# this file and re-run i3-config-wizard(1).\n", ks_config);
     fputs("#\n", ks_config);
-    fputs("# See http://i3wm.org/docs/userguide.html\n", ks_config);
 
     while ((read = getline(&line, &len, kc_config)) != -1) {
         /* skip the warning block at the beginning of the input file */
