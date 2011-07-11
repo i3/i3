@@ -33,7 +33,7 @@ install: all
 	$(INSTALL) -m 0755 i3-config-wizard $(DESTDIR)$(PREFIX)/bin/
 
 clean:
-	rm -f *.o
+	rm -f *.o cfgparse.tab.{c,h} cfgparse.output cfgparse.yy.c
 
 distclean: clean
 	rm -f i3-config-wizard
