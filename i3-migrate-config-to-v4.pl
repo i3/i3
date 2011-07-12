@@ -207,7 +207,7 @@ sub convert_command {
         qr/^T/ => 'layout tabbed',
         qr/^f($|[^go])/ => 'fullscreen',
         qr/^fg/ => 'fullscreen global',
-        qr/^t/ => 'focus mode_toggle',
+        qr/^t/ => 'floating toggle',
         qr/^h/ => 'focus left',
         qr/^j($|[^u])/ => 'focus down',
         qr/^k/ => 'focus up',
