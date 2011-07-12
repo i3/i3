@@ -518,6 +518,7 @@ void parse_file(const char *f) {
 %token                  TOKIPCSOCKET                "ipc_socket"
 %token                  TOKRESTARTSTATE             "restart_state"
 %token                  TOKEXEC                     "exec"
+%token                  TOKEXEC_ALWAYS              "exec_always"
 %token  <single_color>  TOKSINGLECOLOR
 %token  <color>         TOKCOLOR
 %token                  TOKARROW                    "→"
@@ -590,6 +591,7 @@ line:
     | ipcsocket
     | restart_state
     | exec
+    | exec_always
     | single_color
     | color
     | terminal
@@ -1033,6 +1035,15 @@ exec:
         struct Autostart *new = smalloc(sizeof(struct Autostart));
         new->command = $2;
         TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
+    }
+    ;
+
+exec_always:
+    TOKEXEC_ALWAYS STR
+    {
+        struct Autostart *new = smalloc(sizeof(struct Autostart));
+        new->command = $2;
+        TAILQ_INSERT_TAIL(&autostarts_always, new, autostarts_always);
     }
     ;
 

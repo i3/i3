@@ -174,13 +174,17 @@ struct Binding {
 };
 
 /**
- * Holds a command specified by an exec-line in the config (see src/config.c)
+ * Holds a command specified by either an:
+ * - exec-line
+ * - exec_always-line
+ * in the config (see src/config.c)
  *
  */
 struct Autostart {
     /** Command, like in command mode */
     char *command;
     TAILQ_ENTRY(Autostart) autostarts;
+    TAILQ_ENTRY(Autostart) autostarts_always;
 };
 
 /**

@@ -26,6 +26,7 @@ extern Display *xlibdpy, *xkbdpy;
 extern int xkb_current_group;
 extern TAILQ_HEAD(bindings_head, Binding) *bindings;
 extern TAILQ_HEAD(autostarts_head, Autostart) autostarts;
+extern TAILQ_HEAD(autostarts_always_head, Autostart) autostarts_always;
 extern TAILQ_HEAD(ws_assignments_head, Workspace_Assignment) ws_assignments;
 extern TAILQ_HEAD(assignments_head, Assignment) assignments;
 extern SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins;

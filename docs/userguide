@@ -469,18 +469,22 @@ use it, it has to be a UTF-8 encoded arrow, not `->` or something like that.
 
 === Automatically starting applications on i3 startup
 
-By using the +exec+ keyword outside a keybinding, you can configure which
-commands will be performed by i3 on initial startup (not when restarting i3
-in-place however). These commands will be run in order.
+By using the +exec+ keyword outside a keybinding, you can configure
+which commands will be performed by i3 on initial startup. +exec+
+commands will not run when restarting i3, if you need a command to run
+also when restarting i3 you should use the +exec_always+
+keyword. These commands will be run in order.
 
 *Syntax*:
-------------
+-------------------
 exec command
-------------
+exec_always command
+-------------------
 
 *Examples*:
 --------------------------------
 exec i3status | dzen2 -dock
+exec_always ~/my_script.sh
 --------------------------------
 
 [[workspace_screen]]

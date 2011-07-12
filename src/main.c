@@ -32,6 +32,9 @@ struct bindings_head *bindings;
 /* The list of exec-lines */
 struct autostarts_head autostarts = TAILQ_HEAD_INITIALIZER(autostarts);
 
+/* The list of exec_always lines */
+struct autostarts_always_head autostarts_always = TAILQ_HEAD_INITIALIZER(autostarts_always);
+
 /* The list of assignments */
 struct assignments_head assignments = TAILQ_HEAD_INITIALIZER(assignments);
 
@@ -463,6 +466,13 @@ int main(int argc, char *argv[]) {
             LOG("auto-starting %s\n", exec->command);
             start_application(exec->command);
         }
+    }
+
+    /* Autostarting exec_always-lines */
+    struct Autostart *exec_always;
+    TAILQ_FOREACH(exec_always, &autostarts_always, autostarts_always) {
+        LOG("auto-starting (always!) %s\n", exec_always->command);
+        start_application(exec_always->command);
     }
 
     ev_loop(main_loop, 0);

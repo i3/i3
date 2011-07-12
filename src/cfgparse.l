@@ -147,6 +147,7 @@ stack-limit                     { return TOKSTACKLIMIT; }
 cols                            { /* yylval.number = STACK_LIMIT_COLS; */return TOKSTACKLIMIT; }
 rows                            { /* yylval.number = STACK_LIMIT_ROWS; */return TOKSTACKLIMIT; }
 exec                            { WS_STRING; return TOKEXEC; }
+exec_always                     { WS_STRING; return TOKEXEC_ALWAYS; }
 client.background               { BEGIN(COLOR_COND); yylval.single_color = &config.client.background; return TOKSINGLECOLOR; }
 client.focused                  { BEGIN(COLOR_COND); yylval.color = &config.client.focused; return TOKCOLOR; }
 client.focused_inactive         { BEGIN(COLOR_COND); yylval.color = &config.client.focused_inactive; return TOKCOLOR; }
