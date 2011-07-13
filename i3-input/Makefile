@@ -14,7 +14,7 @@ HEADERS=$(wildcard *.h)
 
 all: ${FILES}
 	echo "LINK i3-input"
-	$(CC) -o i3-input ${FILES} $(LDFLAGS)
+	$(CC) $(LDFLAGS) -o i3-input ${FILES} $(LIBS)
 
 install: all
 	echo "INSTALL"

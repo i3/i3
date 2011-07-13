@@ -49,23 +49,23 @@ CPPFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
 CPPFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
 CPPFLAGS += -DTERM_EMU=\"$(TERM_EMU)\"
 
-LDFLAGS += -lm
-LDFLAGS += $(call ldflags_for_lib, xcb-event, xcb-event)
-LDFLAGS += $(call ldflags_for_lib, xcb-keysyms, xcb-keysyms)
+LIBS += -lm
+LIBS += $(call ldflags_for_lib, xcb-event, xcb-event)
+LIBS += $(call ldflags_for_lib, xcb-keysyms, xcb-keysyms)
 ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
-LDFLAGS += $(call ldflags_for_lib, xcb-atom, xcb-atom)
-LDFLAGS += $(call ldflags_for_lib, xcb-aux, xcb-aux)
+LIBS += $(call ldflags_for_lib, xcb-atom, xcb-atom)
+LIBS += $(call ldflags_for_lib, xcb-aux, xcb-aux)
 else
-LDFLAGS += $(call ldflags_for_lib, xcb-util)
+LIBS += $(call ldflags_for_lib, xcb-util)
 endif
-LDFLAGS += $(call ldflags_for_lib, xcb-icccm, xcb-icccm)
-LDFLAGS += $(call ldflags_for_lib, xcb-xinerama, xcb-xinerama)
-LDFLAGS += $(call ldflags_for_lib, xcb-randr, xcb-randr)
-LDFLAGS += $(call ldflags_for_lib, xcb, xcb)
-LDFLAGS += $(call ldflags_for_lib, xcursor, Xcursor)
-LDFLAGS += $(call ldflags_for_lib, x11, X11)
-LDFLAGS += $(call ldflags_for_lib, yajl, yajl)
-LDFLAGS += $(call ldflags_for_lib, libev, ev)
+LIBS += $(call ldflags_for_lib, xcb-icccm, xcb-icccm)
+LIBS += $(call ldflags_for_lib, xcb-xinerama, xcb-xinerama)
+LIBS += $(call ldflags_for_lib, xcb-randr, xcb-randr)
+LIBS += $(call ldflags_for_lib, xcb, xcb)
+LIBS += $(call ldflags_for_lib, xcursor, Xcursor)
+LIBS += $(call ldflags_for_lib, x11, X11)
+LIBS += $(call ldflags_for_lib, yajl, yajl)
+LIBS += $(call ldflags_for_lib, libev, ev)
 
 ifeq ($(UNAME),NetBSD)
 # We need -idirafter instead of -I to prefer the system’s iconv over GNU libiconv
@@ -75,12 +75,12 @@ endif
 
 ifeq ($(UNAME),OpenBSD)
 CFLAGS += -I${X11BASE}/include
-LDFLAGS += -liconv
+LIBS += -liconv
 LDFLAGS += -L${X11BASE}/lib
 endif
 
 ifeq ($(UNAME),FreeBSD)
-LDFLAGS += -liconv
+LIBS += -liconv
 endif
 
 # Fallback for libyajl 1 which did not include yajl_version.h. We need
@@ -102,7 +102,7 @@ endif
 
 ifeq ($(COVERAGE),1)
 CFLAGS += -fprofile-arcs -ftest-coverage
-LDFLAGS += -lgcov
+LIBS += -lgcov
 endif
 
 # Don’t print command lines which are run

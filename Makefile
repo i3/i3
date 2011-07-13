@@ -25,7 +25,7 @@ src/%.o: src/%.c ${HEADERS}
 
 all: src/cfgparse.y.o src/cfgparse.yy.o src/cmdparse.y.o src/cmdparse.yy.o ${FILES}
 	echo "LINK i3"
-	$(CC) -o i3 $^ $(LDFLAGS)
+	$(CC) $(LDFLAGS) -o i3 $^ $(LIBS)
 
 loglevels.h:
 	echo "LOGLEVELS"

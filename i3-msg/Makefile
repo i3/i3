@@ -16,7 +16,7 @@ HEADERS=$(wildcard *.h)
 
 all: ${FILES}
 	echo "LINK i3-msg"
-	$(CC) -o i3-msg ${FILES} $(LDFLAGS)
+	$(CC) $(LDFLAGS) -o i3-msg ${FILES} $(LIBS)
 
 install: all
 	echo "INSTALL"

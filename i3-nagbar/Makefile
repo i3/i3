@@ -14,7 +14,7 @@ HEADERS=$(wildcard *.h)
 
 all: ${FILES}
 	echo "LINK i3-nagbar"
-	$(CC) -o i3-nagbar ${FILES} $(LDFLAGS)
+	$(CC) $(LDFLAGS) -o i3-nagbar ${FILES} $(LIBS)
 
 install: all
 	echo "INSTALL"
