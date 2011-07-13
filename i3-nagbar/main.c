@@ -44,7 +44,7 @@ static xcb_rectangle_t rect = { 0, 0, 600, 20 };
 static char *glyphs_ucs[512];
 static int input_position;
 static int font_height;
-static char *prompt = "You have an error in your i3 config file!";
+static char *prompt = "Please do not run this program.";
 static button_t *buttons;
 static int buttoncnt;
 xcb_window_t root;
@@ -224,10 +224,11 @@ int main(int argc, char *argv[]) {
         {"font", required_argument, 0, 'f'},
         {"button", required_argument, 0, 'b'},
         {"help", no_argument, 0, 'h'},
+        {"message", no_argument, 0, 'm'},
         {0, 0, 0, 0}
     };
 
-    char *options_string = "b:f:vh";
+    char *options_string = "b:f:m:vh";
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         switch (o) {
@@ -237,6 +238,9 @@ int main(int argc, char *argv[]) {
             case 'f':
                 FREE(pattern);
                 pattern = strdup(optarg);
+                break;
+            case 'm':
+                prompt = strdup(optarg);
                 break;
             case 'h':
                 printf("i3-nagbar " I3_VERSION);
