@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
     socket_path = getenv("I3SOCK");
     int o, option_index = 0;
     int message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
-    char *payload = "";
+    char *payload = NULL;
     bool quiet = false;
 
     static struct option long_options[] = {
@@ -204,8 +204,25 @@ int main(int argc, char *argv[]) {
     if (socket_path == NULL)
         socket_path = strdup("/tmp/i3-ipc.sock");
 
-    if (optind < argc)
-        payload = argv[optind];
+    /* Use all arguments, separated by whitespace, as payload.
+     * This way, you don’t have to do i3-msg 'mark foo', you can use
+     * i3-msg mark foo */
+    while (optind < argc) {
+        if (!payload) {
+            if (!(payload = strdup(argv[optind])))
+                err(EXIT_FAILURE, "strdup(argv[optind])");
+        } else {
+            char *both;
+            if (asprintf(&both, "%s %s", payload, argv[optind]) == -1)
+                err(EXIT_FAILURE, "asprintf");
+            free(payload);
+            payload = both;
+        }
+        optind++;
+    }
+
+    if (!payload)
+        payload = "";
 
     int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
     if (sockfd == -1)
