@@ -258,7 +258,7 @@ static void start_configerror_nagbar(const char *config_path) {
     if (configerror_pid == 0) {
         char *editaction,
              *pageraction;
-        if (asprintf(&editaction, TERM_EMU " -e sh -c \"${EDITOR:-vi} \"%s\"\"", config_path) == -1)
+        if (asprintf(&editaction, TERM_EMU " -e sh -c \"${EDITOR:-vi} \"%s\" && i3-msg reload\"", config_path) == -1)
             exit(1);
         if (asprintf(&pageraction, TERM_EMU " -e sh -c \"${PAGER:-less} \"%s\"\"", errorfilename) == -1)
             exit(1);
