@@ -93,7 +93,7 @@ dist: distclean
 	find i3-input -maxdepth 1 -type f \( -name "*.c" -or -name "*.h" -or -name "Makefile" \) -exec cp '{}' i3-${VERSION}/i3-input \;
 	sed -e 's/^GIT_VERSION:=\(.*\)/GIT_VERSION:=$(shell echo '${GIT_VERSION}' | sed 's/\\/\\\\/g')/g;s/^VERSION:=\(.*\)/VERSION:=${VERSION}/g' common.mk > i3-${VERSION}/common.mk
 	# Pre-generate a manpage to allow distributors to skip this step and save some dependencies
-	make -C man
+	$(MAKE) -C man
 	cp man/*.1 i3-${VERSION}/man/
 	tar cfj i3-${VERSION}.tar.bz2 i3-${VERSION}
 	rm -rf i3-${VERSION}
