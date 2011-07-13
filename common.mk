@@ -31,7 +31,7 @@ CFLAGS += -Wunused-value
 CFLAGS += -Iinclude
 CFLAGS += $(call cflags_for_lib, xcb-keysyms)
 ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
-CFLAGS += -DXCB_COMPAT
+CPPFLAGS += -DXCB_COMPAT
 CFLAGS += $(call cflags_for_lib, xcb-atom)
 CFLAGS += $(call cflags_for_lib, xcb-aux)
 else
@@ -45,9 +45,9 @@ CFLAGS += $(call cflags_for_lib, xcursor)
 CFLAGS += $(call cflags_for_lib, x11)
 CFLAGS += $(call cflags_for_lib, yajl)
 CFLAGS += $(call cflags_for_lib, libev)
-CFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
-CFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
-CFLAGS += -DTERM_EMU=\"$(TERM_EMU)\"
+CPPFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
+CPPFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
+CPPFLAGS += -DTERM_EMU=\"$(TERM_EMU)\"
 
 LDFLAGS += -lm
 LDFLAGS += $(call ldflags_for_lib, xcb-event, xcb-event)
@@ -88,7 +88,7 @@ endif
 CFLAGS += -idirafter yajl-fallback
 
 ifneq (,$(filter Linux GNU GNU/%, $(UNAME)))
-CFLAGS += -D_GNU_SOURCE
+CPPFLAGS += -D_GNU_SOURCE
 endif
 
 ifeq ($(DEBUG),1)

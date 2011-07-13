@@ -10,7 +10,7 @@ HEADERS=$(wildcard *.h)
 # Depend on the specific file (.c for each .o) and on all headers
 %.o: %.c ${HEADERS}
 	echo "CC $<"
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 all: ${FILES}
 	echo "LINK i3-nagbar"

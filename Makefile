@@ -21,7 +21,7 @@ endif
 # Depend on the specific file (.c for each .o) and on all headers
 src/%.o: src/%.c ${HEADERS}
 	echo "CC $<"
-	$(CC) $(CFLAGS) -DLOGLEVEL="((uint64_t)1 << $(shell awk '/$(shell basename $< .c)/ { print NR; exit 0; }' loglevels.tmp))" -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="((uint64_t)1 << $(shell awk '/$(shell basename $< .c)/ { print NR; exit 0; }' loglevels.tmp))" -c -o $@ $<
 
 all: src/cfgparse.y.o src/cfgparse.yy.o src/cmdparse.y.o src/cmdparse.yy.o ${FILES}
 	echo "LINK i3"
@@ -42,23 +42,23 @@ loglevels.h:
 src/cfgparse.yy.o: src/cfgparse.l src/cfgparse.y.o ${HEADERS}
 	echo "LEX $<"
 	flex -i -o$(@:.o=.c) $<
-	$(CC) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
 
 src/cmdparse.yy.o: src/cmdparse.l src/cmdparse.y.o ${HEADERS}
 	echo "LEX $<"
 	flex -Pcmdyy -i -o$(@:.o=.c) $<
-	$(CC) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cmdparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cmdparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
 
 
 src/cfgparse.y.o: src/cfgparse.y ${HEADERS}
 	echo "YACC $<"
 	bison --debug --verbose -b $(basename $< .y) -d $<
-	$(CC) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.y/ { print NR }' loglevels.tmp))" -c -o $@ $(<:.y=.tab.c)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.y/ { print NR }' loglevels.tmp))" -c -o $@ $(<:.y=.tab.c)
 
 src/cmdparse.y.o: src/cmdparse.y ${HEADERS}
 	echo "YACC $<"
 	bison -p cmdyy --debug --verbose -b $(basename $< .y) -d $<
-	$(CC) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cmdparse.y/ { print NR }' loglevels.tmp))" -c -o $@ $(<:.y=.tab.c)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cmdparse.y/ { print NR }' loglevels.tmp))" -c -o $@ $(<:.y=.tab.c)
 
 
 install: all
