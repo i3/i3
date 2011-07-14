@@ -243,8 +243,8 @@ int main(int argc, char *argv[]) {
                 prompt = strdup(optarg);
                 break;
             case 'h':
-                printf("i3-nagbar " I3_VERSION);
-                printf("i3-nagbar [-s <socket>] [-p <prefix>] [-l <limit>] [-P <prompt>] [-f <font>] [-v]\n");
+                printf("i3-nagbar " I3_VERSION "\n");
+                printf("i3-nagbar [-m <message>] [-b <button> <action>] [-f <font>] [-v]\n");
                 return 0;
             case 'b':
                 buttons = realloc(buttons, sizeof(button_t) * (buttoncnt + 1));
