@@ -42,6 +42,7 @@ sub set_wm_class {
 #####################################################################
 
 my ($fh, $tmpfile) = tempfile();
+say $fh "# i3 config file (v4)";
 say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
 say $fh "ipc-socket /tmp/nestedcons";
 close($fh);
@@ -83,6 +84,7 @@ sleep 0.25;
 #####################################################################
 
 ($fh, $tmpfile) = tempfile();
+say $fh "# i3 config file (v4)";
 say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
 say $fh "ipc-socket /tmp/nestedcons";
 say $fh q|assign "special" → targetws|;
@@ -168,6 +170,7 @@ exit_gracefully($process->pid);
 #####################################################################
 
 ($fh, $tmpfile) = tempfile();
+say $fh "# i3 config file (v4)";
 say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
 say $fh "ipc-socket /tmp/nestedcons";
 say $fh q|assign "special" → ~|;

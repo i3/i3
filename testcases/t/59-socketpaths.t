@@ -19,6 +19,7 @@ my $i3_path = abs_path("../i3");
 #####################################################################
 
 my ($fh, $tmpfile) = tempfile();
+say $fh "# i3 config file (v4)";
 say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
 close($fh);
 
@@ -67,6 +68,7 @@ $socketpath = $tmpdir . "/config.sock";
 ok(! -e $socketpath, "$socketpath does not exist yet");
 
 ($fh, $tmpfile) = tempfile();
+say $fh "# i3 config file (v4)";
 say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
 say $fh "ipc-socket $socketpath";
 close($fh);
