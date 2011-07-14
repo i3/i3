@@ -57,6 +57,8 @@ void reconnect() {
             ELOG("malloc() failed: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
+    } else {
+        ev_timer_stop(main_loop, reconn);
     }
     ev_timer_init(reconn, retry_connection, 0.25, 0.25);
     ev_timer_start(main_loop, reconn);
