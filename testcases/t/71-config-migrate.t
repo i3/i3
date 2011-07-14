@@ -202,7 +202,7 @@ ok(line_exists($output, qr|^bindsym Mod1\+s layout default$|), 'd replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s layout tabbed$|), 'T replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s fullscreen$|), 'f replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s fullscreen global$|), 'fg replaced');
-ok(line_exists($output, qr|^bindsym Mod1\+s focus mode_toggle$|), 't replaced');
+ok(line_exists($output, qr|^bindsym Mod1\+s floating toggle$|), 't replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s focus left$|), 'h replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s focus down$|), 'j replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s focus up$|), 'k replaced');
