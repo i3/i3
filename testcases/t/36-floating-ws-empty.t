@@ -17,11 +17,6 @@ my $tmp = fresh_workspace;
 # 1: open a floating window, get it mapped
 #############################################################################
 
-sub workspace_exists {
-    my ($name) = @_;
-    ($name ~~ @{get_workspace_names()})
-}
-
 ok(workspace_exists($tmp), "workspace $tmp exists");
 
 my $x = X11::XCB::Connection->new;

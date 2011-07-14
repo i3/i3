@@ -12,7 +12,7 @@ BEGIN {
 my $x = X11::XCB::Connection->new;
 
 my $i3 = i3("/tmp/nestedcons");
-fresh_workspace;
+my $tmp = fresh_workspace;
 
 cmd 'split h';
 
@@ -73,5 +73,17 @@ is($focus, $top->id, "Top window focused");
 $focus = focus_after(qq|[con_mark="$random_mark" con_mark="$random_mark"] focus|);
 is($focus, $mid->id, "goto worked");
 
+#####################################################################
+# Check whether the focus command will switch to a different
+# workspace if necessary
+#####################################################################
+
+my $tmp2 = fresh_workspace;
+
+is(focused_ws(), $tmp2, 'tmp2 now focused');
+
+cmd qq|[con_mark="$random_mark"] focus|;
+
+is(focused_ws(), $tmp, 'tmp now focused');
 
 done_testing;

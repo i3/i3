@@ -14,7 +14,7 @@ use Try::Tiny;
 use v5.10;
 
 use Exporter ();
-our @EXPORT = qw(get_workspace_names get_unused_workspace fresh_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live exit_gracefully);
+our @EXPORT = qw(get_workspace_names get_unused_workspace fresh_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live exit_gracefully workspace_exists focused_ws);
 
 my $tester = Test::Builder->new();
 
@@ -165,6 +165,24 @@ sub get_dock_clients {
 
 sub cmd {
     i3("/tmp/nestedcons")->command(@_)->recv
+}
+
+sub workspace_exists {
+    my ($name) = @_;
+    ($name ~~ @{get_workspace_names()})
+}
+
+sub focused_ws {
+    my $i3 = i3("/tmp/nestedcons");
+    my $tree = $i3->get_tree->recv;
+    my @outputs = @{$tree->{nodes}};
+    my @cons;
+    for my $output (@outputs) {
+        # get the first CT_CON of each output
+        my $content = first { $_->{type} == 2 } @{$output->{nodes}};
+        my $first = first { $_->{fullscreen_mode} == 1 } @{$content->{nodes}};
+        return $first->{name}
+    }
 }
 
 sub does_i3_live {

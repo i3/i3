@@ -7,11 +7,6 @@
 use List::Util qw(first);
 use i3test;
 
-sub workspace_exists {
-    my ($name) = @_;
-    ($name ~~ @{get_workspace_names()})
-}
-
 my $tmp = fresh_workspace;
 ok(workspace_exists($tmp), 'workspace created');
 # if the workspace could not be created, we cannot run any other test
@@ -52,24 +47,6 @@ cmd 'open';
 
 ok(workspace_exists($tmp), 'workspace tmp still exists');
 ok(workspace_exists($otmp), 'workspace otmp created');
-
-sub focused_ws_con {
-    my $i3 = i3("/tmp/nestedcons");
-    my $tree = $i3->get_tree->recv;
-    my @outputs = @{$tree->{nodes}};
-    my @cons;
-    for my $output (@outputs) {
-        # get the first CT_CON of each output
-        my $content = first { $_->{type} == 2 } @{$output->{nodes}};
-        my @focused = @{$content->{focus}};
-        return first { $_->{id} == $focused[0] } @{$content->{nodes}};
-    }
-}
-
-sub focused_ws {
-    my $con = focused_ws_con;
-    return $con->{name};
-}
 
 is(focused_ws(), $otmp, 'focused workspace is otmp');
 

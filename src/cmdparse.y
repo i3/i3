@@ -412,6 +412,8 @@ focus:
 
         int count = 0;
         TAILQ_FOREACH(current, &owindows, owindows) {
+            Con *ws = con_get_workspace(current->con);
+            workspace_show(ws->name);
             LOG("focusing %p / %s\n", current->con, current->con->name);
             con_focus(current->con);
             count++;
