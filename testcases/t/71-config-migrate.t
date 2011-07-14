@@ -155,7 +155,7 @@ ok(line_exists($output, qr|^bindsym Mod1\+s stack-limit cols 2$|), 'stack-limit 
 ok(line_exists($output, qr|^bindsym Mod1\+s stack-limit rows 3$|), 'stack-limit unchanged');
 ok(line_exists($output, qr|^bindcode Mod1\+c exec /usr/bin/urxvt$|), 'bind changed to bindcode');
 ok(line_exists($output, qr|^mode "asdf" {$|), 'mode asdf unchanged');
-ok(line_exists($output, qr|^bindcode 36 mode default$|), 'mode default unchanged');
+ok(line_exists($output, qr|^bindcode 36 mode \"default\"$|), 'mode default unchanged');
 ok(line_exists($output, qr|^}$|), 'closing mode bracket still there');
 
 #####################################################################
@@ -334,5 +334,12 @@ ok(line_exists($output, qr|i3bar|), 'i3bar added');
 
 $output = migrate_config('workspace_bar no');
 ok(!line_exists($output, qr|i3bar|), 'no i3bar added');
+
+#####################################################################
+# check whether the mode command gets quotes
+#####################################################################
+
+$output = migrate_config('bindsym Mod1+m mode foobar');
+ok(line_exists($output, qr|^bindsym Mod1\+m mode "foobar"|), 'mode got quotes');
 
 done_testing();

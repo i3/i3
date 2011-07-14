@@ -179,7 +179,6 @@ sub convert_command {
 
     my @unchanged_cmds = qw(
         exec
-        mode
         mark
         kill
         restart
@@ -274,6 +273,12 @@ sub convert_command {
             return;
         }
         print qq|$statement $key focus $what\n|;
+        return;
+    }
+
+    if ($command =~ /^mode/) {
+        my ($parameters) = ($command =~ /^mode (.*)/);
+        print qq|$statement $key mode "$parameters"\n|;
         return;
     }
 
