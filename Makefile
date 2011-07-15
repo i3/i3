@@ -84,7 +84,7 @@ dist: distclean
 	[ ! -e i3-${VERSION}.tar.bz2 ] || rm i3-${VERSION}.tar.bz2
 	mkdir i3-${VERSION}
 	cp i3-migrate-config-to-v4.pl i3.config.keycodes DEPENDS GOALS LICENSE PACKAGE-MAINTAINER TODO RELEASE-NOTES-${VERSION} i3.config i3.desktop i3.welcome pseudo-doc.doxygen Makefile i3-${VERSION}
-	cp -r src i3-msg i3-nagbar yajl-fallback include man i3-${VERSION}
+	cp -r src i3-msg i3-nagbar i3-config-wizard yajl-fallback include man i3-${VERSION}
 	# Only copy toplevel documentation (important stuff)
 	mkdir i3-${VERSION}/docs
 	find docs -maxdepth 1 -type f ! -name "*.xcf" -exec cp '{}' i3-${VERSION}/docs \;
@@ -106,12 +106,14 @@ clean:
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg clean
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-input clean
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-nagbar clean
+	$(MAKE) TOPDIR=$(TOPDIR) -C i3-config-wizard clean
 
 distclean: clean
 	rm -f i3
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg distclean
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-input distclean
 	$(MAKE) TOPDIR=$(TOPDIR) -C i3-nagbar distclean
+	$(MAKE) TOPDIR=$(TOPDIR) -C i3-config-wizard distclean
 
 coverage:
 	rm -f /tmp/i3-coverage.info
