@@ -83,6 +83,10 @@ ifeq ($(UNAME),FreeBSD)
 LIBS += -liconv
 endif
 
+ifeq ($(UNAME),Darwin)
+LIBS += -liconv
+endif
+
 # Fallback for libyajl 1 which did not include yajl_version.h. We need
 # YAJL_MAJOR from that file to decide which code path should be used.
 CFLAGS += -idirafter yajl-fallback
