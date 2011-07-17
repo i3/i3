@@ -164,4 +164,18 @@ char *get_process_filename(const char *prefix);
  */
 void i3_restart(bool forget_layout);
 
+#if defined(__OpenBSD__) || defined(__APPLE__)
+
+/*
+ * Taken from FreeBSD
+ * Find the first occurrence of the byte string s in byte string l.
+ *
+ */
+void *memmem(const void *l, size_t l_len, const void *s, size_t s_len);
+
+#endif
+
+#if defined(__APPLE__)
+#endif
+
 #endif
