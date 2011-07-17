@@ -176,6 +176,15 @@ void *memmem(const void *l, size_t l_len, const void *s, size_t s_len);
 #endif
 
 #if defined(__APPLE__)
+
+/*
+ * Taken from FreeBSD
+ * Returns a pointer to a new string which is a duplicate of the
+ * string, but only copies at most n characters.
+ *
+ */
+char *strndup(const char *str, size_t n);
+
 #endif
 
 #endif
