@@ -73,6 +73,30 @@ Display *dpy;
 char *rewrite_binding(const char *bindingline);
 static void finish();
 
+#if defined(__APPLE__)
+
+/*
+ * Taken from FreeBSD
+ * Returns a pointer to a new string which is a duplicate of the
+ * string, but only copies at most n characters.
+ *
+ */
+char *strndup(const char *str, size_t n) {
+    size_t len;
+    char *copy;
+
+    for (len = 0; len < n && str[len]; len++)
+        continue;
+
+    if ((copy = malloc(len + 1)) == NULL)
+        return (NULL);
+    memcpy(copy, str, len);
+    copy[len] = '\0';
+    return (copy);
+}
+
+#endif
+
 /*
  * This function resolves ~ in pathnames.
  * It may resolve wildcards in the first part of the path, but if no match
@@ -266,7 +290,9 @@ static void finish() {
 
     char *line = NULL;
     size_t len = 0;
+#if !defined(__APPLE__)
     ssize_t read;
+#endif
     bool head_of_file = true;
 
     /* write a header about auto-generation to the output file */
@@ -277,7 +303,11 @@ static void finish() {
     fputs("# this file and re-run i3-config-wizard(1).\n", ks_config);
     fputs("#\n", ks_config);
 
+#if defined(__APPLE__)
+    while ((line = fgetln(kc_config, &len)) != NULL) {
+#else
     while ((read = getline(&line, &len, kc_config)) != -1) {
+#endif
         /* skip the warning block at the beginning of the input file */
         if (head_of_file &&
             strncmp("# WARNING", line, strlen("# WARNING")) == 0)
