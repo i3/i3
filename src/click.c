@@ -221,12 +221,9 @@ static int route_click(Con *con, xcb_button_press_event_t *event, bool mod_press
     }
 
     if (in_stacked) {
-        /* for stacked/tabbed cons, floating modifier + right click resizes the
-         * parent container */
-        if (mod_pressed && event->detail == 3)
-            if (floating_mod_on_tiled_client(con->parent, event))
-                return 1;
-        goto done;
+        /* for stacked/tabbed cons, the resizing applies to the parent
+         * container */
+        con = con->parent;
     }
 
     /* 7: floating modifier pressed, initiate a resize */
@@ -236,7 +233,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, bool mod_press
     }
     /* 8: otherwise, check for border/decoration clicks and resize */
     else if (dest == CLICK_BORDER || dest == CLICK_DECORATION) {
-        DLOG("Should trry resizing (tiling)\n");
+        DLOG("Trying to resize (tiling)\n");
         tiling_resize(con, event, dest);
     }
 
