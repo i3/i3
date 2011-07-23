@@ -1,3 +1,9 @@
+i3-wm (4.0-0) unstable; urgency=low
+
+  * NOT YET RELEASED
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Sun, 24 Jul 2011 00:10:30 +0200
+
 i3-wm (3.e-bf1-3) unstable; urgency=low
 
   * include keyboard-layer{1,2}.png in docs (Closes: #595295)
