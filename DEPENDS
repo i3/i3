@@ -1,33 +1,39 @@
-You need the following libraries. The version given is to be understood as the
-minimum version required. However, if any of these libraries changes the API,
-i3 may not compile anymore. In that case, please try using the versions
-mentioned below until a fix is provided.
 
- * xcb-proto-1.3 (2008-12-10)
- * libxcb-1.1.93 (2008-12-11)
- * xcb-util-0.3.3 (2009-01-31)
- * libev
- * flex and bison
- * yajl (the IPC interface uses JSON to serialize data)
- * asciidoc >= 8.3.0 for docs/hacking-howto
- * asciidoc, xmlto, docbook-xml for man/i3.man
- * libxcursor
- * Xlib, the one that comes with your X-Server
- * x11-utils for xmessage (only for displaying the welcome message, so this is
-   mainly interesting for distributors)
+ i3 has the following dependencies:
 
-Recommendations:
- * i3lock for locking your screen
- * dmenu for launching applications
+   "min" means minimum required version
+   "lkgv" means last known good version
 
-Get the libraries from:
-http://xcb.freedesktop.org/dist/xcb-proto-1.5.tar.bz2
-http://xcb.freedesktop.org/dist/libxcb-1.1.93.tar.bz2
-http://xcb.freedesktop.org/dist/xcb-util-0.3.5.tar.bz2
-http://libev.schmorp.de/
-http://flex.sourceforge.net/
-http://www.gnu.org/software/bison/
-http://lloyd.github.com/yajl/
+┌─────────────┬────────┬────────┬────────────────────────────────────────┐
+│ dependency  │ min.   │ lkgv   │ URL                                    │
+├─────────────┼────────┼────────┼────────────────────────────────────────┤
+│ pkg-config  │ 0.25   │ 0.26   │ http://pkgconfig.freedesktop.org/      │
+│ xcb-proto   │ 1.3    │ 1.6    │ http://xcb.freedesktop.org/dist/       │
+│ libxcb      │ 1.1.93 │ 1.7    │ http://xcb.freedesktop.org/dist/       │
+│ xcb-util    │ 0.3.3  │ 0.3.8  │ http://xcb.freedesktop.org/dist/       │
+│ libev       │ 3.0    │ 4.04   │ http://libev.schmorp.de/               │
+│ flex        │ 2.5.35 │ 2.5.35 │ http://flex.sourceforge.net/           │
+│ bison       │ 2.4.1  │ 2.4.1  │ http://www.gnu.org/software/bison/     │
+│ yajl        │ 1.0.8  │ 2.0.1  │ http://lloyd.github.com/yajl/          │
+│ asciidoc    │ 8.3.0  │ 8.6.4  │ http://www.methods.co.nz/asciidoc/     │
+│ xmlto       │ 0.0.23 │ 0.0.23 │ http://www.methods.co.nz/asciidoc/     │
+│ docbook-xml │ 4.5    │ 4.5    │ http://www.methods.co.nz/asciidoc/     │
+│ libxcursor  │ 1.1.11 │ 1.1.11 │ http://ftp.x.org/pub/current/src/lib/  │
+│ Xlib        │ 1.3.3  │ 1.4.3  │ http://ftp.x.org/pub/current/src/lib/  │
+└─────────────┴────────┴────────┴────────────────────────────────────────┘
 
-http://i3.zekjur.net/i3lock/
-http://tools.suckless.org/dmenu
+ i3-msg, i3-input, i3-nagbar and i3-config-wizard do not introduce any new
+ dependencies.
+
+ i3-wsbar is implemented in Perl and has the following dependencies:
+
+   • IPC::Run
+   • Try::Tiny
+   • AnyEvent
+   • AnyEvent::I3
+
+ All of them are available at CPAN, see http://search.cpan.org/
+ Use your distribution’s packages or cpan(1) to install them.
+
+ i3-migrate-config-to-v4.pl is implemented in Perl, but it has no dependencies
+ besides Perl 5.10.
