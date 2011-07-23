@@ -369,6 +369,7 @@ void parse_file(const char *f) {
         }
     }
     fclose(fstr);
+    close(fd);
 
     /* For every custom variable, see how often it occurs in the file and
      * how much extra bytes it requires when replaced. */
