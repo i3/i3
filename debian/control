@@ -4,7 +4,7 @@ Priority: extra
 Maintainer: Michael Stapelberg <michael@stapelberg.de>
 DM-Upload-Allowed: yes
 Build-Depends: debhelper (>= 5), libx11-dev, libxcb-util0-dev (>= 0.3.8), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-randr0-dev, libxcb-icccm4-dev, libxcursor-dev, asciidoc (>= 8.4.4), xmlto, docbook-xml, pkg-config, libev-dev, flex, bison, libyajl-dev
-Standards-Version: 3.8.3
+Standards-Version: 3.8.4
 Homepage: http://i3.zekjur.net/
 
 Package: i3
@@ -25,7 +25,7 @@ Section: x11
 Depends: ${shlibs:Depends}, ${misc:Depends}, x11-utils
 Provides: x-window-manager
 Suggests: rxvt-unicode | x-terminal-emulator
-Recommends: xfonts-base
+Recommends: xfonts-base, libanyevent-i3-perl, libanyevent-perl, libipc-run-perl
 Description: an improved dynamic tiling window manager
  Key features of i3 are correct implementation of Xinerama (workspaces are
  assigned to virtual screens, i3 does the right thing when attaching new

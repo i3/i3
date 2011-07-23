@@ -1,3 +1,18 @@
+i3-wm (3.e-3) unstable; urgency=low
+
+  * Bump debian policy version
+  * Add Recommends: libanyevent-i3-perl, libanyevent-perl, libipc-run-perl
+    which are necessary to use i3-wsbar (which is not core functionality,
+    thus no Depends:) (Closes: #577287)
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Sat, 24 Apr 2010 11:20:19 +0200
+
+i3-wm (3.e-2) unstable; urgency=low
+
+  * Use x-terminal-emulator instead of hard-coded urxvt
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Sun, 04 Apr 2010 19:30:46 +0200
+
 i3-wm (3.e-1) unstable; urgency=low
 
   * Implement RandR instead of Xinerama
