@@ -149,8 +149,6 @@ Output *get_output_most(direction_t direction, Output *current) {
  *
  */
 void disable_randr(xcb_connection_t *conn) {
-    xcb_screen_t *root_screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
-
     DLOG("RandR extension unusable, disabling.\n");
 
     Output *s = scalloc(sizeof(Output));

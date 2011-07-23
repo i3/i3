@@ -30,6 +30,7 @@ extern TAILQ_HEAD(autostarts_always_head, Autostart) autostarts_always;
 extern TAILQ_HEAD(ws_assignments_head, Workspace_Assignment) ws_assignments;
 extern TAILQ_HEAD(assignments_head, Assignment) assignments;
 extern SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins;
+extern xcb_screen_t *root_screen;
 extern uint8_t root_depth;
 extern bool xcursor_supported, xkb_supported;
 extern xcb_window_t root;

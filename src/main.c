@@ -16,6 +16,7 @@ char **start_argv;
 
 xcb_connection_t *conn;
 
+xcb_screen_t *root_screen;
 xcb_window_t root;
 uint8_t root_depth;
 
@@ -270,7 +271,7 @@ int main(int argc, char *argv[]) {
     if (main_loop == NULL)
             die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
 
-    xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
+    root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
     root_depth = root_screen->root_depth;
     xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);
