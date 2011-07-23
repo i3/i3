@@ -15,7 +15,6 @@
 
 /* We need Xlib for XStringToKeysym */
 #include <X11/Xlib.h>
-#include <wordexp.h>
 
 #include "all.h"
 
