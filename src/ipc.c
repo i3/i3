@@ -193,7 +193,9 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     }
 
     ystr("percent");
-    y(double, con->percent);
+    if (con->percent == 0.0)
+        y(null);
+    else y(double, con->percent);
 
     ystr("urgent");
     y(integer, con->urgent);
