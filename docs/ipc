@@ -10,13 +10,12 @@ workspace bar.
 
 The method of choice for IPC in our case is a unix socket because it has very
 little overhead on both sides and is usually available without headaches in
-most languages. In the default configuration file, no ipc-socket path is
-specified and thus no socket is created. Alternatively you can set the
-environment-variable +I3SOCK+. Setting a path in the configfile will override
-+I3SOCK+.
+most languages. In the default configuration file, the ipc-socket gets created
+in +/tmp/i3-%u/ipc-socket.%p+ where +%u+ is your UNIX username and +%p+ is the
+PID of i3.
 
-+i3-msg+ and +i3-input+ will use +I3SOCK+ to connect to i3, unless -s is passed.
-If neither is given, they will default to +/tmp/i3-ipc.sock+.
+All i3 utilities, like +i3-msg+ and +i3-input+ will read the +I3_SOCKET_PATH+
+X11 property, stored on the X11 root window.
 
 == Establishing a connection
 
