@@ -574,6 +574,7 @@ static int handle_windowname_change_legacy(void *data, xcb_connection_t *conn, u
     return 1;
 }
 
+#if 0
 /*
  * Updates the client’s WM_CLASS property
  *
@@ -588,6 +589,7 @@ static int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t
 
     return 0;
 }
+#endif
 
 /*
  * Expose event means we should redraw our windows (= title bar)
