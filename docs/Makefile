@@ -27,5 +27,4 @@ refcard.pdf: refcard.tex
 	pdflatex refcard.tex && pdflatex refcard.tex
 
 clean:
-	rm -f */*.{aux,log,toc,bm,pdf,dvi}
-	rm -f *.log *.html
+	find . -regex ".*\.\(aux\|out\|log\|toc\|bm\|pdf\|dvi\|log\|html\)" -exec rm '{}' \;
