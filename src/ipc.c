@@ -201,7 +201,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(bool, con->urgent);
 
     ystr("focused");
-    y(integer, (con == focused));
+    y(bool, (con == focused));
 
     ystr("layout");
     switch (con->layout) {

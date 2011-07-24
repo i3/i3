@@ -22,10 +22,10 @@ cmd 'split v';
 
 my ($nodes, $focus) = get_ws_content($tmp);
 
-is($nodes->[1]->{focused}, 0, 'split container not focused');
+ok(!$nodes->[1]->{focused}, 'split container not focused');
 cmd 'focus parent';
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[1]->{focused}, 1, 'split container focused after focus parent');
+ok($nodes->[1]->{focused}, 'split container focused after focus parent');
 
 my $third = open_empty_con($i3);
 
@@ -50,7 +50,7 @@ cmd 'kill';
 sleep 0.25;
 ($nodes, $focus) = get_ws_content($tmp);
 is($nodes->[1]->{nodes}->[0]->{id}, $second, 'second container found');
-is($nodes->[1]->{nodes}->[0]->{focused}, 1, 'second container focused');
+ok($nodes->[1]->{nodes}->[0]->{focused}, 'second container focused');
 
 ##############################################################
 # another case, using a slightly different layout (regression)

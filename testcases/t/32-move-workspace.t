@@ -35,7 +35,7 @@ my ($nodes, $focus) = get_ws_content($tmp2);
 is($focus->[0], $second, 'same container on different ws');
 
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[0]->{focused}, 1, 'first container focused on first ws');
+ok($nodes->[0]->{focused}, 'first container focused on first ws');
 
 ###################################################################
 # check if floating cons are moved to new workspaces properly
