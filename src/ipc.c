@@ -198,7 +198,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     else y(double, con->percent);
 
     ystr("urgent");
-    y(integer, con->urgent);
+    y(bool, con->urgent);
 
     ystr("focused");
     y(integer, (con == focused));

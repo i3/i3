@@ -29,7 +29,7 @@ my $expected = {
     layout => 'default',
     focus => ignore(),
     focused => 0,
-    urgent => 0,
+    urgent => JSON::XS::false,
     border => 'normal',
     'floating_nodes' => ignore(),
 };
