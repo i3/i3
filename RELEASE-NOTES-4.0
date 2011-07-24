@@ -35,7 +35,7 @@ now.
    terminal.
 
  • You can specify which windows should be affected by your command by using
-   different criteria. A good example is '[class="Iceweasel"] kill' to get rid
+   different criteria. A good example is '[class="Firefox"] kill' to get rid
    of all Firefox windows.
 
  • As the configuration file needs new commands (and a few options are
