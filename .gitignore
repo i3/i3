@@ -19,6 +19,9 @@ man/i3-nagbar.html
 man/i3-wsbar.1
 man/i3-wsbar.xml
 man/i3-wsbar.html
+man/i3-input.1
+man/i3-input.xml
+man/i3-input.html
 man/i3.1
 man/i3.xml
 man/i3.html
@@ -27,3 +30,7 @@ i3
 i3-input/i3-input
 i3-nagbar/i3-nagbar
 i3-msg/i3-msg
+docs/*.html
+docs/*.aux
+docs/*.out
+docs/*.pdf
