@@ -23,12 +23,12 @@ now.
  │ New features               │
  └────────────────────────────┘
 
- • Like we introduced a proper flex/bison based parser in 3.δ for the
-   configfile, we now also have a flex/bison parser for commands. This means,
-   instead of the cryptic commands like 'f' for fullscreen or 'mh' for move
-   left, we now have human-readable, beautiful command names. In fact, the
-   commands for the just mentioned functions *are* 'fullscreen' and 'move
-   left'!
+ • In addition to the proper flex/bison based parser for the config file
+   introduced in 3.δ, we now also have a flex/bison parser for commands. What
+   this means is that we can have more human-readable, beautiful command names
+   instead of cryptic commands like 'f' for fullscreen or 'mh' for move left.
+   In fact, the commands for the aforementioned functions *are* 'fullscreen'
+   and 'move left'!
 
  • You can now chain commands using ';' (a semicolon). One example for that is
    'workspace 3 ; exec /usr/bin/urxvt' to switch to a new workspace and open a
@@ -58,7 +58,7 @@ now.
 
  • The internal workspace bar is obsolete. Use i3bar instead.
 
- • Resizing now works between everything!
+ • Resizing now works between all windows!
 
  • Fullscreen now works for everything!
 
@@ -103,7 +103,7 @@ now.
  • IPC: Commands can now have custom replies. When the parser encounters an
    error, a proper error reply is sent.
 
- • There now is an 'exec_always' configuration directive which works like
+ • There is now an 'exec_always' configuration directive which works like
    'exec' but will also be run when restarting.
 
  ┌────────────────────────────┐
