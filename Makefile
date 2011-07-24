@@ -18,14 +18,25 @@ else
 UNUSED:=$(shell $(MAKE) loglevels.h)
 endif
 
+SUBDIRS=i3-msg i3-input i3-nagbar i3-config-wizard
+
 # Depend on the specific file (.c for each .o) and on all headers
 src/%.o: src/%.c ${HEADERS}
 	echo "CC $<"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="((uint64_t)1 << $(shell awk '/$(shell basename $< .c)/ { print NR; exit 0; }' loglevels.tmp))" -c -o $@ $<
 
-all: src/cfgparse.y.o src/cfgparse.yy.o src/cmdparse.y.o src/cmdparse.yy.o ${FILES}
+all: i3 subdirs
+
+i3: src/cfgparse.y.o src/cfgparse.yy.o src/cmdparse.y.o src/cmdparse.yy.o ${FILES}
 	echo "LINK i3"
-	$(CC) $(LDFLAGS) -o i3 $^ $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+subdirs:
+	for dir in $(SUBDIRS); do \
+		echo ""; \
+		echo "MAKE $$dir"; \
+		$(MAKE) -C $$dir; \
+	done
 
 loglevels.h:
 	echo "LOGLEVELS"
@@ -74,10 +85,9 @@ install: all
 	$(INSTALL) -m 0644 i3.welcome $(DESTDIR)$(SYSCONFDIR)/i3/welcome
 	$(INSTALL) -m 0644 i3.desktop $(DESTDIR)$(PREFIX)/share/xsessions/
 	$(INSTALL) -m 0644 include/i3/ipc.h $(DESTDIR)$(PREFIX)/include/i3/
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg install
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-input install
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-nagbar install
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-config-wizard install
+	for dir in $(SUBDIRS); do \
+		$(MAKE) -C $$dir install; \
+	done
 
 dist: distclean
 	[ ! -d i3-${VERSION} ] || rm -rf i3-${VERSION}

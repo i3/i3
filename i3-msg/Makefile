@@ -14,7 +14,9 @@ HEADERS=$(wildcard *.h)
 	echo "CC $<"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-all: ${FILES}
+all: i3-msg
+
+i3-msg: ${FILES}
 	echo "LINK i3-msg"
 	$(CC) $(LDFLAGS) -o i3-msg ${FILES} $(LIBS)
 

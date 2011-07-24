@@ -12,9 +12,11 @@ HEADERS=$(wildcard *.h)
 	echo "CC $<"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-all: ${FILES}
+all: i3-nagbar
+
+i3-nagbar: ${FILES}
 	echo "LINK i3-nagbar"
-	$(CC) $(LDFLAGS) -o i3-nagbar ${FILES} $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ ${FILES} $(LIBS)
 
 install: all
 	echo "INSTALL"

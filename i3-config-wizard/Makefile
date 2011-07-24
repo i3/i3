@@ -13,9 +13,11 @@ HEADERS:=$(wildcard *.h)
 	echo "CC $<"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-all: cfgparse.y.o cfgparse.yy.o ${FILES}
+all: i3-config-wizard
+
+i3-config-wizard: cfgparse.y.o cfgparse.yy.o ${FILES}
 	echo "LINK i3-config-wizard"
-	$(CC) $(LDFLAGS) -o i3-config-wizard $^ $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 cfgparse.yy.o: cfgparse.l cfgparse.y.o ${HEADERS}
 	echo "LEX $<"
