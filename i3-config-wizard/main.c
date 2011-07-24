@@ -246,11 +246,17 @@ static int handle_expose() {
 static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
     printf("Keypress %d, state raw = %d\n", event->detail, event->state);
 
-    xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, event->state);
+    /* Remove the numlock bit, all other bits are modifiers we can bind to */
+    uint16_t state_filtered = event->state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK);
+    /* Only use the lower 8 bits of the state (modifier masks) so that mouse
+     * button masks are filtered out */
+    state_filtered &= 0xFF;
+
+    xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, state_filtered);
 
     printf("sym = %c (%d)\n", sym, sym);
 
-    if (sym == XK_Return) {
+    if (sym == XK_Return || sym == XK_KP_Enter) {
         if (current_step == STEP_WELCOME)
             current_step = STEP_GENERATE;
         else finish();
@@ -427,6 +433,8 @@ int main(int argc, char *argv[]) {
 
     xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
+
+    xcb_get_numlock_mask(conn);
 
     symbols = xcb_key_symbols_alloc(conn);
 
