@@ -41,8 +41,6 @@ static xcb_window_t win;
 static xcb_pixmap_t pixmap;
 static xcb_gcontext_t pixmap_gc;
 static xcb_rectangle_t rect = { 0, 0, 600, 20 };
-static char *glyphs_ucs[512];
-static int input_position;
 static int font_height;
 static char *prompt = "Please do not run this program.";
 static button_t *buttons;
@@ -294,7 +292,7 @@ int main(int argc, char *argv[]) {
     #undef xmacro
 
     /* Set dock mode */
-    xcb_void_cookie_t dock_cookie = xcb_change_property(conn,
+    xcb_change_property(conn,
         XCB_PROP_MODE_REPLACE,
         win,
         A__NET_WM_WINDOW_TYPE,
@@ -323,7 +321,7 @@ int main(int argc, char *argv[]) {
     strut_partial.top_start_x = 0;
     strut_partial.top_end_x = 800;
 
-    xcb_void_cookie_t strut_cookie = xcb_change_property(conn,
+    xcb_change_property(conn,
         XCB_PROP_MODE_REPLACE,
         win,
         A__NET_WM_STRUT_PARTIAL,
