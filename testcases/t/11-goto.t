@@ -11,7 +11,7 @@ BEGIN {
 
 my $x = X11::XCB::Connection->new;
 
-my $i3 = i3("/tmp/nestedcons");
+my $i3 = i3(get_socket_path());
 my $tmp = fresh_workspace;
 
 cmd 'split h';

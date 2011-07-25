@@ -41,16 +41,21 @@ sub set_wm_class {
 # start a window and see that it does not get assigned with an empty config
 #####################################################################
 
+my $socketpath = File::Temp::tempnam('/tmp', 'i3-test-socket-');
+
 my ($fh, $tmpfile) = tempfile();
 say $fh "# i3 config file (v4)";
 say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket /tmp/nestedcons";
+say $fh "ipc-socket $socketpath";
 close($fh);
 
 diag("Starting i3");
 my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
 my $process = Proc::Background->new($i3cmd);
 sleep 1;
+
+# force update of the cached socket path in lib/i3test
+get_socket_path(0);
 
 diag("pid = " . $process->pid);
 
@@ -86,7 +91,7 @@ sleep 0.25;
 ($fh, $tmpfile) = tempfile();
 say $fh "# i3 config file (v4)";
 say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket /tmp/nestedcons";
+say $fh "ipc-socket $socketpath";
 say $fh q|assign "special" → targetws|;
 close($fh);
 
@@ -94,6 +99,9 @@ diag("Starting i3");
 $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
 $process = Proc::Background->new($i3cmd);
 sleep 1;
+
+# force update of the cached socket path in lib/i3test
+get_socket_path(0);
 
 diag("pid = " . $process->pid);
 
@@ -134,6 +142,9 @@ $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $t
 $process = Proc::Background->new($i3cmd);
 sleep 1;
 
+# force update of the cached socket path in lib/i3test
+get_socket_path(0);
+
 diag("pid = " . $process->pid);
 
 # initialize the target workspace, then go to a fresh one
@@ -172,7 +183,7 @@ exit_gracefully($process->pid);
 ($fh, $tmpfile) = tempfile();
 say $fh "# i3 config file (v4)";
 say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket /tmp/nestedcons";
+say $fh "ipc-socket $socketpath";
 say $fh q|assign "special" → ~|;
 close($fh);
 
@@ -180,6 +191,9 @@ diag("Starting i3");
 $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
 $process = Proc::Background->new($i3cmd);
 sleep 1;
+
+# force update of the cached socket path in lib/i3test
+get_socket_path(0);
 
 diag("pid = " . $process->pid);
 

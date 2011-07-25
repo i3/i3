@@ -14,9 +14,10 @@ use Try::Tiny;
 use v5.10;
 
 use Exporter ();
-our @EXPORT = qw(get_workspace_names get_unused_workspace fresh_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live exit_gracefully workspace_exists focused_ws);
+our @EXPORT = qw(get_workspace_names get_unused_workspace fresh_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live exit_gracefully workspace_exists focused_ws get_socket_path);
 
 my $tester = Test::Builder->new();
+my $_cached_socket_path = undef;
 
 BEGIN {
     my $window_count = 0;
@@ -69,7 +70,7 @@ sub open_empty_con {
 }
 
 sub get_workspace_names {
-    my $i3 = i3("/tmp/nestedcons");
+    my $i3 = i3(get_socket_path());
     my $tree = $i3->get_tree->recv;
     my @outputs = @{$tree->{nodes}};
     my @cons;
@@ -96,7 +97,7 @@ sub fresh_workspace {
 
 sub get_ws {
     my ($name) = @_;
-    my $i3 = i3("/tmp/nestedcons");
+    my $i3 = i3(get_socket_path());
     my $tree = $i3->get_tree->recv;
 
     my @outputs = @{$tree->{nodes}};
@@ -143,7 +144,7 @@ sub get_focused {
 sub get_dock_clients {
     my $which = shift;
 
-    my $tree = i3("/tmp/nestedcons")->get_tree->recv;
+    my $tree = i3(get_socket_path())->get_tree->recv;
     my @outputs = @{$tree->{nodes}};
     # Children of all dockareas
     my @docked;
@@ -164,7 +165,7 @@ sub get_dock_clients {
 }
 
 sub cmd {
-    i3("/tmp/nestedcons")->command(@_)->recv
+    i3(get_socket_path())->command(@_)->recv
 }
 
 sub workspace_exists {
@@ -173,7 +174,7 @@ sub workspace_exists {
 }
 
 sub focused_ws {
-    my $i3 = i3("/tmp/nestedcons");
+    my $i3 = i3(get_socket_path());
     my $tree = $i3->get_tree->recv;
     my @outputs = @{$tree->{nodes}};
     my @cons;
@@ -186,7 +187,7 @@ sub focused_ws {
 }
 
 sub does_i3_live {
-    my $tree = i3('/tmp/nestedcons')->get_tree->recv;
+    my $tree = i3(get_socket_path())->get_tree->recv;
     my @nodes = @{$tree->{nodes}};
     my $ok = (@nodes > 0);
     $tester->ok($ok, 'i3 still lives');
@@ -196,7 +197,7 @@ sub does_i3_live {
 # Tries to exit i3 gracefully (with the 'exit' cmd) or kills the PID if that fails
 sub exit_gracefully {
     my ($pid, $socketpath) = @_;
-    $socketpath ||= '/tmp/nestedcons';
+    $socketpath ||= get_socket_path();
 
     my $exited = 0;
     try {
@@ -208,6 +209,24 @@ sub exit_gracefully {
     if (!$exited) {
         kill(9, $pid) or die "could not kill i3";
     }
+}
+
+# Gets the socket path from the I3_SOCKET_PATH atom stored on the X11 root window
+sub get_socket_path {
+    my ($cache) = @_;
+    $cache ||= 1;
+
+    if ($cache && defined($_cached_socket_path)) {
+        return $_cached_socket_path;
+    }
+
+    my $x = X11::XCB::Connection->new;
+    my $atom = $x->atom(name => 'I3_SOCKET_PATH');
+    my $cookie = $x->get_property(0, $x->get_root_window(), $atom->id, GET_PROPERTY_TYPE_ANY, 0, 256);
+    my $reply = $x->get_property_reply($cookie->{sequence});
+    my $socketpath = $reply->{value};
+    $_cached_socket_path = $socketpath;
+    return $socketpath;
 }
 
 1

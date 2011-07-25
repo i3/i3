@@ -4,7 +4,7 @@
 use i3test;
 use List::MoreUtils qw(all);
 
-my $i3 = i3("/tmp/nestedcons");
+my $i3 = i3(get_socket_path());
 
 ####################
 # Request workspaces

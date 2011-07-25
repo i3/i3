@@ -5,7 +5,7 @@ use i3test;
 use List::MoreUtils qw(all none);
 use List::Util qw(first);
 
-my $i3 = i3("/tmp/nestedcons");
+my $i3 = i3(get_socket_path());
 
 ####################
 # Request tree

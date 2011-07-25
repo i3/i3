@@ -10,7 +10,7 @@ use List::Util qw(first);
 use i3test;
 
 my $x = X11::XCB::Connection->new;
-my $i3 = i3("/tmp/nestedcons");
+my $i3 = i3(get_socket_path());
 my $tmp = fresh_workspace;
 my $window = open_standard_window($x);
 

@@ -7,7 +7,7 @@
 #
 use i3test;
 
-my $i3 = i3("/tmp/nestedcons");
+my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;
 

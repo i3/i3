@@ -5,7 +5,7 @@
 #
 use i3test;
 
-my $i3 = i3("/tmp/nestedcons");
+my $i3 = i3(get_socket_path());
 
 # We move the pointer out of our way to avoid a bug where the focus will
 # be set to the window under the cursor

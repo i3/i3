@@ -9,7 +9,7 @@ BEGIN {
     use_ok('X11::XCB::Window');
 }
 
-my $i3 = i3("/tmp/nestedcons");
+my $i3 = i3(get_socket_path());
 my $x = X11::XCB::Connection->new;
 
 sub check_order {
