@@ -4,6 +4,10 @@
 /* from X11/keysymdef.h */
 #define XCB_NUM_LOCK                    0xff7f
 
+#define xmacro(atom) xcb_atom_t A_ ## atom;
+#include "atoms.xmacro"
+#undef xmacro
+
 extern unsigned int xcb_numlock_mask;
 
 void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t mask, uint32_t value);

@@ -171,12 +171,9 @@ static char *socket_path_from_x11() {
  */
 static int handle_expose() {
     /* re-draw the background */
-    xcb_rectangle_t border = {0, 0, 300, (15*font_height) + 8},
-                    inner = {2, 2, 296, (15*font_height) + 8 - 4};
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#285577"));
-    xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
+    xcb_rectangle_t border = {0, 0, 300, (15*font_height) + 8};
     xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
-    xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
+    xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
 
     xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font_id);
 
@@ -186,54 +183,51 @@ static int handle_expose() {
         /* restore font color */
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FFFFFF"));
 
-        txt(10, 1, "i3: first configuration");
-        txt(10, 4, "You have not configured i3 yet.");
-        txt(10, 5, "Do you want me to generate ~/.i3/config?");
-        txt(85, 8, "Yes, generate ~/.i3/config");
-        txt(85, 10, "No, I will use the defaults");
+        txt(10, 2, "You have not configured i3 yet.");
+        txt(10, 3, "Do you want me to generate ~/.i3/config?");
+        txt(85, 5, "Yes, generate ~/.i3/config");
+        txt(85, 7, "No, I will use the defaults");
 
         /* green */
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#00FF00"));
-        txt(25, 8, "<Enter>");
+        txt(25, 5, "<Enter>");
 
         /* red */
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FF0000"));
-        txt(31, 10, "<ESC>");
+        txt(31, 7, "<ESC>");
     }
 
     if (current_step == STEP_GENERATE) {
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FFFFFF"));
 
-        txt(10, 1, "i3: generate config");
-
-        txt(10, 4, "Please choose either:");
-        txt(85, 6, "Win as default modifier");
-        txt(85, 7, "Alt as default modifier");
-        txt(10, 9, "Afterwards, press");
-        txt(85, 11, "to write ~/.i3/config");
-        txt(85, 12, "to abort");
+        txt(10, 2, "Please choose either:");
+        txt(85, 4, "Win as default modifier");
+        txt(85, 5, "Alt as default modifier");
+        txt(10, 7, "Afterwards, press");
+        txt(85, 9, "to write ~/.i3/config");
+        txt(85, 10, "to abort");
 
         /* the not-selected modifier */
         if (modifier == MOD_SUPER)
-            txt(31, 7, "<Alt>");
-        else txt(31, 6, "<Win>");
+            txt(31, 5, "<Alt>");
+        else txt(31, 4, "<Win>");
 
         /* the selected modifier */
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font_bold_id);
         if (modifier == MOD_SUPER)
-            txt(31, 6, "<Win>");
-        else txt(31, 7, "<Alt>");
+            txt(31, 4, "<Win>");
+        else txt(31, 5, "<Alt>");
 
         /* green */
         uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_FONT;
         uint32_t values[] = { get_colorpixel(conn, "#00FF00"), font_id };
         xcb_change_gc(conn, pixmap_gc, mask, values);
 
-        txt(25, 11, "<Enter>");
+        txt(25, 9, "<Enter>");
 
         /* red */
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FF0000"));
-        txt(31, 12, "<ESC>");
+        txt(31, 10, "<ESC>");
     }
 
     /* Copy the contents of the pixmap to the real window */
@@ -257,8 +251,19 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     printf("sym = %c (%d)\n", sym, sym);
 
     if (sym == XK_Return || sym == XK_KP_Enter) {
-        if (current_step == STEP_WELCOME)
+        if (current_step == STEP_WELCOME) {
             current_step = STEP_GENERATE;
+            /* Set window title */
+            xcb_change_property(conn,
+                XCB_PROP_MODE_REPLACE,
+                win,
+                A__NET_WM_NAME,
+                A_UTF8_STRING,
+                8,
+                strlen("i3: generate config"),
+                "i3: generate config");
+            xcb_flush(conn);
+        }
         else finish();
     }
 
@@ -431,6 +436,12 @@ int main(int argc, char *argv[]) {
         xcb_connection_has_error(conn))
         errx(1, "Cannot open display\n");
 
+    /* Place requests for the atoms we need as soon as possible */
+    #define xmacro(atom) \
+        xcb_intern_atom_cookie_t atom ## _cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
+    #include "atoms.xmacro"
+    #undef xmacro
+
     xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
 
@@ -444,15 +455,44 @@ int main(int argc, char *argv[]) {
     /* Open an input window */
     win = open_input_window(conn, 300, 205);
 
+    /* Setup NetWM atoms */
+    #define xmacro(name) \
+        do { \
+            xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name ## _cookie, NULL); \
+            if (!reply) \
+                errx(EXIT_FAILURE, "Could not get atom " # name "\n"); \
+            \
+            A_ ## name = reply->atom; \
+            free(reply); \
+        } while (0);
+    #include "atoms.xmacro"
+    #undef xmacro
+
+    /* Set dock mode */
+    xcb_change_property(conn,
+        XCB_PROP_MODE_REPLACE,
+        win,
+        A__NET_WM_WINDOW_TYPE,
+        A_ATOM,
+        32,
+        1,
+        (unsigned char*) &A__NET_WM_WINDOW_TYPE_DIALOG);
+
+    /* Set window title */
+    xcb_change_property(conn,
+        XCB_PROP_MODE_REPLACE,
+        win,
+        A__NET_WM_NAME,
+        A_UTF8_STRING,
+        8,
+        strlen("i3: first configuration"),
+        "i3: first configuration");
+
     /* Create pixmap */
     pixmap = xcb_generate_id(conn);
     pixmap_gc = xcb_generate_id(conn);
     xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, 500, 500);
     xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
-
-    /* Set input focus (we have override_redirect=1, so the wm will not do
-     * this for us) */
-    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, win, XCB_CURRENT_TIME);
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);

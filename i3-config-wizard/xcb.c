@@ -109,11 +109,8 @@ xcb_window_t open_input_window(xcb_connection_t *conn, uint32_t width, uint32_t 
         mask |= XCB_CW_BACK_PIXEL;
         values[0] = 0;
 
-        mask |= XCB_CW_OVERRIDE_REDIRECT;
-        values[1] = 1;
-
 	mask |= XCB_CW_EVENT_MASK;
-	values[2] = XCB_EVENT_MASK_EXPOSURE;
+	values[1] = XCB_EVENT_MASK_EXPOSURE;
 
         xcb_create_window(conn,
                           XCB_COPY_FROM_PARENT,

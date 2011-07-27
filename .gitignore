@@ -7,9 +7,9 @@ loglevels.tmp
 *.gcno
 testcases/testsuite-*
 testcases/latest
-src/*.output
-src/*.tab.*
-src/*.yy.c
+*.output
+*.tab.*
+*.yy.c
 man/i3-msg.1
 man/i3-msg.xml
 man/i3-msg.html
