@@ -28,6 +28,7 @@ use AnyEvent::I3 qw(:all);
 use Try::Tiny;
 use Getopt::Long;
 use Time::HiRes qw(sleep);
+use X11::XCB::Connection;
 
 # install a dummy CHLD handler to overwrite the CHLD handler of AnyEvent / EV
 # XXX: we could maybe also use a different loop than the default loop in EV?
@@ -53,6 +54,23 @@ my $result = GetOptions(
 @displays = map { s/ //g; $_ } @displays;
 
 @displays = qw(:1) if @displays == 0;
+
+# connect to all displays for two reasons:
+# 1: check if the display actually works
+# 2: keep the connection open so that i3 is not the only client. this prevents
+#    the X server from exiting (Xdummy will restart it, but not quick enough
+#    sometimes)
+my @conns;
+my @wdisplays;
+for my $display (@displays) {
+    try {
+        my $x = X11::XCB::Connection->new(display => $display);
+        push @conns, $x;
+        push @wdisplays, $display;
+    } catch {
+        say STDERR "WARNING: Not using X11 display $display, could not connect";
+    };
+}
 
 my $i3cmd = abs_path("../i3") . " -V -d all --disable-signalhandler";
 my $config = slurp('i3-test.config');
@@ -84,7 +102,7 @@ my $cv = AnyEvent->condvar;
 
 # We start tests concurrently: For each display, one test gets started. Every
 # test starts another test after completing.
-take_job($_) for @displays;
+take_job($_) for @wdisplays;
 
 #
 # Takes a test from the beginning of @testfiles and runs it.
