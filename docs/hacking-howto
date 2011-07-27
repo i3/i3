@@ -252,17 +252,18 @@ So, the hierarchy is:
 
 === Virtual screens
 
-A virtual screen (type `i3Screen`) is generated from the connected screens
-obtained through Xinerama. The difference to the raw Xinerama monitors as seen
+A virtual screen (type `i3Screen`) is generated from the connected outputs
+obtained through RandR. The difference to the raw RandR outputs as seen
 when using +xrandr(1)+ is that it falls back to the lowest common resolution of
-the logical screens.
+the actual enabled outputs.
 
-For example, if your notebook has 1280x800 and you connect a video projector
-with 1024x768, set up in clone mode (+xrandr \--output VGA \--mode 1024x768
-\--same-as LVDS+), i3 will have one virtual screen.
+For example, if your notebook has a screen resolution of 1280x800 px and you
+connect a video projector with a resolution of 1024x768 px, set it up in clone
+mode (+xrandr \--output VGA1 \--mode 1024x768 \--same-as LVDS1+), i3 will have
+one virtual screen.
 
-However, if you configure it using +xrandr \--output VGA \--mode 1024x768
-\--right-of LVDS+, i3 will generate two virtual screens. For each virtual
+However, if you configure it using +xrandr \--output VGA1 \--mode 1024x768
+\--right-of LVDS1+, i3 will generate two virtual screens. For each virtual
 screen, a new workspace will be assigned. New workspaces are created on the
 screen you are currently on.
 
@@ -320,7 +321,7 @@ should be chosen for those:
 
  * Establish the xcb connection
  * Check for XKB extension on the separate X connection
- * Check for Xinerama screens
+ * Check for RandR screens
  * Grab the keycodes for which bindings exist
  * Manage all existing windows
  * Enter the event loop
