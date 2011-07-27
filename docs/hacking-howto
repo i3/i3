@@ -111,6 +111,11 @@ Furthermore, you can freely resize table cells.
 
 == Files
 
+include/atoms.xmacro::
+A file containing all X11 atoms which i3 uses. This file will be included
+various times (for defining, requesting and receiving the atoms), each time
+with a different definition of xmacro().
+
 include/data.h::
 Contains data definitions used by nearly all files. You really need to read
 this first.
@@ -130,18 +135,26 @@ src/click.c::
 Contains all functions which handle mouse button clicks (right mouse button
 clicks initiate resizing and thus are relatively complex).
 
-src/client.c::
-Contains all functions which are specific to a certain client (make it
-fullscreen, see if its class/name matches a pattern, kill it, …).
+src/cmdparse.l::
+Contains the lexer for i3 commands, written for +flex(1)+.
 
-src/commands.c::
-Parsing commands and actually executing them (focusing, moving, …).
+src/cmdparse.y::
+Contains the parser for i3 commands, written for +bison(1)+.
+
+src/con.c::
+Contains all functions which deal with containers directly (creating
+containers, searching containers, getting specific properties from containers,
+…).
 
 src/config.c::
-Parses the configuration file.
+Contains all functions handling the configuration file (calling the parser
+(src/cfgparse.y) with the correct path, switching key bindings mode).
 
 src/debug.c::
 Contains debugging functions to print unhandled X events.
+
+src/ewmh.c::
+iFunctions to get/set certain EWMH properties easily.
 
 src/floating.c::
 Contains functions for floating mode (mostly resizing/dragging).
@@ -153,34 +166,74 @@ unmapping, key presses, button presses, …).
 src/ipc.c::
 Contains code for the IPC interface.
 
-src/layout.c::
-Renders your layout (screens, workspaces, containers).
+src/load_layout.c::
+Contains code for loading layouts from JSON files.
 
-src/mainx.c::
+src/log.c::
+Handles the setting of loglevels, contains the logging functions.
+
+src/main.c::
 Initializes the window manager.
 
 src/manage.c::
 Looks at existing or new windows and decides whether to manage them. If so, it
 reparents the window and inserts it into our data structures.
 
-src/resize.c::
-Contains the functions to resize columns/rows in the table.
+src/match.c::
+A "match" is a data structure which acts like a mask or expression to match
+certain windows or not. For example, when using commands, you can specify a
+command like this: [title="*Firefox*"] kill. The title member of the match
+data structure will then be filled and i3 will check each window using
+match_matches_window() to find the windows affected by this command.
 
-src/table.c::
-Manages the most important internal data structure, the design table.
+src/move.c::
+Contains code to move a container in a specific direction.
+
+src/output.c::
+Functions to handle CT_OUTPUT cons.
+
+src/randr.c::
+The RandR API is used to get (and re-query) the configured outputs (monitors,
+…).
+
+src/render.c::
+Renders the tree data structure by assigning coordinates to every node. These
+values will later be pushed to X11 in +src/x.c+.
+
+src/resize.c::
+Contains the functions to resize containers.
+
+src/sighandler.c::
+Handles +SIGSEGV+, +SIGABRT+ and +SIGFPE+ by showing a dialog that i3 crashed.
+You can chose to let it dump core, to restart it in-place or to restart it
+in-place but forget about the layout.
+
+src/tree.c::
+Contains functions which open or close containers in the tree, change focus or
+cleanup ("flatten") the tree. See also +src/move.c+ for another similar
+function, which was moved into its own file because it is so long.
 
 src/util.c::
 Contains useful functions which are not really dependant on anything.
 
+src/window.c::
+Handlers to update X11 window properties like +WM_CLASS+, +_NET_WM_NAME+,
++CLIENT_LEADER+, etc.
+
 src/workspace.c::
 Contains all functions related to workspaces (displaying, hiding, renaming…)
+
+src/x.c::
+Transfers our in-memory tree (see +src/render.c+) to X11.
 
 src/xcb.c::
 Contains wrappers to use xcb more easily.
 
+src/xcursor.c::
+XCursor functions (for cursor themes).
+
 src/xinerama.c::
-(Re-)initializes the available screens and converts them to virtual screens
-(see below).
+Legacy support for Xinerama. See +src/randr.c+ for the preferred API.
 
 == Data structures
 
