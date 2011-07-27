@@ -7,6 +7,9 @@
 use List::Util qw(first);
 use i3test;
 
+# to ensure that workspace 1 stays open
+cmd 'open';
+
 my $tmp = fresh_workspace;
 ok(workspace_exists($tmp), 'workspace created');
 # if the workspace could not be created, we cannot run any other test
