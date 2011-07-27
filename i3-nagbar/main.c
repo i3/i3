@@ -260,8 +260,9 @@ int main(int argc, char *argv[]) {
     }
 
     int screens;
-    xcb_connection_t *conn = xcb_connect(NULL, &screens);
-    if (xcb_connection_has_error(conn))
+    xcb_connection_t *conn;
+    if ((conn = xcb_connect(NULL, &screens)) == NULL ||
+        xcb_connection_has_error(conn))
         die("Cannot open display\n");
 
     /* Place requests for the atoms we need as soon as possible */
