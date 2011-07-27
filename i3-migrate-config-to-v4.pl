@@ -321,7 +321,24 @@ sub convert_command {
 
     # With Container-commands are now obsolete due to different abstraction
     if ($command =~ /^wc/) {
-        print "# XXX: 'with container' commands are obsolete in 4.x: $line\n";
+        $command =~ s/^wc//g;
+        my $wc_replaced = 0;
+        for (my $c = 0; $c < @replace; $c += 2) {
+            if ($command =~ $replace[$c]) {
+                $command = $replace[$c+1];
+                $wc_replaced = 1;
+                last;
+            }
+        }
+        if (!$wc_replaced) {
+            print "# XXX: migration script could not handle command: $line\n";
+        } else {
+            # NOTE: This is not 100% accurate, as it only works for one level
+            # of nested containers. As this is a common use case, we use 'focus
+            # parent; $command' nevertheless. For advanced use cases, the user
+            # has to modify his config.
+            print "$statement $key focus parent; $command\n";
+        }
         return;
     }
 
