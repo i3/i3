@@ -427,8 +427,8 @@ int main(int argc, char *argv[]) {
         socket_path = "/tmp/i3-ipc.sock";
 
     int screens;
-    conn = xcb_connect(NULL, &screens);
-    if (xcb_connection_has_error(conn))
+    if ((conn = xcb_connect(NULL, &screens)) == NULL ||
+        xcb_connection_has_error(conn))
         errx(1, "Cannot open display\n");
 
     xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
