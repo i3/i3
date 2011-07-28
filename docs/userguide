@@ -655,6 +655,27 @@ popup_during_fullscreen ignore
 
 == List of commands
 
+=== Splitting containers
+
+The split command makes the current window a split container. Split containers
+can contain multiple windows. Every split container has an orientation, it is
+either split horizontally (a new window gets placed to the right of the current
+one) or vertically (a new window gets placed below the current one).
+
+If you apply this command to a split container with the same orientation,
+nothing will happen. If you use a different orientation, the split container’s
+orientation will be changed (if it does not have more than one window).
+
+*Syntax*:
+---------------------------
+split <vertical|horizontal>
+---------------------------
+
+*Example*:
+--------------
+split vertical
+--------------
+
 === Manipulating layout
 
 To change the layout of the current container to stacking, use +layout
