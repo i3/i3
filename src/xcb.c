@@ -93,7 +93,6 @@ uint32_t get_colorpixel(char *hex) {
 xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class,
         enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values) {
     xcb_window_t result = xcb_generate_id(conn);
-    xcb_cursor_t cursor_id = xcb_generate_id(conn);
 
     /* If the window class is XCB_WINDOW_CLASS_INPUT_ONLY, depth has to be 0 */
     uint16_t depth = (window_class == XCB_WINDOW_CLASS_INPUT_ONLY ? 0 : XCB_COPY_FROM_PARENT);
@@ -115,6 +114,7 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
         values[0] = xcursor_get_cursor(cursor);
         xcb_change_window_attributes(conn, result, mask, values);
     } else {
+        xcb_cursor_t cursor_id = xcb_generate_id(conn);
         i3Font cursor_font = load_font("cursor", false);
         int xcb_cursor = xcursor_get_xcb_cursor(cursor);
         xcb_create_glyph_cursor(conn, cursor_id, cursor_font.id, cursor_font.id,
