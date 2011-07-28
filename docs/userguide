@@ -594,7 +594,7 @@ ipc-socket /tmp/i3-ipc.sock
 You can then use the +i3-msg+ application to perform any command listed in
 the next section.
 
-=== Disable focus follows mouse
+=== Focus follows mouse
 
 If you have a setup where your mouse usually is in your way (like a touchpad
 on your laptop which you do not want to disable completely), you might want
@@ -607,10 +607,32 @@ to click on links in your browser window).
 focus_follows_mouse <yes|no>
 ----------------------------
 
-*Examples*:
+*Example*:
 ----------------------
 focus_follows_mouse no
 ----------------------
+
+=== Popups during fullscreen mode
+
+When you are in fullscreen mode, some applications still open popup windows
+(take Xpdf for example). This is because these applications may not be aware
+that they are in fullscreen mode (they do not check the corresponding hint).
+There are two things which are possible to do in this situation:
+
+1. Just ignore the popup (don’t map it). This won’t interrupt you while you are
+   in fullscreen. However, some apps might react badly to this (deadlock until
+   you go out of fullscreen).
+2. Leave fullscreen mode. This is the default.
+
+*Syntax*:
+-------------------------------------------------
+popup_during_fullscreen <ignore|leave_fullscreen>
+-------------------------------------------------
+
+*Example*:
+------------------------------
+popup_during_fullscreen ignore
+------------------------------
 
 == List of commands
 
