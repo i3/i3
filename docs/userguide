@@ -380,6 +380,25 @@ floating_modifier <Modifiers>
 floating_modifier Mod1
 --------------------------------
 
+=== Orientation for new workspaces
+
+New workspaces get a reasonable default orientation: Wide-screen monitors
+(anything wider than high) get horizontal orientation, rotated monitors
+(anything higher than wide) get vertical orientation.
+
+With the +default_orientation+ configuration directive, you can overwrite that
+behaviour.
+
+*Syntax*:
+----------------------------------------------
+default_orientation <horizontal|vertical|auto>
+----------------------------------------------
+
+*Example*:
+----------------------------
+default_orientation vertical
+----------------------------
+
 === Layout mode for new containers
 
 This option determines in which mode new containers on workspace level will
