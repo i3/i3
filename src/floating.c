@@ -445,6 +445,8 @@ void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
                     break;
 
                 case XCB_UNMAP_NOTIFY:
+                case XCB_KEY_PRESS:
+                case XCB_KEY_RELEASE:
                     DLOG("Unmap-notify, aborting\n");
                     handle_event(type, inside_event);
                     goto done;
