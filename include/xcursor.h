@@ -13,9 +13,9 @@ enum xcursor_cursor_t {
     XCURSOR_CURSOR_MAX
 };
 
-extern void xcursor_load_cursors();
-extern Cursor xcursor_get_cursor(enum xcursor_cursor_t c);
-extern int xcursor_get_xcb_cursor(enum xcursor_cursor_t c);
+void xcursor_load_cursors();
+Cursor xcursor_get_cursor(enum xcursor_cursor_t c);
+int xcursor_get_xcb_cursor(enum xcursor_cursor_t c);
 
 /**
  * Sets the cursor of the root window to the 'pointer' cursor.
