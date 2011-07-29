@@ -338,8 +338,7 @@ int main(int argc, char *argv[]) {
     /* Set a cursor for the root window (otherwise the root window will show no
        cursor until the first client is launched). */
     if (xcursor_supported) {
-        uint32_t values[1] = { xcursor_get_cursor(XCURSOR_CURSOR_POINTER) };
-        xcb_change_window_attributes(conn, root, XCB_CW_CURSOR, values);
+        xcursor_set_root_cursor();
     } else {
         xcb_cursor_t cursor_id = xcb_generate_id(conn);
         i3Font cursor_font = load_font("cursor", false);
