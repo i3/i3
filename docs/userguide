@@ -51,17 +51,17 @@ image:single_terminal.png[Single terminal]
 
 If you now open another terminal, i3 will place it next to the current one,
 splitting the screen size in half. Depending on your monitor, i3 will put the
-new window right to the old window (for widescreen) or below the old window
-(rotated displays).
+created window beside the existing window (on wide displays) or below the
+existing window (rotated displays).
 
 image:two_terminals.png[Two terminals]
 
-To move the focus between the two terminals, you use the direction keys which
-you may know from the editor +vi+. However, in i3, your homerow is used for
-these keys (in +vi+, the keys are shifted to the left by one for compatibility
-with most keyboard layouts). Therefore, +mod+J+ is left, +mod+K+ is down,
-+mod+L+ is up and `mod+;` is right. So, to switch between the terminals,
-use +mod+K+ or +mod+L+. Of course, you can also use the arrow keys.
+To move the focus between the two terminals, you can use the direction keys
+which you may know from the editor +vi+. However, in i3, your homerow is used
+for these keys (in +vi+, the keys are shifted to the left by one for
+compatibility with most keyboard layouts). Therefore, +mod+J+ is left, +mod+K+
+is down, +mod+L+ is up and `mod+;` is right. So, to switch between the
+terminals, use +mod+K+ or +mod+L+. Of course, you can also use the arrow keys.
 
 At the moment, your workspace is split (it contains two terminals) in a
 specific direction (horizontal by default). Every window can be split
@@ -99,7 +99,7 @@ image:modes.png[Container modes]
 To display a window in fullscreen mode or to go out of fullscreen mode again,
 press +mod+f+.
 
-There is also a global fullscreen mode in i3 in which the client will use all
+There is also a global fullscreen mode in i3 in which the client will span all
 available outputs.
 
 === Opening other applications
@@ -386,7 +386,7 @@ New workspaces get a reasonable default orientation: Wide-screen monitors
 (anything wider than high) get horizontal orientation, rotated monitors
 (anything higher than wide) get vertical orientation.
 
-With the +default_orientation+ configuration directive, you can overwrite that
+With the +default_orientation+ configuration directive, you can override that
 behaviour.
 
 *Syntax*:
@@ -462,13 +462,14 @@ configuration file and run it before starting i3 (for example in your
 
 [[assign_workspace]]
 
-It is recommended that you match on window classes insetead of window titles
-whenever possible because some applications first create their window, and then
-worry about setting the correct title. Firefox with Vimperator comes to mind.
-The window starts up being named Firefox, and only when Vimperator is loaded
-does the title change. As i3 will get the title as soon as the application maps
-the window (mapping means actually displaying it on the screen), you’d need to
-have to match on 'Firefox' in this case.
+Specific windows can be matched by window class and/or window title. It is
+recommended that you match on window classes instead of window titles whenever
+possible because some applications first create their window, and then worry
+about setting the correct title. Firefox with Vimperator comes to mind. The
+window starts up being named Firefox, and only when Vimperator is loaded does
+the title change. As i3 will get the title as soon as the application maps the
+window (mapping means actually displaying it on the screen), you’d need to have
+to match on 'Firefox' in this case.
 
 You can prefix or suffix workspaces with a `~` to specify that matching clients
 should be put into floating mode. If you specify only a `~`, the client will
@@ -539,8 +540,7 @@ workspace 5 output VGA1
 
 === Changing colors
 
-You can change all colors which i3 uses to draw the window decorations and the
-bottom bar.
+You can change all colors which i3 uses to draw the window decorations.
 
 *Syntax*:
 --------------------------------------------
@@ -678,9 +678,10 @@ split vertical
 
 === Manipulating layout
 
-To change the layout of the current container to stacking, use +layout
-stacking+, for default use +layout default+ and for tabbed, use +layout
-tabbed+. To make the current window (!) fullscreen, use +fullscreen+, to make
+Use +layout default+, +layout stacking+ or +layout tabbed+ to change the
+current container layout to default, stacking or tabbed layout, respectively.
+
+To make the current window (!) fullscreen, use +fullscreen+, to make
 it floating (or tiling again) use +floating enable+ respectively +floating disable+
 (or +floating toggle+):
 
