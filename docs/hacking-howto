@@ -1,14 +1,12 @@
 Hacking i3: How To
 ==================
 Michael Stapelberg <michael+i3@stapelberg.de>
-February 2010
+July 2011
 
 This document is intended to be the first thing you read before looking and/or
 touching i3’s source code. It should contain all important information to help
 you understand why things are like they are. If it does not mention something
 you find necessary, please do not hesitate to contact me.
-
-PLEASE BEWARE THAT THIS DOCUMENT IS ONLY PARTIALLY UPDATED FOR -tree YET!
 
 == Window Managers
 
@@ -67,6 +65,13 @@ the layout you need at the moment.
 
 === The layout table
 
+*********************************************************************************
+This section has not been updated for v4.0 yet, sorry! We wanted to release on
+time, but we will update this soon. Please talk to us on IRC if you need to
+know stuff *NOW* :).
+*********************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////////
 To accomplish flexible layouts, we decided to simply use a table. The table
 grows and shrinks as you need it. Each cell holds a container which then holds
 windows (see picture below). You can use different layouts for each container
@@ -108,6 +113,7 @@ window).
 |========
 
 Furthermore, you can freely resize table cells.
+/////////////////////////////////////////////////////////////////////////////////
 
 == Files
 
@@ -237,10 +243,20 @@ Legacy support for Xinerama. See +src/randr.c+ for the preferred API.
 
 == Data structures
 
+*********************************************************************************
+This section has not been updated for v4.0 yet, sorry! We wanted to release on
+time, but we will update this soon. Please talk to us on IRC if you need to
+know stuff *NOW* :).
+*********************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////////
+
 See include/data.h for documented data structures. The most important ones are
 explained right here.
 
 image:bigpicture.png[The Big Picture]
+
+/////////////////////////////////////////////////////////////////////////////////
 
 So, the hierarchy is:
 
@@ -280,17 +296,37 @@ desktops''.
 
 === The layout table
 
+*********************************************************************************
+This section has not been updated for v4.0 yet, sorry! We wanted to release on
+time, but we will update this soon. Please talk to us on IRC if you need to
+know stuff *NOW* :).
+*********************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////////
+
 Each workspace has a table, which is just a two-dimensional dynamic array
 containing Containers (see below). This table grows and shrinks as you need it
 (by moving windows to the right you can create a new column in the table, by
 moving them to the bottom you create a new row).
 
+/////////////////////////////////////////////////////////////////////////////////
+
 === Container
+
+*********************************************************************************
+This section has not been updated for v4.0 yet, sorry! We wanted to release on
+time, but we will update this soon. Please talk to us on IRC if you need to
+know stuff *NOW* :).
+*********************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////////
 
 A container is the content of a table’s cell. It holds an arbitrary amount of
 windows and has a specific layout (default layout, stack layout or tabbed
 layout). Containers can consume multiple table cells by modifying their
 colspan/rowspan attribute.
+
+/////////////////////////////////////////////////////////////////////////////////
 
 === Client
 
@@ -399,7 +435,7 @@ i3 does not care for applications. All it notices is when new windows are
 mapped (see `src/handlers.c`, `handle_map_request()`). The window is then
 reparented (see section "Manage windows").
 
-After reparenting the window, `render_layout()` is called which renders the
+After reparenting the window, `render_tree()` is called which renders the
 internal layout table. The new window has been placed in the currently focused
 container and therefore the new window and the old windows (if any) need to be
 moved/resized so that the currently active layout (default/stacking/tabbed mode)
@@ -447,6 +483,15 @@ until the size maintains the correct aspect ratio. For the code to do this, see
 src/layout.c, function resize_client().
 
 == Rendering (src/layout.c, render_layout() and render_container())
+
+*********************************************************************************
+This section has not been updated for v4.0 yet, sorry! We wanted to release on
+time, but we will update this soon. Please talk to us on IRC if you need to
+know stuff *NOW* :).
+*********************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////////
+
 
 There are several entry points to rendering: `render_layout()`,
 `render_workspace()` and `render_container()`. The former one calls
@@ -520,7 +565,18 @@ floating windows:
 * The new width_factor for each involved column (respectively row) will be
   calculated.
 
-== User commands / commandmode (src/commands.c)
+/////////////////////////////////////////////////////////////////////////////////
+
+== User commands / commandmode (src/cmdparse.{l,y})
+
+*********************************************************************************
+This section has not been updated for v4.0 yet, sorry! We wanted to release on
+time, but we will update this soon. Please talk to us on IRC if you need to
+know stuff *NOW* :).
+*********************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////////
+
 
 Like in vim, you can control i3 using commands. They are intended to be a
 powerful alternative to lots of shortcuts, because they can be combined. There
@@ -544,6 +600,8 @@ The other commands are to be combined with a direction. The directions are h,
 j, k and l, like in vim (h = left, j = down, k = up, l = right). When you just
 specify the direction keys, i3 will move the focus in that direction. You can
 provide "m" or "s" before the direction to move a window respectively or snap.
+
+/////////////////////////////////////////////////////////////////////////////////
 
 == Moving containers
 
