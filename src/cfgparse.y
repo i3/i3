@@ -19,6 +19,7 @@ static Match current_match;
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(struct context *context);
 extern int yyparse(void);
+extern int yylex_destroy(void);
 extern FILE *yyin;
 YY_BUFFER_STATE yy_scan_string(const char *);
 
@@ -467,6 +468,7 @@ void parse_file(const char *f) {
         start_configerror_nagbar(f);
     }
 
+    yylex_destroy();
     FREE(context->line_copy);
     free(context);
     free(new);
