@@ -1,7 +1,7 @@
 i3(1)
 =====
 Michael Stapelberg <michael+i3@stapelberg.de>
-v3.epsilon, March 2010
+v4.0, July 2011
 
 == NAME
 
@@ -47,7 +47,7 @@ Please be aware that i3 is primarily targeted at advanced users and developers.
 === IMPORTANT NOTE TO nVidia BINARY DRIVER USERS
 
 If you are using the nVidia binary graphics driver (also known as 'blob')
-you need to use the +--force-xinerama+ flag (in your .xsession) when starting
+you need to use the +--force-xinerama+ flag (in your ~/.xsession) when starting
 i3, like so:
 
 ----------------------------------------------
@@ -58,26 +58,21 @@ See also docs/multi-monitor for the full explanation.
 
 === TERMINOLOGY
 
-Client::
-A client is X11-speak for a window.
+Tree::
+i3 keeps your layout in a tree data structure.
 
-Table::
-Your workspace is managed using a table. You can move windows around and create
-new columns (move a client to the right) or rows (move it to the bottom)
-implicitly.
-+
-By "snapping" a client in a specific direction, you increase its colspan/rowspan.
+Window::
+An X11 window, like the Firefox browser window or a terminal emulator.
 
-Container::
-A container contains a variable number of clients. Each cell of the table is a
-container.
+Split container::
+A split container contains multiple other split containers or windows.
 +
-Containers can be used in various modes. The default mode is called "default"
+Containers can be used in various layouts. The default mode is called "default"
 and just resizes each client equally so that it fits.
 
 Workspace::
-A workspace is a set of clients (technically speaking, it’s just a table).
-Other window managers call this "Virtual Desktops".
+A workspace is a set of containers. Other window managers call this "Virtual
+Desktops".
 +
 In i3, each workspace is assigned to a specific virtual screen. By default,
 screen 1 has workspace 1, screen 2 has workspace 2 and so on… However, when you
@@ -103,17 +98,8 @@ on your "j" key). Alternatively, you can use the cursor keys.
 Mod1+<direction>::
 Focus window in <direction>.
 
-Mod3+<direction>::
-Focus container in <direction>.
-
 Mod1+Shift+<direction>::
 Move window to <direction>.
-
-Mod3+Shift+<direction>::
-Move container to <direction>.
-
-Mod1+Control+<direction>::
-Snap container to <direction>.
 
 Mod1+<number>::
 Switch to workspace <number>.
@@ -124,17 +110,21 @@ Move window to workspace <number>.
 Mod1+f::
 Toggle fullscreen mode.
 
-Mod1+h::
+Mod1+s::
 Enable stacking layout for the current container.
 
 Mod1+e::
 Enable default layout for the current container.
 
-Mod1+Shift+Space::
-Toggle tiling/floating for the current window.
+Mod1+w::
+Enable tabbed layout for the current container.
 
-Mod1+t::
-Select the first tiling window if the current window is floating and vice-versa.
+Mod1+Shift+Space::
+Toggle tiling/floating for the current container.
+
+Mod1+Space::
+Select the first tiling container if the current container is floating and
+vice-versa.
 
 Mod1+Shift+q::
 Kills the current window. This is equivalent to "clicking on the close button",
@@ -144,8 +134,7 @@ support that, the window will be killed and it depends on the application what
 happens.
 
 Mod1+Shift+r::
-Restarts i3 in place (without losing any windows, but at this time, the layout
-and placement of windows is not retained).
+Restarts i3 in place. Your layout will be preserved.
 
 Mod1+Shift+e::
 Exits i3.
@@ -165,88 +154,93 @@ You can specify a custom path using the -c option.
 
 .Sample configuration
 -------------------------------------------------------------
+# i3 config file (v4)
+
+# font for window titles. ISO 10646 = Unicode
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
-# Start terminal (Mod1+Enter)
-bindcode Mod1+36 exec /usr/bin/urxvt
+# use Mouse+Mod1 to drag floating windows to their wanted position
+floating_modifier Mod1
 
-# Start dmenu (Mod1+v)
-bindcode Mod1+55 exec /usr/bin/dmenu_run
+# start a terminal
+bindsym Mod1+Return exec /usr/bin/urxvt
 
-# Kill current client (Mod1+Shift+q)
-bindcode Mod1+Shift+24 kill
+# kill focused window
+bindsym Mod1+Shift+q kill
 
-# Beamer on/off
-bindcode Mod1+73 exec /home/michael/toggle_beamer.sh
+# start dmenu (a program launcher)
+bindsym Mod1+d exec /usr/bin/dmenu_run
 
-# Screen locking
-bindcode Mod1+68 exec /usr/bin/i3lock
+# change focus
+bindsym Mod1+j focus left
+bindsym Mod1+k focus down
+bindsym Mod1+l focus up
+bindsym Mod1+semicolon focus right
 
-# Restart i3 inplace (Mod1+Shift+r)
-bindcode Mod1+Shift+27 restart
+# alternatively, you can use the cursor keys:
+bindsym Mod1+Left focus left
+bindsym Mod1+Down focus down
+bindsym Mod1+Up focus up
+bindsym Mod1+Right focus right
 
-# Exit i3 (Mod1+Shift+e)
-bindcode Mod1+Shift+26 exit
+# move focused window
+bindsym Mod1+Shift+j move left
+bindsym Mod1+Shift+k move down
+bindsym Mod1+Shift+l move up
+bindsym Mod1+Shift+semicolon move right
 
-# Brightness
-bindcode Mod1+97 exec sudo sh -c "echo up > /proc/acpi/ibm/brightness"
-bindcode Mod1+103 exec sudo sh -c "echo down > /proc/acpi/ibm/brightness"
+# alternatively, you can use the cursor keys:
+bindsym Mod1+Shift+Left move left
+bindsym Mod1+Shift+Down move down
+bindsym Mod1+Shift+Up move up
+bindsym Mod1+Shift+Right move right
 
-# Fullscreen (Mod1+f)
-bindcode Mod1+41 f
+# split in horizontal orientation
+bindsym Mod1+h split h
 
-# Stacking (Mod1+h)
-bindcode Mod1+43 s
+# split in vertical orientation
+bindsym Mod1+v split v
 
-# Default (Mod1+e)
-bindcode Mod1+26 d
+# enter fullscreen mode for the focused container
+bindsym Mod1+f fullscreen
 
-# Toggle tiling/floating of the current window (Mod1+Shift+Space)
-bindcode Mod1+Shift+65 t
+# change container layout (stacked, tabbed, default)
+bindsym Mod1+s layout stacking
+bindsym Mod1+w layout tabbed
+bindsym Mod1+e layout default
 
-# Go into the tiling layer / floating layer, depending on whether
-# the current window is tiling / floating (Mod1+t)
-bindcode Mod1+28 focus ft
+# toggle tiling / floating
+bindsym Mod1+Shift+space floating toggle
 
-# Focus (Mod1+j/k/l/;)
-bindcode Mod1+44 h
-bindcode Mod1+45 j
-bindcode Mod1+46 k
-bindcode Mod1+47 l
+# change focus between tiling / floating windows
+bindsym Mod1+space focus mode_toggle
 
-# Focus Container (Mod3+j/k/l/;)
-bindcode Mod3+44 wch
-bindcode Mod3+45 wcj
-bindcode Mod3+46 wck
-bindcode Mod3+47 wcl
+# focus the parent container
+bindsym Mod1+a focus parent
 
-# Snap (Mod1+Control+j/k/l/;)
-bindcode Mod1+Control+44 sh
-bindcode Mod1+Control+45 sj
-bindcode Mod1+Control+46 sk
-bindcode Mod1+Control+47 sl
+# focus the child container
+#bindsym Mod1+d focus child
 
-# Move (Mod1+Shift+j/k/l/;)
-bindcode Mod1+Shift+44 mh
-bindcode Mod1+Shift+45 mj
-bindcode Mod1+Shift+46 mk
-bindcode Mod1+Shift+47 ml
+# switch to workspace
+bindsym Mod1+1 workspace 1
+bindsym Mod1+2 workspace 2
+# ..
 
-# Move Container (Mod3+Shift+j/k/l/;)
-bindcode Mod3+Shift+44 wcmh
-bindcode Mod3+Shift+45 wcmj
-bindcode Mod3+Shift+46 wcmk
-bindcode Mod3+Shift+47 wcml
+# move focused container to workspace
+bindsym Mod1+Shift+1 move workspace 1
+bindsym Mod1+Shift+2 move workspace 2
+# ...
 
-# Workspaces
-bindcode Mod1+10 1
-bindcode Mod1+11 2
-...
+# reload the configuration file
+bindsym Mod1+Shift+c reload
+# restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
+bindsym Mod1+Shift+r restart
+# exit i3 (logs you out of your X session)
+bindsym Mod1+Shift+e exit
 
-# Move to Workspace
-bindcode Mod1+Shift+10 1
-bindcode Mod1+Shift+11 2
-...
+# Start i3bar to display a workspace bar (plus the system information i3status
+# finds out, if available)
+exec i3status | i3bar -d
 -------------------------------------------------------------
 
 === ~/.xsession
@@ -257,7 +251,7 @@ your login manager (xdm, slim, gdm, …) as soon as you login.
 .Sample xsession
 -------------------------------------------------------------
 # Disable DPMS turning off the screen
-xset dpms force on
+xset -dpms
 xset s off
 
 # Disable bell
@@ -298,9 +292,10 @@ exec /usr/bin/i3 -V -d all >> ~/.i3/logfile
 
 === I3SOCK
 
-If no ipc-socket is specified in the configfile, this variable is used
-to determine the path, at wich the unix domain socket is created, on which
-i3 listenes to incoming connections.
+This variable overwrites the IPC socket path (placed in
+/tmp/i3-%u/ipc-socket.%p by default, where %u is replaced with your UNIX
+username and %p is replaced with i3’s PID). The IPC socket is used by external
+programs like i3-msg(1) or i3bar(1).
 
 == TODO
 
@@ -316,7 +311,8 @@ and the "how to hack" guide. If you are building from source, run:
 
 You can also access these documents online at http://i3.zekjur.net/
 
-i3-input(1), i3-msg(1), i3-wsbar(1)
+i3-input(1), i3-msg(1), i3-wsbar(1), i3-nagbar(1), i3-config-wizard(1),
+i3-migrate-config-to-v4(1)
 
 == AUTHOR
 
