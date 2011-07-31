@@ -283,6 +283,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         want_floating = true;
     }
 
+    FREE(reply);
+
     if (cwindow->transient_for != XCB_NONE ||
         (cwindow->leader != XCB_NONE &&
          cwindow->leader != cwindow->id &&
@@ -331,6 +333,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     reply = xcb_get_property_reply(conn, state_cookie, NULL);
     if (xcb_reply_contains_atom(reply, A__NET_WM_STATE_FULLSCREEN))
         con_toggle_fullscreen(nc, CF_OUTPUT);
+
+    FREE(reply);
 
     /* Put the client inside the save set. Upon termination (whether killed or
      * normal exit does not matter) of the window manager, these clients will
