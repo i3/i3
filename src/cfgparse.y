@@ -1062,6 +1062,7 @@ font:
     {
         config.font = load_font($2, true);
         printf("font %s\n", $2);
+        free($2);
     }
     ;
 
