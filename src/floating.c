@@ -407,16 +407,22 @@ void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
         memcpy(&old_rect, &(con->rect), sizeof(Rect));
 
     /* Grab the pointer */
-    /* TODO: returncode */
-    xcb_grab_pointer(conn, 
-                     false,               /* get all pointer events specified by the following mask */
-                     root,                /* grab the root window */
-                     XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION, /* which events to let through */
-                     XCB_GRAB_MODE_ASYNC, /* pointer events should continue as normal */
-                     XCB_GRAB_MODE_ASYNC, /* keyboard mode */
-                     confine_to,          /* confine_to = in which window should the cursor stay */
-                     XCB_NONE,            /* don’t display a special cursor */
-                     XCB_CURRENT_TIME);
+    xcb_grab_pointer_cookie_t cookie;
+    xcb_grab_pointer_reply_t *reply;
+    cookie = xcb_grab_pointer(conn,
+        false,               /* get all pointer events specified by the following mask */
+        root,                /* grab the root window */
+        XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION, /* which events to let through */
+        XCB_GRAB_MODE_ASYNC, /* pointer events should continue as normal */
+        XCB_GRAB_MODE_ASYNC, /* keyboard mode */
+        confine_to,          /* confine_to = in which window should the cursor stay */
+        XCB_NONE,            /* don’t display a special cursor */
+        XCB_CURRENT_TIME);
+
+    if ((reply = xcb_grab_pointer_reply(conn, cookie, NULL)) == NULL) {
+        ELOG("Could not grab pointer\n");
+        return;
+    }
 
     /* Go into our own event loop */
     xcb_flush(conn);
