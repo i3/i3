@@ -1041,24 +1041,16 @@ approach you have in the task bar of a traditional desktop environment.
 If you don’t already have your favorite way of generating such a status line
 (self-written scripts, conky, …), then i3status is the recommended tool for
 this task. It was written in C with the goal of using as few syscalls as
-possible to reduce the time your CPU is woken up from sleep states.
+possible to reduce the time your CPU is woken up from sleep states. Because
+i3status only spits out text, you need to combine it with some other tool, like
+i3bar. Use a pipe to connect them: +i3status | i3bar -d+.
 
-Regardless of which application you use to generate the status line, you
-want to make sure that the application does one of the following things:
-
-1. Register as a dock window using EWMH hints. This will make i3 position the
-   window above the workspace bar but below every other client. This is the
-   recommended way, but in case of dzen2, for example, you need to check out
-   the source of dzen2 from subversion, as the -dock option is not present
-   in the released versions.
-2. Overlay the internal workspace bar. This method will not waste any space
-   on the workspace bar, however, it is rather hackish. Just configure
-   the output window to be over the workspace bar (say -x 200 and -y 780 if
-   your screen is 800 px height).
-
-The planned solution for this problem is to make the workspace bar optional
-and switch to a third party application completely (dzen2 for example)
-which will then contain the workspace bar.
+Regardless of which application you use to display the status line, you
+want to make sure that it registers as a dock window using EWMH hints. i3 will
+position the window either at the top or at the bottom of the screen, depending
+on which hint the application sets. With i3bar, you can use +-d+ or +-dbottom+
+for positioning it at the bottom and +-dtop+ to position it at the top of the
+screen.
 
 === Giving presentations (multi-monitor)
 
