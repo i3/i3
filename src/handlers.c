@@ -986,9 +986,8 @@ static int property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) 
         propr = xcb_get_property_reply(conn, cookie, 0);
     }
 
-    ret = handler->cb(NULL, conn, state, window, atom, propr);
-    FREE(propr);
-    return ret;
+    /* the handler will free() the reply */
+    return handler->cb(NULL, conn, state, window, atom, propr);
 }
 
 /*
