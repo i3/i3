@@ -1,0 +1,34 @@
+i3-migrate-config-to-v4(1)
+==========================
+Michael Stapelberg <michael+i3@stapelberg.de>
+v4.0, July 2011
+
+== NAME
+
+i3-migrate-config-to-v4 - migrates your i3 config file
+
+== SYNOPSIS
+
+-------------------------------------------------------
+mv ~/.i3/config ~/.i3/old.config
+i3-migrate-config-to-v4 ~/.i3/old.config > ~/.i3/config
+-------------------------------------------------------
+
+== DESCRIPTION
+
+i3-migrate-config-to-v4 is a Perl script which migrates your old (< version 4)
+configuration files to a version 4 config file. The most significant changes
+are the new commands (see the release notes).
+
+This script will automatically be run by i3 when it detects an old config file.
+Please migrate your config file as soon as possible. We plan to include this
+script in all i3 release until 2012-08-01. Afterwards, old config files will no
+longer be supported.
+
+== SEE ALSO
+
+i3(1)
+
+== AUTHOR
+
+Michael Stapelberg and contributors
