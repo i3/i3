@@ -260,17 +260,17 @@ int main(int argc, char **argv) {
     free_colors(&colors);
 
     init_outputs();
-    init_connection(socket_path);
+    if (init_connection(socket_path)) {
+        /* We subscribe to the i3-events we need */
+        subscribe_events();
 
-    /* We subscribe to the i3-events we need */
-    subscribe_events();
-
-    /* We initiate the main-function by requesting infos about the outputs and
-     * workspaces. Everything else (creating the bars, showing the right workspace-
-     * buttons and more) is taken care of by the event-driveniness of the code */
-    i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
-    if (!config.disable_ws) {
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
+        /* We initiate the main-function by requesting infos about the outputs and
+         * workspaces. Everything else (creating the bars, showing the right workspace-
+         * buttons and more) is taken care of by the event-driveniness of the code */
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
+        if (!config.disable_ws) {
+            i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
+        }
     }
 
     /* The name of this function is actually misleading. Even if no -c is specified,

@@ -44,7 +44,13 @@ void retry_connection(struct ev_loop *loop, ev_timer *w, int events) {
     retries = 8;
     ev_timer_stop(loop, w);
     subscribe_events();
-    reconfig_windows();
+
+    /* We get the current outputs and workspaces, to
+     * reconfigure all bars with the current configuration */
+    i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
+    if (!config.disable_ws) {
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
+    }
 }
 
 /*
