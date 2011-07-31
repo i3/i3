@@ -5,7 +5,7 @@ v0.6, September 2010
 
 == NAME
 
-i3bar - xcb-based status- and ws-bar
+i3bar - xcb-based status- and workspace-bar
 
 == SYNOPSIS
 
@@ -43,7 +43,7 @@ Display a short help-message and exit
 
 It does not sample any status-information itself, so you still need a program like *i3status*(1) or *conky*(1) for that.
 
-i3bar does not support any color or other markups, so stdin should be plain utf8, one line at a time. If you use *i3status*(1), you therefore should specify 'output_format = none' in the general-section of it's configfile.
+i3bar does not support any color or other markups, so stdin should be plain utf8, one line at a time. If you use *i3status*(1), you therefore should specify 'output_format = none' in the general section of its config file.
 
 Also, you should disable the internal workspace bar of *i3*(1), when using *i3bar* by specifying 'workspace_bar no' in your *i3*-configfile.
 
