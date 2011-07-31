@@ -1,6 +1,18 @@
+v0.7
+=====
+- Make i3bar compatible with i3-4.0
+- Implement disabling the workspace buttons
+- Add Color for focused ws
+- Add support for I3_SOCKET_PATH-atom
 - Implement different dock-positions
 - Hide-on-modifier is now the default behavior
+- Change default socketpath to /tmp/i3-ipc.sock
+- Use I3SOCK environment-variable
+- Bugfix: Stop the reconn-timer before starting it again, else it's running twice
+- Bugfix: Don't SIGSTOP child in dockmode
+- Bugfix: If hide-on-modifier is set, stop the child after starting
 - Bugfix: Recover from closed socket
+- Some minor bugfixes
 
 v0.6
 =====

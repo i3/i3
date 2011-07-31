@@ -1,7 +1,7 @@
 i3bar(1)
 ========
 Axel Wagner <mail+i3bar@merovius.de>
-v0.6, September 2010
+v0.7, July 2011
 
 == NAME
 

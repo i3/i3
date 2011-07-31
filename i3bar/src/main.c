@@ -1,7 +1,7 @@
 /*
  * i3bar - an xcb-based status- and ws-bar for i3
  *
- * © 2010 Axel Wagner and contributors
+ * © 2010-2011 Axel Wagner and contributors
  *
  * See file LICNSE for license information
  *
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
                 config.disable_ws = 1;
                 break;
             case 'v':
-                printf("i3bar version " I3BAR_VERSION " © 2010 Axel Wagner and contributors\n");
+                printf("i3bar version " I3BAR_VERSION " © 2010-2011 Axel Wagner and contributors\n");
                 exit(EXIT_SUCCESS);
                 break;
             case 'V':
