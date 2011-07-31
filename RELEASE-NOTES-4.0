@@ -40,7 +40,7 @@ now.
 
  • As the configuration file needs new commands (and a few options are
    obsolete), you need to change it. To make this process a little bit easier
-   for you, this release comes with the script i3-migrate-config-to-v4.pl. Just
+   for you, this release comes with the script i3-migrate-config-to-v4. Just
    run it on your current config file and it will spit out a v4 config file to
    stdout. To make things even better, i3 automatically detects v3 config files
    and calls that script, so you never end up with a non-working config :).
