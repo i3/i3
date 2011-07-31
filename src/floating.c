@@ -430,8 +430,9 @@ void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
     xcb_flush(conn);
 
     xcb_generic_event_t *inside_event, *last_motion_notify = NULL;
+    bool loop_done = false;
     /* I’ve always wanted to have my own eventhandler… */
-    while ((inside_event = xcb_wait_for_event(conn))) {
+    while (!loop_done && (inside_event = xcb_wait_for_event(conn))) {
         /* We now handle all events we can get using xcb_poll_for_event */
         do {
             /* skip x11 errors */
@@ -444,7 +445,8 @@ void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
 
             switch (type) {
                 case XCB_BUTTON_RELEASE:
-                    goto done;
+                    loop_done = true;
+                    break;
 
                 case XCB_MOTION_NOTIFY:
                     /* motion_notify events are saved for later */
@@ -457,7 +459,8 @@ void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
                 case XCB_KEY_RELEASE:
                     DLOG("Unmap-notify, aborting\n");
                     handle_event(type, inside_event);
-                    goto done;
+                    loop_done = true;
+                    break;
 
                 default:
                     DLOG("Passing to original handler\n");
@@ -478,7 +481,7 @@ void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
         callback(con, &old_rect, new_x, new_y, extra);
         FREE(last_motion_notify);
     }
-done:
+
     xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
     xcb_flush(conn);
 }
