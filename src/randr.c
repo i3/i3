@@ -223,6 +223,7 @@ void output_init_con(Output *output) {
     match->insert_where = M_BELOW;
     TAILQ_INSERT_TAIL(&(topdock->swallow_head), match, matches);
 
+    FREE(topdock->name);
     topdock->name = sstrdup("topdock");
 
     asprintf(&name, "[i3 con] top dockarea %s", con->name);
@@ -236,6 +237,7 @@ void output_init_con(Output *output) {
     DLOG("adding main content container\n");
     Con *content = con_new(NULL, NULL);
     content->type = CT_CON;
+    FREE(content->name);
     content->name = sstrdup("content");
 
     asprintf(&name, "[i3 con] content %s", con->name);
@@ -255,6 +257,7 @@ void output_init_con(Output *output) {
     match->insert_where = M_BELOW;
     TAILQ_INSERT_TAIL(&(bottomdock->swallow_head), match, matches);
 
+    FREE(bottomdock->name);
     bottomdock->name = sstrdup("bottomdock");
 
     asprintf(&name, "[i3 con] bottom dockarea %s", con->name);
