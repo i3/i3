@@ -1,0 +1,45 @@
+Release notes for i3 tree-pr1
+-----------------------------
+
+This is a PREVIEW RELEASE for the tree branch. It is *NOT* part of i3’s regular
+releases and should *NOT* be packaged in the usual way for distributions.
+Instead, provide a separate, unofficial package if possible.
+
+The so called tree branch is the place where the next version of i3 is
+developed. This time, we did a major code refactoring bringing many changes.
+The idea is to use a tree as datastructure instead of separate lists (like one
+for outputs, workspaces and a table for storing your window layout).
+
+Quite a few advantages arise from this new data structure. The most prominent
+ones will be a slightly different look and feel, the possibility to store your
+layout and restore it later, correct resizing, a much cleaner command parser
+and more little improvements.
+
+As this is a preview release, some things are not working yet. Generally,
+though, the core developers are using it already and think it’s good enough to
+try it out. With this release, we want to gather feedback from you, so please
+report any bugs you encounter in our bugtracker at http://i3.zekjur.net/bugs
+
+What should be working in this release?
+---------------------------------------
+
+ • Basic window management, navigation, moving
+ • Fullscreen mode, correct aspect ratio
+ • Stacked/Tabbed layout, floating mode
+ • Splitting (for fancy layouts), resizing
+ • Restarts, preserving the layout
+ • i3bar, get it from http://git.merovius.de/
+
+If any of these features do not work (correctly), please file a bugreport.
+
+What is not working in this release?
+------------------------------------
+
+ • RandR changes (i3 needs to be restarted)
+ • Assignments
+ • Configfile compatibility
+ • Workspace switching is sometimes not working. If you find a pattern, please
+   report it.
+ • There are still some bugs in resizing. Please report!
+
+ -- Michael Stapelberg, 2010-12-06

@@ -1,5 +1,5 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
  *
@@ -8,34 +8,32 @@
  * See file LICENSE for license information.
  *
  */
-#include <xcb/xcb.h>
-#include <xcb/xcb_property.h>
-#include <xcb/xcb_event.h>
 #include <xcb/xcb_keysyms.h>
 
 #include <X11/XKBlib.h>
 
 #include "queue.h"
 #include "data.h"
+#include "xcb.h"
 
 #ifndef _I3_H
 #define _I3_H
 
-#define NUM_ATOMS 21
-
-extern xcb_connection_t *global_conn;
+extern xcb_connection_t *conn;
 extern xcb_key_symbols_t *keysyms;
 extern char **start_argv;
-extern Display *xkbdpy;
+extern Display *xlibdpy, *xkbdpy;
 extern int xkb_current_group;
 extern TAILQ_HEAD(bindings_head, Binding) *bindings;
 extern TAILQ_HEAD(autostarts_head, Autostart) autostarts;
+extern TAILQ_HEAD(autostarts_always_head, Autostart) autostarts_always;
+extern TAILQ_HEAD(ws_assignments_head, Workspace_Assignment) ws_assignments;
 extern TAILQ_HEAD(assignments_head, Assignment) assignments;
 extern SLIST_HEAD(stack_wins_head, Stack_Window) stack_wins;
-extern xcb_event_handlers_t evenths;
+extern xcb_screen_t *root_screen;
 extern uint8_t root_depth;
-extern bool xkb_supported;
-extern xcb_atom_t atoms[NUM_ATOMS];
+extern bool xcursor_supported, xkb_supported;
 extern xcb_window_t root;
+extern struct ev_loop *main_loop;
 
 #endif

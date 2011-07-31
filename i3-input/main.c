@@ -3,7 +3,7 @@
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009-2010 Michael Stapelberg and contributors
+ * © 2009 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -22,7 +22,7 @@
 #include <err.h>
 #include <stdint.h>
 #include <getopt.h>
-#include <glob.h>
+#include <limits.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -35,6 +35,7 @@
 
 #include "i3-input.h"
 
+static char *socket_path;
 static int sockfd;
 static xcb_key_symbols_t *symbols;
 static int modeswitchmask;
@@ -51,20 +52,42 @@ static char *command_prefix;
 static char *prompt;
 static int prompt_len;
 static int limit;
+xcb_window_t root;
 
 /*
- * This function resolves ~ in pathnames (and more, see glob(3)).
+ * Try to get the socket path from X11 and return NULL if it doesn’t work.
+ * As i3-msg is a short-running tool, we don’t bother with cleaning up the
+ * connection and leave it up to the operating system on exit.
  *
  */
-static char *glob_path(const char *path) {
-        static glob_t globbuf;
-        if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0)
-                errx(EXIT_FAILURE, "glob() failed");
-        char *result = strdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
-        if (result == NULL)
-                err(EXIT_FAILURE, "malloc() failed");
-        globfree(&globbuf);
-        return result;
+static char *socket_path_from_x11() {
+        xcb_connection_t *conn;
+        int screen;
+        if ((conn = xcb_connect(NULL, &screen)) == NULL ||
+            xcb_connection_has_error(conn))
+                return NULL;
+        xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screen);
+        xcb_window_t root = root_screen->root;
+
+        xcb_intern_atom_cookie_t atom_cookie;
+        xcb_intern_atom_reply_t *atom_reply;
+
+        atom_cookie = xcb_intern_atom(conn, 0, strlen("I3_SOCKET_PATH"), "I3_SOCKET_PATH");
+        atom_reply = xcb_intern_atom_reply(conn, atom_cookie, NULL);
+        if (atom_reply == NULL)
+                return NULL;
+
+        xcb_get_property_cookie_t prop_cookie;
+        xcb_get_property_reply_t *prop_reply;
+        prop_cookie = xcb_get_property_unchecked(conn, false, root, atom_reply->atom,
+                                                 XCB_GET_PROPERTY_TYPE_ANY, 0, PATH_MAX);
+        prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
+        if (prop_reply == NULL || xcb_get_property_value_length(prop_reply) == 0)
+                return NULL;
+        if (asprintf(&socket_path, "%.*s", xcb_get_property_value_length(prop_reply),
+                     (char*)xcb_get_property_value(prop_reply)) == -1)
+                return NULL;
+        return socket_path;
 }
 
 /*
@@ -257,7 +280,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 }
 
 int main(int argc, char *argv[]) {
-        char *socket_path = glob_path("~/.i3/ipc.sock");
+        socket_path = getenv("I3SOCK");
         char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
         int o, option_index = 0;
 
@@ -277,21 +300,25 @@ int main(int argc, char *argv[]) {
         while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
                 switch (o) {
                         case 's':
-                                socket_path = glob_path(optarg);
+                                FREE(socket_path);
+                                socket_path = strdup(optarg);
                                 break;
                         case 'v':
                                 printf("i3-input " I3_VERSION);
                                 return 0;
                         case 'p':
+                                FREE(command_prefix);
                                 command_prefix = strdup(optarg);
                                 break;
                         case 'l':
                                 limit = atoi(optarg);
                                 break;
                         case 'P':
+                                FREE(prompt);
                                 prompt = strdup(optarg);
                                 break;
                         case 'f':
+                                FREE(pattern);
                                 pattern = strdup(optarg);
                                 break;
                         case 'h':
@@ -300,6 +327,12 @@ int main(int argc, char *argv[]) {
                                 return 0;
                 }
         }
+
+        if (socket_path == NULL)
+                socket_path = socket_path_from_x11();
+
+        if (socket_path == NULL)
+                socket_path = "/tmp/i3-ipc.sock";
 
         sockfd = connect_ipc(socket_path);
 
@@ -311,13 +344,8 @@ int main(int argc, char *argv[]) {
         if (xcb_connection_has_error(conn))
                 die("Cannot open display\n");
 
-        /* Set up event handlers for key press and key release */
-        xcb_event_handlers_t evenths;
-        memset(&evenths, 0, sizeof(xcb_event_handlers_t));
-        xcb_event_handlers_init(conn, &evenths);
-        xcb_event_set_key_press_handler(&evenths, handle_key_press, NULL);
-        xcb_event_set_key_release_handler(&evenths, handle_key_release, NULL);
-        xcb_event_set_expose_handler(&evenths, handle_expose, NULL);
+        xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
+        root = root_screen->root;
 
         modeswitchmask = get_mod_mask(conn, XK_Mode_switch);
         numlockmask = get_mod_mask(conn, XK_Num_Lock);
@@ -329,8 +357,6 @@ int main(int argc, char *argv[]) {
         win = open_input_window(conn, 500, font_height + 8);
 
         /* Create pixmap */
-        xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
-
         pixmap = xcb_generate_id(conn);
         pixmap_gc = xcb_generate_id(conn);
         xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, 500, font_height + 8);
@@ -366,7 +392,32 @@ int main(int argc, char *argv[]) {
 
         xcb_flush(conn);
 
-        xcb_event_wait_for_event_loop(&evenths);
+        xcb_generic_event_t *event;
+        while ((event = xcb_wait_for_event(conn)) != NULL) {
+                if (event->response_type == 0) {
+                        fprintf(stderr, "X11 Error received! sequence %x\n", event->sequence);
+                        continue;
+                }
+
+                /* Strip off the highest bit (set if the event is generated) */
+                int type = (event->response_type & 0x7F);
+
+                switch (type) {
+                        case XCB_KEY_PRESS:
+                                handle_key_press(NULL, conn, (xcb_key_press_event_t*)event);
+                                break;
+
+                        case XCB_KEY_RELEASE:
+                                handle_key_release(NULL, conn, (xcb_key_release_event_t*)event);
+                                break;
+
+                        case XCB_EXPOSE:
+                                handle_expose(NULL, conn, (xcb_expose_event_t*)event);
+                                break;
+                }
+
+                free(event);
+        }
 
         return 0;
 }

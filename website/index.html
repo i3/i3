@@ -1,65 +1,49 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>i3 - an improved dynamic tiling window manager</title>
-<link rel="icon" type="image/png" href="/favicon.png">
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="description" content="i3 is a dynamic tiling window manager with clean, readable and documented code, featuring extended XRandR support, usage of libxcb instead of xlib and several improvements over wmii">
-<meta name="keywords" content="i3, window, manager, tiling, keyboard, wmii, x11, xcb, xinerama, utf8">
-<meta name="author" content="i3 developers">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="description" content="i3 is a dynamic tiling window manager with clean, readable and documented code, featuring extended Xinerama support, usage of libxcb instead of xlib and several improvements over wmii" />
+<meta name="keywords" content="i3, window, manager, tiling, keyboard, wmii, x11, xcb, xinerama, utf8" />
+<meta name="author" content="i3 developers" />
 <style type="text/css">
 body {
 	text-align: justify;
-	max-width: 900px;
-	background-color: #1e1e1e;
-	color: #c0c0c0;
+	max-width: 800px;
 }
 
-ol li {
+li {
 	margin-bottom: 10px;
 }
-
 #menu {
-	margin-left: -15px;
 	overflow: hidden;
 	list-style-type: none;
 }
-
 #menu li {
 	margin-left: 30px;
 	margin-right: 30px;
 	float: left;
 }
 
-a {
-        color: #c0c0c0;
-	text-decoration: underline;
-}
-
 </style>
 </head>
 <body>
 
-<img width="131" height="125" src="http://i3.zekjur.net/logo.png" style="margin-right: 15px" alt="logo" id="logo" align="left">
-
-<h1 style="color: red; font-family: georgia; font-size: 3em;margin-bottom: 0;">i3</h1>
-<h1 style="font-family: georgia; font-size: 2em;margin-bottom: 0;">improved tiling wm</h1>
-
-<br style="height: 0; clear: both;">
-<hr style="border: 1px solid black; clear: both; margin-top: 5px;">
+<h1>i3 - an improved dynamic tiling window manager</h1>
 
 <ul id="menu">
   <li>
     <a href="/">Goals</a>
   </li>
   <li>
-    <a href="/docs/">Docs</a>
+    <a href="/docs/">Documentation</a>
   </li>
   <li>
     <a href="/downloads/">Downloads</a>
   </li>
   <li>
-    <a href="/screenshots/">Screens</a>
+    <a href="/screenshots/">Screenshots</a>
   </li>
   <li>
     <a href="/bugs">Bugtracker</a>
@@ -68,23 +52,17 @@ a {
     <a href="/contact/">Contact</a>
   </li>
   <li>
-    <a href="/impress.html">Impressum</a>
+    <a href="/impress.html">Impressum/Imprint</a>
   </li>
 </ul>
 
-<hr style="border: 1px solid black; clear: both; margin-top: 15px;">
-
-<p>
-  i3 is a tiling window manager, completely written from scratch.
-</p>
-
 <p>
   i3 was created because wmii, our favorite window manager at the time, didn’t
-  provide some features we wanted (multi-monitor done right, for example), had
-  some bugs, didn’t progress since quite some time and wasn’t easy to hack at
-  all (source code comments/documentation completely lacking). Still, we think
-  the wmii developers and contributors did a great job. Thank you for inspiring
-  us to create i3.
+  provide some features we wanted (Xinerama done right, for example), had some
+  bugs, didn’t progress since quite some time and wasn’t easy to hack at all
+  (source code comments/documentation completely lacking). Still, we think the
+  wmii developers and contributors did a great job. Thank you for inspiring us
+  to create i3.
 </p>
 
 <p>
@@ -114,7 +92,7 @@ a {
     in quite a lot of situations.
   </li>
   <li>
-    Implement multi-monitor correctly, that is by assigning each workspace to a
+    Implement Xinerama correctly, that is by assigning each workspace to a
     virtual screen. Especially make sure that attaching and detaching new monitors
     like video projectors works during operation and does the right thing.
   </li>

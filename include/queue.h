@@ -407,6 +407,19 @@ struct {								\
 	_Q_INVALIDATE((elm)->field.tqe_next);				\
 } while (0)
 
+/* Swaps two consecutive elements. 'second' *MUST* follow 'first' */
+#define TAILQ_SWAP(first, second, head, field) do { 			\
+	*((first)->field.tqe_prev) = (second); 				\
+	(second)->field.tqe_prev = (first)->field.tqe_prev; 		\
+	(first)->field.tqe_prev = &((second)->field.tqe_next); 		\
+	(first)->field.tqe_next = (second)->field.tqe_next; 		\
+	if ((second)->field.tqe_next) 					\
+		(second)->field.tqe_next->field.tqe_prev = &((first)->field.tqe_next); \
+	(second)->field.tqe_next = first; 				\
+	if ((head)->tqh_last == &((second)->field.tqe_next)) 		\
+		(head)->tqh_last = &((first)->field.tqe_next); 		\
+} while (0)
+
 /*
  * Circular queue definitions.
  */

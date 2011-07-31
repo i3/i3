@@ -1,9 +1,9 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
  *
- * (c) 2009 Michael Stapelberg and contributors
+ * © 2009-2011 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -12,6 +12,7 @@
 #define _XCB_H
 
 #include "data.h"
+#include "xcursor.h"
 
 #define _NET_WM_STATE_REMOVE    0
 #define _NET_WM_STATE_ADD       1
@@ -32,49 +33,31 @@
 /** The XCB_CW_EVENT_MASK for the child (= real window) */
 #define CHILD_EVENT_MASK (XCB_EVENT_MASK_PROPERTY_CHANGE | \
                           XCB_EVENT_MASK_STRUCTURE_NOTIFY | \
-                          XCB_EVENT_MASK_ENTER_WINDOW)
+                          XCB_EVENT_MASK_FOCUS_CHANGE)
 
 /** The XCB_CW_EVENT_MASK for its frame */
 #define FRAME_EVENT_MASK (XCB_EVENT_MASK_BUTTON_PRESS |          /* …mouse is pressed/released */ \
                           XCB_EVENT_MASK_BUTTON_RELEASE | \
+                          XCB_EVENT_MASK_POINTER_MOTION |        /* …mouse is moved */ \
                           XCB_EVENT_MASK_EXPOSURE |              /* …our window needs to be redrawn */ \
                           XCB_EVENT_MASK_STRUCTURE_NOTIFY |      /* …the frame gets destroyed */ \
                           XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | /* …the application tries to resize itself */ \
                           XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |   /* …subwindows get notifies */ \
                           XCB_EVENT_MASK_ENTER_WINDOW)           /* …user moves cursor inside our window */
 
-
-enum { _NET_SUPPORTED = 0,
-        _NET_SUPPORTING_WM_CHECK,
-        _NET_WM_NAME,
-        _NET_WM_STATE_FULLSCREEN,
-        _NET_WM_STATE,
-        _NET_WM_WINDOW_TYPE,
-        _NET_WM_WINDOW_TYPE_DOCK,
-        _NET_WM_WINDOW_TYPE_DIALOG,
-        _NET_WM_WINDOW_TYPE_UTILITY,
-        _NET_WM_WINDOW_TYPE_TOOLBAR,
-        _NET_WM_WINDOW_TYPE_SPLASH,
-        _NET_WM_DESKTOP,
-        _NET_WM_STRUT_PARTIAL,
-        _NET_CURRENT_DESKTOP,
-        _NET_ACTIVE_WINDOW,
-        _NET_WORKAREA,
-        WM_PROTOCOLS,
-        WM_DELETE_WINDOW,
-        UTF8_STRING,
-        WM_STATE,
-        WM_CLIENT_LEADER
-};
+#define xmacro(atom) xcb_atom_t A_ ## atom;
+#include "atoms.xmacro"
+#undef xmacro
 
 extern unsigned int xcb_numlock_mask;
 
 /**
- * Loads a font for usage, getting its height. This function is used very
- * often, so it maintains a cache.
+ * Loads a font for usage, also getting its height. If fallback is true,
+ * i3 loads 'fixed' or '-misc-*' if the font cannot be found instead of
+ * exiting.
  *
  */
-i3Font *load_font(xcb_connection_t *conn, const char *pattern);
+i3Font load_font(const char *pattern, bool fallback);
 
 /**
  * Returns the colorpixel to use for the given hex color (think of HTML).
@@ -85,7 +68,7 @@ i3Font *load_font(xcb_connection_t *conn, const char *pattern);
  * validity.  This has to be done by the caller.
  *
  */
-uint32_t get_colorpixel(xcb_connection_t *conn, char *hex);
+uint32_t get_colorpixel(char *hex);
 
 /**
  * Convenience wrapper around xcb_create_window which takes care of depth,
@@ -93,7 +76,7 @@ uint32_t get_colorpixel(xcb_connection_t *conn, char *hex);
  *
  */
 xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class,
-                           int cursor, bool map, uint32_t mask, uint32_t *values);
+        enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values);
 
 /**
  * Changes a single value in the graphic context (so one doesn’t have to
@@ -132,7 +115,13 @@ void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window);
  * the X root window, not to the client’s frame) for the given client.
  *
  */
-void fake_absolute_configure_notify(xcb_connection_t *conn, Client *client);
+void fake_absolute_configure_notify(Con *con);
+
+/**
+ * Sends the WM_TAKE_FOCUS ClientMessage to the given window
+ *
+ */
+void send_take_focus(xcb_window_t window);
 
 /**
  * Finds out which modifier mask is the one for numlock, as the user may
@@ -148,26 +137,19 @@ void xcb_get_numlock_mask(xcb_connection_t *conn);
 void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window);
 
 /**
- *
- * Prepares the given Cached_Pixmap for usage (checks whether the size of the
- * object this pixmap is related to (e.g. a window) has changed and re-creates
- * the pixmap if so).
- *
- */
-void cached_pixmap_prepare(xcb_connection_t *conn, struct Cached_Pixmap *pixmap);
-
-/**
  * Calculate the width of the given text (16-bit characters, UCS) with given
  * real length (amount of glyphs) using the given font.
  *
  */
-int predict_text_width(xcb_connection_t *conn, const char *font_pattern, char *text,
-                       int length);
+int predict_text_width(char *text, int length);
 
 /**
  * Configures the given window to have the size/position specified by given rect
  *
  */
 void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r);
+
+
+bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom);
 
 #endif

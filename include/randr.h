@@ -22,7 +22,7 @@ extern struct outputs_head outputs;
  * XRandR information to setup workspaces for each screen.
  *
  */
-void initialize_randr(xcb_connection_t *conn, int *event_base);
+void randr_init(int *event_base);
 
 /**
  * Disables RandR support by creating exactly one output with the size of the
@@ -32,16 +32,35 @@ void initialize_randr(xcb_connection_t *conn, int *event_base);
 void disable_randr(xcb_connection_t *conn);
 
 /**
+ * Initializes a CT_OUTPUT Con (searches existing ones from inplace restart
+ * before) to use for the given Output.
+ *
+ */
+void output_init_con(Output *output);
+
+/**
+ * Initializes at least one workspace for this output, trying the following
+ * steps until there is at least one workspace:
+ *
+ * • Move existing workspaces, which are assigned to be on the given output, to
+ *   the output.
+ * • Create the first assigned workspace for this output.
+ * • Create the first unused workspace.
+ *
+ */
+void init_ws_for_output(Output *output, Con *content);
+
+/**
  * Initializes the specified output, assigning the specified workspace to it.
  *
  */
-void initialize_output(xcb_connection_t *conn, Output *output, Workspace *workspace);
+//void initialize_output(xcb_connection_t *conn, Output *output, Workspace *workspace);
 
 /**
  * (Re-)queries the outputs via RandR and stores them in the list of outputs.
  *
  */
-void randr_query_outputs(xcb_connection_t *conn);
+void randr_query_outputs();
 
 /**
  * Returns the first output which is active.

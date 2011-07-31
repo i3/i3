@@ -3,16 +3,19 @@ IPC interface (interprocess communication)
 Michael Stapelberg <michael+i3@stapelberg.de>
 March 2010
 
-This document describes how to interface with i3 from a seperate process. This
+This document describes how to interface with i3 from a separate process. This
 is useful for example to remote-control i3 (to write test cases for example) or
 to get various information like the current workspaces to implement an external
 workspace bar.
 
 The method of choice for IPC in our case is a unix socket because it has very
 little overhead on both sides and is usually available without headaches in
-most languages. In the default configuration file, no ipc-socket path is
-specified and thus no socket is created. The standard path (which +i3-msg+ and
-+i3-input+ use) is +~/.i3/ipc.sock+.
+most languages. In the default configuration file, the ipc-socket gets created
+in +/tmp/i3-%u/ipc-socket.%p+ where +%u+ is your UNIX username and +%p+ is the
+PID of i3.
+
+All i3 utilities, like +i3-msg+ and +i3-input+ will read the +I3_SOCKET_PATH+
+X11 property, stored on the X11 root window.
 
 == Establishing a connection
 
@@ -21,7 +24,7 @@ snippet illustrates this in Perl:
 
 -------------------------------------------------------------
 use IO::Socket::UNIX;
-my $sock = IO::Socket::UNIX->new(Peer => '~/.i3/ipc.sock');
+my $sock = IO::Socket::UNIX->new(Peer => '/tmp/i3-ipc.sock');
 -------------------------------------------------------------
 
 == Sending messages to i3
@@ -52,6 +55,10 @@ SUBSCRIBE (2)::
 GET_OUTPUTS (3)::
 	Gets the current outputs. The reply will be a JSON-encoded list of outputs
 	(see the reply section).
+GET_TREE (4)::
+	Gets the layout tree. i3 uses a tree as data structure which includes
+	every container. The reply will be the JSON-encoded tree (see the reply
+	section).
 
 So, a typical message could look like this:
 --------------------------------------------------
@@ -101,6 +108,8 @@ SUBSCRIBE (2)::
 	Confirmation/Error code for the SUBSCRIBE message.
 GET_OUTPUTS (3)::
 	Reply to the GET_OUTPUTS message.
+GET_TREE (4)::
+	Reply to the GET_TREE message.
 
 === COMMAND reply
 
@@ -226,6 +235,190 @@ rect (map)::
 ]
 -------------------
 
+=== GET_TREE reply
+
+The reply consists of a serialized tree. Each node in the tree (representing
+one container) has at least the properties listed below. While the nodes might
+have more properties, please do not use any properties which are not documented
+here. They are not yet finalized and will probably change!
+
+id (integer)::
+	The internal ID (actually a C pointer value) of this container. Do not
+	make any assumptions about it. You can use it to (re-)identify and
+	address containers when talking to i3.
+name (string)::
+	The internal name of this container. For all containers which are part
+	of the tree structure down to the workspace contents, this is set to a
+	nice human-readable name of the container.
+	For all other containers, the content is not defined (yet).
+border (string)::
+	Can be either "normal", "none" or "1pixel", dependending on the
+	container’s border style.
+layout (string)::
+	Can be either "default", "stacked", "tabbed", "dockarea" or "output".
+	Other values might be possible in the future, should we add new
+	layouts.
+orientation (string)::
+	Can be either "none" (for non-split containers), "horizontal" or
+	"vertical".
+percent (float)::
+	The percentage which this container takes in its parent. A value of
+	+null+ means that the percent property does not make sense for this
+	container, for example for the root container.
+rect (map)::
+	The absolute display coordinates for this container. Display
+	coordinates means that when you have two 1600x1200 monitors on a single
+	X11 Display (the standard way), the coordinates of the first window on
+	the second monitor are +{ "x": 1600, "y": 0, "width": 1600, "height":
+	1200 }+.
+window_rect (map)::
+	The coordinates of the *actual client window* inside its container.
+	These coordinates are relative to the container and do not include the
+	window decoration (which is actually rendered on the parent container).
+	So, when using the +default+ layout, you will have a 2 pixel border on
+	each side, making the window_rect +{ "x": 2, "y": 0, "width": 632,
+	"height": 366 }+ (for example).
+geometry (map)::
+	The original geometry the window specified when i3 mapped it. Used when
+	switching a window to floating mode, for example.
+urgent (bool)::
+	Whether this container (window or workspace) has the urgency hint set.
+focused (bool)::
+	Whether this container is currently focused.
+
+Please note that in the following example, I have left out some keys/values
+which are not relevant for the type of the node. Otherwise, the example would
+be by far too long (it already is quite long, despite showing only 1 window and
+one dock window).
+
+It is useful to have an overview of the structure before taking a look at the
+JSON dump:
+
+* root
+** LVDS1
+*** topdock
+*** content
+**** workspace 1
+***** window 1
+*** bottomdock
+**** dock window 1
+** VGA1
+
+*Example:*
+-----------------------
+{
+ "id": 6875648,
+ "name": "root",
+ "rect": {
+   "x": 0,
+   "y": 0,
+   "width": 1280,
+   "height": 800
+ },
+ "nodes": [
+
+   {
+    "id": 6878320,
+    "name": "LVDS1",
+    "layout": "output",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800
+    },
+    "nodes": [
+
+      {
+       "id": 6878784,
+       "name": "topdock",
+       "layout": "dockarea",
+       "orientation": "vertical",
+       "rect": {
+         "x": 0,
+	 "y": 0,
+	 "width": 1280,
+	 "height": 0
+       },
+      },
+
+      {
+       "id": 6879344,
+       "name": "content",
+       "rect": {
+         "x": 0,
+	 "y": 0,
+	 "width": 1280,
+	 "height": 782
+       },
+       "nodes": [
+
+         {
+          "id": 6880464,
+	  "name": "1",
+	  "orientation": "horizontal",
+	  "rect": {
+            "x": 0,
+	    "y": 0,
+	    "width": 1280,
+	    "height": 782
+	  },
+	  "floating_nodes": [],
+	  "nodes": [
+
+            {
+             "id": 6929968,
+	     "name": "#aa0000",
+	     "border": "normal",
+	     "percent": 1,
+	     "rect": {
+               "x": 0,
+	       "y": 18,
+	       "width": 1280,
+	       "height": 782
+	     }
+	    }
+
+	  ]
+	 }
+
+       ]
+      },
+
+      {
+       "id": 6880208,
+       "name": "bottomdock",
+       "layout": "dockarea",
+       "orientation": "vertical",
+       "rect": {
+         "x": 0,
+	 "y": 782,
+	 "width": 1280,
+	 "height": 18
+       },
+       "nodes": [
+
+         {
+          "id": 6931312,
+	  "name": "#00aa00",
+	  "percent": 1,
+	  "rect": {
+            "x": 0,
+	    "y": 782,
+	    "width": 1280,
+	    "height": 18
+	  }
+	 }
+
+       ]
+      }
+    ]
+   }
+ ]
+}
+------------------------
+
+
 == Events
 
 [[events]]
@@ -242,7 +435,7 @@ situation can happen: You send a GET_WORKSPACES request but you receive a
 "workspace" event before receiving the reply to GET_WORKSPACES. If your
 program does not want to cope which such kinds of race conditions (an
 event based library may not have a problem here), I suggest you create a
-seperate connection to receive events.
+separate connection to receive events.
 
 === Subscribing to events
 
@@ -290,8 +483,8 @@ if ($is_event) {
 === workspace event
 
 This event consists of a single serialized map containing a property
-+change (string)+ which indicates the type of the change ("focus", "create",
-"init", "empty", "urgent").
++change (string)+ which indicates the type of the change ("focus", "init",
+"empty", "urgent").
 
 *Example:*
 ---------------------
