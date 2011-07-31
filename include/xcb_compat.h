@@ -2,6 +2,7 @@
 #define _XCB_COMPAT_H
 
 #define xcb_icccm_get_wm_protocols_reply_t xcb_get_wm_protocols_reply_t
+#define xcb_icccm_get_wm_protocols xcb_get_wm_protocols
 #define xcb_icccm_get_wm_protocols_unchecked xcb_get_wm_protocols_unchecked
 #define xcb_icccm_get_wm_protocols_reply xcb_get_wm_protocols_reply
 #define xcb_icccm_get_wm_protocols_reply_wipe xcb_get_wm_protocols_reply_wipe
