@@ -77,7 +77,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     xcb_drawable_t d = { window };
     xcb_get_geometry_cookie_t geomc;
     xcb_get_geometry_reply_t *geom;
-    xcb_get_window_attributes_reply_t *attr = 0;
+    xcb_get_window_attributes_reply_t *attr = NULL;
 
     DLOG("---> looking at window 0x%08x\n", window);
 
@@ -87,27 +87,36 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
 
     geomc = xcb_get_geometry(conn, d);
+#define FREE_GEOMETRY() do { \
+    if ((geom = xcb_get_geometry_reply(conn, geomc, 0)) != NULL) \
+        free(geom); \
+} while (0)
 
     /* Check if the window is mapped (it could be not mapped when intializing and
        calling manage_window() for every window) */
     if ((attr = xcb_get_window_attributes_reply(conn, cookie, 0)) == NULL) {
         DLOG("Could not get attributes\n");
+        FREE_GEOMETRY();
         return;
     }
 
     if (needs_to_be_mapped && attr->map_state != XCB_MAP_STATE_VIEWABLE) {
         DLOG("map_state unviewable\n");
+        FREE_GEOMETRY();
         goto out;
     }
 
     /* Don’t manage clients with the override_redirect flag */
     DLOG("override_redirect is %d\n", attr->override_redirect);
-    if (attr->override_redirect)
+    if (attr->override_redirect) {
+        FREE_GEOMETRY();
         goto out;
+    }
 
     /* Check if the window is already managed */
     if (con_by_window_id(window) != NULL) {
         DLOG("already managed (by con %p)\n", con_by_window_id(window));
+        FREE_GEOMETRY();
         goto out;
     }
 
@@ -323,7 +332,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     xcb_void_cookie_t rcookie = xcb_reparent_window_checked(conn, window, nc->frame, 0, 0);
     if (xcb_request_check(conn, rcookie) != NULL) {
         LOG("Could not reparent the window, aborting\n");
-        goto out;
+        goto geom_out;
     }
 
     values[0] = CHILD_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
@@ -347,6 +356,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     tree_render();
 
+geom_out:
     free(geom);
 out:
     free(attr);
