@@ -1,5 +1,5 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
  *

@@ -9,7 +9,7 @@ i3-input - interactively take a command for i3 window manager
 
 == SYNOPSIS
 
-i3-input [-s <socket>] [-p <prefix>] [-l <limit>] [-P <prompt>] [-v]
+i3-input [-s <socket>] [-p <prefix>] [-l <limit>] [-P <prompt>] [-f <font>] [-v]
 
 == DESCRIPTION
 
@@ -22,6 +22,14 @@ mark/goto command.
 ------------------------------------------------
 i3-input -p 'mark ' -l 1 -P 'Mark: '
 ------------------------------------------------
+
+== ENVIRONMENT
+
+=== I3SOCK
+
+If no ipc-socket is specified on the commandline, this variable is used
+to determine the path, at wich the unix domain socket is expected, on which
+to connect to i3.
 
 == SEE ALSO
 

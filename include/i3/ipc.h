@@ -35,6 +35,10 @@
 /** Requests the current outputs from i3 */
 #define I3_IPC_MESSAGE_TYPE_GET_OUTPUTS         3
 
+/** Requests the tree layout from i3 */
+#define I3_IPC_MESSAGE_TYPE_GET_TREE            4
+
+
 /*
  * Messages from i3 to clients
  *
@@ -51,6 +55,10 @@
 
 /** Outputs reply type */
 #define I3_IPC_REPLY_TYPE_OUTPUTS               3
+
+/** Tree reply type */
+#define I3_IPC_REPLY_TYPE_TREE                  4
+
 
 /*
  * Events from i3 to clients. Events have the first bit set high.

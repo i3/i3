@@ -3,9 +3,9 @@ Section: utils
 Priority: extra
 Maintainer: Michael Stapelberg <michael@stapelberg.de>
 DM-Upload-Allowed: yes
-Build-Depends: debhelper (>= 6), libx11-dev, libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-randr0-dev, libxcb-util0-dev (>= 0.3.8), libxcb-icccm4-dev (>= 0.3.8), asciidoc (>= 8.4.4), xmlto, docbook-xml, pkg-config, libev-dev, flex, bison, libyajl-dev, perl
+Build-Depends: debhelper (>= 6), libx11-dev, libxcb-util0-dev (>= 0.3.8), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-randr0-dev, libxcb-icccm4-dev, libxcursor-dev, asciidoc (>= 8.4.4), xmlto, docbook-xml, pkg-config, libev-dev, flex, bison, libyajl-dev, perl, texlive-latex-base, texlive-latex-recommended, texlive-latex-extra
 Standards-Version: 3.9.1
-Homepage: http://i3wm.org/
+Homepage: http://i3.zekjur.net/
 
 Package: i3
 Architecture: any
@@ -25,14 +25,14 @@ Section: x11
 Depends: ${shlibs:Depends}, ${misc:Depends}, x11-utils
 Provides: x-window-manager
 Suggests: rxvt-unicode | x-terminal-emulator
-Recommends: xfonts-base, libanyevent-i3-perl, libanyevent-perl, libipc-run-perl, libtry-tiny-perl
+Recommends: xfonts-base, libanyevent-i3-perl, libanyevent-perl, libipc-run-perl
 Description: an improved dynamic tiling window manager
- Key features of i3 are good support of multi-monitor setups (workspaces are
+ Key features of i3 are correct implementation of Xinerama (workspaces are
  assigned to virtual screens, i3 does the right thing when attaching new
- monitors), XRandR support, horizontal and vertical columns (think of a table)
- in tiling. Also, special focus is on writing clean, readable and well
- documented code. i3 uses XCB for asynchronous communication with X11, and has
- several measures to be very fast.
+ monitors), XrandR support (not done yet), horizontal and vertical columns
+ (think of a table) in tiling. Also, special focus is on writing clean,
+ readable and well documented code. i3 uses xcb for asynchronous
+ communication with X11, and has several measures to be very fast.
  .
  Please be aware i3 is primarily targeted at advanced users and developers.
 

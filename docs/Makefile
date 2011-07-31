@@ -1,5 +1,5 @@
 
-all: hacking-howto.html debugging.html userguide.html ipc.html multi-monitor.html wsbar.html tree-migrating.html
+all: hacking-howto.html debugging.html userguide.html ipc.html multi-monitor.html wsbar.html tree-migrating.html refcard.pdf
 
 hacking-howto.html: hacking-howto
 	asciidoc -a toc -n $<
@@ -23,6 +23,8 @@ multi-monitor.html: multi-monitor
 wsbar.html: wsbar
 	asciidoc -a toc -n $<
 
+refcard.pdf: refcard.tex
+	pdflatex refcard.tex && pdflatex refcard.tex
+
 clean:
-	rm -f */*.{aux,log,toc,bm,pdf,dvi}
-	rm -f *.log *.html
+	find . -regex ".*\.\(aux\|out\|log\|toc\|bm\|pdf\|dvi\|log\|html\)" -exec rm '{}' \;

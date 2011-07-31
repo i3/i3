@@ -4,16 +4,8 @@
 # the workspace to be empty).
 # TODO: skip it by default?
 
-use Test::More tests => 15;
-use Test::Deep;
-use X11::XCB qw(:all);
-use Data::Dumper;
-use Time::HiRes qw(sleep);
-use FindBin;
-use Digest::SHA1 qw(sha1_base64);
-use lib "$FindBin::Bin/lib";
 use i3test;
-use AnyEvent::I3;
+use X11::XCB qw(:all);
 
 BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
@@ -21,10 +13,7 @@ BEGIN {
 
 my $x = X11::XCB::Connection->new;
 
-my $i3 = i3;
-
-# Switch to the nineth workspace
-$i3->command('9')->recv;
+fresh_workspace;
 
 #####################################################################
 # Create a floating window and see if resizing works
@@ -36,7 +25,7 @@ my $window = $x->root->create_child(
     rect => [ 0, 0, 30, 30],
     background_color => '#C0C0C0',
     # replace the type with 'utility' as soon as the coercion works again in X11::XCB
-    type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
+    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
 );
 
 isa_ok($window, 'X11::XCB::Window');
@@ -75,11 +64,13 @@ sub test_resize {
 test_resize;
 
 # Test borderless
-$i3->command('bb')->recv;
+cmd 'border none';
 
 test_resize;
 
 # Test with 1-px-border
-$i3->command('bp')->recv;
+cmd 'border 1pixel';
 
 test_resize;
+
+done_testing;

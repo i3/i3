@@ -10,11 +10,13 @@ HEADERS=$(wildcard *.h)
 # Depend on the specific file (.c for each .o) and on all headers
 %.o: %.c ${HEADERS}
 	echo "CC $<"
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-all: ${FILES}
+all: i3-input
+
+i3-input: ${FILES}
 	echo "LINK i3-input"
-	$(CC) -o i3-input ${FILES} $(LDFLAGS)
+	$(CC) $(LDFLAGS) -o $@ ${FILES} $(LIBS)
 
 install: all
 	echo "INSTALL"

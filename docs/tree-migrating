@@ -7,7 +7,7 @@ November 2010
 
 The tree branch (referring to a branch of i3 in the git repository) is the new
 version of i3. Due to the very deep changes and heavy refactoring of the source
-source, we decided to develop it in a seperate branch (instead of using the
+source, we decided to develop it in a separate branch (instead of using the
 next/master-branch system like before).
 
 == Current status

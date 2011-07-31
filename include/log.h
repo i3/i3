@@ -1,9 +1,9 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
  *
- * © 2009-2010 Michael Stapelberg and contributors
+ * © 2009-2011 Michael Stapelberg and contributors
  *
  * See file LICENSE for license information.
  *
@@ -21,6 +21,14 @@
 #define DLOG(fmt, ...) debuglog(LOGLEVEL, "%s:%s:%d - " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 extern char *loglevels[];
+extern char *errorfilename;
+
+/**
+ * Initializes logging by creating an error logfile in /tmp (or
+ * XDG_RUNTIME_DIR, see get_process_filename()).
+ *
+ */
+void init_logging();
 
 /**
  * Enables the given loglevel.
@@ -41,7 +49,7 @@ void set_verbosity(bool _verbose);
  * but only if the corresponding debug loglevel was activated.
  *
  */
-void debuglog(int lev, char *fmt, ...);
+void debuglog(uint64_t lev, char *fmt, ...);
 
 /**
  * Logs the given message to stdout while prefixing the current time to it.

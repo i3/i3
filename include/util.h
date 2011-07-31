@@ -8,7 +8,6 @@
  * See file LICENSE for license information.
  *
  */
-#include <xcb/xcb.h>
 #include <err.h>
 
 #include "data.h"
@@ -26,6 +25,21 @@
 #define FOR_TABLE(workspace) \
                         for (int cols = 0; cols < (workspace)->cols; cols++) \
                                 for (int rows = 0; rows < (workspace)->rows; rows++)
+
+#define NODES_FOREACH(head) \
+    for (Con *child = (Con*)-1; (child == (Con*)-1) && ((child = 0), true);) \
+        TAILQ_FOREACH(child, &((head)->nodes_head), nodes)
+
+/* greps the ->nodes of the given head and returns the first node that matches the given condition */
+#define GREP_FIRST(dest, head, condition) \
+    NODES_FOREACH(head) { \
+        if (!(condition)) \
+            continue; \
+        \
+        (dest) = child; \
+        break; \
+    }
+
 #define FREE(pointer) do { \
         if (pointer != NULL) { \
                 free(pointer); \
@@ -34,12 +48,12 @@
 } \
 while (0)
 
-TAILQ_HEAD(keyvalue_table_head, keyvalue_element);
-extern struct keyvalue_table_head by_parent;
-extern struct keyvalue_table_head by_child;
+#define CALL(obj, member, ...) obj->member(obj, ## __VA_ARGS__)
 
 int min(int a, int b);
 int max(int a, int b);
+bool rect_contains(Rect rect, uint32_t x, uint32_t y);
+Rect rect_add(Rect a, Rect b);
 
 /**
  * Updates *destination with new_value and returns true if it was changed or false
@@ -63,31 +77,18 @@ void *smalloc(size_t size);
 void *scalloc(size_t size);
 
 /**
+ * Safe-wrapper around realloc which exits if realloc returns NULL (meaning
+ * that there is no more memory available).
+ *
+ */
+void *srealloc(void *ptr, size_t size);
+
+/**
  * Safe-wrapper around strdup which exits if malloc returns NULL (meaning that
  * there is no more memory available)
  *
  */
 char *sstrdup(const char *str);
-
-/**
- * Inserts an element into the given keyvalue-table using the given key.
- *
- */
-bool table_put(struct keyvalue_table_head *head, uint32_t key, void *value);
-
-/**
- * Removes the element from the given keyvalue-table with the given key and
- * returns its value;
- *
- */
-void *table_remove(struct keyvalue_table_head *head, uint32_t key);
-
-/**
- * Returns the value of the element of the given keyvalue-table with the given
- * key.
- *
- */
-void *table_get(struct keyvalue_table_head *head, uint32_t key);
 
 /**
  * Starts the given application by passing it through a shell. We use double
@@ -100,6 +101,23 @@ void *table_get(struct keyvalue_table_head *head, uint32_t key);
  *
  */
 void start_application(const char *command);
+
+/**
+ * exec()s an i3 utility, for example the config file migration script or
+ * i3-nagbar. This function first searches $PATH for the given utility named,
+ * then falls back to the dirname() of the i3 executable path and then falls
+ * back to the dirname() of the target of /proc/self/exe (on linux).
+ *
+ * This function should be called after fork()ing.
+ *
+ * The first argument of the given argv vector will be overwritten with the
+ * executable name, so pass NULL.
+ *
+ * If the utility cannot be found in any of these locations, it exits with
+ * return code 2.
+ *
+ */
+void exec_i3_utility(char *name, char *argv[]);
 
 /**
  * Checks a generic cookie for errors and quits with the given message if
@@ -119,60 +137,54 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie,
 char *convert_utf8_to_ucs2(char *input, int *real_strlen);
 
 /**
- * Returns the client which comes next in focus stack (= was selected before) for
- * the given container, optionally excluding the given client.
+ * This function resolves ~ in pathnames.
+ * It may resolve wildcards in the first part of the path, but if no match
+ * or multiple matches are found, it just returns a copy of path as given.
  *
  */
-Client *get_last_focused_client(xcb_connection_t *conn, Container *container,
-                                Client *exclude);
+char *resolve_tilde(const char *path);
 
 /**
- * Sends WM_TAKE_FOCUS to the client
+ * Checks if the given path exists by calling stat().
  *
  */
-void take_focus(xcb_connection_t *conn, Client *client);
+bool path_exists(const char *path);
+
 
 /**
- * Sets the given client as focused by updating the data structures correctly,
- * updating the X input focus and finally re-decorating both windows (to
- * signalize the user the new focus situation)
+ * Returns the name of a temporary file with the specified prefix.
  *
  */
-void set_focus(xcb_connection_t *conn, Client *client, bool set_anyways);
+char *get_process_filename(const char *prefix);
 
 /**
- * Called when the user switches to another mode or when the container is
- * destroyed and thus needs to be cleaned up.
- *
- */
-void leave_stack_mode(xcb_connection_t *conn, Container *container);
-
-/**
- * Switches the layout of the given container taking care of the necessary
- * house-keeping
- *
- */
-void switch_layout_mode(xcb_connection_t *conn, Container *container, int mode);
-
-/**
- * Gets the first matching client for the given window class/window title.
- * If the paramater specific is set to a specific client, only this one
- * will be checked.
- *
- */
-Client *get_matching_client(xcb_connection_t *conn,
-                            const char *window_classtitle, Client *specific);
-
-/*
  * Restart i3 in-place
  * appends -a to argument list to disable autostart
  *
  */
-void i3_restart();
+void i3_restart(bool forget_layout);
 
-#if defined(__OpenBSD__)
-/* OpenBSD does not provide memmem(), so we provide FreeBSD’s implementation */
+#if defined(__OpenBSD__) || defined(__APPLE__)
+
+/*
+ * Taken from FreeBSD
+ * Find the first occurrence of the byte string s in byte string l.
+ *
+ */
 void *memmem(const void *l, size_t l_len, const void *s, size_t s_len);
+
+#endif
+
+#if defined(__APPLE__)
+
+/*
+ * Taken from FreeBSD
+ * Returns a pointer to a new string which is a duplicate of the
+ * string, but only copies at most n characters.
+ *
+ */
+char *strndup(const char *str, size_t n);
+
 #endif
 
 #endif

@@ -168,84 +168,84 @@ You can specify a custom path using the -c option.
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # Start terminal (Mod1+Enter)
-bind Mod1+36 exec /usr/bin/urxvt
+bindcode Mod1+36 exec /usr/bin/urxvt
 
 # Start dmenu (Mod1+v)
-bind Mod1+55 exec /usr/bin/dmenu_run
+bindcode Mod1+55 exec /usr/bin/dmenu_run
 
 # Kill current client (Mod1+Shift+q)
-bind Mod1+Shift+24 kill
+bindcode Mod1+Shift+24 kill
 
 # Beamer on/off
-bind Mod1+73 exec /home/michael/toggle_beamer.sh
+bindcode Mod1+73 exec /home/michael/toggle_beamer.sh
 
 # Screen locking
-bind Mod1+68 exec /usr/bin/i3lock
+bindcode Mod1+68 exec /usr/bin/i3lock
 
 # Restart i3 inplace (Mod1+Shift+r)
-bind Mod1+Shift+27 restart
+bindcode Mod1+Shift+27 restart
 
 # Exit i3 (Mod1+Shift+e)
-bind Mod1+Shift+26 exit
+bindcode Mod1+Shift+26 exit
 
 # Brightness
-bind Mod1+97 exec sudo sh -c "echo up > /proc/acpi/ibm/brightness"
-bind Mod1+103 exec sudo sh -c "echo down > /proc/acpi/ibm/brightness"
+bindcode Mod1+97 exec sudo sh -c "echo up > /proc/acpi/ibm/brightness"
+bindcode Mod1+103 exec sudo sh -c "echo down > /proc/acpi/ibm/brightness"
 
 # Fullscreen (Mod1+f)
-bind Mod1+41 f
+bindcode Mod1+41 f
 
 # Stacking (Mod1+h)
-bind Mod1+43 s
+bindcode Mod1+43 s
 
 # Default (Mod1+e)
-bind Mod1+26 d
+bindcode Mod1+26 d
 
 # Toggle tiling/floating of the current window (Mod1+Shift+Space)
-bind Mod1+Shift+65 t
+bindcode Mod1+Shift+65 t
 
 # Go into the tiling layer / floating layer, depending on whether
 # the current window is tiling / floating (Mod1+t)
-bind Mod1+28 focus ft
+bindcode Mod1+28 focus ft
 
 # Focus (Mod1+j/k/l/;)
-bind Mod1+44 h
-bind Mod1+45 j
-bind Mod1+46 k
-bind Mod1+47 l
+bindcode Mod1+44 h
+bindcode Mod1+45 j
+bindcode Mod1+46 k
+bindcode Mod1+47 l
 
 # Focus Container (Mod3+j/k/l/;)
-bind Mod3+44 wch
-bind Mod3+45 wcj
-bind Mod3+46 wck
-bind Mod3+47 wcl
+bindcode Mod3+44 wch
+bindcode Mod3+45 wcj
+bindcode Mod3+46 wck
+bindcode Mod3+47 wcl
 
 # Snap (Mod1+Control+j/k/l/;)
-bind Mod1+Control+44 sh
-bind Mod1+Control+45 sj
-bind Mod1+Control+46 sk
-bind Mod1+Control+47 sl
+bindcode Mod1+Control+44 sh
+bindcode Mod1+Control+45 sj
+bindcode Mod1+Control+46 sk
+bindcode Mod1+Control+47 sl
 
 # Move (Mod1+Shift+j/k/l/;)
-bind Mod1+Shift+44 mh
-bind Mod1+Shift+45 mj
-bind Mod1+Shift+46 mk
-bind Mod1+Shift+47 ml
+bindcode Mod1+Shift+44 mh
+bindcode Mod1+Shift+45 mj
+bindcode Mod1+Shift+46 mk
+bindcode Mod1+Shift+47 ml
 
 # Move Container (Mod3+Shift+j/k/l/;)
-bind Mod3+Shift+44 wcmh
-bind Mod3+Shift+45 wcmj
-bind Mod3+Shift+46 wcmk
-bind Mod3+Shift+47 wcml
+bindcode Mod3+Shift+44 wcmh
+bindcode Mod3+Shift+45 wcmj
+bindcode Mod3+Shift+46 wcmk
+bindcode Mod3+Shift+47 wcml
 
 # Workspaces
-bind Mod1+10 1
-bind Mod1+11 2
+bindcode Mod1+10 1
+bindcode Mod1+11 2
 ...
 
 # Move to Workspace
-bind Mod1+Shift+10 1
-bind Mod1+Shift+11 2
+bindcode Mod1+Shift+10 1
+bindcode Mod1+Shift+11 2
 ...
 -------------------------------------------------------------
 
@@ -293,6 +293,14 @@ ulimit -c unlimited
 echo "Starting at $(date)" >> ~/.i3/logfile
 exec /usr/bin/i3 -V -d all >> ~/.i3/logfile
 -------------------------------------------------------------
+
+== ENVIRONMENT
+
+=== I3SOCK
+
+If no ipc-socket is specified in the configfile, this variable is used
+to determine the path, at wich the unix domain socket is created, on which
+i3 listenes to incoming connections.
 
 == TODO
 

@@ -1,7 +1,7 @@
 Hacking i3: How To
 ==================
 Michael Stapelberg <michael+i3@stapelberg.de>
-December 2009
+July 2011
 
 This document is intended to be the first thing you read before looking and/or
 touching i3’s source code. It should contain all important information to help
@@ -65,6 +65,13 @@ the layout you need at the moment.
 
 === The layout table
 
+*********************************************************************************
+This section has not been updated for v4.0 yet, sorry! We wanted to release on
+time, but we will update this soon. Please talk to us on IRC if you need to
+know stuff *NOW* :).
+*********************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////////
 To accomplish flexible layouts, we decided to simply use a table. The table
 grows and shrinks as you need it. Each cell holds a container which then holds
 windows (see picture below). You can use different layouts for each container
@@ -106,8 +113,14 @@ window).
 |========
 
 Furthermore, you can freely resize table cells.
+/////////////////////////////////////////////////////////////////////////////////
 
 == Files
+
+include/atoms.xmacro::
+A file containing all X11 atoms which i3 uses. This file will be included
+various times (for defining, requesting and receiving the atoms), each time
+with a different definition of xmacro().
 
 include/data.h::
 Contains data definitions used by nearly all files. You really need to read
@@ -128,18 +141,26 @@ src/click.c::
 Contains all functions which handle mouse button clicks (right mouse button
 clicks initiate resizing and thus are relatively complex).
 
-src/client.c::
-Contains all functions which are specific to a certain client (make it
-fullscreen, see if its class/name matches a pattern, kill it, …).
+src/cmdparse.l::
+Contains the lexer for i3 commands, written for +flex(1)+.
 
-src/commands.c::
-Parsing commands and actually executing them (focusing, moving, …).
+src/cmdparse.y::
+Contains the parser for i3 commands, written for +bison(1)+.
+
+src/con.c::
+Contains all functions which deal with containers directly (creating
+containers, searching containers, getting specific properties from containers,
+…).
 
 src/config.c::
-Parses the configuration file.
+Contains all functions handling the configuration file (calling the parser
+(src/cfgparse.y) with the correct path, switching key bindings mode).
 
 src/debug.c::
 Contains debugging functions to print unhandled X events.
+
+src/ewmh.c::
+iFunctions to get/set certain EWMH properties easily.
 
 src/floating.c::
 Contains functions for floating mode (mostly resizing/dragging).
@@ -151,69 +172,123 @@ unmapping, key presses, button presses, …).
 src/ipc.c::
 Contains code for the IPC interface.
 
-src/layout.c::
-Renders your layout (screens, workspaces, containers).
+src/load_layout.c::
+Contains code for loading layouts from JSON files.
 
-src/mainx.c::
+src/log.c::
+Handles the setting of loglevels, contains the logging functions.
+
+src/main.c::
 Initializes the window manager.
 
 src/manage.c::
 Looks at existing or new windows and decides whether to manage them. If so, it
 reparents the window and inserts it into our data structures.
 
-src/resize.c::
-Contains the functions to resize columns/rows in the table.
+src/match.c::
+A "match" is a data structure which acts like a mask or expression to match
+certain windows or not. For example, when using commands, you can specify a
+command like this: [title="*Firefox*"] kill. The title member of the match
+data structure will then be filled and i3 will check each window using
+match_matches_window() to find the windows affected by this command.
 
-src/table.c::
-Manages the most important internal data structure, the design table.
+src/move.c::
+Contains code to move a container in a specific direction.
+
+src/output.c::
+Functions to handle CT_OUTPUT cons.
+
+src/randr.c::
+The RandR API is used to get (and re-query) the configured outputs (monitors,
+…).
+
+src/render.c::
+Renders the tree data structure by assigning coordinates to every node. These
+values will later be pushed to X11 in +src/x.c+.
+
+src/resize.c::
+Contains the functions to resize containers.
+
+src/sighandler.c::
+Handles +SIGSEGV+, +SIGABRT+ and +SIGFPE+ by showing a dialog that i3 crashed.
+You can chose to let it dump core, to restart it in-place or to restart it
+in-place but forget about the layout.
+
+src/tree.c::
+Contains functions which open or close containers in the tree, change focus or
+cleanup ("flatten") the tree. See also +src/move.c+ for another similar
+function, which was moved into its own file because it is so long.
 
 src/util.c::
 Contains useful functions which are not really dependant on anything.
 
+src/window.c::
+Handlers to update X11 window properties like +WM_CLASS+, +_NET_WM_NAME+,
++CLIENT_LEADER+, etc.
+
 src/workspace.c::
 Contains all functions related to workspaces (displaying, hiding, renaming…)
+
+src/x.c::
+Transfers our in-memory tree (see +src/render.c+) to X11.
 
 src/xcb.c::
 Contains wrappers to use xcb more easily.
 
+src/xcursor.c::
+XCursor functions (for cursor themes).
+
 src/xinerama.c::
-(Re-)initializes the available screens and converts them to virtual screens
-(see below).
+Legacy support for Xinerama. See +src/randr.c+ for the preferred API.
 
 == Data structures
+
+*********************************************************************************
+This section has not been updated for v4.0 yet, sorry! We wanted to release on
+time, but we will update this soon. Please talk to us on IRC if you need to
+know stuff *NOW* :).
+*********************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////////
 
 See include/data.h for documented data structures. The most important ones are
 explained right here.
 
 image:bigpicture.png[The Big Picture]
 
+/////////////////////////////////////////////////////////////////////////////////
+
 So, the hierarchy is:
 
+. *X11 root window*, the root container
 . *Virtual screens* (Screen 0 in this example)
-. *Workspaces* (Workspace 1 in this example)
-. *Table* (There can only be one table per Workspace)
-. *Container* (left and right in this example)
-. *Client* (The two clients in the left container)
+. *Content container* (there are also containers for dock windows)
+. *Workspaces* (Workspace 1 in this example, with horizontal orientation)
+. *Split container* (vertically split)
+. *X11 window containers*
+
+The data type is +Con+, in all cases.
 
 === Virtual screens
 
-A virtual screen (type `i3Screen`) is generated from the connected screens
-obtained through Xinerama. The difference to the raw Xinerama monitors as seen
+A virtual screen (type `i3Screen`) is generated from the connected outputs
+obtained through RandR. The difference to the raw RandR outputs as seen
 when using +xrandr(1)+ is that it falls back to the lowest common resolution of
-the logical screens.
+the actual enabled outputs.
 
-For example, if your notebook has 1280x800 and you connect a video projector
-with 1024x768, set up in clone mode (+xrandr \--output VGA \--mode 1024x768
-\--same-as LVDS+), i3 will have one virtual screen.
+For example, if your notebook has a screen resolution of 1280x800 px and you
+connect a video projector with a resolution of 1024x768 px, set it up in clone
+mode (+xrandr \--output VGA1 \--mode 1024x768 \--same-as LVDS1+), i3 will have
+one virtual screen.
 
-However, if you configure it using +xrandr \--output VGA \--mode 1024x768
-\--right-of LVDS+, i3 will generate two virtual screens. For each virtual
+However, if you configure it using +xrandr \--output VGA1 \--mode 1024x768
+\--right-of LVDS1+, i3 will generate two virtual screens. For each virtual
 screen, a new workspace will be assigned. New workspaces are created on the
 screen you are currently on.
 
 === Workspace
 
-A workspace is identified by its number. Basically, you could think of
+A workspace is identified by its name. Basically, you could think of
 workspaces as different desks in your office, if you like the desktop
 methaphor. They just contain different sets of windows and are completely
 separate of each other. Other window managers also call this ``Virtual
@@ -221,17 +296,37 @@ desktops''.
 
 === The layout table
 
+*********************************************************************************
+This section has not been updated for v4.0 yet, sorry! We wanted to release on
+time, but we will update this soon. Please talk to us on IRC if you need to
+know stuff *NOW* :).
+*********************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////////
+
 Each workspace has a table, which is just a two-dimensional dynamic array
 containing Containers (see below). This table grows and shrinks as you need it
 (by moving windows to the right you can create a new column in the table, by
 moving them to the bottom you create a new row).
 
+/////////////////////////////////////////////////////////////////////////////////
+
 === Container
+
+*********************************************************************************
+This section has not been updated for v4.0 yet, sorry! We wanted to release on
+time, but we will update this soon. Please talk to us on IRC if you need to
+know stuff *NOW* :).
+*********************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////////
 
 A container is the content of a table’s cell. It holds an arbitrary amount of
 windows and has a specific layout (default layout, stack layout or tabbed
 layout). Containers can consume multiple table cells by modifying their
 colspan/rowspan attribute.
+
+/////////////////////////////////////////////////////////////////////////////////
 
 === Client
 
@@ -244,11 +339,11 @@ ensure that the operating system on which i3 is compiled has all the expected
 features, i3 comes with `include/queue.h`. On BSD systems, you can use man
 `queue(3)`. On Linux, you have to use google (or read the source).
 
-The lists used are `SLIST` (single linked lists), `CIRCLEQ` (circular
-queues) and TAILQ (tail queues). Usually, only forward traversal is necessary,
+The lists used are +SLIST+ (single linked lists), +CIRCLEQ+ (circular
+queues) and +TAILQ+ (tail queues). Usually, only forward traversal is necessary,
 so an `SLIST` works fine. If inserting elements at arbitrary positions or at
-the end of a list is necessary, a `TAILQ` is used instead. However, for the
-windows inside a container, a `CIRCLEQ` is necessary to go from the currently
+the end of a list is necessary, a +TAILQ+ is used instead. However, for the
+windows inside a container, a +CIRCLEQ+ is necessary to go from the currently
 selected window to the window above/below.
 
 == Naming conventions
@@ -258,14 +353,14 @@ should be chosen for those:
 
  * ``conn'' is the xcb_connection_t
  * ``event'' is the event of the particular type
- * ``container'' names a container
- * ``client'' names a client, for example when using a +CIRCLEQ_FOREACH+
+ * ``con'' names a container
+ * ``current'' is a loop variable when using +TAILQ_FOREACH+ etc.
 
 == Startup (src/mainx.c, main())
 
  * Establish the xcb connection
- * Check for XKB extension on the separate X connection
- * Check for Xinerama screens
+ * Check for XKB extension on the separate X connection, load Xcursor
+ * Check for RandR screens (with a fall-back to Xinerama)
  * Grab the keycodes for which bindings exist
  * Manage all existing windows
  * Enter the event loop
@@ -303,9 +398,10 @@ the correct state.
 Then, it looks through all bindings and gets the one which matches the received
 event.
 
-The bound command is parsed directly in command mode.
+The bound command is parsed by the cmdparse lexer/parser, see +parse_cmd+ in
++src/cmdparse.y+.
 
-== Manage windows (src/mainx.c, manage_window() and reparent_window())
+== Manage windows (src/main.c, manage_window() and reparent_window())
 
 `manage_window()` does some checks to decide whether the window should be
 managed at all:
@@ -325,7 +421,7 @@ After reparenting, the window type (`_NET_WM_WINDOW_TYPE`) is checked to see
 whether this window is a dock (`_NET_WM_WINDOW_TYPE_DOCK`), like dzen2 for
 example. Docks are handled differently, they don’t have decorations and are not
 assigned to a specific container. Instead, they are positioned at the bottom
-of the screen. To get the height which needsd to be reserved for the window,
+of the screen. To get the height which needs to be reserved for the window,
 the `_NET_WM_STRUT_PARTIAL` property is used.
 
 Furthermore, the list of assignments (to other workspaces, which may be on
@@ -339,7 +435,7 @@ i3 does not care for applications. All it notices is when new windows are
 mapped (see `src/handlers.c`, `handle_map_request()`). The window is then
 reparented (see section "Manage windows").
 
-After reparenting the window, `render_layout()` is called which renders the
+After reparenting the window, `render_tree()` is called which renders the
 internal layout table. The new window has been placed in the currently focused
 container and therefore the new window and the old windows (if any) need to be
 moved/resized so that the currently active layout (default/stacking/tabbed mode)
@@ -387,6 +483,15 @@ until the size maintains the correct aspect ratio. For the code to do this, see
 src/layout.c, function resize_client().
 
 == Rendering (src/layout.c, render_layout() and render_container())
+
+*********************************************************************************
+This section has not been updated for v4.0 yet, sorry! We wanted to release on
+time, but we will update this soon. Please talk to us on IRC if you need to
+know stuff *NOW* :).
+*********************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////////
+
 
 There are several entry points to rendering: `render_layout()`,
 `render_workspace()` and `render_container()`. The former one calls
@@ -460,7 +565,18 @@ floating windows:
 * The new width_factor for each involved column (respectively row) will be
   calculated.
 
-== User commands / commandmode (src/commands.c)
+/////////////////////////////////////////////////////////////////////////////////
+
+== User commands / commandmode (src/cmdparse.{l,y})
+
+*********************************************************************************
+This section has not been updated for v4.0 yet, sorry! We wanted to release on
+time, but we will update this soon. Please talk to us on IRC if you need to
+know stuff *NOW* :).
+*********************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////////
+
 
 Like in vim, you can control i3 using commands. They are intended to be a
 powerful alternative to lots of shortcuts, because they can be combined. There
@@ -484,6 +600,148 @@ The other commands are to be combined with a direction. The directions are h,
 j, k and l, like in vim (h = left, j = down, k = up, l = right). When you just
 specify the direction keys, i3 will move the focus in that direction. You can
 provide "m" or "s" before the direction to move a window respectively or snap.
+
+/////////////////////////////////////////////////////////////////////////////////
+
+== Moving containers
+
+The movement code is pretty delicate. You need to consider all cases before
+making any changes or before being able to fully understand how it works.
+
+=== Case 1: Moving inside the same container
+
+The reference layout for this case is a single workspace in horizontal
+orientation with two containers on it. Focus is on the left container (1).
+
+
+[width="15%",cols="^,^"]
+|========
+| 1 | 2
+|========
+
+When moving the left window to the right (command +move right+), tree_move will
+look for a container with horizontal orientation and finds the parent of the
+left container, that is, the workspace. Afterwards, it runs the code branch
+commented with "the easy case": it calls TAILQ_NEXT to get the container right
+of the current one and swaps both containers.
+
+=== Case 2: Move a container into a split container
+
+The reference layout for this case is a horizontal workspace with two
+containers. The right container is a v-split with two containers. Focus is on
+the left container (1).
+
+[width="15%",cols="^,^"]
+|========
+1.2+^.^| 1 | 2
+| 3
+|========
+
+When moving to the right (command +move right+), i3 will work like in case 1
+("the easy case"). However, as the right container is not a leaf container, but
+a v-split, the left container (1) will be inserted at the right position (below
+2, assuming that 2 is focused inside the v-split) by calling +insert_con_into+.
+
++insert_con_into+ detaches the container from its parent and inserts it
+before/after the given target container. Afterwards, the on_remove_child
+callback is called on the old parent container which will then be closed, if
+empty.
+
+Afterwards, +con_focus+ will be called to fix the focus stack and the tree will
+be flattened.
+
+=== Case 3: Moving to non-existant top/bottom
+
+Like in case 1, the reference layout for this case is a single workspace in
+horizontal orientation with two containers on it. Focus is on the left
+container:
+
+[width="15%",cols="^,^"]
+|========
+| 1 | 2
+|========
+
+This time however, the command is +move up+ or +move down+. tree_move will look
+for a container with vertical orientation. As it will not find any,
++same_orientation+ is NULL and therefore i3 will perform a forced orientation
+change on the workspace by creating a new h-split container, moving the
+workspace contents into it and then changing the workspace orientation to
+vertical. Now it will again search for parent containers with vertical
+orientation and it will find the workspace.
+
+This time, the easy case code path will not be run as we are not moving inside
+the same container. Instead, +insert_con_into+ will be called with the focused
+container and the container above/below the current one (on the level of
++same_orientation+).
+
+Now, +con_focus+ will be called to fix the focus stack and the tree will be
+flattened.
+
+=== Case 4: Moving to existant top/bottom
+
+The reference layout for this case is a vertical workspace with two containers.
+The bottom one is a h-split containing two containers (1 and 2). Focus is on
+the bottom left container (1).
+
+[width="15%",cols="^,^"]
+|========
+2+| 3
+| 1 | 2
+|========
+
+This case is very much like case 3, only this time the forced workspace
+orientation change does not need to be performed because the workspace already
+is in vertical orientation.
+
+=== Case 5: Moving in one-child h-split
+
+The reference layout for this case is a horizontal workspace with two
+containers having a v-split on the left side with a one-child h-split on the
+bottom. Focus is on the bottom left container (2(h)):
+
+[width="15%",cols="^,^"]
+|========
+| 1 1.2+^.^| 3
+| 2(h)
+|========
+
+In this case, +same_orientation+ will be set to the h-split container around
+the focused container. However, when trying the easy case, the next/previous
+container +swap+ will be NULL. Therefore, i3 will search again for a
++same_orientation+ container, this time starting from the parent of the h-split
+container.
+
+After determining a new +same_orientation+ container (if it is NULL, the
+orientation will be force-changed), this case is equivalent to case 2 or case
+4.
+
+
+=== Case 6: Floating containers
+
+The reference layout for this case is a horizontal workspace with two
+containers plus one floating h-split container. Focus is on the floating
+container.
+
+TODO: nice illustration. table not possible?
+
+When moving up/down, the container needs to leave the floating container and it
+needs to be placed on the workspace (at workspace level). This is accomplished
+by calling the function +attach_to_workspace+.
+
+== Click handling
+
+Without much ado, here is the list of cases which need to be considered:
+
+* click to focus (tiling + floating) and raise (floating)
+* click to focus/raise when in stacked/tabbed mode
+* floating_modifier + left mouse button to drag a floating con
+* floating_modifier + right mouse button to resize a floating con
+* click on decoration in a floating con to either initiate a resize (if there
+  is more than one child in the floating con) or to drag the
+  floating con (if it’s the one at the top).
+* click on border in a floating con to resize the floating con
+* floating_modifier + right mouse button to resize a tiling con
+* click on border/decoration to resize a tiling con
 
 == Gotchas
 

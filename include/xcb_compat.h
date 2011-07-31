@@ -2,6 +2,7 @@
 #define _XCB_COMPAT_H
 
 #define xcb_icccm_get_wm_protocols_reply_t xcb_get_wm_protocols_reply_t
+#define xcb_icccm_get_wm_protocols xcb_get_wm_protocols
 #define xcb_icccm_get_wm_protocols_unchecked xcb_get_wm_protocols_unchecked
 #define xcb_icccm_get_wm_protocols_reply xcb_get_wm_protocols_reply
 #define xcb_icccm_get_wm_protocols_reply_wipe xcb_get_wm_protocols_reply_wipe
@@ -20,7 +21,5 @@
 #define xcb_icccm_get_wm_hints_unchecked xcb_get_wm_hints_unchecked
 #define xcb_icccm_wm_hints_get_urgency xcb_wm_hints_get_urgency
 #define xcb_icccm_get_wm_transient_for_from_reply xcb_get_wm_transient_for_from_reply
-#define xcb_icccm_get_wm_transient_for_reply xcb_get_wm_transient_for_reply
-#define xcb_icccm_get_wm_transient_for_unchecked xcb_get_wm_transient_for_unchecked
 
 #endif

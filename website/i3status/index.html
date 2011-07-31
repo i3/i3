@@ -2,8 +2,7 @@
  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<title>i3status – Generates a status line for dzen2 or xmobar</title>
-<link rel="icon" type="image/png" href="/favicon.png">
+<title>i3status – Generates a status line for dzen2 or wmii</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <style type="text/css">
 body {
@@ -21,38 +20,23 @@ li {
 <h1>i3status</h1>
 
 <p>
-  i3status is a small program (about 1500 SLOC) for generating a status bar
-  for dzen2, xmobar or similar programs. It is designed to be very efficient by
-  issuing a very small number of system calls, as one generally wants to update
-  such a status line every second. This ensures that even under high load, your
-  status bar is updated correctly. Also, it saves a bit of energy by not hogging
-  your CPU as much as spawning the corresponding amount of shell commands would.
+  i3status is a small program (around 500 SLOC) for filling dzen2 or wmii’s status
+  bar via its 9P pseudo filesystem. It is designed to be very efficient by issuing
+  a very small number of systemcalls (as the bar should be updated every second or
+  at your specified interval). This ensures that even under high load, your status
+  bar is updated correctly and it saves a little bit of battery life by not spawning
+  new processes every second like shell scripts do.
 </p>
 
 <h2>Releases</h2>
 
 <ul>
-  <li><a href="/i3status/i3status-2.3.tar.bz2">i3status-2.3.tar.bz2</a>
-  (<a href="/i3status/i3status-2.3.tar.bz2.asc">GPG signature</a>, 2011-07-21)</li>
-  <li><a href="/i3status/i3status-2.2.tar.bz2">i3status-2.2.tar.bz2</a>
-  (<a href="/i3status/i3status-2.2.tar.bz2.asc">GPG signature</a>, 2010-09-23)</li>
-  <li><a href="/i3status/i3status-2.1.tar.bz2">i3status-2.1.tar.bz2</a>
-  (<a href="/i3status/i3status-2.1.tar.bz2.asc">GPG signature</a>, 2010-04-11)</li>
-  <li><a href="/i3status/i3status-2.0.tar.bz2">i3status-2.0.tar.bz2</a>
-  (<a href="/i3status/i3status-2.0.tar.bz2.asc">GPG signature</a>, 2009-10-27)</li>
   <li><a href="/i3status/i3status-1.2.tar.bz2">i3status-1.2.tar.bz2</a>
   (<a href="/i3status/i3status-1.2.tar.bz2.asc">GPG signature</a>, 2009-06-21)</li>
   <li><a href="/i3status/i3status-1.1.tar.bz2">i3status-1.1.tar.bz2</a>
   (<a href="/i3status/i3status-1.1.tar.bz2.asc">GPG signature</a>, 2009-06-17)</li>
   <li><a href="/i3status/i3status-1.0.tar.bz2">i3status-1.0.tar.bz2</a></li>
 </ul>
-
-<h2>Documentation</h2>
-
-<p>
-  The documentation for i3status is its manpage. You can also <a
-  href="/i3status/manpage.html">view the manpage online</a>.
-</p>
 
 <h2>Development</h2>
 
@@ -74,7 +58,7 @@ li {
 <h2>License</h2>
 
 <pre>
- Copyright © 2008-2011 Michael Stapelberg and contributors
+ Copyright © 2008-2009 Michael Stapelberg and contributors
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,

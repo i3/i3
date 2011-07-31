@@ -1,0 +1,34 @@
+i3-nagbar(1)
+============
+Michael Stapelberg <michael+i3@stapelberg.de>
+v4.0, July 2011
+
+== NAME
+
+i3-nagbar - displays an error bar on top of your screen
+
+== SYNOPSIS
+
+i3-nagbar -m 'message' -b 'label' 'action'
+
+== DESCRIPTION
+
+i3-nagbar is used by i3 to tell you about errors in your configuration file
+(for example). While these errors are logged to the logfile (if any), the past
+has proven that users are either not aware of their logfile or do not check it
+after modifying the configuration file.
+
+== EXAMPLE
+
+------------------------------------------------
+i3-nagbar -m 'You have an error in your i3 config file!' \
+-b 'edit config' 'xterm $EDITOR ~/.i3/config'
+------------------------------------------------
+
+== SEE ALSO
+
+i3(1)
+
+== AUTHOR
+
+Michael Stapelberg and contributors

@@ -22,6 +22,7 @@
 #include "i3.h"
 
 typedef struct Config Config;
+extern char *current_configpath;
 extern Config config;
 extern SLIST_HEAD(modes_head, Mode) modes;
 
@@ -31,9 +32,13 @@ extern SLIST_HEAD(modes_head, Mode) modes;
  *
  */
 struct context {
+        bool has_errors;
+
         int line_number;
         char *line_copy;
         const char *filename;
+
+        char *compact_error;
 
         /* These are the same as in YYLTYPE */
         int first_column;
@@ -84,13 +89,17 @@ struct Mode {
  */
 struct Config {
         const char *terminal;
-        const char *font;
+        i3Font font;
 
-        const char *ipc_socket_path;
+        char *ipc_socket_path;
+        const char *restart_state_path;
 
-        int container_mode;
+        int default_layout;
         int container_stack_limit;
         int container_stack_limit_value;
+
+        /** Default orientation for new containers */
+        int default_orientation;
 
         /** By default, focus follows mouse. If the user explicitly wants to
          * turn this off (and instead rely only on the keyboard for changing
@@ -104,7 +113,18 @@ struct Config {
          * comes with i3. Thus, you can turn it off entirely. */
         bool disable_workspace_bar;
 
-        const char *default_border;
+        /** Think of the following layout: Horizontal workspace with a tabbed
+         * con on the left of the screen and a terminal on the right of the
+         * screen. You are in the second container in the tabbed container and
+         * focus to the right. By default, i3 will set focus to the terminal on
+         * the right. If you are in the first container in the tabbed container
+         * however, focusing to the left will wrap. This option forces i3 to
+         * always wrap, which will result in you having to use "focus parent"
+         * more often. */
+        bool force_focus_wrapping;
+
+        /** The default border style for new windows. */
+        border_style_t default_border;
 
         /** The modifier which needs to be pressed in combination with your mouse
          * buttons to do things with floating windows (move, resize) */
@@ -123,19 +143,13 @@ struct Config {
                 struct Colortriple unfocused;
                 struct Colortriple urgent;
         } bar;
+
+        /** What should happen when a new popup is opened during fullscreen mode */
+        enum {
+                PDF_LEAVE_FULLSCREEN = 0,
+                PDF_IGNORE = 1
+        } popup_during_fullscreen;
 };
-
-/**
- * This function resolves ~ in pathnames.
- *
- */
-char *glob_path(const char *path);
-
-/**
- * Checks if the given path exists by calling stat().
- *
- */
-bool path_exists(const char *path);
 
 /**
  * Reads the configuration from ~/.i3/config or /etc/i3/config if not found.
@@ -169,7 +183,7 @@ void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch);
  * Switches the key bindings to the given mode, if the mode exists
  *
  */
-void switch_mode(xcb_connection_t *conn, const char *new_mode);
+void switch_mode(const char *new_mode);
 
 /**
  * Returns a pointer to the Binding with the specified modifiers and keycode
@@ -177,6 +191,17 @@ void switch_mode(xcb_connection_t *conn, const char *new_mode);
  *
  */
 Binding *get_binding(uint16_t modifiers, xcb_keycode_t keycode);
+
+/**
+ * Kills the configerror i3-nagbar process, if any.
+ *
+ * Called when reloading/restarting.
+ *
+ * If wait_for_it is set (restarting), this function will waitpid(), otherwise,
+ * ev is assumed to handle it (reloading).
+ *
+ */
+void kill_configerror_nagbar(bool wait_for_it);
 
 /* prototype for src/cfgparse.y */
 void parse_file(const char *f);

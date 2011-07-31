@@ -1,0 +1,37 @@
+Release notes for i3 tree-pr4
+-----------------------------
+
+This is the fourth PREVIEW RELEASE for the tree branch. It is *NOT* part of
+i3’s regular releases and should *NOT* be packaged in the usual way for
+distributions. Instead, provide a separate, unofficial package if possible.
+
+The so called tree branch is the place where the next version of i3 is
+developed. This time, we did a major code refactoring bringing many changes.
+The idea is to use a tree as datastructure instead of separate lists (like one
+for outputs, workspaces and a table for storing your window layout).
+
+Quite a few advantages arise from this new data structure. The most prominent
+ones will be a slightly different look and feel, the possibility to store your
+layout and restore it later, correct resizing, a much cleaner command parser
+and more little improvements.
+
+This release is considered a release candidate for i3 v4.0. We will not make
+big changes and plan to release v4.0 in a few weeks.
+With this release, we want to gather feedback from you, so please
+report any bugs you encounter in our bugtracker at http://bugs.i3wm.org/
+
+What should be working in this release?
+---------------------------------------
+
+ • Basic window management, navigation, moving
+ • Fullscreen mode, correct aspect ratio
+ • Stacked/Tabbed layout, floating mode
+ • Splitting (for fancy layouts), resizing
+ • Restarts (preserving the layout), crash handler
+ • RandR changes, keyboard layout changes
+ • Dock clients
+ • Assignments
+ • Config file compatibility
+ • i3bar, get it from http://git.merovius.de/
+
+ -- Michael Stapelberg, 2011-07-15

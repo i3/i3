@@ -18,6 +18,6 @@
  * Xinerama information to setup workspaces for each screen.
  *
  */
-void initialize_xinerama(xcb_connection_t *conn);
+void xinerama_init();
 
 #endif

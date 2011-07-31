@@ -13,9 +13,16 @@ use AnyEvent;
 use v5.10;
 
 my $stdin;
-my $i3 = i3;
+my $socket_path = undef;
 my ($workspaces, $outputs) = ([], {});
 my $last_line = "";
+my $w = AnyEvent->timer(
+    after => 2,
+    cb => sub {
+        say "Connection to i3 timed out. Verify socket path ($socket_path)";
+        exit 1;
+    }
+);
 
 my $command = "";
 my $input_on = "";
@@ -24,6 +31,7 @@ my $show_all = 0;
 
 my $result = GetOptions(
     'command=s' => \$command,
+    'socket=s' => \$socket_path,
     'input-on=s' => \$input_on,
     'output-on=s' => \$output_on,
     'show-all' => \$show_all,
@@ -36,6 +44,8 @@ if ($command eq '') {
     exit 1;
 }
 
+my $i3 = i3($socket_path);
+
 my @input_on = split(/,/, $input_on);
 my @output_on = split(/,/, $output_on);
 
@@ -45,6 +55,16 @@ $| = 1;
 # Wait a short amount of time and try to connect to i3 again
 sub reconnect {
     my $timer;
+    if (!defined($w)) {
+        $w = AnyEvent->timer(
+            after => 2,
+            cb => sub {
+                say "Connection to i3 timed out. Verify socket path ($socket_path)";
+                exit 1;
+            }
+        );
+    }
+
     my $c = sub {
         $timer = AnyEvent->timer(
             after => 0.01,
@@ -62,6 +82,8 @@ sub connected {
         reconnect();
         return;
     }
+
+    $w = undef;
 
     $i3->subscribe({
         workspace => \&ws_change,
@@ -114,9 +136,12 @@ sub got_outputs {
         }
 
         my $x = $new{$name}->{rect}->{x};
+        my $w = $new{$name}->{rect}->{width};
         my $launch = $command;
         $launch =~ s/([^%])%x/$1$x/g;
+        $launch =~ s/([^%])%w/$1$w/g;
         $launch =~ s/%%x/%x/g;
+        $launch =~ s/%%w/%w/g;
 
         $new{$name}->{cmd_input} = '';
         my @cmd = ('/bin/sh', '-c', $launch);
@@ -177,7 +202,7 @@ sub update_output {
             $out .= qq|^p(2)^pa(;2)|;
         }
 
-        $out .= qq|^p(_LOCK_X)^fg($dzen_bg)^r(${width}x17)^p(_UNLOCK_X)^fg(white)|;
+        $out .= qq|^p(_LOCK_X)^fg($dzen_bg)^r(${width}x17)^p(_UNLOCK_X)^fg()|;
         $out .= qq|^p(+5)|;
         $out .= $last_line if (!@input_on or $name ~~ @input_on);
         $out .= "\n";
@@ -223,10 +248,11 @@ i3-wsbar -c <dzen2-commandline> [options]
 =item B<--command> <command>
 
 This command (at the moment only dzen2 is supported) will be started for each
-output. C<%x> will be replaced with the X coordinate of the output.
+output. C<%x> will be replaced with the X coordinate of the output, C<%w> will
+be replaced with the width of the output.
 
 Example:
-    --command "dzen2 -dock -x %x"
+    --command "dzen2 -dock -x %x -w %w"
 
 =item B<--input-on> <list-of-RandR-outputs>
 

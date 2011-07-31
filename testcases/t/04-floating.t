@@ -1,14 +1,8 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 
-use Test::More tests => 10;
-use Test::Deep;
-use X11::XCB qw(:all);
-use Data::Dumper;
-use Time::HiRes qw(sleep);
-use FindBin;
-use lib "$FindBin::Bin/lib";
 use i3test;
+use X11::XCB qw(:all);
 
 BEGIN {
     use_ok('X11::XCB::Window');
@@ -29,13 +23,13 @@ isa_ok($window, 'X11::XCB::Window');
 
 $window->map;
 
-sleep(0.25);
+sleep 0.25;
 
 my ($absolute, $top) = $window->rect;
 
 ok($window->mapped, 'Window is mapped');
-ok($absolute->{width} >= 75, 'i3 raised the width to 75');
-ok($absolute->{height} >= 50, 'i3 raised the height to 50');
+cmp_ok($absolute->{width}, '>=', 75, 'i3 raised the width to 75');
+cmp_ok($absolute->{height}, '>=', 50, 'i3 raised the height to 50');
 
 ok($absolute->{x} != 0 && $absolute->{y} != 0, 'i3 did not map it to (0x0)');
 
@@ -52,15 +46,18 @@ isa_ok($window, 'X11::XCB::Window');
 
 $window->map;
 
-sleep(0.25);
+sleep 0.25;
 
 ($absolute, $top) = $window->rect;
 
-ok($absolute->{width} == 80, "i3 let the width at 80");
-ok($absolute->{height} == 90, "i3 let the height at 90");
+cmp_ok($absolute->{width}, '==', 80, "i3 let the width at 80");
+cmp_ok($absolute->{height}, '==', 92, "i3 let the height at 90");
 
-ok($top->{x} == 1 && $top->{y} == 1, "i3 mapped it to (1,1)");
+# We need to compare the position with decorations due to the way
+# we do decoration rendering (on the parent frame) in the tree branch
+cmp_ok($top->{x}, '==', 1, 'i3 mapped it to x=1');
+cmp_ok($top->{y}, '==', 19, 'i3 mapped it to y=18');
 
 $window->unmap;
 
-diag( "Testing i3, Perl $], $^X" );
+done_testing;

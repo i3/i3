@@ -1,6 +1,7 @@
-This Debian package is based on a tarball downloaded from http://i3wm.org/
+This Debian package is based on a tarball downloaded from
+http://i3.zekjur.net
 
-Copyright: (C) 2009-2011 Michael Stapelberg <michael+i3 at stapelberg dot de>
+Copyright: (C) 2009 Michael Stapelberg <michael+i3 at stapelberg dot de>
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,

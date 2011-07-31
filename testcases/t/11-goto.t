@@ -1,19 +1,9 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
-# Beware that this test uses workspace 9 to perform some tests (it expects
-# the workspace to be empty).
-# TODO: skip it by default?
 
-use Test::More tests => 7;
-use Test::Deep;
-use X11::XCB qw(:all);
-use Data::Dumper;
-use Time::HiRes qw(sleep);
-use FindBin;
-use Digest::SHA1 qw(sha1_base64);
-use lib "$FindBin::Bin/lib";
 use i3test;
-use AnyEvent::I3;
+use X11::XCB qw(:all);
+use Digest::SHA1 qw(sha1_base64);
 
 BEGIN {
     use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
@@ -21,21 +11,21 @@ BEGIN {
 
 my $x = X11::XCB::Connection->new;
 
-my $i3 = i3;
+my $i3 = i3(get_socket_path());
+my $tmp = fresh_workspace;
 
-# Switch to the nineth workspace
-$i3->command('9')->recv;
+cmd 'split h';
 
 #####################################################################
 # Create two windows and make sure focus switching works
 #####################################################################
 
-my $top = i3test::open_standard_window($x);
-sleep(0.25);
-my $mid = i3test::open_standard_window($x);
-sleep(0.25);
-my $bottom = i3test::open_standard_window($x);
-sleep(0.25);
+my $top = open_standard_window($x);
+sleep 0.25;
+my $mid = open_standard_window($x);
+sleep 0.25;
+my $bottom = open_standard_window($x);
+sleep 0.25;
 
 diag("top id = " . $top->id);
 diag("mid id = " . $mid->id);
@@ -48,17 +38,14 @@ diag("bottom id = " . $bottom->id);
 sub focus_after {
     my $msg = shift;
 
-    $i3->command($msg)->recv;
+    cmd $msg;
     return $x->input_focus;
 }
 
 $focus = $x->input_focus;
 is($focus, $bottom->id, "Latest window focused");
 
-$focus = focus_after("ml");
-is($focus, $bottom->id, "Right window still focused");
-
-$focus = focus_after("h");
+$focus = focus_after('focus left');
 is($focus, $mid->id, "Middle window focused");
 
 #####################################################################
@@ -67,14 +54,36 @@ is($focus, $mid->id, "Middle window focused");
 
 my $random_mark = sha1_base64(rand());
 
-$focus = focus_after("goto $random_mark");
+$focus = focus_after(qq|[con_mark="$random_mark"] focus|);
 is($focus, $mid->id, "focus unchanged");
 
 $i3->command("mark $random_mark")->recv;
 
-$focus = focus_after("k");
+$focus = focus_after('focus left');
 is($focus, $top->id, "Top window focused");
 
-$focus = focus_after("goto $random_mark");
+$focus = focus_after(qq|[con_mark="$random_mark"] focus|);
 is($focus, $mid->id, "goto worked");
 
+# check that we can specify multiple criteria
+
+$focus = focus_after('focus left');
+is($focus, $top->id, "Top window focused");
+
+$focus = focus_after(qq|[con_mark="$random_mark" con_mark="$random_mark"] focus|);
+is($focus, $mid->id, "goto worked");
+
+#####################################################################
+# Check whether the focus command will switch to a different
+# workspace if necessary
+#####################################################################
+
+my $tmp2 = fresh_workspace;
+
+is(focused_ws(), $tmp2, 'tmp2 now focused');
+
+cmd qq|[con_mark="$random_mark"] focus|;
+
+is(focused_ws(), $tmp, 'tmp now focused');
+
+done_testing;

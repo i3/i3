@@ -1,68 +1,49 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>i3 - an improved dynamic tiling window manager</title>
-<link rel="icon" type="image/png" href="/favicon.png">
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="description" content="i3 is a dynamic tiling window manager with clean, readable and documented code, featuring extended XRandR support, usage of libxcb instead of xlib and several improvements over wmii">
-<meta name="keywords" content="i3, window, manager, tiling, keyboard, wmii, x11, xcb, xinerama, utf8">
-<meta name="author" content="i3 developers">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="description" content="i3 is a dynamic tiling window manager with clean, readable and documented code, featuring extended Xinerama support, usage of libxcb instead of xlib and several improvements over wmii" />
+<meta name="keywords" content="i3, window, manager, tiling, keyboard, wmii, x11, xcb, xinerama, utf8" />
+<meta name="author" content="i3 developers" />
 <style type="text/css">
 body {
 	text-align: justify;
-	max-width: 900px;
-	background-color: #1e1e1e;
-	color: #c0c0c0;
+	max-width: 800px;
 }
 
-ol li {
+li {
 	margin-bottom: 10px;
 }
-
 #menu {
-	margin-left: -15px;
 	overflow: hidden;
 	list-style-type: none;
 }
-
 #menu li {
 	margin-left: 30px;
 	margin-right: 30px;
 	float: left;
 }
 
-a {
-        color: #c0c0c0;
-	text-decoration: underline;
-}
-
 </style>
 </head>
 <body>
 
-<img width="131" height="125" src="http://i3.zekjur.net/logo.png" style="margin-right: 15px" alt="logo" id="logo" align="left">
-
-<h1 style="color: red; font-family: georgia; font-size: 3em;margin-bottom: 0;">i3</h1>
-<h1 style="font-family: georgia; font-size: 2em;margin-bottom: 0;">improved tiling wm</h1>
-
-<br style="height: 0; clear: both;">
-<hr style="border: 1px solid black; clear: both; margin-top: 5px;">
+<h1>i3 - an improved dynamic tiling window manager</h1>
 
 <ul id="menu">
   <li>
     <a href="/">Goals</a>
   </li>
   <li>
-    <a href="/docs/">Docs</a>
+    <a href="/docs/">Documentation</a>
   </li>
   <li>
-    <a href="/downloads/">Downloads</a>
+    <strong><a href="/downloads/">Downloads</a></strong>
   </li>
   <li>
-    <a href="/blog/">Blog</a>
-  </li>
-  <li>
-    <a href="/screenshots/">Screens</a>
+    <a href="/screenshots/">Screenshots</a>
   </li>
   <li>
     <a href="/bugs">Bugtracker</a>
@@ -71,12 +52,9 @@ a {
     <a href="/contact/">Contact</a>
   </li>
   <li>
-    <a href="/impress.html">Impressum</a>
+    <a href="/impress.html">Impressum/Imprint</a>
   </li>
 </ul>
-
-<hr style="border: 1px solid black; clear: both; margin-top: 15px;">
-
 
 <h2>Distribution</h2>
 
@@ -86,14 +64,15 @@ a {
 
 <ul>
   <li>
-    <a href="http://packages.debian.org/sid/i3">Debian GNU/Linux</a>
+    <a href="http://packages.debian.org/sid/i3">Debian GNU/Linux</a> (in unstable currently)
   </li>
   <li>
-    <a href="http://www.archlinux.org/packages/community/x86_64/i3-wm/">Arch Linux</a>, maintained by Atsutane
+    <a href="http://aur.archlinux.org/packages.php?ID=24720">Arch Linux</a>
+    (in <a href="http://aur.archlinux.org/">AUR</a>), maintained by Atsutane
   </li>
   <li>
     <a href="http://overlays.gentoo.org/proj/sunrise/browser/sunrise/x11-wm/i3">Gentoo Linux</a>
-    (in <a href="http://www.gentoo.org/proj/en/sunrise">sunrise</a>), maintained by mimi_vx / Moredread<br>
+    (in <a href="http://www.gentoo.org/proj/en/sunrise">sunrise</a>), maintained by Moredread<br>
     See also: <a href="http://gist.github.com/89277">i3-9999.ebuild</a>
   </li>
   <li>
@@ -103,84 +82,18 @@ a {
     <a href="http://pkgsrc.se/wip/i3">NetBSD</a> (wip/i3 in <a href="http://pkgsrc-wip.sourceforge.net/">pkgsrc-wip</a>)
   </li>
   <li>
-    <a href="http://www.openbsd.org/cgi-bin/cvsweb/ports/x11/i3/">OpenBSD</a>, maintained by David Coppa
-  </li>
-  <li>
-    <a href="https://admin.fedoraproject.org/community/?package=i3#package_maintenance">Fedora, RHEL, CentOS</a> (in EPEL), maintained by cassmodiah
-  </li>
-  <li>
-    <a href="http://packages.ubuntu.com/karmic/i3">Ubuntu Linux</a> (in karmic/universe)<br>
-    Because Ubuntu packages are always outdated, you can also install
-    up-to-date third-party i3 packages for Ubuntu by adding the following line
-    to your <code>/etc/apt/sources.list</code> and using <code>apt-get install
-    i3</code> afterwards:<br>
-    <pre>
-    deb http://debian.sur5r.net/i3/ karmic universe
-    </pre>
-    Or, if you are running lucid:
-    <pre>
-    deb http://debian.sur5r.net/i3/ lucid universe
-    </pre>
+    <a href="http://packages.ubuntu.com/karmic/i3">Ubuntu Linux</a> (in karmic/universe)
   </li>
 </ul>
 
 <h2>Downloads</h2>
 
 <p>
-  The current stable version is 3.ε-bf3 (transcribed 3.e-bf3 because many systems still can’t
+  The current stable version is 3.β (transcribed 3.b because many systems still can’t
   handle UTF-8 in version numbers).
 </p>
 
-<p>
-  <strong>IMPORTANT:</strong> If you use the nVidia binary driver (which does
-  not support XRandR at the moment), read <a
-  href="/docs/multi-monitor.html">this document</a> for an explanation and how
-  to enable the work-around!
-</p>
-
 <ul>
-  <li>
-    <a href="/downloads/i3-3.e-bf3.tar.bz2">i3-3.e-bf3.tar.bz2</a>
-    (<a href="/downloads/i3-3.e-bf3.tar.bz2.asc">GPG signature</a>), Version 3.ε-bf3, 353 KiB, 2011-05-08,
-    <a href="/downloads/RELEASE-NOTES-3.e-bf3.txt">release notes</a>
-  </li>
-
-  <li>
-    <a href="/downloads/i3-3.e-bf2.tar.bz2">i3-3.e-bf2.tar.bz2</a>
-    (<a href="/downloads/i3-3.e-bf2.tar.bz2.asc">GPG signature</a>), Version 3.ε-bf2, 285 KiB, 2011-01-19,
-    <a href="/downloads/RELEASE-NOTES-3.e-bf2.txt">release notes</a>
-  </li>
-
-  <li>
-    <a href="/downloads/i3-3.e-bf1.tar.bz2">i3-3.e-bf1.tar.bz2</a>
-    (<a href="/downloads/i3-3.e-bf1.tar.bz2.asc">GPG signature</a>), Version 3.ε-bf1, 285 KiB, 2010-06-09,
-    <a href="/downloads/RELEASE-NOTES-3.e-bf1.txt">release notes</a>
-  </li>
-
-  <li>
-    <a href="/downloads/i3-3.e.tar.bz2">i3-3.e.tar.bz2</a>
-    (<a href="/downloads/i3-3.e.tar.bz2.asc">GPG signature</a>), Version 3.ε, 271 KiB, 2010-03-30,
-    <a href="/downloads/RELEASE-NOTES-3.e.txt">release notes</a>
-  </li>
-
-  <li>
-    <a href="/downloads/i3-3.d-bf1.tar.bz2">i3-3.d-bf1.tar.bz2</a>
-    (<a href="/downloads/i3-3.d-bf1.tar.bz2.asc">GPG signature</a>), Version 3.δ-bf1, 153 KiB, 2009-12-21,
-    <a href="/downloads/RELEASE-NOTES-3.d-bf1.txt">release notes</a>
-  </li>
-
-  <li>
-    <a href="/downloads/i3-3.d.tar.bz2">i3-3.d.tar.bz2</a>
-    (<a href="/downloads/i3-3.d.tar.bz2.asc">GPG signature</a>), Version 3.δ, 153 KiB, 2009-11-09,
-    <a href="/downloads/RELEASE-NOTES-3.d.txt">release notes</a>
-  </li>
-
-  <li>
-    <a href="/downloads/i3-3.c.tar.bz2">i3-3.c.tar.bz2</a>
-    (<a href="/downloads/i3-3.c.tar.bz2.asc">GPG signature</a>), Version 3.γ, 107 KiB, 2009-08-19,
-    <a href="/downloads/RELEASE-NOTES-3.c.txt">release notes</a>
-  </li>
-
   <li>
     <a href="/downloads/i3-3.b.tar.bz2">i3-3.b.tar.bz2</a>
     (<a href="/downloads/i3-3.b.tar.bz2.asc">GPG signature</a>), Version 3.β, 96 KiB, 2009-06-26,
@@ -192,34 +105,14 @@ a {
     (<a href="/downloads/i3-3.a-bf2.tar.bz2.asc">GPG signature</a>), Version 3.α-bf2, 65 KiB, 2009-05-03,
     hotfix for a problem with -bf1
   </li>
-
   <li>
     <a href="/downloads/i3-3.a-bf1.tar.bz2">i3-3.a-bf1.tar.bz2</a>
     (<a href="/downloads/i3-3.a-bf1.tar.bz2.asc">GPG signature</a>), Version 3.α-bf1, 65 KiB, 2009-05-03,
     <a href="/downloads/RELEASE-NOTES-3.a-bf1.txt">release notes</a>
   </li>
-
   <li>
     <a href="/downloads/i3-3.a.tar.bz2">i3-3.a.tar.bz2</a>
     (<a href="/downloads/i3-3.a.tar.bz2.asc">GPG signature</a>), Version 3.α, 50 KiB, 2009-03-15
-  </li>
-</ul>
-
-<h2>People who downloaded this also liked…</h2>
-
-<ul>
-  <li>
-  <a href="http://i3.zekjur.net/i3status/">i3status – a small program to
-  generate a dzen2 or xmobar status bar</a>
-  </li>
-  <li>
-  <a href="http://i3.zekjur.net/i3lock/">i3lock – a slightly improved version
-  of slock</a>
-  </li>
-  <li>
-  <a href="http://sites.google.com/site/gotmor/dzen">dzen2 – a general purpose
-  messaging, notification and menuing program for X11</a><br>(can be used to
-  display i3status output in a bar in some corner of the screen)
   </li>
 </ul>
 

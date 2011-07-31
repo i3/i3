@@ -8,9 +8,9 @@
  * See file LICENSE for license information.
  *
  */
-#include <xcb/xcb.h>
 
 #include "data.h"
+#include "tree.h"
 #include "randr.h"
 
 #ifndef _WORKSPACE_H
@@ -21,9 +21,13 @@
  * creating the workspace if necessary (by allocating the necessary amount of
  * memory and initializing the data structures correctly).
  *
+ * If created is not NULL, *created will be set to whether or not the
+ * workspace has just been created.
+ *
  */
-Workspace *workspace_get(int number);
+Con *workspace_get(const char *num, bool *created);
 
+#if 0
 /**
  * Sets the name (or just its number) for the given workspace. This has to
  * be called for every workspace as the rendering function
@@ -32,6 +36,7 @@ Workspace *workspace_get(int number);
  *
  */
 void workspace_set_name(Workspace *ws, const char *name);
+#endif
 
 /**
  * Returns true if the workspace is currently visible. Especially important for
@@ -39,11 +44,24 @@ void workspace_set_name(Workspace *ws, const char *name);
  * workspaces.
  *
  */
-bool workspace_is_visible(Workspace *ws);
+bool workspace_is_visible(Con *ws);
 
 /** Switches to the given workspace */
-void workspace_show(xcb_connection_t *conn, int workspace);
+void workspace_show(const char *num);
 
+/**
+ * Focuses the next workspace.
+ *
+ */
+void workspace_next();
+
+/**
+ * Focuses the previous workspace.
+ *
+ */
+void workspace_prev();
+
+#if 0
 /**
  * Assigns the given workspace to the given screen by correctly updating its
  * state and reconfiguring all the clients on this workspace.
@@ -86,25 +104,33 @@ void workspace_unmap_clients(xcb_connection_t *conn, Workspace *u_ws);
  *
  */
 void workspace_map_clients(xcb_connection_t *conn, Workspace *ws);
+#endif
 
 /**
  * Goes through all clients on the given workspace and updates the workspace’s
  * urgent flag accordingly.
  *
  */
-void workspace_update_urgent_flag(Workspace *ws);
+void workspace_update_urgent_flag(Con *ws);
 
-/*
- * Returns the width of the workspace.
+/**
+ * 'Forces' workspace orientation by moving all cons into a new split-con with
+ * the same orientation as the workspace and then changing the workspace
+ * orientation.
  *
  */
-int workspace_width(Workspace *ws);
+void ws_force_orientation(Con *ws, orientation_t orientation);
 
-/*
- * Returns the effective height of the workspace (without the internal bar and
- * without dock clients).
+/**
+ * Called when a new con (with a window, not an empty or split con) should be
+ * attached to the workspace (for example when managing a new window or when
+ * moving an existing window to the workspace level).
+ *
+ * Depending on the workspace_layout setting, this function either returns the
+ * workspace itself (default layout) or creates a new stacked/tabbed con and
+ * returns that.
  *
  */
-int workspace_height(Workspace *ws);
+Con *workspace_attach_to(Con *ws);
 
 #endif

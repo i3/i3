@@ -1,5 +1,5 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
  *
@@ -12,65 +12,15 @@
  * mode).
  *
  */
-#include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <glob.h>
-#include <wordexp.h>
-#include <unistd.h>
 
 /* We need Xlib for XStringToKeysym */
 #include <X11/Xlib.h>
 
-#include <xcb/xcb_keysyms.h>
+#include "all.h"
 
-#include "i3.h"
-#include "util.h"
-#include "config.h"
-#include "xcb.h"
-#include "table.h"
-#include "workspace.h"
-#include "log.h"
-
+char *current_configpath = NULL;
 Config config;
 struct modes_head modes;
-
-/*
- * This function resolves ~ in pathnames.
- *
- */
-char *glob_path(const char *path) {
-        static glob_t globbuf;
-        if (glob(path, GLOB_NOCHECK | GLOB_TILDE, NULL, &globbuf) < 0)
-                die("glob() failed");
-        char *result = sstrdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
-        globfree(&globbuf);
-
-        /* If the file does not exist yet, we still may need to resolve tilde,
-         * so call wordexp */
-        if (strcmp(result, path) == 0) {
-                wordexp_t we;
-                wordexp(path, &we, WRDE_NOCMD);
-                if (we.we_wordc > 0) {
-                        free(result);
-                        result = sstrdup(we.we_wordv[0]);
-                }
-                wordfree(&we);
-        }
-
-        return result;
-}
-
-/*
- * Checks if the given path exists by calling stat().
- *
- */
-bool path_exists(const char *path) {
-        struct stat buf;
-        return (stat(path, &buf) == 0);
-}
 
 /**
  * Ungrabs all keys, to be called before re-grabbing the keys because of a
@@ -148,14 +98,6 @@ void translate_keysyms() {
                         continue;
                 }
 
-#ifdef OLD_XCB_KEYSYMS_API
-                bind->number_keycodes = 1;
-                xcb_keycode_t code = xcb_key_symbols_get_keycode(keysyms, keysym);
-                DLOG("Translated symbol \"%s\" to 1 keycode (%d)\n", bind->symbol, code);
-                grab_keycode_for_binding(global_conn, bind, code);
-                bind->translated_to = smalloc(sizeof(xcb_keycode_t));
-                memcpy(bind->translated_to, &code, sizeof(xcb_keycode_t));
-#else
                 uint32_t last_keycode = 0;
                 xcb_keycode_t *keycodes = xcb_key_symbols_get_keycode(keysyms, keysym);
                 if (keycodes == NULL) {
@@ -177,7 +119,6 @@ void translate_keysyms() {
                 bind->translated_to = smalloc(bind->number_keycodes * sizeof(xcb_keycode_t));
                 memcpy(bind->translated_to, keycodes, bind->number_keycodes * sizeof(xcb_keycode_t));
                 free(keycodes);
-#endif
         }
 }
 
@@ -208,7 +149,7 @@ void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch) {
  * Switches the key bindings to the given mode, if the mode exists
  *
  */
-void switch_mode(xcb_connection_t *conn, const char *new_mode) {
+void switch_mode(const char *new_mode) {
         struct Mode *mode;
 
         LOG("Switching to mode %s\n", new_mode);
@@ -228,58 +169,72 @@ void switch_mode(xcb_connection_t *conn, const char *new_mode) {
 }
 
 /*
- * Get the path of the first configuration file found. Checks the XDG folders
- * first ($XDG_CONFIG_HOME, $XDG_CONFIG_DIRS), then the traditional paths.
+ * Get the path of the first configuration file found. If override_configpath
+ * is specified, that path is returned and saved for further calls. Otherwise,
+ * checks the home directory first, then the system directory first, always
+ * taking into account the XDG Base Directory Specification ($XDG_CONFIG_HOME,
+ * $XDG_CONFIG_DIRS)
  *
  */
-static char *get_config_path() {
-        /* 1: check for $XDG_CONFIG_HOME/i3/config */
-        char *xdg_config_home, *xdg_config_dirs, *config_path;
+static char *get_config_path(const char *override_configpath) {
+    char *xdg_config_home, *xdg_config_dirs, *config_path;
 
-        if ((xdg_config_home = getenv("XDG_CONFIG_HOME")) == NULL)
-                xdg_config_home = "~/.config";
+    static const char *saved_configpath = NULL;
 
-        xdg_config_home = glob_path(xdg_config_home);
-        if (asprintf(&config_path, "%s/i3/config", xdg_config_home) == -1)
-                die("asprintf() failed");
-        free(xdg_config_home);
+    if (override_configpath != NULL) {
+        saved_configpath = override_configpath;
+        return sstrdup(saved_configpath);
+    }
 
-        if (path_exists(config_path))
-                return config_path;
-        free(config_path);
+    if (saved_configpath != NULL)
+        return sstrdup(saved_configpath);
 
-        /* 2: check for $XDG_CONFIG_DIRS/i3/config */
-        if ((xdg_config_dirs = getenv("XDG_CONFIG_DIRS")) == NULL)
-                xdg_config_dirs = "/etc/xdg";
-
-        char *buf = sstrdup(xdg_config_dirs);
-        char *tok = strtok(buf, ":");
-        while (tok != NULL) {
-                tok = glob_path(tok);
-                if (asprintf(&config_path, "%s/i3/config", tok) == -1)
-                        die("asprintf() failed");
-                free(tok);
-                if (path_exists(config_path)) {
-                        free(buf);
-                        return config_path;
-                }
-                free(config_path);
-                tok = strtok(NULL, ":");
-        }
-        free(buf);
-
-        /* 3: check traditional paths */
-        config_path = glob_path("~/.i3/config");
-        if (path_exists(config_path))
-                return config_path;
-
-        config_path = sstrdup("/etc/i3/config");
-        if (!path_exists(config_path))
-                die("Neither $XDG_CONFIG_HOME/i3/config, nor "
-                    "$XDG_CONFIG_DIRS/i3/config, nor ~/.i3/config nor "
-                    "/etc/i3/config exist.");
-
+    /* 1: check the traditional path under the home directory */
+    config_path = resolve_tilde("~/.i3/config");
+    if (path_exists(config_path))
         return config_path;
+
+    /* 2: check for $XDG_CONFIG_HOME/i3/config */
+    if ((xdg_config_home = getenv("XDG_CONFIG_HOME")) == NULL)
+        xdg_config_home = "~/.config";
+
+    xdg_config_home = resolve_tilde(xdg_config_home);
+    if (asprintf(&config_path, "%s/i3/config", xdg_config_home) == -1)
+        die("asprintf() failed");
+    free(xdg_config_home);
+
+    if (path_exists(config_path))
+        return config_path;
+    free(config_path);
+
+    /* 3: check the traditional path under /etc */
+    config_path = SYSCONFDIR "/i3/config";
+    if (path_exists(config_path))
+        return sstrdup(config_path);
+
+    /* 4: check for $XDG_CONFIG_DIRS/i3/config */
+    if ((xdg_config_dirs = getenv("XDG_CONFIG_DIRS")) == NULL)
+        xdg_config_dirs = "/etc/xdg";
+
+    char *buf = sstrdup(xdg_config_dirs);
+    char *tok = strtok(buf, ":");
+    while (tok != NULL) {
+        tok = resolve_tilde(tok);
+        if (asprintf(&config_path, "%s/i3/config", tok) == -1)
+            die("asprintf() failed");
+        free(tok);
+        if (path_exists(config_path)) {
+            free(buf);
+            return config_path;
+        }
+        free(config_path);
+        tok = strtok(NULL, ":");
+    }
+    free(buf);
+
+    die("Unable to find the configuration file (looked at "
+            "~/.i3/config, $XDG_CONFIG_HOME/i3/config, "
+            SYSCONFDIR "i3/config and $XDG_CONFIG_DIRS/i3/config)");
 }
 
 /*
@@ -289,15 +244,11 @@ static char *get_config_path() {
  *
  */
 static void parse_configuration(const char *override_configpath) {
-        if (override_configpath != NULL) {
-                parse_file(override_configpath);
-                return;
-        }
-
-        char *path = get_config_path();
-        DLOG("Parsing configfile %s\n", path);
-        parse_file(path);
-        free(path);
+    char *path = get_config_path(override_configpath);
+    DLOG("Parsing configfile %s\n", path);
+    FREE(current_configpath);
+    current_configpath = path;
+    parse_file(path);
 }
 
 /*
@@ -328,6 +279,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         SLIST_REMOVE(&modes, mode, Mode, modes);
                 }
 
+#if 0
                 struct Assignment *assign;
                 while (!TAILQ_EMPTY(&assignments)) {
                         assign = TAILQ_FIRST(&assignments);
@@ -335,11 +287,14 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                         TAILQ_REMOVE(&assignments, assign, assignments);
                         FREE(assign);
                 }
+#endif
 
                 /* Clear workspace names */
+#if 0
                 Workspace *ws;
                 TAILQ_FOREACH(ws, workspaces, workspaces)
                         workspace_set_name(ws, NULL);
+#endif
         }
 
         SLIST_INIT(&modes);
@@ -362,12 +317,12 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         /* Initialize default colors */
 #define INIT_COLOR(x, cborder, cbackground, ctext) \
         do { \
-                x.border = get_colorpixel(conn, cborder); \
-                x.background = get_colorpixel(conn, cbackground); \
-                x.text = get_colorpixel(conn, ctext); \
+                x.border = get_colorpixel(cborder); \
+                x.background = get_colorpixel(cbackground); \
+                x.text = get_colorpixel(ctext); \
         } while (0)
 
-        config.client.background = get_colorpixel(conn, "#000000");
+        config.client.background = get_colorpixel("#000000");
         INIT_COLOR(config.client.focused, "#4c7899", "#285577", "#ffffff");
         INIT_COLOR(config.client.focused_inactive, "#333333", "#5f676a", "#ffffff");
         INIT_COLOR(config.client.unfocused, "#333333", "#222222", "#888888");
@@ -376,6 +331,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         INIT_COLOR(config.bar.unfocused, "#333333", "#222222", "#888888");
         INIT_COLOR(config.bar.urgent, "#2f343a", "#900000", "#ffffff");
 
+        config.default_border = BS_NORMAL;
+        /* Set default_orientation to NO_ORIENTATION for auto orientation. */
+        config.default_orientation = NO_ORIENTATION;
+
         parse_configuration(override_configpath);
 
         if (reload) {
@@ -383,8 +342,12 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
                 grab_all_keys(conn, false);
         }
 
-        REQUIRED_OPTION(font);
+        if (config.font.id == 0) {
+                ELOG("You did not specify required configuration option \"font\"\n");
+                config.font = load_font("fixed", true);
+        }
 
+#if 0
         /* Set an empty name for every workspace which got no name */
         Workspace *ws;
         TAILQ_FOREACH(ws, workspaces, workspaces) {
@@ -399,4 +362,5 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
                 workspace_set_name(ws, NULL);
         }
+#endif
 }
