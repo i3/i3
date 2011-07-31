@@ -34,6 +34,7 @@
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int cmdyylex(struct context *context);
 extern int cmdyyparse(void);
+extern int cmdyylex_destroy(void);
 extern FILE *cmdyyin;
 YY_BUFFER_STATE cmdyy_scan_string(const char *);
 
@@ -98,6 +99,7 @@ char *parse_cmd(const char *new) {
     }
     printf("done, json output = %s\n", json_output);
 
+    cmdyylex_destroy();
     FREE(context->line_copy);
     FREE(context->compact_error);
     free(context);
