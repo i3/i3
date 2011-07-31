@@ -424,6 +424,8 @@ void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
         return;
     }
 
+    free(reply);
+
     /* Go into our own event loop */
     xcb_flush(conn);
 
