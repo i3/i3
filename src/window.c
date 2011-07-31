@@ -15,6 +15,7 @@
 void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
         DLOG("empty property, not updating\n");
+        FREE(prop);
         return;
     }
 
@@ -33,8 +34,10 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool bef
     LOG("WM_CLASS changed to %s (instance), %s (class)\n",
         win->class_instance, win->class_class);
 
-    if (before_mgmt)
+    if (before_mgmt) {
+        free(prop);
         return;
+    }
 
     run_assignments(win);
 
@@ -49,6 +52,7 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool bef
 void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
         DLOG("_NET_WM_NAME not specified, not changing\n");
+        FREE(prop);
         return;
     }
 
@@ -58,6 +62,7 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
                  (char*)xcb_get_property_value(prop)) == -1) {
         perror("asprintf()");
         DLOG("Could not get window name\n");
+        free(prop);
         return;
     }
     /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
@@ -66,6 +71,7 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     if (ucs2_name == NULL) {
         LOG("Could not convert _NET_WM_NAME to UCS-2, ignoring new hint\n");
         FREE(new_name);
+        free(prop);
         return;
     }
     FREE(win->name_x);
@@ -78,8 +84,10 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
 
     win->uses_net_wm_name = true;
 
-    if (before_mgmt)
+    if (before_mgmt) {
+        free(prop);
         return;
+    }
 
     run_assignments(win);
 
@@ -96,18 +104,22 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
 void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
         DLOG("prop == NULL\n");
+        FREE(prop);
         return;
     }
 
     /* ignore update when the window is known to already have a UTF-8 name */
-    if (win->uses_net_wm_name)
+    if (win->uses_net_wm_name) {
+        free(prop);
         return;
+    }
 
     char *new_name;
     if (asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop),
                  (char*)xcb_get_property_value(prop)) == -1) {
         perror("asprintf()");
         DLOG("Could not get legacy window name\n");
+        free(prop);
         return;
     }
 
@@ -121,8 +133,10 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
     win->name_len = strlen(new_name);
     win->name_x_changed = true;
 
-    if (before_mgmt)
+    if (before_mgmt) {
+        free(prop);
         return;
+    }
 
     run_assignments(win);
 
@@ -136,12 +150,15 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
 void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
         DLOG("prop == NULL\n");
+        FREE(prop);
         return;
     }
 
     xcb_window_t *leader = xcb_get_property_value(prop);
-    if (leader == NULL)
+    if (leader == NULL) {
+        free(prop);
         return;
+    }
 
     DLOG("Client leader changed to %08x\n", *leader);
 
@@ -157,12 +174,15 @@ void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop) {
 void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
         DLOG("prop == NULL\n");
+        FREE(prop);
         return;
     }
 
     xcb_window_t transient_for;
-    if (!xcb_icccm_get_wm_transient_for_from_reply(&transient_for, prop))
+    if (!xcb_icccm_get_wm_transient_for_from_reply(&transient_for, prop)) {
+        free(prop);
         return;
+    }
 
     DLOG("Transient for changed to %08x\n", transient_for);
 
@@ -178,12 +198,15 @@ void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop) 
 void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
         DLOG("prop == NULL\n");
+        FREE(prop);
         return;
     }
 
     uint32_t *strut;
-    if (!(strut = xcb_get_property_value(prop)))
+    if (!(strut = xcb_get_property_value(prop))) {
+        free(prop);
         return;
+    }
 
     DLOG("Reserved pixels changed to: left = %d, right = %d, top = %d, bottom = %d\n",
          strut[0], strut[1], strut[2], strut[3]);
