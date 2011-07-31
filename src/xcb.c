@@ -219,19 +219,21 @@ void fake_absolute_configure_notify(Con *con) {
  *
  */
 void send_take_focus(xcb_window_t window) {
-    xcb_client_message_event_t ev;
+    /* Every X11 event is 32 bytes long. Therefore, XCB will copy 32 bytes.
+     * In order to properly initialize these bytes, we allocate 32 bytes even
+     * though we only need less for an xcb_configure_notify_event_t */
+    void *event = scalloc(32);
+    xcb_client_message_event_t *ev = event;
 
-    memset(&ev, 0, sizeof(xcb_client_message_event_t));
-
-    ev.response_type = XCB_CLIENT_MESSAGE;
-    ev.window = window;
-    ev.type = A_WM_PROTOCOLS;
-    ev.format = 32;
-    ev.data.data32[0] = A_WM_TAKE_FOCUS;
-    ev.data.data32[1] = XCB_CURRENT_TIME;
+    ev->response_type = XCB_CLIENT_MESSAGE;
+    ev->window = window;
+    ev->type = A_WM_PROTOCOLS;
+    ev->format = 32;
+    ev->data.data32[0] = A_WM_TAKE_FOCUS;
+    ev->data.data32[1] = XCB_CURRENT_TIME;
 
     DLOG("Sending WM_TAKE_FOCUS to the client\n");
-    xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char*)&ev);
+    xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char*)ev);
 }
 
 /*
