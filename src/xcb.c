@@ -62,6 +62,8 @@ i3Font load_font(const char *pattern, bool fallback) {
 
     new.height = reply->font_ascent + reply->font_descent;
 
+    free(reply);
+
     return new;
 }
 
