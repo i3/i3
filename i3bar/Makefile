@@ -19,7 +19,7 @@ doc:
 
 src/%.o: src/%.c ${HEADERS}
 	echo "CC $<"
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 install: all
 	echo "INSTALL"

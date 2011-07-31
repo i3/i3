@@ -10,6 +10,7 @@
  */
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
+#include <xcb/xcb_atom.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,6 +19,7 @@
 #include <i3/ipc.h>
 #include <ev.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <X11/Xlib.h>
 #include <X11/XKBlib.h>
@@ -26,11 +28,10 @@
 #include "common.h"
 
 /* We save the Atoms in an easy to access array, indexed by an enum */
-#define NUM_ATOMS 3
-
 enum {
     #define ATOM_DO(name) name,
     #include "xcb_atoms.def"
+    NUM_ATOMS
 };
 
 xcb_intern_atom_cookie_t atom_cookies[NUM_ATOMS];
@@ -75,6 +76,8 @@ struct xcb_colors_t {
     uint32_t inactive_ws_bg;
     uint32_t urgent_ws_bg;
     uint32_t urgent_ws_fg;
+    uint32_t focus_ws_bg;
+    uint32_t focus_ws_fg;
 };
 struct xcb_colors_t colors;
 
@@ -273,6 +276,8 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR(inactive_ws_bg, "240000");
     PARSE_COLOR(urgent_ws_fg, "FFFFFF");
     PARSE_COLOR(urgent_ws_bg, "002400");
+    PARSE_COLOR(focus_ws_fg, "FFFFFF");
+    PARSE_COLOR(focus_ws_bg, "480000");
 #undef PARSE_COLOR
 }
 
@@ -348,8 +353,8 @@ void handle_button(xcb_button_press_event_t *event) {
             break;
     }
 
-    char buffer[50];
-    snprintf(buffer, 50, "%d", cur_ws->num);
+    char buffer[strlen(cur_ws->name) + 11];
+    snprintf(buffer, 50, "workspace %s", cur_ws->name);
     i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, buffer);
 }
 
@@ -358,7 +363,7 @@ void handle_button(xcb_button_press_event_t *event) {
  * then (and only then)
  *
  */
-void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revenst) {
+void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revents) {
     xcb_flush(xcb_connection);
 }
 
@@ -438,7 +443,7 @@ void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  * Initialize xcb and use the specified fontname for text-rendering
  *
  */
-void init_xcb(char *fontname) {
+char *init_xcb(char *fontname) {
     /* FIXME: xcb_connect leaks Memory */
     xcb_connection = xcb_connect(NULL, NULL);
     if (xcb_connection_has_error(xcb_connection)) {
@@ -476,7 +481,11 @@ void init_xcb(char *fontname) {
         xkb_major = XkbMajorVersion;
         xkb_minor = XkbMinorVersion;
 
-        xkb_dpy = XkbOpenDisplay(":0",
+        char *dispname = getenv("DISPLAY");
+        if (dispname == NULL) {
+            dispname = ":0";
+        }
+        xkb_dpy = XkbOpenDisplay(dispname,
                                  &xkb_event_base,
                                  &xkb_errbase,
                                  &xkb_major,
@@ -556,6 +565,26 @@ void init_xcb(char *fontname) {
     /* Now we get the atoms and save them in a nice data-structure */
     get_atoms();
 
+    xcb_get_property_cookie_t path_cookie;
+    path_cookie = xcb_get_property_unchecked(xcb_connection,
+                                   0,
+                                   xcb_root,
+                                   atoms[I3_SOCKET_PATH],
+                                   XCB_GET_PROPERTY_TYPE_ANY,
+                                   0, PATH_MAX);
+
+    /* We check, if i3 set it's socket-path */
+    xcb_get_property_reply_t *path_reply = xcb_get_property_reply(xcb_connection,
+                                                                  path_cookie,
+                                                                  NULL);
+    char *path = NULL;
+    if (path_reply) {
+        int len = xcb_get_property_value_length(path_reply);
+        if (len != 0) {
+            path = strndup(xcb_get_property_value(path_reply), len);
+        }
+    }
+
     /* Now we save the font-infos */
     font_info = xcb_query_font_reply(xcb_connection,
                                      query_font_cookie,
@@ -580,6 +609,8 @@ void init_xcb(char *fontname) {
         xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline-buffer-context")) {
         exit(EXIT_FAILURE);
     }
+
+    return path;
 }
 
 /*
@@ -713,8 +744,10 @@ void reconfig_windows() {
             /* If hide_on_modifier is set, i3 is not supposed to manage our bar-windows */
             values[1] = config.hide_on_modifier;
             /* The events we want to receive */
-            values[2] = XCB_EVENT_MASK_EXPOSURE |
-                        XCB_EVENT_MASK_BUTTON_PRESS;
+            values[2] = XCB_EVENT_MASK_EXPOSURE;
+            if (!config.disable_ws) {
+                values[2] |= XCB_EVENT_MASK_BUTTON_PRESS;
+            }
             xcb_void_cookie_t win_cookie = xcb_create_window_checked(xcb_connection,
                                                                      xcb_screen->root_depth,
                                                                      walk->bar,
@@ -737,14 +770,56 @@ void reconfig_windows() {
 
             /* We want dock-windows (for now). When override_redirect is set, i3 is ignoring
              * this one */
-            xcb_void_cookie_t prop_cookie = xcb_change_property(xcb_connection,
+            xcb_void_cookie_t dock_cookie = xcb_change_property(xcb_connection,
                                                                 XCB_PROP_MODE_REPLACE,
                                                                 walk->bar,
                                                                 atoms[_NET_WM_WINDOW_TYPE],
-                                                                atoms[ATOM],
+                                                                XCB_ATOM_ATOM,
                                                                 32,
                                                                 1,
                                                                 (unsigned char*) &atoms[_NET_WM_WINDOW_TYPE_DOCK]);
+
+            /* We need to tell i3, where to reserve space for i3bar */
+            /* left, right, top, bottom, left_start_y, left_end_y,
+             * right_start_y, right_end_y, top_start_x, top_end_x, bottom_start_x,
+             * bottom_end_x */
+            /* A local struct to save the strut_partial property */
+            struct {
+                uint32_t left;
+                uint32_t right;
+                uint32_t top;
+                uint32_t bottom;
+                uint32_t left_start_y;
+                uint32_t left_end_y;
+                uint32_t right_start_y;
+                uint32_t right_end_y;
+                uint32_t top_start_x;
+                uint32_t top_end_x;
+                uint32_t bottom_start_x;
+                uint32_t bottom_end_x;
+            } __attribute__((__packed__)) strut_partial = {0,};
+            switch (config.dockpos) {
+                case DOCKPOS_NONE:
+                    break;
+                case DOCKPOS_TOP:
+                    strut_partial.top = font_height + 6;
+                    strut_partial.top_start_x = walk->rect.x;
+                    strut_partial.top_end_x = walk->rect.x + walk->rect.w;
+                    break;
+                case DOCKPOS_BOT:
+                    strut_partial.bottom = font_height + 6;
+                    strut_partial.bottom_start_x = walk->rect.x;
+                    strut_partial.bottom_end_x = walk->rect.x + walk->rect.w;
+                    break;
+            }
+            xcb_void_cookie_t strut_cookie = xcb_change_property(xcb_connection,
+                                                                 XCB_PROP_MODE_REPLACE,
+                                                                 walk->bar,
+                                                                 atoms[_NET_WM_STRUT_PARTIAL],
+                                                                 XCB_ATOM_CARDINAL,
+                                                                 32,
+                                                                 12,
+                                                                 &strut_partial);
 
             /* We also want a graphics-context for the bars (it defines the properties
              * with which we draw to them) */
@@ -763,10 +838,11 @@ void reconfig_windows() {
                 map_cookie = xcb_map_window_checked(xcb_connection, walk->bar);
             }
 
-            if (xcb_request_failed(win_cookie,  "Could not create window") ||
-                xcb_request_failed(pm_cookie,   "Could not create pixmap") ||
-                xcb_request_failed(prop_cookie, "Could not set dock mode") ||
-                xcb_request_failed(gc_cookie,   "Could not create graphical context") ||
+            if (xcb_request_failed(win_cookie,   "Could not create window") ||
+                xcb_request_failed(pm_cookie,    "Could not create pixmap") ||
+                xcb_request_failed(dock_cookie,  "Could not set dock mode") ||
+                xcb_request_failed(strut_cookie, "Could not set strut")     ||
+                xcb_request_failed(gc_cookie,    "Could not create graphical context") ||
                 (!config.hide_on_modifier && xcb_request_failed(map_cookie, "Could not map window"))) {
                 exit(EXIT_FAILURE);
             }
@@ -858,14 +934,23 @@ void draw_bars() {
                           MIN(outputs_walk->rect.w - 4, statusline_width), font_height);
         }
 
+        if (config.disable_ws) {
+            continue;
+        }
+
         i3_ws *ws_walk;
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
             DLOG("Drawing Button for WS %s at x = %d\n", ws_walk->name, i);
             uint32_t fg_color = colors.inactive_ws_fg;
             uint32_t bg_color = colors.inactive_ws_bg;
             if (ws_walk->visible) {
-                fg_color = colors.active_ws_fg;
-                bg_color = colors.active_ws_bg;
+                if (!ws_walk->focused) {
+                    fg_color = colors.active_ws_fg;
+                    bg_color = colors.active_ws_bg;
+                } else {
+                    fg_color = colors.focus_ws_fg;
+                    bg_color = colors.focus_ws_bg;
+                }
             }
             if (ws_walk->urgent) {
                 DLOG("WS %s is urgent!\n", ws_walk->name);
@@ -874,14 +959,12 @@ void draw_bars() {
                 /* The urgent-hint should get noticed, so we unhide the bars shortly */
                 unhide_bars();
             }
+            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+            uint32_t vals[] = { bg_color, bg_color };
             xcb_change_gc(xcb_connection,
                           outputs_walk->bargc,
-                          XCB_GC_FOREGROUND,
-                          &bg_color);
-            xcb_change_gc(xcb_connection,
-                          outputs_walk->bargc,
-                          XCB_GC_BACKGROUND,
-                          &bg_color);
+                          mask,
+                          vals);
             xcb_rectangle_t rect = { i + 1, 1, ws_walk->name_width + 8, font_height + 4 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
@@ -901,10 +984,10 @@ void draw_bars() {
             i += 10 + ws_walk->name_width;
         }
 
-        redraw_bars();
-
         i = 0;
     }
+
+    redraw_bars();
 }
 
 /*

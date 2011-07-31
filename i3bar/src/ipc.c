@@ -57,6 +57,8 @@ void reconnect() {
             ELOG("malloc() failed: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
+    } else {
+        ev_timer_stop(main_loop, reconn);
     }
     ev_timer_init(reconn, retry_connection, 0.25, 0.25);
     ev_timer_start(main_loop, reconn);
@@ -127,7 +129,9 @@ void got_workspace_event(char *event) {
 void got_output_event(char *event) {
     DLOG("Got Output Event!\n");
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
-    i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
+    if (!config.disable_ws) {
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
+    }
 }
 
 /* Data-structure to easily call the reply-handlers later */
@@ -144,7 +148,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
     DLOG("Got data!\n");
     int fd = watcher->fd;
 
-    /* First we only read the header, because we know it's length */
+    /* First we only read the header, because we know its length */
     uint32_t header_len = strlen(I3_IPC_MAGIC) + sizeof(uint32_t)*2;
     char *header = malloc(header_len);
     if (header == NULL) {
@@ -324,5 +328,9 @@ void destroy_connection() {
  *
  */
 void subscribe_events() {
-    i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"workspace\", \"output\" ]");
+    if (config.disable_ws) {
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"output\" ]");
+    } else {
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"workspace\", \"output\" ]");
+    }
 }

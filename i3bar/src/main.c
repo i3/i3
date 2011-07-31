@@ -75,17 +75,21 @@ static void free_colors(struct xcb_color_strings_t *colors) {
     FREE_COLOR(inactive_ws_bg);
     FREE_COLOR(urgent_ws_fg);
     FREE_COLOR(urgent_ws_bg);
+    FREE_COLOR(focus_ws_fg);
+    FREE_COLOR(focus_ws_bg);
 #undef FREE_COLOR
 }
 
 void print_usage(char *elf_name) {
-    printf("Usage: %s [-s sock_path] [-c command] [-m] [-f font] [-V] [-h]\n", elf_name);
+    printf("Usage: %s [-s sock_path] [-c command] [-m|-d[pos]] [-f font] [-V] [-h]\n", elf_name);
     printf("-s <sock_path>\tConnect to i3 via <sock_path>\n");
     printf("-c <command>\tExecute <command> to get stdin\n");
     printf("-m\t\tHide the bars, when mod4 is not pressed.\n");
+    printf("-d[<pos>]\tEnable dockmode. <pos> is \"top\" or \"bottom\". Default is bottom\n");
     printf("\t\tIf -c is specified, the childprocess is sent a SIGSTOP on hiding,\n");
     printf("\t\tand a SIGCONT on unhiding of the bars\n");
     printf("-f <font>\tUse X-Core-Font <font> for display\n");
+    printf("-w\t\tDisable workspace-buttons\n");
     printf("-V\t\tBe (very) verbose with the debug-output\n");
     printf("-h\t\tDisplay this help-message and exit\n");
 }
@@ -116,17 +120,21 @@ int main(int argc, char **argv) {
     char *socket_path = getenv("I3SOCK");
     char *command = NULL;
     char *fontname = NULL;
-    char *i3_default_sock_path = "~/.i3/ipc.sock";
+    char *i3_default_sock_path = "/tmp/i3-ipc.sock";
     struct xcb_color_strings_t colors = { NULL, };
 
     /* Definition of the standard-config */
     config.hide_on_modifier = 0;
+    config.dockpos = DOCKPOS_NONE;
+    config.disable_ws = 0;
 
     static struct option long_opt[] = {
         { "socket",               required_argument, 0, 's' },
         { "command",              required_argument, 0, 'c' },
         { "hide",                 no_argument,       0, 'm' },
+        { "dock",                 optional_argument, 0, 'd' },
         { "font",                 required_argument, 0, 'f' },
+        { "nows",                 no_argument,       0, 'w' },
         { "help",                 no_argument,       0, 'h' },
         { "version",              no_argument,       0, 'v' },
         { "verbose",              no_argument,       0, 'V' },
@@ -138,10 +146,12 @@ int main(int argc, char **argv) {
         { "color-inactive-ws-bg", required_argument, 0, 'F' },
         { "color-urgent-ws-bg",   required_argument, 0, 'G' },
         { "color-urgent-ws-fg",   required_argument, 0, 'H' },
+        { "color-focus-ws-bg",    required_argument, 0, 'I' },
+        { "color-focus-ws-fg",    required_argument, 0, 'J' },
         { NULL,                   0,                 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "s:c:mf:hvVA:B:C:D:E:F:G:H:", long_opt, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "s:c:d::mf:whvVA:B:C:D:E:F:G:H:I:J:", long_opt, &option_index)) != -1) {
         switch (opt) {
             case 's':
                 socket_path = expand_path(optarg);
@@ -152,8 +162,26 @@ int main(int argc, char **argv) {
             case 'm':
                 config.hide_on_modifier = 1;
                 break;
+            case 'd':
+                config.hide_on_modifier = 0;
+                if (optarg == NULL) {
+                    config.dockpos = DOCKPOS_BOT;
+                    break;
+                }
+                if (!strcmp(optarg, "top")) {
+                    config.dockpos = DOCKPOS_TOP;
+                } else if (!strcmp(optarg, "bottom")) {
+                    config.dockpos = DOCKPOS_BOT;
+                } else {
+                    print_usage(argv[0]);
+                    exit(EXIT_FAILURE);
+                }
+                break;
             case 'f':
                 fontname = strdup(optarg);
+                break;
+            case 'w':
+                config.disable_ws = 1;
                 break;
             case 'v':
                 printf("i3bar version " I3BAR_VERSION " © 2010 Axel Wagner and contributors\n");
@@ -186,6 +214,12 @@ int main(int argc, char **argv) {
             case 'H':
                 read_color(&colors.urgent_ws_fg);
                 break;
+            case 'I':
+                read_color(&colors.focus_ws_bg);
+                break;
+            case 'J':
+                read_color(&colors.focus_ws_fg);
+                break;
             default:
                 print_usage(argv[0]);
                 exit(EXIT_SUCCESS);
@@ -200,15 +234,28 @@ int main(int argc, char **argv) {
         fontname = "-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1";
     }
 
-    if (socket_path == NULL) {
-        ELOG("No Socket Path Specified, default to %s\n", i3_default_sock_path);
-        socket_path = expand_path(i3_default_sock_path);
+    if (config.dockpos != DOCKPOS_NONE) {
+        if (config.hide_on_modifier) {
+            ELOG("--dock and --hide are mutually exclusive!\n");
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        config.hide_on_modifier = 1;
     }
 
     main_loop = ev_default_loop(0);
 
     init_colors(&colors);
-    init_xcb(fontname);
+    char *atom_sock_path = init_xcb(fontname);
+
+    if (socket_path == NULL) {
+        socket_path = atom_sock_path;
+    }
+
+    if (socket_path == NULL) {
+        ELOG("No Socket Path Specified, default to %s\n", i3_default_sock_path);
+        socket_path = expand_path(i3_default_sock_path);
+    }
 
     free_colors(&colors);
 
@@ -222,7 +269,9 @@ int main(int argc, char **argv) {
      * workspaces. Everything else (creating the bars, showing the right workspace-
      * buttons and more) is taken care of by the event-driveniness of the code */
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
-    i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
+    if (!config.disable_ws) {
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
+    }
 
     /* The name of this function is actually misleading. Even if no -c is specified,
      * this function initiates the watchers to listen on stdin and react accordingly */

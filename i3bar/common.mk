@@ -13,9 +13,10 @@ CFLAGS += -idirafter yajl-fallback
 
 CFLAGS += -Wall
 CFLAGS += -pipe
-CFLAGS += -Iinclude
 CFLAGS += -g
-CFLAGS += -DI3BAR_VERSION=\"${GIT_VERSION}\"
+
+CPPFLAGS += -DI3BAR_VERSION=\"${GIT_VERSION}\"
+CPPFLAGS += -Iinclude
 
 LDFLAGS += -lev
 LDFLAGS += -lyajl
