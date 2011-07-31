@@ -184,7 +184,7 @@ bool window_supports_protocol(xcb_window_t window, xcb_atom_t atom) {
     xcb_icccm_get_wm_protocols_reply_t protocols;
     bool result = false;
 
-    cookie = xcb_icccm_get_wm_protocols_unchecked(conn, window, A_WM_PROTOCOLS);
+    cookie = xcb_icccm_get_wm_protocols(conn, window, A_WM_PROTOCOLS);
     if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) != 1)
         return false;
 

@@ -126,7 +126,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE;
     xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, values);
 
-#define GET_PROPERTY(atom, len) xcb_get_property_unchecked(conn, false, window, atom, XCB_GET_PROPERTY_TYPE_ANY, 0, len)
+#define GET_PROPERTY(atom, len) xcb_get_property(conn, false, window, atom, XCB_GET_PROPERTY_TYPE_ANY, 0, len)
 
     wm_type_cookie = GET_PROPERTY(A__NET_WM_WINDOW_TYPE, UINT32_MAX);
     strut_cookie = GET_PROPERTY(A__NET_WM_STRUT_PARTIAL, UINT32_MAX);

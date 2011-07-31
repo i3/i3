@@ -254,7 +254,7 @@ void xcb_get_numlock_mask(xcb_connection_t *conn) {
                            XCB_MOD_MASK_5 };
 
     /* Request the modifier map */
-    cookie = xcb_get_modifier_mapping_unchecked(conn);
+    cookie = xcb_get_modifier_mapping(conn);
 
     /* Get the keysymbols */
     keysyms = xcb_key_symbols_alloc(conn);
