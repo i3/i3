@@ -234,6 +234,7 @@ void send_take_focus(xcb_window_t window) {
 
     DLOG("Sending WM_TAKE_FOCUS to the client\n");
     xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char*)ev);
+    free(event);
 }
 
 /*
