@@ -2,7 +2,7 @@
 # vim:ts=4:sw=4:expandtab
 # !NO_I3_INSTANCE! will prevent complete-run.pl from starting i3
 #
-# Tests if i3-migrate-config-to-v4.pl correctly migrates all config file
+# Tests if i3-migrate-config-to-v4 correctly migrates all config file
 # directives and commands
 #
 use i3test;
@@ -27,7 +27,7 @@ sub migrate_config {
     print $fh $config;
     close($fh);
 
-    my $cmd = "sh -c 'exec " . abs_path("../i3-migrate-config-to-v4.pl") . " --v3 <$tmpfile'";
+    my $cmd = "sh -c 'exec " . abs_path("../i3-migrate-config-to-v4") . " --v3 <$tmpfile'";
     return [ split /\n/, qx($cmd) ];
 }
 

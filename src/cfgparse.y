@@ -115,7 +115,7 @@ next:
 }
 
 /*
- * Calls i3-migrate-config-to-v4.pl to migrate a configuration file (input
+ * Calls i3-migrate-config-to-v4 to migrate a configuration file (input
  * buffer).
  *
  * Returns the converted config file or NULL if there was an error (for
@@ -153,7 +153,7 @@ static char *migrate_config(char *input, off_t size) {
             NULL, /* will be replaced by the executable path */
             NULL
         };
-        exec_i3_utility("i3-migrate-config-to-v4.pl", argv);
+        exec_i3_utility("i3-migrate-config-to-v4", argv);
     }
 
     /* parent */
@@ -438,7 +438,7 @@ void parse_file(const char *f) {
             printf("\n");
             printf("Please convert your config file to v4. You can use this command:\n");
             printf("    mv %s %s.O\n", f, f);
-            printf("    i3-migrate-config-to-v4.pl %s.O > %s\n", f, f);
+            printf("    i3-migrate-config-to-v4 %s.O > %s\n", f, f);
             printf("****************************************************************\n");
             printf("\n");
             free(new);
@@ -446,7 +446,7 @@ void parse_file(const char *f) {
         } else {
             printf("\n");
             printf("**********************************************************************\n");
-            printf("ERROR: Could not convert config file. Maybe i3-migrate-config-to-v4.pl\n");
+            printf("ERROR: Could not convert config file. Maybe i3-migrate-config-to-v4\n");
             printf("was not correctly installed on your system?\n");
             printf("**********************************************************************\n");
             printf("\n");

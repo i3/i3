@@ -79,7 +79,7 @@ install: all
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/include/i3
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/share/xsessions
 	$(INSTALL) -m 0755 i3 $(DESTDIR)$(PREFIX)/bin/
-	$(INSTALL) -m 0755 i3-migrate-config-to-v4.pl $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -m 0755 i3-migrate-config-to-v4 $(DESTDIR)$(PREFIX)/bin/
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)$(SYSCONFDIR)/i3/config
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes || $(INSTALL) -m 0644 i3.config.keycodes $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes
 	$(INSTALL) -m 0644 i3.welcome $(DESTDIR)$(SYSCONFDIR)/i3/welcome
@@ -93,7 +93,7 @@ dist: distclean
 	[ ! -d i3-${VERSION} ] || rm -rf i3-${VERSION}
 	[ ! -e i3-${VERSION}.tar.bz2 ] || rm i3-${VERSION}.tar.bz2
 	mkdir i3-${VERSION}
-	cp i3-migrate-config-to-v4.pl i3.config.keycodes DEPENDS GOALS LICENSE PACKAGE-MAINTAINER TODO RELEASE-NOTES-${VERSION} i3.config i3.desktop i3.welcome pseudo-doc.doxygen i3-wsbar Makefile i3-${VERSION}
+	cp i3-migrate-config-to-v4 i3.config.keycodes DEPENDS GOALS LICENSE PACKAGE-MAINTAINER TODO RELEASE-NOTES-${VERSION} i3.config i3.desktop i3.welcome pseudo-doc.doxygen i3-wsbar Makefile i3-${VERSION}
 	cp -r src i3-msg i3-nagbar i3-config-wizard yajl-fallback include man i3-${VERSION}
 	# Only copy toplevel documentation (important stuff)
 	mkdir i3-${VERSION}/docs
