@@ -117,17 +117,19 @@ clean:
 	(which lcov >/dev/null && lcov -d . --zerocounters) || true
 	$(MAKE) -C docs clean
 	$(MAKE) -C man clean
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg clean
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-input clean
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-nagbar clean
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-config-wizard clean
+	for dir in $(SUBDIRS); do \
+		echo ""; \
+		echo "CLEAN $$dir"; \
+		$(MAKE) TOPDIR=$(TOPDIR) -C $$dir distclean; \
+	done
 
 distclean: clean
 	rm -f i3
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-msg distclean
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-input distclean
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-nagbar distclean
-	$(MAKE) TOPDIR=$(TOPDIR) -C i3-config-wizard distclean
+	for dir in $(SUBDIRS); do \
+		echo ""; \
+		echo "DISTCLEAN $$dir"; \
+		$(MAKE) TOPDIR=$(TOPDIR) -C $$dir distclean; \
+	done
 
 coverage:
 	rm -f /tmp/i3-coverage.info
