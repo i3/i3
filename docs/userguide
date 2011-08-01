@@ -523,7 +523,7 @@ exec_always command
 
 *Examples*:
 --------------------------------
-exec i3status | dzen2 -dock
+exec i3status | i3bar -d
 exec_always ~/my_script.sh
 --------------------------------
 
