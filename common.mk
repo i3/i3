@@ -93,7 +93,7 @@ endif
 
 # Fallback for libyajl 1 which did not include yajl_version.h. We need
 # YAJL_MAJOR from that file to decide which code path should be used.
-CFLAGS += -idirafter yajl-fallback
+CFLAGS += -idirafter $(TOPDIR)/yajl-fallback
 
 ifneq (,$(filter Linux GNU GNU/%, $(UNAME)))
 CPPFLAGS += -D_GNU_SOURCE

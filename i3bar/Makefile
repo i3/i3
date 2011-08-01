@@ -1,4 +1,4 @@
-TOPDIR=$(shell pwd)
+TOPDIR=..
 
 include $(TOPDIR)/common.mk
 
@@ -6,11 +6,13 @@ FILES:=$(wildcard src/*.c)
 FILES:=$(FILES:.c=.o)
 HEADERS:=$(wildcard include/*.h)
 
+CPPFLAGS += -I$(TOPDIR)/include
+
 all: i3bar doc
 
 i3bar: ${FILES}
 	echo "LINK"
-	$(CC) -o i3bar ${FILES} ${LDFLAGS}
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 doc:
 	echo ""
