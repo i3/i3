@@ -53,6 +53,7 @@ install: build
 	cp man/i3-nagbar.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
 	cp man/i3-config-wizard.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
 	cp man/i3-migrate-config-to-v4.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
+	cp i3bar/doc/i3bar.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
 
 
 # Build architecture-independent files here.
