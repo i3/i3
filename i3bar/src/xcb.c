@@ -27,6 +27,30 @@
 
 #include "common.h"
 
+#if defined(__APPLE__)
+
+/*
+ * Taken from FreeBSD
+ * Returns a pointer to a new string which is a duplicate of the
+ * string, but only copies at most n characters.
+ *
+ */
+char *strndup(const char *str, size_t n) {
+    size_t len;
+    char *copy;
+
+    for (len = 0; len < n && str[len]; len++)
+        continue;
+
+    if ((copy = malloc(len + 1)) == NULL)
+        return (NULL);
+    memcpy(copy, str, len);
+    copy[len] = '\0';
+    return (copy);
+}
+
+#endif
+
 /* We save the Atoms in an easy to access array, indexed by an enum */
 enum {
     #define ATOM_DO(name) name,
