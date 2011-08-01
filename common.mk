@@ -71,7 +71,11 @@ LIBS += $(call ldflags_for_lib, x11, X11)
 LIBS += $(call ldflags_for_lib, yajl, yajl)
 LIBS += $(call ldflags_for_lib, libev, ev)
 
+# Please test if -Wl,--as-needed works on your platform and send me a patch.
+# it is known not to work on Darwin (Mac OS X)
+ifneq (,$(filter Linux GNU GNU/%, $(UNAME)))
 LDFLAGS += -Wl,--as-needed
+endif
 
 ifeq ($(UNAME),NetBSD)
 # We need -idirafter instead of -I to prefer the system’s iconv over GNU libiconv
