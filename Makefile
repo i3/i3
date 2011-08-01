@@ -94,11 +94,12 @@ dist: distclean
 	[ ! -e i3-${VERSION}.tar.bz2 ] || rm i3-${VERSION}.tar.bz2
 	mkdir i3-${VERSION}
 	cp i3-migrate-config-to-v4 i3.config.keycodes DEPENDS GOALS LICENSE PACKAGE-MAINTAINER TODO RELEASE-NOTES-${VERSION} i3.config i3.desktop i3.welcome pseudo-doc.doxygen i3-wsbar Makefile i3-${VERSION}
-	cp -r src i3-msg i3-nagbar i3-config-wizard yajl-fallback include man i3-${VERSION}
+	cp -r src i3-msg i3-nagbar i3-config-wizard i3bar yajl-fallback include man i3-${VERSION}
 	# Only copy toplevel documentation (important stuff)
 	mkdir i3-${VERSION}/docs
 	# Pre-generate documentation
 	make -C docs
+	make -C i3bar/doc
 	# Cleanup τεχ output files
 	find docs -regex ".*\.\(aux\|out\|log\|toc\|bm\|dvi\|log\)" -exec rm '{}' \;
 	find docs -maxdepth 1 -type f ! \( -name "*.xcf" -or -name "*.svg" \) -exec cp '{}' i3-${VERSION}/docs \;
@@ -109,6 +110,7 @@ dist: distclean
 	# Pre-generate a manpage to allow distributors to skip this step and save some dependencies
 	$(MAKE) -C man
 	cp man/*.1 i3-${VERSION}/man/
+	cp i3bar/doc/*.1 i3-${VERSION}/i3bar/doc/
 	tar cfj i3-${VERSION}.tar.bz2 i3-${VERSION}
 	rm -rf i3-${VERSION}
 
