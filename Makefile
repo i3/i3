@@ -18,7 +18,7 @@ else
 UNUSED:=$(shell $(MAKE) loglevels.h)
 endif
 
-SUBDIRS=i3-msg i3-input i3-nagbar i3-config-wizard
+SUBDIRS=i3-msg i3-input i3-nagbar i3-config-wizard i3bar
 
 # Depend on the specific file (.c for each .o) and on all headers
 src/%.o: src/%.c ${HEADERS}
@@ -114,7 +114,7 @@ dist: distclean
 
 clean:
 	rm -f src/*.o src/*.gcno src/cfgparse.tab.{c,h} src/cfgparse.yy.c src/cfgparse.{output,dot} src/cmdparse.tab.{c,h} src/cmdparse.yy.c src/cmdparse.{output,dot} loglevels.tmp include/loglevels.h
-	(which lcov >/dev/null && lcov -d . --zerocounters) || true
+	(which lcov >/dev/null 2>&1 && lcov -d . --zerocounters) || true
 	$(MAKE) -C docs clean
 	$(MAKE) -C man clean
 	for dir in $(SUBDIRS); do \

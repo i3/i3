@@ -13,11 +13,16 @@ config.status: configure
 	dh_testdir
 	touch $@
 
-build:
+build: build-arch build-indep
+
+build-arch: build-stamp
+build-indep: build-stamp
+
+build-stamp:
 	dh_testdir
 
 	# Add here commands to compile the package.
-	$(MAKE)
+	$(MAKE) TERM_EMU=x-terminal-emulator
 	$(MAKE) -C man
 	$(MAKE) -C docs
 
@@ -45,6 +50,9 @@ install: build
 	cp man/i3.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
 	cp man/i3-msg.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
 	cp man/i3-input.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
+	cp man/i3-nagbar.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
+	cp man/i3-config-wizard.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
+	cp man/i3-migrate-config-to-v4.1 $(CURDIR)/debian/i3-wm/usr/share/man/man1
 
 
 # Build architecture-independent files here.

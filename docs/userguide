@@ -523,7 +523,7 @@ exec_always command
 
 *Examples*:
 --------------------------------
-exec i3status | dzen2 -dock
+exec i3status | i3bar -d
 exec_always ~/my_script.sh
 --------------------------------
 
@@ -572,12 +572,6 @@ client.unfocused::
 	A client which is not the focused one of its container.
 client.urgent::
 	A client which has its urgency hint activated.
-bar.focused::
-	The current workspace in the bottom bar.
-bar.unfocused::
-	All other workspaces in the bottom bar.
-bar.urgent::
-	A workspace which has at least one client with an activated urgency hint.
 
 You can also specify the color to be used to paint the background of the client
 windows. This color will be used to paint the window on top of which the client

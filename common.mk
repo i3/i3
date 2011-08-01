@@ -71,6 +71,12 @@ LIBS += $(call ldflags_for_lib, x11, X11)
 LIBS += $(call ldflags_for_lib, yajl, yajl)
 LIBS += $(call ldflags_for_lib, libev, ev)
 
+# Please test if -Wl,--as-needed works on your platform and send me a patch.
+# it is known not to work on Darwin (Mac OS X)
+ifneq (,$(filter Linux GNU GNU/%, $(UNAME)))
+LDFLAGS += -Wl,--as-needed
+endif
+
 ifeq ($(UNAME),NetBSD)
 # We need -idirafter instead of -I to prefer the system’s iconv over GNU libiconv
 CFLAGS += -idirafter /usr/pkg/include
@@ -93,7 +99,7 @@ endif
 
 # Fallback for libyajl 1 which did not include yajl_version.h. We need
 # YAJL_MAJOR from that file to decide which code path should be used.
-CFLAGS += -idirafter yajl-fallback
+CFLAGS += -idirafter $(TOPDIR)/yajl-fallback
 
 ifneq (,$(filter Linux GNU GNU/%, $(UNAME)))
 CPPFLAGS += -D_GNU_SOURCE
