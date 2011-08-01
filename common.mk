@@ -71,6 +71,8 @@ LIBS += $(call ldflags_for_lib, x11, X11)
 LIBS += $(call ldflags_for_lib, yajl, yajl)
 LIBS += $(call ldflags_for_lib, libev, ev)
 
+LDFLAGS += -Wl,--as-needed
+
 ifeq ($(UNAME),NetBSD)
 # We need -idirafter instead of -I to prefer the system’s iconv over GNU libiconv
 CFLAGS += -idirafter /usr/pkg/include
