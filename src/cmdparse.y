@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <float.h>
 
 #include "all.h"
 
@@ -104,6 +105,14 @@ char *parse_cmd(const char *new) {
     FREE(context->compact_error);
     free(context);
     return json_output;
+}
+
+/*
+ * Returns true if a is definitely greater than b (using the given epsilon)
+ *
+ */
+bool definitelyGreaterThan(float a, float b, float epsilon) {
+    return (a - b) > ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon);
 }
 
 %}
@@ -807,10 +816,21 @@ resize:
                 focused->percent = percentage;
             if (other->percent == 0.0)
                 other->percent = percentage;
-            focused->percent += ((double)ppt / 100.0);
-            other->percent -= ((double)ppt / 100.0);
-            LOG("focused->percent after = %f\n", focused->percent);
-            LOG("other->percent after = %f\n", other->percent);
+            double new_focused_percent = focused->percent + ((double)ppt / 100.0);
+            double new_other_percent = other->percent - ((double)ppt / 100.0);
+            LOG("new_focused_percent = %f\n", new_focused_percent);
+            LOG("new_other_percent = %f\n", new_other_percent);
+            /* Ensure that the new percentages are positive and greater than
+             * 0.05 to have a reasonable minimum size. */
+            if (definitelyGreaterThan(new_focused_percent, 0.05, DBL_EPSILON) &&
+                definitelyGreaterThan(new_other_percent, 0.05, DBL_EPSILON)) {
+                focused->percent += ((double)ppt / 100.0);
+                other->percent -= ((double)ppt / 100.0);
+                LOG("focused->percent after = %f\n", focused->percent);
+                LOG("other->percent after = %f\n", other->percent);
+            } else {
+                LOG("Not resizing, already at minimum size\n");
+            }
         }
 
         tree_render();
