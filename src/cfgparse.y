@@ -685,6 +685,11 @@ matchend:
     ;
 
 criteria:
+    criteria criterion
+    | criterion
+    ;
+
+criterion:
     TOK_CLASS '=' STR
     {
         printf("criteria: class = %s\n", $3);
