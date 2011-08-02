@@ -223,7 +223,12 @@ $stdin = AnyEvent->io(
     fh => \*STDIN,
     poll => 'r',
     cb => sub {
-        chomp (my $line = <STDIN>);
+        my $line = <STDIN>;
+        if (!defined($line)) {
+            undef $stdin;
+            return;
+        }
+        chomp($line);
         $last_line = $line;
         update_output();
     });
