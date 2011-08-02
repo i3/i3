@@ -1,7 +1,7 @@
 package i3test;
 # vim:ts=4:sw=4:expandtab
 
-use File::Temp qw(tmpnam);
+use File::Temp qw(tmpnam tempfile tempdir);
 use Test::Builder;
 use X11::XCB::Rect;
 use X11::XCB::Window;
@@ -11,13 +11,17 @@ use List::Util qw(first);
 use List::MoreUtils qw(lastval);
 use Time::HiRes qw(sleep);
 use Try::Tiny;
+use Cwd qw(abs_path);
+use Proc::Background;
+
 use v5.10;
 
 use Exporter ();
-our @EXPORT = qw(get_workspace_names get_unused_workspace fresh_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live exit_gracefully workspace_exists focused_ws get_socket_path);
+our @EXPORT = qw(get_workspace_names get_unused_workspace fresh_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live exit_gracefully workspace_exists focused_ws get_socket_path launch_with_config);
 
 my $tester = Test::Builder->new();
 my $_cached_socket_path = undef;
+my $tmp_socket_path = undef;
 
 BEGIN {
     my $window_count = 0;
@@ -227,6 +231,35 @@ sub get_socket_path {
     my $socketpath = $reply->{value};
     $_cached_socket_path = $socketpath;
     return $socketpath;
+}
+
+#
+# launches a new i3 process with the given string as configuration file.
+# useful for tests which test specific config file directives.
+#
+# be sure to use !NO_I3_INSTANCE! somewhere in the file to signal
+# complete-run.pl that it should not create an instance of i3
+#
+sub launch_with_config {
+    my ($config) = @_;
+
+    if (!defined($tmp_socket_path)) {
+        $tmp_socket_path = File::Temp::tempnam('/tmp', 'i3-test-socket-');
+    }
+
+    my ($fh, $tmpfile) = tempfile('i3-test-config-XXXXX', UNLINK => 1);
+    say $fh $config;
+    say $fh "ipc-socket $tmp_socket_path";
+    close($fh);
+
+    my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
+    my $process = Proc::Background->new($i3cmd);
+    sleep 1;
+
+    # force update of the cached socket path in lib/i3test
+    get_socket_path(0);
+
+    return $process;
 }
 
 1
