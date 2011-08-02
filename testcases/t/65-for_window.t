@@ -224,4 +224,60 @@ ok($content[0]->{focused}, 'first node focused');
 
 exit_gracefully($process->pid);
 
+##############################################################
+# 4: multiple criteria for the for_window command
+##############################################################
+
+($fh, $tmpfile) = tempfile();
+say $fh "# i3 config file (v4)";
+say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
+say $fh "ipc-socket $socketpath";
+say $fh q|for_window [class="borderless" title="usethis"] border none|;
+close($fh);
+
+diag("Starting i3");
+my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/tmp/a 2>/dev/null";
+my $process = Proc::Background->new($i3cmd);
+sleep 1;
+
+# force update of the cached socket path in lib/i3test
+get_socket_path(0);
+
+$tmp = fresh_workspace;
+
+$window = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#00ff00',
+);
+
+$window->_create;
+
+set_wm_class($window->id, 'borderless', 'borderless');
+$window->name('usethis');
+$window->map;
+sleep 0.25;
+
+@content = @{get_ws_content($tmp)};
+cmp_ok(@content, '==', 1, 'one node on this workspace now');
+is($content[0]->{border}, 'none', 'no border');
+
+$window->unmap;
+sleep 0.25;
+
+@content = @{get_ws_content($tmp)};
+cmp_ok(@content, '==', 0, 'no nodes on this workspace now');
+
+set_wm_class($window->id, 'borderless', 'borderless');
+$window->name('notthis');
+$window->map;
+sleep 0.25;
+
+@content = @{get_ws_content($tmp)};
+cmp_ok(@content, '==', 1, 'one node on this workspace now');
+is($content[0]->{border}, 'normal', 'no border');
+
+
+exit_gracefully($process->pid);
+
 done_testing;
