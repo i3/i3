@@ -39,4 +39,16 @@ void ewmh_update_active_window(xcb_window_t window);
  */
 void ewmh_update_workarea();
 
+/**
+ * Updates the _NET_CLIENT_LIST_STACKING hint. Necessary to move tabs in
+ * Chromium correctly.
+ *
+ * EWMH: These arrays contain all X Windows managed by the Window Manager.
+ * _NET_CLIENT_LIST has initial mapping order, starting with the oldest window.
+ * _NET_CLIENT_LIST_STACKING has bottom-to-top stacking order. These properties
+ * SHOULD be set and updated by the Window Manager.
+ *
+ */
+void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows);
+
 #endif
