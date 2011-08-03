@@ -387,6 +387,7 @@ void init_ws_for_output(Output *output, Con *content) {
             ws->name[strlen(ws->name)-1] = '\0';
         DLOG("trying name *%s*\n", ws->name);
 
+        current = NULL;
         TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
             GREP_FIRST(current, output_get_content(out), !strcasecmp(child->name, ws->name));
 
@@ -404,6 +405,7 @@ void init_ws_for_output(Output *output, Con *content) {
         FREE(ws->name);
         asprintf(&(ws->name), "%d", c);
 
+        current = NULL;
         TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
             GREP_FIRST(current, output_get_content(out), !strcasecmp(child->name, ws->name));
         exists = (current != NULL);
