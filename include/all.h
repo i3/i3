@@ -23,6 +23,7 @@
 #include <err.h>
 #include <stdint.h>
 #include <math.h>
+#include <limits.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
