@@ -991,7 +991,7 @@ assign:
         /* Compatibility with older versions: If the assignment target starts
          * with ~, we create the equivalent of:
          *
-         * for_window [class="foo"] mode floating
+         * for_window [class="foo"] floating enable
          */
         if (*workspace == '~') {
             workspace++;
