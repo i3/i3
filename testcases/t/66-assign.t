@@ -5,17 +5,11 @@
 # Tests if assignments work
 #
 use i3test;
-use Cwd qw(abs_path);
-use Proc::Background;
-use File::Temp qw(tempfile tempdir);
 use X11::XCB qw(:all);
 use X11::XCB::Connection;
 use v5.10;
 
 my $x = X11::XCB::Connection->new;
-
-# assuming we are run by complete-run.pl
-my $i3_path = abs_path("../i3");
 
 # TODO: move to X11::XCB
 sub set_wm_class {
@@ -41,23 +35,12 @@ sub set_wm_class {
 # start a window and see that it does not get assigned with an empty config
 #####################################################################
 
-my $socketpath = File::Temp::tempnam('/tmp', 'i3-test-socket-');
+my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+EOT
 
-my ($fh, $tmpfile) = tempfile();
-say $fh "# i3 config file (v4)";
-say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket $socketpath";
-close($fh);
-
-diag("Starting i3");
-my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
-my $process = Proc::Background->new($i3cmd);
-sleep 1;
-
-# force update of the cached socket path in lib/i3test
-get_socket_path(0);
-
-diag("pid = " . $process->pid);
+my $process = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -88,22 +71,13 @@ sleep 0.25;
 # workspace
 #####################################################################
 
-($fh, $tmpfile) = tempfile();
-say $fh "# i3 config file (v4)";
-say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket $socketpath";
-say $fh q|assign "special" → targetws|;
-close($fh);
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+assign "special" → targetws
+EOT
 
-diag("Starting i3");
-$i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
-$process = Proc::Background->new($i3cmd);
-sleep 1;
-
-# force update of the cached socket path in lib/i3test
-get_socket_path(0);
-
-diag("pid = " . $process->pid);
+$process = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -137,15 +111,7 @@ sleep 0.25;
 # already, next to the existing node.
 #####################################################################
 
-diag("Starting i3");
-$i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
-$process = Proc::Background->new($i3cmd);
-sleep 1;
-
-# force update of the cached socket path in lib/i3test
-get_socket_path(0);
-
-diag("pid = " . $process->pid);
+$process = launch_with_config($config);
 
 # initialize the target workspace, then go to a fresh one
 ok(!("targetws" ~~ @{get_workspace_names()}), 'targetws does not exist yet');
@@ -180,22 +146,13 @@ exit_gracefully($process->pid);
 # already, next to the existing node.
 #####################################################################
 
-($fh, $tmpfile) = tempfile();
-say $fh "# i3 config file (v4)";
-say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket $socketpath";
-say $fh q|assign "special" → ~|;
-close($fh);
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+assign "special" → ~
+EOT
 
-diag("Starting i3");
-$i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
-$process = Proc::Background->new($i3cmd);
-sleep 1;
-
-# force update of the cached socket path in lib/i3test
-get_socket_path(0);
-
-diag("pid = " . $process->pid);
+$process = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
