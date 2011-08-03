@@ -6,39 +6,22 @@
 #
 
 use i3test;
-use Cwd qw(abs_path);
-use Proc::Background;
-use File::Temp qw(tempfile tempdir);
 use X11::XCB qw(:all);
 use X11::XCB::Connection;
 
 my $x = X11::XCB::Connection->new;
-
-# assuming we are run by complete-run.pl
-my $i3_path = abs_path("../i3");
 
 #####################################################################
 # 1: check that with an empty config, cons are place next to each
 # other and no split containers are created
 #####################################################################
 
-my $socketpath = File::Temp::tempnam('/tmp', 'i3-test-socket-');
+my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+EOT
 
-my ($fh, $tmpfile) = tempfile();
-say $fh "# i3 config file (v4)";
-say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket $socketpath";
-close($fh);
-
-diag("Starting i3");
-my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
-my $process = Proc::Background->new($i3cmd);
-sleep 1;
-
-# force update of the cached socket path in lib/i3test
-get_socket_path(0);
-
-diag("pid = " . $process->pid);
+my $process = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -59,22 +42,13 @@ exit_gracefully($process->pid);
 # they end up in a stacked con
 #####################################################################
 
-($fh, $tmpfile) = tempfile();
-say $fh "# i3 config file (v4)";
-say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket $socketpath";
-say $fh "workspace_layout stacked";
-close($fh);
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+workspace_layout stacked
+EOT
 
-diag("Starting i3");
-$i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
-$process = Proc::Background->new($i3cmd);
-sleep 1;
-
-# force update of the cached socket path in lib/i3test
-get_socket_path(0);
-
-diag("pid = " . $process->pid);
+$process = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
