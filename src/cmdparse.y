@@ -785,12 +785,12 @@ resize:
                 focused->parent->rect.y -= px;
                 focused->parent->rect.height += px;
             } else if (direction == TOK_DOWN) {
-                focused->rect.height += px;
+                focused->parent->rect.height += px;
             } else if (direction == TOK_LEFT) {
-                focused->rect.x -= px;
-                focused->rect.width += px;
+                focused->parent->rect.x -= px;
+                focused->parent->rect.width += px;
             } else {
-                focused->rect.width += px;
+                focused->parent->rect.width += px;
             }
         } else {
             LOG("tiling resize\n");
