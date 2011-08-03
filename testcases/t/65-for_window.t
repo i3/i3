@@ -6,14 +6,8 @@
 use X11::XCB qw(:all);
 use X11::XCB::Connection;
 use i3test;
-use Cwd qw(abs_path);
-use Proc::Background;
-use File::Temp qw(tempfile tempdir);
 
 my $x = X11::XCB::Connection->new;
-
-# assuming we are run by complete-run.pl
-my $i3_path = abs_path("../i3");
 
 ##############################################################
 # 1: test the following directive:
@@ -23,22 +17,14 @@ my $i3_path = abs_path("../i3");
 # "borderless" (should get no border)
 ##############################################################
 
-my $socketpath = File::Temp::tempnam('/tmp', 'i3-test-socket-');
+my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [class="borderless"] border none
+for_window [title="special borderless title"] border none
+EOT
 
-my ($fh, $tmpfile) = tempfile();
-say $fh "# i3 config file (v4)";
-say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket $socketpath";
-say $fh q|for_window [class="borderless"] border none|;
-close($fh);
-
-diag("Starting i3");
-my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
-my $process = Proc::Background->new($i3cmd);
-sleep 1;
-
-# force update of the cached socket path in lib/i3test
-get_socket_path(0);
+my $process = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -112,21 +98,14 @@ exit_gracefully($process->pid);
 # only once
 ##############################################################
 
-($fh, $tmpfile) = tempfile();
-say $fh "# i3 config file (v4)";
-say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket $socketpath";
-say $fh q|for_window [class="borderless"] border none|;
-say $fh q|for_window [title="special borderless title"] border none|;
-close($fh);
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [class="borderless"] border none
+for_window [title="special borderless title"] border none
+EOT
 
-diag("Starting i3");
-my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
-my $process = Proc::Background->new($i3cmd);
-sleep 1;
-
-# force update of the cached socket path in lib/i3test
-get_socket_path(0);
+$process = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -176,22 +155,16 @@ exit_gracefully($process->pid);
 # 3: match on the title, set border style *and* a mark
 ##############################################################
 
-($fh, $tmpfile) = tempfile();
-say $fh "# i3 config file (v4)";
-say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket $socketpath";
-say $fh q|for_window [class="borderless"] border none|;
-say $fh q|for_window [title="special borderless title"] border none|;
-say $fh q|for_window [title="special mark title"] border none, mark bleh|;
-close($fh);
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [class="borderless" title="usethis"] border none
+for_window [class="borderless"] border none
+for_window [title="special borderless title"] border none
+for_window [title="special mark title"] border none, mark bleh
+EOT
 
-diag("Starting i3");
-my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
-my $process = Proc::Background->new($i3cmd);
-sleep 1;
-
-# force update of the cached socket path in lib/i3test
-get_socket_path(0);
+$process = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -228,20 +201,13 @@ exit_gracefully($process->pid);
 # 4: multiple criteria for the for_window command
 ##############################################################
 
-($fh, $tmpfile) = tempfile();
-say $fh "# i3 config file (v4)";
-say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket $socketpath";
-say $fh q|for_window [class="borderless" title="usethis"] border none|;
-close($fh);
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [class="borderless" title="usethis"] border none
+EOT
 
-diag("Starting i3");
-my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/tmp/a 2>/dev/null";
-my $process = Proc::Background->new($i3cmd);
-sleep 1;
-
-# force update of the cached socket path in lib/i3test
-get_socket_path(0);
+$process = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
