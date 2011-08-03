@@ -3,7 +3,6 @@
  */
 #include <ev.h>
 #include <fcntl.h>
-#include <limits.h>
 #include "all.h"
 
 static int xkb_event_base;

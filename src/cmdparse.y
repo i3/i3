@@ -13,7 +13,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <limits.h>
 #include <float.h>
 
 #include "all.h"

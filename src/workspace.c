@@ -7,8 +7,6 @@
  * workspace.c: Functions for modifying workspaces
  *
  */
-#include <limits.h>
-
 #include "all.h"
 
 /*
