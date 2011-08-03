@@ -365,36 +365,43 @@ void init_ws_for_output(Output *output, Con *content) {
     DLOG("Now adding a workspace\n");
 
     /* add a workspace to this output */
+    Con *out, *current;
+    bool exists = true;
     Con *ws = con_new(NULL, NULL);
     ws->type = CT_WORKSPACE;
+
+    /* try the configured workspace bindings first to find a free name */
+    Binding *bind;
+    TAILQ_FOREACH(bind, bindings, bindings) {
+        DLOG("binding with command %s\n", bind->command);
+        if (strlen(bind->command) < strlen("workspace ") ||
+            strncasecmp(bind->command, "workspace", strlen("workspace")) != 0)
+            continue;
+        DLOG("relevant command = %s\n", bind->command);
+        FREE(ws->name);
+        ws->name = strdup(bind->command + strlen("workspace "));
+        DLOG("trying name *%s*\n", ws->name);
+
+        TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
+            GREP_FIRST(current, output_get_content(out), !strcasecmp(child->name, ws->name));
+
+        exists = (current != NULL);
+        if (!exists)
+            break;
+    }
 
     /* get the next unused workspace number */
     DLOG("Getting next unused workspace\n");
     int c = 0;
-    bool exists = true;
     while (exists) {
-        Con *out, *current, *child;
-
         c++;
 
         FREE(ws->name);
         asprintf(&(ws->name), "%d", c);
 
-        exists = false;
-        TAILQ_FOREACH(out, &(croot->nodes_head), nodes) {
-            TAILQ_FOREACH(current, &(out->nodes_head), nodes) {
-                if (current->type != CT_CON)
-                    continue;
-
-                TAILQ_FOREACH(child, &(current->nodes_head), nodes) {
-                    if (strcasecmp(child->name, ws->name) != 0)
-                        continue;
-
-                    exists = true;
-                    break;
-                }
-            }
-        }
+        TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
+            GREP_FIRST(current, output_get_content(out), !strcasecmp(child->name, ws->name));
+        exists = (current != NULL);
 
         DLOG("result for ws %s / %d: exists = %d\n", ws->name, c, exists);
     }
