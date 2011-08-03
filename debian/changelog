@@ -1,3 +1,13 @@
+i3-wm (4.0.1-1) unstable; urgency=low
+
+  * Fix the build process of i3bar (Closes: #636274)
+  * Fix the build process on Mac OS X
+  * i3-config-wizard: also start i3bar in the keycode config template
+  * userguide: Remove the obsolete bar.* colors
+  * userguide: Use i3bar instead of dzen2 in the 'exec' example
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Mon, 01 Aug 2011 23:31:06 +0200
+
 i3-wm (4.0-1) unstable; urgency=low
 
   * In addition to the proper flex/bison based parser for the config file
