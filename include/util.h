@@ -30,6 +30,10 @@
     for (Con *child = (Con*)-1; (child == (Con*)-1) && ((child = 0), true);) \
         TAILQ_FOREACH(child, &((head)->nodes_head), nodes)
 
+#define NODES_FOREACH_REVERSE(head) \
+    for (Con *child = (Con*)-1; (child == (Con*)-1) && ((child = 0), true);) \
+        TAILQ_FOREACH_REVERSE(child, &((head)->nodes_head), nodes_head, nodes)
+
 /* greps the ->nodes of the given head and returns the first node that matches the given condition */
 #define GREP_FIRST(dest, head, condition) \
     NODES_FOREACH(head) { \
