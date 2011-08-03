@@ -7,6 +7,11 @@
 /* Stores the X11 window ID of the currently focused window */
 xcb_window_t focused_id = XCB_NONE;
 
+/* The bottom-to-top window stack of all windows which are managed by i3.
+ * Used for x_get_window_stack(). */
+static xcb_window_t *btt_stack;
+static int btt_stack_num;
+
 /*
  * Describes the X11 state we may modify (map state, position, window stack).
  * There is one entry per container. The state represents the current situation
@@ -20,6 +25,9 @@ typedef struct con_state {
     bool mapped;
     bool unmap_now;
     bool child_mapped;
+
+    /** The con for which this state is. */
+    Con *con;
 
     /* For reparenting, we have a flag (need_reparent) and the X ID of the old
      * frame this window was in. The latter is necessary because we need to
@@ -112,6 +120,7 @@ void x_reinit(Con *con) {
     DLOG("resetting state %p to initial\n", state);
     state->initial = true;
     state->child_mapped = false;
+    state->con = con;
     memset(&(state->window_rect), 0, sizeof(Rect));
 }
 
@@ -147,6 +156,9 @@ void x_move_win(Con *src, Con *dest) {
         ELOG("window state for dest not found\n");
         return;
     }
+
+    state_dest->con = state_src->con;
+    state_src->con = NULL;
 
     Rect zero = { 0, 0, 0, 0 };
     if (memcmp(&(state_dest->window_rect), &(zero), sizeof(Rect)) == 0) {
@@ -753,14 +765,31 @@ void x_push_changes(Con *con) {
     }
     //DLOG("Done, EnterNotify disabled\n");
     bool order_changed = false;
+
+    /* count first, necessary to (re)allocate memory for the bottom-to-top
+     * stack afterwards */
+    int cnt = 0;
+    CIRCLEQ_FOREACH_REVERSE(state, &state_head, state)
+        if (state->con && state->con->window)
+            cnt++;
+
+    if (cnt != btt_stack_num) {
+        btt_stack = srealloc(btt_stack, sizeof(xcb_window_t) * cnt);
+        btt_stack_num = cnt;
+    }
+
+    xcb_window_t *walk = btt_stack;
+
     /* X11 correctly represents the stack if we push it from bottom to top */
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
+        if (state->con && state->con->window)
+            memcpy(walk++, &(state->con->window->id), sizeof(xcb_window_t));
+
         //DLOG("stack: 0x%08x\n", state->id);
         con_state *prev = CIRCLEQ_PREV(state, state);
         con_state *old_prev = CIRCLEQ_PREV(state, old_state);
-        if (prev != old_prev)
+        if ((prev != old_prev || state->initial) && prev != CIRCLEQ_END(&state_head)) {
             order_changed = true;
-        if ((state->initial || order_changed) && prev != CIRCLEQ_END(&state_head)) {
             DLOG("Stacking 0x%08x above 0x%08x\n", prev->id, state->id);
             uint32_t mask = 0;
             mask |= XCB_CONFIG_WINDOW_SIBLING;
@@ -771,6 +800,12 @@ void x_push_changes(Con *con) {
         }
         state->initial = false;
     }
+
+    /* If we re-stacked something (or a new window appeared), we need to update
+     * the _NET_CLIENT_LIST_STACKING hint */
+    if (order_changed)
+        ewmh_update_client_list_stacking(btt_stack, btt_stack_num);
+
     //DLOG("Re-enabling EnterNotify\n");
     values[0] = FRAME_EVENT_MASK;
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {

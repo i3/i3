@@ -77,7 +77,8 @@ void *scalloc(size_t size) {
 
 void *srealloc(void *ptr, size_t size) {
     void *result = realloc(ptr, size);
-    exit_if_null(result, "Error: out memory (realloc(%zd))\n", size);
+    if (result == NULL && size > 0)
+        die("Error: out memory (realloc(%zd))\n", size);
     return result;
 }
 

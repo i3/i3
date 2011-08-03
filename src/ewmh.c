@@ -110,3 +110,20 @@ void ewmh_update_workarea() {
     free(workarea);
     xcb_flush(conn);
 }
+
+/*
+ * Updates the _NET_CLIENT_LIST_STACKING hint.
+ *
+ */
+void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows) {
+    DLOG("Updating _NET_CLIENT_LIST_STACKING\n");
+    xcb_change_property(
+        conn,
+        XCB_PROP_MODE_REPLACE,
+        root,
+        A__NET_CLIENT_LIST_STACKING,
+        A_WINDOW,
+        32,
+        num_windows,
+        stack);
+}
