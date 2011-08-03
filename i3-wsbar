@@ -167,19 +167,28 @@ sub output_change {
 sub update_output {
     my $dzen_bg = "#111111";
     my $out;
+    my $previous_output;
 
     for my $name (keys %{$outputs}) {
         my $width = $outputs->{$name}->{rect}->{width};
 
+        $previous_output = undef;
         $out = qq|^pa(;2)|;
         for my $ws (@{$workspaces}) {
             next if $ws->{output} ne $name and !$show_all;
+
+            # Display a separator if we are on a different output now
+            if (defined($previous_output) and
+                ($ws->{output} ne $previous_output)) {
+                $out .= qq|^fg(#900000)^ib(1)\|^ib(0)^p(+4)|;
+            }
+            $previous_output = $ws->{output};
 
             my ($bg, $fg) = qw(333333 888888);
             ($bg, $fg) = qw(4c7899 ffffff) if $ws->{visible};
             ($bg, $fg) = qw(900000 ffffff) if $ws->{urgent};
 
-            my $cmd = q|i3-msg "| . $ws->{num} . q|"|;
+            my $cmd = q|i3-msg "workspace | . $ws->{name} . q|"|;
             my $name = $ws->{name};
 
             # Begin the clickable area
@@ -223,7 +232,12 @@ $stdin = AnyEvent->io(
     fh => \*STDIN,
     poll => 'r',
     cb => sub {
-        chomp (my $line = <STDIN>);
+        my $line = <STDIN>;
+        if (!defined($line)) {
+            undef $stdin;
+            return;
+        }
+        chomp($line);
         $last_line = $line;
         update_output();
     });
