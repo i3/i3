@@ -378,8 +378,13 @@ void init_ws_for_output(Output *output, Con *content) {
             strncasecmp(bind->command, "workspace", strlen("workspace")) != 0)
             continue;
         DLOG("relevant command = %s\n", bind->command);
+        char *target = bind->command + strlen("workspace ");
+        if (*target == '"')
+            target++;
         FREE(ws->name);
-        ws->name = strdup(bind->command + strlen("workspace "));
+        ws->name = strdup(target);
+        if (ws->name[strlen(ws->name)-1] == '"')
+            ws->name[strlen(ws->name)-1] = '\0';
         DLOG("trying name *%s*\n", ws->name);
 
         TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
