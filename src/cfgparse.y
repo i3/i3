@@ -346,11 +346,13 @@ static void check_for_duplicate_bindings(struct context *context) {
                 bind->mods != current->mods)
                 continue;
             context->has_errors = true;
-            fprintf(stderr, "Duplicated keybinding in config file:  mod%d with key %s", current->mods, current->symbol);
-            /* if keycode is 0, this is a keysym binding */
-            if (current->keycode != 0)
-                fprintf(stderr, " and keycode %d", current->keycode);
-            fprintf(stderr, "\n");
+            if (current->keycode != 0) {
+                ELOG("Duplicate keybinding in config file:\n  modmask %d with keycode %d, command \"%s\"\n",
+                     current->mods, current->keycode, current->command);
+            } else {
+                ELOG("Duplicate keybinding in config file:\n  modmask %d with keysym %s, command \"%s\"\n",
+                     current->mods, current->symbol, current->command);
+            }
         }
     }
 }
