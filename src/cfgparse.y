@@ -310,6 +310,35 @@ void kill_configerror_nagbar(bool wait_for_it) {
     waitpid(configerror_pid, NULL, 0);
 }
 
+/*
+    check_for_duplicate_bindings is function looking for duplicated
+    key bindings loaded from configuration file. It goes trought all bindings
+    and tests if exists same key mapping in bindings visited before.
+    If exists, message is printed to "stderr" and error warning is set.
+*/
+static bool check_for_duplicate_bindings(struct context *context) {
+    bool retval = true;
+    Binding *bind, *current;
+    TAILQ_FOREACH(current, bindings, bindings) {
+        bind = TAILQ_FIRST(bindings);
+        // test only bindings visited up to current binding
+        while ((bind != TAILQ_END(bindings)) && (bind != current)) {
+            // testing is not case sensitive
+            if ((strcasecmp(bind->symbol, current->symbol) == 0) && (bind->keycode == current->keycode) && (bind->mods == current->mods)) {
+                context->has_errors = true;
+                fprintf(stderr, "Duplicated keybinding in config file:  mod%d with key %s", current->mods, current->symbol);
+                // if keycode is 0, it´s not necessary to print it.
+                if(current->keycode != 0)
+                    fprintf(stderr, " and keycode %d", current->keycode);
+                fprintf(stderr, "\n");
+                retval = false;
+            }
+            bind = TAILQ_NEXT(bind, bindings);
+        }
+    }
+    return retval;
+}
+
 void parse_file(const char *f) {
     SLIST_HEAD(variables_head, Variable) variables = SLIST_HEAD_INITIALIZER(&variables);
     int fd, ret, read_bytes = 0;
@@ -462,6 +491,8 @@ void parse_file(const char *f) {
         fprintf(stderr, "Could not parse configfile\n");
         exit(1);
     }
+
+    check_for_duplicate_bindings(context);
 
     if (context->has_errors) {
         start_configerror_nagbar(f);
