@@ -153,24 +153,17 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
 
 #if YAJL_MAJOR >= 2
 static int json_int(void *ctx, long long val) {
+    LOG("int %lld for key %s\n", val, last_key);
 #else
 static int json_int(void *ctx, long val) {
+    LOG("int %ld for key %s\n", val, last_key);
 #endif
-    LOG("int %d for key %s\n", val, last_key);
-    // TODO: remove this after the next preview release
-    if (strcasecmp(last_key, "layout") == 0) {
-        json_node->layout = val;
-    }
     if (strcasecmp(last_key, "type") == 0) {
         json_node->type = val;
     }
     if (strcasecmp(last_key, "fullscreen_mode") == 0) {
         json_node->fullscreen_mode = val;
     }
-    if (strcasecmp(last_key, "focused") == 0 && val == 1) {
-        to_focus = json_node;
-    }
-
     if (strcasecmp(last_key, "num") == 0)
         json_node->num = val;
 
@@ -208,6 +201,15 @@ static int json_int(void *ctx, long val) {
     return 1;
 }
 
+static int json_bool(void *ctx, int val) {
+    LOG("bool %d for key %s\n", val, last_key);
+    if (strcasecmp(last_key, "focused") == 0 && val) {
+        to_focus = json_node;
+    }
+
+    return 1;
+}
+
 static int json_double(void *ctx, double val) {
     LOG("double %f for key %s\n", val, last_key);
     if (strcasecmp(last_key, "percent") == 0) {
@@ -237,6 +239,7 @@ void tree_append_json(const char *filename) {
     callbacks.yajl_map_key = json_key;
     callbacks.yajl_integer = json_int;
     callbacks.yajl_double = json_double;
+    callbacks.yajl_boolean = json_bool;
 #if YAJL_MAJOR >= 2
     g = yajl_gen_alloc(NULL);
     hand = yajl_alloc(&callbacks, NULL, (void*)g);
