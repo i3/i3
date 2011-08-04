@@ -246,4 +246,71 @@ is($content[0]->{border}, 'normal', 'no border');
 
 exit_gracefully($process->pid);
 
+##############################################################
+# 5: check that a class criterion does not match the instance
+##############################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [class="foo"] border 1pixel
+EOT
+
+$process = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+$window = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#00ff00',
+);
+
+$window->_create;
+
+set_wm_class($window->id, 'bar', 'foo');
+$window->name('usethis');
+$window->map;
+sleep 0.25;
+
+@content = @{get_ws_content($tmp)};
+cmp_ok(@content, '==', 1, 'one node on this workspace now');
+is($content[0]->{border}, 'normal', 'normal border, not matched');
+
+exit_gracefully($process->pid);
+
+##############################################################
+# 6: check that the 'instance' criterion works
+##############################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [class="foo"] border 1pixel
+for_window [instance="foo"] border none
+EOT
+
+$process = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+$window = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#00ff00',
+);
+
+$window->_create;
+
+set_wm_class($window->id, 'bar', 'foo');
+$window->name('usethis');
+$window->map;
+sleep 0.25;
+
+@content = @{get_ws_content($tmp)};
+cmp_ok(@content, '==', 1, 'one node on this workspace now');
+is($content[0]->{border}, 'none', 'no border');
+
+exit_gracefully($process->pid);
+
 done_testing;
