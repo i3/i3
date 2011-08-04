@@ -175,6 +175,7 @@ bool definitelyGreaterThan(float a, float b, float epsilon) {
 %token              TOK_NOP             "nop"
 
 %token              TOK_CLASS           "class"
+%token              TOK_INSTANCE        "instance"
 %token              TOK_ID              "id"
 %token              TOK_CON_ID          "con_id"
 %token              TOK_TITLE           "title"
@@ -299,6 +300,11 @@ criterion:
     {
         printf("criteria: class = %s\n", $3);
         current_match.class = $3;
+    }
+    | TOK_INSTANCE '=' STR
+    {
+        printf("criteria: instance = %s\n", $3);
+        current_match.instance = $3;
     }
     | TOK_CON_ID '=' STR
     {

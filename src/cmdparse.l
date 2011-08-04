@@ -153,6 +153,7 @@ false                           { return TOK_DISABLE; }
 no                              { return TOK_DISABLE; }
 
 class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
+instance                        { BEGIN(WANT_QSTRING); return TOK_INSTANCE; }
 id                              { BEGIN(WANT_QSTRING); return TOK_ID; }
 con_id                          { BEGIN(WANT_QSTRING); return TOK_CON_ID; }
 con_mark                        { BEGIN(WANT_QSTRING); return TOK_MARK; }
