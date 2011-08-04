@@ -399,11 +399,11 @@ void x_draw_decoration(Con *con) {
     xcb_change_gc_single(conn, parent->pm_gc, XCB_GC_FOREGROUND, p->color->border);
     Rect *dr = &(con->deco_rect);
     xcb_segment_t segments[] = {
-        { dr->x,             dr->y,
-          dr->x + dr->width, dr->y },
+        { dr->x,                 dr->y,
+          dr->x + dr->width - 1, dr->y },
 
-        { dr->x,             dr->y + dr->height - 1,
-          dr->x + dr->width, dr->y + dr->height - 1 }
+        { dr->x + 2,             dr->y + dr->height - 1,
+          dr->x + dr->width - 3, dr->y + dr->height - 1 }
     };
     xcb_poly_segment(conn, parent->pixmap, parent->pm_gc, 2, segments);
 
