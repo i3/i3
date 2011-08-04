@@ -153,10 +153,11 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
 
 #if YAJL_MAJOR >= 2
 static int json_int(void *ctx, long long val) {
+    LOG("int %lld for key %s\n", val, last_key);
 #else
 static int json_int(void *ctx, long val) {
+    LOG("int %ld for key %s\n", val, last_key);
 #endif
-    LOG("int %d for key %s\n", val, last_key);
     if (strcasecmp(last_key, "type") == 0) {
         json_node->type = val;
     }
