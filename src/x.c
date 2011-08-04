@@ -765,6 +765,7 @@ void x_push_changes(Con *con) {
     }
     //DLOG("Done, EnterNotify disabled\n");
     bool order_changed = false;
+    bool stacking_changed = false;
 
     /* count first, necessary to (re)allocate memory for the bottom-to-top
      * stack afterwards */
@@ -788,8 +789,10 @@ void x_push_changes(Con *con) {
         //DLOG("stack: 0x%08x\n", state->id);
         con_state *prev = CIRCLEQ_PREV(state, state);
         con_state *old_prev = CIRCLEQ_PREV(state, old_state);
-        if ((prev != old_prev || state->initial) && prev != CIRCLEQ_END(&state_head)) {
+        if (prev != old_prev)
             order_changed = true;
+        if ((state->initial || order_changed) && prev != CIRCLEQ_END(&state_head)) {
+            stacking_changed = true;
             DLOG("Stacking 0x%08x above 0x%08x\n", prev->id, state->id);
             uint32_t mask = 0;
             mask |= XCB_CONFIG_WINDOW_SIBLING;
@@ -803,7 +806,7 @@ void x_push_changes(Con *con) {
 
     /* If we re-stacked something (or a new window appeared), we need to update
      * the _NET_CLIENT_LIST_STACKING hint */
-    if (order_changed)
+    if (stacking_changed)
         ewmh_update_client_list_stacking(btt_stack, btt_stack_num);
 
     //DLOG("Re-enabling EnterNotify\n");
