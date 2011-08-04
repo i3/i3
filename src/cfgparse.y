@@ -317,29 +317,42 @@ void kill_configerror_nagbar(bool wait_for_it) {
  * i3-nagbar.
  *
  */
-static bool check_for_duplicate_bindings(struct context *context) {
-    bool retval = true;
+static void check_for_duplicate_bindings(struct context *context) {
     Binding *bind, *current;
     TAILQ_FOREACH(current, bindings, bindings) {
-        bind = TAILQ_FIRST(bindings);
-        /* test only bindings visited up to current binding */
-        while ((bind != TAILQ_END(bindings)) && (bind != current)) {
-            /* testing is not case sensitive */
-            if ((strcasecmp(bind->symbol, current->symbol) == 0) &&
-                (bind->keycode == current->keycode) &&
-                (bind->mods == current->mods)) {
-                context->has_errors = true;
-                fprintf(stderr, "Duplicated keybinding in config file:  mod%d with key %s", current->mods, current->symbol);
-                /* if keycode is 0, this is a keysym binding */
-                if (current->keycode != 0)
-                    fprintf(stderr, " and keycode %d", current->keycode);
-                fprintf(stderr, "\n");
-                retval = false;
-            }
-            bind = TAILQ_NEXT(bind, bindings);
+        TAILQ_FOREACH(bind, bindings, bindings) {
+            /* Abort when we reach the current keybinding, only check the
+             * bindings before */
+            if (bind == current)
+                break;
+
+            /* Check if one is using keysym while the other is using bindsym.
+             * If so, skip. */
+            /* XXX: It should be checked at a later place (when translating the
+             * keysym to keycodes) if there are any duplicates */
+            if ((bind->symbol == NULL && current->symbol != NULL) ||
+                (bind->symbol != NULL && current->symbol == NULL))
+                continue;
+
+            /* If bind is NULL, current has to be NULL, too (see above).
+             * If the keycodes differ, it can't be a duplicate. */
+            if (bind->symbol != NULL &&
+                strcasecmp(bind->symbol, current->symbol) != 0)
+                continue;
+
+            /* Check if the keycodes or modifiers are different. If so, they
+             * can't be duplicate */
+            if (bind->keycode != current->keycode ||
+                bind->mods != current->mods)
+                continue;
+            context->has_errors = true;
+            fprintf(stderr, "Duplicated keybinding in config file:  mod%d with key %s", current->mods, current->symbol);
+            /* if keycode is 0, this is a keysym binding */
+            if (current->keycode != 0)
+                fprintf(stderr, " and keycode %d", current->keycode);
+            fprintf(stderr, "\n");
         }
     }
-    return retval;
 }
 
 void parse_file(const char *f) {
