@@ -144,6 +144,48 @@ Output *get_output_most(direction_t direction, Output *current) {
 }
 
 /*
+ * Gets the output which is the next one in the given direction.
+ *
+ */
+Output *get_output_next(direction_t direction, Output *current) {
+    Output *output, *candidate = NULL;
+
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (!output->active)
+            continue;
+
+        if (((direction == D_UP) || (direction == D_DOWN)) &&
+            (current->rect.x != output->rect.x))
+            continue;
+
+        if (((direction == D_LEFT) || (direction == D_RIGHT)) &&
+            (current->rect.y != output->rect.y))
+            continue;
+
+        switch (direction) {
+            case D_UP:
+                if (current->rect.y < output->rect.y && (!candidate || output->rect.y < candidate->rect.y))
+                    candidate = output;
+                break;
+            case D_DOWN:
+                if (current->rect.y > output->rect.y && (!candidate || output->rect.y > candidate->rect.y))
+                    candidate = output;
+                break;
+            case D_LEFT:
+                if (current->rect.x > output->rect.x && (!candidate || output->rect.x > candidate->rect.x))
+                    candidate = output;
+                break;
+            case D_RIGHT:
+                if (current->rect.x < output->rect.x && (!candidate || output->rect.x < candidate->rect.x))
+                    candidate = output;
+                break;
+        }
+    }
+
+    return candidate;
+}
+
+/*
  * Disables RandR support by creating exactly one output with the size of the
  * X11 screen.
  *

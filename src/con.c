@@ -773,6 +773,44 @@ Con *con_descend_tiling_focused(Con *con) {
     return next;
 }
 
+/*
+ * Recursively walk tree of nodes and check all nodes for condition.  Returns
+ * container that matches condition (i.e. leftmost, rightmost, etc.).
+ *
+ */
+Con *_con_descend_direction(Con *con, Con *next, direction_t direction) {
+    #define DESCEND_DIRECTION(condition) \
+        if (TAILQ_EMPTY(&(con->nodes_head))) \
+            if (!next || condition) \
+                next = con; \
+        NODES_FOREACH(con) \
+            next = _con_descend_direction(child, next, direction); \
+        break;
+
+    switch (direction) {
+        case D_LEFT:
+            DESCEND_DIRECTION(next->rect.x < con->rect.x)
+        case D_RIGHT:
+            DESCEND_DIRECTION(next->rect.x > con->rect.x)
+        case D_UP:
+            DESCEND_DIRECTION(next->rect.y > con->rect.y)
+        case D_DOWN:
+            DESCEND_DIRECTION(next->rect.y < con->rect.y)
+    }
+
+    return next;
+}
+
+/*
+ * Returns the leftmost, rightmost, etc. container in sub-tree. For example, if
+ * direction is D_LEFT, then we return the rightmost container and if direction
+ * is D_RIGHT, we return the leftmost container.  This is because if we are
+ * moving D_LEFT, and thus want the rightmost container.
+ *
+ */
+Con *con_descend_direction(Con *con, direction_t direction) {
+    return _con_descend_direction(con, NULL, direction);
+}
 
 /*
  * Returns a "relative" Rect which contains the amount of pixels that need to
