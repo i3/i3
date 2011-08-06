@@ -297,6 +297,11 @@ DRAGGING_CB(drag_window_callback) {
 void floating_drag_window(Con *con, xcb_button_press_event_t *event) {
     DLOG("floating_drag_window\n");
 
+    /* Push changes before dragging, so that the window gets raised now and not
+     * after the user releases the mouse button */
+    tree_render();
+
+    /* Drag the window */
     drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback, event);
     tree_render();
 }
