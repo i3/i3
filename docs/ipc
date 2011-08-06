@@ -59,6 +59,9 @@ GET_TREE (4)::
 	Gets the layout tree. i3 uses a tree as data structure which includes
 	every container. The reply will be the JSON-encoded tree (see the reply
 	section).
+GET_MARKS (5)::
+	Gets a list of marks. The reply will be a JSON-encoded list of window marks
+	(see reply section).
 
 So, a typical message could look like this:
 --------------------------------------------------
@@ -110,6 +113,8 @@ GET_OUTPUTS (3)::
 	Reply to the GET_OUTPUTS message.
 GET_TREE (4)::
 	Reply to the GET_TREE message.
+GET_MARKS (5)::
+	Reply to the GET_MARKS message.
 
 === COMMAND reply
 
@@ -416,6 +421,14 @@ JSON dump:
    }
  ]
 }
+
+
+=== GET_MARKS reply
+
+The reply consists of a single array of strings for each
+window that has a mark.
+
+If no window has a mark the response will be the empty array [].
 ------------------------
 
 

@@ -330,6 +330,7 @@ IPC_HANDLER(tree) {
     y(free);
 }
 
+
 /*
  * Formats the reply message for a GET_WORKSPACES request and sends it to the
  * client
@@ -461,6 +462,34 @@ IPC_HANDLER(get_outputs) {
 }
 
 /*
+ * Formats the reply message for a GET_MARKS request and sends it to the
+ * client
+ *
+ */
+IPC_HANDLER(get_marks) {
+#if YAJL_MAJOR >= 2
+    yajl_gen gen = yajl_gen_alloc(NULL);
+#else
+    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+#endif
+    y(array_open);
+
+    Con *con;
+    TAILQ_FOREACH(con, &all_cons, all_cons)
+        if (con->mark != NULL)
+            ystr(con->mark);
+
+    y(array_close);
+
+    const unsigned char *payload;
+    unsigned int length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_MARKS, length);
+    y(free);
+}
+
+/*
  * Callback for the YAJL parser (will be called when a string is parsed).
  *
  */
@@ -547,12 +576,13 @@ IPC_HANDLER(subscribe) {
 
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[5] = {
+handler_t handlers[6] = {
     handle_command,
     handle_get_workspaces,
     handle_subscribe,
     handle_get_outputs,
-    handle_tree
+    handle_tree,
+    handle_get_marks
 };
 
 /*
