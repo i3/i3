@@ -164,19 +164,23 @@ Output *get_output_next(direction_t direction, Output *current) {
 
         switch (direction) {
             case D_UP:
-                if (current->rect.y < output->rect.y && (!candidate || output->rect.y < candidate->rect.y))
+                if (output->rect.y < current->rect.y &&
+                    (!candidate || output->rect.y < candidate->rect.y))
                     candidate = output;
                 break;
             case D_DOWN:
-                if (current->rect.y > output->rect.y && (!candidate || output->rect.y > candidate->rect.y))
+                if (output->rect.y > current->rect.y &&
+                    (!candidate || output->rect.y > candidate->rect.y))
                     candidate = output;
                 break;
             case D_LEFT:
-                if (current->rect.x > output->rect.x && (!candidate || output->rect.x > candidate->rect.x))
+                if (output->rect.x < current->rect.x &&
+                    (!candidate || output->rect.x > candidate->rect.x))
                     candidate = output;
                 break;
             case D_RIGHT:
-                if (current->rect.x < output->rect.x && (!candidate || output->rect.x < candidate->rect.x))
+                if (output->rect.x > current->rect.x &&
+                    (!candidate || output->rect.x < candidate->rect.x))
                     candidate = output;
                 break;
         }

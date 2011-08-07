@@ -393,9 +393,9 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         else if (way == 'p' && orientation == HORIZ)
             direction = D_LEFT;
         else if (way == 'n' && orientation == VERT)
-            direction = D_UP;
-        else if (way == 'p' && orientation == VERT)
             direction = D_DOWN;
+        else if (way == 'p' && orientation == VERT)
+            direction = D_UP;
         else
             return false;
 
