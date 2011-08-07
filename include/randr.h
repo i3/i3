@@ -91,4 +91,10 @@ Output *get_output_containing(int x, int y);
  */
 Output *get_output_most(direction_t direction, Output *current);
 
+/**
+ * Gets the output which is the next one in the given direction.
+ *
+ */
+Output *get_output_next(direction_t direction, Output *current);
+
 #endif
