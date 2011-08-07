@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael+i3@stapelberg.de>
-July 2011
+August 2011
 
 This document contains all the information you need to configure and use the i3
 window manager. If it does not, please contact us on IRC (preferred) or post your
@@ -680,9 +680,10 @@ split <vertical|horizontal>
 ---------------------------
 
 *Example*:
---------------
-split vertical
---------------
+------------------------------
+bindsym mod+v split vertical
+bindsym mod+h split horizontal
+------------------------------
 
 === Manipulating layout
 
