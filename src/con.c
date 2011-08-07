@@ -781,7 +781,7 @@ Con *con_descend_tiling_focused(Con *con) {
  *
  */
 Con *con_descend_direction(Con *con, direction_t direction) {
-    Con *most;
+    Con *most = NULL;
     DLOG("con_descend_direction(%p, %d)\n", con, direction);
     if (direction == D_LEFT || direction == D_RIGHT) {
         if (con->orientation == HORIZ) {
