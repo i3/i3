@@ -774,34 +774,6 @@ Con *con_descend_tiling_focused(Con *con) {
 }
 
 /*
- * Recursively walk tree of nodes and check all nodes for condition.  Returns
- * container that matches condition (i.e. leftmost, rightmost, etc.).
- *
- */
-Con *_con_descend_direction(Con *con, Con *next, direction_t direction) {
-    #define DESCEND_DIRECTION(condition) \
-        if (TAILQ_EMPTY(&(con->nodes_head))) \
-            if (!next || condition) \
-                next = con; \
-        NODES_FOREACH(con) \
-            next = _con_descend_direction(child, next, direction); \
-        break;
-
-    switch (direction) {
-        case D_LEFT:
-            DESCEND_DIRECTION(next->rect.x < con->rect.x)
-        case D_RIGHT:
-            DESCEND_DIRECTION(next->rect.x > con->rect.x)
-        case D_UP:
-            DESCEND_DIRECTION(next->rect.y > con->rect.y)
-        case D_DOWN:
-            DESCEND_DIRECTION(next->rect.y < con->rect.y)
-    }
-
-    return next;
-}
-
-/*
  * Returns the leftmost, rightmost, etc. container in sub-tree. For example, if
  * direction is D_LEFT, then we return the rightmost container and if direction
  * is D_RIGHT, we return the leftmost container.  This is because if we are
@@ -809,7 +781,49 @@ Con *_con_descend_direction(Con *con, Con *next, direction_t direction) {
  *
  */
 Con *con_descend_direction(Con *con, direction_t direction) {
-    return _con_descend_direction(con, NULL, direction);
+    Con *most;
+    DLOG("con_descend_direction(%p, %d)\n", con, direction);
+    if (direction == D_LEFT || direction == D_RIGHT) {
+        if (con->orientation == HORIZ) {
+            /* If the direction is horizontal, we can use either the first
+             * (D_RIGHT) or the last con (D_LEFT) */
+            if (direction == D_RIGHT)
+                most = TAILQ_FIRST(&(con->nodes_head));
+            else most = TAILQ_LAST(&(con->nodes_head), nodes_head);
+        } else if (con->orientation == VERT) {
+            /* Wrong orientation. We use the last focused con. Within that con,
+             * we recurse to chose the left/right con or at least the last
+             * focused one. */
+            most = TAILQ_FIRST(&(con->focus_head));
+        } else {
+            /* If the con has no orientation set, it’s not a split container
+             * but a container with a client window, so stop recursing */
+            return con;
+        }
+    }
+
+    if (direction == D_UP || direction == D_DOWN) {
+        if (con->orientation == VERT) {
+            /* If the direction is vertical, we can use either the first
+             * (D_DOWN) or the last con (D_UP) */
+            if (direction == D_UP)
+                most = TAILQ_LAST(&(con->nodes_head), nodes_head);
+            else most = TAILQ_FIRST(&(con->nodes_head));
+        } else if (con->orientation == HORIZ) {
+            /* Wrong orientation. We use the last focused con. Within that con,
+             * we recurse to chose the top/bottom con or at least the last
+             * focused one. */
+            most = TAILQ_FIRST(&(con->focus_head));
+        } else {
+            /* If the con has no orientation set, it’s not a split container
+             * but a container with a client window, so stop recursing */
+            return con;
+        }
+    }
+
+    if (!most)
+        return con;
+    return con_descend_direction(most, direction);
 }
 
 /*
