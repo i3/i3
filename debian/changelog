@@ -1,3 +1,24 @@
+i3-wm (4.0.2-0) unstable; urgency=low
+
+  * NOT YET RELEASED!
+  * Bugfix: Correctly bind on multiple keycodes if a symbol has more than one
+  * Bugfix: Allow multiple criteria in 'for_window'
+  * Bugfix: Ensure a minimum size when using the 'resize' command
+  * Bugfix: Start on the first named workspace, not always on '1'
+  * Bugfix: Fix resize command with direction != up for floating windows
+  * Bugfix: Correctly set the _NET_CLIENT_LIST_STACKING hint (chromium tabbar)
+  * Bugfix: 'workspace <next|prev>' now takes all outputs into account
+  * Bugfix: i3-wsbar: make workspace names clickable again
+  * Bugfix: i3-wsbar: correctly handle EOF on stdin
+  * Bugfix: i3-wsbar: display a separator between workspaces of each output
+  * Bugfix: Correctly handle the 'instance' criterion (WM_CLASS)
+  * Bugfix: Use correct format string in load_layout (fixes crash in restart)
+  * Bugfix: Fix border rendering (border lines were "cutting" through)
+  * Bugfix: Raise floating windows immediately when dragging/resizing
+  * Bugfix: Make focus switching work accross outputs again
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Sun, 07 Aug 2011 18:13:29 +0200
+
 i3-wm (4.0.1-1) unstable; urgency=low
 
   * Fix the build process of i3bar (Closes: #636274)
