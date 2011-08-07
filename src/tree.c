@@ -405,19 +405,18 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         DLOG("Next output is %s\n", next_output->name);
 
         /* Find visible workspace on next output */
-        Con* workspace = NULL;
+        Con *workspace = NULL;
         GREP_FIRST(workspace, output_get_content(next_output->con), workspace_is_visible(child));
 
         /* Show next workspace and focus appropriate container if possible. */
-        if (workspace) {
-            workspace_show(workspace->name);
-            Con* focus = con_descend_direction(workspace, direction);
-            if (focus)
-                con_focus(focus);
-            return true;
-        }
+        if (!workspace)
+            return false;
 
-        return false;
+        workspace_show(workspace->name);
+        Con *focus = con_descend_direction(workspace, direction);
+        if (focus)
+            con_focus(focus);
+        return true;
     }
 
     if (con->type == CT_FLOATING_CON) {
