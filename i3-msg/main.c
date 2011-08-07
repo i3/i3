@@ -180,9 +180,11 @@ int main(int argc, char *argv[]) {
                 message_type = I3_IPC_MESSAGE_TYPE_GET_OUTPUTS;
             else if (strcasecmp(optarg, "get_tree") == 0)
                 message_type = I3_IPC_MESSAGE_TYPE_GET_TREE;
+            else if (strcasecmp(optarg, "get_marks") == 0)
+                message_type = I3_IPC_MESSAGE_TYPE_GET_MARKS;
             else {
                 printf("Unknown message type\n");
-                printf("Known types: command, get_workspaces, get_outputs, get_tree\n");
+                printf("Known types: command, get_workspaces, get_outputs, get_tree, get_marks\n");
                 exit(EXIT_FAILURE);
             }
         } else if (o == 'q') {
