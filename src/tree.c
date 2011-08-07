@@ -376,9 +376,48 @@ void tree_render() {
  *
  */
 static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap) {
-    /* Stop recursing at workspaces */
-    if (con->type == CT_WORKSPACE)
-        return false;
+    /* Stop recursing at workspaces after attempting to switch to next
+     * workspace if possible. */
+    if (con->type == CT_WORKSPACE) {
+        Output *current_output = get_output_containing(con->rect.x, con->rect.y);
+        Output *next_output;
+
+        if (!current_output)
+            return false;
+        DLOG("Current output is %s\n", current_output->name);
+
+        /* Try to find next output */
+        direction_t direction;
+        if (way == 'n' && orientation == HORIZ)
+            direction = D_RIGHT;
+        else if (way == 'p' && orientation == HORIZ)
+            direction = D_LEFT;
+        else if (way == 'n' && orientation == VERT)
+            direction = D_DOWN;
+        else if (way == 'p' && orientation == VERT)
+            direction = D_UP;
+        else
+            return false;
+
+        next_output = get_output_next(direction, current_output);
+        if (!next_output)
+            return false;
+        DLOG("Next output is %s\n", next_output->name);
+
+        /* Find visible workspace on next output */
+        Con *workspace = NULL;
+        GREP_FIRST(workspace, output_get_content(next_output->con), workspace_is_visible(child));
+
+        /* Show next workspace and focus appropriate container if possible. */
+        if (!workspace)
+            return false;
+
+        workspace_show(workspace->name);
+        Con *focus = con_descend_direction(workspace, direction);
+        if (focus)
+            con_focus(focus);
+        return true;
+    }
 
     if (con->type == CT_FLOATING_CON) {
         /* TODO: implement focus for floating windows */

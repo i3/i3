@@ -177,6 +177,14 @@ Con *con_descend_focused(Con *con);
  */
 Con *con_descend_tiling_focused(Con *con);
 
+/*
+ * Returns the leftmost, rightmost, etc. container in sub-tree. For example, if
+ * direction is D_LEFT, then we return the rightmost container and if direction
+ * is D_RIGHT, we return the leftmost container.  This is because if we are
+ * moving D_LEFT, and thus want the rightmost container.
+ */
+Con *con_descend_direction(Con *con, direction_t direction);
+
 /**
  * Returns a "relative" Rect which contains the amount of pixels that need to
  * be added to the original Rect to get the final position (obviously the
