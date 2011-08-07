@@ -200,6 +200,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("urgent");
     y(bool, con->urgent);
 
+    if (con->mark != NULL) {
+        ystr("mark");
+        ystr(con->mark);
+    }
+
     ystr("focused");
     y(bool, (con == focused));
 
