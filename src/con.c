@@ -585,6 +585,14 @@ void con_move_to_workspace(Con *con, Con *workspace) {
         next = ws;
     }
 
+    /* If moving to a visible workspace, call show so it can be considered
+     * focused. Must do before attaching because workspace_show checks to see
+     * if focused container is in its area. */
+    if (source_output != dest_output &&
+        workspace_is_visible(workspace)) {
+        workspace_show(workspace->name);
+    }
+
     DLOG("Re-attaching container to %p / %s\n", next, next->name);
     /* 5: re-attach the con to the parent of this focused container */
     Con *parent = con->parent;
@@ -597,7 +605,7 @@ void con_move_to_workspace(Con *con, Con *workspace) {
     con_fix_percent(next);
 
     /* 7: focus the con on the target workspace (the X focus is only updated by
-     * calling tree_render(), so for the "real" focus this is a no-op) */
+     * calling tree_render(), so for the "real" focus this is a no-op). */
     con_focus(con);
 
     /* 8: when moving to a visible workspace on a different output, we keep the
@@ -607,7 +615,11 @@ void con_move_to_workspace(Con *con, Con *workspace) {
         workspace_is_visible(workspace)) {
         DLOG("Moved to a different output, focusing target\n");
     } else {
-        con_focus(focus_next);
+        /* Descend focus stack in case focus_next is a workspace which can
+         * occur if we move to the same workspace.  Also show current workspace
+         * to ensure it is focused. */
+        workspace_show(con_get_workspace(focus_next)->name);
+        con_focus(con_descend_focused(focus_next));
     }
 
     CALL(parent, on_remove_child);
