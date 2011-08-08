@@ -759,6 +759,11 @@ You can also switch to the next and previous workspace with the commands
 workspace 1, 3, 4 and 9 and you want to cycle through them with a single key
 combination.
 
+To move a container to another xrandr output such as +LVDS1+ or +VGA1+, you can
+use the +move output+ command followed by the name of the target output. You
+may also use +left+, +right+, +up+, +down+ instead of the xrandr output name to
+move to the the next output in the specified direction.
+
 *Examples*:
 -------------------------
 bindsym mod+1 workspace 1

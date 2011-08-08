@@ -149,6 +149,7 @@ bool definitelyGreaterThan(float a, float b, float epsilon) {
 %token              TOK_ENABLE          "enable"
 %token              TOK_DISABLE         "disable"
 %token              TOK_WORKSPACE       "workspace"
+%token              TOK_OUTPUT          "output"
 %token              TOK_TOGGLE          "toggle"
 %token              TOK_FOCUS           "focus"
 %token              TOK_MOVE            "move"
@@ -696,6 +697,51 @@ move:
         free($3);
 
         HANDLE_EMPTY_MATCH;
+
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            printf("matching: %p / %s\n", current->con, current->con->name);
+            con_move_to_workspace(current->con, ws);
+        }
+
+        tree_render();
+    }
+    | TOK_MOVE TOK_OUTPUT STR
+    {
+        owindow *current;
+
+        printf("should move window to output %s", $3);
+
+        HANDLE_EMPTY_MATCH;
+
+        /* get the output */
+        Output *current_output = NULL;
+        Output *output;
+
+        TAILQ_FOREACH(current, &owindows, owindows)
+            current_output = get_output_containing(current->con->rect.x, current->con->rect.y);
+
+        assert(current_output != NULL);
+
+        if (strcasecmp($3, "up") == 0)
+            output = get_output_next(D_UP, current_output);
+        else if (strcasecmp($3, "down") == 0)
+            output = get_output_next(D_DOWN, current_output);
+        else if (strcasecmp($3, "left") == 0)
+            output = get_output_next(D_LEFT, current_output);
+        else if (strcasecmp($3, "right") == 0)
+            output = get_output_next(D_RIGHT, current_output);
+        else
+            output = get_output_by_name($3);
+        free($3);
+
+        if (!output)
+            return 0;
+
+        /* get visible workspace on output */
+        Con *ws = NULL;
+        GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
+        if (!ws)
+            return 0;
 
         TAILQ_FOREACH(current, &owindows, owindows) {
             printf("matching: %p / %s\n", current->con, current->con->name);
