@@ -321,7 +321,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     if (want_floating) {
         DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);
-        floating_enable(nc, false);
+        floating_enable(nc, true);
     }
 
     /* to avoid getting an UnmapNotify event due to reparenting, we temporarily
