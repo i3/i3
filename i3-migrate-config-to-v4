@@ -289,6 +289,11 @@ sub convert_command {
         my ($direction, $sign, $px) = ($command =~ /^resize (left|right|top|bottom) ([+-])([0-9]+)/);
         my $cmd = 'resize ';
         $cmd .= ($sign eq '+' ? 'grow' : 'shrink') . ' ';
+        if ($direction eq 'top') {
+            $direction = 'down';
+        } elsif ($direction eq 'bottom') {
+            $direction = 'up';
+        }
         $cmd .= "$direction ";
         $cmd .= "$px px";
         print qq|$statement $key $cmd\n|;
