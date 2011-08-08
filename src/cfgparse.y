@@ -579,6 +579,7 @@ void parse_file(const char *f) {
 %token                  TOK_AUTO                    "auto"
 %token                  TOK_WORKSPACE_LAYOUT        "workspace_layout"
 %token                  TOKNEWWINDOW                "new_window"
+%token                  TOKNEWFLOAT                 "new_float"
 %token                  TOK_NORMAL                  "normal"
 %token                  TOK_NONE                    "none"
 %token                  TOK_1PIXEL                  "1pixel"
@@ -610,6 +611,7 @@ void parse_file(const char *f) {
 %type   <number>        layout_mode
 %type   <number>        border_style
 %type   <number>        new_window
+%type   <number>        new_float
 %type   <number>        colorpixel
 %type   <number>        bool
 %type   <number>        popup_setting
@@ -634,6 +636,7 @@ line:
     | orientation
     | workspace_layout
     | new_window
+    | new_float
     | focus_follows_mouse
     | force_focus_wrapping
     | workspace_bar
@@ -921,6 +924,14 @@ new_window:
     {
         DLOG("new windows should start with border style %d\n", $2);
         config.default_border = $2;
+    }
+    ;
+
+new_float:
+    TOKNEWFLOAT border_style
+    {
+       DLOG("new floating windows should start with border style %d\n", $2);
+       config.default_floating_border = $2;
     }
     ;
 
