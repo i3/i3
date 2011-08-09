@@ -789,11 +789,11 @@ mode "resize" {
         bindsym j resize shrink left
         bindsym Shift+j resize grow left
 
-        bindsym k resize grow up
-        bindsym Shift+k resize shrink up
+        bindsym k resize grow down
+        bindsym Shift+k resize shrink down
 
-        bindsym l resize shrink down
-        bindsym Shift+l resize grow down
+        bindsym l resize shrink up
+        bindsym Shift+l resize grow up
 
         bindsym semicolon resize grow right
         bindsym Shift+semicolon resize shrink right

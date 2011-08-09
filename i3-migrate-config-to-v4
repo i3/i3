@@ -290,9 +290,9 @@ sub convert_command {
         my $cmd = 'resize ';
         $cmd .= ($sign eq '+' ? 'grow' : 'shrink') . ' ';
         if ($direction eq 'top') {
-            $direction = 'down';
-        } elsif ($direction eq 'bottom') {
             $direction = 'up';
+        } elsif ($direction eq 'bottom') {
+            $direction = 'down';
         }
         $cmd .= "$direction ";
         $cmd .= "$px px";
