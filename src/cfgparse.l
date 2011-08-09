@@ -118,6 +118,7 @@ vertical                        { return TOK_VERT; }
 auto                            { return TOK_AUTO; }
 workspace_layout                { return TOK_WORKSPACE_LAYOUT; }
 new_window                      { return TOKNEWWINDOW; }
+new_float                       { return TOKNEWFLOAT; }
 normal                          { return TOK_NORMAL; }
 none                            { return TOK_NONE; }
 1pixel                          { return TOK_1PIXEL; }

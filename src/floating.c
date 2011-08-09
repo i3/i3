@@ -129,6 +129,10 @@ void floating_enable(Con *con, bool automatic) {
     con->percent = 1.0;
     con->floating = FLOATING_USER_ON;
 
+    /* 4: set the border style as specified with new_float */
+    if (automatic)
+        con->border_style = config.default_floating_border;
+
     /* Some clients (like GIMP’s color picker window) get mapped
      * to (0, 0), so we push them to a reasonable position
      * (centered over their leader) */

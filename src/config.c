@@ -333,6 +333,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         INIT_COLOR(config.bar.urgent, "#2f343a", "#900000", "#ffffff");
 
         config.default_border = BS_NORMAL;
+        config.default_floating_border = BS_NORMAL;
         /* Set default_orientation to NO_ORIENTATION for auto orientation. */
         config.default_orientation = NO_ORIENTATION;
 
