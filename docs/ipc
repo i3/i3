@@ -60,8 +60,9 @@ GET_TREE (4)::
 	every container. The reply will be the JSON-encoded tree (see the reply
 	section).
 GET_MARKS (5)::
-	Gets a list of marks. The reply will be a JSON-encoded list of window marks
-	(see reply section).
+	Gets a list of marks (identifiers for containers to easily jump to them
+	later). The reply will be a JSON-encoded list of window marks (see
+	reply section).
 
 So, a typical message could look like this:
 --------------------------------------------------
@@ -425,8 +426,10 @@ JSON dump:
 
 === GET_MARKS reply
 
-The reply consists of a single array of strings for each
-window that has a mark.
+The reply consists of a single array of strings for each container that has a
+mark. The order of that array is undefined. If more than one container has the
+same mark, it will be represented multiple times in the reply (the array
+contents are not unique).
 
 If no window has a mark the response will be the empty array [].
 ------------------------
