@@ -112,7 +112,8 @@ static int handle_key_press(xcb_key_press_event_t *event) {
         }
     }
 
-    parse_cmd(bind->command);
+    char *json_result = parse_cmd(bind->command);
+    FREE(json_result);
     return 1;
 }
 
