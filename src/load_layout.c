@@ -146,6 +146,10 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
                 json_node->layout = L_OUTPUT;
             else LOG("Unhandled \"layout\": %s\n", buf);
             free(buf);
+        } else if (strcasecmp(last_key, "mark") == 0) {
+            char *buf = NULL;
+            asprintf(&buf, "%.*s", (int)len, val);
+            json_node->mark = buf;
         }
     }
     return 1;

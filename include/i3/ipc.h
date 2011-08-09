@@ -38,6 +38,8 @@
 /** Requests the tree layout from i3 */
 #define I3_IPC_MESSAGE_TYPE_GET_TREE            4
 
+/** Request the current defined marks from i3 */
+#define I3_IPC_MESSAGE_TYPE_GET_MARKS           5
 
 /*
  * Messages from i3 to clients
@@ -59,6 +61,8 @@
 /** Tree reply type */
 #define I3_IPC_REPLY_TYPE_TREE                  4
 
+/** Marks reply type*/
+#define I3_IPC_REPLY_TYPE_MARKS                 5
 
 /*
  * Events from i3 to clients. Events have the first bit set high.
