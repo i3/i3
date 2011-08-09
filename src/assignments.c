@@ -39,7 +39,9 @@ void run_assignments(i3Window *window) {
             DLOG("execute command %s\n", current->dest.command);
             char *full_command;
             asprintf(&full_command, "[id=\"%d\"] %s", window->id, current->dest.command);
-            parse_cmd(full_command);
+            char *json_result = parse_cmd(full_command);
+            FREE(full_command);
+            FREE(json_result);
         }
 
         /* Store that we ran this assignment to not execute it again */

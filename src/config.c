@@ -193,6 +193,7 @@ static char *get_config_path(const char *override_configpath) {
     config_path = resolve_tilde("~/.i3/config");
     if (path_exists(config_path))
         return config_path;
+    free(config_path);
 
     /* 2: check for $XDG_CONFIG_HOME/i3/config */
     if ((xdg_config_home = getenv("XDG_CONFIG_HOME")) == NULL)

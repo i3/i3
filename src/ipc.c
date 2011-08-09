@@ -147,7 +147,8 @@ IPC_HANDLER(command) {
     char *command = scalloc(message_size + 1);
     strncpy(command, (const char*)message, message_size);
     LOG("IPC: received: *%s*\n", command);
-    const char *reply = parse_cmd((const char*)command);
+    char *reply = parse_cmd((const char*)command);
+    char *save_reply = reply;
     free(command);
 
     /* If no reply was provided, we just use the default success message */
@@ -155,6 +156,8 @@ IPC_HANDLER(command) {
         reply = "{\"success\":true}";
     ipc_send_message(fd, (const unsigned char*)reply,
                      I3_IPC_REPLY_TYPE_COMMAND, strlen(reply));
+
+    FREE(save_reply);
 }
 
 static void dump_rect(yajl_gen gen, const char *name, Rect r) {

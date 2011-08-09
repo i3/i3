@@ -1101,6 +1101,7 @@ colorpixel:
         char *hex;
         if (asprintf(&hex, "#%s", $2) == -1)
             die("asprintf()");
+        free($2);
         $$ = get_colorpixel(hex);
         free(hex);
     }
