@@ -81,13 +81,13 @@ int cmdyywrap() {
 }
 
 char *parse_cmd(const char *new) {
+    json_output = NULL;
     LOG("COMMAND: *%s*\n", new);
     cmdyy_scan_string(new);
 
     match_init(&current_match);
     context = scalloc(sizeof(struct context));
     context->filename = "cmd";
-    FREE(json_output);
     if (cmdyyparse() != 0) {
         fprintf(stderr, "Could not parse command\n");
         asprintf(&json_output, "{\"success\":false, \"error\":\"%s at position %d\"}",
