@@ -256,13 +256,13 @@ $output = migrate_config('bindsym Mod1+f resize left +10');
 ok(line_exists($output, qr|^bindsym Mod1\+f resize grow left 10 px$|), 'resize left changed');
 
 $output = migrate_config('bindsym Mod1+f resize top -20');
-ok(line_exists($output, qr|^bindsym Mod1\+f resize shrink top 20 px$|), 'resize top changed');
+ok(line_exists($output, qr|^bindsym Mod1\+f resize shrink up 20 px$|), 'resize top changed');
 
 $output = migrate_config('bindsym Mod1+f resize right -20');
 ok(line_exists($output, qr|^bindsym Mod1\+f resize shrink right 20 px$|), 'resize right changed');
 
 $output = migrate_config('bindsym Mod1+f resize bottom +23');
-ok(line_exists($output, qr|^bindsym Mod1\+f resize grow bottom 23 px$|), 'resize bottom changed');
+ok(line_exists($output, qr|^bindsym Mod1\+f resize grow down 23 px$|), 'resize bottom changed');
 
 #####################################################################
 # check whether jump's parameters get changed correctly
