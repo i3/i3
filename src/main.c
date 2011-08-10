@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include "all.h"
 
+#include "sd-daemon.h"
+
 static int xkb_event_base;
 
 int xkb_current_group;
@@ -439,6 +441,21 @@ int main(int argc, char *argv[]) {
         struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
         ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
         ev_io_start(main_loop, ipc_io);
+    }
+
+    /* Also handle the UNIX domain sockets passed via socket activation */
+    int fds = sd_listen_fds(1);
+    if (fds < 0)
+        ELOG("socket activation: Error in sd_listen_fds\n");
+    else if (fds == 0)
+        DLOG("socket activation: no sockets passed\n");
+    else {
+        for (int fd = SD_LISTEN_FDS_START; fd < (SD_LISTEN_FDS_START + fds); fd++) {
+            DLOG("socket activation: also listening on fd %d\n", fd);
+            struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
+            ev_io_init(ipc_io, ipc_new_client, fd, EV_READ);
+            ev_io_start(main_loop, ipc_io);
+        }
     }
 
     /* Set up i3 specific atoms like I3_SOCKET_PATH and I3_CONFIG_PATH */
