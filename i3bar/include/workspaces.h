@@ -21,7 +21,7 @@ TAILQ_HEAD(ws_head, i3_ws);
  * Start parsing the received json-string
  *
  */
-void parse_workspaces_json();
+void parse_workspaces_json(char *json);
 
 /*
  * free() all workspace data-structures
