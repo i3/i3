@@ -713,7 +713,7 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
     ev_io_init(package, ipc_receive_message, client, EV_READ);
     ev_io_start(EV_A_ package);
 
-    DLOG("IPC: new client connected\n");
+    DLOG("IPC: new client connected on fd %d\n", w->fd);
 
     ipc_client *new = scalloc(sizeof(ipc_client));
     new->fd = client;
