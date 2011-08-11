@@ -361,3 +361,13 @@ bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom) {
     return false;
 
 }
+
+/**
+ * Moves the mouse pointer into the middle of rect.
+ *
+ */
+void xcb_warp_pointer_rect(xcb_connection_t *conn, Rect *rect) {
+    xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0,
+        rect->x + (rect->width / 2),
+        rect->y + (rect->height / 2));
+}
