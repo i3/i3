@@ -216,9 +216,18 @@ void workspace_show(const char *num) {
         }
     }
 
+    /* Memorize current output */
+    Con *old_output = con_get_output(focused);
+
     con_focus(next);
     workspace->fullscreen_mode = CF_OUTPUT;
     LOG("focused now = %p / %s\n", focused, focused->name);
+
+    /* Set mouse pointer */
+    Con *new_output = con_get_output(focused);
+    if (old_output != new_output) {
+       xcb_warp_pointer_rect(conn, &next->rect);
+    }
 
     /* Update the EWMH hints */
     if (changed_num_workspaces)

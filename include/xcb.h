@@ -152,4 +152,10 @@ void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r);
 
 bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom);
 
+/**
+ * Moves the mouse pointer into the middle of rect.
+ *
+ */
+void xcb_warp_pointer_rect(xcb_connection_t *conn, Rect *rect);
+
 #endif
