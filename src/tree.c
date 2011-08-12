@@ -414,8 +414,10 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
 
         workspace_show(workspace->name);
         Con *focus = con_descend_direction(workspace, direction);
-        if (focus)
+        if (focus) {
             con_focus(focus);
+            x_set_warp_to(&(focus->rect));
+        }
         return true;
     }
 

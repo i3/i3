@@ -104,4 +104,11 @@ void x_set_name(Con *con, const char *name);
  */
 void x_set_i3_atoms();
 
+/**
+ * Set warp_to coordinates.  This will trigger on the next call to
+ * x_push_changes().
+ *
+ */
+void x_set_warp_to(Rect *rect);
+
 #endif
