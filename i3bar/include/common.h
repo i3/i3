@@ -17,10 +17,10 @@ char            *statusline;
 char            *statusline_buffer;
 
 struct rect_t {
-	int	x;
-	int	y;
-	int	w;
-	int	h;
+    int x;
+    int y;
+    int w;
+    int h;
 };
 
 #include "queue.h"
