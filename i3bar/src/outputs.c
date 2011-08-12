@@ -40,7 +40,7 @@ static int outputs_null_cb(void *params_) {
 }
 
 /*
- * Parse a booleant-value (active)
+ * Parse a boolean value (active)
  *
  */
 static int outputs_boolean_cb(void *params_, bool val) {
