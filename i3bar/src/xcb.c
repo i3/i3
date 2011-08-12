@@ -506,11 +506,7 @@ char *init_xcb(char *fontname) {
         xkb_major = XkbMajorVersion;
         xkb_minor = XkbMinorVersion;
 
-        char *dispname = getenv("DISPLAY");
-        if (dispname == NULL) {
-            dispname = ":0";
-        }
-        xkb_dpy = XkbOpenDisplay(dispname,
+        xkb_dpy = XkbOpenDisplay(NULL,
                                  &xkb_event_base,
                                  &xkb_errbase,
                                  &xkb_major,
