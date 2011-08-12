@@ -377,8 +377,9 @@ void handle_button(xcb_button_press_event_t *event) {
             break;
     }
 
-    char buffer[strlen(cur_ws->name) + 11];
-    snprintf(buffer, 50, "workspace %s", cur_ws->name);
+    const size_t len = strlen(cur_ws->name) + strlen("workspace \"\"") + 1;
+    char buffer[len];
+    snprintf(buffer, len, "workspace \"%s\"", cur_ws->name);
     i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, buffer);
 }
 
