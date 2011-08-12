@@ -46,6 +46,8 @@ struct i3_output {
     xcb_pixmap_t   buffer;        /* An extra pixmap for double-buffering */
     xcb_gcontext_t bargc;         /* The graphical context of the bar */
 
+    int            traypx;        /* Amount of pixels reserved for tray icons */
+
     struct ws_head *workspaces;   /* The workspaces on this output */
 
     SLIST_ENTRY(i3_output) slist; /* Pointer for the SLIST-Macro */

@@ -383,6 +383,45 @@ void handle_button(xcb_button_press_event_t *event) {
     i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, buffer);
 }
 
+void handle_client_message(xcb_client_message_event_t* event) {
+    printf("got a client message, yay\n");
+    if (event->type == atoms[_NET_SYSTEM_TRAY_OPCODE] &&
+        event->format == 32) {
+        printf("system tray message\n");
+        /* event->data.data32[0] is the timestamp */
+        uint32_t op = event->data.data32[1];
+#define SYSTEM_TRAY_REQUEST_DOCK    0
+#define SYSTEM_TRAY_BEGIN_MESSAGE   1
+#define SYSTEM_TRAY_CANCEL_MESSAGE  2
+        if (op == SYSTEM_TRAY_REQUEST_DOCK) {
+            printf("docking requested of x window id %d\n", event->data.data32[2]);
+            /* TODO: correctly handle multiple dock clients */
+            xcb_window_t client = event->data.data32[2];
+            i3_output *walk, *output;
+            SLIST_FOREACH(walk, outputs, slist) {
+                if (!walk->active)
+                    continue;
+                printf("using output %s\n", walk->name);
+                output = walk;
+            }
+            xcb_reparent_window(xcb_connection,
+                                client,
+                                output->bar,
+                                output->rect.w - font_height - 2, /* TODO: why -2? */
+                                0);
+            uint32_t mask = XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
+            uint32_t values[] = { font_height, font_height };
+            xcb_configure_window(xcb_connection,
+                                 client,
+                                 mask,
+                                 values);
+            xcb_map_window(xcb_connection, client);
+            /* XXX: We assume that icons are quadratic. Is that so? */
+            output->traypx += font_height;
+        }
+    }
+}
+
 /*
  * This function is called immediately before the main loop locks. We flush xcb
  * then (and only then)
@@ -412,6 +451,11 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
         case XCB_BUTTON_PRESS:
             /* Button-press-events are mouse-buttons clicked on one of our bars */
             handle_button((xcb_button_press_event_t*) event);
+            break;
+        case XCB_CLIENT_MESSAGE:
+            /* Client messages are used for client-to-client communication, for
+             * example system tray widgets talk to us directly via client messages. */
+            handle_client_message((xcb_client_message_event_t*) event);
             break;
     }
     FREE(event);
@@ -634,6 +678,62 @@ char *init_xcb(char *fontname) {
     return path;
 }
 
+void init_tray() {
+/* tray support: we need a window to own the selection */
+    xcb_void_cookie_t selwin_cookie;
+    xcb_window_t selwin = xcb_generate_id(xcb_connection);
+    uint32_t selmask = XCB_CW_OVERRIDE_REDIRECT;
+    uint32_t selval[] = { 1 };
+    selwin_cookie = xcb_create_window_checked(xcb_connection,
+                                              xcb_screen->root_depth,
+                                              selwin,
+                                              xcb_root,
+                                              -1, -1,
+                                              1, 1,
+                                              1,
+                                              XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                                              xcb_screen->root_visual,
+                                              selmask,
+                                              selval);
+
+#define _NET_SYSTEM_TRAY_ORIENTATION_HORZ 0
+#define _NET_SYSTEM_TRAY_ORIENTATION_VERT 1
+    uint32_t orientation = _NET_SYSTEM_TRAY_ORIENTATION_HORZ;
+    /* set the atoms */
+    xcb_change_property(xcb_connection,
+                        XCB_PROP_MODE_REPLACE,
+                        selwin,
+                        atoms[_NET_SYSTEM_TRAY_ORIENTATION],
+                        atoms[CARDINAL],
+                        32,
+                        1,
+                        &orientation);
+
+
+    xcb_set_selection_owner(xcb_connection,
+                            selwin,
+                            /* TODO: request this atom separately */
+                            atoms[_NET_SYSTEM_TRAY_S0],
+                            XCB_CURRENT_TIME);
+    /* FIXME: don't use XCB_CURRENT_TIME */
+
+    /* TODO: check if we got the selection */
+    void *event = calloc(32, 1);
+    xcb_client_message_event_t *ev = event;
+    ev->response_type = XCB_CLIENT_MESSAGE;
+    ev->window = xcb_root;
+    ev->type = atoms[MANAGER];
+    ev->format = 32;
+    ev->data.data32[0] = XCB_CURRENT_TIME;
+    ev->data.data32[1] = atoms[_NET_SYSTEM_TRAY_S0];
+    ev->data.data32[2] = selwin;
+    xcb_send_event(xcb_connection,
+                   0,
+                   xcb_root,
+                   XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+                   (char*)ev);
+}
+
 /*
  * Cleanup the xcb-stuff.
  * Called once, before the program terminates.
@@ -756,6 +856,9 @@ void reconfig_windows() {
         }
         if (walk->bar == XCB_NONE) {
             DLOG("Creating Window for output %s\n", walk->name);
+
+            /* TODO: only call init_tray() if the tray is configured for this output */
+            init_tray();
 
             walk->bar = xcb_generate_id(xcb_connection);
             walk->buffer = xcb_generate_id(xcb_connection);
@@ -946,13 +1049,17 @@ void draw_bars() {
             /* Luckily we already prepared a seperate pixmap containing the rendered
              * statusline, we just have to copy the relevant parts to the relevant
              * position */
+            int traypx = outputs_walk->traypx;
+            /* Add 2px of padding if there are any tray icons */
+            if (traypx > 0)
+                traypx += 2;
             xcb_copy_area(xcb_connection,
                           statusline_pm,
                           outputs_walk->buffer,
                           outputs_walk->bargc,
                           MAX(0, (int16_t)(statusline_width - outputs_walk->rect.w + 4)), 0,
-                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - 4)), 3,
-                          MIN(outputs_walk->rect.w - 4, statusline_width), font_height);
+                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - traypx - 4)), 3,
+                          MIN(outputs_walk->rect.w - outputs_walk->traypx - 4, statusline_width), font_height);
         }
 
         if (config.disable_ws) {
