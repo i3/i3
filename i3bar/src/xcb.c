@@ -306,8 +306,8 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
 }
 
 /*
- * Handle a button-press-event (i.c. a mouse click on one of our bars).
- * We determine, wether the click occured on a ws-button or if the scroll-
+ * Handle a button-press-event (i.e. a mouse click on one of our bars).
+ * We determine, whether the click occured on a ws-button or if the scroll-
  * wheel was used and change the workspace appropriately
  *
  */
@@ -384,7 +384,7 @@ void handle_button(xcb_button_press_event_t *event) {
 }
 
 /*
- * This function is called immediately bevor the main loop locks. We flush xcb
+ * This function is called immediately before the main loop locks. We flush xcb
  * then (and only then)
  *
  */
@@ -395,7 +395,7 @@ void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revents) {
 /*
  * This function is called immediately after the main loop locks, so when one
  * of the watchers registered an event.
- * We check wether an X-Event arrived and handle it.
+ * We check whether an X-Event arrived and handle it.
  *
  */
 void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
@@ -492,7 +492,7 @@ char *init_xcb(char *fontname) {
                                              strlen(fontname),
                                              fontname);
 
-    /* We need to save info about the font, because we need the fonts height and
+    /* We need to save info about the font, because we need the font's height and
      * information about the width of characters */
     xcb_query_font_cookie_t query_font_cookie;
     query_font_cookie = xcb_query_font(xcb_connection,
@@ -570,7 +570,7 @@ char *init_xcb(char *fontname) {
                                                                xcb_screen->height_in_pixels);
 
 
-    /* The varios Watchers to communicate with xcb */
+    /* The various Watchers to communicate with xcb */
     xcb_io = malloc(sizeof(ev_io));
     xcb_prep = malloc(sizeof(ev_prepare));
     xcb_chk = malloc(sizeof(ev_check));
@@ -583,7 +583,7 @@ char *init_xcb(char *fontname) {
     ev_prepare_start(main_loop, xcb_prep);
     ev_check_start(main_loop, xcb_chk);
 
-    /* Now we get the atoms and save them in a nice data-structure */
+    /* Now we get the atoms and save them in a nice data structure */
     get_atoms();
 
     xcb_get_property_cookie_t path_cookie;
@@ -594,7 +594,7 @@ char *init_xcb(char *fontname) {
                                    XCB_GET_PROPERTY_TYPE_ANY,
                                    0, PATH_MAX);
 
-    /* We check, if i3 set it's socket-path */
+    /* We check, if i3 set its socket-path */
     xcb_get_property_reply_t *path_reply = xcb_get_property_reply(xcb_connection,
                                                                   path_cookie,
                                                                   NULL);
@@ -663,7 +663,7 @@ void clean_xcb() {
 }
 
 /*
- * Get the earlier requested atoms and save them in the prepared data-structure
+ * Get the earlier requested atoms and save them in the prepared data structure
  *
  */
 void get_atoms() {
@@ -738,7 +738,7 @@ void realloc_sl_buffer() {
 }
 
 /*
- * Reconfigure all bars and create new for newly activated outputs
+ * Reconfigure all bars and create new bars for recently activated outputs
  *
  */
 void reconfig_windows() {
@@ -748,7 +748,7 @@ void reconfig_windows() {
     i3_output *walk;
     SLIST_FOREACH(walk, outputs, slist) {
         if (!walk->active) {
-            /* If an output is not active, we destroy it's bar */
+            /* If an output is not active, we destroy its bar */
             /* FIXME: Maybe we rather want to unmap? */
             DLOG("Destroying window for output %s\n", walk->name);
             destroy_window(walk);

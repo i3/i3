@@ -26,7 +26,7 @@ struct workspaces_json_params {
 };
 
 /*
- * Parse a booleant-value (visible, focused, urgent)
+ * Parse a boolean value (visible, focused, urgent)
  *
  */
 static int workspaces_boolean_cb(void *params_, bool val) {
@@ -119,7 +119,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
             strncpy(params->workspaces_walk->name, (const char*) val, len);
             params->workspaces_walk->name[len] = '\0';
 
-            /* Convert the name to ucs2, save it's length in glyphs and calculate it'srendered width */
+            /* Convert the name to ucs2, save its length in glyphs and calculate its rendered width */
             int ucs2_len;
             xcb_char2b_t *ucs2_name = (xcb_char2b_t*) convert_utf8_to_ucs2(params->workspaces_walk->name, &ucs2_len);
             params->workspaces_walk->ucs2_name = ucs2_name;
