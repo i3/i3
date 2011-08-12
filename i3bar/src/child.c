@@ -87,7 +87,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         if (rec == buffer_len) {
             buffer_len += STDIN_CHUNK_SIZE;
             buffer = realloc(buffer, buffer_len);
-	    }
+        }
     }
     if (*buffer == '\0') {
         FREE(buffer);
