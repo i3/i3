@@ -418,6 +418,10 @@ void handle_client_message(xcb_client_message_event_t* event) {
             xcb_map_window(xcb_connection, client);
             /* XXX: We assume that icons are quadratic. Is that so? */
             output->traypx += font_height;
+
+            /* Trigger an update to copy the statusline text to the appropriate
+             * position */
+            draw_bars();
         }
     }
 }
