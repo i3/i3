@@ -29,6 +29,7 @@ struct rect_t {
 #include "outputs.h"
 #include "util.h"
 #include "workspaces.h"
+#include "trayclients.h"
 #include "xcb.h"
 #include "ucs2_to_utf8.h"
 #include "config.h"

@@ -157,10 +157,12 @@ static int outputs_start_map_cb(void *params_) {
         new_output->ws = 0,
         memset(&new_output->rect, 0, sizeof(rect));
         new_output->bar = XCB_NONE;
-        new_output->traypx = 0;
 
         new_output->workspaces = malloc(sizeof(struct ws_head));
         TAILQ_INIT(new_output->workspaces);
+
+        new_output->trayclients = malloc(sizeof(struct tc_head));
+        TAILQ_INIT(new_output->trayclients);
 
         params->outputs_walk = new_output;
 

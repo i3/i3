@@ -408,20 +408,59 @@ void handle_client_message(xcb_client_message_event_t* event) {
                                 client,
                                 output->bar,
                                 output->rect.w - font_height - 2, /* TODO: why -2? */
-                                0);
+                                2);
+            /* We reconfigure the window to use a reasonable size. The systray
+             * specification explicitly says:
+             *   Tray icons may be assigned any size by the system tray, and
+             *   should do their best to cope with any size effectively
+             */
             uint32_t mask = XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
             uint32_t values[] = { font_height, font_height };
             xcb_configure_window(xcb_connection,
                                  client,
                                  mask,
                                  values);
+
+            /* Listen for PropertyNotify events to get the most recent value of
+             * the XEMBED_MAPPED atom, also listen for UnmapNotify events */
+            mask = XCB_CW_EVENT_MASK;
+            values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE |
+                    XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+            xcb_change_window_attributes(xcb_connection,
+                                         client,
+                                         mask,
+                                         values);
             xcb_map_window(xcb_connection, client);
-            /* XXX: We assume that icons are quadratic. Is that so? */
-            output->traypx += font_height;
+            trayclient *tc = malloc(sizeof(trayclient));
+            tc->win = client;
+            TAILQ_INSERT_TAIL(output->trayclients, tc, tailq);
 
             /* Trigger an update to copy the statusline text to the appropriate
              * position */
             draw_bars();
+        }
+    }
+}
+
+void handle_unmap_notify(xcb_unmap_notify_event_t* event) {
+    DLOG("UnmapNotify for window = %08x, event = %08x\n", event->window, event->event);
+
+    i3_output *walk;
+    SLIST_FOREACH(walk, outputs, slist) {
+        if (!walk->active)
+            continue;
+        DLOG("checking output %s\n", walk->name);
+        trayclient *trayclient;
+        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
+            if (trayclient->win != event->window)
+                continue;
+
+            DLOG("Removing tray client with window ID %08x\n", event->window);
+            TAILQ_REMOVE(walk->trayclients, trayclient, tailq);
+
+            /* Trigger an update, we now have more space for the statusline */
+            draw_bars();
+            return;
         }
     }
 }
@@ -460,6 +499,10 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
             /* Client messages are used for client-to-client communication, for
              * example system tray widgets talk to us directly via client messages. */
             handle_client_message((xcb_client_message_event_t*) event);
+            break;
+        case XCB_UNMAP_NOTIFY:
+            /* UnmapNotifies are received when a tray window unmaps itself */
+            handle_unmap_notify((xcb_unmap_notify_event_t*) event);
             break;
     }
     FREE(event);
@@ -1053,7 +1096,14 @@ void draw_bars() {
             /* Luckily we already prepared a seperate pixmap containing the rendered
              * statusline, we just have to copy the relevant parts to the relevant
              * position */
-            int traypx = outputs_walk->traypx;
+            trayclient *trayclient;
+            int traypx = 0;
+            TAILQ_FOREACH(trayclient, outputs_walk->trayclients, tailq) {
+                /* We assume the tray icons are quadratic (we use the font
+                 * *height* as *width* of the icons) because we configured them
+                 * like this. */
+                traypx += font_height;
+            }
             /* Add 2px of padding if there are any tray icons */
             if (traypx > 0)
                 traypx += 2;
@@ -1063,7 +1113,7 @@ void draw_bars() {
                           outputs_walk->bargc,
                           MAX(0, (int16_t)(statusline_width - outputs_walk->rect.w + 4)), 0,
                           MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - traypx - 4)), 3,
-                          MIN(outputs_walk->rect.w - outputs_walk->traypx - 4, statusline_width), font_height);
+                          MIN(outputs_walk->rect.w - traypx - 4, statusline_width), font_height);
         }
 
         if (config.disable_ws) {
