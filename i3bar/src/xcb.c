@@ -990,15 +990,27 @@ void init_tray() {
  */
 void clean_xcb() {
     i3_output *o_walk;
+    trayclient *trayclient;
     free_workspaces();
     SLIST_FOREACH(o_walk, outputs, slist) {
+        TAILQ_FOREACH(trayclient, o_walk->trayclients, tailq) {
+            /* Unmap, then reparent (to root) the tray client windows */
+            xcb_unmap_window(xcb_connection, trayclient->win);
+            xcb_reparent_window(xcb_connection,
+                                trayclient->win,
+                                xcb_root,
+                                0,
+                                0);
+        }
         destroy_window(o_walk);
+        FREE(o_walk->trayclients);
         FREE(o_walk->workspaces);
         FREE(o_walk->name);
     }
     FREE_SLIST(outputs, i3_output);
     FREE(outputs);
 
+    xcb_flush(xcb_connection);
     xcb_disconnect(xcb_connection);
 
     ev_check_stop(main_loop, xcb_chk);
