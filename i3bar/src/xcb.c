@@ -63,6 +63,7 @@ xcb_atom_t               atoms[NUM_ATOMS];
 
 /* Variables, that are the same for all functions at all times */
 xcb_connection_t *xcb_connection;
+int              screen;
 xcb_screen_t     *xcb_screen;
 xcb_window_t     xcb_root;
 xcb_font_t       xcb_font;
@@ -712,7 +713,7 @@ void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  */
 char *init_xcb(char *fontname) {
     /* FIXME: xcb_connect leaks Memory */
-    xcb_connection = xcb_connect(NULL, NULL);
+    xcb_connection = xcb_connect(NULL, &screen);
     if (xcb_connection_has_error(xcb_connection)) {
         ELOG("Cannot open display\n");
         exit(EXIT_FAILURE);
@@ -877,7 +878,14 @@ char *init_xcb(char *fontname) {
 }
 
 void init_tray() {
-/* tray support: we need a window to own the selection */
+    /* request the tray manager atom for the X11 display we are running on */
+    char atomname[strlen("_NET_SYSTEM_TRAY_S") + 11];
+    snprintf(atomname, strlen("_NET_SYSTEM_TRAY_S") + 11, "_NET_SYSTEM_TRAY_S%d", screen);
+    xcb_intern_atom_cookie_t tray_cookie;
+    xcb_intern_atom_reply_t *tray_reply;
+    tray_cookie = xcb_intern_atom(xcb_connection, 0, strlen(atomname), atomname);
+
+    /* tray support: we need a window to own the selection */
     xcb_void_cookie_t selwin_cookie;
     xcb_window_t selwin = xcb_generate_id(xcb_connection);
     uint32_t selmask = XCB_CW_OVERRIDE_REDIRECT;
@@ -894,8 +902,6 @@ void init_tray() {
                                               selmask,
                                               selval);
 
-#define _NET_SYSTEM_TRAY_ORIENTATION_HORZ 0
-#define _NET_SYSTEM_TRAY_ORIENTATION_VERT 1
     uint32_t orientation = _NET_SYSTEM_TRAY_ORIENTATION_HORZ;
     /* set the atoms */
     xcb_change_property(xcb_connection,
@@ -907,13 +913,15 @@ void init_tray() {
                         1,
                         &orientation);
 
+    if (!(tray_reply = xcb_intern_atom_reply(xcb_connection, tray_cookie, NULL))) {
+        ELOG("Could not get atom %s\n", atomname);
+        exit(EXIT_FAILURE);
+    }
 
     xcb_set_selection_owner(xcb_connection,
                             selwin,
-                            /* TODO: request this atom separately */
-                            atoms[_NET_SYSTEM_TRAY_S0],
+                            tray_reply->atom,
                             XCB_CURRENT_TIME);
-    /* FIXME: don't use XCB_CURRENT_TIME */
 
     /* TODO: check if we got the selection */
     void *event = calloc(32, 1);
@@ -923,7 +931,7 @@ void init_tray() {
     ev->type = atoms[MANAGER];
     ev->format = 32;
     ev->data.data32[0] = XCB_CURRENT_TIME;
-    ev->data.data32[1] = atoms[_NET_SYSTEM_TRAY_S0];
+    ev->data.data32[1] = tray_reply->atom;
     ev->data.data32[2] = selwin;
     xcb_send_event(xcb_connection,
                    0,
@@ -931,6 +939,7 @@ void init_tray() {
                    XCB_EVENT_MASK_STRUCTURE_NOTIFY,
                    (char*)ev);
     free(event);
+    free(tray_reply);
 }
 
 /*

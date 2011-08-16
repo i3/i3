@@ -12,6 +12,8 @@
 #include <stdint.h>
 //#include "outputs.h"
 
+#define _NET_SYSTEM_TRAY_ORIENTATION_HORZ 0
+#define _NET_SYSTEM_TRAY_ORIENTATION_VERT 1
 #define SYSTEM_TRAY_REQUEST_DOCK    0
 #define SYSTEM_TRAY_BEGIN_MESSAGE   1
 #define SYSTEM_TRAY_CANCEL_MESSAGE  2
