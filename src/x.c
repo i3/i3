@@ -518,7 +518,7 @@ void x_push_node(Con *con) {
         DLOG("pushing name %s for con %p\n", state->name, con);
 
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->frame,
-                            A_WM_NAME, A_STRING, 8, strlen(state->name), state->name);
+                            XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(state->name), state->name);
         FREE(state->name);
     }
 
