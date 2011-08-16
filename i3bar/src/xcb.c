@@ -383,25 +383,50 @@ void handle_button(xcb_button_press_event_t *event) {
     i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, buffer);
 }
 
+/*
+ * Configures the x coordinate of all trayclients. To be called after adding a
+ * new tray client or removing an old one.
+ *
+ */
+static void configure_trayclients() {
+    trayclient *trayclient;
+    i3_output *output;
+    SLIST_FOREACH(output, outputs, slist) {
+        if (!output->active)
+            continue;
+
+        int clients = 0;
+        TAILQ_FOREACH_REVERSE(trayclient, output->trayclients, tc_head, tailq) {
+            clients++;
+
+            DLOG("Configuring tray window %08x to x=%d\n",
+                 trayclient->win, output->rect.w - (clients * (font_height + 2)));
+            uint32_t x = output->rect.w - (clients * (font_height + 2));
+            xcb_configure_window(xcb_connection,
+                                 trayclient->win,
+                                 XCB_CONFIG_WINDOW_X,
+                                 &x);
+        }
+    }
+}
+
 void handle_client_message(xcb_client_message_event_t* event) {
-    printf("got a client message, yay\n");
     if (event->type == atoms[_NET_SYSTEM_TRAY_OPCODE] &&
         event->format == 32) {
-        printf("system tray message\n");
+        DLOG("_NET_SYSTEM_TRAY_OPCODE received\n");
         /* event->data.data32[0] is the timestamp */
         uint32_t op = event->data.data32[1];
 #define SYSTEM_TRAY_REQUEST_DOCK    0
 #define SYSTEM_TRAY_BEGIN_MESSAGE   1
 #define SYSTEM_TRAY_CANCEL_MESSAGE  2
         if (op == SYSTEM_TRAY_REQUEST_DOCK) {
-            printf("docking requested of x window id %d\n", event->data.data32[2]);
-            /* TODO: correctly handle multiple dock clients */
             xcb_window_t client = event->data.data32[2];
+            DLOG("X window %08x requested docking\n", client);
             i3_output *walk, *output;
             SLIST_FOREACH(walk, outputs, slist) {
                 if (!walk->active)
                     continue;
-                printf("using output %s\n", walk->name);
+                DLOG("using output %s\n", walk->name);
                 output = walk;
             }
             xcb_reparent_window(xcb_connection,
@@ -437,6 +462,7 @@ void handle_client_message(xcb_client_message_event_t* event) {
 
             /* Trigger an update to copy the statusline text to the appropriate
              * position */
+            configure_trayclients();
             draw_bars();
         }
     }
@@ -459,6 +485,7 @@ void handle_unmap_notify(xcb_unmap_notify_event_t* event) {
             TAILQ_REMOVE(walk->trayclients, trayclient, tailq);
 
             /* Trigger an update, we now have more space for the statusline */
+            configure_trayclients();
             draw_bars();
             return;
         }
