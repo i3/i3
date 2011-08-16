@@ -12,6 +12,11 @@
 #include <stdint.h>
 //#include "outputs.h"
 
+#define SYSTEM_TRAY_REQUEST_DOCK    0
+#define SYSTEM_TRAY_BEGIN_MESSAGE   1
+#define SYSTEM_TRAY_CANCEL_MESSAGE  2
+#define XEMBED_MAPPED                   (1 << 0)
+
 struct xcb_color_strings_t {
     char *bar_fg;
     char *bar_bg;

@@ -9,8 +9,9 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#include <stdbool.h>
+
 typedef struct rect_t rect;
-typedef int bool;
 
 struct ev_loop* main_loop;
 char            *statusline;

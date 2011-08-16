@@ -43,7 +43,7 @@ static int outputs_null_cb(void *params_) {
  * Parse a boolean value (active)
  *
  */
-static int outputs_boolean_cb(void *params_, bool val) {
+static int outputs_boolean_cb(void *params_, int val) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
 
     if (strcmp(params->cur_key, "active")) {

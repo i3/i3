@@ -29,7 +29,7 @@ struct workspaces_json_params {
  * Parse a boolean value (visible, focused, urgent)
  *
  */
-static int workspaces_boolean_cb(void *params_, bool val) {
+static int workspaces_boolean_cb(void *params_, int val) {
     struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
 
     if (!strcmp(params->cur_key, "visible")) {
