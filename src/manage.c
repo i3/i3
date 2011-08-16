@@ -142,9 +142,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     state_cookie = GET_PROPERTY(A__NET_WM_STATE, UINT32_MAX);
     utf8_title_cookie = GET_PROPERTY(A__NET_WM_NAME, 128);
     leader_cookie = GET_PROPERTY(A_WM_CLIENT_LEADER, UINT32_MAX);
-    transient_cookie = GET_PROPERTY(A_WM_TRANSIENT_FOR, UINT32_MAX);
-    title_cookie = GET_PROPERTY(A_WM_NAME, 128);
-    class_cookie = GET_PROPERTY(A_WM_CLASS, 128);
+    transient_cookie = GET_PROPERTY(XCB_ATOM_WM_TRANSIENT_FOR, UINT32_MAX);
+    title_cookie = GET_PROPERTY(XCB_ATOM_WM_NAME, 128);
+    class_cookie = GET_PROPERTY(XCB_ATOM_WM_CLASS, 128);
     /* TODO: also get wm_normal_hints here. implement after we got rid of xcb-event */
 
     DLOG("reparenting!\n");

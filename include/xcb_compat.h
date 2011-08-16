@@ -22,4 +22,14 @@
 #define xcb_icccm_wm_hints_get_urgency xcb_wm_hints_get_urgency
 #define xcb_icccm_get_wm_transient_for_from_reply xcb_get_wm_transient_for_from_reply
 
+#define XCB_ATOM_CARDINAL CARDINAL
+#define XCB_ATOM_WINDOW WINDOW
+#define XCB_ATOM_WM_TRANSIENT_FOR WM_TRANSIENT_FOR
+#define XCB_ATOM_WM_NAME WM_NAME
+#define XCB_ATOM_WM_CLASS WM_CLASS
+#define XCB_ATOM_WM_HINTS WM_HINTS
+#define XCB_ATOM_ATOM ATOM
+#define XCB_ATOM_WM_NORMAL_HINTS WM_NORMAL_HINTS
+#define XCB_ATOM_STRING STRING
+
 #endif
