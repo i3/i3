@@ -856,7 +856,7 @@ static bool handle_transient_for(void *data, xcb_connection_t *conn, uint8_t sta
 
     if (prop == NULL) {
         prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
-                                false, window, A_WM_TRANSIENT_FOR, A_WINDOW, 0, 32), NULL);
+                                false, window, XCB_ATOM_WM_TRANSIENT_FOR, XCB_ATOM_WINDOW, 0, 32), NULL);
         if (prop == NULL)
             return false;
     }
@@ -887,7 +887,7 @@ static bool handle_clientleader_change(void *data, xcb_connection_t *conn, uint8
 
     if (prop == NULL) {
         prop = xcb_get_property_reply(conn, xcb_get_property_unchecked(conn,
-                                false, window, A_WM_CLIENT_LEADER, A_WINDOW, 0, 32), NULL);
+                                false, window, A_WM_CLIENT_LEADER, XCB_ATOM_WINDOW, 0, 32), NULL);
         if (prop == NULL)
             return false;
     }
@@ -961,11 +961,11 @@ static struct property_handler_t property_handlers[] = {
  */
 void property_handlers_init() {
     property_handlers[0].atom = A__NET_WM_NAME;
-    property_handlers[1].atom = A_WM_HINTS;
-    property_handlers[2].atom = A_WM_NAME;
-    property_handlers[3].atom = A_WM_NORMAL_HINTS;
+    property_handlers[1].atom = XCB_ATOM_WM_HINTS;
+    property_handlers[2].atom = XCB_ATOM_WM_NAME;
+    property_handlers[3].atom = XCB_ATOM_WM_NORMAL_HINTS;
     property_handlers[4].atom = A_WM_CLIENT_LEADER;
-    property_handlers[5].atom = A_WM_TRANSIENT_FOR;
+    property_handlers[5].atom = XCB_ATOM_WM_TRANSIENT_FOR;
 }
 
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {

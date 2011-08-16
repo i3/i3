@@ -31,7 +31,7 @@ void ewmh_update_current_desktop() {
         TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
             if (ws == focused_ws) {
                 xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
-                        A__NET_CURRENT_DESKTOP, A_CARDINAL, 32, 1, &idx);
+                        A__NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, &idx);
                 return;
             }
             ++idx;
@@ -48,7 +48,7 @@ void ewmh_update_current_desktop() {
  */
 void ewmh_update_active_window(xcb_window_t window) {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
-            A__NET_ACTIVE_WINDOW, A_WINDOW, 32, 1, &window);
+            A__NET_ACTIVE_WINDOW, XCB_ATOM_WINDOW, 32, 1, &window);
 }
 
 /*
@@ -104,7 +104,7 @@ void ewmh_update_workarea() {
         }
     }
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
-            A__NET_WORKAREA, A_CARDINAL, 32,
+            A__NET_WORKAREA, XCB_ATOM_CARDINAL, 32,
             num_workspaces * (sizeof(Rect) / sizeof(uint32_t)),
             workarea);
     free(workarea);
@@ -122,7 +122,7 @@ void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows) {
         XCB_PROP_MODE_REPLACE,
         root,
         A__NET_CLIENT_LIST_STACKING,
-        A_WINDOW,
+        XCB_ATOM_WINDOW,
         32,
         num_windows,
         stack);

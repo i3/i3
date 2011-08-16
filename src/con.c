@@ -534,7 +534,7 @@ update_netwm_state:
         values[num++] = A__NET_WM_STATE_FULLSCREEN;
 
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, con->window->id,
-                        A__NET_WM_STATE, A_ATOM, 32, num, values);
+                        A__NET_WM_STATE, XCB_ATOM_ATOM, 32, num, values);
 }
 
 /*
