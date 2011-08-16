@@ -930,7 +930,7 @@ void init_tray() {
                         XCB_PROP_MODE_REPLACE,
                         selwin,
                         atoms[_NET_SYSTEM_TRAY_ORIENTATION],
-                        atoms[CARDINAL],
+                        XCB_ATOM_CARDINAL,
                         32,
                         1,
                         &orientation);
