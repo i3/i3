@@ -411,7 +411,14 @@ static void configure_trayclients() {
     }
 }
 
-void handle_client_message(xcb_client_message_event_t* event) {
+/*
+ * Handles ClientMessages (messages sent from another client directly to us).
+ *
+ * At the moment, only the tray window will receive client messages. All
+ * supported client messages currently are _NET_SYSTEM_TRAY_OPCODE.
+ *
+ */
+static void handle_client_message(xcb_client_message_event_t* event) {
     if (event->type == atoms[_NET_SYSTEM_TRAY_OPCODE] &&
         event->format == 32) {
         DLOG("_NET_SYSTEM_TRAY_OPCODE received\n");
@@ -474,7 +481,7 @@ void handle_client_message(xcb_client_message_event_t* event) {
             xcb_reparent_window(xcb_connection,
                                 client,
                                 output->bar,
-                                output->rect.w - font_height - 2, /* TODO: why -2? */
+                                output->rect.w - font_height - 2,
                                 2);
             /* We reconfigure the window to use a reasonable size. The systray
              * specification explicitly says:
@@ -527,7 +534,12 @@ void handle_client_message(xcb_client_message_event_t* event) {
     }
 }
 
-void handle_unmap_notify(xcb_unmap_notify_event_t* event) {
+/*
+ * Handles UnmapNotify events. These events happen when a tray window unmaps
+ * itself. We then update our data structure
+ *
+ */
+static void handle_unmap_notify(xcb_unmap_notify_event_t* event) {
     DLOG("UnmapNotify for window = %08x, event = %08x\n", event->window, event->event);
 
     i3_output *walk;
@@ -551,6 +563,11 @@ void handle_unmap_notify(xcb_unmap_notify_event_t* event) {
     }
 }
 
+/*
+ * Handle PropertyNotify messages. Currently only the _XEMBED_INFO property is
+ * handled, which tells us whether a dock client should be mapped or unmapped.
+ *
+ */
 static void handle_property_notify(xcb_property_notify_event_t *event) {
     DLOG("PropertyNotify\n");
     if (event->atom == atoms[_XEMBED_INFO] &&
@@ -877,6 +894,12 @@ char *init_xcb(char *fontname) {
     return path;
 }
 
+/*
+ * Initializes tray support by requesting the appropriate _NET_SYSTEM_TRAY atom
+ * for the X11 display we are running on, then acquiring the selection for this
+ * atom. Afterwards, tray clients will send ClientMessages to our window.
+ *
+ */
 void init_tray() {
     /* request the tray manager atom for the X11 display we are running on */
     char atomname[strlen("_NET_SYSTEM_TRAY_S") + 11];
@@ -886,21 +909,20 @@ void init_tray() {
     tray_cookie = xcb_intern_atom(xcb_connection, 0, strlen(atomname), atomname);
 
     /* tray support: we need a window to own the selection */
-    xcb_void_cookie_t selwin_cookie;
     xcb_window_t selwin = xcb_generate_id(xcb_connection);
     uint32_t selmask = XCB_CW_OVERRIDE_REDIRECT;
     uint32_t selval[] = { 1 };
-    selwin_cookie = xcb_create_window_checked(xcb_connection,
-                                              xcb_screen->root_depth,
-                                              selwin,
-                                              xcb_root,
-                                              -1, -1,
-                                              1, 1,
-                                              1,
-                                              XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                              xcb_screen->root_visual,
-                                              selmask,
-                                              selval);
+    xcb_create_window(xcb_connection,
+                      xcb_screen->root_depth,
+                      selwin,
+                      xcb_root,
+                      -1, -1,
+                      1, 1,
+                      1,
+                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                      xcb_screen->root_visual,
+                      selmask,
+                      selval);
 
     uint32_t orientation = _NET_SYSTEM_TRAY_ORIENTATION_HORZ;
     /* set the atoms */
@@ -923,7 +945,26 @@ void init_tray() {
                             tray_reply->atom,
                             XCB_CURRENT_TIME);
 
-    /* TODO: check if we got the selection */
+    /* Verify that we have the selection */
+    xcb_get_selection_owner_cookie_t selcookie;
+    xcb_get_selection_owner_reply_t *selreply;
+
+    selcookie = xcb_get_selection_owner(xcb_connection, tray_reply->atom);
+    if (!(selreply = xcb_get_selection_owner_reply(xcb_connection, selcookie, NULL))) {
+        ELOG("Could not get selection owner for %s\n", atomname);
+        exit(EXIT_FAILURE);
+    }
+
+    if (selreply->owner != selwin) {
+        ELOG("Could not set the %s selection. " \
+             "Maybe another tray is already running?\n", atomname);
+        /* NOTE that this error is not fatal. We just can’t provide tray
+         * functionality */
+        free(selreply);
+        return;
+    }
+
+    /* Inform clients waiting for a new _NET_SYSTEM_TRAY that we are here */
     void *event = calloc(32, 1);
     xcb_client_message_event_t *ev = event;
     ev->response_type = XCB_CLIENT_MESSAGE;
