@@ -435,6 +435,7 @@ void handle_client_message(xcb_client_message_event_t* event) {
              * (which is referred by the tray specification) says this *has* to
              * be set, but VLC does not set it… */
             bool map_it = true;
+            int xe_version = 1;
             xcb_get_property_cookie_t xembedc;
             xembedc = xcb_get_property_unchecked(xcb_connection,
                                                  0,
@@ -453,6 +454,9 @@ void handle_client_message(xcb_client_message_event_t* event) {
                 DLOG("xembed version = %d\n", xembed[0]);
                 DLOG("xembed flags = %d\n", xembed[1]);
                 map_it = ((xembed[1] & XEMBED_MAPPED) == XEMBED_MAPPED);
+                xe_version = xembed[0];
+                if (xe_version > 1)
+                    xe_version = 1;
                 free(xembedr);
             } else {
                 ELOG("Window %08x violates the XEMBED protocol, _XEMBED_INFO not set\n", client);
@@ -484,6 +488,24 @@ void handle_client_message(xcb_client_message_event_t* event) {
                                  mask,
                                  values);
 
+            /* send the XEMBED_EMBEDDED_NOTIFY message */
+            void *event = calloc(32, 1);
+            xcb_client_message_event_t *ev = event;
+            ev->response_type = XCB_CLIENT_MESSAGE;
+            ev->window = client;
+            ev->type = atoms[_XEMBED];
+            ev->format = 32;
+            ev->data.data32[0] = XCB_CURRENT_TIME;
+            ev->data.data32[1] = atoms[XEMBED_EMBEDDED_NOTIFY];
+            ev->data.data32[2] = output->bar;
+            ev->data.data32[3] = xe_version;
+            xcb_send_event(xcb_connection,
+                           0,
+                           client,
+                           XCB_EVENT_MASK_NO_EVENT,
+                           (char*)ev);
+            free(event);
+
             if (map_it) {
                 DLOG("Mapping dock client\n");
                 xcb_map_window(xcb_connection, client);
@@ -493,6 +515,7 @@ void handle_client_message(xcb_client_message_event_t* event) {
             trayclient *tc = malloc(sizeof(trayclient));
             tc->win = client;
             tc->mapped = map_it;
+            tc->xe_version = xe_version;
             TAILQ_INSERT_TAIL(output->trayclients, tc, tailq);
 
             /* Trigger an update to copy the statusline text to the appropriate
@@ -533,12 +556,12 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
         event->state == XCB_PROPERTY_NEW_VALUE) {
         DLOG("xembed_info updated\n");
         trayclient *trayclient = NULL, *walk;
-        i3_output *output;
-        SLIST_FOREACH(output, outputs, slist) {
-            if (!output->active)
+        i3_output *o_walk;
+        SLIST_FOREACH(o_walk, outputs, slist) {
+            if (!o_walk->active)
                 continue;
 
-            TAILQ_FOREACH(walk, output->trayclients, tailq) {
+            TAILQ_FOREACH(walk, o_walk->trayclients, tailq) {
                 if (walk->win != event->window)
                     continue;
                 trayclient = walk;
@@ -907,6 +930,7 @@ void init_tray() {
                    xcb_root,
                    XCB_EVENT_MASK_STRUCTURE_NOTIFY,
                    (char*)ev);
+    free(event);
 }
 
 /*

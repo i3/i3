@@ -18,6 +18,7 @@ TAILQ_HEAD(tc_head, trayclient);
 struct trayclient {
     xcb_window_t       win;         /* The window ID of the tray client */
     bool               mapped;      /* Whether this window is mapped */
+    int                xe_version;  /* The XEMBED version supported by the client */
 
     TAILQ_ENTRY(trayclient) tailq;  /* Pointer for the TAILQ-Macro */
 };
