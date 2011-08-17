@@ -264,9 +264,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     if (fs == NULL) {
         DLOG("Not in fullscreen mode, focusing\n");
-        if (!cwindow->dock)
-            con_focus(nc);
-        else DLOG("dock, not focusing\n");
+        if (!cwindow->dock) {
+            /* Check that the workspace is visible. If the window was assigned
+             * to an invisible workspace, we should not steal focus. */
+            if (workspace_is_visible(ws)) {
+                con_focus(nc);
+            } else DLOG("workspace not visible, not focusing\n");
+        } else DLOG("dock, not focusing\n");
     } else {
         DLOG("fs = %p, ws = %p, not focusing\n", fs, ws);
         /* Insert the new container in focus stack *after* the currently
