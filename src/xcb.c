@@ -367,7 +367,9 @@ bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom) {
  *
  */
 void xcb_warp_pointer_rect(xcb_connection_t *conn, Rect *rect) {
-    xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0,
-        rect->x + (rect->width / 2),
-        rect->y + (rect->height / 2));
+    int mid_x = rect->x + (rect->width / 2);
+    int mid_y = rect->y + (rect->height / 2);
+
+    LOG("warp pointer to: %d %d\n", mid_x, mid_y);
+    xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0, mid_x, mid_y);
 }

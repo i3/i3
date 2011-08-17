@@ -591,6 +591,13 @@ void con_move_to_workspace(Con *con, Con *workspace) {
     if (source_output != dest_output &&
         workspace_is_visible(workspace)) {
         workspace_show(workspace->name);
+
+        /* Unset warp_to if target con is floating.  Otherwise, set warp_to to
+         * current target container. */
+        if (con->type == CT_FLOATING_CON)
+            x_set_warp_to(NULL);
+        else
+            x_set_warp_to(&(con->rect));
     }
 
     DLOG("Re-attaching container to %p / %s\n", next, next->name);

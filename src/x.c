@@ -12,6 +12,9 @@ xcb_window_t focused_id = XCB_NONE;
 static xcb_window_t *btt_stack;
 static int btt_stack_num;
 
+/* Stores coordinates to warp mouse pointer to if set */
+static Rect *warp_to;
+
 /*
  * Describes the X11 state we may modify (map state, position, window stack).
  * There is one entry per container. The state represents the current situation
@@ -862,6 +865,11 @@ void x_push_changes(Con *con) {
         focused_id = root;
     }
 
+    if (warp_to) {
+        xcb_warp_pointer_rect(conn, warp_to);
+        warp_to = NULL;
+    }
+
     xcb_flush(conn);
     DLOG("\n\n ENDING CHANGES\n\n");
 
@@ -936,4 +944,14 @@ void x_set_i3_atoms() {
                         current_socketpath);
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_CONFIG_PATH, A_UTF8_STRING, 8,
                         strlen(current_configpath), current_configpath);
+}
+
+/*
+ * Set warp_to coordinates.  This will trigger on the next call to
+ * x_push_changes().
+ *
+ */
+void x_set_warp_to(Rect *rect)
+{
+    warp_to = rect;
 }
