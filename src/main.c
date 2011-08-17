@@ -281,6 +281,7 @@ int main(int argc, char *argv[]) {
     root = root_screen->root;
     root_depth = root_screen->root_depth;
     xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);
+    xcb_query_pointer_cookie_t pointercookie = xcb_query_pointer(conn, root);
 
     load_configuration(conn, override_configpath, false);
     if (only_check_config) {
@@ -429,6 +430,20 @@ int main(int argc, char *argv[]) {
         DLOG("Checking for XRandR...\n");
         randr_init(&randr_base);
     }
+
+    xcb_query_pointer_reply_t *pointerreply;
+    if (!(pointerreply = xcb_query_pointer_reply(conn, pointercookie, NULL)))
+        die("Could not query pointer position\n");
+
+    DLOG("Pointer at %d, %d\n", pointerreply->root_x, pointerreply->root_y);
+    Output *output = get_output_containing(pointerreply->root_x, pointerreply->root_y);
+    if (!output) {
+        ELOG("ERROR: No screen at (%d, %d), starting on the first screen\n",
+             pointerreply->root_x, pointerreply->root_y);
+        output = get_first_output();
+    }
+
+    con_focus(con_descend_focused(output_get_content(output->con)));
 
     tree_render();
 
