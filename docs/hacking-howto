@@ -243,16 +243,12 @@ Legacy support for Xinerama. See +src/randr.c+ for the preferred API.
 
 == Data structures
 
-*********************************************************************************
-This section has not been updated for v4.0 yet, sorry! We wanted to release on
-time, but we will update this soon. Please talk to us on IRC if you need to
-know stuff *NOW* :).
-*********************************************************************************
-
-/////////////////////////////////////////////////////////////////////////////////
 
 See include/data.h for documented data structures. The most important ones are
 explained right here.
+
+/////////////////////////////////////////////////////////////////////////////////
+// TODO: update image
 
 image:bigpicture.png[The Big Picture]
 
@@ -261,7 +257,7 @@ image:bigpicture.png[The Big Picture]
 So, the hierarchy is:
 
 . *X11 root window*, the root container
-. *Virtual screens* (Screen 0 in this example)
+. *Output container* (LVDS1 in this example)
 . *Content container* (there are also containers for dock windows)
 . *Workspaces* (Workspace 1 in this example, with horizontal orientation)
 . *Split container* (vertically split)
@@ -269,22 +265,35 @@ So, the hierarchy is:
 
 The data type is +Con+, in all cases.
 
-=== Virtual screens
+=== X11 root window
 
-A virtual screen (type `i3Screen`) is generated from the connected outputs
-obtained through RandR. The difference to the raw RandR outputs as seen
-when using +xrandr(1)+ is that it falls back to the lowest common resolution of
-the actual enabled outputs.
+The X11 root window is a single window per X11 display (a display is identified
+by +:0+ or +:1+ etc.). The root window is what you draw your background image
+on. It spans all the available outputs, e.g. +VGA1+ is a specific part of the
+root window and +LVDS1+ is a specific part of the root window.
+
+=== Output container
+
+Every active output obtained through RandR is represented by one output
+container. Outputs are considered active when a mode is configured (meaning
+something is actually displayed on the output) and the output is not a clone.
 
 For example, if your notebook has a screen resolution of 1280x800 px and you
 connect a video projector with a resolution of 1024x768 px, set it up in clone
-mode (+xrandr \--output VGA1 \--mode 1024x768 \--same-as LVDS1+), i3 will have
-one virtual screen.
+mode (+xrandr \--output VGA1 \--mode 1024x768 \--same-as LVDS1+), i3 will
+reduce the resolution to the lowest common resolution and disable one of the
+cloned outputs afterwards.
 
 However, if you configure it using +xrandr \--output VGA1 \--mode 1024x768
-\--right-of LVDS1+, i3 will generate two virtual screens. For each virtual
-screen, a new workspace will be assigned. New workspaces are created on the
-screen you are currently on.
+\--right-of LVDS1+, i3 will set both outputs active. For each output, a new
+workspace will be assigned. New workspaces are created on the output you are
+currently on.
+
+=== Content container
+
+Each output has multiple children. Two of them are dock containers which hold
+dock clients. The other one is the content container, which holds the actual
+content (workspaces) of this output.
 
 === Workspace
 
@@ -294,43 +303,19 @@ methaphor. They just contain different sets of windows and are completely
 separate of each other. Other window managers also call this ``Virtual
 desktops''.
 
-=== The layout table
+=== Split container
 
-*********************************************************************************
-This section has not been updated for v4.0 yet, sorry! We wanted to release on
-time, but we will update this soon. Please talk to us on IRC if you need to
-know stuff *NOW* :).
-*********************************************************************************
+A split container is a container which holds an arbitrary amount of split
+containers or X11 window containers. It has an orientation (horizontal or
+vertical) and a layout.
 
-/////////////////////////////////////////////////////////////////////////////////
+Split containers (and X11 window containers, which are a subtype of split
+containers) can have different border styles.
 
-Each workspace has a table, which is just a two-dimensional dynamic array
-containing Containers (see below). This table grows and shrinks as you need it
-(by moving windows to the right you can create a new column in the table, by
-moving them to the bottom you create a new row).
+=== X11 window container
 
-/////////////////////////////////////////////////////////////////////////////////
-
-=== Container
-
-*********************************************************************************
-This section has not been updated for v4.0 yet, sorry! We wanted to release on
-time, but we will update this soon. Please talk to us on IRC if you need to
-know stuff *NOW* :).
-*********************************************************************************
-
-/////////////////////////////////////////////////////////////////////////////////
-
-A container is the content of a table’s cell. It holds an arbitrary amount of
-windows and has a specific layout (default layout, stack layout or tabbed
-layout). Containers can consume multiple table cells by modifying their
-colspan/rowspan attribute.
-
-/////////////////////////////////////////////////////////////////////////////////
-
-=== Client
-
-A client is x11-speak for a window.
+An X11 window container holds exactly one X11 window. These are the leaf nodes
+of the layout tree, they cannot have any children.
 
 == List/queue macros
 
