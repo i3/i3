@@ -735,13 +735,13 @@ move:
         free($3);
 
         if (!output)
-            return 0;
+            break;
 
         /* get visible workspace on output */
         Con *ws = NULL;
         GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
         if (!ws)
-            return 0;
+            break;
 
         TAILQ_FOREACH(current, &owindows, owindows) {
             printf("matching: %p / %s\n", current->con, current->con->name);
