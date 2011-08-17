@@ -123,6 +123,7 @@ floating                        { return TOK_FLOATING; }
 toggle                          { return TOK_TOGGLE; }
 mode_toggle                     { return TOK_MODE_TOGGLE; }
 workspace                       { WS_STRING; return TOK_WORKSPACE; }
+output                          { WS_STRING; return TOK_OUTPUT; }
 focus                           { return TOK_FOCUS; }
 move                            { return TOK_MOVE; }
 open                            { return TOK_OPEN; }
