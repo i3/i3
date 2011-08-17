@@ -475,6 +475,11 @@ time, but we will update this soon. Please talk to us on IRC if you need to
 know stuff *NOW* :).
 *********************************************************************************
 
+Rendering in i3 version 4 is the step which assigns the correct sizes for
+borders, decoration windows, child windows and the stacking order of all
+windows. In a separate step (+x_push_changes()+), these changes are pushed to
+X11.
+
 /////////////////////////////////////////////////////////////////////////////////
 
 
