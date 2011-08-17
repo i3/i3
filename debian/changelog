@@ -16,6 +16,15 @@ i3-wm (4.0.2-0) unstable; urgency=low
   * Bugfix: Fix border rendering (border lines were "cutting" through)
   * Bugfix: Raise floating windows immediately when dragging/resizing
   * Bugfix: Make focus switching work accross outputs again
+  * Bugfix: migration-script: handle resize top/bottom correctly
+  * Bugfix: Fix focus issue when moving containers to workspaces
+  * Bugfix: Warp cursor when changing outputs again
+  * Bugfix: i3bar: fix switching to workspaces with extremely long names
+  * Bugfix: i3bar: fix switching to workspaces "next" and "prev"
+  * Bugfix: Correctly initialize the verbose flag
+  * Bugfix: Don’t start with workspace 'next' when the command 'workspace next'
+    is bound in the config file
+  * Bugfix: Set focus to where the mouse pointer is when starting
 
  -- Michael Stapelberg <michael@stapelberg.de>  Sun, 07 Aug 2011 18:13:29 +0200
 
