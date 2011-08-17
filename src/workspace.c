@@ -226,7 +226,7 @@ void workspace_show(const char *num) {
     /* Set mouse pointer */
     Con *new_output = con_get_output(focused);
     if (old_output != new_output) {
-       xcb_warp_pointer_rect(conn, &next->rect);
+        x_set_warp_to(&next->rect);
     }
 
     /* Update the EWMH hints */
