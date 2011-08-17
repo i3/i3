@@ -24,7 +24,7 @@
 #include "loglevels.h"
 
 static uint64_t loglevel = 0;
-static bool verbose = true;
+static bool verbose = false;
 static FILE *errorfile;
 char *errorfilename;
 
