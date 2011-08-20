@@ -430,18 +430,21 @@ int main(int argc, char *argv[]) {
     }
 
     xcb_query_pointer_reply_t *pointerreply;
-    if (!(pointerreply = xcb_query_pointer_reply(conn, pointercookie, NULL)))
-        die("Could not query pointer position\n");
-
-    DLOG("Pointer at %d, %d\n", pointerreply->root_x, pointerreply->root_y);
-    Output *output = get_output_containing(pointerreply->root_x, pointerreply->root_y);
-    if (!output) {
-        ELOG("ERROR: No screen at (%d, %d), starting on the first screen\n",
-             pointerreply->root_x, pointerreply->root_y);
+    Output *output = NULL;
+    if (!(pointerreply = xcb_query_pointer_reply(conn, pointercookie, NULL))) {
+        ELOG("Could not query pointer position, using first screen\n");
         output = get_first_output();
-    }
+    } else {
+        DLOG("Pointer at %d, %d\n", pointerreply->root_x, pointerreply->root_y);
+        output = get_output_containing(pointerreply->root_x, pointerreply->root_y);
+        if (!output) {
+            ELOG("ERROR: No screen at (%d, %d), starting on the first screen\n",
+                 pointerreply->root_x, pointerreply->root_y);
+            output = get_first_output();
+        }
 
-    con_focus(con_descend_focused(output_get_content(output->con)));
+        con_focus(con_descend_focused(output_get_content(output->con)));
+    }
 
     tree_render();
 
