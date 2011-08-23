@@ -471,12 +471,16 @@ static void handle_client_message(xcb_client_message_event_t* event) {
             }
 
             DLOG("X window %08x requested docking\n", client);
-            i3_output *walk, *output;
+            i3_output *walk, *output = NULL;
             SLIST_FOREACH(walk, outputs, slist) {
                 if (!walk->active)
                     continue;
                 DLOG("using output %s\n", walk->name);
                 output = walk;
+            }
+            if (output == NULL) {
+                ELOG("No output found\n");
+                return;
             }
             xcb_reparent_window(xcb_connection,
                                 client,
