@@ -63,6 +63,7 @@ xcb_atom_t               atoms[NUM_ATOMS];
 
 /* Variables, that are the same for all functions at all times */
 xcb_connection_t *xcb_connection;
+int              screen;
 xcb_screen_t     *xcb_screen;
 xcb_window_t     xcb_root;
 xcb_font_t       xcb_font;
@@ -384,6 +385,252 @@ void handle_button(xcb_button_press_event_t *event) {
 }
 
 /*
+ * Configures the x coordinate of all trayclients. To be called after adding a
+ * new tray client or removing an old one.
+ *
+ */
+static void configure_trayclients() {
+    trayclient *trayclient;
+    i3_output *output;
+    SLIST_FOREACH(output, outputs, slist) {
+        if (!output->active)
+            continue;
+
+        int clients = 0;
+        TAILQ_FOREACH_REVERSE(trayclient, output->trayclients, tc_head, tailq) {
+            clients++;
+
+            DLOG("Configuring tray window %08x to x=%d\n",
+                 trayclient->win, output->rect.w - (clients * (font_height + 2)));
+            uint32_t x = output->rect.w - (clients * (font_height + 2));
+            xcb_configure_window(xcb_connection,
+                                 trayclient->win,
+                                 XCB_CONFIG_WINDOW_X,
+                                 &x);
+        }
+    }
+}
+
+/*
+ * Handles ClientMessages (messages sent from another client directly to us).
+ *
+ * At the moment, only the tray window will receive client messages. All
+ * supported client messages currently are _NET_SYSTEM_TRAY_OPCODE.
+ *
+ */
+static void handle_client_message(xcb_client_message_event_t* event) {
+    if (event->type == atoms[_NET_SYSTEM_TRAY_OPCODE] &&
+        event->format == 32) {
+        DLOG("_NET_SYSTEM_TRAY_OPCODE received\n");
+        /* event->data.data32[0] is the timestamp */
+        uint32_t op = event->data.data32[1];
+        uint32_t mask;
+        uint32_t values[2];
+        if (op == SYSTEM_TRAY_REQUEST_DOCK) {
+            xcb_window_t client = event->data.data32[2];
+
+            /* Listen for PropertyNotify events to get the most recent value of
+             * the XEMBED_MAPPED atom, also listen for UnmapNotify events */
+            mask = XCB_CW_EVENT_MASK;
+            values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE |
+                        XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+            xcb_change_window_attributes(xcb_connection,
+                                         client,
+                                         mask,
+                                         values);
+
+            /* Request the _XEMBED_INFO property. The XEMBED specification
+             * (which is referred by the tray specification) says this *has* to
+             * be set, but VLC does not set it… */
+            bool map_it = true;
+            int xe_version = 1;
+            xcb_get_property_cookie_t xembedc;
+            xembedc = xcb_get_property_unchecked(xcb_connection,
+                                                 0,
+                                                 client,
+                                                 atoms[_XEMBED_INFO],
+                                                 XCB_GET_PROPERTY_TYPE_ANY,
+                                                 0,
+                                                 2 * 32);
+
+            xcb_get_property_reply_t *xembedr = xcb_get_property_reply(xcb_connection,
+                                                                       xembedc,
+                                                                       NULL);
+            if (xembedr != NULL && xembedr->length != 0) {
+                DLOG("xembed format = %d, len = %d\n", xembedr->format, xembedr->length);
+                uint32_t *xembed = xcb_get_property_value(xembedr);
+                DLOG("xembed version = %d\n", xembed[0]);
+                DLOG("xembed flags = %d\n", xembed[1]);
+                map_it = ((xembed[1] & XEMBED_MAPPED) == XEMBED_MAPPED);
+                xe_version = xembed[0];
+                if (xe_version > 1)
+                    xe_version = 1;
+                free(xembedr);
+            } else {
+                ELOG("Window %08x violates the XEMBED protocol, _XEMBED_INFO not set\n", client);
+            }
+
+            DLOG("X window %08x requested docking\n", client);
+            i3_output *walk, *output;
+            SLIST_FOREACH(walk, outputs, slist) {
+                if (!walk->active)
+                    continue;
+                DLOG("using output %s\n", walk->name);
+                output = walk;
+            }
+            xcb_reparent_window(xcb_connection,
+                                client,
+                                output->bar,
+                                output->rect.w - font_height - 2,
+                                2);
+            /* We reconfigure the window to use a reasonable size. The systray
+             * specification explicitly says:
+             *   Tray icons may be assigned any size by the system tray, and
+             *   should do their best to cope with any size effectively
+             */
+            mask = XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
+            values[0] = font_height;
+            values[1] = font_height;
+            xcb_configure_window(xcb_connection,
+                                 client,
+                                 mask,
+                                 values);
+
+            /* send the XEMBED_EMBEDDED_NOTIFY message */
+            void *event = calloc(32, 1);
+            xcb_client_message_event_t *ev = event;
+            ev->response_type = XCB_CLIENT_MESSAGE;
+            ev->window = client;
+            ev->type = atoms[_XEMBED];
+            ev->format = 32;
+            ev->data.data32[0] = XCB_CURRENT_TIME;
+            ev->data.data32[1] = atoms[XEMBED_EMBEDDED_NOTIFY];
+            ev->data.data32[2] = output->bar;
+            ev->data.data32[3] = xe_version;
+            xcb_send_event(xcb_connection,
+                           0,
+                           client,
+                           XCB_EVENT_MASK_NO_EVENT,
+                           (char*)ev);
+            free(event);
+
+            if (map_it) {
+                DLOG("Mapping dock client\n");
+                xcb_map_window(xcb_connection, client);
+            } else {
+                DLOG("Not mapping dock client yet\n");
+            }
+            trayclient *tc = malloc(sizeof(trayclient));
+            tc->win = client;
+            tc->mapped = map_it;
+            tc->xe_version = xe_version;
+            TAILQ_INSERT_TAIL(output->trayclients, tc, tailq);
+
+            /* Trigger an update to copy the statusline text to the appropriate
+             * position */
+            configure_trayclients();
+            draw_bars();
+        }
+    }
+}
+
+/*
+ * Handles UnmapNotify events. These events happen when a tray window unmaps
+ * itself. We then update our data structure
+ *
+ */
+static void handle_unmap_notify(xcb_unmap_notify_event_t* event) {
+    DLOG("UnmapNotify for window = %08x, event = %08x\n", event->window, event->event);
+
+    i3_output *walk;
+    SLIST_FOREACH(walk, outputs, slist) {
+        if (!walk->active)
+            continue;
+        DLOG("checking output %s\n", walk->name);
+        trayclient *trayclient;
+        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
+            if (trayclient->win != event->window)
+                continue;
+
+            DLOG("Removing tray client with window ID %08x\n", event->window);
+            TAILQ_REMOVE(walk->trayclients, trayclient, tailq);
+
+            /* Trigger an update, we now have more space for the statusline */
+            configure_trayclients();
+            draw_bars();
+            return;
+        }
+    }
+}
+
+/*
+ * Handle PropertyNotify messages. Currently only the _XEMBED_INFO property is
+ * handled, which tells us whether a dock client should be mapped or unmapped.
+ *
+ */
+static void handle_property_notify(xcb_property_notify_event_t *event) {
+    DLOG("PropertyNotify\n");
+    if (event->atom == atoms[_XEMBED_INFO] &&
+        event->state == XCB_PROPERTY_NEW_VALUE) {
+        DLOG("xembed_info updated\n");
+        trayclient *trayclient = NULL, *walk;
+        i3_output *o_walk;
+        SLIST_FOREACH(o_walk, outputs, slist) {
+            if (!o_walk->active)
+                continue;
+
+            TAILQ_FOREACH(walk, o_walk->trayclients, tailq) {
+                if (walk->win != event->window)
+                    continue;
+                trayclient = walk;
+                break;
+            }
+
+            if (trayclient)
+                break;
+        }
+        if (!trayclient) {
+            ELOG("PropertyNotify received for unknown window %08x\n",
+                 event->window);
+            return;
+        }
+        xcb_get_property_cookie_t xembedc;
+        xembedc = xcb_get_property_unchecked(xcb_connection,
+                                             0,
+                                             trayclient->win,
+                                             atoms[_XEMBED_INFO],
+                                             XCB_GET_PROPERTY_TYPE_ANY,
+                                             0,
+                                             2 * 32);
+
+        xcb_get_property_reply_t *xembedr = xcb_get_property_reply(xcb_connection,
+                                                                   xembedc,
+                                                                   NULL);
+        if (xembedr == NULL || xembedr->length == 0)
+            return;
+
+        DLOG("xembed format = %d, len = %d\n", xembedr->format, xembedr->length);
+        uint32_t *xembed = xcb_get_property_value(xembedr);
+        DLOG("xembed version = %d\n", xembed[0]);
+        DLOG("xembed flags = %d\n", xembed[1]);
+        bool map_it = ((xembed[1] & XEMBED_MAPPED) == XEMBED_MAPPED);
+        DLOG("map-state now %d\n", map_it);
+        if (trayclient->mapped && !map_it) {
+            /* need to unmap the window */
+            xcb_unmap_window(xcb_connection, trayclient->win);
+            trayclient->mapped = map_it;
+            draw_bars();
+        } else if (!trayclient->mapped && map_it) {
+            /* need to map the window */
+            xcb_map_window(xcb_connection, trayclient->win);
+            trayclient->mapped = map_it;
+            draw_bars();
+        }
+        free(xembedr);
+    }
+}
+
+/*
  * This function is called immediately before the main loop locks. We flush xcb
  * then (and only then)
  *
@@ -412,6 +659,19 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
         case XCB_BUTTON_PRESS:
             /* Button-press-events are mouse-buttons clicked on one of our bars */
             handle_button((xcb_button_press_event_t*) event);
+            break;
+        case XCB_CLIENT_MESSAGE:
+            /* Client messages are used for client-to-client communication, for
+             * example system tray widgets talk to us directly via client messages. */
+            handle_client_message((xcb_client_message_event_t*) event);
+            break;
+        case XCB_UNMAP_NOTIFY:
+            /* UnmapNotifies are received when a tray window unmaps itself */
+            handle_unmap_notify((xcb_unmap_notify_event_t*) event);
+            break;
+        case XCB_PROPERTY_NOTIFY:
+            /* PropertyNotify */
+            handle_property_notify((xcb_property_notify_event_t*) event);
             break;
     }
     FREE(event);
@@ -470,7 +730,7 @@ void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  */
 char *init_xcb(char *fontname) {
     /* FIXME: xcb_connect leaks Memory */
-    xcb_connection = xcb_connect(NULL, NULL);
+    xcb_connection = xcb_connect(NULL, &screen);
     if (xcb_connection_has_error(xcb_connection)) {
         ELOG("Cannot open display\n");
         exit(EXIT_FAILURE);
@@ -635,21 +895,122 @@ char *init_xcb(char *fontname) {
 }
 
 /*
+ * Initializes tray support by requesting the appropriate _NET_SYSTEM_TRAY atom
+ * for the X11 display we are running on, then acquiring the selection for this
+ * atom. Afterwards, tray clients will send ClientMessages to our window.
+ *
+ */
+void init_tray() {
+    /* request the tray manager atom for the X11 display we are running on */
+    char atomname[strlen("_NET_SYSTEM_TRAY_S") + 11];
+    snprintf(atomname, strlen("_NET_SYSTEM_TRAY_S") + 11, "_NET_SYSTEM_TRAY_S%d", screen);
+    xcb_intern_atom_cookie_t tray_cookie;
+    xcb_intern_atom_reply_t *tray_reply;
+    tray_cookie = xcb_intern_atom(xcb_connection, 0, strlen(atomname), atomname);
+
+    /* tray support: we need a window to own the selection */
+    xcb_window_t selwin = xcb_generate_id(xcb_connection);
+    uint32_t selmask = XCB_CW_OVERRIDE_REDIRECT;
+    uint32_t selval[] = { 1 };
+    xcb_create_window(xcb_connection,
+                      xcb_screen->root_depth,
+                      selwin,
+                      xcb_root,
+                      -1, -1,
+                      1, 1,
+                      1,
+                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                      xcb_screen->root_visual,
+                      selmask,
+                      selval);
+
+    uint32_t orientation = _NET_SYSTEM_TRAY_ORIENTATION_HORZ;
+    /* set the atoms */
+    xcb_change_property(xcb_connection,
+                        XCB_PROP_MODE_REPLACE,
+                        selwin,
+                        atoms[_NET_SYSTEM_TRAY_ORIENTATION],
+                        XCB_ATOM_CARDINAL,
+                        32,
+                        1,
+                        &orientation);
+
+    if (!(tray_reply = xcb_intern_atom_reply(xcb_connection, tray_cookie, NULL))) {
+        ELOG("Could not get atom %s\n", atomname);
+        exit(EXIT_FAILURE);
+    }
+
+    xcb_set_selection_owner(xcb_connection,
+                            selwin,
+                            tray_reply->atom,
+                            XCB_CURRENT_TIME);
+
+    /* Verify that we have the selection */
+    xcb_get_selection_owner_cookie_t selcookie;
+    xcb_get_selection_owner_reply_t *selreply;
+
+    selcookie = xcb_get_selection_owner(xcb_connection, tray_reply->atom);
+    if (!(selreply = xcb_get_selection_owner_reply(xcb_connection, selcookie, NULL))) {
+        ELOG("Could not get selection owner for %s\n", atomname);
+        exit(EXIT_FAILURE);
+    }
+
+    if (selreply->owner != selwin) {
+        ELOG("Could not set the %s selection. " \
+             "Maybe another tray is already running?\n", atomname);
+        /* NOTE that this error is not fatal. We just can’t provide tray
+         * functionality */
+        free(selreply);
+        return;
+    }
+
+    /* Inform clients waiting for a new _NET_SYSTEM_TRAY that we are here */
+    void *event = calloc(32, 1);
+    xcb_client_message_event_t *ev = event;
+    ev->response_type = XCB_CLIENT_MESSAGE;
+    ev->window = xcb_root;
+    ev->type = atoms[MANAGER];
+    ev->format = 32;
+    ev->data.data32[0] = XCB_CURRENT_TIME;
+    ev->data.data32[1] = tray_reply->atom;
+    ev->data.data32[2] = selwin;
+    xcb_send_event(xcb_connection,
+                   0,
+                   xcb_root,
+                   XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+                   (char*)ev);
+    free(event);
+    free(tray_reply);
+}
+
+/*
  * Cleanup the xcb-stuff.
  * Called once, before the program terminates.
  *
  */
 void clean_xcb() {
     i3_output *o_walk;
+    trayclient *trayclient;
     free_workspaces();
     SLIST_FOREACH(o_walk, outputs, slist) {
+        TAILQ_FOREACH(trayclient, o_walk->trayclients, tailq) {
+            /* Unmap, then reparent (to root) the tray client windows */
+            xcb_unmap_window(xcb_connection, trayclient->win);
+            xcb_reparent_window(xcb_connection,
+                                trayclient->win,
+                                xcb_root,
+                                0,
+                                0);
+        }
         destroy_window(o_walk);
+        FREE(o_walk->trayclients);
         FREE(o_walk->workspaces);
         FREE(o_walk->name);
     }
     FREE_SLIST(outputs, i3_output);
     FREE(outputs);
 
+    xcb_flush(xcb_connection);
     xcb_disconnect(xcb_connection);
 
     ev_check_stop(main_loop, xcb_chk);
@@ -756,6 +1117,9 @@ void reconfig_windows() {
         }
         if (walk->bar == XCB_NONE) {
             DLOG("Creating Window for output %s\n", walk->name);
+
+            /* TODO: only call init_tray() if the tray is configured for this output */
+            init_tray();
 
             walk->bar = xcb_generate_id(xcb_connection);
             walk->buffer = xcb_generate_id(xcb_connection);
@@ -946,13 +1310,26 @@ void draw_bars() {
             /* Luckily we already prepared a seperate pixmap containing the rendered
              * statusline, we just have to copy the relevant parts to the relevant
              * position */
+            trayclient *trayclient;
+            int traypx = 0;
+            TAILQ_FOREACH(trayclient, outputs_walk->trayclients, tailq) {
+                if (!trayclient->mapped)
+                    continue;
+                /* We assume the tray icons are quadratic (we use the font
+                 * *height* as *width* of the icons) because we configured them
+                 * like this. */
+                traypx += font_height;
+            }
+            /* Add 2px of padding if there are any tray icons */
+            if (traypx > 0)
+                traypx += 2;
             xcb_copy_area(xcb_connection,
                           statusline_pm,
                           outputs_walk->buffer,
                           outputs_walk->bargc,
                           MAX(0, (int16_t)(statusline_width - outputs_walk->rect.w + 4)), 0,
-                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - 4)), 3,
-                          MIN(outputs_walk->rect.w - 4, statusline_width), font_height);
+                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - traypx - 4)), 3,
+                          MIN(outputs_walk->rect.w - traypx - 4, statusline_width), font_height);
         }
 
         if (config.disable_ws) {

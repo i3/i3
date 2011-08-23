@@ -43,7 +43,7 @@ static int outputs_null_cb(void *params_) {
  * Parse a boolean value (active)
  *
  */
-static int outputs_boolean_cb(void *params_, bool val) {
+static int outputs_boolean_cb(void *params_, int val) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
 
     if (strcmp(params->cur_key, "active")) {
@@ -160,6 +160,9 @@ static int outputs_start_map_cb(void *params_) {
 
         new_output->workspaces = malloc(sizeof(struct ws_head));
         TAILQ_INIT(new_output->workspaces);
+
+        new_output->trayclients = malloc(sizeof(struct tc_head));
+        TAILQ_INIT(new_output->trayclients);
 
         params->outputs_walk = new_output;
 

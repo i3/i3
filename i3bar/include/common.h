@@ -9,8 +9,9 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#include <stdbool.h>
+
 typedef struct rect_t rect;
-typedef int bool;
 
 struct ev_loop* main_loop;
 char            *statusline;
@@ -29,6 +30,7 @@ struct rect_t {
 #include "outputs.h"
 #include "util.h"
 #include "workspaces.h"
+#include "trayclients.h"
 #include "xcb.h"
 #include "ucs2_to_utf8.h"
 #include "config.h"

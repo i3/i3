@@ -47,6 +47,7 @@ struct i3_output {
     xcb_gcontext_t bargc;         /* The graphical context of the bar */
 
     struct ws_head *workspaces;   /* The workspaces on this output */
+    struct tc_head *trayclients;  /* The tray clients on this output */
 
     SLIST_ENTRY(i3_output) slist; /* Pointer for the SLIST-Macro */
 };
