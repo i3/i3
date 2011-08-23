@@ -17,13 +17,13 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 floating_modifier $mod
 
 # start a terminal
-bindcode $mod+36 exec /usr/bin/urxvt
+bindcode $mod+36 exec urxvt
 
 # kill focused window
 bindcode $mod+Shift+24 kill
 
 # start dmenu (a program launcher)
-bindcode $mod+40 exec /usr/bin/dmenu_run
+bindcode $mod+40 exec dmenu_run
 
 # change focus
 bindcode $mod+44 focus left
