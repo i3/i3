@@ -485,7 +485,7 @@ focus:
             int to_focus = $2;
             if ($2 == TOK_MODE_TOGGLE) {
                 current = TAILQ_FIRST(&(ws->focus_head));
-                if (current->type == CT_FLOATING_CON)
+                if (current != NULL && current->type == CT_FLOATING_CON)
                     to_focus = TOK_TILING;
                 else to_focus = TOK_FLOATING;
             }
