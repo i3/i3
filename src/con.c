@@ -623,7 +623,7 @@ void con_move_to_workspace(Con *con, Con *workspace) {
 
     /* 7: focus the con on the target workspace (the X focus is only updated by
      * calling tree_render(), so for the "real" focus this is a no-op). */
-    con_focus(con);
+    con_focus(con_descend_focused(con));
 
     /* 8: when moving to a visible workspace on a different output, we keep the
      * con focused. Otherwise, we leave the focus on the current workspace as we
