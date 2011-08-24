@@ -799,39 +799,44 @@ resize:
             }
         } else {
             LOG("tiling resize\n");
+            /* get the appropriate current container (skip stacked/tabbed cons) */
+            Con *current = focused;
+            while (current->parent->layout == L_STACKED ||
+                   current->parent->layout == L_TABBED)
+                current = current->parent;
             /* get the default percentage */
-            int children = con_num_children(focused->parent);
+            int children = con_num_children(current->parent);
             Con *other;
             LOG("ins. %d children\n", children);
             double percentage = 1.0 / children;
             LOG("default percentage = %f\n", percentage);
 
             if (direction == TOK_UP || direction == TOK_LEFT) {
-                other = TAILQ_PREV(focused, nodes_head, nodes);
+                other = TAILQ_PREV(current, nodes_head, nodes);
             } else {
-                other = TAILQ_NEXT(focused, nodes);
+                other = TAILQ_NEXT(current, nodes);
             }
             if (other == TAILQ_END(workspaces)) {
                 LOG("No other container in this direction found, cannot resize.\n");
                 return 0;
             }
             LOG("other->percent = %f\n", other->percent);
-            LOG("focused->percent before = %f\n", focused->percent);
-            if (focused->percent == 0.0)
-                focused->percent = percentage;
+            LOG("current->percent before = %f\n", current->percent);
+            if (current->percent == 0.0)
+                current->percent = percentage;
             if (other->percent == 0.0)
                 other->percent = percentage;
-            double new_focused_percent = focused->percent + ((double)ppt / 100.0);
+            double new_current_percent = current->percent + ((double)ppt / 100.0);
             double new_other_percent = other->percent - ((double)ppt / 100.0);
-            LOG("new_focused_percent = %f\n", new_focused_percent);
+            LOG("new_current_percent = %f\n", new_current_percent);
             LOG("new_other_percent = %f\n", new_other_percent);
             /* Ensure that the new percentages are positive and greater than
              * 0.05 to have a reasonable minimum size. */
-            if (definitelyGreaterThan(new_focused_percent, 0.05, DBL_EPSILON) &&
+            if (definitelyGreaterThan(new_current_percent, 0.05, DBL_EPSILON) &&
                 definitelyGreaterThan(new_other_percent, 0.05, DBL_EPSILON)) {
-                focused->percent += ((double)ppt / 100.0);
+                current->percent += ((double)ppt / 100.0);
                 other->percent -= ((double)ppt / 100.0);
-                LOG("focused->percent after = %f\n", focused->percent);
+                LOG("current->percent after = %f\n", current->percent);
                 LOG("other->percent after = %f\n", other->percent);
             } else {
                 LOG("Not resizing, already at minimum size\n");
