@@ -146,8 +146,8 @@ void floating_enable(Con *con, bool automatic) {
              nc->rect.x, nc->rect.y);
         /* Take the relative coordinates of the current output, then add them
          * to the coordinate space of the correct output */
-        uint32_t rel_x = (nc->rect.x - current_output->con->rect.x);
-        uint32_t rel_y = (nc->rect.y - current_output->con->rect.y);
+        uint32_t rel_x = (nc->rect.x - (current_output ? current_output->con->rect.x : 0));
+        uint32_t rel_y = (nc->rect.y - (current_output ? current_output->con->rect.y : 0));
         nc->rect.x = correct_output->rect.x + rel_x;
         nc->rect.y = correct_output->rect.y + rel_y;
     }
