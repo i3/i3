@@ -25,6 +25,12 @@ i3-wm (4.0.2-0) unstable; urgency=low
   * Bugfix: Don’t start with workspace 'next' when the command 'workspace next'
     is bound in the config file
   * Bugfix: Set focus to where the mouse pointer is when starting
+  * Bugfix: Don’t change focus when assigned windows start on invisible
+    workspaces
+  * Bugfix: Don’t use absolute paths for exec in the config file
+  * Bugfix: Fix crash when using 'focus mode_toggle' on an empty workspace
+  * Bugfix: Make the 'resize' command work inside tabbed/stacked cons
+  * Bugfix: Correctly place floating windows on their appropriate output
 
  -- Michael Stapelberg <michael@stapelberg.de>  Sun, 07 Aug 2011 18:13:29 +0200
 
