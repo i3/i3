@@ -255,6 +255,7 @@ void x_window_kill(xcb_window_t window, kill_window_t kill_window) {
  */
 void x_draw_decoration(Con *con) {
     Con *parent = con->parent;
+    bool leaf = con_is_leaf(con);
     /* This code needs to run for:
      *  • leaf containers
      *  • non-leaf containers which are in a stacked/tabbed container
@@ -262,7 +263,7 @@ void x_draw_decoration(Con *con) {
      * It does not need to run for:
      *  • floating containers (they don’t have a decoration)
      */
-    if ((!con_is_leaf(con) &&
+    if ((!leaf &&
          parent->layout != L_STACKED &&
          parent->layout != L_TABBED) ||
         con->type == CT_FLOATING_CON)
@@ -278,7 +279,7 @@ void x_draw_decoration(Con *con) {
     /* Skip containers whose pixmap has not yet been created (can happen when
      * decoration rendering happens recursively for a window for which
      * x_push_node() was not yet called) */
-    if (con->pixmap == XCB_NONE) {
+    if (leaf && con->pixmap == XCB_NONE) {
         DLOG("pixmap not yet created, not rendering\n");
         return;
     }
@@ -499,7 +500,7 @@ void x_deco_recurse(Con *con) {
     }
 
     if ((con->type != CT_ROOT && con->type != CT_OUTPUT) &&
-        con->mapped)
+        (!leaf || con->mapped))
         x_draw_decoration(con);
 }
 
