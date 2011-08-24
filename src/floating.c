@@ -80,7 +80,8 @@ void floating_enable(Con *con, bool automatic) {
     /* we need to set the parent afterwards instead of passing it as an
      * argument to con_new() because nc would be inserted into the tiling layer
      * otherwise. */
-    nc->parent = con_get_workspace(con);
+    Con *ws = con_get_workspace(con);
+    nc->parent = ws;
 
     /* check if the parent container is empty and close it if so */
     if ((con->parent->type == CT_CON || con->parent->type == CT_FLOATING_CON) && con_num_children(con->parent) == 0) {
@@ -118,11 +119,27 @@ void floating_enable(Con *con, bool automatic) {
      * 1pixel/borderless mode */
     nc->rect.height += deco_height + 4;
     nc->rect.width += 4;
+
+    /* Sanity check: Are the coordinates on the appropriate output? If not, we
+     * need to change them */
+    Output *current_output = get_output_containing(nc->rect.x, nc->rect.y);
+    Con *correct_output = con_get_output(ws);
+    if (!current_output || current_output->con != correct_output) {
+        DLOG("This floating window is on the wrong output, fixing coordinates (currently (%d, %d))\n",
+             nc->rect.x, nc->rect.y);
+        /* Take the relative coordinates of the current output, then add them
+         * to the coordinate space of the correct output */
+        uint32_t rel_x = (nc->rect.x - current_output->con->rect.x);
+        uint32_t rel_y = (nc->rect.y - current_output->con->rect.y);
+        nc->rect.x = correct_output->rect.x + rel_x;
+        nc->rect.y = correct_output->rect.y + rel_y;
+    }
+
     DLOG("Floating rect: (%d, %d) with %d x %d\n", nc->rect.x, nc->rect.y, nc->rect.width, nc->rect.height);
     nc->orientation = NO_ORIENTATION;
     nc->type = CT_FLOATING_CON;
-    TAILQ_INSERT_TAIL(&(nc->parent->floating_head), nc, floating_windows);
-    TAILQ_INSERT_TAIL(&(nc->parent->focus_head), nc, focused);
+    TAILQ_INSERT_TAIL(&(ws->floating_head), nc, floating_windows);
+    TAILQ_INSERT_TAIL(&(ws->focus_head), nc, focused);
 
     /* 3: attach the child to the new parent container */
     con->parent = nc;
@@ -145,7 +162,6 @@ void floating_enable(Con *con, bool automatic) {
             nc->rect.y = leader->rect.y + (leader->rect.height / 2) - (nc->rect.height / 2);
         } else {
             /* center the window on workspace as fallback */
-            Con *ws = nc->parent;
             nc->rect.x = ws->rect.x + (ws->rect.width / 2) - (nc->rect.width / 2);
             nc->rect.y = ws->rect.y + (ws->rect.height / 2) - (nc->rect.height / 2);
         }
@@ -172,7 +188,6 @@ void floating_enable(Con *con, bool automatic) {
         return;
 
     ELOG("No output found at destination coordinates, centering floating window on current ws\n");
-    Con *ws = nc->parent;
     nc->rect.x = ws->rect.x + (ws->rect.width / 2) - (nc->rect.width / 2);
     nc->rect.y = ws->rect.y + (ws->rect.height / 2) - (nc->rect.height / 2);
 }
