@@ -540,10 +540,14 @@ update_netwm_state:
 /*
  * Moves the given container to the currently focused container on the given
  * workspace.
+ *
+ * The dont_warp flag disables pointer warping and will be set when this
+ * function is called while dragging a floating window.
+ *
  * TODO: is there a better place for this function?
  *
  */
-void con_move_to_workspace(Con *con, Con *workspace) {
+void con_move_to_workspace(Con *con, Con *workspace, bool dont_warp) {
     if (con->type == CT_WORKSPACE) {
         DLOG("Moving workspaces is not yet implemented.\n");
         return;
@@ -602,9 +606,9 @@ void con_move_to_workspace(Con *con, Con *workspace) {
             con->rect.y = dest_output->rect.y + rel_y;
         }
 
-        /* Unset warp_to if target con is floating.  Otherwise, set warp_to to
-         * current target container. */
-        if (con->type == CT_FLOATING_CON)
+        /* Don’t warp if told so (when dragging floating windows with the
+         * mouse for example) */
+        if (dont_warp)
             x_set_warp_to(NULL);
         else
             x_set_warp_to(&(con->rect));
