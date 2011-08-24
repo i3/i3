@@ -592,6 +592,16 @@ void con_move_to_workspace(Con *con, Con *workspace) {
         workspace_is_visible(workspace)) {
         workspace_show(workspace->name);
 
+        if (con->type == CT_FLOATING_CON) {
+            DLOG("Floating window, fixing coordinates\n");
+            /* Take the relative coordinates of the current output, then add them
+             * to the coordinate space of the correct output */
+            uint32_t rel_x = (con->rect.x - source_output->rect.x);
+            uint32_t rel_y = (con->rect.y - source_output->rect.y);
+            con->rect.x = dest_output->rect.x + rel_x;
+            con->rect.y = dest_output->rect.y + rel_y;
+        }
+
         /* Unset warp_to if target con is floating.  Otherwise, set warp_to to
          * current target container. */
         if (con->type == CT_FLOATING_CON)
