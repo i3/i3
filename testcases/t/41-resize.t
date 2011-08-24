@@ -47,6 +47,32 @@ is($nodes->[0]->{percent}, 0.25, 'top window got only 25%');
 is($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
 
 ############################################################
+# checks that resizing within stacked/tabbed cons works
+############################################################
+
+$tmp = fresh_workspace;
+
+cmd 'split v';
+
+$top = open_standard_window($x);
+sleep 0.25;
+$bottom = open_standard_window($x);
+sleep 0.25;
+
+cmd 'split h';
+cmd 'layout stacked';
+
+($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[0]->{percent}, 0.5, 'top window got 50%');
+is($nodes->[1]->{percent}, 0.5, 'bottom window got 50%');
+
+cmd 'resize grow up 10 px or 25 ppt';
+
+($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[0]->{percent}, 0.25, 'top window got 25%');
+is($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
+
+############################################################
 # checks that resizing floating windows works
 ############################################################
 
