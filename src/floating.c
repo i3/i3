@@ -120,6 +120,23 @@ void floating_enable(Con *con, bool automatic) {
     nc->rect.height += deco_height + 4;
     nc->rect.width += 4;
 
+    /* Some clients (like GIMP’s color picker window) get mapped
+     * to (0, 0), so we push them to a reasonable position
+     * (centered over their leader) */
+    if (nc->rect.x == 0 && nc->rect.y == 0) {
+        Con *leader;
+        if (con->window && con->window->leader != XCB_NONE &&
+            (leader = con_by_window_id(con->window->leader)) != NULL) {
+            DLOG("Centering above leader\n");
+            nc->rect.x = leader->rect.x + (leader->rect.width / 2) - (nc->rect.width / 2);
+            nc->rect.y = leader->rect.y + (leader->rect.height / 2) - (nc->rect.height / 2);
+        } else {
+            /* center the window on workspace as fallback */
+            nc->rect.x = ws->rect.x + (ws->rect.width / 2) - (nc->rect.width / 2);
+            nc->rect.y = ws->rect.y + (ws->rect.height / 2) - (nc->rect.height / 2);
+        }
+    }
+
     /* Sanity check: Are the coordinates on the appropriate output? If not, we
      * need to change them */
     Output *current_output = get_output_containing(nc->rect.x, nc->rect.y);
@@ -149,23 +166,6 @@ void floating_enable(Con *con, bool automatic) {
     /* 4: set the border style as specified with new_float */
     if (automatic)
         con->border_style = config.default_floating_border;
-
-    /* Some clients (like GIMP’s color picker window) get mapped
-     * to (0, 0), so we push them to a reasonable position
-     * (centered over their leader) */
-    if (nc->rect.x == 0 && nc->rect.y == 0) {
-        Con *leader;
-        if (con->window && con->window->leader != XCB_NONE &&
-            (leader = con_by_window_id(con->window->leader)) != NULL) {
-            DLOG("Centering above leader\n");
-            nc->rect.x = leader->rect.x + (leader->rect.width / 2) - (nc->rect.width / 2);
-            nc->rect.y = leader->rect.y + (leader->rect.height / 2) - (nc->rect.height / 2);
-        } else {
-            /* center the window on workspace as fallback */
-            nc->rect.x = ws->rect.x + (ws->rect.width / 2) - (nc->rect.width / 2);
-            nc->rect.y = ws->rect.y + (ws->rect.height / 2) - (nc->rect.height / 2);
-        }
-    }
 
     TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
     TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
