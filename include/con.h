@@ -131,10 +131,14 @@ void con_toggle_fullscreen(Con *con, int fullscreen_mode);
 /**
  * Moves the given container to the currently focused container on the given
  * workspace.
+ *
+ * The dont_warp flag disables pointer warping and will be set when this
+ * function is called while dragging a floating window.
+ *
  * TODO: is there a better place for this function?
  *
  */
-void con_move_to_workspace(Con *con, Con *workspace);
+void con_move_to_workspace(Con *con, Con *workspace, bool dont_warp);
 
 /**
  * Returns the orientation of the given container (for stacked containers,
