@@ -212,7 +212,13 @@ void refresh_statusline() {
     }
 
     xcb_char2b_t *text = (xcb_char2b_t*) convert_utf8_to_ucs2(statusline, &glyph_count);
+    uint32_t old_statusline_width = statusline_width;
     statusline_width = predict_text_extents(text, glyph_count);
+    /* If the statusline is bigger than our screen we need to make sure that
+     * the pixmap provides enough space, so re-allocate if the width grew */
+    if (statusline_width > xcb_screen->width_in_pixels &&
+        statusline_width > old_statusline_width)
+        realloc_sl_buffer();
 
     xcb_rectangle_t rect = { 0, 0, xcb_screen->width_in_pixels, font_height };
     xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_clear, 1, &rect);
@@ -700,13 +706,15 @@ void destroy_window(i3_output *output) {
  *
  */
 void realloc_sl_buffer() {
+    DLOG("Re-allocating statusline-buffer, statusline_width = %d, xcb_screen->width_in_pixels = %d\n",
+         statusline_width, xcb_screen->width_in_pixels);
     xcb_free_pixmap(xcb_connection, statusline_pm);
     statusline_pm = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
                                                                xcb_screen->root_depth,
                                                                statusline_pm,
                                                                xcb_root,
-                                                               xcb_screen->width_in_pixels,
+                                                               MAX(xcb_screen->width_in_pixels, statusline_width),
                                                                xcb_screen->height_in_pixels);
 
     uint32_t mask = XCB_GC_FOREGROUND;
