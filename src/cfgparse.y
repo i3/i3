@@ -397,13 +397,18 @@ void parse_file(const char *f) {
             continue;
 
         if (strcasecmp(key, "set") == 0) {
-            if (value[0] != '$')
-                die("Malformed variable assignment, name has to start with $\n");
+            if (value[0] != '$') {
+                ELOG("Malformed variable assignment, name has to start with $\n");
+                continue;
+            }
 
             /* get key/value for this variable */
             char *v_key = value, *v_value;
-            if ((v_value = strstr(value, " ")) == NULL)
-                die("Malformed variable assignment, need a value\n");
+            if ((v_value = strstr(value, " ")) == NULL &&
+                (v_value = strstr(value, "\t")) == NULL) {
+                ELOG("Malformed variable assignment, need a value\n");
+                continue;
+            }
 
             *(v_value++) = '\0';
 
