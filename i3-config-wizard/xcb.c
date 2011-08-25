@@ -110,7 +110,8 @@ xcb_window_t open_input_window(xcb_connection_t *conn, uint32_t width, uint32_t 
         values[0] = 0;
 
 	mask |= XCB_CW_EVENT_MASK;
-	values[1] = XCB_EVENT_MASK_EXPOSURE;
+	values[1] = XCB_EVENT_MASK_EXPOSURE |
+                    XCB_EVENT_MASK_BUTTON_PRESS;
 
         xcb_create_window(conn,
                           XCB_COPY_FROM_PARENT,
