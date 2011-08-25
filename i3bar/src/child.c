@@ -40,6 +40,8 @@ void cleanup() {
         ev_io_stop(main_loop, stdin_io);
         FREE(stdin_io);
         FREE(statusline_buffer);
+	/* statusline pointed to memory within statusline_buffer */
+	statusline = NULL;
     }
 
     if (child_sig != NULL) {
@@ -78,7 +80,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
             }
 
             /* end of file, kill the watcher */
-            DLOG("stdin: EOF\n");
+            ELOG("stdin: received EOF\n");
             cleanup();
             break;
         }
@@ -110,7 +112,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  *
  */
 void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
-    DLOG("Child (pid: %d) unexpectedly exited with status %d\n",
+    ELOG("Child (pid: %d) unexpectedly exited with status %d\n",
            child_pid,
            watcher->rstatus);
     cleanup();
