@@ -611,7 +611,8 @@ The IPC socket is enabled by default and will be created in
 of i3.
 
 You can override the default path through the environment-variable +I3SOCK+ or
-by specifying the +ipc-socket+ directive.
+by specifying the +ipc-socket+ directive. This is discouraged, though, since i3
+does the right thing by default.
 
 *Examples*:
 ----------------------------
@@ -748,7 +749,7 @@ bindsym mod+l move up
 bindsym mod+semicolon move right
 ----------------------
 
-=== Changing workspaces/moving containers to workspaces
+=== Changing (named) workspaces/moving to workspaces
 
 To change to a specific workspace, use the +workspace+ command, followed by the
 number or name of the workspace. To move containers to specific workspaces, use
@@ -774,6 +775,32 @@ bindsym mod+Shift+1 move workspace 1
 bindsym mod+Shift+2 move workspace 2
 ...
 -------------------------
+
+==== Named workspaces
+
+Workspaces are identified by their name. So, instead of using numbers in the
+workspace command, you can use an arbitrary name:
+
+*Example*:
+-------------------------
+bindsym mod+1 workspace mail
+...
+-------------------------
+
+If you want the workspace to have a number *and* a name, just prefix the
+number, like this:
+
+*Example*:
+-------------------------
+bindsym mod+1 workspace 1: mail
+bindsym mod+2 workspace 2: www
+...
+-------------------------
+
+Note that the workspace will really be named "1: mail". i3 treats workspace
+names beginning with a number in a slightly special way. Normally, named
+workspaces are ordered the way they appeared. When they start with a number, i3
+will order them numerically.
 
 [[resizingconfig]]
 
