@@ -82,7 +82,8 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
             /* end of file, kill the watcher */
             ELOG("stdin: received EOF\n");
             cleanup();
-            break;
+            draw_bars();
+            return;
         }
         rec += n;
 
