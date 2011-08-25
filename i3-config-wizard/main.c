@@ -282,6 +282,29 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 }
 
 /*
+ * Handle button presses to make clicking on "<win>" and "<alt>" work
+ *
+ */
+static void handle_button_press(xcb_button_press_event_t* event) {
+    if (current_step != STEP_GENERATE)
+        return;
+
+    if (event->event_x >= 32 && event->event_x <= 68 &&
+        event->event_y >= 45 && event->event_y <= 54) {
+        modifier = MOD_SUPER;
+        handle_expose();
+    }
+
+    if (event->event_x >= 32 && event->event_x <= 68 &&
+        event->event_y >= 56 && event->event_y <= 70) {
+        modifier = MOD_ALT;
+        handle_expose();
+    }
+
+    return;
+}
+
+/*
  * Creates the config file and tells i3 to reload.
  *
  */
@@ -533,6 +556,10 @@ int main(int argc, char *argv[]) {
                 break;
 
             /* TODO: handle mappingnotify */
+
+            case XCB_BUTTON_PRESS:
+                handle_button_press((xcb_button_press_event_t*)event);
+                break;
 
             case XCB_EXPOSE:
                 handle_expose();
