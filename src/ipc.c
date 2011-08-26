@@ -490,7 +490,11 @@ IPC_HANDLER(get_marks) {
     y(array_close);
 
     const unsigned char *payload;
+#if YAJL_MAJOR >= 2
+    size_t length;
+#else
     unsigned int length;
+#endif
     y(get_buf, &payload, &length);
 
     ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_MARKS, length);
