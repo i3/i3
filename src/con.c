@@ -362,7 +362,7 @@ Con *con_inside_floating(Con *con) {
  * Checks if the given container is inside a focused container.
  *
  */
-Con *con_inside_focused(Con *con) {
+bool con_inside_focused(Con *con) {
     if (con == focused)
         return true;
     if (!con->parent)
