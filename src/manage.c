@@ -223,7 +223,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE | A_TO_OUTPUT))) {
             DLOG("Assignment matches (%p)\n", match);
             if (assignment->type == A_TO_WORKSPACE) {
-                nc = con_descend_focused(workspace_get(assignment->dest.workspace, NULL));
+                nc = con_descend_tiling_focused(workspace_get(assignment->dest.workspace, NULL));
                 DLOG("focused on ws %s: %p / %s\n", assignment->dest.workspace, nc, nc->name);
                 if (nc->type == CT_WORKSPACE)
                     nc = tree_open_con(nc, cwindow);
