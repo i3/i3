@@ -813,6 +813,9 @@ void x_push_changes(Con *con) {
     if (stacking_changed)
         ewmh_update_client_list_stacking(btt_stack, btt_stack_num);
 
+    DLOG("\n\n PUSHING CHANGES\n\n");
+    x_push_node(con);
+
     //DLOG("Re-enabling EnterNotify\n");
     values[0] = FRAME_EVENT_MASK;
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
@@ -821,8 +824,6 @@ void x_push_changes(Con *con) {
     }
     //DLOG("Done, EnterNotify re-enabled\n");
 
-    DLOG("\n\n PUSHING CHANGES\n\n");
-    x_push_node(con);
     x_deco_recurse(con);
 
     xcb_window_t to_focus = focused->frame;
