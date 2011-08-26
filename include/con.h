@@ -72,7 +72,7 @@ Con *con_inside_floating(Con *con);
  * Checks if the given container is inside a focused container.
  *
  */
-Con *con_inside_focused(Con *con);
+bool con_inside_focused(Con *con);
 
 /**
  * Returns the container with the given client window ID or NULL if no such
