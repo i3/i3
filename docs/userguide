@@ -78,7 +78,7 @@ tabbed::
 The same principle as +stacking+, but the list of windows at the top is only
 a single line which is vertically split.
 
-To switch modes, press +mod+e+ for default, +mod+h+ for stacking and
+To switch modes, press +mod+e+ for default, +mod+s+ for stacking and
 +mod+w+ for tabbed.
 
 image:modes.png[Container modes]
