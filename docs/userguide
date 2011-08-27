@@ -590,11 +590,14 @@ area of the termianal and the i3 border.
 
 Colors are in HTML hex format (#rrggbb), see the following example:
 
-*Examples*:
---------------------------------------
-# class        border  backgr. text
-client.focused #2F343A #900000 #FFFFFF
---------------------------------------
+*Examples (default colors)*:
+-----------------------------------------------
+# class                 border  backgr. text
+client.focused          #4c7899 #285577 #ffffff
+client.focused_inactive #333333 #5f676a #ffffff
+client.unfocused        #333333 #222222 #888888
+client.urgent           #2f343a #900000 #ffffff
+-----------------------------------------------
 
 Note that for the window decorations, the color around the child window is the
 background color, and the border color is only the two thin lines at the top of
