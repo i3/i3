@@ -66,6 +66,28 @@ ok(@{get_ws_content($tmp)} == 0, 'special window not on current workspace');
 ok(@{get_ws_content('targetws')} == 1, 'special window on targetws');
 ok(get_ws($tmp)->{focused}, 'current workspace still focused');
 
+#####################################################################
+# the same test, but with a floating window
+#####################################################################
+
+$window = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#0000ff',
+    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
+);
+
+$window->_create;
+set_wm_class($window->id, 'special', 'special');
+$window->name('special window');
+$window->map;
+sleep 0.25;
+
+
+ok(@{get_ws_content($tmp)} == 0, 'special window not on current workspace');
+ok(@{get_ws_content('targetws')} == 1, 'special window on targetws');
+ok(get_ws($tmp)->{focused}, 'current workspace still focused');
+
 exit_gracefully($process->pid);
 
 $window->destroy;
