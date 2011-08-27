@@ -770,3 +770,73 @@ git format-patch origin
 -----------------------
 
 Just send us the generated file via email.
+
+== Thought experiments
+
+In this section, we collect thought experiments, so that we don’t forget our
+thoughts about specific topics. They are not necessary to get into hacking i3,
+but if you are interested in one of the topics they cover, you should read them
+before asking us why things are the way they are or why we don’t implement
+things.
+
+=== Using cgroups per workspace
+
+cgroups (control groups) are a linux-only feature which provides the ability to
+group multiple processes. For each group, you can individually set resource
+limits, like allowed memory usage. Furthermore, and more importantly for our
+purposes, they serve as a namespace, a label which you can attach to processes
+and their children.
+
+One interesting use for cgroups is having one cgroup per workspace (or
+container, doesn’t really matter). That way, you could set different priorities
+and have a workspace for important stuff (say, writing a LaTeX document or
+programming) and a workspace for unimportant background stuff (say,
+JDownloader). Both tasks can obviously consume a lot of I/O resources, but in
+this example it doesn’t really matter if JDownloader unpacks the download a
+minute earlier or not. However, your compiler should work as fast as possible.
+Having one cgroup per workspace, you would assign more resources to the
+programming workspace.
+
+Another interesting feature is that an inherent problem of the workspace
+concept could be solved by using cgroups: When starting an application on
+workspace 1, then switching to workspace 2, you will get the application’s
+window(s) on workspace 2 instead of the one you started it on. This is because
+the window manager does not have any mapping between the process it starts (or
+gets started in any way) and the window(s) which appear.
+
+Imagine for example using dmenu: The user starts dmenu by pressing Mod+d, dmenu
+gets started with PID 3390. The user then decides to launch Firefox, which
+takes a long time. So he enters firefox into dmenu and presses enter. Firefox
+gets started with PID 4001. When it finally finishes loading, it creates an X11
+window and uses MapWindow to make it visible. This is the first time i3
+actually gets in touch with Firefox. It decides to map the window, but it has
+no way of knowing that this window (even though it has the _NET_WM_PID property
+set to 4001) belongs to the dmenu the user started before.
+
+How do cgroups help with this? Well, when pressing Mod+d to launch dmenu, i3
+would create a new cgroup, let’s call it i3-3390-1. It launches dmenu in that
+cgroup, which gets PID 3390. As before, the user enters firefox and Firefox
+gets launched with PID 4001. This time, though, the Firefox process with PID
+4001 is *also* member of the cgroup i3-3390-1 (because fork()ing in a cgroup
+retains the cgroup property). Therefore, when mapping the window, i3 can look
+up in which cgroup the process is and can establish a mapping between the
+workspace and the window.
+
+There are multiple problems with this approach:
+
+. Every application has to properly set +_NET_WM_PID+. This is acceptable and
+  patches can be written for the few applications which don’t set the hint yet.
+. It does only work on Linux, since cgroups are a Linux-only feature. Again,
+  this is acceptable.
+. The main problem is that some applications create X11 windows completely
+  independent of UNIX processes. An example for this is Chromium (or
+  gnome-terminal), which, when being started a second time, communicates with
+  the first process and lets the first process open a new window. Therefore, if
+  you have a Chromium window on workspace 2 and you are currently working on
+  workspace 3, starting +chromium+ does not lead to the desired result (the
+  window will open on workspace 2).
+
+Therefore, my conclusion is that the only proper way of fixing the "window gets
+opened on the wrong workspace" problem is in the application itself. Most
+modern applications support freedesktop startup-notifications  which can be
+used for this.
