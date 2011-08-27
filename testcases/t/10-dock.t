@@ -61,6 +61,25 @@ is($docknode->{rect}->{y}, 0, 'dock node placed at y=0');
 is($docknode->{rect}->{width}, $primary->rect->width, 'dock node as wide as the screen');
 is($docknode->{rect}->{height}, 30, 'dock node has unchanged height');
 
+#####################################################################
+# check that re-configuring the height works
+#####################################################################
+
+$window->rect(X11::XCB::Rect->new(x => 0, y => 0, width => 50, height => 40));
+
+sleep 0.25;
+
+@docked = get_dock_clients('top');
+is(@docked, 1, 'one dock client found');
+
+# verify the position/size
+$docknode = $docked[0];
+
+is($docknode->{rect}->{x}, 0, 'dock node placed at x=0');
+is($docknode->{rect}->{y}, 0, 'dock node placed at y=0');
+is($docknode->{rect}->{width}, $primary->rect->width, 'dock node as wide as the screen');
+is($docknode->{rect}->{height}, 40, 'dock height changed');
+
 $window->destroy;
 
 sleep 0.25;
