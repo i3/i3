@@ -17,7 +17,7 @@
 extern xcb_connection_t *conn;
 
 void floating_enable(Con *con, bool automatic) {
-    bool set_focus = true;
+    bool set_focus = (con == focused);
 
     if (con_is_floating(con)) {
         LOG("Container is already in floating mode, not doing anything.\n");
@@ -170,7 +170,6 @@ void floating_enable(Con *con, bool automatic) {
     render_con(nc, false);
     render_con(con, false);
 
-    // TODO: don’t influence focus handling when Con was not focused before.
     if (set_focus)
         con_focus(con);
 
