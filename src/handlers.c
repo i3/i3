@@ -374,40 +374,20 @@ static int handle_configure_request(xcb_configure_request_event_t *event) {
         tree_render();
     }
 
+    /* Dock windows can be reconfigured in their height */
+    if (con->parent && con->parent->type == CT_DOCKAREA) {
+        DLOG("Dock window, only height reconfiguration allowed\n");
+        if (event->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
+            DLOG("Height given, changing\n");
+
+            con->geometry.height = event->height;
+            tree_render();
+        }
+    }
+
     fake_absolute_configure_notify(con);
 
     return 1;
-#if 0
-        /* Dock clients can be reconfigured in their height */
-        if (client->dock) {
-                DLOG("Reconfiguring height of this dock client\n");
-
-                if (!(event->value_mask & XCB_CONFIG_WINDOW_HEIGHT)) {
-                        DLOG("Ignoring configure request, no height given\n");
-                        return 1;
-                }
-
-                client->desired_height = event->height;
-                render_workspace(conn, c_ws->output, c_ws);
-                xcb_flush(conn);
-
-                return 1;
-        }
-
-        if (client->fullscreen) {
-                DLOG("Client is in fullscreen mode\n");
-
-                Rect child_rect = client->container->workspace->rect;
-                child_rect.x = child_rect.y = 0;
-                fake_configure_notify(conn, child_rect, client->child);
-
-                return 1;
-        }
-
-        fake_absolute_configure_notify(conn, client);
-
-        return 1;
-#endif
 }
 #if 0
 
