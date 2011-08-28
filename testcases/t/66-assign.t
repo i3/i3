@@ -182,4 +182,51 @@ exit_gracefully($process->pid);
 
 sleep 0.25;
 
+#####################################################################
+# regression test: dock clients with floating assignments should not crash
+# (instead, nothing should happen - dock clients can’t float)
+# ticket #501
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+assign "special" → ~
+EOT
+
+$process = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
+my @docked = get_dock_clients;
+is(@docked, 0, 'no dock clients yet');
+
+my $window = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#0000ff',
+    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+);
+
+$window->_create;
+set_wm_class($window->id, 'special', 'special');
+$window->name('special window');
+$window->map;
+sleep 0.25;
+
+my $content = get_ws($tmp);
+ok(@{$content->{nodes}} == 0, 'no tiling cons');
+ok(@{$content->{floating_nodes}} == 0, 'one floating con');
+@docked = get_dock_clients;
+is(@docked, 1, 'no dock clients yet');
+
+$window->destroy;
+
+does_i3_live;
+
+exit_gracefully($process->pid);
+
+sleep 0.25;
+
 done_testing;
