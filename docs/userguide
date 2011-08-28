@@ -690,6 +690,54 @@ force_focus_wrapping yes
 
 == List of commands
 
+Commands are what you bind to specific keypresses. You can also issue commands
+at runtime without pressing a key by using the IPC interface. An easy way to
+do this is to use the +i3-msg+ utility:
+
+*Example*:
+--------------------------
+# execute this on your shell to make the current container borderless
+i3-msg border none
+--------------------------
+
+Commands can be chained by using +;+ (a semicolon). So, to move a window to a
+specific workspace and immediately switch to that workspace, you can configure
+the following keybinding:
+
+*Example*:
+-------------------------------------------
+bindsym mod+x move workspace 3; workspace 3
+-------------------------------------------
+
+Furthermore, you can change the scope of a command, that is, which containers
+should be affected by that command, by using various criteria. These are
+prefixed in square brackets to every command. If you want to kill all windows
+which have the class Firefox, use:
+
+*Example*:
+------------------------------------
+bindsym mod+x [class="Firefox"] kill
+------------------------------------
+
+The criteria which are currently implemented are:
+
+class::
+	Compares the window class (the second part of WM_CLASS)
+instance::
+	Compares the window instance (the first part of WM_CLASS)
+id::
+	Compares the X11 window ID, which you can get via +xwininfo+ for example.
+title::
+	Compares the X11 window title (_NET_WM_NAME or WM_NAME as fallback).
+mark::
+	Compares the mark set for this container, see <<vim_like_marks>>.
+con_id::
+	Compares the i3-internal container ID, which you can get via the IPC
+	interface. Handy for scripting.
+
+Note that currently all criteria are compared case-insensitive and do not
+support regular expressions. This is planned to change in the future.
+
 === Splitting containers
 
 The split command makes the current window a split container. Split containers
@@ -828,7 +876,20 @@ will order them numerically.
 === Resizing containers/windows
 
 If you want to resize containers/windows using your keyboard, you can use the
-+resize+ command, I recommend using it inside a so called +mode+:
++resize+ command:
+
+*Syntax*:
+---------------------------------------------------------
+resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt]
+---------------------------------------------------------
+
+Direction can be one of +up+, +down+, +left+ or +right+. The optional pixel
+argument specifies by how many pixels a *floating container* should be grown or
+shrinked (the default is 10 pixels). The ppt argument means percentage points
+and specifies by how many percentage points a *tiling container* should be
+grown or shrinked (the default is 10 percentage points).
+
+I recommend using the resize command inside a so called +mode+:
 
 .Example: Configuration file, defining a mode for resizing
 ----------------------------------------------------------------------
@@ -851,7 +912,9 @@ mode "resize" {
         bindsym semicolon resize grow right
         bindsym Shift+semicolon resize shrink right
 
-        bindcode 36 mode default
+        # back to normal: Enter or Escape
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
 }
 
 # Enter resize mode
