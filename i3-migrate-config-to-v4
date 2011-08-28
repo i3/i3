@@ -67,7 +67,7 @@ sub need_to_convert {
         # have a look at bindings
         next unless $line =~ /^bind/;
 
-        my ($statement, $key, $command) = ($line =~ /([a-zA-Z_-]+)[ \t]+([^ \t]+)[ \t]+(.*)/);
+        my ($statement, $key, $command) = ($line =~ /([a-zA-Z_-]+)\s+([^\s]+)\s+(.*)/);
         return 0 if $command =~ /^layout/ ||
                     $command =~ /^floating/ ||
                     $command =~ /^workspace/ ||
@@ -94,7 +94,7 @@ for my $line (@lines) {
     # skip everything but workspace lines
     next unless defined($statement) and $statement eq 'workspace';
 
-    my ($number, $params) = ($parameters =~ /[ \t]+([0-9]+) (.+)/);
+    my ($number, $params) = ($parameters =~ /\s+([0-9]+)\s+(.+)/);
 
     # save workspace name (unless the line is actually a workspace assignment)
     $workspace_names{$number} = $params unless $params =~ /^output/;
@@ -124,7 +124,7 @@ for my $line (@lines) {
 
     # workspace_bar is gone, you should use i3bar now
     if ($statement eq 'workspace_bar') {
-        $workspace_bar = ($parameters =~ /[ \t+](yes|true|on|enable|active)/);
+        $workspace_bar = ($parameters =~ /\s+(yes|true|on|enable|active)/);
         print "# XXX: REMOVED workspace_bar line. There is no internal workspace bar in v4.\n";
         next;
     }
@@ -153,7 +153,7 @@ for my $line (@lines) {
 
     # one form of this is still ok (workspace assignments), the other (named workspaces) isn’t
     if ($statement eq 'workspace') {
-        my ($number, $params) = ($parameters =~ /[ \t]+([0-9]+) (.+)/);
+        my ($number, $params) = ($parameters =~ /\s+([0-9]+)\s+(.+)/);
         if ($params =~ /^output/) {
             print "$line\n";
             next;
@@ -187,7 +187,7 @@ sub convert_command {
         stack-limit
     );
 
-    my ($statement, $key, $command) = ($line =~ /([a-zA-Z_-]+)[ \t]+([^ \t]+)[ \t]+(.*)/);
+    my ($statement, $key, $command) = ($line =~ /([a-zA-Z_-]+)\s+([^\s]+)\s+(.*)/);
 
     # turn 'bind' to 'bindcode'
     $statement = 'bindcode' if $statement eq 'bind';
@@ -234,14 +234,14 @@ sub convert_command {
 
     # goto command is now obsolete due to criteria + focus command
     if ($command =~ /^goto/) {
-        my ($mark) = ($command =~ /^goto (.*)/);
+        my ($mark) = ($command =~ /^goto\s+(.*)/);
         print qq|$statement $key [con_mark="$mark"] focus\n|;
         return;
     }
 
     # the jump command is also obsolete due to criteria + focus
     if ($command =~ /^jump/) {
-        my ($params) = ($command =~ /^jump (.*)/);
+        my ($params) = ($command =~ /^jump\s+(.*)/);
         if ($params =~ /^"/) {
             # jump ["]window class[/window title]["]
             ($params) = ($params =~ /^"([^"]+)"/);
@@ -262,8 +262,8 @@ sub convert_command {
     }
 
     if (!$replaced && $command =~ /^focus/) {
-        my ($what) = ($command =~ /^focus (.*)/);
-        $what =~ s/[ \t]//g;
+        my ($what) = ($command =~ /^focus\s+(.*)/);
+        $what =~ s/\s//g;
         if ($what eq 'ft') {
             $what = 'mode_toggle';
         } elsif ($what eq 'floating' || $what eq 'tiling') {
@@ -277,7 +277,7 @@ sub convert_command {
     }
 
     if ($command =~ /^mode/) {
-        my ($parameters) = ($command =~ /^mode (.*)/);
+        my ($parameters) = ($command =~ /^mode\s+(.*)/);
         print qq|$statement $key mode "$parameters"\n|;
         return;
     }
@@ -286,7 +286,7 @@ sub convert_command {
     if ($command =~ /^resize/) {
         # OLD: resize <left|right|top|bottom> [+|-]<pixels>\n")
         # NEW: resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt]
-        my ($direction, $sign, $px) = ($command =~ /^resize (left|right|top|bottom) ([+-])([0-9]+)/);
+        my ($direction, $sign, $px) = ($command =~ /^resize\s+(left|right|top|bottom)\s+([+-])([0-9]+)/);
         my $cmd = 'resize ';
         $cmd .= ($sign eq '+' ? 'grow' : 'shrink') . ' ';
         if ($direction eq 'top') {

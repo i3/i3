@@ -265,6 +265,13 @@ $output = migrate_config('bindsym Mod1+f resize bottom +23');
 ok(line_exists($output, qr|^bindsym Mod1\+f resize grow down 23 px$|), 'resize bottom changed');
 
 #####################################################################
+# also resizing, but with indention this time
+#####################################################################
+
+$output = migrate_config("bindsym Mod1+f resize          left    \t +10");
+ok(line_exists($output, qr|^bindsym Mod1\+f resize grow left 10 px$|), 'resize left changed');
+
+#####################################################################
 # check whether jump's parameters get changed correctly
 #####################################################################
 
