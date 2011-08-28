@@ -53,7 +53,7 @@ Con *workspace_get(const char *num, bool *created) {
         long parsed_num = strtol(num, NULL, 10);
         if (parsed_num == LONG_MIN ||
             parsed_num == LONG_MAX ||
-            parsed_num <= 0)
+            parsed_num < 0)
             workspace->num = -1;
         else workspace->num = parsed_num;
         LOG("num = %d\n", workspace->num);
