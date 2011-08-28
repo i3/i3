@@ -19,6 +19,11 @@ extern xcb_connection_t *conn;
 void floating_enable(Con *con, bool automatic) {
     bool set_focus = (con == focused);
 
+    if (con->parent && con->parent->type == CT_DOCKAREA) {
+        LOG("Container is a dock window, not enabling floating mode.\n");
+        return;
+    }
+
     if (con_is_floating(con)) {
         LOG("Container is already in floating mode, not doing anything.\n");
         return;
