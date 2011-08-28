@@ -1,0 +1,82 @@
+
+ ┌─────────────────────────────┐
+ │ Release notes for i3 v4.0.2 │
+ └─────────────────────────────┘
+
+This is the third release of the new major version of i3, v4.0.2. It is a
+bugfix release and considered stable. A lot of bugs and suggestions have been
+reported since the release of v4.0.1. This release fixes 44 bugs and includes a
+few other minor improvements.
+
+
+ ┌────────────────────────────┐
+ │ Changes in v4.0.2          │
+ └────────────────────────────┘
+
+  • i3-config-wizard: handle mouse button clicks on <win> and <alt> texts
+  • i3-config-wizard: check the modifier mapping to decide whether to use Mod1
+    or Mod4
+  • migrate-config: use \s, be a bit more whitespace tolerant
+  • userguide: s/mod+h/mod+s for stacking
+  • userguide: provide the default colors in the colors example
+  • userguide: document force_focus_wrapping directive
+  • userguide: properly document the resize command
+  • userguide: properly document command chaining and criteria
+  • Bugfix: Correctly bind on multiple keycodes if a symbol has more than one
+  • Bugfix: Allow multiple criteria in 'for_window'
+  • Bugfix: Ensure a minimum size when using the 'resize' command
+  • Bugfix: Start on the first named workspace, not always on '1'
+  • Bugfix: Fix resize command with direction != up for floating windows
+  • Bugfix: Correctly set the _NET_CLIENT_LIST_STACKING hint (chromium tabbar)
+  • Bugfix: 'workspace <next|prev>' now takes all outputs into account
+  • Bugfix: i3-wsbar: make workspace names clickable again
+  • Bugfix: i3-wsbar: correctly handle EOF on stdin
+  • Bugfix: i3-wsbar: display a separator between workspaces of each output
+  • Bugfix: Correctly handle the 'instance' criterion (WM_CLASS)
+  • Bugfix: Use correct format string in load_layout (fixes crash in restart)
+  • Bugfix: Fix border rendering (border lines were "cutting" through)
+  • Bugfix: Raise floating windows immediately when dragging/resizing
+  • Bugfix: Make focus switching work accross outputs again
+  • Bugfix: migration-script: handle resize top/bottom correctly
+  • Bugfix: Fix focus issue when moving containers to workspaces
+  • Bugfix: Warp cursor when changing outputs again
+  • Bugfix: i3bar: fix switching to workspaces with extremely long names
+  • Bugfix: i3bar: fix switching to workspaces "next" and "prev"
+  • Bugfix: i3bar: Correctly allocate pixmap for statuslines which are longer
+    than the screen
+  • Bugfix: i3bar: set statusline = NULL on EOF / SIGCHLD
+  • Bugfix: Correctly initialize the verbose flag
+  • Bugfix: Don’t start with workspace 'next' when the command 'workspace next'
+    is bound in the config file
+  • Bugfix: Set focus to where the mouse pointer is when starting
+  • Bugfix: Don’t change focus when assigned windows start on invisible
+    workspaces
+  • Bugfix: Don’t use absolute paths for exec in the config file
+  • Bugfix: Fix crash when using 'focus mode_toggle' on an empty workspace
+  • Bugfix: Make the 'resize' command work inside tabbed/stacked cons
+  • Bugfix: Correctly place floating windows on their appropriate output
+  • Bugfix: Fix coordinates when moving a floating window to a different output
+  • Bugfix: Correctly keep focus when moving non-leaf windows
+  • Bugfix: Accept '\t' in the set command
+  • Bugfix: Only consider tiling windows when attaching tiling windows to a
+    workspace
+  • Bugfix: Correctly render containers when a split container is focused
+  • Bugfix: Correctly recognize duplicate workspace assignments
+  • Bugfix: Re-enable X11 Eventmask •after• pushing all the X11 changes
+  • Bugfix: Fix focus stealing with assignments of floating windows
+  • Bugfix: Re-implement reconfiguring height of dock windows
+  • Bugfix: IPC: return name_json if available
+  • Bugfix: Make 'floating enable' check for dock windows
+
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks go out to the following contributors / reporters:
+
+  andi, Atsutane, BeF, ccount, cls, edelkind, eeemsi, f8l, ioflag, Jan, kraM,
+  marforio, Merovius, Moredread, mseed, Niklas, nutron, pnutzh4x0r, rogutes,
+  Sander, sbedivere, sur5r, thomasba, tilman, Tim, ubitux
+
+-- Michael Stapelberg, 2011-08-28
