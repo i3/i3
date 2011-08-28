@@ -1,3 +1,9 @@
+i3-wm (4.0.3-0) unstable; urgency=low
+
+  * NOT YET RELEASED!
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Sun, 28 Aug 2011 20:17:31 +0200
+
 i3-wm (4.0.2-1) unstable; urgency=low
 
   * i3-config-wizard: handle mouse button clicks on <win> and <alt> texts
