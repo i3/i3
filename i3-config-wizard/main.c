@@ -54,10 +54,11 @@ while (0)
 #include "ipc.h"
 
 enum { STEP_WELCOME, STEP_GENERATE } current_step = STEP_WELCOME;
-enum { MOD_ALT, MOD_SUPER } modifier = MOD_SUPER;
+enum { MOD_Mod1, MOD_Mod4 } modifier = MOD_Mod4;
 
 static char *config_path;
 static xcb_connection_t *conn;
+static xcb_get_modifier_mapping_reply_t *modmap_reply;
 static uint32_t font_id;
 static uint32_t font_bold_id;
 static char *socket_path;
@@ -208,13 +209,13 @@ static int handle_expose() {
         txt(85, 10, "to abort");
 
         /* the not-selected modifier */
-        if (modifier == MOD_SUPER)
+        if (modifier == MOD_Mod4)
             txt(31, 5, "<Alt>");
         else txt(31, 4, "<Win>");
 
         /* the selected modifier */
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font_bold_id);
-        if (modifier == MOD_SUPER)
+        if (modifier == MOD_Mod4)
             txt(31, 4, "<Win>");
         else txt(31, 5, "<Alt>");
 
@@ -271,11 +272,34 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     if (sym == XK_Escape)
         exit(0);
 
-    if (sym == XK_Alt_L)
-        modifier = MOD_ALT;
+    /* Check if this is Mod1 or Mod4. The modmap contains Shift, Lock, Control,
+     * Mod1, Mod2, Mod3, Mod4, Mod5 (in that order) */
+    xcb_keycode_t *modmap = xcb_get_modifier_mapping_keycodes(modmap_reply);
+    /* Mod1? */
+    int mask = 3;
+    for (int i = 0; i < modmap_reply->keycodes_per_modifier; i++) {
+        xcb_keycode_t code = modmap[(mask * modmap_reply->keycodes_per_modifier) + i];
+        if (code == XCB_NONE)
+            continue;
+        printf("Modifier keycode for Mod1: 0x%02x\n", code);
+        if (code == event->detail) {
+            modifier = MOD_Mod1;
+            printf("This is Mod1!\n");
+        }
+    }
 
-    if (sym == XK_Super_L)
-        modifier = MOD_SUPER;
+    /* Mod4? */
+    mask = 6;
+    for (int i = 0; i < modmap_reply->keycodes_per_modifier; i++) {
+        xcb_keycode_t code = modmap[(mask * modmap_reply->keycodes_per_modifier) + i];
+        if (code == XCB_NONE)
+            continue;
+        printf("Modifier keycode for Mod4: 0x%02x\n", code);
+        if (code == event->detail) {
+            modifier = MOD_Mod4;
+            printf("This is Mod4!\n");
+        }
+    }
 
     handle_expose();
     return 1;
@@ -291,13 +315,13 @@ static void handle_button_press(xcb_button_press_event_t* event) {
 
     if (event->event_x >= 32 && event->event_x <= 68 &&
         event->event_y >= 45 && event->event_y <= 54) {
-        modifier = MOD_SUPER;
+        modifier = MOD_Mod4;
         handle_expose();
     }
 
     if (event->event_x >= 32 && event->event_x <= 68 &&
         event->event_y >= 56 && event->event_y <= 70) {
-        modifier = MOD_ALT;
+        modifier = MOD_Mod1;
         handle_expose();
     }
 
@@ -356,7 +380,7 @@ static void finish() {
 
         /* Set the modifier the user chose */
         if (strncmp(walk, "set $mod ", strlen("set $mod ")) == 0) {
-            if (modifier == MOD_ALT)
+            if (modifier == MOD_Mod1)
                 fputs("set $mod Mod1\n", ks_config);
             else fputs("set $mod Mod4\n", ks_config);
             continue;
@@ -459,6 +483,9 @@ int main(int argc, char *argv[]) {
         xcb_connection_has_error(conn))
         errx(1, "Cannot open display\n");
 
+    xcb_get_modifier_mapping_cookie_t modmap_cookie;
+    modmap_cookie = xcb_get_modifier_mapping(conn);
+
     /* Place requests for the atoms we need as soon as possible */
     #define xmacro(atom) \
         xcb_intern_atom_cookie_t atom ## _cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
@@ -468,6 +495,11 @@ int main(int argc, char *argv[]) {
     xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
 
+    if (!(modmap_reply = xcb_get_modifier_mapping_reply(conn, modmap_cookie, NULL)))
+        errx(EXIT_FAILURE, "Could not get modifier mapping\n");
+
+    /* XXX: we should refactor xcb_get_numlock_mask so that it uses the
+     * modifier mapping we already have */
     xcb_get_numlock_mask(conn);
 
     symbols = xcb_key_symbols_alloc(conn);
