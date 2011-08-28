@@ -1,7 +1,14 @@
-i3-wm (4.0.2-0) unstable; urgency=low
+i3-wm (4.0.2-1) unstable; urgency=low
 
-  * NOT YET RELEASED!
   * i3-config-wizard: handle mouse button clicks on <win> and <alt> texts
+  * i3-config-wizard: check the modifier mapping to decide whether to use Mod1
+    or Mod4
+  * migrate-config: use \s, be a bit more whitespace tolerant
+  * userguide: s/mod+h/mod+s for stacking
+  * userguide: provide the default colors in the colors example
+  * userguide: document force_focus_wrapping directive
+  * userguide: properly document the resize command
+  * userguide: properly document command chaining and criteria
   * Bugfix: Correctly bind on multiple keycodes if a symbol has more than one
   * Bugfix: Allow multiple criteria in 'for_window'
   * Bugfix: Ensure a minimum size when using the 'resize' command
@@ -41,8 +48,14 @@ i3-wm (4.0.2-0) unstable; urgency=low
   * Bugfix: Only consider tiling windows when attaching tiling windows to a
     workspace
   * Bugfix: Correctly render containers when a split container is focused
+  * Bugfix: Correctly recognize duplicate workspace assignments
+  * Bugfix: Re-enable X11 Eventmask *after* pushing all the X11 changes
+  * Bugfix: Fix focus stealing with assignments of floating windows
+  * Bugfix: Re-implement reconfiguring height of dock windows
+  * Bugfix: IPC: return name_json if available
+  * Bugfix: Make 'floating enable' check for dock windows
 
- -- Michael Stapelberg <michael@stapelberg.de>  Sun, 07 Aug 2011 18:13:29 +0200
+ -- Michael Stapelberg <michael@stapelberg.de>  Sun, 28 Aug 2011 19:07:43 +0200
 
 i3-wm (4.0.1-1) unstable; urgency=low
 
