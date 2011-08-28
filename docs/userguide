@@ -665,6 +665,29 @@ popup_during_fullscreen <ignore|leave_fullscreen>
 popup_during_fullscreen ignore
 ------------------------------
 
+=== Focus wrapping
+
+When being in a tabbed or stacked container, the first container will be
+focused when you use +focus down+ on the last container -- the focus wraps. If
+however there is another stacked/tabbed container in that direction, focus will
+be set on that container. This is the default behaviour so you can navigate to
+all your windows without having to use +focus parent+.
+
+If you want the focus to *always* wrap and you are aware of using +focus
+parent+ to switch to different containers, you can use the
++force_focus_wrapping+ configuration directive. After enabling it, the focus
+will always wrap.
+
+*Syntax*:
+-----------------------------
+force_focus_wrapping <yes|no>
+-----------------------------
+
+*Example*:
+------------------------
+force_focus_wrapping yes
+------------------------
+
 == List of commands
 
 === Splitting containers
