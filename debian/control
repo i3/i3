@@ -14,8 +14,8 @@ Depends: i3-wm, ${misc:Depends}
 Recommends: i3lock, suckless-tools, i3status
 Description: metapackage (i3 window manager, screen locker, menu, statusbar)
  This metapackage installs the i3 window manager (i3-wm), the i3lock screen
- locker (slightly improved version of slock), suckless-tools which contains dmenu
- and i3status, which displays useful information about your system in
+ locker (slightly improved version of slock), suckless-tools which contains
+ dmenu and i3status, which displays useful information about your system in
  combination with dzen2. These are all the tools you need to use the i3 window
  manager efficiently.
 
