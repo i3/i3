@@ -828,7 +828,20 @@ will order them numerically.
 === Resizing containers/windows
 
 If you want to resize containers/windows using your keyboard, you can use the
-+resize+ command, I recommend using it inside a so called +mode+:
++resize+ command:
+
+*Syntax*:
+---------------------------------------------------------
+resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt]
+---------------------------------------------------------
+
+Direction can be one of +up+, +down+, +left+ or +right+. The optional pixel
+argument specifies by how many pixels a *floating container* should be grown or
+shrinked (the default is 10 pixels). The ppt argument means percentage points
+and specifies by how many percentage points a *tiling container* should be
+grown or shrinked (the default is 10 percentage points).
+
+I recommend using the resize command inside a so called +mode+:
 
 .Example: Configuration file, defining a mode for resizing
 ----------------------------------------------------------------------
@@ -851,7 +864,9 @@ mode "resize" {
         bindsym semicolon resize grow right
         bindsym Shift+semicolon resize shrink right
 
-        bindcode 36 mode default
+        # back to normal: Enter or Escape
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
 }
 
 # Enter resize mode
