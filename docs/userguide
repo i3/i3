@@ -160,7 +160,7 @@ paradigm but can be useful for some corner cases like "Save as" dialog
 windows, or toolbar windows (GIMP or similar). Those windows usually set the
 appropriate hint and are opened in floating mode by default.
 
-You can enable floating mode for a window by pressing +mod+Shift+Space+. By
+You can toggle floating mode for a window by pressing +mod+Shift+Space+. By
 dragging the window’s titlebar with your mouse you can move the window
 around. By grabbing the borders and moving them you can resize the window. You
 can also do that by using the <<floating_modifier>>.
@@ -448,6 +448,8 @@ for_window [class="urxvt"] border 1pixel
 for_window [title="x200: ~/work"] floating enable
 ------------------------------------------------
 
+The valid criteria are the same as those for commands, see <<command_criteria>>.
+
 === Variables
 
 As you learned in the section about keyboard bindings, you will have
@@ -708,6 +710,8 @@ the following keybinding:
 -------------------------------------------
 bindsym mod+x move workspace 3; workspace 3
 -------------------------------------------
+
+[[command_criteria]]
 
 Furthermore, you can change the scope of a command, that is, which containers
 should be affected by that command, by using various criteria. These are
