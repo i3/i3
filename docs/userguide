@@ -415,7 +415,7 @@ This option determines which border style new windows will have.
 
 *Syntax*:
 ---------------------------------------------
-new_window <normal|1pixel|borderless>
+new_window <normal|1pixel|none>
 ---------------------------------------------
 
 *Example*:
