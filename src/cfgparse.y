@@ -188,6 +188,7 @@ static char *migrate_config(char *input, off_t size) {
         ret = read(readpipe[0], converted + read_bytes, conv_size - read_bytes);
         if (ret == -1) {
             warn("Cannot read from pipe");
+            FREE(converted);
             return NULL;
         }
         read_bytes += ret;

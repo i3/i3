@@ -59,8 +59,10 @@ static bool mkdirp(const char *path) {
         copy[strlen(copy)-1] = '\0';
 
     char *sep = strrchr(copy, '/');
-    if (sep == NULL)
+    if (sep == NULL) {
+        FREE(copy);
         return false;
+    }
     *sep = '\0';
     bool result = false;
     if (mkdirp(copy))
