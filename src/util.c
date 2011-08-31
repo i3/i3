@@ -374,11 +374,13 @@ char *store_restart_layout() {
         if (n == -1) {
             perror("write()");
             free(filename);
+            close(fd);
             return NULL;
         }
         if (n == 0) {
             printf("write == 0?\n");
             free(filename);
+            close(fd);
             return NULL;
         }
         written += n;
