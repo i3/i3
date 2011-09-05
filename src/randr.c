@@ -447,10 +447,12 @@ void init_ws_for_output(Output *output, Con *content) {
         if (!exists) {
             /* Set ->num to the number of the workspace, if the name actually
              * is a number or starts with a number */
-            long parsed_num = strtol(ws->name, NULL, 10);
+            char *endptr = NULL;
+            long parsed_num = strtol(ws->name, &endptr, 10);
             if (parsed_num == LONG_MIN ||
                 parsed_num == LONG_MAX ||
-                parsed_num <= 0)
+                parsed_num < 0 ||
+                endptr == ws->name)
                 ws->num = -1;
             else ws->num = parsed_num;
             LOG("Used number %d for workspace with name %s\n", ws->num, ws->name);
