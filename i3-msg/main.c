@@ -245,7 +245,7 @@ int main(int argc, char *argv[]) {
     uint32_t reply_length;
     uint8_t *reply;
     ipc_recv_message(sockfd, message_type, &reply_length, &reply);
-    printf("%.*s", reply_length, reply);
+    printf("%.*s\n", reply_length, reply);
     free(reply);
 
     close(sockfd);
