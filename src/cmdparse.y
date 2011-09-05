@@ -857,6 +857,17 @@ resize:
             double percentage = 1.0 / children;
             LOG("default percentage = %f\n", percentage);
 
+            orientation_t orientation = current->parent->orientation;
+
+            if ((orientation == HORIZ &&
+                 (direction == TOK_UP || direction == TOK_DOWN)) ||
+                (orientation == VERT &&
+                 (direction == TOK_LEFT || direction == TOK_RIGHT))) {
+                LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
+                    (orientation == HORIZ ? "horizontal" : "vertical"));
+                break;
+            }
+
             if (direction == TOK_UP || direction == TOK_LEFT) {
                 other = TAILQ_PREV(current, nodes_head, nodes);
             } else {
@@ -864,7 +875,7 @@ resize:
             }
             if (other == TAILQ_END(workspaces)) {
                 LOG("No other container in this direction found, cannot resize.\n");
-                return 0;
+                break;
             }
             LOG("other->percent = %f\n", other->percent);
             LOG("current->percent before = %f\n", current->percent);
