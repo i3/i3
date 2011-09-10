@@ -64,5 +64,6 @@
 #include "output.h"
 #include "ewmh.h"
 #include "assignments.h"
+#include "regex.h"
 
 #endif
