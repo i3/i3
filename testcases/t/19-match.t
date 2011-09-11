@@ -139,7 +139,7 @@ sleep 0.25;
 
 # two windows should be here
 $content = get_ws_content($tmp);
-ok(@{$content} == 1, 'two windows opened');
+ok(@{$content} == 1, 'window opened');
 
 cmd '[class="^special[0-9]$"] kill';
 
@@ -148,5 +148,33 @@ sleep 0.25;
 $content = get_ws_content($tmp);
 is(@{$content}, 0, 'window killed');
 
+######################################################################
+# check that UTF-8 works when matching
+######################################################################
+
+$tmp = fresh_workspace;
+
+$left = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#0000ff',
+);
+
+$left->_create;
+set_wm_class($left->id, 'special7', 'special7');
+$left->name('ä 3');
+$left->map;
+sleep 0.25;
+
+# two windows should be here
+$content = get_ws_content($tmp);
+ok(@{$content} == 1, 'window opened');
+
+cmd '[title="^\w [3]$"] kill';
+
+sleep 0.25;
+
+$content = get_ws_content($tmp);
+is(@{$content}, 0, 'window killed');
 
 done_testing;

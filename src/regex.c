@@ -21,16 +21,31 @@
  */
 struct regex *regex_new(const char *pattern) {
     const char *error;
-    int offset;
+    int errorcode, offset;
 
     struct regex *re = scalloc(sizeof(struct regex));
     re->pattern = sstrdup(pattern);
-    if (!(re->regex = pcre_compile(pattern, 0, &error, &offset, NULL))) {
-        ELOG("PCRE regular expression compilation failed at %d: %s",
+    /* We use PCRE_UCP so that \B, \b, \D, \d, \S, \s, \W, \w and some POSIX
+     * character classes play nicely with Unicode */
+    int options = PCRE_UCP | PCRE_UTF8;
+    while (!(re->regex = pcre_compile2(pattern, options, &errorcode, &error, &offset, NULL))) {
+        /* If the error is that PCRE was not compiled with UTF-8 support we
+         * disable it and try again */
+        if (errorcode == 32) {
+            options &= ~PCRE_UTF8;
+            continue;
+        }
+        ELOG("PCRE regular expression compilation failed at %d: %s\n",
              offset, error);
         return NULL;
     }
     re->extra = pcre_study(re->regex, 0, &error);
+    /* If an error happened, we print the error message, but continue.
+     * Studying the regular expression leads to faster matching, but it’s not
+     * absolutely necessary. */
+    if (error) {
+        ELOG("PCRE regular expression studying failed: %s\n", error);
+    }
     return re;
 }
 
@@ -43,8 +58,8 @@ struct regex *regex_new(const char *pattern) {
 bool regex_matches(struct regex *regex, const char *input) {
     int rc;
 
-    /* TODO: is strlen(input) correct for UTF-8 matching? */
-    /* TODO: enable UTF-8 */
+    /* We use strlen() because pcre_exec() expects the length of the input
+     * string in bytes */
     if ((rc = pcre_exec(regex->regex, regex->extra, input, strlen(input), 0, 0, NULL, 0)) == 0) {
         LOG("Regular expression \"%s\" matches \"%s\"\n",
             regex->pattern, input);
@@ -57,7 +72,7 @@ bool regex_matches(struct regex *regex, const char *input) {
         return false;
     }
 
-    /* TODO: handle the other error codes */
-    LOG("PCRE error\n");
+    ELOG("PCRE error %d while trying to use regular expression \"%s\" on input \"%s\", see pcreapi(3)\n",
+         rc, regex->pattern, input);
     return false;
 }
