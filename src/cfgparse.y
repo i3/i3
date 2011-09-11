@@ -1137,6 +1137,15 @@ assign:
         assignment->dest.workspace = workspace;
         TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
     }
+    | TOKASSIGN match STR
+    {
+        printf("new assignment, using above criteria, to workspace %s\n", $3);
+        Assignment *assignment = scalloc(sizeof(Assignment));
+        assignment->match = current_match;
+        assignment->type = A_TO_WORKSPACE;
+        assignment->dest.workspace = $3;
+        TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
+    }
     ;
 
 window_class:
