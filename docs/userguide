@@ -431,7 +431,7 @@ change their border style, for example.
 
 *Syntax*:
 -----------------------------
-for_window [criteria] command
+for_window <criteria> command
 -----------------------------
 
 *Examples*:
