@@ -241,6 +241,18 @@ static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
 }
 
 /*
+ * Cleanup handler. Will be called when i3 exits. Kills i3-nagbar with signal
+ * SIGKILL (9) to make sure there are no left-over i3-nagbar processes.
+ *
+ */
+static void nagbar_cleanup(EV_P_ ev_cleanup *watcher, int revent) {
+    if (configerror_pid != -1) {
+        LOG("Sending SIGKILL (9) to i3-nagbar with PID %d\n", configerror_pid);
+        kill(configerror_pid, SIGKILL);
+    }
+}
+
+/*
  * Starts an i3-nagbar process which alerts the user that his configuration
  * file contains one or more errors. Also offers two buttons: One to launch an
  * $EDITOR on the config file and another one to launch a $PAGER on the error
@@ -283,6 +295,12 @@ static void start_configerror_nagbar(const char *config_path) {
     ev_child *child = smalloc(sizeof(ev_child));
     ev_child_init(child, &nagbar_exited, configerror_pid, 0);
     ev_child_start(main_loop, child);
+
+    /* install a cleanup watcher (will be called when i3 exits and i3-nagbar is
+     * still running) */
+    ev_cleanup *cleanup = smalloc(sizeof(ev_cleanup));
+    ev_cleanup_init(cleanup, nagbar_cleanup);
+    ev_cleanup_start(main_loop, cleanup);
 }
 
 /*
