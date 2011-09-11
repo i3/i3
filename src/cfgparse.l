@@ -106,13 +106,6 @@ bindsym                         { yy_push_state(BINDSYM_COND); yy_push_state(EAT
 floating_modifier               { BEGIN(INITIAL); return TOKFLOATING_MODIFIER; }
 workspace                       { BEGIN(INITIAL); return TOKWORKSPACE; }
 output                          { yy_push_state(OUTPUT_COND); yy_push_state(EAT_WHITESPACE); return TOKOUTPUT; }
-screen                          {
-                                  /* for compatibility until v3.φ */
-                                  ELOG("Assignments to screens are DEPRECATED and will not work. " \
-                                       "Please replace them with assignments to outputs.\n");
-                                  yy_push_state(OUTPUT_COND); yy_push_state(EAT_WHITESPACE);
-                                  return TOKOUTPUT;
-                                }
 terminal                        { WS_STRING; return TOKTERMINAL; }
 font                            { WS_STRING; return TOKFONT; }
 assign                          { yy_push_state(ASSIGN_TARGET_COND); yy_push_state(ASSIGN_COND); return TOKASSIGN; }
