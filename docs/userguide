@@ -721,6 +721,9 @@ which have the class Firefox, use:
 *Example*:
 ------------------------------------
 bindsym mod+x [class="Firefox"] kill
+
+# same thing, but case-insensitive
+bindsym mod+x [class="(?i)firefox"] kill
 ------------------------------------
 
 The criteria which are currently implemented are:
