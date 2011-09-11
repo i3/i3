@@ -478,36 +478,58 @@ configuration file and run it before starting i3 (for example in your
 
 [[assign_workspace]]
 
-Specific windows can be matched by window class and/or window title. It is
-recommended that you match on window classes instead of window titles whenever
-possible because some applications first create their window, and then worry
-about setting the correct title. Firefox with Vimperator comes to mind. The
-window starts up being named Firefox, and only when Vimperator is loaded does
-the title change. As i3 will get the title as soon as the application maps the
+To automatically make a specific window show up on a specific workspace, you
+can use an *assignment*. You can match windows by using any criteria,
+see <<command_criteria>>. It is recommended that you match on window classes
+(and instances, when appropriate) instead of window titles whenever possible
+because some applications first create their window, and then worry about
+setting the correct title. Firefox with Vimperator comes to mind. The window
+starts up being named Firefox, and only when Vimperator is loaded does the
+title change. As i3 will get the title as soon as the application maps the
 window (mapping means actually displaying it on the screen), you’d need to have
 to match on 'Firefox' in this case.
 
-You can prefix or suffix workspaces with a `~` to specify that matching clients
-should be put into floating mode. If you specify only a `~`, the client will
-not be put onto any workspace, but will be set floating on the current one.
-
 *Syntax*:
 ------------------------------------------------------------
-assign ["]window class[/window title]["] [→] [workspace]
+assign <criteria> [→] workspace
 ------------------------------------------------------------
 
 *Examples*:
 ----------------------
-assign urxvt 2
-assign urxvt → 2
-assign urxvt → work
-assign "urxvt" → 2
-assign "urxvt/VIM" → 3
-assign "gecko" → 4
+# Assign URxvt terminals to workspace 2
+assign [class="URxvt"] 2
+
+# Same thing, but more precise (exact match instead of substring)
+assign [class="^URxvt$"] 2
+
+# Same thing, but with a beautiful arrow :)
+assign [class="^URxvt$"] → 2
+
+# Assignment to a named workspace
+assign [class="^URxvt$"] → work
+
+# Start urxvt -name irssi
+assign [class="^URxvt$" instance="^irssi$"] → 3
 ----------------------
 
 Note that the arrow is not required, it just looks good :-). If you decide to
 use it, it has to be a UTF-8 encoded arrow, not `->` or something like that.
+
+To get the class and instance, you can use +xprop+. After clicking on the
+window, you will see the following output:
+
+*xwininfo*:
+-----------------------------------
+WM_CLASS(STRING) = "irssi", "URxvt"
+-----------------------------------
+
+The first part of the WM_CLASS is the instance ("irssi" in this example), the
+second part is the class ("URxvt" in this example).
+
+Should you have any problems with assignments, make sure to check the i3
+logfile first (see http://i3wm.org/docs/debugging.html). It includes more
+details about the matching process and the window’s actual class, instance and
+title when starting up.
 
 === Automatically starting applications on i3 startup
 
