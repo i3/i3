@@ -241,6 +241,18 @@ static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
 }
 
 /*
+ * Cleanup handler. Will be called when i3 exits. Kills i3-nagbar with signal
+ * SIGKILL (9) to make sure there are no left-over i3-nagbar processes.
+ *
+ */
+static void nagbar_cleanup(EV_P_ ev_cleanup *watcher, int revent) {
+    if (configerror_pid != -1) {
+        LOG("Sending SIGKILL (9) to i3-nagbar with PID %d\n", configerror_pid);
+        kill(configerror_pid, SIGKILL);
+    }
+}
+
+/*
  * Starts an i3-nagbar process which alerts the user that his configuration
  * file contains one or more errors. Also offers two buttons: One to launch an
  * $EDITOR on the config file and another one to launch a $PAGER on the error
@@ -283,6 +295,12 @@ static void start_configerror_nagbar(const char *config_path) {
     ev_child *child = smalloc(sizeof(ev_child));
     ev_child_init(child, &nagbar_exited, configerror_pid, 0);
     ev_child_start(main_loop, child);
+
+    /* install a cleanup watcher (will be called when i3 exits and i3-nagbar is
+     * still running) */
+    ev_cleanup *cleanup = smalloc(sizeof(ev_cleanup));
+    ev_cleanup_init(cleanup, nagbar_cleanup);
+    ev_cleanup_start(main_loop, cleanup);
 }
 
 /*
@@ -1058,8 +1076,13 @@ workspace_name:
 assign:
     TOKASSIGN window_class STR
     {
-        /* TODO: the assign command also needs some kind of new syntax where we
-         * just use criteria. Then deprecate the old form */
+        /* This is the old, deprecated form of assignments. It’s provided for
+         * compatibility in version (4.1, 4.2, 4.3) and will be removed
+         * afterwards. It triggers an i3-nagbar warning starting from 4.1. */
+        ELOG("You are using the old assign syntax (without criteria). "
+             "Please see the User's Guide for the new syntax and fix "
+             "your config file.\n");
+        context->has_errors = true;
         printf("assignment of %s to *%s*\n", $2, $3);
         char *workspace = $3;
         char *criteria = $2;
@@ -1071,11 +1094,23 @@ assign:
         char *separator = NULL;
         if ((separator = strchr(criteria, '/')) != NULL) {
             *(separator++) = '\0';
-            match->title = regex_new(separator);
+            char *pattern;
+            if (asprintf(&pattern, "(?i)%s", separator) == -1) {
+                ELOG("asprintf failed\n");
+                break;
+            }
+            match->title = regex_new(pattern);
+            free(pattern);
             printf("  title = %s\n", separator);
         }
         if (*criteria != '\0') {
-            match->class = regex_new(criteria);
+            char *pattern;
+            if (asprintf(&pattern, "(?i)%s", criteria) == -1) {
+                ELOG("asprintf failed\n");
+                break;
+            }
+            match->class = regex_new(pattern);
+            free(pattern);
             printf("  class = %s\n", criteria);
         }
         free(criteria);
@@ -1105,6 +1140,15 @@ assign:
 
         assignment->type = A_TO_WORKSPACE;
         assignment->dest.workspace = workspace;
+        TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
+    }
+    | TOKASSIGN match STR
+    {
+        printf("new assignment, using above criteria, to workspace %s\n", $3);
+        Assignment *assignment = scalloc(sizeof(Assignment));
+        assignment->match = current_match;
+        assignment->type = A_TO_WORKSPACE;
+        assignment->dest.workspace = $3;
         TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
     }
     ;

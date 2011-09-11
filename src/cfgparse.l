@@ -75,6 +75,14 @@ EOL     (\r?\n)
 
 
 <FOR_WINDOW_COND>"]"            { yy_pop_state(); return ']'; }
+<ASSIGN_COND>"["                {
+                                  /* this is the case for the new assign syntax
+                                   * that uses criteria */
+                                  yy_pop_state();
+                                  yy_push_state(FOR_WINDOW_COND);
+                                  /* afterwards we will be in ASSIGN_TARGET_COND */
+                                  return '[';
+                                }
 <EAT_WHITESPACE>[ \t]*          { yy_pop_state(); }
 <WANT_QSTRING>\"[^\"]+\"        {
                                   yy_pop_state();
@@ -194,7 +202,7 @@ title                           { yy_push_state(WANT_QSTRING); return TOK_TITLE;
                                   yylval.string = copy;
                                   return QUOTEDSTRING;
                                 }
-<ASSIGN_COND>[^ \t\"]+          { BEGIN(ASSIGN_TARGET_COND); yylval.string = sstrdup(yytext); return STR_NG; }
+<ASSIGN_COND>[^ \t\"\[]+        { BEGIN(ASSIGN_TARGET_COND); yylval.string = sstrdup(yytext); return STR_NG; }
 <BINDSYM_COND>[a-zA-Z0-9_]+     { yylval.string = sstrdup(yytext); return WORD; }
 [a-zA-Z]+                       { yylval.string = sstrdup(yytext); return WORD; }
 .                               { return (int)yytext[0]; }

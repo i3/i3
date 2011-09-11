@@ -163,6 +163,14 @@ static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
     DLOG("Done\n");
 }
 
+/*
+ * Exit handler which destroys the main_loop. Will trigger cleanup handlers.
+ *
+ */
+static void i3_exit() {
+    ev_loop_destroy(main_loop);
+}
+
 int main(int argc, char *argv[]) {
     //parse_cmd("[ foo ] attach, attach ; focus");
     int screens;
@@ -528,6 +536,10 @@ int main(int argc, char *argv[]) {
         LOG("auto-starting (always!) %s\n", exec_always->command);
         start_application(exec_always->command);
     }
+
+    /* Make sure to destroy the event loop to invoke the cleeanup callbacks
+     * when calling exit() */
+    atexit(i3_exit);
 
     ev_loop(main_loop, 0);
 }
