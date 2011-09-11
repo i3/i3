@@ -28,4 +28,10 @@ void match_copy(Match *dest, Match *src);
  */
 bool match_matches_window(Match *match, i3Window *window);
 
+/**
+ * Frees the given match. It must not be used afterwards!
+ *
+ */
+void match_free(Match *match);
+
 #endif

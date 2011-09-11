@@ -280,15 +280,19 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             SLIST_REMOVE(&modes, mode, Mode, modes);
         }
 
-#if 0
         struct Assignment *assign;
         while (!TAILQ_EMPTY(&assignments)) {
             assign = TAILQ_FIRST(&assignments);
-            FREE(assign->windowclass_title);
+            if (assign->type == A_TO_WORKSPACE)
+                FREE(assign->dest.workspace);
+            else if (assign->type == A_TO_OUTPUT)
+                FREE(assign->dest.output);
+            else if (assign->type == A_COMMAND)
+                FREE(assign->dest.command);
+            match_free(&(assign->match));
             TAILQ_REMOVE(&assignments, assign, assignments);
             FREE(assign);
         }
-#endif
 
         /* Clear workspace names */
 #if 0

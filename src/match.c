@@ -136,3 +136,23 @@ bool match_matches_window(Match *match, i3Window *window) {
 
     return true;
 }
+
+/*
+ * Frees the given match. It must not be used afterwards!
+ *
+ */
+void match_free(Match *match) {
+    /* First step: free the regex fields / patterns */
+    regex_free(match->title);
+    regex_free(match->application);
+    regex_free(match->class);
+    regex_free(match->instance);
+    regex_free(match->mark);
+
+    /* Second step: free the regex helper struct itself */
+    FREE(match->title);
+    FREE(match->application);
+    FREE(match->class);
+    FREE(match->instance);
+    FREE(match->mark);
+}

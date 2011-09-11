@@ -18,6 +18,12 @@
 struct regex *regex_new(const char *pattern);
 
 /**
+ * Frees the given regular expression. It must not be used afterwards!
+ *
+ */
+void regex_free(struct regex *regex);
+
+/**
  * Checks if the given regular expression matches the given input and returns
  * true if it does. In either case, it logs the outcome using LOG(), so it will
  * be visible without any debug loglevel.
