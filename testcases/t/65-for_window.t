@@ -313,4 +313,41 @@ is($content[0]->{border}, 'none', 'no border');
 
 exit_gracefully($process->pid);
 
+##############################################################
+# 7: check that invalid criteria don’t end up matching all windows
+##############################################################
+
+# this configuration is broken because "asdf" is not a valid integer
+# the for_window should therefore recognize this error and don’t add the
+# assignment
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [id="asdf"] border none
+EOT
+
+$process = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+$window = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#00ff00',
+);
+
+$window->_create;
+
+set_wm_class($window->id, 'bar', 'foo');
+$window->name('usethis');
+$window->map;
+sleep 0.25;
+
+@content = @{get_ws_content($tmp)};
+cmp_ok(@content, '==', 1, 'one node on this workspace now');
+is($content[0]->{border}, 'normal', 'normal border');
+
+exit_gracefully($process->pid);
+
+
 done_testing;

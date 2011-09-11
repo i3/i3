@@ -729,6 +729,10 @@ bindsym:
 for_window:
     TOK_FOR_WINDOW match command
     {
+        if (match_is_empty(&current_match)) {
+            ELOG("Match is empty, ignoring this for_window statement\n");
+            break;
+        }
         printf("\t should execute command %s for the criteria mentioned above\n", $3);
         Assignment *assignment = scalloc(sizeof(Assignment));
         assignment->type = A_COMMAND;
