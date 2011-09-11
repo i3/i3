@@ -739,8 +739,9 @@ con_id::
 	Compares the i3-internal container ID, which you can get via the IPC
 	interface. Handy for scripting.
 
-Note that currently all criteria are compared case-insensitive and do not
-support regular expressions. This is planned to change in the future.
+The criteria +class+, +instance+, +title+ and +mark+ are actually regular
+expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for information on
+how to use them.
 
 === Splitting containers
 
