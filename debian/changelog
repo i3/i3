@@ -1,6 +1,18 @@
-i3-wm (4.0.3-0) unstable; urgency=low
+i3-wm (4.1-0) unstable; urgency=low
 
   * NOT YET RELEASED!
+  * Implement system tray support in i3bar (for NetworkManager, Skype, …)
+  * Implement support for PCRE regular expressions in criteria
+  * Implement a new assign syntax which uses criteria
+  * Sort named workspaces whose name starts with a number accordingly
+  * Warn on duplicate bindings for the same key
+  * Restrict 'resize' command to left/right for horizontal containers, up/down
+    for vertical containers
+  * Implement the GET_MARKS IPC request to get all marks
+  * Implement the new_float config option (border style for floating windows)
+  * Implement passing IPC sockets to i3 (systemd-style socket activation)
+  * Implement the 'move output' command to move containers to a specific output
+  * Bugfix: Preserve marks when restarting
 
  -- Michael Stapelberg <michael@stapelberg.de>  Sun, 28 Aug 2011 20:17:31 +0200
 
