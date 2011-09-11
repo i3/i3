@@ -267,10 +267,9 @@ matchend:
 
                 }
             } else if (current_match.mark != NULL && current->con->mark != NULL &&
-                    strcasecmp(current_match.mark, current->con->mark) == 0) {
+                       regex_matches(current_match.mark, current->con->mark)) {
                 printf("match by mark\n");
-                    TAILQ_INSERT_TAIL(&owindows, current, owindows);
-
+                TAILQ_INSERT_TAIL(&owindows, current, owindows);
             } else {
                 if (current->con->window == NULL)
                     continue;
@@ -300,12 +299,14 @@ criterion:
     TOK_CLASS '=' STR
     {
         printf("criteria: class = %s\n", $3);
-        current_match.class = $3;
+        current_match.class = regex_new($3);
+        free($3);
     }
     | TOK_INSTANCE '=' STR
     {
         printf("criteria: instance = %s\n", $3);
-        current_match.instance = $3;
+        current_match.instance = regex_new($3);
+        free($3);
     }
     | TOK_CON_ID '=' STR
     {
@@ -340,12 +341,14 @@ criterion:
     | TOK_MARK '=' STR
     {
         printf("criteria: mark = %s\n", $3);
-        current_match.mark = $3;
+        current_match.mark = regex_new($3);
+        free($3);
     }
     | TOK_TITLE '=' STR
     {
         printf("criteria: title = %s\n", $3);
-        current_match.title = $3;
+        current_match.title = regex_new($3);
+        free($3);
     }
     ;
 

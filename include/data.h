@@ -10,6 +10,7 @@
 #include <xcb/randr.h>
 #include <xcb/xcb_atom.h>
 #include <stdbool.h>
+#include <pcre.h>
 
 #ifndef _DATA_H
 #define _DATA_H
@@ -135,6 +136,21 @@ struct Ignore_Event {
     time_t added;
 
     SLIST_ENTRY(Ignore_Event) ignore_events;
+};
+
+/**
+ * Regular expression wrapper. It contains the pattern itself as a string (like
+ * ^foo[0-9]$) as well as a pointer to the compiled PCRE expression and the
+ * pcre_extra data returned by pcre_study().
+ *
+ * This makes it easier to have a useful logfile, including the matching or
+ * non-matching pattern.
+ *
+ */
+struct regex {
+    const char *pattern;
+    pcre *regex;
+    pcre_extra *extra;
 };
 
 /******************************************************************************
@@ -277,12 +293,11 @@ struct Window {
 };
 
 struct Match {
-    char *title;
-    int title_len;
-    char *application;
-    char *class;
-    char *instance;
-    char *mark;
+    struct regex *title;
+    struct regex *application;
+    struct regex *class;
+    struct regex *instance;
+    struct regex *mark;
     enum {
         M_DONTCHECK = -1,
         M_NODOCK = 0,

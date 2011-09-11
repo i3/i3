@@ -751,12 +751,14 @@ criterion:
     TOK_CLASS '=' STR
     {
         printf("criteria: class = %s\n", $3);
-        current_match.class = $3;
+        current_match.class = regex_new($3);
+        free($3);
     }
     | TOK_INSTANCE '=' STR
     {
         printf("criteria: instance = %s\n", $3);
-        current_match.instance = $3;
+        current_match.instance = regex_new($3);
+        free($3);
     }
     | TOK_CON_ID '=' STR
     {
@@ -791,12 +793,14 @@ criterion:
     | TOK_MARK '=' STR
     {
         printf("criteria: mark = %s\n", $3);
-        current_match.mark = $3;
+        current_match.mark = regex_new($3);
+        free($3);
     }
     | TOK_TITLE '=' STR
     {
         printf("criteria: title = %s\n", $3);
-        current_match.title = $3;
+        current_match.title = regex_new($3);
+        free($3);
     }
     ;
 
@@ -1054,6 +1058,8 @@ workspace_name:
 assign:
     TOKASSIGN window_class STR
     {
+        /* TODO: the assign command also needs some kind of new syntax where we
+         * just use criteria. Then deprecate the old form */
         printf("assignment of %s to *%s*\n", $2, $3);
         char *workspace = $3;
         char *criteria = $2;
@@ -1065,14 +1071,14 @@ assign:
         char *separator = NULL;
         if ((separator = strchr(criteria, '/')) != NULL) {
             *(separator++) = '\0';
-            match->title = sstrdup(separator);
+            match->title = regex_new(separator);
+            printf("  title = %s\n", separator);
         }
-        if (*criteria != '\0')
-            match->class = sstrdup(criteria);
+        if (*criteria != '\0') {
+            match->class = regex_new(criteria);
+            printf("  class = %s\n", criteria);
+        }
         free(criteria);
-
-        printf("  class = %s\n", match->class);
-        printf("  title = %s\n", match->title);
 
         /* Compatibility with older versions: If the assignment target starts
          * with ~, we create the equivalent of:

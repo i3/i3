@@ -49,6 +49,7 @@ CFLAGS += $(call cflags_for_lib, xcursor)
 CFLAGS += $(call cflags_for_lib, x11)
 CFLAGS += $(call cflags_for_lib, yajl)
 CFLAGS += $(call cflags_for_lib, libev)
+CFLAGS += $(call cflags_for_lib, libpcre)
 CPPFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
 CPPFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
 CPPFLAGS += -DTERM_EMU=\"$(TERM_EMU)\"
@@ -70,6 +71,7 @@ LIBS += $(call ldflags_for_lib, xcursor, Xcursor)
 LIBS += $(call ldflags_for_lib, x11, X11)
 LIBS += $(call ldflags_for_lib, yajl, yajl)
 LIBS += $(call ldflags_for_lib, libev, ev)
+LIBS += $(call ldflags_for_lib, libpcre, pcre)
 
 # Please test if -Wl,--as-needed works on your platform and send me a patch.
 # it is known not to work on Darwin (Mac OS X)
