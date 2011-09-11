@@ -148,7 +148,7 @@ struct Ignore_Event {
  *
  */
 struct regex {
-    const char *pattern;
+    char *pattern;
     pcre *regex;
     pcre_extra *extra;
 };
