@@ -1148,6 +1148,10 @@ assign:
     }
     | TOKASSIGN match STR
     {
+        if (match_is_empty(&current_match)) {
+            ELOG("Match is empty, ignoring this assignment\n");
+            break;
+        }
         printf("new assignment, using above criteria, to workspace %s\n", $3);
         Assignment *assignment = scalloc(sizeof(Assignment));
         assignment->match = current_match;
