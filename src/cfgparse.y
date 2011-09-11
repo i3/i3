@@ -1071,11 +1071,23 @@ assign:
         char *separator = NULL;
         if ((separator = strchr(criteria, '/')) != NULL) {
             *(separator++) = '\0';
-            match->title = regex_new(separator);
+            char *pattern;
+            if (asprintf(&pattern, "(?i)%s", separator) == -1) {
+                ELOG("asprintf failed\n");
+                break;
+            }
+            match->title = regex_new(pattern);
+            free(pattern);
             printf("  title = %s\n", separator);
         }
         if (*criteria != '\0') {
-            match->class = regex_new(criteria);
+            char *pattern;
+            if (asprintf(&pattern, "(?i)%s", criteria) == -1) {
+                ELOG("asprintf failed\n");
+                break;
+            }
+            match->class = regex_new(pattern);
+            free(pattern);
             printf("  class = %s\n", criteria);
         }
         free(criteria);

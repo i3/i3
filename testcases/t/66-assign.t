@@ -183,6 +183,46 @@ exit_gracefully($process->pid);
 sleep 0.25;
 
 #####################################################################
+# make sure that assignments are case-insensitive in the old syntax.
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+assign "special" → ~
+EOT
+
+$process = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
+my $workspaces = get_workspace_names;
+ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
+
+my $window = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#0000ff',
+);
+
+$window->_create;
+set_wm_class($window->id, 'SPEcial', 'SPEcial');
+$window->name('special window');
+$window->map;
+sleep 0.25;
+
+my $content = get_ws($tmp);
+ok(@{$content->{nodes}} == 0, 'no tiling cons');
+ok(@{$content->{floating_nodes}} == 1, 'one floating con');
+
+$window->destroy;
+
+exit_gracefully($process->pid);
+
+sleep 0.25;
+
+#####################################################################
 # regression test: dock clients with floating assignments should not crash
 # (instead, nothing should happen - dock clients can’t float)
 # ticket #501
