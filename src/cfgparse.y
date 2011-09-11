@@ -1076,8 +1076,13 @@ workspace_name:
 assign:
     TOKASSIGN window_class STR
     {
-        /* TODO: the assign command also needs some kind of new syntax where we
-         * just use criteria. Then deprecate the old form */
+        /* This is the old, deprecated form of assignments. It’s provided for
+         * compatibility in version (4.1, 4.2, 4.3) and will be removed
+         * afterwards. It triggers an i3-nagbar warning starting from 4.1. */
+        ELOG("You are using the old assign syntax (without criteria). "
+             "Please see the User's Guide for the new syntax and fix "
+             "your config file.\n");
+        context->has_errors = true;
         printf("assignment of %s to *%s*\n", $2, $3);
         char *workspace = $3;
         char *criteria = $2;

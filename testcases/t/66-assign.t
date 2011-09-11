@@ -240,7 +240,9 @@ $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 my @docked = get_dock_clients;
-is(@docked, 0, 'no dock clients yet');
+# We expect i3-nagbar as the first dock client due to using the old assign
+# syntax
+is(@docked, 1, 'one dock client yet');
 
 my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
@@ -259,7 +261,7 @@ my $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
 ok(@{$content->{floating_nodes}} == 0, 'one floating con');
 @docked = get_dock_clients;
-is(@docked, 1, 'no dock clients yet');
+is(@docked, 2, 'two dock clients now');
 
 $window->destroy;
 
