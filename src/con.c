@@ -608,29 +608,30 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         next = ws;
     }
 
-    /* If moving to a visible workspace, call show so it can be considered
-     * focused. Must do before attaching because workspace_show checks to see
-     * if focused container is in its area. */
-    if (source_output != dest_output &&
-        workspace_is_visible(workspace)) {
-        workspace_show(workspace->name);
-
+    if (source_output != dest_output) {
+        /* Take the relative coordinates of the current output, then add them
+         * to the coordinate space of the correct output */
         if (fix_coordinates && con->type == CT_FLOATING_CON) {
             DLOG("Floating window, fixing coordinates\n");
-            /* Take the relative coordinates of the current output, then add them
-             * to the coordinate space of the correct output */
             uint32_t rel_x = (con->rect.x - source_output->rect.x);
             uint32_t rel_y = (con->rect.y - source_output->rect.y);
             con->rect.x = dest_output->rect.x + rel_x;
             con->rect.y = dest_output->rect.y + rel_y;
         } else DLOG("Not fixing coordinates, fix_coordinates flag = %d\n", fix_coordinates);
 
-        /* Don’t warp if told so (when dragging floating windows with the
-         * mouse for example) */
-        if (dont_warp)
-            x_set_warp_to(NULL);
-        else
-            x_set_warp_to(&(con->rect));
+        /* If moving to a visible workspace, call show so it can be considered
+         * focused. Must do before attaching because workspace_show checks to see
+         * if focused container is in its area. */
+        if (workspace_is_visible(workspace)) {
+            workspace_show(workspace->name);
+
+            /* Don’t warp if told so (when dragging floating windows with the
+             * mouse for example) */
+            if (dont_warp)
+                x_set_warp_to(NULL);
+            else
+                x_set_warp_to(&(con->rect));
+        }
     }
 
     DLOG("Re-attaching container to %p / %s\n", next, next->name);
