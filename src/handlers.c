@@ -371,6 +371,7 @@ static int handle_configure_request(xcb_configure_request_event_t *event) {
             con->rect.height = event->height + (-1) * bsr.height;
             DLOG("proposed height = %d, new height is %d\n", event->height, con->rect.height);
         }
+        floating_maybe_reassign_ws(con);
         tree_render();
     }
 
