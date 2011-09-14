@@ -138,13 +138,20 @@ void con_toggle_fullscreen(Con *con, int fullscreen_mode);
  * Moves the given container to the currently focused container on the given
  * workspace.
  *
+ * The fix_coordinates flag will translate the current coordinates (offset from
+ * the monitor position basically) to appropriate coordinates on the
+ * destination workspace.
+ * Not enabling this behaviour comes in handy when this function gets called by
+ * floating_maybe_reassign_ws, which will only "move" a floating window when it
+ * *already* changed its coordinates to a different output.
+ *
  * The dont_warp flag disables pointer warping and will be set when this
  * function is called while dragging a floating window.
  *
  * TODO: is there a better place for this function?
  *
  */
-void con_move_to_workspace(Con *con, Con *workspace, bool dont_warp);
+void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool dont_warp);
 
 /**
  * Returns the orientation of the given container (for stacked containers,

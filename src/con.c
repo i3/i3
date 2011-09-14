@@ -553,13 +553,20 @@ update_netwm_state:
  * Moves the given container to the currently focused container on the given
  * workspace.
  *
+ * The fix_coordinates flag will translate the current coordinates (offset from
+ * the monitor position basically) to appropriate coordinates on the
+ * destination workspace.
+ * Not enabling this behaviour comes in handy when this function gets called by
+ * floating_maybe_reassign_ws, which will only "move" a floating window when it
+ * *already* changed its coordinates to a different output.
+ *
  * The dont_warp flag disables pointer warping and will be set when this
  * function is called while dragging a floating window.
  *
  * TODO: is there a better place for this function?
  *
  */
-void con_move_to_workspace(Con *con, Con *workspace, bool dont_warp) {
+void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool dont_warp) {
     if (con->type == CT_WORKSPACE) {
         DLOG("Moving workspaces is not yet implemented.\n");
         return;
@@ -608,7 +615,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool dont_warp) {
         workspace_is_visible(workspace)) {
         workspace_show(workspace->name);
 
-        if (con->type == CT_FLOATING_CON) {
+        if (fix_coordinates && con->type == CT_FLOATING_CON) {
             DLOG("Floating window, fixing coordinates\n");
             /* Take the relative coordinates of the current output, then add them
              * to the coordinate space of the correct output */
@@ -616,7 +623,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool dont_warp) {
             uint32_t rel_y = (con->rect.y - source_output->rect.y);
             con->rect.x = dest_output->rect.x + rel_x;
             con->rect.y = dest_output->rect.y + rel_y;
-        }
+        } else DLOG("Not fixing coordinates, fix_coordinates flag = %d\n", fix_coordinates);
 
         /* Don’t warp if told so (when dragging floating windows with the
          * mouse for example) */
