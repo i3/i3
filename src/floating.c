@@ -122,7 +122,7 @@ void floating_enable(Con *con, bool automatic) {
     /* add pixels for the decoration */
     /* TODO: don’t add them when the user automatically puts new windows into
      * 1pixel/borderless mode */
-    nc->rect.height += deco_height + 4;
+    nc->rect.height += deco_height + 2;
     nc->rect.width += 4;
 
     /* Some clients (like GIMP’s color picker window) get mapped
