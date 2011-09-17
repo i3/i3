@@ -103,6 +103,7 @@ void floating_enable(Con *con, bool automatic) {
     int deco_height = config.font.height + 5;
 
     DLOG("Original rect: (%d, %d) with %d x %d\n", con->rect.x, con->rect.y, con->rect.width, con->rect.height);
+    DLOG("Geometry = (%d, %d) with %d x %d\n", con->geometry.x, con->geometry.y, con->geometry.width, con->geometry.height);
     Rect zero = { 0, 0, 0, 0 };
     nc->rect = con->geometry;
     /* If the geometry was not set (split containers), we need to determine a
@@ -124,6 +125,10 @@ void floating_enable(Con *con, bool automatic) {
      * 1pixel/borderless mode */
     nc->rect.height += deco_height + 2;
     nc->rect.width += 4;
+
+    /* Honor the X11 border */
+    nc->rect.height += con->border_width * 2;
+    nc->rect.width += con->border_width * 2;
 
     /* Some clients (like GIMP’s color picker window) get mapped
      * to (0, 0), so we push them to a reasonable position
