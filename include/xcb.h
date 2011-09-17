@@ -108,7 +108,7 @@ void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable,
  * The truth is, however, that we will manage them.
  *
  */
-void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window);
+void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window, int border_width);
 
 /**
  * Generates a configure_notify_event with absolute coordinates (relative to
