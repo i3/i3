@@ -759,6 +759,12 @@ static void x_push_node_unmaps(Con *con) {
  */
 void x_push_changes(Con *con) {
     con_state *state;
+    xcb_query_pointer_cookie_t pointercookie;
+
+    /* If we need to warp later, we request the pointer position as soon as possible */
+    if (warp_to) {
+        pointercookie = xcb_query_pointer(conn, root);
+    }
 
     DLOG("-- PUSHING WINDOW STACK --\n");
     //DLOG("Disabling EnterNotify\n");
@@ -868,7 +874,18 @@ void x_push_changes(Con *con) {
     }
 
     if (warp_to) {
-        xcb_warp_pointer_rect(conn, warp_to);
+        xcb_query_pointer_reply_t *pointerreply = xcb_query_pointer_reply(conn, pointercookie, NULL);
+        if (!pointerreply) {
+            ELOG("Could not query pointer position, not warping pointer\n");
+        } else {
+            int mid_x = warp_to->x + (warp_to->width / 2);
+            int mid_y = warp_to->y + (warp_to->height / 2);
+
+            Output *current = get_output_containing(pointerreply->root_x, pointerreply->root_y);
+            Output *target = get_output_containing(mid_x, mid_y);
+            if (current != target)
+                xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0, mid_x, mid_y);
+        }
         warp_to = NULL;
     }
 
