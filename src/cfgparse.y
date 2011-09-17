@@ -240,6 +240,10 @@ static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
     configerror_pid = -1;
 }
 
+/* We need ev >= 4 for the following code. Since it is not *that* important (it
+ * only makes sure that there are no i3-nagbar instances left behind) we still
+ * support old systems with libev 3. */
+#if EV_VERSION_MAJOR >= 4
 /*
  * Cleanup handler. Will be called when i3 exits. Kills i3-nagbar with signal
  * SIGKILL (9) to make sure there are no left-over i3-nagbar processes.
@@ -251,6 +255,7 @@ static void nagbar_cleanup(EV_P_ ev_cleanup *watcher, int revent) {
         kill(configerror_pid, SIGKILL);
     }
 }
+#endif
 
 /*
  * Starts an i3-nagbar process which alerts the user that his configuration
@@ -296,11 +301,16 @@ static void start_configerror_nagbar(const char *config_path) {
     ev_child_init(child, &nagbar_exited, configerror_pid, 0);
     ev_child_start(main_loop, child);
 
+/* We need ev >= 4 for the following code. Since it is not *that* important (it
+ * only makes sure that there are no i3-nagbar instances left behind) we still
+ * support old systems with libev 3. */
+#if EV_VERSION_MAJOR >= 4
     /* install a cleanup watcher (will be called when i3 exits and i3-nagbar is
      * still running) */
     ev_cleanup *cleanup = smalloc(sizeof(ev_cleanup));
     ev_cleanup_init(cleanup, nagbar_cleanup);
     ev_cleanup_start(main_loop, cleanup);
+#endif
 }
 
 /*
