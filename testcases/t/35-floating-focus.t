@@ -170,5 +170,46 @@ sleep 0.25;
 
 is($x->input_focus, $second->id, 'second (floating) container focused');
 
+#############################################################################
+# 6: see if switching floating focus using the focus left/right command works
+#############################################################################
+
+$tmp = fresh_workspace;
+
+$first = open_standard_window($x, '#ff0000', 1);    # window 10
+$second = open_standard_window($x, '#00ff00', 1);   # window 11
+$third = open_standard_window($x, '#0000ff', 1);   # window 12
+
+is($x->input_focus, $third->id, 'third container focused');
+
+cmd 'focus left';
+
+sleep 0.25;
+
+is($x->input_focus, $second->id, 'second container focused');
+
+cmd 'focus left';
+
+sleep 0.25;
+
+is($x->input_focus, $first->id, 'first container focused');
+
+cmd 'focus left';
+
+sleep 0.25;
+
+is($x->input_focus, $third->id, 'focus wrapped to third container');
+
+cmd 'focus right';
+
+sleep 0.25;
+
+is($x->input_focus, $first->id, 'focus wrapped to first container');
+
+cmd 'focus right';
+
+sleep 0.25;
+
+is($x->input_focus, $second->id, 'focus on second container');
 
 done_testing;

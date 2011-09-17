@@ -521,31 +521,6 @@ void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
 
 #if 0
 /*
- * Changes focus in the given direction for floating clients.
- *
- * Changing to the left/right means going to the previous/next floating client,
- * changing to top/bottom means cycling through the Z-index.
- *
- */
-void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused, direction_t direction) {
-        DLOG("floating focus\n");
-
-        if (direction == D_LEFT || direction == D_RIGHT) {
-                /* Go to the next/previous floating client */
-                Client *client;
-
-                while ((client = (direction == D_LEFT ? TAILQ_PREV(currently_focused, floating_clients_head, floating_clients) :
-                                                        TAILQ_NEXT(currently_focused, floating_clients))) !=
-                       TAILQ_END(&(currently_focused->workspace->floating_clients))) {
-                        if (!client->floating)
-                                continue;
-                        set_focus(conn, client, true);
-                        return;
-                }
-        }
-}
-
-/*
  * Moves the client 10px to the specified direction.
  *
  */

@@ -48,15 +48,22 @@ use warnings;
 }
 
 sub open_standard_window {
-    my ($x, $color) = @_;
+    my ($x, $color, $floating) = @_;
 
     $color ||= '#c0c0c0';
 
-    my $window = $x->root->create_child(
+    # We cannot use a hashref here because create_child expands the arguments into an array
+    my @args = (
         class => WINDOW_CLASS_INPUT_OUTPUT,
-        rect => [ 0, 0, 30, 30 ],
+        rect => X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30 ),
         background_color => $color,
     );
+
+    if (defined($floating) && $floating) {
+        @args = (@args, window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'));
+    }
+
+    my $window = $x->root->create_child(@args);
 
     $window->name('Window ' . counter_window());
     $window->map;
