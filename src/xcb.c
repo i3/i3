@@ -168,7 +168,7 @@ void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext
  * The truth is, however, that we will manage them.
  *
  */
-void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window) {
+void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window, int border_width) {
     /* Every X11 event is 32 bytes long. Therefore, XCB will copy 32 bytes.
      * In order to properly initialize these bytes, we allocate 32 bytes even
      * though we only need less for an xcb_configure_notify_event_t */
@@ -184,7 +184,7 @@ void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window) 
     generated_event->width = r.width;
     generated_event->height = r.height;
 
-    generated_event->border_width = 0;
+    generated_event->border_width = border_width;
     generated_event->above_sibling = XCB_NONE;
     generated_event->override_redirect = false;
 
@@ -211,7 +211,7 @@ void fake_absolute_configure_notify(Con *con) {
 
     DLOG("fake rect = (%d, %d, %d, %d)\n", absolute.x, absolute.y, absolute.width, absolute.height);
 
-    fake_configure_notify(conn, absolute, con->window->id);
+    fake_configure_notify(conn, absolute, con->window->id, con->border_width);
 }
 
 /*
