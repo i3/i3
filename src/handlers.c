@@ -353,25 +353,27 @@ static int handle_configure_request(xcb_configure_request_event_t *event) {
             bsr.y += deco_height;
             bsr.height -= deco_height;
         }
-        con = con->parent;
+        Con *floatingcon = con->parent;
         DLOG("Container is a floating leaf node, will do that.\n");
         if (event->value_mask & XCB_CONFIG_WINDOW_X) {
-            con->rect.x = event->x + (-1) * bsr.x;
-            DLOG("proposed x = %d, new x is %d\n", event->x, con->rect.x);
+            floatingcon->rect.x = event->x + (-1) * bsr.x;
+            DLOG("proposed x = %d, new x is %d\n", event->x, floatingcon->rect.x);
         }
         if (event->value_mask & XCB_CONFIG_WINDOW_Y) {
-            con->rect.y = event->y + (-1) * bsr.y;
-            DLOG("proposed y = %d, new y is %d\n", event->y, con->rect.y);
+            floatingcon->rect.y = event->y + (-1) * bsr.y;
+            DLOG("proposed y = %d, new y is %d\n", event->y, floatingcon->rect.y);
         }
         if (event->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
-            con->rect.width = event->width + (-1) * bsr.width;
-            DLOG("proposed width = %d, new width is %d\n", event->width, con->rect.width);
+            floatingcon->rect.width = event->width + (-1) * bsr.width;
+            floatingcon->rect.width += con->border_width * 2;
+            DLOG("proposed width = %d, new width is %d (x11 border %d)\n", event->width, floatingcon->rect.width, con->border_width);
         }
         if (event->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
-            con->rect.height = event->height + (-1) * bsr.height;
-            DLOG("proposed height = %d, new height is %d\n", event->height, con->rect.height);
+            floatingcon->rect.height = event->height + (-1) * bsr.height;
+            floatingcon->rect.height += con->border_width * 2;
+            DLOG("proposed height = %d, new height is %d (x11 border %d)\n", event->height, floatingcon->rect.height, con->border_width);
         }
-        floating_maybe_reassign_ws(con);
+        floating_maybe_reassign_ws(floatingcon);
         tree_render();
     }
 
