@@ -322,7 +322,7 @@ int main(int argc, char *argv[]) {
                 pattern = strdup(optarg);
                 break;
             case 'h':
-                printf("i3-input " I3_VERSION);
+                printf("i3-input " I3_VERSION "\n");
                 printf("i3-input [-s <socket>] [-p <prefix>] [-l <limit>] [-P <prompt>] [-f <font>] [-v]\n");
                 return 0;
         }
