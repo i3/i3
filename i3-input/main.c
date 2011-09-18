@@ -35,6 +35,10 @@
 
 #include "i3-input.h"
 
+/* IPC format string. %s will be replaced with what the user entered, then
+ * the command will be sent to i3 */
+static char *format;
+
 static char *socket_path;
 static int sockfd;
 static xcb_key_symbols_t *symbols;
@@ -48,7 +52,6 @@ static char *glyphs_ucs[512];
 static char *glyphs_utf8[512];
 static int input_position;
 static int font_height;
-static char *command_prefix;
 static char *prompt;
 static int prompt_len;
 static int limit;
@@ -172,16 +175,41 @@ static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_rel
 }
 
 static void finish_input() {
-    uint8_t *command = concat_strings(glyphs_utf8, input_position);
-    char *full_command = (char*)command;
-    /* prefix the command if a prefix was specified on commandline */
-    if (command_prefix != NULL) {
-        if (asprintf(&full_command, "%s%s", command_prefix, command) == -1)
-            err(EXIT_FAILURE, "asprintf() failed\n");
-    }
-    printf("command = %s\n", full_command);
+    char *command = (char*)concat_strings(glyphs_utf8, input_position);
 
-    ipc_send_message(sockfd, strlen(full_command), 0, (uint8_t*)full_command);
+    /* count the occurences of %s in the string */
+    int c;
+    int len = strlen(format);
+    int cnt = 0;
+    for (c = 0; c < (len-1); c++)
+        if (format[c] == '%' && format[c+1] == 's')
+            cnt++;
+    printf("occurences = %d\n", cnt);
+
+    /* allocate space for the output */
+    int inputlen = strlen(command);
+    char *full = calloc(1,
+                        strlen(format) - (2 * cnt) /* format without all %s */
+                        + (inputlen * cnt)         /* replaced %s */
+                        + 1);                      /* trailing NUL */
+    char *dest = full;
+    for (c = 0; c < len; c++) {
+        /* if this is not % or it is % but without a following 's',
+         * just copy the character */
+        if (format[c] != '%' || (c == (len-1)) || format[c+1] != 's')
+            *(dest++) = format[c];
+        else {
+            strncat(dest, command, inputlen);
+            dest += inputlen;
+            /* skip the following 's' of '%s' */
+            c++;
+        }
+    }
+
+    /* prefix the command if a prefix was specified on commandline */
+    printf("command = %s\n", full);
+
+    ipc_send_message(sockfd, strlen(full), 0, (uint8_t*)full);
 
 #if 0
     free(command);
@@ -280,6 +308,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 }
 
 int main(int argc, char *argv[]) {
+    format = strdup("%s");
     socket_path = getenv("I3SOCK");
     char *pattern = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
     int o, option_index = 0;
@@ -290,12 +319,13 @@ int main(int argc, char *argv[]) {
         {"limit", required_argument, 0, 'l'},
         {"prompt", required_argument, 0, 'P'},
         {"prefix", required_argument, 0, 'p'},
+        {"format", required_argument, 0, 'F'},
         {"font", required_argument, 0, 'f'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
 
-    char *options_string = "s:p:P:f:l:vh";
+    char *options_string = "s:p:P:f:l:F:vh";
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         switch (o) {
@@ -307,8 +337,10 @@ int main(int argc, char *argv[]) {
                 printf("i3-input " I3_VERSION);
                 return 0;
             case 'p':
-                FREE(command_prefix);
-                command_prefix = strdup(optarg);
+                /* This option is deprecated, but will still work in i3 v4.1, 4.2 and 4.3 */
+                fprintf(stderr, "i3-input: WARNING: the -p option is DEPRECATED in favor of the -F (format) option\n");
+                FREE(format);
+                asprintf(&format, "%s%%s", optarg);
                 break;
             case 'l':
                 limit = atoi(optarg);
@@ -321,12 +353,21 @@ int main(int argc, char *argv[]) {
                 FREE(pattern);
                 pattern = strdup(optarg);
                 break;
+            case 'F':
+                FREE(format);
+                format = strdup(optarg);
+                break;
             case 'h':
                 printf("i3-input " I3_VERSION "\n");
-                printf("i3-input [-s <socket>] [-p <prefix>] [-l <limit>] [-P <prompt>] [-f <font>] [-v]\n");
+                printf("i3-input [-s <socket>] [-F <format>] [-l <limit>] [-P <prompt>] [-f <font>] [-v]\n");
+                printf("\n");
+                printf("Example:\n");
+                printf("    i3-input -F 'workspace \"%%s\"' -P 'Switch to workspace: '\n");
                 return 0;
         }
     }
+
+    printf("using format \"%s\"\n", format);
 
     if (socket_path == NULL)
         socket_path = socket_path_from_x11();
