@@ -835,15 +835,16 @@ Con *con_descend_tiling_focused(Con *con) {
  */
 Con *con_descend_direction(Con *con, direction_t direction) {
     Con *most = NULL;
-    DLOG("con_descend_direction(%p, %d)\n", con, direction);
+    int orientation = con_orientation(con);
+    DLOG("con_descend_direction(%p, orientation %d, direction %d)\n", con, orientation, direction);
     if (direction == D_LEFT || direction == D_RIGHT) {
-        if (con->orientation == HORIZ) {
+        if (orientation == HORIZ) {
             /* If the direction is horizontal, we can use either the first
              * (D_RIGHT) or the last con (D_LEFT) */
             if (direction == D_RIGHT)
                 most = TAILQ_FIRST(&(con->nodes_head));
             else most = TAILQ_LAST(&(con->nodes_head), nodes_head);
-        } else if (con->orientation == VERT) {
+        } else if (orientation == VERT) {
             /* Wrong orientation. We use the last focused con. Within that con,
              * we recurse to chose the left/right con or at least the last
              * focused one. */
@@ -856,13 +857,13 @@ Con *con_descend_direction(Con *con, direction_t direction) {
     }
 
     if (direction == D_UP || direction == D_DOWN) {
-        if (con->orientation == VERT) {
+        if (orientation == VERT) {
             /* If the direction is vertical, we can use either the first
              * (D_DOWN) or the last con (D_UP) */
             if (direction == D_UP)
                 most = TAILQ_LAST(&(con->nodes_head), nodes_head);
             else most = TAILQ_FIRST(&(con->nodes_head));
-        } else if (con->orientation == HORIZ) {
+        } else if (orientation == HORIZ) {
             /* Wrong orientation. We use the last focused con. Within that con,
              * we recurse to chose the top/bottom con or at least the last
              * focused one. */
