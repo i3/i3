@@ -264,6 +264,11 @@ struct Window {
      * application supports _NET_WM_NAME, in COMPOUND_TEXT otherwise). */
     char *name_x;
 
+    /** The WM_WINDOW_ROLE of this window (for example, the pidgin buddy window
+     * sets "buddy list"). Useful to match specific windows in assignments or
+     * for_window. */
+    char *role;
+
     /** Flag to force re-rendering the decoration upon changes */
     bool name_x_changed;
 
@@ -298,6 +303,7 @@ struct Match {
     struct regex *class;
     struct regex *instance;
     struct regex *mark;
+    struct regex *role;
     enum {
         M_DONTCHECK = -1,
         M_NODOCK = 0,

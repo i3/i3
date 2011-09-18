@@ -557,6 +557,21 @@ static bool handle_windowname_change_legacy(void *data, xcb_connection_t *conn, 
     return true;
 }
 
+/*
+ * Called when a window changes its WM_WINDOW_ROLE.
+ *
+ */
+static bool handle_windowrole_change(void *data, xcb_connection_t *conn, uint8_t state,
+                                     xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
+        return false;
+
+    window_update_role(con->window, prop, false);
+
+    return true;
+}
+
 #if 0
 /*
  * Updates the client’s WM_CLASS property
@@ -933,7 +948,8 @@ static struct property_handler_t property_handlers[] = {
     { 0, 128, handle_windowname_change_legacy },
     { 0, UINT_MAX, handle_normal_hints },
     { 0, UINT_MAX, handle_clientleader_change },
-    { 0, UINT_MAX, handle_transient_for }
+    { 0, UINT_MAX, handle_transient_for },
+    { 0, 128, handle_windowrole_change }
 };
 #define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
 
@@ -949,6 +965,7 @@ void property_handlers_init() {
     property_handlers[3].atom = XCB_ATOM_WM_NORMAL_HINTS;
     property_handlers[4].atom = A_WM_CLIENT_LEADER;
     property_handlers[5].atom = XCB_ATOM_WM_TRANSIENT_FOR;
+    property_handlers[6].atom = A_WM_WINDOW_ROLE;
 }
 
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {

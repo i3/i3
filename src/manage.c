@@ -83,7 +83,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
                               utf8_title_cookie, title_cookie,
-                              class_cookie, leader_cookie, transient_cookie;
+                              class_cookie, leader_cookie, transient_cookie,
+                              role_cookie;
 
 
     geomc = xcb_get_geometry(conn, d);
@@ -145,6 +146,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     transient_cookie = GET_PROPERTY(XCB_ATOM_WM_TRANSIENT_FOR, UINT32_MAX);
     title_cookie = GET_PROPERTY(XCB_ATOM_WM_NAME, 128);
     class_cookie = GET_PROPERTY(XCB_ATOM_WM_CLASS, 128);
+    role_cookie = GET_PROPERTY(A_WM_WINDOW_ROLE, 128);
     /* TODO: also get wm_normal_hints here. implement after we got rid of xcb-event */
 
     DLOG("reparenting!\n");
@@ -171,6 +173,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_leader(cwindow, xcb_get_property_reply(conn, leader_cookie, NULL));
     window_update_transient_for(cwindow, xcb_get_property_reply(conn, transient_cookie, NULL));
     window_update_strut_partial(cwindow, xcb_get_property_reply(conn, strut_cookie, NULL));
+    window_update_role(cwindow, xcb_get_property_reply(conn, role_cookie, NULL), true);
 
     /* check if the window needs WM_TAKE_FOCUS */
     cwindow->needs_take_focus = window_supports_protocol(cwindow->id, A_WM_TAKE_FOCUS);

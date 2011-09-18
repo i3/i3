@@ -632,6 +632,7 @@ void parse_file(const char *f) {
 %token              TOK_MARK            "mark"
 %token              TOK_CLASS           "class"
 %token              TOK_INSTANCE        "instance"
+%token              TOK_WINDOW_ROLE     "window_role"
 %token              TOK_ID              "id"
 %token              TOK_CON_ID          "con_id"
 %token              TOK_TITLE           "title"
@@ -790,6 +791,12 @@ criterion:
     {
         printf("criteria: instance = %s\n", $3);
         current_match.instance = regex_new($3);
+        free($3);
+    }
+    | TOK_WINDOW_ROLE '=' STR
+    {
+        printf("criteria: window_role = %s\n", $3);
+        current_match.role = regex_new($3);
         free($3);
     }
     | TOK_CON_ID '=' STR
