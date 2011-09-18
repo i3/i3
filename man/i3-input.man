@@ -1,7 +1,7 @@
 i3-input(1)
 =========
 Michael Stapelberg <michael+i3@stapelberg.de>
-v3.delta, November 2009
+v4.1, September 2011
 
 == NAME
 
@@ -9,7 +9,7 @@ i3-input - interactively take a command for i3 window manager
 
 == SYNOPSIS
 
-i3-input [-s <socket>] [-p <prefix>] [-l <limit>] [-P <prompt>] [-f <font>] [-v]
+i3-input [-s <socket>] [-F <format>] [-l <limit>] [-P <prompt>] [-f <font>] [-v]
 
 == DESCRIPTION
 
@@ -17,19 +17,28 @@ i3-input is a tool to take commands (or parts of a command) composed by
 the user, and send it/them to i3. This is useful, for example, for the
 mark/goto command.
 
+The -F option takes a format string. In this string, every occurence of %s is
+replaced by the user input.
+
 == EXAMPLE
 
 ------------------------------------------------
-i3-input -p 'mark ' -l 1 -P 'Mark: '
+i3-input -F 'mark %s' -l 1 -P 'Mark: '
 ------------------------------------------------
 
 == ENVIRONMENT
 
 === I3SOCK
 
-If no ipc-socket is specified on the commandline, this variable is used
-to determine the path, at wich the unix domain socket is expected, on which
-to connect to i3.
+i3-input handles the different sources of socket paths in the following order:
+
+* I3SOCK environment variable
+* I3SOCK gets overwritten by the -s parameter, if specified
+* if neither are available, i3-input reads the socket path from the X11
+  property, which is the recommended way
+* if everything fails, i3-input tries +/tmp/i3-ipc.sock+
+
+The socket path is necessary to connect to i3 and actually issue the command.
 
 == SEE ALSO
 
