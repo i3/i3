@@ -613,10 +613,19 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
          * to the coordinate space of the correct output */
         if (fix_coordinates && con->type == CT_FLOATING_CON) {
             DLOG("Floating window, fixing coordinates\n");
+            /* First we get the x/y coordinates relative to the x/y coordinates
+             * of the output on which the window is on */
             uint32_t rel_x = (con->rect.x - source_output->rect.x);
             uint32_t rel_y = (con->rect.y - source_output->rect.y);
-            con->rect.x = dest_output->rect.x + rel_x;
-            con->rect.y = dest_output->rect.y + rel_y;
+            /* Then we calculate a fraction, for example 0.63 for a window
+             * which is at y = 1212 of a 1920 px high output */
+            double fraction_x = ((double)rel_x / source_output->rect.width);
+            double fraction_y = ((double)rel_y / source_output->rect.height);
+            DLOG("rel_x = %d, rel_y = %d, fraction_x = %f, fraction_y = %f, output->w = %d, output->h = %d\n",
+                 rel_x, rel_y, fraction_x, fraction_y, source_output->rect.width, source_output->rect.height);
+            con->rect.x = dest_output->rect.x + (fraction_x * dest_output->rect.width);
+            con->rect.y = dest_output->rect.y + (fraction_y * dest_output->rect.height);
+            DLOG("Resulting coordinates: x = %d, y = %d\n", con->rect.x, con->rect.y);
         } else DLOG("Not fixing coordinates, fix_coordinates flag = %d\n", fix_coordinates);
 
         /* If moving to a visible workspace, call show so it can be considered
