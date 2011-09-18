@@ -215,3 +215,36 @@ void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop) 
 
     free(prop);
 }
+
+/*
+ * Updates the WM_WINDOW_ROLE
+ *
+ */
+void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
+    if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+        DLOG("prop == NULL\n");
+        FREE(prop);
+        return;
+    }
+
+    char *new_role;
+    if (asprintf(&new_role, "%.*s", xcb_get_property_value_length(prop),
+                 (char*)xcb_get_property_value(prop)) == -1) {
+        perror("asprintf()");
+        DLOG("Could not get WM_WINDOW_ROLE\n");
+        free(prop);
+        return;
+    }
+    FREE(win->role);
+    win->role = new_role;
+    LOG("WM_WINDOW_ROLE changed to \"%s\"\n", win->role);
+
+    if (before_mgmt) {
+        free(prop);
+        return;
+    }
+
+    run_assignments(win);
+
+    free(prop);
+}

@@ -39,6 +39,7 @@ bool match_is_empty(Match *match) {
             match->application == NULL &&
             match->class == NULL &&
             match->instance == NULL &&
+            match->role == NULL &&
             match->id == XCB_NONE &&
             match->con_id == NULL &&
             match->dock == -1 &&
@@ -65,6 +66,7 @@ void match_copy(Match *dest, Match *src) {
     DUPLICATE_REGEX(application);
     DUPLICATE_REGEX(class);
     DUPLICATE_REGEX(instance);
+    DUPLICATE_REGEX(role);
 }
 
 /*
@@ -113,6 +115,16 @@ bool match_matches_window(Match *match, i3Window *window) {
         }
     }
 
+    if (match->role != NULL) {
+        if (window->role != NULL &&
+            regex_matches(match->role, window->role)) {
+            LOG("window_role matches (%s)\n", window->role);
+        } else {
+            LOG("window_role does not match\n");
+            return false;
+        }
+    }
+
     if (match->dock != -1) {
         LOG("match->dock = %d, window->dock = %d\n", match->dock, window->dock);
         if ((window->dock == W_DOCK_TOP && match->dock == M_DOCK_TOP) ||
@@ -148,6 +160,7 @@ void match_free(Match *match) {
     regex_free(match->class);
     regex_free(match->instance);
     regex_free(match->mark);
+    regex_free(match->role);
 
     /* Second step: free the regex helper struct itself */
     FREE(match->title);
@@ -155,4 +168,5 @@ void match_free(Match *match) {
     FREE(match->class);
     FREE(match->instance);
     FREE(match->mark);
+    FREE(match->role);
 }

@@ -170,6 +170,7 @@ shift                           { return TOKSHIFT; }
 
 class                           { yy_push_state(WANT_QSTRING); return TOK_CLASS; }
 instance                        { yy_push_state(WANT_QSTRING); return TOK_INSTANCE; }
+window_role                     { yy_push_state(WANT_QSTRING); return TOK_WINDOW_ROLE; }
 id                              { yy_push_state(WANT_QSTRING); return TOK_ID; }
 con_id                          { yy_push_state(WANT_QSTRING); return TOK_CON_ID; }
 con_mark                        { yy_push_state(WANT_QSTRING); return TOK_MARK; }

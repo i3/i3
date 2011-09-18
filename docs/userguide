@@ -754,6 +754,8 @@ class::
 	Compares the window class (the second part of WM_CLASS)
 instance::
 	Compares the window instance (the first part of WM_CLASS)
+window_role::
+	Compares the window role (WM_WINDOW_ROLE).
 id::
 	Compares the X11 window ID, which you can get via +xwininfo+ for example.
 title::
@@ -764,9 +766,9 @@ con_id::
 	Compares the i3-internal container ID, which you can get via the IPC
 	interface. Handy for scripting.
 
-The criteria +class+, +instance+, +title+ and +mark+ are actually regular
-expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for information on
-how to use them.
+The criteria +class+, +instance+, +role+, +title+ and +mark+ are actually
+regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
+information on how to use them.
 
 === Splitting containers
 

@@ -42,4 +42,10 @@ void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop);
  */
 void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop);
 
+/**
+ * Updates the WM_WINDOW_ROLE
+ *
+ */
+void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt);
+
 #endif

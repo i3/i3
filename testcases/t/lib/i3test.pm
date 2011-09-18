@@ -259,7 +259,10 @@ sub launch_with_config {
     say $fh "ipc-socket $tmp_socket_path";
     close($fh);
 
-    my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
+    # Use $ENV{LOGPATH}, gets set in complete-run.pl. We append instead of
+    # overwrite because there might be multiple instances of i3 running during
+    # one test case.
+    my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >>$ENV{LOGPATH} 2>&1";
     my $process = Proc::Background->new($i3cmd);
     sleep 1;
 

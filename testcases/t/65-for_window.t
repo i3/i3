@@ -349,5 +349,108 @@ is($content[0]->{border}, 'normal', 'normal border');
 
 exit_gracefully($process->pid);
 
+##############################################################
+# 8: check that the role criterion works properly
+##############################################################
+
+# this configuration is broken because "asdf" is not a valid integer
+# the for_window should therefore recognize this error and don’t add the
+# assignment
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [window_role="i3test"] border none
+EOT
+
+$process = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+$window = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#00ff00',
+);
+
+$window->_create;
+
+my $atomname = $x->atom(name => 'WM_WINDOW_ROLE');
+my $atomtype = $x->atom(name => 'STRING');
+$x->change_property(
+  PROP_MODE_REPLACE,
+  $window->id,
+  $atomname->id,
+  $atomtype->id,
+  8,
+  length("i3test") + 1,
+  "i3test\x00"
+);
+
+$window->name('usethis');
+$window->map;
+sleep 0.25;
+
+@content = @{get_ws_content($tmp)};
+cmp_ok(@content, '==', 1, 'one node on this workspace now');
+is($content[0]->{border}, 'none', 'no border (window_role)');
+
+exit_gracefully($process->pid);
+
+##############################################################
+# 9: another test for the window_role, but this time it changes
+#    *after* the window has been mapped
+##############################################################
+
+# this configuration is broken because "asdf" is not a valid integer
+# the for_window should therefore recognize this error and don’t add the
+# assignment
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+for_window [window_role="i3test"] border none
+EOT
+
+$process = launch_with_config($config);
+
+$tmp = fresh_workspace;
+
+$window = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#00ff00',
+);
+
+$window->_create;
+
+$window->name('usethis');
+$window->map;
+sleep 0.25;
+
+@content = @{get_ws_content($tmp)};
+cmp_ok(@content, '==', 1, 'one node on this workspace now');
+is($content[0]->{border}, 'normal', 'normal border (window_role 2)');
+
+$atomname = $x->atom(name => 'WM_WINDOW_ROLE');
+$atomtype = $x->atom(name => 'STRING');
+$x->change_property(
+  PROP_MODE_REPLACE,
+  $window->id,
+  $atomname->id,
+  $atomtype->id,
+  8,
+  length("i3test") + 1,
+  "i3test\x00"
+);
+
+$x->flush;
+
+sleep 0.25;
+
+@content = @{get_ws_content($tmp)};
+cmp_ok(@content, '==', 1, 'one node on this workspace now');
+is($content[0]->{border}, 'none', 'no border (window_role 2)');
+
+exit_gracefully($process->pid);
+
 
 done_testing;
