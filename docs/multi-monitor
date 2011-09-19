@@ -1,7 +1,7 @@
 The multi-monitor situation
 ===========================
 Michael Stapelberg <michael+i3@stapelberg.de>
-March 2010
+September 2011
 
 …or: oh no, I have an nVidia graphics card!
 
@@ -15,6 +15,8 @@ i3, like so:
 ----------------------------------------------
 exec i3 --force-xinerama -V >>~/.i3/i3log 2>&1
 ----------------------------------------------
+
+…or use +force_xinerama yes+ in your configuration file.
 
 == The explanation
 
@@ -50,9 +52,13 @@ these are two screens).
 
 For this very reason, we decided to implement the following workaround: As
 long as the nVidia driver does not support RandR, an option called
-+--force-xinerama+ is available in i3. This option gets the list of screens
-*once* when starting, and never updates it. As the nVidia driver cannot do
-dynamic configuration anyways, this is not a big deal.
++--force-xinerama+ is available in i3 (alternatively, you can use the
++force_xinerama+ configuration file directive). This option gets the list of
+screens *once* when starting, and never updates it. As the nVidia driver cannot
+do dynamic configuration anyways, this is not a big deal.
+
+Also note that your output names are not descriptive (like +HDMI1+) when using
+Xinerama, instead they are counted up, starting at 0: +xinerama-0+, +xinerama-1+, …
 
 == See also
 
