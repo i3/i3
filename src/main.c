@@ -432,7 +432,10 @@ int main(int argc, char *argv[]) {
 
     free(greply);
 
-    if (force_xinerama) {
+    /* Force Xinerama (for drivers which don't support RandR yet, esp. the
+     * nVidia binary graphics driver), when specified either in the config
+     * file or on command-line */
+    if (force_xinerama || config.force_xinerama) {
         xinerama_init();
     } else {
         DLOG("Checking for XRandR...\n");

@@ -123,6 +123,16 @@ struct Config {
          * more often. */
         bool force_focus_wrapping;
 
+        /** By default, use the RandR API for multi-monitor setups.
+         * Unfortunately, the nVidia binary graphics driver doesn't support
+         * this API. Instead, it only support the less powerful Xinerama API,
+         * which can be enabled by this option.
+         *
+         * Note: this option takes only effect on the initial startup (eg.
+         * reconfiguration is not possible). On startup, the list of screens
+         * is fetched once and never updated. */
+        bool force_xinerama;
+
         /** The default border style for new windows. */
         border_style_t default_border;
 

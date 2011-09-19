@@ -619,6 +619,7 @@ void parse_file(const char *f) {
 %token                  TOK_1PIXEL                  "1pixel"
 %token                  TOKFOCUSFOLLOWSMOUSE        "focus_follows_mouse"
 %token                  TOK_FORCE_FOCUS_WRAPPING    "force_focus_wrapping"
+%token                  TOK_FORCE_XINERAMA          "force_xinerama"
 %token                  TOKWORKSPACEBAR             "workspace_bar"
 %token                  TOK_DEFAULT                 "default"
 %token                  TOK_STACKING                "stacking"
@@ -674,6 +675,7 @@ line:
     | new_float
     | focus_follows_mouse
     | force_focus_wrapping
+    | force_xinerama
     | workspace_bar
     | workspace
     | assign
@@ -1019,6 +1021,14 @@ force_focus_wrapping:
     {
         DLOG("force focus wrapping = %d\n", $2);
         config.force_focus_wrapping = $2;
+    }
+    ;
+
+force_xinerama:
+    TOK_FORCE_XINERAMA bool
+    {
+        DLOG("force xinerama = %d\n", $2);
+        config.force_xinerama = $2;
     }
     ;
 
