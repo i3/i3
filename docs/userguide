@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael+i3@stapelberg.de>
-August 2011
+September 2011
 
 This document contains all the information you need to configure and use the i3
 window manager. If it does not, please contact us on IRC (preferred) or post your
@@ -711,6 +711,31 @@ force_focus_wrapping <yes|no>
 ------------------------
 force_focus_wrapping yes
 ------------------------
+
+=== Forcing Xinerama
+
+As explained in-depth in <http://i3wm.org/docs/multi-monitor.html>, some X11
+video drivers (especially the nVidia binary driver) only provide support for
+Xinerama instead of RandR. In such a situation, i3 must be told to use the
+inferior Xinerama API explicitly and therefore don’t provide support for
+reconfiguring your screens on the fly (they are read only once on startup and
+that’s it).
+
+For people who do cannot modify their +~/.xsession+ to add the
++--force-xinerama+ commandline parameter, a configuration option is provided:
+
+*Syntax*:
+-----------------------
+force_xinerama <yes|no>
+-----------------------
+
+*Example*:
+------------------
+force_xinerama yes
+------------------
+
+Also note that your output names are not descriptive (like +HDMI1+) when using
+Xinerama, instead they are counted up, starting at 0: +xinerama-0+, +xinerama-1+, …
 
 == List of commands
 
