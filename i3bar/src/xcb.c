@@ -657,6 +657,12 @@ void xcb_prep_cb(struct ev_loop *loop, ev_prepare *watcher, int revents) {
  */
 void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
     xcb_generic_event_t *event;
+
+    if (xcb_connection_has_error(xcb_connection)) {
+        ELOG("X11 connection was closed unexpectedly - maybe your X server terminated / crashed?\n");
+        exit(1);
+    }
+
     while ((event = xcb_poll_for_event(xcb_connection)) == NULL) {
         return;
     }
