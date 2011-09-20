@@ -390,8 +390,8 @@ void parse_file(const char *f) {
         int extra = (strlen(current->value) - strlen(current->key));
         char *next;
         for (next = bufcopy;
-             (bufcopy + (next - bufcopy)) < (buf + stbuf.st_size) &&
-             (next = strcasestr(bufcopy + (next - bufcopy), current->key)) != NULL;
+             next < (bufcopy + stbuf.st_size) &&
+             (next = strcasestr(next, current->key)) != NULL;
              next += strlen(current->key)) {
             *next = '_';
             extra_bytes += extra;
