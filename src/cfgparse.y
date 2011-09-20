@@ -358,11 +358,13 @@ void parse_file(const char *f) {
 
             /* get key/value for this variable */
             char *v_key = value, *v_value;
-            if ((v_value = strstr(value, " ")) == NULL &&
-                (v_value = strstr(value, "\t")) == NULL) {
+            if (strstr(value, " ") == NULL && strstr(value, "\t") == NULL) {
                 ELOG("Malformed variable assignment, need a value\n");
                 continue;
             }
+
+            if (!(v_value = strstr(value, " ")))
+                v_value = strstr(value, "\t");
 
             *(v_value++) = '\0';
 
@@ -388,6 +390,7 @@ void parse_file(const char *f) {
         int extra = (strlen(current->value) - strlen(current->key));
         char *next;
         for (next = bufcopy;
+             (bufcopy + (next - bufcopy)) < (buf + stbuf.st_size) &&
              (next = strcasestr(bufcopy + (next - bufcopy), current->key)) != NULL;
              next += strlen(current->key)) {
             *next = '_';
