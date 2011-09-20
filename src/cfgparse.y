@@ -358,11 +358,13 @@ void parse_file(const char *f) {
 
             /* get key/value for this variable */
             char *v_key = value, *v_value;
-            if ((v_value = strstr(value, " ")) == NULL &&
-                (v_value = strstr(value, "\t")) == NULL) {
+            if (strstr(value, " ") == NULL && strstr(value, "\t") == NULL) {
                 ELOG("Malformed variable assignment, need a value\n");
                 continue;
             }
+
+            if (!(v_value = strstr(value, " ")))
+                v_value = strstr(value, "\t");
 
             *(v_value++) = '\0';
 
