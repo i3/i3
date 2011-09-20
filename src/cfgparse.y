@@ -390,6 +390,7 @@ void parse_file(const char *f) {
         int extra = (strlen(current->value) - strlen(current->key));
         char *next;
         for (next = bufcopy;
+             (bufcopy + (next - bufcopy)) < (buf + stbuf.st_size) &&
              (next = strcasestr(bufcopy + (next - bufcopy), current->key)) != NULL;
              next += strlen(current->key)) {
             *next = '_';
