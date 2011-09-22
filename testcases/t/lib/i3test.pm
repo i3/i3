@@ -7,6 +7,7 @@ use X11::XCB::Rect;
 use X11::XCB::Window;
 use X11::XCB qw(:all);
 use AnyEvent::I3;
+use EV;
 use List::Util qw(first);
 use List::MoreUtils qw(lastval);
 use Time::HiRes qw(sleep);
@@ -57,6 +58,7 @@ sub open_standard_window {
         class => WINDOW_CLASS_INPUT_OUTPUT,
         rect => X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30 ),
         background_color => $color,
+        event_mask => [ 'structure_notify' ],
     );
 
     if (defined($floating) && $floating) {
@@ -68,7 +70,29 @@ sub open_standard_window {
     $window->name('Window ' . counter_window());
     $window->map;
 
-    sleep(0.25);
+    # wait for the mapped event with a timeout of 0.25s
+    my $cv = AE::cv;
+
+    my $prep = EV::prepare sub {
+        $x->flush;
+    };
+
+    my $check = EV::check sub {
+        while (defined(my $event = $x->poll_for_event)) {
+            if ($event->{response_type} == MAP_NOTIFY) {
+                $cv->send(0)
+            }
+        }
+    };
+
+    my $watcher = EV::io $x->get_file_descriptor, EV::READ, sub {
+        # do nothing, we only need this watcher so that EV picks up the events
+    };
+
+    # Trigger timeout after 0.25s
+    my $timeout = AE::timer 0.5, 0, sub { say STDERR "timeout"; $cv->send(1) };
+
+    my $result = $cv->recv;
 
     return $window;
 }
