@@ -1021,7 +1021,7 @@ static void con_on_remove_child(Con *con) {
     int children = con_num_children(con);
     if (children == 0) {
         DLOG("Container empty, closing\n");
-        tree_close(con, DONT_KILL_WINDOW, false);
+        tree_close(con, DONT_KILL_WINDOW, false, false);
         return;
     }
 }

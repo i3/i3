@@ -114,8 +114,15 @@ static bool _is_con_mapped(Con *con) {
  * Returns true if the container was killed or false if just WM_DELETE was sent
  * and the window is expected to kill itself.
  *
+ * The dont_kill_parent flag is specified when the function calls itself
+ * recursively while deleting a containers children.
+ *
+ * The force_set_focus flag is specified in the case of killing a floating
+ * window: tree_close() will be invoked for the CT_FLOATINGCON (the parent
+ * container) and focus should be set there.
+ *
  */
-bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent) {
+bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool force_set_focus) {
     bool was_mapped = con->mapped;
     Con *parent = con->parent;
 
@@ -138,7 +145,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent) {
     for (child = TAILQ_FIRST(&(con->nodes_head)); child; ) {
         nextchild = TAILQ_NEXT(child, nodes);
         DLOG("killing child=%p\n", child);
-        if (!tree_close(child, kill_window, true))
+        if (!tree_close(child, kill_window, true, false))
             abort_kill = true;
         child = nextchild;
     }
@@ -191,7 +198,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent) {
     if (con_is_floating(con)) {
         Con *ws = con_get_workspace(con);
         DLOG("Container was floating, killing floating container\n");
-        tree_close(parent, DONT_KILL_WINDOW, false);
+        tree_close(parent, DONT_KILL_WINDOW, false, (con == focused));
         DLOG("parent container killed\n");
         if (con == focused) {
             DLOG("This is the focused container, i need to find another one to focus. I start looking at ws = %p\n", ws);
@@ -224,7 +231,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent) {
                 /* Instead of focusing the dockarea, we need to restore focus to the workspace */
                 con_focus(con_descend_focused(output_get_content(next->parent)));
             } else {
-                if (con != focused)
+                if (!force_set_focus && con != focused)
                     DLOG("not changing focus, the container was not focused before\n");
                 else con_focus(next);
             }
@@ -259,7 +266,7 @@ void tree_close_con(kill_window_t kill_window) {
     assert(focused->type != CT_ROOT);
 
     /* Kill con */
-    tree_close(focused, kill_window, false);
+    tree_close(focused, kill_window, false, false);
 }
 
 /*
@@ -572,7 +579,7 @@ void tree_flatten(Con *con) {
 
     /* 4: close the redundant cons */
     DLOG("closing redundant cons\n");
-    tree_close(con, DONT_KILL_WINDOW, true);
+    tree_close(con, DONT_KILL_WINDOW, true, false);
 
     /* Well, we got to abort the recursion here because we destroyed the
      * container. However, if tree_flatten() is called sufficiently often,
