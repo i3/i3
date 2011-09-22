@@ -18,7 +18,25 @@ use Proc::Background;
 use v5.10;
 
 use Exporter ();
-our @EXPORT = qw(get_workspace_names get_unused_workspace fresh_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live exit_gracefully workspace_exists focused_ws get_socket_path launch_with_config);
+our @EXPORT = qw(
+    get_workspace_names
+    get_unused_workspace
+    fresh_workspace
+    get_ws_content
+    get_ws
+    get_focused
+    open_empty_con
+    open_standard_window
+    get_dock_clients
+    cmd
+    sync_with_i3
+    does_i3_live
+    exit_gracefully
+    workspace_exists
+    focused_ws
+    get_socket_path
+    launch_with_config
+);
 
 my $tester = Test::Builder->new();
 my $_cached_socket_path = undef;
