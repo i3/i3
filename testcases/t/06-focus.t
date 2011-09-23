@@ -24,7 +24,7 @@ cmd 'split v';
 my $top = open_standard_window($x);
 my $mid = open_standard_window($x);
 my $bottom = open_standard_window($x);
-sleep 0.25;
+##sleep 0.25;
 
 diag("top id = " . $top->id);
 diag("mid id = " . $mid->id);

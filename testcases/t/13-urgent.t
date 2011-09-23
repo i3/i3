@@ -31,7 +31,7 @@ is(@urgent, 0, 'no window got the urgent flag');
 # Add the urgency hint, switch to a different workspace and back again
 #####################################################################
 $top->add_hint('urgency');
-sleep 0.5;
+sync_with_i3($x);
 
 @content = @{get_ws_content($tmp)};
 @urgent = grep { $_->{urgent} } @content;
@@ -48,7 +48,7 @@ cmd '[id="' . $top->id . '"] focus';
 is(@urgent, 0, 'no window got the urgent flag after focusing');
 
 $top->add_hint('urgency');
-sleep 0.5;
+sync_with_i3($x);
 
 @urgent = grep { $_->{urgent} } @{get_ws_content($tmp)};
 is(@urgent, 0, 'no window got the urgent flag after re-setting urgency hint');
@@ -62,7 +62,7 @@ ok(!$ws->{urgent}, 'urgent flag not set on workspace');
 my $otmp = fresh_workspace;
 
 $top->add_hint('urgency');
-sleep 0.5;
+sync_with_i3($x);
 
 $ws = get_ws($tmp);
 ok($ws->{urgent}, 'urgent flag set on workspace');

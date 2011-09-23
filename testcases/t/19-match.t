@@ -12,20 +12,7 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
 # Open a new window
 my $x = X11::XCB::Connection->new;
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#C0C0C0',
-);
-
-$window->map;
-# give it some time to be picked up by the window manager
-# TODO: better check for $window->mapped or something like that?
-# maybe we can even wait for getting mapped?
-my $c = 0;
-while (@{get_ws_content($tmp)} == 0 and $c++ < 5) {
-    sleep 0.25;
-}
+my $window = open_standard_window($x);
 my $content = get_ws_content($tmp);
 ok(@{$content} == 1, 'window mapped');
 my $win = $content->[0];
@@ -114,7 +101,7 @@ ok(@{$content} == 2, 'two windows opened');
 
 cmd '[class="special" title="left"] kill';
 
-sleep 0.25;
+sync_with_i3($x);
 
 $content = get_ws_content($tmp);
 is(@{$content}, 1, 'one window still there');

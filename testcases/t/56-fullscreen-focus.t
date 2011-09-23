@@ -56,7 +56,7 @@ cmd "move workspace $tmp2";
 
 # verify that the third window has the focus
 
-sleep 0.25;
+sync_with_i3($x);
 
 is($x->input_focus, $third->id, 'third window focused');
 

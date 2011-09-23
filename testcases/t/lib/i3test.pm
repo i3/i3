@@ -40,6 +40,7 @@ our @EXPORT = qw(
 
 my $tester = Test::Builder->new();
 my $_cached_socket_path = undef;
+my $_sync_window = undef;
 my $tmp_socket_path = undef;
 
 BEGIN {
@@ -66,6 +67,44 @@ use warnings;
     goto \&Exporter::import;
 }
 
+#
+# Waits for the next event and calls the given callback for every event to
+# determine if this is the event we are waiting for.
+#
+# Can be used to wait until a window is mapped, until a ClientMessage is
+# received, etc.
+#
+# wait_for_event $x, 0.25, sub { $_[0]->{response_type} == MAP_NOTIFY };
+#
+sub wait_for_event {
+    my ($x, $timeout, $cb) = @_;
+
+    my $cv = AE::cv;
+
+    my $prep = EV::prepare sub {
+        $x->flush;
+    };
+
+    my $check = EV::check sub {
+        while (defined(my $event = $x->poll_for_event)) {
+            if ($cb->($event)) {
+                $cv->send(1);
+                last;
+            }
+        }
+    };
+
+    my $watcher = EV::io $x->get_file_descriptor, EV::READ, sub {
+        # do nothing, we only need this watcher so that EV picks up the events
+    };
+
+    # Trigger timeout after $timeout seconds (can be fractional)
+    my $timeout = AE::timer $timeout, 0, sub { say STDERR "timeout"; $cv->send(0) };
+
+    my $result = $cv->recv;
+    return $result;
+}
+
 sub open_standard_window {
     my ($x, $color, $floating) = @_;
 
@@ -88,29 +127,7 @@ sub open_standard_window {
     $window->name('Window ' . counter_window());
     $window->map;
 
-    # wait for the mapped event with a timeout of 0.25s
-    my $cv = AE::cv;
-
-    my $prep = EV::prepare sub {
-        $x->flush;
-    };
-
-    my $check = EV::check sub {
-        while (defined(my $event = $x->poll_for_event)) {
-            if ($event->{response_type} == MAP_NOTIFY) {
-                $cv->send(0)
-            }
-        }
-    };
-
-    my $watcher = EV::io $x->get_file_descriptor, EV::READ, sub {
-        # do nothing, we only need this watcher so that EV picks up the events
-    };
-
-    # Trigger timeout after 0.25s
-    my $timeout = AE::timer 0.5, 0, sub { say STDERR "timeout"; $cv->send(1) };
-
-    my $result = $cv->recv;
+    wait_for_event $x, 0.5, sub { $_[0]->{response_type} == MAP_NOTIFY };
 
     return $window;
 }
@@ -237,6 +254,69 @@ sub focused_ws {
         my $first = first { $_->{fullscreen_mode} == 1 } @{$content->{nodes}};
         return $first->{name}
     }
+}
+
+#
+# Sends an I3_SYNC ClientMessage with a random value to the root window.
+# i3 will reply with the same value, but, due to the order of events it
+# processes, only after all other events are done.
+#
+# This can be used to ensure the results of a cmd 'focus left' are pushed to
+# X11 and that $x->input_focus returns the correct value afterwards.
+#
+# See also docs/testsuite for a long explanation
+#
+sub sync_with_i3 {
+    my ($x) = @_;
+
+    # Since we need a (mapped) window for receiving a ClientMessage, we create
+    # one on the first call of sync_with_i3. It will be re-used in all
+    # subsequent calls.
+    if (!defined($_sync_window)) {
+        $_sync_window = $x->root->create_child(
+            class => WINDOW_CLASS_INPUT_OUTPUT,
+            rect => X11::XCB::Rect->new(x => -15, y => -15, width => 10, height => 10 ),
+            override_redirect => 1,
+            background_color => '#ff0000',
+            event_mask => [ 'structure_notify' ],
+        );
+
+        $_sync_window->map;
+
+        wait_for_event $x, 0.5, sub { $_[0]->{response_type} == MAP_NOTIFY };
+    }
+
+    my $root = $x->root->id;
+    # Generate a random number to identify this particular ClientMessage.
+    my $myrnd = int(rand(255)) + 1;
+
+    # Generate a ClientMessage, see xcb_client_message_t
+    my $msg = pack "CCSLLLLLLL",
+         CLIENT_MESSAGE, # response_type
+         32,     # format
+         0,      # sequence
+         $root,  # destination window
+         $x->atom(name => 'I3_SYNC')->id,
+
+         $_sync_window->id,    # data[0]: our own window id
+         $myrnd, # data[1]: a random value to identify the request
+         0,
+         0,
+         0;
+
+    # Send it to the root window -- since i3 uses the SubstructureRedirect
+    # event mask, it will get the ClientMessage.
+    $x->send_event(0, $root, EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
+
+    # now wait until the reply is here
+    return wait_for_event $x, 1, sub {
+        my ($event) = @_;
+        # TODO: const
+        return 0 unless $event->{response_type} == 161;
+
+        my ($win, $rnd) = unpack "LL", $event->{data};
+        return ($rnd == $myrnd);
+    };
 }
 
 sub does_i3_live {

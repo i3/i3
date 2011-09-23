@@ -30,6 +30,8 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 my $first = open_standard_window($x);
 my $second = open_standard_window($x);
 
+sync_with_i3($x);
+
 is($x->input_focus, $second->id, 'second window focused');
 ok(@{get_ws_content($tmp)} == 2, 'two containers opened');
 isnt($content[0]->{layout}, 'stacked', 'layout not stacked');
@@ -56,6 +58,8 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
 $first = open_standard_window($x);
 $second = open_standard_window($x);
+
+sync_with_i3($x);
 
 is($x->input_focus, $second->id, 'second window focused');
 my @content = @{get_ws_content($tmp)};

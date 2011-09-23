@@ -17,20 +17,20 @@ my $tmp = fresh_workspace;
 
 # open a tiling window on the first workspace
 open_standard_window($x);
-sleep 0.25;
+#sleep 0.25;
 my $first = get_focused($tmp);
 
 # on a different ws, open a floating window
 my $otmp = fresh_workspace;
 open_standard_window($x);
-sleep 0.25;
+#sleep 0.25;
 my $float = get_focused($otmp);
 cmd 'mode toggle';
-sleep 0.25;
+#sleep 0.25;
 
 # move the floating con to first workspace
 cmd "move workspace $tmp";
-sleep 0.25;
+#sleep 0.25;
 
 # switch to the first ws and check focus
 is(get_focused($tmp), $float, 'floating client correctly focused');

@@ -27,9 +27,7 @@ $i3->command('9')->recv;
 #####################################################################
 
 my $top = i3test::open_standard_window($x);
-sleep(0.25);
 my $mid = i3test::open_standard_window($x);
-sleep(0.25);
 my $bottom = i3test::open_standard_window($x);
 sleep(0.25);
 

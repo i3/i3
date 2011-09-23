@@ -21,11 +21,8 @@ cmd 'split h';
 #####################################################################
 
 my $top = open_standard_window($x);
-sleep 0.25;
 my $mid = open_standard_window($x);
-sleep 0.25;
 my $bottom = open_standard_window($x);
-sleep 0.25;
 
 diag("top id = " . $top->id);
 diag("mid id = " . $mid->id);
@@ -39,6 +36,7 @@ sub focus_after {
     my $msg = shift;
 
     cmd $msg;
+    sync_with_i3($x);
     return $x->input_focus;
 }
 

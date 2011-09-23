@@ -1,8 +1,5 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
-# Beware that this test uses workspace 9 to perform some tests (it expects
-# the workspace to be empty).
-# TODO: skip it by default?
 
 use i3test;
 use X11::XCB qw(:all);
@@ -20,29 +17,21 @@ fresh_workspace;
 #####################################################################
 
 # Create a floating window
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#C0C0C0',
-    # replace the type with 'utility' as soon as the coercion works again in X11::XCB
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
-);
-
-isa_ok($window, 'X11::XCB::Window');
-
-$window->map;
-sleep 0.25;
+my $window = open_standard_window($x, undef, 1);
 
 # See if configurerequests cause window movements (they should not)
 my ($a, $t) = $window->rect;
 $window->rect(X11::XCB::Rect->new(x => $a->x, y => $a->y, width => $a->width, height => $a->height));
 
-sleep 0.25;
+sync_with_i3($x);
+
 my ($na, $nt) = $window->rect;
 is_deeply($na, $a, 'Rects are equal after configurerequest');
 
 sub test_resize {
     $window->rect(X11::XCB::Rect->new(x => 0, y => 0, width => 100, height => 100));
+
+    sync_with_i3($x);
 
     my ($absolute, $top) = $window->rect;
 
@@ -52,7 +41,8 @@ sub test_resize {
     isnt($absolute->height, 500, 'height != 500');
 
     $window->rect(X11::XCB::Rect->new(x => 0, y => 0, width => 300, height => 500));
-    sleep 0.25;
+
+    sync_with_i3($x);
 
     ($absolute, $top) = $window->rect;
 

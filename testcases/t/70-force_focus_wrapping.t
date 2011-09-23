@@ -73,6 +73,9 @@ cmd 'layout tabbed';
 cmd 'focus parent';
 
 $third = open_standard_window($x);
+
+sync_with_i3($x);
+
 is($x->input_focus, $third->id, 'third window focused');
 
 cmd 'focus left';

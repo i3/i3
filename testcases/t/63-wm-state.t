@@ -16,25 +16,18 @@ BEGIN {
 
 my $x = X11::XCB::Connection->new;
 
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#00ff00',
-    event_mask => [ 'structure_notify' ],
-);
+my $window = open_standard_window($x);
 
-$window->name('Window 1');
-$window->map;
+sync_with_i3($x);
 
 diag('window mapped');
-
-sleep 0.5;
 
 is($window->state, ICCCM_WM_STATE_NORMAL, 'WM_STATE normal');
 
 $window->unmap;
 
-sleep 0.5;
+# TODO: wait for unmapnotify
+sync_with_i3($x);
 
 is($window->state, ICCCM_WM_STATE_WITHDRAWN, 'WM_STATE withdrawn');
 

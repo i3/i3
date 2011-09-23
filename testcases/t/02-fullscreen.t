@@ -59,11 +59,9 @@ my $new_rect = $window->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned");
 $original_rect = $new_rect;
 
-sleep 0.25;
-
 $window->fullscreen(1);
 
-sleep 0.25;
+sync_with_i3($x);
 
 $new_rect = $window->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned after fullscreen");
@@ -135,12 +133,12 @@ $new_rect = $swindow->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned");
 
 $swindow->fullscreen(1);
-sleep 0.25;
+sync_with_i3($x);
 
 is(fullscreen_windows(), 1, 'amount of fullscreen windows');
 
 $window->fullscreen(0);
-sleep 0.25;
+sync_with_i3($x);
 is(fullscreen_windows(), 0, 'amount of fullscreen windows');
 
 ok($swindow->mapped, 'window mapped after other fullscreen ended');
@@ -152,7 +150,7 @@ ok($swindow->mapped, 'window mapped after other fullscreen ended');
 ###########################################################################
 
 $swindow->fullscreen(0);
-sleep 0.25;
+sync_with_i3($x);
 
 is(fullscreen_windows(), 0, 'amount of fullscreen windows after disabling');
 

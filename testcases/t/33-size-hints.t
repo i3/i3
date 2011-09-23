@@ -32,7 +32,7 @@ sleep 0.25;
 $win->hints->aspect($aspect);
 $x->flush;
 
-sleep 0.25;
+sync_with_i3($x);
 
 my $rect = $win->rect;
 my $ar = $rect->width / $rect->height;
