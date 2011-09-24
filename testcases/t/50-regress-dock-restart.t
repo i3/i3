@@ -31,11 +31,12 @@ my $window = $x->root->create_child(
     rect => [ 0, 0, 30, 30],
     background_color => '#FF0000',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 #####################################################################
 # check that we can find it in the layout tree at the expected position
@@ -69,7 +70,7 @@ is($docknode->{rect}->{height}, 30, 'dock node has unchanged height after restar
 
 $window->destroy;
 
-sleep 0.25;
+wait_for_unmap $x;
 
 @docked = get_dock_clients;
 is(@docked, 0, 'no dock clients found');
@@ -84,11 +85,12 @@ $window = $x->root->create_child(
     rect => [ 0, 0, 30, 20],
     background_color => '#00FF00',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 @docked = get_dock_clients;
 is(@docked, 1, 'one dock client found');

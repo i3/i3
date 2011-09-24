@@ -9,7 +9,6 @@ BEGIN {
 }
 
 my $x = X11::XCB::Connection->new;
-my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;
 
@@ -25,6 +24,7 @@ my $left = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [0, 0, 30, 30],
     background_color => '#FF0000',
+    event_mask => [ 'structure_notify' ],
 );
 
 $left->name('Left');
@@ -34,12 +34,14 @@ my $right = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [0, 0, 30, 30],
     background_color => '#FF0000',
+    event_mask => [ 'structure_notify' ],
 );
 
 $right->name('Right');
 $right->map;
 
-sleep 0.25;
+ok(wait_for_map($x), 'left window mapped');
+ok(wait_for_map($x), 'right window mapped');
 
 my ($abs, $rgeom) = $right->rect;
 
@@ -48,13 +50,14 @@ my $child = $x->root->create_child(
     rect => [ 0, 0, 30, 30 ],
     background_color => '#C0C0C0',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $child->name('Child window');
 $child->client_leader($right);
 $child->map;
 
-sleep 0.25;
+ok(wait_for_map($x), 'child window mapped');
 
 my $cgeom;
 ($abs, $cgeom) = $child->rect;
@@ -65,13 +68,14 @@ my $child2 = $x->root->create_child(
     rect => [ 0, 0, 30, 30 ],
     background_color => '#C0C0C0',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $child2->name('Child window 2');
 $child2->client_leader($left);
 $child2->map;
 
-sleep 0.25;
+ok(wait_for_map($x), 'second child window mapped');
 
 ($abs, $cgeom) = $child2->rect;
 cmp_ok(($cgeom->x + $cgeom->width), '<', $rgeom->x, 'child above left window');
@@ -83,12 +87,13 @@ my $fwindow = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30],
     background_color => '#FF0000',
+    event_mask => [ 'structure_notify' ],
 );
 
 $fwindow->transient_for($right);
 $fwindow->map;
 
-sleep 0.25;
+ok(wait_for_map($x), 'transient window mapped');
 
 my ($absolute, $top) = $fwindow->rect;
 ok($absolute->{x} != 0 && $absolute->{y} != 0, 'i3 did not map it to (0x0)');
@@ -101,15 +106,16 @@ SKIP: {
 #####################################################################
 
 my $window = $x->root->create_child(
-class => WINDOW_CLASS_INPUT_OUTPUT,
-rect => [ 0, 0, 30, 30 ],
-background_color => '#C0C0C0',
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#C0C0C0',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->name('Parent window');
 $window->map;
 
-sleep 0.25;
+ok(wait_for_map($x), 'parent window mapped');
 
 #########################################################################
 # Switch to a different workspace and open a child window. It should be opened
@@ -118,16 +124,17 @@ sleep 0.25;
 fresh_workspace;
 
 my $child = $x->root->create_child(
-class => WINDOW_CLASS_INPUT_OUTPUT,
-rect => [ 0, 0, 30, 30 ],
-background_color => '#C0C0C0',
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => [ 0, 0, 30, 30 ],
+    background_color => '#C0C0C0',
+    event_mask => [ 'structure_notify' ],
 );
 
 $child->name('Child window');
 $child->client_leader($window);
 $child->map;
 
-sleep 0.25;
+ok(wait_for_map($x), 'child window mapped');
 
 isnt($x->input_focus, $child->id, "Child window focused");
 

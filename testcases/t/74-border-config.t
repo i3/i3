@@ -6,8 +6,6 @@
 #
 
 use i3test;
-use X11::XCB qw(:all);
-use X11::XCB::Connection;
 
 my $x = X11::XCB::Connection->new;
 
@@ -84,11 +82,12 @@ $first = $x->root->create_child(
     background_color => '#C0C0C0',
     # replace the type with 'utility' as soon as the coercion works again in X11::XCB
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $first->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 my $wscontent = get_ws($tmp);
 my @floating = @{$wscontent->{floating_nodes}};
@@ -123,11 +122,12 @@ $first = $x->root->create_child(
     background_color => '#C0C0C0',
     # replace the type with 'utility' as soon as the coercion works again in X11::XCB
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $first->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 $wscontent = get_ws($tmp);
 @floating = @{$wscontent->{floating_nodes}};

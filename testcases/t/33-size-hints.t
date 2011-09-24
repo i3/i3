@@ -5,8 +5,6 @@
 #
 use i3test;
 
-my $i3 = i3(get_socket_path());
-
 my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
@@ -17,6 +15,7 @@ my $win = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30),
     background_color => '#C0C0C0',
+    event_mask => [ 'structure_notify' ],
 );
 
 # XXX: we should check screen size. in screens with an AR of 2.0,
@@ -28,7 +27,7 @@ $aspect->max_num(600);
 $aspect->max_den(300);
 $win->_create;
 $win->map;
-sleep 0.25;
+wait_for_map $x;
 $win->hints->aspect($aspect);
 $x->flush;
 

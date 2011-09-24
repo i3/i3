@@ -12,7 +12,6 @@ BEGIN {
 }
 
 my $x = X11::XCB::Connection->new;
-my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;
 
@@ -24,11 +23,12 @@ my $first = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 200, 80],
     background_color => '#FF0000',
+    event_mask => [ 'structure_notify' ],
 );
 
 $first->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 #####################################################################
 # Open a second window with 300x90
@@ -38,11 +38,12 @@ my $second = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 300, 90],
     background_color => '#00FF00',
+    event_mask => [ 'structure_notify' ],
 );
 
 $second->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 #####################################################################
 # Set the parent to floating

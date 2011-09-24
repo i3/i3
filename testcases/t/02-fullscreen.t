@@ -42,6 +42,7 @@ my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => $original_rect,
     background_color => '#C0C0C0',
+    event_mask => [ 'structure_notify' ],
 );
 
 isa_ok($window, 'X11::XCB::Window');
@@ -50,7 +51,7 @@ is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 # open another container to make the window get only half of the screen
 cmd 'open';
@@ -92,6 +93,7 @@ $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => $original_rect,
     background_color => 61440,
+    event_mask => [ 'structure_notify' ],
 );
 
 is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
@@ -99,7 +101,7 @@ is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
 $window->fullscreen(1);
 $window->map;
 
-sleep(0.25);
+wait_for_map $x;
 
 $new_rect = $window->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned after fullscreen");
@@ -122,10 +124,12 @@ my $swindow = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => $original_rect,
     background_color => '#C0C0C0',
+    event_mask => [ 'structure_notify' ],
 );
 
 $swindow->map;
-sleep 0.25;
+
+sync_with_i3($x);
 
 ok(!$swindow->mapped, 'window not mapped while fullscreen window active');
 

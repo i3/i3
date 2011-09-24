@@ -11,7 +11,6 @@ BEGIN {
 }
 
 my $x = X11::XCB::Connection->new;
-my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;
 
@@ -33,11 +32,12 @@ my $first = $x->root->create_child(
     rect => [ 0, 0, 30, 30],
     background_color => '#FF0000',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $first->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 #####################################################################
 # Open a second dock client
@@ -48,11 +48,12 @@ my $second = $x->root->create_child(
     rect => [ 0, 0, 30, 30],
     background_color => '#FF0000',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $second->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 #####################################################################
 # Kill the second dock client

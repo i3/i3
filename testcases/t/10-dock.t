@@ -10,7 +10,6 @@ BEGIN {
 }
 
 my $x = X11::XCB::Connection->new;
-my $i3 = i3(get_socket_path());
 
 #####################################################################
 # verify that there is no dock window yet
@@ -36,11 +35,12 @@ my $window = $x->root->create_child(
     rect => [ 0, 0, 30, 30],
     background_color => '#FF0000',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 my $rect = $window->rect;
 is($rect->width, $primary->rect->width, 'dock client is as wide as the screen');
@@ -67,7 +67,7 @@ is($docknode->{rect}->{height}, 30, 'dock node has unchanged height');
 
 $window->rect(X11::XCB::Rect->new(x => 0, y => 0, width => 50, height => 40));
 
-sleep 0.25;
+sync_with_i3 $x;
 
 @docked = get_dock_clients('top');
 is(@docked, 1, 'one dock client found');
@@ -82,7 +82,7 @@ is($docknode->{rect}->{height}, 40, 'dock height changed');
 
 $window->destroy;
 
-sleep 0.25;
+wait_for_unmap $x;
 
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
@@ -96,11 +96,12 @@ $window = $x->root->create_child(
     rect => [ 0, 1000, 30, 30],
     background_color => '#FF0000',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 my $rect = $window->rect;
 is($rect->width, $primary->rect->width, 'dock client is as wide as the screen');
@@ -111,7 +112,7 @@ is(@docked, 1, 'dock client on bottom');
 
 $window->destroy;
 
-sleep 0.25;
+wait_for_unmap $x;
 
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
@@ -125,6 +126,7 @@ $window = $x->root->create_child(
     rect => [ 0, 1000, 30, 30],
     background_color => '#FF0000',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create();
@@ -145,14 +147,14 @@ $x->change_property(
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 @docked = get_dock_clients('top');
 is(@docked, 1, 'dock client on top');
 
 $window->destroy;
 
-sleep 0.25;
+wait_for_unmap $x;
 
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
@@ -162,6 +164,7 @@ $window = $x->root->create_child(
     rect => [ 0, 1000, 30, 30],
     background_color => '#FF0000',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create();
@@ -182,7 +185,7 @@ $x->change_property(
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 @docked = get_dock_clients('bottom');
 is(@docked, 1, 'dock client on bottom');
@@ -199,12 +202,13 @@ my $fwindow = $x->root->create_child(
     rect => [ 0, 0, 30, 30],
     background_color => '#FF0000',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $fwindow->transient_for($window);
 $fwindow->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 does_i3_live;
 

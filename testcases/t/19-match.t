@@ -35,8 +35,7 @@ cmd 'nop now killing the window';
 my $id = $win->{id};
 cmd qq|[con_id="$id"] kill|;
 
-# give i3 some time to pick up the UnmapNotify event
-sleep 0.25;
+wait_for_unmap $x;
 
 cmd 'nop checking if its gone';
 $content = get_ws_content($tmp);
@@ -75,25 +74,27 @@ my $left = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
+    event_mask => [ 'structure_notify' ],
 );
 
 $left->_create;
 set_wm_class($left->id, 'special', 'special');
 $left->name('left');
 $left->map;
-sleep 0.25;
+ok(wait_for_map($x), 'left window mapped');
 
 my $right = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
+    event_mask => [ 'structure_notify' ],
 );
 
 $right->_create;
 set_wm_class($right->id, 'special', 'special');
 $right->name('right');
 $right->map;
-sleep 0.25;
+ok(wait_for_map($x), 'right window mapped');
 
 # two windows should be here
 $content = get_ws_content($tmp);
@@ -116,13 +117,14 @@ $left = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
+    event_mask => [ 'structure_notify' ],
 );
 
 $left->_create;
 set_wm_class($left->id, 'special7', 'special7');
 $left->name('left');
 $left->map;
-sleep 0.25;
+ok(wait_for_map($x), 'left window mapped');
 
 # two windows should be here
 $content = get_ws_content($tmp);
@@ -130,7 +132,7 @@ ok(@{$content} == 1, 'window opened');
 
 cmd '[class="^special[0-9]$"] kill';
 
-sleep 0.25;
+wait_for_unmap $x;
 
 $content = get_ws_content($tmp);
 is(@{$content}, 0, 'window killed');
@@ -145,13 +147,14 @@ $left = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
+    event_mask => [ 'structure_notify' ],
 );
 
 $left->_create;
 set_wm_class($left->id, 'special7', 'special7');
 $left->name('ä 3');
 $left->map;
-sleep 0.25;
+ok(wait_for_map($x), 'left window mapped');
 
 # two windows should be here
 $content = get_ws_content($tmp);
@@ -159,7 +162,7 @@ ok(@{$content} == 1, 'window opened');
 
 cmd '[title="^\w [3]$"] kill';
 
-sleep 0.25;
+wait_for_unmap $x;
 
 $content = get_ws_content($tmp);
 is(@{$content}, 0, 'window killed');

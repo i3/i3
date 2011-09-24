@@ -44,7 +44,19 @@ cmd 'fullscreen';
 # Open a third window
 #####################################################################
 
-my $third = open_standard_window($x, '#0000ff');
+#my $third = open_standard_window($x, '#0000ff');
+
+my $third = $x->root->create_child(
+    class => WINDOW_CLASS_INPUT_OUTPUT,
+    rect => X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30 ),
+    background_color => '#0000ff',
+    event_mask => [ 'structure_notify' ],
+);
+
+$third->name('Third window');
+$third->map;
+
+sync_with_i3 $x;
 
 diag("third = " . $third->id);
 

@@ -15,13 +15,14 @@ my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 400, 150],
     background_color => '#C0C0C0',
+    event_mask => [ 'structure_notify' ],
 );
 
 isa_ok($window, 'X11::XCB::Window');
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 my ($absolute, $top) = $window->rect;
 
