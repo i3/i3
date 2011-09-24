@@ -400,8 +400,8 @@ we achieved times of about 25 seconds. This is very significant and influences
 the way you think about tests -- the faster they are, the more likely you are
 to check whether everything still works quite often (which you should).
 
-What I am trying to say is: This adds up quickly and makes the test suite less
-robust.
+What I am trying to say is: Delays adds up quickly and make the test suite
+less robust.
 
 The real solution for this problem is a mechanism which I call "the i3 sync
 protocol". The idea is to send a request (which does not modify state) via X11
