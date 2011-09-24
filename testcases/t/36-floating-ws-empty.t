@@ -22,20 +22,7 @@ ok(workspace_exists($tmp), "workspace $tmp exists");
 my $x = X11::XCB::Connection->new;
 
 # Create a floating window which is smaller than the minimum enforced size of i3
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#C0C0C0',
-    # replace the type with 'utility' as soon as the coercion works again in X11::XCB
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
-);
-
-isa_ok($window, 'X11::XCB::Window');
-
-$window->map;
-
-sleep 0.25;
-
+my $window = open_floating_window($x);
 ok($window->mapped, 'Window is mapped');
 
 # switch to a different workspace, see if the window is still mapped?

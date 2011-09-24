@@ -50,21 +50,20 @@ my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 ok(@{get_ws_content($tmp)} == 1, 'special window got managed to current (random) workspace');
 
 exit_gracefully($process->pid);
 
 $window->destroy;
-
-sleep 0.25;
 
 #####################################################################
 # start a window and see that it gets assigned to a formerly unused
@@ -89,13 +88,14 @@ my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 ok(@{get_ws_content($tmp)} == 0, 'still no containers');
 ok("targetws" ~~ @{get_workspace_names()}, 'targetws exists');
@@ -128,13 +128,18 @@ my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-sleep 0.25;
+
+# We use sync_with_i3 instead of wait_for_map here because i3 will not actually
+# map the window -- it will be assigned to a different workspace and will only
+# be mapped once you switch to that workspace
+sync_with_i3 $x;
 
 ok(@{get_ws_content($tmp)} == 0, 'still no containers');
 ok(@{get_ws_content('targetws')} == 2, 'two containers on targetws');
@@ -164,13 +169,14 @@ my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 my $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
@@ -204,13 +210,14 @@ my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
 set_wm_class($window->id, 'SPEcial', 'SPEcial');
 $window->name('special window');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 my $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
@@ -249,13 +256,14 @@ my $window = $x->root->create_child(
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 my $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');

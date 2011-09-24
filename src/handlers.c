@@ -648,6 +648,25 @@ static int handle_client_message(xcb_client_message_event_t *event) {
 
         tree_render();
         x_push_changes(croot);
+    } else if (event->type == A_I3_SYNC) {
+        DLOG("i3 sync, yay\n");
+        xcb_window_t window = event->data.data32[0];
+        uint32_t rnd = event->data.data32[1];
+        DLOG("Sending random value %d back to X11 window 0x%08x\n", rnd, window);
+
+        void *reply = scalloc(32);
+        xcb_client_message_event_t *ev = reply;
+
+        ev->response_type = XCB_CLIENT_MESSAGE;
+        ev->window = window;
+        ev->type = A_I3_SYNC;
+        ev->format = 32;
+        ev->data.data32[0] = window;
+        ev->data.data32[1] = rnd;
+
+        xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char*)ev);
+        xcb_flush(conn);
+        free(reply);
     } else {
         ELOG("unhandled clientmessage\n");
         return 0;

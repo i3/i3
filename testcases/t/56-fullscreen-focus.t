@@ -20,7 +20,7 @@ my $tmp = fresh_workspace;
 # open the left window
 #####################################################################
 
-my $left = open_standard_window($x, '#ff0000');
+my $left = open_window($x, { background_color => '#ff0000' });
 
 is($x->input_focus, $left->id, 'left window focused');
 
@@ -30,7 +30,7 @@ diag("left = " . $left->id);
 # Open the right window
 #####################################################################
 
-my $right = open_standard_window($x, '#00ff00');
+my $right = open_window($x, { background_color => '#00ff00' });
 
 diag("right = " . $right->id);
 
@@ -44,7 +44,15 @@ cmd 'fullscreen';
 # Open a third window
 #####################################################################
 
-my $third = open_standard_window($x, '#0000ff');
+my $third = open_window($x, {
+        background_color => '#0000ff',
+        name => 'Third window',
+        dont_map => 1,
+    });
+
+$third->map;
+
+sync_with_i3 $x;
 
 diag("third = " . $third->id);
 
@@ -56,7 +64,7 @@ cmd "move workspace $tmp2";
 
 # verify that the third window has the focus
 
-sleep 0.25;
+sync_with_i3($x);
 
 is($x->input_focus, $third->id, 'third window focused');
 

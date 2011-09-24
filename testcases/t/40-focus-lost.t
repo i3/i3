@@ -4,7 +4,6 @@
 # bug introduced by 77d0d42ed2d7ac8cafe267c92b35a81c1b9491eb
 use i3test;
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
 
 BEGIN {
     use_ok('X11::XCB::Window');
@@ -25,12 +24,11 @@ sub check_order {
 
 my $tmp = fresh_workspace;
 
-my $left = open_standard_window($x);
-sleep 0.25;
-my $mid = open_standard_window($x);
-sleep 0.25;
-my $right = open_standard_window($x);
-sleep 0.25;
+my $left = open_window($x);
+my $mid = open_window($x);
+my $right = open_window($x);
+
+sync_with_i3($x);
 
 diag("left = " . $left->id . ", mid = " . $mid->id . ", right = " . $right->id);
 

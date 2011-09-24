@@ -2,16 +2,10 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use X11::XCB qw(:all);
-use Digest::SHA1 qw(sha1_base64);
-
-BEGIN {
-    use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
-}
+use File::Temp;
 
 my $x = X11::XCB::Connection->new;
 
-my $i3 = i3(get_socket_path());
 my $tmp = fresh_workspace;
 
 cmd 'split h';
@@ -20,16 +14,9 @@ cmd 'split h';
 # Create two windows and make sure focus switching works
 #####################################################################
 
-my $top = open_standard_window($x);
-sleep 0.25;
-my $mid = open_standard_window($x);
-sleep 0.25;
-my $bottom = open_standard_window($x);
-sleep 0.25;
-
-diag("top id = " . $top->id);
-diag("mid id = " . $mid->id);
-diag("bottom id = " . $bottom->id);
+my $top = open_window($x);
+my $mid = open_window($x);
+my $bottom = open_window($x);
 
 #
 # Returns the input focus after sending the given command to i3 via IPC
@@ -39,6 +26,7 @@ sub focus_after {
     my $msg = shift;
 
     cmd $msg;
+    sync_with_i3($x);
     return $x->input_focus;
 }
 
@@ -52,12 +40,12 @@ is($focus, $mid->id, "Middle window focused");
 # Now goto a mark which does not exist
 #####################################################################
 
-my $random_mark = sha1_base64(rand());
+my $random_mark = mktemp('mark.XXXXXX');
 
 $focus = focus_after(qq|[con_mark="$random_mark"] focus|);
 is($focus, $mid->id, "focus unchanged");
 
-$i3->command("mark $random_mark")->recv;
+cmd "mark $random_mark";
 
 $focus = focus_after('focus left');
 is($focus, $top->id, "Top window focused");

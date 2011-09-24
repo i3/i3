@@ -11,8 +11,8 @@ my $x = X11::XCB::Connection->new;
 
 fresh_workspace;
 
-open_standard_window($x);
-open_standard_window($x);
+open_window($x);
+open_window($x);
 
 cmd 'layout stacking';
 sleep 1;

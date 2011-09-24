@@ -18,7 +18,7 @@ my $i3_path = abs_path("../i3");
 # default case: socket will be created in /tmp/i3-<username>/ipc-socket.<pid>
 #####################################################################
 
-my ($fh, $tmpfile) = tempfile();
+my ($fh, $tmpfile) = tempfile('/tmp/i3-test-config.XXXXXX', UNLINK => 1);
 say $fh "# i3 config file (v4)";
 say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
 close($fh);
@@ -67,7 +67,7 @@ my $tmpdir = tempdir(CLEANUP => 1);
 $socketpath = $tmpdir . "/config.sock";
 ok(! -e $socketpath, "$socketpath does not exist yet");
 
-($fh, $tmpfile) = tempfile();
+($fh, $tmpfile) = tempfile('/tmp/i3-test-config.XXXXXX', UNLINK => 1);
 say $fh "# i3 config file (v4)";
 say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
 say $fh "ipc-socket $socketpath";

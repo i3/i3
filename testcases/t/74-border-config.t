@@ -6,8 +6,6 @@
 #
 
 use i3test;
-use X11::XCB qw(:all);
-use X11::XCB::Connection;
 
 my $x = X11::XCB::Connection->new;
 
@@ -27,7 +25,7 @@ my $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-my $first = open_standard_window($x);
+my $first = open_window($x);
 
 my @content = @{get_ws_content($tmp)};
 ok(@content == 1, 'one container opened');
@@ -53,7 +51,7 @@ $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-$first = open_standard_window($x);
+$first = open_window($x);
 
 @content = @{get_ws_content($tmp)};
 ok(@content == 1, 'one container opened');
@@ -77,18 +75,7 @@ $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-# Create a floating window which is smaller than the minimum enforced size of i3
-$first = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#C0C0C0',
-    # replace the type with 'utility' as soon as the coercion works again in X11::XCB
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
-);
-
-$first->map;
-
-sleep 0.25;
+$first = open_floating_window($x);
 
 my $wscontent = get_ws($tmp);
 my @floating = @{$wscontent->{floating_nodes}};
@@ -116,18 +103,7 @@ $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-# Create a floating window which is smaller than the minimum enforced size of i3
-$first = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#C0C0C0',
-    # replace the type with 'utility' as soon as the coercion works again in X11::XCB
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
-);
-
-$first->map;
-
-sleep 0.25;
+$first = open_floating_window($x);
 
 $wscontent = get_ws($tmp);
 @floating = @{$wscontent->{floating_nodes}};

@@ -2,15 +2,9 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use X11::XCB qw(:all);
-
-BEGIN {
-    use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
-}
 
 my $x = X11::XCB::Connection->new;
 
-my $i3 = i3(get_socket_path());
 my $tmp = fresh_workspace;
 
 #####################################################################
@@ -21,14 +15,9 @@ my $tmp = fresh_workspace;
 cmd 'layout default';
 cmd 'split v';
 
-my $top = open_standard_window($x);
-my $mid = open_standard_window($x);
-my $bottom = open_standard_window($x);
-sleep 0.25;
-
-diag("top id = " . $top->id);
-diag("mid id = " . $mid->id);
-diag("bottom id = " . $bottom->id);
+my $top = open_window($x);
+my $mid = open_window($x);
+my $bottom = open_window($x);
 
 #
 # Returns the input focus after sending the given command to i3 via IPC
@@ -37,7 +26,8 @@ diag("bottom id = " . $bottom->id);
 sub focus_after {
     my $msg = shift;
 
-    $i3->command($msg)->recv;
+    cmd $msg;
+    sync_with_i3 $x;
     return $x->input_focus;
 }
 

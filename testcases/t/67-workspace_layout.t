@@ -27,8 +27,10 @@ my $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-my $first = open_standard_window($x);
-my $second = open_standard_window($x);
+my $first = open_window($x);
+my $second = open_window($x);
+
+sync_with_i3($x);
 
 is($x->input_focus, $second->id, 'second window focused');
 ok(@{get_ws_content($tmp)} == 2, 'two containers opened');
@@ -54,8 +56,10 @@ $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-$first = open_standard_window($x);
-$second = open_standard_window($x);
+$first = open_window($x);
+$second = open_window($x);
+
+sync_with_i3($x);
 
 is($x->input_focus, $second->id, 'second window focused');
 my @content = @{get_ws_content($tmp)};
@@ -68,8 +72,8 @@ is($content[0]->{layout}, 'stacked', 'layout stacked');
 #####################################################################
 
 cmd 'focus parent';
-my $right_top = open_standard_window($x);
-my $right_bot = open_standard_window($x);
+my $right_top = open_window($x);
+my $right_bot = open_window($x);
 
 @content = @{get_ws_content($tmp)};
 is(@content, 2, 'two cons at workspace level after focus parent');

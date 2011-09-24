@@ -16,12 +16,9 @@ my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 
-my $left = open_standard_window($x);
-sleep 0.25;
-my $mid = open_standard_window($x);
-sleep 0.25;
-my $right = open_standard_window($x);
-sleep 0.25;
+my $left = open_window($x);
+my $mid = open_window($x);
+my $right = open_window($x);
 
 # go to workspace level
 cmd 'level up';

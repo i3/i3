@@ -11,7 +11,6 @@ BEGIN {
 }
 
 my $x = X11::XCB::Connection->new;
-my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;
 
@@ -26,16 +25,10 @@ is(@docked, 0, 'no dock clients yet');
 
 # open a dock client
 
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-);
-
-$window->map;
-
-sleep 0.25;
+my $window = open_window($x, {
+        background_color => '#FF0000',
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 #####################################################################
 # check that we can find it in the layout tree at the expected position
@@ -69,7 +62,7 @@ is($docknode->{rect}->{height}, 30, 'dock node has unchanged height after restar
 
 $window->destroy;
 
-sleep 0.25;
+wait_for_unmap $x;
 
 @docked = get_dock_clients;
 is(@docked, 0, 'no dock clients found');
@@ -78,17 +71,12 @@ is(@docked, 0, 'no dock clients found');
 # create a dock client with a 1px border
 #####################################################################
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    border => 1,
-    rect => [ 0, 0, 30, 20],
-    background_color => '#00FF00',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-);
-
-$window->map;
-
-sleep 0.25;
+$window = open_window($x, {
+        border => 1,
+        rect => [ 0, 0, 30, 20 ],
+        background_color => '#00FF00',
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 @docked = get_dock_clients;
 is(@docked, 1, 'one dock client found');

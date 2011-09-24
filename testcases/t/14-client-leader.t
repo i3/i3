@@ -9,7 +9,6 @@ BEGIN {
 }
 
 my $x = X11::XCB::Connection->new;
-my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;
 
@@ -21,74 +20,42 @@ my $tmp = fresh_workspace;
 # one of both (depending on your screen resolution) will be positioned wrong.
 ####################################################################################
 
-my $left = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [0, 0, 30, 30],
-    background_color => '#FF0000',
-);
-
-$left->name('Left');
-$left->map;
-
-my $right = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [0, 0, 30, 30],
-    background_color => '#FF0000',
-);
-
-$right->name('Right');
-$right->map;
-
-sleep 0.25;
+my $left = open_window($x, { name => 'Left' });
+my $right = open_window($x, { name => 'Right' });
 
 my ($abs, $rgeom) = $right->rect;
 
-my $child = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#C0C0C0',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
-);
-
-$child->name('Child window');
+my $child = open_floating_window($x, {
+        dont_map => 1,
+        name => 'Child window',
+    });
 $child->client_leader($right);
 $child->map;
 
-sleep 0.25;
+ok(wait_for_map($x), 'child window mapped');
 
 my $cgeom;
 ($abs, $cgeom) = $child->rect;
 cmp_ok($cgeom->x, '>=', $rgeom->x, 'Child X >= right container X');
 
-my $child2 = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#C0C0C0',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
-);
-
-$child2->name('Child window 2');
+my $child2 = open_floating_window($x, {
+        dont_map => 1,
+        name => 'Child window 2',
+    });
 $child2->client_leader($left);
 $child2->map;
 
-sleep 0.25;
+ok(wait_for_map($x), 'second child window mapped');
 
 ($abs, $cgeom) = $child2->rect;
 cmp_ok(($cgeom->x + $cgeom->width), '<', $rgeom->x, 'child above left window');
 
 # check wm_transient_for
-
-
-my $fwindow = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#FF0000',
-);
-
+my $fwindow = open_window($x, { dont_map => 1 });
 $fwindow->transient_for($right);
 $fwindow->map;
 
-sleep 0.25;
+ok(wait_for_map($x), 'transient window mapped');
 
 my ($absolute, $top) = $fwindow->rect;
 ok($absolute->{x} != 0 && $absolute->{y} != 0, 'i3 did not map it to (0x0)');
@@ -100,16 +67,10 @@ SKIP: {
 # Create a parent window
 #####################################################################
 
-my $window = $x->root->create_child(
-class => WINDOW_CLASS_INPUT_OUTPUT,
-rect => [ 0, 0, 30, 30 ],
-background_color => '#C0C0C0',
-);
-
-$window->name('Parent window');
+my $window = open_window($x, { dont_map => 1, name => 'Parent window' });
 $window->map;
 
-sleep 0.25;
+ok(wait_for_map($x), 'parent window mapped');
 
 #########################################################################
 # Switch to a different workspace and open a child window. It should be opened
@@ -117,17 +78,11 @@ sleep 0.25;
 #########################################################################
 fresh_workspace;
 
-my $child = $x->root->create_child(
-class => WINDOW_CLASS_INPUT_OUTPUT,
-rect => [ 0, 0, 30, 30 ],
-background_color => '#C0C0C0',
-);
-
-$child->name('Child window');
+my $child = open_window($x, { dont_map => 1, name => 'Child window' });
 $child->client_leader($window);
 $child->map;
 
-sleep 0.25;
+ok(wait_for_map($x), 'child window mapped');
 
 isnt($x->input_focus, $child->id, "Child window focused");
 

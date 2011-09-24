@@ -10,7 +10,6 @@ BEGIN {
 }
 
 my $x = X11::XCB::Connection->new;
-my $i3 = i3(get_socket_path());
 
 #####################################################################
 # verify that there is no dock window yet
@@ -30,17 +29,9 @@ my $screens = $x->screens;
 my $primary = first { $_->primary } @{$screens};
 
 # TODO: focus the primary screen before
-
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-);
-
-$window->map;
-
-sleep 0.25;
+my $window = open_window($x, {
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 my $rect = $window->rect;
 is($rect->width, $primary->rect->width, 'dock client is as wide as the screen');
@@ -67,7 +58,7 @@ is($docknode->{rect}->{height}, 30, 'dock node has unchanged height');
 
 $window->rect(X11::XCB::Rect->new(x => 0, y => 0, width => 50, height => 40));
 
-sleep 0.25;
+sync_with_i3 $x;
 
 @docked = get_dock_clients('top');
 is(@docked, 1, 'one dock client found');
@@ -82,7 +73,7 @@ is($docknode->{rect}->{height}, 40, 'dock height changed');
 
 $window->destroy;
 
-sleep 0.25;
+wait_for_unmap $x;
 
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
@@ -91,16 +82,11 @@ is(@docked, 0, 'no more dock clients');
 # check if it gets placed on bottom (by coordinates)
 #####################################################################
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 1000, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-);
-
-$window->map;
-
-sleep 0.25;
+$window = open_window($x, {
+        rect => [ 0, 1000, 30, 30 ],
+        background_color => '#FF0000',
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 my $rect = $window->rect;
 is($rect->width, $primary->rect->width, 'dock client is as wide as the screen');
@@ -111,7 +97,7 @@ is(@docked, 1, 'dock client on bottom');
 
 $window->destroy;
 
-sleep 0.25;
+wait_for_unmap $x;
 
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
@@ -120,12 +106,12 @@ is(@docked, 0, 'no more dock clients');
 # check if it gets placed on bottom (by hint)
 #####################################################################
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 1000, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-);
+$window = open_window($x, {
+        dont_map => 1,
+        rect => [ 0, 1000, 30, 30 ],
+        background_color => '#FF0000',
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 $window->_create();
 
@@ -145,24 +131,24 @@ $x->change_property(
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 @docked = get_dock_clients('top');
 is(@docked, 1, 'dock client on top');
 
 $window->destroy;
 
-sleep 0.25;
+wait_for_unmap $x;
 
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 1000, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-);
+$window = open_window($x, {
+        dont_map => 1,
+        rect => [ 0, 1000, 30, 30 ],
+        background_color => '#FF0000',
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 $window->_create();
 
@@ -182,7 +168,7 @@ $x->change_property(
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 @docked = get_dock_clients('bottom');
 is(@docked, 1, 'dock client on bottom');
@@ -194,17 +180,16 @@ $window->destroy;
 # regression test: transient dock client
 #####################################################################
 
-my $fwindow = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-);
+$fwindow = open_window($x, {
+        dont_map => 1,
+        background_color => '#FF0000',
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 $fwindow->transient_for($window);
 $fwindow->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 does_i3_live;
 

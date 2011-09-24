@@ -7,34 +7,17 @@
 use X11::XCB qw(:all);
 use i3test;
 
-BEGIN {
-    use_ok('X11::XCB::Window');
-    use_ok('X11::XCB::Event::Generic');
-    use_ok('X11::XCB::Event::MapNotify');
-    use_ok('X11::XCB::Event::ClientMessage');
-}
-
 my $x = X11::XCB::Connection->new;
 
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#00ff00',
-    event_mask => [ 'structure_notify' ],
-);
+my $window = open_window($x);
 
-$window->name('Window 1');
-$window->map;
-
-diag('window mapped');
-
-sleep 0.5;
+sync_with_i3($x);
 
 is($window->state, ICCCM_WM_STATE_NORMAL, 'WM_STATE normal');
 
 $window->unmap;
 
-sleep 0.5;
+wait_for_unmap $x;
 
 is($window->state, ICCCM_WM_STATE_WITHDRAWN, 'WM_STATE withdrawn');
 

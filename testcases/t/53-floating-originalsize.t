@@ -11,17 +11,7 @@ my $tmp = fresh_workspace;
 my $x = X11::XCB::Connection->new;
 
 # Create a floating window which is smaller than the minimum enforced size of i3
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 400, 150],
-    background_color => '#C0C0C0',
-);
-
-isa_ok($window, 'X11::XCB::Window');
-
-$window->map;
-
-sleep 0.25;
+my $window = open_window($x, { rect => [ 0, 0, 400, 150 ] });
 
 my ($absolute, $top) = $window->rect;
 
@@ -30,7 +20,7 @@ cmp_ok($absolute->{width}, '>', 400, 'i3 raised the width');
 cmp_ok($absolute->{height}, '>', 150, 'i3 raised the height');
 
 cmd 'floating toggle';
-sleep 0.25;
+sync_with_i3($x);
 
 ($absolute, $top) = $window->rect;
 

@@ -32,18 +32,19 @@ my $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#00ff00',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->name('Border window');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 my @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'normal border');
 
 $window->unmap;
-sleep 0.25;
+wait_for_unmap $x;
 
 my @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
@@ -53,6 +54,7 @@ $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#00ff00',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
@@ -79,14 +81,14 @@ sub set_wm_class {
 set_wm_class($window->id, 'borderless', 'borderless');
 $window->name('Borderless window');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border');
 
 $window->unmap;
-sleep 0.25;
+wait_for_unmap $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
@@ -113,24 +115,25 @@ $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#00ff00',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->name('special title');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'normal border');
 
 $window->name('special borderless title');
-sleep 0.25;
+sync_with_i3 $x;
 
 @content = @{get_ws_content($tmp)};
 is($content[0]->{border}, 'none', 'no border');
 
 $window->name('special title');
-sleep 0.25;
+sync_with_i3 $x;
 
 cmd 'border normal';
 
@@ -138,13 +141,13 @@ cmd 'border normal';
 is($content[0]->{border}, 'normal', 'border reset to normal');
 
 $window->name('special borderless title');
-sleep 0.25;
+sync_with_i3 $x;
 
 @content = @{get_ws_content($tmp)};
 is($content[0]->{border}, 'normal', 'still normal border');
 
 $window->unmap;
-sleep 0.25;
+wait_for_unmap $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
@@ -172,17 +175,18 @@ $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#00ff00',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->name('special mark title');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border');
 
-my $other = open_standard_window($x);
+my $other = open_window($x);
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 2, 'two nodes');
@@ -215,6 +219,7 @@ $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#00ff00',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
@@ -222,14 +227,14 @@ $window->_create;
 set_wm_class($window->id, 'borderless', 'borderless');
 $window->name('usethis');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border');
 
 $window->unmap;
-sleep 0.25;
+wait_for_unmap $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no nodes on this workspace now');
@@ -237,7 +242,7 @@ cmp_ok(@content, '==', 0, 'no nodes on this workspace now');
 set_wm_class($window->id, 'borderless', 'borderless');
 $window->name('notthis');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -264,6 +269,7 @@ $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#00ff00',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
@@ -271,7 +277,7 @@ $window->_create;
 set_wm_class($window->id, 'bar', 'foo');
 $window->name('usethis');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -298,6 +304,7 @@ $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#00ff00',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
@@ -305,7 +312,7 @@ $window->_create;
 set_wm_class($window->id, 'bar', 'foo');
 $window->name('usethis');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -334,6 +341,7 @@ $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#00ff00',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
@@ -341,7 +349,7 @@ $window->_create;
 set_wm_class($window->id, 'bar', 'foo');
 $window->name('usethis');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -370,6 +378,7 @@ $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#00ff00',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
@@ -388,7 +397,7 @@ $x->change_property(
 
 $window->name('usethis');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -418,13 +427,14 @@ $window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#00ff00',
+    event_mask => [ 'structure_notify' ],
 );
 
 $window->_create;
 
 $window->name('usethis');
 $window->map;
-sleep 0.25;
+wait_for_map $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -444,7 +454,7 @@ $x->change_property(
 
 $x->flush;
 
-sleep 0.25;
+sync_with_i3 $x;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');

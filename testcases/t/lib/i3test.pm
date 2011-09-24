@@ -7,6 +7,7 @@ use X11::XCB::Rect;
 use X11::XCB::Window;
 use X11::XCB qw(:all);
 use AnyEvent::I3;
+use EV;
 use List::Util qw(first);
 use List::MoreUtils qw(lastval);
 use Time::HiRes qw(sleep);
@@ -17,10 +18,33 @@ use Proc::Background;
 use v5.10;
 
 use Exporter ();
-our @EXPORT = qw(get_workspace_names get_unused_workspace fresh_workspace get_ws_content get_ws get_focused open_empty_con open_standard_window get_dock_clients cmd does_i3_live exit_gracefully workspace_exists focused_ws get_socket_path launch_with_config);
+our @EXPORT = qw(
+    get_workspace_names
+    get_unused_workspace
+    fresh_workspace
+    get_ws_content
+    get_ws
+    get_focused
+    open_empty_con
+    open_window
+    open_floating_window
+    get_dock_clients
+    cmd
+    sync_with_i3
+    does_i3_live
+    exit_gracefully
+    workspace_exists
+    focused_ws
+    get_socket_path
+    launch_with_config
+    wait_for_event
+    wait_for_map
+    wait_for_unmap
+);
 
 my $tester = Test::Builder->new();
 my $_cached_socket_path = undef;
+my $_sync_window = undef;
 my $tmp_socket_path = undef;
 
 BEGIN {
@@ -47,30 +71,105 @@ use warnings;
     goto \&Exporter::import;
 }
 
-sub open_standard_window {
-    my ($x, $color, $floating) = @_;
+#
+# Waits for the next event and calls the given callback for every event to
+# determine if this is the event we are waiting for.
+#
+# Can be used to wait until a window is mapped, until a ClientMessage is
+# received, etc.
+#
+# wait_for_event $x, 0.25, sub { $_[0]->{response_type} == MAP_NOTIFY };
+#
+sub wait_for_event {
+    my ($x, $timeout, $cb) = @_;
 
-    $color ||= '#c0c0c0';
+    my $cv = AE::cv;
 
-    # We cannot use a hashref here because create_child expands the arguments into an array
-    my @args = (
-        class => WINDOW_CLASS_INPUT_OUTPUT,
-        rect => X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30 ),
-        background_color => $color,
-    );
+    my $prep = EV::prepare sub {
+        $x->flush;
+    };
 
-    if (defined($floating) && $floating) {
-        @args = (@args, window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'));
-    }
+    my $check = EV::check sub {
+        while (defined(my $event = $x->poll_for_event)) {
+            if ($cb->($event)) {
+                $cv->send(1);
+                last;
+            }
+        }
+    };
 
-    my $window = $x->root->create_child(@args);
+    my $watcher = EV::io $x->get_file_descriptor, EV::READ, sub {
+        # do nothing, we only need this watcher so that EV picks up the events
+    };
 
-    $window->name('Window ' . counter_window());
+    # Trigger timeout after $timeout seconds (can be fractional)
+    my $timeout = AE::timer $timeout, 0, sub { warn "timeout"; $cv->send(0) };
+
+    my $result = $cv->recv;
+    return $result;
+}
+
+# thin wrapper around wait_for_event which waits for MAP_NOTIFY
+# make sure to include 'structure_notify' in the window’s event_mask attribute
+sub wait_for_map {
+    my ($x) = @_;
+    wait_for_event $x, 1, sub { $_[0]->{response_type} == MAP_NOTIFY };
+}
+
+# Wrapper around wait_for_event which waits for UNMAP_NOTIFY. Also calls
+# sync_with_i3 to make sure i3 also picked up and processed the UnmapNotify
+# event.
+sub wait_for_unmap {
+    my ($x) = @_;
+    wait_for_event $x, 1, sub { $_[0]->{response_type} == UNMAP_NOTIFY };
+    sync_with_i3($x);
+}
+
+#
+# Opens a new window (see X11::XCB::Window), maps it, waits until it got mapped
+# and synchronizes with i3.
+#
+# set dont_map to a true value to avoid mapping
+#
+# default values:
+#     class => WINDOW_CLASS_INPUT_OUTPUT
+#     rect => [ 0, 0, 30, 30 ]
+#     background_color => '#c0c0c0'
+#     event_mask => [ 'structure_notify' ]
+#     name => 'Window <n>'
+#
+sub open_window {
+    my ($x, $args) = @_;
+    my %args = ($args ? %$args : ());
+
+    my $dont_map = delete $args{dont_map};
+
+    $args{class} //= WINDOW_CLASS_INPUT_OUTPUT;
+    $args{rect} //= [ 0, 0, 30, 30 ];
+    $args{background_color} //= '#c0c0c0';
+    $args{event_mask} //= [ 'structure_notify' ];
+    $args{name} //= 'Window ' . counter_window();
+
+    my $window = $x->root->create_child(%args);
+
+    return $window if $dont_map;
+
     $window->map;
-
-    sleep(0.25);
-
+    wait_for_map($x);
+    # We sync with i3 here to make sure $x->input_focus is updated.
+    sync_with_i3($x);
     return $window;
+}
+
+# Thin wrapper around open_window which sets window_type to
+# _NET_WM_WINDOW_TYPE_UTILITY to make the window floating.
+sub open_floating_window {
+    my ($x, $args) = @_;
+    my %args = ($args ? %$args : ());
+
+    $args{window_type} = $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY');
+
+    return open_window($x, \%args);
 }
 
 sub open_empty_con {
@@ -197,6 +296,69 @@ sub focused_ws {
     }
 }
 
+#
+# Sends an I3_SYNC ClientMessage with a random value to the root window.
+# i3 will reply with the same value, but, due to the order of events it
+# processes, only after all other events are done.
+#
+# This can be used to ensure the results of a cmd 'focus left' are pushed to
+# X11 and that $x->input_focus returns the correct value afterwards.
+#
+# See also docs/testsuite for a long explanation
+#
+sub sync_with_i3 {
+    my ($x) = @_;
+
+    # Since we need a (mapped) window for receiving a ClientMessage, we create
+    # one on the first call of sync_with_i3. It will be re-used in all
+    # subsequent calls.
+    if (!defined($_sync_window)) {
+        $_sync_window = $x->root->create_child(
+            class => WINDOW_CLASS_INPUT_OUTPUT,
+            rect => X11::XCB::Rect->new(x => -15, y => -15, width => 10, height => 10 ),
+            override_redirect => 1,
+            background_color => '#ff0000',
+            event_mask => [ 'structure_notify' ],
+        );
+
+        $_sync_window->map;
+
+        wait_for_event $x, 0.5, sub { $_[0]->{response_type} == MAP_NOTIFY };
+    }
+
+    my $root = $x->get_root_window();
+    # Generate a random number to identify this particular ClientMessage.
+    my $myrnd = int(rand(255)) + 1;
+
+    # Generate a ClientMessage, see xcb_client_message_t
+    my $msg = pack "CCSLLLLLLL",
+         CLIENT_MESSAGE, # response_type
+         32,     # format
+         0,      # sequence
+         $root,  # destination window
+         $x->atom(name => 'I3_SYNC')->id,
+
+         $_sync_window->id,    # data[0]: our own window id
+         $myrnd, # data[1]: a random value to identify the request
+         0,
+         0,
+         0;
+
+    # Send it to the root window -- since i3 uses the SubstructureRedirect
+    # event mask, it will get the ClientMessage.
+    $x->send_event(0, $root, EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
+
+    # now wait until the reply is here
+    return wait_for_event $x, 1, sub {
+        my ($event) = @_;
+        # TODO: const
+        return 0 unless $event->{response_type} == 161;
+
+        my ($win, $rnd) = unpack "LL", $event->{data};
+        return ($rnd == $myrnd);
+    };
+}
+
 sub does_i3_live {
     my $tree = i3(get_socket_path())->get_tree->recv;
     my @nodes = @{$tree->{nodes}};
@@ -219,6 +381,10 @@ sub exit_gracefully {
 
     if (!$exited) {
         kill(9, $pid) or die "could not kill i3";
+    }
+
+    if ($socketpath =~ m,^/tmp/i3-test-socket-,) {
+        unlink($socketpath);
     }
 }
 
@@ -264,7 +430,7 @@ sub launch_with_config {
     # one test case.
     my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >>$ENV{LOGPATH} 2>&1";
     my $process = Proc::Background->new($i3cmd);
-    sleep 1;
+    sleep 1.25;
 
     # force update of the cached socket path in lib/i3test
     get_socket_path(0);

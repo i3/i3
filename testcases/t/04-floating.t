@@ -17,13 +17,14 @@ my $window = $x->root->create_child(
     background_color => '#C0C0C0',
     # replace the type with 'utility' as soon as the coercion works again in X11::XCB
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
+    event_mask => [ 'structure_notify' ],
 );
 
 isa_ok($window, 'X11::XCB::Window');
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 my ($absolute, $top) = $window->rect;
 
@@ -40,13 +41,14 @@ $window = $x->root->create_child(
     rect => [ 1, 1, 80, 90],
     background_color => '#C0C0C0',
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
+    event_mask => [ 'structure_notify' ],
 );
 
 isa_ok($window, 'X11::XCB::Window');
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 ($absolute, $top) = $window->rect;
 
@@ -70,13 +72,14 @@ $window = $x->root->create_child(
     rect => [ 1, 1, 80, 90],
     background_color => '#C0C0C0',
     #window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
+    event_mask => [ 'structure_notify' ],
 );
 
 isa_ok($window, 'X11::XCB::Window');
 
 $window->map;
 
-sleep 0.25;
+wait_for_map $x;
 
 cmd 'floating enable';
 

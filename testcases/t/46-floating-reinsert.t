@@ -2,7 +2,6 @@
 # vim:ts=4:sw=4:expandtab
 #
 use X11::XCB qw(:all);
-use Time::HiRes qw(sleep);
 use i3test;
 
 BEGIN {
@@ -13,14 +12,11 @@ my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 
-my $left = open_standard_window($x);
-sleep 0.25;
-my $mid = open_standard_window($x);
-sleep 0.25;
+my $left = open_window($x);
+my $mid = open_window($x);
 
 cmd 'split v';
-my $bottom = open_standard_window($x);
-sleep 0.25;
+my $bottom = open_window($x);
 
 my ($nodes, $focus) = get_ws_content($tmp);
 
@@ -28,23 +24,8 @@ my ($nodes, $focus) = get_ws_content($tmp);
 # 1: open a floating window, get it mapped
 #############################################################################
 
-my $x = X11::XCB::Connection->new;
-
 # Create a floating window
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#C0C0C0',
-    # replace the type with 'utility' as soon as the coercion works again in X11::XCB
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
-);
-
-isa_ok($window, 'X11::XCB::Window');
-
-$window->map;
-
-sleep 0.25;
-
+my $window = open_floating_window($x);
 ok($window->mapped, 'Window is mapped');
 
 ($nodes, $focus) = get_ws_content($tmp);

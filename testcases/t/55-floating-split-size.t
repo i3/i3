@@ -12,7 +12,6 @@ BEGIN {
 }
 
 my $x = X11::XCB::Connection->new;
-my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;
 
@@ -20,29 +19,19 @@ my $tmp = fresh_workspace;
 # open a window with 200x80
 #####################################################################
 
-my $first = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 200, 80],
-    background_color => '#FF0000',
-);
-
-$first->map;
-
-sleep 0.25;
+my $first = open_window($x, {
+        rect => [ 0, 0, 200, 80],
+        background_color => '#FF0000',
+    });
 
 #####################################################################
 # Open a second window with 300x90
 #####################################################################
 
-my $second = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 300, 90],
-    background_color => '#00FF00',
-);
-
-$second->map;
-
-sleep 0.25;
+my $second = open_window($x, {
+        rect => [ 0, 0, 300, 90],
+        background_color => '#00FF00',
+    });
 
 #####################################################################
 # Set the parent to floating

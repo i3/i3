@@ -27,8 +27,8 @@ use File::Basename qw(basename);
 use AnyEvent::I3 qw(:all);
 use Try::Tiny;
 use Getopt::Long;
-use Time::HiRes qw(sleep);
-use X11::XCB::Connection;
+use Time::HiRes qw(sleep gettimeofday tv_interval);
+use X11::XCB;
 use IO::Socket::UNIX; # core
 use POSIX; # core
 use AnyEvent::Handle;
@@ -75,13 +75,14 @@ my $result = GetOptions(
 my @conns;
 my @wdisplays;
 for my $display (@displays) {
-    try {
-        my $x = X11::XCB::Connection->new(display => $display);
+    my $screen;
+    my $x = X11::XCB->new($display, $screen);
+    if ($x->has_error) {
+        say STDERR "WARNING: Not using X11 display $display, could not connect";
+    } else {
         push @conns, $x;
         push @wdisplays, $display;
-    } catch {
-        say STDERR "WARNING: Not using X11 display $display, could not connect";
-    };
+    }
 }
 
 my $config = slurp('i3-test.config');
@@ -133,12 +134,13 @@ sub take_job {
     my $dont_start = (slurp($test) =~ /# !NO_I3_INSTANCE!/);
     my $logpath = "$outdir/i3-log-for-" . basename($test);
 
-    my ($fh, $tmpfile) = tempfile();
+    my ($fh, $tmpfile) = tempfile('i3-run-cfg.XXXXXX', UNLINK => 1);
     say $fh $config;
     say $fh "ipc-socket /tmp/nested-$display";
     close($fh);
 
     my $activate_cv = AnyEvent->condvar;
+    my $time_before_start = [gettimeofday];
     my $start_i3 = sub {
         # remove the old unix socket
         unlink("/tmp/nested-$display-activation");
@@ -157,15 +159,12 @@ sub take_job {
         if (!defined($pid)) {
             die "could not fork()";
         }
-        say "pid = $pid";
         if ($pid == 0) {
-            say "child!";
             $ENV{LISTEN_PID} = $$;
             $ENV{LISTEN_FDS} = 1;
             $ENV{DISPLAY} = $display;
             $^F = 3;
 
-            say "fileno is " . fileno($socket);
             close($reserved);
             POSIX::dup2(fileno($socket), 3);
 
@@ -200,7 +199,6 @@ sub take_job {
         # wait for the reply
         $hdl->push_read(chunk => 1, => sub {
             my ($h, $line) = @_;
-            say "read something from i3";
             $activate_cv->send(1);
             undef $hdl;
         });
@@ -234,9 +232,14 @@ sub take_job {
     # This will be called as soon as i3 is running and answered to our
     # IPC request
     $activate_cv->cb(sub {
-        say "cb";
+        my $time_activating = [gettimeofday];
+        my $start_duration = tv_interval($time_before_start, $time_activating);
         my ($status) = $activate_cv->recv;
-        say "complete-run: status = $status";
+        if ($dont_start) {
+            say "[$display] Not starting i3, testcase does that";
+        } else {
+            say "[$display] i3 startup: took " . sprintf("%.2f", $start_duration) . "s, status = $status";
+        }
 
         say "[$display] Running $test with logfile $logpath";
 
