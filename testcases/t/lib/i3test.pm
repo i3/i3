@@ -36,6 +36,9 @@ our @EXPORT = qw(
     focused_ws
     get_socket_path
     launch_with_config
+    wait_for_event
+    wait_for_map
+    wait_for_unmap
 );
 
 my $tester = Test::Builder->new();
@@ -99,10 +102,26 @@ sub wait_for_event {
     };
 
     # Trigger timeout after $timeout seconds (can be fractional)
-    my $timeout = AE::timer $timeout, 0, sub { say STDERR "timeout"; $cv->send(0) };
+    my $timeout = AE::timer $timeout, 0, sub { warn "timeout"; $cv->send(0) };
 
     my $result = $cv->recv;
     return $result;
+}
+
+# thin wrapper around wait_for_event which waits for MAP_NOTIFY
+# make sure to include 'structure_notify' in the window’s event_mask attribute
+sub wait_for_map {
+    my ($x) = @_;
+    wait_for_event $x, 1, sub { $_[0]->{response_type} == MAP_NOTIFY };
+}
+
+# Wrapper around wait_for_event which waits for UNMAP_NOTIFY. Also calls
+# sync_with_i3 to make sure i3 also picked up and processed the UnmapNotify
+# event.
+sub wait_for_unmap {
+    my ($x) = @_;
+    wait_for_event $x, 1, sub { $_[0]->{response_type} == UNMAP_NOTIFY };
+    sync_with_i3($x);
 }
 
 sub open_standard_window {
@@ -286,7 +305,7 @@ sub sync_with_i3 {
         wait_for_event $x, 0.5, sub { $_[0]->{response_type} == MAP_NOTIFY };
     }
 
-    my $root = $x->root->id;
+    my $root = $x->get_root_window();
     # Generate a random number to identify this particular ClientMessage.
     my $myrnd = int(rand(255)) + 1;
 
@@ -386,7 +405,7 @@ sub launch_with_config {
     # one test case.
     my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >>$ENV{LOGPATH} 2>&1";
     my $process = Proc::Background->new($i3cmd);
-    sleep 1;
+    sleep 1.25;
 
     # force update of the cached socket path in lib/i3test
     get_socket_path(0);
