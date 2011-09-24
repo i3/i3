@@ -382,6 +382,10 @@ sub exit_gracefully {
     if (!$exited) {
         kill(9, $pid) or die "could not kill i3";
     }
+
+    if ($socketpath =~ m,^/tmp/i3-test-socket-,) {
+        unlink($socketpath);
+    }
 }
 
 # Gets the socket path from the I3_SOCKET_PATH atom stored on the X11 root window

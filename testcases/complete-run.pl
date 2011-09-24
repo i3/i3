@@ -134,7 +134,7 @@ sub take_job {
     my $dont_start = (slurp($test) =~ /# !NO_I3_INSTANCE!/);
     my $logpath = "$outdir/i3-log-for-" . basename($test);
 
-    my ($fh, $tmpfile) = tempfile();
+    my ($fh, $tmpfile) = tempfile('i3-run-cfg.XXXXXX', UNLINK => 1);
     say $fh $config;
     say $fh "ipc-socket /tmp/nested-$display";
     close($fh);
