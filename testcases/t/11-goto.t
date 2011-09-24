@@ -2,12 +2,7 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use X11::XCB qw(:all);
-use Digest::SHA1 qw(sha1_base64);
-
-BEGIN {
-    use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
-}
+use File::Temp;
 
 my $x = X11::XCB::Connection->new;
 
@@ -45,7 +40,7 @@ is($focus, $mid->id, "Middle window focused");
 # Now goto a mark which does not exist
 #####################################################################
 
-my $random_mark = sha1_base64(rand());
+my $random_mark = mktemp('mark.XXXXXX');
 
 $focus = focus_after(qq|[con_mark="$random_mark"] focus|);
 is($focus, $mid->id, "focus unchanged");
