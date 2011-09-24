@@ -1,5 +1,5 @@
 
-all: hacking-howto.html debugging.html userguide.html ipc.html multi-monitor.html wsbar.html refcard.pdf
+all: hacking-howto.html debugging.html userguide.html ipc.html multi-monitor.html wsbar.html refcard.pdf testsuite.html
 
 hacking-howto.html: hacking-howto
 	asciidoc -a toc -n $<
@@ -8,6 +8,9 @@ debugging.html: debugging
 	asciidoc -n $<
 
 userguide.html: userguide
+	asciidoc -a toc -n $<
+
+testsuite.html: testsuite
 	asciidoc -a toc -n $<
 
 ipc.html: ipc
