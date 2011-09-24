@@ -11,7 +11,6 @@ BEGIN {
 
 my $x = X11::XCB::Connection->new;
 
-my $i3 = i3(get_socket_path());
 my $tmp = fresh_workspace;
 
 cmd 'split h';
@@ -20,13 +19,9 @@ cmd 'split h';
 # Create two windows and make sure focus switching works
 #####################################################################
 
-my $top = open_standard_window($x);
-my $mid = open_standard_window($x);
-my $bottom = open_standard_window($x);
-
-diag("top id = " . $top->id);
-diag("mid id = " . $mid->id);
-diag("bottom id = " . $bottom->id);
+my $top = open_window($x);
+my $mid = open_window($x);
+my $bottom = open_window($x);
 
 #
 # Returns the input focus after sending the given command to i3 via IPC
@@ -55,7 +50,7 @@ my $random_mark = sha1_base64(rand());
 $focus = focus_after(qq|[con_mark="$random_mark"] focus|);
 is($focus, $mid->id, "focus unchanged");
 
-$i3->command("mark $random_mark")->recv;
+cmd "mark $random_mark";
 
 $focus = focus_after('focus left');
 is($focus, $top->id, "Top window focused");

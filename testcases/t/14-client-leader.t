@@ -20,40 +20,15 @@ my $tmp = fresh_workspace;
 # one of both (depending on your screen resolution) will be positioned wrong.
 ####################################################################################
 
-my $left = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [0, 0, 30, 30],
-    background_color => '#FF0000',
-    event_mask => [ 'structure_notify' ],
-);
-
-$left->name('Left');
-$left->map;
-
-my $right = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [0, 0, 30, 30],
-    background_color => '#FF0000',
-    event_mask => [ 'structure_notify' ],
-);
-
-$right->name('Right');
-$right->map;
-
-ok(wait_for_map($x), 'left window mapped');
-ok(wait_for_map($x), 'right window mapped');
+my $left = open_window($x, { name => 'Left' });
+my $right = open_window($x, { name => 'Right' });
 
 my ($abs, $rgeom) = $right->rect;
 
-my $child = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#C0C0C0',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
-    event_mask => [ 'structure_notify' ],
-);
-
-$child->name('Child window');
+my $child = open_floating_window($x, {
+        dont_map => 1,
+        name => 'Child window',
+    });
 $child->client_leader($right);
 $child->map;
 
@@ -63,15 +38,10 @@ my $cgeom;
 ($abs, $cgeom) = $child->rect;
 cmp_ok($cgeom->x, '>=', $rgeom->x, 'Child X >= right container X');
 
-my $child2 = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#C0C0C0',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'),
-    event_mask => [ 'structure_notify' ],
-);
-
-$child2->name('Child window 2');
+my $child2 = open_floating_window($x, {
+        dont_map => 1,
+        name => 'Child window 2',
+    });
 $child2->client_leader($left);
 $child2->map;
 
@@ -81,15 +51,7 @@ ok(wait_for_map($x), 'second child window mapped');
 cmp_ok(($cgeom->x + $cgeom->width), '<', $rgeom->x, 'child above left window');
 
 # check wm_transient_for
-
-
-my $fwindow = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#FF0000',
-    event_mask => [ 'structure_notify' ],
-);
-
+my $fwindow = open_window($x, { dont_map => 1 });
 $fwindow->transient_for($right);
 $fwindow->map;
 
@@ -105,14 +67,7 @@ SKIP: {
 # Create a parent window
 #####################################################################
 
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#C0C0C0',
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->name('Parent window');
+my $window = open_window($x, { dont_map => 1, name => 'Parent window' });
 $window->map;
 
 ok(wait_for_map($x), 'parent window mapped');
@@ -123,14 +78,7 @@ ok(wait_for_map($x), 'parent window mapped');
 #########################################################################
 fresh_workspace;
 
-my $child = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#C0C0C0',
-    event_mask => [ 'structure_notify' ],
-);
-
-$child->name('Child window');
+my $child = open_window($x, { dont_map => 1, name => 'Child window' });
 $child->client_leader($window);
 $child->map;
 

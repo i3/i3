@@ -11,7 +11,6 @@ BEGIN {
 }
 
 my $x = X11::XCB::Connection->new;
-my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;
 
@@ -19,7 +18,7 @@ my $tmp = fresh_workspace;
 # open a window, verify it’s not in fullscreen mode
 #####################################################################
 
-my $win = open_standard_window($x);
+my $win = open_window($x);
 
 my $nodes = get_ws_content $tmp;
 is(@$nodes, 1, 'exactly one client');

@@ -30,7 +30,7 @@ check_order('workspace order alright before testing');
 
 cmd "workspace 93";
 
-open_standard_window($x);
+open_window($x);
 
 my @ws = @{$i3->get_workspaces->recv};
 my @f = grep { defined($_->{num}) && $_->{num} == 93 } @ws;
@@ -38,23 +38,23 @@ is(@f, 1, 'ws 93 found by num');
 check_order('workspace order alright after opening 93');
 
 cmd "workspace 92";
-open_standard_window($x);
+open_window($x);
 check_order('workspace order alright after opening 92');
 
 cmd "workspace 94";
-open_standard_window($x);
+open_window($x);
 check_order('workspace order alright after opening 94');
 
 cmd "workspace 96";
-open_standard_window($x);
+open_window($x);
 check_order('workspace order alright after opening 96');
 
 cmd "workspace foo";
-open_standard_window($x);
+open_window($x);
 check_order('workspace order alright after opening foo');
 
 cmd "workspace 91";
-open_standard_window($x);
+open_window($x);
 check_order('workspace order alright after opening 91');
 
 done_testing;

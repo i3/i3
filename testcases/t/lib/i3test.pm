@@ -26,7 +26,8 @@ our @EXPORT = qw(
     get_ws
     get_focused
     open_empty_con
-    open_standard_window
+    open_window
+    open_floating_window
     get_dock_clients
     cmd
     sync_with_i3
@@ -124,31 +125,51 @@ sub wait_for_unmap {
     sync_with_i3($x);
 }
 
-sub open_standard_window {
-    my ($x, $color, $floating) = @_;
+#
+# Opens a new window (see X11::XCB::Window), maps it, waits until it got mapped
+# and synchronizes with i3.
+#
+# set dont_map to a true value to avoid mapping
+#
+# default values:
+#     class => WINDOW_CLASS_INPUT_OUTPUT
+#     rect => [ 0, 0, 30, 30 ]
+#     background_color => '#c0c0c0'
+#     event_mask => [ 'structure_notify' ]
+#     name => 'Window <n>'
+#
+sub open_window {
+    my ($x, $args) = @_;
+    my %args = ($args ? %$args : ());
 
-    $color ||= '#c0c0c0';
+    my $dont_map = delete $args{dont_map};
 
-    # We cannot use a hashref here because create_child expands the arguments into an array
-    my @args = (
-        class => WINDOW_CLASS_INPUT_OUTPUT,
-        rect => X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30 ),
-        background_color => $color,
-        event_mask => [ 'structure_notify' ],
-    );
+    $args{class} = WINDOW_CLASS_INPUT_OUTPUT unless exists $args{class};
+    $args{rect} = [ 0, 0, 30, 30 ] unless exists $args{rect};
+    $args{background_color} = '#c0c0c0' unless exists $args{background_color};
+    $args{event_mask} = [ 'structure_notify' ] unless exists $args{event_mask};
+    $args{name} = 'Window ' . counter_window() unless exists $args{name};
 
-    if (defined($floating) && $floating) {
-        @args = (@args, window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY'));
-    }
+    my $window = $x->root->create_child(%args);
 
-    my $window = $x->root->create_child(@args);
+    return $window if $dont_map;
 
-    $window->name('Window ' . counter_window());
     $window->map;
-
-    wait_for_event $x, 0.5, sub { $_[0]->{response_type} == MAP_NOTIFY };
-
+    wait_for_map($x);
+    # We sync with i3 here to make sure $x->input_focus is updated.
+    sync_with_i3($x);
     return $window;
+}
+
+# Thin wrapper around open_window which sets window_type to
+# _NET_WM_WINDOW_TYPE_UTILITY to make the window floating.
+sub open_floating_window {
+    my ($x, $args) = @_;
+    my %args = ($args ? %$args : ());
+
+    $args{window_type} = $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY');
+
+    return open_window($x, \%args);
 }
 
 sub open_empty_con {

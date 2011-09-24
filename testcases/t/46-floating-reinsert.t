@@ -12,11 +12,11 @@ my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 
-my $left = open_standard_window($x);
-my $mid = open_standard_window($x);
+my $left = open_window($x);
+my $mid = open_window($x);
 
 cmd 'split v';
-my $bottom = open_standard_window($x);
+my $bottom = open_window($x);
 
 my ($nodes, $focus) = get_ws_content($tmp);
 
@@ -24,10 +24,8 @@ my ($nodes, $focus) = get_ws_content($tmp);
 # 1: open a floating window, get it mapped
 #############################################################################
 
-my $x = X11::XCB::Connection->new;
-
 # Create a floating window
-my $window = open_standard_window($x, undef, 1);
+my $window = open_floating_window($x);
 ok($window->mapped, 'Window is mapped');
 
 ($nodes, $focus) = get_ws_content($tmp);

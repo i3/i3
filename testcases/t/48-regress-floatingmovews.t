@@ -16,13 +16,13 @@ my $x = X11::XCB::Connection->new;
 my $tmp = fresh_workspace;
 
 # open a tiling window on the first workspace
-open_standard_window($x);
+open_window($x);
 #sleep 0.25;
 my $first = get_focused($tmp);
 
 # on a different ws, open a floating window
 my $otmp = fresh_workspace;
-open_standard_window($x);
+open_window($x);
 #sleep 0.25;
 my $float = get_focused($otmp);
 cmd 'mode toggle';

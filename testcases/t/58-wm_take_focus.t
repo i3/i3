@@ -17,7 +17,6 @@ BEGIN {
 }
 
 my $x = X11::XCB::Connection->new;
-my $i3 = i3(get_socket_path());
 
 subtest 'Window without WM_TAKE_FOCUS', sub {
 

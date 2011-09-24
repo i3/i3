@@ -12,8 +12,7 @@ fresh_workspace;
 #####################################################################
 
 # Create a window so we can get a focus different from NULL
-my $window = open_standard_window($x);
-sync_with_i3($x);
+my $window = open_window($x);
 
 my $focus = $x->input_focus;
 

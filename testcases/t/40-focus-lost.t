@@ -24,9 +24,9 @@ sub check_order {
 
 my $tmp = fresh_workspace;
 
-my $left = open_standard_window($x);
-my $mid = open_standard_window($x);
-my $right = open_standard_window($x);
+my $left = open_window($x);
+my $mid = open_window($x);
+my $right = open_window($x);
 
 sync_with_i3($x);
 

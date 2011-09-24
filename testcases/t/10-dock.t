@@ -29,18 +29,9 @@ my $screens = $x->screens;
 my $primary = first { $_->primary } @{$screens};
 
 # TODO: focus the primary screen before
-
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->map;
-
-wait_for_map $x;
+my $window = open_window($x, {
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 my $rect = $window->rect;
 is($rect->width, $primary->rect->width, 'dock client is as wide as the screen');
@@ -91,17 +82,11 @@ is(@docked, 0, 'no more dock clients');
 # check if it gets placed on bottom (by coordinates)
 #####################################################################
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 1000, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->map;
-
-wait_for_map $x;
+$window = open_window($x, {
+        rect => [ 0, 1000, 30, 30 ],
+        background_color => '#FF0000',
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 my $rect = $window->rect;
 is($rect->width, $primary->rect->width, 'dock client is as wide as the screen');
@@ -121,13 +106,12 @@ is(@docked, 0, 'no more dock clients');
 # check if it gets placed on bottom (by hint)
 #####################################################################
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 1000, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-    event_mask => [ 'structure_notify' ],
-);
+$window = open_window($x, {
+        dont_map => 1,
+        rect => [ 0, 1000, 30, 30 ],
+        background_color => '#FF0000',
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 $window->_create();
 
@@ -159,13 +143,12 @@ wait_for_unmap $x;
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 1000, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-    event_mask => [ 'structure_notify' ],
-);
+$window = open_window($x, {
+        dont_map => 1,
+        rect => [ 0, 1000, 30, 30 ],
+        background_color => '#FF0000',
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 $window->_create();
 
@@ -197,13 +180,11 @@ $window->destroy;
 # regression test: transient dock client
 #####################################################################
 
-my $fwindow = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-    event_mask => [ 'structure_notify' ],
-);
+$fwindow = open_window($x, {
+        dont_map => 1,
+        background_color => '#FF0000',
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 $fwindow->transient_for($window);
 $fwindow->map;

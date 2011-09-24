@@ -102,7 +102,7 @@ $first = open_empty_con($i3);
 $middle = open_empty_con($i3);
 # XXX: the $right empty con will be filled with the x11 window we are creating afterwards
 $right = open_empty_con($i3);
-my $win = open_standard_window($x, '#00ff00');
+my $win = open_window($x, { background_color => '#00ff00' });
 
 cmd qq|[con_id="$middle"] focus|;
 $win->destroy;

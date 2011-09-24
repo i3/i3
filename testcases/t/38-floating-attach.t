@@ -21,7 +21,7 @@ my $tmp = fresh_workspace;
 my $x = X11::XCB::Connection->new;
 
 # Create a floating window
-my $window = open_standard_window($x, undef, 1);
+my $window = open_floating_window($x);
 ok($window->mapped, 'Window is mapped');
 
 my $ws = get_ws($tmp);
@@ -31,7 +31,7 @@ is(@{$ws->{floating_nodes}}, 1, 'one floating node');
 is(@{$nodes}, 0, 'no tiling nodes');
 
 # Create a tiling window
-my $twindow = open_standard_window($x);
+my $twindow = open_window($x);
 
 ($nodes, $focus) = get_ws_content($tmp);
 
@@ -44,8 +44,8 @@ is(@{$nodes}, 1, 'one tiling node');
 
 $tmp = fresh_workspace;
 
-my $first = open_standard_window($x);
-my $second = open_standard_window($x);
+my $first = open_window($x);
+my $second = open_window($x);
 
 cmd 'layout stacked';
 
@@ -54,14 +54,14 @@ is(@{$ws->{floating_nodes}}, 0, 'no floating nodes so far');
 is(@{$ws->{nodes}}, 1, 'one tiling node (stacked con)');
 
 # Create a floating window
-my $window = open_standard_window($x, undef, 1);
+my $window = open_floating_window($x);
 ok($window->mapped, 'Window is mapped');
 
 $ws = get_ws($tmp);
 is(@{$ws->{floating_nodes}}, 1, 'one floating nodes');
 is(@{$ws->{nodes}}, 1, 'one tiling node (stacked con)');
 
-my $third = open_standard_window($x);
+my $third = open_window($x);
 
 
 $ws = get_ws($tmp);

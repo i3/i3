@@ -12,7 +12,7 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
 # Open a new window
 my $x = X11::XCB::Connection->new;
-my $window = open_standard_window($x);
+my $window = open_window($x);
 my $content = get_ws_content($tmp);
 ok(@{$content} == 1, 'window mapped');
 my $win = $content->[0];

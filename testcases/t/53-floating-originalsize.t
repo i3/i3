@@ -11,18 +11,7 @@ my $tmp = fresh_workspace;
 my $x = X11::XCB::Connection->new;
 
 # Create a floating window which is smaller than the minimum enforced size of i3
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 400, 150],
-    background_color => '#C0C0C0',
-    event_mask => [ 'structure_notify' ],
-);
-
-isa_ok($window, 'X11::XCB::Window');
-
-$window->map;
-
-wait_for_map $x;
+my $window = open_window($x, { rect => [ 0, 0, 400, 150 ] });
 
 my ($absolute, $top) = $window->rect;
 

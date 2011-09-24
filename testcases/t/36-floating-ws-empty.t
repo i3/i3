@@ -22,7 +22,7 @@ ok(workspace_exists($tmp), "workspace $tmp exists");
 my $x = X11::XCB::Connection->new;
 
 # Create a floating window which is smaller than the minimum enforced size of i3
-my $window = open_standard_window($x, undef, 1);
+my $window = open_floating_window($x);
 ok($window->mapped, 'Window is mapped');
 
 # switch to a different workspace, see if the window is still mapped?

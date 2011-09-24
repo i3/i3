@@ -27,33 +27,19 @@ is(@docked, 0, 'no dock clients yet');
 # open a dock client
 #####################################################################
 
-my $first = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-    event_mask => [ 'structure_notify' ],
-);
-
-$first->map;
-
-wait_for_map $x;
+my $first = open_window($x, {
+        background_color => '#FF0000',
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 #####################################################################
 # Open a second dock client
 #####################################################################
 
-my $second = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30],
-    background_color => '#FF0000',
-    window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-    event_mask => [ 'structure_notify' ],
-);
-
-$second->map;
-
-wait_for_map $x;
+my $second = open_window($x, {
+        background_color => '#FF0000',
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
 
 #####################################################################
 # Kill the second dock client

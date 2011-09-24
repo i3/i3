@@ -20,7 +20,7 @@ my $tmp = fresh_workspace;
 # open the left window
 #####################################################################
 
-my $left = open_standard_window($x, '#ff0000');
+my $left = open_window($x, { background_color => '#ff0000' });
 
 is($x->input_focus, $left->id, 'left window focused');
 
@@ -30,7 +30,7 @@ diag("left = " . $left->id);
 # Open the right window
 #####################################################################
 
-my $right = open_standard_window($x, '#00ff00');
+my $right = open_window($x, { background_color => '#00ff00' });
 
 diag("right = " . $right->id);
 
@@ -44,16 +44,12 @@ cmd 'fullscreen';
 # Open a third window
 #####################################################################
 
-#my $third = open_standard_window($x, '#0000ff');
+my $third = open_window($x, {
+        background_color => '#0000ff',
+        name => 'Third window',
+        dont_map => 1,
+    });
 
-my $third = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30 ),
-    background_color => '#0000ff',
-    event_mask => [ 'structure_notify' ],
-);
-
-$third->name('Third window');
 $third->map;
 
 sync_with_i3 $x;

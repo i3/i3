@@ -13,10 +13,8 @@ my $tmp = fresh_workspace;
 # 1: see if focus stays the same when toggling tiling/floating mode
 #############################################################################
 
-my $first = open_standard_window($x);
-my $second = open_standard_window($x);
-
-sync_with_i3($x);
+my $first = open_window($x);
+my $second = open_window($x);
 
 is($x->input_focus, $second->id, 'second window focused');
 
@@ -32,11 +30,9 @@ is($x->input_focus, $second->id, 'second window still focused after mode toggle'
 
 $tmp = fresh_workspace;
 
-$first = open_standard_window($x);    # window 2
-$second = open_standard_window($x);   # window 3
-my $third = open_standard_window($x); # window 4
-
-sync_with_i3($x);
+$first = open_window($x);    # window 2
+$second = open_window($x);   # window 3
+my $third = open_window($x); # window 4
 
 is($x->input_focus, $third->id, 'last container focused');
 
@@ -66,11 +62,9 @@ is($x->input_focus, $second->id, 'second con still focused after killing third')
 
 $tmp = fresh_workspace;
 
-$first = open_standard_window($x, '#ff0000');    # window 5
-$second = open_standard_window($x, '#00ff00');   # window 6
-my $third = open_standard_window($x, '#0000ff'); # window 7
-
-sync_with_i3($x);
+$first = open_window($x, '#ff0000');    # window 5
+$second = open_window($x, '#00ff00');   # window 6
+my $third = open_window($x, '#0000ff'); # window 7
 
 is($x->input_focus, $third->id, 'last container focused');
 
@@ -105,13 +99,11 @@ is($x->input_focus, $first->id, 'first con focused after killing all floating co
 
 $tmp = fresh_workspace;
 
-$first = open_standard_window($x, '#ff0000');    # window 5
+$first = open_window($x, { background_color => '#ff0000' });    # window 5
 cmd 'split v';
 cmd 'layout stacked';
-$second = open_standard_window($x, '#00ff00');   # window 6
-$third = open_standard_window($x, '#0000ff'); # window 7
-
-sync_with_i3($x);
+$second = open_window($x, { background_color => '#00ff00' });   # window 6
+$third = open_window($x, { background_color => '#0000ff' }); # window 7
 
 is($x->input_focus, $third->id, 'last container focused');
 
@@ -148,8 +140,8 @@ is($x->input_focus, $first->id, 'first con focused after killing all floating co
 
 $tmp = fresh_workspace;
 
-$first = open_standard_window($x, '#ff0000');    # window 8
-$second = open_standard_window($x, '#00ff00');   # window 9
+$first = open_window($x, { background_color => '#ff0000' });    # window 8
+$second = open_window($x, { background_color => '#00ff00' });   # window 9
 
 sync_with_i3($x);
 
@@ -195,9 +187,9 @@ is($x->input_focus, $second->id, 'second (floating) container focused');
 
 $tmp = fresh_workspace;
 
-$first = open_standard_window($x, '#ff0000', 1);    # window 10
-$second = open_standard_window($x, '#00ff00', 1);   # window 11
-$third = open_standard_window($x, '#0000ff', 1);   # window 12
+$first = open_floating_window($x, { background_color => '#ff0000' });# window 10
+$second = open_floating_window($x, { background_color => '#00ff00' }); # window 11
+$third = open_floating_window($x, { background_color => '#0000ff' }); # window 12
 
 sync_with_i3($x);
 

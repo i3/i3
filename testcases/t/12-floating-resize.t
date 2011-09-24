@@ -16,8 +16,7 @@ fresh_workspace;
 # Create a floating window and see if resizing works
 #####################################################################
 
-# Create a floating window
-my $window = open_standard_window($x, undef, 1);
+my $window = open_floating_window($x);
 
 # See if configurerequests cause window movements (they should not)
 my ($a, $t) = $window->rect;
