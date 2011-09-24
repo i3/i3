@@ -28,7 +28,7 @@ use AnyEvent::I3 qw(:all);
 use Try::Tiny;
 use Getopt::Long;
 use Time::HiRes qw(sleep);
-use X11::XCB::Connection;
+use X11::XCB;
 use IO::Socket::UNIX; # core
 use POSIX; # core
 use AnyEvent::Handle;
@@ -75,13 +75,14 @@ my $result = GetOptions(
 my @conns;
 my @wdisplays;
 for my $display (@displays) {
-    try {
-        my $x = X11::XCB::Connection->new(display => $display);
+    my $screen;
+    my $x = X11::XCB->new($display, $screen);
+    if ($x->has_error) {
+        say STDERR "WARNING: Not using X11 display $display, could not connect";
+    } else {
         push @conns, $x;
         push @wdisplays, $display;
-    } catch {
-        say STDERR "WARNING: Not using X11 display $display, could not connect";
-    };
+    }
 }
 
 my $config = slurp('i3-test.config');
