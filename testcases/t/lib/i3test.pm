@@ -144,11 +144,11 @@ sub open_window {
 
     my $dont_map = delete $args{dont_map};
 
-    $args{class} = WINDOW_CLASS_INPUT_OUTPUT unless exists $args{class};
-    $args{rect} = [ 0, 0, 30, 30 ] unless exists $args{rect};
-    $args{background_color} = '#c0c0c0' unless exists $args{background_color};
-    $args{event_mask} = [ 'structure_notify' ] unless exists $args{event_mask};
-    $args{name} = 'Window ' . counter_window() unless exists $args{name};
+    $args{class} //= WINDOW_CLASS_INPUT_OUTPUT;
+    $args{rect} //= [ 0, 0, 30, 30 ];
+    $args{background_color} //= '#c0c0c0';
+    $args{event_mask} //= [ 'structure_notify' ];
+    $args{name} //= 'Window ' . counter_window();
 
     my $window = $x->root->create_child(%args);
 
