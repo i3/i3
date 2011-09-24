@@ -27,7 +27,7 @@ use File::Basename qw(basename);
 use AnyEvent::I3 qw(:all);
 use Try::Tiny;
 use Getopt::Long;
-use Time::HiRes qw(sleep);
+use Time::HiRes qw(sleep gettimeofday tv_interval);
 use X11::XCB;
 use IO::Socket::UNIX; # core
 use POSIX; # core
@@ -140,6 +140,7 @@ sub take_job {
     close($fh);
 
     my $activate_cv = AnyEvent->condvar;
+    my $time_before_start = [gettimeofday];
     my $start_i3 = sub {
         # remove the old unix socket
         unlink("/tmp/nested-$display-activation");
@@ -235,9 +236,14 @@ sub take_job {
     # This will be called as soon as i3 is running and answered to our
     # IPC request
     $activate_cv->cb(sub {
-        say "cb";
+        my $time_activating = [gettimeofday];
+        my $start_duration = tv_interval($time_before_start, $time_activating);
         my ($status) = $activate_cv->recv;
-        say "complete-run: status = $status";
+        if ($dont_start) {
+            say "[$display] Not starting i3, testcase does that";
+        } else {
+            say "[$display] i3 startup: took " . sprintf("%.2f", $start_duration) . "s, status = $status";
+        }
 
         say "[$display] Running $test with logfile $logpath";
 
