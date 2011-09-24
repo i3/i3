@@ -159,15 +159,12 @@ sub take_job {
         if (!defined($pid)) {
             die "could not fork()";
         }
-        say "pid = $pid";
         if ($pid == 0) {
-            say "child!";
             $ENV{LISTEN_PID} = $$;
             $ENV{LISTEN_FDS} = 1;
             $ENV{DISPLAY} = $display;
             $^F = 3;
 
-            say "fileno is " . fileno($socket);
             close($reserved);
             POSIX::dup2(fileno($socket), 3);
 
@@ -202,7 +199,6 @@ sub take_job {
         # wait for the reply
         $hdl->push_read(chunk => 1, => sub {
             my ($h, $line) = @_;
-            say "read something from i3";
             $activate_cv->send(1);
             undef $hdl;
         });
