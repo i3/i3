@@ -3,10 +3,10 @@ i3 testsuite
 Michael Stapelberg <michael+i3@stapelberg.de>
 September 2011
 
-This document explains how the i3 testsuite works, how to use it and how to
-extend it. It is targeted at developers who not necessarily have been doing
-testing before or have not been testing in Perl before. In general, the
-testsuite is not of interest for end users.
+This document explains how the i3 testsuite works, how to use it and extend it.
+It is targeted at developers who not necessarily have been doing testing before
+or have not been testing in Perl before. In general, the testsuite is not of
+interest for end users.
 
 
 == Introduction
@@ -21,12 +21,12 @@ correctly.
 The goal of having these tests is to automatically find problems and to
 automatically get a feel for whether a change in the source code breaks any
 existing feature. After every modification of the i3 sourcecode, the developer
-should run the full testsuite. If one of the tests does not pass (but fails),
-the corresponding problem should be fixed (or, in some cases, the testcase has
-to be modified). For every bugreport, a testcase should be written to test the
-correct behaviour. Initially, it will fail, but after fixing the bug, it will
-pass. This ensures (or increases the chance) that bugs which have been fixed
-once will never be found again.
+should run the full testsuite. If one of the tests fails, the corresponding
+problem should be fixed (or, in some cases, the testcase has to be modified).
+For every bugreport, a testcase should be written to test the correct
+behaviour. Initially, it will fail, but after fixing the bug, it will pass.
+This ensures (or increases the chance) that bugs which have been fixed once
+will never be found again.
 
 Also, when implementing a new feature, a testcase might be a good way to be
 able to easily test if the feature is working correctly. Many developers will
@@ -130,7 +130,8 @@ manager.
 In the git root of i3, the testcases live in the folder +testcases+. This
 folder contains the +complete-run.pl+ and +Xdummy+ scripts and a base
 configuration file which will be used for the tests. The different testcases
-themselve can be found in the conventionally named subfolder +t+:
+(their file extension is .t, not .pl) themselves can be found in the
+conventionally named subfolder +t+:
 
 .Filesystem structure
 --------------------------------------------
@@ -225,7 +226,7 @@ tiling mode by i3. If you want a floating window, use the
 ----------------------
 #
 # Returns the input focus after sending the given command to i3 via IPC
-# end sleeping for half a second to make sure i3 reacted
+# and syncing with i3
 #
 sub focus_after {
     my $msg = shift;
@@ -283,6 +284,10 @@ $focus = focus_after(qq|[con_mark="$random_mark"] focus|);
 is($focus, $mid->id, "focus unchanged");
 ----------------------
 
+Syntax hint: The qq keyword is the interpolating quote operator. It lets you
+chose a quote character (in this case the +|+ character, a pipe). This makes
+having double quotes in our string easy.
+
 In this new major section, a random mark (mark is an identifier for a window,
 see "VIM-like marks" in the i3 User’s Guide) will be generated. Afterwards, we
 test that trying to focus that mark will not do anything. This is important: Do
@@ -304,8 +309,8 @@ is($focus, $mid->id, "goto worked");
 Remember: Focus was on the middle window (we verified that earlier in "Test
 assumptions"). We now mark the middle window with our randomly generated mark.
 Afterwards, we switch focus away from the middle window to be able to tell if
-focusing it via its mark will work. If it does work (next test), the goto
-command works.
+focusing it via its mark will work. If the test works, the goto command seems
+to be working.
 
 .t/11-goto.t: Test corner case
 ----------------------

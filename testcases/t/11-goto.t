@@ -20,7 +20,7 @@ my $bottom = open_window($x);
 
 #
 # Returns the input focus after sending the given command to i3 via IPC
-# end sleeping for half a second to make sure i3 reacted
+# and syncing with i3
 #
 sub focus_after {
     my $msg = shift;
