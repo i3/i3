@@ -276,9 +276,9 @@ static void start_configerror_nagbar(const char *config_path) {
     if (configerror_pid == 0) {
         char *editaction,
              *pageraction;
-        if (asprintf(&editaction, TERM_EMU " -e sh -c \"${EDITOR:-vi} \"%s\" && i3-msg reload\"", config_path) == -1)
+        if (asprintf(&editaction, "i3-sensible-terminal -e sh -c \"i3-sensible-editor \\\"%s\\\" && i3-msg reload\"", config_path) == -1)
             exit(1);
-        if (asprintf(&pageraction, TERM_EMU " -e sh -c \"${PAGER:-less} \"%s\"\"", errorfilename) == -1)
+        if (asprintf(&pageraction, "i3-sensible-terminal -e i3-sensible-pager \"%s\"", errorfilename) == -1)
             exit(1);
         char *argv[] = {
             NULL, /* will be replaced by the executable path */
