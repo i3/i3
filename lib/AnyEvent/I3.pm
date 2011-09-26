@@ -41,7 +41,7 @@ then subscribe to events or send messages and receive their replies.
 
     use AnyEvent::I3;
 
-    my $workspaces = i3->workspaces->recv;
+    my $workspaces = i3->get_workspaces->recv;
     say "Currently, you use " . @{$workspaces} . " workspaces";
 
 =head1 EXPORT
