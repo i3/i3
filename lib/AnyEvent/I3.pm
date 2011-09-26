@@ -65,9 +65,10 @@ use constant TYPE_GET_WORKSPACES => 1;
 use constant TYPE_SUBSCRIBE => 2;
 use constant TYPE_GET_OUTPUTS => 3;
 use constant TYPE_GET_TREE => 4;
+use constant TYPE_GET_MARKS => 5;
 
 our %EXPORT_TAGS = ( 'all' => [
-    qw(i3 TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS TYPE_GET_TREE)
+    qw(i3 TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS TYPE_GET_TREE TYPE_GET_MARKS)
 ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
@@ -325,7 +326,7 @@ sub get_outputs {
 
 =head2 get_tree
 
-Gets the layout tree from i3 (tree branch only).
+Gets the layout tree from i3 (>= v4.0).
 
     my $tree = i3->get_tree->recv;
     say Dumper($tree);
@@ -339,6 +340,21 @@ sub get_tree {
     $self->message(TYPE_GET_TREE)
 }
 
+=head2 get_marks
+
+Gets all the window identifier marks from i3 (>= v4.1).
+
+    my $marks = i3->get_marks->recv;
+    say Dumper($tree);
+
+=cut
+sub get_marks {
+    my ($self) = @_;
+
+    $self->_ensure_connection;
+
+    $self->message(TYPE_GET_MARKS)
+}
 
 =head2 command($content)
 
