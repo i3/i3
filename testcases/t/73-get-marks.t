@@ -5,21 +5,8 @@
 #
 use i3test;
 
-# TODO: this will be available in AnyEvent::I3 soon
 sub get_marks {
-    my $i3 = i3(get_socket_path());
-    $i3->connect->recv;
-    my $cv = AnyEvent->condvar;
-    my $msg = $i3->message(5);
-    my $t;
-    $msg->cb(sub {
-        my ($_cv) = @_;
-        $cv->send($_cv->recv);
-    });
-    $t = AnyEvent->timer(after => 2, cb => sub {
-        $cv->croak('timeout while waiting for the marks');
-    });
-    return $cv->recv;
+    return i3(get_socket_path())->get_marks->recv;
 }
 
 ##############################################################
