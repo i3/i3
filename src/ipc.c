@@ -284,7 +284,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     ystr("focus");
     y(array_open);
-    TAILQ_FOREACH(node, &(con->focus_head), nodes) {
+    TAILQ_FOREACH(node, &(con->focus_head), focused) {
         y(integer, (long int)node);
     }
     y(array_close);
