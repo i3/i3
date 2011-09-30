@@ -53,6 +53,10 @@ CPPFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
 CPPFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
 CPPFLAGS += -DTERM_EMU=\"$(TERM_EMU)\"
 
+ifeq ($(shell pkg-config --atleast-version=8.10 libpcre && echo 1),1)
+CPPFLAGS += -DPCRE_HAS_UCP=1
+endif
+
 LIBS += -lm
 LIBS += $(call ldflags_for_lib, xcb-event, xcb-event)
 LIBS += $(call ldflags_for_lib, xcb-keysyms, xcb-keysyms)
