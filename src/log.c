@@ -16,6 +16,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "util.h"
 #include "log.h"
@@ -41,6 +43,9 @@ void init_logging() {
     }
 
     errorfile = fopen(errorfilename, "w");
+    if (fcntl(fileno(errorfile), F_SETFD, FD_CLOEXEC)) {
+        ELOG("Could not set close-on-exec flag\n");
+    }
 }
 
 /*
