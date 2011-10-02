@@ -180,11 +180,8 @@ static void workspace_reassign_sticky(Con *con) {
  * Switches to the given workspace
  *
  */
-void workspace_show(const char *num) {
-    Con *workspace, *current, *old = NULL;
-
-    bool changed_num_workspaces;
-    workspace = workspace_get(num, &changed_num_workspaces);
+void workspace_show_changed(Con *workspace, bool changed_num_workspaces) {
+    Con *current, *old = NULL;
 
     /* disable fullscreen for the other workspaces and get the workspace we are
      * currently on. */
@@ -238,11 +235,22 @@ void workspace_show(const char *num) {
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
 }
 
+void workspace_show(Con *workspace) { 
+    workspace_show_changed(workspace, false);
+}
+
+void workspace_show_by_name(const char *num) {
+    Con *workspace;
+    bool changed_num_workspaces;
+    workspace = workspace_get(num, &changed_num_workspaces);
+    workspace_show_changed(workspace, changed_num_workspaces);
+}
+
 /*
  * Focuses the next workspace.
  *
  */
-void workspace_next() {
+Con* workspace_next() {
     Con *current = con_get_workspace(focused);
     Con *next = NULL;
     Con *output;
@@ -277,7 +285,7 @@ void workspace_next() {
                     found_current = 1;
                 } else if (child->num == -1 && (current->num != -1 || found_current)) {
                     next = child;
-                    goto workspace_next_show;
+                    goto workspace_next_end;
                 }
             }
     }
@@ -292,16 +300,15 @@ void workspace_next() {
                     next = child;
             }
     }
-
-workspace_next_show:
-    workspace_show(next->name);
+workspace_next_end:
+    return next;
 }
 
 /*
  * Focuses the previous workspace.
  *
  */
-void workspace_prev() {
+Con* workspace_prev() {
     Con *current = con_get_workspace(focused);
     Con *prev = NULL;
     Con *output;
@@ -336,7 +343,7 @@ void workspace_prev() {
                     found_current = 1;
                 } else if (child->num == -1 && (current->num != -1 || found_current)) {
                     prev = child;
-                    goto workspace_prev_show;
+                    goto workspace_prev_end;
                 }
             }
     }
@@ -352,8 +359,8 @@ void workspace_prev() {
             }
     }
 
-workspace_prev_show:
-    workspace_show(prev->name);
+workspace_prev_end:
+    return prev;
 }
 
 static bool get_urgency_flag(Con *con) {

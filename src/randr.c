@@ -363,7 +363,7 @@ void init_ws_for_output(Output *output, Con *content) {
         if (visible && (previous = TAILQ_NEXT(workspace, focused))) {
             LOG("Switching to previously used workspace \"%s\" on output \"%s\"\n",
                 previous->name, workspace_out->name);
-            workspace_show(previous->name);
+            workspace_show(previous);
         }
 
         con_detach(workspace);
@@ -390,7 +390,7 @@ void init_ws_for_output(Output *output, Con *content) {
         if (!visible) {
             visible = TAILQ_FIRST(&(content->nodes_head));
             focused = content;
-            workspace_show(visible->name);
+            workspace_show(visible);
         }
         return;
     }
@@ -403,7 +403,7 @@ void init_ws_for_output(Output *output, Con *content) {
         LOG("Initializing first assigned workspace \"%s\" for output \"%s\"\n",
             assignment->name, assignment->output);
         focused = content;
-        workspace_show(assignment->name);
+        workspace_show_by_name(assignment->name);
         return;
     }
 

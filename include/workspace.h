@@ -47,19 +47,20 @@ void workspace_set_name(Workspace *ws, const char *name);
 bool workspace_is_visible(Con *ws);
 
 /** Switches to the given workspace */
-void workspace_show(const char *num);
+void workspace_show(Con *ws);
+void workspace_show_by_name(const char *num);
 
 /**
- * Focuses the next workspace.
+ * Returns the next workspace.
  *
  */
-void workspace_next();
+Con* workspace_next();
 
 /**
- * Focuses the previous workspace.
+ * Returns the previous workspace.
  *
  */
-void workspace_prev();
+Con* workspace_prev();
 
 #if 0
 /**

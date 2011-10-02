@@ -440,7 +440,7 @@ focus:
         int count = 0;
         TAILQ_FOREACH(current, &owindows, owindows) {
             Con *ws = con_get_workspace(current->con);
-            workspace_show(ws->name);
+            workspace_show(ws);
             LOG("focusing %p / %s\n", current->con, current->con->name);
             con_focus(current->con);
             count++;
@@ -561,18 +561,18 @@ optional_kill_mode:
 workspace:
     TOK_WORKSPACE TOK_NEXT
     {
-        workspace_next();
+        workspace_show(workspace_next());
         tree_render();
     }
     | TOK_WORKSPACE TOK_PREV
     {
-        workspace_prev();
+        workspace_show(workspace_prev());
         tree_render();
     }
     | TOK_WORKSPACE STR
     {
         printf("should switch to workspace %s\n", $2);
-        workspace_show($2);
+        workspace_show_by_name($2);
         free($2);
 
         tree_render();
