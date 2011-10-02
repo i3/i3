@@ -189,6 +189,7 @@ int main(int argc, char *argv[]) {
         {"restart", required_argument, 0, 0},
         {"force-xinerama", no_argument, 0, 0},
         {"disable-signalhandler", no_argument, 0, 0},
+        {"get-socketpath", no_argument, 0, 0},
         {0, 0, 0, 0}
     };
     int option_index = 0, opt;
@@ -247,6 +248,14 @@ int main(int argc, char *argv[]) {
                 } else if (strcmp(long_options[option_index].name, "disable-signalhandler") == 0) {
                     disable_signalhandler = true;
                     break;
+                } else if (strcmp(long_options[option_index].name, "get-socketpath") == 0) {
+                    char *socket_path = socket_path_from_x11();
+                    if (socket_path) {
+                        printf("%s\n", socket_path);
+                        return 0;
+                    }
+
+                    return 1;
                 } else if (strcmp(long_options[option_index].name, "restart") == 0) {
                     FREE(layout_path);
                     layout_path = sstrdup(optarg);
