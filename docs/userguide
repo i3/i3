@@ -785,7 +785,7 @@ id::
 	Compares the X11 window ID, which you can get via +xwininfo+ for example.
 title::
 	Compares the X11 window title (_NET_WM_NAME or WM_NAME as fallback).
-mark::
+con_mark::
 	Compares the mark set for this container, see <<vim_like_marks>>.
 con_id::
 	Compares the i3-internal container ID, which you can get via the IPC
