@@ -11,22 +11,16 @@ HEADERS=$(wildcard *.h)
 
 # Depend on the specific file (.c for each .o) and on all headers
 %.o: %.c ${HEADERS}
-	echo "[i3-msg] CC $<"
+	echo "[libi3] CC $<"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-all: i3-msg
+all: libi3.a
 
-i3-msg: ${FILES}
-	echo "[i3-msg] LINK i3-msg"
-	$(CC) $(LDFLAGS) -o i3-msg ${FILES} $(LIBS)
-
-install: all
-	echo "[i3-msg] INSTALL"
-	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
-	$(INSTALL) -m 0755 i3-msg $(DESTDIR)$(PREFIX)/bin/
+libi3.a: ${FILES}
+	echo "[libi3] AR libi3.a"
+	ar rcs libi3.a ${FILES}
 
 clean:
-	rm -f *.o
+	rm -f *.o libi3.a
 
 distclean: clean
-	rm -f i3-msg

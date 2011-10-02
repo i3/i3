@@ -58,6 +58,7 @@ CPPFLAGS += -DPCRE_HAS_UCP=1
 endif
 
 LIBS += -lm
+LIBS += -L $(TOPDIR)/libi3 -li3
 LIBS += $(call ldflags_for_lib, xcb-event, xcb-event)
 LIBS += $(call ldflags_for_lib, xcb-keysyms, xcb-keysyms)
 ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)

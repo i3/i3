@@ -18,18 +18,21 @@ else
 UNUSED:=$(shell $(MAKE) loglevels.h)
 endif
 
-SUBDIRS=i3-msg i3-input i3-nagbar i3-config-wizard i3bar
+SUBDIRS:=i3-msg i3-input i3-nagbar i3-config-wizard i3bar
 
 # Depend on the specific file (.c for each .o) and on all headers
 src/%.o: src/%.c ${HEADERS}
-	echo "CC $<"
+	echo "[i3] CC $<"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="((uint64_t)1 << $(shell awk '/$(shell basename $< .c)/ { print NR; exit 0; }' loglevels.tmp))" -c -o $@ $<
 
 all: i3 subdirs
 
-i3: src/cfgparse.y.o src/cfgparse.yy.o src/cmdparse.y.o src/cmdparse.yy.o ${FILES}
-	echo "LINK i3"
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+i3: libi3/libi3.a src/cfgparse.y.o src/cfgparse.yy.o src/cmdparse.y.o src/cmdparse.yy.o ${FILES}
+	echo "[i3] LINK i3"
+	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3/libi3.a,$^) $(LIBS)
+
+libi3/%.a:
+	$(MAKE) -C libi3
 
 subdirs:
 	for dir in $(SUBDIRS); do \
@@ -39,7 +42,7 @@ subdirs:
 	done
 
 loglevels.h:
-	echo "LOGLEVELS"
+	echo "[i3] LOGLEVELS"
 	for file in $$(ls src/*.c src/*.y src/*.l | grep -v 'cfgparse.\(tab\|yy\).c'); \
 	do \
 		echo $$(basename $$file .c); \
@@ -51,29 +54,29 @@ loglevels.h:
 	echo "};") > include/loglevels.h;
 
 src/cfgparse.yy.o: src/cfgparse.l src/cfgparse.y.o ${HEADERS}
-	echo "LEX $<"
+	echo "[i3] LEX $<"
 	flex -i -o$(@:.o=.c) $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
 
 src/cmdparse.yy.o: src/cmdparse.l src/cmdparse.y.o ${HEADERS}
-	echo "LEX $<"
+	echo "[i3] LEX $<"
 	flex -Pcmdyy -i -o$(@:.o=.c) $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cmdparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
 
 
 src/cfgparse.y.o: src/cfgparse.y ${HEADERS}
-	echo "YACC $<"
+	echo "[i3] YACC $<"
 	bison --debug --verbose -b $(basename $< .y) -d $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.y/ { print NR }' loglevels.tmp))" -c -o $@ $(<:.y=.tab.c)
 
 src/cmdparse.y.o: src/cmdparse.y ${HEADERS}
-	echo "YACC $<"
+	echo "[i3] YACC $<"
 	bison -p cmdyy --debug --verbose -b $(basename $< .y) -d $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cmdparse.y/ { print NR }' loglevels.tmp))" -c -o $@ $(<:.y=.tab.c)
 
 
 install: all
-	echo "INSTALL"
+	echo "[i3] INSTALL"
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(SYSCONFDIR)/i3
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/include/i3
@@ -120,6 +123,7 @@ dist: distclean
 clean:
 	rm -f src/*.o src/*.gcno src/cfgparse.tab.{c,h} src/cfgparse.yy.c src/cfgparse.{output,dot} src/cmdparse.tab.{c,h} src/cmdparse.yy.c src/cmdparse.{output,dot} loglevels.tmp include/loglevels.h
 	(which lcov >/dev/null 2>&1 && lcov -d . --zerocounters) || true
+	$(MAKE) -C libi3 clean
 	$(MAKE) -C docs clean
 	$(MAKE) -C man clean
 	for dir in $(SUBDIRS); do \

@@ -1,0 +1,16 @@
+Introduction
+============
+
+libi3 is an *INTERNAL* library which contains functions that i3 and related
+tools (i3-msg, i3-input, i3-nagbar, i3-config-wizard, i3bar) use.
+
+It is NOT to be used by other programs.
+
+Structure
+=========
+
+Every function gets its own .c file, which in turn gets compiled into an .o
+object file. Afterwards, all .o files are archived into one static library
+(libi3.a). This library will be linked into all i3 binaries. The linker is able
+to eliminate unused .o files when linking, so only the functions which you
+actually use will be included in the corresponding binary.

@@ -10,28 +10,28 @@ HEADERS:=$(wildcard *.h)
 
 # Depend on the specific file (.c for each .o) and on all headers
 %.o: %.c ${HEADERS}
-	echo "CC $<"
+	echo "[i3-config-wizard] CC $<"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 all: i3-config-wizard
 
 i3-config-wizard: cfgparse.y.o cfgparse.yy.o ${FILES}
-	echo "LINK i3-config-wizard"
+	echo "[i3-config-wizard] LINK i3-config-wizard"
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 cfgparse.yy.o: cfgparse.l cfgparse.y.o ${HEADERS}
-	echo "LEX $<"
+	echo "[i3-config-wizard] LEX $<"
 	flex -i -o$(@:.o=.c) $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $(@:.o=.c)
 
 cfgparse.y.o: cfgparse.y ${HEADERS}
-	echo "YACC $<"
+	echo "[i3-config-wizard] YACC $<"
 	bison --debug --verbose -b $(basename $< .y) -d $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $(<:.y=.tab.c)
 
 
 install: all
-	echo "INSTALL"
+	echo "[i3-config-wizard] INSTALL"
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
 	$(INSTALL) -m 0755 i3-config-wizard $(DESTDIR)$(PREFIX)/bin/
 

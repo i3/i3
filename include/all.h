@@ -65,5 +65,6 @@
 #include "ewmh.h"
 #include "assignments.h"
 #include "regex.h"
+#include "libi3.h"
 
 #endif
