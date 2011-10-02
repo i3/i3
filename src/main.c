@@ -3,6 +3,9 @@
  */
 #include <ev.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include "all.h"
 
 #include "sd-daemon.h"
@@ -281,8 +284,75 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "\n");
                 fprintf(stderr, "\t--get-socketpath\n"
                                 "\tRetrieve the i3 IPC socket path from X11, print it, then exit.\n");
+                fprintf(stderr, "\n");
+                fprintf(stderr, "If you pass plain text arguments, i3 will interpret them as a command\n"
+                                "to send to a currently running i3 (like i3-msg). This allows you to\n"
+                                "use nice and logical commands, such as:\n"
+                                "\n"
+                                "\ti3 border none\n"
+                                "\ti3 floating toggle\n"
+                                "\ti3 kill window\n"
+                                "\n");
                 exit(EXIT_FAILURE);
         }
+    }
+
+    /* If the user passes more arguments, we act like i3-msg would: Just send
+     * the arguments as an IPC message to i3. This allows for nice semantic
+     * commands such as 'i3 border none'. */
+    if (optind < argc) {
+        /* We enable verbose mode so that the user knows what’s going on.
+         * This should make it easier to find mistakes when the user passes
+         * arguments by mistake. */
+        set_verbosity(true);
+
+        LOG("Additional arguments passed. Sending them as a command to i3.\n");
+        char *payload = NULL;
+        while (optind < argc) {
+            if (!payload) {
+                payload = sstrdup(argv[optind]);
+            } else {
+                char *both;
+                if (asprintf(&both, "%s %s", payload, argv[optind]) == -1)
+                    err(EXIT_FAILURE, "asprintf");
+                free(payload);
+                payload = both;
+            }
+            optind++;
+        }
+        LOG("Command is: %s (%d bytes)\n", payload, strlen(payload));
+        char *socket_path = socket_path_from_x11();
+        if (!socket_path) {
+            ELOG("Could not get i3 IPC socket path\n");
+            return 1;
+        }
+
+        int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
+        if (sockfd == -1)
+            err(EXIT_FAILURE, "Could not create socket");
+
+        struct sockaddr_un addr;
+        memset(&addr, 0, sizeof(struct sockaddr_un));
+        addr.sun_family = AF_LOCAL;
+        strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
+        if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0)
+            err(EXIT_FAILURE, "Could not connect to i3");
+
+        if (ipc_send_message(sockfd, strlen(payload), I3_IPC_MESSAGE_TYPE_COMMAND,
+                             (uint8_t*)payload) == -1)
+            err(EXIT_FAILURE, "IPC: write()");
+
+        uint32_t reply_length;
+        uint8_t *reply;
+        int ret;
+        if ((ret = ipc_recv_message(sockfd, I3_IPC_MESSAGE_TYPE_COMMAND,
+                                    &reply_length, &reply)) != 0) {
+            if (ret == -1)
+                err(EXIT_FAILURE, "IPC: read()");
+            return 1;
+        }
+        printf("%.*s\n", reply_length, reply);
+        return 0;
     }
 
     LOG("i3 (tree) version " I3_VERSION " starting\n");
