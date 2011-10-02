@@ -176,11 +176,8 @@ static void workspace_reassign_sticky(Con *con) {
         workspace_reassign_sticky(current);
 }
 
-/*
- * Switches to the given workspace
- *
- */
-void workspace_show_changed(Con *workspace, bool changed_num_workspaces) {
+
+static void _workspace_show(Con *workspace, bool changed_num_workspaces) {
     Con *current, *old = NULL;
 
     /* disable fullscreen for the other workspaces and get the workspace we are
@@ -235,15 +232,23 @@ void workspace_show_changed(Con *workspace, bool changed_num_workspaces) {
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
 }
 
-void workspace_show(Con *workspace) { 
-    workspace_show_changed(workspace, false);
+/*
+ * Switches to the given workspace
+ *
+ */
+void workspace_show(Con *workspace) {
+    _workspace_show(workspace, false);
 }
 
+/*
+ * Looks up the workspace by name and switches to it.
+ *
+ */
 void workspace_show_by_name(const char *num) {
     Con *workspace;
     bool changed_num_workspaces;
     workspace = workspace_get(num, &changed_num_workspaces);
-    workspace_show_changed(workspace, changed_num_workspaces);
+    _workspace_show(workspace, changed_num_workspaces);
 }
 
 /*
