@@ -715,6 +715,38 @@ move:
 
         tree_render();
     }
+    | TOK_MOVE TOK_WORKSPACE TOK_NEXT
+    {
+        owindow *current;
+
+        /* get the workspace */
+        Con *ws = workspace_next();
+
+        HANDLE_EMPTY_MATCH;
+
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            printf("matching: %p / %s\n", current->con, current->con->name);
+            con_move_to_workspace(current->con, ws, true, false);
+        }
+
+        tree_render();
+    }
+    | TOK_MOVE TOK_WORKSPACE TOK_PREV
+    {
+        owindow *current;
+
+        /* get the workspace */
+        Con *ws = workspace_prev();
+
+        HANDLE_EMPTY_MATCH;
+
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            printf("matching: %p / %s\n", current->con, current->con->name);
+            con_move_to_workspace(current->con, ws, true, false);
+        }
+
+        tree_render();
+    }
     | TOK_MOVE TOK_OUTPUT STR
     {
         owindow *current;
