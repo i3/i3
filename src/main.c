@@ -172,7 +172,6 @@ static void i3_exit() {
 }
 
 int main(int argc, char *argv[]) {
-    //parse_cmd("[ foo ] attach, attach ; focus");
     int screens;
     char *override_configpath = NULL;
     bool autostart = true;
