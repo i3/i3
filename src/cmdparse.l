@@ -19,6 +19,7 @@
 
 #include "config.h"
 #include "util.h"
+#include "libi3.h"
 
 int cmdyycolumn = 1;
 

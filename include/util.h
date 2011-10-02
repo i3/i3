@@ -67,34 +67,6 @@ Rect rect_add(Rect a, Rect b);
 bool update_if_necessary(uint32_t *destination, const uint32_t new_value);
 
 /**
- * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that
- * there is no more memory available)
- *
- */
-void *smalloc(size_t size);
-
-/**
- * Safe-wrapper around calloc which exits if malloc returns NULL (meaning that
- * there is no more memory available)
- *
- */
-void *scalloc(size_t size);
-
-/**
- * Safe-wrapper around realloc which exits if realloc returns NULL (meaning
- * that there is no more memory available).
- *
- */
-void *srealloc(void *ptr, size_t size);
-
-/**
- * Safe-wrapper around strdup which exits if malloc returns NULL (meaning that
- * there is no more memory available)
- *
- */
-char *sstrdup(const char *str);
-
-/**
  * Starts the given application by passing it through a shell. We use double
  * fork to avoid zombie processes. As the started application’s parent exits
  * (immediately), the application is reparented to init (process-id 1), which
