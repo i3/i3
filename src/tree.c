@@ -420,7 +420,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         if (!workspace)
             return false;
 
-        workspace_show(workspace->name);
+        workspace_show(workspace);
         Con *focus = con_descend_direction(workspace, direction);
         if (focus) {
             con_focus(focus);

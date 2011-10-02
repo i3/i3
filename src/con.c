@@ -632,7 +632,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
          * focused. Must do before attaching because workspace_show checks to see
          * if focused container is in its area. */
         if (workspace_is_visible(workspace)) {
-            workspace_show(workspace->name);
+            workspace_show(workspace);
 
             /* Don’t warp if told so (when dragging floating windows with the
              * mouse for example) */
@@ -668,7 +668,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         /* Descend focus stack in case focus_next is a workspace which can
          * occur if we move to the same workspace.  Also show current workspace
          * to ensure it is focused. */
-        workspace_show(con_get_workspace(focus_next)->name);
+        workspace_show(con_get_workspace(focus_next));
         con_focus(con_descend_focused(focus_next));
     }
 

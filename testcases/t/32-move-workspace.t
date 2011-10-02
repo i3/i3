@@ -38,6 +38,39 @@ is($focus->[0], $second, 'same container on different ws');
 ok($nodes->[0]->{focused}, 'first container focused on first ws');
 
 ###################################################################
+# check if 'move workspace next' and 'move workspace prev' work
+###################################################################
+
+# Open two containers on the first workspace, one container on the second
+# workspace. Because the workspaces are named, they will be sorted by order of
+# creation.
+$tmp = get_unused_workspace();
+$tmp2 = get_unused_workspace();
+cmd "workspace $tmp";
+ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
+$first = open_empty_con($i3);
+$second = open_empty_con($i3);
+ok(@{get_ws_content($tmp)} == 2, 'two containers on first ws');
+
+cmd "workspace $tmp2";
+ok(@{get_ws_content($tmp2)} == 0, 'no containers yet');
+my $third = open_empty_con($i3);
+ok(@{get_ws_content($tmp2)} == 1, 'one container on second ws');
+
+# go back to the first workspace, move one of the containers to the next one
+cmd "workspace $tmp";
+cmd 'move workspace next';
+ok(@{get_ws_content($tmp)} == 1, 'one container on first ws');
+ok(@{get_ws_content($tmp2)} == 2, 'two containers on second ws');
+
+# go to the second workspace and move two containers to the first one
+cmd "workspace $tmp2";
+cmd 'move workspace prev';
+cmd 'move workspace prev';
+ok(@{get_ws_content($tmp)} == 3, 'three containers on first ws');
+ok(@{get_ws_content($tmp2)} == 0, 'no containers on second ws');
+
+###################################################################
 # check if floating cons are moved to new workspaces properly
 # (that is, if they are floating on the target ws, too)
 ###################################################################

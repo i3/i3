@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael+i3@stapelberg.de>
-September 2011
+October 2011
 
 This document contains all the information you need to configure and use the i3
 window manager. If it does not, please contact us on IRC (preferred) or post your
@@ -889,7 +889,8 @@ number or name of the workspace. To move containers to specific workspaces, use
 You can also switch to the next and previous workspace with the commands
 +workspace next+ and +workspace prev+, which is handy, for example, if you have
 workspace 1, 3, 4 and 9 and you want to cycle through them with a single key
-combination.
+combination. Similarily, you can use +move workspace next+ and +move workspace
+prev+ to move a container to the next/previous workspace.
 
 To move a container to another xrandr output such as +LVDS1+ or +VGA1+, you can
 use the +move output+ command followed by the name of the target output. You
