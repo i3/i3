@@ -97,9 +97,7 @@ static void ipc_recv_message(int sockfd, uint32_t message_type,
         errx(EXIT_FAILURE, "unexpected reply type (got %d, expected %d)", *((uint32_t*)walk), message_type);
     walk += sizeof(uint32_t);
 
-    *reply = malloc(*reply_length);
-    if ((*reply) == NULL)
-        err(EXIT_FAILURE, "malloc() failed");
+    *reply = smalloc(*reply_length);
 
     to_read = *reply_length;
     read_bytes = 0;
@@ -135,7 +133,7 @@ int main(int argc, char *argv[]) {
         if (o == 's') {
             if (socket_path != NULL)
                 free(socket_path);
-            socket_path = strdup(optarg);
+            socket_path = sstrdup(optarg);
         } else if (o == 't') {
             if (strcasecmp(optarg, "command") == 0)
                 message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
@@ -169,15 +167,14 @@ int main(int argc, char *argv[]) {
 
     /* Fall back to the default socket path */
     if (socket_path == NULL)
-        socket_path = strdup("/tmp/i3-ipc.sock");
+        socket_path = sstrdup("/tmp/i3-ipc.sock");
 
     /* Use all arguments, separated by whitespace, as payload.
      * This way, you don’t have to do i3-msg 'mark foo', you can use
      * i3-msg mark foo */
     while (optind < argc) {
         if (!payload) {
-            if (!(payload = strdup(argv[optind])))
-                err(EXIT_FAILURE, "strdup(argv[optind])");
+            payload = sstrdup(argv[optind]);
         } else {
             char *both;
             if (asprintf(&both, "%s %s", payload, argv[optind]) == -1)
