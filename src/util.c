@@ -59,36 +59,6 @@ bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
 }
 
 /*
- * The s* functions (safe) are wrappers around malloc, strdup, …, which exits if one of
- * the called functions returns NULL, meaning that there is no more memory available
- *
- */
-void *smalloc(size_t size) {
-    void *result = malloc(size);
-    exit_if_null(result, "Error: out of memory (malloc(%zd))\n", size);
-    return result;
-}
-
-void *scalloc(size_t size) {
-    void *result = calloc(size, 1);
-    exit_if_null(result, "Error: out of memory (calloc(%zd))\n", size);
-    return result;
-}
-
-void *srealloc(void *ptr, size_t size) {
-    void *result = realloc(ptr, size);
-    if (result == NULL && size > 0)
-        die("Error: out memory (realloc(%zd))\n", size);
-    return result;
-}
-
-char *sstrdup(const char *str) {
-    char *result = strdup(str);
-    exit_if_null(result, "Error: out of memory (strdup())\n");
-    return result;
-}
-
-/*
  * Starts the given application by passing it through a shell. We use double fork
  * to avoid zombie processes. As the started application’s parent exits (immediately),
  * the application is reparented to init (process-id 1), which correctly handles

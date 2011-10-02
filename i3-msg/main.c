@@ -10,7 +10,10 @@
  * i3-msg/main.c: Utility which sends messages to a running i3-instance using
  * IPC via UNIX domain sockets.
  *
- * This serves as an example for how to send your own messages to i3.
+ * This (in combination with libi3/ipc_send_message.c and
+ * libi3/ipc_recv_message.c) serves as an example for how to send your own
+ * messages to i3.
+ *
  * Additionally, it’s even useful sometimes :-).
  *
  */
@@ -37,82 +40,6 @@
 
 static char *socket_path;
 
-/*
- * Formats a message (payload) of the given size and type and sends it to i3 via
- * the given socket file descriptor.
- *
- */
-static void ipc_send_message(int sockfd, uint32_t message_size,
-                             uint32_t message_type, uint8_t *payload) {
-    int buffer_size = strlen(I3_IPC_MAGIC) + sizeof(uint32_t) + sizeof(uint32_t) + message_size;
-    char msg[buffer_size];
-    char *walk = msg;
-
-    strcpy(walk, I3_IPC_MAGIC);
-    walk += strlen(I3_IPC_MAGIC);
-    memcpy(walk, &message_size, sizeof(uint32_t));
-    walk += sizeof(uint32_t);
-    memcpy(walk, &message_type, sizeof(uint32_t));
-    walk += sizeof(uint32_t);
-    memcpy(walk, payload, message_size);
-
-    int sent_bytes = 0;
-    int bytes_to_go = buffer_size;
-    while (sent_bytes < bytes_to_go) {
-        int n = write(sockfd, msg + sent_bytes, bytes_to_go);
-        if (n == -1)
-            err(EXIT_FAILURE, "write() failed");
-
-        sent_bytes += n;
-        bytes_to_go -= n;
-    }
-}
-
-static void ipc_recv_message(int sockfd, uint32_t message_type,
-                             uint32_t *reply_length, uint8_t **reply) {
-    /* Read the message header first */
-    uint32_t to_read = strlen(I3_IPC_MAGIC) + sizeof(uint32_t) + sizeof(uint32_t);
-    char msg[to_read];
-    char *walk = msg;
-
-    uint32_t read_bytes = 0;
-    while (read_bytes < to_read) {
-        int n = read(sockfd, msg + read_bytes, to_read);
-        if (n == -1)
-            err(EXIT_FAILURE, "read() failed");
-        if (n == 0)
-            errx(EXIT_FAILURE, "received EOF instead of reply");
-
-        read_bytes += n;
-        to_read -= n;
-    }
-
-    if (memcmp(walk, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC)) != 0)
-        errx(EXIT_FAILURE, "invalid magic in reply");
-
-    walk += strlen(I3_IPC_MAGIC);
-    *reply_length = *((uint32_t*)walk);
-    walk += sizeof(uint32_t);
-    if (*((uint32_t*)walk) != message_type)
-        errx(EXIT_FAILURE, "unexpected reply type (got %d, expected %d)", *((uint32_t*)walk), message_type);
-    walk += sizeof(uint32_t);
-
-    *reply = malloc(*reply_length);
-    if ((*reply) == NULL)
-        err(EXIT_FAILURE, "malloc() failed");
-
-    to_read = *reply_length;
-    read_bytes = 0;
-    while (read_bytes < to_read) {
-        int n = read(sockfd, *reply + read_bytes, to_read);
-        if (n == -1)
-            err(EXIT_FAILURE, "read() failed");
-
-        read_bytes += n;
-        to_read -= n;
-    }
-}
-
 int main(int argc, char *argv[]) {
     socket_path = getenv("I3SOCK");
     int o, option_index = 0;
@@ -135,7 +62,7 @@ int main(int argc, char *argv[]) {
         if (o == 's') {
             if (socket_path != NULL)
                 free(socket_path);
-            socket_path = strdup(optarg);
+            socket_path = sstrdup(optarg);
         } else if (o == 't') {
             if (strcasecmp(optarg, "command") == 0)
                 message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
@@ -169,15 +96,14 @@ int main(int argc, char *argv[]) {
 
     /* Fall back to the default socket path */
     if (socket_path == NULL)
-        socket_path = strdup("/tmp/i3-ipc.sock");
+        socket_path = sstrdup("/tmp/i3-ipc.sock");
 
     /* Use all arguments, separated by whitespace, as payload.
      * This way, you don’t have to do i3-msg 'mark foo', you can use
      * i3-msg mark foo */
     while (optind < argc) {
         if (!payload) {
-            if (!(payload = strdup(argv[optind])))
-                err(EXIT_FAILURE, "strdup(argv[optind])");
+            payload = sstrdup(argv[optind]);
         } else {
             char *both;
             if (asprintf(&both, "%s %s", payload, argv[optind]) == -1)
@@ -202,14 +128,20 @@ int main(int argc, char *argv[]) {
     if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0)
         err(EXIT_FAILURE, "Could not connect to i3");
 
-    ipc_send_message(sockfd, strlen(payload), message_type, (uint8_t*)payload);
+    if (ipc_send_message(sockfd, strlen(payload), message_type, (uint8_t*)payload) == -1)
+        err(EXIT_FAILURE, "IPC: write()");
 
     if (quiet)
         return 0;
 
     uint32_t reply_length;
     uint8_t *reply;
-    ipc_recv_message(sockfd, message_type, &reply_length, &reply);
+    int ret;
+    if ((ret = ipc_recv_message(sockfd, message_type, &reply_length, &reply)) != 0) {
+        if (ret == -1)
+            err(EXIT_FAILURE, "IPC: read()");
+        exit(1);
+    }
     printf("%.*s\n", reply_length, reply);
     free(reply);
 
