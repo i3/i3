@@ -18,7 +18,7 @@ else
 UNUSED:=$(shell $(MAKE) loglevels.h)
 endif
 
-SUBDIRS=i3-msg i3-input i3-nagbar i3-config-wizard i3bar
+SUBDIRS:=i3-msg i3-input i3-nagbar i3-config-wizard i3bar
 
 # Depend on the specific file (.c for each .o) and on all headers
 src/%.o: src/%.c ${HEADERS}
