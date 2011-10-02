@@ -9,17 +9,17 @@ HEADERS=$(wildcard *.h)
 
 # Depend on the specific file (.c for each .o) and on all headers
 %.o: %.c ${HEADERS}
-	echo "CC $<"
+	echo "[i3-nagbar] CC $<"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 all: i3-nagbar
 
 i3-nagbar: ${FILES}
-	echo "LINK i3-nagbar"
+	echo "[i3-nagbar] LINK i3-nagbar"
 	$(CC) $(LDFLAGS) -o $@ ${FILES} $(LIBS)
 
 install: all
-	echo "INSTALL"
+	echo "[i3-nagbar] INSTALL"
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
 	$(INSTALL) -m 0755 i3-nagbar $(DESTDIR)$(PREFIX)/bin/
 

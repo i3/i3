@@ -22,7 +22,7 @@ SUBDIRS:=i3-msg i3-input i3-nagbar i3-config-wizard i3bar
 
 # Depend on the specific file (.c for each .o) and on all headers
 src/%.o: src/%.c ${HEADERS}
-	echo "CC $<"
+	echo "[i3] CC $<"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="((uint64_t)1 << $(shell awk '/$(shell basename $< .c)/ { print NR; exit 0; }' loglevels.tmp))" -c -o $@ $<
 
 all: i3 subdirs
@@ -39,7 +39,7 @@ subdirs:
 	done
 
 loglevels.h:
-	echo "LOGLEVELS"
+	echo "[i3] LOGLEVELS"
 	for file in $$(ls src/*.c src/*.y src/*.l | grep -v 'cfgparse.\(tab\|yy\).c'); \
 	do \
 		echo $$(basename $$file .c); \
@@ -51,29 +51,29 @@ loglevels.h:
 	echo "};") > include/loglevels.h;
 
 src/cfgparse.yy.o: src/cfgparse.l src/cfgparse.y.o ${HEADERS}
-	echo "LEX $<"
+	echo "[i3] LEX $<"
 	flex -i -o$(@:.o=.c) $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
 
 src/cmdparse.yy.o: src/cmdparse.l src/cmdparse.y.o ${HEADERS}
-	echo "LEX $<"
+	echo "[i3] LEX $<"
 	flex -Pcmdyy -i -o$(@:.o=.c) $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cmdparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
 
 
 src/cfgparse.y.o: src/cfgparse.y ${HEADERS}
-	echo "YACC $<"
+	echo "[i3] YACC $<"
 	bison --debug --verbose -b $(basename $< .y) -d $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.y/ { print NR }' loglevels.tmp))" -c -o $@ $(<:.y=.tab.c)
 
 src/cmdparse.y.o: src/cmdparse.y ${HEADERS}
-	echo "YACC $<"
+	echo "[i3] YACC $<"
 	bison -p cmdyy --debug --verbose -b $(basename $< .y) -d $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cmdparse.y/ { print NR }' loglevels.tmp))" -c -o $@ $(<:.y=.tab.c)
 
 
 install: all
-	echo "INSTALL"
+	echo "[i3] INSTALL"
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(SYSCONFDIR)/i3
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/include/i3
