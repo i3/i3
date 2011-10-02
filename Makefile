@@ -27,9 +27,12 @@ src/%.o: src/%.c ${HEADERS}
 
 all: i3 subdirs
 
-i3: src/cfgparse.y.o src/cfgparse.yy.o src/cmdparse.y.o src/cmdparse.yy.o ${FILES}
-	echo "LINK i3"
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+i3: libi3/libi3.a src/cfgparse.y.o src/cfgparse.yy.o src/cmdparse.y.o src/cmdparse.yy.o ${FILES}
+	echo "[i3] LINK i3"
+	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3/libi3.a,$^) $(LIBS)
+
+libi3/%.a:
+	$(MAKE) -C libi3
 
 subdirs:
 	for dir in $(SUBDIRS); do \
@@ -120,6 +123,7 @@ dist: distclean
 clean:
 	rm -f src/*.o src/*.gcno src/cfgparse.tab.{c,h} src/cfgparse.yy.c src/cfgparse.{output,dot} src/cmdparse.tab.{c,h} src/cmdparse.yy.c src/cmdparse.{output,dot} loglevels.tmp include/loglevels.h
 	(which lcov >/dev/null 2>&1 && lcov -d . --zerocounters) || true
+	$(MAKE) -C libi3 clean
 	$(MAKE) -C docs clean
 	$(MAKE) -C man clean
 	for dir in $(SUBDIRS); do \
