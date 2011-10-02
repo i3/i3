@@ -72,35 +72,6 @@ static bool mkdirp(const char *path) {
     return result;
 }
 
-static void ipc_send_message(int fd, const unsigned char *payload,
-                             int message_type, int message_size) {
-    int buffer_size = strlen("i3-ipc") + sizeof(uint32_t) +
-                      sizeof(uint32_t) + message_size;
-    char msg[buffer_size];
-    char *walk = msg;
-
-    strncpy(walk, "i3-ipc", buffer_size - 1);
-    walk += strlen("i3-ipc");
-    memcpy(walk, &message_size, sizeof(uint32_t));
-    walk += sizeof(uint32_t);
-    memcpy(walk, &message_type, sizeof(uint32_t));
-    walk += sizeof(uint32_t);
-    memcpy(walk, payload, message_size);
-
-    int sent_bytes = 0;
-    int bytes_to_go = buffer_size;
-    while (sent_bytes < bytes_to_go) {
-        int n = write(fd, msg + sent_bytes, bytes_to_go);
-        if (n == -1) {
-            DLOG("write() failed: %s\n", strerror(errno));
-            return;
-        }
-
-        sent_bytes += n;
-        bytes_to_go -= n;
-    }
-}
-
 /*
  * Sends the specified event to all IPC clients which are currently connected
  * and subscribed to this kind of event.
@@ -120,8 +91,7 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
         if (!interested)
             continue;
 
-        ipc_send_message(current->fd, (const unsigned char*)payload,
-                         message_type, strlen(payload));
+        ipc_send_message(current->fd, strlen(payload), message_type, (const uint8_t*)payload);
     }
 }
 
@@ -156,8 +126,7 @@ IPC_HANDLER(command) {
     /* If no reply was provided, we just use the default success message */
     if (reply == NULL)
         reply = "{\"success\":true}";
-    ipc_send_message(fd, (const unsigned char*)reply,
-                     I3_IPC_REPLY_TYPE_COMMAND, strlen(reply));
+    ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_COMMAND, (const uint8_t*)reply);
 
     FREE(save_reply);
 }
@@ -339,7 +308,7 @@ IPC_HANDLER(tree) {
 #endif
     y(get_buf, &payload, &length);
 
-    ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_TREE, length);
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_TREE, payload);
     y(free);
 }
 
@@ -412,7 +381,7 @@ IPC_HANDLER(get_workspaces) {
 #endif
     y(get_buf, &payload, &length);
 
-    ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_WORKSPACES, length);
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_WORKSPACES, payload);
     y(free);
 }
 
@@ -470,7 +439,7 @@ IPC_HANDLER(get_outputs) {
 #endif
     y(get_buf, &payload, &length);
 
-    ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_OUTPUTS, length);
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_OUTPUTS, payload);
     y(free);
 }
 
@@ -502,7 +471,7 @@ IPC_HANDLER(get_marks) {
 #endif
     y(get_buf, &payload, &length);
 
-    ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_MARKS, length);
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_MARKS, payload);
     y(free);
 }
 
@@ -580,15 +549,13 @@ IPC_HANDLER(subscribe) {
         yajl_free_error(p, err);
 
         const char *reply = "{\"success\":false}";
-        ipc_send_message(fd, (const unsigned char*)reply,
-                         I3_IPC_REPLY_TYPE_SUBSCRIBE, strlen(reply));
+        ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t*)reply);
         yajl_free(p);
         return;
     }
     yajl_free(p);
     const char *reply = "{\"success\":true}";
-    ipc_send_message(fd, (const unsigned char*)reply,
-                     I3_IPC_REPLY_TYPE_SUBSCRIBE, strlen(reply));
+    ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t*)reply);
 }
 
 /* The index of each callback function corresponds to the numeric
