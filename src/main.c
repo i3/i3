@@ -266,16 +266,21 @@ int main(int argc, char *argv[]) {
             default:
                 fprintf(stderr, "Usage: %s [-c configfile] [-d loglevel] [-a] [-v] [-V] [-C]\n", argv[0]);
                 fprintf(stderr, "\n");
-                fprintf(stderr, "-a: disable autostart\n");
-                fprintf(stderr, "-L <layoutfile>: load the layout from <layoutfile>\n");
-                fprintf(stderr, "-v: display version and exit\n");
-                fprintf(stderr, "-V: enable verbose mode\n");
-                fprintf(stderr, "-d <loglevel>: enable debug loglevel <loglevel>\n");
-                fprintf(stderr, "-c <configfile>: use the provided configfile instead\n");
-                fprintf(stderr, "-C: check configuration file and exit\n");
-                fprintf(stderr, "--force-xinerama: Use Xinerama instead of RandR. This "
-                                "option should only be used if you are stuck with the "
-                                "nvidia closed source driver which does not support RandR.\n");
+                fprintf(stderr, "\t-a          disable autostart ('exec' lines in config)\n");
+                fprintf(stderr, "\t-c <file>   use the provided configfile instead\n");
+                fprintf(stderr, "\t-C          validate configuration file and exit\n");
+                fprintf(stderr, "\t-d <level>  enable debug output with the specified loglevel\n");
+                fprintf(stderr, "\t-L <file>   path to the serialized layout during restarts\n");
+                fprintf(stderr, "\t-v          display version and exit\n");
+                fprintf(stderr, "\t-V          enable verbose mode\n");
+                fprintf(stderr, "\n");
+                fprintf(stderr, "\t--force-xinerama\n"
+                                "\tUse Xinerama instead of RandR.\n"
+                                "\tThis option should only be used if you are stuck with the\n"
+                                "\tnvidia closed source driver which does not support RandR.\n");
+                fprintf(stderr, "\n");
+                fprintf(stderr, "\t--get-socketpath\n"
+                                "\tRetrieve the i3 IPC socket path from X11, print it, then exit.\n");
                 exit(EXIT_FAILURE);
         }
     }
