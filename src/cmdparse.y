@@ -440,6 +440,24 @@ focus:
         int count = 0;
         TAILQ_FOREACH(current, &owindows, owindows) {
             Con *ws = con_get_workspace(current->con);
+
+            /* If the container is not on the current workspace,
+             * workspace_show() will switch to a different workspace and (if
+             * enabled) trigger a mouse pointer warp to the currently focused
+             * container (!) on the target workspace.
+             *
+             * Therefore, before calling workspace_show(), we make sure that
+             * 'current' will be focused on the workspace. However, we cannot
+             * just con_focus(current) because then the pointer will not be
+             * warped at all (the code thinks we are already there).
+             *
+             * So we focus 'current' to make it the currently focused window of
+             * the target workspace, then revert focus. */
+            Con *currently_focused = focused;
+            con_focus(current->con);
+            con_focus(currently_focused);
+
+            /* Now switch to the workspace, then focus */
             workspace_show(ws);
             LOG("focusing %p / %s\n", current->con, current->con->name);
             con_focus(current->con);
