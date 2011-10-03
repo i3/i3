@@ -29,7 +29,7 @@ Put i3bar in dockmode. This will reserve some space for it, so it does not overl
 You can specify either *bottom* (default) or *top* as 'pos'.
 
 *-f, --font* 'font'::
-Specifies a 'X-core-font' to use. You can choose one with *xfontsel*(1). Defaults to '-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1'.
+Specifies a 'X-core-font' to use. You can choose one with *xfontsel*(1). Defaults to '+++-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1+++'.
 
 *-V, --verbose*::
 Be (very) verbose with the debug-output. If not set, only errors are reported to 'stderr'
