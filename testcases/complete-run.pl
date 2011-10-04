@@ -18,7 +18,6 @@ use File::Temp qw(tempfile tempdir);
 use v5.10;
 use Data::Dumper;
 use Cwd qw(abs_path);
-use Proc::Background;
 use TAP::Harness;
 use TAP::Parser;
 use TAP::Parser::Aggregator;
