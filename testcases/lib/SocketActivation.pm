@@ -56,8 +56,12 @@ sub activate_i3 {
         $ENV{DISPLAY} = $args{display};
         $^F = 3;
 
-        POSIX::close(3);
-        POSIX::dup2(fileno($socket), 3);
+        # If the socket does not use file descriptor 3 by chance already, we
+        # close fd 3 and dup2() the socket to 3.
+        if (fileno($socket) != 3) {
+            POSIX::close(3);
+            POSIX::dup2(fileno($socket), 3);
+        }
 
         # now execute i3
         my $i3cmd = abs_path("../i3") . " -V -d all --disable-signalhandler";
