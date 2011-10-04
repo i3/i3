@@ -104,9 +104,10 @@ sub wait_for_event {
     };
 
     # Trigger timeout after $timeout seconds (can be fractional)
-    my $timeout = AE::timer $timeout, 0, sub { warn "timeout"; $cv->send(0) };
+    my $t = AE::timer $timeout, 0, sub { warn "timeout ($timeout secs)"; $cv->send(0) };
 
     my $result = $cv->recv;
+    undef $t;
     return $result;
 }
 
