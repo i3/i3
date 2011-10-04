@@ -54,6 +54,8 @@ sub activate_i3 {
         $ENV{LISTEN_PID} = $$;
         $ENV{LISTEN_FDS} = 1;
         $ENV{DISPLAY} = $args{display};
+        # Only pass file descriptors 0 (stdin), 1 (stdout), 2 (stderr) and
+        # 3 (socket) to the child.
         $^F = 3;
 
         # If the socket does not use file descriptor 3 by chance already, we
@@ -63,9 +65,15 @@ sub activate_i3 {
             POSIX::dup2(fileno($socket), 3);
         }
 
-        # now execute i3
+        # Construct the command to launch i3. Use maximum debug level, disable
+        # the interactive signalhandler to make it crash immediately instead.
         my $i3cmd = abs_path("../i3") . " -V -d all --disable-signalhandler";
-        my $cmd = "exec $i3cmd -c $args{configfile} >$args{logpath} 2>&1";
+
+        # Append to $args{logpath} instead of overwriting because i3 might be
+        # run multiple times in one testcase.
+        my $cmd = "exec $i3cmd -c $args{configfile} >>$args{logpath} 2>&1";
+
+        # We need to use the shell due to using output redirections.
         exec "/bin/sh", '-c', $cmd;
 
         # if we are still here, i3 could not be found or exec failed. bail out.
