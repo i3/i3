@@ -16,7 +16,6 @@ use AnyEvent;
 use IO::Scalar; # not in core :\
 use File::Temp qw(tempfile tempdir);
 use v5.10;
-use DateTime;
 use Data::Dumper;
 use Cwd qw(abs_path);
 use Proc::Background;
@@ -86,7 +85,7 @@ my @testfiles = @ARGV;
 
 # 2: create an output directory for this test-run
 my $outdir = "testsuite-";
-$outdir .= DateTime->now->strftime("%Y-%m-%d-%H-%M-%S-");
+$outdir .= POSIX::strftime("%Y-%m-%d-%H-%M-%S-", localtime());
 $outdir .= `git describe --tags`;
 chomp($outdir);
 mkdir($outdir) or die "Could not create $outdir";
