@@ -19,7 +19,7 @@ my $config = <<EOT;
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
-my $process = launch_with_config($config);
+my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -31,7 +31,7 @@ my @content = @{get_ws_content($tmp)};
 ok(@content == 1, 'one container opened');
 is($content[0]->{border}, 'normal', 'border normal by default');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 #####################################################################
 # 2: check that new tiling windows start with '1pixel' border when
@@ -45,7 +45,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 new_window 1pixel
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -57,7 +57,7 @@ $first = open_window($x);
 ok(@content == 1, 'one container opened');
 is($content[0]->{border}, '1pixel', 'border normal by default');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 #####################################################################
 # 3: check that new floating windows start with 'normal' border unless
@@ -69,7 +69,7 @@ $config = <<EOT;
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -83,7 +83,7 @@ ok(@floating == 1, 'one floating container opened');
 my $floatingcon = $floating[0];
 is($floatingcon->{nodes}->[0]->{border}, 'normal', 'border normal by default');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 #####################################################################
 # 4: check that new floating windows start with '1pixel' border when
@@ -97,7 +97,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 new_float 1pixel
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -111,6 +111,6 @@ ok(@floating == 1, 'one floating container opened');
 $floatingcon = $floating[0];
 is($floatingcon->{nodes}->[0]->{border}, '1pixel', 'border normal by default');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 done_testing;

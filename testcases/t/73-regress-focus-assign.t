@@ -42,7 +42,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 assign "special" → targetws
 EOT
 
-my $process = launch_with_config($config);
+my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -88,7 +88,7 @@ ok(@{get_ws_content($tmp)} == 0, 'special window not on current workspace');
 ok(@{get_ws_content('targetws')} == 1, 'special window on targetws');
 ok(get_ws($tmp)->{focused}, 'current workspace still focused');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 $window->destroy;
 

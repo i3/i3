@@ -24,7 +24,7 @@ for_window [class="borderless"] border none
 for_window [title="special borderless title"] border none
 EOT
 
-my $process = launch_with_config($config);
+my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -93,7 +93,7 @@ wait_for_unmap $x;
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 ##############################################################
 # 2: match on the title, check if for_window is really executed
@@ -107,7 +107,7 @@ for_window [class="borderless"] border none
 for_window [title="special borderless title"] border none
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -152,7 +152,7 @@ wait_for_unmap $x;
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 ##############################################################
 # 3: match on the title, set border style *and* a mark
@@ -167,7 +167,7 @@ for_window [title="special borderless title"] border none
 for_window [title="special mark title"] border none, mark bleh
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -199,7 +199,7 @@ cmd qq|[con_mark="bleh"] focus|;
 @content = @{get_ws_content($tmp)};
 ok($content[0]->{focused}, 'first node focused');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 ##############################################################
 # 4: multiple criteria for the for_window command
@@ -211,7 +211,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 for_window [class="borderless" title="usethis"] border none
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -233,11 +233,14 @@ wait_for_map $x;
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border');
 
-$window->unmap;
+cmd 'kill';
 wait_for_unmap $x;
+$window->destroy;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no nodes on this workspace now');
+
+$window->_create;
 
 set_wm_class($window->id, 'borderless', 'borderless');
 $window->name('notthis');
@@ -249,7 +252,7 @@ cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'no border');
 
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 ##############################################################
 # 5: check that a class criterion does not match the instance
@@ -261,7 +264,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 for_window [class="foo"] border 1pixel
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -283,7 +286,7 @@ wait_for_map $x;
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'normal border, not matched');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 ##############################################################
 # 6: check that the 'instance' criterion works
@@ -296,7 +299,7 @@ for_window [class="foo"] border 1pixel
 for_window [instance="foo"] border none
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -318,7 +321,7 @@ wait_for_map $x;
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 ##############################################################
 # 7: check that invalid criteria don’t end up matching all windows
@@ -333,7 +336,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 for_window [id="asdf"] border none
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -355,7 +358,7 @@ wait_for_map $x;
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'normal border');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 ##############################################################
 # 8: check that the role criterion works properly
@@ -370,7 +373,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 for_window [window_role="i3test"] border none
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -403,7 +406,7 @@ wait_for_map $x;
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border (window_role)');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 ##############################################################
 # 9: another test for the window_role, but this time it changes
@@ -419,7 +422,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 for_window [window_role="i3test"] border none
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -460,7 +463,7 @@ sync_with_i3 $x;
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border (window_role 2)');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 
 done_testing;
