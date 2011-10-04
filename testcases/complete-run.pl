@@ -33,15 +33,6 @@ use IO::Socket::UNIX; # core
 use POSIX; # core
 use AnyEvent::Handle;
 
-# open a file so that we get file descriptor 3. we will later close it in the
-# child and dup() the listening socket file descriptor to 3 to pass it to i3
-open(my $reserved, '<', '/dev/null');
-if (fileno($reserved) != 3) {
-    warn "Socket file descriptor is not 3.";
-    warn "Please don't start this script within a subshell of vim or something.";
-    exit 1;
-}
-
 # install a dummy CHLD handler to overwrite the CHLD handler of AnyEvent / EV
 # XXX: we could maybe also use a different loop than the default loop in EV?
 $SIG{CHLD} = sub {
@@ -165,7 +156,7 @@ sub take_job {
             $ENV{DISPLAY} = $display;
             $^F = 3;
 
-            close($reserved);
+            POSIX::close(3);
             POSIX::dup2(fileno($socket), 3);
 
             # now execute i3
