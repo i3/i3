@@ -11,25 +11,26 @@
 
 use strict;
 use warnings;
-use EV;
-use AnyEvent;
-use IO::Scalar; # not in core :\
-use File::Temp qw(tempfile tempdir);
 use v5.10;
-use Data::Dumper;
+# the following are modules which ship with Perl (>= 5.10):
 use Cwd qw(abs_path);
+use File::Basename qw(basename);
+use File::Temp qw(tempfile tempdir);
+use Getopt::Long;
+use IO::Socket::UNIX;
+use POSIX;
+use Time::HiRes qw(sleep gettimeofday tv_interval);
 use TAP::Harness;
 use TAP::Parser;
 use TAP::Parser::Aggregator;
-use File::Basename qw(basename);
-use AnyEvent::I3 qw(:all);
-use Try::Tiny;
-use Getopt::Long;
-use Time::HiRes qw(sleep gettimeofday tv_interval);
-use X11::XCB;
-use IO::Socket::UNIX; # core
-use POSIX; # core
+# the following modules are not shipped with Perl
+use EV;
+use AnyEvent;
 use AnyEvent::Handle;
+use AnyEvent::I3 qw(:all);
+use IO::Scalar; # not in core :\
+use Try::Tiny; # not in core
+use X11::XCB;
 
 # install a dummy CHLD handler to overwrite the CHLD handler of AnyEvent / EV
 # XXX: we could maybe also use a different loop than the default loop in EV?
