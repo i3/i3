@@ -14,6 +14,7 @@ use Time::HiRes qw(sleep);
 use Try::Tiny;
 use Cwd qw(abs_path);
 use Proc::Background;
+use SocketActivation;
 
 use v5.10;
 
@@ -103,9 +104,10 @@ sub wait_for_event {
     };
 
     # Trigger timeout after $timeout seconds (can be fractional)
-    my $timeout = AE::timer $timeout, 0, sub { warn "timeout"; $cv->send(0) };
+    my $t = AE::timer $timeout, 0, sub { warn "timeout ($timeout secs)"; $cv->send(0) };
 
     my $result = $cv->recv;
+    undef $t;
     return $result;
 }
 
@@ -113,7 +115,7 @@ sub wait_for_event {
 # make sure to include 'structure_notify' in the window’s event_mask attribute
 sub wait_for_map {
     my ($x) = @_;
-    wait_for_event $x, 1, sub { $_[0]->{response_type} == MAP_NOTIFY };
+    wait_for_event $x, 2, sub { $_[0]->{response_type} == MAP_NOTIFY };
 }
 
 # Wrapper around wait_for_event which waits for UNMAP_NOTIFY. Also calls
@@ -121,7 +123,7 @@ sub wait_for_map {
 # event.
 sub wait_for_unmap {
     my ($x) = @_;
-    wait_for_event $x, 1, sub { $_[0]->{response_type} == UNMAP_NOTIFY };
+    wait_for_event $x, 2, sub { $_[0]->{response_type} == UNMAP_NOTIFY };
     sync_with_i3($x);
 }
 
@@ -323,7 +325,7 @@ sub sync_with_i3 {
 
         $_sync_window->map;
 
-        wait_for_event $x, 0.5, sub { $_[0]->{response_type} == MAP_NOTIFY };
+        wait_for_event $x, 2, sub { $_[0]->{response_type} == MAP_NOTIFY };
     }
 
     my $root = $x->get_root_window();
@@ -349,7 +351,7 @@ sub sync_with_i3 {
     $x->send_event(0, $root, EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
 
     # now wait until the reply is here
-    return wait_for_event $x, 1, sub {
+    return wait_for_event $x, 2, sub {
         my ($event) = @_;
         # TODO: const
         return 0 unless $event->{response_type} == 161;
@@ -414,7 +416,9 @@ sub get_socket_path {
 # complete-run.pl that it should not create an instance of i3
 #
 sub launch_with_config {
-    my ($config) = @_;
+    my ($config, $dont_add_socket_path) = @_;
+
+    $dont_add_socket_path //= 0;
 
     if (!defined($tmp_socket_path)) {
         $tmp_socket_path = File::Temp::tempnam('/tmp', 'i3-test-socket-');
@@ -422,20 +426,25 @@ sub launch_with_config {
 
     my ($fh, $tmpfile) = tempfile('i3-test-config-XXXXX', UNLINK => 1);
     say $fh $config;
-    say $fh "ipc-socket $tmp_socket_path";
+    say $fh "ipc-socket $tmp_socket_path" unless $dont_add_socket_path;
     close($fh);
 
-    # Use $ENV{LOGPATH}, gets set in complete-run.pl. We append instead of
-    # overwrite because there might be multiple instances of i3 running during
-    # one test case.
-    my $i3cmd = "exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >>$ENV{LOGPATH} 2>&1";
-    my $process = Proc::Background->new($i3cmd);
-    sleep 1.25;
+    my $cv = AnyEvent->condvar;
+    my $pid = activate_i3(
+        unix_socket_path => "$tmp_socket_path-activation",
+        display => $ENV{DISPLAY},
+        configfile => $tmpfile,
+        logpath => $ENV{LOGPATH},
+        cv => $cv,
+    );
+
+    # blockingly wait until i3 is ready
+    $cv->recv;
 
     # force update of the cached socket path in lib/i3test
     get_socket_path(0);
 
-    return $process;
+    return $pid;
 }
 
 1

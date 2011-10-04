@@ -11,36 +11,29 @@
 
 use strict;
 use warnings;
-use EV;
-use AnyEvent;
-use IO::Scalar; # not in core :\
-use File::Temp qw(tempfile tempdir);
 use v5.10;
-use DateTime;
-use Data::Dumper;
+# the following are modules which ship with Perl (>= 5.10):
 use Cwd qw(abs_path);
-use Proc::Background;
+use File::Basename qw(basename);
+use File::Temp qw(tempfile tempdir);
+use Getopt::Long;
+use IO::Socket::UNIX;
+use POSIX;
+use Time::HiRes qw(sleep gettimeofday tv_interval);
 use TAP::Harness;
 use TAP::Parser;
 use TAP::Parser::Aggregator;
-use File::Basename qw(basename);
-use AnyEvent::I3 qw(:all);
-use Try::Tiny;
-use Getopt::Long;
-use Time::HiRes qw(sleep gettimeofday tv_interval);
-use X11::XCB;
-use IO::Socket::UNIX; # core
-use POSIX; # core
+# these are shipped with the testsuite
+use lib qw(lib);
+use SocketActivation;
+# the following modules are not shipped with Perl
+use EV;
+use AnyEvent;
 use AnyEvent::Handle;
-
-# open a file so that we get file descriptor 3. we will later close it in the
-# child and dup() the listening socket file descriptor to 3 to pass it to i3
-open(my $reserved, '<', '/dev/null');
-if (fileno($reserved) != 3) {
-    warn "Socket file descriptor is not 3.";
-    warn "Please don't start this script within a subshell of vim or something.";
-    exit 1;
-}
+use AnyEvent::I3 qw(:all);
+use IO::Scalar; # not in core :\
+use Try::Tiny; # not in core
+use X11::XCB;
 
 # install a dummy CHLD handler to overwrite the CHLD handler of AnyEvent / EV
 # XXX: we could maybe also use a different loop than the default loop in EV?
@@ -95,7 +88,7 @@ my @testfiles = @ARGV;
 
 # 2: create an output directory for this test-run
 my $outdir = "testsuite-";
-$outdir .= DateTime->now->strftime("%Y-%m-%d-%H-%M-%S-");
+$outdir .= POSIX::strftime("%Y-%m-%d-%H-%M-%S-", localtime());
 $outdir .= `git describe --tags`;
 chomp($outdir);
 mkdir($outdir) or die "Could not create $outdir";
@@ -141,73 +134,23 @@ sub take_job {
 
     my $activate_cv = AnyEvent->condvar;
     my $time_before_start = [gettimeofday];
-    my $start_i3 = sub {
-        # remove the old unix socket
-        unlink("/tmp/nested-$display-activation");
 
-        # pass all file descriptors up to three to the children.
-        # we need to set this flag before opening the socket.
-        open(my $fdtest, '<', '/dev/null');
-        $^F = fileno($fdtest);
-        close($fdtest);
-        my $socket = IO::Socket::UNIX->new(
-            Listen => 1,
-            Local => "/tmp/nested-$display-activation",
+    my $pid;
+    if (!$dont_start) {
+        $pid = activate_i3(
+            unix_socket_path => "/tmp/nested-$display-activation",
+            display => $display,
+            configfile => $tmpfile,
+            logpath => $logpath,
+            cv => $activate_cv
         );
-
-        my $pid = fork;
-        if (!defined($pid)) {
-            die "could not fork()";
-        }
-        if ($pid == 0) {
-            $ENV{LISTEN_PID} = $$;
-            $ENV{LISTEN_FDS} = 1;
-            $ENV{DISPLAY} = $display;
-            $^F = 3;
-
-            close($reserved);
-            POSIX::dup2(fileno($socket), 3);
-
-            # now execute i3
-            my $i3cmd = abs_path("../i3") . " -V -d all --disable-signalhandler";
-            my $cmd = "exec $i3cmd -c $tmpfile >$logpath 2>&1";
-            exec "/bin/sh", '-c', $cmd;
-
-            # if we are still here, i3 could not be found or exec failed. bail out.
-            exit 1;
-        }
 
         my $child_watcher;
         $child_watcher = AnyEvent->child(pid => $pid, cb => sub {
             say "child died. pid = $pid";
             undef $child_watcher;
         });
-
-        # close the socket, the child process should be the only one which keeps a file
-        # descriptor on the listening socket.
-        $socket->close;
-
-        # We now connect (will succeed immediately) and send a request afterwards.
-        # As soon as the reply is there, i3 is considered ready.
-        my $cl = IO::Socket::UNIX->new(Peer => "/tmp/nested-$display-activation");
-        my $hdl;
-        $hdl = AnyEvent::Handle->new(fh => $cl, on_error => sub { $activate_cv->send(0) });
-
-        # send a get_tree message without payload
-        $hdl->push_write('i3-ipc' . pack("LL", 0, 4));
-
-        # wait for the reply
-        $hdl->push_read(chunk => 1, => sub {
-            my ($h, $line) = @_;
-            $activate_cv->send(1);
-            undef $hdl;
-        });
-
-        return $pid;
-    };
-
-    my $pid;
-    $pid = $start_i3->() unless $dont_start;
+    }
 
     my $kill_i3 = sub {
         # Don’t bother killing i3 when we haven’t started it
@@ -245,7 +188,7 @@ sub take_job {
 
         my $output;
         my $parser = TAP::Parser->new({
-            exec => [ 'sh', '-c', qq|DISPLAY=$display LOGPATH="$logpath" /usr/bin/perl -It/lib $test| ],
+            exec => [ 'sh', '-c', qq|DISPLAY=$display LOGPATH="$logpath" /usr/bin/perl -Ilib $test| ],
             spool => IO::Scalar->new(\$output),
             merge => 1,
         });

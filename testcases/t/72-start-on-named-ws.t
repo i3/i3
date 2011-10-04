@@ -19,12 +19,12 @@ my $config = <<EOT;
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
-my $process = launch_with_config($config);
+my $pid = launch_with_config($config);
 
 my @names = @{get_workspace_names()};
 cmp_deeply(\@names, [ '1' ], 'i3 starts on workspace 1 without any configuration');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 ##############################################################
 # 2: with named workspaces, i3 should start on the first named one
@@ -37,12 +37,12 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 bindsym Mod1+1 workspace foobar
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 my @names = @{get_workspace_names()};
 cmp_deeply(\@names, [ 'foobar' ], 'i3 starts on named workspace foobar');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 ##############################################################
 # 3: the same test as 2, but with a quoted workspace name
@@ -55,11 +55,11 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 bindsym Mod1+1 workspace "foobar"
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 my @names = @{get_workspace_names()};
 cmp_deeply(\@names, [ 'foobar' ], 'i3 starts on named workspace foobar');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 done_testing;

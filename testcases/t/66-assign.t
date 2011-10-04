@@ -40,7 +40,7 @@ my $config = <<EOT;
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
-my $process = launch_with_config($config);
+my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -61,7 +61,7 @@ wait_for_map $x;
 
 ok(@{get_ws_content($tmp)} == 1, 'special window got managed to current (random) workspace');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 $window->destroy;
 
@@ -76,7 +76,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 assign "special" → targetws
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -102,7 +102,7 @@ ok("targetws" ~~ @{get_workspace_names()}, 'targetws exists');
 
 $window->destroy;
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 sleep 0.25;
 
@@ -111,7 +111,7 @@ sleep 0.25;
 # already, next to the existing node.
 #####################################################################
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 # initialize the target workspace, then go to a fresh one
 ok(!("targetws" ~~ @{get_workspace_names()}), 'targetws does not exist yet');
@@ -144,7 +144,7 @@ sync_with_i3 $x;
 ok(@{get_ws_content($tmp)} == 0, 'still no containers');
 ok(@{get_ws_content('targetws')} == 2, 'two containers on targetws');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 #####################################################################
 # start a window and see that it gets assigned to a workspace which has content
@@ -157,7 +157,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 assign "special" → ~
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -184,7 +184,7 @@ ok(@{$content->{floating_nodes}} == 1, 'one floating con');
 
 $window->destroy;
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 sleep 0.25;
 
@@ -198,7 +198,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 assign "special" → ~
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -225,7 +225,7 @@ ok(@{$content->{floating_nodes}} == 1, 'one floating con');
 
 $window->destroy;
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 sleep 0.25;
 
@@ -241,7 +241,11 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 assign "special" → ~
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
+
+# TODO: replace this with checking the process hierarchy
+# XXX: give i3-nagbar some time to start up
+sleep 1;
 
 $tmp = fresh_workspace;
 
@@ -275,7 +279,7 @@ $window->destroy;
 
 does_i3_live;
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 sleep 0.25;
 

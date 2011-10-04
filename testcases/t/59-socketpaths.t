@@ -18,26 +18,21 @@ my $i3_path = abs_path("../i3");
 # default case: socket will be created in /tmp/i3-<username>/ipc-socket.<pid>
 #####################################################################
 
-my ($fh, $tmpfile) = tempfile('/tmp/i3-test-config.XXXXXX', UNLINK => 1);
-say $fh "# i3 config file (v4)";
-say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-close($fh);
+my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+EOT
 
-diag("Starting i3");
-my $i3cmd = "unset XDG_RUNTIME_DIR; exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
-my $process = Proc::Background->new($i3cmd);
-sleep 1;
-
-diag("pid = " . $process->pid);
+# ensure XDG_RUNTIME_DIR is not set
+delete $ENV{XDG_RUNTIME_DIR};
+my $pid = launch_with_config($config, 1);
 
 my $folder = "/tmp/i3-" . getpwuid(getuid());
 ok(-d $folder, "folder $folder exists");
-my $socketpath = "$folder/ipc-socket." . $process->pid;
+my $socketpath = "$folder/ipc-socket." . $pid;
 ok(-S $socketpath, "file $socketpath exists and is a socket");
 
-exit_gracefully($process->pid, $socketpath);
-
-sleep 0.25;
+exit_gracefully($pid);
 
 #####################################################################
 # XDG_RUNTIME_DIR case: socket gets created in $XDG_RUNTIME_DIR/i3/ipc-socket.<pid>
@@ -47,17 +42,15 @@ my $rtdir = tempdir(CLEANUP => 1);
 
 ok(! -e "$rtdir/i3", "$rtdir/i3 does not exist yet");
 
-$i3cmd = "export XDG_RUNTIME_DIR=$rtdir; exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
-$process = Proc::Background->new($i3cmd);
-sleep 1;
+$ENV{XDG_RUNTIME_DIR} = $rtdir;
+
+$pid = launch_with_config($config, 1);
 
 ok(-d "$rtdir/i3", "$rtdir/i3 exists and is a directory");
-$socketpath = "$rtdir/i3/ipc-socket." . $process->pid;
+$socketpath = "$rtdir/i3/ipc-socket." . $pid;
 ok(-S $socketpath, "file $socketpath exists and is a socket");
 
-exit_gracefully($process->pid, $socketpath);
-
-sleep 0.25;
+exit_gracefully($pid);
 
 #####################################################################
 # configuration file case: socket gets placed whereever we specify
@@ -67,18 +60,16 @@ my $tmpdir = tempdir(CLEANUP => 1);
 $socketpath = $tmpdir . "/config.sock";
 ok(! -e $socketpath, "$socketpath does not exist yet");
 
-($fh, $tmpfile) = tempfile('/tmp/i3-test-config.XXXXXX', UNLINK => 1);
-say $fh "# i3 config file (v4)";
-say $fh "font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-say $fh "ipc-socket $socketpath";
-close($fh);
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+ipc-socket $socketpath
+EOT
 
-$i3cmd = "export XDG_RUNTIME_DIR=$rtdir; exec " . abs_path("../i3") . " -V -d all --disable-signalhandler -c $tmpfile >/dev/null 2>/dev/null";
-$process = Proc::Background->new($i3cmd);
-sleep 1;
+$pid = launch_with_config($config, 1);
 
 ok(-S $socketpath, "file $socketpath exists and is a socket");
 
-exit_gracefully($process->pid, $socketpath);
+exit_gracefully($pid);
 
 done_testing;

@@ -21,7 +21,7 @@ my $config = <<EOT;
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
-my $process = launch_with_config($config);
+my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -37,7 +37,7 @@ ok(@{get_ws_content($tmp)} == 2, 'two containers opened');
 isnt($content[0]->{layout}, 'stacked', 'layout not stacked');
 isnt($content[1]->{layout}, 'stacked', 'layout not stacked');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 #####################################################################
 # 2: set workspace_layout stacked, check that when opening two cons,
@@ -50,7 +50,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 workspace_layout stacked
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -122,6 +122,6 @@ is($content[1]->{layout}, 'stacked', 'layout stacked');
 is(@content, 1, 'one con on target workspace');
 is($content[0]->{layout}, 'stacked', 'layout stacked');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 done_testing;

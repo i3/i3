@@ -19,7 +19,7 @@ my $config = <<EOT;
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
-my $process = launch_with_config($config);
+my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -48,7 +48,7 @@ is($x->input_focus, $second->id, 'second window focused');
 cmd 'focus right';
 is($x->input_focus, $third->id, 'third window focused');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 #####################################################################
 # 2: test the wrapping behaviour with force_focus_wrapping
@@ -60,7 +60,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 force_focus_wrapping true
 EOT
 
-$process = launch_with_config($config);
+$pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
@@ -92,6 +92,6 @@ is($x->input_focus, $second->id, 'second window focused');
 cmd 'focus right';
 is($x->input_focus, $first->id, 'first window focused');
 
-exit_gracefully($process->pid);
+exit_gracefully($pid);
 
 done_testing;
