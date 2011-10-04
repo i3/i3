@@ -188,7 +188,7 @@ sub take_job {
 
         my $output;
         my $parser = TAP::Parser->new({
-            exec => [ 'sh', '-c', qq|DISPLAY=$display LOGPATH="$logpath" /usr/bin/perl -It/lib -Ilib $test| ],
+            exec => [ 'sh', '-c', qq|DISPLAY=$display LOGPATH="$logpath" /usr/bin/perl -Ilib $test| ],
             spool => IO::Scalar->new(\$output),
             merge => 1,
         });
