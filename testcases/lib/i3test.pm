@@ -9,7 +9,6 @@ use X11::XCB qw(:all);
 use AnyEvent::I3;
 use EV;
 use List::Util qw(first);
-use List::MoreUtils qw(lastval);
 use Time::HiRes qw(sleep);
 use Cwd qw(abs_path);
 use SocketActivation;
@@ -267,7 +266,8 @@ sub get_dock_clients {
             my $first = first { $_->{type} == 5 } @{$output->{nodes}};
             @docked = (@docked, @{$first->{nodes}});
         } elsif ($which eq 'bottom') {
-            my $last = lastval { $_->{type} == 5 } @{$output->{nodes}};
+            my @matching = grep { $_->{type} == 5 } @{$output->{nodes}};
+            my $last = $matching[-1];
             @docked = (@docked, @{$last->{nodes}});
         }
     }
