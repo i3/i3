@@ -31,7 +31,6 @@ use EV;
 use AnyEvent;
 use AnyEvent::Handle;
 use AnyEvent::I3 qw(:all);
-use IO::Scalar; # not in core :\
 use Try::Tiny; # not in core
 use X11::XCB;
 
@@ -187,9 +186,10 @@ sub take_job {
         say "[$display] Running $test with logfile $logpath";
 
         my $output;
+        open(my $spool, '>', \$output);
         my $parser = TAP::Parser->new({
             exec => [ 'sh', '-c', qq|DISPLAY=$display LOGPATH="$logpath" /usr/bin/perl -Ilib $test| ],
-            spool => IO::Scalar->new(\$output),
+            spool => $spool,
             merge => 1,
         });
 
