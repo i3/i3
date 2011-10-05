@@ -27,16 +27,18 @@ use TAP::Parser::Aggregator;
 use lib qw(lib);
 use SocketActivation;
 # the following modules are not shipped with Perl
-use EV;
 use AnyEvent;
 use AnyEvent::Handle;
 use AnyEvent::I3 qw(:all);
 use X11::XCB;
 
-# Install a dummy CHLD handler to overwrite the CHLD handler of AnyEvent / EV.
+# We actually use AnyEvent to make sure it loads an event loop implementation.
+# Afterwards, we overwrite SIGCHLD:
+my $cv = AnyEvent->condvar;
+
+# Install a dummy CHLD handler to overwrite the CHLD handler of AnyEvent.
 # AnyEvent’s handler wait()s for every child which conflicts with TAP (TAP
 # needs to get the exit status to determine if a test is successful).
-# XXX: we could maybe also use a different loop than the default loop in EV?
 $SIG{CHLD} = sub {
 };
 
@@ -102,8 +104,6 @@ my $harness = TAP::Harness->new({ });
 
 my $aggregator = TAP::Parser::Aggregator->new();
 $aggregator->start();
-
-my $cv = AnyEvent->condvar;
 
 # We start tests concurrently: For each display, one test gets started. Every
 # test starts another test after completing.
