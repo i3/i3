@@ -11,7 +11,6 @@ use EV;
 use List::Util qw(first);
 use List::MoreUtils qw(lastval);
 use Time::HiRes qw(sleep);
-use Try::Tiny;
 use Cwd qw(abs_path);
 use SocketActivation;
 
@@ -374,7 +373,7 @@ sub exit_gracefully {
     $socketpath ||= get_socket_path();
 
     my $exited = 0;
-    try {
+    eval {
         say "Exiting i3 cleanly...";
         i3($socketpath)->command('exit')->recv;
         $exited = 1;

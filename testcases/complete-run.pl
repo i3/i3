@@ -31,7 +31,6 @@ use EV;
 use AnyEvent;
 use AnyEvent::Handle;
 use AnyEvent::I3 qw(:all);
-use Try::Tiny; # not in core
 use X11::XCB;
 
 # install a dummy CHLD handler to overwrite the CHLD handler of AnyEvent / EV
@@ -159,7 +158,7 @@ sub take_job {
         # files are not written) and fallback to killing it
         if ($coverage_testing) {
             my $exited = 0;
-            try {
+            eval {
                 say "Exiting i3 cleanly...";
                 i3("/tmp/nested-$display")->command('exit')->recv;
                 $exited = 1;
