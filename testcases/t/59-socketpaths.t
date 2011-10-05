@@ -5,14 +5,9 @@
 # Tests if the various ipc_socket_path options are correctly handled
 #
 use i3test;
-use Cwd qw(abs_path);
-use Proc::Background;
 use File::Temp qw(tempfile tempdir);
 use POSIX qw(getuid);
 use v5.10;
-
-# assuming we are run by complete-run.pl
-my $i3_path = abs_path("../i3");
 
 #####################################################################
 # default case: socket will be created in /tmp/i3-<username>/ipc-socket.<pid>

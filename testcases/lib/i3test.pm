@@ -13,7 +13,6 @@ use List::MoreUtils qw(lastval);
 use Time::HiRes qw(sleep);
 use Try::Tiny;
 use Cwd qw(abs_path);
-use Proc::Background;
 use SocketActivation;
 
 use v5.10;
