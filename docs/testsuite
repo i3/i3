@@ -1,7 +1,7 @@
 i3 testsuite
 ============
 Michael Stapelberg <michael+i3@stapelberg.de>
-September 2011
+October 2011
 
 This document explains how the i3 testsuite works, how to use it and extend it.
 It is targeted at developers who not necessarily have been doing testing before
@@ -449,3 +449,97 @@ request. You should use a random value in +data[1]+ and check that you received
 the same one when getting the reply.
 
 == Appendix B: Socket activation
+
+Socket activation is a mechanism which was made popular by systemd, an init
+replacement. It basically describes creating a listening socket before starting
+a program.  systemd will invoke the program only when an actual connection to
+the socket is made, hence the term socket activation.
+
+The interesting part of this (in the i3 context) is that you can very precisely
+detect when the program is ready (finished its initialization).
+
+=== Preparing the listening socket
+
++complete-run.pl+ will create a listening UNIX socket which it will then pass
+to i3. This socket will be used by i3 as an additional IPC socket, just like
+the one it will create on its own. Passing the socket happens implicitly
+because children will inherit the parent’s sockets when fork()ing and sockets
+will continue to exist after an exec() call (unless CLOEXEC is set of course).
+
+The only explicit things +complete-run.pl+ has to do is setting the +LISTEN_FDS+
+environment variable to the number of sockets which exist (1 in our case) and
+setting the +LISTEN_PID+ environment variable to the current process ID. Both
+variables are necessary so that the program (i3) knows how many sockets it
+should use and if the environment variable is actually intended for it. i3 will
+then start looking for sockets at file descriptor 3 (since 0, 1 and 2 are used
+for stdin, stdout and stderr, respectively).
+
+The actual Perl code which sets up the socket, fork()s, makes sure the socket
+has file descriptor 3 and sets up the environment variables follows (shortened
+a bit):
+
+
+.Setup socket and environment
+-----------------------------
+my $socket = IO::Socket::UNIX->new(
+    Listen => 1,
+    Local => $args{unix_socket_path},
+);
+
+my $pid = fork;
+if ($pid == 0) {
+    $ENV{LISTEN_PID} = $$;
+    $ENV{LISTEN_FDS} = 1;
+
+    # Only pass file descriptors 0 (stdin), 1 (stdout),
+    # 2 (stderr) and 3 (socket) to the child.
+    $^F = 3;
+
+    # If the socket does not use file descriptor 3 by chance
+    # already, we close fd 3 and dup2() the socket to 3.
+    if (fileno($socket) != 3) {
+        POSIX::close(3);
+        POSIX::dup2(fileno($socket), 3);
+    }
+
+    exec "/usr/bin/i3";
+}
+-----------------------------
+
+=== Waiting for a reply
+
+In the parent process, we want to know when i3 is ready to answer our IPC
+requests and handle our windows. Therefore, after forking, we immediately close
+the listening socket (i3 will handle this side of the socket) and connect to it
+(remember, we are talking about a named UNIX socket) as a client. This connect
+call will immediately succeed because the kernel buffers it. Then, we send a
+request (of type GET_TREE, but that is not really relevant). Writing data to
+the socket will also succeed immediately because, again, the kernel buffers it
+(only up to a certain amount of data of course).
+
+Afterwards, we just blockingly wait until we get an answer. In the child
+process, i3 will setup the listening socket in its event loop. Immediately
+after actually starting the event loop, it will notice a new client connecting
+(the parent process) and handle its request. Since all initialization has been
+completed successfully by the time the event loop is entered, we can now assume
+that i3 is ready.
+
+=== Timing and conclusion
+
+A beautiful feature of this mechanism is that it does not depend on timing. It
+does not matter when the child process gets CPU time or when the parent process
+gets CPU time. On heavily loaded machines (or machines with multiple CPUs,
+cores or unreliable schedulers), this makes waiting for i3 much more robust.
+
+Before using socket activation, we typically used a +sleep(1)+ and hoped that
+i3 was initialized by that time. Of course, this breaks on some (slow)
+computers and wastes a lot of time on faster computers. By using socket
+activation, we decreased the total amount of time necessary to run all tests
+(72 files at the time of writing) from > 100 seconds to 16 seconds. This makes
+it significantly more attractive to run the test suite more often (or at all)
+during development.
+
+An alternative approach to using socket activation is polling for the existance
+of the IPC socket and connecting to it. While this might be slightly easier to
+implement, it wastes CPU time and is considerably more ugly than this solution
+:). After all, +lib/SocketActivation.pm+ contains only 54 SLOC.

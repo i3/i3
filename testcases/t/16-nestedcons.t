@@ -2,8 +2,24 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use List::MoreUtils qw(all none);
 use List::Util qw(first);
+
+# to not depend on List::MoreUtils
+sub all (&@) {
+    my $cb = shift;
+    for (@_) {
+        return 0 unless $cb->();
+    }
+    return 1;
+}
+
+sub none (&@) {
+    my $cb = shift;
+    for (@_) {
+        return 0 if $cb->();
+    }
+    return 1;
+}
 
 my $i3 = i3(get_socket_path());
 

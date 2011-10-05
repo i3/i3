@@ -7,10 +7,7 @@
 #
 use i3test;
 use Cwd qw(abs_path);
-use Proc::Background;
 use File::Temp qw(tempfile tempdir);
-use POSIX qw(getuid);
-use Data::Dumper;
 use v5.10;
 
 # reads in a whole file

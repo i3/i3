@@ -9,11 +9,8 @@ use X11::XCB qw(:all);
 use AnyEvent::I3;
 use EV;
 use List::Util qw(first);
-use List::MoreUtils qw(lastval);
 use Time::HiRes qw(sleep);
-use Try::Tiny;
 use Cwd qw(abs_path);
-use Proc::Background;
 use SocketActivation;
 
 use v5.10;
@@ -269,7 +266,8 @@ sub get_dock_clients {
             my $first = first { $_->{type} == 5 } @{$output->{nodes}};
             @docked = (@docked, @{$first->{nodes}});
         } elsif ($which eq 'bottom') {
-            my $last = lastval { $_->{type} == 5 } @{$output->{nodes}};
+            my @matching = grep { $_->{type} == 5 } @{$output->{nodes}};
+            my $last = $matching[-1];
             @docked = (@docked, @{$last->{nodes}});
         }
     }
@@ -375,7 +373,7 @@ sub exit_gracefully {
     $socketpath ||= get_socket_path();
 
     my $exited = 0;
-    try {
+    eval {
         say "Exiting i3 cleanly...";
         i3($socketpath)->command('exit')->recv;
         $exited = 1;
