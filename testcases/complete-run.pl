@@ -33,7 +33,9 @@ use AnyEvent::Handle;
 use AnyEvent::I3 qw(:all);
 use X11::XCB;
 
-# install a dummy CHLD handler to overwrite the CHLD handler of AnyEvent / EV
+# Install a dummy CHLD handler to overwrite the CHLD handler of AnyEvent / EV.
+# AnyEvent’s handler wait()s for every child which conflicts with TAP (TAP
+# needs to get the exit status to determine if a test is successful).
 # XXX: we could maybe also use a different loop than the default loop in EV?
 $SIG{CHLD} = sub {
 };
