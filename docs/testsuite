@@ -541,5 +541,5 @@ during development.
 
 An alternative approach to using socket activation is polling for the existance
 of the IPC socket and connecting to it. While this might be slightly easier to
-implement, it wastes CPU time and is considerably more ugly than this solution
+implement, it wastes CPU time and is considerably uglier than this solution
 :). After all, +lib/SocketActivation.pm+ contains only 54 SLOC.
