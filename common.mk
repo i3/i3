@@ -21,7 +21,11 @@ $(error "pkg-config was not found")
 endif
 
 # An easier way to get CFLAGS and LDFLAGS falling back in case there's
-# no pkg-config support for certain libraries
+# no pkg-config support for certain libraries.
+# NOTE that you must not use a blank after comma when calling this:
+#     $(call ldflags_for_lib name, fallback) # bad
+#     $(call ldflags_for_lib name,fallback) # good
+# Otherwise, the compiler will get -l foo instead of -lfoo
 cflags_for_lib = $(shell pkg-config --silence-errors --cflags $(1))
 ldflags_for_lib = $(shell pkg-config --exists $(1) && pkg-config --libs $(1) || echo -l$(2))
 
@@ -59,23 +63,23 @@ endif
 
 LIBS += -lm
 LIBS += -L $(TOPDIR)/libi3 -li3
-LIBS += $(call ldflags_for_lib, xcb-event, xcb-event)
-LIBS += $(call ldflags_for_lib, xcb-keysyms, xcb-keysyms)
+LIBS += $(call ldflags_for_lib, xcb-event,xcb-event)
+LIBS += $(call ldflags_for_lib, xcb-keysyms,xcb-keysyms)
 ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
-LIBS += $(call ldflags_for_lib, xcb-atom, xcb-atom)
-LIBS += $(call ldflags_for_lib, xcb-aux, xcb-aux)
+LIBS += $(call ldflags_for_lib, xcb-atom,xcb-atom)
+LIBS += $(call ldflags_for_lib, xcb-aux,xcb-aux)
 else
 LIBS += $(call ldflags_for_lib, xcb-util)
 endif
-LIBS += $(call ldflags_for_lib, xcb-icccm, xcb-icccm)
-LIBS += $(call ldflags_for_lib, xcb-xinerama, xcb-xinerama)
-LIBS += $(call ldflags_for_lib, xcb-randr, xcb-randr)
-LIBS += $(call ldflags_for_lib, xcb, xcb)
-LIBS += $(call ldflags_for_lib, xcursor, Xcursor)
-LIBS += $(call ldflags_for_lib, x11, X11)
-LIBS += $(call ldflags_for_lib, yajl, yajl)
-LIBS += $(call ldflags_for_lib, libev, ev)
-LIBS += $(call ldflags_for_lib, libpcre, pcre)
+LIBS += $(call ldflags_for_lib, xcb-icccm,xcb-icccm)
+LIBS += $(call ldflags_for_lib, xcb-xinerama,xcb-xinerama)
+LIBS += $(call ldflags_for_lib, xcb-randr,xcb-randr)
+LIBS += $(call ldflags_for_lib, xcb,xcb)
+LIBS += $(call ldflags_for_lib, xcursor,Xcursor)
+LIBS += $(call ldflags_for_lib, x11,X11)
+LIBS += $(call ldflags_for_lib, yajl,yajl)
+LIBS += $(call ldflags_for_lib, libev,ev)
+LIBS += $(call ldflags_for_lib, libpcre,pcre)
 
 # Please test if -Wl,--as-needed works on your platform and send me a patch.
 # it is known not to work on Darwin (Mac OS X)
