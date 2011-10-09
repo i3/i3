@@ -19,6 +19,8 @@ extern Con *focused;
 char **start_argv;
 
 xcb_connection_t *conn;
+/* The screen (0 when you are using DISPLAY=:0) of the connection 'conn' */
+int conn_screen;
 
 xcb_screen_t *root_screen;
 xcb_window_t root;
@@ -175,7 +177,6 @@ static void i3_exit() {
 }
 
 int main(int argc, char *argv[]) {
-    int screens;
     char *override_configpath = NULL;
     bool autostart = true;
     char *layout_path = NULL;
@@ -357,7 +358,7 @@ int main(int argc, char *argv[]) {
 
     LOG("i3 (tree) version " I3_VERSION " starting\n");
 
-    conn = xcb_connect(NULL, &screens);
+    conn = xcb_connect(NULL, &conn_screen);
     if (xcb_connection_has_error(conn))
         errx(EXIT_FAILURE, "Cannot open display\n");
 
@@ -368,7 +369,7 @@ int main(int argc, char *argv[]) {
     if (main_loop == NULL)
             die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
 
-    root_screen = xcb_aux_get_screen(conn, screens);
+    root_screen = xcb_aux_get_screen(conn, conn_screen);
     root = root_screen->root;
     root_depth = root_screen->root_depth;
     xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);

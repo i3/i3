@@ -20,6 +20,7 @@
 #define _I3_H
 
 extern xcb_connection_t *conn;
+extern int conn_screen;
 extern xcb_key_symbols_t *keysyms;
 extern char **start_argv;
 extern Display *xlibdpy, *xkbdpy;
