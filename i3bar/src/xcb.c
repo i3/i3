@@ -28,6 +28,7 @@
 #include <X11/extensions/XKB.h>
 
 #include "common.h"
+#include "libi3.h"
 
 #if defined(__APPLE__)
 
@@ -643,6 +644,42 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
 }
 
 /*
+ * Handle ConfigureRequests by denying them and sending the client a
+ * ConfigureNotify with its actual size.
+ *
+ */
+static void handle_configure_request(xcb_configure_request_event_t *event) {
+    DLOG("ConfigureRequest for window = %08x\n", event->window);
+
+    trayclient *trayclient;
+    i3_output *output;
+    SLIST_FOREACH(output, outputs, slist) {
+        if (!output->active)
+            continue;
+
+        int clients = 0;
+        TAILQ_FOREACH_REVERSE(trayclient, output->trayclients, tc_head, tailq) {
+            clients++;
+
+            if (trayclient->win != event->window)
+                continue;
+
+            xcb_rectangle_t rect;
+            rect.x = output->rect.w - (clients * (font_height + 2));
+            rect.y = 2;
+            rect.width = font_height;
+            rect.height = font_height;
+
+            DLOG("This is a tray window. x = %d\n", rect.x);
+            fake_configure_notify(xcb_connection, rect, event->window, 0);
+            return;
+        }
+    }
+
+    DLOG("WARNING: Could not find corresponding tray window.\n");
+}
+
+/*
  * This function is called immediately before the main loop locks. We flush xcb
  * then (and only then)
  *
@@ -690,6 +727,10 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
         case XCB_PROPERTY_NOTIFY:
             /* PropertyNotify */
             handle_property_notify((xcb_property_notify_event_t*) event);
+            break;
+        case XCB_CONFIGURE_REQUEST:
+            /* ConfigureRequest, sent by a tray child */
+            handle_configure_request((xcb_configure_request_event_t*) event);
             break;
     }
     FREE(event);
@@ -1148,8 +1189,14 @@ void reconfig_windows() {
             values[0] = colors.bar_bg;
             /* If hide_on_modifier is set, i3 is not supposed to manage our bar-windows */
             values[1] = config.hide_on_modifier;
-            /* The events we want to receive */
-            values[2] = XCB_EVENT_MASK_EXPOSURE;
+            /* We enable the following EventMask fields:
+             * EXPOSURE, to get expose events (we have to re-draw then)
+             * SUBSTRUCTURE_REDIRECT, to get ConfigureRequests when the tray
+             *                        child windows use ConfigureWindow
+             * BUTTON_PRESS, to handle clicks on the workspace buttons
+             * */
+            values[2] = XCB_EVENT_MASK_EXPOSURE |
+                        XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT;
             if (!config.disable_ws) {
                 values[2] |= XCB_EVENT_MASK_BUTTON_PRESS;
             }
