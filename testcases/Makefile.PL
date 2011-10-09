@@ -12,6 +12,7 @@ WriteMakefile(
         'Test::Most'   => 0,
         'Test::Deep'   => 0,
 	'EV'	       => 0,
+	'Inline'       => 0,
     },
     # don't install any files from this directory
     PM => {},
