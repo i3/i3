@@ -21,7 +21,6 @@
 /* While a clean namespace is usually a pretty good thing, we really need
  * to use shorter names than the whole xcb_randr_* default names. */
 typedef xcb_randr_get_crtc_info_reply_t crtc_info;
-typedef xcb_randr_mode_info_t mode_info;
 typedef xcb_randr_get_screen_resources_current_reply_t resources_reply;
 
 /* Pointer to the result of the query for primary output */
