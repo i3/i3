@@ -103,14 +103,6 @@ void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable,
                    uint32_t y, uint32_t width, uint32_t height);
 
 /**
- * Generates a configure_notify event and sends it to the given window
- * Applications need this to think they’ve configured themselves correctly.
- * The truth is, however, that we will manage them.
- *
- */
-void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window, int border_width);
-
-/**
  * Generates a configure_notify_event with absolute coordinates (relative to
  * the X root window, not to the client’s frame) for the given client.
  *
