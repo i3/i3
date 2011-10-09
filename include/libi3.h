@@ -5,6 +5,9 @@
 #ifndef _LIBI3_H
 #define _LIBI3_H
 
+#include <xcb/xcb.h>
+#include <xcb/xproto.h>
+
 /**
  * Try to get the socket path from X11 and return NULL if it doesn’t work.
  *
@@ -66,5 +69,13 @@ int ipc_send_message(int sockfd, uint32_t message_size,
  */
 int ipc_recv_message(int sockfd, uint32_t message_type,
                      uint32_t *reply_length, uint8_t **reply);
+
+/**
+ * Generates a configure_notify event and sends it to the given window
+ * Applications need this to think they’ve configured themselves correctly.
+ * The truth is, however, that we will manage them.
+ *
+ */
+void fake_configure_notify(xcb_connection_t *conn, xcb_rectangle_t r, xcb_window_t window, int border_width);
 
 #endif
