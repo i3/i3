@@ -22,6 +22,14 @@ xcb_connection_t *conn;
 /* The screen (0 when you are using DISPLAY=:0) of the connection 'conn' */
 int conn_screen;
 
+/* Display handle for libstartup-notification */
+SnDisplay *sndisplay;
+
+/* The last timestamp we got from X11 (timestamps are included in some events
+ * and are used for some things, like determining a unique ID in startup
+ * notification). */
+xcb_timestamp_t last_timestamp = XCB_CURRENT_TIME;
+
 xcb_screen_t *root_screen;
 xcb_window_t root;
 uint8_t root_depth;
@@ -361,6 +369,8 @@ int main(int argc, char *argv[]) {
     conn = xcb_connect(NULL, &conn_screen);
     if (xcb_connection_has_error(conn))
         errx(EXIT_FAILURE, "Cannot open display\n");
+
+    sndisplay = sn_xcb_display_new(conn, NULL, NULL);
 
     /* Initialize the libev event loop. This needs to be done before loading
      * the config file because the parser will install an ev_child watcher

@@ -21,6 +21,9 @@
 #include <yajl/yajl_version.h>
 #include <libgen.h>
 
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-launcher.h>
+
 #include "all.h"
 
 static iconv_t conversion_descriptor = 0;
@@ -69,11 +72,31 @@ bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
  *
  */
 void start_application(const char *command) {
+    /* Create a startup notification context to monitor the progress of this
+     * startup. */
+    SnLauncherContext *context;
+    context = sn_launcher_context_new(sndisplay, conn_screen);
+    sn_launcher_context_set_name(context, "i3");
+    sn_launcher_context_set_description(context, "exec command in i3");
+    /* Chop off everything starting from the first space (if there are any
+     * spaces in the command), since we don’t want the parameters. */
+    char *first_word = sstrdup(command);
+    char *space = strchr(first_word, ' ');
+    if (space)
+        *space = '\0';
+    sn_launcher_context_initiate(context, "i3", first_word, last_timestamp);
+    free(first_word);
+
+    LOG("startup id = %s\n", sn_launcher_context_get_startup_id(context));
+
     LOG("executing: %s\n", command);
     if (fork() == 0) {
         /* Child process */
         setsid();
         if (fork() == 0) {
+            /* Setup the environment variable(s) */
+            sn_launcher_context_setup_child_process(context);
+
             /* Stores the path of the shell */
             static const char *shell = NULL;
 
