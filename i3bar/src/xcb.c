@@ -22,6 +22,7 @@
 #include <ev.h>
 #include <errno.h>
 #include <limits.h>
+#include <err.h>
 
 #include <X11/Xlib.h>
 #include <X11/XKBlib.h>
@@ -1220,6 +1221,31 @@ void reconfig_windows() {
                                                                     walk->rect.w,
                                                                     walk->rect.h);
 
+            /* Set the WM_CLASS and WM_NAME (we don't need UTF-8) atoms */
+            xcb_void_cookie_t class_cookie;
+            class_cookie = xcb_change_property(xcb_connection,
+                                               XCB_PROP_MODE_REPLACE,
+                                               walk->bar,
+                                               XCB_ATOM_WM_CLASS,
+                                               XCB_ATOM_STRING,
+                                               8,
+                                               (strlen("i3bar") + 1) * 2,
+                                               "i3bar\0i3bar\0");
+
+            char *name;
+            if (asprintf(&name, "i3bar for output %s", walk->name) == -1)
+                err(EXIT_FAILURE, "asprintf()");
+            xcb_void_cookie_t name_cookie;
+            name_cookie = xcb_change_property(xcb_connection,
+                                              XCB_PROP_MODE_REPLACE,
+                                              walk->bar,
+                                              XCB_ATOM_WM_NAME,
+                                              XCB_ATOM_STRING,
+                                              8,
+                                              strlen(name),
+                                              name);
+            free(name);
+
             /* We want dock-windows (for now). When override_redirect is set, i3 is ignoring
              * this one */
             xcb_void_cookie_t dock_cookie = xcb_change_property(xcb_connection,
@@ -1293,6 +1319,8 @@ void reconfig_windows() {
             if (xcb_request_failed(win_cookie,   "Could not create window") ||
                 xcb_request_failed(pm_cookie,    "Could not create pixmap") ||
                 xcb_request_failed(dock_cookie,  "Could not set dock mode") ||
+                xcb_request_failed(class_cookie, "Could not set WM_CLASS")  ||
+                xcb_request_failed(name_cookie,  "Could not set WM_NAME")   ||
                 xcb_request_failed(strut_cookie, "Could not set strut")     ||
                 xcb_request_failed(gc_cookie,    "Could not create graphical context") ||
                 (!config.hide_on_modifier && xcb_request_failed(map_cookie, "Could not map window"))) {
