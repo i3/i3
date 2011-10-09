@@ -22,12 +22,16 @@ endif
 
 # An easier way to get CFLAGS and LDFLAGS falling back in case there's
 # no pkg-config support for certain libraries.
+#
 # NOTE that you must not use a blank after comma when calling this:
 #     $(call ldflags_for_lib name, fallback) # bad
 #     $(call ldflags_for_lib name,fallback) # good
 # Otherwise, the compiler will get -l foo instead of -lfoo
-cflags_for_lib = $(shell pkg-config --silence-errors --cflags $(1))
-ldflags_for_lib = $(shell pkg-config --exists $(1) && pkg-config --libs $(1) || echo -l$(2))
+#
+# We redirect stderr to /dev/null because pkg-config prints an error if support
+# for gnome-config was enabled but gnome-config is not actually installed.
+cflags_for_lib = $(shell pkg-config --silence-errors --cflags $(1) 2>/dev/null)
+ldflags_for_lib = $(shell pkg-config --exists $(1) && pkg-config --libs $(1) 2>/dev/null || echo -l$(2))
 
 CFLAGS += -std=c99
 CFLAGS += -pipe
@@ -37,7 +41,7 @@ CFLAGS += -Wall
 CFLAGS += -Wunused-value
 CFLAGS += -Iinclude
 CFLAGS += $(call cflags_for_lib, xcb-keysyms)
-ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
+ifeq ($(shell pkg-config --exists xcb-util 2>/dev/null || echo 1),1)
 CPPFLAGS += -DXCB_COMPAT
 CFLAGS += $(call cflags_for_lib, xcb-atom)
 CFLAGS += $(call cflags_for_lib, xcb-aux)
@@ -65,7 +69,7 @@ LIBS += -lm
 LIBS += -L $(TOPDIR)/libi3 -li3
 LIBS += $(call ldflags_for_lib, xcb-event,xcb-event)
 LIBS += $(call ldflags_for_lib, xcb-keysyms,xcb-keysyms)
-ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
+ifeq ($(shell pkg-config --exists xcb-util 2>/dev/null || echo 1),1)
 LIBS += $(call ldflags_for_lib, xcb-atom,xcb-atom)
 LIBS += $(call ldflags_for_lib, xcb-aux,xcb-aux)
 else
