@@ -123,6 +123,7 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
         return;
     }
 
+    LOG("WM_NAME changed to \"%s\"\n", new_name);
     LOG("Using legacy window title. Note that in order to get Unicode window "
         "titles in i3, the application has to set _NET_WM_NAME (UTF-8)\n");
 
