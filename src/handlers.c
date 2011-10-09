@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
 #include <time.h>
@@ -627,20 +627,20 @@ static int handle_expose_event(xcb_expose_event_t *event) {
  * Handle client messages (EWMH)
  *
  */
-static int handle_client_message(xcb_client_message_event_t *event) {
+static void handle_client_message(xcb_client_message_event_t *event) {
     LOG("ClientMessage for window 0x%08x\n", event->window);
     if (event->type == A__NET_WM_STATE) {
         if (event->format != 32 || event->data.data32[1] != A__NET_WM_STATE_FULLSCREEN) {
             DLOG("atom in clientmessage is %d, fullscreen is %d\n",
                     event->data.data32[1], A__NET_WM_STATE_FULLSCREEN);
             DLOG("not about fullscreen atom\n");
-            return 0;
+            return;
         }
 
         Con *con = con_by_window_id(event->window);
         if (con == NULL) {
             DLOG("Could not get window for client message\n");
-            return 0;
+            return;
         }
 
         /* Check if the fullscreen state should be toggled */
@@ -677,10 +677,8 @@ static int handle_client_message(xcb_client_message_event_t *event) {
         free(reply);
     } else {
         ELOG("unhandled clientmessage\n");
-        return 0;
+        return;
     }
-
-    return 1;
 }
 
 #if 0
