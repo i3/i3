@@ -259,6 +259,8 @@ int handle_button_press(xcb_button_press_event_t *event) {
     Con *con;
     DLOG("Button %d pressed on window 0x%08x\n", event->state, event->event);
 
+    last_timestamp = event->time;
+
     const uint32_t mod = config.floating_modifier;
     bool mod_pressed = (mod != 0 && (event->state & mod) == mod);
     DLOG("floating_mod = %d, detail = %d\n", mod_pressed, event->detail);

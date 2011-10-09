@@ -80,6 +80,9 @@ bool event_is_ignored(const int sequence, const int response_type) {
  *
  */
 static int handle_key_press(xcb_key_press_event_t *event) {
+
+    last_timestamp = event->time;
+
     DLOG("Keypress %d, state raw = %d\n", event->detail, event->state);
 
     /* Remove the numlock bit, all other bits are modifiers we can bind to */
@@ -156,6 +159,8 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
 static int handle_enter_notify(xcb_enter_notify_event_t *event) {
     Con *con;
 
+    last_timestamp = event->time;
+
     DLOG("enter_notify for %08x, mode = %d, detail %d, serial %d\n",
          event->event, event->mode, event->detail, event->sequence);
     DLOG("coordinates %d, %d\n", event->event_x, event->event_y);
@@ -227,6 +232,9 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
  *
  */
 static int handle_motion_notify(xcb_motion_notify_event_t *event) {
+
+    last_timestamp = event->time;
+
     /* Skip events where the pointer was over a child window, we are only
      * interested in events on the root window. */
     if (event->child != 0)
@@ -1084,6 +1092,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
         case XCB_PROPERTY_NOTIFY:
             DLOG("Property notify\n");
             xcb_property_notify_event_t *e = (xcb_property_notify_event_t*)event;
+            last_timestamp = e->time;
             property_notify(e->state, e->window, e->atom);
             break;
 
