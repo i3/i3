@@ -33,10 +33,10 @@ install: all
 
 clean:
 	rm -f src/*.o
-	make -C doc clean
+	$(MAKE) -C doc clean
 
 distclean: clean
 	rm -f i3bar
-	make -C doc distclean
+	$(MAKE) -C doc distclean
 
 .PHONY: install clean distclean doc

@@ -104,8 +104,8 @@ dist: distclean
 	# Only copy toplevel documentation (important stuff)
 	mkdir i3-${VERSION}/docs
 	# Pre-generate documentation
-	make -C docs
-	make -C i3bar/doc
+	$(MAKE) -C docs
+	$(MAKE) -C i3bar/doc
 	# Cleanup τεχ output files
 	find docs -regex ".*\.\(aux\|out\|log\|toc\|bm\|dvi\|log\)" -exec rm '{}' \;
 	find docs -maxdepth 1 -type f ! \( -name "*.xcf" -or -name "*.svg" \) -exec cp '{}' i3-${VERSION}/docs \;
