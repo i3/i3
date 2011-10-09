@@ -31,7 +31,7 @@ endif
 # We redirect stderr to /dev/null because pkg-config prints an error if support
 # for gnome-config was enabled but gnome-config is not actually installed.
 cflags_for_lib = $(shell pkg-config --silence-errors --cflags $(1) 2>/dev/null)
-ldflags_for_lib = $(shell pkg-config --exists $(1) && pkg-config --libs $(1) 2>/dev/null || echo -l$(2))
+ldflags_for_lib = $(shell pkg-config --exists 2>/dev/null $(1) && pkg-config --libs $(1) 2>/dev/null || echo -l$(2))
 
 CFLAGS += -std=c99
 CFLAGS += -pipe
@@ -61,7 +61,7 @@ CPPFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
 CPPFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
 CPPFLAGS += -DTERM_EMU=\"$(TERM_EMU)\"
 
-ifeq ($(shell pkg-config --atleast-version=8.10 libpcre && echo 1),1)
+ifeq ($(shell pkg-config --atleast-version=8.10 libpcre 2>/dev/null && echo 1),1)
 CPPFLAGS += -DPCRE_HAS_UCP=1
 endif
 
