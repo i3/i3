@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# vim:ts=4:sw=4:expandtab
 use strict; use warnings;
 use ExtUtils::MakeMaker;
 
@@ -16,6 +17,9 @@ WriteMakefile(
     },
     # don't install any files from this directory
     PM => {},
+    clean => {
+        FILES => 'testsuite-* latest'
+    }
 );
 # and don't run the tests while installing
 sub MY::test { }
