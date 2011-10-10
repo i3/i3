@@ -66,5 +66,6 @@
 #include "assignments.h"
 #include "regex.h"
 #include "libi3.h"
+#include "startup.h"
 
 #endif

@@ -62,58 +62,6 @@ bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
 }
 
 /*
- * Starts the given application by passing it through a shell. We use double fork
- * to avoid zombie processes. As the started application’s parent exits (immediately),
- * the application is reparented to init (process-id 1), which correctly handles
- * childs, so we don’t have to do it :-).
- *
- * The shell is determined by looking for the SHELL environment variable. If it
- * does not exist, /bin/sh is used.
- *
- */
-void start_application(const char *command) {
-    /* Create a startup notification context to monitor the progress of this
-     * startup. */
-    SnLauncherContext *context;
-    context = sn_launcher_context_new(sndisplay, conn_screen);
-    sn_launcher_context_set_name(context, "i3");
-    sn_launcher_context_set_description(context, "exec command in i3");
-    /* Chop off everything starting from the first space (if there are any
-     * spaces in the command), since we don’t want the parameters. */
-    char *first_word = sstrdup(command);
-    char *space = strchr(first_word, ' ');
-    if (space)
-        *space = '\0';
-    sn_launcher_context_initiate(context, "i3", first_word, last_timestamp);
-    free(first_word);
-
-    LOG("startup id = %s\n", sn_launcher_context_get_startup_id(context));
-
-    LOG("executing: %s\n", command);
-    if (fork() == 0) {
-        /* Child process */
-        setsid();
-        if (fork() == 0) {
-            /* Setup the environment variable(s) */
-            sn_launcher_context_setup_child_process(context);
-
-            /* Stores the path of the shell */
-            static const char *shell = NULL;
-
-            if (shell == NULL)
-                if ((shell = getenv("SHELL")) == NULL)
-                    shell = "/bin/sh";
-
-            /* This is the child */
-            execl(shell, shell, "-c", command, (void*)NULL);
-            /* not reached */
-        }
-        exit(0);
-    }
-    wait(0);
-}
-
-/*
  * exec()s an i3 utility, for example the config file migration script or
  * i3-nagbar. This function first searches $PATH for the given utility named,
  * then falls back to the dirname() of the i3 executable path and then falls

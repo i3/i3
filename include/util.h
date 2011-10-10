@@ -67,18 +67,6 @@ Rect rect_add(Rect a, Rect b);
 bool update_if_necessary(uint32_t *destination, const uint32_t new_value);
 
 /**
- * Starts the given application by passing it through a shell. We use double
- * fork to avoid zombie processes. As the started application’s parent exits
- * (immediately), the application is reparented to init (process-id 1), which
- * correctly handles childs, so we don’t have to do it :-).
- *
- * The shell is determined by looking for the SHELL environment variable. If
- * it does not exist, /bin/sh is used.
- *
- */
-void start_application(const char *command);
-
-/**
  * exec()s an i3 utility, for example the config file migration script or
  * i3-nagbar. This function first searches $PATH for the given utility named,
  * then falls back to the dirname() of the i3 executable path and then falls

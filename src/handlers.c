@@ -11,6 +11,9 @@
 
 #include <X11/XKBlib.h>
 
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-monitor.h>
+
 #include "all.h"
 
 int randr_base = -1;
@@ -628,6 +631,11 @@ static int handle_expose_event(xcb_expose_event_t *event) {
  *
  */
 static void handle_client_message(xcb_client_message_event_t *event) {
+    /* If this is a startup notification ClientMessage, the library will handle
+     * it and call our monitor_event() callback. */
+    if (sn_xcb_display_process_event(sndisplay, (xcb_generic_event_t*)event))
+        return;
+
     LOG("ClientMessage for window 0x%08x\n", event->window);
     if (event->type == A__NET_WM_STATE) {
         if (event->format != 32 || event->data.data32[1] != A__NET_WM_STATE_FULLSCREEN) {
@@ -984,6 +992,9 @@ static struct property_handler_t property_handlers[] = {
  *
  */
 void property_handlers_init() {
+
+    sn_monitor_context_new(sndisplay, conn_screen, startup_monitor_event, NULL, NULL);
+
     property_handlers[0].atom = A__NET_WM_NAME;
     property_handlers[1].atom = XCB_ATOM_WM_HINTS;
     property_handlers[2].atom = XCB_ATOM_WM_NAME;
