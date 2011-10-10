@@ -18,6 +18,9 @@
 
 #include "all.h"
 
+static TAILQ_HEAD(startup_sequence_head, Startup_Sequence) startup_sequences =
+    TAILQ_HEAD_INITIALIZER(startup_sequences);
+
 /*
  * Starts the given application by passing it through a shell. We use double fork
  * to avoid zombie processes. As the started application’s parent exits (immediately),
@@ -45,6 +48,14 @@ void start_application(const char *command) {
     free(first_word);
 
     LOG("startup id = %s\n", sn_launcher_context_get_startup_id(context));
+
+    /* Save the ID and current workspace in our internal list of startup
+     * sequences */
+    Con *ws = con_get_workspace(focused);
+    struct Startup_Sequence *sequence = scalloc(sizeof(struct Startup_Sequence));
+    sequence->id = sstrdup(sn_launcher_context_get_startup_id(context));
+    sequence->workspace = sstrdup(ws->name);
+    TAILQ_INSERT_TAIL(&startup_sequences, sequence, sequences);
 
     LOG("executing: %s\n", command);
     if (fork() == 0) {
@@ -75,14 +86,29 @@ void start_application(const char *command) {
  *
  */
 void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
-    SnStartupSequence *sequence;
+    SnStartupSequence *snsequence;
 
-    DLOG("something happened\n");
-    sequence = sn_monitor_event_get_startup_sequence(event);
+    snsequence = sn_monitor_event_get_startup_sequence(event);
+
+    /* Get the corresponding internal startup sequence */
+    const char *id = sn_startup_sequence_get_id(snsequence);
+    struct Startup_Sequence *current, *sequence = NULL;
+    TAILQ_FOREACH(current, &startup_sequences, sequences) {
+        if (strcmp(current->id, id) != 0)
+            continue;
+
+        sequence = current;
+        break;
+    }
+
+    if (!sequence) {
+        DLOG("Got event for startup sequence that we did not initiate (ID = %s). Ignoring.\n", id);
+        return;
+    }
 
     switch (sn_monitor_event_get_type(event)) {
         case SN_MONITOR_EVENT_COMPLETED:
-            DLOG("startup sequence %s completed\n", sn_startup_sequence_get_id(sequence));
+            DLOG("startup sequence %s completed\n", sn_startup_sequence_get_id(snsequence));
             break;
         default:
             /* ignore */
