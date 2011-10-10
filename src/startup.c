@@ -24,8 +24,8 @@ static TAILQ_HEAD(startup_sequence_head, Startup_Sequence) startup_sequences =
 /*
  * After 60 seconds, a timeout will be triggered for each startup sequence.
  *
- * The internal startup sequence will be deleted, the libstartup-notification
- * context will be completed and unref'd (therefore free'd aswell).
+ * The timeout will just trigger completion of the sequence, so the normal
+ * completion process takes place (startup_monitor_event will free it).
  *
  */
 static void startup_timeout(EV_P_ ev_timer *w, int revents) {
@@ -41,17 +41,16 @@ static void startup_timeout(EV_P_ ev_timer *w, int revents) {
         break;
     }
 
+    /* Unref the context (for the timeout itself, see start_application) */
+    sn_launcher_context_unref(w->data);
+
     if (!sequence) {
         DLOG("Sequence already deleted, nevermind.\n");
         return;
     }
 
-    /* Delete our internal sequence */
-    TAILQ_REMOVE(&startup_sequences, sequence, sequences);
-
-    /* Complete and unref the context */
+    /* Complete the startup sequence, will trigger its deletion. */
     sn_launcher_context_complete(w->data);
-    sn_launcher_context_unref(w->data);
     free(w);
 }
 
@@ -95,7 +94,13 @@ void start_application(const char *command) {
     struct Startup_Sequence *sequence = scalloc(sizeof(struct Startup_Sequence));
     sequence->id = sstrdup(sn_launcher_context_get_startup_id(context));
     sequence->workspace = sstrdup(ws->name);
+    sequence->context = context;
     TAILQ_INSERT_TAIL(&startup_sequences, sequence, sequences);
+
+    /* Increase the refcount once (it starts with 1, so it will be 2 now) for
+     * the timeout. Even if the sequence gets completed, the timeout still
+     * needs the context (but will unref it then) */
+    sn_launcher_context_ref(context);
 
     LOG("executing: %s\n", command);
     if (fork() == 0) {
@@ -149,6 +154,12 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
     switch (sn_monitor_event_get_type(event)) {
         case SN_MONITOR_EVENT_COMPLETED:
             DLOG("startup sequence %s completed\n", sn_startup_sequence_get_id(snsequence));
+
+            /* Unref the context, will be free()d */
+            sn_launcher_context_unref(sequence->context);
+
+            /* Delete our internal sequence */
+            TAILQ_REMOVE(&startup_sequences, sequence, sequences);
             break;
         default:
             /* ignore */

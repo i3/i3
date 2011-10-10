@@ -11,6 +11,9 @@
 #ifndef _DATA_H
 #define _DATA_H
 
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-launcher.h>
+
 #include <xcb/randr.h>
 #include <xcb/xcb_atom.h>
 #include <stdbool.h>
@@ -150,6 +153,8 @@ struct Startup_Sequence {
     char *id;
     /** workspace on which this startup was initiated */
     char *workspace;
+    /** libstartup-notification context for this launch */
+    SnLauncherContext *context;
 
     TAILQ_ENTRY(Startup_Sequence) sequences;
 };
