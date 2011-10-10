@@ -28,11 +28,11 @@ use Inline C => <<'END_OF_C_CODE';
 
 static SnDisplay *sndisplay;
 static SnLauncheeContext *ctx;
+static xcb_connection_t *conn;
 
 // TODO: this should use $x
 void init_ctx() {
     int screen;
-    xcb_connection_t *conn;
     if ((conn = xcb_connect(NULL, &screen)) == NULL ||
         xcb_connection_has_error(conn))
         errx(1, "x11 conn failed");
@@ -48,6 +48,7 @@ const char *get_startup_id() {
 
 void mark_window(int window) {
     sn_launchee_context_setup_window(ctx, (Window)window);
+    xcb_flush(conn);
 }
 
 void complete_startup() {
@@ -95,8 +96,12 @@ my $second_ws = fresh_workspace;
 
 is(@{get_ws_content($second_ws)}, 0, 'no containers on the second workspace yet');
 
-my $win = open_window($x);
+my $win = open_window($x, { dont_map => 1 });
 mark_window($win->id);
+$win->map;
+wait_for_map($x);
+# We sync with i3 here to make sure $x->input_focus is updated.
+sync_with_i3($x);
 
 is(@{get_ws_content($second_ws)}, 0, 'still no containers on the second workspace');
 is(@{get_ws_content($first_ws)}, 1, 'one container on the first workspace');
