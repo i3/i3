@@ -12,6 +12,9 @@
 
 #include <X11/XKBlib.h>
 
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-launcher.h>
+
 #include "queue.h"
 #include "data.h"
 #include "xcb.h"
@@ -20,6 +23,12 @@
 #define _I3_H
 
 extern xcb_connection_t *conn;
+extern int conn_screen;
+/** The last timestamp we got from X11 (timestamps are included in some events
+ * and are used for some things, like determining a unique ID in startup
+ * notification). */
+extern xcb_timestamp_t last_timestamp;
+extern SnDisplay *sndisplay;
 extern xcb_key_symbols_t *keysyms;
 extern char **start_argv;
 extern Display *xlibdpy, *xkbdpy;

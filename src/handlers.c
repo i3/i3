@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
 #include <time.h>
@@ -10,6 +10,9 @@
 #include <xcb/randr.h>
 
 #include <X11/XKBlib.h>
+
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-monitor.h>
 
 #include "all.h"
 
@@ -80,6 +83,9 @@ bool event_is_ignored(const int sequence, const int response_type) {
  *
  */
 static int handle_key_press(xcb_key_press_event_t *event) {
+
+    last_timestamp = event->time;
+
     DLOG("Keypress %d, state raw = %d\n", event->detail, event->state);
 
     /* Remove the numlock bit, all other bits are modifiers we can bind to */
@@ -156,6 +162,8 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
 static int handle_enter_notify(xcb_enter_notify_event_t *event) {
     Con *con;
 
+    last_timestamp = event->time;
+
     DLOG("enter_notify for %08x, mode = %d, detail %d, serial %d\n",
          event->event, event->mode, event->detail, event->sequence);
     DLOG("coordinates %d, %d\n", event->event_x, event->event_y);
@@ -227,6 +235,9 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
  *
  */
 static int handle_motion_notify(xcb_motion_notify_event_t *event) {
+
+    last_timestamp = event->time;
+
     /* Skip events where the pointer was over a child window, we are only
      * interested in events on the root window. */
     if (event->child != 0)
@@ -619,20 +630,25 @@ static int handle_expose_event(xcb_expose_event_t *event) {
  * Handle client messages (EWMH)
  *
  */
-static int handle_client_message(xcb_client_message_event_t *event) {
+static void handle_client_message(xcb_client_message_event_t *event) {
+    /* If this is a startup notification ClientMessage, the library will handle
+     * it and call our monitor_event() callback. */
+    if (sn_xcb_display_process_event(sndisplay, (xcb_generic_event_t*)event))
+        return;
+
     LOG("ClientMessage for window 0x%08x\n", event->window);
     if (event->type == A__NET_WM_STATE) {
         if (event->format != 32 || event->data.data32[1] != A__NET_WM_STATE_FULLSCREEN) {
             DLOG("atom in clientmessage is %d, fullscreen is %d\n",
                     event->data.data32[1], A__NET_WM_STATE_FULLSCREEN);
             DLOG("not about fullscreen atom\n");
-            return 0;
+            return;
         }
 
         Con *con = con_by_window_id(event->window);
         if (con == NULL) {
             DLOG("Could not get window for client message\n");
-            return 0;
+            return;
         }
 
         /* Check if the fullscreen state should be toggled */
@@ -669,10 +685,8 @@ static int handle_client_message(xcb_client_message_event_t *event) {
         free(reply);
     } else {
         ELOG("unhandled clientmessage\n");
-        return 0;
+        return;
     }
-
-    return 1;
 }
 
 #if 0
@@ -978,6 +992,9 @@ static struct property_handler_t property_handlers[] = {
  *
  */
 void property_handlers_init() {
+
+    sn_monitor_context_new(sndisplay, conn_screen, startup_monitor_event, NULL, NULL);
+
     property_handlers[0].atom = A__NET_WM_NAME;
     property_handlers[1].atom = XCB_ATOM_WM_HINTS;
     property_handlers[2].atom = XCB_ATOM_WM_NAME;
@@ -1084,6 +1101,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
         case XCB_PROPERTY_NOTIFY:
             DLOG("Property notify\n");
             xcb_property_notify_event_t *e = (xcb_property_notify_event_t*)event;
+            last_timestamp = e->time;
             property_notify(e->state, e->window, e->atom);
             break;
 

@@ -21,6 +21,9 @@
 #include <yajl/yajl_version.h>
 #include <libgen.h>
 
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-launcher.h>
+
 #include "all.h"
 
 static iconv_t conversion_descriptor = 0;
@@ -56,38 +59,6 @@ bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
     uint32_t old_value = *destination;
 
     return ((*destination = new_value) != old_value);
-}
-
-/*
- * Starts the given application by passing it through a shell. We use double fork
- * to avoid zombie processes. As the started application’s parent exits (immediately),
- * the application is reparented to init (process-id 1), which correctly handles
- * childs, so we don’t have to do it :-).
- *
- * The shell is determined by looking for the SHELL environment variable. If it
- * does not exist, /bin/sh is used.
- *
- */
-void start_application(const char *command) {
-    LOG("executing: %s\n", command);
-    if (fork() == 0) {
-        /* Child process */
-        setsid();
-        if (fork() == 0) {
-            /* Stores the path of the shell */
-            static const char *shell = NULL;
-
-            if (shell == NULL)
-                if ((shell = getenv("SHELL")) == NULL)
-                    shell = "/bin/sh";
-
-            /* This is the child */
-            execl(shell, shell, "-c", command, (void*)NULL);
-            /* not reached */
-        }
-        exit(0);
-    }
-    wait(0);
 }
 
 /*

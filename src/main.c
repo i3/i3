@@ -19,6 +19,16 @@ extern Con *focused;
 char **start_argv;
 
 xcb_connection_t *conn;
+/* The screen (0 when you are using DISPLAY=:0) of the connection 'conn' */
+int conn_screen;
+
+/* Display handle for libstartup-notification */
+SnDisplay *sndisplay;
+
+/* The last timestamp we got from X11 (timestamps are included in some events
+ * and are used for some things, like determining a unique ID in startup
+ * notification). */
+xcb_timestamp_t last_timestamp = XCB_CURRENT_TIME;
 
 xcb_screen_t *root_screen;
 xcb_window_t root;
@@ -175,7 +185,6 @@ static void i3_exit() {
 }
 
 int main(int argc, char *argv[]) {
-    int screens;
     char *override_configpath = NULL;
     bool autostart = true;
     char *layout_path = NULL;
@@ -357,9 +366,11 @@ int main(int argc, char *argv[]) {
 
     LOG("i3 (tree) version " I3_VERSION " starting\n");
 
-    conn = xcb_connect(NULL, &screens);
+    conn = xcb_connect(NULL, &conn_screen);
     if (xcb_connection_has_error(conn))
         errx(EXIT_FAILURE, "Cannot open display\n");
+
+    sndisplay = sn_xcb_display_new(conn, NULL, NULL);
 
     /* Initialize the libev event loop. This needs to be done before loading
      * the config file because the parser will install an ev_child watcher
@@ -368,7 +379,7 @@ int main(int argc, char *argv[]) {
     if (main_loop == NULL)
             die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
 
-    root_screen = xcb_aux_get_screen(conn, screens);
+    root_screen = xcb_aux_get_screen(conn, conn_screen);
     root = root_screen->root;
     root_depth = root_screen->root_depth;
     xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);
@@ -431,17 +442,9 @@ int main(int argc, char *argv[]) {
 
     /* Set a cursor for the root window (otherwise the root window will show no
        cursor until the first client is launched). */
-    if (xcursor_supported) {
-        xcursor_set_root_cursor();
-    } else {
-        xcb_cursor_t cursor_id = xcb_generate_id(conn);
-        i3Font cursor_font = load_font("cursor", false);
-        int xcb_cursor = xcursor_get_xcb_cursor(XCURSOR_CURSOR_POINTER);
-        xcb_create_glyph_cursor(conn, cursor_id, cursor_font.id, cursor_font.id,
-                xcb_cursor, xcb_cursor + 1, 0, 0, 0, 65535, 65535, 65535);
-        xcb_change_window_attributes(conn, root, XCB_CW_CURSOR, &cursor_id);
-        xcb_free_cursor(conn, cursor_id);
-    }
+    if (xcursor_supported)
+        xcursor_set_root_cursor(XCURSOR_CURSOR_POINTER);
+    else xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
 
     if (xkb_supported) {
         int errBase,
