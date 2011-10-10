@@ -22,6 +22,40 @@ static TAILQ_HEAD(startup_sequence_head, Startup_Sequence) startup_sequences =
     TAILQ_HEAD_INITIALIZER(startup_sequences);
 
 /*
+ * After 60 seconds, a timeout will be triggered for each startup sequence.
+ *
+ * The internal startup sequence will be deleted, the libstartup-notification
+ * context will be completed and unref'd (therefore free'd aswell).
+ *
+ */
+static void startup_timeout(EV_P_ ev_timer *w, int revents) {
+    const char *id = sn_launcher_context_get_startup_id(w->data);
+    DLOG("Timeout for startup sequence %s\n", id);
+
+    struct Startup_Sequence *current, *sequence = NULL;
+    TAILQ_FOREACH(current, &startup_sequences, sequences) {
+        if (strcmp(current->id, id) != 0)
+            continue;
+
+        sequence = current;
+        break;
+    }
+
+    if (!sequence) {
+        DLOG("Sequence already deleted, nevermind.\n");
+        return;
+    }
+
+    /* Delete our internal sequence */
+    TAILQ_REMOVE(&startup_sequences, sequence, sequences);
+
+    /* Complete and unref the context */
+    sn_launcher_context_complete(w->data);
+    sn_launcher_context_unref(w->data);
+    free(w);
+}
+
+/*
  * Starts the given application by passing it through a shell. We use double fork
  * to avoid zombie processes. As the started application’s parent exits (immediately),
  * the application is reparented to init (process-id 1), which correctly handles
@@ -46,6 +80,12 @@ void start_application(const char *command) {
         *space = '\0';
     sn_launcher_context_initiate(context, "i3", first_word, last_timestamp);
     free(first_word);
+
+    /* Trigger a timeout after 60 seconds */
+    struct ev_timer *timeout = scalloc(sizeof(struct ev_timer));
+    ev_timer_init(timeout, startup_timeout, 60.0, 0.);
+    timeout->data = context;
+    ev_timer_start(main_loop, timeout);
 
     LOG("startup id = %s\n", sn_launcher_context_get_startup_id(context));
 
