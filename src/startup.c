@@ -115,3 +115,51 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
             break;
     }
 }
+
+/*
+ * Checks if the given window belongs to a startup notification by checking if
+ * the _NET_STARTUP_ID property is set on the window (or on its leader, if it’s
+ * unset).
+ *
+ * If so, returns the workspace on which the startup was initiated.
+ * Returns NULL otherwise.
+ *
+ */
+char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *startup_id_reply) {
+    /* The _NET_STARTUP_ID is only needed during this function, so we get it
+     * here and don’t save it in the 'cwindow'. */
+    if (startup_id_reply == NULL || xcb_get_property_value_length(startup_id_reply) == 0) {
+        DLOG("No _NET_STARTUP_ID set on this window\n");
+        /* TODO: check the leader, if any */
+        FREE(startup_id_reply);
+        return NULL;
+    }
+
+    char *startup_id;
+    if (asprintf(&startup_id, "%.*s", xcb_get_property_value_length(startup_id_reply),
+                 (char*)xcb_get_property_value(startup_id_reply)) == -1) {
+        perror("asprintf()");
+        DLOG("Could not get _NET_STARTUP_ID\n");
+        free(startup_id_reply);
+        return NULL;
+    }
+
+    struct Startup_Sequence *current, *sequence = NULL;
+    TAILQ_FOREACH(current, &startup_sequences, sequences) {
+        if (strcmp(current->id, startup_id) != 0)
+            continue;
+
+        sequence = current;
+        break;
+    }
+
+    free(startup_id);
+    free(startup_id_reply);
+
+    if (!sequence) {
+        DLOG("WARNING: This sequence (ID %s) was not found\n", startup_id);
+        return NULL;
+    }
+
+    return sequence->workspace;
+}

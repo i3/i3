@@ -84,7 +84,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
                               utf8_title_cookie, title_cookie,
                               class_cookie, leader_cookie, transient_cookie,
-                              role_cookie;
+                              role_cookie, startup_id_cookie;
 
 
     geomc = xcb_get_geometry(conn, d);
@@ -147,6 +147,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     title_cookie = GET_PROPERTY(XCB_ATOM_WM_NAME, 128);
     class_cookie = GET_PROPERTY(XCB_ATOM_WM_CLASS, 128);
     role_cookie = GET_PROPERTY(A_WM_WINDOW_ROLE, 128);
+    startup_id_cookie = GET_PROPERTY(A__NET_STARTUP_ID, 512);
     /* TODO: also get wm_normal_hints here. implement after we got rid of xcb-event */
 
     DLOG("reparenting!\n");
@@ -174,6 +175,11 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_transient_for(cwindow, xcb_get_property_reply(conn, transient_cookie, NULL));
     window_update_strut_partial(cwindow, xcb_get_property_reply(conn, strut_cookie, NULL));
     window_update_role(cwindow, xcb_get_property_reply(conn, role_cookie, NULL), true);
+
+    xcb_get_property_reply_t *startup_id_reply;
+    startup_id_reply = xcb_get_property_reply(conn, startup_id_cookie, NULL);
+    char *startup_ws = startup_workspace_for_window(cwindow, startup_id_reply);
+    DLOG("startup workspace = %s\n", startup_ws);
 
     /* check if the window needs WM_TAKE_FOCUS */
     cwindow->needs_take_focus = window_supports_protocol(cwindow->id, A_WM_TAKE_FOCUS);
@@ -233,6 +239,15 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
                 else nc = tree_open_con(nc->parent, cwindow);
             }
         /* TODO: handle assignments with type == A_TO_OUTPUT */
+        } else if (startup_ws) {
+            /* If it’s not assigned, but was started on a specific workspace,
+             * we want to open it there */
+            DLOG("Using workspace on which this application was started (%s)\n", startup_ws);
+            nc = con_descend_tiling_focused(workspace_get(startup_ws, NULL));
+            DLOG("focused on ws %s: %p / %s\n", startup_ws, nc, nc->name);
+            if (nc->type == CT_WORKSPACE)
+                nc = tree_open_con(nc, cwindow);
+            else nc = tree_open_con(nc->parent, cwindow);
         } else {
             /* If not, insert it at the currently focused position */
             if (focused->type == CT_CON && con_accepts_window(focused)) {

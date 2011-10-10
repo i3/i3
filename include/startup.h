@@ -32,4 +32,15 @@ void start_application(const char *command);
  */
 void startup_monitor_event(SnMonitorEvent *event, void *userdata);
 
+/**
+ * Checks if the given window belongs to a startup notification by checking if
+ * the _NET_STARTUP_ID property is set on the window (or on its leader, if it’s
+ * unset).
+ *
+ * If so, returns the workspace on which the startup was initiated.
+ * Returns NULL otherwise.
+ *
+ */
+char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *startup_id_reply);
+
 #endif
