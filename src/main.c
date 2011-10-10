@@ -442,17 +442,9 @@ int main(int argc, char *argv[]) {
 
     /* Set a cursor for the root window (otherwise the root window will show no
        cursor until the first client is launched). */
-    if (xcursor_supported) {
-        xcursor_set_root_cursor();
-    } else {
-        xcb_cursor_t cursor_id = xcb_generate_id(conn);
-        i3Font cursor_font = load_font("cursor", false);
-        int xcb_cursor = xcursor_get_xcb_cursor(XCURSOR_CURSOR_POINTER);
-        xcb_create_glyph_cursor(conn, cursor_id, cursor_font.id, cursor_font.id,
-                xcb_cursor, xcb_cursor + 1, 0, 0, 0, 65535, 65535, 65535);
-        xcb_change_window_attributes(conn, root, XCB_CW_CURSOR, &cursor_id);
-        xcb_free_cursor(conn, cursor_id);
-    }
+    if (xcursor_supported)
+        xcursor_set_root_cursor(XCURSOR_CURSOR_POINTER);
+    else xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
 
     if (xkb_supported) {
         int errBase,

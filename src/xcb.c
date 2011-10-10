@@ -341,3 +341,20 @@ void xcb_warp_pointer_rect(xcb_connection_t *conn, Rect *rect) {
     LOG("warp pointer to: %d %d\n", mid_x, mid_y);
     xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0, mid_x, mid_y);
 }
+
+/*
+ * Set the cursor of the root window to the given cursor id.
+ * This function should only be used if xcursor_supported == false.
+ * Otherwise, use xcursor_set_root_cursor().
+ *
+ */
+void xcb_set_root_cursor(int cursor) {
+    xcb_cursor_t cursor_id = xcb_generate_id(conn);
+    i3Font cursor_font = load_font("cursor", false);
+    int xcb_cursor = xcursor_get_xcb_cursor(cursor);
+    xcb_create_glyph_cursor(conn, cursor_id, cursor_font.id, cursor_font.id,
+            xcb_cursor, xcb_cursor + 1, 0, 0, 0, 65535, 65535, 65535);
+    xcb_change_window_attributes(conn, root, XCB_CW_CURSOR, &cursor_id);
+    xcb_free_cursor(conn, cursor_id);
+    xcb_flush(conn);
+}

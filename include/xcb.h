@@ -23,6 +23,7 @@
 #define XCB_CURSOR_LEFT_PTR     68
 #define XCB_CURSOR_SB_H_DOUBLE_ARROW 108
 #define XCB_CURSOR_SB_V_DOUBLE_ARROW 116
+#define XCB_CURSOR_WATCH 150
 
 /* from X11/keysymdef.h */
 #define XCB_NUM_LOCK                    0xff7f
@@ -149,5 +150,13 @@ bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom);
  *
  */
 void xcb_warp_pointer_rect(xcb_connection_t *conn, Rect *rect);
+
+/**
+ * Set the cursor of the root window to the given cursor id.
+ * This function should only be used if xcursor_supported == false.
+ * Otherwise, use xcursor_set_root_cursor().
+ *
+ */
+void xcb_set_root_cursor(int cursor);
 
 #endif

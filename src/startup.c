@@ -7,7 +7,9 @@
  *
  * See file LICENSE for license information.
  *
- * startup.c: Startup notification code
+ * startup.c: Startup notification code. Ensures a startup notification context
+ * is setup when launching applications. We store the current workspace to open
+ * windows in that startup notification context on the appropriate workspace.
  *
  */
 #include <sys/types.h>
@@ -124,6 +126,11 @@ void start_application(const char *command) {
         exit(0);
     }
     wait(0);
+
+    /* Change the pointer of the root window to indicate progress */
+    if (xcursor_supported)
+        xcursor_set_root_cursor(XCURSOR_CURSOR_WATCH);
+    else xcb_set_root_cursor(XCURSOR_CURSOR_WATCH);
 }
 
 /*
@@ -160,6 +167,14 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
 
             /* Delete our internal sequence */
             TAILQ_REMOVE(&startup_sequences, sequence, sequences);
+
+            if (TAILQ_EMPTY(&startup_sequences)) {
+                DLOG("No more startup sequences running, changing root window cursor to default pointer.\n");
+                /* Change the pointer of the root window to indicate progress */
+                if (xcursor_supported)
+                    xcursor_set_root_cursor(XCURSOR_CURSOR_POINTER);
+                else xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
+            }
             break;
         default:
             /* ignore */
