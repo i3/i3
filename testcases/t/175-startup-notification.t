@@ -106,7 +106,17 @@ sync_with_i3($x);
 is(@{get_ws_content($second_ws)}, 0, 'still no containers on the second workspace');
 is(@{get_ws_content($first_ws)}, 1, 'one container on the first workspace');
 
-# TODO: the same thing, but in a CLIENT_LEADER situation
+######################################################################
+# same thing, but with _NET_STARTUP_ID set on the leader
+######################################################################
+
+my $leader = open_window($x, { dont_map => 1 });
+mark_window($leader->id);
+
+$win = open_window($x, { client_leader => $leader });
+
+is(@{get_ws_content($second_ws)}, 0, 'still no containers on the second workspace');
+is(@{get_ws_content($first_ws)}, 2, 'two containers on the first workspace');
 
 ######################################################################
 # 2) open another window after the startup process is completed

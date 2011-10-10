@@ -129,10 +129,21 @@ char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *
     /* The _NET_STARTUP_ID is only needed during this function, so we get it
      * here and don’t save it in the 'cwindow'. */
     if (startup_id_reply == NULL || xcb_get_property_value_length(startup_id_reply) == 0) {
-        DLOG("No _NET_STARTUP_ID set on this window\n");
-        /* TODO: check the leader, if any */
         FREE(startup_id_reply);
-        return NULL;
+        DLOG("No _NET_STARTUP_ID set on this window\n");
+        if (cwindow->leader == XCB_NONE)
+            return NULL;
+
+        xcb_get_property_cookie_t cookie;
+        cookie = xcb_get_property(conn, false, cwindow->leader, A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
+        DLOG("Checking leader window 0x%08x\n", cwindow->leader);
+        startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
+
+        if (startup_id_reply == NULL || xcb_get_property_value_length(startup_id_reply) == 0) {
+            DLOG("No _NET_STARTUP_ID set on the leader either\n");
+            FREE(startup_id_reply);
+            return NULL;
+        }
     }
 
     char *startup_id;
