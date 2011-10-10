@@ -7,13 +7,15 @@
  * include/data.h: This file defines all data structures used by i3
  *
  */
+
+#ifndef _DATA_H
+#define _DATA_H
+
 #include <xcb/randr.h>
 #include <xcb/xcb_atom.h>
 #include <stdbool.h>
 #include <pcre.h>
 
-#ifndef _DATA_H
-#define _DATA_H
 #include "queue.h"
 
 /*
