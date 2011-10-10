@@ -13,6 +13,11 @@
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
 #include <xcb/xcb_atom.h>
+
+#ifdef XCB_COMPAT
+#include "xcb_compat.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
