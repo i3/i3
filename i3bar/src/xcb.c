@@ -1418,7 +1418,7 @@ void draw_bars() {
                 /* We assume the tray icons are quadratic (we use the font
                  * *height* as *width* of the icons) because we configured them
                  * like this. */
-                traypx += font_height;
+                traypx += font_height + 2;
             }
             /* Add 2px of padding if there are any tray icons */
             if (traypx > 0)
