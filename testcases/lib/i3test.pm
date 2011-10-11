@@ -1,5 +1,6 @@
 package i3test;
 # vim:ts=4:sw=4:expandtab
+use strict; use warnings;
 
 use File::Temp qw(tmpnam tempfile tempdir);
 use Test::Builder;
@@ -243,7 +244,7 @@ sub get_focused {
         $lf = $focused[0];
         last unless defined($con->{focus});
         @focused = @{$con->{focus}};
-        @cons = grep { $_->{id} == $lf } (@{$con->{nodes}}, @{$con->{'floating_nodes'}});
+        my @cons = grep { $_->{id} == $lf } (@{$con->{nodes}}, @{$con->{'floating_nodes'}});
         $con = $cons[0];
     }
 
