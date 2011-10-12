@@ -22,9 +22,11 @@
 #include "i3.h"
 
 typedef struct Config Config;
+typedef struct Barconfig Barconfig;
 extern char *current_configpath;
 extern Config config;
 extern SLIST_HEAD(modes_head, Mode) modes;
+extern SLIST_HEAD(barconfig_head, Barconfig) barconfigs;
 
 /**
  * Used during the config file lexing/parsing to keep the state of the lexer
@@ -168,6 +170,72 @@ struct Config {
         PDF_LEAVE_FULLSCREEN = 0,
         PDF_IGNORE = 1
     } popup_during_fullscreen;
+};
+
+/**
+ * Holds the status bar configuration (i3bar). One of these structures is
+ * created for each 'bar' block in the config.
+ *
+ */
+struct Barconfig {
+    /** Automatically generated ID for this bar config. Used by the bar process
+     * to request a specific configuration. */
+    char *id;
+
+    /** Number of outputs in the outputs array */
+    int num_outputs;
+    /** Outputs on which this bar should show up on. We use an array for
+     * simplicity (since we store just strings). */
+    char **outputs;
+
+    /** Output on which the tray should be shown. The special value of 'no'
+     * disables the tray (it’s enabled by default). */
+    char *tray_output;
+
+    /** Path to the i3 IPC socket. This option is discouraged since programs
+     * can find out the path by looking for the I3_SOCKET_PATH property on the
+     * root window! */
+    char *socket_path;
+
+    /** Bar display mode (hide unless modifier is pressed or show in dock mode) */
+    enum { M_HIDE = 0, M_DOCK = 1 } mode;
+
+    /** Bar position (bottom by default). */
+    enum { P_BOTTOM = 0, P_TOP = 1 } position;
+
+    /** Command that should be run to get a statusline, for example 'i3status'.
+     * Will be passed to the shell. */
+    char *status_command;
+
+    /** Font specification for all text rendered on the bar. */
+    char *font;
+
+    /** Hide workspace buttons? Configuration option is 'workspace_buttons no'
+     * but we invert the bool to get the correct default when initializing with
+     * zero. */
+    bool hide_workspace_buttons;
+
+    /** Enable verbose mode? Useful for debugging purposes. */
+    bool verbose;
+
+    struct bar_colors {
+        char *background;
+        char *statusline;
+
+        char *focused_workspace_text;
+        char *focused_workspace_bg;
+
+        char *active_workspace_text;
+        char *active_workspace_bg;
+
+        char *inactive_workspace_text;
+        char *inactive_workspace_bg;
+
+        char *urgent_workspace_text;
+        char *urgent_workspace_bg;
+    } colors;
+
+    SLIST_ENTRY(Barconfig) configs;
 };
 
 /**
