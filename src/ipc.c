@@ -476,6 +476,120 @@ IPC_HANDLER(get_marks) {
 }
 
 /*
+ * Formats the reply message for a GET_BAR_CONFIG request and sends it to the
+ * client.
+ *
+ */
+IPC_HANDLER(get_bar_config) {
+    /* To get a properly terminated buffer, we copy
+     * message_size bytes out of the buffer */
+    char *bar_id = scalloc(message_size + 1);
+    strncpy(bar_id, (const char*)message, message_size);
+    LOG("IPC: looking for config for bar ID \"%s\"\n", bar_id);
+    Barconfig *current, *config = NULL;
+    SLIST_FOREACH(current, &barconfigs, configs) {
+        if (strcmp(current->id, bar_id) != 0)
+            continue;
+
+        config = current;
+        break;
+    }
+
+#if YAJL_MAJOR >= 2
+    yajl_gen gen = yajl_gen_alloc(NULL);
+#else
+    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+#endif
+
+    y(map_open);
+
+    if (!config) {
+        /* If we did not find a config for the given ID, the reply will contain
+         * a null 'id' field. */
+        ystr("id");
+        y(null);
+    } else {
+        ystr("id");
+        ystr(config->id);
+
+        if (config->num_outputs > 0) {
+            ystr("outputs");
+            y(array_open);
+            for (int c = 0; c < config->num_outputs; c++)
+                ystr(config->outputs[c]);
+            y(array_close);
+        }
+
+#define YSTR_IF_SET(name) \
+        do { \
+            if (config->name) { \
+                ystr( # name); \
+                ystr(config->name); \
+            } \
+        } while (0)
+
+        YSTR_IF_SET(tray_output);
+        YSTR_IF_SET(socket_path);
+
+        ystr("mode");
+        if (config->mode == M_HIDE)
+            ystr("hide");
+        else ystr("dock");
+
+        ystr("position");
+        if (config->position == P_BOTTOM)
+            ystr("bottom");
+        else ystr("top");
+
+        YSTR_IF_SET(status_command);
+        YSTR_IF_SET(font);
+
+        ystr("workspace_buttons");
+        y(bool, !config->hide_workspace_buttons);
+
+        ystr("verbose");
+        y(bool, config->verbose);
+
+#undef YSTR_IF_SET
+#define YSTR_IF_SET(name) \
+        do { \
+            if (config->colors.name) { \
+                ystr( # name); \
+                ystr(config->colors.name); \
+            } \
+        } while (0)
+
+        ystr("colors");
+        y(map_open);
+        YSTR_IF_SET(background);
+        YSTR_IF_SET(statusline);
+        YSTR_IF_SET(focused_workspace_text);
+        YSTR_IF_SET(focused_workspace_bg);
+        YSTR_IF_SET(active_workspace_text);
+        YSTR_IF_SET(active_workspace_bg);
+        YSTR_IF_SET(inactive_workspace_text);
+        YSTR_IF_SET(inactive_workspace_bg);
+        YSTR_IF_SET(urgent_workspace_text);
+        YSTR_IF_SET(urgent_workspace_bg);
+
+#undef YSTR_IF_SET
+    }
+
+    y(map_close);
+
+    const unsigned char *payload;
+#if YAJL_MAJOR >= 2
+    size_t length;
+#else
+    unsigned int length;
+#endif
+    y(get_buf, &payload, &length);
+
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_BAR_CONFIG, payload);
+    y(free);
+}
+
+/*
  * Callback for the YAJL parser (will be called when a string is parsed).
  *
  */
@@ -560,13 +674,14 @@ IPC_HANDLER(subscribe) {
 
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[6] = {
+handler_t handlers[7] = {
     handle_command,
     handle_get_workspaces,
     handle_subscribe,
     handle_get_outputs,
     handle_tree,
-    handle_get_marks
+    handle_get_marks,
+    handle_get_bar_config
 };
 
 /*
