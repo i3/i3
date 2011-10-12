@@ -345,7 +345,7 @@ sub get_tree {
 Gets all the window identifier marks from i3 (>= v4.1).
 
     my $marks = i3->get_marks->recv;
-    say Dumper($tree);
+    say Dumper($marks);
 
 =cut
 sub get_marks {
