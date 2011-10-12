@@ -66,9 +66,11 @@ use constant TYPE_SUBSCRIBE => 2;
 use constant TYPE_GET_OUTPUTS => 3;
 use constant TYPE_GET_TREE => 4;
 use constant TYPE_GET_MARKS => 5;
+use constant TYPE_GET_BAR_CONFIG => 6;
 
 our %EXPORT_TAGS = ( 'all' => [
-    qw(i3 TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS TYPE_GET_TREE TYPE_GET_MARKS)
+    qw(i3 TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS
+       TYPE_GET_TREE TYPE_GET_MARKS TYPE_GET_BAR_CONFIG)
 ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
@@ -354,6 +356,22 @@ sub get_marks {
     $self->_ensure_connection;
 
     $self->message(TYPE_GET_MARKS)
+}
+
+=head2 get_bar_config
+
+Gets the bar configuration for the specific bar id from i3 (>= v4.1).
+
+    my $config = i3->get_bar_config($id)->recv;
+    say Dumper($config);
+
+=cut
+sub get_bar_config {
+    my ($self, $id) = @_;
+
+    $self->_ensure_connection;
+
+    $self->message(TYPE_GET_BAR_CONFIG, $id)
 }
 
 =head2 command($content)
