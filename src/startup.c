@@ -123,7 +123,7 @@ void start_application(const char *command) {
             execl(shell, shell, "-c", command, (void*)NULL);
             /* not reached */
         }
-        exit(0);
+        _exit(0);
     }
     wait(0);
 
