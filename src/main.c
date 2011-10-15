@@ -181,7 +181,12 @@ static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
  *
  */
 static void i3_exit() {
+/* We need ev >= 4 for the following code. Since it is not *that* important (it
+ * only makes sure that there are no i3-nagbar instances left behind) we still
+ * support old systems with libev 3. */
+#if EV_VERSION_MAJOR >= 4
     ev_loop_destroy(main_loop);
+#endif
 }
 
 int main(int argc, char *argv[]) {
