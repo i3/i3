@@ -174,6 +174,7 @@ bool definitelyGreaterThan(float a, float b, float epsilon) {
 %token              TOK_OR              "or"
 %token              TOK_PPT             "ppt"
 %token              TOK_NOP             "nop"
+%token              TOK_BACK_AND_FORTH  "back_and_forth"
 
 %token              TOK_CLASS           "class"
 %token              TOK_INSTANCE        "instance"
@@ -587,9 +588,28 @@ workspace:
         workspace_show(workspace_prev());
         tree_render();
     }
+    | TOK_WORKSPACE TOK_BACK_AND_FORTH
+    {
+        workspace_back_and_forth();
+        tree_render();
+    }
     | TOK_WORKSPACE STR
     {
         printf("should switch to workspace %s\n", $2);
+
+        Con *ws = con_get_workspace(focused);
+
+        /* Check if the command wants to switch to the current workspace */
+        if (strcmp(ws->name, $2) == 0) {
+            printf("This workspace is already focused.\n");
+            if (config.workspace_auto_back_and_forth) {
+                workspace_back_and_forth();
+                free($2);
+                tree_render();
+            }
+            break;
+        }
+
         workspace_show_by_name($2);
         free($2);
 

@@ -2,12 +2,16 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * workspace.c: Functions for modifying workspaces
  *
  */
 #include "all.h"
+
+/* Stores a copy of the name of the last used workspace for the workspace
+ * back-and-forth switching. */
+static char *previous_workspace_name = NULL;
 
 /*
  * Returns a pointer to the workspace with the given number (starting at 0),
@@ -191,10 +195,19 @@ static void _workspace_show(Con *workspace, bool changed_num_workspaces) {
     /* enable fullscreen for the target workspace. If it happens to be the
      * same one we are currently on anyways, we can stop here. */
     workspace->fullscreen_mode = CF_OUTPUT;
-    if (workspace == con_get_workspace(focused)) {
+    current = con_get_workspace(focused);
+    if (workspace == current) {
         DLOG("Not switching, already there.\n");
         return;
     }
+
+    /* Remember currently focused workspace for switching back to it later with
+     * the 'workspace back_and_forth' command.
+     * NOTE: We have to duplicate the name as the original will be freed when
+     * the corresponding workspace is cleaned up. */
+
+    FREE(previous_workspace_name);
+    previous_workspace_name = sstrdup(current->name);
 
     workspace_reassign_sticky(workspace);
 
@@ -366,6 +379,19 @@ Con* workspace_prev() {
 
 workspace_prev_end:
     return prev;
+}
+
+/*
+ * Focuses the previously focused workspace.
+ *
+ */
+void workspace_back_and_forth() {
+    if (!previous_workspace_name) {
+        DLOG("No previous workspace name set. Not switching.");
+        return;
+    }
+
+    workspace_show_by_name(previous_workspace_name);
 }
 
 static bool get_urgency_flag(Con *con) {

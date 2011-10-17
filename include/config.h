@@ -133,6 +133,12 @@ struct Config {
          * is fetched once and never updated. */
         bool force_xinerama;
 
+        /** Automatic workspace back and forth switching. If this is set, a
+         * switch to the currently active workspace will switch to the
+         * previously focused one instead, making it possible to fast toggle
+         * between two workspaces. */
+        bool workspace_auto_back_and_forth;
+
         /** The default border style for new windows. */
         border_style_t default_border;
 
