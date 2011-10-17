@@ -70,6 +70,13 @@ Con* workspace_next();
  */
 Con* workspace_prev();
 
+/**
+ * Focuses the previously focused workspace.
+ *
+ */
+void workspace_back_and_forth();
+
+
 #if 0
 /**
  * Assigns the given workspace to the given screen by correctly updating its

@@ -623,6 +623,7 @@ void parse_file(const char *f) {
 %token                  TOKFOCUSFOLLOWSMOUSE        "focus_follows_mouse"
 %token                  TOK_FORCE_FOCUS_WRAPPING    "force_focus_wrapping"
 %token                  TOK_FORCE_XINERAMA          "force_xinerama"
+%token                  TOK_WORKSPACE_AUTO_BAF      "workspace_auto_back_and_forth"
 %token                  TOKWORKSPACEBAR             "workspace_bar"
 %token                  TOK_DEFAULT                 "default"
 %token                  TOK_STACKING                "stacking"
@@ -679,6 +680,7 @@ line:
     | focus_follows_mouse
     | force_focus_wrapping
     | force_xinerama
+    | workspace_back_and_forth
     | workspace_bar
     | workspace
     | assign
@@ -1032,6 +1034,14 @@ force_xinerama:
     {
         DLOG("force xinerama = %d\n", $2);
         config.force_xinerama = $2;
+    }
+    ;
+
+workspace_back_and_forth:
+    TOK_WORKSPACE_AUTO_BAF bool
+    {
+        DLOG("automatic workspace back-and-forth = %d\n", $2);
+        config.workspace_auto_back_and_forth = $2;
     }
     ;
 

@@ -72,10 +72,11 @@ EOL (\r?\n)
     cmdyycolumn = 1;
 }
 
-    /* the next/prev tokens are here to recognize them *before* handling
-     * strings ('workspace' command) */
+    /* the next/prev/back_and_forth tokens are here to recognize them *before*
+     * handling strings ('workspace' command) */
 next                            { return TOK_NEXT; }
 prev                            { return TOK_PREV; }
+back_and_forth                  { return TOK_BACK_AND_FORTH; }
 
 <WANT_STRING>\"[^\"]+\"         {
                                   BEGIN(INITIAL);
