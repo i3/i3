@@ -207,7 +207,8 @@ static void _workspace_show(Con *workspace, bool changed_num_workspaces) {
      * the corresponding workspace is cleaned up. */
 
     FREE(previous_workspace_name);
-    previous_workspace_name = sstrdup(current->name);
+    if (current)
+        previous_workspace_name = sstrdup(current->name);
 
     workspace_reassign_sticky(workspace);
 
