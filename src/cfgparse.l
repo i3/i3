@@ -37,6 +37,11 @@ int yycolumn = 1;
     yy_push_state(EAT_WHITESPACE); \
 } while (0)
 
+#define BAR_DOUBLE_COLOR do { \
+    yy_push_state(BAR_COLOR); \
+    yy_push_state(BAR_COLOR); \
+} while (0)
+
 %}
 
 EOL     (\r?\n)
@@ -50,7 +55,13 @@ EOL     (\r?\n)
 %s OUTPUT_COND
 %s FOR_WINDOW_COND
 %s EAT_WHITESPACE
+
 %x BUFFER_LINE
+%x BAR
+%x BAR_MODE
+%x BAR_POSITION
+%x BAR_COLORS
+%x BAR_COLOR
 
 %%
 
@@ -74,6 +85,37 @@ EOL     (\r?\n)
     yycolumn = 1;
 }
 
+ /* This part of the lexer handles the bar {} blocks */
+<BAR,BAR_MODE,BAR_POSITION,BAR_COLORS,BAR_COLOR>[ \t]+ { /* ignore whitespace */ ; }
+<BAR>"{"                        { return '{'; }
+<BAR>"}"                        { yy_pop_state(); return '}'; }
+<BAR>^[ \t]*#[^\n]*             { return TOKCOMMENT; }
+<BAR>output                     { WS_STRING; return TOK_BAR_OUTPUT; }
+<BAR>tray_output                { WS_STRING; return TOK_BAR_TRAY_OUTPUT; }
+<BAR>socket_path                { WS_STRING; return TOK_BAR_SOCKET_PATH; }
+<BAR>mode                       { yy_push_state(BAR_MODE); return TOK_BAR_MODE; }
+<BAR_MODE>hide                  { yy_pop_state(); return TOK_BAR_HIDE; }
+<BAR_MODE>dock                  { yy_pop_state(); return TOK_BAR_DOCK; }
+<BAR>position                   { yy_push_state(BAR_POSITION); return TOK_BAR_POSITION; }
+<BAR_POSITION>bottom            { yy_pop_state(); return TOK_BAR_BOTTOM; }
+<BAR_POSITION>top               { yy_pop_state(); return TOK_BAR_TOP; }
+<BAR>status_command             { WS_STRING; return TOK_BAR_STATUS_COMMAND; }
+<BAR>font                       { WS_STRING; return TOK_BAR_FONT; }
+<BAR>workspace_buttons          { return TOK_BAR_WORKSPACE_BUTTONS; }
+<BAR>verbose                    { return TOK_BAR_VERBOSE; }
+<BAR>colors                     { yy_push_state(BAR_COLORS); return TOK_BAR_COLORS; }
+<BAR_COLORS>"{"                 { return '{'; }
+<BAR_COLORS>"}"                 { yy_pop_state(); return '}'; }
+<BAR_COLORS>background          { yy_push_state(BAR_COLOR); return TOK_BAR_COLOR_BACKGROUND; }
+<BAR_COLORS>statusline          { yy_push_state(BAR_COLOR); return TOK_BAR_COLOR_STATUSLINE; }
+<BAR_COLORS>focused_workspace   { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_FOCUSED_WORKSPACE; }
+<BAR_COLORS>active_workspace    { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_ACTIVE_WORKSPACE; }
+<BAR_COLORS>inactive_workspace  { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_INACTIVE_WORKSPACE; }
+<BAR_COLORS>urgent_workspace    { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_URGENT_WORKSPACE; }
+<BAR_COLOR>#[0-9a-fA-F]+        { yy_pop_state(); yylval.string = sstrdup(yytext+1); return HEXCOLOR; }
+<BAR,BAR_COLORS,BAR_MODE,BAR_POSITION>[a-zA-Z]+ { yylval.string = sstrdup(yytext); return WORD; }
+
+
 
 <FOR_WINDOW_COND>"]"            { yy_pop_state(); return ']'; }
 <ASSIGN_COND>"["                {
@@ -93,13 +135,14 @@ EOL     (\r?\n)
                                   yylval.string = copy;
                                   return STR;
                                 }
-<WANT_STRING>[^\n]+             { BEGIN(INITIAL); yylval.string = sstrdup(yytext); return STR; }
+<WANT_STRING>[^\n]+             { yy_pop_state(); yylval.string = sstrdup(yytext); return STR; }
 <OUTPUT_COND>[a-zA-Z0-9_-]+     { yylval.string = sstrdup(yytext); return OUTPUT; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
 <COLOR_COND>[0-9a-fA-F]+        { yylval.string = sstrdup(yytext); return HEX; }
 <ASSIGN_TARGET_COND>[ \t]*→[ \t]*     { BEGIN(WANT_STRING); }
 <ASSIGN_TARGET_COND>[ \t]+      { BEGIN(WANT_STRING); }
 [0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
+bar                             { yy_push_state(BAR); return TOK_BAR; }
 mode                            { return TOKMODE; }
 bind                            { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
 bindcode                        { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
@@ -179,10 +222,9 @@ con_id                          { yy_push_state(WANT_QSTRING); return TOK_CON_ID
 con_mark                        { yy_push_state(WANT_QSTRING); return TOK_MARK; }
 title                           { yy_push_state(WANT_QSTRING); return TOK_TITLE; }
 
-{EOL}                           {
+<*>{EOL}                        {
                                   FREE(context->line_copy);
                                   context->line_number++;
-                                  BEGIN(INITIAL);
                                   yy_push_state(BUFFER_LINE);
                                 }
 <BINDSYM_COND>[ \t]+            { BEGIN(WANT_STRING); }

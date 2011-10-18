@@ -14,6 +14,7 @@
 static pid_t configerror_pid = -1;
 
 static Match current_match;
+static Barconfig current_bar;
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(struct context *context);
@@ -587,6 +588,7 @@ void parse_file(const char *f) {
 %token  <string>        STR                         "<string>"
 %token  <string>        STR_NG                      "<string (non-greedy)>"
 %token  <string>        HEX                         "<hex>"
+%token  <string>        HEXCOLOR                    "#<hex>"
 %token  <string>        OUTPUT                      "<RandR output>"
 %token                  TOKBINDCODE
 %token                  TOKTERMINAL
@@ -610,6 +612,7 @@ void parse_file(const char *f) {
 %token  <color>         TOKCOLOR
 %token                  TOKARROW                    "→"
 %token                  TOKMODE                     "mode"
+%token                  TOK_BAR                     "bar"
 %token                  TOK_ORIENTATION             "default_orientation"
 %token                  TOK_HORIZ                   "horizontal"
 %token                  TOK_VERT                    "vertical"
@@ -634,6 +637,27 @@ void parse_file(const char *f) {
 %token                  TOK_LEAVE_FULLSCREEN        "leave_fullscreen"
 %token                  TOK_FOR_WINDOW              "for_window"
 
+%token                  TOK_BAR_OUTPUT              "output (bar)"
+%token                  TOK_BAR_TRAY_OUTPUT         "tray_output"
+%token                  TOK_BAR_SOCKET_PATH         "socket_path"
+%token                  TOK_BAR_MODE                "mode"
+%token                  TOK_BAR_HIDE                "hide"
+%token                  TOK_BAR_DOCK                "dock"
+%token                  TOK_BAR_POSITION            "position"
+%token                  TOK_BAR_BOTTOM              "bottom"
+%token                  TOK_BAR_TOP                 "top"
+%token                  TOK_BAR_STATUS_COMMAND      "status_command"
+%token                  TOK_BAR_FONT                "font"
+%token                  TOK_BAR_WORKSPACE_BUTTONS   "workspace_buttons"
+%token                  TOK_BAR_VERBOSE             "verbose"
+%token                  TOK_BAR_COLORS              "colors"
+%token                  TOK_BAR_COLOR_BACKGROUND    "background"
+%token                  TOK_BAR_COLOR_STATUSLINE    "statusline"
+%token                  TOK_BAR_COLOR_FOCUSED_WORKSPACE "focused_workspace"
+%token                  TOK_BAR_COLOR_ACTIVE_WORKSPACE "active_workspace"
+%token                  TOK_BAR_COLOR_INACTIVE_WORKSPACE "inactive_workspace"
+%token                  TOK_BAR_COLOR_URGENT_WORKSPACE "urgent_workspace"
+
 %token              TOK_MARK            "mark"
 %token              TOK_CLASS           "class"
 %token              TOK_INSTANCE        "instance"
@@ -655,6 +679,8 @@ void parse_file(const char *f) {
 %type   <number>        colorpixel
 %type   <number>        bool
 %type   <number>        popup_setting
+%type   <number>        bar_position_position
+%type   <number>        bar_mode_mode
 %type   <string>        command
 %type   <string>        word_or_number
 %type   <string>        optional_workspace_name
@@ -672,6 +698,7 @@ line:
     bindline
     | for_window
     | mode
+    | bar
     | floating_modifier
     | orientation
     | workspace_layout
@@ -899,6 +926,200 @@ modeline:
         }
 
         TAILQ_INSERT_TAIL(current_bindings, $1, bindings);
+    }
+    ;
+
+bar:
+    TOK_BAR '{' barlines '}'
+    {
+        printf("\t new bar configuration finished, saving.\n");
+        /* Generate a unique ID for this bar */
+        current_bar.id = sstrdup("foo"); /* TODO */
+
+        /* Copy the current (static) structure into a dynamically allocated
+         * one, then cleanup our static one. */
+        Barconfig *bar_config = scalloc(sizeof(Barconfig));
+        memcpy(bar_config, &current_bar, sizeof(Barconfig));
+        TAILQ_INSERT_TAIL(&barconfigs, bar_config, configs);
+
+        memset(&current_bar, '\0', sizeof(Barconfig));
+    }
+    ;
+
+barlines:
+    /* empty */
+    | barlines barline
+    ;
+
+barline:
+    comment
+    | bar_status_command
+    | bar_output
+    | bar_tray_output
+    | bar_position
+    | bar_mode
+    | bar_font
+    | bar_workspace_buttons
+    | bar_verbose
+    | bar_socket_path
+    | bar_colors
+    | bar_color_background
+    | bar_color_statusline
+    | bar_color_focused_workspace
+    | bar_color_active_workspace
+    | bar_color_inactive_workspace
+    | bar_color_urgent_workspace
+    ;
+
+bar_status_command:
+    TOK_BAR_STATUS_COMMAND STR
+    {
+        DLOG("should add status command %s\n", $2);
+        FREE(current_bar.status_command);
+        current_bar.status_command = $2;
+    }
+    ;
+
+bar_output:
+    TOK_BAR_OUTPUT STR
+    {
+        DLOG("bar output %s\n", $2);
+        int new_outputs = current_bar.num_outputs + 1;
+        current_bar.outputs = srealloc(current_bar.outputs, sizeof(char*) * new_outputs);
+        current_bar.outputs[current_bar.num_outputs] = $2;
+        current_bar.num_outputs = new_outputs;
+    }
+    ;
+
+bar_tray_output:
+    TOK_BAR_TRAY_OUTPUT STR
+    {
+        DLOG("tray %s\n", $2);
+        FREE(current_bar.tray_output);
+        current_bar.tray_output = $2;
+    }
+    ;
+
+bar_position:
+    TOK_BAR_POSITION bar_position_position
+    {
+        DLOG("position %d\n", $2);
+        current_bar.position = $2;
+    }
+    ;
+
+bar_position_position:
+    TOK_BAR_TOP      { $$ = P_TOP; }
+    | TOK_BAR_BOTTOM { $$ = P_BOTTOM; }
+    ;
+
+bar_mode:
+    TOK_BAR_MODE bar_mode_mode
+    {
+        DLOG("mode %d\n", $2);
+        current_bar.mode = $2;
+    }
+    ;
+
+bar_mode_mode:
+    TOK_BAR_HIDE   { $$ = M_HIDE; }
+    | TOK_BAR_DOCK { $$ = M_DOCK; }
+    ;
+
+bar_font:
+    TOK_BAR_FONT STR
+    {
+        DLOG("font %s\n", $2);
+        FREE(current_bar.font);
+        current_bar.font = $2;
+    }
+    ;
+
+bar_workspace_buttons:
+    TOK_BAR_WORKSPACE_BUTTONS bool
+    {
+        DLOG("workspace_buttons = %d\n", $2);
+        /* We store this inverted to make the default setting right when
+         * initializing the struct with zero. */
+        current_bar.hide_workspace_buttons = !($2);
+    }
+    ;
+
+bar_verbose:
+    TOK_BAR_VERBOSE bool
+    {
+        DLOG("verbose = %d\n", $2);
+        current_bar.verbose = $2;
+    }
+    ;
+
+bar_socket_path:
+    TOK_BAR_SOCKET_PATH STR
+    {
+        DLOG("socket_path = %s\n", $2);
+        FREE(current_bar.socket_path);
+        current_bar.socket_path = $2;
+    }
+    ;
+
+bar_colors:
+    TOK_BAR_COLORS '{' barlines '}'
+    {
+        /* At the moment, the TOK_BAR_COLORS token is only to make the config
+         * friendlier for humans. We might change this in the future if it gets
+         * more complex. */
+    }
+    ;
+
+bar_color_background:
+    TOK_BAR_COLOR_BACKGROUND HEXCOLOR
+    {
+        DLOG("background = %s\n", $2);
+        current_bar.colors.background = $2;
+    }
+    ;
+
+bar_color_statusline:
+    TOK_BAR_COLOR_STATUSLINE HEXCOLOR
+    {
+        DLOG("statusline = %s\n", $2);
+        current_bar.colors.statusline = $2;
+    }
+    ;
+
+bar_color_focused_workspace:
+    TOK_BAR_COLOR_FOCUSED_WORKSPACE HEXCOLOR HEXCOLOR
+    {
+        DLOG("focused_ws = %s and %s\n", $2, $3);
+        current_bar.colors.focused_workspace_text = $2;
+        current_bar.colors.focused_workspace_bg = $3;
+    }
+    ;
+
+bar_color_active_workspace:
+    TOK_BAR_COLOR_ACTIVE_WORKSPACE HEXCOLOR HEXCOLOR
+    {
+        DLOG("active_ws = %s and %s\n", $2, $3);
+        current_bar.colors.active_workspace_text = $2;
+        current_bar.colors.active_workspace_bg = $3;
+    }
+    ;
+
+bar_color_inactive_workspace:
+    TOK_BAR_COLOR_INACTIVE_WORKSPACE HEXCOLOR HEXCOLOR
+    {
+        DLOG("inactive_ws = %s and %s\n", $2, $3);
+        current_bar.colors.inactive_workspace_text = $2;
+        current_bar.colors.inactive_workspace_bg = $3;
+    }
+    ;
+
+bar_color_urgent_workspace:
+    TOK_BAR_COLOR_URGENT_WORKSPACE HEXCOLOR HEXCOLOR
+    {
+        DLOG("urgent_ws = %s and %s\n", $2, $3);
+        current_bar.colors.urgent_workspace_text = $2;
+        current_bar.colors.urgent_workspace_bg = $3;
     }
     ;
 
