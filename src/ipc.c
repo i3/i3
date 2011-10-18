@@ -481,6 +481,34 @@ IPC_HANDLER(get_marks) {
  *
  */
 IPC_HANDLER(get_bar_config) {
+#if YAJL_MAJOR >= 2
+    yajl_gen gen = yajl_gen_alloc(NULL);
+#else
+    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+#endif
+
+    /* If no ID was passed, we return a JSON array with all IDs */
+    if (message_size == 0) {
+        y(array_open);
+        Barconfig *current;
+        TAILQ_FOREACH(current, &barconfigs, configs) {
+            ystr(current->id);
+        }
+        y(array_close);
+
+        const unsigned char *payload;
+#if YAJL_MAJOR >= 2
+        size_t length;
+#else
+        unsigned int length;
+#endif
+        y(get_buf, &payload, &length);
+
+        ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_BAR_CONFIG, payload);
+        y(free);
+        return;
+    }
+
     /* To get a properly terminated buffer, we copy
      * message_size bytes out of the buffer */
     char *bar_id = scalloc(message_size + 1);
@@ -494,12 +522,6 @@ IPC_HANDLER(get_bar_config) {
         config = current;
         break;
     }
-
-#if YAJL_MAJOR >= 2
-    yajl_gen gen = yajl_gen_alloc(NULL);
-#else
-    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
-#endif
 
     y(map_open);
 
