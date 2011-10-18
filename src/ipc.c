@@ -487,7 +487,7 @@ IPC_HANDLER(get_bar_config) {
     strncpy(bar_id, (const char*)message, message_size);
     LOG("IPC: looking for config for bar ID \"%s\"\n", bar_id);
     Barconfig *current, *config = NULL;
-    SLIST_FOREACH(current, &barconfigs, configs) {
+    TAILQ_FOREACH(current, &barconfigs, configs) {
         if (strcmp(current->id, bar_id) != 0)
             continue;
 

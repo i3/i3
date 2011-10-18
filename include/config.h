@@ -26,7 +26,7 @@ typedef struct Barconfig Barconfig;
 extern char *current_configpath;
 extern Config config;
 extern SLIST_HEAD(modes_head, Mode) modes;
-extern SLIST_HEAD(barconfig_head, Barconfig) barconfigs;
+extern TAILQ_HEAD(barconfig_head, Barconfig) barconfigs;
 
 /**
  * Used during the config file lexing/parsing to keep the state of the lexer
@@ -235,7 +235,7 @@ struct Barconfig {
         char *urgent_workspace_bg;
     } colors;
 
-    SLIST_ENTRY(Barconfig) configs;
+    TAILQ_ENTRY(Barconfig) configs;
 };
 
 /**

@@ -21,7 +21,7 @@
 char *current_configpath = NULL;
 Config config;
 struct modes_head modes;
-struct barconfig_head barconfigs;
+struct barconfig_head barconfigs = TAILQ_HEAD_INITIALIZER(barconfigs);
 
 /**
  * Ungrabs all keys, to be called before re-grabbing the keys because of a
