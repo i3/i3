@@ -571,6 +571,7 @@ IPC_HANDLER(get_bar_config) {
         YSTR_IF_SET(inactive_workspace_bg);
         YSTR_IF_SET(urgent_workspace_text);
         YSTR_IF_SET(urgent_workspace_bg);
+        y(map_close);
 
 #undef YSTR_IF_SET
     }
