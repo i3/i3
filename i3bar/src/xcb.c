@@ -790,10 +790,11 @@ void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 }
 
 /*
- * Initialize xcb and use the specified fontname for text-rendering
+ * Early initialization of the connection to X11: Everything which does not
+ * depend on 'config'.
  *
  */
-char *init_xcb(char *fontname) {
+char *init_xcb_early() {
     /* FIXME: xcb_connect leaks Memory */
     xcb_connection = xcb_connect(NULL, &screen);
     if (xcb_connection_has_error(xcb_connection)) {
@@ -809,66 +810,10 @@ char *init_xcb(char *fontname) {
     xcb_screen = xcb_setup_roots_iterator(xcb_get_setup(xcb_connection)).data;
     xcb_root = xcb_screen->root;
 
-    /* We load and allocate the font */
-    xcb_font = xcb_generate_id(xcb_connection);
-    xcb_void_cookie_t open_font_cookie;
-    open_font_cookie = xcb_open_font_checked(xcb_connection,
-                                             xcb_font,
-                                             strlen(fontname),
-                                             fontname);
-
-    /* We need to save info about the font, because we need the font's height and
-     * information about the width of characters */
-    xcb_query_font_cookie_t query_font_cookie;
-    query_font_cookie = xcb_query_font(xcb_connection,
-                                       xcb_font);
-
-    /* To grab modifiers without blocking other applications from receiving key-events
-     * involving that modifier, we sadly have to use xkb which is not yet fully supported
-     * in xcb */
-    if (config.hide_on_modifier) {
-        int xkb_major, xkb_minor, xkb_errbase, xkb_err;
-        xkb_major = XkbMajorVersion;
-        xkb_minor = XkbMinorVersion;
-
-        xkb_dpy = XkbOpenDisplay(NULL,
-                                 &xkb_event_base,
-                                 &xkb_errbase,
-                                 &xkb_major,
-                                 &xkb_minor,
-                                 &xkb_err);
-
-        if (xkb_dpy == NULL) {
-            ELOG("No XKB!\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if (fcntl(ConnectionNumber(xkb_dpy), F_SETFD, FD_CLOEXEC) == -1) {
-            ELOG("Could not set FD_CLOEXEC on xkbdpy: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-
-        int i1;
-        if (!XkbQueryExtension(xkb_dpy, &i1, &xkb_event_base, &xkb_errbase, &xkb_major, &xkb_minor)) {
-            ELOG("XKB not supported by X-server!\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if (!XkbSelectEvents(xkb_dpy, XkbUseCoreKbd, XkbStateNotifyMask, XkbStateNotifyMask)) {
-            ELOG("Could not grab Key!\n");
-            exit(EXIT_FAILURE);
-        }
-
-        xkb_io = malloc(sizeof(ev_io));
-        ev_io_init(xkb_io, &xkb_io_cb, ConnectionNumber(xkb_dpy), EV_READ);
-        ev_io_start(main_loop, xkb_io);
-        XFlush(xkb_dpy);
-    }
-
     /* We draw the statusline to a seperate pixmap, because it looks the same on all bars and
      * this way, we can choose to crop it */
     uint32_t mask = XCB_GC_FOREGROUND;
-    uint32_t vals[3] = { colors.bar_bg, colors.bar_bg, xcb_font };
+    uint32_t vals[] = { colors.bar_bg, colors.bar_bg };
 
     statusline_clear = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t clear_ctx_cookie = xcb_create_gc_checked(xcb_connection,
@@ -877,7 +822,7 @@ char *init_xcb(char *fontname) {
                                                                mask,
                                                                vals);
 
-    mask |= XCB_GC_BACKGROUND | XCB_GC_FONT;
+    mask |= XCB_GC_BACKGROUND;
     vals[0] = colors.bar_fg;
     statusline_ctx = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_ctx_cookie = xcb_create_gc_checked(xcb_connection,
@@ -931,6 +876,92 @@ char *init_xcb(char *fontname) {
         }
     }
 
+
+    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer") ||
+        xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline-buffer-clearcontext") ||
+        xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline-buffer-context")) {
+        exit(EXIT_FAILURE);
+    }
+
+    return path;
+}
+
+/*
+ * Initialization which depends on 'config' being usable. Called after the
+ * configuration has arrived.
+ *
+ */
+void init_xcb_late(char *fontname) {
+    if (fontname == NULL) {
+        /* This is a very restrictive default. More sensefull would be something like
+         * "-misc-*-*-*-*--*-*-*-*-*-*-*-*". But since that produces very ugly results
+         * on my machine, let's stick with this until we have a configfile */
+        fontname = "-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1";
+    }
+
+    /* We load and allocate the font */
+    xcb_font = xcb_generate_id(xcb_connection);
+    xcb_void_cookie_t open_font_cookie;
+    open_font_cookie = xcb_open_font_checked(xcb_connection,
+                                             xcb_font,
+                                             strlen(fontname),
+                                             fontname);
+
+    /* We need to save info about the font, because we need the font's height and
+     * information about the width of characters */
+    xcb_query_font_cookie_t query_font_cookie;
+    query_font_cookie = xcb_query_font(xcb_connection,
+                                       xcb_font);
+
+    xcb_change_gc(xcb_connection,
+                  statusline_ctx,
+                  XCB_GC_FONT,
+                  (uint32_t[]){ xcb_font });
+
+    xcb_flush(xcb_connection);
+
+    /* To grab modifiers without blocking other applications from receiving key-events
+     * involving that modifier, we sadly have to use xkb which is not yet fully supported
+     * in xcb */
+    if (config.hide_on_modifier) {
+        int xkb_major, xkb_minor, xkb_errbase, xkb_err;
+        xkb_major = XkbMajorVersion;
+        xkb_minor = XkbMinorVersion;
+
+        xkb_dpy = XkbOpenDisplay(NULL,
+                                 &xkb_event_base,
+                                 &xkb_errbase,
+                                 &xkb_major,
+                                 &xkb_minor,
+                                 &xkb_err);
+
+        if (xkb_dpy == NULL) {
+            ELOG("No XKB!\n");
+            exit(EXIT_FAILURE);
+        }
+
+        if (fcntl(ConnectionNumber(xkb_dpy), F_SETFD, FD_CLOEXEC) == -1) {
+            ELOG("Could not set FD_CLOEXEC on xkbdpy: %s\n", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+
+        int i1;
+        if (!XkbQueryExtension(xkb_dpy, &i1, &xkb_event_base, &xkb_errbase, &xkb_major, &xkb_minor)) {
+            ELOG("XKB not supported by X-server!\n");
+            exit(EXIT_FAILURE);
+        }
+
+        if (!XkbSelectEvents(xkb_dpy, XkbUseCoreKbd, XkbStateNotifyMask, XkbStateNotifyMask)) {
+            ELOG("Could not grab Key!\n");
+            exit(EXIT_FAILURE);
+        }
+
+        xkb_io = malloc(sizeof(ev_io));
+        ev_io_init(xkb_io, &xkb_io_cb, ConnectionNumber(xkb_dpy), EV_READ);
+        ev_io_start(main_loop, xkb_io);
+        XFlush(xkb_dpy);
+    }
+
     /* Now we save the font-infos */
     font_info = xcb_query_font_reply(xcb_connection,
                                      query_font_cookie,
@@ -949,14 +980,6 @@ char *init_xcb(char *fontname) {
     }
 
     DLOG("Calculated Font-height: %d\n", font_height);
-
-    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer") ||
-        xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline-buffer-clearcontext") ||
-        xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline-buffer-context")) {
-        exit(EXIT_FAILURE);
-    }
-
-    return path;
 }
 
 /*

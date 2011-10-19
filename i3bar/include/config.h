@@ -13,10 +13,25 @@ typedef struct config_t {
     int          hide_on_modifier;
     dockpos_t    dockpos;
     int          verbose;
-    xcb_colors_t *colors;
+    struct xcb_color_strings_t colors;
     int          disable_ws;
+    char         *bar_id;
+    char         *command;
+    char         *fontname;
 } config_t;
 
 config_t config;
+
+/**
+ * Start parsing the received bar configuration json-string
+ *
+ */
+void parse_config_json(char *json);
+
+/**
+ * free()s the color strings as soon as they are not needed anymore.
+ *
+ */
+void free_colors(struct xcb_color_strings_t *colors);
 
 #endif

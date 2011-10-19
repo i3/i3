@@ -114,12 +114,47 @@ void got_output_reply(char *reply) {
     reconfig_windows();
 }
 
+/*
+ * Called when we get the configuration for our bar instance
+ *
+ */
+void got_bar_config(char *reply) {
+    DLOG("Received bar config \"%s\"\n", reply);
+    /* We initiate the main-function by requesting infos about the outputs and
+     * workspaces. Everything else (creating the bars, showing the right workspace-
+     * buttons and more) is taken care of by the event-drivenness of the code */
+    i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
+    parse_config_json(reply);
+
+    /* Now we can actually use 'config', so let's subscribe to the appropriate
+     * events and request the workspaces if necessary. */
+    subscribe_events();
+    if (!config.disable_ws)
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
+
+    /* Initialize the rest of XCB */
+    init_xcb_late(config.fontname);
+
+    /* Resolve color strings to colorpixels and save them, then free the strings. */
+    init_colors(&(config.colors));
+    free_colors(&(config.colors));
+
+    /* The name of this function is actually misleading. Even if no command is
+     * specified, this function initiates the watchers to listen on stdin and
+     * react accordingly */
+    start_child(config.command);
+    FREE(config.command);
+}
+
 /* Data-structure to easily call the reply-handlers later */
 handler_t reply_handlers[] = {
     &got_command_reply,
     &got_workspace_reply,
     &got_subscribe_reply,
     &got_output_reply,
+    NULL,
+    NULL,
+    &got_bar_config,
 };
 
 /*
@@ -232,7 +267,8 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
         type ^= 1 << 31;
         event_handlers[type](buffer);
     } else {
-        reply_handlers[type](buffer);
+        if (reply_handlers[type])
+            reply_handlers[type](buffer);
     }
 
     FREE(header);
