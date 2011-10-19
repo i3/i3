@@ -217,6 +217,8 @@ int main(int argc, char *argv[]) {
     if (!isatty(fileno(stdout)))
         setbuf(stdout, NULL);
 
+    srand(time(NULL));
+
     init_logging();
 
     start_argv = argv;

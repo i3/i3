@@ -934,7 +934,14 @@ bar:
     {
         printf("\t new bar configuration finished, saving.\n");
         /* Generate a unique ID for this bar */
-        current_bar.id = sstrdup("foo"); /* TODO */
+        current_bar.id = sstrdup("bar-XXXXXX");
+        /* This works similar to mktemp in that it replaces the last six X with
+         * random letters, but without the restriction that the given buffer
+         * has to contain a valid path name. */
+        char *x = current_bar.id + strlen("bar-");
+        while (*x != '\0') {
+            *(x++) = (rand() % 26) + 'a';
+        }
 
         /* Copy the current (static) structure into a dynamically allocated
          * one, then cleanup our static one. */

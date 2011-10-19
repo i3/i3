@@ -99,9 +99,9 @@ $i3 = i3(get_socket_path(0));
 $bars = $i3->get_bar_config()->recv;
 is(@$bars, 1, 'one bar configured');
 
-my $bar_id = shift @$bars;
+$bar_id = shift @$bars;
 
-my $bar_config = $i3->get_bar_config($bar_id)->recv;
+$bar_config = $i3->get_bar_config($bar_id)->recv;
 is($bar_config->{status_command}, 'i3status --bar', 'status_command correct');
 ok($bar_config->{verbose}, 'verbose on');
 ok(!$bar_config->{workspace_buttons}, 'workspace buttons disabled');
@@ -124,6 +124,41 @@ is_deeply($bar_config->{colors},
         urgent_workspace_text => 'ffffff',
         urgent_workspace_bg => '900000',
     }, 'colors ok');
+
+exit_gracefully($pid);
+
+#####################################################################
+# ensure that multiple bars get different IDs
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+bar {
+    # Start a default instance of i3bar which provides workspace buttons.
+    # Additionally, i3status will provide a statusline.
+    status_command i3status --bar
+
+    output HDMI1
+}
+
+bar {
+    output VGA1
+}
+EOT
+
+$pid = launch_with_config($config);
+
+$i3 = i3(get_socket_path(0));
+$bars = $i3->get_bar_config()->recv;
+is(@$bars, 2, 'two bars configured');
+isnt($bars->[0], $bars->[1], 'bar IDs are different');
+
+my $bar1_config = $i3->get_bar_config($bars->[0])->recv;
+my $bar2_config = $i3->get_bar_config($bars->[1])->recv;
+
+isnt($bar1_config->{outputs}, $bar2_config->{outputs}, 'outputs different');
 
 exit_gracefully($pid);
 
