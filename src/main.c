@@ -633,6 +633,17 @@ int main(int argc, char *argv[]) {
         start_application(exec_always->command);
     }
 
+    /* Start i3bar processes for all configured bars */
+    Barconfig *barconfig;
+    TAILQ_FOREACH(barconfig, &barconfigs, configs) {
+        char *command = NULL;
+        asprintf(&command, "i3bar --bar_id=%s --socket=\"%s\"",
+                 barconfig->id, current_socketpath);
+        LOG("Starting bar process: %s\n", command);
+        start_application(command);
+        free(command);
+    }
+
     /* Make sure to destroy the event loop to invoke the cleeanup callbacks
      * when calling exit() */
     atexit(i3_exit);
