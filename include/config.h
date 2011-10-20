@@ -198,7 +198,7 @@ struct Barconfig {
     char *socket_path;
 
     /** Bar display mode (hide unless modifier is pressed or show in dock mode) */
-    enum { M_HIDE = 0, M_DOCK = 1 } mode;
+    enum { M_DOCK = 0, M_HIDE = 1 } mode;
 
     /** Bar position (bottom by default). */
     enum { P_BOTTOM = 0, P_TOP = 1 } position;
