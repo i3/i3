@@ -8,7 +8,7 @@ WriteMakefile(
     MIN_PERL_VERSION => '5.010000', # 5.10.0
     PREREQ_PM => {
         'AnyEvent'     => 0,
-        'AnyEvent::I3' => '0.08',
+        'AnyEvent::I3' => '0.09',
         'X11::XCB'     => '0.03',
         'Test::Most'   => 0,
         'Test::Deep'   => 0,
