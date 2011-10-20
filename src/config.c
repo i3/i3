@@ -295,6 +295,32 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(assign);
         }
 
+        /* Clear bar configs */
+        Barconfig *barconfig;
+        while (!TAILQ_EMPTY(&barconfigs)) {
+            barconfig = TAILQ_FIRST(&barconfigs);
+            FREE(barconfig->id);
+            for (int c = 0; c < barconfig->num_outputs; c++)
+                free(barconfig->outputs[c]);
+            FREE(barconfig->outputs);
+            FREE(barconfig->tray_output);
+            FREE(barconfig->socket_path);
+            FREE(barconfig->status_command);
+            FREE(barconfig->font);
+            FREE(barconfig->colors.background);
+            FREE(barconfig->colors.statusline);
+            FREE(barconfig->colors.focused_workspace_text);
+            FREE(barconfig->colors.focused_workspace_bg);
+            FREE(barconfig->colors.active_workspace_text);
+            FREE(barconfig->colors.active_workspace_bg);
+            FREE(barconfig->colors.inactive_workspace_text);
+            FREE(barconfig->colors.inactive_workspace_bg);
+            FREE(barconfig->colors.urgent_workspace_text);
+            FREE(barconfig->colors.urgent_workspace_bg);
+            TAILQ_REMOVE(&barconfigs, barconfig, configs);
+            FREE(barconfig);
+        }
+
         /* Clear workspace names */
 #if 0
         Workspace *ws;

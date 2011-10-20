@@ -54,6 +54,14 @@ ok($bar_config->{workspace_buttons}, 'workspace buttons enabled per default');
 is($bar_config->{mode}, 'hide', 'hide mode by default');
 is($bar_config->{position}, 'bottom', 'position bottom by default');
 
+#####################################################################
+# ensure that reloading cleans up the old bar configs
+#####################################################################
+
+cmd 'reload';
+$bars = $i3->get_bar_config()->recv;
+is(@$bars, 1, 'still one bar configured');
+
 exit_gracefully($pid);
 
 #####################################################################
