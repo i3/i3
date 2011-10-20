@@ -423,7 +423,7 @@ JSON dump:
    }
  ]
 }
-
+------------------------
 
 === GET_MARKS reply
 
@@ -433,7 +433,6 @@ same mark, it will be represented multiple times in the reply (the array
 contents are not unique).
 
 If no window has a mark the response will be the empty array [].
-------------------------
 
 
 == Events
