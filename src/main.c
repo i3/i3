@@ -61,6 +61,11 @@ struct ws_assignments_head ws_assignments = TAILQ_HEAD_INITIALIZER(ws_assignment
 bool xcursor_supported = true;
 bool xkb_supported = true;
 
+/* This will be set to true when -C is used so that functions can behave
+ * slightly differently. We don’t want i3-nagbar to be started when validating
+ * the config, for example. */
+bool only_check_config = false;
+
 /*
  * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
  * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop
@@ -194,7 +199,6 @@ int main(int argc, char *argv[]) {
     bool autostart = true;
     char *layout_path = NULL;
     bool delete_layout_path = false;
-    bool only_check_config = false;
     bool force_xinerama = false;
     bool disable_signalhandler = false;
     static struct option long_options[] = {

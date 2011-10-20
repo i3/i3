@@ -266,7 +266,10 @@ static void nagbar_cleanup(EV_P_ ev_cleanup *watcher, int revent) {
  *
  */
 static void start_configerror_nagbar(const char *config_path) {
-    fprintf(stderr, "Would start i3-nagscreen now\n");
+    if (only_check_config)
+        return;
+
+    fprintf(stderr, "Starting i3-nagbar due to configuration errors\n");
     configerror_pid = fork();
     if (configerror_pid == -1) {
         warn("Could not fork()");
