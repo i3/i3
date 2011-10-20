@@ -64,6 +64,10 @@ GET_MARKS (5)::
 	Gets a list of marks (identifiers for containers to easily jump to them
 	later). The reply will be a JSON-encoded list of window marks (see
 	reply section).
+GET_BAR_CONFIG (6)::
+	Gets the configuration (as JSON map) of the workspace bar with the
+	given ID. If no ID is provided, an array with all configured bar IDs is
+	returned instead.
 
 So, a typical message could look like this:
 --------------------------------------------------
@@ -117,6 +121,8 @@ GET_TREE (4)::
 	Reply to the GET_TREE message.
 GET_MARKS (5)::
 	Reply to the GET_MARKS message.
+GET_BAR_CONFIG (6)::
+	Reply to the GET_BAR_CONFIG message.
 
 === COMMAND reply
 
@@ -434,6 +440,89 @@ contents are not unique).
 
 If no window has a mark the response will be the empty array [].
 
+=== GET_BAR_CONFIG reply
+
+This can be used by third-party workspace bars (especially i3bar, but others
+are free to implement compatible alternatives) to get the +bar+ block
+configuration from i3.
+
+Depending on the input, the reply is either:
+
+empty input::
+	An array of configured bar IDs
+Bar ID::
+	A JSON map containing the configuration for the specified bar.
+
+Each bar configuration has the following properties:
+
+id (string)::
+	The ID for this bar. Included in case you request multiple
+	configurations and want to differentiate the different replies.
+mode (string)::
+	Either +dock+ (the bar sets the dock window type) or +hide+ (the bar
+	does not show unless a specific key is pressed).
+position (string)::
+	Either +bottom+ or +top+ at the moment.
+status_command (string)::
+	Command which will be run to generate a statusline. Each line on stdout
+	of this command will be displayed in the bar. At the moment, no
+	formatting is supported.
+font (string)::
+	The font to use for text on the bar.
+workspace_buttons (boolean)::
+	Display workspace buttons or not? Defaults to true.
+verbose (boolean)::
+	Should the bar enable verbose output for debugging? Defaults to false.
+colors (map)::
+	Contains key/value pairs of colors. Each value is a color code in hex,
+	formatted rrggbb (like used in HTML).
+
+The following colors can be configured at the moment:
+
+background::
+	Background color of the bar.
+statusline::
+	Text color to be used for the statusline.
+focused_workspace_text/focused_workspace_bg::
+	Text color/background color for a workspace button when the workspace
+	has focus.
+active_workspace_text/active_workspace_bg::
+	Text color/background color for a workspace button when the workspace
+	is active (visible) on some output, but the focus is on another one.
+	You can only tell this apart from the focused workspace when you are
+	using multiple monitors.
+inactive_workspace_text/inactive_workspace_bg::
+	Text color/background color for a workspace button when the workspace
+	does not have focus and is not active (visible) on any output. This
+	will be the case for most workspaces.
+urgent_workspace_text/urgent_workspace_bar::
+	Text color/background color for workspaces which contain at least one
+	window with the urgency hint set.
+
+
+*Example of configured bars:*
+--------------
+["bar-bxuqzf"]
+--------------
+
+*Example of bar configuration:*
+--------------
+{
+ "id": "bar-bxuqzf",
+ "mode": "dock",
+ "position": "bottom",
+ "status_command": "i3status",
+ "font": "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1",
+ "workspace_buttons": true,
+ "verbose": false,
+ "colors": {
+   "background": "c0c0c0",
+   "statusline": "00ff00",
+   "focused_workspace_text": "ffffff",
+   "focused_workspace_bg": "000000"
+ }
+}
+--------------
 
 == Events
 
