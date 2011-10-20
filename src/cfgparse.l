@@ -136,7 +136,7 @@ EOL     (\r?\n)
                                   return STR;
                                 }
 <WANT_STRING>[^\n]+             { yy_pop_state(); yylval.string = sstrdup(yytext); return STR; }
-<OUTPUT_COND>[a-zA-Z0-9_-]+     { yylval.string = sstrdup(yytext); return OUTPUT; }
+<OUTPUT_COND>[a-zA-Z0-9_-]+     { yy_pop_state(); yylval.string = sstrdup(yytext); return OUTPUT; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
 <COLOR_COND>[0-9a-fA-F]+        { yylval.string = sstrdup(yytext); return HEX; }
 <ASSIGN_TARGET_COND>[ \t]*→[ \t]*     { BEGIN(WANT_STRING); }
@@ -147,8 +147,8 @@ mode                            { return TOKMODE; }
 bind                            { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
 bindcode                        { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
 bindsym                         { yy_push_state(BINDSYM_COND); yy_push_state(EAT_WHITESPACE); return TOKBINDSYM; }
-floating_modifier               { BEGIN(INITIAL); return TOKFLOATING_MODIFIER; }
-workspace                       { BEGIN(INITIAL); return TOKWORKSPACE; }
+floating_modifier               { return TOKFLOATING_MODIFIER; }
+workspace                       { return TOKWORKSPACE; }
 output                          { yy_push_state(OUTPUT_COND); yy_push_state(EAT_WHITESPACE); return TOKOUTPUT; }
 terminal                        { WS_STRING; return TOKTERMINAL; }
 font                            { WS_STRING; return TOKFONT; }
@@ -234,7 +234,6 @@ title                           { yy_push_state(WANT_QSTRING); return TOK_TITLE;
                                   /* if ASSIGN_COND then */
                                   if (yy_start_stack_ptr > 0)
                                       yy_pop_state();
-                                  else BEGIN(INITIAL);
                                   /* yylval will be the string, but without quotes */
                                   char *copy = sstrdup(yytext+1);
                                   copy[strlen(copy)-1] = '\0';
