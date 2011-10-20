@@ -24,54 +24,10 @@
 #include "common.h"
 
 ev_io      *i3_connection;
-ev_timer   *reconn = NULL;
 
 const char *sock_path;
 
 typedef void(*handler_t)(char*);
-
-/*
- * Retry to connect.
- *
- */
-void retry_connection(struct ev_loop *loop, ev_timer *w, int events) {
-    static int retries = 8;
-    if (init_connection(sock_path) == 0) {
-        if (retries == 0) {
-            ELOG("Retried 8 times - connection failed!\n");
-            exit(EXIT_FAILURE);
-        }
-        retries--;
-        return;
-    }
-    retries = 8;
-    ev_timer_stop(loop, w);
-    subscribe_events();
-
-    /* We get the current outputs and workspaces, to
-     * reconfigure all bars with the current configuration */
-    i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
-    if (!config.disable_ws) {
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
-    }
-}
-
-/*
- * Schedule a reconnect
- *
- */
-void reconnect() {
-    if (reconn == NULL) {
-        if ((reconn = malloc(sizeof(ev_timer))) == NULL) {
-            ELOG("malloc() failed: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        ev_timer_stop(main_loop, reconn);
-    }
-    ev_timer_init(reconn, retry_connection, 0.25, 0.25);
-    ev_timer_start(main_loop, reconn);
-}
 
 /*
  * Called, when we get a reply to a command from i3.
@@ -210,12 +166,10 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
-            /* EOF received. We try to recover a few times, because most likely
-             * i3 just restarted */
-            ELOG("EOF received, try to recover...\n");
-            destroy_connection();
-            reconnect();
-            return;
+            /* EOF received. Since i3 will restart i3bar instances as appropriate,
+             * we exit here. */
+            DLOG("EOF received, exiting...\n");
+            exit(EXIT_SUCCESS);
         }
         rec += n;
     }
@@ -239,12 +193,10 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
      * of the message */
     char *buffer = malloc(size + 1);
     if (buffer == NULL) {
-        /* EOF received. We try to recover a few times, because most likely
-         * i3 just restarted */
-        ELOG("EOF received, try to recover...\n");
-        destroy_connection();
-        reconnect();
-        return;
+        /* EOF received. Since i3 will restart i3bar instances as appropriate,
+         * we exit here. */
+        DLOG("EOF received, exiting...\n");
+        exit(EXIT_SUCCESS);
     }
     rec = 0;
 
@@ -346,8 +298,7 @@ int init_connection(const char *socket_path) {
     strcpy(addr.sun_path, sock_path);
     if (connect(sockfd, (const struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
         ELOG("Could not connect to i3! %s: %s\n", sock_path, strerror(errno));
-        reconnect();
-        return 0;
+        exit(EXIT_FAILURE);
     }
 
     i3_connection = malloc(sizeof(ev_io));
