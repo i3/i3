@@ -756,6 +756,174 @@ workspace_auto_back_and_forth <yes|no>
 workspace_auto_back_and_forth yes
 ---------------------------------
 
+== Configuring i3bar
+
+The bar at the bottom of your monitor is drawn by a separate process called
+i3bar. Having this part of "the i3 user interface" in a separate process has
+several advantages:
+
+1. It is a modular approach. If you don’t need a workspace bar at all, or if
+   you prefer a different one (dzen2, xmobar, maybe even gnome-panel?), you can
+   just remove the i3bar configuration and start your favorite bar instead.
+2. It follows the UNIX philosophy of "Make each program do one thing well".
+   While i3 manages your windows well, i3bar is good at displaying a bar on
+   each monitor (unless you configure it otherwise).
+3. It leads to two separate, clean codebases. If you want to understand i3, you
+   don’t need to bother with the details of i3bar and vice versa.
+
+That said, i3bar is configured in the same configuration file as i3. This is
+because it is tightly coupled with i3 (in contrary to i3lock or i3status which
+are useful for people using other window managers). Therefore, it makes no
+sense to use a different configuration place when we already have a good
+configuration infrastructure in place.
+
+Configuring your workspace bar starts with opening a +bar+ block. You can have
+multiple bar blocks to use different settings for different outputs (monitors):
+
+*Example*:
+---------------------------
+bar {
+    status_command i3status
+}
+---------------------------
+
+=== Statusline command
+
+i3bar can run a program and display every line of its +stdout+ output on the
+right hand side of the bar. This is useful to display system information like
+your current IP address, battery status or date/time.
+
+The specified command will be passed to +sh -c+, so you can use globbing and
+have to have correct quoting etc.
+
+*Syntax*:
+----------------------
+status_command command
+----------------------
+
+*Example*:
+-------------------------------------------------
+status_command i3status --config ~/.i3status.conf
+-------------------------------------------------
+
+=== Display mode
+
+You can have i3bar either be visible permanently at one edge of the screen
+(+dock+ mode) or make it show up when you press your modifier key (+hide+
+mode).
+
+The hide mode maximizes screen space that can be used for actual windows. Also,
+i3bar sends the +SIGSTOP+ and +SIGCONT+ signals to the statusline process to
+save battery power.
+
+The default is dock mode.
+
+*Syntax*:
+----------------
+mode <dock|hide>
+----------------
+
+*Example*:
+----------------
+mode hide
+----------------
+
+=== Position
+
+This option determines in which edge of the screen i3bar should show up.
+
+The default is bottom.
+
+*Syntax*:
+---------------------
+position <top|bottom>
+---------------------
+
+*Example*:
+---------------------
+position top
+---------------------
+
+=== Font
+
+Specifies the font (again, X core font, not Xft, just like in i3) to be used in
+the bar.
+
+*Syntax*:
+---------------------
+font <font>
+---------------------
+
+*Example*:
+--------------------------------------------------------------
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+--------------------------------------------------------------
+
+=== Workspace buttons
+
+Specifies whether workspace buttons should be shown or not. This is useful if
+you want to display a statusline-only bar containing additional information.
+
+The default is to show workspace buttons.
+
+*Syntax*:
+--------------------------
+workspace_buttons <yes|no>
+--------------------------
+
+*Example*:
+--------------------
+workspace_buttons no
+--------------------
+
+=== Colors
+
+As with i3, colors are in HTML hex format (#rrggbb). The following colors can
+be configured at the moment:
+
+background::
+	Background color of the bar.
+statusline::
+	Text color to be used for the statusline.
+focused_workspace_text/focused_workspace_bg::
+	Text color/background color for a workspace button when the workspace
+	has focus.
+active_workspace_text/active_workspace_bg::
+	Text color/background color for a workspace button when the workspace
+	is active (visible) on some output, but the focus is on another one.
+	You can only tell this apart from the focused workspace when you are
+	using multiple monitors.
+inactive_workspace_text/inactive_workspace_bg::
+	Text color/background color for a workspace button when the workspace
+	does not have focus and is not active (visible) on any output. This
+	will be the case for most workspaces.
+urgent_workspace_text/urgent_workspace_bar::
+	Text color/background color for workspaces which contain at least one
+	window with the urgency hint set.
+
+*Syntax*:
+----------------------------------------
+colors {
+    background <color>
+    statusline <color>
+
+    colorclass <foreground> <background>
+}
+----------------------------------------
+
+*Example*:
+--------------------------------------
+colors {
+    background #000000
+    statusline #ffffff
+
+    focused_workspace  #ffffff #285577
+    active_workspace   #888888 #222222
+    inactive_workspace #888888 #222222
+    urgent_workspace   #ffffff #900000
+}
+--------------------------------------
+
 == List of commands
 
 Commands are what you bind to specific keypresses. You can also issue commands
