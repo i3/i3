@@ -43,6 +43,22 @@ static int config_map_key_cb(void *params_, const unsigned char *keyVal, unsigne
 }
 
 /*
+ * Parse a null-value (current_workspace)
+ *
+ */
+static int config_null_cb(void *params_) {
+    if (!strcmp(cur_key, "id")) {
+        /* If 'id' is NULL, the bar config was not found. Error out. */
+        ELOG("No such bar config. Use 'i3-msg -t get_bar_config' to get the available configs.\n");
+        ELOG("Are you starting i3bar by hand? You should not:\n");
+        ELOG("Configure a 'bar' block in your i3 config and i3 will launch i3bar automatically.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return 1;
+}
+
+/*
  * Parse a string
  *
  */
@@ -143,7 +159,7 @@ static int config_boolean_cb(void *params_, int val) {
 
 /* A datastructure to pass all these callbacks to yajl */
 static yajl_callbacks outputs_callbacks = {
-    NULL,
+    &config_null_cb,
     &config_boolean_cb,
     NULL,
     NULL,
