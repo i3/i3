@@ -63,7 +63,7 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
 
     if (!strcmp(cur_key, "position")) {
         DLOG("position = %.*s\n", len, val);
-        config.dockpos = (len == 3 && !strncmp((const char*)val, "top", strlen("top")) ? DOCKPOS_TOP : DOCKPOS_BOT);
+        config.position = (len == 3 && !strncmp((const char*)val, "top", strlen("top")) ? POS_TOP : POS_BOT);
         return 1;
     }
 

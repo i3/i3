@@ -281,7 +281,9 @@ void unhide_bars() {
                XCB_CONFIG_WINDOW_HEIGHT |
                XCB_CONFIG_WINDOW_STACK_MODE;
         values[0] = walk->rect.x;
-        values[1] = walk->rect.y + walk->rect.h - font_height - 6;
+        if (config.position == POS_TOP)
+            values[1] = walk->rect.y;
+        else values[1] = walk->rect.y + walk->rect.h - font_height - 6;
         values[2] = walk->rect.w;
         values[3] = font_height + 6;
         values[4] = XCB_STACK_MODE_ABOVE;
@@ -1305,15 +1307,15 @@ void reconfig_windows() {
                 uint32_t bottom_start_x;
                 uint32_t bottom_end_x;
             } __attribute__((__packed__)) strut_partial = {0,};
-            switch (config.dockpos) {
-                case DOCKPOS_NONE:
+            switch (config.position) {
+                case POS_NONE:
                     break;
-                case DOCKPOS_TOP:
+                case POS_TOP:
                     strut_partial.top = font_height + 6;
                     strut_partial.top_start_x = walk->rect.x;
                     strut_partial.top_end_x = walk->rect.x + walk->rect.w;
                     break;
-                case DOCKPOS_BOT:
+                case POS_BOT:
                     strut_partial.bottom = font_height + 6;
                     strut_partial.bottom_start_x = walk->rect.x;
                     strut_partial.bottom_end_x = walk->rect.x + walk->rect.w;

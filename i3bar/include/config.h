@@ -4,14 +4,14 @@
 #include "common.h"
 
 typedef enum {
-    DOCKPOS_NONE = 0,
-    DOCKPOS_TOP,
-    DOCKPOS_BOT
-} dockpos_t;
+    POS_NONE = 0,
+    POS_TOP,
+    POS_BOT
+} position_t;
 
 typedef struct config_t {
     int          hide_on_modifier;
-    dockpos_t    dockpos;
+    position_t   position;
     int          verbose;
     struct xcb_color_strings_t colors;
     int          disable_ws;
