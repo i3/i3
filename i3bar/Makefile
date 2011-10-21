@@ -10,7 +10,7 @@ CPPFLAGS += -I$(TOPDIR)/include
 
 all: i3bar doc
 
-i3bar: libi3/libi3.a ${FILES}
+i3bar: $(TOPDIR)/libi3/libi3.a ${FILES}
 	echo "[i3bar] LINK"
 	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3/libi3.a,$^) $(LIBS)
 
