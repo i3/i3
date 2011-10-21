@@ -844,6 +844,28 @@ position <top|bottom>
 position top
 ---------------------
 
+=== Tray output
+
+i3bar by default provides a system tray area where programs such as
+NetworkManager, VLC, Pidgin, etc. can place little icons.
+
+You can configure on which output (monitor) the icons should be displayed or
+you can turn off the functionality entirely.
+
+*Syntax*:
+-------------------------
+tray_output <none|output>
+-------------------------
+
+*Example*:
+-------------------------
+# disable system tray
+tray_output none
+
+# show tray icons on the big monitor
+tray_output HDMI2
+-------------------------
+
 === Font
 
 Specifies the font (again, X core font, not Xft, just like in i3) to be used in
