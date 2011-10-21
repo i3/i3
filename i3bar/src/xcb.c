@@ -1359,7 +1359,8 @@ void reconfig_windows() {
             }
 
             if (!tray_configured &&
-                strcasecmp("none", config.tray_output) != 0) {
+                (!config.tray_output ||
+                 strcasecmp("none", config.tray_output) != 0)) {
                 init_tray();
                 tray_configured = true;
             }
