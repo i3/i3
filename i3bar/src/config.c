@@ -35,7 +35,7 @@ static int config_map_key_cb(void *params_, const unsigned char *keyVal, unsigne
 #endif
     FREE(cur_key);
 
-    cur_key = malloc(sizeof(unsigned char) * (keyLen + 1));
+    cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
     strncpy(cur_key, (const char*) keyVal, keyLen);
     cur_key[keyLen] = '\0';
 

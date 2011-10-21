@@ -51,8 +51,7 @@ char *strndup(const char *str, size_t n) {
     for (len = 0; len < n && str[len]; len++)
         continue;
 
-    if ((copy = malloc(len + 1)) == NULL)
-        return (NULL);
+    copy = smalloc(len + 1);
     memcpy(copy, str, len);
     copy[len] = '\0';
     return (copy);
@@ -516,7 +515,7 @@ static void handle_client_message(xcb_client_message_event_t* event) {
                                  values);
 
             /* send the XEMBED_EMBEDDED_NOTIFY message */
-            void *event = calloc(32, 1);
+            void *event = scalloc(32);
             xcb_client_message_event_t *ev = event;
             ev->response_type = XCB_CLIENT_MESSAGE;
             ev->window = client;
@@ -539,7 +538,7 @@ static void handle_client_message(xcb_client_message_event_t* event) {
             } else {
                 DLOG("Not mapping dock client yet\n");
             }
-            trayclient *tc = malloc(sizeof(trayclient));
+            trayclient *tc = smalloc(sizeof(trayclient));
             tc->win = client;
             tc->mapped = map_it;
             tc->xe_version = xe_version;
@@ -841,9 +840,9 @@ char *init_xcb_early() {
 
 
     /* The various Watchers to communicate with xcb */
-    xcb_io = malloc(sizeof(ev_io));
-    xcb_prep = malloc(sizeof(ev_prepare));
-    xcb_chk = malloc(sizeof(ev_check));
+    xcb_io = smalloc(sizeof(ev_io));
+    xcb_prep = smalloc(sizeof(ev_prepare));
+    xcb_chk = smalloc(sizeof(ev_check));
 
     ev_io_init(xcb_io, &xcb_io_cb, xcb_get_file_descriptor(xcb_connection), EV_READ);
     ev_prepare_init(xcb_prep, &xcb_prep_cb);
@@ -956,7 +955,7 @@ void init_xcb_late(char *fontname) {
             exit(EXIT_FAILURE);
         }
 
-        xkb_io = malloc(sizeof(ev_io));
+        xkb_io = smalloc(sizeof(ev_io));
         ev_io_init(xkb_io, &xkb_io_cb, ConnectionNumber(xkb_dpy), EV_READ);
         ev_io_start(main_loop, xkb_io);
         XFlush(xkb_dpy);
@@ -1053,7 +1052,7 @@ void init_tray() {
     }
 
     /* Inform clients waiting for a new _NET_SYSTEM_TRAY that we are here */
-    void *event = calloc(32, 1);
+    void *event = scalloc(32);
     xcb_client_message_event_t *ev = event;
     ev->response_type = XCB_CLIENT_MESSAGE;
     ev->window = xcb_root;

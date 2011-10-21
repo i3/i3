@@ -150,11 +150,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
 
     /* First we only read the header, because we know its length */
     uint32_t header_len = strlen(I3_IPC_MAGIC) + sizeof(uint32_t)*2;
-    char *header = malloc(header_len);
-    if (header == NULL) {
-        ELOG("Could not allocate memory: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    char *header = smalloc(header_len);
 
     /* We first parse the fixed-length IPC-header, to know, how much data
      * we have to expect */
@@ -191,13 +187,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
 
     /* Now that we know, what to expect, we can start read()ing the rest
      * of the message */
-    char *buffer = malloc(size + 1);
-    if (buffer == NULL) {
-        /* EOF received. Since i3 will restart i3bar instances as appropriate,
-         * we exit here. */
-        DLOG("EOF received, exiting...\n");
-        exit(EXIT_SUCCESS);
-    }
+    char *buffer = smalloc(size + 1);
     rec = 0;
 
     while (rec < size) {
@@ -243,12 +233,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
     /* TODO: I'm not entirely sure if this buffer really has to contain more
      * than the pure header (why not just write() the payload from *payload?),
      * but we leave it for now */
-    char *buffer = malloc(to_write);
-    if (buffer == NULL) {
-        ELOG("Could not allocate memory: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
+    char *buffer = smalloc(to_write);
     char *walk = buffer;
 
     strncpy(buffer, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC));
@@ -301,11 +286,7 @@ int init_connection(const char *socket_path) {
         exit(EXIT_FAILURE);
     }
 
-    i3_connection = malloc(sizeof(ev_io));
-    if (i3_connection == NULL) {
-        ELOG("malloc() failed: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    i3_connection = smalloc(sizeof(ev_io));
     ev_io_init(i3_connection, &got_data, sockfd, EV_READ);
     ev_io_start(main_loop, i3_connection);
     return 1;

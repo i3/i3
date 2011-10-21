@@ -115,7 +115,7 @@ static int outputs_string_cb(void *params_, const unsigned char *val, unsigned i
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
 
     if (!strcmp(params->cur_key, "current_workspace")) {
-        char *copy = malloc(sizeof(const unsigned char) * (len + 1));
+        char *copy = smalloc(sizeof(const unsigned char) * (len + 1));
         strncpy(copy, (const char*) val, len);
         copy[len] = '\0';
 
@@ -134,7 +134,7 @@ static int outputs_string_cb(void *params_, const unsigned char *val, unsigned i
         return 0;
     }
 
-    char *name = malloc(sizeof(const unsigned char) * (len + 1));
+    char *name = smalloc(sizeof(const unsigned char) * (len + 1));
     strncpy(name, (const char*) val, len);
     name[len] = '\0';
 
@@ -154,16 +154,16 @@ static int outputs_start_map_cb(void *params_) {
     i3_output *new_output = NULL;
 
     if (params->cur_key == NULL) {
-        new_output = malloc(sizeof(i3_output));
+        new_output = smalloc(sizeof(i3_output));
         new_output->name = NULL;
         new_output->ws = 0,
         memset(&new_output->rect, 0, sizeof(rect));
         new_output->bar = XCB_NONE;
 
-        new_output->workspaces = malloc(sizeof(struct ws_head));
+        new_output->workspaces = smalloc(sizeof(struct ws_head));
         TAILQ_INIT(new_output->workspaces);
 
-        new_output->trayclients = malloc(sizeof(struct tc_head));
+        new_output->trayclients = smalloc(sizeof(struct tc_head));
         TAILQ_INIT(new_output->trayclients);
 
         params->outputs_walk = new_output;
@@ -208,7 +208,7 @@ static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, unsign
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
     FREE(params->cur_key);
 
-    params->cur_key = malloc(sizeof(unsigned char) * (keyLen + 1));
+    params->cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
     strncpy(params->cur_key, (const char*) keyVal, keyLen);
     params->cur_key[keyLen] = '\0';
 
@@ -235,7 +235,7 @@ yajl_callbacks outputs_callbacks = {
  *
  */
 void init_outputs() {
-    outputs = malloc(sizeof(struct outputs_head));
+    outputs = smalloc(sizeof(struct outputs_head));
     SLIST_INIT(outputs);
 }
 

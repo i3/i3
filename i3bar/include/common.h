@@ -34,5 +34,6 @@ struct rect_t {
 #include "xcb.h"
 #include "ucs2_to_utf8.h"
 #include "config.h"
+#include "libi3.h"
 
 #endif

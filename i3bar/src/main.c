@@ -19,7 +19,6 @@
 #include <glob.h>
 
 #include "common.h"
-#include "libi3.h"
 
 /*
  * Glob path, i.e. expand ~
@@ -31,11 +30,7 @@ char *expand_path(char *path) {
         ELOG("glob() failed\n");
         exit(EXIT_FAILURE);
     }
-    char *result = strdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
-    if (result == NULL) {
-        ELOG("malloc() failed: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    char *result = sstrdup(globbuf.gl_pathc > 0 ? globbuf.gl_pathv[0] : path);
     globfree(&globbuf);
     return result;
 }
@@ -142,14 +137,9 @@ int main(int argc, char **argv) {
     /* We listen to SIGTERM/QUIT/INT and try to exit cleanly, by stopping the main-loop.
      * We only need those watchers on the stack, so putting them on the stack saves us
      * some calls to free() */
-    ev_signal *sig_term = malloc(sizeof(ev_signal));
-    ev_signal *sig_int = malloc(sizeof(ev_signal));
-    ev_signal *sig_hup = malloc(sizeof(ev_signal));
-
-    if (sig_term == NULL || sig_int == NULL || sig_hup == NULL) {
-        ELOG("malloc() failed: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    ev_signal *sig_term = smalloc(sizeof(ev_signal));
+    ev_signal *sig_int = smalloc(sizeof(ev_signal));
+    ev_signal *sig_hup = smalloc(sizeof(ev_signal));
 
     ev_signal_init(sig_term, &sig_cb, SIGTERM);
     ev_signal_init(sig_int, &sig_cb, SIGINT);

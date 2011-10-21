@@ -62,7 +62,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     int n = 0;
     int rec = 0;
     int buffer_len = STDIN_CHUNK_SIZE;
-    char *buffer = malloc(buffer_len);
+    char *buffer = smalloc(buffer_len);
     buffer[0] = '\0';
     while(1) {
         n = read(fd, buffer + rec, buffer_len - rec);
@@ -91,7 +91,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 
         if (rec == buffer_len) {
             buffer_len += STDIN_CHUNK_SIZE;
-            buffer = realloc(buffer, buffer_len);
+            buffer = srealloc(buffer, buffer_len);
         }
     }
     if (*buffer == '\0') {
@@ -169,12 +169,12 @@ void start_child(char *command) {
     /* We set O_NONBLOCK because blocking is evil in event-driven software */
     fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
 
-    stdin_io = malloc(sizeof(ev_io));
+    stdin_io = smalloc(sizeof(ev_io));
     ev_io_init(stdin_io, &stdin_io_cb, STDIN_FILENO, EV_READ);
     ev_io_start(main_loop, stdin_io);
 
     /* We must cleanup, if the child unexpectedly terminates */
-    child_sig = malloc(sizeof(ev_child));
+    child_sig = smalloc(sizeof(ev_child));
     ev_child_init(child_sig, &child_sig_cb, child_pid, 0);
     ev_child_start(main_loop, child_sig);
 
