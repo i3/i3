@@ -547,7 +547,7 @@ exec_always command
 
 *Examples*:
 --------------------------------
-exec i3status | i3bar -d
+exec chromium
 exec_always ~/my_script.sh
 --------------------------------
 
@@ -843,6 +843,36 @@ position <top|bottom>
 ---------------------
 position top
 ---------------------
+
+=== Output(s)
+
+You can restrict i3bar to one or more outputs (monitors). The default is to
+handle all outputs. Restricting the outputs is useful for using different
+options for different outputs by using multiple 'bar' blocks.
+
+*Syntax*:
+---------------
+output <output>
+---------------
+
+*Example*:
+-------------------------------
+# big monitor: everything
+bar {
+	output HDMI2
+	status_command i3status
+}
+
+# laptop monitor: bright colors and i3status with less modules.
+bar {
+	output LVDS1
+	status_command i3status --config ~/.i3status-small.conf
+	colors {
+		background #000000
+		statusline #ffffff
+	}
+}
+-------------------------------
 
 === Tray output
 
