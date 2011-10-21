@@ -90,8 +90,9 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
     }
 
     if (!strcmp(cur_key, "tray_output")) {
-        printf("tray_output %.*s\n", len, val);
-        /* XXX: these are not implemented yet */
+        DLOG("tray_output %.*s\n", len, val);
+        FREE(config.tray_output);
+        asprintf(&config.tray_output, "%.*s", len, val);
         return 1;
     }
 

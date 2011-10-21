@@ -18,6 +18,7 @@ typedef struct config_t {
     char         *bar_id;
     char         *command;
     char         *fontname;
+    char         *tray_output;
 } config_t;
 
 config_t config;

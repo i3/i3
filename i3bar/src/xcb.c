@@ -489,6 +489,9 @@ static void handle_client_message(xcb_client_message_event_t* event) {
             SLIST_FOREACH(walk, outputs, slist) {
                 if (!walk->active)
                     continue;
+                if (config.tray_output &&
+                    strcasecmp(walk->name, config.tray_output) != 0)
+                    continue;
                 DLOG("using output %s\n", walk->name);
                 output = walk;
             }
@@ -988,6 +991,7 @@ void init_xcb_late(char *fontname) {
  *
  */
 void init_tray() {
+    DLOG("Initializing system tray functionality\n");
     /* request the tray manager atom for the X11 display we are running on */
     char atomname[strlen("_NET_SYSTEM_TRAY_S") + 11];
     snprintf(atomname, strlen("_NET_SYSTEM_TRAY_S") + 11, "_NET_SYSTEM_TRAY_S%d", screen);
@@ -1194,6 +1198,7 @@ void realloc_sl_buffer() {
 void reconfig_windows() {
     uint32_t mask;
     uint32_t values[5];
+    static bool tray_configured = false;
 
     i3_output *walk;
     SLIST_FOREACH(walk, outputs, slist) {
@@ -1206,9 +1211,6 @@ void reconfig_windows() {
         }
         if (walk->bar == XCB_NONE) {
             DLOG("Creating Window for output %s\n", walk->name);
-
-            /* TODO: only call init_tray() if the tray is configured for this output */
-            init_tray();
 
             walk->bar = xcb_generate_id(xcb_connection);
             walk->buffer = xcb_generate_id(xcb_connection);
@@ -1352,6 +1354,12 @@ void reconfig_windows() {
                 xcb_request_failed(gc_cookie,    "Could not create graphical context") ||
                 (!config.hide_on_modifier && xcb_request_failed(map_cookie, "Could not map window"))) {
                 exit(EXIT_FAILURE);
+            }
+
+            if (!tray_configured &&
+                strcasecmp("none", config.tray_output) != 0) {
+                init_tray();
+                tray_configured = true;
             }
         } else {
             /* We already have a bar, so we just reconfigure it */
