@@ -138,7 +138,7 @@ EOL     (\r?\n)
 <WANT_STRING>[^\n]+             { yy_pop_state(); yylval.string = sstrdup(yytext); return STR; }
 <OUTPUT_COND>[a-zA-Z0-9_-]+     { yy_pop_state(); yylval.string = sstrdup(yytext); return OUTPUT; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
-<COLOR_COND>#[0-9a-fA-F]+       { yy_pop_state(); yylval.string = sstrdup(yytext+1); return HEXCOLOR; }
+<COLOR_COND>#[0-9a-fA-F]+       { yy_pop_state(); yylval.string = sstrdup(yytext); return HEXCOLOR; }
 <ASSIGN_TARGET_COND>[ \t]*→[ \t]*     { BEGIN(WANT_STRING); }
 <ASSIGN_TARGET_COND>[ \t]+      { BEGIN(WANT_STRING); }
 [0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
