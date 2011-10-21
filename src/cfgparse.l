@@ -138,7 +138,7 @@ EOL     (\r?\n)
 <WANT_STRING>[^\n]+             { yy_pop_state(); yylval.string = sstrdup(yytext); return STR; }
 <OUTPUT_COND>[a-zA-Z0-9_-]+     { yy_pop_state(); yylval.string = sstrdup(yytext); return OUTPUT; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
-<COLOR_COND>[0-9a-fA-F]+        { yylval.string = sstrdup(yytext); return HEX; }
+<COLOR_COND>[0-9a-fA-F]+        { yy_pop_state(); yylval.string = sstrdup(yytext); return HEX; }
 <ASSIGN_TARGET_COND>[ \t]*→[ \t]*     { BEGIN(WANT_STRING); }
 <ASSIGN_TARGET_COND>[ \t]+      { BEGIN(WANT_STRING); }
 [0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
@@ -196,14 +196,14 @@ cols                            { /* yylval.number = STACK_LIMIT_COLS; */return 
 rows                            { /* yylval.number = STACK_LIMIT_ROWS; */return TOKSTACKLIMIT; }
 exec                            { WS_STRING; return TOKEXEC; }
 exec_always                     { WS_STRING; return TOKEXEC_ALWAYS; }
-client.background               { BEGIN(COLOR_COND); yylval.single_color = &config.client.background; return TOKSINGLECOLOR; }
-client.focused                  { BEGIN(COLOR_COND); yylval.color = &config.client.focused; return TOKCOLOR; }
-client.focused_inactive         { BEGIN(COLOR_COND); yylval.color = &config.client.focused_inactive; return TOKCOLOR; }
-client.unfocused                { BEGIN(COLOR_COND); yylval.color = &config.client.unfocused; return TOKCOLOR; }
-client.urgent                   { BEGIN(COLOR_COND); yylval.color = &config.client.urgent; return TOKCOLOR; }
-bar.focused                     { BEGIN(COLOR_COND); yylval.color = &config.bar.focused; return TOKCOLOR; }
-bar.unfocused                   { BEGIN(COLOR_COND); yylval.color = &config.bar.unfocused; return TOKCOLOR; }
-bar.urgent                      { BEGIN(COLOR_COND); yylval.color = &config.bar.urgent; return TOKCOLOR; }
+client.background               { yy_push_state(COLOR_COND); yylval.single_color = &config.client.background; return TOKSINGLECOLOR; }
+client.focused                  { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.focused; return TOKCOLOR; }
+client.focused_inactive         { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.focused_inactive; return TOKCOLOR; }
+client.unfocused                { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.unfocused; return TOKCOLOR; }
+client.urgent                   { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.urgent; return TOKCOLOR; }
+bar.focused                     { yy_push_state(COLOR_COND); yylval.color = &config.bar.focused; return TOKCOLOR; }
+bar.unfocused                   { yy_push_state(COLOR_COND); yylval.color = &config.bar.unfocused; return TOKCOLOR; }
+bar.urgent                      { yy_push_state(COLOR_COND); yylval.color = &config.bar.urgent; return TOKCOLOR; }
 Mod1                            { yylval.number = BIND_MOD1; return MODIFIER; }
 Mod2                            { yylval.number = BIND_MOD2; return MODIFIER; }
 Mod3                            { yylval.number = BIND_MOD3; return MODIFIER; }
@@ -227,8 +227,8 @@ title                           { yy_push_state(WANT_QSTRING); return TOK_TITLE;
                                   context->line_number++;
                                   yy_push_state(BUFFER_LINE);
                                 }
-<BINDSYM_COND>[ \t]+            { BEGIN(WANT_STRING); }
-<OUTPUT_COND>[ \t]+             { BEGIN(WANT_STRING); }
+<BINDSYM_COND>[ \t]+            { yy_pop_state(); yy_push_state(WANT_STRING); }
+<OUTPUT_COND>[ \t]+             { yy_pop_state(); yy_push_state(WANT_STRING); }
 [ \t]+                          { /* ignore whitespace */ ; }
 \"[^\"]+\"                      {
                                   /* if ASSIGN_COND then */
