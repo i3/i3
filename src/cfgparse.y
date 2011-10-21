@@ -590,7 +590,6 @@ void parse_file(const char *f) {
 %token  <string>        WORD                        "<word>"
 %token  <string>        STR                         "<string>"
 %token  <string>        STR_NG                      "<string (non-greedy)>"
-%token  <string>        HEX                         "<hex>"
 %token  <string>        HEXCOLOR                    "#<hex>"
 %token  <string>        OUTPUT                      "<RandR output>"
 %token                  TOKBINDCODE
@@ -1506,14 +1505,10 @@ color:
     ;
 
 colorpixel:
-    '#' HEX
+    HEXCOLOR
     {
-        char *hex;
-        if (asprintf(&hex, "#%s", $2) == -1)
-            die("asprintf()");
-        free($2);
-        $$ = get_colorpixel(hex);
-        free(hex);
+        $$ = get_colorpixel($1);
+        free($1);
     }
     ;
 
