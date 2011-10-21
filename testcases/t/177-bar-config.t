@@ -51,7 +51,7 @@ my $bar_config = $i3->get_bar_config($bar_id)->recv;
 is($bar_config->{status_command}, 'i3status --foo', 'status_command correct');
 ok(!$bar_config->{verbose}, 'verbose off by default');
 ok($bar_config->{workspace_buttons}, 'workspace buttons enabled per default');
-is($bar_config->{mode}, 'hide', 'hide mode by default');
+is($bar_config->{mode}, 'dock', 'dock mode by default');
 is($bar_config->{position}, 'bottom', 'position bottom by default');
 
 #####################################################################
