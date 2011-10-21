@@ -19,6 +19,8 @@ typedef struct config_t {
     char         *command;
     char         *fontname;
     char         *tray_output;
+    int          num_outputs;
+    char         **outputs;
 } config_t;
 
 config_t config;

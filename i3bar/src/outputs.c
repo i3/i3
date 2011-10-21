@@ -26,7 +26,7 @@ struct outputs_json_params {
     i3_output           *outputs_walk;
     char                *cur_key;
     char                *json;
-    bool                init;
+    bool                in_rect;
 };
 
 /*
@@ -171,6 +171,10 @@ static int outputs_start_map_cb(void *params_) {
         return 1;
     }
 
+    if (!strcmp(params->cur_key, "rect")) {
+        params->in_rect = true;
+    }
+
     return 1;
 }
 
@@ -180,7 +184,33 @@ static int outputs_start_map_cb(void *params_) {
  */
 static int outputs_end_map_cb(void *params_) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
-    /* FIXME: What is at the end of a rect? */
+    if (params->in_rect) {
+        params->in_rect = false;
+        /* Ignore the end of a rect */
+        return 1;
+    }
+
+    /* See if we actually handle that output */
+    if (config.num_outputs > 0) {
+        bool handle_output = false;
+        for (int c = 0; c < config.num_outputs; c++) {
+            if (strcasecmp(params->outputs_walk->name, config.outputs[c]) != 0)
+                continue;
+
+            handle_output = true;
+            break;
+        }
+        if (!handle_output) {
+            DLOG("Ignoring output \"%s\", not configured to handle it.\n",
+                 params->outputs_walk->name);
+            FREE(params->outputs_walk->name);
+            FREE(params->outputs_walk->workspaces);
+            FREE(params->outputs_walk->trayclients);
+            FREE(params->outputs_walk);
+            FREE(params->cur_key);
+            return 1;
+        }
+    }
 
     i3_output *target = get_output_by_name(params->outputs_walk->name);
 
@@ -249,6 +279,7 @@ void parse_outputs_json(char *json) {
     params.outputs_walk = NULL;
     params.cur_key = NULL;
     params.json = json;
+    params.in_rect = false;
 
     yajl_handle handle;
     yajl_status state;

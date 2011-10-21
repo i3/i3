@@ -100,8 +100,11 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
     }
 
     if (!strcmp(cur_key, "outputs")) {
-        printf("+output %.*s\n", len, val);
-        /* XXX: these are not implemented yet */
+        DLOG("+output %.*s\n", len, val);
+        int new_num_outputs = config.num_outputs + 1;
+        config.outputs = srealloc(config.outputs, sizeof(char*) * new_num_outputs);
+        asprintf(&config.outputs[config.num_outputs], "%.*s", len, val);
+        config.num_outputs = new_num_outputs;
         return 1;
     }
 

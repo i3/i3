@@ -144,11 +144,14 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
             output_name = smalloc(sizeof(const unsigned char) * (len + 1));
             strncpy(output_name, (const char*) val, len);
             output_name[len] = '\0';
-            params->workspaces_walk->output = get_output_by_name(output_name);
+            i3_output *target = get_output_by_name(output_name);
+            if (target) {
+                params->workspaces_walk->output = target;
 
-            TAILQ_INSERT_TAIL(params->workspaces_walk->output->workspaces,
-                              params->workspaces_walk,
-                              tailq);
+                TAILQ_INSERT_TAIL(params->workspaces_walk->output->workspaces,
+                                  params->workspaces_walk,
+                                  tailq);
+            }
 
             FREE(output_name);
             return 1;
