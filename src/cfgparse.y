@@ -286,13 +286,17 @@ static void start_configerror_nagbar(const char *config_path) {
             exit(1);
         char *argv[] = {
             NULL, /* will be replaced by the executable path */
+            "-t",
+            (context->has_errors ? "error" : "warning"),
             "-m",
-            "You have an error in your i3 config file!",
+            (context->has_errors ?
+             "You have an error in your i3 config file!" :
+             "Your config is outdated. Please fix the warnings to make sure everything works."),
             "-b",
             "edit config",
             editaction,
             (errorfilename ? "-b" : NULL),
-            "show errors",
+            (context->has_errors ? "show errors" : "show warnings"),
             pageraction,
             NULL
         };
@@ -388,6 +392,31 @@ static void check_for_duplicate_bindings(struct context *context) {
             }
         }
     }
+}
+
+static void migrate_i3bar_exec(struct Autostart *exec) {
+    ELOG("**********************************************************************\n");
+    ELOG("IGNORING exec command: %s\n", exec->command);
+    ELOG("It contains \"i3bar\". Since i3 v4.1, i3bar will be automatically started\n");
+    ELOG("for each 'bar' configuration block in your i3 config. Please remove the exec\n");
+    ELOG("line and add the following to your i3 config:\n");
+    ELOG("\n");
+    ELOG("    bar {\n");
+    ELOG("        status_command i3status\n");
+    ELOG("    }\n");
+    ELOG("**********************************************************************\n");
+
+    /* Generate a dummy bar configuration */
+    Barconfig *bar_config = scalloc(sizeof(Barconfig));
+    /* The hard-coded ID is not a problem. It does not conflict with the
+     * auto-generated bar IDs and having multiple hard-coded IDs is irrelevant
+     * – they all just contain status_command = i3status */
+    bar_config->id = sstrdup("migrate-bar");
+    bar_config->status_command = sstrdup("i3status");
+    TAILQ_INSERT_TAIL(&barconfigs, bar_config, configs);
+
+    /* Trigger an i3-nagbar */
+    context->has_warnings = true;
 }
 
 void parse_file(const char *f) {
@@ -553,7 +582,31 @@ void parse_file(const char *f) {
 
     check_for_duplicate_bindings(context);
 
-    if (context->has_errors) {
+    /* XXX: The following code will be removed in i3 v4.3 (three releases from
+     * now, as of 2011-10-22) */
+    /* Check for any exec or exec_always lines starting i3bar. We remove these
+     * and add a bar block instead. Additionally, a i3-nagbar warning (not an
+     * error) will be displayed so that users update their config file. */
+    struct Autostart *exec, *next;
+    for (exec = TAILQ_FIRST(&autostarts); exec; ) {
+        next = TAILQ_NEXT(exec, autostarts);
+        if (strstr(exec->command, "i3bar") != NULL) {
+            migrate_i3bar_exec(exec);
+            TAILQ_REMOVE(&autostarts, exec, autostarts);
+        }
+        exec = next;
+    }
+
+    for (exec = TAILQ_FIRST(&autostarts_always); exec; ) {
+        next = TAILQ_NEXT(exec, autostarts_always);
+        if (strstr(exec->command, "i3bar") != NULL) {
+            migrate_i3bar_exec(exec);
+            TAILQ_REMOVE(&autostarts_always, exec, autostarts_always);
+        }
+        exec = next;
+    }
+
+    if (context->has_errors || context->has_warnings) {
         start_configerror_nagbar(f);
     }
 
@@ -1356,7 +1409,7 @@ assign:
         ELOG("You are using the old assign syntax (without criteria). "
              "Please see the User's Guide for the new syntax and fix "
              "your config file.\n");
-        context->has_errors = true;
+        context->has_warnings = true;
         printf("assignment of %s to *%s*\n", $2, $3);
         char *workspace = $3;
         char *criteria = $2;

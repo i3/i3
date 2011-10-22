@@ -173,7 +173,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     line_width = 1;
     for (int c = 0; c < buttoncnt; c++) {
         /* TODO: make w = text extents of the label */
-        w = 90;
+        w = 100;
         y -= 30;
         xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, color_button_background);
         close = (xcb_rectangle_t){ y - w - (2 * line_width), 2, w + (2 * line_width), rect.height - 6 };

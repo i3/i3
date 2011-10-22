@@ -35,6 +35,7 @@ extern TAILQ_HEAD(barconfig_head, Barconfig) barconfigs;
  */
 struct context {
     bool has_errors;
+    bool has_warnings;
 
     int line_number;
     char *line_copy;
