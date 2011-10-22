@@ -311,14 +311,14 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     } while  (0)
     PARSE_COLOR(bar_fg, "FFFFFF");
     PARSE_COLOR(bar_bg, "000000");
-    PARSE_COLOR(active_ws_fg, "FFFFFF");
-    PARSE_COLOR(active_ws_bg, "480000");
-    PARSE_COLOR(inactive_ws_fg, "FFFFFF");
-    PARSE_COLOR(inactive_ws_bg, "240000");
+    PARSE_COLOR(active_ws_fg, "888888");
+    PARSE_COLOR(active_ws_bg, "222222");
+    PARSE_COLOR(inactive_ws_fg, "888888");
+    PARSE_COLOR(inactive_ws_bg, "222222");
     PARSE_COLOR(urgent_ws_fg, "FFFFFF");
-    PARSE_COLOR(urgent_ws_bg, "002400");
+    PARSE_COLOR(urgent_ws_bg, "900000");
     PARSE_COLOR(focus_ws_fg, "FFFFFF");
-    PARSE_COLOR(focus_ws_bg, "480000");
+    PARSE_COLOR(focus_ws_bg, "285577");
 #undef PARSE_COLOR
 }
 
