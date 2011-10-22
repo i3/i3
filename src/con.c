@@ -193,7 +193,6 @@ void con_focus(Con *con) {
         con->urgent = false;
         workspace_update_urgent_flag(con_get_workspace(con));
     }
-    DLOG("con_focus done = %p\n", con);
 }
 
 /*
@@ -404,8 +403,8 @@ Con *con_by_frame_id(xcb_window_t frame) {
 Con *con_for_window(Con *con, i3Window *window, Match **store_match) {
     Con *child;
     Match *match;
-    DLOG("searching con for window %p starting at con %p\n", window, con);
-    DLOG("class == %s\n", window->class_class);
+    //DLOG("searching con for window %p starting at con %p\n", window, con);
+    //DLOG("class == %s\n", window->class_class);
 
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
         TAILQ_FOREACH(match, &(child->swallow_head), matches) {

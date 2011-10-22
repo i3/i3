@@ -73,14 +73,13 @@ void match_copy(Match *dest, Match *src) {
  *
  */
 bool match_matches_window(Match *match, i3Window *window) {
-    LOG("checking window %d (%s)\n", window->id, window->class_class);
+    LOG("Checking window 0x%08x (class %s)\n", window->id, window->class_class);
 
     if (match->class != NULL) {
         if (window->class_class != NULL &&
             regex_matches(match->class, window->class_class)) {
             LOG("window class matches (%s)\n", window->class_class);
         } else {
-            LOG("window class does not match\n");
             return false;
         }
     }
@@ -90,7 +89,6 @@ bool match_matches_window(Match *match, i3Window *window) {
             regex_matches(match->instance, window->class_instance)) {
             LOG("window instance matches (%s)\n", window->class_instance);
         } else {
-            LOG("window instance does not match\n");
             return false;
         }
     }
@@ -109,7 +107,6 @@ bool match_matches_window(Match *match, i3Window *window) {
             regex_matches(match->title, window->name_json)) {
             LOG("title matches (%s)\n", window->name_json);
         } else {
-            LOG("title does not match\n");
             return false;
         }
     }
@@ -119,13 +116,11 @@ bool match_matches_window(Match *match, i3Window *window) {
             regex_matches(match->role, window->role)) {
             LOG("window_role matches (%s)\n", window->role);
         } else {
-            LOG("window_role does not match\n");
             return false;
         }
     }
 
     if (match->dock != -1) {
-        LOG("match->dock = %d, window->dock = %d\n", match->dock, window->dock);
         if ((window->dock == W_DOCK_TOP && match->dock == M_DOCK_TOP) ||
          (window->dock == W_DOCK_BOTTOM && match->dock == M_DOCK_BOTTOM) ||
          ((window->dock == W_DOCK_TOP || window->dock == W_DOCK_BOTTOM) &&

@@ -77,8 +77,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     xcb_get_geometry_reply_t *geom;
     xcb_get_window_attributes_reply_t *attr = NULL;
 
-    DLOG("---> looking at window 0x%08x\n", window);
-
     xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
                               utf8_title_cookie, title_cookie,
                               class_cookie, leader_cookie, transient_cookie,
@@ -100,13 +98,11 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     }
 
     if (needs_to_be_mapped && attr->map_state != XCB_MAP_STATE_VIEWABLE) {
-        DLOG("map_state unviewable\n");
         FREE_GEOMETRY();
         goto out;
     }
 
     /* Don’t manage clients with the override_redirect flag */
-    DLOG("override_redirect is %d\n", attr->override_redirect);
     if (attr->override_redirect) {
         FREE_GEOMETRY();
         goto out;
@@ -148,7 +144,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     startup_id_cookie = GET_PROPERTY(A__NET_STARTUP_ID, 512);
     /* TODO: also get wm_normal_hints here. implement after we got rid of xcb-event */
 
-    DLOG("reparenting!\n");
+    DLOG("Managing window 0x%08x\n", window);
 
     i3Window *cwindow = scalloc(sizeof(i3Window));
     cwindow->id = window;

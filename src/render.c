@@ -25,7 +25,6 @@ static void render_l_output(Con *con) {
     int x = con->rect.x;
     int y = con->rect.y;
     int height = con->rect.height;
-    DLOG("Available height: %d\n", height);
 
     /* Find the content container and ensure that there is exactly one. Also
      * check for any non-CT_DOCKAREA clients. */
@@ -51,7 +50,6 @@ static void render_l_output(Con *con) {
     Con *ws = con_get_fullscreen_con(content, CF_OUTPUT);
     Con *fullscreen = con_get_fullscreen_con(ws, CF_OUTPUT);
     if (fullscreen) {
-        DLOG("got fs node: %p\n", fullscreen);
         fullscreen->rect = con->rect;
         x_raise_con(fullscreen);
         render_con(fullscreen, true);
@@ -67,12 +65,9 @@ static void render_l_output(Con *con) {
         child->rect.height = 0;
         TAILQ_FOREACH(dockchild, &(child->nodes_head), nodes)
             child->rect.height += dockchild->geometry.height;
-        DLOG("This dockarea's height: %d\n", child->rect.height);
 
         height -= child->rect.height;
     }
-
-    DLOG("Remaining: %d\n", height);
 
     /* Second pass: Set the widths/heights */
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
@@ -96,7 +91,6 @@ static void render_l_output(Con *con) {
 
         DLOG("child at (%d, %d) with (%d x %d)\n",
                 child->rect.x, child->rect.y, child->rect.width, child->rect.height);
-        DLOG("x now %d, y now %d\n", x, y);
         x_raise_con(child);
         render_con(child, false);
     }
@@ -111,10 +105,10 @@ static void render_l_output(Con *con) {
  *
  */
 void render_con(Con *con, bool render_fullscreen) {
-    DLOG("currently rendering node %p / %s / layout %d\n",
-            con, con->name, con->layout);
     int children = con_num_children(con);
-    DLOG("children: %d, orientation = %d\n", children, con->orientation);
+    DLOG("Rendering %snode %p / %s / layout %d / children %d / orient %d\n",
+         (render_fullscreen ? "fullscreen " : ""), con, con->name, con->layout,
+         children, con->orientation);
 
     /* Copy container rect, subtract container border */
     /* This is the actually usable space inside this container for clients */
@@ -145,16 +139,13 @@ void render_con(Con *con, bool render_fullscreen) {
         if (!render_fullscreen)
             *inset = rect_add(*inset, con_border_style_rect(con));
 
-        DLOG("Starting with inset = (%d, %d) %d x %d\n", inset->x, inset->y, inset->width, inset->height);
         /* Obey x11 border */
-        DLOG("X11 border: %d\n", con->border_width);
         inset->width -= (2 * con->border_width);
         inset->height -= (2 * con->border_width);
 
         /* Obey the aspect ratio, if any */
         if (con->proportional_height != 0 &&
             con->proportional_width != 0) {
-            DLOG("proportional height = %d, width = %d\n", con->proportional_height, con->proportional_width);
             double new_height = inset->height + 1;
             int new_width = inset->width;
 
@@ -170,7 +161,6 @@ void render_con(Con *con, bool render_fullscreen) {
 
             inset->height = new_height;
             inset->width = new_width;
-            DLOG("new_height = %f, new_width = %d\n", new_height, new_width);
         }
 
         if (con->height_increment > 1) {
@@ -196,7 +186,6 @@ void render_con(Con *con, bool render_fullscreen) {
         fullscreen = con_get_fullscreen_con(con, (con->type == CT_ROOT ? CF_GLOBAL : CF_OUTPUT));
     }
     if (fullscreen) {
-        DLOG("got fs node: %p\n", fullscreen);
         fullscreen->rect = rect;
         x_raise_con(fullscreen);
         render_con(fullscreen, true);
@@ -232,7 +221,6 @@ void render_con(Con *con, bool render_fullscreen) {
     if (con->layout == L_OUTPUT) {
         render_l_output(con);
     } else if (con->type == CT_ROOT) {
-        DLOG("Root node, rendering outputs\n");
         Con *child;
         TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
             render_con(child, false);
@@ -262,7 +250,6 @@ void render_con(Con *con, bool render_fullscreen) {
 
             /* first we have the decoration, if this is a leaf node */
             if (con_is_leaf(child) && child->border_style == BS_NORMAL) {
-                DLOG("that child is a leaf node, subtracting deco\n");
                 /* TODO: make a function for relative coords? */
                 child->deco_rect.x = child->rect.x - con->rect.x;
                 child->deco_rect.y = child->rect.y - con->rect.y;
@@ -277,7 +264,6 @@ void render_con(Con *con, bool render_fullscreen) {
 
         /* stacked layout */
         else if (con->layout == L_STACKED) {
-            DLOG("stacked con\n");
             child->rect.x = x;
             child->rect.y = y;
             child->rect.width = rect.width;
@@ -296,7 +282,6 @@ void render_con(Con *con, bool render_fullscreen) {
 
         /* tabbed layout */
         else if (con->layout == L_TABBED) {
-            DLOG("tabbed con\n");
             child->rect.x = x;
             child->rect.y = y;
             child->rect.width = rect.width;
@@ -315,7 +300,6 @@ void render_con(Con *con, bool render_fullscreen) {
 
         /* dockarea layout */
         else if (con->layout == L_DOCKAREA) {
-            DLOG("dockarea con\n");
             child->rect.x = x;
             child->rect.y = y;
             child->rect.width = rect.width;
@@ -330,7 +314,6 @@ void render_con(Con *con, bool render_fullscreen) {
 
         DLOG("child at (%d, %d) with (%d x %d)\n",
                 child->rect.x, child->rect.y, child->rect.width, child->rect.height);
-        DLOG("x now %d, y now %d\n", x, y);
         x_raise_con(child);
         render_con(child, false);
         i++;
@@ -338,12 +321,9 @@ void render_con(Con *con, bool render_fullscreen) {
 
     /* in a stacking or tabbed container, we ensure the focused client is raised */
     if (con->layout == L_STACKED || con->layout == L_TABBED) {
-        DLOG("stacked/tabbed, raising focused reverse\n");
         TAILQ_FOREACH_REVERSE(child, &(con->focus_head), focus_head, focused)
             x_raise_con(child);
-        DLOG("done\n");
         if ((child = TAILQ_FIRST(&(con->focus_head)))) {
-            DLOG("con %p is stacking, raising %p\n", con, child);
             /* By rendering the stacked container again, we handle the case
              * that we have a non-leaf-container inside the stack. In that
              * case, the children of the non-leaf-container need to be raised
@@ -362,11 +342,8 @@ void render_con(Con *con, bool render_fullscreen) {
 
     Con *child;
     TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
-        DLOG("render floating:\n");
         DLOG("floating child at (%d,%d) with %d x %d\n", child->rect.x, child->rect.y, child->rect.width, child->rect.height);
         x_raise_con(child);
         render_con(child, false);
     }
-
-    DLOG("-- level up\n");
 }

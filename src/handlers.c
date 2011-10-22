@@ -684,7 +684,7 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         xcb_flush(conn);
         free(reply);
     } else {
-        ELOG("unhandled clientmessage\n");
+        DLOG("unhandled clientmessage\n");
         return;
     }
 }
@@ -1017,7 +1017,7 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
     }
 
     if (handler == NULL) {
-        DLOG("Unhandled property notify for atom %d (0x%08x)\n", atom, atom);
+        //DLOG("Unhandled property notify for atom %d (0x%08x)\n", atom, atom);
         return;
     }
 
@@ -1098,15 +1098,15 @@ void handle_event(int type, xcb_generic_event_t *event) {
             handle_focus_in((xcb_focus_in_event_t*)event);
             break;
 
-        case XCB_PROPERTY_NOTIFY:
-            DLOG("Property notify\n");
+        case XCB_PROPERTY_NOTIFY: {
             xcb_property_notify_event_t *e = (xcb_property_notify_event_t*)event;
             last_timestamp = e->time;
             property_notify(e->state, e->window, e->atom);
             break;
+        }
 
         default:
-            DLOG("Unhandled event of type %d\n", type);
+            //DLOG("Unhandled event of type %d\n", type);
             break;
     }
 }

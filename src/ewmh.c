@@ -112,7 +112,6 @@ void ewmh_update_workarea() {
  *
  */
 void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows) {
-    DLOG("Updating _NET_CLIENT_LIST_STACKING\n");
     xcb_change_property(
         conn,
         XCB_PROP_MODE_REPLACE,

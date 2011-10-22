@@ -15,7 +15,7 @@
  *
  */
 void run_assignments(i3Window *window) {
-    DLOG("Checking assignments...\n");
+    DLOG("Checking if any assignments matches this window\n");
 
     /* Check if any assignments match */
     Assignment *current;

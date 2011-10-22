@@ -16,7 +16,7 @@
  */
 void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("empty property, not updating\n");
+        DLOG("WM_CLASS not set.\n");
         FREE(prop);
         return;
     }
@@ -105,7 +105,7 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
  */
 void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("prop == NULL\n");
+        DLOG("WM_NAME not set (_NET_WM_NAME is what you want anyways).\n");
         FREE(prop);
         return;
     }
@@ -152,7 +152,7 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
  */
 void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("prop == NULL\n");
+        DLOG("CLIENT_LEADER not set.\n");
         FREE(prop);
         return;
     }
@@ -176,7 +176,7 @@ void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop) {
  */
 void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("prop == NULL\n");
+        DLOG("TRANSIENT_FOR not set.\n");
         FREE(prop);
         return;
     }
@@ -200,7 +200,7 @@ void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop) 
  */
 void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("prop == NULL\n");
+        DLOG("_NET_WM_STRUT_PARTIAL not set.\n");
         FREE(prop);
         return;
     }
@@ -225,7 +225,7 @@ void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop) 
  */
 void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("prop == NULL\n");
+        DLOG("WM_WINDOW_ROLE not set.\n");
         FREE(prop);
         return;
     }

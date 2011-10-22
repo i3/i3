@@ -274,21 +274,16 @@ void x_draw_decoration(Con *con) {
          parent->layout != L_TABBED) ||
         con->type == CT_FLOATING_CON)
         return;
-    DLOG("decoration should be rendered for con %p\n", con);
 
     /* Skip containers whose height is 0 (for example empty dockareas) */
-    if (con->rect.height == 0) {
-        DLOG("height == 0, not rendering\n");
+    if (con->rect.height == 0)
         return;
-    }
 
     /* Skip containers whose pixmap has not yet been created (can happen when
      * decoration rendering happens recursively for a window for which
      * x_push_node() was not yet called) */
-    if (leaf && con->pixmap == XCB_NONE) {
-        DLOG("pixmap not yet created, not rendering\n");
+    if (leaf && con->pixmap == XCB_NONE)
         return;
-    }
 
     /* 1: build deco_params and compare with cache */
     struct deco_render_params *p = scalloc(sizeof(struct deco_render_params));
@@ -319,15 +314,12 @@ void x_draw_decoration(Con *con) {
         !parent->pixmap_recreated &&
         !con->pixmap_recreated &&
         memcmp(p, con->deco_render_params, sizeof(struct deco_render_params)) == 0) {
-        DLOG("CACHE HIT, copying existing pixmaps\n");
         free(p);
         goto copy_pixmaps;
     }
 
-    DLOG("CACHE MISS\n");
     Con *next = con;
     while ((next = TAILQ_NEXT(next, nodes))) {
-        DLOG("Also invalidating cache of %p\n", next);
         FREE(next->deco_render_params);
     }
 
@@ -395,10 +387,8 @@ void x_draw_decoration(Con *con) {
 
     /* if this is a borderless/1pixel window, we don’t * need to render the
      * decoration. */
-    if (p->border_style != BS_NORMAL) {
-        DLOG("border style not BS_NORMAL, aborting rendering of decoration\n");
+    if (p->border_style != BS_NORMAL)
         goto copy_pixmaps;
-    }
 
     /* 4: paint the bar */
     xcb_change_gc_single(conn, parent->pm_gc, XCB_GC_FOREGROUND, p->color->background);
@@ -445,7 +435,7 @@ void x_draw_decoration(Con *con) {
     Con *il_parent = parent;
     if (il_parent->layout != L_STACKED) {
         while (1) {
-            DLOG("il_parent = %p, layout = %d\n", il_parent, il_parent->layout);
+            //DLOG("il_parent = %p, layout = %d\n", il_parent, il_parent->layout);
             if (il_parent->layout == L_STACKED)
                 indent_level++;
             if (il_parent->type == CT_WORKSPACE || il_parent->type == CT_DOCKAREA || il_parent->type == CT_OUTPUT)
@@ -454,7 +444,7 @@ void x_draw_decoration(Con *con) {
             indent_mult++;
         }
     }
-    DLOG("indent_level = %d, indent_mult = %d\n", indent_level, indent_mult);
+    //DLOG("indent_level = %d, indent_mult = %d\n", indent_level, indent_mult);
     int indent_px = (indent_level * 5) * indent_mult;
 
     if (win->uses_net_wm_name)
@@ -544,10 +534,8 @@ void x_push_node(Con *con) {
             }
         }
         rect.height = max_y + max_height;
-        if (rect.height == 0) {
-            DLOG("Unmapping container %p because it does not contain anything.\n", con);
+        if (rect.height == 0)
             con->mapped = false;
-        }
     }
 
     /* reparent the child window (when the window was moved due to a sticky
@@ -591,9 +579,6 @@ void x_push_node(Con *con) {
          * (height == 0). */
         if ((state->rect.width != rect.width ||
             state->rect.height != rect.height)) {
-            DLOG("CACHE: creating new pixmap for con %p (old: %d x %d, new: %d x %d)\n",
-                    con, state->rect.width, state->rect.height,
-                    rect.width, rect.height);
             if (con->pixmap == 0) {
                 con->pixmap = xcb_generate_id(conn);
                 con->pm_gc = xcb_generate_id(conn);
@@ -809,7 +794,7 @@ void x_push_changes(Con *con) {
             order_changed = true;
         if ((state->initial || order_changed) && prev != CIRCLEQ_END(&state_head)) {
             stacking_changed = true;
-            DLOG("Stacking 0x%08x above 0x%08x\n", prev->id, state->id);
+            //DLOG("Stacking 0x%08x above 0x%08x\n", prev->id, state->id);
             uint32_t mask = 0;
             mask |= XCB_CONFIG_WINDOW_SIBLING;
             mask |= XCB_CONFIG_WINDOW_STACK_MODE;
@@ -825,7 +810,7 @@ void x_push_changes(Con *con) {
     if (stacking_changed)
         ewmh_update_client_list_stacking(btt_stack, btt_stack_num);
 
-    DLOG("\n\n PUSHING CHANGES\n\n");
+    DLOG("PUSHING CHANGES\n");
     x_push_node(con);
 
     //DLOG("Re-enabling EnterNotify\n");
@@ -842,7 +827,6 @@ void x_push_changes(Con *con) {
     if (focused->window != NULL)
         to_focus = focused->window->id;
 
-    DLOG("focused_id = 0x%08x, to_focus = 0x%08x\n", focused_id, to_focus);
     if (focused_id != to_focus) {
         if (!focused->mapped) {
             DLOG("Not updating focus (to %p / %s), focused window is not mapped.\n", focused, focused->name);
@@ -896,7 +880,7 @@ void x_push_changes(Con *con) {
     }
 
     xcb_flush(conn);
-    DLOG("\n\n ENDING CHANGES\n\n");
+    DLOG("ENDING CHANGES\n");
 
     /* Disable EnterWindow events for windows which will be unmapped in
      * x_push_node_unmaps() now. Unmapping windows happens when switching
