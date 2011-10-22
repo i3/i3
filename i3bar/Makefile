@@ -10,8 +10,8 @@ CPPFLAGS += -I$(TOPDIR)/include
 
 all: i3bar doc
 
-i3bar: libi3/libi3.a ${FILES}
-	echo "LINK"
+i3bar: $(TOPDIR)/libi3/libi3.a ${FILES}
+	echo "[i3bar] LINK"
 	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3/libi3.a,$^) $(LIBS)
 
 libi3/%.a:
@@ -19,15 +19,15 @@ libi3/%.a:
 
 doc:
 	echo ""
-	echo "SUBDIR doc"
+	echo "[i3bar] SUBDIR doc"
 	$(MAKE) -C doc
 
 src/%.o: src/%.c ${HEADERS}
-	echo "CC $<"
+	echo "[i3bar] CC $<"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 install: all
-	echo "INSTALL"
+	echo "[i3bar] INSTALL"
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
 	$(INSTALL) -m 0755 i3bar $(DESTDIR)$(PREFIX)/bin
 

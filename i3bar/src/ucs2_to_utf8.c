@@ -14,6 +14,8 @@
 #include <err.h>
 #include <iconv.h>
 
+#include "libi3.h"
+
 static iconv_t conversion_descriptor = 0;
 static iconv_t conversion_descriptor2 = 0;
 
@@ -27,9 +29,7 @@ char *convert_ucs_to_utf8(char *input) {
         /* UTF-8 may consume up to 4 byte */
         int buffer_size = 8;
 
-        char *buffer = calloc(buffer_size, 1);
-        if (buffer == NULL)
-                err(EXIT_FAILURE, "malloc() failed\n");
+        char *buffer = scalloc(buffer_size);
         size_t output_size = buffer_size;
         /* We need to use an additional pointer, because iconv() modifies it */
         char *output = buffer;
@@ -68,9 +68,7 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
         /* UCS-2 consumes exactly two bytes for each glyph */
         int buffer_size = input_size * 2;
 
-        char *buffer = malloc(buffer_size);
-        if (buffer == NULL)
-                err(EXIT_FAILURE, "malloc() failed\n");
+        char *buffer = smalloc(buffer_size);
         size_t output_size = buffer_size;
         /* We need to use an additional pointer, because iconv() modifies it */
         char *output = buffer;

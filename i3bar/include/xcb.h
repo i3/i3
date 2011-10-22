@@ -40,10 +40,18 @@ struct xcb_color_strings_t {
 typedef struct xcb_colors_t xcb_colors_t;
 
 /*
- * Initialize xcb and use the specified fontname for text-rendering
+ * Early initialization of the connection to X11: Everything which does not
+ * depend on 'config'.
  *
  */
-char *init_xcb(char *fontname);
+char *init_xcb_early();
+
+/**
+ * Initialization which depends on 'config' being usable. Called after the
+ * configuration has arrived.
+ *
+ */
+void init_xcb_late(char *fontname);
 
 /*
  * Initialize the colors

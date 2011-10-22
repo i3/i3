@@ -74,9 +74,11 @@ int main(int argc, char *argv[]) {
                 message_type = I3_IPC_MESSAGE_TYPE_GET_TREE;
             else if (strcasecmp(optarg, "get_marks") == 0)
                 message_type = I3_IPC_MESSAGE_TYPE_GET_MARKS;
+            else if (strcasecmp(optarg, "get_bar_config") == 0)
+                message_type = I3_IPC_MESSAGE_TYPE_GET_BAR_CONFIG;
             else {
                 printf("Unknown message type\n");
-                printf("Known types: command, get_workspaces, get_outputs, get_tree, get_marks\n");
+                printf("Known types: command, get_workspaces, get_outputs, get_tree, get_marks, get_bar_config\n");
                 exit(EXIT_FAILURE);
             }
         } else if (o == 'q') {

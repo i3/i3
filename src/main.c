@@ -61,6 +61,11 @@ struct ws_assignments_head ws_assignments = TAILQ_HEAD_INITIALIZER(ws_assignment
 bool xcursor_supported = true;
 bool xkb_supported = true;
 
+/* This will be set to true when -C is used so that functions can behave
+ * slightly differently. We don’t want i3-nagbar to be started when validating
+ * the config, for example. */
+bool only_check_config = false;
+
 /*
  * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
  * See also man libev(3): "ev_prepare" and "ev_check" - customise your event loop
@@ -194,7 +199,6 @@ int main(int argc, char *argv[]) {
     bool autostart = true;
     char *layout_path = NULL;
     bool delete_layout_path = false;
-    bool only_check_config = false;
     bool force_xinerama = false;
     bool disable_signalhandler = false;
     static struct option long_options[] = {
@@ -216,6 +220,8 @@ int main(int argc, char *argv[]) {
     /* Disable output buffering to make redirects in .xsession actually useful for debugging */
     if (!isatty(fileno(stdout)))
         setbuf(stdout, NULL);
+
+    srand(time(NULL));
 
     init_logging();
 
@@ -629,6 +635,17 @@ int main(int argc, char *argv[]) {
     TAILQ_FOREACH(exec_always, &autostarts_always, autostarts_always) {
         LOG("auto-starting (always!) %s\n", exec_always->command);
         start_application(exec_always->command);
+    }
+
+    /* Start i3bar processes for all configured bars */
+    Barconfig *barconfig;
+    TAILQ_FOREACH(barconfig, &barconfigs, configs) {
+        char *command = NULL;
+        asprintf(&command, "i3bar --bar_id=%s --socket=\"%s\"",
+                 barconfig->id, current_socketpath);
+        LOG("Starting bar process: %s\n", command);
+        start_application(command);
+        free(command);
     }
 
     /* Make sure to destroy the event loop to invoke the cleeanup callbacks

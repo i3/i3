@@ -54,6 +54,14 @@ sub activate_i3 {
         $ENV{LISTEN_PID} = $$;
         $ENV{LISTEN_FDS} = 1;
         $ENV{DISPLAY} = $args{display};
+        $ENV{PATH} = join(':',
+            '../i3-nagbar',
+            '../i3-msg',
+            '../i3-config-wizard',
+            '../i3bar',
+            '..',
+            $ENV{PATH}
+        );
         # Only pass file descriptors 0 (stdin), 1 (stdout), 2 (stderr) and
         # 3 (socket) to the child.
         $^F = 3;

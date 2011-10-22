@@ -358,6 +358,8 @@ sub convert_command {
 # add an i3bar invocation automatically if no 'workspace_bar no' was found
 if ($workspace_bar) {
     print "\n";
-    print "# XXX: Automatically added a call to i3bar to provide a workspace bar\n";
-    print "exec i3status | i3bar -d\n";
+    print "# XXX: Automatically added a bar configuration\n";
+    print "bar {\n";
+    print "    status_command i3status\n";
+    print "}\n";
 }
