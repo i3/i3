@@ -1,13 +1,19 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * load_layout.c: Restore (parts of) the layout, for example after an inplace
+ *                restart.
+ *
  */
+#include "all.h"
+
 #include <yajl/yajl_common.h>
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_version.h>
-
-#include "all.h"
 
 /* TODO: refactor the whole parsing thing */
 

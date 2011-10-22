@@ -2,11 +2,11 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * con.c contains all functions which deal with containers directly (creating
- * containers, searching containers, getting specific properties from
- * containers, …).
+ * con.c: Functions which deal with containers directly (creating containers,
+ *        searching containers, getting specific properties from containers,
+ *        …).
  *
  */
 #include "all.h"

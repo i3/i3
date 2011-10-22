@@ -2,15 +2,11 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * ewmh.c: Functions to get/set certain EWMH properties easily.
+ * ewmh.c: Get/set certain EWMH properties easily.
  *
  */
-
 #include "all.h"
 
 /*

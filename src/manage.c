@@ -4,11 +4,9 @@
  * i3 - an improved dynamic tiling window manager
  * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * manage.c: Contains all functions for initially managing new windows
- *           (or existing ones on restart).
+ * manage.c: Initially managing new windows (or existing ones on restart).
  *
  */
-
 #include "all.h"
 
 /*

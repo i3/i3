@@ -2,21 +2,17 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * For more information on RandR, please see the X.org RandR specification at
  * http://cgit.freedesktop.org/xorg/proto/randrproto/tree/randrproto.txt
  * (take your time to read it completely, it answers all questions).
  *
  */
-#include <time.h>
-
-#include <xcb/randr.h>
-
 #include "all.h"
+
+#include <time.h>
+#include <xcb/randr.h>
 
 /* While a clean namespace is usually a pretty good thing, we really need
  * to use shorter names than the whole xcb_randr_* default names. */

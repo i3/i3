@@ -1,5 +1,11 @@
 /*
  * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * main.c: Initialization, main loop
+ *
  */
 #include <ev.h>
 #include <fcntl.h>

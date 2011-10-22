@@ -4,17 +4,17 @@
  * i3 - an improved dynamic tiling window manager
  * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
+ * handlers.c: Small handlers for various events (keypresses, focus changes,
+ *             …).
+ *
  */
+#include "all.h"
+
 #include <time.h>
-
 #include <xcb/randr.h>
-
 #include <X11/XKBlib.h>
-
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-monitor.h>
-
-#include "all.h"
 
 int randr_base = -1;
 

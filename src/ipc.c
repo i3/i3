@@ -2,14 +2,13 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * ipc.c: Everything about the UNIX domain sockets for IPC
+ * ipc.c: UNIX domain socket IPC (initialization, client handling, protocol).
  *
  */
+#include "all.h"
+
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <fcntl.h>
@@ -18,8 +17,6 @@
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_version.h>
-
-#include "all.h"
 
 char *current_socketpath = NULL;
 

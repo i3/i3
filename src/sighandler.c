@@ -2,31 +2,22 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2009-2010 Michael Stapelberg and contributors
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  * © 2009-2010 Jan-Erik Rediger
  *
- * See file LICENSE for license information.
- *
- * sighandler.c: contains all functions for signal handling
+ * sighandler.c: Interactive crash dialog upon SIGSEGV/SIGABRT/SIGFPE (offers
+ *               to restart inplace).
  *
  */
+#include "all.h"
+
 #include <ev.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <iconv.h>
 #include <signal.h>
 
-#include <xcb/xcb.h>
-#include <xcb/xcb_aux.h>
 #include <xcb/xcb_event.h>
-#include <xcb/xcb_keysyms.h>
 
 #include <X11/keysym.h>
-
-#include "all.h"
 
 static xcb_gcontext_t pixmap_gc;
 static xcb_pixmap_t pixmap;

@@ -2,21 +2,16 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * src/config.c: Contains all functions handling the configuration file (calling
- * the parser (src/cfgparse.y) with the correct path, switching key bindings
- * mode).
+ * config.c: Configuration file (calling the parser (src/cfgparse.y) with the
+ *           correct path, switching key bindings mode).
  *
  */
+#include "all.h"
 
 /* We need Xlib for XStringToKeysym */
 #include <X11/Xlib.h>
-
-#include "all.h"
 
 char *current_configpath = NULL;
 Config config;

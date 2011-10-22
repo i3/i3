@@ -2,23 +2,21 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * startup.c: Startup notification code. Ensures a startup notification context
- * is setup when launching applications. We store the current workspace to open
- * windows in that startup notification context on the appropriate workspace.
+ *            is setup when launching applications. We store the current
+ *            workspace to open windows in that startup notification context on
+ *            the appropriate workspace.
  *
  */
+#include "all.h"
+
 #include <sys/types.h>
 #include <sys/wait.h>
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
-
-#include "all.h"
 
 static TAILQ_HEAD(startup_sequence_head, Startup_Sequence) startup_sequences =
     TAILQ_HEAD_INITIALIZER(startup_sequences);

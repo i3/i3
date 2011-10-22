@@ -4,9 +4,9 @@
  * i3 - an improved dynamic tiling window manager
  * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
+ * regex.c: Interface to libPCRE (perl compatible regular expressions).
  *
  */
-
 #include "all.h"
 
 /*

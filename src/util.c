@@ -2,14 +2,14 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * util.c: Utility functions, which can be useful everywhere.
+ * util.c: Utility functions, which can be useful everywhere within i3 (see
+ *         also libi3).
  *
  */
+#include "all.h"
+
 #include <sys/wait.h>
 #include <stdarg.h>
 #include <iconv.h>
@@ -23,8 +23,6 @@
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
-
-#include "all.h"
 
 static iconv_t conversion_descriptor = 0;
 

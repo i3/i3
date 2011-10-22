@@ -2,16 +2,11 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * src/floating.c: contains all functions for handling floating clients
+ * floating.c: Floating windows.
  *
  */
-
-
 #include "all.h"
 
 extern xcb_connection_t *conn;

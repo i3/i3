@@ -4,7 +4,8 @@
  * i3 - an improved dynamic tiling window manager
  * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * workspace.c: Functions for modifying workspaces
+ * workspace.c: Modifying workspaces, accessing them, moving containers to
+ *              workspaces.
  *
  */
 #include "all.h"

@@ -4,6 +4,8 @@
  * i3 - an improved dynamic tiling window manager
  * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
+ * window.c: Updates window attributes (X11 hints/properties).
+ *
  */
 #include "all.h"
 

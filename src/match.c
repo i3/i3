@@ -11,7 +11,6 @@
  * match_matches_window() to find the windows affected by this command.
  *
  */
-
 #include "all.h"
 
 /*

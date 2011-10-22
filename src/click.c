@@ -2,15 +2,13 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * src/click.c: Contains the handlers for button press (mouse click) events
- *              because they are quite large.
+ * click.c: Button press (mouse click) events.
  *
  */
+#include "all.h"
+
 #include <time.h>
 #include <math.h>
 
@@ -18,9 +16,6 @@
 #include <xcb/xcb_icccm.h>
 
 #include <X11/XKBlib.h>
-
-#include "all.h"
-
 
 typedef enum { CLICK_BORDER = 0, CLICK_DECORATION = 1, CLICK_INSIDE = 2 } click_destination_t;
 
