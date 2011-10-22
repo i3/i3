@@ -897,10 +897,8 @@ char *init_xcb_early() {
  */
 void init_xcb_late(char *fontname) {
     if (fontname == NULL) {
-        /* This is a very restrictive default. More sensefull would be something like
-         * "-misc-*-*-*-*--*-*-*-*-*-*-*-*". But since that produces very ugly results
-         * on my machine, let's stick with this until we have a configfile */
-        fontname = "-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso10646-1";
+        /* XXX: font fallback to 'misc' like i3 does it would be good. */
+        fontname = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
     }
 
     /* We load and allocate the font */
