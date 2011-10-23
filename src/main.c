@@ -215,8 +215,10 @@ int main(int argc, char *argv[]) {
         {"layout", required_argument, 0, 'L'},
         {"restart", required_argument, 0, 0},
         {"force-xinerama", no_argument, 0, 0},
+        {"force_xinerama", no_argument, 0, 0},
         {"disable-signalhandler", no_argument, 0, 0},
         {"get-socketpath", no_argument, 0, 0},
+        {"get_socketpath", no_argument, 0, 0},
         {0, 0, 0, 0}
     };
     int option_index = 0, opt;
@@ -266,7 +268,8 @@ int main(int argc, char *argv[]) {
                 /* DEPRECATED, ignored for the next 3 versions (3.e, 3.f, 3.g) */
                 break;
             case 0:
-                if (strcmp(long_options[option_index].name, "force-xinerama") == 0) {
+                if (strcmp(long_options[option_index].name, "force-xinerama") == 0 ||
+                    strcmp(long_options[option_index].name, "force_xinerama") == 0) {
                     force_xinerama = true;
                     ELOG("Using Xinerama instead of RandR. This option should be "
                          "avoided at all cost because it does not refresh the list "
@@ -277,7 +280,8 @@ int main(int argc, char *argv[]) {
                 } else if (strcmp(long_options[option_index].name, "disable-signalhandler") == 0) {
                     disable_signalhandler = true;
                     break;
-                } else if (strcmp(long_options[option_index].name, "get-socketpath") == 0) {
+                } else if (strcmp(long_options[option_index].name, "get-socketpath") == 0 ||
+                           strcmp(long_options[option_index].name, "get_socketpath") == 0) {
                     char *socket_path = socket_path_from_x11();
                     if (socket_path) {
                         printf("%s\n", socket_path);
