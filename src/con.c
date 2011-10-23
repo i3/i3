@@ -1007,11 +1007,22 @@ static void con_on_remove_child(Con *con) {
 
     /* Every container 'above' (in the hierarchy) the workspace content should
      * not be closed when the last child was removed */
-    if (con->type == CT_WORKSPACE ||
-        con->type == CT_OUTPUT ||
+    if (con->type == CT_OUTPUT ||
         con->type == CT_ROOT ||
         con->type == CT_DOCKAREA) {
         DLOG("not handling, type = %d\n", con->type);
+        return;
+    }
+
+    /* For workspaces, close them only if they're not visible anymore */
+    if (con->type == CT_WORKSPACE) {
+        int children = con_num_children(con);
+        if (children == 0 && !workspace_is_visible(con)) {
+            LOG("Closing old workspace (%p / %s), it is empty\n", con, con->name);
+            tree_close(con, DONT_KILL_WINDOW, false, false);
+            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"empty\"}");
+            ewmh_update_workarea();
+        }
         return;
     }
 
