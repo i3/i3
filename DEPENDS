@@ -25,18 +25,8 @@
 └─────────────┴────────┴────────┴────────────────────────────────────────┘
  ¹ libsn = libstartup-notification
 
- i3-msg, i3-input, i3-nagbar and i3-config-wizard do not introduce any new
- dependencies.
-
- i3-wsbar is implemented in Perl and has the following dependencies:
-
-   • IPC::Run
-   • Try::Tiny
-   • AnyEvent
-   • AnyEvent::I3
-
- All of them are available at CPAN, see http://search.cpan.org/
- Use your distribution’s packages or cpan(1) to install them.
+ i3bar, i3-msg, i3-input, i3-nagbar and i3-config-wizard do not introduce any
+ new dependencies.
 
  i3-migrate-config-to-v4 is implemented in Perl, but it has no dependencies
  besides Perl 5.10.

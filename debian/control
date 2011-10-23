@@ -3,7 +3,7 @@ Section: utils
 Priority: extra
 Maintainer: Michael Stapelberg <michael@stapelberg.de>
 DM-Upload-Allowed: yes
-Build-Depends: debhelper (>= 7.0.50~), libx11-dev, libxcb-util0-dev (>= 0.3.8), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-randr0-dev, libxcb-icccm4-dev, libxcursor-dev, asciidoc (>= 8.4.4), xmlto, docbook-xml, pkg-config, libev-dev, flex, bison, libyajl-dev, perl, texlive-latex-base, texlive-latex-recommended, texlive-latex-extra, libpcre3-dev, libstartup-notification0-dev (>= 0.12)
+Build-Depends: debhelper (>= 7.0.50~), libx11-dev, libxcb-util0-dev (>= 0.3.8), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-randr0-dev, libxcb-icccm4-dev, libxcursor-dev, asciidoc (>= 8.4.4), xmlto, docbook-xml, pkg-config, libev-dev, flex, bison, libyajl-dev, texlive-latex-base, texlive-latex-recommended, texlive-latex-extra, libpcre3-dev, libstartup-notification0-dev (>= 0.10)
 Standards-Version: 3.9.2
 Homepage: http://i3wm.org/
 
@@ -22,10 +22,10 @@ Description: metapackage (i3 window manager, screen locker, menu, statusbar)
 Package: i3-wm
 Architecture: any
 Section: x11
-Depends: ${shlibs:Depends}, ${misc:Depends}, x11-utils
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}, x11-utils
 Provides: x-window-manager
 Suggests: rxvt-unicode | x-terminal-emulator
-Recommends: xfonts-base, libanyevent-i3-perl, libanyevent-perl, libipc-run-perl
+Recommends: xfonts-base
 Description: improved dynamic tiling window manager
  Key features of i3 are correct implementation of Xinerama (workspaces are
  assigned to virtual screens, i3 does the right thing when attaching new
