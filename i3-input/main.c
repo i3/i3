@@ -44,8 +44,6 @@ static char *format;
 static char *socket_path;
 static int sockfd;
 static xcb_key_symbols_t *symbols;
-static int modeswitchmask;
-static int numlockmask;
 static bool modeswitch_active = false;
 static xcb_window_t win;
 static xcb_pixmap_t pixmap;
@@ -128,8 +126,15 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
 static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_event_t *event) {
     printf("releasing %d, state raw = %d\n", event->detail, event->state);
 
-    /* fix state */
-    event->state &= ~numlockmask;
+    /* See the documentation of xcb_key_symbols_get_keysym for this one.
+     * Basically: We get either col 0 or col 1, depending on whether shift is
+     * pressed. */
+    int col = (event->state & XCB_MOD_MASK_SHIFT);
+
+    /* If modeswitch is currently active, we need to look in group 2 or 3,
+     * respectively. */
+    if (modeswitch_active)
+        col += 2;
 
     xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, event->state);
     if (sym == XK_Mode_switch) {
@@ -196,16 +201,17 @@ static void finish_input() {
 static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press_event_t *event) {
     printf("Keypress %d, state raw = %d\n", event->detail, event->state);
 
-    /* fix state */
+    /* See the documentation of xcb_key_symbols_get_keysym for this one.
+     * Basically: We get either col 0 or col 1, depending on whether shift is
+     * pressed. */
+    int col = (event->state & XCB_MOD_MASK_SHIFT);
+
+    /* If modeswitch is currently active, we need to look in group 2 or 3,
+     * respectively. */
     if (modeswitch_active)
-        event->state |= modeswitchmask;
+        col += 2;
 
-    /* Apparantly, after activating numlock once, the numlock modifier
-     * stays turned on (use xev(1) to verify). So, to resolve useful
-     * keysyms, we remove the numlock flag from the event state */
-    event->state &= ~numlockmask;
-
-    xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, event->state);
+    xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, col);
     if (sym == XK_Mode_switch) {
         printf("Mode switch enabled\n");
         modeswitch_active = true;
@@ -354,8 +360,6 @@ int main(int argc, char *argv[]) {
     xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
 
-    modeswitchmask = get_mod_mask(conn, XK_Mode_switch);
-    numlockmask = get_mod_mask(conn, XK_Num_Lock);
     symbols = xcb_key_symbols_alloc(conn);
 
     uint32_t font_id = get_font_id(conn, pattern, &font_height);
