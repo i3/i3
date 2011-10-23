@@ -74,30 +74,6 @@ Display *dpy;
 char *rewrite_binding(const char *bindingline);
 static void finish();
 
-#if defined(__APPLE__)
-
-/*
- * Taken from FreeBSD
- * Returns a pointer to a new string which is a duplicate of the
- * string, but only copies at most n characters.
- *
- */
-char *strndup(const char *str, size_t n) {
-    size_t len;
-    char *copy;
-
-    for (len = 0; len < n && str[len]; len++)
-        continue;
-
-    if ((copy = malloc(len + 1)) == NULL)
-        return (NULL);
-    memcpy(copy, str, len);
-    copy[len] = '\0';
-    return (copy);
-}
-
-#endif
-
 /*
  * This function resolves ~ in pathnames.
  * It may resolve wildcards in the first part of the path, but if no match

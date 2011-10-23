@@ -109,4 +109,16 @@ void fake_configure_notify(xcb_connection_t *conn, xcb_rectangle_t r, xcb_window
  */
 uint32_t get_colorpixel(const char *hex) __attribute__((const));
 
+#if defined(__APPLE__)
+
+/*
+ * Taken from FreeBSD
+ * Returns a pointer to a new string which is a duplicate of the
+ * string, but only copies at most n characters.
+ *
+ */
+char *strndup(const char *str, size_t n);
+
+#endif
+
 #endif
