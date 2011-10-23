@@ -17,37 +17,6 @@
 #include <err.h>
 
 /*
- * Formats a message (payload) of the given size and type and sends it to i3 via
- * the given socket file descriptor.
- *
- */
-void ipc_send_message(int sockfd, uint32_t message_size,
-                      uint32_t message_type, uint8_t *payload) {
-        int buffer_size = strlen("i3-ipc") + sizeof(uint32_t) + sizeof(uint32_t) + message_size;
-        char msg[buffer_size];
-        char *walk = msg;
-
-        strcpy(walk, "i3-ipc");
-        walk += strlen("i3-ipc");
-        memcpy(walk, &message_size, sizeof(uint32_t));
-        walk += sizeof(uint32_t);
-        memcpy(walk, &message_type, sizeof(uint32_t));
-        walk += sizeof(uint32_t);
-        memcpy(walk, payload, message_size);
-
-        int sent_bytes = 0;
-        int bytes_to_go = buffer_size;
-        while (sent_bytes < bytes_to_go) {
-                int n = write(sockfd, msg + sent_bytes, bytes_to_go);
-                if (n == -1)
-                        err(EXIT_FAILURE, "write() failed");
-
-                sent_bytes += n;
-                bytes_to_go -= n;
-        }
-}
-
-/*
  * Connects to the i3 IPC socket and returns the file descriptor for the
  * socket. die()s if anything goes wrong.
  *
