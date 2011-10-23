@@ -25,14 +25,6 @@ extern xcb_window_t root;
 unsigned int xcb_numlock_mask;
 
 /*
- * Convenience-wrapper around xcb_change_gc which saves us declaring a variable
- *
- */
-void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t mask, uint32_t value) {
-        xcb_change_gc(conn, gc, mask, &value);
-}
-
-/*
  * Returns the mask for Mode_switch (to be used for looking up keysymbols by
  * keycode).
  *

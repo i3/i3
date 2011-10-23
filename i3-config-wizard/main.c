@@ -137,16 +137,16 @@ static char *resolve_tilde(const char *path) {
 static int handle_expose() {
     /* re-draw the background */
     xcb_rectangle_t border = {0, 0, 300, (15*font_height) + 8};
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel("#000000"));
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#000000") });
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
 
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font_id);
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font_id });
 
 #define txt(x, row, text) xcb_image_text_8(conn, strlen(text), pixmap, pixmap_gc, x, (row * font_height) + 2, text)
 
     if (current_step == STEP_WELCOME) {
         /* restore font color */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel("#FFFFFF"));
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FFFFFF") });
 
         txt(10, 2, "You have not configured i3 yet.");
         txt(10, 3, "Do you want me to generate ~/.i3/config?");
@@ -154,16 +154,16 @@ static int handle_expose() {
         txt(85, 7, "No, I will use the defaults");
 
         /* green */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel("#00FF00"));
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#00FF00") });
         txt(25, 5, "<Enter>");
 
         /* red */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel("#FF0000"));
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FF0000") });
         txt(31, 7, "<ESC>");
     }
 
     if (current_step == STEP_GENERATE) {
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel("#FFFFFF"));
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FFFFFF") });
 
         txt(10, 2, "Please choose either:");
         txt(85, 4, "Win as default modifier");
@@ -178,20 +178,19 @@ static int handle_expose() {
         else txt(31, 4, "<Win>");
 
         /* the selected modifier */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font_bold_id);
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font_bold_id });
         if (modifier == MOD_Mod4)
             txt(31, 4, "<Win>");
         else txt(31, 5, "<Alt>");
 
         /* green */
-        uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_FONT;
-        uint32_t values[] = { get_colorpixel("#00FF00"), font_id };
-        xcb_change_gc(conn, pixmap_gc, mask, values);
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_FONT,
+                      (uint32_t[]) { get_colorpixel("#00FF00"), font_id });
 
         txt(25, 9, "<Enter>");
 
         /* red */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel("#FF0000"));
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FF0000") });
         txt(31, 10, "<ESC>");
     }
 
