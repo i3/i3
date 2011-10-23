@@ -57,6 +57,7 @@ enum { STEP_WELCOME, STEP_GENERATE } current_step = STEP_WELCOME;
 enum { MOD_Mod1, MOD_Mod4 } modifier = MOD_Mod4;
 
 static char *config_path;
+static uint32_t xcb_numlock_mask;
 xcb_connection_t *conn;
 static xcb_get_modifier_mapping_reply_t *modmap_reply;
 static i3Font font;
@@ -442,7 +443,25 @@ int main(int argc, char *argv[]) {
     bold_font = load_font(patternbold, true);
 
     /* Open an input window */
-    win = open_input_window(conn, 300, 205);
+    win = xcb_generate_id(conn);
+    xcb_create_window(
+        conn,
+        XCB_COPY_FROM_PARENT,
+        win, /* the window id */
+        root, /* parent == root */
+        490, 297, 300, 205, /* dimensions */
+        0, /* X11 border = 0, we draw our own */
+        XCB_WINDOW_CLASS_INPUT_OUTPUT,
+        XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
+        XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
+        (uint32_t[]){
+            0, /* back pixel: black */
+            XCB_EVENT_MASK_EXPOSURE |
+            XCB_EVENT_MASK_BUTTON_PRESS
+        });
+
+    /* Map the window (make it visible) */
+    xcb_map_window(conn, win);
 
     /* Setup NetWM atoms */
     #define xmacro(name) \

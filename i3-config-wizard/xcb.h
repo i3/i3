@@ -8,8 +8,4 @@
 #include "atoms.xmacro"
 #undef xmacro
 
-extern unsigned int xcb_numlock_mask;
-
-xcb_window_t open_input_window(xcb_connection_t *conn, uint32_t width, uint32_t height);
-
 #endif

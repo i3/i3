@@ -305,7 +305,28 @@ int main(int argc, char *argv[]) {
     font = load_font(pattern, true);
 
     /* Open an input window */
-    win = open_input_window(conn, 500, font.height + 8 + 8 /* 8px padding */);
+    win = xcb_generate_id(conn);
+
+    xcb_create_window(
+        conn,
+        XCB_COPY_FROM_PARENT,
+        win, /* the window id */
+        root, /* parent == root */
+        50, 50, 500, font.height + 8 + 8 /* 8 px padding */, /* dimensions */
+        0, /* x11 border = 0, we draw our own */
+        XCB_WINDOW_CLASS_INPUT_OUTPUT,
+        XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
+        XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
+        (uint32_t[]){
+            0, /* back pixel: black */
+            XCB_EVENT_MASK_EXPOSURE |
+            XCB_EVENT_MASK_STRUCTURE_NOTIFY |
+            XCB_EVENT_MASK_BUTTON_PRESS |
+            XCB_EVENT_MASK_BUTTON_RELEASE
+        });
+
+    /* Map the window (make it visible) */
+    xcb_map_window(conn, win);
 
     /* Setup NetWM atoms */
     #define xmacro(name) \

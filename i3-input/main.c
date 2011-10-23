@@ -366,7 +366,25 @@ int main(int argc, char *argv[]) {
     font = load_font(pattern, true);
 
     /* Open an input window */
-    win = open_input_window(conn, 500, font.height + 8);
+    win = xcb_generate_id(conn);
+    xcb_create_window(
+        conn,
+        XCB_COPY_FROM_PARENT,
+        win, /* the window id */
+        root, /* parent == root */
+        50, 50, 500, font.height + 8, /* dimensions */
+        0, /* X11 border = 0, we draw our own */
+        XCB_WINDOW_CLASS_INPUT_OUTPUT,
+        XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
+        XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK,
+        (uint32_t[]){
+            0, /* back pixel: black */
+            1, /* override redirect: don’t manage this window */
+            XCB_EVENT_MASK_EXPOSURE
+        });
+
+    /* Map the window (make it visible) */
+    xcb_map_window(conn, win);
 
     /* Create pixmap */
     pixmap = xcb_generate_id(conn);
