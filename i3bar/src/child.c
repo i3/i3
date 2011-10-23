@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#include <err.h>
 #include <ev.h>
 
 #include "common.h"
@@ -131,7 +132,9 @@ void start_child(char *command) {
     child_pid = 0;
     if (command != NULL) {
         int fd[2];
-        pipe(fd);
+        if (pipe(fd) == -1)
+            err(EXIT_FAILURE, "pipe(fd)");
+
         child_pid = fork();
         switch (child_pid) {
             case -1:
