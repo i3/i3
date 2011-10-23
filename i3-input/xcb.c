@@ -21,14 +21,6 @@
 #include "i3-input.h"
 
 /*
- * Convenience-wrapper around xcb_change_gc which saves us declaring a variable
- *
- */
-void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t mask, uint32_t value) {
-        xcb_change_gc(conn, gc, mask, &value);
-}
-
-/*
  * Returns the colorpixel to use for the given hex color (think of HTML).
  *
  * The hex_color has to start with #, for example #FF00FF.

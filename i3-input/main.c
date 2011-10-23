@@ -92,13 +92,13 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
 
     /* re-draw the background */
     xcb_rectangle_t border = {0, 0, 500, font_height + 8}, inner = {2, 2, 496, font_height + 8 - 4};
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FF0000"));
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel(conn, "#FF0000") });
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel(conn, "#000000") });
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FFFFFF"));
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel(conn, "#FFFFFF") });
     uint8_t *con = concat_strings(glyphs_ucs, input_position);
     char *full_text = (char*)con;
     if (prompt != NULL) {
@@ -374,7 +374,7 @@ int main(int argc, char *argv[]) {
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, win, XCB_CURRENT_TIME);
 
     /* Create graphics context */
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font_id);
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font_id });
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);
