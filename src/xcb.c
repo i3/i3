@@ -9,7 +9,6 @@
  */
 #include "all.h"
 
-TAILQ_HEAD(cached_fonts_head, Font) cached_fonts = TAILQ_HEAD_INITIALIZER(cached_fonts);
 unsigned int xcb_numlock_mask;
 
 /*
