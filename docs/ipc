@@ -475,7 +475,7 @@ verbose (boolean)::
 	Should the bar enable verbose output for debugging? Defaults to false.
 colors (map)::
 	Contains key/value pairs of colors. Each value is a color code in hex,
-	formatted rrggbb (like used in HTML).
+	formatted #rrggbb (like in HTML).
 
 The following colors can be configured at the moment:
 
@@ -516,10 +516,10 @@ urgent_workspace_text/urgent_workspace_bar::
  "workspace_buttons": true,
  "verbose": false,
  "colors": {
-   "background": "c0c0c0",
-   "statusline": "00ff00",
-   "focused_workspace_text": "ffffff",
-   "focused_workspace_bg": "000000"
+   "background": "#c0c0c0",
+   "statusline": "#00ff00",
+   "focused_workspace_text": "#ffffff",
+   "focused_workspace_bg": "#000000"
  }
 }
 --------------

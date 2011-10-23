@@ -112,7 +112,7 @@ EOL     (\r?\n)
 <BAR_COLORS>active_workspace    { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_ACTIVE_WORKSPACE; }
 <BAR_COLORS>inactive_workspace  { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_INACTIVE_WORKSPACE; }
 <BAR_COLORS>urgent_workspace    { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_URGENT_WORKSPACE; }
-<BAR_COLOR>#[0-9a-fA-F]+        { yy_pop_state(); yylval.string = sstrdup(yytext+1); return HEXCOLOR; }
+<BAR_COLOR>#[0-9a-fA-F]+        { yy_pop_state(); yylval.string = sstrdup(yytext); return HEXCOLOR; }
 <BAR,BAR_COLORS,BAR_MODE,BAR_POSITION>[a-zA-Z]+ { yylval.string = sstrdup(yytext); return WORD; }
 
 
