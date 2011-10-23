@@ -41,13 +41,13 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
     /* re-draw the background */
     xcb_rectangle_t border = { 0, 0, width, height},
                     inner = { 2, 2, width - 4, height - 4};
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel("#FF0000"));
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FF0000") });
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel("#000000"));
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#000000") });
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel("#FFFFFF"));
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FFFFFF") });
 
     for (int i = 0; i < sizeof(crash_text) / sizeof(char*); i++) {
         int text_len = strlen(crash_text[i]);
@@ -170,7 +170,7 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
 
         /* Create graphics context */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, config.font.id);
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ config.font.id });
 
         /* Grab the keyboard to get all input */
         xcb_grab_keyboard(conn, false, win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);

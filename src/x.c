@@ -354,7 +354,7 @@ void x_draw_decoration(Con *con) {
                 );
 #endif
 
-        xcb_change_gc_single(conn, con->pm_gc, XCB_GC_FOREGROUND, config.client.background);
+        xcb_change_gc(conn, con->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]) { config.client.background });
         xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, sizeof(background) / sizeof(xcb_rectangle_t), background);
     }
 
@@ -371,7 +371,7 @@ void x_draw_decoration(Con *con) {
          * (left, bottom and right part). We don’t just fill the whole
          * rectangle because some childs are not freely resizable and we want
          * their background color to "shine through". */
-        xcb_change_gc_single(conn, con->pm_gc, XCB_GC_FOREGROUND, p->color->background);
+        xcb_change_gc(conn, con->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->background });
         xcb_rectangle_t borders[] = {
             { 0, 0, br.x, r->height },
             { 0, r->height + br.height + br.y, r->width, r->height },
@@ -391,12 +391,12 @@ void x_draw_decoration(Con *con) {
         goto copy_pixmaps;
 
     /* 4: paint the bar */
-    xcb_change_gc_single(conn, parent->pm_gc, XCB_GC_FOREGROUND, p->color->background);
+    xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->background });
     xcb_rectangle_t drect = { con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height };
     xcb_poly_fill_rectangle(conn, parent->pixmap, parent->pm_gc, 1, &drect);
 
     /* 5: draw two unconnected lines in border color */
-    xcb_change_gc_single(conn, parent->pm_gc, XCB_GC_FOREGROUND, p->color->border);
+    xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->border });
     Rect *dr = &(con->deco_rect);
     xcb_segment_t segments[] = {
         { dr->x,                 dr->y,

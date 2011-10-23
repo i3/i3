@@ -69,14 +69,6 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class
         enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values);
 
 /**
- * Changes a single value in the graphic context (so one doesn’t have to
- * define an array of values)
- *
- */
-void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc,
-                          uint32_t mask, uint32_t value);
-
-/**
  * Draws a line from x,y to to_x,to_y using the given color
  *
  */
