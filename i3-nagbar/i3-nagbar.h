@@ -19,6 +19,5 @@ while (0)
 extern xcb_window_t root;
 
 xcb_window_t open_input_window(xcb_connection_t *conn, uint32_t width, uint32_t height);
-int get_font_id(xcb_connection_t *conn, char *pattern, int *font_height);
 
 #endif

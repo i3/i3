@@ -53,14 +53,6 @@
 extern unsigned int xcb_numlock_mask;
 
 /**
- * Loads a font for usage, also getting its height. If fallback is true,
- * i3 loads 'fixed' or '-misc-*' if the font cannot be found instead of
- * exiting.
- *
- */
-i3Font load_font(const char *pattern, bool fallback);
-
-/**
  * Convenience wrapper around xcb_create_window which takes care of depth,
  * generating an ID and checking for errors.
  *

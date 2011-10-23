@@ -13,9 +13,9 @@
 #include <stdint.h>
 #include <xcb/xcb.h>
 
+#include "log.h"
 #include "data.h"
 #include "config.h"
-#include "log.h"
 #include "util.h"
 #include "libi3.h"
 

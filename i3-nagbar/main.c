@@ -42,7 +42,7 @@ static xcb_window_t win;
 static xcb_pixmap_t pixmap;
 static xcb_gcontext_t pixmap_gc;
 static xcb_rectangle_t rect = { 0, 0, 600, 20 };
-static int font_height;
+static i3Font font;
 static char *prompt = "Please do not run this program.";
 static button_t *buttons;
 static int buttoncnt;
@@ -55,6 +55,7 @@ static uint32_t color_border_bottom;     /* color of the bottom border */
 static uint32_t color_text;              /* color of the text */
 
 xcb_window_t root;
+xcb_connection_t *conn;
 
 /*
  * Starts the given application by passing it through a shell. We use double fork
@@ -137,7 +138,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     values[1] = color_background;
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_BACKGROUND, values);
     xcb_image_text_8(conn, strlen(prompt), pixmap, pixmap_gc, 4 + 4/* X */,
-                      font_height + 2 + 4 /* Y = baseline of font */, prompt);
+                      font.height + 2 + 4 /* Y = baseline of font */, prompt);
 
     /* render close button */
     int line_width = 4;
@@ -165,7 +166,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     values[2] = 1;
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_LINE_WIDTH, values);
     xcb_image_text_8(conn, strlen("x"), pixmap, pixmap_gc, y - w - line_width + (w / 2) - 4/* X */,
-                      font_height + 2 + 4 - 1/* Y = baseline of font */, "X");
+                      font.height + 2 + 4 - 1/* Y = baseline of font */, "X");
     y -= w;
 
     y -= 20;
@@ -196,7 +197,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
         values[1] = color_button_background;
         xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_BACKGROUND, values);
         xcb_image_text_8(conn, strlen(buttons[c].label), pixmap, pixmap_gc, y - w - line_width + 6/* X */,
-                          font_height + 2 + 3/* Y = baseline of font */, buttons[c].label);
+                          font.height + 2 + 3/* Y = baseline of font */, buttons[c].label);
 
         y -= w;
     }
@@ -272,7 +273,6 @@ int main(int argc, char *argv[]) {
     }
 
     int screens;
-    xcb_connection_t *conn;
     if ((conn = xcb_connect(NULL, &screens)) == NULL ||
         xcb_connection_has_error(conn))
         die("Cannot open display\n");
@@ -302,10 +302,10 @@ int main(int argc, char *argv[]) {
         color_border_bottom = get_colorpixel("#ab7100");
     }
 
-    uint32_t font_id = get_font_id(conn, pattern, &font_height);
+    font = load_font(pattern, true);
 
     /* Open an input window */
-    win = open_input_window(conn, 500, font_height + 8 + 8 /* 8px padding */);
+    win = open_input_window(conn, 500, font.height + 8 + 8 /* 8px padding */);
 
     /* Setup NetWM atoms */
     #define xmacro(name) \
@@ -346,7 +346,7 @@ int main(int argc, char *argv[]) {
         uint32_t bottom_end_x;
     } __attribute__((__packed__)) strut_partial = {0,};
 
-    strut_partial.top = font_height + 6;
+    strut_partial.top = font.height + 6;
     strut_partial.top_start_x = 0;
     strut_partial.top_end_x = 800;
 
@@ -362,11 +362,11 @@ int main(int argc, char *argv[]) {
     /* Create pixmap */
     pixmap = xcb_generate_id(conn);
     pixmap_gc = xcb_generate_id(conn);
-    xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, 500, font_height + 8);
+    xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, 500, font.height + 8);
     xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
 
     /* Create graphics context */
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font_id });
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font.id });
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);
@@ -411,7 +411,7 @@ int main(int argc, char *argv[]) {
                 xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
 
                 /* Create graphics context */
-                xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font_id });
+                xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font.id });
                 break;
             }
         }

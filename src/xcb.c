@@ -12,57 +12,6 @@
 unsigned int xcb_numlock_mask;
 
 /*
- * Loads a font for usage, also getting its height. If fallback is true,
- * i3 loads 'fixed' or '-misc-*' if the font cannot be found instead of
- * exiting.
- *
- */
-i3Font load_font(const char *pattern, bool fallback) {
-    i3Font new;
-    xcb_void_cookie_t font_cookie;
-    xcb_list_fonts_with_info_cookie_t info_cookie;
-
-    /* Send all our requests first */
-    new.id = xcb_generate_id(conn);
-    font_cookie = xcb_open_font_checked(conn, new.id, strlen(pattern), pattern);
-    info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
-
-    /* Check for errors. If errors, fall back to default font. */
-    xcb_generic_error_t *error = xcb_request_check(conn, font_cookie);
-
-    /* If we fail to open font, fall back to 'fixed'. If opening 'fixed' fails fall back to '-misc-*' */
-    if (fallback && error != NULL) {
-        ELOG("Could not open font %s (X error %d). Reverting to backup font.\n", pattern, error->error_code);
-        pattern = "fixed";
-        font_cookie = xcb_open_font_checked(conn, new.id, strlen(pattern), pattern);
-        info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
-
-        /* Check if we managed to open 'fixed' */
-        xcb_generic_error_t *error = xcb_request_check(conn, font_cookie);
-
-        /* Fall back to '-misc-*' if opening 'fixed' fails. */
-        if (error != NULL) {
-            ELOG("Could not open fallback font '%s', trying with '-misc-*'\n",pattern);
-            pattern = "-misc-*";
-            font_cookie = xcb_open_font_checked(conn, new.id, strlen(pattern), pattern);
-            info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
-
-            check_error(conn, font_cookie, "Could open neither requested font nor fallback (fixed or -misc-*");
-        }
-    }
-
-    /* Get information (height/name) for this font */
-    xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(conn, info_cookie, NULL);
-    exit_if_null(reply, "Could not load font \"%s\"\n", pattern);
-
-    new.height = reply->font_ascent + reply->font_descent;
-
-    free(reply);
-
-    return new;
-}
-
-/*
  * Convenience wrapper around xcb_create_window which takes care of depth, generating an ID and checking
  * for errors.
  *

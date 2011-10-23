@@ -33,7 +33,6 @@
  */
 
 /* Forward definitions */
-typedef struct Font i3Font;
 typedef struct Binding Binding;
 typedef struct Rect Rect;
 typedef struct xoutput Output;
@@ -223,20 +222,6 @@ struct Autostart {
     TAILQ_ENTRY(Autostart) autostarts;
     TAILQ_ENTRY(Autostart) autostarts_always;
 };
-
-/**
- * Data structure for cached font information:
- * - font id in X11 (load it once)
- * - font height (multiple calls needed to get it)
- *
- */
-struct Font {
-    /** The height of the font, built from font_ascent + font_descent */
-    int height;
-    /** The xcb-id for the font */
-    xcb_font_t id;
-};
-
 
 /**
  * An Output is a physical output on your graphics driver. Outputs which

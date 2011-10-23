@@ -5,10 +5,33 @@
 #ifndef _LIBI3_H
 #define _LIBI3_H
 
+#include <stdbool.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
 #include <xcb/xcb_keysyms.h>
+
+typedef struct Font i3Font;
+
+/**
+ * Data structure for cached font information:
+ * - font id in X11 (load it once)
+ * - font height (multiple calls needed to get it)
+ *
+ */
+struct Font {
+    /** The height of the font, built from font_ascent + font_descent */
+    int height;
+    /** The xcb-id for the font */
+    xcb_font_t id;
+};
+
+/* Since this file also gets included by utilities which don’t use the i3 log
+ * infrastructure, we define a fallback. */
+#if !defined(ELOG)
+#define ELOG(fmt, ...) fprintf(stderr, "ERROR: " fmt, ##__VA_ARGS__)
+#endif
 
 /**
  * Try to get the socket path from X11 and return NULL if it doesn’t work.
@@ -142,5 +165,12 @@ uint32_t aio_get_mod_mask_for(uint32_t keysym, xcb_key_symbols_t *symbols);
 uint32_t get_mod_mask_for(uint32_t keysym,
                            xcb_key_symbols_t *symbols,
                            xcb_get_modifier_mapping_reply_t *modmap_reply);
+
+/**
+ * Loads a font for usage, also getting its height. If fallback is true,
+ * the fonts 'fixed' or '-misc-*' will be loaded instead of exiting.
+ *
+ */
+i3Font load_font(const char *pattern, bool fallback);
 
 #endif

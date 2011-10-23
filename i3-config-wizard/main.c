@@ -59,11 +59,9 @@ enum { MOD_Mod1, MOD_Mod4 } modifier = MOD_Mod4;
 static char *config_path;
 xcb_connection_t *conn;
 static xcb_get_modifier_mapping_reply_t *modmap_reply;
-static uint32_t font_id;
-static uint32_t font_bold_id;
+static i3Font font;
+static i3Font bold_font;
 static char *socket_path;
-static int font_height;
-static int font_bold_height;
 static xcb_window_t win;
 static xcb_pixmap_t pixmap;
 static xcb_gcontext_t pixmap_gc;
@@ -112,13 +110,13 @@ static char *resolve_tilde(const char *path) {
  */
 static int handle_expose() {
     /* re-draw the background */
-    xcb_rectangle_t border = {0, 0, 300, (15*font_height) + 8};
+    xcb_rectangle_t border = {0, 0, 300, (15 * font.height) + 8};
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#000000") });
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
 
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font_id });
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font.id });
 
-#define txt(x, row, text) xcb_image_text_8(conn, strlen(text), pixmap, pixmap_gc, x, (row * font_height) + 2, text)
+#define txt(x, row, text) xcb_image_text_8(conn, strlen(text), pixmap, pixmap_gc, x, (row * font.height) + 2, text)
 
     if (current_step == STEP_WELCOME) {
         /* restore font color */
@@ -154,14 +152,14 @@ static int handle_expose() {
         else txt(31, 4, "<Win>");
 
         /* the selected modifier */
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font_bold_id });
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ bold_font.id });
         if (modifier == MOD_Mod4)
             txt(31, 4, "<Win>");
         else txt(31, 5, "<Alt>");
 
         /* green */
         xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_FONT,
-                      (uint32_t[]) { get_colorpixel("#00FF00"), font_id });
+                      (uint32_t[]) { get_colorpixel("#00FF00"), font.id });
 
         txt(25, 9, "<Enter>");
 
@@ -440,8 +438,8 @@ int main(int argc, char *argv[]) {
 
     xcb_numlock_mask = get_mod_mask_for(XCB_NUM_LOCK, symbols, modmap_reply);
 
-    font_id = get_font_id(conn, pattern, &font_height);
-    font_bold_id = get_font_id(conn, patternbold, &font_bold_height);
+    font = load_font(pattern, true);
+    bold_font = load_font(patternbold, true);
 
     /* Open an input window */
     win = open_input_window(conn, 300, 205);

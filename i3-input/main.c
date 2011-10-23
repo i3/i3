@@ -51,11 +51,12 @@ static xcb_gcontext_t pixmap_gc;
 static char *glyphs_ucs[512];
 static char *glyphs_utf8[512];
 static int input_position;
-static int font_height;
+static i3Font font;
 static char *prompt;
 static int prompt_len;
 static int limit;
 xcb_window_t root;
+xcb_connection_t *conn;
 
 /*
  * Concats the glyphs (either UCS-2 or UTF-8) to a single string, suitable for
@@ -89,7 +90,7 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
     printf("expose!\n");
 
     /* re-draw the background */
-    xcb_rectangle_t border = {0, 0, 500, font_height + 8}, inner = {2, 2, 496, font_height + 8 - 4};
+    xcb_rectangle_t border = {0, 0, 500, font.height + 8}, inner = {2, 2, 496, font.height + 8 - 4};
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FF0000") });
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#000000") });
@@ -107,10 +108,10 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
         memcpy(full_text + (prompt_len * 2), con, input_position * 2);
     }
     xcb_image_text_16(conn, input_position + prompt_len, pixmap, pixmap_gc, 4 /* X */,
-                      font_height + 2 /* Y = baseline of font */, (xcb_char2b_t*)full_text);
+                      font.height + 2 /* Y = baseline of font */, (xcb_char2b_t*)full_text);
 
     /* Copy the contents of the pixmap to the real window */
-    xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, /* */ 500, font_height + 8);
+    xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, /* */ 500, font.height + 8);
     xcb_flush(conn);
     free(con);
     if (prompt != NULL)
@@ -353,8 +354,8 @@ int main(int argc, char *argv[]) {
         prompt = convert_utf8_to_ucs2(prompt, &prompt_len);
 
     int screens;
-    xcb_connection_t *conn = xcb_connect(NULL, &screens);
-    if (xcb_connection_has_error(conn))
+    conn = xcb_connect(NULL, &screens);
+    if (!conn || xcb_connection_has_error(conn))
         die("Cannot open display\n");
 
     xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
@@ -362,15 +363,15 @@ int main(int argc, char *argv[]) {
 
     symbols = xcb_key_symbols_alloc(conn);
 
-    uint32_t font_id = get_font_id(conn, pattern, &font_height);
+    font = load_font(pattern, true);
 
     /* Open an input window */
-    win = open_input_window(conn, 500, font_height + 8);
+    win = open_input_window(conn, 500, font.height + 8);
 
     /* Create pixmap */
     pixmap = xcb_generate_id(conn);
     pixmap_gc = xcb_generate_id(conn);
-    xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, 500, font_height + 8);
+    xcb_create_pixmap(conn, root_screen->root_depth, pixmap, win, 500, font.height + 8);
     xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
 
     /* Set input focus (we have override_redirect=1, so the wm will not do
@@ -378,7 +379,7 @@ int main(int argc, char *argv[]) {
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, win, XCB_CURRENT_TIME);
 
     /* Create graphics context */
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font_id });
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font.id });
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);
