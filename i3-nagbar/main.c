@@ -128,7 +128,7 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
  */
 static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     /* re-draw the background */
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, color_background);
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ color_background });
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &rect);
 
     /* restore font color */
@@ -150,7 +150,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     xcb_rectangle_t close = { y - w - (2 * line_width), 0, w + (2 * line_width), rect.height };
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &close);
 
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, color_border);
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ color_border });
     xcb_point_t points[] = {
         { y - w - (2 * line_width), line_width / 2 },
         { y - (line_width / 2), line_width / 2 },
@@ -176,11 +176,11 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
         /* TODO: make w = text extents of the label */
         w = 100;
         y -= 30;
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, color_button_background);
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ color_button_background });
         close = (xcb_rectangle_t){ y - w - (2 * line_width), 2, w + (2 * line_width), rect.height - 6 };
         xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &close);
 
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, color_border);
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ color_border });
         buttons[c].x = y - w - (2 * line_width);
         buttons[c].width = w;
         xcb_point_t points2[] = {
@@ -366,7 +366,7 @@ int main(int argc, char *argv[]) {
     xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
 
     /* Create graphics context */
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font_id);
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font_id });
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);
@@ -411,7 +411,7 @@ int main(int argc, char *argv[]) {
                 xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
 
                 /* Create graphics context */
-                xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font_id);
+                xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font_id });
                 break;
             }
         }

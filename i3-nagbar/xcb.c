@@ -21,14 +21,6 @@
 #include "i3-nagbar.h"
 
 /*
- * Convenience-wrapper around xcb_change_gc which saves us declaring a variable
- *
- */
-void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t mask, uint32_t value) {
-        xcb_change_gc(conn, gc, mask, &value);
-}
-
-/*
  * Opens the window we use for input/output and maps it
  *
  */
