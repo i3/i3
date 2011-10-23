@@ -60,7 +60,6 @@ CFLAGS += $(call cflags_for_lib, libpcre)
 CFLAGS += $(call cflags_for_lib, libstartup-notification-1.0)
 CPPFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
 CPPFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
-CPPFLAGS += -DTERM_EMU=\"$(TERM_EMU)\"
 
 ifeq ($(shell pkg-config --atleast-version=8.10 libpcre 2>/dev/null && echo 1),1)
 CPPFLAGS += -DPCRE_HAS_UCP=1
