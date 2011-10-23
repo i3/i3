@@ -331,13 +331,13 @@ ok(line_exists($output, qr|^bindsym Mod1\+3 move workspace work|), 'move to name
 #####################################################################
 
 $output = migrate_config('');
-ok(line_exists($output, qr|i3bar|), 'i3bar added');
+ok(line_exists($output, qr|bar {|), 'i3bar added');
 
 $output = migrate_config('workspace_bar enable');
-ok(line_exists($output, qr|i3bar|), 'i3bar added');
+ok(line_exists($output, qr|bar {|), 'i3bar added');
 
 $output = migrate_config('workspace_bar no');
-ok(!line_exists($output, qr|i3bar|), 'no i3bar added');
+ok(!line_exists($output, qr|bar {|), 'no i3bar added');
 
 #####################################################################
 # check whether the mode command gets quotes

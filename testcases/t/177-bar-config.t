@@ -121,16 +121,16 @@ is($bar_config->{font}, 'Terminus', 'font ok');
 is($bar_config->{socket_path}, '/tmp/foobar', 'socket_path ok');
 is_deeply($bar_config->{colors},
     {
-        background => 'ff0000',
-        statusline => '00ff00',
-        focused_workspace_text => 'ffffff',
-        focused_workspace_bg => '285577',
-        active_workspace_text => '888888',
-        active_workspace_bg => '222222',
-        inactive_workspace_text => '888888',
-        inactive_workspace_bg => '222222',
-        urgent_workspace_text => 'ffffff',
-        urgent_workspace_bg => '900000',
+        background => '#ff0000',
+        statusline => '#00ff00',
+        focused_workspace_text => '#ffffff',
+        focused_workspace_bg => '#285577',
+        active_workspace_text => '#888888',
+        active_workspace_bg => '#222222',
+        inactive_workspace_text => '#888888',
+        inactive_workspace_bg => '#222222',
+        urgent_workspace_text => '#ffffff',
+        urgent_workspace_bg => '#900000',
     }, 'colors ok');
 
 exit_gracefully($pid);
