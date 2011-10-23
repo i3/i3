@@ -21,7 +21,7 @@
 │ libxcursor  │ 1.1.11 │ 1.1.11 │ http://ftp.x.org/pub/current/src/lib/  │
 │ Xlib        │ 1.3.3  │ 1.4.3  │ http://ftp.x.org/pub/current/src/lib/  │
 │ PCRE        │ 8.12   │ 8.12   │ http://www.pcre.org/                   │
-│ libsn¹      │ 0.12   │ 0.12   │ http://freedesktop.org/wiki/Software/startup-notification
+│ libsn¹      │ 0.10   │ 0.12   │ http://freedesktop.org/wiki/Software/startup-notification
 └─────────────┴────────┴────────┴────────────────────────────────────────┘
  ¹ libsn = libstartup-notification
 
