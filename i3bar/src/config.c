@@ -63,10 +63,11 @@ static int config_null_cb(void *params_) {
  *
  */
 #if YAJL_MAJOR >= 2
-static int config_string_cb(void *params_, const unsigned char *val, size_t len) {
+static int config_string_cb(void *params_, const unsigned char *val, size_t _len) {
 #else
-static int config_string_cb(void *params_, const unsigned char *val, unsigned int len) {
+static int config_string_cb(void *params_, const unsigned char *val, unsigned int _len) {
 #endif
+    int len = (int)_len;
     /* The id is ignored, we already have it in config.bar_id */
     if (!strcmp(cur_key, "id"))
         return 1;
