@@ -54,6 +54,13 @@ char *sstrdup(const char *str);
 int sasprintf(char **strp, const char *fmt, ...);
 
 /**
+ * Connects to the i3 IPC socket and returns the file descriptor for the
+ * socket. die()s if anything goes wrong.
+ *
+ */
+int ipc_connect(const char *socket_path);
+
+/**
  * Formats a message (payload) of the given size and type and sends it to i3 via
  * the given socket file descriptor.
  *

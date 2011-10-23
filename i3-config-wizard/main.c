@@ -51,7 +51,6 @@
 while (0)
 
 #include "xcb.h"
-#include "ipc.h"
 #include "libi3.h"
 
 enum { STEP_WELCOME, STEP_GENERATE } current_step = STEP_WELCOME;
@@ -371,7 +370,7 @@ static void finish() {
     fclose(ks_config);
 
     /* tell i3 to reload the config file */
-    int sockfd = connect_ipc(socket_path);
+    int sockfd = ipc_connect(socket_path);
     ipc_send_message(sockfd, strlen("reload"), 0, (uint8_t*)"reload");
     close(sockfd);
 

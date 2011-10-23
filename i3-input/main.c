@@ -341,7 +341,7 @@ int main(int argc, char *argv[]) {
     if (socket_path == NULL)
         socket_path = "/tmp/i3-ipc.sock";
 
-    sockfd = connect_ipc(socket_path);
+    sockfd = ipc_connect(socket_path);
 
     if (prompt != NULL)
         prompt = convert_utf8_to_ucs2(prompt, &prompt_len);

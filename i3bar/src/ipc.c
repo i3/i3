@@ -271,21 +271,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
  */
 int init_connection(const char *socket_path) {
     sock_path = socket_path;
-    int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
-    if (sockfd == -1) {
-        ELOG("Could not create Socket: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    struct sockaddr_un addr;
-    memset(&addr, 0, sizeof(struct sockaddr_un));
-    addr.sun_family = AF_LOCAL;
-    strcpy(addr.sun_path, sock_path);
-    if (connect(sockfd, (const struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
-        ELOG("Could not connect to i3! %s: %s\n", sock_path, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
+    int sockfd = ipc_connect(socket_path);
     i3_connection = smalloc(sizeof(ev_io));
     ev_io_init(i3_connection, &got_data, sockfd, EV_READ);
     ev_io_start(main_loop, i3_connection);
