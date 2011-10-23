@@ -21,39 +21,6 @@
 #include "i3-input.h"
 
 /*
- * Returns the mask for Mode_switch (to be used for looking up keysymbols by
- * keycode).
- *
- */
-uint32_t get_mod_mask(xcb_connection_t *conn, uint32_t keycode) {
-	xcb_key_symbols_t *symbols = xcb_key_symbols_alloc(conn);
-
-	xcb_get_modifier_mapping_reply_t *modmap_r;
-	xcb_keycode_t *modmap, kc;
-	xcb_keycode_t *modeswitchcodes = xcb_key_symbols_get_keycode(symbols, keycode);
-	if (modeswitchcodes == NULL)
-		return 0;
-
-	modmap_r = xcb_get_modifier_mapping_reply(conn, xcb_get_modifier_mapping(conn), NULL);
-	modmap = xcb_get_modifier_mapping_keycodes(modmap_r);
-
-	for (int i = 0; i < 8; i++)
-		for (int j = 0; j < modmap_r->keycodes_per_modifier; j++) {
-			kc = modmap[i * modmap_r->keycodes_per_modifier + j];
-			for (xcb_keycode_t *ktest = modeswitchcodes; *ktest; ktest++) {
-				if (*ktest != kc)
-					continue;
-
-				free(modeswitchcodes);
-				free(modmap_r);
-				return (1 << i);
-			}
-		}
-
-	return 0;
-}
-
-/*
  * Opens the window we use for input/output and maps it
  *
  */
