@@ -14,10 +14,8 @@ Depends: i3-wm, ${misc:Depends}
 Recommends: i3lock, suckless-tools, i3status
 Description: metapackage (i3 window manager, screen locker, menu, statusbar)
  This metapackage installs the i3 window manager (i3-wm), the i3lock screen
- locker (slightly improved version of slock), suckless-tools which contains
- dmenu and i3status, which displays useful information about your system in
- combination with dzen2. These are all the tools you need to use the i3 window
- manager efficiently.
+ locker, i3status (for system information) and suckless-tools (for dmenu).
+ These are all the tools you need to use the i3 window manager efficiently.
 
 Package: i3-wm
 Architecture: any
@@ -27,12 +25,11 @@ Provides: x-window-manager
 Suggests: rxvt-unicode | x-terminal-emulator
 Recommends: xfonts-base
 Description: improved dynamic tiling window manager
- Key features of i3 are correct implementation of Xinerama (workspaces are
- assigned to virtual screens, i3 does the right thing when attaching new
- monitors), XrandR support (not done yet), horizontal and vertical columns
- (think of a table) in tiling. Also, special focus is on writing clean,
- readable and well documented code. i3 uses xcb for asynchronous
- communication with X11, and has several measures to be very fast.
+ Key features of i3 are good documentation, reasonable defaults (changeable in
+ a simple configuration file) and good multi-monitor support. The user
+ interface is designed for power users and emphasizes keyboard usage. i3 uses
+ XCB for asynchronous communication with X11 and aims to be fast and
+ light-weight.
  .
  Please be aware i3 is primarily targeted at advanced users and developers.
 
