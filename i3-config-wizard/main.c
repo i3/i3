@@ -57,7 +57,7 @@ enum { STEP_WELCOME, STEP_GENERATE } current_step = STEP_WELCOME;
 enum { MOD_Mod1, MOD_Mod4 } modifier = MOD_Mod4;
 
 static char *config_path;
-static xcb_connection_t *conn;
+xcb_connection_t *conn;
 static xcb_get_modifier_mapping_reply_t *modmap_reply;
 static uint32_t font_id;
 static uint32_t font_bold_id;
@@ -424,6 +424,7 @@ int main(int argc, char *argv[]) {
 
     xcb_get_modifier_mapping_cookie_t modmap_cookie;
     modmap_cookie = xcb_get_modifier_mapping(conn);
+    symbols = xcb_key_symbols_alloc(conn);
 
     /* Place requests for the atoms we need as soon as possible */
     #define xmacro(atom) \
@@ -437,11 +438,7 @@ int main(int argc, char *argv[]) {
     if (!(modmap_reply = xcb_get_modifier_mapping_reply(conn, modmap_cookie, NULL)))
         errx(EXIT_FAILURE, "Could not get modifier mapping\n");
 
-    /* XXX: we should refactor xcb_get_numlock_mask so that it uses the
-     * modifier mapping we already have */
-    xcb_get_numlock_mask(conn);
-
-    symbols = xcb_key_symbols_alloc(conn);
+    xcb_numlock_mask = get_mod_mask_for(XCB_NUM_LOCK, symbols, modmap_reply);
 
     font_id = get_font_id(conn, pattern, &font_height);
     font_bold_id = get_font_id(conn, patternbold, &font_bold_height);

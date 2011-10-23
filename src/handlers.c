@@ -286,7 +286,7 @@ static int handle_mapping_notify(xcb_mapping_notify_event_t *event) {
     DLOG("Received mapping_notify for keyboard or modifier mapping, re-grabbing keys\n");
     xcb_refresh_keyboard_mapping(keysyms, event);
 
-    xcb_get_numlock_mask(conn);
+    xcb_numlock_mask = aio_get_mod_mask_for(XCB_NUM_LOCK, keysyms);
 
     ungrab_all_keys(conn);
     translate_keysyms();

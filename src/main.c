@@ -178,7 +178,7 @@ static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
     xcb_key_symbols_free(keysyms);
     keysyms = xcb_key_symbols_alloc(conn);
 
-    xcb_get_numlock_mask(conn);
+    xcb_numlock_mask = aio_get_mod_mask_for(XCB_NUM_LOCK, keysyms);
 
     ungrab_all_keys(conn);
     DLOG("Re-grabbing...\n");
@@ -520,7 +520,7 @@ int main(int argc, char *argv[]) {
 
     keysyms = xcb_key_symbols_alloc(conn);
 
-    xcb_get_numlock_mask(conn);
+    xcb_numlock_mask = aio_get_mod_mask_for(XCB_NUM_LOCK, keysyms);
 
     translate_keysyms();
     grab_all_keys(conn, false);

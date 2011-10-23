@@ -98,13 +98,6 @@ void fake_absolute_configure_notify(Con *con);
 void send_take_focus(xcb_window_t window);
 
 /**
- * Finds out which modifier mask is the one for numlock, as the user may
- * change this.
- *
- */
-void xcb_get_numlock_mask(xcb_connection_t *conn);
-
-/**
  * Raises the given window (typically client->frame) above all other windows
  *
  */
