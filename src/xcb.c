@@ -32,7 +32,7 @@ i3Font load_font(const char *pattern, bool fallback) {
     xcb_generic_error_t *error = xcb_request_check(conn, font_cookie);
 
     /* If we fail to open font, fall back to 'fixed'. If opening 'fixed' fails fall back to '-misc-*' */
-    if (error != NULL) {
+    if (fallback && error != NULL) {
         ELOG("Could not open font %s (X error %d). Reverting to backup font.\n", pattern, error->error_code);
         pattern = "fixed";
         font_cookie = xcb_open_font_checked(conn, new.id, strlen(pattern), pattern);
