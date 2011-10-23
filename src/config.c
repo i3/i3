@@ -196,8 +196,7 @@ static char *get_config_path(const char *override_configpath) {
         xdg_config_home = "~/.config";
 
     xdg_config_home = resolve_tilde(xdg_config_home);
-    if (asprintf(&config_path, "%s/i3/config", xdg_config_home) == -1)
-        die("asprintf() failed");
+    sasprintf(&config_path, "%s/i3/config", xdg_config_home);
     free(xdg_config_home);
 
     if (path_exists(config_path))
@@ -217,8 +216,7 @@ static char *get_config_path(const char *override_configpath) {
     char *tok = strtok(buf, ":");
     while (tok != NULL) {
         tok = resolve_tilde(tok);
-        if (asprintf(&config_path, "%s/i3/config", tok) == -1)
-            die("asprintf() failed");
+        sasprintf(&config_path, "%s/i3/config", tok);
         free(tok);
         if (path_exists(config_path)) {
             free(buf);

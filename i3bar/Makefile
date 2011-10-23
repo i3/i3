@@ -14,7 +14,7 @@ i3bar: $(TOPDIR)/libi3/libi3.a ${FILES}
 	echo "[i3bar] LINK"
 	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3/libi3.a,$^) $(LIBS)
 
-$(TOPDIR)/libi3/%.a:
+$(TOPDIR)/libi3/%.a: $(TOPDIR)/libi3/*.c
 	$(MAKE) -C $(TOPDIR)/libi3
 
 doc:

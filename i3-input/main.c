@@ -306,7 +306,7 @@ int main(int argc, char *argv[]) {
                 /* This option is deprecated, but will still work in i3 v4.1, 4.2 and 4.3 */
                 fprintf(stderr, "i3-input: WARNING: the -p option is DEPRECATED in favor of the -F (format) option\n");
                 FREE(format);
-                asprintf(&format, "%s%%s", optarg);
+                sasprintf(&format, "%s%%s", optarg);
                 break;
             case 'l':
                 limit = atoi(optarg);

@@ -10,6 +10,8 @@
  */
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <err.h>
 
 
@@ -43,5 +45,16 @@ char *sstrdup(const char *str) {
     char *result = strdup(str);
     if (result == NULL)
         err(EXIT_FAILURE, "strdup()");
+    return result;
+}
+
+int sasprintf(char **strp, const char *fmt, ...) {
+    va_list args;
+    int result;
+
+    va_start(args, fmt);
+    if ((result = vasprintf(strp, fmt, args)) == -1)
+        err(EXIT_FAILURE, "asprintf(%s)", fmt);
+    va_end(args);
     return result;
 }

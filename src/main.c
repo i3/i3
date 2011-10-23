@@ -339,8 +339,7 @@ int main(int argc, char *argv[]) {
                 payload = sstrdup(argv[optind]);
             } else {
                 char *both;
-                if (asprintf(&both, "%s %s", payload, argv[optind]) == -1)
-                    err(EXIT_FAILURE, "asprintf");
+                sasprintf(&both, "%s %s", payload, argv[optind]);
                 free(payload);
                 payload = both;
             }
@@ -647,8 +646,8 @@ int main(int argc, char *argv[]) {
     Barconfig *barconfig;
     TAILQ_FOREACH(barconfig, &barconfigs, configs) {
         char *command = NULL;
-        asprintf(&command, "i3bar --bar_id=%s --socket=\"%s\"",
-                 barconfig->id, current_socketpath);
+        sasprintf(&command, "i3bar --bar_id=%s --socket=\"%s\"",
+                  barconfig->id, current_socketpath);
         LOG("Starting bar process: %s\n", command);
         start_application(command);
         free(command);

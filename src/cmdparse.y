@@ -90,8 +90,8 @@ char *parse_cmd(const char *new) {
     context->filename = "cmd";
     if (cmdyyparse() != 0) {
         fprintf(stderr, "Could not parse command\n");
-        asprintf(&json_output, "{\"success\":false, \"error\":\"%s at position %d\"}",
-                 context->compact_error, context->first_column);
+        sasprintf(&json_output, "{\"success\":false, \"error\":\"%s at position %d\"}",
+                  context->compact_error, context->first_column);
         FREE(context->line_copy);
         FREE(context->compact_error);
         free(context);
@@ -433,8 +433,8 @@ focus:
             ELOG("You have to specify which window/container should be focused.\n");
             ELOG("Example: [class=\"urxvt\" title=\"irssi\"] focus\n");
 
-            asprintf(&json_output, "{\"success\":false, \"error\":\"You have to "
-                     "specify which window/container should be focused\"}");
+            sasprintf(&json_output, "{\"success\":false, \"error\":\"You have to "
+                      "specify which window/container should be focused\"}");
             break;
         }
 
@@ -623,7 +623,7 @@ open:
         printf("opening new container\n");
         Con *con = tree_open_con(NULL, NULL);
         con_focus(con);
-        asprintf(&json_output, "{\"success\":true, \"id\":%ld}", (long int)con);
+        sasprintf(&json_output, "{\"success\":true, \"id\":%ld}", (long int)con);
 
         tree_render();
     }

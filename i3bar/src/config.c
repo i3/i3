@@ -89,13 +89,13 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
          * Therefore we save the command in 'config' and access it later in
          * got_bar_config() */
         DLOG("command = %.*s\n", len, val);
-        asprintf(&config.command, "%.*s", len, val);
+        sasprintf(&config.command, "%.*s", len, val);
         return 1;
     }
 
     if (!strcmp(cur_key, "font")) {
         DLOG("font = %.*s\n", len, val);
-        asprintf(&config.fontname, "%.*s", len, val);
+        sasprintf(&config.fontname, "%.*s", len, val);
         return 1;
     }
 
@@ -103,7 +103,7 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
         DLOG("+output %.*s\n", len, val);
         int new_num_outputs = config.num_outputs + 1;
         config.outputs = srealloc(config.outputs, sizeof(char*) * new_num_outputs);
-        asprintf(&config.outputs[config.num_outputs], "%.*s", len, val);
+        sasprintf(&config.outputs[config.num_outputs], "%.*s", len, val);
         config.num_outputs = new_num_outputs;
         return 1;
     }
@@ -111,7 +111,7 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
     if (!strcmp(cur_key, "tray_output")) {
         DLOG("tray_output %.*s\n", len, val);
         FREE(config.tray_output);
-        asprintf(&config.tray_output, "%.*s", len, val);
+        sasprintf(&config.tray_output, "%.*s", len, val);
         return 1;
     }
 
@@ -119,7 +119,7 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
     do { \
         if (!strcmp(cur_key, #json_name)) { \
             DLOG(#json_name " = " #struct_name " = %.*s\n", len, val); \
-            asprintf(&(config.colors.struct_name), "%.*s", len, val); \
+            sasprintf(&(config.colors.struct_name), "%.*s", len, val); \
             return 1; \
         } \
     } while (0)

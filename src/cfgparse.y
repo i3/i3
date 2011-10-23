@@ -280,10 +280,8 @@ static void start_configerror_nagbar(const char *config_path) {
     if (configerror_pid == 0) {
         char *editaction,
              *pageraction;
-        if (asprintf(&editaction, "i3-sensible-terminal -e sh -c \"i3-sensible-editor \\\"%s\\\" && i3-msg reload\"", config_path) == -1)
-            exit(1);
-        if (asprintf(&pageraction, "i3-sensible-terminal -e i3-sensible-pager \"%s\"", errorfilename) == -1)
-            exit(1);
+        sasprintf(&editaction, "i3-sensible-terminal -e sh -c \"i3-sensible-editor \\\"%s\\\" && i3-msg reload\"", config_path);
+        sasprintf(&pageraction, "i3-sensible-terminal -e i3-sensible-pager \"%s\"", errorfilename);
         char *argv[] = {
             NULL, /* will be replaced by the executable path */
             "-t",
@@ -938,7 +936,7 @@ word_or_number:
     WORD
     | NUMBER
     {
-        asprintf(&$$, "%d", $1);
+        sasprintf(&$$, "%d", $1);
     }
     ;
 
@@ -1345,7 +1343,7 @@ workspace:
         } else {
             char *ws_name = NULL;
             if ($5 == NULL) {
-                asprintf(&ws_name, "%d", ws_num);
+                sasprintf(&ws_name, "%d", ws_num);
             } else {
                 ws_name = $5;
             }
@@ -1422,20 +1420,14 @@ assign:
         if ((separator = strchr(criteria, '/')) != NULL) {
             *(separator++) = '\0';
             char *pattern;
-            if (asprintf(&pattern, "(?i)%s", separator) == -1) {
-                ELOG("asprintf failed\n");
-                break;
-            }
+            sasprintf(&pattern, "(?i)%s", separator);
             match->title = regex_new(pattern);
             free(pattern);
             printf("  title = %s\n", separator);
         }
         if (*criteria != '\0') {
             char *pattern;
-            if (asprintf(&pattern, "(?i)%s", criteria) == -1) {
-                ELOG("asprintf failed\n");
-                break;
-            }
+            sasprintf(&pattern, "(?i)%s", criteria);
             match->class = regex_new(pattern);
             free(pattern);
             printf("  class = %s\n", criteria);

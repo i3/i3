@@ -90,7 +90,7 @@ void floating_enable(Con *con, bool automatic) {
     }
 
     char *name;
-    asprintf(&name, "[i3 con] floatingcon around %p", con);
+    sasprintf(&name, "[i3 con] floatingcon around %p", con);
     x_set_name(nc, name);
     free(name);
 

@@ -5,6 +5,7 @@
 #ifndef _LIBI3_H
 #define _LIBI3_H
 
+#include <stdarg.h>
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
 
@@ -44,6 +45,13 @@ void *srealloc(void *ptr, size_t size);
  *
  */
 char *sstrdup(const char *str);
+
+/**
+ * Safe-wrapper around asprintf which exits if it returns -1 (meaning that
+ * there is no more memory available)
+ *
+ */
+int sasprintf(char **strp, const char *fmt, ...);
 
 /**
  * Formats a message (payload) of the given size and type and sends it to i3 via

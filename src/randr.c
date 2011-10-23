@@ -243,7 +243,7 @@ void output_init_con(Output *output) {
     output->con = con;
 
     char *name;
-    asprintf(&name, "[i3 con] output %s", con->name);
+    sasprintf(&name, "[i3 con] output %s", con->name);
     x_set_name(con, name);
     FREE(name);
 
@@ -267,7 +267,7 @@ void output_init_con(Output *output) {
     FREE(topdock->name);
     topdock->name = sstrdup("topdock");
 
-    asprintf(&name, "[i3 con] top dockarea %s", con->name);
+    sasprintf(&name, "[i3 con] top dockarea %s", con->name);
     x_set_name(topdock, name);
     FREE(name);
     DLOG("attaching\n");
@@ -281,7 +281,7 @@ void output_init_con(Output *output) {
     FREE(content->name);
     content->name = sstrdup("content");
 
-    asprintf(&name, "[i3 con] content %s", con->name);
+    sasprintf(&name, "[i3 con] content %s", con->name);
     x_set_name(content, name);
     FREE(name);
     con_attach(content, con, false);
@@ -301,7 +301,7 @@ void output_init_con(Output *output) {
     FREE(bottomdock->name);
     bottomdock->name = sstrdup("bottomdock");
 
-    asprintf(&name, "[i3 con] bottom dockarea %s", con->name);
+    sasprintf(&name, "[i3 con] bottom dockarea %s", con->name);
     x_set_name(bottomdock, name);
     FREE(name);
     DLOG("attaching\n");
@@ -464,7 +464,7 @@ void init_ws_for_output(Output *output, Con *content) {
             c++;
 
             FREE(ws->name);
-            asprintf(&(ws->name), "%d", c);
+            sasprintf(&(ws->name), "%d", c);
 
             current = NULL;
             TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
@@ -477,7 +477,7 @@ void init_ws_for_output(Output *output, Con *content) {
     }
     con_attach(ws, content, false);
 
-    asprintf(&name, "[i3 con] workspace %s", ws->name);
+    sasprintf(&name, "[i3 con] workspace %s", ws->name);
     x_set_name(ws, name);
     free(name);
 
@@ -562,7 +562,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
     new->id = id;
     new->primary = (primary && primary->output == id);
     FREE(new->name);
-    asprintf(&new->name, "%.*s",
+    sasprintf(&new->name, "%.*s",
             xcb_randr_get_output_info_name_length(output),
             xcb_randr_get_output_info_name(output));
 

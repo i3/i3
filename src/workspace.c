@@ -46,7 +46,7 @@ Con *workspace_get(const char *num, bool *created) {
          * will handle CT_WORKSPACEs differently */
         workspace = con_new(NULL, NULL);
         char *name;
-        asprintf(&name, "[i3 con] workspace %s", num);
+        sasprintf(&name, "[i3 con] workspace %s", num);
         x_set_name(workspace, name);
         free(name);
         workspace->type = CT_WORKSPACE;

@@ -117,7 +117,7 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             LOG("sticky_group of this container is %s\n", json_node->sticky_group);
         } else if (strcasecmp(last_key, "orientation") == 0) {
             char *buf = NULL;
-            asprintf(&buf, "%.*s", (int)len, val);
+            sasprintf(&buf, "%.*s", (int)len, val);
             if (strcasecmp(buf, "none") == 0)
                 json_node->orientation = NO_ORIENTATION;
             else if (strcasecmp(buf, "horizontal") == 0)
@@ -128,7 +128,7 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             free(buf);
         } else if (strcasecmp(last_key, "border") == 0) {
             char *buf = NULL;
-            asprintf(&buf, "%.*s", (int)len, val);
+            sasprintf(&buf, "%.*s", (int)len, val);
             if (strcasecmp(buf, "none") == 0)
                 json_node->border_style = BS_NONE;
             else if (strcasecmp(buf, "1pixel") == 0)
@@ -139,7 +139,7 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             free(buf);
         } else if (strcasecmp(last_key, "layout") == 0) {
             char *buf = NULL;
-            asprintf(&buf, "%.*s", (int)len, val);
+            sasprintf(&buf, "%.*s", (int)len, val);
             if (strcasecmp(buf, "default") == 0)
                 json_node->layout = L_DEFAULT;
             else if (strcasecmp(buf, "stacked") == 0)
@@ -154,7 +154,7 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             free(buf);
         } else if (strcasecmp(last_key, "mark") == 0) {
             char *buf = NULL;
-            asprintf(&buf, "%.*s", (int)len, val);
+            sasprintf(&buf, "%.*s", (int)len, val);
             json_node->mark = buf;
         }
     }

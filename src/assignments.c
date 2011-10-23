@@ -40,7 +40,7 @@ void run_assignments(i3Window *window) {
         if (current->type == A_COMMAND) {
             DLOG("execute command %s\n", current->dest.command);
             char *full_command;
-            asprintf(&full_command, "[id=\"%d\"] %s", window->id, current->dest.command);
+            sasprintf(&full_command, "[id=\"%d\"] %s", window->id, current->dest.command);
             char *json_result = parse_cmd(full_command);
             FREE(full_command);
             FREE(json_result);

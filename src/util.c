@@ -85,7 +85,7 @@ void exec_i3_utility(char *name, char *argv[]) {
      * argv[0]’s dirname */
     char *pathbuf = strdup(start_argv[0]);
     char *dir = dirname(pathbuf);
-    asprintf(&migratepath, "%s/%s", dir, name);
+    sasprintf(&migratepath, "%s/%s", dir, name);
     argv[0] = migratepath;
     execvp(migratepath, argv);
 
@@ -97,7 +97,7 @@ void exec_i3_utility(char *name, char *argv[]) {
         exit(1);
     }
     dir = dirname(buffer);
-    asprintf(&migratepath, "%s/%s", dir, name);
+    sasprintf(&migratepath, "%s/%s", dir, name);
     argv[0] = migratepath;
     execvp(migratepath, argv);
 #endif
@@ -237,16 +237,10 @@ char *get_process_filename(const char *prefix) {
     if (dir == NULL) {
         struct passwd *pw = getpwuid(getuid());
         const char *username = pw ? pw->pw_name : "unknown";
-        if (asprintf(&dir, "/tmp/i3-%s", username) == -1) {
-            perror("asprintf()");
-            return NULL;
-        }
+        sasprintf(&dir, "/tmp/i3-%s", username);
     } else {
         char *tmp;
-        if (asprintf(&tmp, "%s/i3", dir) == -1) {
-            perror("asprintf()");
-            return NULL;
-        }
+        sasprintf(&tmp, "%s/i3", dir);
         dir = tmp;
     }
     if (!path_exists(dir)) {
@@ -256,11 +250,7 @@ char *get_process_filename(const char *prefix) {
         }
     }
     char *filename;
-    if (asprintf(&filename, "%s/%s.%d", dir, prefix, getpid()) == -1) {
-        perror("asprintf()");
-        filename = NULL;
-    }
-
+    sasprintf(&filename, "%s/%s.%d", dir, prefix, getpid());
     free(dir);
     return filename;
 }
