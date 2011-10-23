@@ -31,7 +31,7 @@ i3: libi3/libi3.a src/cfgparse.y.o src/cfgparse.yy.o src/cmdparse.y.o src/cmdpar
 	echo "[i3] LINK i3"
 	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3/libi3.a,$^) $(LIBS)
 
-libi3/%.a:
+libi3/%.a: libi3/*.c
 	$(MAKE) -C libi3
 
 subdirs:
