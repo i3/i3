@@ -21,26 +21,6 @@
 #include "i3-input.h"
 
 /*
- * Returns the colorpixel to use for the given hex color (think of HTML).
- *
- * The hex_color has to start with #, for example #FF00FF.
- *
- * NOTE that get_colorpixel() does _NOT_ check the given color code for validity.
- * This has to be done by the caller.
- *
- */
-uint32_t get_colorpixel(xcb_connection_t *conn, char *hex) {
-        char strgroups[3][3] = {{hex[1], hex[2], '\0'},
-                                {hex[3], hex[4], '\0'},
-                                {hex[5], hex[6], '\0'}};
-        uint32_t rgb16[3] = {(strtol(strgroups[0], NULL, 16)),
-                             (strtol(strgroups[1], NULL, 16)),
-                             (strtol(strgroups[2], NULL, 16))};
-
-        return (rgb16[0] << 16) + (rgb16[1] << 8) + rgb16[2];
-}
-
-/*
  * Returns the mask for Mode_switch (to be used for looking up keysymbols by
  * keycode).
  *

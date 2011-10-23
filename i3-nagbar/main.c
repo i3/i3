@@ -28,6 +28,7 @@
 #include <xcb/xcb_aux.h>
 #include <xcb/xcb_event.h>
 
+#include "libi3.h"
 #include "i3-nagbar.h"
 
 typedef struct {
@@ -287,18 +288,18 @@ int main(int argc, char *argv[]) {
 
     if (bar_type == TYPE_ERROR) {
         /* Red theme for error messages */
-        color_button_background = get_colorpixel(conn, "#680a0a");
-        color_background = get_colorpixel(conn, "#900000");
-        color_text = get_colorpixel(conn, "#ffffff");
-        color_border = get_colorpixel(conn, "#d92424");
-        color_border_bottom = get_colorpixel(conn, "#470909");
+        color_button_background = get_colorpixel("#680a0a");
+        color_background = get_colorpixel("#900000");
+        color_text = get_colorpixel("#ffffff");
+        color_border = get_colorpixel("#d92424");
+        color_border_bottom = get_colorpixel("#470909");
     } else {
         /* Yellowish theme for warnings */
-        color_button_background = get_colorpixel(conn, "#ffc100");
-        color_background = get_colorpixel(conn, "#ffa8000");
-        color_text = get_colorpixel(conn, "#000000");
-        color_border = get_colorpixel(conn, "#ab7100");
-        color_border_bottom = get_colorpixel(conn, "#ab7100");
+        color_button_background = get_colorpixel("#ffc100");
+        color_background = get_colorpixel("#ffa8000");
+        color_text = get_colorpixel("#000000");
+        color_border = get_colorpixel("#ab7100");
+        color_border_bottom = get_colorpixel("#ab7100");
     }
 
     uint32_t font_id = get_font_id(conn, pattern, &font_height);

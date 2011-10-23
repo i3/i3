@@ -195,21 +195,6 @@ void draw_text(xcb_drawable_t drawable, xcb_gcontext_t ctx, int16_t x, int16_t y
 }
 
 /*
- * Converts a colorstring to a colorpixel as expected from xcb_change_gc.
- * s is assumed to be in the format "rrggbb"
- *
- */
-uint32_t get_colorpixel(const char *s) {
-    char strings[3][3] = { { s[0], s[1], '\0'} ,
-                           { s[2], s[3], '\0'} ,
-                           { s[4], s[5], '\0'} };
-    uint8_t r = strtol(strings[0], NULL, 16);
-    uint8_t g = strtol(strings[1], NULL, 16);
-    uint8_t b = strtol(strings[2], NULL, 16);
-    return (r << 16 | g << 8 | b);
-}
-
-/*
  * Redraws the statusline to the buffer
  *
  */

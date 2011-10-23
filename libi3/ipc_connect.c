@@ -15,6 +15,8 @@
 #include <err.h>
 #include <stdlib.h>
 
+#include "libi3.h"
+
 /*
  * Connects to the i3 IPC socket and returns the file descriptor for the
  * socket. die()s if anything goes wrong.

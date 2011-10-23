@@ -16,6 +16,8 @@
 
 #include <i3/ipc.h>
 
+#include "libi3.h"
+
 /*
  * Formats a message (payload) of the given size and type and sends it to i3 via
  * the given socket file descriptor.

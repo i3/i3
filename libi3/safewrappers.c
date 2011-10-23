@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <err.h>
 
+#include "libi3.h"
 
 /*
  * The s* functions (safe) are wrappers around malloc, strdup, …, which exits if one of

@@ -61,17 +61,6 @@ extern unsigned int xcb_numlock_mask;
 i3Font load_font(const char *pattern, bool fallback);
 
 /**
- * Returns the colorpixel to use for the given hex color (think of HTML).
- *
- * The hex_color has to start with #, for example #FF00FF.
- *
- * NOTE that get_colorpixel() does _NOT_ check the given color code for
- * validity.  This has to be done by the caller.
- *
- */
-uint32_t get_colorpixel(char *hex);
-
-/**
  * Convenience wrapper around xcb_create_window which takes care of depth,
  * generating an ID and checking for errors.
  *

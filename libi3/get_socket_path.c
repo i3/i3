@@ -16,6 +16,8 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
 
+#include "libi3.h"
+
 /*
  * Try to get the socket path from X11 and return NULL if it doesn’t work.
  *
