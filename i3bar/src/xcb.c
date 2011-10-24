@@ -499,6 +499,13 @@ static void handle_client_message(xcb_client_message_event_t* event) {
                            (char*)ev);
             free(event);
 
+            /* Put the client inside the save set. Upon termination (whether
+             * killed or normal exit does not matter) of i3bar, these clients
+             * will be correctly reparented to their most closest living
+             * ancestor. Without this, tray icons might die when i3bar
+             * exits/crashes. */
+            xcb_change_save_set(xcb_connection, XCB_SET_MODE_INSERT, client);
+
             if (map_it) {
                 DLOG("Mapping dock client\n");
                 xcb_map_window(xcb_connection, client);

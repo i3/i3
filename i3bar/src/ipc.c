@@ -165,6 +165,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
             /* EOF received. Since i3 will restart i3bar instances as appropriate,
              * we exit here. */
             DLOG("EOF received, exiting...\n");
+            clean_xcb();
             exit(EXIT_SUCCESS);
         }
         rec += n;
