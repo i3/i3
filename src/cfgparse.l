@@ -106,6 +106,7 @@ EOL     (\r?\n)
 <BAR>colors                     { yy_push_state(BAR_COLORS); return TOK_BAR_COLORS; }
 <BAR_COLORS>"{"                 { return '{'; }
 <BAR_COLORS>"}"                 { yy_pop_state(); return '}'; }
+<BAR_COLORS>^[ \t]*#[^\n]*      { return TOKCOMMENT; }
 <BAR_COLORS>background          { yy_push_state(BAR_COLOR); return TOK_BAR_COLOR_BACKGROUND; }
 <BAR_COLORS>statusline          { yy_push_state(BAR_COLOR); return TOK_BAR_COLOR_STATUSLINE; }
 <BAR_COLORS>focused_workspace   { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_FOCUSED_WORKSPACE; }

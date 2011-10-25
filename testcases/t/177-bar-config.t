@@ -170,4 +170,39 @@ isnt($bar1_config->{outputs}, $bar2_config->{outputs}, 'outputs different');
 
 exit_gracefully($pid);
 
+#####################################################################
+# make sure comments work properly
+#####################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+bar {
+    # Start a default instance of i3bar which provides workspace buttons.
+    # Additionally, i3status will provide a statusline.
+    status_command i3status --bar
+    #status_command i3status --qux
+#status_command i3status --qux
+
+    output HDMI1
+    colors {
+        background #000000
+        #background #ffffff
+    }
+}
+EOT
+
+$pid = launch_with_config($config);
+
+$i3 = i3(get_socket_path(0));
+$bars = $i3->get_bar_config()->recv;
+$bar_id = shift @$bars;
+
+$bar_config = $i3->get_bar_config($bar_id)->recv;
+is($bar_config->{status_command}, 'i3status --bar', 'status_command correct');
+is($bar_config->{colors}->{background}, '#000000', 'background color ok');
+
+exit_gracefully($pid);
+
 done_testing;
