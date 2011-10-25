@@ -84,6 +84,8 @@ close($fh);
 
 unlink($tmp);
 
+isnt($startup_id, '', 'startup_id not empty');
+
 $ENV{DESKTOP_STARTUP_ID} = $startup_id;
 
 # Create a new libstartup-notification launchee context
@@ -131,5 +133,22 @@ sync_with_i3($x);
 
 my $otherwin = open_window($x);
 is(@{get_ws_content($second_ws)}, 1, 'one container on the second workspace');
+
+######################################################################
+# 3) test that the --no-startup-id flag for exec leads to no DESKTOP_STARTUP_ID
+# environment variable.
+######################################################################
+
+mkfifo($tmp, 0600) or die "Could not create FIFO in $tmp";
+
+cmd qq|exec --no-startup-id echo \$DESKTOP_STARTUP_ID >$tmp|;
+
+open($fh, '<', $tmp);
+chomp($startup_id = <$fh>);
+close($fh);
+
+unlink($tmp);
+
+is($startup_id, '', 'startup_id empty');
 
 done_testing;

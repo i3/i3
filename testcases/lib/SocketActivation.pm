@@ -53,6 +53,7 @@ sub activate_i3 {
     if ($pid == 0) {
         $ENV{LISTEN_PID} = $$;
         $ENV{LISTEN_FDS} = 1;
+        delete $ENV{DESKTOP_STARTUP_ID};
         $ENV{DISPLAY} = $args{display};
         $ENV{PATH} = join(':',
             '../i3-nagbar',

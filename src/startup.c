@@ -63,44 +63,50 @@ static void startup_timeout(EV_P_ ev_timer *w, int revents) {
  * The shell is determined by looking for the SHELL environment variable. If it
  * does not exist, /bin/sh is used.
  *
+ * The no_startup_id flag determines whether a startup notification context
+ * (and ID) should be created, which is the default and encouraged behavior.
+ *
  */
-void start_application(const char *command) {
-    /* Create a startup notification context to monitor the progress of this
-     * startup. */
+void start_application(const char *command, bool no_startup_id) {
     SnLauncherContext *context;
-    context = sn_launcher_context_new(sndisplay, conn_screen);
-    sn_launcher_context_set_name(context, "i3");
-    sn_launcher_context_set_description(context, "exec command in i3");
-    /* Chop off everything starting from the first space (if there are any
-     * spaces in the command), since we don’t want the parameters. */
-    char *first_word = sstrdup(command);
-    char *space = strchr(first_word, ' ');
-    if (space)
-        *space = '\0';
-    sn_launcher_context_initiate(context, "i3", first_word, last_timestamp);
-    free(first_word);
 
-    /* Trigger a timeout after 60 seconds */
-    struct ev_timer *timeout = scalloc(sizeof(struct ev_timer));
-    ev_timer_init(timeout, startup_timeout, 60.0, 0.);
-    timeout->data = context;
-    ev_timer_start(main_loop, timeout);
+    if (!no_startup_id) {
+        /* Create a startup notification context to monitor the progress of this
+         * startup. */
+        context = sn_launcher_context_new(sndisplay, conn_screen);
+        sn_launcher_context_set_name(context, "i3");
+        sn_launcher_context_set_description(context, "exec command in i3");
+        /* Chop off everything starting from the first space (if there are any
+         * spaces in the command), since we don’t want the parameters. */
+        char *first_word = sstrdup(command);
+        char *space = strchr(first_word, ' ');
+        if (space)
+            *space = '\0';
+        sn_launcher_context_initiate(context, "i3", first_word, last_timestamp);
+        free(first_word);
 
-    LOG("startup id = %s\n", sn_launcher_context_get_startup_id(context));
+        /* Trigger a timeout after 60 seconds */
+        struct ev_timer *timeout = scalloc(sizeof(struct ev_timer));
+        ev_timer_init(timeout, startup_timeout, 60.0, 0.);
+        timeout->data = context;
+        ev_timer_start(main_loop, timeout);
 
-    /* Save the ID and current workspace in our internal list of startup
-     * sequences */
-    Con *ws = con_get_workspace(focused);
-    struct Startup_Sequence *sequence = scalloc(sizeof(struct Startup_Sequence));
-    sequence->id = sstrdup(sn_launcher_context_get_startup_id(context));
-    sequence->workspace = sstrdup(ws->name);
-    sequence->context = context;
-    TAILQ_INSERT_TAIL(&startup_sequences, sequence, sequences);
+        LOG("startup id = %s\n", sn_launcher_context_get_startup_id(context));
 
-    /* Increase the refcount once (it starts with 1, so it will be 2 now) for
-     * the timeout. Even if the sequence gets completed, the timeout still
-     * needs the context (but will unref it then) */
-    sn_launcher_context_ref(context);
+        /* Save the ID and current workspace in our internal list of startup
+         * sequences */
+        Con *ws = con_get_workspace(focused);
+        struct Startup_Sequence *sequence = scalloc(sizeof(struct Startup_Sequence));
+        sequence->id = sstrdup(sn_launcher_context_get_startup_id(context));
+        sequence->workspace = sstrdup(ws->name);
+        sequence->context = context;
+        TAILQ_INSERT_TAIL(&startup_sequences, sequence, sequences);
+
+        /* Increase the refcount once (it starts with 1, so it will be 2 now) for
+         * the timeout. Even if the sequence gets completed, the timeout still
+         * needs the context (but will unref it then) */
+        sn_launcher_context_ref(context);
+    }
 
     LOG("executing: %s\n", command);
     if (fork() == 0) {
@@ -108,7 +114,8 @@ void start_application(const char *command) {
         setsid();
         if (fork() == 0) {
             /* Setup the environment variable(s) */
-            sn_launcher_context_setup_child_process(context);
+            if (!no_startup_id)
+                sn_launcher_context_setup_child_process(context);
 
             /* Stores the path of the shell */
             static const char *shell = NULL;
@@ -125,10 +132,12 @@ void start_application(const char *command) {
     }
     wait(0);
 
-    /* Change the pointer of the root window to indicate progress */
-    if (xcursor_supported)
-        xcursor_set_root_cursor(XCURSOR_CURSOR_WATCH);
-    else xcb_set_root_cursor(XCURSOR_CURSOR_WATCH);
+    if (!no_startup_id) {
+        /* Change the pointer of the root window to indicate progress */
+        if (xcursor_supported)
+            xcursor_set_root_cursor(XCURSOR_CURSOR_WATCH);
+        else xcb_set_root_cursor(XCURSOR_CURSOR_WATCH);
+    }
 }
 
 /*
