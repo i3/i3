@@ -1,7 +1,13 @@
 /*
  * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * render.c: Renders (determines position/sizes) the layout tree, updating the
+ *           various rects. Needs to be pushed to X11 (see x.c) to be visible.
+ *
  */
-
 #ifndef _RENDER_H
 #define _RENDER_H
 

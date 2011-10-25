@@ -2,12 +2,10 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * i3-nagbar is a utility which displays a nag message.
+ * i3-nagbar is a utility which displays a nag message, for example in the case
+ * when the user has an error in his configuration file.
  *
  */
 #include <ev.h>

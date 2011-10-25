@@ -1,20 +1,19 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * workspace.c: Modifying workspaces, accessing them, moving containers to
+ *              workspaces.
  *
  */
+#ifndef _WORKSPACE_H
+#define _WORKSPACE_H
 
 #include "data.h"
 #include "tree.h"
 #include "randr.h"
-
-#ifndef _WORKSPACE_H
-#define _WORKSPACE_H
 
 /**
  * Returns a pointer to the workspace with the given number (starting at 0),

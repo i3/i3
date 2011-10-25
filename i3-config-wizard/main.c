@@ -2,13 +2,10 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-config-wizard: Program to convert configs using keycodes to configs using
- * keysyms.
+ *                   keysyms.
  *
  */
 #include <ev.h>

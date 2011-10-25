@@ -7,7 +7,6 @@
  * include/data.h: This file defines all data structures used by i3
  *
  */
-
 #ifndef _DATA_H
 #define _DATA_H
 

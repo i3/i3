@@ -2,10 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-msg/main.c: Utility which sends messages to a running i3-instance using
  * IPC via UNIX domain sockets.

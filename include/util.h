@@ -1,19 +1,19 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * util.c: Utility functions, which can be useful everywhere within i3 (see
+ *         also libi3).
  *
  */
+#ifndef _UTIL_H
+#define _UTIL_H
+
 #include <err.h>
 
 #include "data.h"
-
-#ifndef _UTIL_H
-#define _UTIL_H
 
 #define die(...) errx(EXIT_FAILURE, __VA_ARGS__);
 #define exit_if_null(pointer, ...) { if (pointer == NULL) die(__VA_ARGS__); }

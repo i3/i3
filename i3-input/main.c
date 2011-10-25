@@ -2,13 +2,10 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-input/main.c: Utility which lets the user input commands and sends them
- * to i3.
+ *                  to i3.
  *
  */
 #include <ev.h>

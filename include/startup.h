@@ -2,10 +2,12 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * startup.c: Startup notification code. Ensures a startup notification context
+ *            is setup when launching applications. We store the current
+ *            workspace to open windows in that startup notification context on
+ *            the appropriate workspace.
  *
  */
 #ifndef _STARTUP_H

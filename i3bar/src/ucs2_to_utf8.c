@@ -1,12 +1,11 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
+ * ucs2_to_utf8.c: Converts between UCS-2 and UTF-8, both of which are used in
+ *                 different contexts in X11.
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,35 +24,35 @@ static iconv_t conversion_descriptor2 = 0;
  *
  */
 char *convert_ucs_to_utf8(char *input) {
-        size_t input_size = 2;
-        /* UTF-8 may consume up to 4 byte */
-        int buffer_size = 8;
+    size_t input_size = 2;
+    /* UTF-8 may consume up to 4 byte */
+    int buffer_size = 8;
 
-        char *buffer = scalloc(buffer_size);
-        size_t output_size = buffer_size;
-        /* We need to use an additional pointer, because iconv() modifies it */
-        char *output = buffer;
+    char *buffer = scalloc(buffer_size);
+    size_t output_size = buffer_size;
+    /* We need to use an additional pointer, because iconv() modifies it */
+    char *output = buffer;
 
-        /* We convert the input into UCS-2 big endian */
+    /* We convert the input into UCS-2 big endian */
+    if (conversion_descriptor == 0) {
+        conversion_descriptor = iconv_open("UTF-8", "UCS-2BE");
         if (conversion_descriptor == 0) {
-                conversion_descriptor = iconv_open("UTF-8", "UCS-2BE");
-                if (conversion_descriptor == 0) {
-                        fprintf(stderr, "error opening the conversion context\n");
-                        exit(1);
-                }
+            fprintf(stderr, "error opening the conversion context\n");
+            exit(1);
         }
+    }
 
-        /* Get the conversion descriptor back to original state */
-        iconv(conversion_descriptor, NULL, NULL, NULL, NULL);
+    /* Get the conversion descriptor back to original state */
+    iconv(conversion_descriptor, NULL, NULL, NULL, NULL);
 
-        /* Convert our text */
-        int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
-        if (rc == (size_t)-1) {
-                perror("Converting to UCS-2 failed");
-                return NULL;
-        }
+    /* Convert our text */
+    int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
+    if (rc == (size_t)-1) {
+        perror("Converting to UCS-2 failed");
+        return NULL;
+    }
 
-        return buffer;
+    return buffer;
 }
 
 /*
@@ -64,38 +63,38 @@ char *convert_ucs_to_utf8(char *input) {
  *
  */
 char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
-        size_t input_size = strlen(input) + 1;
-        /* UCS-2 consumes exactly two bytes for each glyph */
-        int buffer_size = input_size * 2;
+    size_t input_size = strlen(input) + 1;
+    /* UCS-2 consumes exactly two bytes for each glyph */
+    int buffer_size = input_size * 2;
 
-        char *buffer = smalloc(buffer_size);
-        size_t output_size = buffer_size;
-        /* We need to use an additional pointer, because iconv() modifies it */
-        char *output = buffer;
+    char *buffer = smalloc(buffer_size);
+    size_t output_size = buffer_size;
+    /* We need to use an additional pointer, because iconv() modifies it */
+    char *output = buffer;
 
-        /* We convert the input into UCS-2 big endian */
+    /* We convert the input into UCS-2 big endian */
+    if (conversion_descriptor2 == 0) {
+        conversion_descriptor2 = iconv_open("UCS-2BE", "UTF-8");
         if (conversion_descriptor2 == 0) {
-                conversion_descriptor2 = iconv_open("UCS-2BE", "UTF-8");
-                if (conversion_descriptor2 == 0) {
-                        fprintf(stderr, "error opening the conversion context\n");
-                        exit(1);
-                }
+            fprintf(stderr, "error opening the conversion context\n");
+            exit(1);
         }
+    }
 
-        /* Get the conversion descriptor back to original state */
-        iconv(conversion_descriptor2, NULL, NULL, NULL, NULL);
+    /* Get the conversion descriptor back to original state */
+    iconv(conversion_descriptor2, NULL, NULL, NULL, NULL);
 
-        /* Convert our text */
-        int rc = iconv(conversion_descriptor2, (void*)&input, &input_size, &output, &output_size);
-        if (rc == (size_t)-1) {
-                perror("Converting to UCS-2 failed");
-                if (real_strlen != NULL)
-                        *real_strlen = 0;
-                return NULL;
-        }
-
+    /* Convert our text */
+    int rc = iconv(conversion_descriptor2, (void*)&input, &input_size, &output, &output_size);
+    if (rc == (size_t)-1) {
+        perror("Converting to UCS-2 failed");
         if (real_strlen != NULL)
-                *real_strlen = ((buffer_size - output_size) / 2) - 1;
+            *real_strlen = 0;
+        return NULL;
+    }
 
-        return buffer;
+    if (real_strlen != NULL)
+        *real_strlen = ((buffer_size - output_size) / 2) - 1;
+
+    return buffer;
 }

@@ -1,18 +1,16 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * manage.c: Initially managing new windows (or existing ones on restart).
  *
  */
-
-#include "data.h"
-
 #ifndef _MANAGE_H
 #define _MANAGE_H
+
+#include "data.h"
 
 /**
  * Go through all existing windows (if the window manager is restarted) and

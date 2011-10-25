@@ -2,12 +2,14 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * i3.h: global variables that are used all over i3.
  *
  */
+#ifndef _I3_H
+#define _I3_H
+
 #include <xcb/xcb_keysyms.h>
 
 #include <X11/XKBlib.h>
@@ -18,9 +20,6 @@
 #include "queue.h"
 #include "data.h"
 #include "xcb.h"
-
-#ifndef _I3_H
-#define _I3_H
 
 extern xcb_connection_t *conn;
 extern int conn_screen;

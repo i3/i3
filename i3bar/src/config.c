@@ -2,12 +2,9 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
+ * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
  *
- * © 2010-2011 Axel Wagner and contributors
- *
- * See file LICENSE for license information
- *
- * src/outputs.c: Maintaining the output-list
+ * config.c: Parses the configuration (received from i3).
  *
  */
 #include <string.h>

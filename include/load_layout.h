@@ -1,3 +1,13 @@
+/*
+ * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * load_layout.c: Restore (parts of) the layout, for example after an inplace
+ *                restart.
+ *
+ */
 #ifndef _LOAD_LAYOUT_H
 #define _LOAD_LAYOUT_H
 

@@ -1,17 +1,18 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * This is LEGACY code (we support RandR, which can do much more than
+ * Xinerama), but necessary for the poor users of the nVidia binary
+ * driver which does not support RandR in 2011 *sigh*.
  *
  */
-#include "data.h"
-
 #ifndef _XINERAMA_H
 #define _XINERAMA_H
+
+#include "data.h"
 
 /**
  * We have just established a connection to the X server and need the initial

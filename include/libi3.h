@@ -1,7 +1,13 @@
 /*
  * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * libi3: contains functions which are used by i3 *and* accompanying tools such
+ * as i3-msg, i3-config-wizard, …
+ *
  */
-
 #ifndef _LIBI3_H
 #define _LIBI3_H
 

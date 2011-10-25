@@ -1,7 +1,12 @@
 /*
  * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * output.c: Output (monitor) related functions.
+ *
  */
-
 #ifndef _OUTPUT_H
 #define _OUTPUT_H
 

@@ -1,3 +1,14 @@
+/*
+ * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * xcb_compat.h: uses #define to create aliases for xcb functions which got
+ *               renamed. Makes the code work with >= 0.3.8 xcb-util and
+ *               older versions.
+ *
+ */
 #ifndef _XCB_COMPAT_H
 #define _XCB_COMPAT_H
 

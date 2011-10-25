@@ -2,10 +2,9 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * xcb.c: Helper functions for easier usage of XCB
  *
  */
 #ifndef _XCB_H

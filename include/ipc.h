@@ -1,14 +1,12 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * ipc.c: UNIX domain socket IPC (initialization, client handling, protocol).
  *
  */
-
 #ifndef _IPC_H
 #define _IPC_H
 

@@ -1,3 +1,12 @@
+/*
+ * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * window.c: Updates window attributes (X11 hints/properties).
+ *
+ */
 #ifndef _WINDOW_H
 #define _WINDOW_H
 

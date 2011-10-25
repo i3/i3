@@ -1,3 +1,16 @@
+/*
+ * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * A "match" is a data structure which acts like a mask or expression to match
+ * certain windows or not. For example, when using commands, you can specify a
+ * command like this: [title="*Firefox*"] kill. The title member of the match
+ * data structure will then be filled and i3 will check each window using
+ * match_matches_window() to find the windows affected by this command.
+ *
+ */
 #ifndef _MATCH_H
 #define _MATCH_H
 

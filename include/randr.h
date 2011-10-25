@@ -1,18 +1,19 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * For more information on RandR, please see the X.org RandR specification at
+ * http://cgit.freedesktop.org/xorg/proto/randrproto/tree/randrproto.txt
+ * (take your time to read it completely, it answers all questions).
  *
  */
-#include "data.h"
-#include <xcb/randr.h>
-
 #ifndef _RANDR_H
 #define _RANDR_H
+
+#include "data.h"
+#include <xcb/randr.h>
 
 TAILQ_HEAD(outputs_head, xoutput);
 extern struct outputs_head outputs;

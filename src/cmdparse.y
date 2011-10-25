@@ -7,7 +7,6 @@
  *
  * cmdparse.y: the parser for commands you send to i3 (or bind on keys)
  *
-
  */
 #include <sys/types.h>
 #include <sys/stat.h>
