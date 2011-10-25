@@ -148,7 +148,11 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
 
     /* Focus the output on which the user moved his cursor */
     Con *old_focused = focused;
-    con_focus(con_descend_focused(output_get_content(output->con)));
+    Con *next = con_descend_focused(output_get_content(output->con));
+    /* Since we are switching outputs, this *must* be a different workspace, so
+     * call workspace_show() */
+    workspace_show(con_get_workspace(next));
+    con_focus(next);
 
     /* If the focus changed, we re-render to get updated decorations */
     if (old_focused != focused)
