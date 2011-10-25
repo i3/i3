@@ -222,6 +222,13 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
     if (config.disable_focus_follows_mouse)
         return 1;
 
+    /* Get the currently focused workspace to check if the focus change also
+     * involves changing workspaces. If so, we need to call workspace_show() to
+     * correctly update state and send the IPC event. */
+    Con *ws = con_get_workspace(con);
+    if (ws != con_get_workspace(focused))
+        workspace_show(ws);
+
     con_focus(con_descend_focused(con));
     tree_render();
 
@@ -958,6 +965,14 @@ static int handle_focus_in(xcb_focus_in_event_t *event) {
     }
 
     DLOG("focus is different, updating decorations\n");
+
+    /* Get the currently focused workspace to check if the focus change also
+     * involves changing workspaces. If so, we need to call workspace_show() to
+     * correctly update state and send the IPC event. */
+    Con *ws = con_get_workspace(con);
+    if (ws != con_get_workspace(focused))
+        workspace_show(ws);
+
     con_focus(con);
     /* We update focused_id because we don’t need to set focus again */
     focused_id = event->event;
