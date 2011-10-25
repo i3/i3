@@ -15,6 +15,10 @@ static pid_t configerror_pid = -1;
 
 static Match current_match;
 static Barconfig current_bar;
+/* The pattern which was specified by the user, for example -misc-fixed-*. We
+ * store this in a separate variable because in the i3 config struct we just
+ * store the i3Font. */
+static char *font_pattern;
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(struct context *context);
@@ -611,6 +615,7 @@ void parse_file(const char *f) {
     yylex_destroy();
     FREE(context->line_copy);
     free(context);
+    FREE(font_pattern);
     free(new);
     free(buf);
 
@@ -995,6 +1000,10 @@ bar:
         while (*x != '\0') {
             *(x++) = (rand() % 26) + 'a';
         }
+
+        /* If no font was explicitly set, we use the i3 font as default */
+        if (!current_bar.font)
+            current_bar.font = sstrdup(font_pattern);
 
         /* Copy the current (static) structure into a dynamically allocated
          * one, then cleanup our static one. */
@@ -1526,7 +1535,8 @@ font:
     {
         config.font = load_font($2, true);
         printf("font %s\n", $2);
-        free($2);
+        FREE(font_pattern);
+        font_pattern = $2;
     }
     ;
 
