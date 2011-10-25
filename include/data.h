@@ -218,6 +218,9 @@ struct Binding {
 struct Autostart {
     /** Command, like in command mode */
     char *command;
+    /** no_startup_id flag for start_application(). Determines whether a
+     * startup notification context/ID should be created. */
+    bool no_startup_id;
     TAILQ_ENTRY(Autostart) autostarts;
     TAILQ_ENTRY(Autostart) autostarts_always;
 };

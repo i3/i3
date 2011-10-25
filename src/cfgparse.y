@@ -1507,8 +1507,19 @@ restart_state:
 exec:
     TOKEXEC STR
     {
+        char *command = $2;
+        bool no_startup_id = false;
+        if (strncasecmp($2, "--no-startup-id ", strlen("--no-startup-id ")) == 0) {
+            no_startup_id = true;
+            /* We need to make a copy here, otherwise we leak the
+             * --no-startup-id bytes in the beginning of the string */
+            command = sstrdup(command + strlen("--no-startup-id "));
+            free($2);
+        }
+
         struct Autostart *new = smalloc(sizeof(struct Autostart));
-        new->command = $2;
+        new->command = command;
+        new->no_startup_id = no_startup_id;
         TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
     }
     ;
@@ -1516,8 +1527,19 @@ exec:
 exec_always:
     TOKEXEC_ALWAYS STR
     {
+        char *command = $2;
+        bool no_startup_id = false;
+        if (strncasecmp($2, "--no-startup-id ", strlen("--no-startup-id ")) == 0) {
+            no_startup_id = true;
+            /* We need to make a copy here, otherwise we leak the
+             * --no-startup-id bytes in the beginning of the string */
+            command = sstrdup(command + strlen("--no-startup-id "));
+            free($2);
+        }
+
         struct Autostart *new = smalloc(sizeof(struct Autostart));
-        new->command = $2;
+        new->command = command;
+        new->no_startup_id = no_startup_id;
         TAILQ_INSERT_TAIL(&autostarts_always, new, autostarts_always);
     }
     ;

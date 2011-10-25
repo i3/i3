@@ -389,8 +389,15 @@ operation:
 exec:
     TOK_EXEC STR
     {
-        printf("should execute %s\n", $2);
-        start_application($2);
+        char *command = $2;
+        bool no_startup_id = false;
+        if (strncasecmp($2, "--no-startup-id ", strlen("--no-startup-id ")) == 0) {
+            no_startup_id = true;
+            command += strlen("--no-startup-id ");
+        }
+
+        printf("should execute %s, no_startup_id = %d\n", command, no_startup_id);
+        start_application(command, no_startup_id);
         free($2);
     }
     ;

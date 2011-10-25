@@ -635,7 +635,7 @@ int main(int argc, char *argv[]) {
         struct Autostart *exec;
         TAILQ_FOREACH(exec, &autostarts, autostarts) {
             LOG("auto-starting %s\n", exec->command);
-            start_application(exec->command);
+            start_application(exec->command, exec->no_startup_id);
         }
     }
 
@@ -643,7 +643,7 @@ int main(int argc, char *argv[]) {
     struct Autostart *exec_always;
     TAILQ_FOREACH(exec_always, &autostarts_always, autostarts_always) {
         LOG("auto-starting (always!) %s\n", exec_always->command);
-        start_application(exec_always->command);
+        start_application(exec_always->command, exec_always->no_startup_id);
     }
 
     /* Start i3bar processes for all configured bars */
@@ -653,7 +653,7 @@ int main(int argc, char *argv[]) {
         sasprintf(&command, "i3bar --bar_id=%s --socket=\"%s\"",
                   barconfig->id, current_socketpath);
         LOG("Starting bar process: %s\n", command);
-        start_application(command);
+        start_application(command, true);
         free(command);
     }
 

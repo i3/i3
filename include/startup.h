@@ -25,8 +25,11 @@
  * The shell is determined by looking for the SHELL environment variable. If
  * it does not exist, /bin/sh is used.
  *
+ * The no_startup_id flag determines whether a startup notification context
+ * (and ID) should be created, which is the default and encouraged behavior.
+ *
  */
-void start_application(const char *command);
+void start_application(const char *command, bool no_startup_id);
 
 /**
  * Called by libstartup-notification when something happens
