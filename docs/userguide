@@ -541,15 +541,20 @@ keyword. These commands will be run in order.
 
 *Syntax*:
 -------------------
-exec command
-exec_always command
+exec [--no-startup-id] command
+exec_always [--no-startup-id] command
 -------------------
 
 *Examples*:
 --------------------------------
 exec chromium
 exec_always ~/my_script.sh
+
+# Execute the terminal emulator urxvt, which is not yet startup-notification aware.
+exec --no-startup-id urxvt
 --------------------------------
+
+The flag --no-startup-id is explained in <<exec>>.
 
 [[workspace_screen]]
 
@@ -1033,6 +1038,8 @@ con_id::
 The criteria +class+, +instance+, +role+, +title+ and +mark+ are actually
 regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
 information on how to use them.
+
+[[exec]]
 
 === Executing applications (exec)
 
