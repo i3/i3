@@ -1002,7 +1002,7 @@ bar:
         }
 
         /* If no font was explicitly set, we use the i3 font as default */
-        if (!current_bar.font)
+        if (!current_bar.font && font_pattern)
             current_bar.font = sstrdup(font_pattern);
 
         /* Copy the current (static) structure into a dynamically allocated
