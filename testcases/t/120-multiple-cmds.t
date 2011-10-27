@@ -45,6 +45,7 @@ ok(($unused ~~ @{get_workspace_names()}), 'workspace exists after moving');
 # quote the workspace name and use a ; (command separator) in its name
 #####################################################################
 
+cmd 'open';
 $unused = get_unused_workspace;
 $unused .= ';a';
 ok(!($unused ~~ @{get_workspace_names()}), 'workspace does not exist yet');
