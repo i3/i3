@@ -24,13 +24,13 @@ is(@{$old_content}, 1, 'one container on this workspace');
 
 my $first = $old_content->[0]->{id};
 
-#cmd 'move before h';
-#cmd 'move before v';
-#cmd 'move after v';
-#cmd 'move after h';
+cmd 'move left';
+cmd 'move right';
+cmd 'move up';
+cmd 'move down';
 
 my $content = get_ws_content($tmp);
-#is_deeply($old_content, $content, 'workspace unmodified after useless moves');
+is_deeply($old_content, $content, 'workspace unmodified after useless moves');
 
 ######################################################################
 # 2) move a container before another single container
