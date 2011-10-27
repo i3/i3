@@ -568,17 +568,20 @@ the second screen and so on).
 
 *Syntax*:
 ----------------------------------
-workspace <number> output <output>
+workspace <workspace> output <output>
 ----------------------------------
 
 The 'output' is the name of the RandR output you attach your screen to. On a
 laptop, you might have VGA1 and LVDS1 as output names. You can see the
 available outputs by running +xrandr --current+.
 
+If you use named workspaces, they must be quoted:
+
 *Examples*:
 ---------------------------
 workspace 1 output LVDS1
 workspace 5 output VGA1
+workspace "2: vim" output VGA1
 ---------------------------
 
 === Changing colors
