@@ -121,8 +121,30 @@ static bool tiling_resize(Con *con, xcb_button_press_event_t *event, click_desti
     DLOG("BORDER x = %d, y = %d for con %p, window 0x%08x\n",
             event->event_x, event->event_y, con, event->event);
     DLOG("checks for right >= %d\n", con->window_rect.x + con->window_rect.width);
-    if (dest == CLICK_DECORATION)
+    if (dest == CLICK_DECORATION) {
+        /* The user clicked on a window decoration. We ignore the following case:
+         * The container is a h-split, tabbed or stacked container with > 1
+         * window. Decorations will end up next to each other and the user
+         * expects to switch to a window by clicking on its decoration. */
+
+        /* To make the check actually work in case of a h-split container, we
+         * need to find the resize con in this function (as opposed to in
+         * tiling_resize_for_border()). The con which was passed is the actualy
+         * child window, not the split container. */
+        while (con->type != CT_WORKSPACE &&
+               con->type != CT_FLOATING_CON &&
+               con->parent->orientation != VERT)
+            con = con->parent;
+
+        if ((con->layout == L_STACKED ||
+             con->layout == L_TABBED ||
+             con->orientation == HORIZ) &&
+            con_num_children(con) > 1) {
+            DLOG("Not handling this resize, this container has > 1 child.\n");
+            return false;
+        }
         return tiling_resize_for_border(con, BORDER_TOP, event);
+    }
 
     if (event->event_x >= 0 && event->event_x <= bsr.x &&
         event->event_y >= bsr.y && event->event_y <= con->rect.height + bsr.height)
