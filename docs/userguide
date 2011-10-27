@@ -1134,9 +1134,19 @@ mode_toggle::
 
 For moving, use +move left+, +move right+, +move down+ and +move up+.
 
+*Syntax*:
+-----------------------------------
+focus <left|right|down|up>
+focus <parent|child|floating|tiling|mode_toggle>
+move <left|right|down|up> [<px> px]
+-----------------------------------
+
+Note that the amount of pixels you can specify for the +move+ command is only
+relevant for floating containers. The default amount is 10 pixels.
+
 *Examples*:
 ----------------------
-# Focus clients on the left, bottom, top, right:
+# Focus container on the left, bottom, top, right:
 bindsym mod+j focus left
 bindsym mod+k focus down
 bindsym mod+l focus up
@@ -1148,11 +1158,15 @@ bindsym mod+u focus parent
 # Focus last floating/tiling container
 bindsym mod+g focus mode_toggle
 
-# Move client to the left, bottom, top, right:
+# Move container to the left, bottom, top, right:
 bindsym mod+j move left
 bindsym mod+k move down
 bindsym mod+l move up
 bindsym mod+semicolon move right
+
+# Move container, but make floating containers
+# move more than the default
+bindsym mod+j move left 20 px
 ----------------------
 
 === Changing (named) workspaces/moving to workspaces

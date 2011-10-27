@@ -8,7 +8,9 @@
 # 4) move a container in a different direction so that we need to go up in tree
 #
 use i3test;
+use X11::XCB::Connection;
 
+my $x = X11::XCB::Connection->new;
 my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;
@@ -24,13 +26,13 @@ is(@{$old_content}, 1, 'one container on this workspace');
 
 my $first = $old_content->[0]->{id};
 
-#cmd 'move before h';
-#cmd 'move before v';
-#cmd 'move after v';
-#cmd 'move after h';
+cmd 'move left';
+cmd 'move right';
+cmd 'move up';
+cmd 'move down';
 
 my $content = get_ws_content($tmp);
-#is_deeply($old_content, $content, 'workspace unmodified after useless moves');
+is_deeply($old_content, $content, 'workspace unmodified after useless moves');
 
 ######################################################################
 # 2) move a container before another single container
@@ -130,5 +132,76 @@ cmd "move right";
 
 $content = get_ws_content($otmp);
 is(@{$content}, 1, 'only one nodes on this workspace');
+
+######################################################################
+# 5) test moving floating containers.
+######################################################################
+
+$tmp = fresh_workspace;
+my $floatwin = open_floating_window($x);
+my ($absolute_before, $top_before) = $floatwin->rect;
+
+cmd 'move left';
+
+my ($absolute, $top) = $floatwin->rect;
+
+is($absolute->x, ($absolute_before->x - 10), 'moved 10 px to the left');
+is($absolute->y, $absolute_before->y, 'y not changed');
+is($absolute->width, $absolute_before->width, 'width not changed');
+is($absolute->height, $absolute_before->height, 'height not changed');
+
+$absolute_before = $absolute;
+$top_before = $top;
+
+cmd 'move right';
+
+($absolute, $top) = $floatwin->rect;
+
+is($absolute->x, ($absolute_before->x + 10), 'moved 10 px to the right');
+is($absolute->y, $absolute_before->y, 'y not changed');
+is($absolute->width, $absolute_before->width, 'width not changed');
+is($absolute->height, $absolute_before->height, 'height not changed');
+
+$absolute_before = $absolute;
+$top_before = $top;
+
+cmd 'move up';
+
+($absolute, $top) = $floatwin->rect;
+
+is($absolute->x, $absolute_before->x, 'x not changed');
+is($absolute->y, ($absolute_before->y - 10), 'moved 10 px up');
+is($absolute->width, $absolute_before->width, 'width not changed');
+is($absolute->height, $absolute_before->height, 'height not changed');
+
+$absolute_before = $absolute;
+$top_before = $top;
+
+cmd 'move down';
+
+($absolute, $top) = $floatwin->rect;
+
+is($absolute->x, $absolute_before->x, 'x not changed');
+is($absolute->y, ($absolute_before->y + 10), 'moved 10 px up');
+is($absolute->width, $absolute_before->width, 'width not changed');
+is($absolute->height, $absolute_before->height, 'height not changed');
+
+$absolute_before = $absolute;
+$top_before = $top;
+
+######################################################################
+# 6) test moving floating containers with a specific amount of px
+######################################################################
+
+cmd 'move left 20 px';
+
+($absolute, $top) = $floatwin->rect;
+
+is($absolute->x, ($absolute_before->x - 20), 'moved 10 px to the left');
+is($absolute->y, $absolute_before->y, 'y not changed');
+is($absolute->width, $absolute_before->width, 'width not changed');
+is($absolute->height, $absolute_before->height, 'height not changed');
+
+
 
 done_testing;
