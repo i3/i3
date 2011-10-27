@@ -762,6 +762,11 @@ move:
     {
         owindow *current;
 
+        /* Error out early to not create a non-existing workspace (in
+         * workspace_get()) if we are not actually able to move anything. */
+        if (match_is_empty(&current_match) && focused->type == CT_WORKSPACE)
+            break;
+
         printf("should move window to workspace %s\n", $3);
         /* get the workspace */
         Con *ws = workspace_get($3, NULL);
