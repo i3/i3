@@ -734,10 +734,27 @@ border_style:
     ;
 
 move:
-    TOK_MOVE direction
+    TOK_MOVE direction resize_px
     {
-        printf("moving in direction %d\n", $2);
-        tree_move($2);
+        int direction = $2;
+        int px = $3;
+
+        /* TODO: make 'move' work with criteria. */
+        printf("moving in direction %d\n", direction);
+        if (con_is_floating(focused)) {
+            printf("floating move with %d pixels\n", px);
+            if (direction == TOK_LEFT) {
+                focused->parent->rect.x -= px;
+            } else if (direction == TOK_RIGHT) {
+                focused->parent->rect.x += px;
+            } else if (direction == TOK_UP) {
+                focused->parent->rect.y -= px;
+            } else if (direction == TOK_DOWN) {
+                focused->parent->rect.y += px;
+            }
+        } else {
+            tree_move(direction);
+        }
 
         tree_render();
     }
