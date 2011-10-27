@@ -741,6 +741,7 @@ void parse_file(const char *f) {
 %type   <number>        bar_mode_mode
 %type   <string>        command
 %type   <string>        word_or_number
+%type   <string>        qstring_or_number
 %type   <string>        optional_workspace_name
 %type   <string>        workspace_name
 %type   <string>        window_class
@@ -935,7 +936,10 @@ criterion:
     }
     ;
 
-
+qstring_or_number:
+    QUOTEDSTRING
+    | NUMBER { sasprintf(&$$, "%d", $1); }
+    ;
 
 word_or_number:
     WORD
@@ -1344,39 +1348,38 @@ workspace_bar:
     ;
 
 workspace:
-    TOKWORKSPACE NUMBER TOKOUTPUT OUTPUT optional_workspace_name
+    TOKWORKSPACE qstring_or_number TOKOUTPUT OUTPUT optional_workspace_name
     {
-        int ws_num = $2;
-        if (ws_num < 1) {
-            DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
-        } else {
-            char *ws_name = NULL;
-            if ($5 == NULL) {
-                sasprintf(&ws_name, "%d", ws_num);
-            } else {
-                ws_name = $5;
-            }
+        char *ws_name = $2;
 
-            DLOG("Should assign workspace %s to output %s\n", ws_name, $4);
-            /* Check for earlier assignments of the same workspace so that we
-             * don’t have assignments of a single workspace to different
-             * outputs */
-            struct Workspace_Assignment *assignment;
-            bool duplicate = false;
-            TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-                if (strcasecmp(assignment->name, ws_name) == 0) {
-                    ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
-                         ws_name);
-                    assignment->output = $4;
-                    duplicate = true;
-                }
-            }
-            if (!duplicate) {
-                assignment = scalloc(sizeof(struct Workspace_Assignment));
-                assignment->name = ws_name;
+        if ($5 != NULL) {
+            ELOG("The old (v3) syntax workspace <number> output <output> <name> is deprecated.\n");
+            ELOG("Please use the new syntax: workspace \"<workspace>\" output <output>\n");
+            ELOG("In your case, the following should work:\n");
+            ELOG("    workspace \"%s\" output %s\n", $5, $4);
+            ws_name = $5;
+            context->has_warnings = true;
+        }
+
+        DLOG("Assigning workspace \"%s\" to output \"%s\"\n", ws_name, $4);
+        /* Check for earlier assignments of the same workspace so that we
+         * don’t have assignments of a single workspace to different
+         * outputs */
+        struct Workspace_Assignment *assignment;
+        bool duplicate = false;
+        TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+            if (strcasecmp(assignment->name, ws_name) == 0) {
+                ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
+                     ws_name);
                 assignment->output = $4;
-                TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
+                duplicate = true;
             }
+        }
+        if (!duplicate) {
+            assignment = scalloc(sizeof(struct Workspace_Assignment));
+            assignment->name = ws_name;
+            assignment->output = $4;
+            TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
         }
     }
     | TOKWORKSPACE NUMBER workspace_name
