@@ -813,6 +813,22 @@ void x_push_changes(Con *con) {
     DLOG("PUSHING CHANGES\n");
     x_push_node(con);
 
+    if (warp_to) {
+        xcb_query_pointer_reply_t *pointerreply = xcb_query_pointer_reply(conn, pointercookie, NULL);
+        if (!pointerreply) {
+            ELOG("Could not query pointer position, not warping pointer\n");
+        } else {
+            int mid_x = warp_to->x + (warp_to->width / 2);
+            int mid_y = warp_to->y + (warp_to->height / 2);
+
+            Output *current = get_output_containing(pointerreply->root_x, pointerreply->root_y);
+            Output *target = get_output_containing(mid_x, mid_y);
+            if (current != target)
+                xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0, mid_x, mid_y);
+        }
+        warp_to = NULL;
+    }
+
     //DLOG("Re-enabling EnterNotify\n");
     values[0] = FRAME_EVENT_MASK;
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
@@ -861,22 +877,6 @@ void x_push_changes(Con *con) {
         DLOG("Still no window focused, better set focus to the root window\n");
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
         focused_id = root;
-    }
-
-    if (warp_to) {
-        xcb_query_pointer_reply_t *pointerreply = xcb_query_pointer_reply(conn, pointercookie, NULL);
-        if (!pointerreply) {
-            ELOG("Could not query pointer position, not warping pointer\n");
-        } else {
-            int mid_x = warp_to->x + (warp_to->width / 2);
-            int mid_y = warp_to->y + (warp_to->height / 2);
-
-            Output *current = get_output_containing(pointerreply->root_x, pointerreply->root_y);
-            Output *target = get_output_containing(mid_x, mid_y);
-            if (current != target)
-                xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0, mid_x, mid_y);
-        }
-        warp_to = NULL;
     }
 
     xcb_flush(conn);
