@@ -357,7 +357,8 @@ it to the position you want.
 
 When holding the floating modifier, you can resize a floating window by
 pressing the right mouse button on it and moving around while holding it. If
-you hold the shift button as well, the resize will be proportional.
+you hold the shift button as well, the resize will be proportional (the aspect
+ratio will be preserved).
 
 *Syntax*:
 --------------------------------
