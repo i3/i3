@@ -743,7 +743,7 @@ void randr_query_outputs() {
                 Con *next = NULL;
                 if (TAILQ_FIRST(&(croot->focus_head)) == output->con) {
                     DLOG("This output (%p) was focused! Getting next\n", output->con);
-                    next = con_next_focused(output->con);
+                    next = focused;
                     DLOG("next = %p\n", next);
                 }
 
@@ -763,6 +763,7 @@ void randr_query_outputs() {
                 if (next) {
                     DLOG("now focusing next = %p\n", next);
                     con_focus(next);
+                    workspace_show(con_get_workspace(next));
                 }
 
                 /* 3: move the dock clients to the first output */
