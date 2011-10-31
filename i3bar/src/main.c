@@ -35,7 +35,7 @@ char *expand_path(char *path) {
 void print_usage(char *elf_name) {
     printf("Usage: %s [-b bar_id] [-s sock_path] [-h] [-v]\n", elf_name);
     printf("\n");
-    printf("-b <bar_id>\tBar ID for which to get the configuration\n");
+    printf("--bar_id <bar_id>\tBar ID for which to get the configuration\n");
     printf("-s <sock_path>\tConnect to i3 via <sock_path>\n");
     printf("-h\t\tDisplay this help-message and exit\n");
     printf("-v\t\tDisplay version number and exit\n");
