@@ -153,6 +153,7 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
     int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
     if (rc == (size_t)-1) {
         perror("Converting to UCS-2 failed");
+        FREE(buffer);
         if (real_strlen != NULL)
             *real_strlen = 0;
         return NULL;
