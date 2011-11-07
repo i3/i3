@@ -1,18 +1,13 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
-#
 # © 2010-2011 Michael Stapelberg and contributors
-#
-# syntax: ./complete-run.pl --display :1 --display :2
-# to run the test suite on the X11 displays :1 and :2
-# use 'Xdummy :1' and 'Xdummy :2' before to start two
-# headless X11 servers
-#
 
 use strict;
 use warnings;
 use v5.10;
 # the following are modules which ship with Perl (>= 5.10):
+use Pod::Usage;
+use Carp::Always;
 use Cwd qw(abs_path);
 use File::Basename qw(basename);
 use File::Temp qw(tempfile tempdir);
@@ -26,6 +21,7 @@ use TAP::Parser::Aggregator;
 # these are shipped with the testsuite
 use lib qw(lib);
 use SocketActivation;
+use StartXDummy;
 # the following modules are not shipped with Perl
 use AnyEvent;
 use AnyEvent::Handle;
@@ -44,23 +40,40 @@ $SIG{CHLD} = sub {
 
 # reads in a whole file
 sub slurp {
-    open my $fh, '<', shift;
+    open(my $fh, '<', shift);
     local $/;
     <$fh>;
 }
 
 my $coverage_testing = 0;
+my $valgrind = 0;
+my $help = 0;
+# Number of tests to run in parallel. Important to know how many Xdummy
+# instances we need to start (unless @displays are given). Defaults to
+# num_cores * 2.
+my $parallel = undef;
 my @displays = ();
+my @childpids = ();
 
 my $result = GetOptions(
     "coverage-testing" => \$coverage_testing,
+    "valgrind" => \$valgrind,
     "display=s" => \@displays,
+    "parallel=i" => \$parallel,
+    "help|?" => \$help,
 );
+
+pod2usage(-verbose => 2, -exitcode => 0) if $help;
 
 @displays = split(/,/, join(',', @displays));
 @displays = map { s/ //g; $_ } @displays;
 
-@displays = qw(:1) if @displays == 0;
+# No displays specified, let’s start some Xdummy instances.
+if (@displays == 0) {
+    my ($displays, $pids) = start_xdummy($parallel);
+    @displays = @$displays;
+    @childpids = @$pids;
+}
 
 # connect to all displays for two reasons:
 # 1: check if the display actually works
@@ -79,6 +92,8 @@ for my $display (@displays) {
         push @wdisplays, $display;
     }
 }
+
+die "No usable displays found" if @wdisplays == 0;
 
 my $config = slurp('i3-test.config');
 
@@ -136,12 +151,16 @@ sub take_job {
     my $time_before_start = [gettimeofday];
 
     my $pid;
-    if (!$dont_start) {
+    if ($dont_start) {
+        $activate_cv->send(1);
+    } else {
         $pid = activate_i3(
             unix_socket_path => "/tmp/nested-$display-activation",
             display => $display,
             configfile => $tmpfile,
+            outdir => $outdir,
             logpath => $logpath,
+            valgrind => $valgrind,
             cv => $activate_cv
         );
 
@@ -153,23 +172,39 @@ sub take_job {
     }
 
     my $kill_i3 = sub {
+        my $kill_cv = AnyEvent->condvar;
+
         # Don’t bother killing i3 when we haven’t started it
-        return if $dont_start;
+        if ($dont_start) {
+            $kill_cv->send();
+            return $kill_cv;
+        }
 
         # When measuring code coverage, try to exit i3 cleanly (otherwise, .gcda
         # files are not written) and fallback to killing it
-        if ($coverage_testing) {
+        if ($coverage_testing || $valgrind) {
             my $exited = 0;
-            eval {
-                say "Exiting i3 cleanly...";
-                i3("/tmp/nested-$display")->command('exit')->recv;
-                $exited = 1;
-            };
-            return if $exited;
+            say "[$display] Exiting i3 cleanly...";
+            my $i3 = i3("/tmp/nested-$display");
+            $i3->connect->cb(sub {
+                if (!$_[0]->recv) {
+                    # Could not connect to i3, just kill -9 it
+                    kill(9, $pid) or die "Could not kill i3 using kill($pid)";
+                    $kill_cv->send();
+                } else {
+                    # Connected. Now send exit and continue once that’s acked.
+                    $i3->command('exit')->cb(sub {
+                        $kill_cv->send();
+                    });
+                }
+            });
+        } else {
+            # No coverage testing or valgrind? Just kill -9 i3.
+            kill(9, $pid) or die "Could not kill i3 using kill($pid)";
+            $kill_cv->send();
         }
 
-        say "[$display] killing i3";
-        kill(9, $pid) or die "could not kill i3";
+        return $kill_cv;
     };
 
     # This will be called as soon as i3 is running and answered to our
@@ -189,7 +224,7 @@ sub take_job {
         my $output;
         open(my $spool, '>', \$output);
         my $parser = TAP::Parser->new({
-            exec => [ 'sh', '-c', qq|DISPLAY=$display LOGPATH="$logpath" /usr/bin/perl -Ilib $test| ],
+            exec => [ 'sh', '-c', qq|DISPLAY=$display LOGPATH="$logpath" OUTDIR="$outdir" VALGRIND=$valgrind /usr/bin/perl -Ilib $test| ],
             spool => $spool,
             merge => 1,
         });
@@ -219,26 +254,29 @@ sub take_job {
                     $aggregator->add($test, $parser);
                     push @done, [ $test, $output ];
 
-                    $kill_i3->();
+                    my $exitcv = $kill_i3->();
+                    $exitcv->cb(sub {
 
-                    undef $_ for @watchers;
-                    if (@done == $num) {
-                        $cv->send;
-                    } else {
-                        take_job($display);
-                    }
+                        undef $_ for @watchers;
+                        if (@done == $num) {
+                            $cv->send;
+                        } else {
+                            take_job($display);
+                        }
+                    });
                 }
             );
             push @watchers, $w;
         }
     });
-
-    $activate_cv->send(1) if $dont_start;
 }
 
 $cv->recv;
 
 $aggregator->stop();
+
+# Disable buffering to make sure the output and summary appear before we exit.
+$| = 1;
 
 for (@done) {
     my ($test, $output) = @$_;
@@ -248,3 +286,59 @@ for (@done) {
 
 # 4: print summary
 $harness->summary($aggregator);
+
+kill(15, $_) for @childpids;
+
+__END__
+
+=head1 NAME
+
+complete-run.pl - Run the i3 testsuite
+
+=head1 SYNOPSIS
+
+complete-run.pl [files...]
+
+=head1 EXAMPLE
+
+To run the whole testsuite on a reasonable number of Xdummy instances (your
+running X11 will not be touched), run:
+  ./complete-run.pl
+
+To run only a specific test (useful when developing a new feature), run:
+  ./complete-run t/100-fullscreen.t
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--display>
+
+Specifies which X11 display should be used. Can be specified multiple times and
+will parallelize the tests:
+
+  # Run tests on the second X server
+  ./complete-run.pl -d :1
+
+  # Run four tests in parallel on some Xdummy servers
+  ./complete-run.pl -d :1,:2,:3,:4
+
+Note that it is not necessary to specify this anymore. If omitted,
+complete-run.pl will start (num_cores * 2) Xdummy instances.
+
+=item B<--valgrind>
+
+Runs i3 under valgrind to find memory problems. The output will be available in
+C<latest/valgrind.log>.
+
+=item B<--coverage-testing>
+
+Exits i3 cleanly (instead of kill -9) to make coverage testing work properly.
+
+=item B<--parallel>
+
+Number of Xdummy instances to start (if you don’t want to start num_cores * 2
+instances for some reason).
+
+  # Run all tests on a single Xdummy instance
+  ./complete-run.pl -p 1

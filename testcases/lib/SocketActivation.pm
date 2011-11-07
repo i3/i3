@@ -1,6 +1,8 @@
 package SocketActivation;
 # vim:ts=4:sw=4:expandtab
 
+use strict;
+use warnings;
 use IO::Socket::UNIX; # core
 use Cwd qw(abs_path); # core
 use POSIX; # core
@@ -78,12 +80,19 @@ sub activate_i3 {
         # the interactive signalhandler to make it crash immediately instead.
         my $i3cmd = abs_path("../i3") . " -V -d all --disable-signalhandler";
 
+        if ($args{valgrind}) {
+            $i3cmd =
+                qq|valgrind -v --log-file="$args{outdir}/valgrind.log" | .
+                qq|--leak-check=full --track-origins=yes --num-callers=20 | .
+                qq|--tool=memcheck -- $i3cmd|;
+        }
+
         # Append to $args{logpath} instead of overwriting because i3 might be
         # run multiple times in one testcase.
         my $cmd = "exec $i3cmd -c $args{configfile} >>$args{logpath} 2>&1";
 
         # We need to use the shell due to using output redirections.
-        exec "/bin/sh", '-c', $cmd;
+        exec '/bin/sh', '-c', $cmd;
 
         # if we are still here, i3 could not be found or exec failed. bail out.
         exit 1;

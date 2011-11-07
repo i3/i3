@@ -433,7 +433,9 @@ sub launch_with_config {
         unix_socket_path => "$tmp_socket_path-activation",
         display => $ENV{DISPLAY},
         configfile => $tmpfile,
+        outdir => $ENV{OUTDIR},
         logpath => $ENV{LOGPATH},
+        valgrind => $ENV{VALGRIND},
         cv => $cv,
     );
 

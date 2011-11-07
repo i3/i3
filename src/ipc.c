@@ -99,9 +99,12 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
  */
 void ipc_shutdown() {
     ipc_client *current;
-    TAILQ_FOREACH(current, &all_clients, clients) {
+    while (!TAILQ_EMPTY(&all_clients)) {
+        current = TAILQ_FIRST(&all_clients);
         shutdown(current->fd, SHUT_RDWR);
         close(current->fd);
+        TAILQ_REMOVE(&all_clients, current, clients);
+        free(current);
     }
 }
 
@@ -743,10 +746,12 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
             /* We can call TAILQ_REMOVE because we break out of the
              * TAILQ_FOREACH afterwards */
             TAILQ_REMOVE(&all_clients, current, clients);
+            free(current);
             break;
         }
 
         ev_io_stop(EV_A_ w);
+        free(w);
 
         DLOG("IPC: client disconnected\n");
         return;
