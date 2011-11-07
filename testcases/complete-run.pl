@@ -139,7 +139,9 @@ sub take_job {
     my $time_before_start = [gettimeofday];
 
     my $pid;
-    if (!$dont_start) {
+    if ($dont_start) {
+        $activate_cv->send(1);
+    } else {
         $pid = activate_i3(
             unix_socket_path => "/tmp/nested-$display-activation",
             display => $display,
@@ -161,20 +163,33 @@ sub take_job {
         # Don’t bother killing i3 when we haven’t started it
         return if $dont_start;
 
+        my $kill_cv = AnyEvent->condvar;
+
         # When measuring code coverage, try to exit i3 cleanly (otherwise, .gcda
         # files are not written) and fallback to killing it
-        if ($coverage_testing) {
+        if ($coverage_testing || $valgrind) {
             my $exited = 0;
-            eval {
-                say "Exiting i3 cleanly...";
-                i3("/tmp/nested-$display")->command('exit')->recv;
-                $exited = 1;
-            };
-            return if $exited;
+            say "[$display] Exiting i3 cleanly...";
+            my $i3 = i3("/tmp/nested-$display");
+            $i3->connect->cb(sub {
+                if (!$_[0]->recv) {
+                    # Could not connect to i3, just kill -9 it
+                    kill(9, $pid) or die "Could not kill i3 using kill($pid)";
+                    $kill_cv->send();
+                } else {
+                    # Connected. Now send exit and continue once that’s acked.
+                    $i3->command('exit')->cb(sub {
+                        $kill_cv->send();
+                    });
+                }
+            });
+        } else {
+            # No coverage testing or valgrind? Just kill -9 i3.
+            kill(9, $pid) or die "Could not kill i3 using kill($pid)";
+            $kill_cv->send();
         }
 
-        say "[$display] killing i3";
-        kill(9, $pid) or die "could not kill i3";
+        return $kill_cv;
     };
 
     # This will be called as soon as i3 is running and answered to our
@@ -224,21 +239,21 @@ sub take_job {
                     $aggregator->add($test, $parser);
                     push @done, [ $test, $output ];
 
-                    $kill_i3->();
+                    my $exitcv = $kill_i3->();
+                    $exitcv->cb(sub {
 
-                    undef $_ for @watchers;
-                    if (@done == $num) {
-                        $cv->send;
-                    } else {
-                        take_job($display);
-                    }
+                        undef $_ for @watchers;
+                        if (@done == $num) {
+                            $cv->send;
+                        } else {
+                            take_job($display);
+                        }
+                    });
                 }
             );
             push @watchers, $w;
         }
     });
-
-    $activate_cv->send(1) if $dont_start;
 }
 
 $cv->recv;
