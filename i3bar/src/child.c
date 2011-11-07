@@ -40,8 +40,8 @@ void cleanup() {
         ev_io_stop(main_loop, stdin_io);
         FREE(stdin_io);
         FREE(statusline_buffer);
-	/* statusline pointed to memory within statusline_buffer */
-	statusline = NULL;
+        /* statusline pointed to memory within statusline_buffer */
+        statusline = NULL;
     }
 
     if (child_sig != NULL) {
