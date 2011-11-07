@@ -90,7 +90,7 @@ sub activate_i3 {
         my $cmd = "exec $i3cmd -c $args{configfile} >>$args{logpath} 2>&1";
 
         # We need to use the shell due to using output redirections.
-        exec "/bin/sh", '-c', $cmd;
+        exec '/bin/sh', '-c', $cmd;
 
         # if we are still here, i3 could not be found or exec failed. bail out.
         exit 1;
