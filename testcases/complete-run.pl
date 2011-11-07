@@ -13,6 +13,7 @@ use strict;
 use warnings;
 use v5.10;
 # the following are modules which ship with Perl (>= 5.10):
+use Pod::Usage;
 use Carp::Always;
 use Cwd qw(abs_path);
 use File::Basename qw(basename);
@@ -52,13 +53,17 @@ sub slurp {
 
 my $coverage_testing = 0;
 my $valgrind = 0;
+my $help = 0;
 my @displays = ();
 
 my $result = GetOptions(
     "coverage-testing" => \$coverage_testing,
     "valgrind" => \$valgrind,
     "display=s" => \@displays,
+    "help|?" => \$help,
 );
+
+pod2usage(0) if $help;
 
 @displays = split(/,/, join(',', @displays));
 @displays = map { s/ //g; $_ } @displays;
@@ -268,3 +273,37 @@ for (@done) {
 
 # 4: print summary
 $harness->summary($aggregator);
+
+__END__
+
+=head1 NAME
+
+complete-run.pl - Run the i3 testsuite
+
+=head1 SYNOPSIS
+
+complete-run.pl [files...]
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--display>
+
+Specifies which X11 display should be used. Can be specified multiple times and
+will parallelize the tests:
+
+  # Run tests on the second X server
+  ./complete-run.pl -d :1
+
+  # Run four tests in parallel on some Xdummy servers
+  ./complete-run.pl -d :1,:2,:3,:4
+
+=item B<--valgrind>
+
+Runs i3 under valgrind to find memory problems. The output will be available in
+C<latest/valgrind.log>.
+
+=item B<--coverage-testing>
+
+Exits i3 cleanly (instead of kill -9) to make coverage testing work properly.
