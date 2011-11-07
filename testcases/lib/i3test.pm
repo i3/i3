@@ -435,6 +435,7 @@ sub launch_with_config {
         configfile => $tmpfile,
         outdir => $ENV{OUTDIR},
         logpath => $ENV{LOGPATH},
+        valgrind => $ENV{VALGRIND},
         cv => $cv,
     );
 

@@ -78,6 +78,13 @@ sub activate_i3 {
         # the interactive signalhandler to make it crash immediately instead.
         my $i3cmd = abs_path("../i3") . " -V -d all --disable-signalhandler";
 
+        if ($args{valgrind}) {
+            $i3cmd =
+                qq|valgrind -v --log-file="$args{outdir}/valgrind.log" | .
+                qq|--leak-check=full --track-origins=yes --num-callers=20 | .
+                qq|--tool=memcheck -- $i3cmd|;
+        }
+
         # Append to $args{logpath} instead of overwriting because i3 might be
         # run multiple times in one testcase.
         my $cmd = "exec $i3cmd -c $args{configfile} >>$args{logpath} 2>&1";
