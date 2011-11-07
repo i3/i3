@@ -1,7 +1,7 @@
 i3 testsuite
 ============
 Michael Stapelberg <michael+i3@stapelberg.de>
-October 2011
+September 2011
 
 This document explains how the i3 testsuite works, how to use it and extend it.
 It is targeted at developers who not necessarily have been doing testing before
@@ -56,28 +56,21 @@ The testcases are run by a script called +complete-run.pl+. It runs all
 testcases by default, but you can be more specific and let it only run one or
 more testcases. Also, it takes care of starting up a separate instance of i3
 with an appropriate configuration file and creates a folder for each run
-containing the appropriate i3 logfile for each testcase.  The latest folder can
-always be found under the symlink +latest/+. It is recommended that you run the
-tests on one or more separate X server instances (you can only start one window
-manager per X session), for example using the provided Xdummy script.
-+complete-run.pl+ takes one or more X11 display specifications and parallelizes
-the testcases appropriately:
+containing the appropriate i3 logfile for each testcase. The latest folder can
+always be found under the symlink +latest/+. Unless told differently, it will
+run the tests on a separate X server instance (using the Xdummy script).
 
 .Example invocation of complete-run.pl+
 ---------------------------------------
 $ cd ~/i3/testcases
 
-# start two dummy X11 instances in the background
-$ ./Xdummy :1 &
-$ ./Xdummy :2 &
-
-$ ./complete-run.pl -d :1,:2
+$ ./complete-run.pl
 # output omitted because it is very long
 All tests successful.
 Files=78, Tests=734, 27 wallclock secs ( 0.38 usr  0.48 sys + 17.65 cusr  3.21 csys = 21.72 CPU)
 Result: PASS
 
-$ ./complete-run.pl -d :1 t/04-floating.t
+$ ./complete-run.pl t/04-floating.t
 [:3] i3 startup: took 0.07s, status = 1
 [:3] Running t/04-floating.t with logfile testsuite-2011-09-24-16-06-04-4.0.2-226-g1eb011a/i3-log-for-04-floating.t
 [:3] t/04-floating.t finished
@@ -138,6 +131,10 @@ conventionally named subfolder +t+:
 ├── testcases
 │   ├── complete-run.pl
 │   ├── i3-test.config
+│   ├── lib
+│   │   ├── i3test.pm
+│   │   ├── SocketActivation.pm
+│   │   └── StartXDummy.pm
 │   ├── t
 │   │   ├── 00-load.t
 │   │   ├── 01-tile.t
@@ -145,9 +142,7 @@ conventionally named subfolder +t+:
 │   │   ├── ...
 │   │   ├── omitted for brevity
 │   │   ├── ...
-│   │   ├── 74-regress-focus-toggle.t
-│   │   └── lib
-│   │       └── i3test.pm
+│   │   └── 74-regress-focus-toggle.t
 │   └── Xdummy
 --------------------------------------------
 
