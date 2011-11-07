@@ -1,13 +1,6 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
-#
 # © 2010-2011 Michael Stapelberg and contributors
-#
-# syntax: ./complete-run.pl --display :1 --display :2
-# to run the test suite on the X11 displays :1 and :2
-# use 'Xdummy :1' and 'Xdummy :2' before to start two
-# headless X11 servers
-#
 
 use strict;
 use warnings;
@@ -28,6 +21,7 @@ use TAP::Parser::Aggregator;
 # these are shipped with the testsuite
 use lib qw(lib);
 use SocketActivation;
+use StartXDummy;
 # the following modules are not shipped with Perl
 use AnyEvent;
 use AnyEvent::Handle;
@@ -46,7 +40,7 @@ $SIG{CHLD} = sub {
 
 # reads in a whole file
 sub slurp {
-    open my $fh, '<', shift;
+    open(my $fh, '<', shift);
     local $/;
     <$fh>;
 }
@@ -54,21 +48,32 @@ sub slurp {
 my $coverage_testing = 0;
 my $valgrind = 0;
 my $help = 0;
+# Number of tests to run in parallel. Important to know how many Xdummy
+# instances we need to start (unless @displays are given). Defaults to
+# num_cores * 2.
+my $parallel = undef;
 my @displays = ();
+my @childpids = ();
 
 my $result = GetOptions(
     "coverage-testing" => \$coverage_testing,
     "valgrind" => \$valgrind,
     "display=s" => \@displays,
+    "parallel=i" => \$parallel,
     "help|?" => \$help,
 );
 
-pod2usage(0) if $help;
+pod2usage(-verbose => 2, -exitcode => 0) if $help;
 
 @displays = split(/,/, join(',', @displays));
 @displays = map { s/ //g; $_ } @displays;
 
-@displays = qw(:1) if @displays == 0;
+# No displays specified, let’s start some Xdummy instances.
+if (@displays == 0) {
+    my ($displays, $pids) = start_xdummy($parallel);
+    @displays = @$displays;
+    @childpids = @$pids;
+}
 
 # connect to all displays for two reasons:
 # 1: check if the display actually works
@@ -87,6 +92,8 @@ for my $display (@displays) {
         push @wdisplays, $display;
     }
 }
+
+die "No usable displays found" if @wdisplays == 0;
 
 my $config = slurp('i3-test.config');
 
@@ -268,6 +275,9 @@ $cv->recv;
 
 $aggregator->stop();
 
+# Disable buffering to make sure the output and summary appear before we exit.
+$| = 1;
+
 for (@done) {
     my ($test, $output) = @$_;
     say "output for $test:";
@@ -276,6 +286,8 @@ for (@done) {
 
 # 4: print summary
 $harness->summary($aggregator);
+
+kill(15, $_) for @childpids;
 
 __END__
 
@@ -286,6 +298,15 @@ complete-run.pl - Run the i3 testsuite
 =head1 SYNOPSIS
 
 complete-run.pl [files...]
+
+=head1 EXAMPLE
+
+To run the whole testsuite on a reasonable number of Xdummy instances (your
+running X11 will not be touched), run:
+  ./complete-run.pl
+
+To run only a specific test (useful when developing a new feature), run:
+  ./complete-run t/100-fullscreen.t
 
 =head1 OPTIONS
 
@@ -302,6 +323,9 @@ will parallelize the tests:
   # Run four tests in parallel on some Xdummy servers
   ./complete-run.pl -d :1,:2,:3,:4
 
+Note that it is not necessary to specify this anymore. If omitted,
+complete-run.pl will start (num_cores * 2) Xdummy instances.
+
 =item B<--valgrind>
 
 Runs i3 under valgrind to find memory problems. The output will be available in
@@ -310,3 +334,11 @@ C<latest/valgrind.log>.
 =item B<--coverage-testing>
 
 Exits i3 cleanly (instead of kill -9) to make coverage testing work properly.
+
+=item B<--parallel>
+
+Number of Xdummy instances to start (if you don’t want to start num_cores * 2
+instances for some reason).
+
+  # Run all tests on a single Xdummy instance
+  ./complete-run.pl -p 1

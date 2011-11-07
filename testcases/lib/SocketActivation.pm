@@ -1,6 +1,8 @@
 package SocketActivation;
 # vim:ts=4:sw=4:expandtab
 
+use strict;
+use warnings;
 use IO::Socket::UNIX; # core
 use Cwd qw(abs_path); # core
 use POSIX; # core
