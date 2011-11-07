@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use IO::Socket::UNIX; # core
 use Cwd qw(abs_path); # core
-use POSIX; # core
+use POSIX (); # core
 use AnyEvent::Handle; # not core
 use Exporter 'import';
 use v5.10;
