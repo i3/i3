@@ -54,6 +54,9 @@ sub start_xdummy {
             # Child, close stdout/stderr, then start Xdummy.
             POSIX::close(0);
             POSIX::close(2);
+            # We use -config /dev/null to prevent Xdummy from using the system
+            # Xorg configuration. The tests should be independant from the
+            # actual system X configuration.
             exec './Xdummy', ":$displaynum", '-config', '/dev/null';
             exit 1;
         }
