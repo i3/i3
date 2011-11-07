@@ -165,10 +165,13 @@ sub take_job {
     }
 
     my $kill_i3 = sub {
-        # Don’t bother killing i3 when we haven’t started it
-        return if $dont_start;
-
         my $kill_cv = AnyEvent->condvar;
+
+        # Don’t bother killing i3 when we haven’t started it
+        if ($dont_start) {
+            $kill_cv->send();
+            return $kill_cv;
+        }
 
         # When measuring code coverage, try to exit i3 cleanly (otherwise, .gcda
         # files are not written) and fallback to killing it
