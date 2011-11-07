@@ -3,7 +3,6 @@ package StartXDummy;
 
 use strict;
 use warnings;
-use POSIX ();
 use Exporter 'import';
 use Time::HiRes qw(sleep);
 use v5.10;
@@ -52,8 +51,8 @@ sub start_xdummy {
         die "Could not fork: $!" unless defined($pid);
         if ($pid == 0) {
             # Child, close stdout/stderr, then start Xdummy.
-            POSIX::close(0);
-            POSIX::close(2);
+            close STDOUT;
+            close STDERR;
             # We use -config /dev/null to prevent Xdummy from using the system
             # Xorg configuration. The tests should be independant from the
             # actual system X configuration.
