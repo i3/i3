@@ -141,6 +141,7 @@ sub take_job {
             unix_socket_path => "/tmp/nested-$display-activation",
             display => $display,
             configfile => $tmpfile,
+            outdir => $outdir,
             logpath => $logpath,
             cv => $activate_cv
         );
@@ -189,7 +190,7 @@ sub take_job {
         my $output;
         open(my $spool, '>', \$output);
         my $parser = TAP::Parser->new({
-            exec => [ 'sh', '-c', qq|DISPLAY=$display LOGPATH="$logpath" /usr/bin/perl -Ilib $test| ],
+            exec => [ 'sh', '-c', qq|DISPLAY=$display LOGPATH="$logpath" OUTDIR="$outdir" /usr/bin/perl -Ilib $test| ],
             spool => $spool,
             merge => 1,
         });
