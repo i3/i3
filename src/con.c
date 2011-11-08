@@ -129,7 +129,9 @@ void con_attach(Con *con, Con *parent, bool ignore_focus) {
          * workspace or a new split container with the configured
          * workspace_layout).
          */
-        if (con->window != NULL && parent->type == CT_WORKSPACE) {
+        if (con->window != NULL &&
+            parent->type == CT_WORKSPACE &&
+            config.default_layout != L_DEFAULT) {
             DLOG("Parent is a workspace. Applying default layout...\n");
             Con *target = workspace_attach_to(parent);
 
