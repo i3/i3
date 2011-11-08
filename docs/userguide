@@ -1248,9 +1248,9 @@ resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt]
 
 Direction can be one of +up+, +down+, +left+ or +right+. The optional pixel
 argument specifies by how many pixels a *floating container* should be grown or
-shrinked (the default is 10 pixels). The ppt argument means percentage points
+shrunk (the default is 10 pixels). The ppt argument means percentage points
 and specifies by how many percentage points a *tiling container* should be
-grown or shrinked (the default is 10 percentage points).
+grown or shrunk (the default is 10 percentage points).
 
 I recommend using the resize command inside a so called +mode+:
 
