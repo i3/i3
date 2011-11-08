@@ -12,9 +12,16 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include "all.h"
 
 #include "sd-daemon.h"
+
+/* The original value of RLIMIT_CORE when i3 was started. We need to restore
+ * this before starting any other process, since we set RLIMIT_CORE to
+ * RLIM_INFINITY for i3 debugging versions. */
+struct rlimit original_rlimit_core;
 
 static int xkb_event_base;
 
@@ -225,6 +232,10 @@ int main(int argc, char *argv[]) {
 
     setlocale(LC_ALL, "");
 
+    /* Get the RLIMIT_CORE limit at startup time to restore this before
+     * starting processes. */
+    getrlimit(RLIMIT_CORE, &original_rlimit_core);
+
     /* Disable output buffering to make redirects in .xsession actually useful for debugging */
     if (!isatty(fileno(stdout)))
         setbuf(stdout, NULL);
@@ -382,6 +393,31 @@ int main(int argc, char *argv[]) {
         }
         printf("%.*s\n", reply_length, reply);
         return 0;
+    }
+
+    /* I3_VERSION contains either something like this:
+     *     "4.0.2 (2011-11-11, branch "release")".
+     * or: "4.0.2-123-gCOFFEEBABE (2011-11-11, branch "next")".
+     *
+     * So we check for the offset of the first opening round bracket to
+     * determine whether this is a git version or a release version. */
+    if ((strchr(I3_VERSION, '(') - I3_VERSION) > 10) {
+        struct rlimit limit = { RLIM_INFINITY, RLIM_INFINITY };
+        setrlimit(RLIMIT_CORE, &limit);
+
+        /* The following code is helpful, but not required. We thus don’t pay
+         * much attention to error handling, non-linux or other edge cases. */
+        char cwd[PATH_MAX];
+        LOG("CORE DUMPS: You are running a development version of i3, so coredumps were automatically enabled (ulimit -c unlimited).\n");
+        if (getcwd(cwd, sizeof(cwd)) != NULL)
+            LOG("CORE DUMPS: Your current working directory is \"%s\".\n", cwd);
+        int patternfd;
+        if ((patternfd = open("/proc/sys/kernel/core_pattern", O_RDONLY)) >= 0) {
+            if (read(patternfd, cwd, sizeof(cwd)) > 0)
+                /* a trailing newline is included in cwd */
+                LOG("CORE DUMPS: Your core_pattern is: %s", cwd);
+            close(patternfd);
+        }
     }
 
     LOG("i3 (tree) version " I3_VERSION " starting\n");

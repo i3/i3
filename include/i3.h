@@ -10,6 +10,9 @@
 #ifndef _I3_H
 #define _I3_H
 
+#include <sys/time.h>
+#include <sys/resource.h>
+
 #include <xcb/xcb_keysyms.h>
 
 #include <X11/XKBlib.h>
@@ -21,6 +24,10 @@
 #include "data.h"
 #include "xcb.h"
 
+/** The original value of RLIMIT_CORE when i3 was started. We need to restore
+ * this before starting any other process, since we set RLIMIT_CORE to
+ * RLIM_INFINITY for i3 debugging versions. */
+extern struct rlimit original_rlimit_core;
 extern xcb_connection_t *conn;
 extern int conn_screen;
 /** The last timestamp we got from X11 (timestamps are included in some events

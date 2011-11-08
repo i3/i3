@@ -112,6 +112,7 @@ void start_application(const char *command, bool no_startup_id) {
     if (fork() == 0) {
         /* Child process */
         setsid();
+        setrlimit(RLIMIT_CORE, &original_rlimit_core);
         if (fork() == 0) {
             /* Setup the environment variable(s) */
             if (!no_startup_id)
