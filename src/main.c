@@ -413,6 +413,7 @@ int main(int argc, char *argv[]) {
             LOG("CORE DUMPS: Your current working directory is \"%s\".\n", cwd);
         int patternfd;
         if ((patternfd = open("/proc/sys/kernel/core_pattern", O_RDONLY)) >= 0) {
+            memset(cwd, '\0', sizeof(cwd));
             if (read(patternfd, cwd, sizeof(cwd)) > 0)
                 /* a trailing newline is included in cwd */
                 LOG("CORE DUMPS: Your core_pattern is: %s", cwd);
