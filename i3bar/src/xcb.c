@@ -686,38 +686,37 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
         exit(1);
     }
 
-    while ((event = xcb_poll_for_event(xcb_connection)) == NULL) {
-        return;
+    while ((event = xcb_poll_for_event(xcb_connection)) != NULL) {
+        switch (event->response_type & ~0x80) {
+            case XCB_EXPOSE:
+                /* Expose-events happen, when the window needs to be redrawn */
+                redraw_bars();
+                break;
+            case XCB_BUTTON_PRESS:
+                /* Button-press-events are mouse-buttons clicked on one of our bars */
+                handle_button((xcb_button_press_event_t*) event);
+                break;
+            case XCB_CLIENT_MESSAGE:
+                /* Client messages are used for client-to-client communication, for
+                 * example system tray widgets talk to us directly via client messages. */
+                handle_client_message((xcb_client_message_event_t*) event);
+                break;
+            case XCB_UNMAP_NOTIFY:
+            case XCB_DESTROY_NOTIFY:
+                /* UnmapNotifies are received when a tray window unmaps itself */
+                handle_unmap_notify((xcb_unmap_notify_event_t*) event);
+                break;
+            case XCB_PROPERTY_NOTIFY:
+                /* PropertyNotify */
+                handle_property_notify((xcb_property_notify_event_t*) event);
+                break;
+            case XCB_CONFIGURE_REQUEST:
+                /* ConfigureRequest, sent by a tray child */
+                handle_configure_request((xcb_configure_request_event_t*) event);
+                break;
+        }
+        free(event);
     }
-
-    switch (event->response_type & ~0x80) {
-        case XCB_EXPOSE:
-            /* Expose-events happen, when the window needs to be redrawn */
-            redraw_bars();
-            break;
-        case XCB_BUTTON_PRESS:
-            /* Button-press-events are mouse-buttons clicked on one of our bars */
-            handle_button((xcb_button_press_event_t*) event);
-            break;
-        case XCB_CLIENT_MESSAGE:
-            /* Client messages are used for client-to-client communication, for
-             * example system tray widgets talk to us directly via client messages. */
-            handle_client_message((xcb_client_message_event_t*) event);
-            break;
-        case XCB_UNMAP_NOTIFY:
-            /* UnmapNotifies are received when a tray window unmaps itself */
-            handle_unmap_notify((xcb_unmap_notify_event_t*) event);
-            break;
-        case XCB_PROPERTY_NOTIFY:
-            /* PropertyNotify */
-            handle_property_notify((xcb_property_notify_event_t*) event);
-            break;
-        case XCB_CONFIGURE_REQUEST:
-            /* ConfigureRequest, sent by a tray child */
-            handle_configure_request((xcb_configure_request_event_t*) event);
-            break;
-    }
-    FREE(event);
 }
 
 /*
