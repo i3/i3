@@ -7,7 +7,6 @@ use warnings;
 use v5.10;
 # the following are modules which ship with Perl (>= 5.10):
 use Pod::Usage;
-use Carp::Always;
 use Cwd qw(abs_path);
 use File::Basename qw(basename);
 use File::Temp qw(tempfile tempdir);
