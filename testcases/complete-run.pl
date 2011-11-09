@@ -22,6 +22,7 @@ use TAP::Parser::Aggregator;
 use lib qw(lib);
 use SocketActivation;
 use StartXDummy;
+use StatusLine;
 # the following modules are not shipped with Perl
 use AnyEvent;
 use AnyEvent::Handle;
@@ -44,6 +45,10 @@ sub slurp {
     local $/;
     <$fh>;
 }
+
+# convinience wrapper to write to the log file
+my $log;
+sub Log { say $log "@_" }
 
 my $coverage_testing = 0;
 my $valgrind = 0;
@@ -86,7 +91,7 @@ for my $display (@displays) {
     my $screen;
     my $x = X11::XCB->new($display, $screen);
     if ($x->has_error) {
-        say STDERR "WARNING: Not using X11 display $display, could not connect";
+        Log "WARNING: Not using X11 display $display, could not connect";
     } else {
         push @conns, $x;
         push @wdisplays, $display;
@@ -112,6 +117,10 @@ mkdir($outdir) or die "Could not create $outdir";
 unlink("latest") if -e "latest";
 symlink("$outdir", "latest") or die "Could not symlink latest to $outdir";
 
+my $logfile = "$outdir/complete-run.log";
+open $log, '>', $logfile or die "Could not create '$logfile': $!";
+say "Writing logfile to '$logfile'...";
+
 # 3: run all tests
 my @done;
 my $num = @testfiles;
@@ -119,6 +128,8 @@ my $harness = TAP::Harness->new({ });
 
 my $aggregator = TAP::Parser::Aggregator->new();
 $aggregator->start();
+
+status_init(displays => \@wdisplays, tests => $num);
 
 # We start tests concurrently: For each display, one test gets started. Every
 # test starts another test after completing.
@@ -139,10 +150,12 @@ sub take_job {
 
     my $test = shift @testfiles;
     return unless $test;
-    my $dont_start = (slurp($test) =~ /# !NO_I3_INSTANCE!/);
-    my $logpath = "$outdir/i3-log-for-" . basename($test);
 
-    my ($fh, $tmpfile) = tempfile('i3-run-cfg.XXXXXX', UNLINK => 1);
+    my $dont_start = (slurp($test) =~ /# !NO_I3_INSTANCE!/);
+    my $basename = basename($test);
+    my $logpath = "$outdir/i3-log-for-$basename";
+
+    my ($fh, $tmpfile) = tempfile("i3-cfg-for-$basename.XXXXXX", UNLINK => 1);
     say $fh $config;
     say $fh "ipc-socket /tmp/nested-$display";
     close($fh);
@@ -166,7 +179,7 @@ sub take_job {
 
         my $child_watcher;
         $child_watcher = AnyEvent->child(pid => $pid, cb => sub {
-            say "child died. pid = $pid";
+            Log status($display, "child died. pid = $pid");
             undef $child_watcher;
         });
     }
@@ -184,7 +197,7 @@ sub take_job {
         # files are not written) and fallback to killing it
         if ($coverage_testing || $valgrind) {
             my $exited = 0;
-            say "[$display] Exiting i3 cleanly...";
+            Log status($display, 'Exiting i3 cleanly...');
             my $i3 = i3("/tmp/nested-$display");
             $i3->connect->cb(sub {
                 if (!$_[0]->recv) {
@@ -199,6 +212,8 @@ sub take_job {
                 }
             });
         } else {
+            Log status($display, 'killing i3');
+
             # No coverage testing or valgrind? Just kill -9 i3.
             kill(9, $pid) or die "Could not kill i3 using kill($pid)";
             $kill_cv->send();
@@ -214,12 +229,13 @@ sub take_job {
         my $start_duration = tv_interval($time_before_start, $time_activating);
         my ($status) = $activate_cv->recv;
         if ($dont_start) {
-            say "[$display] Not starting i3, testcase does that";
+            Log status($display, 'Not starting i3, testcase does that');
         } else {
-            say "[$display] i3 startup: took " . sprintf("%.2f", $start_duration) . "s, status = $status";
+            my $duration = sprintf("%.2f", $start_duration);
+            Log status($display, "i3 startup: took $duration sec, status = $status");
         }
 
-        say "[$display] Running $test with logfile $logpath";
+        Log status($display, "Starting $test with logfile $logpath");
 
         my $output;
         open(my $spool, '>', \$output);
@@ -228,6 +244,8 @@ sub take_job {
             spool => $spool,
             merge => 1,
         });
+
+        my $tests_completed;
 
         my @watchers;
         my ($stdout, $stderr) = $parser->get_select_handles;
@@ -244,15 +262,19 @@ sub take_job {
 
                     my $result = $parser->next;
                     if (defined($result)) {
+                        $tests_completed++;
+                        status($display, "Running $test: [$tests_completed/??]");
                         # TODO: check if we should bail out
                         return;
                     }
 
                     # $result is not defined, we are done parsing
-                    say "[$display] $test finished";
+                    Log status($display, "$test finished");
                     close($parser->delete_spool);
                     $aggregator->add($test, $parser);
                     push @done, [ $test, $output ];
+
+                    status_completed(scalar @done);
 
                     my $exitcv = $kill_i3->();
                     $exitcv->cb(sub {
@@ -275,17 +297,21 @@ $cv->recv;
 
 $aggregator->stop();
 
-# Disable buffering to make sure the output and summary appear before we exit.
-$| = 1;
+# print empty lines to seperate failed tests from statuslines
+print "\n\n";
 
 for (@done) {
     my ($test, $output) = @$_;
-    say "output for $test:";
-    say $output;
+    Log "output for $test:";
+    Log $output;
+    # print error messages of failed tests
+    say for $output =~ /^not ok.+\n+((?:^#.+\n)+)/mg
 }
 
 # 4: print summary
 $harness->summary($aggregator);
+
+close $log;
 
 kill(15, $_) for @childpids;
 
