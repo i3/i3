@@ -235,7 +235,7 @@ sub take_job {
             Log status($display, "i3 startup: took $duration sec, status = $status");
         }
 
-        Log status($display, "Starting $test with logfile $logpath");
+        Log status($display, "Starting $test");
 
         my $output;
         open(my $spool, '>', \$output);
