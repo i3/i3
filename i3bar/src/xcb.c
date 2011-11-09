@@ -373,6 +373,8 @@ static void configure_trayclients() {
 
         int clients = 0;
         TAILQ_FOREACH_REVERSE(trayclient, output->trayclients, tc_head, tailq) {
+            if (!trayclient->mapped)
+                continue;
             clients++;
 
             DLOG("Configuring tray window %08x to x=%d\n",
@@ -595,8 +597,10 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
         xcb_get_property_reply_t *xembedr = xcb_get_property_reply(xcb_connection,
                                                                    xembedc,
                                                                    NULL);
-        if (xembedr == NULL || xembedr->length == 0)
+        if (xembedr == NULL || xembedr->length == 0) {
+            DLOG("xembed_info unset\n");
             return;
+        }
 
         DLOG("xembed format = %d, len = %d\n", xembedr->format, xembedr->length);
         uint32_t *xembed = xcb_get_property_value(xembedr);
@@ -608,11 +612,13 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
             /* need to unmap the window */
             xcb_unmap_window(xcb_connection, trayclient->win);
             trayclient->mapped = map_it;
+            configure_trayclients();
             draw_bars();
         } else if (!trayclient->mapped && map_it) {
             /* need to map the window */
             xcb_map_window(xcb_connection, trayclient->win);
             trayclient->mapped = map_it;
+            configure_trayclients();
             draw_bars();
         }
         free(xembedr);
@@ -635,6 +641,8 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
 
         int clients = 0;
         TAILQ_FOREACH_REVERSE(trayclient, output->trayclients, tc_head, tailq) {
+            if (!trayclient->mapped)
+                continue;
             clients++;
 
             if (trayclient->win != event->window)
