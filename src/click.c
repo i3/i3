@@ -127,13 +127,10 @@ static bool tiling_resize(Con *con, const xcb_button_press_event_t *event, const
          * window. Decorations will end up next to each other and the user
          * expects to switch to a window by clicking on its decoration. */
 
-        /* To make the check actually work in case of a h-split container, we
-         * need to find the resize con in this function (as opposed to in
-         * tiling_resize_for_border()). The con which was passed is the actualy
-         * child window, not the split container. */
-        while (con->type != CT_WORKSPACE &&
-               con->type != CT_FLOATING_CON &&
-               con->parent->orientation != VERT)
+        /* Since the container might either be the child *or* already a split
+         * container (in the case of a nested split container), we need to make
+         * sure that we are dealing with the split container here. */
+        if (con_is_leaf(con))
             con = con->parent;
 
         if ((con->layout == L_STACKED ||
