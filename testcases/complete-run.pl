@@ -139,7 +139,7 @@ status_init(displays => \@wdisplays, tests => $num);
 
 # We start tests concurrently: For each display, one test gets started. Every
 # test starts another test after completing.
-take_job($_) for @wdisplays;
+for (@wdisplays) { $cv->begin; take_job($_) }
 
 #
 # Takes a test from the beginning of @testfiles and runs it.
@@ -154,8 +154,8 @@ take_job($_) for @wdisplays;
 sub take_job {
     my ($display) = @_;
 
-    my $test = shift @testfiles;
-    return unless $test;
+    my $test = shift @testfiles
+        or return $cv->end;
 
     my $dont_start = (slurp($test) =~ /# !NO_I3_INSTANCE!/);
     my $basename = basename($test);
@@ -288,7 +288,7 @@ sub take_job {
 
                         undef $_ for @watchers;
                         if (@done == $num) {
-                            $cv->send;
+                            $cv->end;
                         } else {
                             take_job($display);
                         }
