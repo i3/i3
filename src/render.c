@@ -221,10 +221,29 @@ void render_con(Con *con, bool render_fullscreen) {
     if (con->layout == L_OUTPUT) {
         render_l_output(con);
     } else if (con->type == CT_ROOT) {
-        Con *child;
-        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
-            render_con(child, false);
+        Con *output;
+        TAILQ_FOREACH(output, &(con->nodes_head), nodes) {
+            render_con(output, false);
         }
+
+        /* We need to render floating windows after rendering all outputs’
+         * tiling windows because they need to be on top of *every* output at
+         * all times. This is important when the user places floating
+         * windows/containers so that they overlap on another output. */
+        DLOG("Rendering floating windows:\n");
+        TAILQ_FOREACH(output, &(con->nodes_head), nodes) {
+            /* Get the active workspace of that output */
+            Con *content = output_get_content(output);
+            Con *workspace = TAILQ_FIRST(&(content->focus_head));
+
+            Con *child;
+            TAILQ_FOREACH(child, &(workspace->floating_head), floating_windows) {
+                DLOG("floating child at (%d,%d) with %d x %d\n", child->rect.x, child->rect.y, child->rect.width, child->rect.height);
+                x_raise_con(child);
+                render_con(child, false);
+            }
+        }
+
     } else {
 
         /* FIXME: refactor this into separate functions: */
@@ -338,12 +357,5 @@ void render_con(Con *con, bool render_fullscreen) {
              * (it’s unmapped afterwards). */
             x_raise_con(con);
     }
-    }
-
-    Con *child;
-    TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
-        DLOG("floating child at (%d,%d) with %d x %d\n", child->rect.x, child->rect.y, child->rect.width, child->rect.height);
-        x_raise_con(child);
-        render_con(child, false);
     }
 }
