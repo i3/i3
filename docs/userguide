@@ -979,7 +979,7 @@ colors {
     statusline #ffffff
 
     focused_workspace  #ffffff #285577
-    active_workspace   #888888 #222222
+    active_workspace   #ffffff #333333
     inactive_workspace #888888 #222222
     urgent_workspace   #ffffff #900000
 }
