@@ -360,7 +360,7 @@ Con* workspace_prev() {
                 if (child->type != CT_WORKSPACE)
                     continue;
                 if (child == current) {
-                    found_current = 1;
+                    found_current = true;
                 } else if (child->num == -1 && (current->num != -1 || found_current)) {
                     prev = child;
                     goto workspace_prev_end;
