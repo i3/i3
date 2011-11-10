@@ -13,12 +13,12 @@
 #include "tree.h"
 
 /** Callback for dragging */
-typedef void(*callback_t)(Con*, Rect*, uint32_t, uint32_t, void*);
+typedef void(*callback_t)(Con*, Rect*, uint32_t, uint32_t, const void*);
 
 /** Macro to create a callback function for dragging */
 #define DRAGGING_CB(name) \
         static void name(Con *con, Rect *old_rect, uint32_t new_x, \
-                         uint32_t new_y, void *extra)
+                         uint32_t new_y, const void *extra)
 
 /** On which border was the dragging initiated? */
 typedef enum { BORDER_LEFT   = (1 << 0),
@@ -89,7 +89,7 @@ int floating_border_click(xcb_connection_t *conn, Client *client,
  * Calls the drag_pointer function with the drag_window callback
  *
  */
-void floating_drag_window(Con *con, xcb_button_press_event_t *event);
+void floating_drag_window(Con *con, const xcb_button_press_event_t *event);
 
 /**
  * Called when the user clicked on a floating window while holding the
@@ -97,7 +97,7 @@ void floating_drag_window(Con *con, xcb_button_press_event_t *event);
  * Calls the drag_pointer function with the resize_window callback
  *
  */
-void floating_resize_window(Con *con, bool proportional, xcb_button_press_event_t *event);
+void floating_resize_window(Con *con, const bool proportional, const xcb_button_press_event_t *event);
 
 #if 0
 /**
@@ -133,8 +133,8 @@ void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace);
  * the event and the new coordinates (x, y).
  *
  */
-void drag_pointer(Con *con, xcb_button_press_event_t *event,
+void drag_pointer(Con *con, const xcb_button_press_event_t *event,
                   xcb_window_t confine_to, border_t border, callback_t callback,
-                  void *extra);
+                  const void *extra);
 
 #endif
