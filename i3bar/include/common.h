@@ -31,7 +31,6 @@ struct rect_t {
 #include "workspaces.h"
 #include "trayclients.h"
 #include "xcb.h"
-#include "ucs2_to_utf8.h"
 #include "config.h"
 #include "libi3.h"
 

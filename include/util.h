@@ -92,15 +92,6 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie,
                  char *err_message);
 
 /**
- * Converts the given string to UCS-2 big endian for use with
- * xcb_image_text_16(). The amount of real glyphs is stored in real_strlen, a
- * buffer containing the UCS-2 encoded string (16 bit per glyph) is
- * returned. It has to be freed when done.
- *
- */
-char *convert_utf8_to_ucs2(char *input, int *real_strlen);
-
-/**
  * This function resolves ~ in pathnames.
  * It may resolve wildcards in the first part of the path, but if no match
  * or multiple matches are found, it just returns a copy of path as given.

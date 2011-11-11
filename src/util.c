@@ -12,7 +12,6 @@
 
 #include <sys/wait.h>
 #include <stdarg.h>
-#include <iconv.h>
 #if defined(__OpenBSD__)
 #include <sys/cdefs.h>
 #endif
@@ -23,8 +22,6 @@
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
-
-static iconv_t conversion_descriptor = 0;
 
 int min(int a, int b) {
     return (a < b ? a : b);
@@ -118,51 +115,6 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_mes
         xcb_disconnect(conn);
         exit(-1);
     }
-}
-
-/*
- * Converts the given string to UCS-2 big endian for use with
- * xcb_image_text_16(). The amount of real glyphs is stored in real_strlen,
- * a buffer containing the UCS-2 encoded string (16 bit per glyph) is
- * returned. It has to be freed when done.
- *
- */
-char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
-    size_t input_size = strlen(input) + 1;
-    /* UCS-2 consumes exactly two bytes for each glyph */
-    int buffer_size = input_size * 2;
-
-    char *buffer = smalloc(buffer_size);
-    size_t output_size = buffer_size;
-    /* We need to use an additional pointer, because iconv() modifies it */
-    char *output = buffer;
-
-    /* We convert the input into UCS-2 big endian */
-    if (conversion_descriptor == 0) {
-        conversion_descriptor = iconv_open("UCS-2BE", "UTF-8");
-        if (conversion_descriptor == 0) {
-            fprintf(stderr, "error opening the conversion context\n");
-            exit(1);
-        }
-    }
-
-    /* Get the conversion descriptor back to original state */
-    iconv(conversion_descriptor, NULL, NULL, NULL, NULL);
-
-    /* Convert our text */
-    int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
-    if (rc == (size_t)-1) {
-        perror("Converting to UCS-2 failed");
-        FREE(buffer);
-        if (real_strlen != NULL)
-            *real_strlen = 0;
-        return NULL;
-    }
-
-    if (real_strlen != NULL)
-        *real_strlen = ((buffer_size - output_size) / 2) - 1;
-
-    return buffer;
 }
 
 /*

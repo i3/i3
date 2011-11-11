@@ -179,4 +179,20 @@ uint32_t get_mod_mask_for(uint32_t keysym,
  */
 i3Font load_font(const char *pattern, bool fallback);
 
+/**
+ * Converts the given string to UTF-8 from UCS-2 big endian. The return value
+ * must be freed after use.
+ *
+ */
+char *convert_ucs2_to_utf8(xcb_char2b_t *text, size_t num_glyphs);
+
+/**
+ * Converts the given string to UCS-2 big endian for use with
+ * xcb_image_text_16(). The amount of real glyphs is stored in real_strlen,
+ * a buffer containing the UCS-2 encoded string (16 bit per glyph) is
+ * returned. It has to be freed when done.
+ *
+ */
+xcb_char2b_t *convert_utf8_to_ucs2(char *input, int *real_strlen);
+
 #endif

@@ -135,13 +135,13 @@ void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
  * length (amount of glyphs) using the given font.
  *
  */
-int predict_text_width(char *text, int length) {
+int predict_text_width(const xcb_char2b_t *text, int length) {
     xcb_query_text_extents_cookie_t cookie;
     xcb_query_text_extents_reply_t *reply;
     xcb_generic_error_t *error;
     int width;
 
-    cookie = xcb_query_text_extents(conn, config.font.id, length, (xcb_char2b_t*)text);
+    cookie = xcb_query_text_extents(conn, config.font.id, length, text);
     if ((reply = xcb_query_text_extents_reply(conn, cookie, &error)) == NULL) {
         ELOG("Could not get text extents (X error code %d)\n",
              error->error_code);

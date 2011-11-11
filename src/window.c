@@ -69,7 +69,7 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     }
     /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
     int len;
-    char *ucs2_name = convert_utf8_to_ucs2(new_name, &len);
+    xcb_char2b_t *ucs2_name = convert_utf8_to_ucs2(new_name, &len);
     if (ucs2_name == NULL) {
         LOG("Could not convert _NET_WM_NAME to UCS-2, ignoring new hint\n");
         FREE(new_name);
@@ -79,7 +79,7 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     FREE(win->name_x);
     FREE(win->name_json);
     win->name_json = new_name;
-    win->name_x = ucs2_name;
+    win->name_x = (char*)ucs2_name;
     win->name_len = len;
     win->name_x_changed = true;
     LOG("_NET_WM_NAME changed to \"%s\"\n", win->name_json);

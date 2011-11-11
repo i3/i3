@@ -260,14 +260,14 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 
     printf("inp[0] = %02x, inp[1] = %02x, inp[2] = %02x\n", inp[0], inp[1], inp[2]);
     /* convert it to UTF-8 */
-    char *out = convert_ucs_to_utf8((char*)inp);
+    char *out = convert_ucs2_to_utf8((xcb_char2b_t*)inp, 1);
     printf("converted to %s\n", out);
 
     glyphs_ucs[input_position] = malloc(3 * sizeof(uint8_t));
     if (glyphs_ucs[input_position] == NULL)
         err(EXIT_FAILURE, "malloc() failed\n");
     memcpy(glyphs_ucs[input_position], inp, 3);
-    glyphs_utf8[input_position] = strdup(out);
+    glyphs_utf8[input_position] = out;
     input_position++;
 
     if (input_position == limit)
@@ -348,7 +348,7 @@ int main(int argc, char *argv[]) {
     sockfd = ipc_connect(socket_path);
 
     if (prompt != NULL)
-        prompt = convert_utf8_to_ucs2(prompt, &prompt_len);
+        prompt = (char*)convert_utf8_to_ucs2(prompt, &prompt_len);
 
     int screens;
     conn = xcb_connect(NULL, &screens);
