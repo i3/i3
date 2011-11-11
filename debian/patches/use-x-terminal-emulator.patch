@@ -1,3 +1,5 @@
+## Description: Use Debian-specific x-terminal-emulator in i3-sensible-terminal
+## Origin/Author: Michael Stapelberg
 --- a/i3-sensible-terminal.O	2011-11-11 22:03:52.414218386 +0000
 +++ b/i3-sensible-terminal	2011-11-11 22:04:38.372020210 +0000
 @@ -1,13 +1,11 @@

@@ -1,0 +1,14 @@
+## Description: Document Debian-specific x-terminal-emulator in the manpage.
+## Origin/Author: Michael Stapelberg
+Index: i3-4.1/man/i3-sensible-terminal.man
+===================================================================
+--- i3-4.1.orig/man/i3-sensible-terminal.man	2011-11-11 22:38:06.508025537 +0000
++++ i3-4.1/man/i3-sensible-terminal.man	2011-11-11 22:38:04.752994892 +0000
+@@ -22,6 +22,7 @@
+ It tries to start one of the following (in that order):
+ 
+ * $TERMINAL (this is a non-standard variable)
++* x-terminal-emulator (only on Debian)
+ * xterm
+ * urxvt
+ * rxvt
