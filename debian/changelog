@@ -1,3 +1,9 @@
+i3-wm (4.1.1-0) unstable; urgency=low
+
+  * NOT YET RELEASED
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Fri, 11 Nov 2011 23:00:04 +0000
+
 i3-wm (4.1-1) unstable; urgency=low
 
   * Switch to dpkg-source 3.0 (quilt) and compat level 7
