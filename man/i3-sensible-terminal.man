@@ -1,0 +1,39 @@
+i3-sensible-terminal(1)
+=======================
+Michael Stapelberg <michael+i3@stapelberg.de>
+v4.1, November 2011
+
+== NAME
+
+i3-sensible-terminal - launches $TERMINAL with fallbacks
+
+== SYNOPSIS
+
+i3-sensible-terminal [arguments]
+
+== DESCRIPTION
+
+i3-sensible-terminal is invoked in the i3 default config to start a terminal.
+This wrapper script is necessary since there is no distribution-independent
+terminal launcher (but for example Debian has x-terminal-emulator).
+Distribution packagers are responsible for shipping this script in a way which
+is appropriate for the distribution.
+
+It tries to start one of the following (in that order):
+
+* $TERMINAL (this is a non-standard variable)
+* xterm
+* urxvt
+* rxvt
+* roxterm
+
+Please don’t complain about the order: If the user has any preference, he will
+have $TERMINAL set or modified his i3 configuration file.
+
+== SEE ALSO
+
+i3(1)
+
+== AUTHOR
+
+Michael Stapelberg and contributors

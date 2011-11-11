@@ -1,5 +1,6 @@
 i3-wm (4.1-1) unstable; urgency=low
 
+  * Switch to dpkg-source 3.0 (quilt) and compat level 7
   * Implement system tray support in i3bar (for NetworkManager, Skype, …)
   * i3bar is now configurable in the i3 configfile
   * Implement support for PCRE regular expressions in criteria
