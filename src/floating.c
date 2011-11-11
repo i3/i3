@@ -2,16 +2,11 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * src/floating.c: contains all functions for handling floating clients
+ * floating.c: Floating windows.
  *
  */
-
-
 #include "all.h"
 
 extern xcb_connection_t *conn;
@@ -95,7 +90,7 @@ void floating_enable(Con *con, bool automatic) {
     }
 
     char *name;
-    asprintf(&name, "[i3 con] floatingcon around %p", con);
+    sasprintf(&name, "[i3 con] floatingcon around %p", con);
     x_set_name(nc, name);
     free(name);
 
@@ -172,6 +167,10 @@ void floating_enable(Con *con, bool automatic) {
     con->parent = nc;
     con->percent = 1.0;
     con->floating = FLOATING_USER_ON;
+
+    /* 4: set the border style as specified with new_float */
+    if (automatic)
+        con->border_style = config.default_floating_border;
 
     TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
     TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
@@ -297,7 +296,7 @@ bool floating_maybe_reassign_ws(Con *con) {
 }
 
 DRAGGING_CB(drag_window_callback) {
-    struct xcb_button_press_event_t *event = extra;
+    const struct xcb_button_press_event_t *event = extra;
 
     /* Reposition the client correctly while moving */
     con->rect.x = old_rect->x + (new_x - event->root_x);
@@ -318,7 +317,7 @@ DRAGGING_CB(drag_window_callback) {
  * Calls the drag_pointer function with the drag_window callback
  *
  */
-void floating_drag_window(Con *con, xcb_button_press_event_t *event) {
+void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
     DLOG("floating_drag_window\n");
 
     /* Push changes before dragging, so that the window gets raised now and not
@@ -338,14 +337,14 @@ void floating_drag_window(Con *con, xcb_button_press_event_t *event) {
  *
  */
 struct resize_window_callback_params {
-    border_t corner;
-    bool proportional;
-    xcb_button_press_event_t *event;
+    const border_t corner;
+    const bool proportional;
+    const xcb_button_press_event_t *event;
 };
 
 DRAGGING_CB(resize_window_callback) {
-    struct resize_window_callback_params *params = extra;
-    xcb_button_press_event_t *event = params->event;
+    const struct resize_window_callback_params *params = extra;
+    const xcb_button_press_event_t *event = params->event;
     border_t corner = params->corner;
 
     int32_t dest_x = con->rect.x;
@@ -398,8 +397,8 @@ DRAGGING_CB(resize_window_callback) {
  * Calls the drag_pointer function with the resize_window callback
  *
  */
-void floating_resize_window(Con *con, bool proportional,
-                            xcb_button_press_event_t *event) {
+void floating_resize_window(Con *con, const bool proportional,
+                            const xcb_button_press_event_t *event) {
     DLOG("floating_resize_window\n");
 
     /* corner saves the nearest corner to the original click. It contains
@@ -427,8 +426,8 @@ void floating_resize_window(Con *con, bool proportional,
  * the event and the new coordinates (x, y).
  *
  */
-void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
-                confine_to, border_t border, callback_t callback, void *extra)
+void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
+                confine_to, border_t border, callback_t callback, const void *extra)
 {
     uint32_t new_x, new_y;
     Rect old_rect;
@@ -516,31 +515,6 @@ void drag_pointer(Con *con, xcb_button_press_event_t *event, xcb_window_t
 }
 
 #if 0
-/*
- * Changes focus in the given direction for floating clients.
- *
- * Changing to the left/right means going to the previous/next floating client,
- * changing to top/bottom means cycling through the Z-index.
- *
- */
-void floating_focus_direction(xcb_connection_t *conn, Client *currently_focused, direction_t direction) {
-        DLOG("floating focus\n");
-
-        if (direction == D_LEFT || direction == D_RIGHT) {
-                /* Go to the next/previous floating client */
-                Client *client;
-
-                while ((client = (direction == D_LEFT ? TAILQ_PREV(currently_focused, floating_clients_head, floating_clients) :
-                                                        TAILQ_NEXT(currently_focused, floating_clients))) !=
-                       TAILQ_END(&(currently_focused->workspace->floating_clients))) {
-                        if (!client->floating)
-                                continue;
-                        set_focus(conn, client, true);
-                        return;
-                }
-        }
-}
-
 /*
  * Moves the client 10px to the specified direction.
  *

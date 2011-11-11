@@ -1,7 +1,12 @@
 /*
  * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * tree.c: Everything that primarily modifies the layout tree data structure.
+ *
  */
-
 #include "all.h"
 
 struct Con *croot;
@@ -420,7 +425,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         if (!workspace)
             return false;
 
-        workspace_show(workspace->name);
+        workspace_show(workspace);
         Con *focus = con_descend_direction(workspace, direction);
         if (focus) {
             con_focus(focus);
@@ -429,12 +434,35 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         return true;
     }
 
-    if (con->type == CT_FLOATING_CON) {
-        /* TODO: implement focus for floating windows */
-        return false;
-    }
-
     Con *parent = con->parent;
+
+    if (con->type == CT_FLOATING_CON) {
+        /* left/right focuses the previous/next floating container */
+        if (orientation == HORIZ) {
+            Con *next;
+            if (way == 'n')
+                next = TAILQ_NEXT(con, floating_windows);
+            else next = TAILQ_PREV(con, floating_head, floating_windows);
+
+            /* If there is no next/previous container, wrap */
+            if (!next) {
+                if (way == 'n')
+                    next = TAILQ_FIRST(&(parent->floating_head));
+                else next = TAILQ_LAST(&(parent->floating_head), floating_head);
+            }
+
+            /* Still no next/previous container? bail out */
+            if (!next)
+                return false;
+
+            con_focus(con_descend_focused(next));
+            return true;
+        } else {
+            /* up/down cycles through the Z-index */
+            /* TODO: implement cycling through the z-index */
+            return false;
+        }
+    }
 
     /* If the orientation does not match or there is no other con to focus, we
      * need to go higher in the hierarchy */

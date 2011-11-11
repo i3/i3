@@ -10,30 +10,33 @@ CPPFLAGS += -I$(TOPDIR)/include
 
 all: i3bar doc
 
-i3bar: ${FILES}
-	echo "LINK"
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+i3bar: $(TOPDIR)/libi3/libi3.a ${FILES}
+	echo "[i3bar] LINK"
+	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3/libi3.a,$^) $(LIBS)
+
+$(TOPDIR)/libi3/%.a: $(TOPDIR)/libi3/*.c
+	$(MAKE) -C $(TOPDIR)/libi3
 
 doc:
 	echo ""
-	echo "SUBDIR doc"
+	echo "[i3bar] SUBDIR doc"
 	$(MAKE) -C doc
 
 src/%.o: src/%.c ${HEADERS}
-	echo "CC $<"
+	echo "[i3bar] CC $<"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 install: all
-	echo "INSTALL"
+	echo "[i3bar] INSTALL"
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
 	$(INSTALL) -m 0755 i3bar $(DESTDIR)$(PREFIX)/bin
 
 clean:
 	rm -f src/*.o
-	make -C doc clean
+	$(MAKE) -C doc clean
 
 distclean: clean
 	rm -f i3bar
-	make -C doc distclean
+	$(MAKE) -C doc distclean
 
 .PHONY: install clean distclean doc

@@ -2,15 +2,11 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * ewmh.c: Functions to get/set certain EWMH properties easily.
+ * ewmh.c: Get/set certain EWMH properties easily.
  *
  */
-
 #include "all.h"
 
 /*
@@ -116,7 +112,6 @@ void ewmh_update_workarea() {
  *
  */
 void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows) {
-    DLOG("Updating _NET_CLIENT_LIST_STACKING\n");
     xcb_change_property(
         conn,
         XCB_PROP_MODE_REPLACE,

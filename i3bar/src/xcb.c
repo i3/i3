@@ -1,16 +1,20 @@
 /*
+ * vim:ts=4:sw=4:expandtab
+ *
  * i3bar - an xcb-based status- and ws-bar for i3
+ * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
  *
- * © 2010-2011 Axel Wagner and contributors
- *
- * See file LICNSE for license information
- *
- * src/xcb.c: Communicating with X
+ * xcb.c: Communicating with X
  *
  */
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
 #include <xcb/xcb_atom.h>
+
+#ifdef XCB_COMPAT
+#include "xcb_compat.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,36 +24,14 @@
 #include <ev.h>
 #include <errno.h>
 #include <limits.h>
+#include <err.h>
 
 #include <X11/Xlib.h>
 #include <X11/XKBlib.h>
 #include <X11/extensions/XKB.h>
 
 #include "common.h"
-
-#if defined(__APPLE__)
-
-/*
- * Taken from FreeBSD
- * Returns a pointer to a new string which is a duplicate of the
- * string, but only copies at most n characters.
- *
- */
-char *strndup(const char *str, size_t n) {
-    size_t len;
-    char *copy;
-
-    for (len = 0; len < n && str[len]; len++)
-        continue;
-
-    if ((copy = malloc(len + 1)) == NULL)
-        return (NULL);
-    memcpy(copy, str, len);
-    copy[len] = '\0';
-    return (copy);
-}
-
-#endif
+#include "libi3.h"
 
 /* We save the Atoms in an easy to access array, indexed by an enum */
 enum {
@@ -63,6 +45,7 @@ xcb_atom_t               atoms[NUM_ATOMS];
 
 /* Variables, that are the same for all functions at all times */
 xcb_connection_t *xcb_connection;
+int              screen;
 xcb_screen_t     *xcb_screen;
 xcb_window_t     xcb_root;
 xcb_font_t       xcb_font;
@@ -186,21 +169,6 @@ void draw_text(xcb_drawable_t drawable, xcb_gcontext_t ctx, int16_t x, int16_t y
 }
 
 /*
- * Converts a colorstring to a colorpixel as expected from xcb_change_gc.
- * s is assumed to be in the format "rrggbb"
- *
- */
-uint32_t get_colorpixel(const char *s) {
-    char strings[3][3] = { { s[0], s[1], '\0'} ,
-                           { s[2], s[3], '\0'} ,
-                           { s[4], s[5], '\0'} };
-    uint8_t r = strtol(strings[0], NULL, 16);
-    uint8_t g = strtol(strings[1], NULL, 16);
-    uint8_t b = strtol(strings[2], NULL, 16);
-    return (r << 16 | g << 8 | b);
-}
-
-/*
  * Redraws the statusline to the buffer
  *
  */
@@ -272,7 +240,9 @@ void unhide_bars() {
                XCB_CONFIG_WINDOW_HEIGHT |
                XCB_CONFIG_WINDOW_STACK_MODE;
         values[0] = walk->rect.x;
-        values[1] = walk->rect.y + walk->rect.h - font_height - 6;
+        if (config.position == POS_TOP)
+            values[1] = walk->rect.y;
+        else values[1] = walk->rect.y + walk->rect.h - font_height - 6;
         values[2] = walk->rect.w;
         values[3] = font_height + 6;
         values[4] = XCB_STACK_MODE_ABOVE;
@@ -298,16 +268,16 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     do { \
         colors.name = get_colorpixel(new_colors->name ? new_colors->name : def); \
     } while  (0)
-    PARSE_COLOR(bar_fg, "FFFFFF");
-    PARSE_COLOR(bar_bg, "000000");
-    PARSE_COLOR(active_ws_fg, "FFFFFF");
-    PARSE_COLOR(active_ws_bg, "480000");
-    PARSE_COLOR(inactive_ws_fg, "FFFFFF");
-    PARSE_COLOR(inactive_ws_bg, "240000");
-    PARSE_COLOR(urgent_ws_fg, "FFFFFF");
-    PARSE_COLOR(urgent_ws_bg, "002400");
-    PARSE_COLOR(focus_ws_fg, "FFFFFF");
-    PARSE_COLOR(focus_ws_bg, "480000");
+    PARSE_COLOR(bar_fg, "#FFFFFF");
+    PARSE_COLOR(bar_bg, "#000000");
+    PARSE_COLOR(active_ws_fg, "#FFFFFF");
+    PARSE_COLOR(active_ws_bg, "#333333");
+    PARSE_COLOR(inactive_ws_fg, "#888888");
+    PARSE_COLOR(inactive_ws_bg, "#222222");
+    PARSE_COLOR(urgent_ws_fg, "#FFFFFF");
+    PARSE_COLOR(urgent_ws_bg, "#900000");
+    PARSE_COLOR(focus_ws_fg, "#FFFFFF");
+    PARSE_COLOR(focus_ws_bg, "#285577");
 #undef PARSE_COLOR
 }
 
@@ -390,6 +360,310 @@ void handle_button(xcb_button_press_event_t *event) {
 }
 
 /*
+ * Configures the x coordinate of all trayclients. To be called after adding a
+ * new tray client or removing an old one.
+ *
+ */
+static void configure_trayclients() {
+    trayclient *trayclient;
+    i3_output *output;
+    SLIST_FOREACH(output, outputs, slist) {
+        if (!output->active)
+            continue;
+
+        int clients = 0;
+        TAILQ_FOREACH_REVERSE(trayclient, output->trayclients, tc_head, tailq) {
+            if (!trayclient->mapped)
+                continue;
+            clients++;
+
+            DLOG("Configuring tray window %08x to x=%d\n",
+                 trayclient->win, output->rect.w - (clients * (font_height + 2)));
+            uint32_t x = output->rect.w - (clients * (font_height + 2));
+            xcb_configure_window(xcb_connection,
+                                 trayclient->win,
+                                 XCB_CONFIG_WINDOW_X,
+                                 &x);
+        }
+    }
+}
+
+/*
+ * Handles ClientMessages (messages sent from another client directly to us).
+ *
+ * At the moment, only the tray window will receive client messages. All
+ * supported client messages currently are _NET_SYSTEM_TRAY_OPCODE.
+ *
+ */
+static void handle_client_message(xcb_client_message_event_t* event) {
+    if (event->type == atoms[_NET_SYSTEM_TRAY_OPCODE] &&
+        event->format == 32) {
+        DLOG("_NET_SYSTEM_TRAY_OPCODE received\n");
+        /* event->data.data32[0] is the timestamp */
+        uint32_t op = event->data.data32[1];
+        uint32_t mask;
+        uint32_t values[2];
+        if (op == SYSTEM_TRAY_REQUEST_DOCK) {
+            xcb_window_t client = event->data.data32[2];
+
+            /* Listen for PropertyNotify events to get the most recent value of
+             * the XEMBED_MAPPED atom, also listen for UnmapNotify events */
+            mask = XCB_CW_EVENT_MASK;
+            values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE |
+                        XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+            xcb_change_window_attributes(xcb_connection,
+                                         client,
+                                         mask,
+                                         values);
+
+            /* Request the _XEMBED_INFO property. The XEMBED specification
+             * (which is referred by the tray specification) says this *has* to
+             * be set, but VLC does not set it… */
+            bool map_it = true;
+            int xe_version = 1;
+            xcb_get_property_cookie_t xembedc;
+            xembedc = xcb_get_property_unchecked(xcb_connection,
+                                                 0,
+                                                 client,
+                                                 atoms[_XEMBED_INFO],
+                                                 XCB_GET_PROPERTY_TYPE_ANY,
+                                                 0,
+                                                 2 * 32);
+
+            xcb_get_property_reply_t *xembedr = xcb_get_property_reply(xcb_connection,
+                                                                       xembedc,
+                                                                       NULL);
+            if (xembedr != NULL && xembedr->length != 0) {
+                DLOG("xembed format = %d, len = %d\n", xembedr->format, xembedr->length);
+                uint32_t *xembed = xcb_get_property_value(xembedr);
+                DLOG("xembed version = %d\n", xembed[0]);
+                DLOG("xembed flags = %d\n", xembed[1]);
+                map_it = ((xembed[1] & XEMBED_MAPPED) == XEMBED_MAPPED);
+                xe_version = xembed[0];
+                if (xe_version > 1)
+                    xe_version = 1;
+                free(xembedr);
+            } else {
+                ELOG("Window %08x violates the XEMBED protocol, _XEMBED_INFO not set\n", client);
+            }
+
+            DLOG("X window %08x requested docking\n", client);
+            i3_output *walk, *output = NULL;
+            SLIST_FOREACH(walk, outputs, slist) {
+                if (!walk->active)
+                    continue;
+                if (config.tray_output &&
+                    strcasecmp(walk->name, config.tray_output) != 0)
+                    continue;
+                DLOG("using output %s\n", walk->name);
+                output = walk;
+            }
+            if (output == NULL) {
+                ELOG("No output found\n");
+                return;
+            }
+            xcb_reparent_window(xcb_connection,
+                                client,
+                                output->bar,
+                                output->rect.w - font_height - 2,
+                                2);
+            /* We reconfigure the window to use a reasonable size. The systray
+             * specification explicitly says:
+             *   Tray icons may be assigned any size by the system tray, and
+             *   should do their best to cope with any size effectively
+             */
+            mask = XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
+            values[0] = font_height;
+            values[1] = font_height;
+            xcb_configure_window(xcb_connection,
+                                 client,
+                                 mask,
+                                 values);
+
+            /* send the XEMBED_EMBEDDED_NOTIFY message */
+            void *event = scalloc(32);
+            xcb_client_message_event_t *ev = event;
+            ev->response_type = XCB_CLIENT_MESSAGE;
+            ev->window = client;
+            ev->type = atoms[_XEMBED];
+            ev->format = 32;
+            ev->data.data32[0] = XCB_CURRENT_TIME;
+            ev->data.data32[1] = atoms[XEMBED_EMBEDDED_NOTIFY];
+            ev->data.data32[2] = output->bar;
+            ev->data.data32[3] = xe_version;
+            xcb_send_event(xcb_connection,
+                           0,
+                           client,
+                           XCB_EVENT_MASK_NO_EVENT,
+                           (char*)ev);
+            free(event);
+
+            /* Put the client inside the save set. Upon termination (whether
+             * killed or normal exit does not matter) of i3bar, these clients
+             * will be correctly reparented to their most closest living
+             * ancestor. Without this, tray icons might die when i3bar
+             * exits/crashes. */
+            xcb_change_save_set(xcb_connection, XCB_SET_MODE_INSERT, client);
+
+            if (map_it) {
+                DLOG("Mapping dock client\n");
+                xcb_map_window(xcb_connection, client);
+            } else {
+                DLOG("Not mapping dock client yet\n");
+            }
+            trayclient *tc = smalloc(sizeof(trayclient));
+            tc->win = client;
+            tc->mapped = map_it;
+            tc->xe_version = xe_version;
+            TAILQ_INSERT_TAIL(output->trayclients, tc, tailq);
+
+            /* Trigger an update to copy the statusline text to the appropriate
+             * position */
+            configure_trayclients();
+            draw_bars();
+        }
+    }
+}
+
+/*
+ * Handles UnmapNotify events. These events happen when a tray window unmaps
+ * itself. We then update our data structure
+ *
+ */
+static void handle_unmap_notify(xcb_unmap_notify_event_t* event) {
+    DLOG("UnmapNotify for window = %08x, event = %08x\n", event->window, event->event);
+
+    i3_output *walk;
+    SLIST_FOREACH(walk, outputs, slist) {
+        if (!walk->active)
+            continue;
+        DLOG("checking output %s\n", walk->name);
+        trayclient *trayclient;
+        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
+            if (trayclient->win != event->window)
+                continue;
+
+            DLOG("Removing tray client with window ID %08x\n", event->window);
+            TAILQ_REMOVE(walk->trayclients, trayclient, tailq);
+
+            /* Trigger an update, we now have more space for the statusline */
+            configure_trayclients();
+            draw_bars();
+            return;
+        }
+    }
+}
+
+/*
+ * Handle PropertyNotify messages. Currently only the _XEMBED_INFO property is
+ * handled, which tells us whether a dock client should be mapped or unmapped.
+ *
+ */
+static void handle_property_notify(xcb_property_notify_event_t *event) {
+    DLOG("PropertyNotify\n");
+    if (event->atom == atoms[_XEMBED_INFO] &&
+        event->state == XCB_PROPERTY_NEW_VALUE) {
+        DLOG("xembed_info updated\n");
+        trayclient *trayclient = NULL, *walk;
+        i3_output *o_walk;
+        SLIST_FOREACH(o_walk, outputs, slist) {
+            if (!o_walk->active)
+                continue;
+
+            TAILQ_FOREACH(walk, o_walk->trayclients, tailq) {
+                if (walk->win != event->window)
+                    continue;
+                trayclient = walk;
+                break;
+            }
+
+            if (trayclient)
+                break;
+        }
+        if (!trayclient) {
+            ELOG("PropertyNotify received for unknown window %08x\n",
+                 event->window);
+            return;
+        }
+        xcb_get_property_cookie_t xembedc;
+        xembedc = xcb_get_property_unchecked(xcb_connection,
+                                             0,
+                                             trayclient->win,
+                                             atoms[_XEMBED_INFO],
+                                             XCB_GET_PROPERTY_TYPE_ANY,
+                                             0,
+                                             2 * 32);
+
+        xcb_get_property_reply_t *xembedr = xcb_get_property_reply(xcb_connection,
+                                                                   xembedc,
+                                                                   NULL);
+        if (xembedr == NULL || xembedr->length == 0) {
+            DLOG("xembed_info unset\n");
+            return;
+        }
+
+        DLOG("xembed format = %d, len = %d\n", xembedr->format, xembedr->length);
+        uint32_t *xembed = xcb_get_property_value(xembedr);
+        DLOG("xembed version = %d\n", xembed[0]);
+        DLOG("xembed flags = %d\n", xembed[1]);
+        bool map_it = ((xembed[1] & XEMBED_MAPPED) == XEMBED_MAPPED);
+        DLOG("map-state now %d\n", map_it);
+        if (trayclient->mapped && !map_it) {
+            /* need to unmap the window */
+            xcb_unmap_window(xcb_connection, trayclient->win);
+            trayclient->mapped = map_it;
+            configure_trayclients();
+            draw_bars();
+        } else if (!trayclient->mapped && map_it) {
+            /* need to map the window */
+            xcb_map_window(xcb_connection, trayclient->win);
+            trayclient->mapped = map_it;
+            configure_trayclients();
+            draw_bars();
+        }
+        free(xembedr);
+    }
+}
+
+/*
+ * Handle ConfigureRequests by denying them and sending the client a
+ * ConfigureNotify with its actual size.
+ *
+ */
+static void handle_configure_request(xcb_configure_request_event_t *event) {
+    DLOG("ConfigureRequest for window = %08x\n", event->window);
+
+    trayclient *trayclient;
+    i3_output *output;
+    SLIST_FOREACH(output, outputs, slist) {
+        if (!output->active)
+            continue;
+
+        int clients = 0;
+        TAILQ_FOREACH_REVERSE(trayclient, output->trayclients, tc_head, tailq) {
+            if (!trayclient->mapped)
+                continue;
+            clients++;
+
+            if (trayclient->win != event->window)
+                continue;
+
+            xcb_rectangle_t rect;
+            rect.x = output->rect.w - (clients * (font_height + 2));
+            rect.y = 2;
+            rect.width = font_height;
+            rect.height = font_height;
+
+            DLOG("This is a tray window. x = %d\n", rect.x);
+            fake_configure_notify(xcb_connection, rect, event->window, 0);
+            return;
+        }
+    }
+
+    DLOG("WARNING: Could not find corresponding tray window.\n");
+}
+
+/*
  * This function is called immediately before the main loop locks. We flush xcb
  * then (and only then)
  *
@@ -412,21 +686,37 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
         exit(1);
     }
 
-    while ((event = xcb_poll_for_event(xcb_connection)) == NULL) {
-        return;
+    while ((event = xcb_poll_for_event(xcb_connection)) != NULL) {
+        switch (event->response_type & ~0x80) {
+            case XCB_EXPOSE:
+                /* Expose-events happen, when the window needs to be redrawn */
+                redraw_bars();
+                break;
+            case XCB_BUTTON_PRESS:
+                /* Button-press-events are mouse-buttons clicked on one of our bars */
+                handle_button((xcb_button_press_event_t*) event);
+                break;
+            case XCB_CLIENT_MESSAGE:
+                /* Client messages are used for client-to-client communication, for
+                 * example system tray widgets talk to us directly via client messages. */
+                handle_client_message((xcb_client_message_event_t*) event);
+                break;
+            case XCB_UNMAP_NOTIFY:
+            case XCB_DESTROY_NOTIFY:
+                /* UnmapNotifies are received when a tray window unmaps itself */
+                handle_unmap_notify((xcb_unmap_notify_event_t*) event);
+                break;
+            case XCB_PROPERTY_NOTIFY:
+                /* PropertyNotify */
+                handle_property_notify((xcb_property_notify_event_t*) event);
+                break;
+            case XCB_CONFIGURE_REQUEST:
+                /* ConfigureRequest, sent by a tray child */
+                handle_configure_request((xcb_configure_request_event_t*) event);
+                break;
+        }
+        free(event);
     }
-
-    switch (event->response_type & ~0x80) {
-        case XCB_EXPOSE:
-            /* Expose-events happen, when the window needs to be redrawn */
-            redraw_bars();
-            break;
-        case XCB_BUTTON_PRESS:
-            /* Button-press-events are mouse-buttons clicked on one of our bars */
-            handle_button((xcb_button_press_event_t*) event);
-            break;
-    }
-    FREE(event);
 }
 
 /*
@@ -477,12 +767,13 @@ void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 }
 
 /*
- * Initialize xcb and use the specified fontname for text-rendering
+ * Early initialization of the connection to X11: Everything which does not
+ * depend on 'config'.
  *
  */
-char *init_xcb(char *fontname) {
+char *init_xcb_early() {
     /* FIXME: xcb_connect leaks Memory */
-    xcb_connection = xcb_connect(NULL, NULL);
+    xcb_connection = xcb_connect(NULL, &screen);
     if (xcb_connection_has_error(xcb_connection)) {
         ELOG("Cannot open display\n");
         exit(EXIT_FAILURE);
@@ -495,6 +786,93 @@ char *init_xcb(char *fontname) {
 
     xcb_screen = xcb_setup_roots_iterator(xcb_get_setup(xcb_connection)).data;
     xcb_root = xcb_screen->root;
+
+    /* We draw the statusline to a seperate pixmap, because it looks the same on all bars and
+     * this way, we can choose to crop it */
+    uint32_t mask = XCB_GC_FOREGROUND;
+    uint32_t vals[] = { colors.bar_bg, colors.bar_bg };
+
+    statusline_clear = xcb_generate_id(xcb_connection);
+    xcb_void_cookie_t clear_ctx_cookie = xcb_create_gc_checked(xcb_connection,
+                                                               statusline_clear,
+                                                               xcb_root,
+                                                               mask,
+                                                               vals);
+
+    mask |= XCB_GC_BACKGROUND;
+    vals[0] = colors.bar_fg;
+    statusline_ctx = xcb_generate_id(xcb_connection);
+    xcb_void_cookie_t sl_ctx_cookie = xcb_create_gc_checked(xcb_connection,
+                                                            statusline_ctx,
+                                                            xcb_root,
+                                                            mask,
+                                                            vals);
+
+    statusline_pm = xcb_generate_id(xcb_connection);
+    xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
+                                                               xcb_screen->root_depth,
+                                                               statusline_pm,
+                                                               xcb_root,
+                                                               xcb_screen->width_in_pixels,
+                                                               xcb_screen->height_in_pixels);
+
+
+    /* The various Watchers to communicate with xcb */
+    xcb_io = smalloc(sizeof(ev_io));
+    xcb_prep = smalloc(sizeof(ev_prepare));
+    xcb_chk = smalloc(sizeof(ev_check));
+
+    ev_io_init(xcb_io, &xcb_io_cb, xcb_get_file_descriptor(xcb_connection), EV_READ);
+    ev_prepare_init(xcb_prep, &xcb_prep_cb);
+    ev_check_init(xcb_chk, &xcb_chk_cb);
+
+    ev_io_start(main_loop, xcb_io);
+    ev_prepare_start(main_loop, xcb_prep);
+    ev_check_start(main_loop, xcb_chk);
+
+    /* Now we get the atoms and save them in a nice data structure */
+    get_atoms();
+
+    xcb_get_property_cookie_t path_cookie;
+    path_cookie = xcb_get_property_unchecked(xcb_connection,
+                                   0,
+                                   xcb_root,
+                                   atoms[I3_SOCKET_PATH],
+                                   XCB_GET_PROPERTY_TYPE_ANY,
+                                   0, PATH_MAX);
+
+    /* We check, if i3 set its socket-path */
+    xcb_get_property_reply_t *path_reply = xcb_get_property_reply(xcb_connection,
+                                                                  path_cookie,
+                                                                  NULL);
+    char *path = NULL;
+    if (path_reply) {
+        int len = xcb_get_property_value_length(path_reply);
+        if (len != 0) {
+            path = strndup(xcb_get_property_value(path_reply), len);
+        }
+    }
+
+
+    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer") ||
+        xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline-buffer-clearcontext") ||
+        xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline-buffer-context")) {
+        exit(EXIT_FAILURE);
+    }
+
+    return path;
+}
+
+/*
+ * Initialization which depends on 'config' being usable. Called after the
+ * configuration has arrived.
+ *
+ */
+void init_xcb_late(char *fontname) {
+    if (fontname == NULL) {
+        /* XXX: font fallback to 'misc' like i3 does it would be good. */
+        fontname = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
+    }
 
     /* We load and allocate the font */
     xcb_font = xcb_generate_id(xcb_connection);
@@ -509,6 +887,13 @@ char *init_xcb(char *fontname) {
     xcb_query_font_cookie_t query_font_cookie;
     query_font_cookie = xcb_query_font(xcb_connection,
                                        xcb_font);
+
+    xcb_change_gc(xcb_connection,
+                  statusline_ctx,
+                  XCB_GC_FONT,
+                  (uint32_t[]){ xcb_font });
+
+    xcb_flush(xcb_connection);
 
     /* To grab modifiers without blocking other applications from receiving key-events
      * involving that modifier, we sadly have to use xkb which is not yet fully supported
@@ -546,76 +931,10 @@ char *init_xcb(char *fontname) {
             exit(EXIT_FAILURE);
         }
 
-        xkb_io = malloc(sizeof(ev_io));
+        xkb_io = smalloc(sizeof(ev_io));
         ev_io_init(xkb_io, &xkb_io_cb, ConnectionNumber(xkb_dpy), EV_READ);
         ev_io_start(main_loop, xkb_io);
         XFlush(xkb_dpy);
-    }
-
-    /* We draw the statusline to a seperate pixmap, because it looks the same on all bars and
-     * this way, we can choose to crop it */
-    uint32_t mask = XCB_GC_FOREGROUND;
-    uint32_t vals[3] = { colors.bar_bg, colors.bar_bg, xcb_font };
-
-    statusline_clear = xcb_generate_id(xcb_connection);
-    xcb_void_cookie_t clear_ctx_cookie = xcb_create_gc_checked(xcb_connection,
-                                                               statusline_clear,
-                                                               xcb_root,
-                                                               mask,
-                                                               vals);
-
-    mask |= XCB_GC_BACKGROUND | XCB_GC_FONT;
-    vals[0] = colors.bar_fg;
-    statusline_ctx = xcb_generate_id(xcb_connection);
-    xcb_void_cookie_t sl_ctx_cookie = xcb_create_gc_checked(xcb_connection,
-                                                            statusline_ctx,
-                                                            xcb_root,
-                                                            mask,
-                                                            vals);
-
-    statusline_pm = xcb_generate_id(xcb_connection);
-    xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                               xcb_screen->root_depth,
-                                                               statusline_pm,
-                                                               xcb_root,
-                                                               xcb_screen->width_in_pixels,
-                                                               xcb_screen->height_in_pixels);
-
-
-    /* The various Watchers to communicate with xcb */
-    xcb_io = malloc(sizeof(ev_io));
-    xcb_prep = malloc(sizeof(ev_prepare));
-    xcb_chk = malloc(sizeof(ev_check));
-
-    ev_io_init(xcb_io, &xcb_io_cb, xcb_get_file_descriptor(xcb_connection), EV_READ);
-    ev_prepare_init(xcb_prep, &xcb_prep_cb);
-    ev_check_init(xcb_chk, &xcb_chk_cb);
-
-    ev_io_start(main_loop, xcb_io);
-    ev_prepare_start(main_loop, xcb_prep);
-    ev_check_start(main_loop, xcb_chk);
-
-    /* Now we get the atoms and save them in a nice data structure */
-    get_atoms();
-
-    xcb_get_property_cookie_t path_cookie;
-    path_cookie = xcb_get_property_unchecked(xcb_connection,
-                                   0,
-                                   xcb_root,
-                                   atoms[I3_SOCKET_PATH],
-                                   XCB_GET_PROPERTY_TYPE_ANY,
-                                   0, PATH_MAX);
-
-    /* We check, if i3 set its socket-path */
-    xcb_get_property_reply_t *path_reply = xcb_get_property_reply(xcb_connection,
-                                                                  path_cookie,
-                                                                  NULL);
-    char *path = NULL;
-    if (path_reply) {
-        int len = xcb_get_property_value_length(path_reply);
-        if (len != 0) {
-            path = strndup(xcb_get_property_value(path_reply), len);
-        }
     }
 
     /* Now we save the font-infos */
@@ -636,14 +955,96 @@ char *init_xcb(char *fontname) {
     }
 
     DLOG("Calculated Font-height: %d\n", font_height);
+}
 
-    if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer") ||
-        xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline-buffer-clearcontext") ||
-        xcb_request_failed(sl_ctx_cookie, "Could not allocate statusline-buffer-context")) {
+/*
+ * Initializes tray support by requesting the appropriate _NET_SYSTEM_TRAY atom
+ * for the X11 display we are running on, then acquiring the selection for this
+ * atom. Afterwards, tray clients will send ClientMessages to our window.
+ *
+ */
+void init_tray() {
+    DLOG("Initializing system tray functionality\n");
+    /* request the tray manager atom for the X11 display we are running on */
+    char atomname[strlen("_NET_SYSTEM_TRAY_S") + 11];
+    snprintf(atomname, strlen("_NET_SYSTEM_TRAY_S") + 11, "_NET_SYSTEM_TRAY_S%d", screen);
+    xcb_intern_atom_cookie_t tray_cookie;
+    xcb_intern_atom_reply_t *tray_reply;
+    tray_cookie = xcb_intern_atom(xcb_connection, 0, strlen(atomname), atomname);
+
+    /* tray support: we need a window to own the selection */
+    xcb_window_t selwin = xcb_generate_id(xcb_connection);
+    uint32_t selmask = XCB_CW_OVERRIDE_REDIRECT;
+    uint32_t selval[] = { 1 };
+    xcb_create_window(xcb_connection,
+                      xcb_screen->root_depth,
+                      selwin,
+                      xcb_root,
+                      -1, -1,
+                      1, 1,
+                      1,
+                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                      xcb_screen->root_visual,
+                      selmask,
+                      selval);
+
+    uint32_t orientation = _NET_SYSTEM_TRAY_ORIENTATION_HORZ;
+    /* set the atoms */
+    xcb_change_property(xcb_connection,
+                        XCB_PROP_MODE_REPLACE,
+                        selwin,
+                        atoms[_NET_SYSTEM_TRAY_ORIENTATION],
+                        XCB_ATOM_CARDINAL,
+                        32,
+                        1,
+                        &orientation);
+
+    if (!(tray_reply = xcb_intern_atom_reply(xcb_connection, tray_cookie, NULL))) {
+        ELOG("Could not get atom %s\n", atomname);
         exit(EXIT_FAILURE);
     }
 
-    return path;
+    xcb_set_selection_owner(xcb_connection,
+                            selwin,
+                            tray_reply->atom,
+                            XCB_CURRENT_TIME);
+
+    /* Verify that we have the selection */
+    xcb_get_selection_owner_cookie_t selcookie;
+    xcb_get_selection_owner_reply_t *selreply;
+
+    selcookie = xcb_get_selection_owner(xcb_connection, tray_reply->atom);
+    if (!(selreply = xcb_get_selection_owner_reply(xcb_connection, selcookie, NULL))) {
+        ELOG("Could not get selection owner for %s\n", atomname);
+        exit(EXIT_FAILURE);
+    }
+
+    if (selreply->owner != selwin) {
+        ELOG("Could not set the %s selection. " \
+             "Maybe another tray is already running?\n", atomname);
+        /* NOTE that this error is not fatal. We just can’t provide tray
+         * functionality */
+        free(selreply);
+        return;
+    }
+
+    /* Inform clients waiting for a new _NET_SYSTEM_TRAY that we are here */
+    void *event = scalloc(32);
+    xcb_client_message_event_t *ev = event;
+    ev->response_type = XCB_CLIENT_MESSAGE;
+    ev->window = xcb_root;
+    ev->type = atoms[MANAGER];
+    ev->format = 32;
+    ev->data.data32[0] = XCB_CURRENT_TIME;
+    ev->data.data32[1] = tray_reply->atom;
+    ev->data.data32[2] = selwin;
+    xcb_send_event(xcb_connection,
+                   0,
+                   xcb_root,
+                   XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+                   (char*)ev);
+    free(event);
+    free(tray_reply);
 }
 
 /*
@@ -653,15 +1054,27 @@ char *init_xcb(char *fontname) {
  */
 void clean_xcb() {
     i3_output *o_walk;
+    trayclient *trayclient;
     free_workspaces();
     SLIST_FOREACH(o_walk, outputs, slist) {
+        TAILQ_FOREACH(trayclient, o_walk->trayclients, tailq) {
+            /* Unmap, then reparent (to root) the tray client windows */
+            xcb_unmap_window(xcb_connection, trayclient->win);
+            xcb_reparent_window(xcb_connection,
+                                trayclient->win,
+                                xcb_root,
+                                0,
+                                0);
+        }
         destroy_window(o_walk);
+        FREE(o_walk->trayclients);
         FREE(o_walk->workspaces);
         FREE(o_walk->name);
     }
     FREE_SLIST(outputs, i3_output);
     FREE(outputs);
 
+    xcb_flush(xcb_connection);
     xcb_disconnect(xcb_connection);
 
     ev_check_stop(main_loop, xcb_chk);
@@ -758,6 +1171,7 @@ void realloc_sl_buffer() {
 void reconfig_windows() {
     uint32_t mask;
     uint32_t values[5];
+    static bool tray_configured = false;
 
     i3_output *walk;
     SLIST_FOREACH(walk, outputs, slist) {
@@ -778,8 +1192,14 @@ void reconfig_windows() {
             values[0] = colors.bar_bg;
             /* If hide_on_modifier is set, i3 is not supposed to manage our bar-windows */
             values[1] = config.hide_on_modifier;
-            /* The events we want to receive */
-            values[2] = XCB_EVENT_MASK_EXPOSURE;
+            /* We enable the following EventMask fields:
+             * EXPOSURE, to get expose events (we have to re-draw then)
+             * SUBSTRUCTURE_REDIRECT, to get ConfigureRequests when the tray
+             *                        child windows use ConfigureWindow
+             * BUTTON_PRESS, to handle clicks on the workspace buttons
+             * */
+            values[2] = XCB_EVENT_MASK_EXPOSURE |
+                        XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT;
             if (!config.disable_ws) {
                 values[2] |= XCB_EVENT_MASK_BUTTON_PRESS;
             }
@@ -802,6 +1222,31 @@ void reconfig_windows() {
                                                                     walk->bar,
                                                                     walk->rect.w,
                                                                     walk->rect.h);
+
+            /* Set the WM_CLASS and WM_NAME (we don't need UTF-8) atoms */
+            xcb_void_cookie_t class_cookie;
+            class_cookie = xcb_change_property(xcb_connection,
+                                               XCB_PROP_MODE_REPLACE,
+                                               walk->bar,
+                                               XCB_ATOM_WM_CLASS,
+                                               XCB_ATOM_STRING,
+                                               8,
+                                               (strlen("i3bar") + 1) * 2,
+                                               "i3bar\0i3bar\0");
+
+            char *name;
+            if (asprintf(&name, "i3bar for output %s", walk->name) == -1)
+                err(EXIT_FAILURE, "asprintf()");
+            xcb_void_cookie_t name_cookie;
+            name_cookie = xcb_change_property(xcb_connection,
+                                              XCB_PROP_MODE_REPLACE,
+                                              walk->bar,
+                                              XCB_ATOM_WM_NAME,
+                                              XCB_ATOM_STRING,
+                                              8,
+                                              strlen(name),
+                                              name);
+            free(name);
 
             /* We want dock-windows (for now). When override_redirect is set, i3 is ignoring
              * this one */
@@ -833,15 +1278,15 @@ void reconfig_windows() {
                 uint32_t bottom_start_x;
                 uint32_t bottom_end_x;
             } __attribute__((__packed__)) strut_partial = {0,};
-            switch (config.dockpos) {
-                case DOCKPOS_NONE:
+            switch (config.position) {
+                case POS_NONE:
                     break;
-                case DOCKPOS_TOP:
+                case POS_TOP:
                     strut_partial.top = font_height + 6;
                     strut_partial.top_start_x = walk->rect.x;
                     strut_partial.top_end_x = walk->rect.x + walk->rect.w;
                     break;
-                case DOCKPOS_BOT:
+                case POS_BOT:
                     strut_partial.bottom = font_height + 6;
                     strut_partial.bottom_start_x = walk->rect.x;
                     strut_partial.bottom_end_x = walk->rect.x + walk->rect.w;
@@ -876,10 +1321,19 @@ void reconfig_windows() {
             if (xcb_request_failed(win_cookie,   "Could not create window") ||
                 xcb_request_failed(pm_cookie,    "Could not create pixmap") ||
                 xcb_request_failed(dock_cookie,  "Could not set dock mode") ||
+                xcb_request_failed(class_cookie, "Could not set WM_CLASS")  ||
+                xcb_request_failed(name_cookie,  "Could not set WM_NAME")   ||
                 xcb_request_failed(strut_cookie, "Could not set strut")     ||
                 xcb_request_failed(gc_cookie,    "Could not create graphical context") ||
                 (!config.hide_on_modifier && xcb_request_failed(map_cookie, "Could not map window"))) {
                 exit(EXIT_FAILURE);
+            }
+
+            if (!tray_configured &&
+                (!config.tray_output ||
+                 strcasecmp("none", config.tray_output) != 0)) {
+                init_tray();
+                tray_configured = true;
             }
         } else {
             /* We already have a bar, so we just reconfigure it */
@@ -960,13 +1414,26 @@ void draw_bars() {
             /* Luckily we already prepared a seperate pixmap containing the rendered
              * statusline, we just have to copy the relevant parts to the relevant
              * position */
+            trayclient *trayclient;
+            int traypx = 0;
+            TAILQ_FOREACH(trayclient, outputs_walk->trayclients, tailq) {
+                if (!trayclient->mapped)
+                    continue;
+                /* We assume the tray icons are quadratic (we use the font
+                 * *height* as *width* of the icons) because we configured them
+                 * like this. */
+                traypx += font_height + 2;
+            }
+            /* Add 2px of padding if there are any tray icons */
+            if (traypx > 0)
+                traypx += 2;
             xcb_copy_area(xcb_connection,
                           statusline_pm,
                           outputs_walk->buffer,
                           outputs_walk->bargc,
                           MAX(0, (int16_t)(statusline_width - outputs_walk->rect.w + 4)), 0,
-                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - 4)), 3,
-                          MIN(outputs_walk->rect.w - 4, statusline_width), font_height);
+                          MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - traypx - 4)), 3,
+                          MIN(outputs_walk->rect.w - traypx - 4, statusline_width), font_height);
         }
 
         if (config.disable_ws) {

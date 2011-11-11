@@ -1,4 +1,9 @@
 /*
+ * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
  * This header file includes all relevant files of i3 and the most often used
  * system header files. This reduces boilerplate (the amount of code duplicated
  * at the beginning of each source file) and is not significantly slower at
@@ -64,5 +69,8 @@
 #include "output.h"
 #include "ewmh.h"
 #include "assignments.h"
+#include "regex.h"
+#include "libi3.h"
+#include "startup.h"
 
 #endif

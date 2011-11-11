@@ -17,7 +17,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 floating_modifier $mod
 
 # start a terminal
-bindcode $mod+36 exec urxvt
+bindcode $mod+36 exec i3-sensible-terminal
 
 # kill focused window
 bindcode $mod+Shift+24 kill
@@ -148,4 +148,6 @@ bindcode $mod+27 mode "resize"
 
 # Start i3bar to display a workspace bar (plus the system information i3status
 # finds out, if available)
-exec i3status | i3bar -d
+bar {
+	status_command i3status
+}

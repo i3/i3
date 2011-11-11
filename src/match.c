@@ -11,7 +11,6 @@
  * match_matches_window() to find the windows affected by this command.
  *
  */
-
 #include "all.h"
 
 /*
@@ -39,6 +38,7 @@ bool match_is_empty(Match *match) {
             match->application == NULL &&
             match->class == NULL &&
             match->instance == NULL &&
+            match->role == NULL &&
             match->id == XCB_NONE &&
             match->con_id == NULL &&
             match->dock == -1 &&
@@ -52,16 +52,20 @@ bool match_is_empty(Match *match) {
 void match_copy(Match *dest, Match *src) {
     memcpy(dest, src, sizeof(Match));
 
-#define STRDUP(field) do { \
+/* The DUPLICATE_REGEX macro creates a new regular expression from the
+ * ->pattern of the old one. It therefore does use a little more memory then
+ *  with a refcounting system, but it’s easier this way. */
+#define DUPLICATE_REGEX(field) do { \
     if (src->field != NULL) \
-        dest->field = sstrdup(src->field); \
+        dest->field = regex_new(src->field->pattern); \
 } while (0)
 
-    STRDUP(title);
-    STRDUP(mark);
-    STRDUP(application);
-    STRDUP(class);
-    STRDUP(instance);
+    DUPLICATE_REGEX(title);
+    DUPLICATE_REGEX(mark);
+    DUPLICATE_REGEX(application);
+    DUPLICATE_REGEX(class);
+    DUPLICATE_REGEX(instance);
+    DUPLICATE_REGEX(role);
 }
 
 /*
@@ -69,23 +73,22 @@ void match_copy(Match *dest, Match *src) {
  *
  */
 bool match_matches_window(Match *match, i3Window *window) {
-    LOG("checking window %d (%s)\n", window->id, window->class_class);
+    LOG("Checking window 0x%08x (class %s)\n", window->id, window->class_class);
 
-    /* TODO: pcre, full matching, … */
     if (match->class != NULL) {
-        if (window->class_class != NULL && strcasecmp(match->class, window->class_class) == 0) {
+        if (window->class_class != NULL &&
+            regex_matches(match->class, window->class_class)) {
             LOG("window class matches (%s)\n", window->class_class);
         } else {
-            LOG("window class does not match\n");
             return false;
         }
     }
 
     if (match->instance != NULL) {
-        if (window->class_instance != NULL && strcasecmp(match->instance, window->class_instance) == 0) {
+        if (window->class_instance != NULL &&
+            regex_matches(match->instance, window->class_instance)) {
             LOG("window instance matches (%s)\n", window->class_instance);
         } else {
-            LOG("window instance does not match\n");
             return false;
         }
     }
@@ -99,18 +102,25 @@ bool match_matches_window(Match *match, i3Window *window) {
         }
     }
 
-    /* TODO: pcre match */
     if (match->title != NULL) {
-        if (window->name_json != NULL && strcasecmp(match->title, window->name_json) == 0) {
+        if (window->name_json != NULL &&
+            regex_matches(match->title, window->name_json)) {
             LOG("title matches (%s)\n", window->name_json);
         } else {
-            LOG("title does not match\n");
+            return false;
+        }
+    }
+
+    if (match->role != NULL) {
+        if (window->role != NULL &&
+            regex_matches(match->role, window->role)) {
+            LOG("window_role matches (%s)\n", window->role);
+        } else {
             return false;
         }
     }
 
     if (match->dock != -1) {
-        LOG("match->dock = %d, window->dock = %d\n", match->dock, window->dock);
         if ((window->dock == W_DOCK_TOP && match->dock == M_DOCK_TOP) ||
          (window->dock == W_DOCK_BOTTOM && match->dock == M_DOCK_BOTTOM) ||
          ((window->dock == W_DOCK_TOP || window->dock == W_DOCK_BOTTOM) &&
@@ -131,4 +141,26 @@ bool match_matches_window(Match *match, i3Window *window) {
     }
 
     return true;
+}
+
+/*
+ * Frees the given match. It must not be used afterwards!
+ *
+ */
+void match_free(Match *match) {
+    /* First step: free the regex fields / patterns */
+    regex_free(match->title);
+    regex_free(match->application);
+    regex_free(match->class);
+    regex_free(match->instance);
+    regex_free(match->mark);
+    regex_free(match->role);
+
+    /* Second step: free the regex helper struct itself */
+    FREE(match->title);
+    FREE(match->application);
+    FREE(match->class);
+    FREE(match->instance);
+    FREE(match->mark);
+    FREE(match->role);
 }

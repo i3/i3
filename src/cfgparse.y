@@ -14,6 +14,11 @@
 static pid_t configerror_pid = -1;
 
 static Match current_match;
+static Barconfig current_bar;
+/* The pattern which was specified by the user, for example -misc-fixed-*. We
+ * store this in a separate variable because in the i3 config struct we just
+ * store the i3Font. */
+static char *font_pattern;
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(struct context *context);
@@ -240,6 +245,23 @@ static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
     configerror_pid = -1;
 }
 
+/* We need ev >= 4 for the following code. Since it is not *that* important (it
+ * only makes sure that there are no i3-nagbar instances left behind) we still
+ * support old systems with libev 3. */
+#if EV_VERSION_MAJOR >= 4
+/*
+ * Cleanup handler. Will be called when i3 exits. Kills i3-nagbar with signal
+ * SIGKILL (9) to make sure there are no left-over i3-nagbar processes.
+ *
+ */
+static void nagbar_cleanup(EV_P_ ev_cleanup *watcher, int revent) {
+    if (configerror_pid != -1) {
+        LOG("Sending SIGKILL (9) to i3-nagbar with PID %d\n", configerror_pid);
+        kill(configerror_pid, SIGKILL);
+    }
+}
+#endif
+
 /*
  * Starts an i3-nagbar process which alerts the user that his configuration
  * file contains one or more errors. Also offers two buttons: One to launch an
@@ -248,7 +270,10 @@ static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
  *
  */
 static void start_configerror_nagbar(const char *config_path) {
-    fprintf(stderr, "Would start i3-nagscreen now\n");
+    if (only_check_config)
+        return;
+
+    fprintf(stderr, "Starting i3-nagbar due to configuration errors\n");
     configerror_pid = fork();
     if (configerror_pid == -1) {
         warn("Could not fork()");
@@ -259,19 +284,21 @@ static void start_configerror_nagbar(const char *config_path) {
     if (configerror_pid == 0) {
         char *editaction,
              *pageraction;
-        if (asprintf(&editaction, TERM_EMU " -e sh -c \"${EDITOR:-vi} \"%s\" && i3-msg reload\"", config_path) == -1)
-            exit(1);
-        if (asprintf(&pageraction, TERM_EMU " -e sh -c \"${PAGER:-less} \"%s\"\"", errorfilename) == -1)
-            exit(1);
+        sasprintf(&editaction, "i3-sensible-terminal -e sh -c \"i3-sensible-editor \\\"%s\\\" && i3-msg reload\"", config_path);
+        sasprintf(&pageraction, "i3-sensible-terminal -e i3-sensible-pager \"%s\"", errorfilename);
         char *argv[] = {
             NULL, /* will be replaced by the executable path */
+            "-t",
+            (context->has_errors ? "error" : "warning"),
             "-m",
-            "You have an error in your i3 config file!",
+            (context->has_errors ?
+             "You have an error in your i3 config file!" :
+             "Your config is outdated. Please fix the warnings to make sure everything works."),
             "-b",
             "edit config",
             editaction,
             (errorfilename ? "-b" : NULL),
-            "show errors",
+            (context->has_errors ? "show errors" : "show warnings"),
             pageraction,
             NULL
         };
@@ -283,6 +310,17 @@ static void start_configerror_nagbar(const char *config_path) {
     ev_child *child = smalloc(sizeof(ev_child));
     ev_child_init(child, &nagbar_exited, configerror_pid, 0);
     ev_child_start(main_loop, child);
+
+/* We need ev >= 4 for the following code. Since it is not *that* important (it
+ * only makes sure that there are no i3-nagbar instances left behind) we still
+ * support old systems with libev 3. */
+#if EV_VERSION_MAJOR >= 4
+    /* install a cleanup watcher (will be called when i3 exits and i3-nagbar is
+     * still running) */
+    ev_cleanup *cleanup = smalloc(sizeof(ev_cleanup));
+    ev_cleanup_init(cleanup, nagbar_cleanup);
+    ev_cleanup_start(main_loop, cleanup);
+#endif
 }
 
 /*
@@ -309,6 +347,78 @@ void kill_configerror_nagbar(bool wait_for_it) {
      * for us and we would end up with a <defunct> process. Therefore we
      * waitpid() here. */
     waitpid(configerror_pid, NULL, 0);
+}
+
+/*
+ * Checks for duplicate key bindings (the same keycode or keysym is configured
+ * more than once). If a duplicate binding is found, a message is printed to
+ * stderr and the has_errors variable is set to true, which will start
+ * i3-nagbar.
+ *
+ */
+static void check_for_duplicate_bindings(struct context *context) {
+    Binding *bind, *current;
+    TAILQ_FOREACH(current, bindings, bindings) {
+        TAILQ_FOREACH(bind, bindings, bindings) {
+            /* Abort when we reach the current keybinding, only check the
+             * bindings before */
+            if (bind == current)
+                break;
+
+            /* Check if one is using keysym while the other is using bindsym.
+             * If so, skip. */
+            /* XXX: It should be checked at a later place (when translating the
+             * keysym to keycodes) if there are any duplicates */
+            if ((bind->symbol == NULL && current->symbol != NULL) ||
+                (bind->symbol != NULL && current->symbol == NULL))
+                continue;
+
+            /* If bind is NULL, current has to be NULL, too (see above).
+             * If the keycodes differ, it can't be a duplicate. */
+            if (bind->symbol != NULL &&
+                strcasecmp(bind->symbol, current->symbol) != 0)
+                continue;
+
+            /* Check if the keycodes or modifiers are different. If so, they
+             * can't be duplicate */
+            if (bind->keycode != current->keycode ||
+                bind->mods != current->mods)
+                continue;
+            context->has_errors = true;
+            if (current->keycode != 0) {
+                ELOG("Duplicate keybinding in config file:\n  modmask %d with keycode %d, command \"%s\"\n",
+                     current->mods, current->keycode, current->command);
+            } else {
+                ELOG("Duplicate keybinding in config file:\n  modmask %d with keysym %s, command \"%s\"\n",
+                     current->mods, current->symbol, current->command);
+            }
+        }
+    }
+}
+
+static void migrate_i3bar_exec(struct Autostart *exec) {
+    ELOG("**********************************************************************\n");
+    ELOG("IGNORING exec command: %s\n", exec->command);
+    ELOG("It contains \"i3bar\". Since i3 v4.1, i3bar will be automatically started\n");
+    ELOG("for each 'bar' configuration block in your i3 config. Please remove the exec\n");
+    ELOG("line and add the following to your i3 config:\n");
+    ELOG("\n");
+    ELOG("    bar {\n");
+    ELOG("        status_command i3status\n");
+    ELOG("    }\n");
+    ELOG("**********************************************************************\n");
+
+    /* Generate a dummy bar configuration */
+    Barconfig *bar_config = scalloc(sizeof(Barconfig));
+    /* The hard-coded ID is not a problem. It does not conflict with the
+     * auto-generated bar IDs and having multiple hard-coded IDs is irrelevant
+     * – they all just contain status_command = i3status */
+    bar_config->id = sstrdup("migrate-bar");
+    bar_config->status_command = sstrdup("i3status");
+    TAILQ_INSERT_TAIL(&barconfigs, bar_config, configs);
+
+    /* Trigger an i3-nagbar */
+    context->has_warnings = true;
 }
 
 void parse_file(const char *f) {
@@ -472,13 +582,40 @@ void parse_file(const char *f) {
         exit(1);
     }
 
-    if (context->has_errors) {
+    check_for_duplicate_bindings(context);
+
+    /* XXX: The following code will be removed in i3 v4.3 (three releases from
+     * now, as of 2011-10-22) */
+    /* Check for any exec or exec_always lines starting i3bar. We remove these
+     * and add a bar block instead. Additionally, a i3-nagbar warning (not an
+     * error) will be displayed so that users update their config file. */
+    struct Autostart *exec, *next;
+    for (exec = TAILQ_FIRST(&autostarts); exec; ) {
+        next = TAILQ_NEXT(exec, autostarts);
+        if (strstr(exec->command, "i3bar") != NULL) {
+            migrate_i3bar_exec(exec);
+            TAILQ_REMOVE(&autostarts, exec, autostarts);
+        }
+        exec = next;
+    }
+
+    for (exec = TAILQ_FIRST(&autostarts_always); exec; ) {
+        next = TAILQ_NEXT(exec, autostarts_always);
+        if (strstr(exec->command, "i3bar") != NULL) {
+            migrate_i3bar_exec(exec);
+            TAILQ_REMOVE(&autostarts_always, exec, autostarts_always);
+        }
+        exec = next;
+    }
+
+    if (context->has_errors || context->has_warnings) {
         start_configerror_nagbar(f);
     }
 
     yylex_destroy();
     FREE(context->line_copy);
     free(context);
+    FREE(font_pattern);
     free(new);
     free(buf);
 
@@ -509,7 +646,7 @@ void parse_file(const char *f) {
 %token  <string>        WORD                        "<word>"
 %token  <string>        STR                         "<string>"
 %token  <string>        STR_NG                      "<string (non-greedy)>"
-%token  <string>        HEX                         "<hex>"
+%token  <string>        HEXCOLOR                    "#<hex>"
 %token  <string>        OUTPUT                      "<RandR output>"
 %token                  TOKBINDCODE
 %token                  TOKTERMINAL
@@ -533,17 +670,21 @@ void parse_file(const char *f) {
 %token  <color>         TOKCOLOR
 %token                  TOKARROW                    "→"
 %token                  TOKMODE                     "mode"
+%token                  TOK_BAR                     "bar"
 %token                  TOK_ORIENTATION             "default_orientation"
 %token                  TOK_HORIZ                   "horizontal"
 %token                  TOK_VERT                    "vertical"
 %token                  TOK_AUTO                    "auto"
 %token                  TOK_WORKSPACE_LAYOUT        "workspace_layout"
 %token                  TOKNEWWINDOW                "new_window"
+%token                  TOKNEWFLOAT                 "new_float"
 %token                  TOK_NORMAL                  "normal"
 %token                  TOK_NONE                    "none"
 %token                  TOK_1PIXEL                  "1pixel"
 %token                  TOKFOCUSFOLLOWSMOUSE        "focus_follows_mouse"
 %token                  TOK_FORCE_FOCUS_WRAPPING    "force_focus_wrapping"
+%token                  TOK_FORCE_XINERAMA          "force_xinerama"
+%token                  TOK_WORKSPACE_AUTO_BAF      "workspace_auto_back_and_forth"
 %token                  TOKWORKSPACEBAR             "workspace_bar"
 %token                  TOK_DEFAULT                 "default"
 %token                  TOK_STACKING                "stacking"
@@ -554,9 +695,32 @@ void parse_file(const char *f) {
 %token                  TOK_LEAVE_FULLSCREEN        "leave_fullscreen"
 %token                  TOK_FOR_WINDOW              "for_window"
 
+%token                  TOK_BAR_OUTPUT              "output (bar)"
+%token                  TOK_BAR_TRAY_OUTPUT         "tray_output"
+%token                  TOK_BAR_SOCKET_PATH         "socket_path"
+%token                  TOK_BAR_MODE                "mode (bar)"
+%token                  TOK_BAR_HIDE                "hide"
+%token                  TOK_BAR_DOCK                "dock"
+%token                  TOK_BAR_POSITION            "position"
+%token                  TOK_BAR_BOTTOM              "bottom"
+%token                  TOK_BAR_TOP                 "top"
+%token                  TOK_BAR_STATUS_COMMAND      "status_command"
+%token                  TOK_BAR_FONT                "font (bar)"
+%token                  TOK_BAR_WORKSPACE_BUTTONS   "workspace_buttons"
+%token                  TOK_BAR_VERBOSE             "verbose"
+%token                  TOK_BAR_COLORS              "colors"
+%token                  TOK_BAR_COLOR_BACKGROUND    "background"
+%token                  TOK_BAR_COLOR_STATUSLINE    "statusline"
+%token                  TOK_BAR_COLOR_FOCUSED_WORKSPACE "focused_workspace"
+%token                  TOK_BAR_COLOR_ACTIVE_WORKSPACE "active_workspace"
+%token                  TOK_BAR_COLOR_INACTIVE_WORKSPACE "inactive_workspace"
+%token                  TOK_BAR_COLOR_URGENT_WORKSPACE "urgent_workspace"
+%token                  TOK_NO_STARTUP_ID           "--no-startup-id"
+
 %token              TOK_MARK            "mark"
 %token              TOK_CLASS           "class"
 %token              TOK_INSTANCE        "instance"
+%token              TOK_WINDOW_ROLE     "window_role"
 %token              TOK_ID              "id"
 %token              TOK_CON_ID          "con_id"
 %token              TOK_TITLE           "title"
@@ -570,11 +734,16 @@ void parse_file(const char *f) {
 %type   <number>        layout_mode
 %type   <number>        border_style
 %type   <number>        new_window
+%type   <number>        new_float
 %type   <number>        colorpixel
 %type   <number>        bool
 %type   <number>        popup_setting
+%type   <number>        bar_position_position
+%type   <number>        bar_mode_mode
+%type   <number>        optional_no_startup_id
 %type   <string>        command
 %type   <string>        word_or_number
+%type   <string>        qstring_or_number
 %type   <string>        optional_workspace_name
 %type   <string>        workspace_name
 %type   <string>        window_class
@@ -590,12 +759,16 @@ line:
     bindline
     | for_window
     | mode
+    | bar
     | floating_modifier
     | orientation
     | workspace_layout
     | new_window
+    | new_float
     | focus_follows_mouse
     | force_focus_wrapping
+    | force_xinerama
+    | workspace_back_and_forth
     | workspace_bar
     | workspace
     | assign
@@ -706,12 +879,20 @@ criterion:
     TOK_CLASS '=' STR
     {
         printf("criteria: class = %s\n", $3);
-        current_match.class = $3;
+        current_match.class = regex_new($3);
+        free($3);
     }
     | TOK_INSTANCE '=' STR
     {
         printf("criteria: instance = %s\n", $3);
-        current_match.instance = $3;
+        current_match.instance = regex_new($3);
+        free($3);
+    }
+    | TOK_WINDOW_ROLE '=' STR
+    {
+        printf("criteria: window_role = %s\n", $3);
+        current_match.role = regex_new($3);
+        free($3);
     }
     | TOK_CON_ID '=' STR
     {
@@ -746,22 +927,27 @@ criterion:
     | TOK_MARK '=' STR
     {
         printf("criteria: mark = %s\n", $3);
-        current_match.mark = $3;
+        current_match.mark = regex_new($3);
+        free($3);
     }
     | TOK_TITLE '=' STR
     {
         printf("criteria: title = %s\n", $3);
-        current_match.title = $3;
+        current_match.title = regex_new($3);
+        free($3);
     }
     ;
 
-
+qstring_or_number:
+    QUOTEDSTRING
+    | NUMBER { sasprintf(&$$, "%d", $1); }
+    ;
 
 word_or_number:
     WORD
     | NUMBER
     {
-        asprintf(&$$, "%d", $1);
+        sasprintf(&$$, "%d", $1);
     }
     ;
 
@@ -804,6 +990,211 @@ modeline:
         }
 
         TAILQ_INSERT_TAIL(current_bindings, $1, bindings);
+    }
+    ;
+
+bar:
+    TOK_BAR '{' barlines '}'
+    {
+        printf("\t new bar configuration finished, saving.\n");
+        /* Generate a unique ID for this bar */
+        current_bar.id = sstrdup("bar-XXXXXX");
+        /* This works similar to mktemp in that it replaces the last six X with
+         * random letters, but without the restriction that the given buffer
+         * has to contain a valid path name. */
+        char *x = current_bar.id + strlen("bar-");
+        while (*x != '\0') {
+            *(x++) = (rand() % 26) + 'a';
+        }
+
+        /* If no font was explicitly set, we use the i3 font as default */
+        if (!current_bar.font && font_pattern)
+            current_bar.font = sstrdup(font_pattern);
+
+        /* Copy the current (static) structure into a dynamically allocated
+         * one, then cleanup our static one. */
+        Barconfig *bar_config = scalloc(sizeof(Barconfig));
+        memcpy(bar_config, &current_bar, sizeof(Barconfig));
+        TAILQ_INSERT_TAIL(&barconfigs, bar_config, configs);
+
+        memset(&current_bar, '\0', sizeof(Barconfig));
+    }
+    ;
+
+barlines:
+    /* empty */
+    | barlines barline
+    ;
+
+barline:
+    comment
+    | bar_status_command
+    | bar_output
+    | bar_tray_output
+    | bar_position
+    | bar_mode
+    | bar_font
+    | bar_workspace_buttons
+    | bar_verbose
+    | bar_socket_path
+    | bar_colors
+    | bar_color_background
+    | bar_color_statusline
+    | bar_color_focused_workspace
+    | bar_color_active_workspace
+    | bar_color_inactive_workspace
+    | bar_color_urgent_workspace
+    ;
+
+bar_status_command:
+    TOK_BAR_STATUS_COMMAND STR
+    {
+        DLOG("should add status command %s\n", $2);
+        FREE(current_bar.status_command);
+        current_bar.status_command = $2;
+    }
+    ;
+
+bar_output:
+    TOK_BAR_OUTPUT STR
+    {
+        DLOG("bar output %s\n", $2);
+        int new_outputs = current_bar.num_outputs + 1;
+        current_bar.outputs = srealloc(current_bar.outputs, sizeof(char*) * new_outputs);
+        current_bar.outputs[current_bar.num_outputs] = $2;
+        current_bar.num_outputs = new_outputs;
+    }
+    ;
+
+bar_tray_output:
+    TOK_BAR_TRAY_OUTPUT STR
+    {
+        DLOG("tray %s\n", $2);
+        FREE(current_bar.tray_output);
+        current_bar.tray_output = $2;
+    }
+    ;
+
+bar_position:
+    TOK_BAR_POSITION bar_position_position
+    {
+        DLOG("position %d\n", $2);
+        current_bar.position = $2;
+    }
+    ;
+
+bar_position_position:
+    TOK_BAR_TOP      { $$ = P_TOP; }
+    | TOK_BAR_BOTTOM { $$ = P_BOTTOM; }
+    ;
+
+bar_mode:
+    TOK_BAR_MODE bar_mode_mode
+    {
+        DLOG("mode %d\n", $2);
+        current_bar.mode = $2;
+    }
+    ;
+
+bar_mode_mode:
+    TOK_BAR_HIDE   { $$ = M_HIDE; }
+    | TOK_BAR_DOCK { $$ = M_DOCK; }
+    ;
+
+bar_font:
+    TOK_BAR_FONT STR
+    {
+        DLOG("font %s\n", $2);
+        FREE(current_bar.font);
+        current_bar.font = $2;
+    }
+    ;
+
+bar_workspace_buttons:
+    TOK_BAR_WORKSPACE_BUTTONS bool
+    {
+        DLOG("workspace_buttons = %d\n", $2);
+        /* We store this inverted to make the default setting right when
+         * initializing the struct with zero. */
+        current_bar.hide_workspace_buttons = !($2);
+    }
+    ;
+
+bar_verbose:
+    TOK_BAR_VERBOSE bool
+    {
+        DLOG("verbose = %d\n", $2);
+        current_bar.verbose = $2;
+    }
+    ;
+
+bar_socket_path:
+    TOK_BAR_SOCKET_PATH STR
+    {
+        DLOG("socket_path = %s\n", $2);
+        FREE(current_bar.socket_path);
+        current_bar.socket_path = $2;
+    }
+    ;
+
+bar_colors:
+    TOK_BAR_COLORS '{' barlines '}'
+    {
+        /* At the moment, the TOK_BAR_COLORS token is only to make the config
+         * friendlier for humans. We might change this in the future if it gets
+         * more complex. */
+    }
+    ;
+
+bar_color_background:
+    TOK_BAR_COLOR_BACKGROUND HEXCOLOR
+    {
+        DLOG("background = %s\n", $2);
+        current_bar.colors.background = $2;
+    }
+    ;
+
+bar_color_statusline:
+    TOK_BAR_COLOR_STATUSLINE HEXCOLOR
+    {
+        DLOG("statusline = %s\n", $2);
+        current_bar.colors.statusline = $2;
+    }
+    ;
+
+bar_color_focused_workspace:
+    TOK_BAR_COLOR_FOCUSED_WORKSPACE HEXCOLOR HEXCOLOR
+    {
+        DLOG("focused_ws = %s and %s\n", $2, $3);
+        current_bar.colors.focused_workspace_text = $2;
+        current_bar.colors.focused_workspace_bg = $3;
+    }
+    ;
+
+bar_color_active_workspace:
+    TOK_BAR_COLOR_ACTIVE_WORKSPACE HEXCOLOR HEXCOLOR
+    {
+        DLOG("active_ws = %s and %s\n", $2, $3);
+        current_bar.colors.active_workspace_text = $2;
+        current_bar.colors.active_workspace_bg = $3;
+    }
+    ;
+
+bar_color_inactive_workspace:
+    TOK_BAR_COLOR_INACTIVE_WORKSPACE HEXCOLOR HEXCOLOR
+    {
+        DLOG("inactive_ws = %s and %s\n", $2, $3);
+        current_bar.colors.inactive_workspace_text = $2;
+        current_bar.colors.inactive_workspace_bg = $3;
+    }
+    ;
+
+bar_color_urgent_workspace:
+    TOK_BAR_COLOR_URGENT_WORKSPACE HEXCOLOR HEXCOLOR
+    {
+        DLOG("urgent_ws = %s and %s\n", $2, $3);
+        current_bar.colors.urgent_workspace_text = $2;
+        current_bar.colors.urgent_workspace_bg = $3;
     }
     ;
 
@@ -888,6 +1279,14 @@ new_window:
     }
     ;
 
+new_float:
+    TOKNEWFLOAT border_style
+    {
+       DLOG("new floating windows should start with border style %d\n", $2);
+       config.default_floating_border = $2;
+    }
+    ;
+
 border_style:
     TOK_NORMAL      { $$ = BS_NORMAL; }
     | TOK_NONE      { $$ = BS_NONE; }
@@ -926,6 +1325,22 @@ force_focus_wrapping:
     }
     ;
 
+force_xinerama:
+    TOK_FORCE_XINERAMA bool
+    {
+        DLOG("force xinerama = %d\n", $2);
+        config.force_xinerama = $2;
+    }
+    ;
+
+workspace_back_and_forth:
+    TOK_WORKSPACE_AUTO_BAF bool
+    {
+        DLOG("automatic workspace back-and-forth = %d\n", $2);
+        config.workspace_auto_back_and_forth = $2;
+    }
+    ;
+
 workspace_bar:
     TOKWORKSPACEBAR bool
     {
@@ -935,39 +1350,38 @@ workspace_bar:
     ;
 
 workspace:
-    TOKWORKSPACE NUMBER TOKOUTPUT OUTPUT optional_workspace_name
+    TOKWORKSPACE qstring_or_number TOKOUTPUT OUTPUT optional_workspace_name
     {
-        int ws_num = $2;
-        if (ws_num < 1) {
-            DLOG("Invalid workspace assignment, workspace number %d out of range\n", ws_num);
-        } else {
-            char *ws_name = NULL;
-            if ($5 == NULL) {
-                asprintf(&ws_name, "%d", ws_num);
-            } else {
-                ws_name = $5;
-            }
+        char *ws_name = $2;
 
-            DLOG("Should assign workspace %s to output %s\n", ws_name, $4);
-            /* Check for earlier assignments of the same workspace so that we
-             * don’t have assignments of a single workspace to different
-             * outputs */
-            struct Workspace_Assignment *assignment;
-            bool duplicate = false;
-            TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-                if (strcasecmp(assignment->name, ws_name) == 0) {
-                    ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
-                         ws_name);
-                    assignment->output = $4;
-                    duplicate = true;
-                }
-            }
-            if (!duplicate) {
-                assignment = scalloc(sizeof(struct Workspace_Assignment));
-                assignment->name = ws_name;
+        if ($5 != NULL) {
+            ELOG("The old (v3) syntax workspace <number> output <output> <name> is deprecated.\n");
+            ELOG("Please use the new syntax: workspace \"<workspace>\" output <output>\n");
+            ELOG("In your case, the following should work:\n");
+            ELOG("    workspace \"%s\" output %s\n", $5, $4);
+            ws_name = $5;
+            context->has_warnings = true;
+        }
+
+        DLOG("Assigning workspace \"%s\" to output \"%s\"\n", ws_name, $4);
+        /* Check for earlier assignments of the same workspace so that we
+         * don’t have assignments of a single workspace to different
+         * outputs */
+        struct Workspace_Assignment *assignment;
+        bool duplicate = false;
+        TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+            if (strcasecmp(assignment->name, ws_name) == 0) {
+                ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
+                     ws_name);
                 assignment->output = $4;
-                TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
+                duplicate = true;
             }
+        }
+        if (!duplicate) {
+            assignment = scalloc(sizeof(struct Workspace_Assignment));
+            assignment->name = ws_name;
+            assignment->output = $4;
+            TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
         }
     }
     | TOKWORKSPACE NUMBER workspace_name
@@ -1001,6 +1415,13 @@ workspace_name:
 assign:
     TOKASSIGN window_class STR
     {
+        /* This is the old, deprecated form of assignments. It’s provided for
+         * compatibility in version (4.1, 4.2, 4.3) and will be removed
+         * afterwards. It triggers an i3-nagbar warning starting from 4.1. */
+        ELOG("You are using the old assign syntax (without criteria). "
+             "Please see the User's Guide for the new syntax and fix "
+             "your config file.\n");
+        context->has_warnings = true;
         printf("assignment of %s to *%s*\n", $2, $3);
         char *workspace = $3;
         char *criteria = $2;
@@ -1012,14 +1433,20 @@ assign:
         char *separator = NULL;
         if ((separator = strchr(criteria, '/')) != NULL) {
             *(separator++) = '\0';
-            match->title = sstrdup(separator);
+            char *pattern;
+            sasprintf(&pattern, "(?i)%s", separator);
+            match->title = regex_new(pattern);
+            free(pattern);
+            printf("  title = %s\n", separator);
         }
-        if (*criteria != '\0')
-            match->class = sstrdup(criteria);
+        if (*criteria != '\0') {
+            char *pattern;
+            sasprintf(&pattern, "(?i)%s", criteria);
+            match->class = regex_new(pattern);
+            free(pattern);
+            printf("  class = %s\n", criteria);
+        }
         free(criteria);
-
-        printf("  class = %s\n", match->class);
-        printf("  title = %s\n", match->title);
 
         /* Compatibility with older versions: If the assignment target starts
          * with ~, we create the equivalent of:
@@ -1048,6 +1475,19 @@ assign:
         assignment->dest.workspace = workspace;
         TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
     }
+    | TOKASSIGN match STR
+    {
+        if (match_is_empty(&current_match)) {
+            ELOG("Match is empty, ignoring this assignment\n");
+            break;
+        }
+        printf("new assignment, using above criteria, to workspace %s\n", $3);
+        Assignment *assignment = scalloc(sizeof(Assignment));
+        assignment->match = current_match;
+        assignment->type = A_TO_WORKSPACE;
+        assignment->dest.workspace = $3;
+        TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
+    }
     ;
 
 window_class:
@@ -1070,21 +1510,28 @@ restart_state:
     ;
 
 exec:
-    TOKEXEC STR
+    TOKEXEC optional_no_startup_id STR
     {
         struct Autostart *new = smalloc(sizeof(struct Autostart));
-        new->command = $2;
+        new->command = $3;
+        new->no_startup_id = $2;
         TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
     }
     ;
 
 exec_always:
-    TOKEXEC_ALWAYS STR
+    TOKEXEC_ALWAYS optional_no_startup_id STR
     {
         struct Autostart *new = smalloc(sizeof(struct Autostart));
-        new->command = $2;
+        new->command = $3;
+        new->no_startup_id = $2;
         TAILQ_INSERT_TAIL(&autostarts_always, new, autostarts_always);
     }
+    ;
+
+optional_no_startup_id:
+    /* empty */ { $$ = false; }
+    | TOK_NO_STARTUP_ID  { $$ = true; }
     ;
 
 terminal:
@@ -1100,7 +1547,8 @@ font:
     {
         config.font = load_font($2, true);
         printf("font %s\n", $2);
-        free($2);
+        FREE(font_pattern);
+        font_pattern = $2;
     }
     ;
 
@@ -1124,14 +1572,10 @@ color:
     ;
 
 colorpixel:
-    '#' HEX
+    HEXCOLOR
     {
-        char *hex;
-        if (asprintf(&hex, "#%s", $2) == -1)
-            die("asprintf()");
-        free($2);
-        $$ = get_colorpixel(hex);
-        free(hex);
+        $$ = get_colorpixel($1);
+        free($1);
     }
     ;
 

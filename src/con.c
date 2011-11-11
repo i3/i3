@@ -2,11 +2,11 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * con.c contains all functions which deal with containers directly (creating
- * containers, searching containers, getting specific properties from
- * containers, …).
+ * con.c: Functions which deal with containers directly (creating containers,
+ *        searching containers, getting specific properties from containers,
+ *        …).
  *
  */
 #include "all.h"
@@ -129,7 +129,9 @@ void con_attach(Con *con, Con *parent, bool ignore_focus) {
          * workspace or a new split container with the configured
          * workspace_layout).
          */
-        if (con->window != NULL && parent->type == CT_WORKSPACE) {
+        if (con->window != NULL &&
+            parent->type == CT_WORKSPACE &&
+            config.default_layout != L_DEFAULT) {
             DLOG("Parent is a workspace. Applying default layout...\n");
             Con *target = workspace_attach_to(parent);
 
@@ -193,7 +195,6 @@ void con_focus(Con *con) {
         con->urgent = false;
         workspace_update_urgent_flag(con_get_workspace(con));
     }
-    DLOG("con_focus done = %p\n", con);
 }
 
 /*
@@ -404,8 +405,8 @@ Con *con_by_frame_id(xcb_window_t frame) {
 Con *con_for_window(Con *con, i3Window *window, Match **store_match) {
     Con *child;
     Match *match;
-    DLOG("searching con for window %p starting at con %p\n", window, con);
-    DLOG("class == %s\n", window->class_class);
+    //DLOG("searching con for window %p starting at con %p\n", window, con);
+    //DLOG("class == %s\n", window->class_class);
 
     TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
         TAILQ_FOREACH(match, &(child->swallow_head), matches) {
@@ -632,7 +633,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
          * focused. Must do before attaching because workspace_show checks to see
          * if focused container is in its area. */
         if (workspace_is_visible(workspace)) {
-            workspace_show(workspace->name);
+            workspace_show(workspace);
 
             /* Don’t warp if told so (when dragging floating windows with the
              * mouse for example) */
@@ -668,7 +669,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         /* Descend focus stack in case focus_next is a workspace which can
          * occur if we move to the same workspace.  Also show current workspace
          * to ensure it is focused. */
-        workspace_show(con_get_workspace(focus_next)->name);
+        workspace_show(con_get_workspace(focus_next));
         con_focus(con_descend_focused(focus_next));
     }
 
@@ -1008,11 +1009,22 @@ static void con_on_remove_child(Con *con) {
 
     /* Every container 'above' (in the hierarchy) the workspace content should
      * not be closed when the last child was removed */
-    if (con->type == CT_WORKSPACE ||
-        con->type == CT_OUTPUT ||
+    if (con->type == CT_OUTPUT ||
         con->type == CT_ROOT ||
         con->type == CT_DOCKAREA) {
         DLOG("not handling, type = %d\n", con->type);
+        return;
+    }
+
+    /* For workspaces, close them only if they're not visible anymore */
+    if (con->type == CT_WORKSPACE) {
+        int children = con_num_children(con);
+        if (children == 0 && !workspace_is_visible(con)) {
+            LOG("Closing old workspace (%p / %s), it is empty\n", con, con->name);
+            tree_close(con, DONT_KILL_WINDOW, false, false);
+            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"empty\"}");
+            ewmh_update_workarea();
+        }
         return;
     }
 

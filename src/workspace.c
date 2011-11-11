@@ -2,12 +2,17 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * workspace.c: Functions for modifying workspaces
+ * workspace.c: Modifying workspaces, accessing them, moving containers to
+ *              workspaces.
  *
  */
 #include "all.h"
+
+/* Stores a copy of the name of the last used workspace for the workspace
+ * back-and-forth switching. */
+static char *previous_workspace_name = NULL;
 
 /*
  * Returns a pointer to the workspace with the given number (starting at 0),
@@ -41,7 +46,7 @@ Con *workspace_get(const char *num, bool *created) {
          * will handle CT_WORKSPACEs differently */
         workspace = con_new(NULL, NULL);
         char *name;
-        asprintf(&name, "[i3 con] workspace %s", num);
+        sasprintf(&name, "[i3 con] workspace %s", num);
         x_set_name(workspace, name);
         free(name);
         workspace->type = CT_WORKSPACE;
@@ -49,12 +54,12 @@ Con *workspace_get(const char *num, bool *created) {
         workspace->name = sstrdup(num);
         /* We set ->num to the number if this workspace’s name consists only of
          * a positive number. Otherwise it’s a named ws and num will be -1. */
-        char *end;
-        long parsed_num = strtol(num, &end, 10);
+        char *endptr = NULL;
+        long parsed_num = strtol(num, &endptr, 10);
         if (parsed_num == LONG_MIN ||
             parsed_num == LONG_MAX ||
             parsed_num < 0 ||
-            (end && *end != '\0'))
+            endptr == num)
             workspace->num = -1;
         else workspace->num = parsed_num;
         LOG("num = %d\n", workspace->num);
@@ -176,15 +181,9 @@ static void workspace_reassign_sticky(Con *con) {
         workspace_reassign_sticky(current);
 }
 
-/*
- * Switches to the given workspace
- *
- */
-void workspace_show(const char *num) {
-    Con *workspace, *current, *old = NULL;
 
-    bool changed_num_workspaces;
-    workspace = workspace_get(num, &changed_num_workspaces);
+static void _workspace_show(Con *workspace, bool changed_num_workspaces) {
+    Con *current, *old = NULL;
 
     /* disable fullscreen for the other workspaces and get the workspace we are
      * currently on. */
@@ -197,10 +196,20 @@ void workspace_show(const char *num) {
     /* enable fullscreen for the target workspace. If it happens to be the
      * same one we are currently on anyways, we can stop here. */
     workspace->fullscreen_mode = CF_OUTPUT;
-    if (workspace == con_get_workspace(focused)) {
+    current = con_get_workspace(focused);
+    if (workspace == current) {
         DLOG("Not switching, already there.\n");
         return;
     }
+
+    /* Remember currently focused workspace for switching back to it later with
+     * the 'workspace back_and_forth' command.
+     * NOTE: We have to duplicate the name as the original will be freed when
+     * the corresponding workspace is cleaned up. */
+
+    FREE(previous_workspace_name);
+    if (current)
+        previous_workspace_name = sstrdup(current->name);
 
     workspace_reassign_sticky(workspace);
 
@@ -239,10 +248,29 @@ void workspace_show(const char *num) {
 }
 
 /*
+ * Switches to the given workspace
+ *
+ */
+void workspace_show(Con *workspace) {
+    _workspace_show(workspace, false);
+}
+
+/*
+ * Looks up the workspace by name and switches to it.
+ *
+ */
+void workspace_show_by_name(const char *num) {
+    Con *workspace;
+    bool changed_num_workspaces;
+    workspace = workspace_get(num, &changed_num_workspaces);
+    _workspace_show(workspace, changed_num_workspaces);
+}
+
+/*
  * Focuses the next workspace.
  *
  */
-void workspace_next() {
+Con* workspace_next() {
     Con *current = con_get_workspace(focused);
     Con *next = NULL;
     Con *output;
@@ -277,7 +305,7 @@ void workspace_next() {
                     found_current = 1;
                 } else if (child->num == -1 && (current->num != -1 || found_current)) {
                     next = child;
-                    goto workspace_next_show;
+                    goto workspace_next_end;
                 }
             }
     }
@@ -292,16 +320,15 @@ void workspace_next() {
                     next = child;
             }
     }
-
-workspace_next_show:
-    workspace_show(next->name);
+workspace_next_end:
+    return next;
 }
 
 /*
  * Focuses the previous workspace.
  *
  */
-void workspace_prev() {
+Con* workspace_prev() {
     Con *current = con_get_workspace(focused);
     Con *prev = NULL;
     Con *output;
@@ -333,10 +360,10 @@ void workspace_prev() {
                 if (child->type != CT_WORKSPACE)
                     continue;
                 if (child == current) {
-                    found_current = 1;
+                    found_current = true;
                 } else if (child->num == -1 && (current->num != -1 || found_current)) {
                     prev = child;
-                    goto workspace_prev_show;
+                    goto workspace_prev_end;
                 }
             }
     }
@@ -352,8 +379,21 @@ void workspace_prev() {
             }
     }
 
-workspace_prev_show:
-    workspace_show(prev->name);
+workspace_prev_end:
+    return prev;
+}
+
+/*
+ * Focuses the previously focused workspace.
+ *
+ */
+void workspace_back_and_forth() {
+    if (!previous_workspace_name) {
+        DLOG("No previous workspace name set. Not switching.");
+        return;
+    }
+
+    workspace_show_by_name(previous_workspace_name);
 }
 
 static bool get_urgency_flag(Con *con) {

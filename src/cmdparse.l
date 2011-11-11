@@ -19,6 +19,7 @@
 
 #include "config.h"
 #include "util.h"
+#include "libi3.h"
 
 int cmdyycolumn = 1;
 
@@ -47,6 +48,8 @@ EOL (\r?\n)
 /* handle a quoted string or everything up to the next whitespace */
 %s WANT_QSTRING
 
+%x EXEC
+
 %x BUFFER_LINE
 
 %%
@@ -71,10 +74,11 @@ EOL (\r?\n)
     cmdyycolumn = 1;
 }
 
-    /* the next/prev tokens are here to recognize them *before* handling
-     * strings ('workspace' command) */
-next                            { return TOK_NEXT; }
-prev                            { return TOK_PREV; }
+    /* the next/prev/back_and_forth tokens are here to recognize them *before*
+     * handling strings ('workspace' command) */
+next                            { BEGIN(INITIAL); return TOK_NEXT; }
+prev                            { BEGIN(INITIAL); return TOK_PREV; }
+back_and_forth                  { BEGIN(INITIAL); return TOK_BACK_AND_FORTH; }
 
 <WANT_STRING>\"[^\"]+\"         {
                                   BEGIN(INITIAL);
@@ -99,7 +103,9 @@ prev                            { return TOK_PREV; }
 <EAT_WHITESPACE>[ \t]*          { yy_pop_state(); }
 
 [ \t]*                          { /* ignore whitespace */ ; }
-exec                            { WS_STRING; return TOK_EXEC; }
+<EXEC>--no-startup-id           { printf("no startup id\n"); yy_pop_state(); return TOK_NO_STARTUP_ID; }
+<EXEC>.                         { printf("anything else: *%s*\n", yytext); yyless(0); yy_pop_state(); yy_pop_state(); }
+exec                            { WS_STRING; yy_push_state(EXEC); yy_push_state(EAT_WHITESPACE); return TOK_EXEC; }
 exit                            { return TOK_EXIT; }
 reload                          { return TOK_RELOAD; }
 restart                         { return TOK_RESTART; }
@@ -123,6 +129,7 @@ floating                        { return TOK_FLOATING; }
 toggle                          { return TOK_TOGGLE; }
 mode_toggle                     { return TOK_MODE_TOGGLE; }
 workspace                       { WS_STRING; return TOK_WORKSPACE; }
+output                          { WS_STRING; return TOK_OUTPUT; }
 focus                           { return TOK_FOCUS; }
 move                            { return TOK_MOVE; }
 open                            { return TOK_OPEN; }
@@ -154,6 +161,7 @@ no                              { return TOK_DISABLE; }
 
 class                           { BEGIN(WANT_QSTRING); return TOK_CLASS; }
 instance                        { BEGIN(WANT_QSTRING); return TOK_INSTANCE; }
+window_role                     { BEGIN(WANT_QSTRING); return TOK_WINDOW_ROLE; }
 id                              { BEGIN(WANT_QSTRING); return TOK_ID; }
 con_id                          { BEGIN(WANT_QSTRING); return TOK_CON_ID; }
 con_mark                        { BEGIN(WANT_QSTRING); return TOK_MARK; }

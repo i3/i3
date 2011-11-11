@@ -1,0 +1,15 @@
+#!/bin/sh
+# This script tries to exec a terminal emulator by trying some known terminal
+# emulators.
+#
+# Distributions/packagers should enhance this script with a
+# distribution-specific mechanism to find the preferred terminal emulator. On
+# Debian, there is the x-terminal-emulator symlink for example.
+# Please don't touch the first line, though:
+which $TERMINAL >/dev/null && exec $TERMINAL "$@"
+
+# Hopefully one of these is installed:
+which xterm >/dev/null && exec xterm "$@"
+which urxvt >/dev/null && exec urxvt "$@"
+which rxvt >/dev/null && exec rxvt "$@"
+which roxterm >/dev/null && exec roxterm "$@"

@@ -1,0 +1,10 @@
+man/i3.1
+man/i3-msg.1
+man/i3-input.1
+man/i3-nagbar.1
+man/i3-config-wizard.1
+man/i3-migrate-config-to-v4.1
+man/i3-sensible-pager.1
+man/i3-sensible-editor.1
+man/i3-sensible-terminal.1
+i3bar/doc/i3bar.1

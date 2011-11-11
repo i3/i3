@@ -1,5 +1,11 @@
 /*
  * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * xcursor.c: libXcursor support for themed cursors.
+ *
  */
 #ifndef _XCURSOR_CURSOR_H
 #define _XCURSOR_CURSOR_H
@@ -10,6 +16,7 @@ enum xcursor_cursor_t {
     XCURSOR_CURSOR_POINTER = 0,
     XCURSOR_CURSOR_RESIZE_HORIZONTAL,
     XCURSOR_CURSOR_RESIZE_VERTICAL,
+    XCURSOR_CURSOR_WATCH,
     XCURSOR_CURSOR_MAX
 };
 

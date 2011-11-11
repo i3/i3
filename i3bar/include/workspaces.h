@@ -1,9 +1,10 @@
 /*
+ * vim:ts=4:sw=4:expandtab
+ *
  * i3bar - an xcb-based status- and ws-bar for i3
+ * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
  *
- * © 2010-2011 Axel Wagner and contributors
- *
- * See file LICNSE for license information
+ * workspaces.c: Maintaining the workspace-lists
  *
  */
 #ifndef WORKSPACES_H_

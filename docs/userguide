@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael+i3@stapelberg.de>
-August 2011
+October 2011
 
 This document contains all the information you need to configure and use the i3
 window manager. If it does not, please contact us on IRC (preferred) or post your
@@ -357,7 +357,8 @@ it to the position you want.
 
 When holding the floating modifier, you can resize a floating window by
 pressing the right mouse button on it and moving around while holding it. If
-you hold the shift button as well, the resize will be proportional.
+you hold the shift button as well, the resize will be proportional (the aspect
+ratio will be preserved).
 
 *Syntax*:
 --------------------------------
@@ -431,7 +432,7 @@ change their border style, for example.
 
 *Syntax*:
 -----------------------------
-for_window [criteria] command
+for_window <criteria> command
 -----------------------------
 
 *Examples*:
@@ -478,36 +479,58 @@ configuration file and run it before starting i3 (for example in your
 
 [[assign_workspace]]
 
-Specific windows can be matched by window class and/or window title. It is
-recommended that you match on window classes instead of window titles whenever
-possible because some applications first create their window, and then worry
-about setting the correct title. Firefox with Vimperator comes to mind. The
-window starts up being named Firefox, and only when Vimperator is loaded does
-the title change. As i3 will get the title as soon as the application maps the
+To automatically make a specific window show up on a specific workspace, you
+can use an *assignment*. You can match windows by using any criteria,
+see <<command_criteria>>. It is recommended that you match on window classes
+(and instances, when appropriate) instead of window titles whenever possible
+because some applications first create their window, and then worry about
+setting the correct title. Firefox with Vimperator comes to mind. The window
+starts up being named Firefox, and only when Vimperator is loaded does the
+title change. As i3 will get the title as soon as the application maps the
 window (mapping means actually displaying it on the screen), you’d need to have
 to match on 'Firefox' in this case.
 
-You can prefix or suffix workspaces with a `~` to specify that matching clients
-should be put into floating mode. If you specify only a `~`, the client will
-not be put onto any workspace, but will be set floating on the current one.
-
 *Syntax*:
 ------------------------------------------------------------
-assign ["]window class[/window title]["] [→] [workspace]
+assign <criteria> [→] workspace
 ------------------------------------------------------------
 
 *Examples*:
 ----------------------
-assign urxvt 2
-assign urxvt → 2
-assign urxvt → work
-assign "urxvt" → 2
-assign "urxvt/VIM" → 3
-assign "gecko" → 4
+# Assign URxvt terminals to workspace 2
+assign [class="URxvt"] 2
+
+# Same thing, but more precise (exact match instead of substring)
+assign [class="^URxvt$"] 2
+
+# Same thing, but with a beautiful arrow :)
+assign [class="^URxvt$"] → 2
+
+# Assignment to a named workspace
+assign [class="^URxvt$"] → work
+
+# Start urxvt -name irssi
+assign [class="^URxvt$" instance="^irssi$"] → 3
 ----------------------
 
 Note that the arrow is not required, it just looks good :-). If you decide to
 use it, it has to be a UTF-8 encoded arrow, not `->` or something like that.
+
+To get the class and instance, you can use +xprop+. After clicking on the
+window, you will see the following output:
+
+*xwininfo*:
+-----------------------------------
+WM_CLASS(STRING) = "irssi", "URxvt"
+-----------------------------------
+
+The first part of the WM_CLASS is the instance ("irssi" in this example), the
+second part is the class ("URxvt" in this example).
+
+Should you have any problems with assignments, make sure to check the i3
+logfile first (see http://i3wm.org/docs/debugging.html). It includes more
+details about the matching process and the window’s actual class, instance and
+title when starting up.
 
 === Automatically starting applications on i3 startup
 
@@ -519,15 +542,20 @@ keyword. These commands will be run in order.
 
 *Syntax*:
 -------------------
-exec command
-exec_always command
+exec [--no-startup-id] command
+exec_always [--no-startup-id] command
 -------------------
 
 *Examples*:
 --------------------------------
-exec i3status | i3bar -d
+exec chromium
 exec_always ~/my_script.sh
+
+# Execute the terminal emulator urxvt, which is not yet startup-notification aware.
+exec --no-startup-id urxvt
 --------------------------------
+
+The flag --no-startup-id is explained in <<exec>>.
 
 [[workspace_screen]]
 
@@ -541,17 +569,20 @@ the second screen and so on).
 
 *Syntax*:
 ----------------------------------
-workspace <number> output <output>
+workspace <workspace> output <output>
 ----------------------------------
 
 The 'output' is the name of the RandR output you attach your screen to. On a
 laptop, you might have VGA1 and LVDS1 as output names. You can see the
 available outputs by running +xrandr --current+.
 
+If you use named workspaces, they must be quoted:
+
 *Examples*:
 ---------------------------
 workspace 1 output LVDS1
 workspace 5 output VGA1
+workspace "2: vim" output VGA1
 ---------------------------
 
 === Changing colors
@@ -690,6 +721,270 @@ force_focus_wrapping <yes|no>
 force_focus_wrapping yes
 ------------------------
 
+=== Forcing Xinerama
+
+As explained in-depth in <http://i3wm.org/docs/multi-monitor.html>, some X11
+video drivers (especially the nVidia binary driver) only provide support for
+Xinerama instead of RandR. In such a situation, i3 must be told to use the
+inferior Xinerama API explicitly and therefore don’t provide support for
+reconfiguring your screens on the fly (they are read only once on startup and
+that’s it).
+
+For people who do cannot modify their +~/.xsession+ to add the
++--force-xinerama+ commandline parameter, a configuration option is provided:
+
+*Syntax*:
+-----------------------
+force_xinerama <yes|no>
+-----------------------
+
+*Example*:
+------------------
+force_xinerama yes
+------------------
+
+Also note that your output names are not descriptive (like +HDMI1+) when using
+Xinerama, instead they are counted up, starting at 0: +xinerama-0+, +xinerama-1+, …
+
+=== Automatic back-and-forth when switching to the current workspace
+
+This configuration directive enables automatic +workspace back_and_forth+ (see
+<<back_and_forth>>) when switching to the workspace that is currently focused.
+
+For instance: Assume you are on workspace "1: www" and switch to "2: IM" using
+mod+2 because somebody sent you a message. You don’t need to remember where you
+came from now, you can just press mod+2 again to switch back to "1: www".
+
+*Syntax*:
+--------------------------------------
+workspace_auto_back_and_forth <yes|no>
+--------------------------------------
+
+*Example*:
+---------------------------------
+workspace_auto_back_and_forth yes
+---------------------------------
+
+== Configuring i3bar
+
+The bar at the bottom of your monitor is drawn by a separate process called
+i3bar. Having this part of "the i3 user interface" in a separate process has
+several advantages:
+
+1. It is a modular approach. If you don’t need a workspace bar at all, or if
+   you prefer a different one (dzen2, xmobar, maybe even gnome-panel?), you can
+   just remove the i3bar configuration and start your favorite bar instead.
+2. It follows the UNIX philosophy of "Make each program do one thing well".
+   While i3 manages your windows well, i3bar is good at displaying a bar on
+   each monitor (unless you configure it otherwise).
+3. It leads to two separate, clean codebases. If you want to understand i3, you
+   don’t need to bother with the details of i3bar and vice versa.
+
+That said, i3bar is configured in the same configuration file as i3. This is
+because it is tightly coupled with i3 (in contrary to i3lock or i3status which
+are useful for people using other window managers). Therefore, it makes no
+sense to use a different configuration place when we already have a good
+configuration infrastructure in place.
+
+Configuring your workspace bar starts with opening a +bar+ block. You can have
+multiple bar blocks to use different settings for different outputs (monitors):
+
+*Example*:
+---------------------------
+bar {
+    status_command i3status
+}
+---------------------------
+
+=== Statusline command
+
+i3bar can run a program and display every line of its +stdout+ output on the
+right hand side of the bar. This is useful to display system information like
+your current IP address, battery status or date/time.
+
+The specified command will be passed to +sh -c+, so you can use globbing and
+have to have correct quoting etc.
+
+*Syntax*:
+----------------------
+status_command command
+----------------------
+
+*Example*:
+-------------------------------------------------
+status_command i3status --config ~/.i3status.conf
+-------------------------------------------------
+
+=== Display mode
+
+You can have i3bar either be visible permanently at one edge of the screen
+(+dock+ mode) or make it show up when you press your modifier key (+hide+
+mode).
+
+The hide mode maximizes screen space that can be used for actual windows. Also,
+i3bar sends the +SIGSTOP+ and +SIGCONT+ signals to the statusline process to
+save battery power.
+
+The default is dock mode.
+
+*Syntax*:
+----------------
+mode <dock|hide>
+----------------
+
+*Example*:
+----------------
+mode hide
+----------------
+
+=== Position
+
+This option determines in which edge of the screen i3bar should show up.
+
+The default is bottom.
+
+*Syntax*:
+---------------------
+position <top|bottom>
+---------------------
+
+*Example*:
+---------------------
+position top
+---------------------
+
+=== Output(s)
+
+You can restrict i3bar to one or more outputs (monitors). The default is to
+handle all outputs. Restricting the outputs is useful for using different
+options for different outputs by using multiple 'bar' blocks.
+
+*Syntax*:
+---------------
+output <output>
+---------------
+
+*Example*:
+-------------------------------
+# big monitor: everything
+bar {
+	output HDMI2
+	status_command i3status
+}
+
+# laptop monitor: bright colors and i3status with less modules.
+bar {
+	output LVDS1
+	status_command i3status --config ~/.i3status-small.conf
+	colors {
+		background #000000
+		statusline #ffffff
+	}
+}
+-------------------------------
+
+=== Tray output
+
+i3bar by default provides a system tray area where programs such as
+NetworkManager, VLC, Pidgin, etc. can place little icons.
+
+You can configure on which output (monitor) the icons should be displayed or
+you can turn off the functionality entirely.
+
+*Syntax*:
+-------------------------
+tray_output <none|output>
+-------------------------
+
+*Example*:
+-------------------------
+# disable system tray
+tray_output none
+
+# show tray icons on the big monitor
+tray_output HDMI2
+-------------------------
+
+=== Font
+
+Specifies the font (again, X core font, not Xft, just like in i3) to be used in
+the bar.
+
+*Syntax*:
+---------------------
+font <font>
+---------------------
+
+*Example*:
+--------------------------------------------------------------
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+--------------------------------------------------------------
+
+=== Workspace buttons
+
+Specifies whether workspace buttons should be shown or not. This is useful if
+you want to display a statusline-only bar containing additional information.
+
+The default is to show workspace buttons.
+
+*Syntax*:
+--------------------------
+workspace_buttons <yes|no>
+--------------------------
+
+*Example*:
+--------------------
+workspace_buttons no
+--------------------
+
+=== Colors
+
+As with i3, colors are in HTML hex format (#rrggbb). The following colors can
+be configured at the moment:
+
+background::
+	Background color of the bar.
+statusline::
+	Text color to be used for the statusline.
+focused_workspace::
+	Text color/background color for a workspace button when the workspace
+	has focus.
+active_workspace::
+	Text color/background color for a workspace button when the workspace
+	is active (visible) on some output, but the focus is on another one.
+	You can only tell this apart from the focused workspace when you are
+	using multiple monitors.
+inactive_workspace::
+	Text color/background color for a workspace button when the workspace
+	does not have focus and is not active (visible) on any output. This
+	will be the case for most workspaces.
+urgent_workspace::
+	Text color/background color for workspaces which contain at least one
+	window with the urgency hint set.
+
+*Syntax*:
+----------------------------------------
+colors {
+    background <color>
+    statusline <color>
+
+    colorclass <foreground> <background>
+}
+----------------------------------------
+
+*Example*:
+--------------------------------------
+colors {
+    background #000000
+    statusline #ffffff
+
+    focused_workspace  #ffffff #285577
+    active_workspace   #ffffff #333333
+    inactive_workspace #888888 #222222
+    urgent_workspace   #ffffff #900000
+}
+--------------------------------------
+
 == List of commands
 
 Commands are what you bind to specific keypresses. You can also issue commands
@@ -721,6 +1016,9 @@ which have the class Firefox, use:
 *Example*:
 ------------------------------------
 bindsym mod+x [class="Firefox"] kill
+
+# same thing, but case-insensitive
+bindsym mod+x [class="(?i)firefox"] kill
 ------------------------------------
 
 The criteria which are currently implemented are:
@@ -729,6 +1027,8 @@ class::
 	Compares the window class (the second part of WM_CLASS)
 instance::
 	Compares the window instance (the first part of WM_CLASS)
+window_role::
+	Compares the window role (WM_WINDOW_ROLE).
 id::
 	Compares the X11 window ID, which you can get via +xwininfo+ for example.
 title::
@@ -739,8 +1039,40 @@ con_id::
 	Compares the i3-internal container ID, which you can get via the IPC
 	interface. Handy for scripting.
 
-Note that currently all criteria are compared case-insensitive and do not
-support regular expressions. This is planned to change in the future.
+The criteria +class+, +instance+, +role+, +title+ and +mark+ are actually
+regular expressions (PCRE). See +pcresyntax(3)+ or +perldoc perlre+ for
+information on how to use them.
+
+[[exec]]
+
+=== Executing applications (exec)
+
+What good is a window manager if you can’t actually start any applications?
+The exec command starts an application by passing the command you specify to a
+shell. This implies that you can use globbing (wildcards) and programs will be
+searched in your $PATH.
+
+*Syntax*:
+------------------------------
+exec [--no-startup-id] command
+------------------------------
+
+*Example*:
+------------------------------
+# Start the GIMP
+bindsym mod+g exec gimp
+
+# Start the terminal emulator urxvt which is not yet startup-notification-aware
+bindsym mod+enter exec --no-startup-id urxvt
+------------------------------
+
+The +--no-startup-id+ parameter disables startup-notification support for this
+particular exec command. With startup-notification, i3 can make sure that a
+window appears on the workspace on which you used the exec command. Also, it
+will change the X11 cursor to +watch+ (a clock) while the application is
+launching. So, if an application is not startup-notification aware (most GTK
+and Qt using applications seem to be, though), you will end up with a watch
+cursor for 60 seconds.
 
 === Splitting containers
 
@@ -806,9 +1138,19 @@ mode_toggle::
 
 For moving, use +move left+, +move right+, +move down+ and +move up+.
 
+*Syntax*:
+-----------------------------------
+focus <left|right|down|up>
+focus <parent|child|floating|tiling|mode_toggle>
+move <left|right|down|up> [<px> px]
+-----------------------------------
+
+Note that the amount of pixels you can specify for the +move+ command is only
+relevant for floating containers. The default amount is 10 pixels.
+
 *Examples*:
 ----------------------
-# Focus clients on the left, bottom, top, right:
+# Focus container on the left, bottom, top, right:
 bindsym mod+j focus left
 bindsym mod+k focus down
 bindsym mod+l focus up
@@ -820,11 +1162,15 @@ bindsym mod+u focus parent
 # Focus last floating/tiling container
 bindsym mod+g focus mode_toggle
 
-# Move client to the left, bottom, top, right:
+# Move container to the left, bottom, top, right:
 bindsym mod+j move left
 bindsym mod+k move down
 bindsym mod+l move up
 bindsym mod+semicolon move right
+
+# Move container, but make floating containers
+# move more than the default
+bindsym mod+j move left 20 px
 ----------------------
 
 === Changing (named) workspaces/moving to workspaces
@@ -836,7 +1182,17 @@ number or name of the workspace. To move containers to specific workspaces, use
 You can also switch to the next and previous workspace with the commands
 +workspace next+ and +workspace prev+, which is handy, for example, if you have
 workspace 1, 3, 4 and 9 and you want to cycle through them with a single key
-combination.
+combination. Similarily, you can use +move workspace next+ and +move workspace
+prev+ to move a container to the next/previous workspace.
+
+[[back_and_forth]]
+To switch back to the previously focused workspace, use +workspace
+back_and_forth+.
+
+To move a container to another xrandr output such as +LVDS1+ or +VGA1+, you can
+use the +move output+ command followed by the name of the target output. You
+may also use +left+, +right+, +up+, +down+ instead of the xrandr output name to
+move to the the next output in the specified direction.
 
 *Examples*:
 -------------------------
@@ -847,6 +1203,9 @@ bindsym mod+2 workspace 2
 bindsym mod+Shift+1 move workspace 1
 bindsym mod+Shift+2 move workspace 2
 ...
+
+# switch between the current and the previously focused one
+bindsym mod+b workspace back_and_forth
 -------------------------
 
 ==== Named workspaces
@@ -889,9 +1248,9 @@ resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt]
 
 Direction can be one of +up+, +down+, +left+ or +right+. The optional pixel
 argument specifies by how many pixels a *floating container* should be grown or
-shrinked (the default is 10 pixels). The ppt argument means percentage points
+shrunk (the default is 10 pixels). The ppt argument means percentage points
 and specifies by how many percentage points a *tiling container* should be
-grown or shrinked (the default is 10 percentage points).
+grown or shrunk (the default is 10 percentage points).
 
 I recommend using the resize command inside a so called +mode+:
 

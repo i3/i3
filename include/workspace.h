@@ -1,20 +1,19 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * workspace.c: Modifying workspaces, accessing them, moving containers to
+ *              workspaces.
  *
  */
+#ifndef _WORKSPACE_H
+#define _WORKSPACE_H
 
 #include "data.h"
 #include "tree.h"
 #include "randr.h"
-
-#ifndef _WORKSPACE_H
-#define _WORKSPACE_H
 
 /**
  * Returns a pointer to the workspace with the given number (starting at 0),
@@ -46,20 +45,36 @@ void workspace_set_name(Workspace *ws, const char *name);
  */
 bool workspace_is_visible(Con *ws);
 
-/** Switches to the given workspace */
-void workspace_show(const char *num);
-
 /**
- * Focuses the next workspace.
+ * Switches to the given workspace
  *
  */
-void workspace_next();
+void workspace_show(Con *ws);
 
 /**
- * Focuses the previous workspace.
+ * Looks up the workspace by name and switches to it.
  *
  */
-void workspace_prev();
+void workspace_show_by_name(const char *num);
+
+/**
+ * Returns the next workspace.
+ *
+ */
+Con* workspace_next();
+
+/**
+ * Returns the previous workspace.
+ *
+ */
+Con* workspace_prev();
+
+/**
+ * Focuses the previously focused workspace.
+ *
+ */
+void workspace_back_and_forth();
+
 
 #if 0
 /**

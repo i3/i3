@@ -1,11 +1,10 @@
 /*
+ * vim:ts=4:sw=4:expandtab
+ *
  * i3bar - an xcb-based status- and ws-bar for i3
+ * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
  *
- * © 2010-2011 Axel Wagner and contributors
- *
- * See file LICNSE for license information
- *
- * src/workspaces.c: Maintaining the workspace-lists
+ * workspaces.c: Maintaining the workspace-lists
  *
  */
 #include <string.h>
@@ -29,7 +28,7 @@ struct workspaces_json_params {
  * Parse a boolean value (visible, focused, urgent)
  *
  */
-static int workspaces_boolean_cb(void *params_, bool val) {
+static int workspaces_boolean_cb(void *params_, int val) {
     struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
 
     if (!strcmp(params->cur_key, "visible")) {
@@ -115,7 +114,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
 
         if (!strcmp(params->cur_key, "name")) {
             /* Save the name */
-            params->workspaces_walk->name = malloc(sizeof(const unsigned char) * (len + 1));
+            params->workspaces_walk->name = smalloc(sizeof(const unsigned char) * (len + 1));
             strncpy(params->workspaces_walk->name, (const char*) val, len);
             params->workspaces_walk->name[len] = '\0';
 
@@ -139,14 +138,17 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
 
         if (!strcmp(params->cur_key, "output")) {
             /* We add the ws to the TAILQ of the output, it belongs to */
-            output_name = malloc(sizeof(const unsigned char) * (len + 1));
+            output_name = smalloc(sizeof(const unsigned char) * (len + 1));
             strncpy(output_name, (const char*) val, len);
             output_name[len] = '\0';
-            params->workspaces_walk->output = get_output_by_name(output_name);
+            i3_output *target = get_output_by_name(output_name);
+            if (target) {
+                params->workspaces_walk->output = target;
 
-            TAILQ_INSERT_TAIL(params->workspaces_walk->output->workspaces,
-                              params->workspaces_walk,
-                              tailq);
+                TAILQ_INSERT_TAIL(params->workspaces_walk->output->workspaces,
+                                  params->workspaces_walk,
+                                  tailq);
+            }
 
             FREE(output_name);
             return 1;
@@ -165,7 +167,7 @@ static int workspaces_start_map_cb(void *params_) {
     i3_ws *new_workspace = NULL;
 
     if (params->cur_key == NULL) {
-        new_workspace = malloc(sizeof(i3_ws));
+        new_workspace = smalloc(sizeof(i3_ws));
         new_workspace->num = -1;
         new_workspace->name = NULL;
         new_workspace->visible = 0;
@@ -195,11 +197,7 @@ static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, uns
     struct workspaces_json_params *params = (struct workspaces_json_params*) params_;
     FREE(params->cur_key);
 
-    params->cur_key = malloc(sizeof(unsigned char) * (keyLen + 1));
-    if (params->cur_key == NULL) {
-        ELOG("Could not allocate memory: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    params->cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
     strncpy(params->cur_key, (const char*) keyVal, keyLen);
     params->cur_key[keyLen] = '\0';
 

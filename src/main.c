@@ -1,9 +1,27 @@
 /*
  * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * main.c: Initialization, main loop
+ *
  */
 #include <ev.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include "all.h"
+
+#include "sd-daemon.h"
+
+/* The original value of RLIMIT_CORE when i3 was started. We need to restore
+ * this before starting any other process, since we set RLIMIT_CORE to
+ * RLIM_INFINITY for i3 debugging versions. */
+struct rlimit original_rlimit_core;
 
 static int xkb_event_base;
 
@@ -14,6 +32,16 @@ extern Con *focused;
 char **start_argv;
 
 xcb_connection_t *conn;
+/* The screen (0 when you are using DISPLAY=:0) of the connection 'conn' */
+int conn_screen;
+
+/* Display handle for libstartup-notification */
+SnDisplay *sndisplay;
+
+/* The last timestamp we got from X11 (timestamps are included in some events
+ * and are used for some things, like determining a unique ID in startup
+ * notification). */
+xcb_timestamp_t last_timestamp = XCB_CURRENT_TIME;
 
 xcb_screen_t *root_screen;
 xcb_window_t root;
@@ -45,6 +73,11 @@ struct ws_assignments_head ws_assignments = TAILQ_HEAD_INITIALIZER(ws_assignment
 /* We hope that those are supported and set them to true */
 bool xcursor_supported = true;
 bool xkb_supported = true;
+
+/* This will be set to true when -C is used so that functions can behave
+ * slightly differently. We don’t want i3-nagbar to be started when validating
+ * the config, for example. */
+bool only_check_config = false;
 
 /*
  * This callback is only a dummy, see xcb_prepare_cb and xcb_check_cb.
@@ -152,7 +185,7 @@ static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
     xcb_key_symbols_free(keysyms);
     keysyms = xcb_key_symbols_alloc(conn);
 
-    xcb_get_numlock_mask(conn);
+    xcb_numlock_mask = aio_get_mod_mask_for(XCB_NUM_LOCK, keysyms);
 
     ungrab_all_keys(conn);
     DLOG("Re-grabbing...\n");
@@ -161,14 +194,24 @@ static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
     DLOG("Done\n");
 }
 
+/*
+ * Exit handler which destroys the main_loop. Will trigger cleanup handlers.
+ *
+ */
+static void i3_exit() {
+/* We need ev >= 4 for the following code. Since it is not *that* important (it
+ * only makes sure that there are no i3-nagbar instances left behind) we still
+ * support old systems with libev 3. */
+#if EV_VERSION_MAJOR >= 4
+    ev_loop_destroy(main_loop);
+#endif
+}
+
 int main(int argc, char *argv[]) {
-    //parse_cmd("[ foo ] attach, attach ; focus");
-    int screens;
     char *override_configpath = NULL;
     bool autostart = true;
     char *layout_path = NULL;
     bool delete_layout_path = false;
-    bool only_check_config = false;
     bool force_xinerama = false;
     bool disable_signalhandler = false;
     static struct option long_options[] = {
@@ -179,16 +222,25 @@ int main(int argc, char *argv[]) {
         {"layout", required_argument, 0, 'L'},
         {"restart", required_argument, 0, 0},
         {"force-xinerama", no_argument, 0, 0},
+        {"force_xinerama", no_argument, 0, 0},
         {"disable-signalhandler", no_argument, 0, 0},
+        {"get-socketpath", no_argument, 0, 0},
+        {"get_socketpath", no_argument, 0, 0},
         {0, 0, 0, 0}
     };
     int option_index = 0, opt;
 
     setlocale(LC_ALL, "");
 
+    /* Get the RLIMIT_CORE limit at startup time to restore this before
+     * starting processes. */
+    getrlimit(RLIMIT_CORE, &original_rlimit_core);
+
     /* Disable output buffering to make redirects in .xsession actually useful for debugging */
     if (!isatty(fileno(stdout)))
         setbuf(stdout, NULL);
+
+    srand(time(NULL));
 
     init_logging();
 
@@ -227,7 +279,8 @@ int main(int argc, char *argv[]) {
                 /* DEPRECATED, ignored for the next 3 versions (3.e, 3.f, 3.g) */
                 break;
             case 0:
-                if (strcmp(long_options[option_index].name, "force-xinerama") == 0) {
+                if (strcmp(long_options[option_index].name, "force-xinerama") == 0 ||
+                    strcmp(long_options[option_index].name, "force_xinerama") == 0) {
                     force_xinerama = true;
                     ELOG("Using Xinerama instead of RandR. This option should be "
                          "avoided at all cost because it does not refresh the list "
@@ -238,6 +291,15 @@ int main(int argc, char *argv[]) {
                 } else if (strcmp(long_options[option_index].name, "disable-signalhandler") == 0) {
                     disable_signalhandler = true;
                     break;
+                } else if (strcmp(long_options[option_index].name, "get-socketpath") == 0 ||
+                           strcmp(long_options[option_index].name, "get_socketpath") == 0) {
+                    char *socket_path = socket_path_from_x11();
+                    if (socket_path) {
+                        printf("%s\n", socket_path);
+                        return 0;
+                    }
+
+                    return 1;
                 } else if (strcmp(long_options[option_index].name, "restart") == 0) {
                     FREE(layout_path);
                     layout_path = sstrdup(optarg);
@@ -248,25 +310,124 @@ int main(int argc, char *argv[]) {
             default:
                 fprintf(stderr, "Usage: %s [-c configfile] [-d loglevel] [-a] [-v] [-V] [-C]\n", argv[0]);
                 fprintf(stderr, "\n");
-                fprintf(stderr, "-a: disable autostart\n");
-                fprintf(stderr, "-L <layoutfile>: load the layout from <layoutfile>\n");
-                fprintf(stderr, "-v: display version and exit\n");
-                fprintf(stderr, "-V: enable verbose mode\n");
-                fprintf(stderr, "-d <loglevel>: enable debug loglevel <loglevel>\n");
-                fprintf(stderr, "-c <configfile>: use the provided configfile instead\n");
-                fprintf(stderr, "-C: check configuration file and exit\n");
-                fprintf(stderr, "--force-xinerama: Use Xinerama instead of RandR. This "
-                                "option should only be used if you are stuck with the "
-                                "nvidia closed source driver which does not support RandR.\n");
+                fprintf(stderr, "\t-a          disable autostart ('exec' lines in config)\n");
+                fprintf(stderr, "\t-c <file>   use the provided configfile instead\n");
+                fprintf(stderr, "\t-C          validate configuration file and exit\n");
+                fprintf(stderr, "\t-d <level>  enable debug output with the specified loglevel\n");
+                fprintf(stderr, "\t-L <file>   path to the serialized layout during restarts\n");
+                fprintf(stderr, "\t-v          display version and exit\n");
+                fprintf(stderr, "\t-V          enable verbose mode\n");
+                fprintf(stderr, "\n");
+                fprintf(stderr, "\t--force-xinerama\n"
+                                "\tUse Xinerama instead of RandR.\n"
+                                "\tThis option should only be used if you are stuck with the\n"
+                                "\tnvidia closed source driver which does not support RandR.\n");
+                fprintf(stderr, "\n");
+                fprintf(stderr, "\t--get-socketpath\n"
+                                "\tRetrieve the i3 IPC socket path from X11, print it, then exit.\n");
+                fprintf(stderr, "\n");
+                fprintf(stderr, "If you pass plain text arguments, i3 will interpret them as a command\n"
+                                "to send to a currently running i3 (like i3-msg). This allows you to\n"
+                                "use nice and logical commands, such as:\n"
+                                "\n"
+                                "\ti3 border none\n"
+                                "\ti3 floating toggle\n"
+                                "\ti3 kill window\n"
+                                "\n");
                 exit(EXIT_FAILURE);
+        }
+    }
+
+    /* If the user passes more arguments, we act like i3-msg would: Just send
+     * the arguments as an IPC message to i3. This allows for nice semantic
+     * commands such as 'i3 border none'. */
+    if (optind < argc) {
+        /* We enable verbose mode so that the user knows what’s going on.
+         * This should make it easier to find mistakes when the user passes
+         * arguments by mistake. */
+        set_verbosity(true);
+
+        LOG("Additional arguments passed. Sending them as a command to i3.\n");
+        char *payload = NULL;
+        while (optind < argc) {
+            if (!payload) {
+                payload = sstrdup(argv[optind]);
+            } else {
+                char *both;
+                sasprintf(&both, "%s %s", payload, argv[optind]);
+                free(payload);
+                payload = both;
+            }
+            optind++;
+        }
+        LOG("Command is: %s (%d bytes)\n", payload, strlen(payload));
+        char *socket_path = socket_path_from_x11();
+        if (!socket_path) {
+            ELOG("Could not get i3 IPC socket path\n");
+            return 1;
+        }
+
+        int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
+        if (sockfd == -1)
+            err(EXIT_FAILURE, "Could not create socket");
+
+        struct sockaddr_un addr;
+        memset(&addr, 0, sizeof(struct sockaddr_un));
+        addr.sun_family = AF_LOCAL;
+        strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
+        if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0)
+            err(EXIT_FAILURE, "Could not connect to i3");
+
+        if (ipc_send_message(sockfd, strlen(payload), I3_IPC_MESSAGE_TYPE_COMMAND,
+                             (uint8_t*)payload) == -1)
+            err(EXIT_FAILURE, "IPC: write()");
+
+        uint32_t reply_length;
+        uint8_t *reply;
+        int ret;
+        if ((ret = ipc_recv_message(sockfd, I3_IPC_MESSAGE_TYPE_COMMAND,
+                                    &reply_length, &reply)) != 0) {
+            if (ret == -1)
+                err(EXIT_FAILURE, "IPC: read()");
+            return 1;
+        }
+        printf("%.*s\n", reply_length, reply);
+        return 0;
+    }
+
+    /* I3_VERSION contains either something like this:
+     *     "4.0.2 (2011-11-11, branch "release")".
+     * or: "4.0.2-123-gCOFFEEBABE (2011-11-11, branch "next")".
+     *
+     * So we check for the offset of the first opening round bracket to
+     * determine whether this is a git version or a release version. */
+    if ((strchr(I3_VERSION, '(') - I3_VERSION) > 10) {
+        struct rlimit limit = { RLIM_INFINITY, RLIM_INFINITY };
+        setrlimit(RLIMIT_CORE, &limit);
+
+        /* The following code is helpful, but not required. We thus don’t pay
+         * much attention to error handling, non-linux or other edge cases. */
+        char cwd[PATH_MAX];
+        LOG("CORE DUMPS: You are running a development version of i3, so coredumps were automatically enabled (ulimit -c unlimited).\n");
+        if (getcwd(cwd, sizeof(cwd)) != NULL)
+            LOG("CORE DUMPS: Your current working directory is \"%s\".\n", cwd);
+        int patternfd;
+        if ((patternfd = open("/proc/sys/kernel/core_pattern", O_RDONLY)) >= 0) {
+            memset(cwd, '\0', sizeof(cwd));
+            if (read(patternfd, cwd, sizeof(cwd)) > 0)
+                /* a trailing newline is included in cwd */
+                LOG("CORE DUMPS: Your core_pattern is: %s", cwd);
+            close(patternfd);
         }
     }
 
     LOG("i3 (tree) version " I3_VERSION " starting\n");
 
-    conn = xcb_connect(NULL, &screens);
+    conn = xcb_connect(NULL, &conn_screen);
     if (xcb_connection_has_error(conn))
         errx(EXIT_FAILURE, "Cannot open display\n");
+
+    sndisplay = sn_xcb_display_new(conn, NULL, NULL);
 
     /* Initialize the libev event loop. This needs to be done before loading
      * the config file because the parser will install an ev_child watcher
@@ -275,7 +436,7 @@ int main(int argc, char *argv[]) {
     if (main_loop == NULL)
             die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
 
-    root_screen = xcb_aux_get_screen(conn, screens);
+    root_screen = xcb_aux_get_screen(conn, conn_screen);
     root = root_screen->root;
     root_depth = root_screen->root_depth;
     xcb_get_geometry_cookie_t gcookie = xcb_get_geometry(conn, root);
@@ -338,17 +499,9 @@ int main(int argc, char *argv[]) {
 
     /* Set a cursor for the root window (otherwise the root window will show no
        cursor until the first client is launched). */
-    if (xcursor_supported) {
-        xcursor_set_root_cursor();
-    } else {
-        xcb_cursor_t cursor_id = xcb_generate_id(conn);
-        i3Font cursor_font = load_font("cursor", false);
-        int xcb_cursor = xcursor_get_xcb_cursor(XCURSOR_CURSOR_POINTER);
-        xcb_create_glyph_cursor(conn, cursor_id, cursor_font.id, cursor_font.id,
-                xcb_cursor, xcb_cursor + 1, 0, 0, 0, 65535, 65535, 65535);
-        xcb_change_window_attributes(conn, root, XCB_CW_CURSOR, &cursor_id);
-        xcb_free_cursor(conn, cursor_id);
-    }
+    if (xcursor_supported)
+        xcursor_set_root_cursor(XCURSOR_CURSOR_POINTER);
+    else xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
 
     if (xkb_supported) {
         int errBase,
@@ -404,7 +557,7 @@ int main(int argc, char *argv[]) {
 
     keysyms = xcb_key_symbols_alloc(conn);
 
-    xcb_get_numlock_mask(conn);
+    xcb_numlock_mask = aio_get_mod_mask_for(XCB_NUM_LOCK, keysyms);
 
     translate_keysyms();
     grab_all_keys(conn, false);
@@ -422,7 +575,10 @@ int main(int argc, char *argv[]) {
 
     free(greply);
 
-    if (force_xinerama) {
+    /* Force Xinerama (for drivers which don't support RandR yet, esp. the
+     * nVidia binary graphics driver), when specified either in the config
+     * file or on command-line */
+    if (force_xinerama || config.force_xinerama) {
         xinerama_init();
     } else {
         DLOG("Checking for XRandR...\n");
@@ -457,6 +613,21 @@ int main(int argc, char *argv[]) {
         struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
         ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
         ev_io_start(main_loop, ipc_io);
+    }
+
+    /* Also handle the UNIX domain sockets passed via socket activation */
+    int fds = sd_listen_fds(1);
+    if (fds < 0)
+        ELOG("socket activation: Error in sd_listen_fds\n");
+    else if (fds == 0)
+        DLOG("socket activation: no sockets passed\n");
+    else {
+        for (int fd = SD_LISTEN_FDS_START; fd < (SD_LISTEN_FDS_START + fds); fd++) {
+            DLOG("socket activation: also listening on fd %d\n", fd);
+            struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
+            ev_io_init(ipc_io, ipc_new_client, fd, EV_READ);
+            ev_io_start(main_loop, ipc_io);
+        }
     }
 
     /* Set up i3 specific atoms like I3_SOCKET_PATH and I3_CONFIG_PATH */
@@ -501,7 +672,7 @@ int main(int argc, char *argv[]) {
         struct Autostart *exec;
         TAILQ_FOREACH(exec, &autostarts, autostarts) {
             LOG("auto-starting %s\n", exec->command);
-            start_application(exec->command);
+            start_application(exec->command, exec->no_startup_id);
         }
     }
 
@@ -509,8 +680,23 @@ int main(int argc, char *argv[]) {
     struct Autostart *exec_always;
     TAILQ_FOREACH(exec_always, &autostarts_always, autostarts_always) {
         LOG("auto-starting (always!) %s\n", exec_always->command);
-        start_application(exec_always->command);
+        start_application(exec_always->command, exec_always->no_startup_id);
     }
+
+    /* Start i3bar processes for all configured bars */
+    Barconfig *barconfig;
+    TAILQ_FOREACH(barconfig, &barconfigs, configs) {
+        char *command = NULL;
+        sasprintf(&command, "i3bar --bar_id=%s --socket=\"%s\"",
+                  barconfig->id, current_socketpath);
+        LOG("Starting bar process: %s\n", command);
+        start_application(command, true);
+        free(command);
+    }
+
+    /* Make sure to destroy the event loop to invoke the cleeanup callbacks
+     * when calling exit() */
+    atexit(i3_exit);
 
     ev_loop(main_loop, 0);
 }

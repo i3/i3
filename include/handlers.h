@@ -1,11 +1,11 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * handlers.c: Small handlers for various events (keypresses, focus changes,
+ *             …).
  *
  */
 #ifndef _HANDLERS_H

@@ -2,24 +2,39 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * i3.h: global variables that are used all over i3.
  *
  */
+#ifndef _I3_H
+#define _I3_H
+
+#include <sys/time.h>
+#include <sys/resource.h>
+
 #include <xcb/xcb_keysyms.h>
 
 #include <X11/XKBlib.h>
+
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-launcher.h>
 
 #include "queue.h"
 #include "data.h"
 #include "xcb.h"
 
-#ifndef _I3_H
-#define _I3_H
-
+/** The original value of RLIMIT_CORE when i3 was started. We need to restore
+ * this before starting any other process, since we set RLIMIT_CORE to
+ * RLIM_INFINITY for i3 debugging versions. */
+extern struct rlimit original_rlimit_core;
 extern xcb_connection_t *conn;
+extern int conn_screen;
+/** The last timestamp we got from X11 (timestamps are included in some events
+ * and are used for some things, like determining a unique ID in startup
+ * notification). */
+extern xcb_timestamp_t last_timestamp;
+extern SnDisplay *sndisplay;
 extern xcb_key_symbols_t *keysyms;
 extern char **start_argv;
 extern Display *xlibdpy, *xkbdpy;
@@ -35,5 +50,6 @@ extern uint8_t root_depth;
 extern bool xcursor_supported, xkb_supported;
 extern xcb_window_t root;
 extern struct ev_loop *main_loop;
+extern bool only_check_config;
 
 #endif

@@ -2,14 +2,13 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * ipc.c: Everything about the UNIX domain sockets for IPC
+ * ipc.c: UNIX domain socket IPC (initialization, client handling, protocol).
  *
  */
+#include "all.h"
+
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <fcntl.h>
@@ -18,8 +17,6 @@
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_version.h>
-
-#include "all.h"
 
 char *current_socketpath = NULL;
 
@@ -72,35 +69,6 @@ static bool mkdirp(const char *path) {
     return result;
 }
 
-static void ipc_send_message(int fd, const unsigned char *payload,
-                             int message_type, int message_size) {
-    int buffer_size = strlen("i3-ipc") + sizeof(uint32_t) +
-                      sizeof(uint32_t) + message_size;
-    char msg[buffer_size];
-    char *walk = msg;
-
-    strncpy(walk, "i3-ipc", buffer_size - 1);
-    walk += strlen("i3-ipc");
-    memcpy(walk, &message_size, sizeof(uint32_t));
-    walk += sizeof(uint32_t);
-    memcpy(walk, &message_type, sizeof(uint32_t));
-    walk += sizeof(uint32_t);
-    memcpy(walk, payload, message_size);
-
-    int sent_bytes = 0;
-    int bytes_to_go = buffer_size;
-    while (sent_bytes < bytes_to_go) {
-        int n = write(fd, msg + sent_bytes, bytes_to_go);
-        if (n == -1) {
-            DLOG("write() failed: %s\n", strerror(errno));
-            return;
-        }
-
-        sent_bytes += n;
-        bytes_to_go -= n;
-    }
-}
-
 /*
  * Sends the specified event to all IPC clients which are currently connected
  * and subscribed to this kind of event.
@@ -120,8 +88,7 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
         if (!interested)
             continue;
 
-        ipc_send_message(current->fd, (const unsigned char*)payload,
-                         message_type, strlen(payload));
+        ipc_send_message(current->fd, strlen(payload), message_type, (const uint8_t*)payload);
     }
 }
 
@@ -132,9 +99,12 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
  */
 void ipc_shutdown() {
     ipc_client *current;
-    TAILQ_FOREACH(current, &all_clients, clients) {
+    while (!TAILQ_EMPTY(&all_clients)) {
+        current = TAILQ_FIRST(&all_clients);
         shutdown(current->fd, SHUT_RDWR);
         close(current->fd);
+        TAILQ_REMOVE(&all_clients, current, clients);
+        free(current);
     }
 }
 
@@ -156,8 +126,7 @@ IPC_HANDLER(command) {
     /* If no reply was provided, we just use the default success message */
     if (reply == NULL)
         reply = "{\"success\":true}";
-    ipc_send_message(fd, (const unsigned char*)reply,
-                     I3_IPC_REPLY_TYPE_COMMAND, strlen(reply));
+    ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_COMMAND, (const uint8_t*)reply);
 
     FREE(save_reply);
 }
@@ -204,6 +173,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     ystr("urgent");
     y(bool, con->urgent);
+
+    if (con->mark != NULL) {
+        ystr("mark");
+        ystr(con->mark);
+    }
 
     ystr("focused");
     y(bool, (con == focused));
@@ -334,9 +308,10 @@ IPC_HANDLER(tree) {
 #endif
     y(get_buf, &payload, &length);
 
-    ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_TREE, length);
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_TREE, payload);
     y(free);
 }
+
 
 /*
  * Formats the reply message for a GET_WORKSPACES request and sends it to the
@@ -406,7 +381,7 @@ IPC_HANDLER(get_workspaces) {
 #endif
     y(get_buf, &payload, &length);
 
-    ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_WORKSPACES, length);
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_WORKSPACES, payload);
     y(free);
 }
 
@@ -464,7 +439,176 @@ IPC_HANDLER(get_outputs) {
 #endif
     y(get_buf, &payload, &length);
 
-    ipc_send_message(fd, payload, I3_IPC_REPLY_TYPE_OUTPUTS, length);
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_OUTPUTS, payload);
+    y(free);
+}
+
+/*
+ * Formats the reply message for a GET_MARKS request and sends it to the
+ * client
+ *
+ */
+IPC_HANDLER(get_marks) {
+#if YAJL_MAJOR >= 2
+    yajl_gen gen = yajl_gen_alloc(NULL);
+#else
+    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+#endif
+    y(array_open);
+
+    Con *con;
+    TAILQ_FOREACH(con, &all_cons, all_cons)
+        if (con->mark != NULL)
+            ystr(con->mark);
+
+    y(array_close);
+
+    const unsigned char *payload;
+#if YAJL_MAJOR >= 2
+    size_t length;
+#else
+    unsigned int length;
+#endif
+    y(get_buf, &payload, &length);
+
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_MARKS, payload);
+    y(free);
+}
+
+/*
+ * Formats the reply message for a GET_BAR_CONFIG request and sends it to the
+ * client.
+ *
+ */
+IPC_HANDLER(get_bar_config) {
+#if YAJL_MAJOR >= 2
+    yajl_gen gen = yajl_gen_alloc(NULL);
+#else
+    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+#endif
+
+    /* If no ID was passed, we return a JSON array with all IDs */
+    if (message_size == 0) {
+        y(array_open);
+        Barconfig *current;
+        TAILQ_FOREACH(current, &barconfigs, configs) {
+            ystr(current->id);
+        }
+        y(array_close);
+
+        const unsigned char *payload;
+#if YAJL_MAJOR >= 2
+        size_t length;
+#else
+        unsigned int length;
+#endif
+        y(get_buf, &payload, &length);
+
+        ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_BAR_CONFIG, payload);
+        y(free);
+        return;
+    }
+
+    /* To get a properly terminated buffer, we copy
+     * message_size bytes out of the buffer */
+    char *bar_id = scalloc(message_size + 1);
+    strncpy(bar_id, (const char*)message, message_size);
+    LOG("IPC: looking for config for bar ID \"%s\"\n", bar_id);
+    Barconfig *current, *config = NULL;
+    TAILQ_FOREACH(current, &barconfigs, configs) {
+        if (strcmp(current->id, bar_id) != 0)
+            continue;
+
+        config = current;
+        break;
+    }
+
+    y(map_open);
+
+    if (!config) {
+        /* If we did not find a config for the given ID, the reply will contain
+         * a null 'id' field. */
+        ystr("id");
+        y(null);
+    } else {
+        ystr("id");
+        ystr(config->id);
+
+        if (config->num_outputs > 0) {
+            ystr("outputs");
+            y(array_open);
+            for (int c = 0; c < config->num_outputs; c++)
+                ystr(config->outputs[c]);
+            y(array_close);
+        }
+
+#define YSTR_IF_SET(name) \
+        do { \
+            if (config->name) { \
+                ystr( # name); \
+                ystr(config->name); \
+            } \
+        } while (0)
+
+        YSTR_IF_SET(tray_output);
+        YSTR_IF_SET(socket_path);
+
+        ystr("mode");
+        if (config->mode == M_HIDE)
+            ystr("hide");
+        else ystr("dock");
+
+        ystr("position");
+        if (config->position == P_BOTTOM)
+            ystr("bottom");
+        else ystr("top");
+
+        YSTR_IF_SET(status_command);
+        YSTR_IF_SET(font);
+
+        ystr("workspace_buttons");
+        y(bool, !config->hide_workspace_buttons);
+
+        ystr("verbose");
+        y(bool, config->verbose);
+
+#undef YSTR_IF_SET
+#define YSTR_IF_SET(name) \
+        do { \
+            if (config->colors.name) { \
+                ystr( # name); \
+                ystr(config->colors.name); \
+            } \
+        } while (0)
+
+        ystr("colors");
+        y(map_open);
+        YSTR_IF_SET(background);
+        YSTR_IF_SET(statusline);
+        YSTR_IF_SET(focused_workspace_text);
+        YSTR_IF_SET(focused_workspace_bg);
+        YSTR_IF_SET(active_workspace_text);
+        YSTR_IF_SET(active_workspace_bg);
+        YSTR_IF_SET(inactive_workspace_text);
+        YSTR_IF_SET(inactive_workspace_bg);
+        YSTR_IF_SET(urgent_workspace_text);
+        YSTR_IF_SET(urgent_workspace_bg);
+        y(map_close);
+
+#undef YSTR_IF_SET
+    }
+
+    y(map_close);
+
+    const unsigned char *payload;
+#if YAJL_MAJOR >= 2
+    size_t length;
+#else
+    unsigned int length;
+#endif
+    y(get_buf, &payload, &length);
+
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_BAR_CONFIG, payload);
     y(free);
 }
 
@@ -542,25 +686,25 @@ IPC_HANDLER(subscribe) {
         yajl_free_error(p, err);
 
         const char *reply = "{\"success\":false}";
-        ipc_send_message(fd, (const unsigned char*)reply,
-                         I3_IPC_REPLY_TYPE_SUBSCRIBE, strlen(reply));
+        ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t*)reply);
         yajl_free(p);
         return;
     }
     yajl_free(p);
     const char *reply = "{\"success\":true}";
-    ipc_send_message(fd, (const unsigned char*)reply,
-                     I3_IPC_REPLY_TYPE_SUBSCRIBE, strlen(reply));
+    ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t*)reply);
 }
 
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[5] = {
+handler_t handlers[7] = {
     handle_command,
     handle_get_workspaces,
     handle_subscribe,
     handle_get_outputs,
-    handle_tree
+    handle_tree,
+    handle_get_marks,
+    handle_get_bar_config
 };
 
 /*
@@ -602,10 +746,12 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
             /* We can call TAILQ_REMOVE because we break out of the
              * TAILQ_FOREACH afterwards */
             TAILQ_REMOVE(&all_clients, current, clients);
+            free(current);
             break;
         }
 
         ev_io_stop(EV_A_ w);
+        free(w);
 
         DLOG("IPC: client disconnected\n");
         return;
@@ -683,7 +829,7 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
     ev_io_init(package, ipc_receive_message, client, EV_READ);
     ev_io_start(EV_A_ package);
 
-    DLOG("IPC: new client connected\n");
+    DLOG("IPC: new client connected on fd %d\n", w->fd);
 
     ipc_client *new = scalloc(sizeof(ipc_client));
     new->fd = client;

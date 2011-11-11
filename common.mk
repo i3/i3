@@ -12,7 +12,6 @@ ifndef SYSCONFDIR
     SYSCONFDIR=$(PREFIX)/etc
   endif
 endif
-TERM_EMU=xterm
 # The escaping is absurd, but we need to escape for shell, sed, make, define
 GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch $(shell [ -f $(TOPDIR)/.git/HEAD ] && sed 's/ref: refs\/heads\/\(.*\)/\\\\\\"\1\\\\\\"/g' $(TOPDIR)/.git/HEAD || echo 'unknown'))"
 VERSION:=$(shell git describe --tags --abbrev=0)
@@ -22,9 +21,17 @@ $(error "pkg-config was not found")
 endif
 
 # An easier way to get CFLAGS and LDFLAGS falling back in case there's
-# no pkg-config support for certain libraries
-cflags_for_lib = $(shell pkg-config --silence-errors --cflags $(1))
-ldflags_for_lib = $(shell pkg-config --exists $(1) && pkg-config --libs $(1) || echo -l$(2))
+# no pkg-config support for certain libraries.
+#
+# NOTE that you must not use a blank after comma when calling this:
+#     $(call ldflags_for_lib name, fallback) # bad
+#     $(call ldflags_for_lib name,fallback) # good
+# Otherwise, the compiler will get -l foo instead of -lfoo
+#
+# We redirect stderr to /dev/null because pkg-config prints an error if support
+# for gnome-config was enabled but gnome-config is not actually installed.
+cflags_for_lib = $(shell pkg-config --silence-errors --cflags $(1) 2>/dev/null)
+ldflags_for_lib = $(shell pkg-config --exists 2>/dev/null $(1) && pkg-config --libs $(1) 2>/dev/null || echo -l$(2))
 
 CFLAGS += -std=c99
 CFLAGS += -pipe
@@ -34,7 +41,7 @@ CFLAGS += -Wall
 CFLAGS += -Wunused-value
 CFLAGS += -Iinclude
 CFLAGS += $(call cflags_for_lib, xcb-keysyms)
-ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
+ifeq ($(shell pkg-config --exists xcb-util 2>/dev/null || echo 1),1)
 CPPFLAGS += -DXCB_COMPAT
 CFLAGS += $(call cflags_for_lib, xcb-atom)
 CFLAGS += $(call cflags_for_lib, xcb-aux)
@@ -49,27 +56,35 @@ CFLAGS += $(call cflags_for_lib, xcursor)
 CFLAGS += $(call cflags_for_lib, x11)
 CFLAGS += $(call cflags_for_lib, yajl)
 CFLAGS += $(call cflags_for_lib, libev)
+CFLAGS += $(call cflags_for_lib, libpcre)
+CFLAGS += $(call cflags_for_lib, libstartup-notification-1.0)
 CPPFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
 CPPFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
-CPPFLAGS += -DTERM_EMU=\"$(TERM_EMU)\"
+
+ifeq ($(shell pkg-config --atleast-version=8.10 libpcre 2>/dev/null && echo 1),1)
+CPPFLAGS += -DPCRE_HAS_UCP=1
+endif
 
 LIBS += -lm
-LIBS += $(call ldflags_for_lib, xcb-event, xcb-event)
-LIBS += $(call ldflags_for_lib, xcb-keysyms, xcb-keysyms)
-ifeq ($(shell pkg-config --exists xcb-util || echo 1),1)
-LIBS += $(call ldflags_for_lib, xcb-atom, xcb-atom)
-LIBS += $(call ldflags_for_lib, xcb-aux, xcb-aux)
+LIBS += -L $(TOPDIR)/libi3 -li3
+LIBS += $(call ldflags_for_lib, xcb-event,xcb-event)
+LIBS += $(call ldflags_for_lib, xcb-keysyms,xcb-keysyms)
+ifeq ($(shell pkg-config --exists xcb-util 2>/dev/null || echo 1),1)
+LIBS += $(call ldflags_for_lib, xcb-atom,xcb-atom)
+LIBS += $(call ldflags_for_lib, xcb-aux,xcb-aux)
 else
 LIBS += $(call ldflags_for_lib, xcb-util)
 endif
-LIBS += $(call ldflags_for_lib, xcb-icccm, xcb-icccm)
-LIBS += $(call ldflags_for_lib, xcb-xinerama, xcb-xinerama)
-LIBS += $(call ldflags_for_lib, xcb-randr, xcb-randr)
-LIBS += $(call ldflags_for_lib, xcb, xcb)
-LIBS += $(call ldflags_for_lib, xcursor, Xcursor)
-LIBS += $(call ldflags_for_lib, x11, X11)
-LIBS += $(call ldflags_for_lib, yajl, yajl)
-LIBS += $(call ldflags_for_lib, libev, ev)
+LIBS += $(call ldflags_for_lib, xcb-icccm,xcb-icccm)
+LIBS += $(call ldflags_for_lib, xcb-xinerama,xcb-xinerama)
+LIBS += $(call ldflags_for_lib, xcb-randr,xcb-randr)
+LIBS += $(call ldflags_for_lib, xcb,xcb)
+LIBS += $(call ldflags_for_lib, xcursor,Xcursor)
+LIBS += $(call ldflags_for_lib, x11,X11)
+LIBS += $(call ldflags_for_lib, yajl,yajl)
+LIBS += $(call ldflags_for_lib, libev,ev)
+LIBS += $(call ldflags_for_lib, libpcre,pcre)
+LIBS += $(call ldflags_for_lib, libstartup-notification-1.0,startup-notification-1)
 
 # Please test if -Wl,--as-needed works on your platform and send me a patch.
 # it is known not to work on Darwin (Mac OS X)

@@ -1,7 +1,13 @@
 /*
  * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * x.c: Interface to X11, transfers our in-memory state to X11 (see also
+ *      render.c). Basically a big state machine.
+ *
  */
-
 #ifndef _X_H
 #define _X_H
 

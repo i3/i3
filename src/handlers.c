@@ -2,16 +2,19 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * handlers.c: Small handlers for various events (keypresses, focus changes,
+ *             …).
  *
  */
-#include <time.h>
-
-#include <xcb/randr.h>
-
-#include <X11/XKBlib.h>
-
 #include "all.h"
+
+#include <time.h>
+#include <xcb/randr.h>
+#include <X11/XKBlib.h>
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-monitor.h>
 
 int randr_base = -1;
 
@@ -80,6 +83,9 @@ bool event_is_ignored(const int sequence, const int response_type) {
  *
  */
 static int handle_key_press(xcb_key_press_event_t *event) {
+
+    last_timestamp = event->time;
+
     DLOG("Keypress %d, state raw = %d\n", event->detail, event->state);
 
     /* Remove the numlock bit, all other bits are modifiers we can bind to */
@@ -142,7 +148,11 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
 
     /* Focus the output on which the user moved his cursor */
     Con *old_focused = focused;
-    con_focus(con_descend_focused(output_get_content(output->con)));
+    Con *next = con_descend_focused(output_get_content(output->con));
+    /* Since we are switching outputs, this *must* be a different workspace, so
+     * call workspace_show() */
+    workspace_show(con_get_workspace(next));
+    con_focus(next);
 
     /* If the focus changed, we re-render to get updated decorations */
     if (old_focused != focused)
@@ -155,6 +165,8 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
  */
 static int handle_enter_notify(xcb_enter_notify_event_t *event) {
     Con *con;
+
+    last_timestamp = event->time;
 
     DLOG("enter_notify for %08x, mode = %d, detail %d, serial %d\n",
          event->event, event->mode, event->detail, event->sequence);
@@ -214,6 +226,13 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
     if (config.disable_focus_follows_mouse)
         return 1;
 
+    /* Get the currently focused workspace to check if the focus change also
+     * involves changing workspaces. If so, we need to call workspace_show() to
+     * correctly update state and send the IPC event. */
+    Con *ws = con_get_workspace(con);
+    if (ws != con_get_workspace(focused))
+        workspace_show(ws);
+
     con_focus(con_descend_focused(con));
     tree_render();
 
@@ -227,6 +246,9 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
  *
  */
 static int handle_motion_notify(xcb_motion_notify_event_t *event) {
+
+    last_timestamp = event->time;
+
     /* Skip events where the pointer was over a child window, we are only
      * interested in events on the root window. */
     if (event->child != 0)
@@ -275,7 +297,7 @@ static int handle_mapping_notify(xcb_mapping_notify_event_t *event) {
     DLOG("Received mapping_notify for keyboard or modifier mapping, re-grabbing keys\n");
     xcb_refresh_keyboard_mapping(keysyms, event);
 
-    xcb_get_numlock_mask(conn);
+    xcb_numlock_mask = aio_get_mod_mask_for(XCB_NUM_LOCK, keysyms);
 
     ungrab_all_keys(conn);
     translate_keysyms();
@@ -557,6 +579,21 @@ static bool handle_windowname_change_legacy(void *data, xcb_connection_t *conn, 
     return true;
 }
 
+/*
+ * Called when a window changes its WM_WINDOW_ROLE.
+ *
+ */
+static bool handle_windowrole_change(void *data, xcb_connection_t *conn, uint8_t state,
+                                     xcb_window_t window, xcb_atom_t atom, xcb_get_property_reply_t *prop) {
+    Con *con;
+    if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
+        return false;
+
+    window_update_role(con->window, prop, false);
+
+    return true;
+}
+
 #if 0
 /*
  * Updates the client’s WM_CLASS property
@@ -604,20 +641,25 @@ static int handle_expose_event(xcb_expose_event_t *event) {
  * Handle client messages (EWMH)
  *
  */
-static int handle_client_message(xcb_client_message_event_t *event) {
+static void handle_client_message(xcb_client_message_event_t *event) {
+    /* If this is a startup notification ClientMessage, the library will handle
+     * it and call our monitor_event() callback. */
+    if (sn_xcb_display_process_event(sndisplay, (xcb_generic_event_t*)event))
+        return;
+
     LOG("ClientMessage for window 0x%08x\n", event->window);
     if (event->type == A__NET_WM_STATE) {
         if (event->format != 32 || event->data.data32[1] != A__NET_WM_STATE_FULLSCREEN) {
             DLOG("atom in clientmessage is %d, fullscreen is %d\n",
                     event->data.data32[1], A__NET_WM_STATE_FULLSCREEN);
             DLOG("not about fullscreen atom\n");
-            return 0;
+            return;
         }
 
         Con *con = con_by_window_id(event->window);
         if (con == NULL) {
             DLOG("Could not get window for client message\n");
-            return 0;
+            return;
         }
 
         /* Check if the fullscreen state should be toggled */
@@ -633,12 +675,29 @@ static int handle_client_message(xcb_client_message_event_t *event) {
 
         tree_render();
         x_push_changes(croot);
-    } else {
-        ELOG("unhandled clientmessage\n");
-        return 0;
-    }
+    } else if (event->type == A_I3_SYNC) {
+        DLOG("i3 sync, yay\n");
+        xcb_window_t window = event->data.data32[0];
+        uint32_t rnd = event->data.data32[1];
+        DLOG("Sending random value %d back to X11 window 0x%08x\n", rnd, window);
 
-    return 1;
+        void *reply = scalloc(32);
+        xcb_client_message_event_t *ev = reply;
+
+        ev->response_type = XCB_CLIENT_MESSAGE;
+        ev->window = window;
+        ev->type = A_I3_SYNC;
+        ev->format = 32;
+        ev->data.data32[0] = window;
+        ev->data.data32[1] = rnd;
+
+        xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char*)ev);
+        xcb_flush(conn);
+        free(reply);
+    } else {
+        DLOG("unhandled clientmessage\n");
+        return;
+    }
 }
 
 #if 0
@@ -910,6 +969,14 @@ static int handle_focus_in(xcb_focus_in_event_t *event) {
     }
 
     DLOG("focus is different, updating decorations\n");
+
+    /* Get the currently focused workspace to check if the focus change also
+     * involves changing workspaces. If so, we need to call workspace_show() to
+     * correctly update state and send the IPC event. */
+    Con *ws = con_get_workspace(con);
+    if (ws != con_get_workspace(focused))
+        workspace_show(ws);
+
     con_focus(con);
     /* We update focused_id because we don’t need to set focus again */
     focused_id = event->event;
@@ -933,7 +1000,8 @@ static struct property_handler_t property_handlers[] = {
     { 0, 128, handle_windowname_change_legacy },
     { 0, UINT_MAX, handle_normal_hints },
     { 0, UINT_MAX, handle_clientleader_change },
-    { 0, UINT_MAX, handle_transient_for }
+    { 0, UINT_MAX, handle_transient_for },
+    { 0, 128, handle_windowrole_change }
 };
 #define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
 
@@ -943,12 +1011,16 @@ static struct property_handler_t property_handlers[] = {
  *
  */
 void property_handlers_init() {
+
+    sn_monitor_context_new(sndisplay, conn_screen, startup_monitor_event, NULL, NULL);
+
     property_handlers[0].atom = A__NET_WM_NAME;
     property_handlers[1].atom = XCB_ATOM_WM_HINTS;
     property_handlers[2].atom = XCB_ATOM_WM_NAME;
     property_handlers[3].atom = XCB_ATOM_WM_NORMAL_HINTS;
     property_handlers[4].atom = A_WM_CLIENT_LEADER;
     property_handlers[5].atom = XCB_ATOM_WM_TRANSIENT_FOR;
+    property_handlers[6].atom = A_WM_WINDOW_ROLE;
 }
 
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom) {
@@ -964,7 +1036,7 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
     }
 
     if (handler == NULL) {
-        DLOG("Unhandled property notify for atom %d (0x%08x)\n", atom, atom);
+        //DLOG("Unhandled property notify for atom %d (0x%08x)\n", atom, atom);
         return;
     }
 
@@ -1045,14 +1117,15 @@ void handle_event(int type, xcb_generic_event_t *event) {
             handle_focus_in((xcb_focus_in_event_t*)event);
             break;
 
-        case XCB_PROPERTY_NOTIFY:
-            DLOG("Property notify\n");
+        case XCB_PROPERTY_NOTIFY: {
             xcb_property_notify_event_t *e = (xcb_property_notify_event_t*)event;
+            last_timestamp = e->time;
             property_notify(e->state, e->window, e->atom);
             break;
+        }
 
         default:
-            DLOG("Unhandled event of type %d\n", type);
+            //DLOG("Unhandled event of type %d\n", type);
             break;
     }
 }

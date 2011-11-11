@@ -1,5 +1,11 @@
 /*
  * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * resize.c: Interactive resizing.
+ *
  */
 #include "all.h"
 
@@ -20,7 +26,7 @@ struct callback_params {
 };
 
 DRAGGING_CB(resize_callback) {
-    struct callback_params *params = extra;
+    const struct callback_params *params = extra;
     Con *output = params->output;
     DLOG("new x = %d, y = %d\n", new_x, new_y);
     if (params->orientation == HORIZ) {
@@ -43,7 +49,7 @@ DRAGGING_CB(resize_callback) {
     xcb_flush(conn);
 }
 
-int resize_graphical_handler(Con *first, Con *second, orientation_t orientation, xcb_button_press_event_t *event) {
+int resize_graphical_handler(Con *first, Con *second, orientation_t orientation, const xcb_button_press_event_t *event) {
     DLOG("resize handler\n");
 
     uint32_t new_position;
@@ -92,7 +98,7 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
 
     xcb_flush(conn);
 
-    struct callback_params params = { orientation, output, helpwin, &new_position };
+    const struct callback_params params = { orientation, output, helpwin, &new_position };
 
     drag_pointer(NULL, event, grabwin, BORDER_TOP, resize_callback, &params);
 

@@ -2,25 +2,21 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * src/config.c: Contains all functions handling the configuration file (calling
- * the parser (src/cfgparse.y) with the correct path, switching key bindings
- * mode).
+ * config.c: Configuration file (calling the parser (src/cfgparse.y) with the
+ *           correct path, switching key bindings mode).
  *
  */
+#include "all.h"
 
 /* We need Xlib for XStringToKeysym */
 #include <X11/Xlib.h>
 
-#include "all.h"
-
 char *current_configpath = NULL;
 Config config;
 struct modes_head modes;
+struct barconfig_head barconfigs = TAILQ_HEAD_INITIALIZER(barconfigs);
 
 /**
  * Ungrabs all keys, to be called before re-grabbing the keys because of a
@@ -200,8 +196,7 @@ static char *get_config_path(const char *override_configpath) {
         xdg_config_home = "~/.config";
 
     xdg_config_home = resolve_tilde(xdg_config_home);
-    if (asprintf(&config_path, "%s/i3/config", xdg_config_home) == -1)
-        die("asprintf() failed");
+    sasprintf(&config_path, "%s/i3/config", xdg_config_home);
     free(xdg_config_home);
 
     if (path_exists(config_path))
@@ -221,8 +216,7 @@ static char *get_config_path(const char *override_configpath) {
     char *tok = strtok(buf, ":");
     while (tok != NULL) {
         tok = resolve_tilde(tok);
-        if (asprintf(&config_path, "%s/i3/config", tok) == -1)
-            die("asprintf() failed");
+        sasprintf(&config_path, "%s/i3/config", tok);
         free(tok);
         if (path_exists(config_path)) {
             free(buf);
@@ -257,111 +251,142 @@ static void parse_configuration(const char *override_configpath) {
  *
  */
 void load_configuration(xcb_connection_t *conn, const char *override_configpath, bool reload) {
-        if (reload) {
-                /* First ungrab the keys */
-                ungrab_all_keys(conn);
+    if (reload) {
+        /* First ungrab the keys */
+        ungrab_all_keys(conn);
 
-                struct Mode *mode;
-                Binding *bind;
-                while (!SLIST_EMPTY(&modes)) {
-                        mode = SLIST_FIRST(&modes);
-                        FREE(mode->name);
+        struct Mode *mode;
+        Binding *bind;
+        while (!SLIST_EMPTY(&modes)) {
+            mode = SLIST_FIRST(&modes);
+            FREE(mode->name);
 
-                        /* Clear the old binding list */
-                        bindings = mode->bindings;
-                        while (!TAILQ_EMPTY(bindings)) {
-                                bind = TAILQ_FIRST(bindings);
-                                TAILQ_REMOVE(bindings, bind, bindings);
-                                FREE(bind->translated_to);
-                                FREE(bind->command);
-                                FREE(bind);
-                        }
-                        FREE(bindings);
-                        SLIST_REMOVE(&modes, mode, Mode, modes);
-                }
-
-#if 0
-                struct Assignment *assign;
-                while (!TAILQ_EMPTY(&assignments)) {
-                        assign = TAILQ_FIRST(&assignments);
-                        FREE(assign->windowclass_title);
-                        TAILQ_REMOVE(&assignments, assign, assignments);
-                        FREE(assign);
-                }
-#endif
-
-                /* Clear workspace names */
-#if 0
-                Workspace *ws;
-                TAILQ_FOREACH(ws, workspaces, workspaces)
-                        workspace_set_name(ws, NULL);
-#endif
+            /* Clear the old binding list */
+            bindings = mode->bindings;
+            while (!TAILQ_EMPTY(bindings)) {
+                bind = TAILQ_FIRST(bindings);
+                TAILQ_REMOVE(bindings, bind, bindings);
+                FREE(bind->translated_to);
+                FREE(bind->command);
+                FREE(bind);
+            }
+            FREE(bindings);
+            SLIST_REMOVE(&modes, mode, Mode, modes);
         }
 
-        SLIST_INIT(&modes);
+        struct Assignment *assign;
+        while (!TAILQ_EMPTY(&assignments)) {
+            assign = TAILQ_FIRST(&assignments);
+            if (assign->type == A_TO_WORKSPACE)
+                FREE(assign->dest.workspace);
+            else if (assign->type == A_TO_OUTPUT)
+                FREE(assign->dest.output);
+            else if (assign->type == A_COMMAND)
+                FREE(assign->dest.command);
+            match_free(&(assign->match));
+            TAILQ_REMOVE(&assignments, assign, assignments);
+            FREE(assign);
+        }
 
-        struct Mode *default_mode = scalloc(sizeof(struct Mode));
-        default_mode->name = sstrdup("default");
-        default_mode->bindings = scalloc(sizeof(struct bindings_head));
-        TAILQ_INIT(default_mode->bindings);
-        SLIST_INSERT_HEAD(&modes, default_mode, modes);
+        /* Clear bar configs */
+        Barconfig *barconfig;
+        while (!TAILQ_EMPTY(&barconfigs)) {
+            barconfig = TAILQ_FIRST(&barconfigs);
+            FREE(barconfig->id);
+            for (int c = 0; c < barconfig->num_outputs; c++)
+                free(barconfig->outputs[c]);
+            FREE(barconfig->outputs);
+            FREE(barconfig->tray_output);
+            FREE(barconfig->socket_path);
+            FREE(barconfig->status_command);
+            FREE(barconfig->font);
+            FREE(barconfig->colors.background);
+            FREE(barconfig->colors.statusline);
+            FREE(barconfig->colors.focused_workspace_text);
+            FREE(barconfig->colors.focused_workspace_bg);
+            FREE(barconfig->colors.active_workspace_text);
+            FREE(barconfig->colors.active_workspace_bg);
+            FREE(barconfig->colors.inactive_workspace_text);
+            FREE(barconfig->colors.inactive_workspace_bg);
+            FREE(barconfig->colors.urgent_workspace_text);
+            FREE(barconfig->colors.urgent_workspace_bg);
+            TAILQ_REMOVE(&barconfigs, barconfig, configs);
+            FREE(barconfig);
+        }
 
-        bindings = default_mode->bindings;
+        /* Clear workspace names */
+#if 0
+        Workspace *ws;
+        TAILQ_FOREACH(ws, workspaces, workspaces)
+            workspace_set_name(ws, NULL);
+#endif
+    }
+
+    SLIST_INIT(&modes);
+
+    struct Mode *default_mode = scalloc(sizeof(struct Mode));
+    default_mode->name = sstrdup("default");
+    default_mode->bindings = scalloc(sizeof(struct bindings_head));
+    TAILQ_INIT(default_mode->bindings);
+    SLIST_INSERT_HEAD(&modes, default_mode, modes);
+
+    bindings = default_mode->bindings;
 
 #define REQUIRED_OPTION(name) \
-        if (config.name == NULL) \
-                die("You did not specify required configuration option " #name "\n");
+    if (config.name == NULL) \
+        die("You did not specify required configuration option " #name "\n");
 
-        /* Clear the old config or initialize the data structure */
-        memset(&config, 0, sizeof(config));
+    /* Clear the old config or initialize the data structure */
+    memset(&config, 0, sizeof(config));
 
-        /* Initialize default colors */
+    /* Initialize default colors */
 #define INIT_COLOR(x, cborder, cbackground, ctext) \
-        do { \
-                x.border = get_colorpixel(cborder); \
-                x.background = get_colorpixel(cbackground); \
-                x.text = get_colorpixel(ctext); \
-        } while (0)
+    do { \
+        x.border = get_colorpixel(cborder); \
+        x.background = get_colorpixel(cbackground); \
+        x.text = get_colorpixel(ctext); \
+    } while (0)
 
-        config.client.background = get_colorpixel("#000000");
-        INIT_COLOR(config.client.focused, "#4c7899", "#285577", "#ffffff");
-        INIT_COLOR(config.client.focused_inactive, "#333333", "#5f676a", "#ffffff");
-        INIT_COLOR(config.client.unfocused, "#333333", "#222222", "#888888");
-        INIT_COLOR(config.client.urgent, "#2f343a", "#900000", "#ffffff");
-        INIT_COLOR(config.bar.focused, "#4c7899", "#285577", "#ffffff");
-        INIT_COLOR(config.bar.unfocused, "#333333", "#222222", "#888888");
-        INIT_COLOR(config.bar.urgent, "#2f343a", "#900000", "#ffffff");
+    config.client.background = get_colorpixel("#000000");
+    INIT_COLOR(config.client.focused, "#4c7899", "#285577", "#ffffff");
+    INIT_COLOR(config.client.focused_inactive, "#333333", "#5f676a", "#ffffff");
+    INIT_COLOR(config.client.unfocused, "#333333", "#222222", "#888888");
+    INIT_COLOR(config.client.urgent, "#2f343a", "#900000", "#ffffff");
+    INIT_COLOR(config.bar.focused, "#4c7899", "#285577", "#ffffff");
+    INIT_COLOR(config.bar.unfocused, "#333333", "#222222", "#888888");
+    INIT_COLOR(config.bar.urgent, "#2f343a", "#900000", "#ffffff");
 
-        config.default_border = BS_NORMAL;
-        /* Set default_orientation to NO_ORIENTATION for auto orientation. */
-        config.default_orientation = NO_ORIENTATION;
+    config.default_border = BS_NORMAL;
+    config.default_floating_border = BS_NORMAL;
+    /* Set default_orientation to NO_ORIENTATION for auto orientation. */
+    config.default_orientation = NO_ORIENTATION;
 
-        parse_configuration(override_configpath);
+    parse_configuration(override_configpath);
 
-        if (reload) {
-                translate_keysyms();
-                grab_all_keys(conn, false);
-        }
+    if (reload) {
+        translate_keysyms();
+        grab_all_keys(conn, false);
+    }
 
-        if (config.font.id == 0) {
-                ELOG("You did not specify required configuration option \"font\"\n");
-                config.font = load_font("fixed", true);
-        }
+    if (config.font.id == 0) {
+        ELOG("You did not specify required configuration option \"font\"\n");
+        config.font = load_font("fixed", true);
+    }
 
 #if 0
-        /* Set an empty name for every workspace which got no name */
-        Workspace *ws;
-        TAILQ_FOREACH(ws, workspaces, workspaces) {
-                if (ws->name != NULL) {
-                        /* If the font was not specified when the workspace name
-                         * was loaded, we need to predict the text width now */
-                        if (ws->text_width == 0)
-                                ws->text_width = predict_text_width(global_conn,
-                                                config.font, ws->name, ws->name_len);
-                        continue;
-                }
+    /* Set an empty name for every workspace which got no name */
+    Workspace *ws;
+    TAILQ_FOREACH(ws, workspaces, workspaces) {
+            if (ws->name != NULL) {
+                    /* If the font was not specified when the workspace name
+                     * was loaded, we need to predict the text width now */
+                    if (ws->text_width == 0)
+                            ws->text_width = predict_text_width(global_conn,
+                                            config.font, ws->name, ws->name_len);
+                    continue;
+            }
 
-                workspace_set_name(ws, NULL);
-        }
+            workspace_set_name(ws, NULL);
+    }
 #endif
 }

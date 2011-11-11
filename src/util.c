@@ -2,14 +2,14 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * util.c: Utility functions, which can be useful everywhere.
+ * util.c: Utility functions, which can be useful everywhere within i3 (see
+ *         also libi3).
  *
  */
+#include "all.h"
+
 #include <sys/wait.h>
 #include <stdarg.h>
 #include <iconv.h>
@@ -21,7 +21,8 @@
 #include <yajl/yajl_version.h>
 #include <libgen.h>
 
-#include "all.h"
+#define SN_API_NOT_YET_FROZEN 1
+#include <libsn/sn-launcher.h>
 
 static iconv_t conversion_descriptor = 0;
 
@@ -59,68 +60,6 @@ bool update_if_necessary(uint32_t *destination, const uint32_t new_value) {
 }
 
 /*
- * The s* functions (safe) are wrappers around malloc, strdup, …, which exits if one of
- * the called functions returns NULL, meaning that there is no more memory available
- *
- */
-void *smalloc(size_t size) {
-    void *result = malloc(size);
-    exit_if_null(result, "Error: out of memory (malloc(%zd))\n", size);
-    return result;
-}
-
-void *scalloc(size_t size) {
-    void *result = calloc(size, 1);
-    exit_if_null(result, "Error: out of memory (calloc(%zd))\n", size);
-    return result;
-}
-
-void *srealloc(void *ptr, size_t size) {
-    void *result = realloc(ptr, size);
-    if (result == NULL && size > 0)
-        die("Error: out memory (realloc(%zd))\n", size);
-    return result;
-}
-
-char *sstrdup(const char *str) {
-    char *result = strdup(str);
-    exit_if_null(result, "Error: out of memory (strdup())\n");
-    return result;
-}
-
-/*
- * Starts the given application by passing it through a shell. We use double fork
- * to avoid zombie processes. As the started application’s parent exits (immediately),
- * the application is reparented to init (process-id 1), which correctly handles
- * childs, so we don’t have to do it :-).
- *
- * The shell is determined by looking for the SHELL environment variable. If it
- * does not exist, /bin/sh is used.
- *
- */
-void start_application(const char *command) {
-    LOG("executing: %s\n", command);
-    if (fork() == 0) {
-        /* Child process */
-        setsid();
-        if (fork() == 0) {
-            /* Stores the path of the shell */
-            static const char *shell = NULL;
-
-            if (shell == NULL)
-                if ((shell = getenv("SHELL")) == NULL)
-                    shell = "/bin/sh";
-
-            /* This is the child */
-            execl(shell, shell, "-c", command, (void*)NULL);
-            /* not reached */
-        }
-        exit(0);
-    }
-    wait(0);
-}
-
-/*
  * exec()s an i3 utility, for example the config file migration script or
  * i3-nagbar. This function first searches $PATH for the given utility named,
  * then falls back to the dirname() of the i3 executable path and then falls
@@ -146,7 +85,7 @@ void exec_i3_utility(char *name, char *argv[]) {
      * argv[0]’s dirname */
     char *pathbuf = strdup(start_argv[0]);
     char *dir = dirname(pathbuf);
-    asprintf(&migratepath, "%s/%s", dir, name);
+    sasprintf(&migratepath, "%s/%s", dir, name);
     argv[0] = migratepath;
     execvp(migratepath, argv);
 
@@ -158,7 +97,7 @@ void exec_i3_utility(char *name, char *argv[]) {
         exit(1);
     }
     dir = dirname(buffer);
-    asprintf(&migratepath, "%s/%s", dir, name);
+    sasprintf(&migratepath, "%s/%s", dir, name);
     argv[0] = migratepath;
     execvp(migratepath, argv);
 #endif
@@ -214,6 +153,7 @@ char *convert_utf8_to_ucs2(char *input, int *real_strlen) {
     int rc = iconv(conversion_descriptor, (void*)&input, &input_size, &output, &output_size);
     if (rc == (size_t)-1) {
         perror("Converting to UCS-2 failed");
+        FREE(buffer);
         if (real_strlen != NULL)
             *real_strlen = 0;
         return NULL;
@@ -298,16 +238,10 @@ char *get_process_filename(const char *prefix) {
     if (dir == NULL) {
         struct passwd *pw = getpwuid(getuid());
         const char *username = pw ? pw->pw_name : "unknown";
-        if (asprintf(&dir, "/tmp/i3-%s", username) == -1) {
-            perror("asprintf()");
-            return NULL;
-        }
+        sasprintf(&dir, "/tmp/i3-%s", username);
     } else {
         char *tmp;
-        if (asprintf(&tmp, "%s/i3", dir) == -1) {
-            perror("asprintf()");
-            return NULL;
-        }
+        sasprintf(&tmp, "%s/i3", dir);
         dir = tmp;
     }
     if (!path_exists(dir)) {
@@ -317,11 +251,7 @@ char *get_process_filename(const char *prefix) {
         }
     }
     char *filename;
-    if (asprintf(&filename, "%s/%s.%d", dir, prefix, getpid()) == -1) {
-        perror("asprintf()");
-        filename = NULL;
-    }
-
+    sasprintf(&filename, "%s/%s.%d", dir, prefix, getpid());
     free(dir);
     return filename;
 }
@@ -483,30 +413,6 @@ void *memmem(const void *l, size_t l_len, const void *s, size_t s_len) {
             return cur;
 
     return NULL;
-}
-
-#endif
-
-#if defined(__APPLE__)
-
-/*
- * Taken from FreeBSD
- * Returns a pointer to a new string which is a duplicate of the
- * string, but only copies at most n characters.
- *
- */
-char *strndup(const char *str, size_t n) {
-    size_t len;
-    char *copy;
-
-    for (len = 0; len < n && str[len]; len++)
-        continue;
-
-    if ((copy = malloc(len + 1)) == NULL)
-        return (NULL);
-    memcpy(copy, str, len);
-    copy[len] = '\0';
-    return (copy);
 }
 
 #endif

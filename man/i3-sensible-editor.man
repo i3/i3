@@ -1,0 +1,36 @@
+i3-sensible-editor(1)
+===================
+Michael Stapelberg <michael+i3@stapelberg.de>
+v4.1, November 2011
+
+== NAME
+
+i3-sensible-editor - launches $EDITOR with fallbacks
+
+== SYNOPSIS
+
+i3-sensible-editor [arguments]
+
+== DESCRIPTION
+
+i3-sensible-editor is used by i3-nagbar(1) when you click on the edit button.
+
+It tries to start one of the following (in that order):
+
+* $VISUAL
+* $EDITOR
+* nano
+* vim
+* vi
+* emacs
+
+Please don’t complain about the order: If the user has any preference, he will
+have $VISUAL or $EDITOR set.
+
+== SEE ALSO
+
+i3(1)
+
+== AUTHOR
+
+Michael Stapelberg and contributors

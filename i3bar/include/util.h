@@ -1,9 +1,8 @@
 /*
- * i3bar - an xcb-based status- and ws-bar for i3
+ * vim:ts=4:sw=4:expandtab
  *
- * © 2010-2011 Axel Wagner and contributors
- *
- * See file LICNSE for license information
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
 #ifndef UTIL_H_

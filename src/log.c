@@ -2,12 +2,9 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * src/log.c: handles the setting of loglevels, contains the logging functions.
+ * log.c: Setting of loglevels, logging functions.
  *
  */
 #include <stdarg.h>
@@ -87,12 +84,13 @@ void add_loglevel(const char *level) {
  *
  */
 void vlog(char *fmt, va_list args) {
-    char timebuf[64];
+    static char timebuf[64];
+    static struct tm result;
 
     /* Get current time */
     time_t t = time(NULL);
     /* Convert time to local time (determined by the locale) */
-    struct tm *tmp = localtime(&t);
+    struct tm *tmp = localtime_r(&t, &result);
     /* Generate time prefix */
     strftime(timebuf, sizeof(timebuf), "%x %X - ", tmp);
 #ifdef DEBUG_TIMING

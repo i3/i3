@@ -4,6 +4,8 @@
  * i3 - an improved dynamic tiling window manager
  * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
+ * window.c: Updates window attributes (X11 hints/properties).
+ *
  */
 #include "all.h"
 
@@ -14,7 +16,7 @@
  */
 void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("empty property, not updating\n");
+        DLOG("WM_CLASS not set.\n");
         FREE(prop);
         return;
     }
@@ -103,7 +105,7 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
  */
 void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("prop == NULL\n");
+        DLOG("WM_NAME not set (_NET_WM_NAME is what you want anyways).\n");
         FREE(prop);
         return;
     }
@@ -123,6 +125,7 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
         return;
     }
 
+    LOG("WM_NAME changed to \"%s\"\n", new_name);
     LOG("Using legacy window title. Note that in order to get Unicode window "
         "titles in i3, the application has to set _NET_WM_NAME (UTF-8)\n");
 
@@ -149,7 +152,7 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
  */
 void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("prop == NULL\n");
+        DLOG("CLIENT_LEADER not set.\n");
         FREE(prop);
         return;
     }
@@ -173,7 +176,7 @@ void window_update_leader(i3Window *win, xcb_get_property_reply_t *prop) {
  */
 void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("prop == NULL\n");
+        DLOG("TRANSIENT_FOR not set.\n");
         FREE(prop);
         return;
     }
@@ -197,7 +200,7 @@ void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop) 
  */
 void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop) {
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
-        DLOG("prop == NULL\n");
+        DLOG("_NET_WM_STRUT_PARTIAL not set.\n");
         FREE(prop);
         return;
     }
@@ -212,6 +215,39 @@ void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop) 
          strut[0], strut[1], strut[2], strut[3]);
 
     win->reserved = (struct reservedpx){ strut[0], strut[1], strut[2], strut[3] };
+
+    free(prop);
+}
+
+/*
+ * Updates the WM_WINDOW_ROLE
+ *
+ */
+void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt) {
+    if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+        DLOG("WM_WINDOW_ROLE not set.\n");
+        FREE(prop);
+        return;
+    }
+
+    char *new_role;
+    if (asprintf(&new_role, "%.*s", xcb_get_property_value_length(prop),
+                 (char*)xcb_get_property_value(prop)) == -1) {
+        perror("asprintf()");
+        DLOG("Could not get WM_WINDOW_ROLE\n");
+        free(prop);
+        return;
+    }
+    FREE(win->role);
+    win->role = new_role;
+    LOG("WM_WINDOW_ROLE changed to \"%s\"\n", win->role);
+
+    if (before_mgmt) {
+        free(prop);
+        return;
+    }
+
+    run_assignments(win);
 
     free(prop);
 }

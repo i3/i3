@@ -1,8 +1,14 @@
 /*
  * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * move.c: Moving containers into some direction.
+ *
  */
-
 #include "all.h"
+
 #include "cmdparse.tab.h"
 
 typedef enum { BEFORE, AFTER } position_t;

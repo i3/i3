@@ -14,6 +14,8 @@
 
 #include <X11/Xlib.h>
 
+#include "libi3.h"
+
 extern Display *dpy;
 
 struct context {
@@ -141,7 +143,7 @@ bindcode:
         char *str = XKeysymToString(sym);
         char *modifiers = modifier_to_string($<number>3);
         // TODO: modifier to string
-        asprintf(&(context->result), "bindsym %s%s %s\n", modifiers, str, $<string>6);
+        sasprintf(&(context->result), "bindsym %s%s %s\n", modifiers, str, $<string>6);
         free(modifiers);
     }
     ;

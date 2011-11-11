@@ -2,13 +2,10 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-config-wizard: Program to convert configs using keycodes to configs using
- * keysyms.
+ *                   keysyms.
  *
  */
 #include <ev.h>
@@ -51,19 +48,18 @@
 while (0)
 
 #include "xcb.h"
-#include "ipc.h"
+#include "libi3.h"
 
 enum { STEP_WELCOME, STEP_GENERATE } current_step = STEP_WELCOME;
 enum { MOD_Mod1, MOD_Mod4 } modifier = MOD_Mod4;
 
 static char *config_path;
-static xcb_connection_t *conn;
+static uint32_t xcb_numlock_mask;
+xcb_connection_t *conn;
 static xcb_get_modifier_mapping_reply_t *modmap_reply;
-static uint32_t font_id;
-static uint32_t font_bold_id;
+static i3Font font;
+static i3Font bold_font;
 static char *socket_path;
-static int font_height;
-static int font_bold_height;
 static xcb_window_t win;
 static xcb_pixmap_t pixmap;
 static xcb_gcontext_t pixmap_gc;
@@ -73,30 +69,6 @@ Display *dpy;
 
 char *rewrite_binding(const char *bindingline);
 static void finish();
-
-#if defined(__APPLE__)
-
-/*
- * Taken from FreeBSD
- * Returns a pointer to a new string which is a duplicate of the
- * string, but only copies at most n characters.
- *
- */
-char *strndup(const char *str, size_t n) {
-    size_t len;
-    char *copy;
-
-    for (len = 0; len < n && str[len]; len++)
-        continue;
-
-    if ((copy = malloc(len + 1)) == NULL)
-        return (NULL);
-    memcpy(copy, str, len);
-    copy[len] = '\0';
-    return (copy);
-}
-
-#endif
 
 /*
  * This function resolves ~ in pathnames.
@@ -131,58 +103,22 @@ static char *resolve_tilde(const char *path) {
 }
 
 /*
- * Try to get the socket path from X11 and return NULL if it doesn’t work.
- * As i3-msg is a short-running tool, we don’t bother with cleaning up the
- * connection and leave it up to the operating system on exit.
- *
- */
-static char *socket_path_from_x11() {
-    xcb_connection_t *conn;
-    int screen;
-    if ((conn = xcb_connect(NULL, &screen)) == NULL ||
-        xcb_connection_has_error(conn))
-        return NULL;
-    xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screen);
-    xcb_window_t root = root_screen->root;
-
-    xcb_intern_atom_cookie_t atom_cookie;
-    xcb_intern_atom_reply_t *atom_reply;
-
-    atom_cookie = xcb_intern_atom(conn, 0, strlen("I3_SOCKET_PATH"), "I3_SOCKET_PATH");
-    atom_reply = xcb_intern_atom_reply(conn, atom_cookie, NULL);
-    if (atom_reply == NULL)
-        return NULL;
-
-    xcb_get_property_cookie_t prop_cookie;
-    xcb_get_property_reply_t *prop_reply;
-    prop_cookie = xcb_get_property_unchecked(conn, false, root, atom_reply->atom,
-                                             XCB_GET_PROPERTY_TYPE_ANY, 0, PATH_MAX);
-    prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
-    if (prop_reply == NULL || xcb_get_property_value_length(prop_reply) == 0)
-        return NULL;
-    if (asprintf(&socket_path, "%.*s", xcb_get_property_value_length(prop_reply),
-                 (char*)xcb_get_property_value(prop_reply)) == -1)
-        return NULL;
-    return socket_path;
-}
-
-/*
  * Handles expose events, that is, draws the window contents.
  *
  */
 static int handle_expose() {
     /* re-draw the background */
-    xcb_rectangle_t border = {0, 0, 300, (15*font_height) + 8};
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#000000"));
+    xcb_rectangle_t border = {0, 0, 300, (15 * font.height) + 8};
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#000000") });
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
 
-    xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font_id);
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font.id });
 
-#define txt(x, row, text) xcb_image_text_8(conn, strlen(text), pixmap, pixmap_gc, x, (row * font_height) + 2, text)
+#define txt(x, row, text) xcb_image_text_8(conn, strlen(text), pixmap, pixmap_gc, x, (row * font.height) + 2, text)
 
     if (current_step == STEP_WELCOME) {
         /* restore font color */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FFFFFF"));
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FFFFFF") });
 
         txt(10, 2, "You have not configured i3 yet.");
         txt(10, 3, "Do you want me to generate ~/.i3/config?");
@@ -190,16 +126,16 @@ static int handle_expose() {
         txt(85, 7, "No, I will use the defaults");
 
         /* green */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#00FF00"));
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#00FF00") });
         txt(25, 5, "<Enter>");
 
         /* red */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FF0000"));
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FF0000") });
         txt(31, 7, "<ESC>");
     }
 
     if (current_step == STEP_GENERATE) {
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FFFFFF"));
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FFFFFF") });
 
         txt(10, 2, "Please choose either:");
         txt(85, 4, "Win as default modifier");
@@ -214,20 +150,19 @@ static int handle_expose() {
         else txt(31, 4, "<Win>");
 
         /* the selected modifier */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FONT, font_bold_id);
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ bold_font.id });
         if (modifier == MOD_Mod4)
             txt(31, 4, "<Win>");
         else txt(31, 5, "<Alt>");
 
         /* green */
-        uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_FONT;
-        uint32_t values[] = { get_colorpixel(conn, "#00FF00"), font_id };
-        xcb_change_gc(conn, pixmap_gc, mask, values);
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_FONT,
+                      (uint32_t[]) { get_colorpixel("#00FF00"), font.id });
 
         txt(25, 9, "<Enter>");
 
         /* red */
-        xcb_change_gc_single(conn, pixmap_gc, XCB_GC_FOREGROUND, get_colorpixel(conn, "#FF0000"));
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FF0000") });
         txt(31, 10, "<ESC>");
     }
 
@@ -406,7 +341,7 @@ static void finish() {
     fclose(ks_config);
 
     /* tell i3 to reload the config file */
-    int sockfd = connect_ipc(socket_path);
+    int sockfd = ipc_connect(socket_path);
     ipc_send_message(sockfd, strlen("reload"), 0, (uint8_t*)"reload");
     close(sockfd);
 
@@ -485,6 +420,7 @@ int main(int argc, char *argv[]) {
 
     xcb_get_modifier_mapping_cookie_t modmap_cookie;
     modmap_cookie = xcb_get_modifier_mapping(conn);
+    symbols = xcb_key_symbols_alloc(conn);
 
     /* Place requests for the atoms we need as soon as possible */
     #define xmacro(atom) \
@@ -498,17 +434,31 @@ int main(int argc, char *argv[]) {
     if (!(modmap_reply = xcb_get_modifier_mapping_reply(conn, modmap_cookie, NULL)))
         errx(EXIT_FAILURE, "Could not get modifier mapping\n");
 
-    /* XXX: we should refactor xcb_get_numlock_mask so that it uses the
-     * modifier mapping we already have */
-    xcb_get_numlock_mask(conn);
+    xcb_numlock_mask = get_mod_mask_for(XCB_NUM_LOCK, symbols, modmap_reply);
 
-    symbols = xcb_key_symbols_alloc(conn);
-
-    font_id = get_font_id(conn, pattern, &font_height);
-    font_bold_id = get_font_id(conn, patternbold, &font_bold_height);
+    font = load_font(pattern, true);
+    bold_font = load_font(patternbold, true);
 
     /* Open an input window */
-    win = open_input_window(conn, 300, 205);
+    win = xcb_generate_id(conn);
+    xcb_create_window(
+        conn,
+        XCB_COPY_FROM_PARENT,
+        win, /* the window id */
+        root, /* parent == root */
+        490, 297, 300, 205, /* dimensions */
+        0, /* X11 border = 0, we draw our own */
+        XCB_WINDOW_CLASS_INPUT_OUTPUT,
+        XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
+        XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
+        (uint32_t[]){
+            0, /* back pixel: black */
+            XCB_EVENT_MASK_EXPOSURE |
+            XCB_EVENT_MASK_BUTTON_PRESS
+        });
+
+    /* Map the window (make it visible) */
+    xcb_map_window(conn, win);
 
     /* Setup NetWM atoms */
     #define xmacro(name) \

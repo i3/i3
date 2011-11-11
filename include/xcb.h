@@ -2,10 +2,9 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * xcb.c: Helper functions for easier usage of XCB
  *
  */
 #ifndef _XCB_H
@@ -23,6 +22,7 @@
 #define XCB_CURSOR_LEFT_PTR     68
 #define XCB_CURSOR_SB_H_DOUBLE_ARROW 108
 #define XCB_CURSOR_SB_V_DOUBLE_ARROW 116
+#define XCB_CURSOR_WATCH 150
 
 /* from X11/keysymdef.h */
 #define XCB_NUM_LOCK                    0xff7f
@@ -52,39 +52,12 @@
 extern unsigned int xcb_numlock_mask;
 
 /**
- * Loads a font for usage, also getting its height. If fallback is true,
- * i3 loads 'fixed' or '-misc-*' if the font cannot be found instead of
- * exiting.
- *
- */
-i3Font load_font(const char *pattern, bool fallback);
-
-/**
- * Returns the colorpixel to use for the given hex color (think of HTML).
- *
- * The hex_color has to start with #, for example #FF00FF.
- *
- * NOTE that get_colorpixel() does _NOT_ check the given color code for
- * validity.  This has to be done by the caller.
- *
- */
-uint32_t get_colorpixel(char *hex);
-
-/**
  * Convenience wrapper around xcb_create_window which takes care of depth,
  * generating an ID and checking for errors.
  *
  */
 xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class,
         enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values);
-
-/**
- * Changes a single value in the graphic context (so one doesn’t have to
- * define an array of values)
- *
- */
-void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc,
-                          uint32_t mask, uint32_t value);
 
 /**
  * Draws a line from x,y to to_x,to_y using the given color
@@ -103,14 +76,6 @@ void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable,
                    uint32_t y, uint32_t width, uint32_t height);
 
 /**
- * Generates a configure_notify event and sends it to the given window
- * Applications need this to think they’ve configured themselves correctly.
- * The truth is, however, that we will manage them.
- *
- */
-void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window, int border_width);
-
-/**
  * Generates a configure_notify_event with absolute coordinates (relative to
  * the X root window, not to the client’s frame) for the given client.
  *
@@ -122,13 +87,6 @@ void fake_absolute_configure_notify(Con *con);
  *
  */
 void send_take_focus(xcb_window_t window);
-
-/**
- * Finds out which modifier mask is the one for numlock, as the user may
- * change this.
- *
- */
-void xcb_get_numlock_mask(xcb_connection_t *conn);
 
 /**
  * Raises the given window (typically client->frame) above all other windows
@@ -157,5 +115,13 @@ bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom);
  *
  */
 void xcb_warp_pointer_rect(xcb_connection_t *conn, Rect *rect);
+
+/**
+ * Set the cursor of the root window to the given cursor id.
+ * This function should only be used if xcursor_supported == false.
+ * Otherwise, use xcursor_set_root_cursor().
+ *
+ */
+void xcb_set_root_cursor(int cursor);
 
 #endif

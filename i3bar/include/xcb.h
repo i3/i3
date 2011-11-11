@@ -1,9 +1,10 @@
 /*
+ * vim:ts=4:sw=4:expandtab
+ *
  * i3bar - an xcb-based status- and ws-bar for i3
+ * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
  *
- * © 2010-2011 Axel Wagner and contributors
- *
- * See file LICNSE for license information
+ * xcb.c: Communicating with X
  *
  */
 #ifndef XCB_H_
@@ -11,6 +12,18 @@
 
 #include <stdint.h>
 //#include "outputs.h"
+
+#ifdef XCB_COMPAT
+#define XCB_ATOM_CARDINAL CARDINAL
+#endif
+
+#define _NET_SYSTEM_TRAY_ORIENTATION_HORZ 0
+#define _NET_SYSTEM_TRAY_ORIENTATION_VERT 1
+#define SYSTEM_TRAY_REQUEST_DOCK    0
+#define SYSTEM_TRAY_BEGIN_MESSAGE   1
+#define SYSTEM_TRAY_CANCEL_MESSAGE  2
+#define XEMBED_MAPPED                   (1 << 0)
+#define XEMBED_EMBEDDED_NOTIFY		0
 
 struct xcb_color_strings_t {
     char *bar_fg;
@@ -28,10 +41,18 @@ struct xcb_color_strings_t {
 typedef struct xcb_colors_t xcb_colors_t;
 
 /*
- * Initialize xcb and use the specified fontname for text-rendering
+ * Early initialization of the connection to X11: Everything which does not
+ * depend on 'config'.
  *
  */
-char *init_xcb(char *fontname);
+char *init_xcb_early();
+
+/**
+ * Initialization which depends on 'config' being usable. Called after the
+ * configuration has arrived.
+ *
+ */
+void init_xcb_late(char *fontname);
 
 /*
  * Initialize the colors

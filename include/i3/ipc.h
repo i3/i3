@@ -1,17 +1,13 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * This public header defines the different constants and message types to use
  * for the IPC interface to i3 (see docs/ipc for more information).
  *
  */
-
 #ifndef _I3_IPC_H
 #define _I3_IPC_H
 
@@ -38,6 +34,11 @@
 /** Requests the tree layout from i3 */
 #define I3_IPC_MESSAGE_TYPE_GET_TREE            4
 
+/** Request the current defined marks from i3 */
+#define I3_IPC_MESSAGE_TYPE_GET_MARKS           5
+
+/** Request the configuration for a specific 'bar' */
+#define I3_IPC_MESSAGE_TYPE_GET_BAR_CONFIG      6
 
 /*
  * Messages from i3 to clients
@@ -59,6 +60,11 @@
 /** Tree reply type */
 #define I3_IPC_REPLY_TYPE_TREE                  4
 
+/** Marks reply type */
+#define I3_IPC_REPLY_TYPE_MARKS                 5
+
+/** Bar config reply type */
+#define I3_IPC_REPLY_TYPE_BAR_CONFIG            6
 
 /*
  * Events from i3 to clients. Events have the first bit set high.

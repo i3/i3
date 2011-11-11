@@ -4,11 +4,9 @@
  * i3 - an improved dynamic tiling window manager
  * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * manage.c: Contains all functions for initially managing new windows
- *           (or existing ones on restart).
+ * manage.c: Initially managing new windows (or existing ones on restart).
  *
  */
-
 #include "all.h"
 
 /*
@@ -79,11 +77,10 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     xcb_get_geometry_reply_t *geom;
     xcb_get_window_attributes_reply_t *attr = NULL;
 
-    DLOG("---> looking at window 0x%08x\n", window);
-
     xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
                               utf8_title_cookie, title_cookie,
-                              class_cookie, leader_cookie, transient_cookie;
+                              class_cookie, leader_cookie, transient_cookie,
+                              role_cookie, startup_id_cookie;
 
 
     geomc = xcb_get_geometry(conn, d);
@@ -101,13 +98,11 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     }
 
     if (needs_to_be_mapped && attr->map_state != XCB_MAP_STATE_VIEWABLE) {
-        DLOG("map_state unviewable\n");
         FREE_GEOMETRY();
         goto out;
     }
 
     /* Don’t manage clients with the override_redirect flag */
-    DLOG("override_redirect is %d\n", attr->override_redirect);
     if (attr->override_redirect) {
         FREE_GEOMETRY();
         goto out;
@@ -145,9 +140,11 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     transient_cookie = GET_PROPERTY(XCB_ATOM_WM_TRANSIENT_FOR, UINT32_MAX);
     title_cookie = GET_PROPERTY(XCB_ATOM_WM_NAME, 128);
     class_cookie = GET_PROPERTY(XCB_ATOM_WM_CLASS, 128);
+    role_cookie = GET_PROPERTY(A_WM_WINDOW_ROLE, 128);
+    startup_id_cookie = GET_PROPERTY(A__NET_STARTUP_ID, 512);
     /* TODO: also get wm_normal_hints here. implement after we got rid of xcb-event */
 
-    DLOG("reparenting!\n");
+    DLOG("Managing window 0x%08x\n", window);
 
     i3Window *cwindow = scalloc(sizeof(i3Window));
     cwindow->id = window;
@@ -171,6 +168,12 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_leader(cwindow, xcb_get_property_reply(conn, leader_cookie, NULL));
     window_update_transient_for(cwindow, xcb_get_property_reply(conn, transient_cookie, NULL));
     window_update_strut_partial(cwindow, xcb_get_property_reply(conn, strut_cookie, NULL));
+    window_update_role(cwindow, xcb_get_property_reply(conn, role_cookie, NULL), true);
+
+    xcb_get_property_reply_t *startup_id_reply;
+    startup_id_reply = xcb_get_property_reply(conn, startup_id_cookie, NULL);
+    char *startup_ws = startup_workspace_for_window(cwindow, startup_id_reply);
+    DLOG("startup workspace = %s\n", startup_ws);
 
     /* check if the window needs WM_TAKE_FOCUS */
     cwindow->needs_take_focus = window_supports_protocol(cwindow->id, A_WM_TAKE_FOCUS);
@@ -230,6 +233,15 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
                 else nc = tree_open_con(nc->parent, cwindow);
             }
         /* TODO: handle assignments with type == A_TO_OUTPUT */
+        } else if (startup_ws) {
+            /* If it’s not assigned, but was started on a specific workspace,
+             * we want to open it there */
+            DLOG("Using workspace on which this application was started (%s)\n", startup_ws);
+            nc = con_descend_tiling_focused(workspace_get(startup_ws, NULL));
+            DLOG("focused on ws %s: %p / %s\n", startup_ws, nc, nc->name);
+            if (nc->type == CT_WORKSPACE)
+                nc = tree_open_con(nc, cwindow);
+            else nc = tree_open_con(nc->parent, cwindow);
         } else {
             /* If not, insert it at the currently focused position */
             if (focused->type == CT_CON && con_accepts_window(focused)) {
@@ -253,7 +265,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     nc->border_width = geom->border_width;
 
     char *name;
-    asprintf(&name, "[i3 con] container around %p", cwindow);
+    sasprintf(&name, "[i3 con] container around %p", cwindow);
     x_set_name(nc, name);
     free(name);
 
@@ -265,9 +277,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (fs == NULL) {
         DLOG("Not in fullscreen mode, focusing\n");
         if (!cwindow->dock) {
-            /* Check that the workspace is visible. If the window was assigned
-             * to an invisible workspace, we should not steal focus. */
-            if (workspace_is_visible(ws)) {
+            /* Check that the workspace is visible and on the same output as
+             * the current focused container. If the window was assigned to an
+             * invisible workspace, we should not steal focus. */
+            Con *current_output = con_get_output(focused);
+            Con *target_output = con_get_output(ws);
+
+            if (workspace_is_visible(ws) && current_output == target_output) {
                 con_focus(nc);
             } else DLOG("workspace not visible, not focusing\n");
         } else DLOG("dock, not focusing\n");
@@ -325,7 +341,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     if (want_floating) {
         DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);
-        floating_enable(nc, false);
+        floating_enable(nc, true);
     }
 
     /* to avoid getting an UnmapNotify event due to reparenting, we temporarily

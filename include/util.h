@@ -1,19 +1,19 @@
 /*
- * vim:ts=8:expandtab
+ * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * util.c: Utility functions, which can be useful everywhere within i3 (see
+ *         also libi3).
  *
  */
+#ifndef _UTIL_H
+#define _UTIL_H
+
 #include <err.h>
 
 #include "data.h"
-
-#ifndef _UTIL_H
-#define _UTIL_H
 
 #define die(...) errx(EXIT_FAILURE, __VA_ARGS__);
 #define exit_if_null(pointer, ...) { if (pointer == NULL) die(__VA_ARGS__); }
@@ -65,46 +65,6 @@ Rect rect_add(Rect a, Rect b);
  *
  */
 bool update_if_necessary(uint32_t *destination, const uint32_t new_value);
-
-/**
- * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that
- * there is no more memory available)
- *
- */
-void *smalloc(size_t size);
-
-/**
- * Safe-wrapper around calloc which exits if malloc returns NULL (meaning that
- * there is no more memory available)
- *
- */
-void *scalloc(size_t size);
-
-/**
- * Safe-wrapper around realloc which exits if realloc returns NULL (meaning
- * that there is no more memory available).
- *
- */
-void *srealloc(void *ptr, size_t size);
-
-/**
- * Safe-wrapper around strdup which exits if malloc returns NULL (meaning that
- * there is no more memory available)
- *
- */
-char *sstrdup(const char *str);
-
-/**
- * Starts the given application by passing it through a shell. We use double
- * fork to avoid zombie processes. As the started application’s parent exits
- * (immediately), the application is reparented to init (process-id 1), which
- * correctly handles childs, so we don’t have to do it :-).
- *
- * The shell is determined by looking for the SHELL environment variable. If
- * it does not exist, /bin/sh is used.
- *
- */
-void start_application(const char *command);
 
 /**
  * exec()s an i3 utility, for example the config file migration script or
@@ -176,18 +136,6 @@ void i3_restart(bool forget_layout);
  *
  */
 void *memmem(const void *l, size_t l_len, const void *s, size_t s_len);
-
-#endif
-
-#if defined(__APPLE__)
-
-/*
- * Taken from FreeBSD
- * Returns a pointer to a new string which is a duplicate of the
- * string, but only copies at most n characters.
- *
- */
-char *strndup(const char *str, size_t n);
 
 #endif
 

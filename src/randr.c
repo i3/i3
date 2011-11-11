@@ -2,26 +2,21 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * For more information on RandR, please see the X.org RandR specification at
  * http://cgit.freedesktop.org/xorg/proto/randrproto/tree/randrproto.txt
  * (take your time to read it completely, it answers all questions).
  *
  */
-#include <time.h>
-
-#include <xcb/randr.h>
-
 #include "all.h"
+
+#include <time.h>
+#include <xcb/randr.h>
 
 /* While a clean namespace is usually a pretty good thing, we really need
  * to use shorter names than the whole xcb_randr_* default names. */
 typedef xcb_randr_get_crtc_info_reply_t crtc_info;
-typedef xcb_randr_mode_info_t mode_info;
 typedef xcb_randr_get_screen_resources_current_reply_t resources_reply;
 
 /* Pointer to the result of the query for primary output */
@@ -248,7 +243,7 @@ void output_init_con(Output *output) {
     output->con = con;
 
     char *name;
-    asprintf(&name, "[i3 con] output %s", con->name);
+    sasprintf(&name, "[i3 con] output %s", con->name);
     x_set_name(con, name);
     FREE(name);
 
@@ -272,7 +267,7 @@ void output_init_con(Output *output) {
     FREE(topdock->name);
     topdock->name = sstrdup("topdock");
 
-    asprintf(&name, "[i3 con] top dockarea %s", con->name);
+    sasprintf(&name, "[i3 con] top dockarea %s", con->name);
     x_set_name(topdock, name);
     FREE(name);
     DLOG("attaching\n");
@@ -286,7 +281,7 @@ void output_init_con(Output *output) {
     FREE(content->name);
     content->name = sstrdup("content");
 
-    asprintf(&name, "[i3 con] content %s", con->name);
+    sasprintf(&name, "[i3 con] content %s", con->name);
     x_set_name(content, name);
     FREE(name);
     con_attach(content, con, false);
@@ -306,7 +301,7 @@ void output_init_con(Output *output) {
     FREE(bottomdock->name);
     bottomdock->name = sstrdup("bottomdock");
 
-    asprintf(&name, "[i3 con] bottom dockarea %s", con->name);
+    sasprintf(&name, "[i3 con] bottom dockarea %s", con->name);
     x_set_name(bottomdock, name);
     FREE(name);
     DLOG("attaching\n");
@@ -363,7 +358,7 @@ void init_ws_for_output(Output *output, Con *content) {
         if (visible && (previous = TAILQ_NEXT(workspace, focused))) {
             LOG("Switching to previously used workspace \"%s\" on output \"%s\"\n",
                 previous->name, workspace_out->name);
-            workspace_show(previous->name);
+            workspace_show(previous);
         }
 
         con_detach(workspace);
@@ -390,7 +385,7 @@ void init_ws_for_output(Output *output, Con *content) {
         if (!visible) {
             visible = TAILQ_FIRST(&(content->nodes_head));
             focused = content;
-            workspace_show(visible->name);
+            workspace_show(visible);
         }
         return;
     }
@@ -403,7 +398,7 @@ void init_ws_for_output(Output *output, Con *content) {
         LOG("Initializing first assigned workspace \"%s\" for output \"%s\"\n",
             assignment->name, assignment->output);
         focused = content;
-        workspace_show(assignment->name);
+        workspace_show_by_name(assignment->name);
         return;
     }
 
@@ -447,10 +442,12 @@ void init_ws_for_output(Output *output, Con *content) {
         if (!exists) {
             /* Set ->num to the number of the workspace, if the name actually
              * is a number or starts with a number */
-            long parsed_num = strtol(ws->name, NULL, 10);
+            char *endptr = NULL;
+            long parsed_num = strtol(ws->name, &endptr, 10);
             if (parsed_num == LONG_MIN ||
                 parsed_num == LONG_MAX ||
-                parsed_num <= 0)
+                parsed_num < 0 ||
+                endptr == ws->name)
                 ws->num = -1;
             else ws->num = parsed_num;
             LOG("Used number %d for workspace with name %s\n", ws->num, ws->name);
@@ -467,7 +464,7 @@ void init_ws_for_output(Output *output, Con *content) {
             c++;
 
             FREE(ws->name);
-            asprintf(&(ws->name), "%d", c);
+            sasprintf(&(ws->name), "%d", c);
 
             current = NULL;
             TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
@@ -480,7 +477,7 @@ void init_ws_for_output(Output *output, Con *content) {
     }
     con_attach(ws, content, false);
 
-    asprintf(&name, "[i3 con] workspace %s", ws->name);
+    sasprintf(&name, "[i3 con] workspace %s", ws->name);
     x_set_name(ws, name);
     free(name);
 
@@ -565,7 +562,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
     new->id = id;
     new->primary = (primary && primary->output == id);
     FREE(new->name);
-    asprintf(&new->name, "%.*s",
+    sasprintf(&new->name, "%.*s",
             xcb_randr_get_output_info_name_length(output),
             xcb_randr_get_output_info_name(output));
 
@@ -746,7 +743,7 @@ void randr_query_outputs() {
                 Con *next = NULL;
                 if (TAILQ_FIRST(&(croot->focus_head)) == output->con) {
                     DLOG("This output (%p) was focused! Getting next\n", output->con);
-                    next = con_next_focused(output->con);
+                    next = focused;
                     DLOG("next = %p\n", next);
                 }
 
@@ -766,6 +763,7 @@ void randr_query_outputs() {
                 if (next) {
                     DLOG("now focusing next = %p\n", next);
                     con_focus(next);
+                    workspace_show(con_get_workspace(next));
                 }
 
                 /* 3: move the dock clients to the first output */

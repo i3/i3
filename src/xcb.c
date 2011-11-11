@@ -2,90 +2,14 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2009-2010 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * xcb.c: Helper functions for easier usage of XCB
  *
  */
-
 #include "all.h"
 
-TAILQ_HEAD(cached_fonts_head, Font) cached_fonts = TAILQ_HEAD_INITIALIZER(cached_fonts);
 unsigned int xcb_numlock_mask;
-
-/*
- * Loads a font for usage, also getting its height. If fallback is true,
- * i3 loads 'fixed' or '-misc-*' if the font cannot be found instead of
- * exiting.
- *
- */
-i3Font load_font(const char *pattern, bool fallback) {
-    i3Font new;
-    xcb_void_cookie_t font_cookie;
-    xcb_list_fonts_with_info_cookie_t info_cookie;
-
-    /* Send all our requests first */
-    new.id = xcb_generate_id(conn);
-    font_cookie = xcb_open_font_checked(conn, new.id, strlen(pattern), pattern);
-    info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
-
-    /* Check for errors. If errors, fall back to default font. */
-    xcb_generic_error_t *error = xcb_request_check(conn, font_cookie);
-
-    /* If we fail to open font, fall back to 'fixed'. If opening 'fixed' fails fall back to '-misc-*' */
-    if (error != NULL) {
-        ELOG("Could not open font %s (X error %d). Reverting to backup font.\n", pattern, error->error_code);
-        pattern = "fixed";
-        font_cookie = xcb_open_font_checked(conn, new.id, strlen(pattern), pattern);
-        info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
-
-        /* Check if we managed to open 'fixed' */
-        xcb_generic_error_t *error = xcb_request_check(conn, font_cookie);
-
-        /* Fall back to '-misc-*' if opening 'fixed' fails. */
-        if (error != NULL) {
-            ELOG("Could not open fallback font '%s', trying with '-misc-*'\n",pattern);
-            pattern = "-misc-*";
-            font_cookie = xcb_open_font_checked(conn, new.id, strlen(pattern), pattern);
-            info_cookie = xcb_list_fonts_with_info(conn, 1, strlen(pattern), pattern);
-
-            check_error(conn, font_cookie, "Could open neither requested font nor fallback (fixed or -misc-*");
-        }
-    }
-
-    /* Get information (height/name) for this font */
-    xcb_list_fonts_with_info_reply_t *reply = xcb_list_fonts_with_info_reply(conn, info_cookie, NULL);
-    exit_if_null(reply, "Could not load font \"%s\"\n", pattern);
-
-    new.height = reply->font_ascent + reply->font_descent;
-
-    free(reply);
-
-    return new;
-}
-
-/*
- * Returns the colorpixel to use for the given hex color (think of HTML).
- *
- * The hex_color has to start with #, for example #FF00FF.
- *
- * NOTE that get_colorpixel() does _NOT_ check the given color code for validity.
- * This has to be done by the caller.
- *
- */
-uint32_t get_colorpixel(char *hex) {
-    char strgroups[3][3] = {{hex[1], hex[2], '\0'},
-                            {hex[3], hex[4], '\0'},
-                            {hex[5], hex[6], '\0'}};
-    uint32_t rgb16[3] = {(strtol(strgroups[0], NULL, 16)),
-                         (strtol(strgroups[1], NULL, 16)),
-                         (strtol(strgroups[2], NULL, 16))};
-
-    return (rgb16[0] << 16) + (rgb16[1] << 8) + rgb16[2];
-}
 
 /*
  * Convenience wrapper around xcb_create_window which takes care of depth, generating an ID and checking
@@ -133,22 +57,14 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
 }
 
 /*
- * Changes a single value in the graphic context (so one doesn’t have to define an array of values)
- *
- */
-void xcb_change_gc_single(xcb_connection_t *conn, xcb_gcontext_t gc, uint32_t mask, uint32_t value) {
-    xcb_change_gc(conn, gc, mask, &value);
-}
-
-/*
  * Draws a line from x,y to to_x,to_y using the given color
  *
  */
 void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t to_x, uint32_t to_y) {
-    xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, colorpixel);
-    xcb_point_t points[] = {{x, y}, {to_x, to_y}};
-    xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, drawable, gc, 2, points);
+    xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, (uint32_t[]){ colorpixel });
+    xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, drawable, gc, 2,
+                  (xcb_point_t[]) { {x, y}, {to_x, to_y} });
 }
 
 /*
@@ -157,41 +73,9 @@ void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext
  */
 void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
-    xcb_change_gc_single(conn, gc, XCB_GC_FOREGROUND, colorpixel);
+    xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, (uint32_t[]){ colorpixel });
     xcb_rectangle_t rect = {x, y, width, height};
     xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
-}
-
-/*
- * Generates a configure_notify event and sends it to the given window
- * Applications need this to think they’ve configured themselves correctly.
- * The truth is, however, that we will manage them.
- *
- */
-void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window, int border_width) {
-    /* Every X11 event is 32 bytes long. Therefore, XCB will copy 32 bytes.
-     * In order to properly initialize these bytes, we allocate 32 bytes even
-     * though we only need less for an xcb_configure_notify_event_t */
-    void *event = scalloc(32);
-    xcb_configure_notify_event_t *generated_event = event;
-
-    generated_event->event = window;
-    generated_event->window = window;
-    generated_event->response_type = XCB_CONFIGURE_NOTIFY;
-
-    generated_event->x = r.x;
-    generated_event->y = r.y;
-    generated_event->width = r.width;
-    generated_event->height = r.height;
-
-    generated_event->border_width = border_width;
-    generated_event->above_sibling = XCB_NONE;
-    generated_event->override_redirect = false;
-
-    xcb_send_event(conn, false, window, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (char*)generated_event);
-    xcb_flush(conn);
-
-    free(event);
 }
 
 /*
@@ -200,7 +84,7 @@ void fake_configure_notify(xcb_connection_t *conn, Rect r, xcb_window_t window, 
  *
  */
 void fake_absolute_configure_notify(Con *con) {
-    Rect absolute;
+    xcb_rectangle_t absolute;
     if (con->window == NULL)
         return;
 
@@ -235,60 +119,6 @@ void send_take_focus(xcb_window_t window) {
     DLOG("Sending WM_TAKE_FOCUS to the client\n");
     xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char*)ev);
     free(event);
-}
-
-/*
- * Finds out which modifier mask is the one for numlock, as the user may change this.
- *
- */
-void xcb_get_numlock_mask(xcb_connection_t *conn) {
-    xcb_key_symbols_t *keysyms;
-    xcb_get_modifier_mapping_cookie_t cookie;
-    xcb_get_modifier_mapping_reply_t *reply;
-    xcb_keycode_t *modmap;
-    int mask, i;
-    const int masks[8] = { XCB_MOD_MASK_SHIFT,
-                           XCB_MOD_MASK_LOCK,
-                           XCB_MOD_MASK_CONTROL,
-                           XCB_MOD_MASK_1,
-                           XCB_MOD_MASK_2,
-                           XCB_MOD_MASK_3,
-                           XCB_MOD_MASK_4,
-                           XCB_MOD_MASK_5 };
-
-    /* Request the modifier map */
-    cookie = xcb_get_modifier_mapping(conn);
-
-    /* Get the keysymbols */
-    keysyms = xcb_key_symbols_alloc(conn);
-
-    if ((reply = xcb_get_modifier_mapping_reply(conn, cookie, NULL)) == NULL) {
-        xcb_key_symbols_free(keysyms);
-        return;
-    }
-
-    modmap = xcb_get_modifier_mapping_keycodes(reply);
-
-    /* Get the keycode for numlock */
-#ifdef OLD_XCB_KEYSYMS_API
-    xcb_keycode_t numlock = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
-#else
-    /* For now, we only use the first keysymbol. */
-    xcb_keycode_t *numlock_syms = xcb_key_symbols_get_keycode(keysyms, XCB_NUM_LOCK);
-    if (numlock_syms == NULL)
-        return;
-    xcb_keycode_t numlock = *numlock_syms;
-    free(numlock_syms);
-#endif
-
-    /* Check all modifiers (Mod1-Mod5, Shift, Control, Lock) */
-    for (mask = 0; mask < 8; mask++)
-        for (i = 0; i < reply->keycodes_per_modifier; i++)
-            if (modmap[(mask * reply->keycodes_per_modifier) + i] == numlock)
-                xcb_numlock_mask = masks[mask];
-
-    xcb_key_symbols_free(keysyms);
-    free(reply);
 }
 
 /*
@@ -372,4 +202,21 @@ void xcb_warp_pointer_rect(xcb_connection_t *conn, Rect *rect) {
 
     LOG("warp pointer to: %d %d\n", mid_x, mid_y);
     xcb_warp_pointer(conn, XCB_NONE, root, 0, 0, 0, 0, mid_x, mid_y);
+}
+
+/*
+ * Set the cursor of the root window to the given cursor id.
+ * This function should only be used if xcursor_supported == false.
+ * Otherwise, use xcursor_set_root_cursor().
+ *
+ */
+void xcb_set_root_cursor(int cursor) {
+    xcb_cursor_t cursor_id = xcb_generate_id(conn);
+    i3Font cursor_font = load_font("cursor", false);
+    int xcb_cursor = xcursor_get_xcb_cursor(cursor);
+    xcb_create_glyph_cursor(conn, cursor_id, cursor_font.id, cursor_font.id,
+            xcb_cursor, xcb_cursor + 1, 0, 0, 0, 65535, 65535, 65535);
+    xcb_change_window_attributes(conn, root, XCB_CW_CURSOR, &cursor_id);
+    xcb_free_cursor(conn, cursor_id);
+    xcb_flush(conn);
 }

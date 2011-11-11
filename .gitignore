@@ -31,6 +31,7 @@ i3-input/i3-input
 i3-nagbar/i3-nagbar
 i3-msg/i3-msg
 i3-config-wizard/i3-config-wizard
+libi3/libi3.a
 docs/*.html
 docs/*.aux
 docs/*.out

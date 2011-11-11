@@ -1,13 +1,19 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * load_layout.c: Restore (parts of) the layout, for example after an inplace
+ *                restart.
+ *
  */
+#include "all.h"
+
 #include <yajl/yajl_common.h>
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_version.h>
-
-#include "all.h"
 
 /* TODO: refactor the whole parsing thing */
 
@@ -111,7 +117,7 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             LOG("sticky_group of this container is %s\n", json_node->sticky_group);
         } else if (strcasecmp(last_key, "orientation") == 0) {
             char *buf = NULL;
-            asprintf(&buf, "%.*s", (int)len, val);
+            sasprintf(&buf, "%.*s", (int)len, val);
             if (strcasecmp(buf, "none") == 0)
                 json_node->orientation = NO_ORIENTATION;
             else if (strcasecmp(buf, "horizontal") == 0)
@@ -122,7 +128,7 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             free(buf);
         } else if (strcasecmp(last_key, "border") == 0) {
             char *buf = NULL;
-            asprintf(&buf, "%.*s", (int)len, val);
+            sasprintf(&buf, "%.*s", (int)len, val);
             if (strcasecmp(buf, "none") == 0)
                 json_node->border_style = BS_NONE;
             else if (strcasecmp(buf, "1pixel") == 0)
@@ -133,7 +139,7 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             free(buf);
         } else if (strcasecmp(last_key, "layout") == 0) {
             char *buf = NULL;
-            asprintf(&buf, "%.*s", (int)len, val);
+            sasprintf(&buf, "%.*s", (int)len, val);
             if (strcasecmp(buf, "default") == 0)
                 json_node->layout = L_DEFAULT;
             else if (strcasecmp(buf, "stacked") == 0)
@@ -146,6 +152,10 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
                 json_node->layout = L_OUTPUT;
             else LOG("Unhandled \"layout\": %s\n", buf);
             free(buf);
+        } else if (strcasecmp(last_key, "mark") == 0) {
+            char *buf = NULL;
+            sasprintf(&buf, "%.*s", (int)len, val);
+            json_node->mark = buf;
         }
     }
     return 1;

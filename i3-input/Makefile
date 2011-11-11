@@ -3,23 +3,28 @@ TOPDIR=..
 
 include $(TOPDIR)/common.mk
 
+CPPFLAGS += -I$(TOPDIR)/include
+
 # Depend on the object files of all source-files in src/*.c and on all header files
 FILES=$(patsubst %.c,%.o,$(wildcard *.c))
 HEADERS=$(wildcard *.h)
 
 # Depend on the specific file (.c for each .o) and on all headers
 %.o: %.c ${HEADERS}
-	echo "CC $<"
+	echo "[i3-input] CC $<"
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 all: i3-input
 
-i3-input: ${FILES}
-	echo "LINK i3-input"
-	$(CC) $(LDFLAGS) -o $@ ${FILES} $(LIBS)
+i3-input: $(TOPDIR)/libi3/libi3.a ${FILES}
+	echo "[i3-input] LINK i3-input"
+	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3/libi3.a,$^) $(LIBS)
+
+$(TOPDIR)/libi3/%.a: $(TOPDIR)/libi3/*.c
+	$(MAKE) -C $(TOPDIR)/libi3
 
 install: all
-	echo "INSTALL"
+	echo "[i3-input] INSTALL"
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
 	$(INSTALL) -m 0755 i3-input $(DESTDIR)$(PREFIX)/bin/
 

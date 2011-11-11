@@ -1,11 +1,10 @@
 /*
+ * vim:ts=4:sw=4:expandtab
+ *
  * i3bar - an xcb-based status- and ws-bar for i3
+ * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
  *
- * © 2010-2011 Axel Wagner and contributors
- *
- * See file LICNSE for license information
- *
- * src/ipc.c: Communicating with i3
+ * ipc.c: Communicating with i3
  *
  */
 #include <stdlib.h>
@@ -22,54 +21,10 @@
 #include "common.h"
 
 ev_io      *i3_connection;
-ev_timer   *reconn = NULL;
 
 const char *sock_path;
 
 typedef void(*handler_t)(char*);
-
-/*
- * Retry to connect.
- *
- */
-void retry_connection(struct ev_loop *loop, ev_timer *w, int events) {
-    static int retries = 8;
-    if (init_connection(sock_path) == 0) {
-        if (retries == 0) {
-            ELOG("Retried 8 times - connection failed!\n");
-            exit(EXIT_FAILURE);
-        }
-        retries--;
-        return;
-    }
-    retries = 8;
-    ev_timer_stop(loop, w);
-    subscribe_events();
-
-    /* We get the current outputs and workspaces, to
-     * reconfigure all bars with the current configuration */
-    i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
-    if (!config.disable_ws) {
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
-    }
-}
-
-/*
- * Schedule a reconnect
- *
- */
-void reconnect() {
-    if (reconn == NULL) {
-        if ((reconn = malloc(sizeof(ev_timer))) == NULL) {
-            ELOG("malloc() failed: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        ev_timer_stop(main_loop, reconn);
-    }
-    ev_timer_init(reconn, retry_connection, 0.25, 0.25);
-    ev_timer_start(main_loop, reconn);
-}
 
 /*
  * Called, when we get a reply to a command from i3.
@@ -112,12 +67,47 @@ void got_output_reply(char *reply) {
     reconfig_windows();
 }
 
+/*
+ * Called when we get the configuration for our bar instance
+ *
+ */
+void got_bar_config(char *reply) {
+    DLOG("Received bar config \"%s\"\n", reply);
+    /* We initiate the main-function by requesting infos about the outputs and
+     * workspaces. Everything else (creating the bars, showing the right workspace-
+     * buttons and more) is taken care of by the event-drivenness of the code */
+    i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
+    parse_config_json(reply);
+
+    /* Now we can actually use 'config', so let's subscribe to the appropriate
+     * events and request the workspaces if necessary. */
+    subscribe_events();
+    if (!config.disable_ws)
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_WORKSPACES, NULL);
+
+    /* Initialize the rest of XCB */
+    init_xcb_late(config.fontname);
+
+    /* Resolve color strings to colorpixels and save them, then free the strings. */
+    init_colors(&(config.colors));
+    free_colors(&(config.colors));
+
+    /* The name of this function is actually misleading. Even if no command is
+     * specified, this function initiates the watchers to listen on stdin and
+     * react accordingly */
+    start_child(config.command);
+    FREE(config.command);
+}
+
 /* Data-structure to easily call the reply-handlers later */
 handler_t reply_handlers[] = {
     &got_command_reply,
     &got_workspace_reply,
     &got_subscribe_reply,
     &got_output_reply,
+    NULL,
+    NULL,
+    &got_bar_config,
 };
 
 /*
@@ -157,11 +147,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
 
     /* First we only read the header, because we know its length */
     uint32_t header_len = strlen(I3_IPC_MAGIC) + sizeof(uint32_t)*2;
-    char *header = malloc(header_len);
-    if (header == NULL) {
-        ELOG("Could not allocate memory: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    char *header = smalloc(header_len);
 
     /* We first parse the fixed-length IPC-header, to know, how much data
      * we have to expect */
@@ -173,12 +159,11 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
-            /* EOF received. We try to recover a few times, because most likely
-             * i3 just restarted */
-            ELOG("EOF received, try to recover...\n");
-            destroy_connection();
-            reconnect();
-            return;
+            /* EOF received. Since i3 will restart i3bar instances as appropriate,
+             * we exit here. */
+            DLOG("EOF received, exiting...\n");
+            clean_xcb();
+            exit(EXIT_SUCCESS);
         }
         rec += n;
     }
@@ -200,15 +185,7 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
 
     /* Now that we know, what to expect, we can start read()ing the rest
      * of the message */
-    char *buffer = malloc(size + 1);
-    if (buffer == NULL) {
-        /* EOF received. We try to recover a few times, because most likely
-         * i3 just restarted */
-        ELOG("EOF received, try to recover...\n");
-        destroy_connection();
-        reconnect();
-        return;
-    }
+    char *buffer = smalloc(size + 1);
     rec = 0;
 
     while (rec < size) {
@@ -230,7 +207,8 @@ void got_data(struct ev_loop *loop, ev_io *watcher, int events) {
         type ^= 1 << 31;
         event_handlers[type](buffer);
     } else {
-        reply_handlers[type](buffer);
+        if (reply_handlers[type])
+            reply_handlers[type](buffer);
     }
 
     FREE(header);
@@ -253,12 +231,7 @@ int i3_send_msg(uint32_t type, const char *payload) {
     /* TODO: I'm not entirely sure if this buffer really has to contain more
      * than the pure header (why not just write() the payload from *payload?),
      * but we leave it for now */
-    char *buffer = malloc(to_write);
-    if (buffer == NULL) {
-        ELOG("Could not allocate memory: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
+    char *buffer = smalloc(to_write);
     char *walk = buffer;
 
     strncpy(buffer, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC));
@@ -296,27 +269,8 @@ int i3_send_msg(uint32_t type, const char *payload) {
  */
 int init_connection(const char *socket_path) {
     sock_path = socket_path;
-    int sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
-    if (sockfd == -1) {
-        ELOG("Could not create Socket: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    struct sockaddr_un addr;
-    memset(&addr, 0, sizeof(struct sockaddr_un));
-    addr.sun_family = AF_LOCAL;
-    strcpy(addr.sun_path, sock_path);
-    if (connect(sockfd, (const struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
-        ELOG("Could not connect to i3! %s: %s\n", sock_path, strerror(errno));
-        reconnect();
-        return 0;
-    }
-
-    i3_connection = malloc(sizeof(ev_io));
-    if (i3_connection == NULL) {
-        ELOG("malloc() failed: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    int sockfd = ipc_connect(socket_path);
+    i3_connection = smalloc(sizeof(ev_io));
     ev_io_init(i3_connection, &got_data, sockfd, EV_READ);
     ev_io_start(main_loop, i3_connection);
     return 1;

@@ -2,20 +2,17 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * This is LEGACY code (we support RandR, which can do much more than
  * Xinerama), but necessary for the poor users of the nVidia binary
- * driver which does not support RandR in 2010 *sigh*.
+ * driver which does not support RandR in 2011 *sigh*.
  *
  */
+#include "all.h"
 
 #include <xcb/xinerama.h>
 
-#include "all.h"
 
 static int num_screens;
 
@@ -59,7 +56,7 @@ static void query_screens(xcb_connection_t *conn) {
             s->rect.height = min(s->rect.height, screen_info[screen].height);
         } else {
             s = scalloc(sizeof(Output));
-            asprintf(&(s->name), "xinerama-%d", num_screens);
+            sasprintf(&(s->name), "xinerama-%d", num_screens);
             DLOG("Created new Xinerama screen %s (%p)\n", s->name, s);
             s->active = true;
             s->rect.x = screen_info[screen].x_org;

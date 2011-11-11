@@ -1,3 +1,12 @@
+/*
+ * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * window.c: Updates window attributes (X11 hints/properties).
+ *
+ */
 #ifndef _WINDOW_H
 #define _WINDOW_H
 
@@ -41,5 +50,11 @@ void window_update_transient_for(i3Window *win, xcb_get_property_reply_t *prop);
  *
  */
 void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop);
+
+/**
+ * Updates the WM_WINDOW_ROLE
+ *
+ */
+void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool before_mgmt);
 
 #endif

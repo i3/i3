@@ -10,15 +10,21 @@ packages for them.
 Please make sure the manpage for i3 will be properly created and installed
 in your package.
 
-Also please provide the path to a suitable terminal emulator which is installed
-as a dependency of your package (e.g. urxvt). On systems which have a special
-commend to launch the best available terminal emulator, please use this one
-(e.g. x-terminal-emulator on debian).
+Please check the i3-sensible-{editor,pager,terminal} scripts and modify them if
+necessary. The former two provide fallbacks in case $PAGER or $EDITOR is not
+set (which might be more common than you think, because they have to be set in
+~/.xsession, not in the shell configuration!) while the latter tries to launch
+a terminal emulator. The scripts are most prominently used in i3-nagbar, which
+alerts the user when the configuration is broken for some reason. Also,
+i3-sensible-terminal is used in the default configuration.
 
-On debian, this looks like this:
+If your distribution has a mechanism to get the preferred terminal, such as the
+x-terminal-emulator symlink in Debian, please use it in i3-sensible-terminal.
+
+On debian, compilation and installing the manpages looks like this:
 
 	# Compilation
-	$(MAKE) TERM_EMU=x-terminal-emulator
+	$(MAKE)
 	$(MAKE) -C man
 
 	# Installation

@@ -2,15 +2,13 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
+ * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * © 2009-2011 Michael Stapelberg and contributors
- *
- * See file LICENSE for license information.
- *
- * src/click.c: Contains the handlers for button press (mouse click) events
- *              because they are quite large.
+ * click.c: Button press (mouse click) events.
  *
  */
+#include "all.h"
+
 #include <time.h>
 #include <math.h>
 
@@ -18,9 +16,6 @@
 #include <xcb/xcb_icccm.h>
 
 #include <X11/XKBlib.h>
-
-#include "all.h"
-
 
 typedef enum { CLICK_BORDER = 0, CLICK_DECORATION = 1, CLICK_INSIDE = 2 } click_destination_t;
 
@@ -30,7 +25,7 @@ typedef enum { CLICK_BORDER = 0, CLICK_DECORATION = 1, CLICK_INSIDE = 2 } click_
  * then calls resize_graphical_handler().
  *
  */
-static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press_event_t *event) {
+static bool tiling_resize_for_border(Con *con, border_t border, const xcb_button_press_event_t *event) {
     DLOG("border = %d\n", border);
     char way = (border == BORDER_TOP || border == BORDER_LEFT ? 'p' : 'n');
     orientation_t orientation = (border == BORDER_TOP || border == BORDER_BOTTOM ? VERT : HORIZ);
@@ -81,7 +76,7 @@ static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press
  * to the client).
  *
  */
-static bool floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *event) {
+static bool floating_mod_on_tiled_client(Con *con, const xcb_button_press_event_t *event) {
     /* The client is in tiling layout. We can still initiate a resize with the
      * right mouse button, by chosing the border which is the most near one to
      * the position of the mouse pointer */
@@ -120,14 +115,33 @@ static bool floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *eve
  * Finds out which border was clicked on and calls tiling_resize_for_border().
  *
  */
-static bool tiling_resize(Con *con, xcb_button_press_event_t *event, click_destination_t dest) {
+static bool tiling_resize(Con *con, const xcb_button_press_event_t *event, const click_destination_t dest) {
     /* check if this was a click on the window border (and on which one) */
     Rect bsr = con_border_style_rect(con);
     DLOG("BORDER x = %d, y = %d for con %p, window 0x%08x\n",
             event->event_x, event->event_y, con, event->event);
     DLOG("checks for right >= %d\n", con->window_rect.x + con->window_rect.width);
-    if (dest == CLICK_DECORATION)
+    if (dest == CLICK_DECORATION) {
+        /* The user clicked on a window decoration. We ignore the following case:
+         * The container is a h-split, tabbed or stacked container with > 1
+         * window. Decorations will end up next to each other and the user
+         * expects to switch to a window by clicking on its decoration. */
+
+        /* Since the container might either be the child *or* already a split
+         * container (in the case of a nested split container), we need to make
+         * sure that we are dealing with the split container here. */
+        if (con_is_leaf(con) && con->parent->type == CT_CON)
+            con = con->parent;
+
+        if ((con->layout == L_STACKED ||
+             con->layout == L_TABBED ||
+             con->orientation == HORIZ) &&
+            con_num_children(con) > 1) {
+            DLOG("Not handling this resize, this container has > 1 child.\n");
+            return false;
+        }
         return tiling_resize_for_border(con, BORDER_TOP, event);
+    }
 
     if (event->event_x >= 0 && event->event_x <= bsr.x &&
         event->event_y >= bsr.y && event->event_y <= con->rect.height + bsr.height)
@@ -148,7 +162,7 @@ static bool tiling_resize(Con *con, xcb_button_press_event_t *event, click_desti
  * functions for resizing/dragging.
  *
  */
-static int route_click(Con *con, xcb_button_press_event_t *event, bool mod_pressed, click_destination_t dest) {
+static int route_click(Con *con, const xcb_button_press_event_t *event, const bool mod_pressed, const click_destination_t dest) {
     DLOG("--> click properties: mod = %d, destination = %d\n", mod_pressed, dest);
     DLOG("--> OUTCOME = %p\n", con);
     DLOG("type = %d, name = %s\n", con->type, con->name);
@@ -259,8 +273,10 @@ int handle_button_press(xcb_button_press_event_t *event) {
     Con *con;
     DLOG("Button %d pressed on window 0x%08x\n", event->state, event->event);
 
+    last_timestamp = event->time;
+
     const uint32_t mod = config.floating_modifier;
-    bool mod_pressed = (mod != 0 && (event->state & mod) == mod);
+    const bool mod_pressed = (mod != 0 && (event->state & mod) == mod);
     DLOG("floating_mod = %d, detail = %d\n", mod_pressed, event->detail);
     if ((con = con_by_window_id(event->event)))
         return route_click(con, event, mod_pressed, CLICK_INSIDE);
