@@ -130,7 +130,7 @@ static bool tiling_resize(Con *con, const xcb_button_press_event_t *event, const
         /* Since the container might either be the child *or* already a split
          * container (in the case of a nested split container), we need to make
          * sure that we are dealing with the split container here. */
-        if (con_is_leaf(con))
+        if (con_is_leaf(con) && con->parent->type == CT_CON)
             con = con->parent;
 
         if ((con->layout == L_STACKED ||
