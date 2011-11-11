@@ -174,6 +174,7 @@ bool definitelyGreaterThan(float a, float b, float epsilon) {
 %token              TOK_PPT             "ppt"
 %token              TOK_NOP             "nop"
 %token              TOK_BACK_AND_FORTH  "back_and_forth"
+%token              TOK_NO_STARTUP_ID   "--no-startup-id"
 
 %token              TOK_CLASS           "class"
 %token              TOK_INSTANCE        "instance"
@@ -197,6 +198,7 @@ bool definitelyGreaterThan(float a, float b, float epsilon) {
 %type   <number>    resize_way
 %type   <number>    resize_tiling
 %type   <number>    optional_kill_mode
+%type   <number>    optional_no_startup_id
 
 %%
 
@@ -387,19 +389,20 @@ operation:
     ;
 
 exec:
-    TOK_EXEC STR
+    TOK_EXEC optional_no_startup_id STR
     {
-        char *command = $2;
-        bool no_startup_id = false;
-        if (strncasecmp($2, "--no-startup-id ", strlen("--no-startup-id ")) == 0) {
-            no_startup_id = true;
-            command += strlen("--no-startup-id ");
-        }
+        char *command = $3;
+        bool no_startup_id = $2;
 
         printf("should execute %s, no_startup_id = %d\n", command, no_startup_id);
         start_application(command, no_startup_id);
-        free($2);
+        free($3);
     }
+    ;
+
+optional_no_startup_id:
+    /* empty */ { $$ = false; }
+    | TOK_NO_STARTUP_ID  { $$ = true; }
     ;
 
 exit:

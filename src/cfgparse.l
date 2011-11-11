@@ -63,6 +63,8 @@ EOL     (\r?\n)
 %x BAR_COLORS
 %x BAR_COLOR
 
+%x EXEC
+
 %%
 
     {
@@ -142,6 +144,8 @@ EOL     (\r?\n)
 <COLOR_COND>#[0-9a-fA-F]+       { yy_pop_state(); yylval.string = sstrdup(yytext); return HEXCOLOR; }
 <ASSIGN_TARGET_COND>[ \t]*→[ \t]*     { BEGIN(WANT_STRING); }
 <ASSIGN_TARGET_COND>[ \t]+      { BEGIN(WANT_STRING); }
+<EXEC>--no-startup-id           { printf("no startup id\n"); yy_pop_state(); return TOK_NO_STARTUP_ID; }
+<EXEC>.                         { printf("anything else: *%s*\n", yytext); yyless(0); yy_pop_state(); yy_pop_state(); }
 [0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
 bar                             { yy_push_state(BAR); return TOK_BAR; }
 mode                            { return TOKMODE; }
@@ -195,8 +199,8 @@ tabbed                          { /* yylval.number = MODE_TABBED; */return TOK_T
 stack-limit                     { return TOKSTACKLIMIT; }
 cols                            { /* yylval.number = STACK_LIMIT_COLS; */return TOKSTACKLIMIT; }
 rows                            { /* yylval.number = STACK_LIMIT_ROWS; */return TOKSTACKLIMIT; }
-exec                            { WS_STRING; return TOKEXEC; }
-exec_always                     { WS_STRING; return TOKEXEC_ALWAYS; }
+exec                            { WS_STRING; yy_push_state(EXEC); yy_push_state(EAT_WHITESPACE); return TOKEXEC; }
+exec_always                     { WS_STRING; yy_push_state(EXEC); yy_push_state(EAT_WHITESPACE); return TOKEXEC_ALWAYS; }
 client.background               { yy_push_state(COLOR_COND); yylval.single_color = &config.client.background; return TOKSINGLECOLOR; }
 client.focused                  { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.focused; return TOKCOLOR; }
 client.focused_inactive         { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.focused_inactive; return TOKCOLOR; }

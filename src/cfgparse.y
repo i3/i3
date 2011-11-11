@@ -715,6 +715,7 @@ void parse_file(const char *f) {
 %token                  TOK_BAR_COLOR_ACTIVE_WORKSPACE "active_workspace"
 %token                  TOK_BAR_COLOR_INACTIVE_WORKSPACE "inactive_workspace"
 %token                  TOK_BAR_COLOR_URGENT_WORKSPACE "urgent_workspace"
+%token                  TOK_NO_STARTUP_ID           "--no-startup-id"
 
 %token              TOK_MARK            "mark"
 %token              TOK_CLASS           "class"
@@ -739,6 +740,7 @@ void parse_file(const char *f) {
 %type   <number>        popup_setting
 %type   <number>        bar_position_position
 %type   <number>        bar_mode_mode
+%type   <number>        optional_no_startup_id
 %type   <string>        command
 %type   <string>        word_or_number
 %type   <string>        qstring_or_number
@@ -1508,43 +1510,28 @@ restart_state:
     ;
 
 exec:
-    TOKEXEC STR
+    TOKEXEC optional_no_startup_id STR
     {
-        char *command = $2;
-        bool no_startup_id = false;
-        if (strncasecmp($2, "--no-startup-id ", strlen("--no-startup-id ")) == 0) {
-            no_startup_id = true;
-            /* We need to make a copy here, otherwise we leak the
-             * --no-startup-id bytes in the beginning of the string */
-            command = sstrdup(command + strlen("--no-startup-id "));
-            free($2);
-        }
-
         struct Autostart *new = smalloc(sizeof(struct Autostart));
-        new->command = command;
-        new->no_startup_id = no_startup_id;
+        new->command = $3;
+        new->no_startup_id = $2;
         TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
     }
     ;
 
 exec_always:
-    TOKEXEC_ALWAYS STR
+    TOKEXEC_ALWAYS optional_no_startup_id STR
     {
-        char *command = $2;
-        bool no_startup_id = false;
-        if (strncasecmp($2, "--no-startup-id ", strlen("--no-startup-id ")) == 0) {
-            no_startup_id = true;
-            /* We need to make a copy here, otherwise we leak the
-             * --no-startup-id bytes in the beginning of the string */
-            command = sstrdup(command + strlen("--no-startup-id "));
-            free($2);
-        }
-
         struct Autostart *new = smalloc(sizeof(struct Autostart));
-        new->command = command;
-        new->no_startup_id = no_startup_id;
+        new->command = $3;
+        new->no_startup_id = $2;
         TAILQ_INSERT_TAIL(&autostarts_always, new, autostarts_always);
     }
+    ;
+
+optional_no_startup_id:
+    /* empty */ { $$ = false; }
+    | TOK_NO_STARTUP_ID  { $$ = true; }
     ;
 
 terminal:

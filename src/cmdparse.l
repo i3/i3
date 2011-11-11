@@ -48,6 +48,8 @@ EOL (\r?\n)
 /* handle a quoted string or everything up to the next whitespace */
 %s WANT_QSTRING
 
+%x EXEC
+
 %x BUFFER_LINE
 
 %%
@@ -101,7 +103,9 @@ back_and_forth                  { BEGIN(INITIAL); return TOK_BACK_AND_FORTH; }
 <EAT_WHITESPACE>[ \t]*          { yy_pop_state(); }
 
 [ \t]*                          { /* ignore whitespace */ ; }
-exec                            { WS_STRING; return TOK_EXEC; }
+<EXEC>--no-startup-id           { printf("no startup id\n"); yy_pop_state(); return TOK_NO_STARTUP_ID; }
+<EXEC>.                         { printf("anything else: *%s*\n", yytext); yyless(0); yy_pop_state(); yy_pop_state(); }
+exec                            { WS_STRING; yy_push_state(EXEC); yy_push_state(EAT_WHITESPACE); return TOK_EXEC; }
 exit                            { return TOK_EXIT; }
 reload                          { return TOK_RELOAD; }
 restart                         { return TOK_RESTART; }

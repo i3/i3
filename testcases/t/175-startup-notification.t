@@ -151,4 +151,21 @@ unlink($tmp);
 
 is($startup_id, '', 'startup_id empty');
 
+######################################################################
+# 4) same thing, but with double quotes in exec
+######################################################################
+
+mkfifo($tmp, 0600) or die "Could not create FIFO in $tmp";
+
+cmd qq|exec --no-startup-id "echo \$DESKTOP_STARTUP_ID >$tmp"|;
+
+open($fh, '<', $tmp);
+chomp($startup_id = <$fh>);
+close($fh);
+
+unlink($tmp);
+
+is($startup_id, '', 'startup_id empty');
+
+
 done_testing;
