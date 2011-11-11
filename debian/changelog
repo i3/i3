@@ -1,20 +1,59 @@
-i3-wm (4.1-0) unstable; urgency=low
+i3-wm (4.1-1) unstable; urgency=low
 
-  * NOT YET RELEASED!
   * Implement system tray support in i3bar (for NetworkManager, Skype, …)
+  * i3bar is now configurable in the i3 configfile
   * Implement support for PCRE regular expressions in criteria
   * Implement a new assign syntax which uses criteria
   * Sort named workspaces whose name starts with a number accordingly
   * Warn on duplicate bindings for the same key
   * Restrict 'resize' command to left/right for horizontal containers, up/down
     for vertical containers
+  * Implement support for startup notifications (cursor will change to 'watch',
+    started applications show up on the workspace they have been launched on)
   * Implement the GET_MARKS IPC request to get all marks
   * Implement the new_float config option (border style for floating windows)
   * Implement passing IPC sockets to i3 (systemd-style socket activation)
   * Implement the 'move output' command to move containers to a specific output
+  * Implement focus switching for floating windows
+  * Implement the window_role criterion (for matching multi-window apps)
+  * Implement a force_xinerama configuration directive
+  * Implement the --get-socketpath, useful for scripts using the IPC interface
+  * Implement the 'move workspace next' and 'move workspace prev' commands
+  * Implement the 'workspace back_and_forth' command and related configuration
+    option
+  * Implement the move command for floating windows
+  * i3 will now handle arbitrary text arguments by sending them as an IPC
+    command, like i3-msg: 'i3 reload' or 'i3 move workspace 3'
+  * Introduce the i3-sensible-{pager,editor,terminal} scripts to execute
+    $PAGER, $EDITOR or an available terminal emulator
+  * i3-input: implement -F (format) option
   * Bugfix: Preserve marks when restarting
+  * Bugfix: Correctly free old assignments when reloading
+  * Bugfix: Fix flickering when moving floating windows between monitors
+  * Bugfix: Correctly handle ConfigureRequests for floating windows in a
+    multi-monitor environment.
+  * Bugfix: Fix size of floating windows with X11 borders
+  * Bugfix: Always adjust floating window position when moving to another
+    output
+  * Bugfix: Avoid out-of-bounds coordinates when moving floating windows
+  * Bugfix: Don’t steal focus when a window gets destroyed
+  * Bugfix: Correctly split key/value when parsing variables
+  * Bugfix: Correctly revert focus to other floating windows when closing a
+    floating window
+  * Bugfix: Don’t leak the error logfile file descriptor
+  * Bugfix: Don’t steal focus when a window opens on an invisible workspace due
+    to assignments
+  * Bugfix: Fix handling of Mode_switch in i3-input
+  * Bugfix: Close invisible workspaces when they become empty
+  * Bugfix: Don’t invoke interactive resizing when clicking on the decoration
+    of a split container with more than one child (switch focus instead)
+  * Bugfix: Make named workspace assignments work again
+  * Bugfix: RandR: Correctly keep focus on the focused workspace when an output
+    disappears
+  * Bugfix: Insert container at the correct position on workspace level when
+    workspace_layout == default
 
- -- Michael Stapelberg <michael@stapelberg.de>  Sun, 28 Aug 2011 20:17:31 +0200
+ -- Michael Stapelberg <michael@stapelberg.de>  Fri, 11 Nov 2011 21:28:15 +0000
 
 i3-wm (4.0.2-1) unstable; urgency=low
 
