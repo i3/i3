@@ -50,12 +50,8 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FFFFFF") });
 
     for (int i = 0; i < sizeof(crash_text) / sizeof(char*); i++) {
-        int text_len = strlen(crash_text[i]);
-        xcb_char2b_t *full_text = convert_utf8_to_ucs2(crash_text[i], &text_len);
-        xcb_image_text_16(conn, text_len, pixmap, pixmap_gc, 8 /* X */,
-                          3 + (i + 1) * font_height /* Y = baseline of font */,
-                          (xcb_char2b_t*)full_text);
-        free(full_text);
+        draw_text(crash_text[i], strlen(crash_text[i]), false,
+                pixmap, pixmap_gc, 8, 3 + (i - 1) * font_height);
     }
 
     /* Copy the contents of the pixmap to the real window */

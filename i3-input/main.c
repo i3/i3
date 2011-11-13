@@ -104,8 +104,8 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
         memcpy(full_text, prompt, prompt_len * 2);
         memcpy(full_text + (prompt_len * 2), con, input_position * 2);
     }
-    xcb_image_text_16(conn, input_position + prompt_len, pixmap, pixmap_gc, 4 /* X */,
-                      font.height + 2 /* Y = baseline of font */, (xcb_char2b_t*)full_text);
+    if (input_position + prompt_len != 0)
+        draw_text(full_text, input_position + prompt_len, true, pixmap, pixmap_gc, 4, 4);
 
     /* Copy the contents of the pixmap to the real window */
     xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, /* */ 500, font.height + 8);
@@ -361,6 +361,7 @@ int main(int argc, char *argv[]) {
     symbols = xcb_key_symbols_alloc(conn);
 
     font = load_font(pattern, true);
+    set_font(&font);
 
     /* Open an input window */
     win = xcb_generate_id(conn);

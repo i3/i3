@@ -112,9 +112,10 @@ static int handle_expose() {
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#000000") });
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
 
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font.id });
+    set_font(&font);
 
-#define txt(x, row, text) xcb_image_text_8(conn, strlen(text), pixmap, pixmap_gc, x, (row * font.height) + 2, text)
+#define txt(x, row, text) \
+    draw_text(text, strlen(text), false, pixmap, pixmap_gc, x, (row - 1) * font.height + 4)
 
     if (current_step == STEP_WELCOME) {
         /* restore font color */
@@ -150,12 +151,14 @@ static int handle_expose() {
         else txt(31, 4, "<Win>");
 
         /* the selected modifier */
+        set_font(&bold_font);
         xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ bold_font.id });
         if (modifier == MOD_Mod4)
             txt(31, 4, "<Win>");
         else txt(31, 5, "<Alt>");
 
         /* green */
+        set_font(&font);
         xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_FONT,
                       (uint32_t[]) { get_colorpixel("#00FF00"), font.id });
 
@@ -437,6 +440,7 @@ int main(int argc, char *argv[]) {
     xcb_numlock_mask = get_mod_mask_for(XCB_NUM_LOCK, symbols, modmap_reply);
 
     font = load_font(pattern, true);
+    set_font(&font);
     bold_font = load_font(patternbold, true);
 
     /* Open an input window */

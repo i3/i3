@@ -135,8 +135,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     values[0] = color_text;
     values[1] = color_background;
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_BACKGROUND, values);
-    xcb_image_text_8(conn, strlen(prompt), pixmap, pixmap_gc, 4 + 4/* X */,
-                      font.height + 2 + 4 /* Y = baseline of font */, prompt);
+    draw_text(prompt, strlen(prompt), false, pixmap, pixmap_gc, 4 + 4, 4 + 4);
 
     /* render close button */
     int line_width = 4;
@@ -163,8 +162,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     values[1] = color_button_background;
     values[2] = 1;
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_LINE_WIDTH, values);
-    xcb_image_text_8(conn, strlen("x"), pixmap, pixmap_gc, y - w - line_width + (w / 2) - 4/* X */,
-                      font.height + 2 + 4 - 1/* Y = baseline of font */, "X");
+    draw_text("X", 1, false, pixmap, pixmap_gc, y - w - line_width + w / 2 - 4, 4 + 4 - 1);
     y -= w;
 
     y -= 20;
@@ -194,8 +192,8 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
         values[0] = color_text;
         values[1] = color_button_background;
         xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_BACKGROUND, values);
-        xcb_image_text_8(conn, strlen(buttons[c].label), pixmap, pixmap_gc, y - w - line_width + 6/* X */,
-                          font.height + 2 + 3/* Y = baseline of font */, buttons[c].label);
+        draw_text(buttons[c].label, strlen(buttons[c].label), false, pixmap, pixmap_gc,
+                y - w - line_width + 6, 4 + 3);
 
         y -= w;
     }
@@ -304,6 +302,7 @@ int main(int argc, char *argv[]) {
     }
 
     font = load_font(pattern, true);
+    set_font(&font);
 
     /* Open an input window */
     win = xcb_generate_id(conn);
