@@ -859,6 +859,9 @@ You can restrict i3bar to one or more outputs (monitors). The default is to
 handle all outputs. Restricting the outputs is useful for using different
 options for different outputs by using multiple 'bar' blocks.
 
+To make a particular i3bar instance handle multiple outputs, specify the output
+directive multiple times.
+
 *Syntax*:
 ---------------
 output <output>
@@ -868,7 +871,9 @@ output <output>
 -------------------------------
 # big monitor: everything
 bar {
+	# The display is connected either via HDMI or via DisplayPort
 	output HDMI2
+	output DP2
 	status_command i3status
 }
 
