@@ -124,8 +124,8 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
             params->workspaces_walk->ucs2_name = ucs2_name;
             params->workspaces_walk->name_glyphs = ucs2_len;
             params->workspaces_walk->name_width =
-                predict_text_extents(params->workspaces_walk->ucs2_name,
-                params->workspaces_walk->name_glyphs);
+                predict_text_width((char *)params->workspaces_walk->ucs2_name,
+                params->workspaces_walk->name_glyphs, true);
 
             DLOG("Got Workspace %s, name_width: %d, glyphs: %d\n",
                  params->workspaces_walk->name,

@@ -131,32 +131,6 @@ void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
 }
 
 /*
- * Query the width of the given text (16-bit characters, UCS) with given real
- * length (amount of glyphs) using the given font.
- *
- */
-int predict_text_width(const xcb_char2b_t *text, int length) {
-    xcb_query_text_extents_cookie_t cookie;
-    xcb_query_text_extents_reply_t *reply;
-    xcb_generic_error_t *error;
-    int width;
-
-    cookie = xcb_query_text_extents(conn, config.font.id, length, text);
-    if ((reply = xcb_query_text_extents_reply(conn, cookie, &error)) == NULL) {
-        ELOG("Could not get text extents (X error code %d)\n",
-             error->error_code);
-        /* We return the rather safe guess of 7 pixels, because a
-         * rendering error is better than a crash. Plus, the user will
-         * see the error in his log. */
-        return 7;
-    }
-
-    width = reply->overall_width;
-    free(reply);
-    return width;
-}
-
-/*
  * Configures the given window to have the size/position specified by given rect
  *
  */

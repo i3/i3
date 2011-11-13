@@ -27,10 +27,17 @@ typedef struct Font i3Font;
  *
  */
 struct Font {
-    /** The height of the font, built from font_ascent + font_descent */
-    int height;
     /** The xcb-id for the font */
     xcb_font_t id;
+
+    /** Font information gathered from the server */
+    xcb_query_font_reply_t *info;
+
+    /** Font table for this font (may be NULL) */
+    xcb_charinfo_t *table;
+
+    /** The height of the font, built from font_ascent + font_descent */
+    int height;
 };
 
 /* Since this file also gets included by utilities which don’t use the i3 log
@@ -194,5 +201,28 @@ char *convert_ucs2_to_utf8(xcb_char2b_t *text, size_t num_glyphs);
  *
  */
 xcb_char2b_t *convert_utf8_to_ucs2(char *input, int *real_strlen);
+
+/**
+ * Defines the font to be used for the forthcoming draw_text and
+ * predict_text_width calls.
+ *
+ */
+void set_font(i3Font *font);
+
+/**
+ * Draws text onto the specified X drawable (normally a pixmap) at the
+ * specified coordinates (from the top left corner of the leftmost, uppermost
+ * glyph) and using the provided gc. Text can be specified as UCS-2 or UTF-8.
+ *
+ */
+void draw_text(char *text, size_t text_len, bool is_ucs2,
+        xcb_drawable_t drawable, xcb_gcontext_t gc, int x, int y);
+
+/**
+ * Predict the text width in pixels for the given text. Text can be specified
+ * as UCS-2 or UTF-8.
+ *
+ */
+int predict_text_width(char *text, size_t text_len, bool is_ucs2);
 
 #endif
