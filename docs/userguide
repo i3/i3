@@ -174,7 +174,7 @@ Floating windows are always on top of tiling windows.
 i3 stores all information about the X11 outputs, workspaces and layout of the
 windows on them in a tree. The root node is the X11 root window, followed by
 the X11 outputs, then dock areas and a content container, then workspaces and
-finally the windows themselve. In previous versions of i3 we had multiple lists
+finally the windows themselves. In previous versions of i3 we had multiple lists
 (of outputs, workspaces) and a table for each workspace. That approach turned
 out to be complicated to use (snapping), understand and implement.
 
