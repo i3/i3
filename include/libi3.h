@@ -318,6 +318,12 @@ void draw_text_ascii(const char *text, xcb_drawable_t drawable,
 int predict_text_width(i3String *text);
 
 /**
+ * Returns the visual type associated with the given screen.
+ *
+ */
+xcb_visualtype_t *get_visualtype(xcb_screen_t *screen);
+
+/**
  * Returns true if this version of i3 is a debug build (anything which is not a
  * release version), based on the git version number.
  *
