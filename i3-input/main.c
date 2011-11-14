@@ -94,7 +94,9 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FFFFFF") });
+    set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
+
+    /* draw the text */
     uint8_t *con = concat_strings(glyphs_ucs, input_position);
     char *full_text = (char*)con;
     if (prompt != NULL) {
@@ -105,7 +107,7 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
         memcpy(full_text + (prompt_len * 2), con, input_position * 2);
     }
     if (input_position + prompt_len != 0)
-        draw_text(full_text, input_position + prompt_len, true, pixmap, pixmap_gc, 4, 4);
+        draw_text(full_text, input_position + prompt_len, true, pixmap, pixmap_gc, 4, 4, 492);
 
     /* Copy the contents of the pixmap to the real window */
     xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, /* */ 500, font.height + 8);
@@ -393,9 +395,6 @@ int main(int argc, char *argv[]) {
     /* Set input focus (we have override_redirect=1, so the wm will not do
      * this for us) */
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, win, XCB_CURRENT_TIME);
-
-    /* Create graphics context */
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ font.id });
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);

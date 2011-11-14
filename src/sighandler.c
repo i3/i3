@@ -47,11 +47,11 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FFFFFF") });
+    set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
 
     for (int i = 0; i < sizeof(crash_text) / sizeof(char*); i++) {
-        draw_text(crash_text[i], strlen(crash_text[i]), false,
-                pixmap, pixmap_gc, 8, 3 + (i - 1) * font_height);
+        draw_text(crash_text[i], strlen(crash_text[i]), false, pixmap, pixmap_gc,
+                8, 3 + (i - 1) * font_height, width - 16);
     }
 
     /* Copy the contents of the pixmap to the real window */
@@ -164,9 +164,6 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         pixmap_gc = xcb_generate_id(conn);
         xcb_create_pixmap(conn, root_depth, pixmap, win, width, height);
         xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
-
-        /* Create graphics context */
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ config.font.id });
 
         /* Grab the keyboard to get all input */
         xcb_grab_keyboard(conn, false, win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);

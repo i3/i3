@@ -408,9 +408,7 @@ void x_draw_decoration(Con *con) {
     xcb_poly_segment(conn, parent->pixmap, parent->pm_gc, 2, segments);
 
     /* 6: draw the title */
-    uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-    uint32_t values[] = { p->color->text, p->color->background, config.font.id };
-    xcb_change_gc(conn, parent->pm_gc, mask, values);
+    set_font_colors(parent->pm_gc, p->color->text, p->color->background);
     int text_offset_y = (con->deco_rect.height - config.font.height) / 2;
 
     struct Window *win = con->window;
@@ -419,7 +417,8 @@ void x_draw_decoration(Con *con) {
         // TODO: use a good description instead of just "another container"
         draw_text("another container", strlen("another container"), false,
                 parent->pixmap, parent->pm_gc,
-                con->deco_rect.x + 2, con->deco_rect.y + text_offset_y);
+                con->deco_rect.x + 2, con->deco_rect.y + text_offset_y,
+                con->deco_rect.width - 2);
         goto copy_pixmaps;
     }
 
@@ -442,7 +441,8 @@ void x_draw_decoration(Con *con) {
 
     draw_text(win->name_x, win->name_len, win->uses_net_wm_name,
             parent->pixmap, parent->pm_gc,
-            con->deco_rect.x + 2 + indent_px, con->deco_rect.y + text_offset_y);
+            con->deco_rect.x + 2 + indent_px, con->deco_rect.y + text_offset_y,
+            con->deco_rect.width - 2 - indent_px);
 
 copy_pixmaps:
     xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);

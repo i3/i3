@@ -115,11 +115,12 @@ static int handle_expose() {
     set_font(&font);
 
 #define txt(x, row, text) \
-    draw_text(text, strlen(text), false, pixmap, pixmap_gc, x, (row - 1) * font.height + 4)
+    draw_text(text, strlen(text), false, pixmap, pixmap_gc,\
+            x, (row - 1) * font.height + 4, 300 - x * 2)
 
     if (current_step == STEP_WELCOME) {
         /* restore font color */
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FFFFFF") });
+        set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
 
         txt(10, 2, "You have not configured i3 yet.");
         txt(10, 3, "Do you want me to generate ~/.i3/config?");
@@ -127,16 +128,16 @@ static int handle_expose() {
         txt(85, 7, "No, I will use the defaults");
 
         /* green */
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#00FF00") });
+        set_font_colors(pixmap_gc, get_colorpixel("#00FF00"), get_colorpixel("#000000"));
         txt(25, 5, "<Enter>");
 
         /* red */
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FF0000") });
+        set_font_colors(pixmap_gc, get_colorpixel("#FF0000"), get_colorpixel("#000000"));
         txt(31, 7, "<ESC>");
     }
 
     if (current_step == STEP_GENERATE) {
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FFFFFF") });
+        set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
 
         txt(10, 2, "Please choose either:");
         txt(85, 4, "Win as default modifier");
@@ -152,20 +153,18 @@ static int handle_expose() {
 
         /* the selected modifier */
         set_font(&bold_font);
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ bold_font.id });
+        set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
         if (modifier == MOD_Mod4)
             txt(31, 4, "<Win>");
         else txt(31, 5, "<Alt>");
 
         /* green */
         set_font(&font);
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_FONT,
-                      (uint32_t[]) { get_colorpixel("#00FF00"), font.id });
-
+        set_font_colors(pixmap_gc, get_colorpixel("#00FF00"), get_colorpixel("#000000"));
         txt(25, 9, "<Enter>");
 
         /* red */
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FF0000") });
+        set_font_colors(pixmap_gc, get_colorpixel("#FF0000"), get_colorpixel("#000000"));
         txt(31, 10, "<ESC>");
     }
 
@@ -440,7 +439,6 @@ int main(int argc, char *argv[]) {
     xcb_numlock_mask = get_mod_mask_for(XCB_NUM_LOCK, symbols, modmap_reply);
 
     font = load_font(pattern, true);
-    set_font(&font);
     bold_font = load_font(patternbold, true);
 
     /* Open an input window */

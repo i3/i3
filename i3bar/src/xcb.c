@@ -121,7 +121,9 @@ void refresh_statusline() {
 
     xcb_rectangle_t rect = { 0, 0, xcb_screen->width_in_pixels, font.height };
     xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_clear, 1, &rect);
-    draw_text((char*)text, glyph_count, true, statusline_pm, statusline_ctx, 0, 0);
+    set_font_colors(statusline_ctx, colors.bar_fg, colors.bar_bg);
+    draw_text((char*)text, glyph_count, true, statusline_pm, statusline_ctx,
+            0, 0, xcb_screen->width_in_pixels);
 
     FREE(text);
 }
@@ -731,14 +733,12 @@ char *init_xcb_early() {
                                                                mask,
                                                                vals);
 
-    mask |= XCB_GC_BACKGROUND;
-    vals[0] = colors.bar_fg;
     statusline_ctx = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_ctx_cookie = xcb_create_gc_checked(xcb_connection,
                                                             statusline_ctx,
                                                             xcb_root,
-                                                            mask,
-                                                            vals);
+                                                            0,
+                                                            NULL);
 
     statusline_pm = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
@@ -808,9 +808,6 @@ void init_xcb_late(char *fontname) {
     font = load_font(fontname, true);
     set_font(&font);
     DLOG("Calculated Font-height: %d\n", font.height);
-
-    /* Set the font in the gc */
-    xcb_change_gc(xcb_connection, statusline_ctx, XCB_GC_FONT, (uint32_t[]){ font.id });
 
     xcb_flush(xcb_connection);
 
@@ -1036,7 +1033,7 @@ void realloc_sl_buffer() {
                                                                xcb_screen->height_in_pixels);
 
     uint32_t mask = XCB_GC_FOREGROUND;
-    uint32_t vals[3] = { colors.bar_bg, colors.bar_bg, font.id };
+    uint32_t vals[2] = { colors.bar_bg, colors.bar_bg };
     xcb_free_gc(xcb_connection, statusline_clear);
     statusline_clear = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t clear_ctx_cookie = xcb_create_gc_checked(xcb_connection,
@@ -1045,7 +1042,7 @@ void realloc_sl_buffer() {
                                                                mask,
                                                                vals);
 
-    mask |= XCB_GC_BACKGROUND | XCB_GC_FONT;
+    mask |= XCB_GC_BACKGROUND;
     vals[0] = colors.bar_fg;
     statusline_ctx = xcb_generate_id(xcb_connection);
     xcb_free_gc(xcb_connection, statusline_ctx);
@@ -1203,13 +1200,11 @@ void reconfig_windows() {
             /* We also want a graphics-context for the bars (it defines the properties
              * with which we draw to them) */
             walk->bargc = xcb_generate_id(xcb_connection);
-            mask = XCB_GC_FONT;
-            values[0] = font.id;
             xcb_void_cookie_t gc_cookie = xcb_create_gc_checked(xcb_connection,
                                                                 walk->bargc,
                                                                 walk->bar,
-                                                                mask,
-                                                                values);
+                                                                0,
+                                                                NULL);
 
             /* We finally map the bar (display it on screen), unless the modifier-switch is on */
             xcb_void_cookie_t map_cookie;
@@ -1372,12 +1367,9 @@ void draw_bars() {
                                     outputs_walk->bargc,
                                     1,
                                     &rect);
-            xcb_change_gc(xcb_connection,
-                          outputs_walk->bargc,
-                          XCB_GC_FOREGROUND,
-                          &fg_color);
+            set_font_colors(outputs_walk->bargc, fg_color, bg_color);
             draw_text((char*)ws_walk->ucs2_name, ws_walk->name_glyphs, true,
-                    outputs_walk->buffer, outputs_walk->bargc, i + 5, 2);
+                    outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, ws_walk->name_width);
             i += 10 + ws_walk->name_width;
         }
 

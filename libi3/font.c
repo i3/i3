@@ -82,13 +82,24 @@ void set_font(i3Font *font) {
 }
 
 /*
+ * Defines the colors to be used for the forthcoming draw_text calls.
+ *
+ */
+void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background) {
+    assert(savedFont != NULL);
+    uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
+    uint32_t values[] = { foreground, background, savedFont->id };
+    xcb_change_gc(conn, gc, mask, values);
+}
+
+/*
  * Draws text onto the specified X drawable (normally a pixmap) at the
  * specified coordinates (from the top left corner of the leftmost, uppermost
  * glyph) and using the provided gc. Text can be specified as UCS-2 or UTF-8.
  *
  */
-void draw_text(char *text, size_t text_len, bool is_ucs2,
-        xcb_drawable_t drawable, xcb_gcontext_t gc, int x, int y) {
+void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawable,
+        xcb_gcontext_t gc, int x, int y, int max_width) {
     assert(savedFont != NULL);
     assert(text_len != 0);
 
