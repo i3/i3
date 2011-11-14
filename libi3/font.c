@@ -24,12 +24,14 @@ static const i3Font *savedFont = NULL;
  */
 i3Font load_font(const char *pattern, const bool fallback) {
     i3Font font;
+    font.type = FONT_TYPE_NONE;
+
 
     /* Send all our requests first */
-    font.id = xcb_generate_id(conn);
-    xcb_void_cookie_t font_cookie = xcb_open_font_checked(conn, font.id,
+    font.specific.xcb.id = xcb_generate_id(conn);
+    xcb_void_cookie_t font_cookie = xcb_open_font_checked(conn, font.specific.xcb.id,
             strlen(pattern), pattern);
-    xcb_query_font_cookie_t info_cookie = xcb_query_font(conn, font.id);
+    xcb_query_font_cookie_t info_cookie = xcb_query_font(conn, font.specific.xcb.id);
 
     /* Check for errors. If errors, fall back to default font. */
     xcb_generic_error_t *error;
@@ -40,8 +42,9 @@ i3Font load_font(const char *pattern, const bool fallback) {
         ELOG("Could not open font %s (X error %d). Trying fallback to 'fixed'.\n",
              pattern, error->error_code);
         pattern = "fixed";
-        font_cookie = xcb_open_font_checked(conn, font.id, strlen(pattern), pattern);
-        info_cookie = xcb_query_font(conn, font.id);
+        font_cookie = xcb_open_font_checked(conn, font.specific.xcb.id,
+                strlen(pattern), pattern);
+        info_cookie = xcb_query_font(conn, font.specific.xcb.id);
 
         /* Check if we managed to open 'fixed' */
         error = xcb_request_check(conn, font_cookie);
@@ -50,8 +53,9 @@ i3Font load_font(const char *pattern, const bool fallback) {
         if (error != NULL) {
             ELOG("Could not open fallback font 'fixed', trying with '-misc-*'.\n");
             pattern = "-misc-*";
-            font_cookie = xcb_open_font_checked(conn, font.id, strlen(pattern), pattern);
-            info_cookie = xcb_query_font(conn, font.id);
+            font_cookie = xcb_open_font_checked(conn, font.specific.xcb.id,
+                    strlen(pattern), pattern);
+            info_cookie = xcb_query_font(conn, font.specific.xcb.id);
 
             if ((error = xcb_request_check(conn, font_cookie)) != NULL)
                 errx(EXIT_FAILURE, "Could open neither requested font nor fallbacks "
@@ -60,18 +64,20 @@ i3Font load_font(const char *pattern, const bool fallback) {
     }
 
     /* Get information (height/name) for this font */
-    if (!(font.info = xcb_query_font_reply(conn, info_cookie, NULL)))
+    if (!(font.specific.xcb.info = xcb_query_font_reply(conn, info_cookie, NULL)))
         errx(EXIT_FAILURE, "Could not load font \"%s\"", pattern);
 
     /* Get the font table, if possible */
-    if (xcb_query_font_char_infos_length(font.info) == 0)
-        font.table = NULL;
+    if (xcb_query_font_char_infos_length(font.specific.xcb.info) == 0)
+        font.specific.xcb.table = NULL;
     else
-        font.table = xcb_query_font_char_infos(font.info);
+        font.specific.xcb.table = xcb_query_font_char_infos(font.specific.xcb.info);
 
     /* Calculate the font height */
-    font.height = font.info->font_ascent + font.info->font_descent;
+    font.height = font.specific.xcb.info->font_ascent + font.specific.xcb.info->font_descent;
 
+    /* Set the font type and return successfully */
+    font.type = FONT_TYPE_XCB;
     return font;
 }
 
@@ -88,10 +94,21 @@ void set_font(i3Font *font) {
  *
  */
 void free_font(void) {
-    /* Close the font and free the info */
-    xcb_close_font(conn, savedFont->id);
-    if (savedFont->info)
-        free(savedFont->info);
+    switch (savedFont->type) {
+        case FONT_TYPE_NONE:
+            /* Nothing to do */
+            break;
+        case FONT_TYPE_XCB: {
+            /* Close the font and free the info */
+            xcb_close_font(conn, savedFont->specific.xcb.id);
+            if (savedFont->specific.xcb.info)
+                free(savedFont->specific.xcb.info);
+            break;
+        }
+        default:
+            assert(false);
+            break;
+    }
 }
 
 /*
@@ -100,9 +117,22 @@ void free_font(void) {
  */
 void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background) {
     assert(savedFont != NULL);
-    uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-    uint32_t values[] = { foreground, background, savedFont->id };
-    xcb_change_gc(conn, gc, mask, values);
+
+    switch (savedFont->type) {
+        case FONT_TYPE_NONE:
+            /* Nothing to do */
+            break;
+        case FONT_TYPE_XCB: {
+            /* Change the font and colors in the GC */
+            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
+            uint32_t values[] = { foreground, background, savedFont->specific.xcb.id };
+            xcb_change_gc(conn, gc, mask, values);
+            break;
+        }
+        default:
+            assert(false);
+            break;
+    }
 }
 
 static int predict_text_width_xcb(const xcb_char2b_t *text, size_t text_len);
@@ -110,7 +140,7 @@ static int predict_text_width_xcb(const xcb_char2b_t *text, size_t text_len);
 static void draw_text_xcb(const xcb_char2b_t *text, size_t text_len, xcb_drawable_t drawable,
                xcb_gcontext_t gc, int x, int y, int max_width) {
     /* X11 coordinates for fonts start at the baseline */
-    int pos_y = y + savedFont->info->font_ascent;
+    int pos_y = y + savedFont->specific.xcb.info->font_ascent;
 
     /* The X11 protocol limits text drawing to 255 chars, so we may need
      * multiple calls */
@@ -148,8 +178,17 @@ void draw_text(i3String *text, xcb_drawable_t drawable,
                xcb_gcontext_t gc, int x, int y, int max_width) {
     assert(savedFont != NULL);
 
-    draw_text_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text),
-              drawable, gc, x, y, max_width);
+    switch (savedFont->type) {
+        case FONT_TYPE_NONE:
+            /* Nothing to do */
+            return;
+        case FONT_TYPE_XCB:
+            draw_text_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text),
+                      drawable, gc, x, y, max_width);
+            break;
+        default:
+            assert(false);
+    }
 }
 
 /*
@@ -160,17 +199,28 @@ void draw_text_ascii(const char *text, xcb_drawable_t drawable,
                xcb_gcontext_t gc, int x, int y, int max_width) {
     assert(savedFont != NULL);
 
-    size_t text_len = strlen(text);
-    if (text_len > 255) {
-        /* The text is too long to draw it directly to X */
-        i3String *str = i3string_from_utf8(text);
-        draw_text(str, drawable, gc, x, y, max_width);
-        i3string_free(str);
-    } else {
-        /* X11 coordinates for fonts start at the baseline */
-        int pos_y = y + savedFont->info->font_ascent;
+    switch (savedFont->type) {
+        case FONT_TYPE_NONE:
+            /* Nothing to do */
+            return;
+        case FONT_TYPE_XCB:
+        {
+            size_t text_len = strlen(text);
+            if (text_len > 255) {
+                /* The text is too long to draw it directly to X */
+                i3String *str = i3string_from_utf8(text);
+                draw_text(str, drawable, gc, x, y, max_width);
+                i3string_free(str);
+            } else {
+                /* X11 coordinates for fonts start at the baseline */
+                int pos_y = y + savedFont->specific.xcb.info->font_ascent;
 
-        xcb_image_text_8(conn, text_len, drawable, gc, x, pos_y, text);
+                xcb_image_text_8(conn, text_len, drawable, gc, x, pos_y, text);
+            }
+            break;
+        }
+        default:
+            assert(false);
     }
 }
 
@@ -185,7 +235,7 @@ static int xcb_query_text_width(const xcb_char2b_t *text, size_t text_len) {
     /* Query the text width */
     xcb_generic_error_t *error;
     xcb_query_text_extents_cookie_t cookie = xcb_query_text_extents(conn,
-            savedFont->id, text_len, (xcb_char2b_t*)text);
+            savedFont->specific.xcb.id, text_len, (xcb_char2b_t*)text);
     xcb_query_text_extents_reply_t *reply = xcb_query_text_extents_reply(conn,
             cookie, &error);
     if (reply == NULL) {
@@ -193,7 +243,7 @@ static int xcb_query_text_width(const xcb_char2b_t *text, size_t text_len) {
          * a crash. Plus, the user will see the error in his log. */
         fprintf(stderr, "Could not get text extents (X error code %d)\n",
                 error->error_code);
-        return savedFont->info->max_bounds.character_width * text_len;
+        return savedFont->specific.xcb.info->max_bounds.character_width * text_len;
     }
 
     int width = reply->overall_width;
@@ -206,13 +256,13 @@ static int predict_text_width_xcb(const xcb_char2b_t *input, size_t text_len) {
         return 0;
 
     int width;
-    if (savedFont->table == NULL) {
+    if (savedFont->specific.xcb.table == NULL) {
         /* If we don't have a font table, fall back to querying the server */
         width = xcb_query_text_width(input, text_len);
     } else {
         /* Save some pointers for convenience */
-        xcb_query_font_reply_t *font_info = savedFont->info;
-        xcb_charinfo_t *font_table = savedFont->table;
+        xcb_query_font_reply_t *font_info = savedFont->specific.xcb.info;
+        xcb_charinfo_t *font_table = savedFont->specific.xcb.table;
 
         /* Calculate the width using the font table */
         width = 0;
@@ -251,5 +301,16 @@ static int predict_text_width_xcb(const xcb_char2b_t *input, size_t text_len) {
  *
  */
 int predict_text_width(i3String *text) {
-    return predict_text_width_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text));
+    assert(savedFont != NULL);
+
+    switch (savedFont->type) {
+        case FONT_TYPE_NONE:
+            /* Nothing to do */
+            return 0;
+        case FONT_TYPE_XCB:
+            return predict_text_width_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text));
+        default:
+            assert(false);
+            return 0;
+    }
 }

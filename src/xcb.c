@@ -50,8 +50,9 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims,
         xcb_cursor_t cursor_id = xcb_generate_id(conn);
         i3Font cursor_font = load_font("cursor", false);
         int xcb_cursor = xcursor_get_xcb_cursor(cursor);
-        xcb_create_glyph_cursor(conn, cursor_id, cursor_font.id, cursor_font.id,
-                xcb_cursor, xcb_cursor + 1, 0, 0, 0, 65535, 65535, 65535);
+        xcb_create_glyph_cursor(conn, cursor_id, cursor_font.specific.xcb.id,
+                cursor_font.specific.xcb.id, xcb_cursor, xcb_cursor + 1, 0, 0, 0,
+                65535, 65535, 65535);
         xcb_change_window_attributes(conn, result, XCB_CW_CURSOR, &cursor_id);
         xcb_free_cursor(conn, cursor_id);
     }
@@ -195,8 +196,9 @@ void xcb_set_root_cursor(int cursor) {
     xcb_cursor_t cursor_id = xcb_generate_id(conn);
     i3Font cursor_font = load_font("cursor", false);
     int xcb_cursor = xcursor_get_xcb_cursor(cursor);
-    xcb_create_glyph_cursor(conn, cursor_id, cursor_font.id, cursor_font.id,
-            xcb_cursor, xcb_cursor + 1, 0, 0, 0, 65535, 65535, 65535);
+    xcb_create_glyph_cursor(conn, cursor_id, cursor_font.specific.xcb.id,
+            cursor_font.specific.xcb.id, xcb_cursor, xcb_cursor + 1, 0, 0, 0,
+            65535, 65535, 65535);
     xcb_change_window_attributes(conn, root, XCB_CW_CURSOR, &cursor_id);
     xcb_free_cursor(conn, cursor_id);
     xcb_flush(conn);

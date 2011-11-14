@@ -33,17 +33,28 @@ typedef struct Font i3Font;
  *
  */
 struct Font {
-    /** The xcb-id for the font */
-    xcb_font_t id;
-
-    /** Font information gathered from the server */
-    xcb_query_font_reply_t *info;
-
-    /** Font table for this font (may be NULL) */
-    xcb_charinfo_t *table;
+    /** The type of font */
+    enum {
+        FONT_TYPE_NONE = 0,
+        FONT_TYPE_XCB,
+        FONT_TYPE_PANGO
+    } type;
 
     /** The height of the font, built from font_ascent + font_descent */
     int height;
+
+    union {
+        struct {
+            /** The xcb-id for the font */
+            xcb_font_t id;
+
+            /** Font information gathered from the server */
+            xcb_query_font_reply_t *info;
+
+            /** Font table for this font (may be NULL) */
+            xcb_charinfo_t *table;
+        } xcb;
+    } specific;
 };
 
 /* Since this file also gets included by utilities which don’t use the i3 log
