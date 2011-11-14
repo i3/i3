@@ -47,7 +47,7 @@ xcb_atom_t               atoms[NUM_ATOMS];
 /* Variables, that are the same for all functions at all times */
 xcb_connection_t *xcb_connection;
 int              screen;
-xcb_screen_t     *xcb_screen;
+xcb_screen_t     *root_screen;
 xcb_window_t     xcb_root;
 
 /* This is needed for integration with libi3 */
@@ -128,12 +128,12 @@ void refresh_statusline() {
 
     /* If the statusline is bigger than our screen we need to make sure that
      * the pixmap provides enough space, so re-allocate if the width grew */
-    if (statusline_width > xcb_screen->width_in_pixels &&
+    if (statusline_width > root_screen->width_in_pixels &&
         statusline_width > old_statusline_width)
         realloc_sl_buffer();
 
     /* Clear the statusline pixmap. */
-    xcb_rectangle_t rect = { 0, 0, xcb_screen->width_in_pixels, font.height };
+    xcb_rectangle_t rect = { 0, 0, root_screen->width_in_pixels, font.height };
     xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_clear, 1, &rect);
 
     /* Draw the text of each block. */
@@ -824,8 +824,8 @@ char *init_xcb_early() {
     #define ATOM_DO(name) atom_cookies[name] = xcb_intern_atom(xcb_connection, 0, strlen(#name), #name);
     #include "xcb_atoms.def"
 
-    xcb_screen = xcb_aux_get_screen(xcb_connection, screen);
-    xcb_root = xcb_screen->root;
+    root_screen = xcb_aux_get_screen(xcb_connection, screen);
+    xcb_root = root_screen->root;
 
     /* We draw the statusline to a seperate pixmap, because it looks the same on all bars and
      * this way, we can choose to crop it */
@@ -848,11 +848,11 @@ char *init_xcb_early() {
 
     statusline_pm = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                               xcb_screen->root_depth,
+                                                               root_screen->root_depth,
                                                                statusline_pm,
                                                                xcb_root,
-                                                               xcb_screen->width_in_pixels,
-                                                               xcb_screen->height_in_pixels);
+                                                               root_screen->width_in_pixels,
+                                                               root_screen->height_in_pixels);
 
 
     /* The various Watchers to communicate with xcb */
@@ -980,14 +980,14 @@ void init_tray() {
     uint32_t selmask = XCB_CW_OVERRIDE_REDIRECT;
     uint32_t selval[] = { 1 };
     xcb_create_window(xcb_connection,
-                      xcb_screen->root_depth,
+                      root_screen->root_depth,
                       selwin,
                       xcb_root,
                       -1, -1,
                       1, 1,
                       1,
                       XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                      xcb_screen->root_visual,
+                      root_screen->root_visual,
                       selmask,
                       selval);
 
@@ -1146,16 +1146,16 @@ void destroy_window(i3_output *output) {
  *
  */
 void realloc_sl_buffer() {
-    DLOG("Re-allocating statusline-buffer, statusline_width = %d, xcb_screen->width_in_pixels = %d\n",
-         statusline_width, xcb_screen->width_in_pixels);
+    DLOG("Re-allocating statusline-buffer, statusline_width = %d, root_screen->width_in_pixels = %d\n",
+         statusline_width, root_screen->width_in_pixels);
     xcb_free_pixmap(xcb_connection, statusline_pm);
     statusline_pm = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                               xcb_screen->root_depth,
+                                                               root_screen->root_depth,
                                                                statusline_pm,
                                                                xcb_root,
-                                                               MAX(xcb_screen->width_in_pixels, statusline_width),
-                                                               xcb_screen->height_in_pixels);
+                                                               MAX(root_screen->width_in_pixels, statusline_width),
+                                                               root_screen->height_in_pixels);
 
     uint32_t mask = XCB_GC_FOREGROUND;
     uint32_t vals[2] = { colors.bar_bg, colors.bar_bg };
@@ -1225,20 +1225,20 @@ void reconfig_windows() {
                 values[2] |= XCB_EVENT_MASK_BUTTON_PRESS;
             }
             xcb_void_cookie_t win_cookie = xcb_create_window_checked(xcb_connection,
-                                                                     xcb_screen->root_depth,
+                                                                     root_screen->root_depth,
                                                                      walk->bar,
                                                                      xcb_root,
                                                                      walk->rect.x, walk->rect.y + walk->rect.h - font.height - 6,
                                                                      walk->rect.w, font.height + 6,
                                                                      1,
                                                                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                                                     xcb_screen->root_visual,
+                                                                     root_screen->root_visual,
                                                                      mask,
                                                                      values);
 
             /* The double-buffer we use to render stuff off-screen */
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                                    xcb_screen->root_depth,
+                                                                    root_screen->root_depth,
                                                                     walk->buffer,
                                                                     walk->bar,
                                                                     walk->rect.w,
@@ -1378,7 +1378,7 @@ void reconfig_windows() {
 
             DLOG("Recreating buffer for output %s", walk->name);
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                                    xcb_screen->root_depth,
+                                                                    root_screen->root_depth,
                                                                     walk->buffer,
                                                                     walk->bar,
                                                                     walk->rect.w,
