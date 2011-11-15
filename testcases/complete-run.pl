@@ -51,6 +51,7 @@ sub Log { say $log "@_" }
 
 my $coverage_testing = 0;
 my $valgrind = 0;
+my $strace = 0;
 my $help = 0;
 # Number of tests to run in parallel. Important to know how many Xdummy
 # instances we need to start (unless @displays are given). Defaults to
@@ -62,6 +63,7 @@ my @childpids = ();
 my $result = GetOptions(
     "coverage-testing" => \$coverage_testing,
     "valgrind" => \$valgrind,
+    "strace" => \$strace,
     "display=s" => \@displays,
     "parallel=i" => \$parallel,
     "help|?" => \$help,
@@ -171,8 +173,9 @@ sub take_job {
             display => $display,
             configfile => $tmpfile,
             outdir => $outdir,
-            logpath => $logpath,
+            testname => $basename,
             valgrind => $valgrind,
+            strace => $strace,
             cv => $activate_cv
         );
 
@@ -239,7 +242,7 @@ sub take_job {
         my $output;
         open(my $spool, '>', \$output);
         my $parser = TAP::Parser->new({
-            exec => [ 'sh', '-c', qq|DISPLAY=$display LOGPATH="$logpath" OUTDIR="$outdir" VALGRIND=$valgrind /usr/bin/perl -Ilib $test| ],
+            exec => [ 'sh', '-c', qq|DISPLAY=$display TESTNAME="$basename" OUTDIR="$outdir" VALGRIND=$valgrind STRACE=$strace /usr/bin/perl -Ilib $test| ],
             spool => $spool,
             merge => 1,
         });
@@ -354,7 +357,12 @@ complete-run.pl will start (num_cores * 2) Xdummy instances.
 =item B<--valgrind>
 
 Runs i3 under valgrind to find memory problems. The output will be available in
-C<latest/valgrind.log>.
+C<latest/valgrind-for-$test.log>.
+
+=item B<--strace>
+
+Runs i3 under strace to trace system calls. The output will be available in
+C<latest/strace-for-$test.log>.
 
 =item B<--coverage-testing>
 

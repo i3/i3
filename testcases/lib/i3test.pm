@@ -434,8 +434,9 @@ sub launch_with_config {
         display => $ENV{DISPLAY},
         configfile => $tmpfile,
         outdir => $ENV{OUTDIR},
-        logpath => $ENV{LOGPATH},
+        testname => $ENV{TESTNAME},
         valgrind => $ENV{VALGRIND},
+        strace => $ENV{STRACE},
         cv => $cv,
     );
 
