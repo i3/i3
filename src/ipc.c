@@ -823,6 +823,9 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
         return;
     }
 
+    /* Close this file descriptor on exec() */
+    (void)fcntl(client, F_SETFD, FD_CLOEXEC);
+
     set_nonblock(client);
 
     struct ev_io *package = scalloc(sizeof(struct ev_io));
