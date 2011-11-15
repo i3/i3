@@ -812,7 +812,9 @@ status_command command
 
 *Example*:
 -------------------------------------------------
-status_command i3status --config ~/.i3status.conf
+bar {
+    status_command i3status --config ~/.i3status.conf
+}
 -------------------------------------------------
 
 === Display mode
@@ -834,7 +836,9 @@ mode <dock|hide>
 
 *Example*:
 ----------------
-mode hide
+bar {
+    mode hide
+}
 ----------------
 
 === Position
@@ -850,7 +854,9 @@ position <top|bottom>
 
 *Example*:
 ---------------------
-position top
+bar {
+    position top
+}
 ---------------------
 
 === Output(s)
@@ -871,20 +877,20 @@ output <output>
 -------------------------------
 # big monitor: everything
 bar {
-	# The display is connected either via HDMI or via DisplayPort
-	output HDMI2
-	output DP2
-	status_command i3status
+    # The display is connected either via HDMI or via DisplayPort
+    output HDMI2
+    output DP2
+    status_command i3status
 }
 
 # laptop monitor: bright colors and i3status with less modules.
 bar {
-	output LVDS1
-	status_command i3status --config ~/.i3status-small.conf
-	colors {
-		background #000000
-		statusline #ffffff
-	}
+    output LVDS1
+    status_command i3status --config ~/.i3status-small.conf
+    colors {
+        background #000000
+        statusline #ffffff
+    }
 }
 -------------------------------
 
@@ -904,10 +910,14 @@ tray_output <none|output>
 *Example*:
 -------------------------
 # disable system tray
-tray_output none
+bar {
+    tray_output none
+}
 
 # show tray icons on the big monitor
-tray_output HDMI2
+bar {
+    tray_output HDMI2
+}
 -------------------------
 
 === Font
@@ -922,7 +932,9 @@ font <font>
 
 *Example*:
 --------------------------------------------------------------
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+bar {
+    font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+}
 --------------------------------------------------------------
 
 === Workspace buttons
@@ -939,7 +951,9 @@ workspace_buttons <yes|no>
 
 *Example*:
 --------------------
-workspace_buttons no
+bar {
+    workspace_buttons no
+}
 --------------------
 
 === Colors
@@ -979,14 +993,16 @@ colors {
 
 *Example*:
 --------------------------------------
-colors {
-    background #000000
-    statusline #ffffff
+bar {
+    colors {
+        background #000000
+        statusline #ffffff
 
-    focused_workspace  #ffffff #285577
-    active_workspace   #ffffff #333333
-    inactive_workspace #888888 #222222
-    urgent_workspace   #ffffff #900000
+        focused_workspace  #ffffff #285577
+        active_workspace   #ffffff #333333
+        inactive_workspace #888888 #222222
+        urgent_workspace   #ffffff #900000
+    }
 }
 --------------------------------------
 
