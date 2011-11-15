@@ -1068,7 +1068,7 @@ exec [--no-startup-id] command
 bindsym mod+g exec gimp
 
 # Start the terminal emulator urxvt which is not yet startup-notification-aware
-bindsym mod+enter exec --no-startup-id urxvt
+bindsym mod+Return exec --no-startup-id urxvt
 ------------------------------
 
 The +--no-startup-id+ parameter disables startup-notification support for this
