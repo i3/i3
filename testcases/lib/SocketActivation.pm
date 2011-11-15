@@ -38,11 +38,6 @@ sub activate_i3 {
     # remove the old unix socket
     unlink($args{unix_socket_path});
 
-    # pass all file descriptors up to three to the children.
-    # we need to set this flag before opening the socket.
-    open(my $fdtest, '<', '/dev/null');
-    $^F = fileno($fdtest);
-    close($fdtest);
     my $socket = IO::Socket::UNIX->new(
         Listen => 1,
         Local => $args{unix_socket_path},
