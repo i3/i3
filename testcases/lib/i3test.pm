@@ -423,7 +423,7 @@ sub launch_with_config {
         $tmp_socket_path = File::Temp::tempnam('/tmp', 'i3-test-socket-');
     }
 
-    my ($fh, $tmpfile) = tempfile('i3-test-config-XXXXX', UNLINK => 1);
+    my ($fh, $tmpfile) = tempfile('/tmp/i3-test-config-XXXXX', UNLINK => 1);
     say $fh $config;
     say $fh "ipc-socket $tmp_socket_path" unless $dont_add_socket_path;
     close($fh);
