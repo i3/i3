@@ -35,8 +35,7 @@ char *convert_ucs2_to_utf8(xcb_char2b_t *text, size_t num_glyphs) {
         utf8_conversion_descriptor = iconv_open("UTF-8", "UCS-2BE");
         if (utf8_conversion_descriptor == (iconv_t)-1)
             err(EXIT_FAILURE, "Error opening the conversion context");
-    }
-    else {
+    } else {
         /* Reset the existing conversion descriptor */
         iconv(utf8_conversion_descriptor, NULL, NULL, NULL, NULL);
     }
@@ -78,8 +77,7 @@ xcb_char2b_t *convert_utf8_to_ucs2(char *input, int *real_strlen) {
         ucs2_conversion_descriptor = iconv_open("UCS-2BE", "UTF-8");
         if (ucs2_conversion_descriptor == (iconv_t)-1)
             err(EXIT_FAILURE, "Error opening the conversion context");
-    }
-    else {
+    } else {
         /* Reset the existing conversion descriptor */
         iconv(ucs2_conversion_descriptor, NULL, NULL, NULL, NULL);
     }
