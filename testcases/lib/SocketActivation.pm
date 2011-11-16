@@ -63,8 +63,11 @@ sub activate_i3 {
 
         # We are about to exec, but we did not modify $^F to include $socket
         # when creating the socket (because the file descriptor could have a
-        # number != 3 which would lead to i3 leaking a file descriptor).
-        # Therefore, we explicitly have to clear the file descriptor flags now:
+        # number != 3 which would lead to i3 leaking a file descriptor). This
+        # caused Perl to set the FD_CLOEXEC flag, which would close $socket on
+        # exec(), effectively *NOT* passing $socket to the new process.
+        # Therefore, we explicitly clear FD_CLOEXEC (the only flag right now)
+        # by setting the flags to 0.
         POSIX::fcntl($socket, F_SETFD, 0) or die "Could not clear fd flags: $!";
 
         # If the socket does not use file descriptor 3 by chance already, we

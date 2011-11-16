@@ -615,7 +615,9 @@ int main(int argc, char *argv[]) {
         ev_io_start(main_loop, ipc_io);
     }
 
-    /* Also handle the UNIX domain sockets passed via socket activation */
+    /* Also handle the UNIX domain sockets passed via socket activation. The
+     * parameter 1 means "remove the environment variables", we don’t want to
+     * pass these to child processes. */
     int fds = sd_listen_fds(1);
     if (fds < 0)
         ELOG("socket activation: Error in sd_listen_fds\n");
