@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use IO::Socket::UNIX; # core
 use Cwd qw(abs_path); # core
-use POSIX (); # core
+use POSIX qw(:fcntl_h); # core
 use AnyEvent::Handle; # not core
 use Exporter 'import';
 use v5.10;
@@ -60,9 +60,12 @@ sub activate_i3 {
             '..',
             $ENV{PATH}
         );
-        # Only pass file descriptors 0 (stdin), 1 (stdout), 2 (stderr) and
-        # 3 (socket) to the child.
-        $^F = 3;
+
+        # We are about to exec, but we did not modify $^F to include $socket
+        # when creating the socket (because the file descriptor could have a
+        # number != 3 which would lead to i3 leaking a file descriptor).
+        # Therefore, we explicitly have to clear the file descriptor flags now:
+        POSIX::fcntl($socket, F_SETFD, 0) or die "Could not clear fd flags: $!";
 
         # If the socket does not use file descriptor 3 by chance already, we
         # close fd 3 and dup2() the socket to 3.
