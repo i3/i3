@@ -4,8 +4,8 @@
 #
 # Distributions/packagers can enhance this script with a
 # distribution-specific mechanism to find the preferred pager.
-which $VISUAL >/dev/null && exec $VISUAL "$@"
-which $EDITOR >/dev/null && exec $EDITOR "$@"
+[ -n "$VISUAL" ] && which $VISUAL >/dev/null && exec $VISUAL "$@"
+[ -n "$EDITOR" ] && which $EDITOR >/dev/null && exec $EDITOR "$@"
 
 # Hopefully one of these is installed (no flamewars about preference please!):
 which nano >/dev/null && exec nano "$@"
