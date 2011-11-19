@@ -11,7 +11,7 @@
 -# distribution-specific mechanism to find the preferred terminal emulator. On
 -# Debian, there is the x-terminal-emulator symlink for example.
 -# Please don't touch the first line, though:
- which $TERMINAL >/dev/null && exec $TERMINAL "$@"
+ [ -n "$TERMINAL" ] && which $TERMINAL >/dev/null && exec $TERMINAL "$@"
  
 +# Debian-specific: use x-terminal-emulator
 +which x-terminal-emulator >/dev/null && exec x-terminal-emulator "$@"
