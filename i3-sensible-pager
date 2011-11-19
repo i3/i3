@@ -4,7 +4,7 @@
 #
 # Distributions/packagers can enhance this script with a
 # distribution-specific mechanism to find the preferred pager.
-which $PAGER >/dev/null && exec $PAGER "$@"
+[ -n "$PAGER" ] && which $PAGER >/dev/null && exec $PAGER "$@"
 
 # Hopefully one of these is installed:
 which most >/dev/null && exec most "$@"
