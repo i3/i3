@@ -75,6 +75,7 @@ sub activate_i3 {
         if (fileno($socket) != 3) {
             POSIX::close(3);
             POSIX::dup2(fileno($socket), 3);
+            POSIX::close(fileno($socket));
         }
 
         # Construct the command to launch i3. Use maximum debug level, disable
