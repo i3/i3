@@ -7,6 +7,7 @@ use IO::Socket::UNIX; # core
 use Cwd qw(abs_path); # core
 use POSIX qw(:fcntl_h); # core
 use AnyEvent::Handle; # not core
+use AnyEvent::Util; # not core
 use Exporter 'import';
 use v5.10;
 
@@ -77,6 +78,10 @@ sub activate_i3 {
             POSIX::dup2(fileno($socket), 3);
             POSIX::close(fileno($socket));
         }
+
+        # Make sure no file descriptors are open. Strangely, I got an open file
+        # descriptor pointing to AnyEvent/Impl/EV.pm when testing.
+        AnyEvent::Util::close_all_fds_except(0, 1, 2, 3);
 
         # Construct the command to launch i3. Use maximum debug level, disable
         # the interactive signalhandler to make it crash immediately instead.

@@ -24,9 +24,14 @@ use StartXDummy;
 use StatusLine;
 # the following modules are not shipped with Perl
 use AnyEvent;
+use AnyEvent::Util;
 use AnyEvent::Handle;
 use AnyEvent::I3 qw(:all);
 use X11::XCB;
+
+# Close superfluous file descriptors which were passed by running in a VIM
+# subshell or situations like that.
+AnyEvent::Util::close_all_fds_except(0, 1, 2);
 
 # We actually use AnyEvent to make sure it loads an event loop implementation.
 # Afterwards, we overwrite SIGCHLD:
