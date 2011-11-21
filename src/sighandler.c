@@ -146,7 +146,7 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
     int height = 13 + (crash_text_num * config.font.height);
 
     /* calculate width for longest text */
-    int text_len = strlen(crash_text[crash_text_longest]);
+    size_t text_len = strlen(crash_text[crash_text_longest]);
     xcb_char2b_t *longest_text = convert_utf8_to_ucs2(crash_text[crash_text_longest], &text_len);
     int font_width = predict_text_width((char *)longest_text, text_len, true);
     int width = font_width + 20;

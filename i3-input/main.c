@@ -50,7 +50,7 @@ static char *glyphs_utf8[512];
 static int input_position;
 static i3Font font;
 static char *prompt;
-static int prompt_len;
+static size_t prompt_len;
 static int limit;
 xcb_window_t root;
 xcb_connection_t *conn;

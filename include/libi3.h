@@ -184,7 +184,7 @@ uint32_t get_mod_mask_for(uint32_t keysym,
  * the fonts 'fixed' or '-misc-*' will be loaded instead of exiting.
  *
  */
-i3Font load_font(const char *pattern, bool fallback);
+i3Font load_font(const char *pattern, const bool fallback);
 
 /**
  * Converts the given string to UTF-8 from UCS-2 big endian. The return value
@@ -200,7 +200,7 @@ char *convert_ucs2_to_utf8(xcb_char2b_t *text, size_t num_glyphs);
  * returned. It has to be freed when done.
  *
  */
-xcb_char2b_t *convert_utf8_to_ucs2(char *input, int *real_strlen);
+xcb_char2b_t *convert_utf8_to_ucs2(char *input, size_t *real_strlen);
 
 /**
  * Defines the font to be used for the forthcoming draw_text and

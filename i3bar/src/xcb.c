@@ -104,13 +104,13 @@ int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
  *
  */
 void refresh_statusline() {
-    int glyph_count;
+    size_t glyph_count;
 
     if (statusline == NULL) {
         return;
     }
 
-    xcb_char2b_t *text = (xcb_char2b_t*) convert_utf8_to_ucs2(statusline, &glyph_count);
+    xcb_char2b_t *text = (xcb_char2b_t*)convert_utf8_to_ucs2(statusline, &glyph_count);
     uint32_t old_statusline_width = statusline_width;
     statusline_width = predict_text_width((char*)text, glyph_count, true);
     /* If the statusline is bigger than our screen we need to make sure that

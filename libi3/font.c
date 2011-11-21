@@ -22,7 +22,7 @@ static const i3Font *savedFont = NULL;
  * the fonts 'fixed' or '-misc-*' will be loaded instead of exiting.
  *
  */
-i3Font load_font(const char *pattern, bool fallback) {
+i3Font load_font(const char *pattern, const bool fallback) {
     i3Font font;
 
     /* Send all our requests first */
@@ -99,7 +99,7 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
  *
  */
 void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawable,
-        xcb_gcontext_t gc, int x, int y, int max_width) {
+               xcb_gcontext_t gc, int x, int y, int max_width) {
     assert(savedFont != NULL);
     assert(text_len != 0);
 
@@ -113,15 +113,7 @@ void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawabl
     }
 
     /* Convert the text into UCS-2 so we can do basic pointer math */
-    char *input;
-    if (is_ucs2) {
-        input = text;
-    }
-    else {
-        int real_strlen;
-        input = (char*)convert_utf8_to_ucs2(text, &real_strlen);
-        text_len = real_strlen;
-    }
+    char *input = (is_ucs2 ? text : (char*)convert_utf8_to_ucs2(text, &text_len));
 
     /* The X11 protocol limits text drawing to 255 chars, so we may need
      * multiple calls */
@@ -129,7 +121,7 @@ void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawabl
     int offset = 0;
     for (;;) {
         /* Calculate the size of this chunk */
-        int chunk_size = text_len > 255 ? 255 : text_len;
+        int chunk_size = (text_len > 255 ? 255 : text_len);
         xcb_char2b_t *chunk = (xcb_char2b_t*)input + offset;
 
         /* Draw it */
@@ -153,11 +145,11 @@ void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawabl
 }
 
 static int xcb_query_text_width(xcb_char2b_t *text, size_t text_len) {
-    /* Make the user know we're using the slow path */
-    static bool first = true;
-    if (first) {
+    /* Make the user know we’re using the slow path, but only once. */
+    static bool first_invocation = true;
+    if (first_invocation) {
         fprintf(stderr, "Using slow code path for text extents\n");
-        first = false;
+        first_invocation = false;
     }
 
     /* Query the text width */
@@ -187,21 +179,16 @@ static int xcb_query_text_width(xcb_char2b_t *text, size_t text_len) {
 int predict_text_width(char *text, size_t text_len, bool is_ucs2) {
     /* Convert the text into UTF-16 so we can do basic pointer math */
     xcb_char2b_t *input;
-    if (is_ucs2) {
-        input = (xcb_char2b_t *)text;
-    }
-    else {
-        int real_strlen;
-        input = convert_utf8_to_ucs2(text, &real_strlen);
-        text_len = real_strlen;
-    }
+    if (is_ucs2)
+        input = (xcb_char2b_t*)text;
+    else
+        input = convert_utf8_to_ucs2(text, &text_len);
 
     int width;
     if (savedFont->table == NULL) {
         /* If we don't have a font table, fall back to querying the server */
         width = xcb_query_text_width(input, text_len);
-    }
-    else {
+    } else {
         /* Save some pointers for convenience */
         xcb_query_font_reply_t *font_info = savedFont->info;
         xcb_charinfo_t *font_table = savedFont->table;
@@ -213,10 +200,11 @@ int predict_text_width(char *text, size_t text_len, bool is_ucs2) {
             int row = input[i].byte1;
             int col = input[i].byte2;
 
-            if (row < font_info->min_byte1 || row > font_info->max_byte1 ||
-                    col < font_info->min_char_or_byte2 || col > font_info->max_char_or_byte2) {
+            if (row < font_info->min_byte1 ||
+                row > font_info->max_byte1 ||
+                col < font_info->min_char_or_byte2 ||
+                col > font_info->max_char_or_byte2)
                 continue;
-            }
 
             /* Don't you ask me, how this one works… (Merovius) */
             info = &font_table[((row - font_info->min_byte1) *
