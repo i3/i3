@@ -449,4 +449,14 @@ sub launch_with_config {
     return $pid;
 }
 
+package i3test::X11;
+use parent 'X11::XCB::Connection';
+
+sub input_focus {
+    my $self = shift;
+    i3test::sync_with_i3($self);
+
+    return $self->SUPER::input_focus(@_);
+}
+
 1
