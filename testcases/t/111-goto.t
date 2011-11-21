@@ -12,9 +12,9 @@ cmd 'split h';
 # Create two windows and make sure focus switching works
 #####################################################################
 
-my $top = open_window($x);
-my $mid = open_window($x);
-my $bottom = open_window($x);
+my $top = open_window;
+my $mid = open_window;
+my $bottom = open_window;
 
 #
 # Returns the input focus after sending the given command to i3 via IPC

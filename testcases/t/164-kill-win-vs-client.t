@@ -11,8 +11,8 @@ sub two_windows {
 
     ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-    my $first = open_window($x);
-    my $second = open_window($x);
+    my $first = open_window;
+    my $second = open_window;
 
     sync_with_i3 $x;
 

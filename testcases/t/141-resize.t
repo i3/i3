@@ -7,8 +7,8 @@ my $tmp = fresh_workspace;
 
 cmd 'split v';
 
-my $top = open_window($x);
-my $bottom = open_window($x);
+my $top = open_window;
+my $bottom = open_window;
 
 sync_with_i3($x);
 
@@ -47,8 +47,8 @@ $tmp = fresh_workspace;
 
 cmd 'split v';
 
-$top = open_window($x);
-$bottom = open_window($x);
+$top = open_window;
+$bottom = open_window;
 
 cmd 'split h';
 cmd 'layout stacked';
@@ -69,7 +69,7 @@ is($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
 
 $tmp = fresh_workspace;
 
-$top = open_window($x);
+$top = open_window;
 
 cmd 'floating enable';
 

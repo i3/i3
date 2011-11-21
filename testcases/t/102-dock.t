@@ -23,7 +23,7 @@ my $screens = $x->screens;
 my $primary = first { $_->primary } @{$screens};
 
 # TODO: focus the primary screen before
-my $window = open_window($x, {
+my $window = open_window({
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
     });
 
@@ -76,7 +76,7 @@ is(@docked, 0, 'no more dock clients');
 # check if it gets placed on bottom (by coordinates)
 #####################################################################
 
-$window = open_window($x, {
+$window = open_window({
         rect => [ 0, 1000, 30, 30 ],
         background_color => '#FF0000',
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
@@ -100,7 +100,7 @@ is(@docked, 0, 'no more dock clients');
 # check if it gets placed on bottom (by hint)
 #####################################################################
 
-$window = open_window($x, {
+$window = open_window({
         dont_map => 1,
         rect => [ 0, 1000, 30, 30 ],
         background_color => '#FF0000',
@@ -137,7 +137,7 @@ wait_for_unmap $window;
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
 
-$window = open_window($x, {
+$window = open_window({
         dont_map => 1,
         rect => [ 0, 1000, 30, 30 ],
         background_color => '#FF0000',
@@ -174,7 +174,7 @@ $window->destroy;
 # regression test: transient dock client
 #####################################################################
 
-my $fwindow = open_window($x, {
+my $fwindow = open_window({
         dont_map => 1,
         background_color => '#FF0000',
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),

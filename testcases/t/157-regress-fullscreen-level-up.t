@@ -11,7 +11,7 @@ my $tmp = fresh_workspace;
 # open a window, verify it’s not in fullscreen mode
 #####################################################################
 
-my $win = open_window($x);
+my $win = open_window;
 
 my $nodes = get_ws_content $tmp;
 is(@$nodes, 1, 'exactly one client');

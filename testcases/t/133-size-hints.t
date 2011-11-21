@@ -9,7 +9,7 @@ my $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-my $win = open_window($x, { dont_map => 1 });
+my $win = open_window({ dont_map => 1 });
 # XXX: we should check screen size. in screens with an AR of 2.0,
 # this is not a good idea.
 my $aspect = X11::XCB::Sizehints::Aspect->new;

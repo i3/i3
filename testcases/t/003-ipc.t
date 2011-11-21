@@ -10,7 +10,7 @@ fresh_workspace;
 #####################################################################
 
 # Create a window so we can get a focus different from NULL
-my $window = open_window($x);
+my $window = open_window;
 
 my $focus = $x->input_focus;
 

@@ -12,8 +12,8 @@ my $tmp = fresh_workspace;
 
 cmd 'split v';
 
-my $top = open_window($x);
-my $bottom = open_window($x);
+my $top = open_window;
+my $bottom = open_window;
 
 my @urgent = grep { $_->{urgent} } @{get_ws_content($tmp)};
 is(@urgent, 0, 'no window got the urgent flag');

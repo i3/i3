@@ -14,7 +14,7 @@ my $tmp = fresh_workspace;
 # open the left window
 #####################################################################
 
-my $left = open_window($x, { background_color => '#ff0000' });
+my $left = open_window({ background_color => '#ff0000' });
 
 is($x->input_focus, $left->id, 'left window focused');
 
@@ -24,7 +24,7 @@ diag("left = " . $left->id);
 # Open the right window
 #####################################################################
 
-my $right = open_window($x, { background_color => '#00ff00' });
+my $right = open_window({ background_color => '#00ff00' });
 
 diag("right = " . $right->id);
 
@@ -38,7 +38,7 @@ cmd 'fullscreen';
 # Open a third window
 #####################################################################
 
-my $third = open_window($x, {
+my $third = open_window({
         background_color => '#0000ff',
         name => 'Third window',
         dont_map => 1,

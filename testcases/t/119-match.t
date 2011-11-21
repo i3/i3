@@ -11,7 +11,7 @@ my $tmp = fresh_workspace;
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
 # Open a new window
-my $window = open_window($x);
+my $window = open_window;
 my $content = get_ws_content($tmp);
 ok(@{$content} == 1, 'window mapped');
 my $win = $content->[0];

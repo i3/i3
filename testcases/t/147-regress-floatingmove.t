@@ -8,9 +8,9 @@ use i3test;
 
 my $tmp = fresh_workspace;
 
-my $left = open_window($x);
-my $mid = open_window($x);
-my $right = open_window($x);
+my $left = open_window;
+my $mid = open_window;
+my $right = open_window;
 
 # go to workspace level
 cmd 'level up';

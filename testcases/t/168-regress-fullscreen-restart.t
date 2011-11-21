@@ -7,8 +7,8 @@ use i3test;
 
 fresh_workspace;
 
-open_window($x);
-open_window($x);
+open_window;
+open_window;
 
 cmd 'layout stacking';
 sleep 1;

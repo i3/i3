@@ -12,7 +12,7 @@ my $tmp = fresh_workspace;
 # open a window with 200x80
 #####################################################################
 
-my $first = open_window($x, {
+my $first = open_window({
         rect => [ 0, 0, 200, 80],
         background_color => '#FF0000',
     });
@@ -21,7 +21,7 @@ my $first = open_window($x, {
 # Open a second window with 300x90
 #####################################################################
 
-my $second = open_window($x, {
+my $second = open_window({
         rect => [ 0, 0, 300, 90],
         background_color => '#00FF00',
     });

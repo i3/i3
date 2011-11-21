@@ -24,7 +24,7 @@ is(@{$ws->{floating_nodes}}, 1, 'one floating node');
 is(@{$nodes}, 0, 'no tiling nodes');
 
 # Create a tiling window
-my $twindow = open_window($x);
+my $twindow = open_window;
 
 ($nodes, $focus) = get_ws_content($tmp);
 
@@ -37,8 +37,8 @@ is(@{$nodes}, 1, 'one tiling node');
 
 $tmp = fresh_workspace;
 
-my $first = open_window($x);
-my $second = open_window($x);
+my $first = open_window;
+my $second = open_window;
 
 cmd 'layout stacked';
 
@@ -54,7 +54,7 @@ $ws = get_ws($tmp);
 is(@{$ws->{floating_nodes}}, 1, 'one floating nodes');
 is(@{$ws->{nodes}}, 1, 'one tiling node (stacked con)');
 
-my $third = open_window($x);
+my $third = open_window;
 
 
 $ws = get_ws($tmp);

@@ -10,7 +10,7 @@ use i3test;
 
 my $i3 = i3(get_socket_path());
 my $tmp = fresh_workspace;
-my $window = open_window($x);
+my $window = open_window;
 
 sub get_border_style {
     my @content = @{get_ws_content($tmp)};

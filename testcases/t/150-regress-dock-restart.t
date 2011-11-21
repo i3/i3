@@ -18,7 +18,7 @@ is(@docked, 0, 'no dock clients yet');
 
 # open a dock client
 
-my $window = open_window($x, {
+my $window = open_window({
         background_color => '#FF0000',
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
     });
@@ -64,7 +64,7 @@ is(@docked, 0, 'no dock clients found');
 # create a dock client with a 1px border
 #####################################################################
 
-$window = open_window($x, {
+$window = open_window({
         border => 1,
         rect => [ 0, 0, 30, 20 ],
         background_color => '#00FF00',

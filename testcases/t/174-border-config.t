@@ -23,7 +23,7 @@ my $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-my $first = open_window($x);
+my $first = open_window;
 
 my @content = @{get_ws_content($tmp)};
 ok(@content == 1, 'one container opened');
@@ -49,7 +49,7 @@ $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-$first = open_window($x);
+$first = open_window;
 
 @content = @{get_ws_content($tmp)};
 ok(@content == 1, 'one container opened');

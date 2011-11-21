@@ -156,7 +156,7 @@ sub wait_for_unmap {
 #     name => 'Window <n>'
 #
 sub open_window {
-    my ($x, $args) = @_;
+    my ($args) = @_;
     my %args = ($args ? %$args : ());
 
     my $dont_map = delete $args{dont_map};
@@ -186,7 +186,7 @@ sub open_floating_window {
 
     $args{window_type} = $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY');
 
-    return open_window($x, \%args);
+    return open_window(\%args);
 }
 
 sub open_empty_con {

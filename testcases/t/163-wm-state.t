@@ -7,7 +7,7 @@
 use i3test;
 use X11::XCB qw(ICCCM_WM_STATE_NORMAL ICCCM_WM_STATE_WITHDRAWN);
 
-my $window = open_window($x);
+my $window = open_window;
 
 sync_with_i3($x);
 

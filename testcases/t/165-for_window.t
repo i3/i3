@@ -183,7 +183,7 @@ wait_for_map $window;
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border');
 
-my $other = open_window($x);
+my $other = open_window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 2, 'two nodes');

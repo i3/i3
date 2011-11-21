@@ -5,11 +5,11 @@ use i3test;
 
 my $tmp = fresh_workspace;
 
-my $left = open_window($x);
-my $mid = open_window($x);
+my $left = open_window;
+my $mid = open_window;
 
 cmd 'split v';
-my $bottom = open_window($x);
+my $bottom = open_window;
 
 my ($nodes, $focus) = get_ws_content($tmp);
 

@@ -21,13 +21,13 @@ my $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-my $first = open_window($x);
-my $second = open_window($x);
+my $first = open_window;
+my $second = open_window;
 
 cmd 'layout tabbed';
 cmd 'focus parent';
 
-my $third = open_window($x);
+my $third = open_window;
 is($x->input_focus, $third->id, 'third window focused');
 
 cmd 'focus left';
@@ -62,13 +62,13 @@ $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-$first = open_window($x);
-$second = open_window($x);
+$first = open_window;
+$second = open_window;
 
 cmd 'layout tabbed';
 cmd 'focus parent';
 
-$third = open_window($x);
+$third = open_window;
 
 sync_with_i3($x);
 

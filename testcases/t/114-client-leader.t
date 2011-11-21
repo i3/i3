@@ -13,8 +13,8 @@ my $tmp = fresh_workspace;
 # one of both (depending on your screen resolution) will be positioned wrong.
 ####################################################################################
 
-my $left = open_window($x, { name => 'Left' });
-my $right = open_window($x, { name => 'Right' });
+my $left = open_window({ name => 'Left' });
+my $right = open_window({ name => 'Right' });
 
 my ($abs, $rgeom) = $right->rect;
 
@@ -44,7 +44,7 @@ ok(wait_for_map($child2), 'second child window mapped');
 cmp_ok(($cgeom->x + $cgeom->width), '<', $rgeom->x, 'child above left window');
 
 # check wm_transient_for
-my $fwindow = open_window($x, { dont_map => 1 });
+my $fwindow = open_window({ dont_map => 1 });
 $fwindow->transient_for($right);
 $fwindow->map;
 
@@ -60,7 +60,7 @@ SKIP: {
 # Create a parent window
 #####################################################################
 
-my $window = open_window($x, { dont_map => 1, name => 'Parent window' });
+my $window = open_window({ dont_map => 1, name => 'Parent window' });
 $window->map;
 
 ok(wait_for_map($window), 'parent window mapped');
@@ -71,7 +71,7 @@ ok(wait_for_map($window), 'parent window mapped');
 #########################################################################
 fresh_workspace;
 
-my $child = open_window($x, { dont_map => 1, name => 'Child window' });
+my $child = open_window({ dont_map => 1, name => 'Child window' });
 $child->client_leader($window);
 $child->map;
 

@@ -8,7 +8,7 @@ use i3test;
 subtest 'Window without WM_TAKE_FOCUS', sub {
     fresh_workspace;
 
-    my $window = open_window($x);
+    my $window = open_window;
 
     ok(!wait_for_event(1, sub { $_[0]->{response_type} == 161 }), 'did not receive ClientMessage');
 
@@ -20,7 +20,7 @@ subtest 'Window with WM_TAKE_FOCUS', sub {
 
     my $take_focus = $x->atom(name => 'WM_TAKE_FOCUS');
 
-    my $window = open_window($x, {
+    my $window = open_window({
         dont_map => 1,
         protocols => [ $take_focus ],
     });

@@ -8,7 +8,7 @@ use i3test;
 my $tmp = fresh_workspace;
 
 # Create a floating window which is smaller than the minimum enforced size of i3
-my $window = open_window($x, { rect => [ 0, 0, 400, 150 ] });
+my $window = open_window({ rect => [ 0, 0, 400, 150 ] });
 
 my ($absolute, $top) = $window->rect;
 

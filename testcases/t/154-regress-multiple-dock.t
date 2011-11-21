@@ -20,7 +20,7 @@ is(@docked, 0, 'no dock clients yet');
 # open a dock client
 #####################################################################
 
-my $first = open_window($x, {
+my $first = open_window({
         background_color => '#FF0000',
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
     });
@@ -29,7 +29,7 @@ my $first = open_window($x, {
 # Open a second dock client
 #####################################################################
 
-my $second = open_window($x, {
+my $second = open_window({
         background_color => '#FF0000',
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
     });

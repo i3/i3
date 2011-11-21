@@ -9,13 +9,13 @@ use i3test;
 my $tmp = fresh_workspace;
 
 # open a tiling window on the first workspace
-open_window($x);
+open_window;
 #sleep 0.25;
 my $first = get_focused($tmp);
 
 # on a different ws, open a floating window
 my $otmp = fresh_workspace;
-open_window($x);
+open_window;
 #sleep 0.25;
 my $float = get_focused($otmp);
 cmd 'mode toggle';
