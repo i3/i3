@@ -68,7 +68,7 @@ use Test::Most $test_most_args;
 use Data::Dumper;
 use AnyEvent::I3;
 use Time::HiRes qw(sleep);
-use Test::Deep qw(eq_deeply cmp_deeply cmp_set cmp_bag cmp_methods useclass noclass set bag subbagof superbagof subsetof supersetof superhashof subhashof bool str arraylength Isa ignore methods regexprefonly regexpmatches num regexponly scalref reftype hashkeysonly blessed array re hash regexpref hash_each shallow array_each code arrayelementsonly arraylengthonly scalarrefonly listmethods any hashkeys isa);
+use Test::Deep qw(eq_deeply cmp_deeply);
 __
     $tester->bail_out("$@") if $@;
     feature->import(":5.10");
