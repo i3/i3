@@ -42,7 +42,7 @@ ok(@{get_ws_content($tmp)} == 1, 'one container left after killing');
 # 'kill window'
 ##############################################################
 
-my $tmp = two_windows;
+$tmp = two_windows;
 
 cmd 'kill window';
 
@@ -55,7 +55,7 @@ ok(@{get_ws_content($tmp)} == 1, 'one container left after killing');
 # and check if both are gone
 ##############################################################
 
-my $tmp = two_windows;
+$tmp = two_windows;
 
 cmd 'kill client';
 

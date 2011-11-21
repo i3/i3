@@ -33,7 +33,8 @@ my $second = open_window($x);
 sync_with_i3($x);
 
 is($x->input_focus, $second->id, 'second window focused');
-ok(@{get_ws_content($tmp)} == 2, 'two containers opened');
+my @content = @{get_ws_content($tmp)};
+ok(@content == 2, 'two containers opened');
 isnt($content[0]->{layout}, 'stacked', 'layout not stacked');
 isnt($content[1]->{layout}, 'stacked', 'layout not stacked');
 
@@ -62,7 +63,7 @@ $second = open_window($x);
 sync_with_i3($x);
 
 is($x->input_focus, $second->id, 'second window focused');
-my @content = @{get_ws_content($tmp)};
+@content = @{get_ws_content($tmp)};
 ok(@content == 1, 'one con at workspace level');
 is($content[0]->{layout}, 'stacked', 'layout stacked');
 

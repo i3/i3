@@ -31,7 +31,7 @@ is($nodes->[0]->{fullscreen_mode}, 0, 'client not fullscreen');
 cmd 'nop making fullscreen';
 cmd 'fullscreen';
 
-my $nodes = get_ws_content $tmp;
+$nodes = get_ws_content $tmp;
 is($nodes->[0]->{fullscreen_mode}, 1, 'client fullscreen now');
 
 #####################################################################
@@ -40,7 +40,7 @@ is($nodes->[0]->{fullscreen_mode}, 1, 'client fullscreen now');
 cmd 'level up';
 cmd 'fullscreen';
 
-my $nodes = get_ws_content $tmp;
+$nodes = get_ws_content $tmp;
 is($nodes->[0]->{fullscreen_mode}, 0, 'client not fullscreen any longer');
 
 does_i3_live;

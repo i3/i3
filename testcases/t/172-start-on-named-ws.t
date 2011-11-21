@@ -39,7 +39,7 @@ EOT
 
 $pid = launch_with_config($config);
 
-my @names = @{get_workspace_names()};
+@names = @{get_workspace_names()};
 cmp_deeply(\@names, [ 'foobar' ], 'i3 starts on named workspace foobar');
 
 exit_gracefully($pid);
@@ -57,7 +57,7 @@ EOT
 
 $pid = launch_with_config($config);
 
-my @names = @{get_workspace_names()};
+@names = @{get_workspace_names()};
 cmp_deeply(\@names, [ 'foobar' ], 'i3 starts on named workspace foobar');
 
 exit_gracefully($pid);

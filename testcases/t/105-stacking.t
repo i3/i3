@@ -46,7 +46,7 @@ sub focus_after {
     return $x->input_focus;
 }
 
-$focus = $x->input_focus;
+my $focus = $x->input_focus;
 is($focus, $bottom->id, "Latest window focused");
 
 $focus = focus_after("s");

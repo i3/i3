@@ -88,7 +88,7 @@ $window = open_window($x, {
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
     });
 
-my $rect = $window->rect;
+$rect = $window->rect;
 is($rect->width, $primary->rect->width, 'dock client is as wide as the screen');
 is($rect->height, 30, 'height is unchanged');
 
@@ -153,8 +153,8 @@ $window = open_window($x, {
 $window->_create();
 
 # Add a _NET_WM_STRUT_PARTIAL hint
-my $atomname = $x->atom(name => '_NET_WM_STRUT_PARTIAL');
-my $atomtype = $x->atom(name => 'CARDINAL');
+$atomname = $x->atom(name => '_NET_WM_STRUT_PARTIAL');
+$atomtype = $x->atom(name => 'CARDINAL');
 
 $x->change_property(
     PROP_MODE_REPLACE,
@@ -180,7 +180,7 @@ $window->destroy;
 # regression test: transient dock client
 #####################################################################
 
-$fwindow = open_window($x, {
+my $fwindow = open_window($x, {
         dont_map => 1,
         background_color => '#FF0000',
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),

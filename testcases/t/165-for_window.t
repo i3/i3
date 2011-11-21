@@ -46,7 +46,7 @@ is($content[0]->{border}, 'normal', 'normal border');
 $window->unmap;
 wait_for_unmap $x;
 
-my @content = @{get_ws_content($tmp)};
+@content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
 diag('content = '. Dumper(\@content));
 

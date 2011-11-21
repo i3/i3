@@ -84,7 +84,7 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 my $workspaces = get_workspace_names;
 ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 
-my $window = $x->root->create_child(
+$window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
@@ -124,7 +124,7 @@ $tmp = fresh_workspace;
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 ok("targetws" ~~ @{get_workspace_names()}, 'targetws does not exist yet');
 
-my $window = $x->root->create_child(
+$window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
@@ -162,10 +162,10 @@ $pid = launch_with_config($config);
 $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
-my $workspaces = get_workspace_names;
+$workspaces = get_workspace_names;
 ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 
-my $window = $x->root->create_child(
+$window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
@@ -203,10 +203,10 @@ $pid = launch_with_config($config);
 $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
-my $workspaces = get_workspace_names;
+$workspaces = get_workspace_names;
 ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 
-my $window = $x->root->create_child(
+$window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
@@ -219,7 +219,7 @@ $window->name('special window');
 $window->map;
 wait_for_map $x;
 
-my $content = get_ws($tmp);
+$content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
 ok(@{$content->{floating_nodes}} == 1, 'one floating con');
 
@@ -255,7 +255,7 @@ my @docked = get_dock_clients;
 # syntax
 is(@docked, 1, 'one dock client yet');
 
-my $window = $x->root->create_child(
+$window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
@@ -269,7 +269,7 @@ $window->name('special window');
 $window->map;
 wait_for_map $x;
 
-my $content = get_ws($tmp);
+$content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
 ok(@{$content->{floating_nodes}} == 0, 'one floating con');
 @docked = get_dock_clients;

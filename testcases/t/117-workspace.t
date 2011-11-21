@@ -108,7 +108,7 @@ ok(defined($ws), "workspace 3: $tmp was created");
 is($ws->{num}, 3, 'workspace number is 3');
 
 cmd "workspace 0: $tmp";
-my $ws = get_ws("0: $tmp");
+$ws = get_ws("0: $tmp");
 ok(defined($ws), "workspace 0: $tmp was created");
 is($ws->{num}, 0, 'workspace number is 0');
 

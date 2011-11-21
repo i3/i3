@@ -63,7 +63,7 @@ $tmp = fresh_workspace;
 
 $first = open_window($x, { background_color => '#ff0000' });    # window 5
 $second = open_window($x, { background_color => '#00ff00' });   # window 6
-my $third = open_window($x, { background_color => '#0000ff' }); # window 7
+$third = open_window($x, { background_color => '#0000ff' }); # window 7
 
 is($x->input_focus, $third->id, 'last container focused');
 

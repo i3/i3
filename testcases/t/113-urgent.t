@@ -33,10 +33,10 @@ is(@urgent, 0, 'no window got the urgent flag');
 $top->add_hint('urgency');
 sync_with_i3($x);
 
-@content = @{get_ws_content($tmp)};
+my @content = @{get_ws_content($tmp)};
 @urgent = grep { $_->{urgent} } @content;
-$top_info = first { $_->{window} == $top->id } @content;
-$bottom_info = first { $_->{window} == $bottom->id } @content;
+my $top_info = first { $_->{window} == $top->id } @content;
+my $bottom_info = first { $_->{window} == $bottom->id } @content;
 
 ok($top_info->{urgent}, 'top window is marked urgent');
 ok(!$bottom_info->{urgent}, 'bottom window is not marked urgent');

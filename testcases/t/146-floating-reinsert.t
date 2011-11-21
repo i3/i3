@@ -37,7 +37,7 @@ is(@{$nodes->[1]->{nodes}}, 2, 'two windows in split con');
 
 cmd 'floating toggle';
 
-my ($nodes, $focus) = get_ws_content($tmp);
+($nodes, $focus) = get_ws_content($tmp);
 
 is(@{$nodes->[1]->{nodes}}, 3, 'three windows in split con after floating toggle');
 
