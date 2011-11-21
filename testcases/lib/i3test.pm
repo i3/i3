@@ -56,8 +56,12 @@ BEGIN {
 sub import {
     my $class = shift;
     my $pkg = caller;
-    eval "package $pkg;
-use Test::Most" . (@_ > 0 ? " qw(@_)" : "") . ";
+
+    my $test_most_args = @_ ? "qw(@_)" : "";
+    local $@;
+    eval << "__";
+package $pkg;
+use Test::Most $test_most_args;
 use Data::Dumper;
 use AnyEvent::I3;
 use Time::HiRes qw(sleep);
@@ -65,7 +69,9 @@ use Test::Deep qw(eq_deeply cmp_deeply cmp_set cmp_bag cmp_methods useclass nocl
 use v5.10;
 use strict;
 use warnings;
-";
+__
+    $tester->bail_out("$@") if $@;
+
     @_ = ($class);
     goto \&Exporter::import;
 }
