@@ -968,6 +968,12 @@ static int handle_focus_in(xcb_focus_in_event_t *event) {
         return 1;
     }
 
+    /* Skip dock clients, they cannot get the i3 focus. */
+    if (con->parent->type == CT_DOCKAREA) {
+        DLOG("This is a dock client, not focusing.\n");
+        return 1;
+    }
+
     DLOG("focus is different, updating decorations\n");
 
     /* Get the currently focused workspace to check if the focus change also
