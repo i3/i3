@@ -371,6 +371,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     if (config.font.id == 0) {
         ELOG("You did not specify required configuration option \"font\"\n");
         config.font = load_font("fixed", true);
+        set_font(&config.font);
     }
 
 #if 0

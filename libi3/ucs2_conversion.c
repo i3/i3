@@ -60,7 +60,7 @@ char *convert_ucs2_to_utf8(xcb_char2b_t *text, size_t num_glyphs) {
  * returned. It has to be freed when done.
  *
  */
-xcb_char2b_t *convert_utf8_to_ucs2(char *input, int *real_strlen) {
+xcb_char2b_t *convert_utf8_to_ucs2(char *input, size_t *real_strlen) {
     /* Calculate the input buffer size (UTF-8 is strlen-safe) */
     size_t input_size = strlen(input);
 

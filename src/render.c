@@ -193,7 +193,9 @@ void render_con(Con *con, bool render_fullscreen) {
     }
 
     /* find the height for the decorations */
-    int deco_height = config.font.height + 5;
+    int deco_height = config.font.height + 4;
+    if (config.font.height & 0x01)
+        ++deco_height;
 
     /* precalculate the sizes to be able to correct rounding errors */
     int sizes[children];

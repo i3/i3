@@ -285,7 +285,7 @@ struct Window {
     char *name_json;
 
     /** The length of the name in glyphs (not bytes) */
-    int name_len;
+    size_t name_len;
 
     /** Whether the application used _NET_WM_NAME */
     bool uses_net_wm_name;

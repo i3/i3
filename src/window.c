@@ -68,7 +68,7 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
         return;
     }
     /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
-    int len;
+    size_t len;
     xcb_char2b_t *ucs2_name = convert_utf8_to_ucs2(new_name, &len);
     if (ucs2_name == NULL) {
         LOG("Could not convert _NET_WM_NAME to UCS-2, ignoring new hint\n");

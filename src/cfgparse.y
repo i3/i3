@@ -1546,6 +1546,7 @@ font:
     TOKFONT STR
     {
         config.font = load_font($2, true);
+        set_font(&config.font);
         printf("font %s\n", $2);
         FREE(font_pattern);
         font_pattern = $2;

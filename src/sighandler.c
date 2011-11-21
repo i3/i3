@@ -47,15 +47,11 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FFFFFF") });
+    set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
 
     for (int i = 0; i < sizeof(crash_text) / sizeof(char*); i++) {
-        int text_len = strlen(crash_text[i]);
-        xcb_char2b_t *full_text = convert_utf8_to_ucs2(crash_text[i], &text_len);
-        xcb_image_text_16(conn, text_len, pixmap, pixmap_gc, 8 /* X */,
-                          3 + (i + 1) * font_height /* Y = baseline of font */,
-                          (xcb_char2b_t*)full_text);
-        free(full_text);
+        draw_text(crash_text[i], strlen(crash_text[i]), false, pixmap, pixmap_gc,
+                8, 3 + (i - 1) * font_height, width - 16);
     }
 
     /* Copy the contents of the pixmap to the real window */
@@ -150,9 +146,9 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
     int height = 13 + (crash_text_num * config.font.height);
 
     /* calculate width for longest text */
-    int text_len = strlen(crash_text[crash_text_longest]);
+    size_t text_len = strlen(crash_text[crash_text_longest]);
     xcb_char2b_t *longest_text = convert_utf8_to_ucs2(crash_text[crash_text_longest], &text_len);
-    int font_width = predict_text_width(longest_text, text_len);
+    int font_width = predict_text_width((char *)longest_text, text_len, true);
     int width = font_width + 20;
 
     /* Open a popup window on each virtual screen */
@@ -168,9 +164,6 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         pixmap_gc = xcb_generate_id(conn);
         xcb_create_pixmap(conn, root_depth, pixmap, win, width, height);
         xcb_create_gc(conn, pixmap_gc, pixmap, 0, 0);
-
-        /* Create graphics context */
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FONT, (uint32_t[]){ config.font.id });
 
         /* Grab the keyboard to get all input */
         xcb_grab_keyboard(conn, false, win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);

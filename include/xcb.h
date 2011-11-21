@@ -95,13 +95,6 @@ void send_take_focus(xcb_window_t window);
 void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window);
 
 /**
- * Calculate the width of the given text (16-bit characters, UCS) with given
- * real length (amount of glyphs) using the given font.
- *
- */
-int predict_text_width(const xcb_char2b_t *text, int length);
-
-/**
  * Configures the given window to have the size/position specified by given rect
  *
  */
