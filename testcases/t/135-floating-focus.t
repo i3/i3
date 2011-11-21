@@ -45,7 +45,7 @@ cmd 'floating enable';
 # now kill the third one (it's floating). focus should stay unchanged
 cmd '[id="' . $third->id . '"] kill';
 
-wait_for_unmap($x);
+wait_for_unmap($third);
 
 is($x->input_focus, $second->id, 'second con still focused after killing third');
 
@@ -76,12 +76,12 @@ cmd 'floating enable';
 # now kill the second one. focus should fall back to the third one, which is
 # also floating
 cmd 'kill';
-wait_for_unmap($x);
+wait_for_unmap($second);
 
 is($x->input_focus, $third->id, 'third con focused');
 
 cmd 'kill';
-wait_for_unmap($x);
+wait_for_unmap($third);
 
 is($x->input_focus, $first->id, 'first con focused after killing all floating cons');
 
@@ -114,12 +114,12 @@ sync_with_i3($x);
 # now kill the second one. focus should fall back to the third one, which is
 # also floating
 cmd 'kill';
-wait_for_unmap($x);
+wait_for_unmap($second);
 
 is($x->input_focus, $third->id, 'third con focused');
 
 cmd 'kill';
-wait_for_unmap($x);
+wait_for_unmap($third);
 
 is($x->input_focus, $first->id, 'first con focused after killing all floating cons');
 

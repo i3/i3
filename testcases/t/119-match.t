@@ -34,7 +34,7 @@ cmd 'nop now killing the window';
 my $id = $win->{id};
 cmd qq|[con_id="$id"] kill|;
 
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 cmd 'nop checking if its gone';
 $content = get_ws_content($tmp);
@@ -80,7 +80,7 @@ $left->_create;
 set_wm_class($left->id, 'special', 'special');
 $left->name('left');
 $left->map;
-ok(wait_for_map($x), 'left window mapped');
+ok(wait_for_map($left), 'left window mapped');
 
 my $right = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
@@ -93,7 +93,7 @@ $right->_create;
 set_wm_class($right->id, 'special', 'special');
 $right->name('right');
 $right->map;
-ok(wait_for_map($x), 'right window mapped');
+ok(wait_for_map($right), 'right window mapped');
 
 # two windows should be here
 $content = get_ws_content($tmp);
@@ -123,7 +123,7 @@ $left->_create;
 set_wm_class($left->id, 'special7', 'special7');
 $left->name('left');
 $left->map;
-ok(wait_for_map($x), 'left window mapped');
+ok(wait_for_map($left), 'left window mapped');
 
 # two windows should be here
 $content = get_ws_content($tmp);
@@ -131,7 +131,7 @@ ok(@{$content} == 1, 'window opened');
 
 cmd '[class="^special[0-9]$"] kill';
 
-wait_for_unmap $x;
+wait_for_unmap $left;
 
 $content = get_ws_content($tmp);
 is(@{$content}, 0, 'window killed');
@@ -153,7 +153,7 @@ $left->_create;
 set_wm_class($left->id, 'special7', 'special7');
 $left->name('ä 3');
 $left->map;
-ok(wait_for_map($x), 'left window mapped');
+ok(wait_for_map($left), 'left window mapped');
 
 # two windows should be here
 $content = get_ws_content($tmp);
@@ -161,7 +161,7 @@ ok(@{$content} == 1, 'window opened');
 
 cmd '[title="^\w [3]$"] kill';
 
-wait_for_unmap $x;
+wait_for_unmap $left;
 
 $content = get_ws_content($tmp);
 is(@{$content}, 0, 'window killed');

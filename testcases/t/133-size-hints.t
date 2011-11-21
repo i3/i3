@@ -19,7 +19,7 @@ $aspect->max_num(600);
 $aspect->max_den(300);
 $win->_create;
 $win->map;
-wait_for_map $x;
+wait_for_map $win;
 $win->hints->aspect($aspect);
 $x->flush;
 

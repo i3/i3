@@ -15,7 +15,7 @@ is($window->state, ICCCM_WM_STATE_NORMAL, 'WM_STATE normal');
 
 $window->unmap;
 
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 is($window->state, ICCCM_WM_STATE_WITHDRAWN, 'WM_STATE withdrawn');
 

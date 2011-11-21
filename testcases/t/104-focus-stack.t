@@ -21,7 +21,7 @@ is($x->input_focus, $window->id, 'floating window focused');
 
 $window->unmap;
 
-wait_for_unmap($x);
+wait_for_unmap $window;
 
 is($x->input_focus, $focus, 'Focus correctly restored');
 

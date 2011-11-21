@@ -55,7 +55,7 @@ is($docknode->{rect}->{height}, 30, 'dock node has unchanged height after restar
 
 $window->destroy;
 
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 @docked = get_dock_clients;
 is(@docked, 0, 'no dock clients found');

@@ -25,7 +25,7 @@ my $child = open_floating_window($x, {
 $child->client_leader($right);
 $child->map;
 
-ok(wait_for_map($x), 'child window mapped');
+ok(wait_for_map($child), 'child window mapped');
 
 my $cgeom;
 ($abs, $cgeom) = $child->rect;
@@ -38,7 +38,7 @@ my $child2 = open_floating_window($x, {
 $child2->client_leader($left);
 $child2->map;
 
-ok(wait_for_map($x), 'second child window mapped');
+ok(wait_for_map($child2), 'second child window mapped');
 
 ($abs, $cgeom) = $child2->rect;
 cmp_ok(($cgeom->x + $cgeom->width), '<', $rgeom->x, 'child above left window');
@@ -48,7 +48,7 @@ my $fwindow = open_window($x, { dont_map => 1 });
 $fwindow->transient_for($right);
 $fwindow->map;
 
-ok(wait_for_map($x), 'transient window mapped');
+ok(wait_for_map($fwindow), 'transient window mapped');
 
 my ($absolute, $top) = $fwindow->rect;
 ok($absolute->{x} != 0 && $absolute->{y} != 0, 'i3 did not map it to (0x0)');
@@ -63,7 +63,7 @@ SKIP: {
 my $window = open_window($x, { dont_map => 1, name => 'Parent window' });
 $window->map;
 
-ok(wait_for_map($x), 'parent window mapped');
+ok(wait_for_map($window), 'parent window mapped');
 
 #########################################################################
 # Switch to a different workspace and open a child window. It should be opened
@@ -75,7 +75,7 @@ my $child = open_window($x, { dont_map => 1, name => 'Child window' });
 $child->client_leader($window);
 $child->map;
 
-ok(wait_for_map($x), 'child window mapped');
+ok(wait_for_map($child), 'child window mapped');
 
 isnt($x->input_focus, $child->id, "Child window focused");
 

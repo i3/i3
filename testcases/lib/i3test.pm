@@ -12,6 +12,7 @@ use EV;
 use List::Util qw(first);
 use Time::HiRes qw(sleep);
 use Cwd qw(abs_path);
+use Scalar::Util qw(blessed);
 use SocketActivation;
 
 use v5.10;
@@ -122,14 +123,22 @@ sub wait_for_event {
 # thin wrapper around wait_for_event which waits for MAP_NOTIFY
 # make sure to include 'structure_notify' in the window’s event_mask attribute
 sub wait_for_map {
-    wait_for_event 2, sub { $_[0]->{response_type} == MAP_NOTIFY };
+    my ($win) = @_;
+    my $id = (blessed($win) && $win->isa('X11::XCB::Window')) ? $win->id : $win;
+    wait_for_event 2, sub {
+        $_[0]->{response_type} == MAP_NOTIFY and $_[0]->{window} == $id
+    };
 }
 
 # Wrapper around wait_for_event which waits for UNMAP_NOTIFY. Also calls
 # sync_with_i3 to make sure i3 also picked up and processed the UnmapNotify
 # event.
 sub wait_for_unmap {
-    wait_for_event 2, sub { $_[0]->{response_type} == UNMAP_NOTIFY };
+    my ($win) = @_;
+    # my $id = (blessed($win) && $win->isa('X11::XCB::Window')) ? $win->id : $win;
+    wait_for_event 2, sub {
+        $_[0]->{response_type} == UNMAP_NOTIFY # and $_[0]->{window} == $id
+    };
     sync_with_i3($x);
 }
 
@@ -163,7 +172,7 @@ sub open_window {
     return $window if $dont_map;
 
     $window->map;
-    wait_for_map($x);
+    wait_for_map($window);
     # We sync with i3 here to make sure $x->input_focus is updated.
     sync_with_i3($x);
     return $window;

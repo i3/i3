@@ -67,7 +67,7 @@ is($docknode->{rect}->{height}, 40, 'dock height changed');
 
 $window->destroy;
 
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
@@ -91,7 +91,7 @@ is(@docked, 1, 'dock client on bottom');
 
 $window->destroy;
 
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
@@ -125,14 +125,14 @@ $x->change_property(
 
 $window->map;
 
-wait_for_map $x;
+wait_for_map $window;
 
 @docked = get_dock_clients('top');
 is(@docked, 1, 'dock client on top');
 
 $window->destroy;
 
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
@@ -162,7 +162,7 @@ $x->change_property(
 
 $window->map;
 
-wait_for_map $x;
+wait_for_map $window;
 
 @docked = get_dock_clients('bottom');
 is(@docked, 1, 'dock client on bottom');
@@ -183,7 +183,7 @@ my $fwindow = open_window($x, {
 $fwindow->transient_for($window);
 $fwindow->map;
 
-wait_for_map $x;
+wait_for_map $fwindow;
 
 does_i3_live;
 

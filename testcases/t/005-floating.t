@@ -18,7 +18,7 @@ isa_ok($window, 'X11::XCB::Window');
 
 $window->map;
 
-wait_for_map $x;
+wait_for_map $window;
 
 my ($absolute, $top) = $window->rect;
 
@@ -42,7 +42,7 @@ isa_ok($window, 'X11::XCB::Window');
 
 $window->map;
 
-wait_for_map $x;
+wait_for_map $window;
 
 ($absolute, $top) = $window->rect;
 
@@ -73,10 +73,11 @@ isa_ok($window, 'X11::XCB::Window');
 
 $window->map;
 
-wait_for_map $x;
+wait_for_map $window;
 
 cmd 'floating enable';
 
+# XXX potentionally racy
 ($absolute, $top) = $window->rect;
 
 cmp_ok($absolute->{width}, '==', 80, "i3 let the width at 80");

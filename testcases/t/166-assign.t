@@ -53,7 +53,7 @@ $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 ok(@{get_ws_content($tmp)} == 1, 'special window got managed to current (random) workspace');
 
@@ -91,7 +91,7 @@ $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 ok(@{get_ws_content($tmp)} == 0, 'still no containers');
 ok("targetws" ~~ @{get_workspace_names()}, 'targetws exists');
@@ -172,7 +172,7 @@ $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 my $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
@@ -213,7 +213,7 @@ $window->_create;
 set_wm_class($window->id, 'SPEcial', 'SPEcial');
 $window->name('special window');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
@@ -263,7 +263,7 @@ $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');

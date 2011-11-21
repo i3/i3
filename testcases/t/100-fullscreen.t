@@ -45,7 +45,7 @@ is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
 
 $window->map;
 
-wait_for_map $x;
+wait_for_map $window;
 
 # open another container to make the window get only half of the screen
 cmd 'open';
@@ -95,7 +95,7 @@ is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
 $window->fullscreen(1);
 $window->map;
 
-wait_for_map $x;
+wait_for_map $window;
 
 $new_rect = $window->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned after fullscreen");
