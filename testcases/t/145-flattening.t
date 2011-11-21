@@ -21,8 +21,8 @@ my $left = open_window($x);
 my $mid = open_window($x);
 my $right = open_window($x);
 
-cmd 'move before v';
-cmd 'move after h';
+cmd 'move up';
+cmd 'move right';
 my $ws = get_ws($tmp);
 
 is($ws->{orientation}, 'horizontal', 'workspace orientation is horizontal');

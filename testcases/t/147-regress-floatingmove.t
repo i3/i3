@@ -29,14 +29,14 @@ cmd 'mode toggle';
 sleep 0.25;
 
 # move the con outside the floating con
-cmd 'move before v';
+cmd 'move up';
 sleep 0.25;
 
 does_i3_live;
 
 # move another con outside
 cmd '[id="' . $mid->id . '"] focus';
-cmd 'move before v';
+cmd 'move up';
 sleep 0.25;
 
 does_i3_live;
