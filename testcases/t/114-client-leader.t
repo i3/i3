@@ -2,13 +2,6 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use X11::XCB qw(:all);
-
-BEGIN {
-    use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
-}
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 
@@ -20,8 +13,8 @@ my $tmp = fresh_workspace;
 # one of both (depending on your screen resolution) will be positioned wrong.
 ####################################################################################
 
-my $left = open_window($x, { name => 'Left' });
-my $right = open_window($x, { name => 'Right' });
+my $left = open_window({ name => 'Left' });
+my $right = open_window({ name => 'Right' });
 
 my ($abs, $rgeom) = $right->rect;
 
@@ -32,7 +25,7 @@ my $child = open_floating_window($x, {
 $child->client_leader($right);
 $child->map;
 
-ok(wait_for_map($x), 'child window mapped');
+ok(wait_for_map($child), 'child window mapped');
 
 my $cgeom;
 ($abs, $cgeom) = $child->rect;
@@ -45,17 +38,17 @@ my $child2 = open_floating_window($x, {
 $child2->client_leader($left);
 $child2->map;
 
-ok(wait_for_map($x), 'second child window mapped');
+ok(wait_for_map($child2), 'second child window mapped');
 
 ($abs, $cgeom) = $child2->rect;
 cmp_ok(($cgeom->x + $cgeom->width), '<', $rgeom->x, 'child above left window');
 
 # check wm_transient_for
-my $fwindow = open_window($x, { dont_map => 1 });
+my $fwindow = open_window({ dont_map => 1 });
 $fwindow->transient_for($right);
 $fwindow->map;
 
-ok(wait_for_map($x), 'transient window mapped');
+ok(wait_for_map($fwindow), 'transient window mapped');
 
 my ($absolute, $top) = $fwindow->rect;
 ok($absolute->{x} != 0 && $absolute->{y} != 0, 'i3 did not map it to (0x0)');
@@ -67,10 +60,10 @@ SKIP: {
 # Create a parent window
 #####################################################################
 
-my $window = open_window($x, { dont_map => 1, name => 'Parent window' });
+my $window = open_window({ dont_map => 1, name => 'Parent window' });
 $window->map;
 
-ok(wait_for_map($x), 'parent window mapped');
+ok(wait_for_map($window), 'parent window mapped');
 
 #########################################################################
 # Switch to a different workspace and open a child window. It should be opened
@@ -78,11 +71,11 @@ ok(wait_for_map($x), 'parent window mapped');
 #########################################################################
 fresh_workspace;
 
-my $child = open_window($x, { dont_map => 1, name => 'Child window' });
+my $child = open_window({ dont_map => 1, name => 'Child window' });
 $child->client_leader($window);
 $child->map;
 
-ok(wait_for_map($x), 'child window mapped');
+ok(wait_for_map($child), 'child window mapped');
 
 isnt($x->input_focus, $child->id, "Child window focused");
 

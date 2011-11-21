@@ -2,10 +2,6 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use X11::XCB qw(:all);
-use X11::XCB::Connection;
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 
@@ -13,8 +9,8 @@ my $tmp = fresh_workspace;
 # 1: see if focus stays the same when toggling tiling/floating mode
 #############################################################################
 
-my $first = open_window($x);
-my $second = open_window($x);
+my $first = open_window;
+my $second = open_window;
 
 is($x->input_focus, $second->id, 'second window focused');
 
@@ -30,9 +26,9 @@ is($x->input_focus, $second->id, 'second window still focused after mode toggle'
 
 $tmp = fresh_workspace;
 
-$first = open_window($x);    # window 2
-$second = open_window($x);   # window 3
-my $third = open_window($x); # window 4
+$first = open_window;    # window 2
+$second = open_window;   # window 3
+my $third = open_window; # window 4
 
 is($x->input_focus, $third->id, 'last container focused');
 
@@ -49,7 +45,7 @@ cmd 'floating enable';
 # now kill the third one (it's floating). focus should stay unchanged
 cmd '[id="' . $third->id . '"] kill';
 
-wait_for_unmap($x);
+wait_for_unmap($third);
 
 is($x->input_focus, $second->id, 'second con still focused after killing third');
 
@@ -61,9 +57,9 @@ is($x->input_focus, $second->id, 'second con still focused after killing third')
 
 $tmp = fresh_workspace;
 
-$first = open_window($x, { background_color => '#ff0000' });    # window 5
-$second = open_window($x, { background_color => '#00ff00' });   # window 6
-my $third = open_window($x, { background_color => '#0000ff' }); # window 7
+$first = open_window({ background_color => '#ff0000' });    # window 5
+$second = open_window({ background_color => '#00ff00' });   # window 6
+$third = open_window({ background_color => '#0000ff' }); # window 7
 
 is($x->input_focus, $third->id, 'last container focused');
 
@@ -80,12 +76,12 @@ cmd 'floating enable';
 # now kill the second one. focus should fall back to the third one, which is
 # also floating
 cmd 'kill';
-wait_for_unmap($x);
+wait_for_unmap($second);
 
 is($x->input_focus, $third->id, 'third con focused');
 
 cmd 'kill';
-wait_for_unmap($x);
+wait_for_unmap($third);
 
 is($x->input_focus, $first->id, 'first con focused after killing all floating cons');
 
@@ -95,11 +91,11 @@ is($x->input_focus, $first->id, 'first con focused after killing all floating co
 
 $tmp = fresh_workspace;
 
-$first = open_window($x, { background_color => '#ff0000' });    # window 5
+$first = open_window({ background_color => '#ff0000' });    # window 5
 cmd 'split v';
 cmd 'layout stacked';
-$second = open_window($x, { background_color => '#00ff00' });   # window 6
-$third = open_window($x, { background_color => '#0000ff' }); # window 7
+$second = open_window({ background_color => '#00ff00' });   # window 6
+$third = open_window({ background_color => '#0000ff' }); # window 7
 
 is($x->input_focus, $third->id, 'last container focused');
 
@@ -118,12 +114,12 @@ sync_with_i3($x);
 # now kill the second one. focus should fall back to the third one, which is
 # also floating
 cmd 'kill';
-wait_for_unmap($x);
+wait_for_unmap($second);
 
 is($x->input_focus, $third->id, 'third con focused');
 
 cmd 'kill';
-wait_for_unmap($x);
+wait_for_unmap($third);
 
 is($x->input_focus, $first->id, 'first con focused after killing all floating cons');
 
@@ -133,8 +129,8 @@ is($x->input_focus, $first->id, 'first con focused after killing all floating co
 
 $tmp = fresh_workspace;
 
-$first = open_window($x, { background_color => '#ff0000' });    # window 8
-$second = open_window($x, { background_color => '#00ff00' });   # window 9
+$first = open_window({ background_color => '#ff0000' });    # window 8
+$second = open_window({ background_color => '#00ff00' });   # window 9
 
 sync_with_i3($x);
 

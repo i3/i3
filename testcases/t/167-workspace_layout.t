@@ -6,10 +6,6 @@
 #
 
 use i3test;
-use X11::XCB qw(:all);
-use X11::XCB::Connection;
-
-my $x = X11::XCB::Connection->new;
 
 #####################################################################
 # 1: check that with an empty config, cons are place next to each
@@ -27,13 +23,14 @@ my $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-my $first = open_window($x);
-my $second = open_window($x);
+my $first = open_window;
+my $second = open_window;
 
 sync_with_i3($x);
 
 is($x->input_focus, $second->id, 'second window focused');
-ok(@{get_ws_content($tmp)} == 2, 'two containers opened');
+my @content = @{get_ws_content($tmp)};
+ok(@content == 2, 'two containers opened');
 isnt($content[0]->{layout}, 'stacked', 'layout not stacked');
 isnt($content[1]->{layout}, 'stacked', 'layout not stacked');
 
@@ -56,13 +53,13 @@ $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-$first = open_window($x);
-$second = open_window($x);
+$first = open_window;
+$second = open_window;
 
 sync_with_i3($x);
 
 is($x->input_focus, $second->id, 'second window focused');
-my @content = @{get_ws_content($tmp)};
+@content = @{get_ws_content($tmp)};
 ok(@content == 1, 'one con at workspace level');
 is($content[0]->{layout}, 'stacked', 'layout stacked');
 
@@ -72,8 +69,8 @@ is($content[0]->{layout}, 'stacked', 'layout stacked');
 #####################################################################
 
 cmd 'focus parent';
-my $right_top = open_window($x);
-my $right_bot = open_window($x);
+my $right_top = open_window;
+my $right_bot = open_window;
 
 @content = @{get_ws_content($tmp)};
 is(@content, 2, 'two cons at workspace level after focus parent');

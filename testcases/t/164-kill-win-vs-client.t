@@ -6,15 +6,13 @@
 #
 use i3test;
 
-my $x = X11::XCB::Connection->new;
-
 sub two_windows {
     my $tmp = fresh_workspace;
 
     ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-    my $first = open_window($x);
-    my $second = open_window($x);
+    my $first = open_window;
+    my $second = open_window;
 
     sync_with_i3 $x;
 
@@ -42,7 +40,7 @@ ok(@{get_ws_content($tmp)} == 1, 'one container left after killing');
 # 'kill window'
 ##############################################################
 
-my $tmp = two_windows;
+$tmp = two_windows;
 
 cmd 'kill window';
 
@@ -55,7 +53,7 @@ ok(@{get_ws_content($tmp)} == 1, 'one container left after killing');
 # and check if both are gone
 ##############################################################
 
-my $tmp = two_windows;
+$tmp = two_windows;
 
 cmd 'kill client';
 

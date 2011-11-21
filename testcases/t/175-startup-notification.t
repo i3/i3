@@ -8,7 +8,6 @@ use i3test;
 use POSIX qw(mkfifo);
 use File::Temp qw(:POSIX);
 
-my $x = X11::XCB::Connection->new;
 use ExtUtils::PkgConfig;
 
 # setup dependency on libstartup-notification using pkg-config
@@ -98,7 +97,7 @@ my $second_ws = fresh_workspace;
 
 is(@{get_ws_content($second_ws)}, 0, 'no containers on the second workspace yet');
 
-my $win = open_window($x, { dont_map => 1 });
+my $win = open_window({ dont_map => 1 });
 mark_window($win->id);
 $win->map;
 # We don’t use wait_for_map because the window will not get mapped -- it is on
@@ -113,10 +112,10 @@ is(@{get_ws_content($first_ws)}, 1, 'one container on the first workspace');
 # same thing, but with _NET_STARTUP_ID set on the leader
 ######################################################################
 
-my $leader = open_window($x, { dont_map => 1 });
+my $leader = open_window({ dont_map => 1 });
 mark_window($leader->id);
 
-$win = open_window($x, { dont_map => 1, client_leader => $leader });
+$win = open_window({ dont_map => 1, client_leader => $leader });
 $win->map;
 sync_with_i3($x);
 
@@ -131,7 +130,7 @@ is(@{get_ws_content($first_ws)}, 2, 'two containers on the first workspace');
 complete_startup();
 sync_with_i3($x);
 
-my $otherwin = open_window($x);
+my $otherwin = open_window;
 is(@{get_ws_content($second_ws)}, 1, 'one container on the second workspace');
 
 ######################################################################

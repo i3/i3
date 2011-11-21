@@ -2,14 +2,8 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use X11::XCB qw(:all);
+use X11::XCB 'PROP_MODE_REPLACE';
 use List::Util qw(first);
-
-BEGIN {
-    use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
-}
-
-my $x = X11::XCB::Connection->new;
 
 #####################################################################
 # verify that there is no dock window yet
@@ -29,7 +23,7 @@ my $screens = $x->screens;
 my $primary = first { $_->primary } @{$screens};
 
 # TODO: focus the primary screen before
-my $window = open_window($x, {
+my $window = open_window({
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
     });
 
@@ -73,7 +67,7 @@ is($docknode->{rect}->{height}, 40, 'dock height changed');
 
 $window->destroy;
 
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
@@ -82,13 +76,13 @@ is(@docked, 0, 'no more dock clients');
 # check if it gets placed on bottom (by coordinates)
 #####################################################################
 
-$window = open_window($x, {
+$window = open_window({
         rect => [ 0, 1000, 30, 30 ],
         background_color => '#FF0000',
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
     });
 
-my $rect = $window->rect;
+$rect = $window->rect;
 is($rect->width, $primary->rect->width, 'dock client is as wide as the screen');
 is($rect->height, 30, 'height is unchanged');
 
@@ -97,7 +91,7 @@ is(@docked, 1, 'dock client on bottom');
 
 $window->destroy;
 
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
@@ -106,7 +100,7 @@ is(@docked, 0, 'no more dock clients');
 # check if it gets placed on bottom (by hint)
 #####################################################################
 
-$window = open_window($x, {
+$window = open_window({
         dont_map => 1,
         rect => [ 0, 1000, 30, 30 ],
         background_color => '#FF0000',
@@ -131,19 +125,19 @@ $x->change_property(
 
 $window->map;
 
-wait_for_map $x;
+wait_for_map $window;
 
 @docked = get_dock_clients('top');
 is(@docked, 1, 'dock client on top');
 
 $window->destroy;
 
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 @docked = get_dock_clients();
 is(@docked, 0, 'no more dock clients');
 
-$window = open_window($x, {
+$window = open_window({
         dont_map => 1,
         rect => [ 0, 1000, 30, 30 ],
         background_color => '#FF0000',
@@ -153,8 +147,8 @@ $window = open_window($x, {
 $window->_create();
 
 # Add a _NET_WM_STRUT_PARTIAL hint
-my $atomname = $x->atom(name => '_NET_WM_STRUT_PARTIAL');
-my $atomtype = $x->atom(name => 'CARDINAL');
+$atomname = $x->atom(name => '_NET_WM_STRUT_PARTIAL');
+$atomtype = $x->atom(name => 'CARDINAL');
 
 $x->change_property(
     PROP_MODE_REPLACE,
@@ -168,7 +162,7 @@ $x->change_property(
 
 $window->map;
 
-wait_for_map $x;
+wait_for_map $window;
 
 @docked = get_dock_clients('bottom');
 is(@docked, 1, 'dock client on bottom');
@@ -180,7 +174,7 @@ $window->destroy;
 # regression test: transient dock client
 #####################################################################
 
-$fwindow = open_window($x, {
+my $fwindow = open_window({
         dont_map => 1,
         background_color => '#FF0000',
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
@@ -189,7 +183,7 @@ $fwindow = open_window($x, {
 $fwindow->transient_for($window);
 $fwindow->map;
 
-wait_for_map $x;
+wait_for_map $fwindow;
 
 does_i3_live;
 

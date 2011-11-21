@@ -10,16 +10,13 @@
 #
 # This testcase checks that the tree is properly flattened after moving.
 #
-use X11::XCB qw(:all);
 use i3test;
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 
-my $left = open_window($x);
-my $mid = open_window($x);
-my $right = open_window($x);
+my $left = open_window;
+my $mid = open_window;
+my $right = open_window;
 
 cmd 'move up';
 cmd 'move right';

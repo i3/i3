@@ -4,15 +4,11 @@
 # Verifies that i3 survives inplace restarts with fullscreen containers
 #
 use i3test;
-use X11::XCB qw(:all);
-use X11::XCB::Connection;
-
-my $x = X11::XCB::Connection->new;
 
 fresh_workspace;
 
-open_window($x);
-open_window($x);
+open_window;
+open_window;
 
 cmd 'layout stacking';
 sleep 1;

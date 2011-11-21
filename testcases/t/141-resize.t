@@ -2,20 +2,13 @@
 # vim:ts=4:sw=4:expandtab
 # Tests resizing tiling containers
 use i3test;
-use X11::XCB qw(:all);
-
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 
 cmd 'split v';
 
-my $top = open_window($x);
-my $bottom = open_window($x);
+my $top = open_window;
+my $bottom = open_window;
 
 sync_with_i3($x);
 
@@ -54,8 +47,8 @@ $tmp = fresh_workspace;
 
 cmd 'split v';
 
-$top = open_window($x);
-$bottom = open_window($x);
+$top = open_window;
+$bottom = open_window;
 
 cmd 'split h';
 cmd 'layout stacked';
@@ -76,7 +69,7 @@ is($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
 
 $tmp = fresh_workspace;
 
-$top = open_window($x);
+$top = open_window;
 
 cmd 'floating enable';
 

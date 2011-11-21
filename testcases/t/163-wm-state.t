@@ -4,12 +4,10 @@
 # Tests if WM_STATE is WM_STATE_NORMAL when mapped and WM_STATE_WITHDRAWN when
 # unmapped.
 #
-use X11::XCB qw(:all);
 use i3test;
+use X11::XCB qw(ICCCM_WM_STATE_NORMAL ICCCM_WM_STATE_WITHDRAWN);
 
-my $x = X11::XCB::Connection->new;
-
-my $window = open_window($x);
+my $window = open_window;
 
 sync_with_i3($x);
 
@@ -17,7 +15,7 @@ is($window->state, ICCCM_WM_STATE_NORMAL, 'WM_STATE normal');
 
 $window->unmap;
 
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 is($window->state, ICCCM_WM_STATE_WITHDRAWN, 'WM_STATE withdrawn');
 

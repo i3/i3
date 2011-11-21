@@ -3,15 +3,12 @@
 #
 # Test if the requested width/height is set after making the window floating.
 #
-use X11::XCB qw(:all);
 use i3test;
 
 my $tmp = fresh_workspace;
 
-my $x = X11::XCB::Connection->new;
-
 # Create a floating window which is smaller than the minimum enforced size of i3
-my $window = open_window($x, { rect => [ 0, 0, 400, 150 ] });
+my $window = open_window({ rect => [ 0, 0, 400, 150 ] });
 
 my ($absolute, $top) = $window->rect;
 

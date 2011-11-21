@@ -17,7 +17,7 @@ cmd qq|[con_id="$first"] focus|;
 
 cmd 'split v';
 
-($nodes, $focus) = get_ws_content($tmp);
+my ($nodes, $focus) = get_ws_content($tmp);
 
 is($nodes->[0]->{focused}, 0, 'split container not focused');
 
@@ -27,7 +27,7 @@ cmd 'level up';
 my $split = $focus->[0];
 cmd 'level down';
 
-my $second = open_empty_con($i3);
+$second = open_empty_con($i3);
 
 isnt($first, $second, 'different container focused');
 
@@ -62,10 +62,10 @@ is($nodes->[0]->{focused}, 0, 'split container not focused');
 # focus the split container
 cmd 'level up';
 ($nodes, $focus) = get_ws_content($tmp);
-my $split = $focus->[0];
+$split = $focus->[0];
 cmd 'level down';
 
-my $second = open_empty_con($i3);
+$second = open_empty_con($i3);
 
 isnt($first, $second, 'different container focused');
 

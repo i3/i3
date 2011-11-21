@@ -3,11 +3,6 @@
 # Regression test: when only having a floating window on a workspace, it should not be deleted.
 
 use i3test;
-use X11::XCB qw(:all);
-
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
 
 my $i3 = i3(get_socket_path());
 
@@ -18,8 +13,6 @@ my $tmp = fresh_workspace;
 #############################################################################
 
 ok(workspace_exists($tmp), "workspace $tmp exists");
-
-my $x = X11::XCB::Connection->new;
 
 # Create a floating window which is smaller than the minimum enforced size of i3
 my $window = open_floating_window($x);

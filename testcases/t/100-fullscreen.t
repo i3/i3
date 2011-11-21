@@ -2,7 +2,7 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use X11::XCB qw(:all);
+use X11::XCB 'WINDOW_CLASS_INPUT_OUTPUT';
 use List::Util qw(first);
 
 my $i3 = i3(get_socket_path());
@@ -26,12 +26,6 @@ for my $o (@outputs) {
     }
 }
 
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
-
-my $x = X11::XCB::Connection->new;
-
 ##################################
 # map a window, then fullscreen it
 ##################################
@@ -51,7 +45,7 @@ is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
 
 $window->map;
 
-wait_for_map $x;
+wait_for_map $window;
 
 # open another container to make the window get only half of the screen
 cmd 'open';
@@ -101,7 +95,7 @@ is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
 $window->fullscreen(1);
 $window->map;
 
-wait_for_map $x;
+wait_for_map $window;
 
 $new_rect = $window->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned after fullscreen");

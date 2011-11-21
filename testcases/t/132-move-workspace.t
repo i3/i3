@@ -9,7 +9,6 @@ my $i3 = i3(get_socket_path());
 
 # We move the pointer out of our way to avoid a bug where the focus will
 # be set to the window under the cursor
-my $x = X11::XCB::Connection->new;
 $x->root->warp_pointer(0, 0);
 
 my $tmp = get_unused_workspace();

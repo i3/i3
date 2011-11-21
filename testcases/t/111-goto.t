@@ -4,8 +4,6 @@
 use i3test;
 use File::Temp;
 
-my $x = X11::XCB::Connection->new;
-
 my $tmp = fresh_workspace;
 
 cmd 'split h';
@@ -14,9 +12,9 @@ cmd 'split h';
 # Create two windows and make sure focus switching works
 #####################################################################
 
-my $top = open_window($x);
-my $mid = open_window($x);
-my $bottom = open_window($x);
+my $top = open_window;
+my $mid = open_window;
+my $bottom = open_window;
 
 #
 # Returns the input focus after sending the given command to i3 via IPC
@@ -30,7 +28,7 @@ sub focus_after {
     return $x->input_focus;
 }
 
-$focus = $x->input_focus;
+my $focus = $x->input_focus;
 is($focus, $bottom->id, "Latest window focused");
 
 $focus = focus_after('focus left');

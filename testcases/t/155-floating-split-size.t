@@ -4,14 +4,7 @@
 # Test to see if i3 combines the geometry of all children in a split container
 # when setting the split container to floating
 #
-use X11::XCB qw(:all);
 use i3test;
-
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 
@@ -19,7 +12,7 @@ my $tmp = fresh_workspace;
 # open a window with 200x80
 #####################################################################
 
-my $first = open_window($x, {
+my $first = open_window({
         rect => [ 0, 0, 200, 80],
         background_color => '#FF0000',
     });
@@ -28,7 +21,7 @@ my $first = open_window($x, {
 # Open a second window with 300x90
 #####################################################################
 
-my $second = open_window($x, {
+my $second = open_window({
         rect => [ 0, 0, 300, 90],
         background_color => '#00FF00',
     });

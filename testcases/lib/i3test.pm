@@ -12,6 +12,7 @@ use EV;
 use List::Util qw(first);
 use Time::HiRes qw(sleep);
 use Cwd qw(abs_path);
+use Scalar::Util qw(blessed);
 use SocketActivation;
 
 use v5.10;
@@ -39,12 +40,15 @@ our @EXPORT = qw(
     wait_for_event
     wait_for_map
     wait_for_unmap
+    $x
 );
 
 my $tester = Test::Builder->new();
 my $_cached_socket_path = undef;
 my $_sync_window = undef;
 my $tmp_socket_path = undef;
+
+our $x;
 
 BEGIN {
     my $window_count = 0;
@@ -56,16 +60,23 @@ BEGIN {
 sub import {
     my $class = shift;
     my $pkg = caller;
-    eval "package $pkg;
-use Test::Most" . (@_ > 0 ? " qw(@_)" : "") . ";
+
+    my $test_most_args = @_ ? "qw(@_)" : "";
+    local $@;
+    eval << "__";
+package $pkg;
+use Test::Most $test_most_args;
 use Data::Dumper;
 use AnyEvent::I3;
 use Time::HiRes qw(sleep);
-use Test::Deep qw(eq_deeply cmp_deeply cmp_set cmp_bag cmp_methods useclass noclass set bag subbagof superbagof subsetof supersetof superhashof subhashof bool str arraylength Isa ignore methods regexprefonly regexpmatches num regexponly scalref reftype hashkeysonly blessed array re hash regexpref hash_each shallow array_each code arrayelementsonly arraylengthonly scalarrefonly listmethods any hashkeys isa);
-use v5.10;
-use strict;
-use warnings;
-";
+use Test::Deep qw(eq_deeply cmp_deeply);
+__
+    $tester->bail_out("$@") if $@;
+    feature->import(":5.10");
+    strict->import;
+    warnings->import;
+
+    $x ||= i3test::X11->new;
     @_ = ($class);
     goto \&Exporter::import;
 }
@@ -80,7 +91,7 @@ use warnings;
 # wait_for_event $x, 0.25, sub { $_[0]->{response_type} == MAP_NOTIFY };
 #
 sub wait_for_event {
-    my ($x, $timeout, $cb) = @_;
+    my ($timeout, $cb) = @_;
 
     my $cv = AE::cv;
 
@@ -112,16 +123,22 @@ sub wait_for_event {
 # thin wrapper around wait_for_event which waits for MAP_NOTIFY
 # make sure to include 'structure_notify' in the window’s event_mask attribute
 sub wait_for_map {
-    my ($x) = @_;
-    wait_for_event $x, 2, sub { $_[0]->{response_type} == MAP_NOTIFY };
+    my ($win) = @_;
+    my $id = (blessed($win) && $win->isa('X11::XCB::Window')) ? $win->id : $win;
+    wait_for_event 2, sub {
+        $_[0]->{response_type} == MAP_NOTIFY and $_[0]->{window} == $id
+    };
 }
 
 # Wrapper around wait_for_event which waits for UNMAP_NOTIFY. Also calls
 # sync_with_i3 to make sure i3 also picked up and processed the UnmapNotify
 # event.
 sub wait_for_unmap {
-    my ($x) = @_;
-    wait_for_event $x, 2, sub { $_[0]->{response_type} == UNMAP_NOTIFY };
+    my ($win) = @_;
+    # my $id = (blessed($win) && $win->isa('X11::XCB::Window')) ? $win->id : $win;
+    wait_for_event 2, sub {
+        $_[0]->{response_type} == UNMAP_NOTIFY # and $_[0]->{window} == $id
+    };
     sync_with_i3($x);
 }
 
@@ -139,7 +156,7 @@ sub wait_for_unmap {
 #     name => 'Window <n>'
 #
 sub open_window {
-    my ($x, $args) = @_;
+    my ($args) = @_;
     my %args = ($args ? %$args : ());
 
     my $dont_map = delete $args{dont_map};
@@ -155,7 +172,7 @@ sub open_window {
     return $window if $dont_map;
 
     $window->map;
-    wait_for_map($x);
+    wait_for_map($window);
     # We sync with i3 here to make sure $x->input_focus is updated.
     sync_with_i3($x);
     return $window;
@@ -169,7 +186,7 @@ sub open_floating_window {
 
     $args{window_type} = $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY');
 
-    return open_window($x, \%args);
+    return open_window(\%args);
 }
 
 sub open_empty_con {
@@ -324,7 +341,7 @@ sub sync_with_i3 {
 
         $_sync_window->map;
 
-        wait_for_event $x, 2, sub { $_[0]->{response_type} == MAP_NOTIFY };
+        wait_for_event 2, sub { $_[0]->{response_type} == MAP_NOTIFY };
     }
 
     my $root = $x->get_root_window();
@@ -350,7 +367,7 @@ sub sync_with_i3 {
     $x->send_event(0, $root, EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
 
     # now wait until the reply is here
-    return wait_for_event $x, 2, sub {
+    return wait_for_event 2, sub {
         my ($event) = @_;
         # TODO: const
         return 0 unless $event->{response_type} == 161;
@@ -398,7 +415,6 @@ sub get_socket_path {
         return $_cached_socket_path;
     }
 
-    my $x = X11::XCB::Connection->new;
     my $atom = $x->atom(name => 'I3_SOCKET_PATH');
     my $cookie = $x->get_property(0, $x->get_root_window(), $atom->id, GET_PROPERTY_TYPE_ANY, 0, 256);
     my $reply = $x->get_property_reply($cookie->{sequence});
@@ -447,6 +463,16 @@ sub launch_with_config {
     get_socket_path(0);
 
     return $pid;
+}
+
+package i3test::X11;
+use parent 'X11::XCB::Connection';
+
+sub input_focus {
+    my $self = shift;
+    i3test::sync_with_i3($self);
+
+    return $self->SUPER::input_focus(@_);
 }
 
 1

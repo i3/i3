@@ -3,11 +3,8 @@
 # !NO_I3_INSTANCE! will prevent complete-run.pl from starting i3
 #
 #
-use X11::XCB qw(:all);
-use X11::XCB::Connection;
 use i3test;
-
-my $x = X11::XCB::Connection->new;
+use X11::XCB qw(PROP_MODE_REPLACE WINDOW_CLASS_INPUT_OUTPUT);
 
 ##############################################################
 # 1: test the following directive:
@@ -37,16 +34,16 @@ my $window = $x->root->create_child(
 
 $window->name('Border window');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 my @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'normal border');
 
 $window->unmap;
-wait_for_unmap $x;
+wait_for_unmap $window;
 
-my @content = @{get_ws_content($tmp)};
+@content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
 diag('content = '. Dumper(\@content));
 
@@ -81,14 +78,14 @@ sub set_wm_class {
 set_wm_class($window->id, 'borderless', 'borderless');
 $window->name('Borderless window');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border');
 
 $window->unmap;
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
@@ -120,7 +117,7 @@ $window = $x->root->create_child(
 
 $window->name('special title');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -147,7 +144,7 @@ sync_with_i3 $x;
 is($content[0]->{border}, 'normal', 'still normal border');
 
 $window->unmap;
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no more nodes');
@@ -180,13 +177,13 @@ $window = $x->root->create_child(
 
 $window->name('special mark title');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border');
 
-my $other = open_window($x);
+my $other = open_window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 2, 'two nodes');
@@ -227,14 +224,14 @@ $window->_create;
 set_wm_class($window->id, 'borderless', 'borderless');
 $window->name('usethis');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'none', 'no border');
 
 cmd 'kill';
-wait_for_unmap $x;
+wait_for_unmap $window;
 $window->destroy;
 
 # give i3 a chance to delete the window from its tree
@@ -248,7 +245,7 @@ $window->_create;
 set_wm_class($window->id, 'borderless', 'borderless');
 $window->name('notthis');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -283,7 +280,7 @@ $window->_create;
 set_wm_class($window->id, 'bar', 'foo');
 $window->name('usethis');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -318,7 +315,7 @@ $window->_create;
 set_wm_class($window->id, 'bar', 'foo');
 $window->name('usethis');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -355,7 +352,7 @@ $window->_create;
 set_wm_class($window->id, 'bar', 'foo');
 $window->name('usethis');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -403,7 +400,7 @@ $x->change_property(
 
 $window->name('usethis');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -440,7 +437,7 @@ $window->_create;
 
 $window->name('usethis');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');

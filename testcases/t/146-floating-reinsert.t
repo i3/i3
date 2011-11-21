@@ -1,22 +1,15 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 #
-use X11::XCB qw(:all);
 use i3test;
-
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 
-my $left = open_window($x);
-my $mid = open_window($x);
+my $left = open_window;
+my $mid = open_window;
 
 cmd 'split v';
-my $bottom = open_window($x);
+my $bottom = open_window;
 
 my ($nodes, $focus) = get_ws_content($tmp);
 
@@ -37,7 +30,7 @@ is(@{$nodes->[1]->{nodes}}, 2, 'two windows in split con');
 
 cmd 'floating toggle';
 
-my ($nodes, $focus) = get_ws_content($tmp);
+($nodes, $focus) = get_ws_content($tmp);
 
 is(@{$nodes->[1]->{nodes}}, 3, 'three windows in split con after floating toggle');
 

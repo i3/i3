@@ -5,11 +5,7 @@
 # Tests if assignments work
 #
 use i3test;
-use X11::XCB qw(:all);
-use X11::XCB::Connection;
-use v5.10;
-
-my $x = X11::XCB::Connection->new;
+use X11::XCB qw(PROP_MODE_REPLACE WINDOW_CLASS_INPUT_OUTPUT);
 
 # TODO: move to X11::XCB
 sub set_wm_class {
@@ -57,7 +53,7 @@ $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 ok(@{get_ws_content($tmp)} == 1, 'special window got managed to current (random) workspace');
 
@@ -84,7 +80,7 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 my $workspaces = get_workspace_names;
 ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 
-my $window = $x->root->create_child(
+$window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
@@ -95,7 +91,7 @@ $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 ok(@{get_ws_content($tmp)} == 0, 'still no containers');
 ok("targetws" ~~ @{get_workspace_names()}, 'targetws exists');
@@ -124,7 +120,7 @@ $tmp = fresh_workspace;
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 ok("targetws" ~~ @{get_workspace_names()}, 'targetws does not exist yet');
 
-my $window = $x->root->create_child(
+$window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
@@ -162,10 +158,10 @@ $pid = launch_with_config($config);
 $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
-my $workspaces = get_workspace_names;
+$workspaces = get_workspace_names;
 ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 
-my $window = $x->root->create_child(
+$window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
@@ -176,7 +172,7 @@ $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
 my $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
@@ -203,10 +199,10 @@ $pid = launch_with_config($config);
 $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
-my $workspaces = get_workspace_names;
+$workspaces = get_workspace_names;
 ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 
-my $window = $x->root->create_child(
+$window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
@@ -217,9 +213,9 @@ $window->_create;
 set_wm_class($window->id, 'SPEcial', 'SPEcial');
 $window->name('special window');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
-my $content = get_ws($tmp);
+$content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
 ok(@{$content->{floating_nodes}} == 1, 'one floating con');
 
@@ -255,7 +251,7 @@ my @docked = get_dock_clients;
 # syntax
 is(@docked, 1, 'one dock client yet');
 
-my $window = $x->root->create_child(
+$window = $x->root->create_child(
     class => WINDOW_CLASS_INPUT_OUTPUT,
     rect => [ 0, 0, 30, 30 ],
     background_color => '#0000ff',
@@ -267,9 +263,9 @@ $window->_create;
 set_wm_class($window->id, 'special', 'special');
 $window->name('special window');
 $window->map;
-wait_for_map $x;
+wait_for_map $window;
 
-my $content = get_ws($tmp);
+$content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
 ok(@{$content->{floating_nodes}} == 0, 'one floating con');
 @docked = get_dock_clients;

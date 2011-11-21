@@ -3,14 +3,7 @@
 #
 # Regression test for inplace restarting with dock clients
 #
-use X11::XCB qw(:all);
 use i3test;
-
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 
@@ -25,7 +18,7 @@ is(@docked, 0, 'no dock clients yet');
 
 # open a dock client
 
-my $window = open_window($x, {
+my $window = open_window({
         background_color => '#FF0000',
         window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
     });
@@ -62,7 +55,7 @@ is($docknode->{rect}->{height}, 30, 'dock node has unchanged height after restar
 
 $window->destroy;
 
-wait_for_unmap $x;
+wait_for_unmap $window;
 
 @docked = get_dock_clients;
 is(@docked, 0, 'no dock clients found');
@@ -71,7 +64,7 @@ is(@docked, 0, 'no dock clients found');
 # create a dock client with a 1px border
 #####################################################################
 
-$window = open_window($x, {
+$window = open_window({
         border => 1,
         rect => [ 0, 0, 30, 20 ],
         background_color => '#00FF00',

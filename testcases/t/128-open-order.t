@@ -27,7 +27,7 @@ isnt($first, $second, 'different container focused');
 
 cmd qq|[con_id="$first"] focus|;
 cmd 'open';
-$content = get_ws_content($tmp);
+my $content = get_ws_content($tmp);
 ok(@{$content} == 3, 'three containers opened');
 
 is($content->[0]->{id}, $first, 'first container unmodified');
