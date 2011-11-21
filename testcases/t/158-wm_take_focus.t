@@ -10,7 +10,7 @@ subtest 'Window without WM_TAKE_FOCUS', sub {
 
     my $window = open_window($x);
 
-    ok(!wait_for_event($x, 1, sub { $_[0]->{response_type} == 161 }), 'did not receive ClientMessage');
+    ok(!wait_for_event(1, sub { $_[0]->{response_type} == 161 }), 'did not receive ClientMessage');
 
     done_testing;
 };
@@ -27,7 +27,7 @@ subtest 'Window with WM_TAKE_FOCUS', sub {
 
     $window->map;
 
-    ok(wait_for_event($x, 1, sub {
+    ok(wait_for_event(1, sub {
         return 0 unless $_[0]->{response_type} == 161;
         my ($data, $time) = unpack("L2", $_[0]->{data});
         return ($data == $take_focus->id);

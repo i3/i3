@@ -90,7 +90,7 @@ __
 # wait_for_event $x, 0.25, sub { $_[0]->{response_type} == MAP_NOTIFY };
 #
 sub wait_for_event {
-    my ($x, $timeout, $cb) = @_;
+    my ($timeout, $cb) = @_;
 
     my $cv = AE::cv;
 
@@ -122,16 +122,14 @@ sub wait_for_event {
 # thin wrapper around wait_for_event which waits for MAP_NOTIFY
 # make sure to include 'structure_notify' in the window’s event_mask attribute
 sub wait_for_map {
-    my ($x) = @_;
-    wait_for_event $x, 2, sub { $_[0]->{response_type} == MAP_NOTIFY };
+    wait_for_event 2, sub { $_[0]->{response_type} == MAP_NOTIFY };
 }
 
 # Wrapper around wait_for_event which waits for UNMAP_NOTIFY. Also calls
 # sync_with_i3 to make sure i3 also picked up and processed the UnmapNotify
 # event.
 sub wait_for_unmap {
-    my ($x) = @_;
-    wait_for_event $x, 2, sub { $_[0]->{response_type} == UNMAP_NOTIFY };
+    wait_for_event 2, sub { $_[0]->{response_type} == UNMAP_NOTIFY };
     sync_with_i3($x);
 }
 
@@ -334,7 +332,7 @@ sub sync_with_i3 {
 
         $_sync_window->map;
 
-        wait_for_event $x, 2, sub { $_[0]->{response_type} == MAP_NOTIFY };
+        wait_for_event 2, sub { $_[0]->{response_type} == MAP_NOTIFY };
     }
 
     my $root = $x->get_root_window();
@@ -360,7 +358,7 @@ sub sync_with_i3 {
     $x->send_event(0, $root, EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
 
     # now wait until the reply is here
-    return wait_for_event $x, 2, sub {
+    return wait_for_event 2, sub {
         my ($event) = @_;
         # TODO: const
         return 0 unless $event->{response_type} == 161;
