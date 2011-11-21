@@ -12,10 +12,9 @@ use List::Util qw(sum);
 my $tmp = fresh_workspace;
 
 cmd 'exec /usr/bin/urxvt';
-wait_for_map $x;
+sleep 0.5;
 cmd 'exec /usr/bin/urxvt';
-wait_for_map $x;
-
+sleep 0.5;
 my ($nodes, $focus) = get_ws_content($tmp);
 my $old_sum = sum map { $_->{rect}->{width} } @{$nodes};
 #cmd 'open';
@@ -23,13 +22,12 @@ cmd 'resize grow left 10 px or 25 ppt';
 cmd 'split v';
 #cmd 'open';
 cmd 'exec /usr/bin/urxvt';
-wait_for_map $x;
-
+sleep 0.5;
 cmd 'mode toggle';
-sync_with_i3 $x;
-
+sleep 0.5;
 cmd 'kill';
-wait_for_unmap $x;
+
+sleep 0.5;
 
 ($nodes, $focus) = get_ws_content($tmp);
 my $new_sum = sum map { $_->{rect}->{width} } @{$nodes};
