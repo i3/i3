@@ -8,9 +8,6 @@
 #
 use i3test;
 use List::Util qw(sum);
-use X11::XCB::Connection;
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 

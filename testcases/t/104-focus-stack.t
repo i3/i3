@@ -5,8 +5,6 @@
 
 use i3test;
 
-my $x = X11::XCB::Connection->new;
-
 fresh_workspace;
 
 cmd 'split h';

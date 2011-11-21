@@ -4,11 +4,7 @@
 #
 # checks if i3 starts up on workspace '1' or the first configured named workspace
 #
-use X11::XCB qw(:all);
-use X11::XCB::Connection;
 use i3test;
-
-my $x = X11::XCB::Connection->new;
 
 ##############################################################
 # 1: i3 should start with workspace '1'

@@ -39,12 +39,15 @@ our @EXPORT = qw(
     wait_for_event
     wait_for_map
     wait_for_unmap
+    $x
 );
 
 my $tester = Test::Builder->new();
 my $_cached_socket_path = undef;
 my $_sync_window = undef;
 my $tmp_socket_path = undef;
+
+our $x;
 
 BEGIN {
     my $window_count = 0;
@@ -72,6 +75,7 @@ __
     strict->import;
     warnings->import;
 
+    $x ||= i3test::X11->new;
     @_ = ($class);
     goto \&Exporter::import;
 }
@@ -404,7 +408,6 @@ sub get_socket_path {
         return $_cached_socket_path;
     }
 
-    my $x = X11::XCB::Connection->new;
     my $atom = $x->atom(name => 'I3_SOCKET_PATH');
     my $cookie = $x->get_property(0, $x->get_root_window(), $atom->id, GET_PROPERTY_TYPE_ANY, 0, 256);
     my $reply = $x->get_property_reply($cookie->{sequence});

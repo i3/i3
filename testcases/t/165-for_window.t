@@ -3,11 +3,8 @@
 # !NO_I3_INSTANCE! will prevent complete-run.pl from starting i3
 #
 #
-use X11::XCB qw(:all);
-use X11::XCB::Connection;
 use i3test;
-
-my $x = X11::XCB::Connection->new;
+use X11::XCB qw(PROP_MODE_REPLACE WINDOW_CLASS_INPUT_OUTPUT);
 
 ##############################################################
 # 1: test the following directive:

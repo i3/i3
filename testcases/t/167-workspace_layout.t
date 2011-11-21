@@ -6,10 +6,6 @@
 #
 
 use i3test;
-use X11::XCB qw(:all);
-use X11::XCB::Connection;
-
-my $x = X11::XCB::Connection->new;
 
 #####################################################################
 # 1: check that with an empty config, cons are place next to each

@@ -4,8 +4,6 @@
 use i3test;
 use File::Temp;
 
-my $x = X11::XCB::Connection->new;
-
 my $tmp = fresh_workspace;
 
 cmd 'split h';

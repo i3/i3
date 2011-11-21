@@ -8,9 +8,7 @@
 # 4) move a container in a different direction so that we need to go up in tree
 #
 use i3test;
-use X11::XCB::Connection;
 
-my $x = X11::XCB::Connection->new;
 my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;

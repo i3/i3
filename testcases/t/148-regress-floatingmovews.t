@@ -4,14 +4,7 @@
 # Regression test for correct focus behaviour when moving a floating con to
 # another workspace.
 #
-use X11::XCB qw(:all);
 use i3test;
-
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 

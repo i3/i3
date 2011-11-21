@@ -2,13 +2,7 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use X11::XCB qw(:all);
-
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
-
-my $x = X11::XCB::Connection->new;
+use X11::XCB 'WINDOW_CLASS_INPUT_OUTPUT';
 
 # Create a floating window which is smaller than the minimum enforced size of i3
 my $window = $x->root->create_child(

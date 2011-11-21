@@ -4,10 +4,7 @@
 # Check if the focus is correctly restored after closing windows.
 #
 use i3test;
-use X11::XCB qw(:all);
 use List::Util qw(first);
-
-my $x = X11::XCB::Connection->new;
 
 my $i3 = i3(get_socket_path());
 

@@ -5,8 +5,6 @@
 #
 use i3test;
 
-my $x = X11::XCB::Connection->new;
-
 my $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');

@@ -5,11 +5,7 @@
 # Tests if assignments work
 #
 use i3test;
-use X11::XCB qw(:all);
-use X11::XCB::Connection;
-use v5.10;
-
-my $x = X11::XCB::Connection->new;
+use X11::XCB qw(PROP_MODE_REPLACE WINDOW_CLASS_INPUT_OUTPUT);
 
 # TODO: move to X11::XCB
 sub set_wm_class {

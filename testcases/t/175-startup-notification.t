@@ -8,7 +8,6 @@ use i3test;
 use POSIX qw(mkfifo);
 use File::Temp qw(:POSIX);
 
-my $x = X11::XCB::Connection->new;
 use ExtUtils::PkgConfig;
 
 # setup dependency on libstartup-notification using pkg-config

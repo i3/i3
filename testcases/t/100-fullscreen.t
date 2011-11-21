@@ -2,7 +2,7 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use X11::XCB qw(:all);
+use X11::XCB 'WINDOW_CLASS_INPUT_OUTPUT';
 use List::Util qw(first);
 
 my $i3 = i3(get_socket_path());
@@ -25,12 +25,6 @@ for my $o (@outputs) {
         last;
     }
 }
-
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
-
-my $x = X11::XCB::Connection->new;
 
 ##################################
 # map a window, then fullscreen it

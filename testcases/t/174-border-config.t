@@ -7,8 +7,6 @@
 
 use i3test;
 
-my $x = X11::XCB::Connection->new;
-
 #####################################################################
 # 1: check that new windows start with 'normal' border unless configured
 # otherwise

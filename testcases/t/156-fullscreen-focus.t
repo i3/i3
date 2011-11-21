@@ -4,14 +4,8 @@
 # Test if new containers get focused when there is a fullscreen container at
 # the time of launching the new one.
 #
-use X11::XCB qw(:all);
 use i3test;
 
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
-
-my $x = X11::XCB::Connection->new;
 my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;

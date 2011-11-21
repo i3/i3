@@ -6,8 +6,6 @@
 #
 use i3test;
 
-my $x = X11::XCB::Connection->new;
-
 sub two_windows {
     my $tmp = fresh_workspace;
 

@@ -2,13 +2,7 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use X11::XCB qw(:all);
-
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
-
-my $x = X11::XCB::Connection->new;
+use X11::XCB 'WINDOW_CLASS_INPUT_OUTPUT';
 
 my $original_rect = X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30);
 

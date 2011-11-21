@@ -3,11 +3,7 @@
 #
 # Tests if the WM_TAKE_FOCUS protocol is correctly handled by i3
 #
-use X11::XCB qw(:all);
 use i3test;
-use v5.10;
-
-my $x = X11::XCB::Connection->new;
 
 subtest 'Window without WM_TAKE_FOCUS', sub {
     fresh_workspace;

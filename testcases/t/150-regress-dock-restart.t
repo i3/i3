@@ -3,14 +3,7 @@
 #
 # Regression test for inplace restarting with dock clients
 #
-use X11::XCB qw(:all);
 use i3test;
-
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 

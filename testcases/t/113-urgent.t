@@ -2,14 +2,7 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use X11::XCB qw(:all);
 use List::Util qw(first);
-
-BEGIN {
-    use_ok('X11::XCB::Connection') or BAIL_OUT('Cannot load X11::XCB::Connection');
-}
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 

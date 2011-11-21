@@ -2,13 +2,6 @@
 # vim:ts=4:sw=4:expandtab
 # Tests resizing tiling containers
 use i3test;
-use X11::XCB qw(:all);
-
-BEGIN {
-    use_ok('X11::XCB::Window');
-}
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 

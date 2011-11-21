@@ -7,9 +7,6 @@
 #
 
 use i3test;
-use X11::XCB::Connection;
-
-my $x = X11::XCB::Connection->new;
 
 my $config = <<EOT;
 # i3 config file (v4)

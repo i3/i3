@@ -10,10 +10,7 @@
 #
 # This testcase checks that the tree is properly flattened after moving.
 #
-use X11::XCB qw(:all);
 use i3test;
-
-my $x = X11::XCB::Connection->new;
 
 my $tmp = fresh_workspace;
 

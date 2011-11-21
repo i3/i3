@@ -4,14 +4,13 @@
 # Tests all kinds of matching methods
 #
 use i3test;
-use X11::XCB qw(:all);
+use X11::XCB qw(PROP_MODE_REPLACE WINDOW_CLASS_INPUT_OUTPUT);
 
 my $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
 # Open a new window
-my $x = X11::XCB::Connection->new;
 my $window = open_window($x);
 my $content = get_ws_content($tmp);
 ok(@{$content} == 1, 'window mapped');
