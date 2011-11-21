@@ -237,6 +237,9 @@ cmd 'kill';
 wait_for_unmap $x;
 $window->destroy;
 
+# give i3 a chance to delete the window from its tree
+sync_with_i3 $x;
+
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no nodes on this workspace now');
 

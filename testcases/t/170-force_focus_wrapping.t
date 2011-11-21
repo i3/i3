@@ -5,10 +5,20 @@
 # Tests if the 'force_focus_wrapping' config directive works correctly.
 #
 use i3test;
-use X11::XCB qw(:all);
-use X11::XCB::Connection;
 
-my $x = X11::XCB::Connection->new;
+{
+    package i3test::X11;
+    use parent 'X11::XCB::Connection';
+
+    sub input_focus {
+        my $self = shift;
+        i3test::sync_with_i3($self);
+
+        return $self->SUPER::input_focus(@_);
+    }
+}
+
+my $x = i3test::X11->new;
 
 #####################################################################
 # 1: test the wrapping behaviour without force_focus_wrapping
