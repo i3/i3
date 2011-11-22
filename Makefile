@@ -55,23 +55,23 @@ loglevels.h:
 
 src/cfgparse.yy.o: src/cfgparse.l src/cfgparse.y.o ${HEADERS}
 	echo "[i3] LEX $<"
-	flex -i -o$(@:.o=.c) $<
+	$(FLEX) -i -o$(@:.o=.c) $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
 
 src/cmdparse.yy.o: src/cmdparse.l src/cmdparse.y.o ${HEADERS}
 	echo "[i3] LEX $<"
-	flex -Pcmdyy -i -o$(@:.o=.c) $<
+	$(FLEX) -Pcmdyy -i -o$(@:.o=.c) $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cmdparse.l/ { print NR }' loglevels.tmp))" -c -o $@ $(@:.o=.c)
 
 
 src/cfgparse.y.o: src/cfgparse.y ${HEADERS}
 	echo "[i3] YACC $<"
-	bison --debug --verbose -b $(basename $< .y) -d $<
+	$(BISON) --debug --verbose -b $(basename $< .y) -d $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cfgparse.y/ { print NR }' loglevels.tmp))" -c -o $@ $(<:.y=.tab.c)
 
 src/cmdparse.y.o: src/cmdparse.y ${HEADERS}
 	echo "[i3] YACC $<"
-	bison -p cmdyy --debug --verbose -b $(basename $< .y) -d $<
+	$(BISON) -p cmdyy --debug --verbose -b $(basename $< .y) -d $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="(1 << $(shell awk '/cmdparse.y/ { print NR }' loglevels.tmp))" -c -o $@ $(<:.y=.tab.c)
 
 

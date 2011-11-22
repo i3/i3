@@ -26,12 +26,12 @@ $(TOPDIR)/libi3/%.a: $(TOPDIR)/libi3/*.c
 
 cfgparse.yy.o: cfgparse.l cfgparse.y.o ${HEADERS}
 	echo "[i3-config-wizard] LEX $<"
-	flex -i -o$(@:.o=.c) $<
+	$(FLEX) -i -o$(@:.o=.c) $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $(@:.o=.c)
 
 cfgparse.y.o: cfgparse.y ${HEADERS}
 	echo "[i3-config-wizard] YACC $<"
-	bison --debug --verbose -b $(basename $< .y) -d $<
+	$(BISON) --debug --verbose -b $(basename $< .y) -d $<
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $(<:.y=.tab.c)
 
 

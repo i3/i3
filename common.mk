@@ -2,6 +2,8 @@ UNAME=$(shell uname)
 DEBUG=1
 COVERAGE=0
 INSTALL=install
+FLEX=flex
+BISON=bison
 ifndef PREFIX
   PREFIX=/usr
 endif
