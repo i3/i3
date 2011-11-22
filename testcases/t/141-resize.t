@@ -10,8 +10,6 @@ cmd 'split v';
 my $top = open_window;
 my $bottom = open_window;
 
-sync_with_i3;
-
 diag("top = " . $top->id . ", bottom = " . $bottom->id);
 
 is($x->input_focus, $bottom->id, 'Bottom window focused');

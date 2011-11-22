@@ -24,7 +24,6 @@ sub focus_after {
     my $msg = shift;
 
     cmd $msg;
-    sync_with_i3;
     return $x->input_focus;
 }
 

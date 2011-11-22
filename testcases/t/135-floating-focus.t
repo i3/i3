@@ -36,8 +36,6 @@ cmd 'floating enable';
 
 cmd '[id="' . $second->id . '"] focus';
 
-sync_with_i3;
-
 is($x->input_focus, $second->id, 'second con focused');
 
 cmd 'floating enable';
@@ -66,8 +64,6 @@ is($x->input_focus, $third->id, 'last container focused');
 cmd 'floating enable';
 
 cmd '[id="' . $second->id . '"] focus';
-
-sync_with_i3;
 
 is($x->input_focus, $second->id, 'second con focused');
 
@@ -103,8 +99,6 @@ cmd 'floating enable';
 
 cmd '[id="' . $second->id . '"] focus';
 
-sync_with_i3;
-
 is($x->input_focus, $second->id, 'second con focused');
 
 cmd 'floating enable';
@@ -132,8 +126,6 @@ $tmp = fresh_workspace;
 $first = open_window({ background_color => '#ff0000' });    # window 8
 $second = open_window({ background_color => '#00ff00' });   # window 9
 
-sync_with_i3;
-
 is($x->input_focus, $second->id, 'second container focused');
 
 cmd 'floating enable';
@@ -142,31 +134,21 @@ is($x->input_focus, $second->id, 'second container focused');
 
 cmd 'focus tiling';
 
-sync_with_i3;
-
 is($x->input_focus, $first->id, 'first (tiling) container focused');
 
 cmd 'focus floating';
-
-sync_with_i3;
 
 is($x->input_focus, $second->id, 'second (floating) container focused');
 
 cmd 'focus floating';
 
-sync_with_i3;
-
 is($x->input_focus, $second->id, 'second (floating) container still focused');
 
 cmd 'focus mode_toggle';
 
-sync_with_i3;
-
 is($x->input_focus, $first->id, 'first (tiling) container focused');
 
 cmd 'focus mode_toggle';
-
-sync_with_i3;
 
 is($x->input_focus, $second->id, 'second (floating) container focused');
 
@@ -180,37 +162,25 @@ $first = open_floating_window({ background_color => '#ff0000' });# window 10
 $second = open_floating_window({ background_color => '#00ff00' }); # window 11
 $third = open_floating_window({ background_color => '#0000ff' }); # window 12
 
-sync_with_i3;
-
 is($x->input_focus, $third->id, 'third container focused');
 
 cmd 'focus left';
-
-sync_with_i3;
 
 is($x->input_focus, $second->id, 'second container focused');
 
 cmd 'focus left';
 
-sync_with_i3;
-
 is($x->input_focus, $first->id, 'first container focused');
 
 cmd 'focus left';
-
-sync_with_i3;
 
 is($x->input_focus, $third->id, 'focus wrapped to third container');
 
 cmd 'focus right';
 
-sync_with_i3;
-
 is($x->input_focus, $first->id, 'focus wrapped to first container');
 
 cmd 'focus right';
-
-sync_with_i3;
 
 is($x->input_focus, $second->id, 'focus on second container');
 

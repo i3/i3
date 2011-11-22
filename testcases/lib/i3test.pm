@@ -173,8 +173,6 @@ sub open_window {
 
     $window->map;
     wait_for_map($window);
-    # We sync with i3 here to make sure $x->input_focus is updated.
-    sync_with_i3();
     return $window;
 }
 

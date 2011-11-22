@@ -14,8 +14,6 @@ sub two_windows {
     my $first = open_window;
     my $second = open_window;
 
-    sync_with_i3;
-
     is($x->input_focus, $second->id, 'second window focused');
     ok(@{get_ws_content($tmp)} == 2, 'two containers opened');
 
