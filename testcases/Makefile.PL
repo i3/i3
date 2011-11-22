@@ -10,8 +10,7 @@ WriteMakefile(
         'AnyEvent'     => 0,
         'AnyEvent::I3' => '0.09',
         'X11::XCB'     => '0.03',
-	'EV'	       => 0,
-	'Inline'       => 0,
+	    'Inline'       => 0,
     },
     PM => {}, # do not install any files from this directory
     clean => {

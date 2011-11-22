@@ -8,7 +8,6 @@ use X11::XCB::Rect;
 use X11::XCB::Window;
 use X11::XCB qw(:all);
 use AnyEvent::I3;
-use EV;
 use List::Util qw(first);
 use Time::HiRes qw(sleep);
 use Cwd qw(abs_path);
@@ -94,11 +93,12 @@ sub wait_for_event {
 
     my $cv = AE::cv;
 
-    my $prep = EV::prepare sub {
-        $x->flush;
-    };
+    $x->flush;
 
-    my $check = EV::check sub {
+    # unfortunately, there is no constant for this
+    my $ae_read = 0;
+
+    my $guard = AE::io $x->get_file_descriptor, $ae_read, sub {
         while (defined(my $event = $x->poll_for_event)) {
             if ($cb->($event)) {
                 $cv->send(1);
@@ -107,15 +107,12 @@ sub wait_for_event {
         }
     };
 
-    my $watcher = EV::io $x->get_file_descriptor, EV::READ, sub {
-        # do nothing, we only need this watcher so that EV picks up the events
-    };
-
     # Trigger timeout after $timeout seconds (can be fractional)
     my $t = AE::timer $timeout, 0, sub { warn "timeout ($timeout secs)"; $cv->send(0) };
 
     my $result = $cv->recv;
     undef $t;
+    undef $guard;
     return $result;
 }
 
