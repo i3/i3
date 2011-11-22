@@ -29,28 +29,44 @@ my $i3 = i3(get_socket_path());
 
 my $tree = $i3->get_tree->recv;
 
+# a unique value
+my $ignore = \"";
+
 my $expected = {
     fullscreen_mode => 0,
-    nodes => ignore(),
+    nodes => $ignore,
     window => undef,
     name => 'root',
-    orientation => ignore(),
+    orientation => $ignore,
     type => 0,
-    id => ignore(),
-    rect => ignore(),
-    window_rect => ignore(),
-    geometry => ignore(),
-    swallows => ignore(),
+    id => $ignore,
+    rect => $ignore,
+    window_rect => $ignore,
+    geometry => $ignore,
+    swallows => $ignore,
     percent => undef,
     layout => 'default',
-    focus => ignore(),
+    focus => $ignore,
     focused => JSON::XS::false,
     urgent => JSON::XS::false,
     border => 'normal',
-    'floating_nodes' => ignore(),
+    'floating_nodes' => $ignore,
 };
 
-is_deeply($tree, $expected, 'root node OK');
+# a shallow copy is sufficient, since we only ignore values at the root
+my $tree_copy = { %$tree };
+
+for (keys %$expected) {
+    my $val = $expected->{$_};
+
+    # delete unwanted keys, so we can use is_deeply()
+    if (ref($val) eq 'SCALAR' and $val == $ignore) {
+        delete $tree_copy->{$_};
+        delete $expected->{$_};
+    }
+}
+
+is_deeply($tree_copy, $expected, 'root node OK');
 
 my @nodes = @{$tree->{nodes}};
 
