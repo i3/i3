@@ -15,7 +15,7 @@ my $tiled_right = open_window;
 my $focus = $x->input_focus;
 
 # Create a floating window which is smaller than the minimum enforced size of i3
-my $window = open_floating_window($x);
+my $window = open_floating_window;
 
 is($x->input_focus, $window->id, 'floating window focused');
 

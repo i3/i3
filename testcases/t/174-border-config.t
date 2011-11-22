@@ -73,7 +73,7 @@ $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-$first = open_floating_window($x);
+$first = open_floating_window;
 
 my $wscontent = get_ws($tmp);
 my @floating = @{$wscontent->{floating_nodes}};
@@ -101,7 +101,7 @@ $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-$first = open_floating_window($x);
+$first = open_floating_window;
 
 $wscontent = get_ws($tmp);
 @floating = @{$wscontent->{floating_nodes}};

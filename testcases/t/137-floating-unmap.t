@@ -14,7 +14,7 @@ my $tmp = fresh_workspace;
 #############################################################################
 
 # Create a floating window which is smaller than the minimum enforced size of i3
-my $window = open_floating_window($x);
+my $window = open_floating_window;
 ok($window->mapped, 'Window is mapped');
 
 # switch to a different workspace, see if the window is still mapped?

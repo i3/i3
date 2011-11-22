@@ -136,7 +136,7 @@ is(@{$content}, 1, 'only one nodes on this workspace');
 ######################################################################
 
 $tmp = fresh_workspace;
-my $floatwin = open_floating_window($x);
+my $floatwin = open_floating_window;
 my ($absolute_before, $top_before) = $floatwin->rect;
 
 cmd 'move left';

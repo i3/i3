@@ -176,9 +176,9 @@ is($x->input_focus, $second->id, 'second (floating) container focused');
 
 $tmp = fresh_workspace;
 
-$first = open_floating_window($x, { background_color => '#ff0000' });# window 10
-$second = open_floating_window($x, { background_color => '#00ff00' }); # window 11
-$third = open_floating_window($x, { background_color => '#0000ff' }); # window 12
+$first = open_floating_window({ background_color => '#ff0000' });# window 10
+$second = open_floating_window({ background_color => '#00ff00' }); # window 11
+$third = open_floating_window({ background_color => '#0000ff' }); # window 12
 
 sync_with_i3($x);
 

@@ -181,7 +181,7 @@ sub open_window {
 # Thin wrapper around open_window which sets window_type to
 # _NET_WM_WINDOW_TYPE_UTILITY to make the window floating.
 sub open_floating_window {
-    my ($x, $args) = @_;
+    my ($args) = @_;
     my %args = ($args ? %$args : ());
 
     $args{window_type} = $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY');
