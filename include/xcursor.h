@@ -35,6 +35,6 @@ int xcursor_get_xcb_cursor(enum xcursor_cursor_t c);
  * races might occur (even though we flush the Xlib connection).
  *
  */
-void xcursor_set_root_cursor();
+void xcursor_set_root_cursor(int cursor_id);
 
 #endif
