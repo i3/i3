@@ -46,7 +46,7 @@ my $third = open_window({
 
 $third->map;
 
-sync_with_i3 $x;
+sync_with_i3;
 
 diag("third = " . $third->id);
 
@@ -58,7 +58,7 @@ cmd "move workspace $tmp2";
 
 # verify that the third window has the focus
 
-sync_with_i3($x);
+sync_with_i3;
 
 is($x->input_focus, $third->id, 'third window focused');
 

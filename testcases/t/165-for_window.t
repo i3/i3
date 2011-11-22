@@ -124,13 +124,13 @@ cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'normal border');
 
 $window->name('special borderless title');
-sync_with_i3 $x;
+sync_with_i3;
 
 @content = @{get_ws_content($tmp)};
 is($content[0]->{border}, 'none', 'no border');
 
 $window->name('special title');
-sync_with_i3 $x;
+sync_with_i3;
 
 cmd 'border normal';
 
@@ -138,7 +138,7 @@ cmd 'border normal';
 is($content[0]->{border}, 'normal', 'border reset to normal');
 
 $window->name('special borderless title');
-sync_with_i3 $x;
+sync_with_i3;
 
 @content = @{get_ws_content($tmp)};
 is($content[0]->{border}, 'normal', 'still normal border');
@@ -235,7 +235,7 @@ wait_for_unmap $window;
 $window->destroy;
 
 # give i3 a chance to delete the window from its tree
-sync_with_i3 $x;
+sync_with_i3;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 0, 'no nodes on this workspace now');
@@ -457,7 +457,7 @@ $x->change_property(
 
 $x->flush;
 
-sync_with_i3 $x;
+sync_with_i3;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');

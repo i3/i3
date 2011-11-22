@@ -56,7 +56,7 @@ $original_rect = $new_rect;
 
 $window->fullscreen(1);
 
-sync_with_i3($x);
+sync_with_i3;
 
 $new_rect = $window->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned after fullscreen");
@@ -123,7 +123,7 @@ my $swindow = $x->root->create_child(
 
 $swindow->map;
 
-sync_with_i3($x);
+sync_with_i3;
 
 ok(!$swindow->mapped, 'window not mapped while fullscreen window active');
 
@@ -131,12 +131,12 @@ $new_rect = $swindow->rect;
 ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned");
 
 $swindow->fullscreen(1);
-sync_with_i3($x);
+sync_with_i3;
 
 is(fullscreen_windows(), 1, 'amount of fullscreen windows');
 
 $window->fullscreen(0);
-sync_with_i3($x);
+sync_with_i3;
 is(fullscreen_windows(), 0, 'amount of fullscreen windows');
 
 ok($swindow->mapped, 'window mapped after other fullscreen ended');
@@ -148,7 +148,7 @@ ok($swindow->mapped, 'window mapped after other fullscreen ended');
 ###########################################################################
 
 $swindow->fullscreen(0);
-sync_with_i3($x);
+sync_with_i3;
 
 is(fullscreen_windows(), 0, 'amount of fullscreen windows after disabling');
 

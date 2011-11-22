@@ -52,7 +52,7 @@ is($docknode->{rect}->{height}, 30, 'dock node has unchanged height');
 
 $window->rect(X11::XCB::Rect->new(x => 0, y => 0, width => 50, height => 40));
 
-sync_with_i3 $x;
+sync_with_i3;
 
 @docked = get_dock_clients('top');
 is(@docked, 1, 'one dock client found');

@@ -139,7 +139,7 @@ sub wait_for_unmap {
     wait_for_event 2, sub {
         $_[0]->{response_type} == UNMAP_NOTIFY # and $_[0]->{window} == $id
     };
-    sync_with_i3($x);
+    sync_with_i3();
 }
 
 #
@@ -174,7 +174,7 @@ sub open_window {
     $window->map;
     wait_for_map($window);
     # We sync with i3 here to make sure $x->input_focus is updated.
-    sync_with_i3($x);
+    sync_with_i3();
     return $window;
 }
 
@@ -325,8 +325,6 @@ sub focused_ws {
 # See also docs/testsuite for a long explanation
 #
 sub sync_with_i3 {
-    my ($x) = @_;
-
     # Since we need a (mapped) window for receiving a ClientMessage, we create
     # one on the first call of sync_with_i3. It will be re-used in all
     # subsequent calls.
@@ -470,7 +468,7 @@ use parent 'X11::XCB::Connection';
 
 sub input_focus {
     my $self = shift;
-    i3test::sync_with_i3($self);
+    i3test::sync_with_i3();
 
     return $self->SUPER::input_focus(@_);
 }

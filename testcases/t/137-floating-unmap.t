@@ -21,7 +21,7 @@ ok($window->mapped, 'Window is mapped');
 
 my $otmp = fresh_workspace;
 
-sync_with_i3($x);
+sync_with_i3;
 
 ok(!$window->mapped, 'Window is not mapped after switching ws');
 

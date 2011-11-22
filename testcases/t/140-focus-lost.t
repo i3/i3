@@ -22,7 +22,7 @@ my $left = open_window;
 my $mid = open_window;
 my $right = open_window;
 
-sync_with_i3($x);
+sync_with_i3;
 
 diag("left = " . $left->id . ", mid = " . $mid->id . ", right = " . $right->id);
 
