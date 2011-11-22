@@ -61,15 +61,14 @@ sub import {
     my $class = shift;
     my $pkg = caller;
 
-    my $test_most_args = @_ ? "qw(@_)" : "";
+    my $test_more_args = @_ ? "qw(@_)" : "";
     local $@;
     eval << "__";
 package $pkg;
-use Test::Most $test_most_args;
+use Test::More $test_more_args;
 use Data::Dumper;
 use AnyEvent::I3;
 use Time::HiRes qw(sleep);
-use Test::Deep qw(eq_deeply cmp_deeply);
 __
     $tester->bail_out("$@") if $@;
     feature->import(":5.10");

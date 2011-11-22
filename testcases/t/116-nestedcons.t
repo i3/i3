@@ -50,7 +50,7 @@ my $expected = {
     'floating_nodes' => ignore(),
 };
 
-cmp_deeply($tree, $expected, 'root node OK');
+is_deeply($tree, $expected, 'root node OK');
 
 my @nodes = @{$tree->{nodes}};
 

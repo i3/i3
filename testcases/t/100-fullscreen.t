@@ -51,7 +51,7 @@ wait_for_map $window;
 cmd 'open';
 
 my $new_rect = $window->rect;
-ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned");
+ok(!eq_hash($new_rect, $original_rect), "Window got repositioned");
 $original_rect = $new_rect;
 
 $window->fullscreen(1);
@@ -59,7 +59,7 @@ $window->fullscreen(1);
 sync_with_i3;
 
 $new_rect = $window->rect;
-ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned after fullscreen");
+ok(!eq_hash($new_rect, $original_rect), "Window got repositioned after fullscreen");
 
 my $orect = $output->{rect};
 my $wrect = $new_rect;
@@ -98,7 +98,7 @@ $window->map;
 wait_for_map $window;
 
 $new_rect = $window->rect;
-ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned after fullscreen");
+ok(!eq_hash($new_rect, $original_rect), "Window got repositioned after fullscreen");
 ok($window->mapped, "Window is mapped after opening it in fullscreen mode");
 
 $wrect = $new_rect;
@@ -128,7 +128,7 @@ sync_with_i3;
 ok(!$swindow->mapped, 'window not mapped while fullscreen window active');
 
 $new_rect = $swindow->rect;
-ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned");
+ok(!eq_hash($new_rect, $original_rect), "Window got repositioned");
 
 $swindow->fullscreen(1);
 sync_with_i3;

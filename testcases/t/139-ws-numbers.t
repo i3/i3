@@ -13,7 +13,7 @@ sub check_order {
     my @nums = map { $_->{num} } grep { defined($_->{num}) } @ws;
     my @sorted = sort @nums;
 
-    cmp_deeply(\@nums, \@sorted, $msg);
+    is_deeply(\@nums, \@sorted, $msg);
 }
 
 check_order('workspace order alright before testing');

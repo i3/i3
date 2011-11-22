@@ -18,7 +18,7 @@ EOT
 my $pid = launch_with_config($config);
 
 my @names = @{get_workspace_names()};
-cmp_deeply(\@names, [ '1' ], 'i3 starts on workspace 1 without any configuration');
+is_deeply(\@names, [ '1' ], 'i3 starts on workspace 1 without any configuration');
 
 exit_gracefully($pid);
 
@@ -36,7 +36,7 @@ EOT
 $pid = launch_with_config($config);
 
 @names = @{get_workspace_names()};
-cmp_deeply(\@names, [ 'foobar' ], 'i3 starts on named workspace foobar');
+is_deeply(\@names, [ 'foobar' ], 'i3 starts on named workspace foobar');
 
 exit_gracefully($pid);
 
@@ -54,7 +54,7 @@ EOT
 $pid = launch_with_config($config);
 
 @names = @{get_workspace_names()};
-cmp_deeply(\@names, [ 'foobar' ], 'i3 starts on named workspace foobar');
+is_deeply(\@names, [ 'foobar' ], 'i3 starts on named workspace foobar');
 
 exit_gracefully($pid);
 
