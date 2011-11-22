@@ -469,53 +469,130 @@ src/layout.c, function resize_client().
 
 == Rendering (src/layout.c, render_layout() and render_container())
 
-*********************************************************************************
-This section has not been updated for v4.0 yet, sorry! We wanted to release on
-time, but we will update this soon. Please talk to us on IRC if you need to
-know stuff *NOW* :).
-*********************************************************************************
-
 Rendering in i3 version 4 is the step which assigns the correct sizes for
 borders, decoration windows, child windows and the stacking order of all
 windows. In a separate step (+x_push_changes()+), these changes are pushed to
 X11.
 
+Keep in mind that all these properties (+rect+, +window_rect+ and +deco_rect+)
+are temporary, meaning they will be overwritten by calling +render_con+.
+Persistent position/size information is kept in +geometry+.
+
+The entry point for every rendering operation (except for the case of moving
+floating windows around) currently is +tree_render()+ which will re-render
+everything that’s necessary (for every output, only the currently displayed
+workspace is rendered). This behavior is expected to change in the future,
+since for a lot of updates, re-rendering everything is not actually necessary.
+Focus was on getting it working correct, not getting it work very fast.
+
+What +tree_render()+ actually does is calling +render_con()+ on the root
+container and then pushing the changes to X11. The following sections talk
+about the different rendering steps, in the order of "top of the tree" (root
+container) to the bottom.
+
+=== Rendering the root container
+
+The i3 root container (+con->type == CT_ROOT+) represents the X11 root window.
+It contains one child container for every output (like LVDS1, VGA1, …), which
+is available on your computer.
+
+Rendering the root will first render all tiling windows and then all floating
+windows. This is necessary because a floating window can be positioned in such
+a way that it is visible on two different outputs. Therefore, by first
+rendering all the tiling windows (of all outputs), we make sure that floating
+windows can never be obscured by tiling windows.
+
+Essentially, though, this code path will just call +render_con()+ for every
+output and +x_raise_con(); render_con()+ for every floating window.
+
+In the special case of having a "global fullscreen" window (fullscreen mode
+spanning all outputs), a shortcut is taken and +x_raise_con(); render_con()+ is
+only called for the global fullscreen window.
+
+=== Rendering an output
+
+Output containers (+con->layout == L_OUTPUT+) represent a hardware output like
+LVDS1, VGA1, etc. An output container has three children (at the moment): One
+content container (having workspaces as children) and the top/bottom dock area
+containers.
+
+The rendering happens in the function +render_l_output()+ in the following
+steps:
+
+1. Find the content container (+con->type == CT_CON+)
+2. Get the currently visible workspace (+con_get_fullscreen_con(content,
+   CF_OUTPUT)+).
+3. If there is a fullscreened window on that workspace, directly render it and
+   return, thus ignoring the dock areas.
+4. Sum up the space used by all the dock windows (they have a variable height
+   only).
+5. Set the workspace rects (x/y/width/height) based on the position of the
+   output (stored in +con->rect+) and the usable space
+   (+con->rect.{width,height}+ without the space used for dock windows).
+6. Recursively raise and render the output’s child containers (meaning dock
+   area containers and the content container).
+
+=== Rendering a workspace or split container
+
+From here on, there really is no difference anymore. All containers are of
++con->type == CT_CON+ (whether workspace or split container) and some of them
+have a +con->window+, meaning they represent an actual window instead of a
+split container.
+
+==== Default layout
+
+In default layout, containers are placed horizontally or vertically next to
+each other (depending on the +con->orientation+). If a child is a leaf node (as
+opposed to a split container) and has border style "normal", appropriate space
+will be reserved for its window decoration.
+
+==== Stacked layout
+
+In stacked layout, only the focused window is actually shown (this is achieved
+by calling +x_raise_con()+ in reverse focus order at the end of +render_con()+).
+
+The available space for the focused window is the size of the container minus
+the height of the window decoration for all windows inside this stacked
+container.
+
+If border style is "1pixel" or "none", no window decoration height will be
+reserved (or displayed later on), unless there is more than one window inside
+the stacked container.
+
+==== Tabbed layout
+
+Tabbed layout works precisely like stacked layout, but the window decoration
+position/size is different: They are placed next to each other on a single line
+(fixed height).
+
+==== Dock area layout
+
+This is a special case. Users cannot chose the dock area layout, but it will be
+set for the dock area containers. In the dockarea layout (at the moment!),
+windows will be placed above each other.
+
+=== Rendering a window
+
+A window’s size and position will be determined in the following way:
+
+1. Subtract the border if border style is not "none" (but "normal" or "1pixel").
+2. Subtract the X11 border, if the window has an X11 border > 0.
+3. Obey the aspect ratio of the window (think MPlayer).
+4. Obey the height- and width-increments of the window (think terminal emulator
+   which can only be resized in one-line or one-character steps).
+
+== Pushing updates to X11 / Drawing
+
+TODO.
+
 /////////////////////////////////////////////////////////////////////////////////
 
-
-There are several entry points to rendering: `render_layout()`,
-`render_workspace()` and `render_container()`. The former one calls
-`render_workspace()` for every screen, which in turn will call
-`render_container()` for every container inside its layout table. Therefore, if
-you need to render only a single container, for example because a window was
-removed, added or changed its title, you should directly call
-render_container().
-
-Rendering consists of two steps: In the first one, in `render_workspace()`, each
-container gets its position (screen offset + offset in the table) and size
-(container's width times colspan/rowspan). Then, `render_container()` is called,
-which takes different approaches, depending on the mode the container is in:
 
 === Common parts
 
 On the frame (the window which was created around the client’s window for the
 decorations), a black rectangle is drawn as a background for windows like
 MPlayer, which do not completely fit into the frame.
-
-=== Default mode
-
-Each clients gets the container’s width and an equal amount of height.
-
-=== Stack mode
-
-In stack mode, a window containing the decorations of all windows inside the
-container is placed at the top. The currently focused window is then given the
-whole remaining space.
-
-=== Tabbed mode
-
-Tabbed mode is like stack mode, except that the window decorations are drawn
-in one single line at the top of the container.
 
 === Window decorations
 
@@ -524,12 +601,6 @@ on whether this window is the currently focused one, the last focused one in a
 not focused container or not focused at all) forming the background.
 Afterwards, two lighter lines are drawn and the last step is drawing the
 window’s title (see WM_NAME) onto it.
-
-=== Fullscreen windows
-
-For fullscreen windows, the `rect` (x, y, width, height) is not changed to
-allow the client to easily go back to its previous position. Instead,
-fullscreen windows are skipped when rendering.
 
 === Resizing containers
 
