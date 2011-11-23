@@ -13,7 +13,7 @@ sub check_order {
     my @nums = map { $_->{num} } grep { defined($_->{num}) } @ws;
     my @sorted = sort @nums;
 
-    cmp_deeply(\@nums, \@sorted, $msg);
+    is_deeply(\@nums, \@sorted, $msg);
 }
 
 my $tmp = fresh_workspace;
@@ -21,8 +21,6 @@ my $tmp = fresh_workspace;
 my $left = open_window;
 my $mid = open_window;
 my $right = open_window;
-
-sync_with_i3($x);
 
 diag("left = " . $left->id . ", mid = " . $mid->id . ", right = " . $right->id);
 

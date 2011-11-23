@@ -101,7 +101,7 @@ ok(@{$content} == 2, 'two windows opened');
 
 cmd '[class="special" title="left"] kill';
 
-sync_with_i3($x);
+sync_with_i3;
 
 $content = get_ws_content($tmp);
 is(@{$content}, 1, 'one window still there');

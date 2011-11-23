@@ -5,7 +5,7 @@
 #
 use i3test;
 
-my $result = sync_with_i3($x);
+my $result = sync_with_i3;
 ok($result, 'syncing was successful');
 
 done_testing;

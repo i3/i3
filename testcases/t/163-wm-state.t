@@ -9,8 +9,6 @@ use X11::XCB qw(ICCCM_WM_STATE_NORMAL ICCCM_WM_STATE_WITHDRAWN);
 
 my $window = open_window;
 
-sync_with_i3($x);
-
 is($window->state, ICCCM_WM_STATE_NORMAL, 'WM_STATE normal');
 
 $window->unmap;

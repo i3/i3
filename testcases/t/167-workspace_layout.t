@@ -26,8 +26,6 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 my $first = open_window;
 my $second = open_window;
 
-sync_with_i3($x);
-
 is($x->input_focus, $second->id, 'second window focused');
 my @content = @{get_ws_content($tmp)};
 ok(@content == 2, 'two containers opened');
@@ -55,8 +53,6 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
 $first = open_window;
 $second = open_window;
-
-sync_with_i3($x);
 
 is($x->input_focus, $second->id, 'second window focused');
 @content = @{get_ws_content($tmp)};

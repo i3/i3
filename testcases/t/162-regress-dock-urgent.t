@@ -47,7 +47,7 @@ is($docknode->{rect}->{height}, 30, 'dock node has unchanged height');
 
 $window->add_hint('urgency');
 
-sync_with_i3($x);
+sync_with_i3;
 
 does_i3_live;
 

@@ -135,7 +135,7 @@ $window->map;
 # We use sync_with_i3 instead of wait_for_map here because i3 will not actually
 # map the window -- it will be assigned to a different workspace and will only
 # be mapped once you switch to that workspace
-sync_with_i3 $x;
+sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 0, 'still no containers');
 ok(@{get_ws_content('targetws')} == 2, 'two containers on targetws');

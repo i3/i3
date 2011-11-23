@@ -23,7 +23,7 @@ wait_for_map $win;
 $win->hints->aspect($aspect);
 $x->flush;
 
-sync_with_i3($x);
+sync_with_i3;
 
 my $rect = $win->rect;
 my $ar = $rect->width / $rect->height;

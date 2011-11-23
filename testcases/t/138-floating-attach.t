@@ -14,7 +14,7 @@ my $tmp = fresh_workspace;
 #############################################################################
 
 # Create a floating window
-my $window = open_floating_window($x);
+my $window = open_floating_window;
 ok($window->mapped, 'Window is mapped');
 
 my $ws = get_ws($tmp);
@@ -47,7 +47,7 @@ is(@{$ws->{floating_nodes}}, 0, 'no floating nodes so far');
 is(@{$ws->{nodes}}, 1, 'one tiling node (stacked con)');
 
 # Create a floating window
-$window = open_floating_window($x);
+$window = open_floating_window;
 ok($window->mapped, 'Window is mapped');
 
 $ws = get_ws($tmp);

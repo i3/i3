@@ -18,7 +18,7 @@ my $right = open_window({ name => 'Right' });
 
 my ($abs, $rgeom) = $right->rect;
 
-my $child = open_floating_window($x, {
+my $child = open_floating_window({
         dont_map => 1,
         name => 'Child window',
     });
@@ -31,7 +31,7 @@ my $cgeom;
 ($abs, $cgeom) = $child->rect;
 cmp_ok($cgeom->x, '>=', $rgeom->x, 'Child X >= right container X');
 
-my $child2 = open_floating_window($x, {
+my $child2 = open_floating_window({
         dont_map => 1,
         name => 'Child window 2',
     });

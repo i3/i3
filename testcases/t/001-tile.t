@@ -21,6 +21,6 @@ $window->map;
 sleep(0.25);
 
 my $new_rect = $window->rect;
-ok(!eq_deeply($new_rect, $original_rect), "Window got repositioned");
+ok(!eq_hash($new_rect, $original_rect), "Window got repositioned");
 
 done_testing;

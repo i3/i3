@@ -76,7 +76,7 @@ $window->map;
 wait_for_map $window;
 
 cmd 'floating enable';
-sync_with_i3($x);
+sync_with_i3;
 
 ($absolute, $top) = $window->rect;
 

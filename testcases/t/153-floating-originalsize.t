@@ -17,7 +17,7 @@ cmp_ok($absolute->{width}, '>', 400, 'i3 raised the width');
 cmp_ok($absolute->{height}, '>', 150, 'i3 raised the height');
 
 cmd 'floating toggle';
-sync_with_i3($x);
+sync_with_i3;
 
 ($absolute, $top) = $window->rect;
 

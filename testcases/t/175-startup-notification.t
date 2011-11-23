@@ -103,7 +103,7 @@ $win->map;
 # We don’t use wait_for_map because the window will not get mapped -- it is on
 # a different workspace.
 # We sync with i3 here to make sure $x->input_focus is updated.
-sync_with_i3($x);
+sync_with_i3;
 
 is(@{get_ws_content($second_ws)}, 0, 'still no containers on the second workspace');
 is(@{get_ws_content($first_ws)}, 1, 'one container on the first workspace');
@@ -117,7 +117,7 @@ mark_window($leader->id);
 
 $win = open_window({ dont_map => 1, client_leader => $leader });
 $win->map;
-sync_with_i3($x);
+sync_with_i3;
 
 is(@{get_ws_content($second_ws)}, 0, 'still no containers on the second workspace');
 is(@{get_ws_content($first_ws)}, 2, 'two containers on the first workspace');
@@ -128,7 +128,7 @@ is(@{get_ws_content($first_ws)}, 2, 'two containers on the first workspace');
 ######################################################################
 
 complete_startup();
-sync_with_i3($x);
+sync_with_i3;
 
 my $otherwin = open_window;
 is(@{get_ws_content($second_ws)}, 1, 'one container on the second workspace');

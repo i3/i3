@@ -8,7 +8,6 @@ use X11::XCB::Rect;
 use X11::XCB::Window;
 use X11::XCB qw(:all);
 use AnyEvent::I3;
-use EV;
 use List::Util qw(first);
 use Time::HiRes qw(sleep);
 use Cwd qw(abs_path);
@@ -61,15 +60,14 @@ sub import {
     my $class = shift;
     my $pkg = caller;
 
-    my $test_most_args = @_ ? "qw(@_)" : "";
+    my $test_more_args = @_ ? "qw(@_)" : "";
     local $@;
     eval << "__";
 package $pkg;
-use Test::Most $test_most_args;
+use Test::More $test_more_args;
 use Data::Dumper;
 use AnyEvent::I3;
 use Time::HiRes qw(sleep);
-use Test::Deep qw(eq_deeply cmp_deeply);
 __
     $tester->bail_out("$@") if $@;
     feature->import(":5.10");
@@ -95,11 +93,12 @@ sub wait_for_event {
 
     my $cv = AE::cv;
 
-    my $prep = EV::prepare sub {
-        $x->flush;
-    };
+    $x->flush;
 
-    my $check = EV::check sub {
+    # unfortunately, there is no constant for this
+    my $ae_read = 0;
+
+    my $guard = AE::io $x->get_file_descriptor, $ae_read, sub {
         while (defined(my $event = $x->poll_for_event)) {
             if ($cb->($event)) {
                 $cv->send(1);
@@ -108,15 +107,12 @@ sub wait_for_event {
         }
     };
 
-    my $watcher = EV::io $x->get_file_descriptor, EV::READ, sub {
-        # do nothing, we only need this watcher so that EV picks up the events
-    };
-
     # Trigger timeout after $timeout seconds (can be fractional)
     my $t = AE::timer $timeout, 0, sub { warn "timeout ($timeout secs)"; $cv->send(0) };
 
     my $result = $cv->recv;
     undef $t;
+    undef $guard;
     return $result;
 }
 
@@ -139,7 +135,7 @@ sub wait_for_unmap {
     wait_for_event 2, sub {
         $_[0]->{response_type} == UNMAP_NOTIFY # and $_[0]->{window} == $id
     };
-    sync_with_i3($x);
+    sync_with_i3();
 }
 
 #
@@ -173,15 +169,13 @@ sub open_window {
 
     $window->map;
     wait_for_map($window);
-    # We sync with i3 here to make sure $x->input_focus is updated.
-    sync_with_i3($x);
     return $window;
 }
 
 # Thin wrapper around open_window which sets window_type to
 # _NET_WM_WINDOW_TYPE_UTILITY to make the window floating.
 sub open_floating_window {
-    my ($x, $args) = @_;
+    my ($args) = @_;
     my %args = ($args ? %$args : ());
 
     $args{window_type} = $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY');
@@ -325,8 +319,6 @@ sub focused_ws {
 # See also docs/testsuite for a long explanation
 #
 sub sync_with_i3 {
-    my ($x) = @_;
-
     # Since we need a (mapped) window for receiving a ClientMessage, we create
     # one on the first call of sync_with_i3. It will be re-used in all
     # subsequent calls.
@@ -470,7 +462,7 @@ use parent 'X11::XCB::Connection';
 
 sub input_focus {
     my $self = shift;
-    i3test::sync_with_i3($self);
+    i3test::sync_with_i3();
 
     return $self->SUPER::input_focus(@_);
 }

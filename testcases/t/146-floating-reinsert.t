@@ -18,7 +18,7 @@ my ($nodes, $focus) = get_ws_content($tmp);
 #############################################################################
 
 # Create a floating window
-my $window = open_floating_window($x);
+my $window = open_floating_window;
 ok($window->mapped, 'Window is mapped');
 
 ($nodes, $focus) = get_ws_content($tmp);
