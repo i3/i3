@@ -42,9 +42,8 @@ isnt(get_focused($tmp), $second, 'different container focused');
 ##############################################################
 
 cmd 'kill';
-# TODO: this testcase sometimes has different outcomes when the
-# sleep is missing. why?
-sleep 0.25;
+sync_with_i3;
+
 ($nodes, $focus) = get_ws_content($tmp);
 is($nodes->[1]->{nodes}->[0]->{id}, $second, 'second container found');
 ok($nodes->[1]->{nodes}->[0]->{focused}, 'second container focused');
@@ -103,8 +102,7 @@ my $win = open_window({ background_color => '#00ff00' });
 
 cmd qq|[con_id="$middle"] focus|;
 $win->destroy;
-
-sleep 0.25;
+sync_with_i3;
 
 is(get_focused($tmp), $middle, 'middle container focused');
 

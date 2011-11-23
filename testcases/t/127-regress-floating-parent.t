@@ -16,8 +16,7 @@ cmd 'open';
 my $floating = get_focused($tmp);
 diag("focused floating: " . get_focused($tmp));
 cmd 'mode toggle';
-# TODO: eliminate this race conditition
-sleep 1;
+sync_with_i3;
 
 # kill old container
 cmd qq|[con_id="$old"] focus|;
@@ -33,7 +32,7 @@ cmd 'kill';
 cmd qq|[con_id="$floating"] focus|;
 is(get_focused($tmp), $floating, 'floating window focused');
 
-sleep 1;
+sync_with_i3;
 cmd 'mode toggle';
 
 does_i3_live;

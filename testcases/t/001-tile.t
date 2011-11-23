@@ -18,7 +18,7 @@ is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
 
 $window->map;
 
-sleep(0.25);
+sleep(0.5);
 
 my $new_rect = $window->rect;
 ok(!eq_hash($new_rect, $original_rect), "Window got repositioned");

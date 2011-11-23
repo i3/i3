@@ -6,6 +6,11 @@
 #
 use i3test;
 
+sub sync_cmd {
+    cmd @_;
+    sync_with_i3;
+}
+
 my $tmp = fresh_workspace;
 
 my $left = open_window;
@@ -13,23 +18,19 @@ my $mid = open_window;
 my $right = open_window;
 
 # go to workspace level
-cmd 'level up';
-sleep 0.25;
+sync_cmd 'level up';
 
 # make it floating
-cmd 'mode toggle';
-sleep 0.25;
+sync_cmd 'mode toggle';
 
 # move the con outside the floating con
-cmd 'move up';
-sleep 0.25;
+sync_cmd 'move up';
 
 does_i3_live;
 
 # move another con outside
-cmd '[id="' . $mid->id . '"] focus';
-cmd 'move up';
-sleep 0.25;
+sync_cmd '[id="' . $mid->id . '"] focus';
+sync_cmd 'move up';
 
 does_i3_live;
 
