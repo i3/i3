@@ -583,26 +583,104 @@ A window’s size and position will be determined in the following way:
 
 == Pushing updates to X11 / Drawing
 
-TODO.
+A big problem with i3 before version 4 was that we just sent requests to X11
+anywhere in the source code. This was bad because nobody could understand the
+entirety of our interaction with X11, it lead to subtle bugs and a lot of edge
+cases which we had to consider all over again.
+
+Therefore, since version 4, we have a single file, +src/x.c+, which is
+responsible for repeatedly transferring parts of our tree datastructure to X11.
+
++src/x.c+ consists of multiple parts:
+
+1. The state pushing: +x_push_changes()+, which calls +x_push_node()+.
+2. State modification functions: +x_con_init+, +x_reinit+,
+   +x_reparent_child+, +x_move_win+, +x_con_kill+, +x_raise_con+, +x_set_name+
+   and +x_set_warp_to+.
+3. Expose event handling (drawing decorations): +x_deco_recurse()+ and
+   +x_draw_decoration()+.
+
+=== Pushing state to X11
+
+In general, the function +x_push_changes+ should be called to push state
+changes. Only when the scope of the state change is clearly defined (for
+example only the title of a window) and its impact is known beforehand, one can
+optimize this and call +x_push_node+ on the appropriate con directly.
+
++x_push_changes+ works in the following steps:
+
+1. Clear the eventmask for all mapped windows. This leads to not getting
+   useless ConfigureNotify or EnterNotify events which are caused by our
+   requests. In general, we only want to handle user input.
+2. Stack windows above each other, in reverse stack order (starting with the
+   most obscured/bottom window). This is relevant for floating windows which
+   can overlap each other, but also for tiling windows in stacked or tabbed
+   containers. We also update the +_NET_CLIENT_LIST_STACKING+ hint which is
+   necessary for tab drag and drop in Chromium.
+3. +x_push_node+ will be called for the root container, recursively calling
+   itself for the container’s children. This function actually pushes the
+   state, see the next paragraph.
+4. If the pointer needs to be warped to a different position (for example when
+   changing focus to a differnt output), it will be warped now.
+5. The eventmask is restored for all mapped windows.
+6. Window decorations will be rendered by calling +x_deco_recurse+ on the root
+   container, which then recursively calls itself for the children.
+7. If the input focus needs to be changed (because the user focused a different
+   window), it will be updated now.
+8. +x_push_node_unmaps+ will be called for the root container. This function
+   only pushes UnmapWindow requests. Separating the state pushing is necessary
+   to handle fullscreen windows (and workspace switches) in a smooth fashion:
+   The newly visible windows should be visible before the old windows are
+   unmapped.
+
++x_push_node+ works in the following steps:
+
+1. Update the window’s +WM_NAME+, if changed (the +WM_NAME+ is set on i3
+   containers mainly for debugging purposes).
+2. Reparents a child window into the i3 container if the container was created
+   for a specific managed window.
+3. If the size/position of the i3 container changed (due to opening a new
+   window or switching layouts for example), the window will be reconfigured.
+   Also, the pixmap which is used to draw the window decoration/border on is
+   reconfigured (pixmaps are size-dependent).
+4. Size/position for the child window is adjusted.
+5. The i3 container is mapped if it should be visible and was not yet mapped.
+   When mapping, +WM_STATE+ is set to +WM_STATE_NORMAL+. Also, the eventmask of
+   the child window is updated and the i3 container’s contents are copied from
+   the pixmap.
+6. +x_push_node+ is called recursively for all children of the current
+   container.
+
++x_push_node_unmaps+ handles the remaining case of an i3 container being
+unmapped if it should not be visible anymore. +WM_STATE+ will be set to
++WM_STATE_WITHDRAWN+.
+
+
+=== Drawing window decorations/borders/backgrounds
+
++x_draw_decoration+ draws window decorations. It is run for every leaf
+container (representing an actual X11 window) and for every non-leaf container
+which is in a stacked/tabbed container (because stacked/tabbed containers
+display a window decoration for split containers, which at the moment just says
+"another container").
+
+Then, parameters are collected to be able to determine whether this decoration
+drawing is actually necessary or was already done. This saves a substantial
+number of redraws (depending on your workload, but far over 50%).
+
+Assuming that we need to draw this decoration, we start by filling the empty
+space around the child window (think of MPlayer with a specific aspect ratio)
+in the user-configured client background color.
+
+Afterwards, we draw the appropriate border (in case of border styles "normal"
+and "1pixel") and the top bar (in case of border style "normal").
+
+The last step is drawing the window title on the top bar.
+
 
 /////////////////////////////////////////////////////////////////////////////////
 
-
-=== Common parts
-
-On the frame (the window which was created around the client’s window for the
-decorations), a black rectangle is drawn as a background for windows like
-MPlayer, which do not completely fit into the frame.
-
-=== Window decorations
-
-The window decorations consist of a rectangle in the appropriate color (depends
-on whether this window is the currently focused one, the last focused one in a
-not focused container or not focused at all) forming the background.
-Afterwards, two lighter lines are drawn and the last step is drawing the
-window’s title (see WM_NAME) onto it.
-
-=== Resizing containers
+== Resizing containers
 
 By clicking and dragging the border of a container, you can resize the whole
 column (respectively row) which this container is in. This is necessary to keep
