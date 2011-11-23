@@ -144,6 +144,12 @@ sub wait_for_unmap {
 #
 # set dont_map to a true value to avoid mapping
 #
+# if you want to change aspects of your window before it would be mapped,
+# set before_map to a coderef. $window gets passed as $_ and as first argument.
+#
+# if you set both dont_map and before_map, the coderef will be called nevertheless
+#
+#
 # default values:
 #     class => WINDOW_CLASS_INPUT_OUTPUT
 #     rect => [ 0, 0, 30, 30 ]
@@ -155,6 +161,7 @@ sub open_window {
     my %args = @_ == 1 ? %{$_[0]} : @_;
 
     my $dont_map = delete $args{dont_map};
+    my $before_map = delete $args{before_map};
 
     $args{class} //= WINDOW_CLASS_INPUT_OUTPUT;
     $args{rect} //= [ 0, 0, 30, 30 ];
@@ -163,6 +170,12 @@ sub open_window {
     $args{name} //= 'Window ' . counter_window();
 
     my $window = $x->root->create_child(%args);
+
+    if ($before_map) {
+        # TODO: investigate why _create is not needed
+        $window->_create;
+        $before_map->($window) for $window;
+    }
 
     return $window if $dont_map;
 
