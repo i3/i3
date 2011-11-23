@@ -160,7 +160,7 @@ src/debug.c::
 Contains debugging functions to print unhandled X events.
 
 src/ewmh.c::
-iFunctions to get/set certain EWMH properties easily.
+Functions to get/set certain EWMH properties easily.
 
 src/floating.c::
 Contains functions for floating mode (mostly resizing/dragging).
