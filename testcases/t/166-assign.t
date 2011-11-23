@@ -5,7 +5,7 @@
 # Tests if assignments work
 #
 use i3test;
-use X11::XCB qw(PROP_MODE_REPLACE WINDOW_CLASS_INPUT_OUTPUT);
+use X11::XCB qw(PROP_MODE_REPLACE);
 
 # TODO: move to X11::XCB
 sub set_wm_class {
@@ -26,6 +26,16 @@ sub set_wm_class {
     );
 }
 
+sub open_special {
+    my %args = @_;
+    my $wm_class = delete($args{wm_class}) || 'special';
+    $args{name} //= 'special window';
+
+    return open_window(
+        %args,
+        before_map => sub { set_wm_class($_->id, $wm_class, $wm_class) },
+    );
+}
 
 #####################################################################
 # start a window and see that it does not get assigned with an empty config
@@ -42,18 +52,7 @@ my $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#0000ff',
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->_create;
-set_wm_class($window->id, 'special', 'special');
-$window->name('special window');
-$window->map;
-wait_for_map $window;
+my $window = open_special;
 
 ok(@{get_ws_content($tmp)} == 1, 'special window got managed to current (random) workspace');
 
@@ -80,18 +79,7 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 my $workspaces = get_workspace_names;
 ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#0000ff',
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->_create;
-set_wm_class($window->id, 'special', 'special');
-$window->name('special window');
-$window->map;
-wait_for_map $window;
+$window = open_special;
 
 ok(@{get_ws_content($tmp)} == 0, 'still no containers');
 ok("targetws" ~~ @{get_workspace_names()}, 'targetws exists');
@@ -120,21 +108,12 @@ $tmp = fresh_workspace;
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 ok("targetws" ~~ @{get_workspace_names()}, 'targetws does not exist yet');
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#0000ff',
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->_create;
-set_wm_class($window->id, 'special', 'special');
-$window->name('special window');
-$window->map;
 
 # We use sync_with_i3 instead of wait_for_map here because i3 will not actually
 # map the window -- it will be assigned to a different workspace and will only
 # be mapped once you switch to that workspace
+$window = open_special(dont_map => 1);
+$window->map;
 sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 0, 'still no containers');
@@ -161,18 +140,7 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 $workspaces = get_workspace_names;
 ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#0000ff',
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->_create;
-set_wm_class($window->id, 'special', 'special');
-$window->name('special window');
-$window->map;
-wait_for_map $window;
+$window = open_special;
 
 my $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
@@ -202,18 +170,7 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 $workspaces = get_workspace_names;
 ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#0000ff',
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->_create;
-set_wm_class($window->id, 'SPEcial', 'SPEcial');
-$window->name('special window');
-$window->map;
-wait_for_map $window;
+$window = open_special(wm_class => 'SPEcial');
 
 $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
@@ -251,19 +208,9 @@ my @docked = get_dock_clients;
 # syntax
 is(@docked, 1, 'one dock client yet');
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#0000ff',
+$window = open_special(
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
-    event_mask => [ 'structure_notify' ],
 );
-
-$window->_create;
-set_wm_class($window->id, 'special', 'special');
-$window->name('special window');
-$window->map;
-wait_for_map $window;
 
 $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
@@ -276,7 +223,5 @@ $window->destroy;
 does_i3_live;
 
 exit_gracefully($pid);
-
-sleep 0.25;
 
 done_testing;

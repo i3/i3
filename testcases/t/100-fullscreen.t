@@ -2,7 +2,6 @@
 # vim:ts=4:sw=4:expandtab
 
 use i3test;
-use X11::XCB 'WINDOW_CLASS_INPUT_OUTPUT';
 use List::Util qw(first);
 
 my $i3 = i3(get_socket_path());
@@ -32,11 +31,9 @@ for my $o (@outputs) {
 
 my $original_rect = X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30);
 
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
+my $window = open_window(
     rect => $original_rect,
-    background_color => '#C0C0C0',
-    event_mask => [ 'structure_notify' ],
+    dont_map => 1,
 );
 
 isa_ok($window, 'X11::XCB::Window');
@@ -83,11 +80,9 @@ $window->unmap;
 cmd 'open';
 
 $original_rect = X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30);
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
+$window = open_window(
     rect => $original_rect,
-    background_color => 61440,
-    event_mask => [ 'structure_notify' ],
+    dont_map => 1,
 );
 
 is_deeply($window->rect, $original_rect, "rect unmodified before mapping");
@@ -114,11 +109,9 @@ ok(abs($wrect->{height} - $orect->{height}) < $threshold, 'height coordinate ful
 ###############################################################################
 
 $original_rect = X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30);
-my $swindow = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
+my $swindow = open_window(
     rect => $original_rect,
-    background_color => '#C0C0C0',
-    event_mask => [ 'structure_notify' ],
+    dont_map => 1,
 );
 
 $swindow->map;

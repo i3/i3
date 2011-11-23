@@ -334,17 +334,10 @@ sub sync_with_i3 {
     # one on the first call of sync_with_i3. It will be re-used in all
     # subsequent calls.
     if (!defined($_sync_window)) {
-        $_sync_window = $x->root->create_child(
-            class => WINDOW_CLASS_INPUT_OUTPUT,
-            rect => X11::XCB::Rect->new(x => -15, y => -15, width => 10, height => 10 ),
+        $_sync_window = open_window(
+            rect => [ -15, -15, 10, 10 ],
             override_redirect => 1,
-            background_color => '#ff0000',
-            event_mask => [ 'structure_notify' ],
         );
-
-        $_sync_window->map;
-
-        wait_for_event 2, sub { $_[0]->{response_type} == MAP_NOTIFY };
     }
 
     my $root = $x->get_root_window();
