@@ -119,7 +119,6 @@ struct deco_render_params {
     Rect con_deco_rect;
     uint32_t background;
     bool con_is_leaf;
-    xcb_font_t font;
 };
 
 /**

@@ -307,7 +307,6 @@ void x_draw_decoration(Con *con) {
     p->con_deco_rect = con->deco_rect;
     p->background = config.client.background;
     p->con_is_leaf = con_is_leaf(con);
-    p->font = config.font.id;
 
     if (con->deco_render_params != NULL &&
         (con->window == NULL || !con->window->name_x_changed) &&

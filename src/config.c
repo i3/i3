@@ -320,6 +320,14 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         TAILQ_FOREACH(ws, workspaces, workspaces)
             workspace_set_name(ws, NULL);
 #endif
+
+        /* Invalidate pixmap caches in case font or colors changed */
+        Con *con;
+        TAILQ_FOREACH(con, &all_cons, all_cons)
+            FREE(con->deco_render_params);
+
+        /* Get rid of the current font */
+        free_font();
     }
 
     SLIST_INIT(&modes);
@@ -372,6 +380,13 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         ELOG("You did not specify required configuration option \"font\"\n");
         config.font = load_font("fixed", true);
         set_font(&config.font);
+    }
+
+    /* Redraw the currently visible decorations on reload, so that
+     * the possibly new drawing parameters changed. */
+    if (reload) {
+        x_deco_recurse(croot);
+        xcb_flush(conn);
     }
 
 #if 0

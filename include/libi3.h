@@ -187,6 +187,18 @@ uint32_t get_mod_mask_for(uint32_t keysym,
 i3Font load_font(const char *pattern, const bool fallback);
 
 /**
+ * Defines the font to be used for the forthcoming calls.
+ *
+ */
+void set_font(i3Font *font);
+
+/**
+ * Frees the resources taken by the current font.
+ *
+ */
+void free_font();
+
+/**
  * Converts the given string to UTF-8 from UCS-2 big endian. The return value
  * must be freed after use.
  *
@@ -201,13 +213,6 @@ char *convert_ucs2_to_utf8(xcb_char2b_t *text, size_t num_glyphs);
  *
  */
 xcb_char2b_t *convert_utf8_to_ucs2(char *input, size_t *real_strlen);
-
-/**
- * Defines the font to be used for the forthcoming draw_text and
- * predict_text_width calls.
- *
- */
-void set_font(i3Font *font);
 
 /**
  * Defines the colors to be used for the forthcoming draw_text calls.

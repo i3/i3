@@ -73,12 +73,22 @@ i3Font load_font(const char *pattern, const bool fallback) {
 }
 
 /*
- * Defines the font to be used for the forthcoming draw_text and
- * predict_text_width calls.
+ * Defines the font to be used for the forthcoming calls.
  *
  */
 void set_font(i3Font *font) {
     savedFont = font;
+}
+
+/*
+ * Frees the resources taken by the current font.
+ *
+ */
+void free_font() {
+    /* Close the font and free the info */
+    xcb_close_font(conn, savedFont->id);
+    if (savedFont->info)
+        free(savedFont->info);
 }
 
 /*
