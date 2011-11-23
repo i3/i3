@@ -243,16 +243,12 @@ Legacy support for Xinerama. See +src/randr.c+ for the preferred API.
 
 == Data structures
 
-*********************************************************************************
-This section has not been updated for v4.0 yet, sorry! We wanted to release on
-time, but we will update this soon. Please talk to us on IRC if you need to
-know stuff *NOW* :).
-*********************************************************************************
-
-/////////////////////////////////////////////////////////////////////////////////
 
 See include/data.h for documented data structures. The most important ones are
 explained right here.
+
+/////////////////////////////////////////////////////////////////////////////////
+// TODO: update image
 
 image:bigpicture.png[The Big Picture]
 
@@ -261,7 +257,7 @@ image:bigpicture.png[The Big Picture]
 So, the hierarchy is:
 
 . *X11 root window*, the root container
-. *Virtual screens* (Screen 0 in this example)
+. *Output container* (LVDS1 in this example)
 . *Content container* (there are also containers for dock windows)
 . *Workspaces* (Workspace 1 in this example, with horizontal orientation)
 . *Split container* (vertically split)
@@ -269,22 +265,35 @@ So, the hierarchy is:
 
 The data type is +Con+, in all cases.
 
-=== Virtual screens
+=== X11 root window
 
-A virtual screen (type `i3Screen`) is generated from the connected outputs
-obtained through RandR. The difference to the raw RandR outputs as seen
-when using +xrandr(1)+ is that it falls back to the lowest common resolution of
-the actual enabled outputs.
+The X11 root window is a single window per X11 display (a display is identified
+by +:0+ or +:1+ etc.). The root window is what you draw your background image
+on. It spans all the available outputs, e.g. +VGA1+ is a specific part of the
+root window and +LVDS1+ is a specific part of the root window.
+
+=== Output container
+
+Every active output obtained through RandR is represented by one output
+container. Outputs are considered active when a mode is configured (meaning
+something is actually displayed on the output) and the output is not a clone.
 
 For example, if your notebook has a screen resolution of 1280x800 px and you
 connect a video projector with a resolution of 1024x768 px, set it up in clone
-mode (+xrandr \--output VGA1 \--mode 1024x768 \--same-as LVDS1+), i3 will have
-one virtual screen.
+mode (+xrandr \--output VGA1 \--mode 1024x768 \--same-as LVDS1+), i3 will
+reduce the resolution to the lowest common resolution and disable one of the
+cloned outputs afterwards.
 
 However, if you configure it using +xrandr \--output VGA1 \--mode 1024x768
-\--right-of LVDS1+, i3 will generate two virtual screens. For each virtual
-screen, a new workspace will be assigned. New workspaces are created on the
-screen you are currently on.
+\--right-of LVDS1+, i3 will set both outputs active. For each output, a new
+workspace will be assigned. New workspaces are created on the output you are
+currently on.
+
+=== Content container
+
+Each output has multiple children. Two of them are dock containers which hold
+dock clients. The other one is the content container, which holds the actual
+content (workspaces) of this output.
 
 === Workspace
 
@@ -294,43 +303,19 @@ methaphor. They just contain different sets of windows and are completely
 separate of each other. Other window managers also call this ``Virtual
 desktops''.
 
-=== The layout table
+=== Split container
 
-*********************************************************************************
-This section has not been updated for v4.0 yet, sorry! We wanted to release on
-time, but we will update this soon. Please talk to us on IRC if you need to
-know stuff *NOW* :).
-*********************************************************************************
+A split container is a container which holds an arbitrary amount of split
+containers or X11 window containers. It has an orientation (horizontal or
+vertical) and a layout.
 
-/////////////////////////////////////////////////////////////////////////////////
+Split containers (and X11 window containers, which are a subtype of split
+containers) can have different border styles.
 
-Each workspace has a table, which is just a two-dimensional dynamic array
-containing Containers (see below). This table grows and shrinks as you need it
-(by moving windows to the right you can create a new column in the table, by
-moving them to the bottom you create a new row).
+=== X11 window container
 
-/////////////////////////////////////////////////////////////////////////////////
-
-=== Container
-
-*********************************************************************************
-This section has not been updated for v4.0 yet, sorry! We wanted to release on
-time, but we will update this soon. Please talk to us on IRC if you need to
-know stuff *NOW* :).
-*********************************************************************************
-
-/////////////////////////////////////////////////////////////////////////////////
-
-A container is the content of a table’s cell. It holds an arbitrary amount of
-windows and has a specific layout (default layout, stack layout or tabbed
-layout). Containers can consume multiple table cells by modifying their
-colspan/rowspan attribute.
-
-/////////////////////////////////////////////////////////////////////////////////
-
-=== Client
-
-A client is x11-speak for a window.
+An X11 window container holds exactly one X11 window. These are the leaf nodes
+of the layout tree, they cannot have any children.
 
 == List/queue macros
 
@@ -484,64 +469,218 @@ src/layout.c, function resize_client().
 
 == Rendering (src/layout.c, render_layout() and render_container())
 
-*********************************************************************************
-This section has not been updated for v4.0 yet, sorry! We wanted to release on
-time, but we will update this soon. Please talk to us on IRC if you need to
-know stuff *NOW* :).
-*********************************************************************************
+Rendering in i3 version 4 is the step which assigns the correct sizes for
+borders, decoration windows, child windows and the stacking order of all
+windows. In a separate step (+x_push_changes()+), these changes are pushed to
+X11.
+
+Keep in mind that all these properties (+rect+, +window_rect+ and +deco_rect+)
+are temporary, meaning they will be overwritten by calling +render_con+.
+Persistent position/size information is kept in +geometry+.
+
+The entry point for every rendering operation (except for the case of moving
+floating windows around) currently is +tree_render()+ which will re-render
+everything that’s necessary (for every output, only the currently displayed
+workspace is rendered). This behavior is expected to change in the future,
+since for a lot of updates, re-rendering everything is not actually necessary.
+Focus was on getting it working correct, not getting it work very fast.
+
+What +tree_render()+ actually does is calling +render_con()+ on the root
+container and then pushing the changes to X11. The following sections talk
+about the different rendering steps, in the order of "top of the tree" (root
+container) to the bottom.
+
+=== Rendering the root container
+
+The i3 root container (+con->type == CT_ROOT+) represents the X11 root window.
+It contains one child container for every output (like LVDS1, VGA1, …), which
+is available on your computer.
+
+Rendering the root will first render all tiling windows and then all floating
+windows. This is necessary because a floating window can be positioned in such
+a way that it is visible on two different outputs. Therefore, by first
+rendering all the tiling windows (of all outputs), we make sure that floating
+windows can never be obscured by tiling windows.
+
+Essentially, though, this code path will just call +render_con()+ for every
+output and +x_raise_con(); render_con()+ for every floating window.
+
+In the special case of having a "global fullscreen" window (fullscreen mode
+spanning all outputs), a shortcut is taken and +x_raise_con(); render_con()+ is
+only called for the global fullscreen window.
+
+=== Rendering an output
+
+Output containers (+con->layout == L_OUTPUT+) represent a hardware output like
+LVDS1, VGA1, etc. An output container has three children (at the moment): One
+content container (having workspaces as children) and the top/bottom dock area
+containers.
+
+The rendering happens in the function +render_l_output()+ in the following
+steps:
+
+1. Find the content container (+con->type == CT_CON+)
+2. Get the currently visible workspace (+con_get_fullscreen_con(content,
+   CF_OUTPUT)+).
+3. If there is a fullscreened window on that workspace, directly render it and
+   return, thus ignoring the dock areas.
+4. Sum up the space used by all the dock windows (they have a variable height
+   only).
+5. Set the workspace rects (x/y/width/height) based on the position of the
+   output (stored in +con->rect+) and the usable space
+   (+con->rect.{width,height}+ without the space used for dock windows).
+6. Recursively raise and render the output’s child containers (meaning dock
+   area containers and the content container).
+
+=== Rendering a workspace or split container
+
+From here on, there really is no difference anymore. All containers are of
++con->type == CT_CON+ (whether workspace or split container) and some of them
+have a +con->window+, meaning they represent an actual window instead of a
+split container.
+
+==== Default layout
+
+In default layout, containers are placed horizontally or vertically next to
+each other (depending on the +con->orientation+). If a child is a leaf node (as
+opposed to a split container) and has border style "normal", appropriate space
+will be reserved for its window decoration.
+
+==== Stacked layout
+
+In stacked layout, only the focused window is actually shown (this is achieved
+by calling +x_raise_con()+ in reverse focus order at the end of +render_con()+).
+
+The available space for the focused window is the size of the container minus
+the height of the window decoration for all windows inside this stacked
+container.
+
+If border style is "1pixel" or "none", no window decoration height will be
+reserved (or displayed later on), unless there is more than one window inside
+the stacked container.
+
+==== Tabbed layout
+
+Tabbed layout works precisely like stacked layout, but the window decoration
+position/size is different: They are placed next to each other on a single line
+(fixed height).
+
+==== Dock area layout
+
+This is a special case. Users cannot chose the dock area layout, but it will be
+set for the dock area containers. In the dockarea layout (at the moment!),
+windows will be placed above each other.
+
+=== Rendering a window
+
+A window’s size and position will be determined in the following way:
+
+1. Subtract the border if border style is not "none" (but "normal" or "1pixel").
+2. Subtract the X11 border, if the window has an X11 border > 0.
+3. Obey the aspect ratio of the window (think MPlayer).
+4. Obey the height- and width-increments of the window (think terminal emulator
+   which can only be resized in one-line or one-character steps).
+
+== Pushing updates to X11 / Drawing
+
+A big problem with i3 before version 4 was that we just sent requests to X11
+anywhere in the source code. This was bad because nobody could understand the
+entirety of our interaction with X11, it lead to subtle bugs and a lot of edge
+cases which we had to consider all over again.
+
+Therefore, since version 4, we have a single file, +src/x.c+, which is
+responsible for repeatedly transferring parts of our tree datastructure to X11.
+
++src/x.c+ consists of multiple parts:
+
+1. The state pushing: +x_push_changes()+, which calls +x_push_node()+.
+2. State modification functions: +x_con_init+, +x_reinit+,
+   +x_reparent_child+, +x_move_win+, +x_con_kill+, +x_raise_con+, +x_set_name+
+   and +x_set_warp_to+.
+3. Expose event handling (drawing decorations): +x_deco_recurse()+ and
+   +x_draw_decoration()+.
+
+=== Pushing state to X11
+
+In general, the function +x_push_changes+ should be called to push state
+changes. Only when the scope of the state change is clearly defined (for
+example only the title of a window) and its impact is known beforehand, one can
+optimize this and call +x_push_node+ on the appropriate con directly.
+
++x_push_changes+ works in the following steps:
+
+1. Clear the eventmask for all mapped windows. This leads to not getting
+   useless ConfigureNotify or EnterNotify events which are caused by our
+   requests. In general, we only want to handle user input.
+2. Stack windows above each other, in reverse stack order (starting with the
+   most obscured/bottom window). This is relevant for floating windows which
+   can overlap each other, but also for tiling windows in stacked or tabbed
+   containers. We also update the +_NET_CLIENT_LIST_STACKING+ hint which is
+   necessary for tab drag and drop in Chromium.
+3. +x_push_node+ will be called for the root container, recursively calling
+   itself for the container’s children. This function actually pushes the
+   state, see the next paragraph.
+4. If the pointer needs to be warped to a different position (for example when
+   changing focus to a differnt output), it will be warped now.
+5. The eventmask is restored for all mapped windows.
+6. Window decorations will be rendered by calling +x_deco_recurse+ on the root
+   container, which then recursively calls itself for the children.
+7. If the input focus needs to be changed (because the user focused a different
+   window), it will be updated now.
+8. +x_push_node_unmaps+ will be called for the root container. This function
+   only pushes UnmapWindow requests. Separating the state pushing is necessary
+   to handle fullscreen windows (and workspace switches) in a smooth fashion:
+   The newly visible windows should be visible before the old windows are
+   unmapped.
+
++x_push_node+ works in the following steps:
+
+1. Update the window’s +WM_NAME+, if changed (the +WM_NAME+ is set on i3
+   containers mainly for debugging purposes).
+2. Reparents a child window into the i3 container if the container was created
+   for a specific managed window.
+3. If the size/position of the i3 container changed (due to opening a new
+   window or switching layouts for example), the window will be reconfigured.
+   Also, the pixmap which is used to draw the window decoration/border on is
+   reconfigured (pixmaps are size-dependent).
+4. Size/position for the child window is adjusted.
+5. The i3 container is mapped if it should be visible and was not yet mapped.
+   When mapping, +WM_STATE+ is set to +WM_STATE_NORMAL+. Also, the eventmask of
+   the child window is updated and the i3 container’s contents are copied from
+   the pixmap.
+6. +x_push_node+ is called recursively for all children of the current
+   container.
+
++x_push_node_unmaps+ handles the remaining case of an i3 container being
+unmapped if it should not be visible anymore. +WM_STATE+ will be set to
++WM_STATE_WITHDRAWN+.
+
+
+=== Drawing window decorations/borders/backgrounds
+
++x_draw_decoration+ draws window decorations. It is run for every leaf
+container (representing an actual X11 window) and for every non-leaf container
+which is in a stacked/tabbed container (because stacked/tabbed containers
+display a window decoration for split containers, which at the moment just says
+"another container").
+
+Then, parameters are collected to be able to determine whether this decoration
+drawing is actually necessary or was already done. This saves a substantial
+number of redraws (depending on your workload, but far over 50%).
+
+Assuming that we need to draw this decoration, we start by filling the empty
+space around the child window (think of MPlayer with a specific aspect ratio)
+in the user-configured client background color.
+
+Afterwards, we draw the appropriate border (in case of border styles "normal"
+and "1pixel") and the top bar (in case of border style "normal").
+
+The last step is drawing the window title on the top bar.
+
 
 /////////////////////////////////////////////////////////////////////////////////
 
-
-There are several entry points to rendering: `render_layout()`,
-`render_workspace()` and `render_container()`. The former one calls
-`render_workspace()` for every screen, which in turn will call
-`render_container()` for every container inside its layout table. Therefore, if
-you need to render only a single container, for example because a window was
-removed, added or changed its title, you should directly call
-render_container().
-
-Rendering consists of two steps: In the first one, in `render_workspace()`, each
-container gets its position (screen offset + offset in the table) and size
-(container's width times colspan/rowspan). Then, `render_container()` is called,
-which takes different approaches, depending on the mode the container is in:
-
-=== Common parts
-
-On the frame (the window which was created around the client’s window for the
-decorations), a black rectangle is drawn as a background for windows like
-MPlayer, which do not completely fit into the frame.
-
-=== Default mode
-
-Each clients gets the container’s width and an equal amount of height.
-
-=== Stack mode
-
-In stack mode, a window containing the decorations of all windows inside the
-container is placed at the top. The currently focused window is then given the
-whole remaining space.
-
-=== Tabbed mode
-
-Tabbed mode is like stack mode, except that the window decorations are drawn
-in one single line at the top of the container.
-
-=== Window decorations
-
-The window decorations consist of a rectangle in the appropriate color (depends
-on whether this window is the currently focused one, the last focused one in a
-not focused container or not focused at all) forming the background.
-Afterwards, two lighter lines are drawn and the last step is drawing the
-window’s title (see WM_NAME) onto it.
-
-=== Fullscreen windows
-
-For fullscreen windows, the `rect` (x, y, width, height) is not changed to
-allow the client to easily go back to its previous position. Instead,
-fullscreen windows are skipped when rendering.
-
-=== Resizing containers
+== Resizing containers
 
 By clicking and dragging the border of a container, you can resize the whole
 column (respectively row) which this container is in. This is necessary to keep
@@ -780,3 +919,73 @@ git format-patch origin
 -----------------------
 
 Just send us the generated file via email.
+
+== Thought experiments
+
+In this section, we collect thought experiments, so that we don’t forget our
+thoughts about specific topics. They are not necessary to get into hacking i3,
+but if you are interested in one of the topics they cover, you should read them
+before asking us why things are the way they are or why we don’t implement
+things.
+
+=== Using cgroups per workspace
+
+cgroups (control groups) are a linux-only feature which provides the ability to
+group multiple processes. For each group, you can individually set resource
+limits, like allowed memory usage. Furthermore, and more importantly for our
+purposes, they serve as a namespace, a label which you can attach to processes
+and their children.
+
+One interesting use for cgroups is having one cgroup per workspace (or
+container, doesn’t really matter). That way, you could set different priorities
+and have a workspace for important stuff (say, writing a LaTeX document or
+programming) and a workspace for unimportant background stuff (say,
+JDownloader). Both tasks can obviously consume a lot of I/O resources, but in
+this example it doesn’t really matter if JDownloader unpacks the download a
+minute earlier or not. However, your compiler should work as fast as possible.
+Having one cgroup per workspace, you would assign more resources to the
+programming workspace.
+
+Another interesting feature is that an inherent problem of the workspace
+concept could be solved by using cgroups: When starting an application on
+workspace 1, then switching to workspace 2, you will get the application’s
+window(s) on workspace 2 instead of the one you started it on. This is because
+the window manager does not have any mapping between the process it starts (or
+gets started in any way) and the window(s) which appear.
+
+Imagine for example using dmenu: The user starts dmenu by pressing Mod+d, dmenu
+gets started with PID 3390. The user then decides to launch Firefox, which
+takes a long time. So he enters firefox into dmenu and presses enter. Firefox
+gets started with PID 4001. When it finally finishes loading, it creates an X11
+window and uses MapWindow to make it visible. This is the first time i3
+actually gets in touch with Firefox. It decides to map the window, but it has
+no way of knowing that this window (even though it has the _NET_WM_PID property
+set to 4001) belongs to the dmenu the user started before.
+
+How do cgroups help with this? Well, when pressing Mod+d to launch dmenu, i3
+would create a new cgroup, let’s call it i3-3390-1. It launches dmenu in that
+cgroup, which gets PID 3390. As before, the user enters firefox and Firefox
+gets launched with PID 4001. This time, though, the Firefox process with PID
+4001 is *also* member of the cgroup i3-3390-1 (because fork()ing in a cgroup
+retains the cgroup property). Therefore, when mapping the window, i3 can look
+up in which cgroup the process is and can establish a mapping between the
+workspace and the window.
+
+There are multiple problems with this approach:
+
+. Every application has to properly set +_NET_WM_PID+. This is acceptable and
+  patches can be written for the few applications which don’t set the hint yet.
+. It does only work on Linux, since cgroups are a Linux-only feature. Again,
+  this is acceptable.
+. The main problem is that some applications create X11 windows completely
+  independent of UNIX processes. An example for this is Chromium (or
+  gnome-terminal), which, when being started a second time, communicates with
+  the first process and lets the first process open a new window. Therefore, if
+  you have a Chromium window on workspace 2 and you are currently working on
+  workspace 3, starting +chromium+ does not lead to the desired result (the
+  window will open on workspace 2).
+
+Therefore, my conclusion is that the only proper way of fixing the "window gets
+opened on the wrong workspace" problem is in the application itself. Most
+modern applications support freedesktop startup-notifications  which can be
+used for this.
