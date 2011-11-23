@@ -11,10 +11,10 @@ open_window;
 open_window;
 
 cmd 'layout stacking';
-sleep 1;
+sync_with_i3;
 
 cmd 'fullscreen';
-sleep 1;
+sync_with_i3;
 
 cmd 'restart';
 sleep 1;

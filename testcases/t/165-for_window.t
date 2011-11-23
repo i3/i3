@@ -4,7 +4,7 @@
 #
 #
 use i3test;
-use X11::XCB qw(PROP_MODE_REPLACE WINDOW_CLASS_INPUT_OUTPUT);
+use X11::XCB qw(PROP_MODE_REPLACE);
 
 ##############################################################
 # 1: test the following directive:
@@ -25,16 +25,7 @@ my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
-my $window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#00ff00',
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->name('Border window');
-$window->map;
-wait_for_map $window;
+my $window = open_window(name => 'Border window');
 
 my @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -47,14 +38,6 @@ wait_for_unmap $window;
 cmp_ok(@content, '==', 0, 'no more nodes');
 diag('content = '. Dumper(\@content));
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#00ff00',
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->_create;
 
 # TODO: move this to X11::XCB::Window
 sub set_wm_class {
@@ -75,10 +58,10 @@ sub set_wm_class {
     );
 }
 
-set_wm_class($window->id, 'borderless', 'borderless');
-$window->name('Borderless window');
-$window->map;
-wait_for_map $window;
+$window = open_window(
+    name => 'Borderless window',
+    before_map => sub { set_wm_class($_->id, 'borderless', 'borderless') },
+);
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -108,16 +91,7 @@ $pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#00ff00',
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->name('special title');
-$window->map;
-wait_for_map $window;
+$window = open_window(name => 'special title');
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -168,16 +142,7 @@ $pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#00ff00',
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->name('special mark title');
-$window->map;
-wait_for_map $window;
+$window = open_window(name => 'special mark title');
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -212,19 +177,10 @@ $pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#00ff00',
-    event_mask => [ 'structure_notify' ],
+$window = open_window(
+    name => 'usethis',
+    before_map => sub { set_wm_class($_->id, 'borderless', 'borderless') },
 );
-
-$window->_create;
-
-set_wm_class($window->id, 'borderless', 'borderless');
-$window->name('usethis');
-$window->map;
-wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -268,19 +224,11 @@ $pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#00ff00',
-    event_mask => [ 'structure_notify' ],
+
+$window = open_window(
+    name => 'usethis',
+    before_map => sub { set_wm_class($_->id, 'bar', 'foo') },
 );
-
-$window->_create;
-
-set_wm_class($window->id, 'bar', 'foo');
-$window->name('usethis');
-$window->map;
-wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -303,19 +251,10 @@ $pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#00ff00',
-    event_mask => [ 'structure_notify' ],
+$window = open_window(
+    name => 'usethis',
+    before_map => sub { set_wm_class($_->id, 'bar', 'foo') },
 );
-
-$window->_create;
-
-set_wm_class($window->id, 'bar', 'foo');
-$window->name('usethis');
-$window->map;
-wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -340,19 +279,10 @@ $pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#00ff00',
-    event_mask => [ 'structure_notify' ],
+$window = open_window(
+    name => 'usethis',
+    before_map => sub { set_wm_class($_->id, 'bar', 'foo') },
 );
-
-$window->_create;
-
-set_wm_class($window->id, 'bar', 'foo');
-$window->name('usethis');
-$window->map;
-wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -377,30 +307,23 @@ $pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#00ff00',
-    event_mask => [ 'structure_notify' ],
+$window = open_window(
+    name => 'usethis',
+    before_map => sub {
+        my ($window) = @_;
+        my $atomname = $x->atom(name => 'WM_WINDOW_ROLE');
+        my $atomtype = $x->atom(name => 'STRING');
+        $x->change_property(
+            PROP_MODE_REPLACE,
+            $window->id,
+            $atomname->id,
+            $atomtype->id,
+            8,
+            length("i3test") + 1,
+            "i3test\x00"
+        );
+    },
 );
-
-$window->_create;
-
-my $atomname = $x->atom(name => 'WM_WINDOW_ROLE');
-my $atomtype = $x->atom(name => 'STRING');
-$x->change_property(
-  PROP_MODE_REPLACE,
-  $window->id,
-  $atomname->id,
-  $atomtype->id,
-  8,
-  length("i3test") + 1,
-  "i3test\x00"
-);
-
-$window->name('usethis');
-$window->map;
-wait_for_map $window;
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
@@ -426,25 +349,14 @@ $pid = launch_with_config($config);
 
 $tmp = fresh_workspace;
 
-$window = $x->root->create_child(
-    class => WINDOW_CLASS_INPUT_OUTPUT,
-    rect => [ 0, 0, 30, 30 ],
-    background_color => '#00ff00',
-    event_mask => [ 'structure_notify' ],
-);
-
-$window->_create;
-
-$window->name('usethis');
-$window->map;
-wait_for_map $window;
+$window = open_window(name => 'usethis');
 
 @content = @{get_ws_content($tmp)};
 cmp_ok(@content, '==', 1, 'one node on this workspace now');
 is($content[0]->{border}, 'normal', 'normal border (window_role 2)');
 
-$atomname = $x->atom(name => 'WM_WINDOW_ROLE');
-$atomtype = $x->atom(name => 'STRING');
+my $atomname = $x->atom(name => 'WM_WINDOW_ROLE');
+my $atomtype = $x->atom(name => 'STRING');
 $x->change_property(
   PROP_MODE_REPLACE,
   $window->id,

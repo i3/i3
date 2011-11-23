@@ -4,7 +4,6 @@
 # Tests splitting
 #
 use i3test;
-use X11::XCB qw(:all);
 
 my $tmp = fresh_workspace;
 

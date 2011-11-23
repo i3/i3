@@ -144,6 +144,12 @@ sub wait_for_unmap {
 #
 # set dont_map to a true value to avoid mapping
 #
+# if you want to change aspects of your window before it would be mapped,
+# set before_map to a coderef. $window gets passed as $_ and as first argument.
+#
+# if you set both dont_map and before_map, the coderef will be called nevertheless
+#
+#
 # default values:
 #     class => WINDOW_CLASS_INPUT_OUTPUT
 #     rect => [ 0, 0, 30, 30 ]
@@ -152,10 +158,10 @@ sub wait_for_unmap {
 #     name => 'Window <n>'
 #
 sub open_window {
-    my ($args) = @_;
-    my %args = ($args ? %$args : ());
+    my %args = @_ == 1 ? %{$_[0]} : @_;
 
     my $dont_map = delete $args{dont_map};
+    my $before_map = delete $args{before_map};
 
     $args{class} //= WINDOW_CLASS_INPUT_OUTPUT;
     $args{rect} //= [ 0, 0, 30, 30 ];
@@ -164,6 +170,12 @@ sub open_window {
     $args{name} //= 'Window ' . counter_window();
 
     my $window = $x->root->create_child(%args);
+
+    if ($before_map) {
+        # TODO: investigate why _create is not needed
+        $window->_create;
+        $before_map->($window) for $window;
+    }
 
     return $window if $dont_map;
 
@@ -175,8 +187,7 @@ sub open_window {
 # Thin wrapper around open_window which sets window_type to
 # _NET_WM_WINDOW_TYPE_UTILITY to make the window floating.
 sub open_floating_window {
-    my ($args) = @_;
-    my %args = ($args ? %$args : ());
+    my %args = @_ == 1 ? %{$_[0]} : @_;
 
     $args{window_type} = $x->atom(name => '_NET_WM_WINDOW_TYPE_UTILITY');
 
@@ -323,17 +334,10 @@ sub sync_with_i3 {
     # one on the first call of sync_with_i3. It will be re-used in all
     # subsequent calls.
     if (!defined($_sync_window)) {
-        $_sync_window = $x->root->create_child(
-            class => WINDOW_CLASS_INPUT_OUTPUT,
-            rect => X11::XCB::Rect->new(x => -15, y => -15, width => 10, height => 10 ),
+        $_sync_window = open_window(
+            rect => [ -15, -15, 10, 10 ],
             override_redirect => 1,
-            background_color => '#ff0000',
-            event_mask => [ 'structure_notify' ],
         );
-
-        $_sync_window->map;
-
-        wait_for_event 2, sub { $_[0]->{response_type} == MAP_NOTIFY };
     }
 
     my $root = $x->get_root_window();
