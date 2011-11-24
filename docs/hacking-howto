@@ -299,7 +299,7 @@ content (workspaces) of this output.
 
 A workspace is identified by its name. Basically, you could think of
 workspaces as different desks in your office, if you like the desktop
-methaphor. They just contain different sets of windows and are completely
+metaphor. They just contain different sets of windows and are completely
 separate of each other. Other window managers also call this ``Virtual
 desktops''.
 
@@ -406,8 +406,9 @@ After reparenting, the window type (`_NET_WM_WINDOW_TYPE`) is checked to see
 whether this window is a dock (`_NET_WM_WINDOW_TYPE_DOCK`), like dzen2 for
 example. Docks are handled differently, they don’t have decorations and are not
 assigned to a specific container. Instead, they are positioned at the bottom
-of the screen. To get the height which needs to be reserved for the window,
-the `_NET_WM_STRUT_PARTIAL` property is used.
+or top of the screen (in the appropriate dock area containers). To get the
+height which needs to be reserved for the window, the `_NET_WM_STRUT_PARTIAL`
+property is used.
 
 Furthermore, the list of assignments (to other workspaces, which may be on
 other screens) is checked. If the window matches one of the user’s criteria,
@@ -492,7 +493,7 @@ container) to the bottom.
 
 === Rendering the root container
 
-The i3 root container (+con->type == CT_ROOT+) represents the X11 root window.
+The i3 root container (`con->type == CT_ROOT`) represents the X11 root window.
 It contains one child container for every output (like LVDS1, VGA1, …), which
 is available on your computer.
 
@@ -511,7 +512,7 @@ only called for the global fullscreen window.
 
 === Rendering an output
 
-Output containers (+con->layout == L_OUTPUT+) represent a hardware output like
+Output containers (`con->layout == L_OUTPUT`) represent a hardware output like
 LVDS1, VGA1, etc. An output container has three children (at the moment): One
 content container (having workspaces as children) and the top/bottom dock area
 containers.
@@ -519,7 +520,7 @@ containers.
 The rendering happens in the function +render_l_output()+ in the following
 steps:
 
-1. Find the content container (+con->type == CT_CON+)
+1. Find the content container (`con->type == CT_CON`)
 2. Get the currently visible workspace (+con_get_fullscreen_con(content,
    CF_OUTPUT)+).
 3. If there is a fullscreened window on that workspace, directly render it and
@@ -527,22 +528,22 @@ steps:
 4. Sum up the space used by all the dock windows (they have a variable height
    only).
 5. Set the workspace rects (x/y/width/height) based on the position of the
-   output (stored in +con->rect+) and the usable space
-   (+con->rect.{width,height}+ without the space used for dock windows).
+   output (stored in `con->rect`) and the usable space
+   (`con->rect.{width,height}` without the space used for dock windows).
 6. Recursively raise and render the output’s child containers (meaning dock
    area containers and the content container).
 
 === Rendering a workspace or split container
 
 From here on, there really is no difference anymore. All containers are of
-+con->type == CT_CON+ (whether workspace or split container) and some of them
-have a +con->window+, meaning they represent an actual window instead of a
+`con->type == CT_CON` (whether workspace or split container) and some of them
+have a `con->window`, meaning they represent an actual window instead of a
 split container.
 
 ==== Default layout
 
 In default layout, containers are placed horizontally or vertically next to
-each other (depending on the +con->orientation+). If a child is a leaf node (as
+each other (depending on the `con->orientation`). If a child is a leaf node (as
 opposed to a split container) and has border style "normal", appropriate space
 will be reserved for its window decoration.
 
