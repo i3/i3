@@ -845,9 +845,10 @@ void randr_init(int *event_base) {
     const xcb_query_extension_reply_t *extreply;
 
     extreply = xcb_get_extension_data(conn, &xcb_randr_id);
-    if (!extreply->present)
+    if (!extreply->present) {
         disable_randr(conn);
-    else randr_query_outputs();
+        return;
+    } else randr_query_outputs();
 
     if (event_base != NULL)
         *event_base = extreply->first_event;
