@@ -102,6 +102,7 @@ EOL     (\r?\n)
 <BAR_POSITION>bottom            { yy_pop_state(); return TOK_BAR_BOTTOM; }
 <BAR_POSITION>top               { yy_pop_state(); return TOK_BAR_TOP; }
 <BAR>status_command             { WS_STRING; return TOK_BAR_STATUS_COMMAND; }
+<BAR>i3bar_command              { WS_STRING; return TOK_BAR_I3BAR_COMMAND; }
 <BAR>font                       { WS_STRING; return TOK_BAR_FONT; }
 <BAR>workspace_buttons          { return TOK_BAR_WORKSPACE_BUTTONS; }
 <BAR>verbose                    { return TOK_BAR_VERBOSE; }

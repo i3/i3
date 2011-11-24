@@ -796,6 +796,28 @@ bar {
 }
 ---------------------------
 
+=== i3bar command
+
+By default i3 will just pass +i3bar+ and let your shell handle the execution,
+searching your +$PATH+ for a correct version.
+If you have a different +i3bar+ somewhere or the binary is not in your +$PATH+ you can
+tell i3 what to execute.
+
+The specified command will be passed to +sh -c+, so you can use globbing and
+have to have correct quoting etc.
+
+*Syntax*:
+----------------------
+i3bar_command command
+----------------------
+
+*Example*:
+-------------------------------------------------
+bar {
+    i3bar_command /home/user/bin/i3bar
+}
+-------------------------------------------------
+
 === Statusline command
 
 i3bar can run a program and display every line of its +stdout+ output on the

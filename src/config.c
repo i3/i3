@@ -299,6 +299,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(barconfig->tray_output);
             FREE(barconfig->socket_path);
             FREE(barconfig->status_command);
+            FREE(barconfig->i3bar_command);
             FREE(barconfig->font);
             FREE(barconfig->colors.background);
             FREE(barconfig->colors.statusline);

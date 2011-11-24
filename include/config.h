@@ -201,6 +201,11 @@ struct Barconfig {
     /** Bar position (bottom by default). */
     enum { P_BOTTOM = 0, P_TOP = 1 } position;
 
+    /** Command that should be run to execute i3bar, give a full path if i3bar is not
+     * in your $PATH.
+     * By default just 'i3bar' is executed. */
+    char *i3bar_command;
+
     /** Command that should be run to get a statusline, for example 'i3status'.
      * Will be passed to the shell. */
     char *status_command;

@@ -689,8 +689,9 @@ int main(int argc, char *argv[]) {
     Barconfig *barconfig;
     TAILQ_FOREACH(barconfig, &barconfigs, configs) {
         char *command = NULL;
-        sasprintf(&command, "i3bar --bar_id=%s --socket=\"%s\"",
-                  barconfig->id, current_socketpath);
+        sasprintf(&command, "%s --bar_id=%s --socket=\"%s\"",
+                barconfig->i3bar_command ? barconfig->i3bar_command : "i3bar",
+                barconfig->id, current_socketpath);
         LOG("Starting bar process: %s\n", command);
         start_application(command, true);
         free(command);

@@ -705,6 +705,7 @@ void parse_file(const char *f) {
 %token                  TOK_BAR_BOTTOM              "bottom"
 %token                  TOK_BAR_TOP                 "top"
 %token                  TOK_BAR_STATUS_COMMAND      "status_command"
+%token                  TOK_BAR_I3BAR_COMMAND       "i3bar_command"
 %token                  TOK_BAR_FONT                "font (bar)"
 %token                  TOK_BAR_WORKSPACE_BUTTONS   "workspace_buttons"
 %token                  TOK_BAR_VERBOSE             "verbose"
@@ -1029,6 +1030,7 @@ barlines:
 barline:
     comment
     | bar_status_command
+    | bar_i3bar_command
     | bar_output
     | bar_tray_output
     | bar_position
@@ -1052,6 +1054,15 @@ bar_status_command:
         DLOG("should add status command %s\n", $2);
         FREE(current_bar.status_command);
         current_bar.status_command = $2;
+    }
+    ;
+
+bar_i3bar_command:
+    TOK_BAR_I3BAR_COMMAND STR
+    {
+        DLOG("should add i3bar_command %s\n", $2);
+        FREE(current_bar.i3bar_command);
+        current_bar.i3bar_command = $2;
     }
     ;
 
