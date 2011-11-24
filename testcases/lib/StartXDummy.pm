@@ -23,6 +23,9 @@ the file ./Xdummy) and returns two arrayrefs: a list of X11 display numbers to
 the Xdummy processes and a list of PIDs of the processes.
 
 =cut
+
+my $x_socketpath = '/tmp/.X11-unix/X';
+
 sub start_xdummy {
     my ($parallel) = @_;
 
@@ -40,12 +43,12 @@ sub start_xdummy {
 
     # First get the last used display number, then increment it by one.
     # Effectively falls back to 1 if no X server is running.
-    my ($displaynum) = reverse ('0', sort </tmp/.X11-unix/X*>);
-    $displaynum =~ s/.*(\d)$/$1/;
+    my ($displaynum) = map { /(\d+)$/ } reverse sort glob($x_socketpath . '*');
     $displaynum++;
 
     say "Starting $parallel Xdummy instances, starting at :$displaynum...";
 
+    my @sockets_waiting;
     for my $idx (0 .. ($parallel-1)) {
         my $pid = fork();
         die "Could not fork: $!" unless defined($pid);
@@ -53,6 +56,9 @@ sub start_xdummy {
             # Child, close stdout/stderr, then start Xdummy.
             close STDOUT;
             close STDERR;
+            # make sure this display isn’t in use yet
+            $displaynum++ while -e ($x_socketpath . $displaynum);
+
             # We use -config /dev/null to prevent Xdummy from using the system
             # Xorg configuration. The tests should be independant from the
             # actual system X configuration.
@@ -61,20 +67,17 @@ sub start_xdummy {
         }
         push(@childpids, $pid);
         push(@displays, ":$displaynum");
+        push(@sockets_waiting, $x_socketpath . $displaynum);
         $displaynum++;
     }
 
     # Wait until the X11 sockets actually appear. Pretty ugly solution, but as
     # long as we can’t socket-activate X11…
-    my $sockets_ready;
-    do {
-        $sockets_ready = 1;
-        for (@displays) {
-            my $path = "/tmp/.X11-unix/X" . substr($_, 1);
-            $sockets_ready = 0 unless -S $path;
-        }
+    while (1) {
+        @sockets_waiting = grep { ! -S $_ } @sockets_waiting;
+        last unless @sockets_waiting;
         sleep 0.1;
-    } until $sockets_ready;
+    }
 
     return \@displays, \@childpids;
 }

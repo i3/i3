@@ -12,7 +12,7 @@ use File::Basename qw(basename);
 use File::Temp qw(tempfile tempdir);
 use Getopt::Long;
 use IO::Socket::UNIX;
-use POSIX;
+use POSIX ();
 use Time::HiRes qw(sleep gettimeofday tv_interval);
 use TAP::Harness;
 use TAP::Parser;
