@@ -1,11 +1,10 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
-# !NO_I3_INSTANCE! will prevent complete-run.pl from starting i3
 #
 # Checks that the bar config is parsed correctly.
 #
 
-use i3test;
+use i3test i3_autostart => 0;
 
 #####################################################################
 # test a config without any bars

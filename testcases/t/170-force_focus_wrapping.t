@@ -1,10 +1,9 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
-# !NO_I3_INSTANCE! will prevent complete-run.pl from starting i3
 #
 # Tests if the 'force_focus_wrapping' config directive works correctly.
 #
-use i3test;
+use i3test i3_autostart => 0;
 
 #####################################################################
 # 1: test the wrapping behaviour without force_focus_wrapping

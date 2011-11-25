@@ -1,11 +1,10 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
-# !NO_I3_INSTANCE! will prevent complete-run.pl from starting i3
 #
 # Tests the workspace_layout config option.
 #
 
-use i3test;
+use i3test i3_autostart => 0;
 
 #####################################################################
 # 1: check that with an empty config, cons are place next to each

@@ -1,9 +1,7 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
-# !NO_I3_INSTANCE! will prevent complete-run.pl from starting i3
 #
-#
-use i3test;
+use i3test i3_autostart => 0;
 use X11::XCB qw(PROP_MODE_REPLACE);
 
 ##############################################################

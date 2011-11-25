@@ -1,11 +1,10 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
-# !NO_I3_INSTANCE! will prevent complete-run.pl from starting i3
 #
 # Tests if i3-migrate-config-to-v4 correctly migrates all config file
 # directives and commands
 #
-use i3test;
+use i3test i3_autostart => 0;
 use Cwd qw(abs_path);
 use File::Temp qw(tempfile tempdir);
 use v5.10;

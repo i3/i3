@@ -1,10 +1,8 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
-# !NO_I3_INSTANCE! will prevent complete-run.pl from starting i3
-#
 # checks if i3 starts up on workspace '1' or the first configured named workspace
 #
-use i3test;
+use i3test i3_autostart => 0;
 
 ##############################################################
 # 1: i3 should start with workspace '1'

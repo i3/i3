@@ -19,7 +19,6 @@ use TAP::Parser;
 use TAP::Parser::Aggregator;
 # these are shipped with the testsuite
 use lib qw(lib);
-use SocketActivation;
 use StartXDummy;
 use StatusLine;
 # the following modules are not shipped with Perl
@@ -42,13 +41,6 @@ my $cv = AnyEvent->condvar;
 # needs to get the exit status to determine if a test is successful).
 $SIG{CHLD} = sub {
 };
-
-# reads in a whole file
-sub slurp {
-    open(my $fh, '<', shift);
-    local $/;
-    <$fh>;
-}
 
 # convinience wrapper to write to the log file
 my $log;
@@ -106,8 +98,6 @@ for my $display (@displays) {
 
 die "No usable displays found" if @wdisplays == 0;
 
-my $config = slurp('i3-test.config');
-
 # 1: get a list of all testcases
 my @testfiles = @ARGV;
 
@@ -157,147 +147,59 @@ sub take_job {
     my $test = shift @testfiles
         or return $cv->end;
 
-    my $dont_start = (slurp($test) =~ /# !NO_I3_INSTANCE!/);
     my $basename = basename($test);
-    my $logpath = "$outdir/i3-log-for-$basename";
 
-    my ($fh, $tmpfile) = tempfile("i3-cfg-for-$basename.XXXXXX", UNLINK => 1);
-    say $fh $config;
-    say $fh "ipc-socket /tmp/nested-$display";
-    close($fh);
+    Log status($display, "Starting $test");
 
-    my $activate_cv = AnyEvent->condvar;
-    my $time_before_start = [gettimeofday];
-
-    my $pid;
-    if ($dont_start) {
-        $activate_cv->send(1);
-    } else {
-        $pid = activate_i3(
-            unix_socket_path => "/tmp/nested-$display-activation",
-            display => $display,
-            configfile => $tmpfile,
-            outdir => $outdir,
-            testname => $basename,
-            valgrind => $valgrind,
-            strace => $strace,
-            cv => $activate_cv
-        );
-
-        my $child_watcher;
-        $child_watcher = AnyEvent->child(pid => $pid, cb => sub {
-            Log status($display, "child died. pid = $pid");
-            undef $child_watcher;
-        });
-    }
-
-    my $kill_i3 = sub {
-        my $kill_cv = AnyEvent->condvar;
-
-        # Don’t bother killing i3 when we haven’t started it
-        if ($dont_start) {
-            $kill_cv->send();
-            return $kill_cv;
-        }
-
-        # When measuring code coverage, try to exit i3 cleanly (otherwise, .gcda
-        # files are not written) and fallback to killing it
-        if ($coverage_testing || $valgrind) {
-            my $exited = 0;
-            Log status($display, 'Exiting i3 cleanly...');
-            my $i3 = i3("/tmp/nested-$display");
-            $i3->connect->cb(sub {
-                if (!$_[0]->recv) {
-                    # Could not connect to i3, just kill -9 it
-                    kill(9, $pid) or die "Could not kill i3 using kill($pid)";
-                    $kill_cv->send();
-                } else {
-                    # Connected. Now send exit and continue once that’s acked.
-                    $i3->command('exit')->cb(sub {
-                        $kill_cv->send();
-                    });
-                }
-            });
-        } else {
-            Log status($display, 'killing i3');
-
-            # No coverage testing or valgrind? Just kill -9 i3.
-            kill(9, $pid) or die "Could not kill i3 using kill($pid)";
-            $kill_cv->send();
-        }
-
-        return $kill_cv;
-    };
-
-    # This will be called as soon as i3 is running and answered to our
-    # IPC request
-    $activate_cv->cb(sub {
-        my $time_activating = [gettimeofday];
-        my $start_duration = tv_interval($time_before_start, $time_activating);
-        my ($status) = $activate_cv->recv;
-        if ($dont_start) {
-            Log status($display, 'Not starting i3, testcase does that');
-        } else {
-            my $duration = sprintf("%.2f", $start_duration);
-            Log status($display, "i3 startup: took $duration sec, status = $status");
-        }
-
-        Log status($display, "Starting $test");
-
-        my $output;
-        open(my $spool, '>', \$output);
-        my $parser = TAP::Parser->new({
-            exec => [ 'sh', '-c', qq|DISPLAY=$display TESTNAME="$basename" OUTDIR="$outdir" VALGRIND=$valgrind STRACE=$strace /usr/bin/perl -Ilib $test| ],
-            spool => $spool,
-            merge => 1,
-        });
-
-        my $tests_completed;
-
-        my @watchers;
-        my ($stdout, $stderr) = $parser->get_select_handles;
-        for my $handle ($parser->get_select_handles) {
-            my $w;
-            $w = AnyEvent->io(
-                fh => $handle,
-                poll => 'r',
-                cb => sub {
-                    # Ignore activity on stderr (unnecessary with merge => 1,
-                    # but let’s keep it in here if we want to use merge => 0
-                    # for some reason in the future).
-                    return if defined($stderr) and $handle == $stderr;
-
-                    my $result = $parser->next;
-                    if (defined($result)) {
-                        $tests_completed++;
-                        status($display, "Running $test: [$tests_completed/??]");
-                        # TODO: check if we should bail out
-                        return;
-                    }
-
-                    # $result is not defined, we are done parsing
-                    Log status($display, "$test finished");
-                    close($parser->delete_spool);
-                    $aggregator->add($test, $parser);
-                    push @done, [ $test, $output ];
-
-                    status_completed(scalar @done);
-
-                    my $exitcv = $kill_i3->();
-                    $exitcv->cb(sub {
-
-                        undef $_ for @watchers;
-                        if (@done == $num) {
-                            $cv->end;
-                        } else {
-                            take_job($display);
-                        }
-                    });
-                }
-            );
-            push @watchers, $w;
-        }
+    my $output;
+    open(my $spool, '>', \$output);
+    my $parser = TAP::Parser->new({
+        exec => [ 'sh', '-c', qq|DISPLAY=$display TESTNAME="$basename" OUTDIR="$outdir" VALGRIND=$valgrind STRACE=$strace COVERAGE=$coverage_testing /usr/bin/perl -Ilib $test| ],
+        spool => $spool,
+        merge => 1,
     });
+
+    my $tests_completed;
+
+    my @watchers;
+    my ($stdout, $stderr) = $parser->get_select_handles;
+    for my $handle ($parser->get_select_handles) {
+        my $w;
+        $w = AnyEvent->io(
+            fh => $handle,
+            poll => 'r',
+            cb => sub {
+                # Ignore activity on stderr (unnecessary with merge => 1,
+                # but let’s keep it in here if we want to use merge => 0
+                # for some reason in the future).
+                return if defined($stderr) and $handle == $stderr;
+
+                my $result = $parser->next;
+                if (defined($result)) {
+                    $tests_completed++;
+                    status($display, "Running $test: [$tests_completed/??]");
+                    # TODO: check if we should bail out
+                    return;
+                }
+
+                # $result is not defined, we are done parsing
+                Log status($display, "$test finished");
+                close($parser->delete_spool);
+                $aggregator->add($test, $parser);
+                push @done, [ $test, $output ];
+
+                status_completed(scalar @done);
+
+                undef $_ for @watchers;
+                if (@done == $num) {
+                    $cv->end;
+                } else {
+                    take_job($display);
+                }
+            }
+        );
+        push @watchers, $w;
+    }
 }
 
 $cv->recv;

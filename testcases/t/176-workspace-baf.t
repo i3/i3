@@ -1,12 +1,10 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
-# !NO_I3_INSTANCE! will prevent complete-run.pl from starting i3
-#
 # Checks if the 'workspace back_and_forth' command and the
 # 'workspace_auto_back_and_forth' config directive work correctly.
 #
 
-use i3test;
+use i3test i3_autostart => 0;
 
 my $config = <<EOT;
 # i3 config file (v4)

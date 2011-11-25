@@ -56,11 +56,54 @@ BEGIN {
     }
 }
 
+my $i3_pid;
+my $i3_autostart;
+
+END {
+
+    # testcases which start i3 manually should always call exit_gracefully
+    # on their own. Let’s see, whether they really did.
+    if (! $i3_autostart) {
+        return unless $i3_pid;
+
+        $tester->ok(undef, 'testcase called exit_gracefully()');
+    }
+
+    # don't trigger SIGCHLD handler
+    local $SIG{CHLD};
+
+    # From perldoc -v '$?':
+    # Inside an "END" subroutine $? contains the value
+    # that is going to be given to "exit()".
+    #
+    # Since waitpid sets $?, we need to localize it,
+    # otherwise TAP would be misinterpreted our return status
+    local $?;
+
+    # When measuring code coverage, try to exit i3 cleanly (otherwise, .gcda
+    # files are not written)
+    if ($ENV{COVERAGE} || $ENV{VALGRIND}) {
+        exit_gracefully($i3_pid, "/tmp/nested-$ENV{DISPLAY}");
+
+    } else {
+        kill(9, $i3_pid)
+            or $tester->BAIL_OUT("could not kill i3");
+
+        waitpid $i3_pid, 0;
+    }
+}
+
 sub import {
-    my $class = shift;
+    my ($class, %args) = @_;
     my $pkg = caller;
 
-    my $test_more_args = @_ ? "qw(@_)" : "";
+    $i3_autostart = delete($args{i3_autostart}) // 1;
+
+    my $cv = launch_with_config('-default', dont_block => 1)
+        if $i3_autostart;
+
+    my $test_more_args = '';
+    $test_more_args = join(' ', 'qw(', %args, ')') if keys %args;
     local $@;
     eval << "__";
 package $pkg;
@@ -69,12 +112,14 @@ use Data::Dumper;
 use AnyEvent::I3;
 use Time::HiRes qw(sleep);
 __
-    $tester->bail_out("$@") if $@;
+    $tester->BAIL_OUT("$@") if $@;
     feature->import(":5.10");
     strict->import;
     warnings->import;
 
     $x ||= i3test::X11->new;
+    $cv->recv if $i3_autostart;
+
     @_ = ($class);
     goto \&Exporter::import;
 }
@@ -394,12 +439,16 @@ sub exit_gracefully {
     };
 
     if (!$exited) {
-        kill(9, $pid) or die "could not kill i3";
+        kill(9, $pid)
+            or $tester->BAIL_OUT("could not kill i3");
     }
 
     if ($socketpath =~ m,^/tmp/i3-test-socket-,) {
         unlink($socketpath);
     }
+
+    waitpid $pid, 0;
+    undef $i3_pid;
 }
 
 # Gets the socket path from the I3_SOCKET_PATH atom stored on the X11 root window
@@ -427,21 +476,28 @@ sub get_socket_path {
 # complete-run.pl that it should not create an instance of i3
 #
 sub launch_with_config {
-    my ($config, $dont_add_socket_path) = @_;
+    my ($config, %args) = @_;
 
-    $dont_add_socket_path //= 0;
+    $tmp_socket_path = "/tmp/nested-$ENV{DISPLAY}";
 
-    if (!defined($tmp_socket_path)) {
-        $tmp_socket_path = File::Temp::tempnam('/tmp', 'i3-test-socket-');
+    my ($fh, $tmpfile) = tempfile("i3-cfg-for-$ENV{TESTNAME}-XXXXX", UNLINK => 1);
+
+    if ($config ne '-default') {
+        say $fh $config;
+    } else {
+        open(my $conf_fh, '<', './i3-test.config')
+            or $tester->BAIL_OUT("could not open default config: $!");
+        local $/;
+        say $fh scalar <$conf_fh>;
     }
 
-    my ($fh, $tmpfile) = tempfile('/tmp/i3-test-config-XXXXX', UNLINK => 1);
-    say $fh $config;
-    say $fh "ipc-socket $tmp_socket_path" unless $dont_add_socket_path;
+    say $fh "ipc-socket $tmp_socket_path"
+        unless $args{dont_add_socket_path};
+
     close($fh);
 
     my $cv = AnyEvent->condvar;
-    my $pid = activate_i3(
+    $i3_pid = activate_i3(
         unix_socket_path => "$tmp_socket_path-activation",
         display => $ENV{DISPLAY},
         configfile => $tmpfile,
@@ -452,13 +508,16 @@ sub launch_with_config {
         cv => $cv,
     );
 
+    # force update of the cached socket path in lib/i3test
+    # as soon as i3 has started
+    $cv->cb(sub { get_socket_path(0) });
+
+    return $cv if $args{dont_block};
+
     # blockingly wait until i3 is ready
     $cv->recv;
 
-    # force update of the cached socket path in lib/i3test
-    get_socket_path(0);
-
-    return $pid;
+    return $i3_pid;
 }
 
 package i3test::X11;

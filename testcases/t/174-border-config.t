@@ -1,11 +1,10 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
-# !NO_I3_INSTANCE! will prevent complete-run.pl from starting i3
 #
 # Tests the new_window and new_float config option.
 #
 
-use i3test;
+use i3test i3_autostart => 0;
 
 #####################################################################
 # 1: check that new windows start with 'normal' border unless configured
