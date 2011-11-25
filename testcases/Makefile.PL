@@ -4,7 +4,7 @@ use strict; use warnings;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-    NAME => 'i3 testsuite',
+    NAME => 'i3-testsuite',
     MIN_PERL_VERSION => '5.010000', # 5.10.0
     PREREQ_PM => {
         'AnyEvent'     => 0,
