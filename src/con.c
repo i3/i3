@@ -954,18 +954,13 @@ void con_set_border_style(Con *con, int border_style) {
     }
 
     /* For floating containers, we want to keep the position/size of the
-     * *window* itself. Since the window size is rendered based on the
-     * container which it is in, we first remove the border/decoration specific
-     * amount of pixels from parent->rect, change the border, then add the new
-     * border/decoration specific pixels. */
+     * *window* itself. We first add the border pixels to con->rect to make
+     * con->rect represent the absolute position of the window. Then, we change
+     * the border and subtract the new border pixels. Afterwards, we update
+     * parent->rect to contain con. */
     DLOG("This is a floating container\n");
 
-    /* Get current border/decoration pixel values. */
-    int deco_height =
-        (con->border_style == BS_NORMAL ? config.font.height + 5 : 0);
     Rect bsr = con_border_style_rect(con);
-    Con *parent = con->parent;
-
     con->rect.x += bsr.x;
     con->rect.y += bsr.y;
     con->rect.width += bsr.width;
@@ -974,13 +969,15 @@ void con_set_border_style(Con *con, int border_style) {
     /* Change the border style, get new border/decoration values. */
     con->border_style = border_style;
     bsr = con_border_style_rect(con);
-    deco_height = (con->border_style == BS_NORMAL ? config.font.height + 5 : 0);
+    int deco_height =
+        (con->border_style == BS_NORMAL ? config.font.height + 5 : 0);
 
     con->rect.x -= bsr.x;
     con->rect.y -= bsr.y;
     con->rect.width -= bsr.width;
     con->rect.height -= bsr.height;
 
+    Con *parent = con->parent;
     parent->rect.x = con->rect.x;
     parent->rect.y = con->rect.y - deco_height;
     parent->rect.width = con->rect.width;
