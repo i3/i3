@@ -719,10 +719,12 @@ border:
 
         TAILQ_FOREACH(current, &owindows, owindows) {
             printf("matching: %p / %s\n", current->con, current->con->name);
+            int border_style = current->con->border_style;
             if ($2 == TOK_TOGGLE) {
-                current->con->border_style++;
-                current->con->border_style %= 3;
-            } else current->con->border_style = $2;
+                border_style++;
+                border_style %= 3;
+            } else border_style = $2;
+            con_set_border_style(current->con, border_style);
         }
 
         tree_render();

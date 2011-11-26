@@ -942,6 +942,52 @@ int con_border_style(Con *con) {
 }
 
 /*
+ * Sets the given border style on con, correctly keeping the position/size of a
+ * floating window.
+ *
+ */
+void con_set_border_style(Con *con, int border_style) {
+    /* Handle the simple case: non-floating containerns */
+    if (!con_is_floating(con)) {
+        con->border_style = border_style;
+        return;
+    }
+
+    /* For floating containers, we want to keep the position/size of the
+     * *window* itself. Since the window size is rendered based on the
+     * container which it is in, we first remove the border/decoration specific
+     * amount of pixels from parent->rect, change the border, then add the new
+     * border/decoration specific pixels. */
+    DLOG("This is a floating container\n");
+
+    /* Get current border/decoration pixel values. */
+    int deco_height =
+        (con->border_style == BS_NORMAL ? config.font.height + 5 : 0);
+    Rect bsr = con_border_style_rect(con);
+    Con *parent = con->parent;
+
+    con->rect.x += bsr.x;
+    con->rect.y += bsr.y;
+    con->rect.width += bsr.width;
+    con->rect.height += bsr.height;
+
+    /* Change the border style, get new border/decoration values. */
+    con->border_style = border_style;
+    bsr = con_border_style_rect(con);
+    deco_height = (con->border_style == BS_NORMAL ? config.font.height + 5 : 0);
+
+    con->rect.x -= bsr.x;
+    con->rect.y -= bsr.y;
+    con->rect.width -= bsr.width;
+    con->rect.height -= bsr.height;
+
+    parent->rect.x = con->rect.x;
+    parent->rect.y = con->rect.y - deco_height;
+    parent->rect.width = con->rect.width;
+    parent->rect.height = con->rect.height + deco_height;
+}
+
+/*
  * This function changes the layout of a given container. Use it to handle
  * special cases like changing a whole workspace to stacked/tabbed (creates a
  * new split container before).
