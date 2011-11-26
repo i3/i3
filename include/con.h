@@ -234,6 +234,13 @@ Rect con_border_style_rect(Con *con);
 int con_border_style(Con *con);
 
 /**
+ * Sets the given border style on con, correctly keeping the position/size of a
+ * floating window.
+ *
+ */
+void con_set_border_style(Con *con, int border_style);
+
+/**
  * This function changes the layout of a given container. Use it to handle
  * special cases like changing a whole workspace to stacked/tabbed (creates a
  * new split container before).
