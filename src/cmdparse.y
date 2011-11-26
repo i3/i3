@@ -450,6 +450,10 @@ focus:
         int count = 0;
         TAILQ_FOREACH(current, &owindows, owindows) {
             Con *ws = con_get_workspace(current->con);
+            /* If no workspace could be found, this was a dock window.
+             * Just skip it, you cannot focus dock windows. */
+            if (!ws)
+                continue;
 
             /* If the container is not on the current workspace,
              * workspace_show() will switch to a different workspace and (if
