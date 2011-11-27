@@ -127,6 +127,30 @@ status_init(displays => \@displays, tests => $num);
 # test starts another test after completing.
 for (@displays) { $cv->begin; take_job($_) }
 
+$cv->recv;
+
+$aggregator->stop();
+
+# print empty lines to seperate failed tests from statuslines
+print "\n\n";
+
+for (@done) {
+    my ($test, $output) = @$_;
+    Log "output for $test:";
+    Log $output;
+    # print error messages of failed tests
+    say for $output =~ /^not ok.+\n+((?:^#.+\n)+)/mg
+}
+
+# 4: print summary
+$harness->summary($aggregator);
+
+close $log;
+
+kill(15, $_) for @childpids;
+
+exit 0;
+
 #
 # Takes a test from the beginning of @testfiles and runs it.
 #
@@ -197,28 +221,6 @@ sub take_job {
         push @watchers, $w;
     }
 }
-
-$cv->recv;
-
-$aggregator->stop();
-
-# print empty lines to seperate failed tests from statuslines
-print "\n\n";
-
-for (@done) {
-    my ($test, $output) = @$_;
-    Log "output for $test:";
-    Log $output;
-    # print error messages of failed tests
-    say for $output =~ /^not ok.+\n+((?:^#.+\n)+)/mg
-}
-
-# 4: print summary
-$harness->summary($aggregator);
-
-close $log;
-
-kill(15, $_) for @childpids;
 
 __END__
 
