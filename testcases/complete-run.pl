@@ -71,12 +71,8 @@ pod2usage(-verbose => 2, -exitcode => 0) if $help;
 @displays = map { s/ //g; $_ } @displays;
 
 # No displays specified, let’s start some Xdummy instances.
-if (@displays == 0) {
-    my ($displays, $pids) = start_xdummy($parallel);
-    @displays = @$displays;
+@displays = start_xdummy($parallel) if @displays == 0;
 
-    push our @CLEANUP, sub { kill(15, $_) for @$pids };
-}
 
 # connect to all displays for two reasons:
 # 1: check if the display actually works
