@@ -55,7 +55,6 @@ my $help = 0;
 # num_cores * 2.
 my $parallel = undef;
 my @displays = ();
-my @childpids = ();
 
 my $result = GetOptions(
     "coverage-testing" => \$coverage_testing,
@@ -75,7 +74,8 @@ pod2usage(-verbose => 2, -exitcode => 0) if $help;
 if (@displays == 0) {
     my ($displays, $pids) = start_xdummy($parallel);
     @displays = @$displays;
-    @childpids = @$pids;
+
+    push our @CLEANUP, sub { kill(15, $_) for @$pids };
 }
 
 # connect to all displays for two reasons:
@@ -147,7 +147,7 @@ $harness->summary($aggregator);
 
 close $log;
 
-kill(15, $_) for @childpids;
+cleanup();
 
 exit 0;
 
@@ -221,6 +221,13 @@ sub take_job {
         push @watchers, $w;
     }
 }
+
+sub cleanup {
+    $_->() for our @CLEANUP;
+}
+
+# must be in a begin block because we C<exit 0> above
+BEGIN { $SIG{$_} = \&cleanup for qw(INT TERM QUIT KILL) }
 
 __END__
 
