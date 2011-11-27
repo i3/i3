@@ -64,7 +64,10 @@ i3Font load_font(const char *pattern, const bool fallback) {
         errx(EXIT_FAILURE, "Could not load font \"%s\"", pattern);
 
     /* Get the font table, if possible */
-    font.table = xcb_query_font_char_infos(font.info);
+    if (xcb_query_font_char_infos_length(font.info) == 0)
+        font.table = NULL;
+    else
+        font.table = xcb_query_font_char_infos(font.info);
 
     /* Calculate the font height */
     font.height = font.info->font_ascent + font.info->font_descent;
