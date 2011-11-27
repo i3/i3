@@ -84,19 +84,15 @@ if (@displays == 0) {
 #    the X server from exiting (Xdummy will restart it, but not quick enough
 #    sometimes)
 my @conns;
-my @wdisplays;
 for my $display (@displays) {
     my $screen;
     my $x = X11::XCB->new($display, $screen);
     if ($x->has_error) {
-        Log "WARNING: Not using X11 display $display, could not connect";
+        die "Could not connect to display $display\n";
     } else {
         push @conns, $x;
-        push @wdisplays, $display;
     }
 }
-
-die "No usable displays found" if @wdisplays == 0;
 
 # 1: get a list of all testcases
 my @testfiles = @ARGV;
@@ -125,11 +121,11 @@ my $harness = TAP::Harness->new({ });
 my $aggregator = TAP::Parser::Aggregator->new();
 $aggregator->start();
 
-status_init(displays => \@wdisplays, tests => $num);
+status_init(displays => \@displays, tests => $num);
 
 # We start tests concurrently: For each display, one test gets started. Every
 # test starts another test after completing.
-for (@wdisplays) { $cv->begin; take_job($_) }
+for (@displays) { $cv->begin; take_job($_) }
 
 #
 # Takes a test from the beginning of @testfiles and runs it.
