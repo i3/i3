@@ -452,10 +452,20 @@ static int handle_screen_change(xcb_generic_event_t *e) {
  *
  */
 static int handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
-    // XXX: this is commented out because in src/x.c we disable EnterNotify events
-    /* we need to ignore EnterNotify events which will be generated because a
-     * different window is visible now */
-    //add_ignore_event(event->sequence, XCB_ENTER_NOTIFY);
+    /* If the client (as opposed to i3) destroyed or unmapped a window, an
+     * EnterNotify event will follow (indistinguishable from an EnterNotify
+     * event caused by moving your mouse), causing i3 to set focus to whichever
+     * window is now visible.
+     *
+     * In a complex stacked or tabbed layout (take two v-split containers in a
+     * tabbed container), when the bottom window in tab2 is closed, the bottom
+     * window of tab1 is visible instead. X11 will thus send an EnterNotify
+     * event for the bottom window of tab1, while the focus should be set to
+     * the remaining window of tab2.
+     *
+     * Therefore, we ignore all EnterNotify events which have the same sequence
+     * as an UnmapNotify event. */
+    add_ignore_event(event->sequence, XCB_ENTER_NOTIFY);
 
     DLOG("UnmapNotify for 0x%08x (received from 0x%08x), serial %d\n", event->window, event->event, event->sequence);
     Con *con = con_by_window_id(event->window);
