@@ -26,7 +26,7 @@ typedef enum { CLICK_BORDER = 0, CLICK_DECORATION = 1, CLICK_INSIDE = 2 } click_
  *
  */
 static bool tiling_resize_for_border(Con *con, border_t border, const xcb_button_press_event_t *event) {
-    DLOG("border = %d\n", border);
+    DLOG("border = %d, con = %p\n", border, con);
     char way = (border == BORDER_TOP || border == BORDER_LEFT ? 'p' : 'n');
     orientation_t orientation = (border == BORDER_TOP || border == BORDER_BOTTOM ? VERT : HORIZ);
 
@@ -38,6 +38,7 @@ static bool tiling_resize_for_border(Con *con, border_t border, const xcb_button
            resize_con->parent->orientation != orientation)
         resize_con = resize_con->parent;
 
+    DLOG("resize_con = %p\n", resize_con);
     if (resize_con->type != CT_WORKSPACE &&
         resize_con->type != CT_FLOATING_CON &&
         resize_con->parent->orientation == orientation) {
@@ -51,6 +52,8 @@ static bool tiling_resize_for_border(Con *con, border_t border, const xcb_button
             first = second;
             second = tmp;
         }
+        DLOG("first = %p, second = %p, resize_con = %p\n",
+                first, second, resize_con);
     }
 
     if (first == NULL || second == NULL) {
@@ -130,13 +133,14 @@ static bool tiling_resize(Con *con, const xcb_button_press_event_t *event, const
         /* Since the container might either be the child *or* already a split
          * container (in the case of a nested split container), we need to make
          * sure that we are dealing with the split container here. */
-        if (con_is_leaf(con) && con->parent->type == CT_CON)
-            con = con->parent;
+        Con *check_con = con;
+        if (con_is_leaf(check_con) && check_con->parent->type == CT_CON)
+            check_con = check_con->parent;
 
-        if ((con->layout == L_STACKED ||
-             con->layout == L_TABBED ||
-             con->orientation == HORIZ) &&
-            con_num_children(con) > 1) {
+        if ((check_con->layout == L_STACKED ||
+             check_con->layout == L_TABBED ||
+             check_con->orientation == HORIZ) &&
+            con_num_children(check_con) > 1) {
             DLOG("Not handling this resize, this container has > 1 child.\n");
             return false;
         }
