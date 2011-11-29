@@ -62,6 +62,33 @@ is($nodes->[0]->{percent}, 0.25, 'top window got 25%');
 is($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
 
 ############################################################
+# Checks that resizing in the parent's parent's orientation works.
+# Take for example a horizontal workspace with one window on the left side and
+# a v-split container with two windows on the right side. Focus is on the
+# bottom right window, use 'resize left'.
+############################################################
+
+$tmp = fresh_workspace;
+
+my $left = open_window;
+my $right = open_window;
+
+cmd 'split v';
+
+$top = open_window;
+$bottom = open_window;
+
+($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[0]->{percent}, 0.5, 'left window got 50%');
+is($nodes->[1]->{percent}, 0.5, 'right window got 50%');
+
+cmd 'resize grow left 10 px or 25 ppt';
+
+($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[0]->{percent}, 0.25, 'left window got 25%');
+is($nodes->[1]->{percent}, 0.75, 'right window got 75%');
+
+############################################################
 # checks that resizing floating windows works
 ############################################################
 
