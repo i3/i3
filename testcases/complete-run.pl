@@ -1,19 +1,16 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
 # © 2010-2011 Michael Stapelberg and contributors
-
+package complete_run;
 use strict;
 use warnings;
 use v5.10;
 # the following are modules which ship with Perl (>= 5.10):
 use Pod::Usage;
 use Cwd qw(abs_path);
-use File::Basename qw(basename);
 use File::Temp qw(tempfile tempdir);
 use Getopt::Long;
-use IO::Socket::UNIX;
 use POSIX ();
-use Time::HiRes qw(sleep gettimeofday tv_interval);
 use TAP::Harness;
 use TAP::Parser;
 use TAP::Parser::Aggregator;
@@ -21,26 +18,17 @@ use TAP::Parser::Aggregator;
 use lib qw(lib);
 use StartXDummy;
 use StatusLine;
+use TestWorker;
 # the following modules are not shipped with Perl
 use AnyEvent;
 use AnyEvent::Util;
 use AnyEvent::Handle;
 use AnyEvent::I3 qw(:all);
-use X11::XCB;
+use X11::XCB::Connection;
 
 # Close superfluous file descriptors which were passed by running in a VIM
 # subshell or situations like that.
 AnyEvent::Util::close_all_fds_except(0, 1, 2);
-
-# We actually use AnyEvent to make sure it loads an event loop implementation.
-# Afterwards, we overwrite SIGCHLD:
-my $cv = AnyEvent->condvar;
-
-# Install a dummy CHLD handler to overwrite the CHLD handler of AnyEvent.
-# AnyEvent’s handler wait()s for every child which conflicts with TAP (TAP
-# needs to get the exit status to determine if a test is successful).
-$SIG{CHLD} = sub {
-};
 
 # convinience wrapper to write to the log file
 my $log;
@@ -73,30 +61,7 @@ pod2usage(-verbose => 2, -exitcode => 0) if $help;
 # No displays specified, let’s start some Xdummy instances.
 @displays = start_xdummy($parallel) if @displays == 0;
 
-
-# connect to all displays for two reasons:
-# 1: check if the display actually works
-# 2: keep the connection open so that i3 is not the only client. this prevents
-#    the X server from exiting (Xdummy will restart it, but not quick enough
-#    sometimes)
-my @conns;
-for my $display (@displays) {
-    my $screen;
-    my $x = X11::XCB->new($display, $screen);
-    if ($x->has_error) {
-        die "Could not connect to display $display\n";
-    } else {
-        push @conns, $x;
-    }
-}
-
-# 1: get a list of all testcases
-my @testfiles = @ARGV;
-
-# if no files were passed on command line, run all tests from t/
-@testfiles = <t/*.t> if @testfiles == 0;
-
-# 2: create an output directory for this test-run
+# 1: create an output directory for this test-run
 my $outdir = "testsuite-";
 $outdir .= POSIX::strftime("%Y-%m-%d-%H-%M-%S-", localtime());
 $outdir .= `git describe --tags`;
@@ -104,6 +69,30 @@ chomp($outdir);
 mkdir($outdir) or die "Could not create $outdir";
 unlink("latest") if -e "latest";
 symlink("$outdir", "latest") or die "Could not symlink latest to $outdir";
+
+
+# connect to all displays for two reasons:
+# 1: check if the display actually works
+# 2: keep the connection open so that i3 is not the only client. this prevents
+#    the X server from exiting (Xdummy will restart it, but not quick enough
+#    sometimes)
+my @worker;
+for my $display (@displays) {
+    my $screen;
+    my $x = X11::XCB::Connection->new(display => $display);
+    if ($x->has_error) {
+        die "Could not connect to display $display\n";
+    } else {
+        # start a TestWorker for each display
+        push @worker, worker($display, $x, $outdir);
+    }
+}
+
+# 2: get a list of all testcases
+my @testfiles = @ARGV;
+
+# if no files were passed on command line, run all tests from t/
+@testfiles = <t/*.t> if @testfiles == 0;
 
 my $logfile = "$outdir/complete-run.log";
 open $log, '>', $logfile or die "Could not create '$logfile': $!";
@@ -119,9 +108,11 @@ $aggregator->start();
 
 status_init(displays => \@displays, tests => $num);
 
+my $cv = AE::cv;
+
 # We start tests concurrently: For each display, one test gets started. Every
 # test starts another test after completing.
-for (@displays) { $cv->begin; take_job($_) }
+for (@worker) { $cv->begin; take_job($_) }
 
 $cv->recv;
 
@@ -132,6 +123,7 @@ print "\n\n";
 
 for (@done) {
     my ($test, $output) = @$_;
+    say "no output for $test" unless $output;
     Log "output for $test:";
     Log $output;
     # print error messages of failed tests
@@ -143,7 +135,7 @@ $harness->summary($aggregator);
 
 close $log;
 
-cleanup();
+END { cleanup() }
 
 exit 0;
 
@@ -158,72 +150,92 @@ exit 0;
 # triggered to finish testing.
 #
 sub take_job {
-    my ($display) = @_;
+    my ($worker) = @_;
 
     my $test = shift @testfiles
         or return $cv->end;
 
-    my $basename = basename($test);
+    my $display = $worker->{display};
 
-    Log status($display, "Starting $test");
+    Log status($display, "$test: starting");
+    worker_next($worker, $test);
 
+    # create a TAP::Parser with an in-memory fh
     my $output;
-    open(my $spool, '>', \$output);
     my $parser = TAP::Parser->new({
-        exec => [ 'sh', '-c', qq|DISPLAY=$display TESTNAME="$basename" OUTDIR="$outdir" VALGRIND=$valgrind STRACE=$strace COVERAGE=$coverage_testing /usr/bin/perl -Ilib $test| ],
-        spool => $spool,
-        merge => 1,
+        source => do { open(my $fh, '<', \$output); $fh },
     });
 
-    my $tests_completed;
+    my $ipc = $worker->{ipc};
 
-    my @watchers;
-    my ($stdout, $stderr) = $parser->get_select_handles;
-    for my $handle ($parser->get_select_handles) {
-        my $w;
-        $w = AnyEvent->io(
-            fh => $handle,
-            poll => 'r',
-            cb => sub {
-                # Ignore activity on stderr (unnecessary with merge => 1,
-                # but let’s keep it in here if we want to use merge => 0
-                # for some reason in the future).
-                return if defined($stderr) and $handle == $stderr;
+    my $w;
+    $w = AnyEvent->io(
+        fh => $ipc,
+        poll => 'r',
+        cb => sub {
+            state $tests_completed = 0;
+            state $partial = '';
 
-                my $result = $parser->next;
-                if (defined($result)) {
-                    $tests_completed++;
-                    status($display, "Running $test: [$tests_completed/??]");
-                    # TODO: check if we should bail out
+            sysread($ipc, my $buf, 4096) or die "sysread: $!";
+
+            if ($partial) {
+                $buf = $partial . $buf;
+                $partial = '';
+            }
+
+            # make sure we feed TAP::Parser complete lines so it doesn't blow up
+            if (substr($buf, -1, 1) ne "\n") {
+                my $nl = rindex($buf, "\n");
+                if ($nl == -1) {
+                    $partial = $buf;
                     return;
                 }
 
-                # $result is not defined, we are done parsing
-                Log status($display, "$test finished");
-                close($parser->delete_spool);
-                $aggregator->add($test, $parser);
-                push @done, [ $test, $output ];
+                # strip partial from buffer
+                $partial = substr($buf, $nl + 1, '');
+            }
 
-                status_completed(scalar @done);
+            # count lines before stripping eof-marker otherwise we might
+            # end up with for (1 .. 0) { } which would effectivly skip the loop
+            my $lines = $buf =~ tr/\n//;
+            my $t_eof = $buf =~ s/^$TestWorker::EOF$//m;
 
-                undef $_ for @watchers;
-                if (@done == $num) {
-                    $cv->end;
-                } else {
-                    take_job($display);
+            $output .= $buf;
+
+            for (1 .. $lines) {
+                my $result = $parser->next;
+                if (defined($result) and $result->is_test) {
+                    $tests_completed++;
+                    status($display, "$test: [$tests_completed/??] ");
                 }
             }
-        );
-        push @watchers, $w;
-    }
+
+            return unless $t_eof;
+
+            Log status($display, "$test: finished");
+            status_completed(scalar @done);
+
+            $aggregator->add($test, $parser);
+            push @done, [ $test, $output ];
+
+            undef $w;
+            take_job($worker);
+        }
+    );
 }
 
 sub cleanup {
     $_->() for our @CLEANUP;
+    exit;
 }
 
 # must be in a begin block because we C<exit 0> above
-BEGIN { $SIG{$_} = \&cleanup for qw(INT TERM QUIT KILL) }
+BEGIN {
+    $SIG{$_} = sub {
+        require Carp; Carp::cluck("Caught SIG$_[0]\n");
+        cleanup();
+    } for qw(INT TERM QUIT KILL PIPE)
+}
 
 __END__
 

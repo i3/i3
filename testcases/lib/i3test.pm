@@ -16,6 +16,10 @@ use SocketActivation;
 
 use v5.10;
 
+# preload
+use Test::More ();
+use Data::Dumper ();
+
 use Exporter ();
 our @EXPORT = qw(
     get_workspace_names
@@ -471,10 +475,6 @@ sub get_socket_path {
 #
 # launches a new i3 process with the given string as configuration file.
 # useful for tests which test specific config file directives.
-#
-# be sure to use !NO_I3_INSTANCE! somewhere in the file to signal
-# complete-run.pl that it should not create an instance of i3
-#
 sub launch_with_config {
     my ($config, %args) = @_;
 

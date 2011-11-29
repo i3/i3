@@ -65,7 +65,7 @@ sub start_xdummy {
             exec './Xdummy', ":$displaynum", '-config', '/dev/null';
             exit 1;
         }
-        push(@main::CLEANUP, sub { kill(15, $pid) });
+        push(@complete_run::CLEANUP, sub { kill(15, $pid) });
         push(@displays, ":$displaynum");
         push(@sockets_waiting, $x_socketpath . $displaynum);
         $displaynum++;
