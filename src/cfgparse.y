@@ -103,7 +103,9 @@ static int detect_version(char *buf) {
                 strncasecmp(bind, "focus down", strlen("focus down")) == 0 ||
                 strncasecmp(bind, "border normal", strlen("border normal")) == 0 ||
                 strncasecmp(bind, "border 1pixel", strlen("border 1pixel")) == 0 ||
-                strncasecmp(bind, "border borderless", strlen("border borderless")) == 0) {
+                strncasecmp(bind, "border borderless", strlen("border borderless")) == 0 ||
+                strncasecmp(bind, "--no-startup-id", strlen("--no-startup-id")) == 0 ||
+                strncasecmp(bind, "bar", strlen("bar")) == 0) {
                 printf("deciding for version 4 due to this line: %.*s\n", (int)(walk-line), line);
                 return 4;
             }
