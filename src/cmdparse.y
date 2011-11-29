@@ -967,6 +967,16 @@ resize:
             while (current->parent->layout == L_STACKED ||
                    current->parent->layout == L_TABBED)
                 current = current->parent;
+
+            /* Then further go up until we find one with the matching orientation. */
+            orientation_t search_orientation =
+                (direction == TOK_LEFT || direction == TOK_RIGHT ? HORIZ : VERT);
+
+            while (current->type != CT_WORKSPACE &&
+                   current->type != CT_FLOATING_CON &&
+                   current->parent->orientation != search_orientation)
+                current = current->parent;
+
             /* get the default percentage */
             int children = con_num_children(current->parent);
             Con *other;
