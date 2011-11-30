@@ -808,8 +808,6 @@ void randr_query_outputs() {
         disable_randr(conn);
     }
 
-    ewmh_update_workarea();
-
     /* Just go through each active output and assign one workspace */
     TAILQ_FOREACH(output, &outputs, outputs) {
         if (!output->active)
