@@ -240,8 +240,6 @@ static void _workspace_show(Con *workspace, bool changed_num_workspaces) {
     }
 
     /* Update the EWMH hints */
-    if (changed_num_workspaces)
-        ewmh_update_workarea();
     ewmh_update_current_desktop();
 
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");

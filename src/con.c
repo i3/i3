@@ -1066,7 +1066,6 @@ static void con_on_remove_child(Con *con) {
             LOG("Closing old workspace (%p / %s), it is empty\n", con, con->name);
             tree_close(con, DONT_KILL_WINDOW, false, false);
             ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"empty\"}");
-            ewmh_update_workarea();
         }
         return;
     }
