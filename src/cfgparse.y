@@ -552,15 +552,15 @@ void parse_file(const char *f) {
         /* We need to convert this v3 configuration */
         char *converted = migrate_config(new, stbuf.st_size);
         if (converted != NULL) {
-            printf("\n");
-            printf("****************************************************************\n");
-            printf("NOTE: Automatically converted configuration file from v3 to v4.\n");
-            printf("\n");
-            printf("Please convert your config file to v4. You can use this command:\n");
-            printf("    mv %s %s.O\n", f, f);
-            printf("    i3-migrate-config-to-v4 %s.O > %s\n", f, f);
-            printf("****************************************************************\n");
-            printf("\n");
+            ELOG("\n");
+            ELOG("****************************************************************\n");
+            ELOG("NOTE: Automatically converted configuration file from v3 to v4.\n");
+            ELOG("\n");
+            ELOG("Please convert your config file to v4. You can use this command:\n");
+            ELOG("    mv %s %s.O\n", f, f);
+            ELOG("    i3-migrate-config-to-v4 %s.O > %s\n", f, f);
+            ELOG("****************************************************************\n");
+            ELOG("\n");
             free(new);
             new = converted;
         } else {
@@ -611,6 +611,9 @@ void parse_file(const char *f) {
     }
 
     if (context->has_errors || context->has_warnings) {
+        ELOG("FYI: You are using i3 version " I3_VERSION "\n");
+        if (version == 3)
+            ELOG("Please convert your configfile first, then fix any remaining errors (see above).\n");
         start_configerror_nagbar(f);
     }
 
