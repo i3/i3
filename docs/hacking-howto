@@ -63,57 +63,22 @@ to a specific file type, a window manager should not limit itself to a certain
 layout (like dwm, awesome, …) but provide mechanisms for you to easily create
 the layout you need at the moment.
 
-=== The layout table
+=== The layout tree
 
-*********************************************************************************
-This section has not been updated for v4.0 yet, sorry! We wanted to release on
-time, but we will update this soon. Please talk to us on IRC if you need to
-know stuff *NOW* :).
-*********************************************************************************
-
-/////////////////////////////////////////////////////////////////////////////////
-To accomplish flexible layouts, we decided to simply use a table. The table
-grows and shrinks as you need it. Each cell holds a container which then holds
-windows (see picture below). You can use different layouts for each container
-(default layout and stacking layout).
+The data structure which i3 uses to keep track of your windows is a tree. Every
+node in the tree is a container (type +Con+). Some containers represent actual
+windows (every container with a +window != NULL+), some represent split
+containers and a few have special purposes: they represent workspaces, outputs
+(like VGA1, LVDS1, …) or the X11 root window.
 
 So, when you open a terminal and immediately open another one, they reside in
-the same container, in default layout. The layout table has exactly one column,
-one row and therefore one cell. When you move one of the terminals to the
-right, the table needs to grow. It will be expanded to two columns and one row.
-This enables you to have different layouts for each container. The table then
-looks like this:
+the same split container, which uses the default layout. In case of an empty
+workspace, the split container we are talking about is the workspace.
 
-[width="15%",cols="^,^"]
-|========
-| T1 | T2
-|========
-
-When moving terminal 2 to the bottom, the table will be expanded again.
-
-[width="15%",cols="^,^"]
-|========
-| T1 |
-|    | T2
-|========
-
-You can really think of the layout table like a traditional HTML table, if
-you’ve ever designed one. Especially col- and rowspan work similarly. Below,
-you see an example of colspan=2 for the first container (which has T1 as
-window).
-
-[width="15%",cols="^asciidoc"]
-|========
-| T1
-|
-[cols="^,^",frame="none"]
-!========
-! T2 ! T3
-!========
-|========
-
-Furthermore, you can freely resize table cells.
-/////////////////////////////////////////////////////////////////////////////////
+To get an impression of how different layouts are represented, just play around
+and look at the data structures -- they are exposed as a JSON hash. See
+http://i3wm.org/docs/ipc.html#_get_tree_reply for documentation on that and an
+example.
 
 == Files
 
