@@ -68,6 +68,7 @@ CPPFLAGS += -DPCRE_HAS_UCP=1
 endif
 
 LIBS += -lm
+LIBS += -lrt
 LIBS += -L $(TOPDIR)/libi3 -li3
 LIBS += $(call ldflags_for_lib, xcb-event,xcb-event)
 LIBS += $(call ldflags_for_lib, xcb-keysyms,xcb-keysyms)
