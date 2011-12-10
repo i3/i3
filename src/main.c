@@ -284,8 +284,7 @@ int main(int argc, char *argv[]) {
     debug_build = ((strchr(I3_VERSION, '(') - I3_VERSION) > 10);
 
     /* On non-release builds, disable SHM logging by default. */
-    if (!debug_build)
-        shmlog_size = 0;
+    shmlog_size = (debug_build ? 25 * 1024 * 1024 : 0);
 
     start_argv = argv;
 

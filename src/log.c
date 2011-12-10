@@ -39,7 +39,7 @@ char *errorfilename;
 char *shmlogname = "";
 /* Size limit for the SHM log, by default 25 MiB. Can be overwritten using the
  * flag --shmlog-size. */
-int shmlog_size = 25 * 1024 * 1024;
+int shmlog_size = 0;
 /* If enabled, logbuffer will point to a memory mapping of the i3 SHM log. */
 static char *logbuffer;
 /* A pointer (within logbuffer) where data will be written to next. */
