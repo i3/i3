@@ -85,7 +85,8 @@ sub activate_i3 {
 
         # Construct the command to launch i3. Use maximum debug level, disable
         # the interactive signalhandler to make it crash immediately instead.
-        my $i3cmd = abs_path("../i3") . " -V -d all --disable-signalhandler";
+        # Also disable logging to SHM since we want to redirect the logs anyways.
+        my $i3cmd = abs_path("../i3") . " -V -d all --disable-signalhandler --shmlog-size=0";
 
         # For convenience:
         my $outdir = $args{outdir};
