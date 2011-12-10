@@ -1,0 +1,32 @@
+i3-dump-log(1)
+==============
+Michael Stapelberg <michael+i3@stapelberg.de>
+v4.1, December 2011
+
+== NAME
+
+i3-dump-log - dumps the i3 SHM log
+
+== SYNOPSIS
+
+i3-dump-log [-s <socketpath>]
+
+== DESCRIPTION
+
+Debug versions of i3 automatically use 1% of your RAM (but 25 MiB max) to store
+full debug loglevel log output. This is extremely helpful for bugreports and
+figuring out what is going on, without permanently logging to a file.
+
+With i3-dump-log, you can dump the SHM log to stdout.
+
+== EXAMPLE
+
+i3-dump-log | gzip -9 > /tmp/i3-log.gz
+
+== SEE ALSO
+
+i3(1)
+
+== AUTHOR
+
+Michael Stapelberg and contributors

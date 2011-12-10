@@ -21,6 +21,8 @@
 
 extern char *loglevels[];
 extern char *errorfilename;
+extern char *shmlogname;
+extern int shmlog_size;
 
 /**
  * Initializes logging by creating an error logfile in /tmp (or
@@ -34,6 +36,13 @@ void init_logging();
  *
  */
 void add_loglevel(const char *level);
+
+/**
+ * Returns the offsets for the next write and for the last wrap.
+ * Necessary to print the i3 SHM log in the correct order.
+ *
+ */
+void get_log_markers(int *offset_next_write, int *offset_last_wrap, int *size);
 
 /**
  * Set verbosity of i3. If verbose is set to true, informative messages will

@@ -199,8 +199,11 @@ void setup_signal_handler() {
     action.sa_flags = SA_NODEFER | SA_RESETHAND | SA_SIGINFO;
     sigemptyset(&action.sa_mask);
 
-    if (sigaction(SIGSEGV, &action, NULL) == -1 ||
+    /* Catch all signals with default action "Core", see signal(7) */
+    if (sigaction(SIGQUIT, &action, NULL) == -1 ||
+        sigaction(SIGILL, &action, NULL) == -1 ||
         sigaction(SIGABRT, &action, NULL) == -1 ||
-        sigaction(SIGFPE, &action, NULL) == -1)
+        sigaction(SIGFPE, &action, NULL) == -1 ||
+        sigaction(SIGSEGV, &action, NULL) == -1)
         ELOG("Could not setup signal handler");
 }

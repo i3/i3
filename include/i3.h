@@ -28,6 +28,8 @@
  * this before starting any other process, since we set RLIMIT_CORE to
  * RLIM_INFINITY for i3 debugging versions. */
 extern struct rlimit original_rlimit_core;
+/** Whether this version of i3 is a debug build or a release build. */
+extern bool debug_build;
 extern xcb_connection_t *conn;
 extern int conn_screen;
 /** The last timestamp we got from X11 (timestamps are included in some events
