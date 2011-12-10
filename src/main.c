@@ -14,6 +14,8 @@
 #include <sys/un.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include "all.h"
 
 #include "sd-daemon.h"
@@ -22,6 +24,9 @@
  * this before starting any other process, since we set RLIMIT_CORE to
  * RLIM_INFINITY for i3 debugging versions. */
 struct rlimit original_rlimit_core;
+
+/* Whether this version of i3 is a debug build or a release build. */
+bool debug_build = false;
 
 static int xkb_event_base;
 
@@ -205,6 +210,28 @@ static void i3_exit() {
 #if EV_VERSION_MAJOR >= 4
     ev_loop_destroy(main_loop);
 #endif
+
+    if (*shmlogname != '\0') {
+        fprintf(stderr, "Closing SHM log \"%s\"\n", shmlogname);
+        fflush(stderr);
+        shm_unlink(shmlogname);
+    }
+}
+
+/*
+ * (One-shot) Handler for all signals with default action "Term", see signal(7)
+ *
+ * Unlinks the SHM log and re-raises the signal.
+ *
+ */
+static void handle_signal(int sig, siginfo_t *info, void *data) {
+    fprintf(stderr, "Received signal %d, terminating\n", sig);
+    if (*shmlogname != '\0') {
+        fprintf(stderr, "Closing SHM log \"%s\"\n", shmlogname);
+        shm_unlink(shmlogname);
+    }
+    fflush(stderr);
+    raise(sig);
 }
 
 int main(int argc, char *argv[]) {
@@ -224,6 +251,8 @@ int main(int argc, char *argv[]) {
         {"force-xinerama", no_argument, 0, 0},
         {"force_xinerama", no_argument, 0, 0},
         {"disable-signalhandler", no_argument, 0, 0},
+        {"shmlog-size", required_argument, 0, 0},
+        {"shmlog_size", required_argument, 0, 0},
         {"get-socketpath", no_argument, 0, 0},
         {"get_socketpath", no_argument, 0, 0},
         {0, 0, 0, 0}
@@ -242,7 +271,21 @@ int main(int argc, char *argv[]) {
 
     srand(time(NULL));
 
+    /* Init logging *before* initializing debug_build to guarantee early
+     * (file) logging. */
     init_logging();
+
+    /* I3_VERSION contains either something like this:
+     *     "4.0.2 (2011-11-11, branch "release")".
+     * or: "4.0.2-123-gCOFFEEBABE (2011-11-11, branch "next")".
+     *
+     * So we check for the offset of the first opening round bracket to
+     * determine whether this is a git version or a release version. */
+    debug_build = ((strchr(I3_VERSION, '(') - I3_VERSION) > 10);
+
+    /* On non-release builds, disable SHM logging by default. */
+    if (!debug_build)
+        shmlog_size = 0;
 
     start_argv = argv;
 
@@ -300,6 +343,14 @@ int main(int argc, char *argv[]) {
                     }
 
                     return 1;
+                } else if (strcmp(long_options[option_index].name, "shmlog-size") == 0 ||
+                           strcmp(long_options[option_index].name, "shmlog_size") == 0) {
+                    shmlog_size = atoi(optarg);
+                    /* Re-initialize logging immediately to get as many
+                     * logmessages as possible into the SHM log. */
+                    init_logging();
+                    LOG("Limiting SHM log size to %d bytes\n", shmlog_size);
+                    break;
                 } else if (strcmp(long_options[option_index].name, "restart") == 0) {
                     FREE(layout_path);
                     layout_path = sstrdup(optarg);
@@ -325,6 +376,11 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "\n");
                 fprintf(stderr, "\t--get-socketpath\n"
                                 "\tRetrieve the i3 IPC socket path from X11, print it, then exit.\n");
+                fprintf(stderr, "\n");
+                fprintf(stderr, "\t--shmlog-size <limit>\n"
+                                "\tLimits the size of the i3 SHM log to <limit> bytes. Setting this\n"
+                                "\tto 0 disables SHM logging entirely.\n"
+                                "\tThe default is %d bytes.\n", shmlog_size);
                 fprintf(stderr, "\n");
                 fprintf(stderr, "If you pass plain text arguments, i3 will interpret them as a command\n"
                                 "to send to a currently running i3 (like i3-msg). This allows you to\n"
@@ -395,13 +451,11 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    /* I3_VERSION contains either something like this:
-     *     "4.0.2 (2011-11-11, branch "release")".
-     * or: "4.0.2-123-gCOFFEEBABE (2011-11-11, branch "next")".
-     *
-     * So we check for the offset of the first opening round bracket to
-     * determine whether this is a git version or a release version. */
-    if ((strchr(I3_VERSION, '(') - I3_VERSION) > 10) {
+    /* Enable logging to handle the case when the user did not specify --shmlog-size */
+    init_logging();
+
+    /* Try to enable core dumps by default when running a debug build */
+    if (debug_build) {
         struct rlimit limit = { RLIM_INFINITY, RLIM_INFINITY };
         setrlimit(RLIMIT_CORE, &limit);
 
@@ -662,8 +716,31 @@ int main(int argc, char *argv[]) {
 
     manage_existing_windows(root);
 
+    struct sigaction action;
+
+    action.sa_sigaction = handle_signal;
+    action.sa_flags = SA_NODEFER | SA_RESETHAND | SA_SIGINFO;
+    sigemptyset(&action.sa_mask);
+
     if (!disable_signalhandler)
         setup_signal_handler();
+    else {
+        /* Catch all signals with default action "Core", see signal(7) */
+        if (sigaction(SIGQUIT, &action, NULL) == -1 ||
+            sigaction(SIGILL, &action, NULL) == -1 ||
+            sigaction(SIGABRT, &action, NULL) == -1 ||
+            sigaction(SIGFPE, &action, NULL) == -1 ||
+            sigaction(SIGSEGV, &action, NULL) == -1)
+            ELOG("Could not setup signal handler");
+    }
+
+    /* Catch all signals with default action "Term", see signal(7) */
+    if (sigaction(SIGHUP, &action, NULL) == -1 ||
+        sigaction(SIGINT, &action, NULL) == -1 ||
+        sigaction(SIGALRM, &action, NULL) == -1 ||
+        sigaction(SIGUSR1, &action, NULL) == -1 ||
+        sigaction(SIGUSR2, &action, NULL) == -1)
+        ELOG("Could not setup signal handler");
 
     /* Ignore SIGPIPE to survive errors when an IPC client disconnects
      * while we are sending him a message */
