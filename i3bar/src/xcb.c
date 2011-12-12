@@ -684,19 +684,47 @@ void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         }
 
         unsigned int mods = ev.state.mods;
-        modstate = mods & Mod4Mask;
+        modstate = mods & config.modifier;
     }
+
+#define DLOGMOD(modmask, status, barfunc) \
+    do { \
+        switch (modmask) { \
+            case ShiftMask: \
+                DLOG("ShiftMask got " #status "!\n"); \
+                break; \
+            case ControlMask: \
+                DLOG("ControlMask got " #status "!\n"); \
+                break; \
+            case Mod1Mask: \
+                DLOG("Mod1Mask got " #status "!\n"); \
+                break; \
+            case Mod2Mask: \
+                DLOG("Mod2Mask got " #status "!\n"); \
+                break; \
+            case Mod3Mask: \
+                DLOG("Mod3Mask got " #status "!\n"); \
+                break; \
+            case Mod4Mask: \
+                DLOG("Mod4Mask got " #status "!\n"); \
+                break; \
+            case Mod5Mask: \
+                DLOG("Mod5Mask got " #status "!\n"); \
+                break; \
+        } \
+        barfunc(); \
+    } while (0)
 
     if (modstate != mod_pressed) {
         if (modstate == 0) {
-            DLOG("Mod4 got released!\n");
-            hide_bars();
+            DLOGMOD(config.modifier, released, hide_bars);
         } else {
-            DLOG("Mod4 got pressed!\n");
-            unhide_bars();
+            DLOGMOD(config.modifier, pressed, unhide_bars);
         }
         mod_pressed = modstate;
     }
+
+#undef DLOGMOD
 }
 
 /*

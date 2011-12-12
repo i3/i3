@@ -708,6 +708,14 @@ void parse_file(const char *f) {
 %token                  TOK_BAR_MODE                "mode (bar)"
 %token                  TOK_BAR_HIDE                "hide"
 %token                  TOK_BAR_DOCK                "dock"
+%token                  TOK_BAR_MODIFIER            "modifier (bar)"
+%token                  TOK_BAR_CONTROL             "shift (bar)"
+%token                  TOK_BAR_SHIFT               "control (bar)"
+%token                  TOK_BAR_MOD1                "Mod1"
+%token                  TOK_BAR_MOD2                "Mod2"
+%token                  TOK_BAR_MOD3                "Mod3"
+%token                  TOK_BAR_MOD4                "Mod4"
+%token                  TOK_BAR_MOD5                "Mod5"
 %token                  TOK_BAR_POSITION            "position"
 %token                  TOK_BAR_BOTTOM              "bottom"
 %token                  TOK_BAR_TOP                 "top"
@@ -748,6 +756,7 @@ void parse_file(const char *f) {
 %type   <number>        popup_setting
 %type   <number>        bar_position_position
 %type   <number>        bar_mode_mode
+%type   <number>        bar_modifier_modifier
 %type   <number>        optional_no_startup_id
 %type   <string>        command
 %type   <string>        word_or_number
@@ -1042,6 +1051,7 @@ barline:
     | bar_tray_output
     | bar_position
     | bar_mode
+    | bar_modifier
     | bar_font
     | bar_workspace_buttons
     | bar_verbose
@@ -1117,6 +1127,23 @@ bar_mode:
 bar_mode_mode:
     TOK_BAR_HIDE   { $$ = M_HIDE; }
     | TOK_BAR_DOCK { $$ = M_DOCK; }
+    ;
+
+bar_modifier:
+    TOK_BAR_MODIFIER bar_modifier_modifier
+    {
+        DLOG("modifier %d\n", $2);
+        current_bar.modifier = $2;
+    };
+
+bar_modifier_modifier:
+    TOK_BAR_CONTROL { $$ = M_CONTROL; }
+    | TOK_BAR_SHIFT { $$ = M_SHIFT; }
+    | TOK_BAR_MOD1  { $$ = M_MOD1; }
+    | TOK_BAR_MOD2  { $$ = M_MOD2; }
+    | TOK_BAR_MOD3  { $$ = M_MOD3; }
+    | TOK_BAR_MOD4  { $$ = M_MOD4; }
+    | TOK_BAR_MOD5  { $$ = M_MOD5; }
     ;
 
 bar_font:

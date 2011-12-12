@@ -198,6 +198,18 @@ struct Barconfig {
     /** Bar display mode (hide unless modifier is pressed or show in dock mode) */
     enum { M_DOCK = 0, M_HIDE = 1 } mode;
 
+    /** Bar modifier (to show bar when in hide mode). */
+    enum {
+        M_NONE = 0,
+        M_CONTROL = 1,
+        M_SHIFT = 2,
+        M_MOD1 = 3,
+        M_MOD2 = 4,
+        M_MOD3 = 5,
+        M_MOD4 = 6,
+        M_MOD5 = 7
+    } modifier;
+
     /** Bar position (bottom by default). */
     enum { P_BOTTOM = 0, P_TOP = 1 } position;
 

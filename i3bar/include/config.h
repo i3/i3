@@ -20,6 +20,7 @@ typedef enum {
 
 typedef struct config_t {
     int          hide_on_modifier;
+    int          modifier;
     position_t   position;
     int          verbose;
     struct xcb_color_strings_t colors;

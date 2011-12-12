@@ -589,6 +589,36 @@ IPC_HANDLER(get_bar_config) {
             ystr("hide");
         else ystr("dock");
 
+        ystr("modifier");
+        switch (config->modifier) {
+            case M_CONTROL:
+                ystr("ctrl");
+                break;
+            case M_SHIFT:
+                ystr("shift");
+                break;
+            case M_MOD1:
+                ystr("Mod1");
+                break;
+            case M_MOD2:
+                ystr("Mod2");
+                break;
+            case M_MOD3:
+                ystr("Mod3");
+                break;
+            /*
+            case M_MOD4:
+                ystr("Mod4");
+                break;
+            */
+            case M_MOD5:
+                ystr("Mod5");
+                break;
+            default:
+                ystr("Mod4");
+                break;
+        }
+
         ystr("position");
         if (config->position == P_BOTTOM)
             ystr("bottom");

@@ -59,6 +59,7 @@ EOL     (\r?\n)
 %x BUFFER_LINE
 %x BAR
 %x BAR_MODE
+%x BAR_MODIFIER
 %x BAR_POSITION
 %x BAR_COLORS
 %x BAR_COLOR
@@ -88,7 +89,7 @@ EOL     (\r?\n)
 }
 
  /* This part of the lexer handles the bar {} blocks */
-<BAR,BAR_MODE,BAR_POSITION,BAR_COLORS,BAR_COLOR>[ \t]+ { /* ignore whitespace */ ; }
+<BAR,BAR_MODE,BAR_MODIFIER,BAR_POSITION,BAR_COLORS,BAR_COLOR>[ \t]+ { /* ignore whitespace */ ; }
 <BAR>"{"                        { return '{'; }
 <BAR>"}"                        { yy_pop_state(); return '}'; }
 <BAR>^[ \t]*#[^\n]*             { return TOKCOMMENT; }
@@ -98,6 +99,15 @@ EOL     (\r?\n)
 <BAR>mode                       { yy_push_state(BAR_MODE); return TOK_BAR_MODE; }
 <BAR_MODE>hide                  { yy_pop_state(); return TOK_BAR_HIDE; }
 <BAR_MODE>dock                  { yy_pop_state(); return TOK_BAR_DOCK; }
+<BAR>modifier                   { yy_push_state(BAR_MODIFIER); return TOK_BAR_MODIFIER; }
+<BAR_MODIFIER>control           { yy_pop_state(); return TOK_BAR_CONTROL; }
+<BAR_MODIFIER>ctrl              { yy_pop_state(); return TOK_BAR_CONTROL; }
+<BAR_MODIFIER>shift             { yy_pop_state(); return TOK_BAR_SHIFT; }
+<BAR_MODIFIER>Mod1              { yy_pop_state(); return TOK_BAR_MOD1; }
+<BAR_MODIFIER>Mod2              { yy_pop_state(); return TOK_BAR_MOD2; }
+<BAR_MODIFIER>Mod3              { yy_pop_state(); return TOK_BAR_MOD3; }
+<BAR_MODIFIER>Mod4              { yy_pop_state(); return TOK_BAR_MOD4; }
+<BAR_MODIFIER>Mod5              { yy_pop_state(); return TOK_BAR_MOD5; }
 <BAR>position                   { yy_push_state(BAR_POSITION); return TOK_BAR_POSITION; }
 <BAR_POSITION>bottom            { yy_pop_state(); return TOK_BAR_BOTTOM; }
 <BAR_POSITION>top               { yy_pop_state(); return TOK_BAR_TOP; }
@@ -117,7 +127,7 @@ EOL     (\r?\n)
 <BAR_COLORS>inactive_workspace  { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_INACTIVE_WORKSPACE; }
 <BAR_COLORS>urgent_workspace    { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_URGENT_WORKSPACE; }
 <BAR_COLOR>#[0-9a-fA-F]+        { yy_pop_state(); yylval.string = sstrdup(yytext); return HEXCOLOR; }
-<BAR,BAR_COLORS,BAR_MODE,BAR_POSITION>[a-zA-Z]+ { yylval.string = sstrdup(yytext); return WORD; }
+<BAR,BAR_COLORS,BAR_MODE,BAR_MODIFIER,BAR_POSITION>[a-zA-Z]+ { yylval.string = sstrdup(yytext); return WORD; }
 
 
 
