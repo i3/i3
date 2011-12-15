@@ -46,7 +46,7 @@ Currently implemented message types are the following:
 COMMAND (0)::
 	The payload of the message is a command for i3 (like the commands you
 	can bind to keys in the configuration file) and will be executed
-	directly after receiving it. There is no reply to this message.
+	directly after receiving it.
 GET_WORKSPACES (1)::
 	Gets the current workspaces. The reply will be a JSON-encoded list of
 	workspaces (see the reply section).
