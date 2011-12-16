@@ -14,6 +14,7 @@ use POSIX ();
 use TAP::Harness;
 use TAP::Parser;
 use TAP::Parser::Aggregator;
+use Time::HiRes qw(time);
 # these are shipped with the testsuite
 use lib qw(lib);
 use StartXDummy;
@@ -25,6 +26,7 @@ use AnyEvent::Util;
 use AnyEvent::Handle;
 use AnyEvent::I3 qw(:all);
 use X11::XCB::Connection;
+use JSON::XS; # AnyEvent::I3 depends on it, too.
 
 # Close superfluous file descriptors which were passed by running in a VIM
 # subshell or situations like that.
@@ -34,6 +36,7 @@ AnyEvent::Util::close_all_fds_except(0, 1, 2);
 my $log;
 sub Log { say $log "@_" }
 
+my %timings;
 my $coverage_testing = 0;
 my $valgrind = 0;
 my $strace = 0;
@@ -88,11 +91,30 @@ for my $display (@displays) {
     }
 }
 
+# Read previous timing information, if available. We will be able to roughly
+# predict the test duration and schedule a good order for the tests.
+my $timingsjson = StartXDummy::slurp('.last_run_timings.json');
+%timings = %{decode_json($timingsjson)} if length($timingsjson) > 0;
+
 # 2: get a list of all testcases
 my @testfiles = @ARGV;
 
 # if no files were passed on command line, run all tests from t/
 @testfiles = <t/*.t> if @testfiles == 0;
+
+# Re-order the files so that those which took the longest time in the previous
+# run will be started at the beginning to not delay the whole run longer than
+# necessary.
+@testfiles = map  { $_->[0] }
+             sort { $b->[1] <=> $a->[1] }
+             map  { [$_, $timings{$_} // 999] } @testfiles;
+
+printf("\nRough time estimate for this run: %.2f seconds\n\n", $timings{GLOBAL})
+    if exists($timings{GLOBAL});
+
+# Forget the old timings, we don’t necessarily run the same set of tests as
+# before. Otherwise we would end up with left-overs.
+%timings = (GLOBAL => time());
 
 my $logfile = "$outdir/complete-run.log";
 open $log, '>', $logfile or die "Could not create '$logfile': $!";
@@ -135,6 +157,21 @@ $harness->summary($aggregator);
 
 close $log;
 
+# 5: Save the timings for better scheduling/prediction next run.
+$timings{GLOBAL} = time() - $timings{GLOBAL};
+open(my $fh, '>', '.last_run_timings.json');
+print $fh encode_json(\%timings);
+close($fh);
+
+# 6: Print the slowest test files.
+my @slowest = map  { $_->[0] }
+              sort { $b->[1] <=> $a->[1] }
+              map  { [$_, $timings{$_}] }
+              grep { !/^GLOBAL$/ } keys %timings;
+say '';
+say 'The slowest tests are:';
+printf("\t%s with %.2f seconds\n", $_, $timings{$_}) for @slowest[0..4];
+
 END { cleanup() }
 
 exit 0;
@@ -158,6 +195,7 @@ sub take_job {
     my $display = $worker->{display};
 
     Log status($display, "$test: starting");
+    $timings{$test} = time();
     worker_next($worker, $test);
 
     # create a TAP::Parser with an in-memory fh
@@ -213,6 +251,7 @@ sub take_job {
             return unless $t_eof;
 
             Log status($display, "$test: finished");
+            $timings{$test} = time() - $timings{$test};
             status_completed(scalar @done);
 
             $aggregator->add($test, $parser);
