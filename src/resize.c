@@ -58,6 +58,9 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     Con *output = con_get_output(first);
     DLOG("x = %d, width = %d\n", output->rect.x, output->rect.width);
 
+    x_mask_event_mask(~XCB_EVENT_MASK_ENTER_WINDOW);
+    xcb_flush(conn);
+
     uint32_t mask = 0;
     uint32_t values[2];
 
