@@ -479,6 +479,8 @@ void parse_file(const char *f) {
                 v_value = strstr(value, "\t");
 
             *(v_value++) = '\0';
+            while (*v_value == '\t' || *v_value == ' ')
+                v_value++;
 
             struct Variable *new = scalloc(sizeof(struct Variable));
             new->key = sstrdup(v_key);
