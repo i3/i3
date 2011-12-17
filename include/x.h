@@ -117,4 +117,12 @@ void x_set_i3_atoms();
  */
 void x_set_warp_to(Rect *rect);
 
+/**
+ * Applies the given mask to the event mask of every i3 window decoration X11
+ * window. This is useful to disable EnterNotify while resizing so that focus
+ * is untouched.
+ *
+ */
+void x_mask_event_mask(uint32_t mask);
+
 #endif
