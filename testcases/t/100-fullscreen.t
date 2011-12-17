@@ -156,4 +156,22 @@ is(fullscreen_windows(), 0, 'amount of fullscreen windows after fullscreen comma
 # clean up the workspace so that it will be cleaned when switching away
 cmd 'kill' for (@{get_ws_content($tmp)});
 
+################################################################################
+# Verify that changing focus while in fullscreen does not work.
+################################################################################
+
+$tmp = fresh_workspace;
+
+my $other = open_window;
+is($x->input_focus, $other->id, 'other window focused');
+
+$window = open_window;
+is($x->input_focus, $window->id, 'window focused');
+
+cmd 'fullscreen';
+is($x->input_focus, $window->id, 'fullscreen window focused');
+
+cmd 'focus left';
+is($x->input_focus, $window->id, 'fullscreen window still focused');
+
 done_testing;
