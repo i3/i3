@@ -908,6 +908,14 @@ layout_mode:
 mark:
     TOK_MARK STR
     {
+        printf("Clearing all windows which have that mark first\n");
+
+        Con *con;
+        TAILQ_FOREACH(con, &all_cons, all_cons) {
+            if (con->mark && strcmp(con->mark, $2) == 0)
+                FREE(con->mark);
+        }
+
         printf("marking window with str %s\n", $2);
         owindow *current;
 
@@ -915,10 +923,8 @@ mark:
 
         TAILQ_FOREACH(current, &owindows, owindows) {
             printf("matching: %p / %s\n", current->con, current->con->name);
-            current->con->mark = sstrdup($2);
+            current->con->mark = $2;
         }
-
-        free($<string>2);
 
         tree_render();
     }
