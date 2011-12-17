@@ -25,7 +25,7 @@ typedef enum { CLICK_BORDER = 0, CLICK_DECORATION = 1, CLICK_INSIDE = 2 } click_
  * then calls resize_graphical_handler().
  *
  */
-static bool tiling_resize_for_border(Con *con, border_t border, const xcb_button_press_event_t *event) {
+static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press_event_t *event) {
     DLOG("border = %d, con = %p\n", border, con);
     char way = (border == BORDER_TOP || border == BORDER_LEFT ? 'p' : 'n');
     orientation_t orientation = (border == BORDER_TOP || border == BORDER_BOTTOM ? VERT : HORIZ);
@@ -60,11 +60,17 @@ static bool tiling_resize_for_border(Con *con, border_t border, const xcb_button
         DLOG("Resize not possible\n");
         return false;
     }
-    else {
-        assert(first != second);
-        assert(first->parent == second->parent);
-        resize_graphical_handler(first, second, orientation, event);
-    }
+
+    assert(first != second);
+    assert(first->parent == second->parent);
+
+    /* We modify the X/Y position in the event so that the divider line is at
+     * the actual position of the border, not at the position of the click. */
+    if (orientation == HORIZ)
+        event->root_x = second->rect.x;
+    else event->root_y = second->rect.y;
+
+    resize_graphical_handler(first, second, orientation, event);
 
     DLOG("After resize handler, rendering\n");
     tree_render();
@@ -79,7 +85,7 @@ static bool tiling_resize_for_border(Con *con, border_t border, const xcb_button
  * to the client).
  *
  */
-static bool floating_mod_on_tiled_client(Con *con, const xcb_button_press_event_t *event) {
+static bool floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *event) {
     /* The client is in tiling layout. We can still initiate a resize with the
      * right mouse button, by chosing the border which is the most near one to
      * the position of the mouse pointer */
@@ -118,7 +124,7 @@ static bool floating_mod_on_tiled_client(Con *con, const xcb_button_press_event_
  * Finds out which border was clicked on and calls tiling_resize_for_border().
  *
  */
-static bool tiling_resize(Con *con, const xcb_button_press_event_t *event, const click_destination_t dest) {
+static bool tiling_resize(Con *con, xcb_button_press_event_t *event, const click_destination_t dest) {
     /* check if this was a click on the window border (and on which one) */
     Rect bsr = con_border_style_rect(con);
     DLOG("BORDER x = %d, y = %d for con %p, window 0x%08x\n",
@@ -166,7 +172,7 @@ static bool tiling_resize(Con *con, const xcb_button_press_event_t *event, const
  * functions for resizing/dragging.
  *
  */
-static int route_click(Con *con, const xcb_button_press_event_t *event, const bool mod_pressed, const click_destination_t dest) {
+static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod_pressed, const click_destination_t dest) {
     DLOG("--> click properties: mod = %d, destination = %d\n", mod_pressed, dest);
     DLOG("--> OUTCOME = %p\n", con);
     DLOG("type = %d, name = %s\n", con->type, con->name);
