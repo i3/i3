@@ -254,7 +254,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     }
 
     /* 7: floating modifier pressed, initiate a resize */
-    if (mod_pressed && event->detail == 3) {
+    if (dest == CLICK_INSIDE && mod_pressed && event->detail == 3) {
         if (floating_mod_on_tiled_client(con, event))
             return 1;
     }
