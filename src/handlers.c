@@ -648,11 +648,6 @@ static int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t
 static int handle_expose_event(xcb_expose_event_t *event) {
     Con *parent;
 
-    /* event->count is the number of minimum remaining expose events for this
-     * window, so we skip all events but the last one */
-    if (event->count != 0)
-        return 1;
-
     DLOG("window = %08x\n", event->window);
 
     if ((parent = con_by_frame_id(event->window)) == NULL) {
@@ -660,8 +655,13 @@ static int handle_expose_event(xcb_expose_event_t *event) {
         return 1;
     }
 
-    /* re-render the parent (recursively, if it’s a split con) */
-    x_deco_recurse(parent);
+    /* Since we render to our pixmap on every change anyways, expose events
+     * only tell us that the X server lost (parts of) the window contents. We
+     * can handle that by copying the appropriate part from our pixmap to the
+     * window. */
+    xcb_copy_area(conn, parent->pixmap, parent->frame, parent->pm_gc,
+                  event->x, event->y, event->x, event->y,
+                  event->width, event->height);
     xcb_flush(conn);
 
     return 1;
