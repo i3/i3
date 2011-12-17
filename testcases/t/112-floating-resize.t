@@ -62,4 +62,22 @@ cmd 'border 1pixel';
 
 test_resize;
 
+################################################################################
+# Check if we can position a floating window out of bounds. The XDummy screen
+# is 1280x1024, so x=2864, y=893 is out of bounds.
+################################################################################
+
+($a, $t) = $window->rect;
+$window->rect(X11::XCB::Rect->new(
+    x => 2864,
+    y => 893,
+    width => $a->width,
+    height => $a->height));
+
+sync_with_i3;
+
+($a, $t) = $window->rect;
+cmp_ok($a->x, '<', 1280, 'X not moved out of bounds');
+cmp_ok($a->y, '<', 1024, 'Y not moved out of bounds');
+
 done_testing;
