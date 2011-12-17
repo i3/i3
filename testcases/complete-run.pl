@@ -61,8 +61,16 @@ pod2usage(-verbose => 2, -exitcode => 0) if $help;
 @displays = split(/,/, join(',', @displays));
 @displays = map { s/ //g; $_ } @displays;
 
+# 2: get a list of all testcases
+my @testfiles = @ARGV;
+
+# if no files were passed on command line, run all tests from t/
+@testfiles = <t/*.t> if @testfiles == 0;
+
+my $numtests = scalar @testfiles;
+
 # No displays specified, let’s start some Xdummy instances.
-@displays = start_xdummy($parallel) if @displays == 0;
+@displays = start_xdummy($parallel, $numtests) if @displays == 0;
 
 # 1: create an output directory for this test-run
 my $outdir = "testsuite-";
@@ -95,12 +103,6 @@ for my $display (@displays) {
 # predict the test duration and schedule a good order for the tests.
 my $timingsjson = StartXDummy::slurp('.last_run_timings.json');
 %timings = %{decode_json($timingsjson)} if length($timingsjson) > 0;
-
-# 2: get a list of all testcases
-my @testfiles = @ARGV;
-
-# if no files were passed on command line, run all tests from t/
-@testfiles = <t/*.t> if @testfiles == 0;
 
 # Re-order the files so that those which took the longest time in the previous
 # run will be started at the beginning to not delay the whole run longer than

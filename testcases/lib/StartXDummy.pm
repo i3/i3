@@ -27,7 +27,7 @@ the Xdummy processes and a list of PIDs of the processes.
 my $x_socketpath = '/tmp/.X11-unix/X';
 
 sub start_xdummy {
-    my ($parallel) = @_;
+    my ($parallel, $numtests) = @_;
 
     my @displays = ();
     my @childpids = ();
@@ -40,6 +40,9 @@ sub start_xdummy {
     $num_cores ||= 2;
 
     $parallel ||= $num_cores * 2;
+
+    # If we are running a small number of tests, don’t over-parallelize.
+    $parallel = $numtests if $numtests < $parallel;
 
     # First get the last used display number, then increment it by one.
     # Effectively falls back to 1 if no X server is running.
