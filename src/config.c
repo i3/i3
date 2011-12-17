@@ -82,40 +82,40 @@ Binding *get_binding(uint16_t modifiers, xcb_keycode_t keycode) {
  *
  */
 void translate_keysyms() {
-        Binding *bind;
-        TAILQ_FOREACH(bind, bindings, bindings) {
-                if (bind->keycode > 0)
-                        continue;
+    Binding *bind;
+    TAILQ_FOREACH(bind, bindings, bindings) {
+        if (bind->keycode > 0)
+            continue;
 
-                /* We need to translate the symbol to a keycode */
-                xcb_keysym_t keysym = XStringToKeysym(bind->symbol);
-                if (keysym == NoSymbol) {
-                        ELOG("Could not translate string to key symbol: \"%s\"\n", bind->symbol);
-                        continue;
-                }
-
-                uint32_t last_keycode = 0;
-                xcb_keycode_t *keycodes = xcb_key_symbols_get_keycode(keysyms, keysym);
-                if (keycodes == NULL) {
-                        DLOG("Could not translate symbol \"%s\"\n", bind->symbol);
-                        continue;
-                }
-
-                bind->number_keycodes = 0;
-
-                for (xcb_keycode_t *walk = keycodes; *walk != 0; walk++) {
-                        /* We hope duplicate keycodes will be returned in order
-                         * and skip them */
-                        if (last_keycode == *walk)
-                                continue;
-                        last_keycode = *walk;
-                        bind->number_keycodes++;
-                }
-                DLOG("Translated symbol \"%s\" to %d keycode\n", bind->symbol, bind->number_keycodes);
-                bind->translated_to = smalloc(bind->number_keycodes * sizeof(xcb_keycode_t));
-                memcpy(bind->translated_to, keycodes, bind->number_keycodes * sizeof(xcb_keycode_t));
-                free(keycodes);
+        /* We need to translate the symbol to a keycode */
+        xcb_keysym_t keysym = XStringToKeysym(bind->symbol);
+        if (keysym == NoSymbol) {
+            ELOG("Could not translate string to key symbol: \"%s\"\n", bind->symbol);
+            continue;
         }
+
+        uint32_t last_keycode = 0;
+        xcb_keycode_t *keycodes = xcb_key_symbols_get_keycode(keysyms, keysym);
+        if (keycodes == NULL) {
+            DLOG("Could not translate symbol \"%s\"\n", bind->symbol);
+            continue;
+        }
+
+        bind->number_keycodes = 0;
+
+        for (xcb_keycode_t *walk = keycodes; *walk != 0; walk++) {
+            /* We hope duplicate keycodes will be returned in order
+             * and skip them */
+            if (last_keycode == *walk)
+                continue;
+            last_keycode = *walk;
+            bind->number_keycodes++;
+        }
+        DLOG("Translated symbol \"%s\" to %d keycode\n", bind->symbol, bind->number_keycodes);
+        bind->translated_to = smalloc(bind->number_keycodes * sizeof(xcb_keycode_t));
+        memcpy(bind->translated_to, keycodes, bind->number_keycodes * sizeof(xcb_keycode_t));
+        free(keycodes);
+    }
 }
 
 /*
