@@ -175,6 +175,14 @@ say 'The slowest tests are:';
 printf("\t%s with %.2f seconds\n", $_, $timings{$_})
     for @slowest[0..($#slowest > 4 ? 4 : $#slowest)];
 
+# When we are running precisely one test, print the output. Makes developing
+# with a single testcase easier.
+if ($numtests == 1) {
+    say '';
+    say 'Test output:';
+    say StartXDummy::slurp($logfile);
+}
+
 END { cleanup() }
 
 exit 0;
