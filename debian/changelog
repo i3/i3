@@ -1,3 +1,27 @@
+i3-wm (4.1.1-0) unstable; urgency=low
+
+  * NOT YET RELEASED
+  * ipc: set CLOEXEC on client file descriptors
+  * Fix prototype in include/xcursor.h
+  * Bugfix: Skip dock clients when handling FocusIn events
+  * Bugfix: Fix fullscreen with floating windows
+  * Bugfix: Fix startup when RandR is not present
+  * Bugfix: Retain window position and size when changing floating border
+  * Bugfix: Disallow focusing dock clients via criteria
+  * Bugfix: Don’t create a workspace named 'back_and_forth' on startup
+  * Bugfix: Fix wrong focus in complex tabbed/stacked layouts
+  * Bugfix: Fix resizing for (e.g.) v-split containers in h-split containers
+  * Bugfix: Fix 'resize' command in nested containers
+  * Bugfix: Don’t set the _NET_WM_WORKAREA hint at all
+  * Bugfix: Skip leading whitespace in variable assignments
+  * Bugfix: Make resizing of tiling windows with floating_modifier use absolute
+    coordinates
+  * Bugfix: Make resizing work when pressing floating_modifier + right mouse
+    button on window decorations
+  * Bugfix: Fix setting the same mark repeatedly on different windows
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Sat, 17 Dec 2011 14:29:59 +0000
+
 i3-wm (4.1-1) unstable; urgency=low
 
   * Switch to dpkg-source 3.0 (quilt) and compat level 7
