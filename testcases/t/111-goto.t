@@ -59,6 +59,24 @@ $focus = focus_after(qq|[con_mark="$random_mark" con_mark="$random_mark"] focus|
 is($focus, $mid->id, "goto worked");
 
 #####################################################################
+# Set the same mark multiple times and see if focus works correctly
+#####################################################################
+
+$focus = focus_after('focus left');
+is($focus, $top->id, "Top window focused");
+
+cmd "mark $random_mark";
+
+$focus = focus_after(qq|[con_mark="$random_mark"] focus|);
+is($focus, $top->id, "focus unchanged after goto");
+
+$focus = focus_after('focus right');
+is($focus, $mid->id, "mid window focused");
+
+$focus = focus_after(qq|[con_mark="$random_mark"] focus|);
+is($focus, $top->id, "goto worked");
+
+#####################################################################
 # Check whether the focus command will switch to a different
 # workspace if necessary
 #####################################################################
