@@ -172,7 +172,8 @@ my @slowest = map  { $_->[0] }
               grep { !/^GLOBAL$/ } keys %timings;
 say '';
 say 'The slowest tests are:';
-printf("\t%s with %.2f seconds\n", $_, $timings{$_}) for @slowest[0..4];
+printf("\t%s with %.2f seconds\n", $_, $timings{$_})
+    for @slowest[0..($#slowest > 4 ? 4 : $#slowest)];
 
 END { cleanup() }
 
