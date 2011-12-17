@@ -436,6 +436,13 @@ restart:
 focus:
     TOK_FOCUS
     {
+        if (focused &&
+            focused->type != CT_WORKSPACE &&
+            focused->fullscreen_mode != CF_NONE) {
+            LOG("Cannot change focus while in fullscreen mode.\n");
+            break;
+        }
+
         owindow *current;
 
         if (match_is_empty(&current_match)) {
@@ -486,6 +493,13 @@ focus:
     }
     | TOK_FOCUS direction
     {
+        if (focused &&
+            focused->type != CT_WORKSPACE &&
+            focused->fullscreen_mode != CF_NONE) {
+            LOG("Cannot change focus while in fullscreen mode.\n");
+            break;
+        }
+
         int direction = $2;
         switch (direction) {
             case TOK_LEFT:
@@ -513,6 +527,13 @@ focus:
     }
     | TOK_FOCUS window_mode
     {
+        if (focused &&
+            focused->type != CT_WORKSPACE &&
+            focused->fullscreen_mode != CF_NONE) {
+            LOG("Cannot change focus while in fullscreen mode.\n");
+            break;
+        }
+
         printf("should focus: ");
 
         if ($2 == TOK_TILING)
@@ -545,6 +566,13 @@ focus:
     }
     | TOK_FOCUS level
     {
+        if (focused &&
+            focused->type != CT_WORKSPACE &&
+            focused->fullscreen_mode != CF_NONE) {
+            LOG("Cannot change focus while in fullscreen mode.\n");
+            break;
+        }
+
         if ($2 == TOK_PARENT)
             level_up();
         else level_down();
