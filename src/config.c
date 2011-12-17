@@ -83,38 +83,46 @@ Binding *get_binding(uint16_t modifiers, xcb_keycode_t keycode) {
  */
 void translate_keysyms() {
     Binding *bind;
+    xcb_keysym_t keysym;
+    int col;
+    xcb_keycode_t i,
+                  min_keycode = xcb_get_setup(conn)->min_keycode,
+                  max_keycode = xcb_get_setup(conn)->max_keycode;
+
     TAILQ_FOREACH(bind, bindings, bindings) {
         if (bind->keycode > 0)
             continue;
 
         /* We need to translate the symbol to a keycode */
-        xcb_keysym_t keysym = XStringToKeysym(bind->symbol);
+        keysym = XStringToKeysym(bind->symbol);
         if (keysym == NoSymbol) {
-            ELOG("Could not translate string to key symbol: \"%s\"\n", bind->symbol);
+            ELOG("Could not translate string to key symbol: \"%s\"\n",
+                 bind->symbol);
             continue;
         }
 
-        uint32_t last_keycode = 0;
-        xcb_keycode_t *keycodes = xcb_key_symbols_get_keycode(keysyms, keysym);
-        if (keycodes == NULL) {
-            DLOG("Could not translate symbol \"%s\"\n", bind->symbol);
-            continue;
-        }
+        /* Base column we use for looking up key symbols. We always consider
+         * the base column and the corresponding shift column, so without
+         * mode_switch, we look in 0 and 1, with mode_switch we look in 2 and
+         * 3. */
+        col = (bind->mods & BIND_MODE_SWITCH ? 2 : 0);
 
+        FREE(bind->translated_to);
         bind->number_keycodes = 0;
 
-        for (xcb_keycode_t *walk = keycodes; *walk != 0; walk++) {
-            /* We hope duplicate keycodes will be returned in order
-             * and skip them */
-            if (last_keycode == *walk)
+        for (i = min_keycode; i && i <= max_keycode; i++) {
+            if ((xcb_key_symbols_get_keysym(keysyms, i, col) != keysym) &&
+                (xcb_key_symbols_get_keysym(keysyms, i, col+1) != keysym))
                 continue;
-            last_keycode = *walk;
             bind->number_keycodes++;
+            bind->translated_to = srealloc(bind->translated_to,
+                                           (sizeof(xcb_keycode_t) *
+                                            bind->number_keycodes));
+            bind->translated_to[bind->number_keycodes-1] = i;
         }
-        DLOG("Translated symbol \"%s\" to %d keycode\n", bind->symbol, bind->number_keycodes);
-        bind->translated_to = smalloc(bind->number_keycodes * sizeof(xcb_keycode_t));
-        memcpy(bind->translated_to, keycodes, bind->number_keycodes * sizeof(xcb_keycode_t));
-        free(keycodes);
+
+        DLOG("Translated symbol \"%s\" to %d keycode\n", bind->symbol,
+             bind->number_keycodes);
     }
 }
 
