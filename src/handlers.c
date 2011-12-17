@@ -376,25 +376,45 @@ static int handle_configure_request(xcb_configure_request_event_t *event) {
             bsr.height -= deco_height;
         }
         Con *floatingcon = con->parent;
-        DLOG("Container is a floating leaf node, will do that.\n");
+
+        Rect newrect = floatingcon->rect;
+
         if (event->value_mask & XCB_CONFIG_WINDOW_X) {
-            floatingcon->rect.x = event->x + (-1) * bsr.x;
-            DLOG("proposed x = %d, new x is %d\n", event->x, floatingcon->rect.x);
+            newrect.x = event->x + (-1) * bsr.x;
+            DLOG("proposed x = %d, new x is %d\n", event->x, newrect.x);
         }
         if (event->value_mask & XCB_CONFIG_WINDOW_Y) {
-            floatingcon->rect.y = event->y + (-1) * bsr.y;
-            DLOG("proposed y = %d, new y is %d\n", event->y, floatingcon->rect.y);
+            newrect.y = event->y + (-1) * bsr.y;
+            DLOG("proposed y = %d, new y is %d\n", event->y, newrect.y);
         }
         if (event->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
-            floatingcon->rect.width = event->width + (-1) * bsr.width;
-            floatingcon->rect.width += con->border_width * 2;
-            DLOG("proposed width = %d, new width is %d (x11 border %d)\n", event->width, floatingcon->rect.width, con->border_width);
+            newrect.width = event->width + (-1) * bsr.width;
+            newrect.width += con->border_width * 2;
+            DLOG("proposed width = %d, new width is %d (x11 border %d)\n",
+                 event->width, newrect.width, con->border_width);
         }
         if (event->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
-            floatingcon->rect.height = event->height + (-1) * bsr.height;
-            floatingcon->rect.height += con->border_width * 2;
-            DLOG("proposed height = %d, new height is %d (x11 border %d)\n", event->height, floatingcon->rect.height, con->border_width);
+            newrect.height = event->height + (-1) * bsr.height;
+            newrect.height += con->border_width * 2;
+            DLOG("proposed height = %d, new height is %d (x11 border %d)\n",
+                 event->height, newrect.height, con->border_width);
         }
+
+        /* Sanity check: Are the new coordinates on any output? If not, we
+         * ignore that request. */
+        Output *output = get_output_containing(
+            newrect.x + (newrect.width / 2),
+            newrect.y + (newrect.height / 2));
+
+        if (!output) {
+            ELOG("No output found at destination coordinates. Ignoring this ConfigureRequest.\n");
+            fake_absolute_configure_notify(con);
+            return 0;
+        }
+
+        DLOG("Container is a floating leaf node, will do that.\n");
+        floatingcon->rect = newrect;
+
         floating_maybe_reassign_ws(floatingcon);
         tree_render();
     }
