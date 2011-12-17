@@ -35,16 +35,4 @@ cmd 'kill';
 
 cmp_deeply(get_marks(), [ ], 'mark gone');
 
-##############################################################
-# 4: check that duplicate marks are included twice in the get_marks reply
-##############################################################
-
-cmd 'open';
-cmd 'mark bar';
-
-cmd 'open';
-cmd 'mark bar';
-
-cmp_deeply(get_marks(), [ 'bar', 'bar' ], 'duplicate mark found twice');
-
 done_testing;
