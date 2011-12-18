@@ -137,4 +137,13 @@ void drag_pointer(Con *con, const xcb_button_press_event_t *event,
                   xcb_window_t confine_to, border_t border, callback_t callback,
                   const void *extra);
 
+/**
+ * Repositions the CT_FLOATING_CON to have the coordinates specified by
+ * newrect, but only if the coordinates are not out-of-bounds. Also reassigns
+ * the floating con to a different workspace if this move was across different
+ * outputs.
+ *
+ */
+void floating_reposition(Con *con, Rect newrect);
+
 #endif

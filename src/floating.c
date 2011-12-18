@@ -514,6 +514,31 @@ void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
     xcb_flush(conn);
 }
 
+/*
+ * Repositions the CT_FLOATING_CON to have the coordinates specified by
+ * newrect, but only if the coordinates are not out-of-bounds. Also reassigns
+ * the floating con to a different workspace if this move was across different
+ * outputs.
+ *
+ */
+void floating_reposition(Con *con, Rect newrect) {
+    /* Sanity check: Are the new coordinates on any output? If not, we
+     * ignore that request. */
+    Output *output = get_output_containing(
+        newrect.x + (newrect.width / 2),
+        newrect.y + (newrect.height / 2));
+
+    if (!output) {
+        ELOG("No output found at destination coordinates. Not repositioning.\n");
+        return;
+    }
+
+    con->rect = newrect;
+
+    floating_maybe_reassign_ws(con);
+    tree_render();
+}
+
 #if 0
 /*
  * Moves the client 10px to the specified direction.
