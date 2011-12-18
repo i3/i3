@@ -234,25 +234,36 @@ static char **append_argument(char **original, char *argument) {
  *
  */
 char *get_process_filename(const char *prefix) {
-    char *dir = getenv("XDG_RUNTIME_DIR");
+    /* dir stores the directory path for this and all subsequent calls so that
+     * we only create a temporary directory once per i3 instance. */
+    static char *dir = NULL;
     if (dir == NULL) {
-        struct passwd *pw = getpwuid(getuid());
-        const char *username = pw ? pw->pw_name : "unknown";
-        sasprintf(&dir, "/tmp/i3-%s", username);
-    } else {
-        char *tmp;
-        sasprintf(&tmp, "%s/i3", dir);
-        dir = tmp;
-    }
-    if (!path_exists(dir)) {
-        if (mkdir(dir, 0700) == -1) {
-            perror("mkdir()");
-            return NULL;
+        /* Check if XDG_RUNTIME_DIR is set. If so, we use XDG_RUNTIME_DIR/i3 */
+        if ((dir = getenv("XDG_RUNTIME_DIR"))) {
+            char *tmp;
+            sasprintf(&tmp, "%s/i3", dir);
+            dir = tmp;
+            if (!path_exists(dir)) {
+                if (mkdir(dir, 0700) == -1) {
+                    perror("mkdir()");
+                    return NULL;
+                }
+            }
+        } else {
+            /* If not, we create a (secure) temp directory using the template
+             * /tmp/i3-<user>.XXXXXX */
+            struct passwd *pw = getpwuid(getuid());
+            const char *username = pw ? pw->pw_name : "unknown";
+            sasprintf(&dir, "/tmp/i3-%s.XXXXXX", username);
+            /* mkdtemp modifies dir */
+            if (mkdtemp(dir) == NULL) {
+                perror("mkdtemp()");
+                return NULL;
+            }
         }
     }
     char *filename;
     sasprintf(&filename, "%s/%s.%d", dir, prefix, getpid());
-    free(dir);
     return filename;
 }
 
