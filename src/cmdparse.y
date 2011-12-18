@@ -780,20 +780,21 @@ move:
         printf("moving in direction %d\n", direction);
         if (con_is_floating(focused)) {
             printf("floating move with %d pixels\n", px);
+            Rect newrect = focused->parent->rect;
             if (direction == TOK_LEFT) {
-                focused->parent->rect.x -= px;
+                newrect.x -= px;
             } else if (direction == TOK_RIGHT) {
-                focused->parent->rect.x += px;
+                newrect.x += px;
             } else if (direction == TOK_UP) {
-                focused->parent->rect.y -= px;
+                newrect.y -= px;
             } else if (direction == TOK_DOWN) {
-                focused->parent->rect.y += px;
+                newrect.y += px;
             }
+            floating_reposition(focused->parent, newrect);
         } else {
             tree_move(direction);
+            tree_render();
         }
-
-        tree_render();
     }
     | TOK_MOVE TOK_WORKSPACE STR
     {
