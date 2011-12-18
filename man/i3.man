@@ -294,9 +294,10 @@ exec /usr/bin/i3 -V -d all >> ~/.i3/logfile
 === I3SOCK
 
 This variable overwrites the IPC socket path (placed in
-/tmp/i3-%u/ipc-socket.%p by default, where %u is replaced with your UNIX
-username and %p is replaced with i3’s PID). The IPC socket is used by external
-programs like i3-msg(1) or i3bar(1).
+/tmp/i3-%u.XXXXXX/ipc-socket.%p by default, where %u is replaced with your UNIX
+username, %p is replaced with i3’s PID and XXXXXX is a string of random
+characters from the portable filename character set (see mkdtemp(3))). The IPC
+socket is used by external programs like i3-msg(1) or i3bar(1).
 
 == TODO
 

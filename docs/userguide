@@ -643,16 +643,19 @@ programs to get information from i3, such as the current workspaces
 (to display a workspace bar), and to control i3.
 
 The IPC socket is enabled by default and will be created in
-+/tmp/i3-%u/ipc-socket.%p+ where +%u+ is your UNIX username and +%p+ is the PID
-of i3.
++/tmp/i3-%u.XXXXXX/ipc-socket.%p+ where +%u+ is your UNIX username, +%p+ is
+the PID of i3 and XXXXXX is a string of random characters from the portable
+filename character set (see mkdtemp(3)).
 
 You can override the default path through the environment-variable +I3SOCK+ or
 by specifying the +ipc-socket+ directive. This is discouraged, though, since i3
-does the right thing by default.
+does the right thing by default. If you decide to change it, it is strongly
+recommended to set this to a location in your home directory so that no other
+user can create that directory.
 
 *Examples*:
 ----------------------------
-ipc-socket /tmp/i3-ipc.sock
+ipc-socket ~/.i3/i3-ipc.sock
 ----------------------------
 
 You can then use the +i3-msg+ application to perform any command listed in
