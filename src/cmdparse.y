@@ -981,18 +981,19 @@ resize:
             ppt *= -1;
         }
 
-        if (con_is_floating(focused)) {
+        Con *floating_con;
+        if ((floating_con = con_inside_floating(focused))) {
             printf("floating resize\n");
             if (direction == TOK_UP) {
-                focused->parent->rect.y -= px;
-                focused->parent->rect.height += px;
+                floating_con->rect.y -= px;
+                floating_con->rect.height += px;
             } else if (direction == TOK_DOWN) {
-                focused->parent->rect.height += px;
+                floating_con->rect.height += px;
             } else if (direction == TOK_LEFT) {
-                focused->parent->rect.x -= px;
-                focused->parent->rect.width += px;
+                floating_con->rect.x -= px;
+                floating_con->rect.width += px;
             } else {
-                focused->parent->rect.width += px;
+                floating_con->rect.width += px;
             }
         } else {
             LOG("tiling resize\n");
