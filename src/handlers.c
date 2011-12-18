@@ -400,23 +400,9 @@ static int handle_configure_request(xcb_configure_request_event_t *event) {
                  event->height, newrect.height, con->border_width);
         }
 
-        /* Sanity check: Are the new coordinates on any output? If not, we
-         * ignore that request. */
-        Output *output = get_output_containing(
-            newrect.x + (newrect.width / 2),
-            newrect.y + (newrect.height / 2));
-
-        if (!output) {
-            ELOG("No output found at destination coordinates. Ignoring this ConfigureRequest.\n");
-            fake_absolute_configure_notify(con);
-            return 0;
-        }
-
         DLOG("Container is a floating leaf node, will do that.\n");
-        floatingcon->rect = newrect;
-
-        floating_maybe_reassign_ws(floatingcon);
-        tree_render();
+        floating_reposition(floatingcon, newrect);
+        return 1;
     }
 
     /* Dock windows can be reconfigured in their height */
