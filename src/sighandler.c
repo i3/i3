@@ -51,7 +51,7 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
 
     for (int i = 0; i < sizeof(crash_text) / sizeof(char*); i++) {
         draw_text(crash_text[i], strlen(crash_text[i]), false, pixmap, pixmap_gc,
-                8, 3 + (i - 1) * font_height, width - 16);
+                8, 5 + i * font_height, width - 16);
     }
 
     /* Copy the contents of the pixmap to the real window */
