@@ -101,8 +101,8 @@ sub worker_wait {
             $test->failure_output(\*STDERR);
             $test->todo_output(\*STDOUT);
 
-            @ENV{qw(DISPLAY TESTNAME OUTDIR VALGRIND STRACE COVERAGE)}
-                = ($self->{display}, basename($file), $outdir, 0, 0, 0);
+            @ENV{qw(DISPLAY TESTNAME OUTDIR VALGRIND STRACE COVERAGE RESTART)}
+                = ($self->{display}, basename($file), $outdir, 0, 0, 0, 0);
 
             package main;
             local $@;

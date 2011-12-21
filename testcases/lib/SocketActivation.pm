@@ -92,6 +92,10 @@ sub activate_i3 {
         my $outdir = $args{outdir};
         my $test = $args{testname};
 
+        if ($args{restart}) {
+            $i3cmd .= ' -L ' . abs_path('restart-state.golden');
+        }
+
         if ($args{valgrind}) {
             $i3cmd =
                 qq|valgrind -v --log-file="$outdir/valgrind-for-$test.log" | .

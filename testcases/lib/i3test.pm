@@ -505,6 +505,7 @@ sub launch_with_config {
         testname => $ENV{TESTNAME},
         valgrind => $ENV{VALGRIND},
         strace => $ENV{STRACE},
+        restart => $ENV{RESTART},
         cv => $cv,
     );
 
