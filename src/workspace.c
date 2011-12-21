@@ -185,6 +185,10 @@ static void workspace_reassign_sticky(Con *con) {
 static void _workspace_show(Con *workspace, bool changed_num_workspaces) {
     Con *current, *old = NULL;
 
+    /* safe-guard against showing i3-internal workspaces like __i3_scratch */
+    if (workspace->name[0] == '_' && workspace->name[1] == '_')
+        return;
+
     /* disable fullscreen for the other workspaces and get the workspace we are
      * currently on. */
     TAILQ_FOREACH(current, &(workspace->parent->nodes_head), nodes) {
@@ -278,7 +282,10 @@ Con* workspace_next() {
         next = TAILQ_NEXT(current, nodes);
     } else {
         /* If currently a numbered workspace, find next numbered workspace. */
-        TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
+        TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+            /* Skip outputs starting with __, they are internal. */
+            if (output->name[0] == '_' && output->name[1] == '_')
+                continue;
             NODES_FOREACH(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
                     continue;
@@ -290,12 +297,16 @@ Con* workspace_next() {
                 if (current->num < child->num && (!next || child->num < next->num))
                     next = child;
             }
+        }
     }
 
     /* Find next named workspace. */
     if (!next) {
         bool found_current = false;
-        TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
+        TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+            /* Skip outputs starting with __, they are internal. */
+            if (output->name[0] == '_' && output->name[1] == '_')
+                continue;
             NODES_FOREACH(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
                     continue;
@@ -306,17 +317,22 @@ Con* workspace_next() {
                     goto workspace_next_end;
                 }
             }
+        }
     }
 
     /* Find first workspace. */
     if (!next) {
-        TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
+        TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+            /* Skip outputs starting with __, they are internal. */
+            if (output->name[0] == '_' && output->name[1] == '_')
+                continue;
             NODES_FOREACH(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
                     continue;
                 if (!next || (child->num != -1 && child->num < next->num))
                     next = child;
             }
+        }
     }
 workspace_next_end:
     return next;
@@ -338,7 +354,10 @@ Con* workspace_prev() {
             prev = NULL;
     } else {
         /* If numbered workspace, find previous numbered workspace. */
-        TAILQ_FOREACH_REVERSE(output, &(croot->nodes_head), nodes_head, nodes)
+        TAILQ_FOREACH_REVERSE(output, &(croot->nodes_head), nodes_head, nodes) {
+            /* Skip outputs starting with __, they are internal. */
+            if (output->name[0] == '_' && output->name[1] == '_')
+                continue;
             NODES_FOREACH_REVERSE(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE || child->num == -1)
                     continue;
@@ -348,12 +367,16 @@ Con* workspace_prev() {
                 if (current->num > child->num && (!prev || child->num > prev->num))
                     prev = child;
             }
+        }
     }
 
     /* Find previous named workspace. */
     if (!prev) {
         bool found_current = false;
-        TAILQ_FOREACH_REVERSE(output, &(croot->nodes_head), nodes_head, nodes)
+        TAILQ_FOREACH_REVERSE(output, &(croot->nodes_head), nodes_head, nodes) {
+            /* Skip outputs starting with __, they are internal. */
+            if (output->name[0] == '_' && output->name[1] == '_')
+                continue;
             NODES_FOREACH_REVERSE(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
                     continue;
@@ -364,17 +387,22 @@ Con* workspace_prev() {
                     goto workspace_prev_end;
                 }
             }
+        }
     }
 
     /* Find last workspace. */
     if (!prev) {
-        TAILQ_FOREACH_REVERSE(output, &(croot->nodes_head), nodes_head, nodes)
+        TAILQ_FOREACH_REVERSE(output, &(croot->nodes_head), nodes_head, nodes) {
+            /* Skip outputs starting with __, they are internal. */
+            if (output->name[0] == '_' && output->name[1] == '_')
+                continue;
             NODES_FOREACH_REVERSE(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
                     continue;
                 if (!prev || child->num > prev->num)
                     prev = child;
             }
+        }
     }
 
 workspace_prev_end:

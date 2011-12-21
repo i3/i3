@@ -155,6 +155,8 @@ bool definitelyGreaterThan(float a, float b, float epsilon) {
 %token              TOK_OPEN            "open"
 %token              TOK_NEXT            "next"
 %token              TOK_PREV            "prev"
+%token              TOK_SCRATCHPAD      "scratchpad"
+%token              TOK_SHOW            "show"
 %token              TOK_SPLIT           "split"
 %token              TOK_HORIZONTAL      "horizontal"
 %token              TOK_VERTICAL        "vertical"
@@ -385,6 +387,7 @@ operation:
     | mark
     | resize
     | nop
+    | scratchpad
     | mode
     ;
 
@@ -636,6 +639,11 @@ workspace:
     }
     | TOK_WORKSPACE STR
     {
+        if (strncasecmp($2, "__i3_", strlen("__i3_")) == 0) {
+            printf("You cannot switch to the i3 internal workspaces.\n");
+            break;
+        }
+
         printf("should switch to workspace %s\n", $2);
 
         Con *ws = con_get_workspace(focused);
@@ -798,6 +806,11 @@ move:
     }
     | TOK_MOVE TOK_WORKSPACE STR
     {
+        if (strncasecmp($3, "__i3_", strlen("__i3_")) == 0) {
+            printf("You cannot switch to the i3 internal workspaces.\n");
+            break;
+        }
+
         owindow *current;
 
         /* Error out early to not create a non-existing workspace (in
@@ -855,7 +868,7 @@ move:
     {
         owindow *current;
 
-        printf("should move window to output %s", $3);
+        printf("should move window to output %s\n", $3);
 
         HANDLE_EMPTY_MATCH;
 
@@ -880,8 +893,10 @@ move:
             output = get_output_by_name($3);
         free($3);
 
-        if (!output)
+        if (!output) {
+            printf("No such output found.\n");
             break;
+        }
 
         /* get visible workspace on output */
         Con *ws = NULL;
@@ -892,6 +907,20 @@ move:
         TAILQ_FOREACH(current, &owindows, owindows) {
             printf("matching: %p / %s\n", current->con, current->con->name);
             con_move_to_workspace(current->con, ws, true, false);
+        }
+
+        tree_render();
+    }
+    | TOK_MOVE TOK_SCRATCHPAD
+    {
+        printf("should move window to scratchpad\n");
+        owindow *current;
+
+        HANDLE_EMPTY_MATCH;
+
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            printf("matching: %p / %s\n", current->con, current->con->name);
+            scratchpad_move(current->con);
         }
 
         tree_render();
@@ -968,6 +997,26 @@ nop:
         free($2);
     }
     ;
+
+scratchpad:
+    TOK_SCRATCHPAD TOK_SHOW
+    {
+        printf("should show scratchpad window\n");
+        owindow *current;
+
+        if (match_is_empty(&current_match)) {
+            scratchpad_show(NULL);
+        } else {
+            TAILQ_FOREACH(current, &owindows, owindows) {
+                printf("matching: %p / %s\n", current->con, current->con->name);
+                scratchpad_show(current->con);
+            }
+        }
+
+        tree_render();
+    }
+    ;
+
 
 resize:
     TOK_RESIZE resize_way direction resize_px resize_tiling

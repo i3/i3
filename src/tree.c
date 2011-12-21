@@ -15,7 +15,48 @@ struct Con *focused;
 struct all_cons_head all_cons = TAILQ_HEAD_INITIALIZER(all_cons);
 
 /*
- * Loads tree from ~/.i3/_restart.json (used for in-place restarts).
+ * Create the pseudo-output __i3. Output-independent workspaces such as
+ * __i3_scratch will live there.
+ *
+ */
+static Con *_create___i3() {
+    Con *__i3 = con_new(croot, NULL);
+    FREE(__i3->name);
+    __i3->name = sstrdup("__i3");
+    __i3->type = CT_OUTPUT;
+    __i3->layout = L_OUTPUT;
+    con_fix_percent(croot);
+    x_set_name(__i3, "[i3 con] pseudo-output __i3");
+    /* For retaining the correct position/size of a scratchpad window, the
+     * dimensions of the real outputs should be multiples of the __i3
+     * pseudo-output. */
+    __i3->rect.width = 1280;
+    __i3->rect.height = 1024;
+
+    /* Add a content container. */
+    DLOG("adding main content container\n");
+    Con *content = con_new(NULL, NULL);
+    content->type = CT_CON;
+    FREE(content->name);
+    content->name = sstrdup("content");
+
+    x_set_name(content, "[i3 con] content __i3");
+    con_attach(content, __i3, false);
+
+    /* Attach the __i3_scratch workspace. */
+    Con *ws = con_new(NULL, NULL);
+    ws->type = CT_WORKSPACE;
+    ws->num = -1;
+    ws->name = sstrdup("__i3_scratch");
+    con_attach(ws, content, false);
+    x_set_name(ws, "[i3 con] workspace __i3_scratch");
+    ws->fullscreen_mode = CF_OUTPUT;
+
+    return __i3;
+}
+
+/*
+ * Loads tree from 'path' (used for in-place restarts).
  *
  */
 bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
@@ -47,6 +88,17 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
     Con *ws = TAILQ_FIRST(&(out->nodes_head));
     printf("ws = %p\n", ws);
 
+    /* For in-place restarting into v4.2, we need to make sure the new
+     * pseudo-output __i3 is present. */
+    if (strcmp(out->name, "__i3") != 0) {
+        DLOG("Adding pseudo-output __i3 during inplace restart\n");
+        Con *__i3 = _create___i3();
+        /* Ensure that it is the first output, other places in the code make
+         * that assumption. */
+        TAILQ_REMOVE(&(croot->nodes_head), __i3, nodes);
+        TAILQ_INSERT_HEAD(&(croot->nodes_head), __i3, nodes);
+    }
+
     return true;
 }
 
@@ -66,6 +118,8 @@ void tree_init(xcb_get_geometry_reply_t *geometry) {
         geometry->width,
         geometry->height
     };
+
+    _create___i3();
 }
 
 /*
