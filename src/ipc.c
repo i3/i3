@@ -166,6 +166,19 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
             break;
     }
 
+    ystr("scratchpad_state");
+    switch (con->scratchpad_state) {
+        case SCRATCHPAD_NONE:
+            ystr("none");
+            break;
+        case SCRATCHPAD_FRESH:
+            ystr("fresh");
+            break;
+        case SCRATCHPAD_CHANGED:
+            ystr("changed");
+            break;
+    }
+
     ystr("percent");
     if (con->percent == 0.0)
         y(null);
@@ -330,6 +343,8 @@ IPC_HANDLER(get_workspaces) {
 
     Con *output;
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        if (output->name[0] == '_' && output->name[1] == '_')
+            continue;
         Con *ws;
         TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
             assert(ws->type == CT_WORKSPACE);

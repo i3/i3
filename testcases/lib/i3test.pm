@@ -256,6 +256,7 @@ sub get_workspace_names {
     my @outputs = @{$tree->{nodes}};
     my @cons;
     for my $output (@outputs) {
+        next if $output->{name} eq '__i3';
         # get the first CT_CON of each output
         my $content = first { $_->{type} == 2 } @{$output->{nodes}};
         @cons = (@cons, @{$content->{nodes}});
@@ -336,11 +337,11 @@ sub get_dock_clients {
                                 @{$output->{nodes}});
         } elsif ($which eq 'top') {
             my $first = first { $_->{type} == 5 } @{$output->{nodes}};
-            @docked = (@docked, @{$first->{nodes}});
+            @docked = (@docked, @{$first->{nodes}}) if defined($first);
         } elsif ($which eq 'bottom') {
             my @matching = grep { $_->{type} == 5 } @{$output->{nodes}};
             my $last = $matching[-1];
-            @docked = (@docked, @{$last->{nodes}});
+            @docked = (@docked, @{$last->{nodes}}) if defined($last);
         }
     }
     return @docked;
@@ -361,6 +362,7 @@ sub focused_ws {
     my @outputs = @{$tree->{nodes}};
     my @cons;
     for my $output (@outputs) {
+        next if $output->{name} eq '__i3';
         # get the first CT_CON of each output
         my $content = first { $_->{type} == 2 } @{$output->{nodes}};
         my $first = first { $_->{fullscreen_mode} == 1 } @{$content->{nodes}};

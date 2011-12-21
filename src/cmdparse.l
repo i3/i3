@@ -133,6 +133,8 @@ output                          { WS_STRING; return TOK_OUTPUT; }
 focus                           { return TOK_FOCUS; }
 move                            { return TOK_MOVE; }
 open                            { return TOK_OPEN; }
+scratchpad                      { return TOK_SCRATCHPAD; }
+show                            { return TOK_SHOW; }
 split                           { return TOK_SPLIT; }
 horizontal                      { return TOK_HORIZONTAL; }
 vertical                        { return TOK_VERTICAL; }

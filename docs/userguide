@@ -1456,6 +1456,40 @@ bindsym mod+Shift+w reload
 bindsym mod+Shift+e exit
 ----------------------------
 
+=== Scratchpad
+
+There are two commands to use any existing window as scratchpad window. +move
+scratchpad+ will move a window to the scratchpad workspace. This will make it
+invisible until you show it again. There is no way to open that workspace.
+Instead, when using +scratchpad show+, the window will be shown again, as a
+floating window, centered on your current workspace (using +scratchpad show+ on
+a visible scratchpad window will make it hidden again, so you can have a
+keybinding to toggle).
+
+As the name indicates, this is useful for having a window with your favorite
+editor always at hand. However, you can also use this for other permanently
+running applications which you don’t want to see all the time: Your music
+player, alsamixer, maybe even your mail client…?
+
+*Syntax*:
+---------------
+move scratchpad
+
+scratchpad show
+---------------
+
+*Examples*:
+------------------------------------------------
+# Make the currently focused window a scratchpad
+bindsym mod+Shift+minus move scratchpad
+
+# Show the first scratchpad window
+bindsym mod+minus scratchpad show
+
+# Show the sup-mail scratchpad window, if any.
+bindsym mod4+s [title="^Sup ::"] scratchpad show
+------------------------------------------------
+
 [[multi_monitor]]
 
 == Multiple monitors

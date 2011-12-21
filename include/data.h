@@ -480,6 +480,12 @@ struct Con {
 
     /** callbacks */
     void(*on_remove_child)(Con *);
+
+    enum {
+        SCRATCHPAD_NONE = 0,
+        SCRATCHPAD_FRESH = 1,
+        SCRATCHPAD_CHANGED = 2
+    } scratchpad_state;
 };
 
 #endif
