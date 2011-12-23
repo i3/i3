@@ -323,7 +323,7 @@ bindcode [Modifiers+]keycode command
 *Examples*:
 --------------------------------
 # Fullscreen
-bindsym mod+f f
+bindsym mod+f fullscreen
 
 # Restart
 bindsym mod+Shift+r restart
