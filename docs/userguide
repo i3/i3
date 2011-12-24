@@ -519,7 +519,7 @@ use it, it has to be a UTF-8 encoded arrow, not `->` or something like that.
 To get the class and instance, you can use +xprop+. After clicking on the
 window, you will see the following output:
 
-*xwininfo*:
+*xprop*:
 -----------------------------------
 WM_CLASS(STRING) = "irssi", "URxvt"
 -----------------------------------
