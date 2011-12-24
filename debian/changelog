@@ -1,6 +1,6 @@
-i3-wm (4.1.1-0) unstable; urgency=low
+i3-wm (4.1.1-1) unstable; urgency=low
 
-  * NOT YET RELEASED
+  * Create a secure temp path instead of a predictable one
   * ipc: set CLOEXEC on client file descriptors
   * Fix prototype in include/xcursor.h
   * Bugfix: Skip dock clients when handling FocusIn events
@@ -19,8 +19,13 @@ i3-wm (4.1.1-0) unstable; urgency=low
   * Bugfix: Make resizing work when pressing floating_modifier + right mouse
     button on window decorations
   * Bugfix: Fix setting the same mark repeatedly on different windows
+  * Bugfix: Disallow focusing other windows when in fullscreen mode
+  * Bugfix: Ignore ConfigureRequests with out-of-bound coordinates
+  * Bugfix: Correctly check boundaries and reassign floating windows when
+    moving
+  * Bugfix: Don’t close workspace when there are still floating windows on it
 
- -- Michael Stapelberg <michael@stapelberg.de>  Sat, 17 Dec 2011 14:29:59 +0000
+ -- Michael Stapelberg <michael@stapelberg.de>  Sat, 24 Dec 2011 15:43:53 +0100
 
 i3-wm (4.1-1) unstable; urgency=low
 
