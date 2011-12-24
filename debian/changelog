@@ -1,3 +1,9 @@
+i3-wm (4.1.2-0) unstable; urgency=low
+
+  * NOT YET RELEASED
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Sat, 24 Dec 2011 16:29:16 +0100
+
 i3-wm (4.1.1-1) unstable; urgency=low
 
   * Re-add build-arch/build-indep targets to debian/rules (Closes: #648613)
