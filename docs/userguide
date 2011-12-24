@@ -174,7 +174,7 @@ Floating windows are always on top of tiling windows.
 i3 stores all information about the X11 outputs, workspaces and layout of the
 windows on them in a tree. The root node is the X11 root window, followed by
 the X11 outputs, then dock areas and a content container, then workspaces and
-finally the windows themselve. In previous versions of i3 we had multiple lists
+finally the windows themselves. In previous versions of i3 we had multiple lists
 (of outputs, workspaces) and a table for each workspace. That approach turned
 out to be complicated to use (snapping), understand and implement.
 
@@ -323,7 +323,7 @@ bindcode [Modifiers+]keycode command
 *Examples*:
 --------------------------------
 # Fullscreen
-bindsym mod+f f
+bindsym mod+f fullscreen
 
 # Restart
 bindsym mod+Shift+r restart
@@ -519,7 +519,7 @@ use it, it has to be a UTF-8 encoded arrow, not `->` or something like that.
 To get the class and instance, you can use +xprop+. After clicking on the
 window, you will see the following output:
 
-*xwininfo*:
+*xprop*:
 -----------------------------------
 WM_CLASS(STRING) = "irssi", "URxvt"
 -----------------------------------
@@ -619,7 +619,7 @@ Only clients that do not cover the whole area of this window expose the color
 used to paint it. If you use a color other than black for your terminals, you
 most likely want to set the client background color to the same color as your
 terminal program's background color to avoid black gaps between the rendered
-area of the termianal and the i3 border.
+area of the terminal and the i3 border.
 
 Colors are in HTML hex format (#rrggbb), see the following example:
 
@@ -1185,7 +1185,7 @@ number or name of the workspace. To move containers to specific workspaces, use
 You can also switch to the next and previous workspace with the commands
 +workspace next+ and +workspace prev+, which is handy, for example, if you have
 workspace 1, 3, 4 and 9 and you want to cycle through them with a single key
-combination. Similarily, you can use +move workspace next+ and +move workspace
+combination. Similarly, you can use +move workspace next+ and +move workspace
 prev+ to move a container to the next/previous workspace.
 
 [[back_and_forth]]
@@ -1195,7 +1195,7 @@ back_and_forth+.
 To move a container to another xrandr output such as +LVDS1+ or +VGA1+, you can
 use the +move output+ command followed by the name of the target output. You
 may also use +left+, +right+, +up+, +down+ instead of the xrandr output name to
-move to the the next output in the specified direction.
+move to the next output in the specified direction.
 
 *Examples*:
 -------------------------
