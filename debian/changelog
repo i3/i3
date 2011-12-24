@@ -1,5 +1,6 @@
 i3-wm (4.1.1-1) unstable; urgency=low
 
+  * Re-add build-arch/build-indep targets to debian/rules (Closes: #648613)
   * Create a secure temp path instead of a predictable one
   * ipc: set CLOEXEC on client file descriptors
   * Fix prototype in include/xcursor.h
@@ -25,7 +26,7 @@ i3-wm (4.1.1-1) unstable; urgency=low
     moving
   * Bugfix: Don’t close workspace when there are still floating windows on it
 
- -- Michael Stapelberg <michael@stapelberg.de>  Sat, 24 Dec 2011 15:43:53 +0100
+ -- Michael Stapelberg <michael@stapelberg.de>  Sat, 24 Dec 2011 16:23:55 +0100
 
 i3-wm (4.1-1) unstable; urgency=low
 
