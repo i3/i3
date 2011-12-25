@@ -78,6 +78,8 @@ EOL (\r?\n)
      * handling strings ('workspace' command) */
 next                            { BEGIN(INITIAL); return TOK_NEXT; }
 prev                            { BEGIN(INITIAL); return TOK_PREV; }
+next_on_output                  { BEGIN(INITIAL); return TOK_NEXT_ON_OUTPUT; }
+prev_on_output                  { BEGIN(INITIAL); return TOK_PREV_ON_OUTPUT; }
 back_and_forth                  { BEGIN(INITIAL); return TOK_BACK_AND_FORTH; }
 
 <WANT_STRING>\"[^\"]+\"         {
