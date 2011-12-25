@@ -528,6 +528,49 @@ focus:
 
         tree_render();
     }
+    | TOK_FOCUS TOK_OUTPUT STR
+    {   
+        owindow *current;
+
+        HANDLE_EMPTY_MATCH;
+
+        /* get the output */
+        Output *current_output = NULL;
+        Output *output;
+
+        TAILQ_FOREACH(current, &owindows, owindows)
+            current_output = get_output_containing(current->con->rect.x, current->con->rect.y);
+        assert(current_output != NULL);
+
+        if (strcasecmp($3, "left") == 0)
+            output = get_output_next(D_LEFT, current_output);
+        else if (strcasecmp($3, "right") == 0)
+            output = get_output_next(D_RIGHT, current_output);
+        else if (strcasecmp($3, "up") == 0)
+            output = get_output_next(D_UP, current_output);
+        else if (strcasecmp($3, "down") == 0)
+            output = get_output_next(D_DOWN, current_output);
+        else
+            output = get_output_by_name($3);
+        
+        free($3);
+
+        if (!output) {
+            printf("No such output found.\n");
+            break;
+        }
+
+
+
+        /* get visible workspace on output */
+        Con *ws = NULL;
+        GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
+        if (!ws)
+            break;
+
+        workspace_show(ws);
+        tree_render();
+    }
     | TOK_FOCUS window_mode
     {
         if (focused &&
