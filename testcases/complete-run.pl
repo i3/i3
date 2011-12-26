@@ -69,8 +69,17 @@ my @testfiles = @ARGV;
 
 my $numtests = scalar @testfiles;
 
+# When the user specifies displays, we don’t run multi-monitor tests at all
+# (because we don’t know which displaynumber is the X-Server with multiple
+# monitors).
+my $multidpy = undef;
+
 # No displays specified, let’s start some Xdummy instances.
-@displays = start_xdummy($parallel, $numtests) if @displays == 0;
+if (@displays == 0) {
+    my $dpyref;
+    ($dpyref, $multidpy) = start_xdummy($parallel, $numtests);
+    @displays = @$dpyref;
+}
 
 # 1: create an output directory for this test-run
 my $outdir = "testsuite-";
@@ -87,7 +96,7 @@ symlink("$outdir", "latest") or die "Could not symlink latest to $outdir";
 # 2: keep the connection open so that i3 is not the only client. this prevents
 #    the X server from exiting (Xdummy will restart it, but not quick enough
 #    sometimes)
-my @worker;
+my @single_worker;
 for my $display (@displays) {
     my $screen;
     my $x = X11::XCB::Connection->new(display => $display);
@@ -95,7 +104,17 @@ for my $display (@displays) {
         die "Could not connect to display $display\n";
     } else {
         # start a TestWorker for each display
-        push @worker, worker($display, $x, $outdir);
+        push @single_worker, worker($display, $x, $outdir);
+    }
+}
+
+my @multi_worker;
+if (defined($multidpy)) {
+    my $x = X11::XCB::Connection->new(display => $multidpy);
+    if ($x->has_error) {
+        die "Could not connect to multi-monitor display $multidpy\n";
+    } else {
+        push @multi_worker, worker($multidpy, $x, $outdir);
     }
 }
 
@@ -127,18 +146,30 @@ my @done;
 my $num = @testfiles;
 my $harness = TAP::Harness->new({ });
 
+my @single_monitor_tests = grep { m,^t/([0-9]+)-, && $1 < 500 } @testfiles;
+my @multi_monitor_tests = grep { m,^t/([0-9]+)-, && $1 >= 500 } @testfiles;
+
 my $aggregator = TAP::Parser::Aggregator->new();
 $aggregator->start();
 
-status_init(displays => \@displays, tests => $num);
+status_init(displays => [ @displays, $multidpy ], tests => $num);
 
-my $cv = AE::cv;
+my $single_cv = AE::cv;
+my $multi_cv = AE::cv;
 
 # We start tests concurrently: For each display, one test gets started. Every
 # test starts another test after completing.
-for (@worker) { $cv->begin; take_job($_) }
+for (@single_worker) {
+    $single_cv->begin;
+    take_job($_, $single_cv, \@single_monitor_tests);
+}
+for (@multi_worker) {
+    $multi_cv->begin;
+    take_job($_, $multi_cv, \@multi_monitor_tests);
+}
 
-$cv->recv;
+$single_cv->recv;
+$multi_cv->recv;
 
 $aggregator->stop();
 
@@ -198,9 +229,9 @@ exit 0;
 # triggered to finish testing.
 #
 sub take_job {
-    my ($worker) = @_;
+    my ($worker, $cv, $tests) = @_;
 
-    my $test = shift @testfiles
+    my $test = shift @$tests
         or return $cv->end;
 
     my $display = $worker->{display};
@@ -269,7 +300,7 @@ sub take_job {
             push @done, [ $test, $output ];
 
             undef $w;
-            take_job($worker);
+            take_job($worker, $cv, $tests);
         }
     );
 }
