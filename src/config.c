@@ -248,7 +248,7 @@ static char *get_config_path(const char *override_configpath) {
  */
 static void parse_configuration(const char *override_configpath) {
     char *path = get_config_path(override_configpath);
-    DLOG("Parsing configfile %s\n", path);
+    LOG("Parsing configfile %s\n", path);
     FREE(current_configpath);
     current_configpath = path;
     parse_file(path);
