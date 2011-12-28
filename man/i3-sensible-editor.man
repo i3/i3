@@ -23,6 +23,12 @@ It tries to start one of the following (in that order):
 * vim
 * vi
 * emacs
+* pico
+* qe
+* mg
+* jed
+* gedit
+* mc-edit
 
 Please don’t complain about the order: If the user has any preference, he will
 have $VISUAL or $EDITOR set.

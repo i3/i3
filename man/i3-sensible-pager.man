@@ -18,8 +18,9 @@ i3-sensible-pager is used by i3-nagbar(1) when you click on the view button.
 It tries to start one of the following (in that order):
 
 * $PAGER
-* most
 * less
+* most
+* w3m
 * i3-sensible-editor(1)
 
 Please don’t complain about the order: If the user has any preference, he will

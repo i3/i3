@@ -22,9 +22,13 @@ is appropriate for the distribution.
 It tries to start one of the following (in that order):
 
 * $TERMINAL (this is a non-standard variable)
-* xterm
 * urxvt
 * rxvt
+* terminator
+* Eterm
+* aterm
+* xterm
+* gnome-terminal
 * roxterm
 
 Please don’t complain about the order: If the user has any preference, he will

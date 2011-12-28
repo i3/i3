@@ -1,14 +1,16 @@
 #!/bin/sh
+#
+# This code is released in public domain by Han Boetes <han@mijncomputer.nl>
+#
 # This script tries to exec an editor by trying some known editors if $EDITOR is
 # not set.
 #
-# Distributions/packagers can enhance this script with a
-# distribution-specific mechanism to find the preferred pager.
-[ -n "$VISUAL" ] && which $VISUAL >/dev/null && exec $VISUAL "$@"
-[ -n "$EDITOR" ] && which $EDITOR >/dev/null && exec $EDITOR "$@"
+# Distributions/packagers can enhance this script with a distribution-specific
+# mechanism to find the preferred editor
 
 # Hopefully one of these is installed (no flamewars about preference please!):
-which nano >/dev/null && exec nano "$@"
-which vim >/dev/null && exec vim "$@"
-which vi >/dev/null && exec vi "$@"
-which emacs >/dev/null && exec emacs "$@"
+for editor in $VISUAL $EDITOR nano vim vi emacs pico qe mg jed gedit mc-edit; do
+    if which $editor > /dev/null 2>&1; then
+        exec $editor "$@"
+    fi
+done

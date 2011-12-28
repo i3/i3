@@ -1,21 +1,17 @@
-## Description: Use Debian-specific x-terminal-emulator in i3-sensible-terminal
-## Origin/Author: Michael Stapelberg
---- a/i3-sensible-terminal.O	2011-11-11 22:03:52.414218386 +0000
-+++ b/i3-sensible-terminal	2011-11-11 22:04:38.372020210 +0000
-@@ -1,13 +1,11 @@
- #!/bin/sh
+Index: i3-4.1.1/i3-sensible-terminal
+===================================================================
+--- i3-4.1.1.orig/i3-sensible-terminal	2011-12-28 23:51:52.455610236 +0100
++++ i3-4.1.1/i3-sensible-terminal	2011-12-28 23:52:00.826775027 +0100
+@@ -4,11 +4,7 @@
+ #
  # This script tries to exec a terminal emulator by trying some known terminal
  # emulators.
 -#
 -# Distributions/packagers should enhance this script with a
 -# distribution-specific mechanism to find the preferred terminal emulator. On
 -# Debian, there is the x-terminal-emulator symlink for example.
--# Please don't touch the first line, though:
- [ -n "$TERMINAL" ] && which $TERMINAL >/dev/null && exec $TERMINAL "$@"
- 
-+# Debian-specific: use x-terminal-emulator
-+which x-terminal-emulator >/dev/null && exec x-terminal-emulator "$@"
-+
- # Hopefully one of these is installed:
- which xterm >/dev/null && exec xterm "$@"
- which urxvt >/dev/null && exec urxvt "$@"
+-for terminal in $TERMINAL urxvt rxvt terminator Eterm aterm xterm gnome-terminal roxterm; do
++for terminal in $TERMINAL x-terminal-emulator urxvt rxvt terminator Eterm aterm xterm gnome-terminal roxterm; do
+     if which $terminal > /dev/null 2>&1; then
+         exec $terminal "$@"
+     fi

@@ -1,15 +1,18 @@
 #!/bin/sh
+#
+# This code is released in public domain by Han Boetes <han@mijncomputer.nl>
+
 # This script tries to exec a pager by trying some known pagers if $PAGER is
 # not set.
 #
 # Distributions/packagers can enhance this script with a
 # distribution-specific mechanism to find the preferred pager.
-[ -n "$PAGER" ] && which $PAGER >/dev/null && exec $PAGER "$@"
 
-# Hopefully one of these is installed:
-which most >/dev/null && exec most "$@"
-which less >/dev/null && exec less "$@"
-# we don't use 'more' because it will exit if the file is 'too short'
-
-# If no pager is installed, try an editor
-exec i3-sensible-editor "$@"
+# Hopefully one of these is installed (no flamewars about preference please!):
+# We don't use 'more' because it will exit if the file is too short.
+# Worst case scenario we'll open the file in your editor.
+for pager in $PAGER less most w3m i3-sensible-editor; do
+    if which $pager > /dev/null 2>&1; then
+        exec $pager "$@"
+    fi
+done
