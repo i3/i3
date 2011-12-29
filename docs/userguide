@@ -821,6 +821,7 @@ bar {
 }
 -------------------------------------------------
 
+[[status_command]]
 === Statusline command
 
 i3bar can run a program and display every line of its +stdout+ output on the
@@ -866,6 +867,7 @@ bar {
 }
 ----------------
 
+[[i3bar_position]]
 === Position
 
 This option determines in which edge of the screen i3bar should show up.
@@ -1611,14 +1613,13 @@ If you don’t already have your favorite way of generating such a status line
 this task. It was written in C with the goal of using as few syscalls as
 possible to reduce the time your CPU is woken up from sleep states. Because
 i3status only spits out text, you need to combine it with some other tool, like
-i3bar. Use a pipe to connect them: +i3status | i3bar -d+.
+i3bar. See <<status_command>> for how to display i3status in i3bar.
 
 Regardless of which application you use to display the status line, you
 want to make sure that it registers as a dock window using EWMH hints. i3 will
 position the window either at the top or at the bottom of the screen, depending
-on which hint the application sets. With i3bar, you can use +-d+ or +-dbottom+
-for positioning it at the bottom and +-dtop+ to position it at the top of the
-screen.
+on which hint the application sets. With i3bar, you can configure its position,
+see <<i3bar_position>>.
 
 === Giving presentations (multi-monitor)
 
