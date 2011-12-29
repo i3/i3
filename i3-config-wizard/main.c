@@ -285,7 +285,7 @@ static void finish() {
 
     char *line = NULL;
     size_t len = 0;
-#if !defined(__APPLE__)
+#if !defined(__APPLE__) && (!defined(__FreeBSD__) || __FreeBSD_version >= 800000)
     ssize_t read;
 #endif
     bool head_of_file = true;
@@ -298,7 +298,7 @@ static void finish() {
     fputs("# this file and re-run i3-config-wizard(1).\n", ks_config);
     fputs("#\n", ks_config);
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || (defined(__FreeBSD__) && __FreeBSD_version < 800000)
     while ((line = fgetln(kc_config, &len)) != NULL) {
 #else
     while ((read = getline(&line, &len, kc_config)) != -1) {
