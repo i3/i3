@@ -21,13 +21,20 @@
 #include "queue.h"
 
 /*
- * To get the big concept: There are helper structures like struct Colorpixel
- * or struct Stack_Window. Everything which is also defined as type (see
+ * To get the big concept: There are helper structures like struct
+ * Workspace_Assignment. Every struct which is also defined as type (see
  * forward definitions) is considered to be a major structure, thus important.
  *
- * Let’s start from the biggest to the smallest:
+ * The following things are all stored in a 'Con', from very high level (the
+ * biggest Cons) to very small (a single window):
  *
- * TODO
+ * 1) X11 root window (as big as all your outputs combined)
+ * 2) output (like LVDS1)
+ * 3) content container, dockarea containers
+ * 4) workspaces
+ * 5) split containers
+ * ... (you can arbitrarily nest split containers)
+ * 6) X11 window containers
  *
  */
 
@@ -177,7 +184,7 @@ struct regex {
 
 /**
  * Holds a keybinding, consisting of a keycode combined with modifiers and the
- * command which is executed as soon as the key is pressed (see src/command.c)
+ * command which is executed as soon as the key is pressed (see src/cfgparse.y)
  *
  */
 struct Binding {
@@ -256,6 +263,11 @@ struct xoutput {
     TAILQ_ENTRY(xoutput) outputs;
 };
 
+/**
+ * A 'Window' is a type which contains an xcb_window_t and all the related
+ * information (hints like _NET_WM_NAME for that window).
+ *
+ */
 struct Window {
     xcb_window_t id;
 
@@ -304,6 +316,14 @@ struct Window {
     Assignment **ran_assignments;
 };
 
+/**
+ * A "match" is a data structure which acts like a mask or expression to match
+ * certain windows or not. For example, when using commands, you can specify a
+ * command like this: [title="*Firefox*"] kill. The title member of the match
+ * data structure will then be filled and i3 will check each window using
+ * match_matches_window() to find the windows affected by this command.
+ *
+ */
 struct Match {
     struct regex *title;
     struct regex *application;
@@ -339,9 +359,9 @@ struct Match {
 /**
  * An Assignment makes specific windows go to a specific workspace/output or
  * run a command for that window. With this mechanism, the user can -- for
- * example -- make specific windows floating or assign his browser to workspace
- * "www". Checking if a window is assigned works by comparing the Match data
- * structure with the window (see match_matches_window()).
+ * example -- assign his browser to workspace "www". Checking if a window is
+ * assigned works by comparing the Match data structure with the window (see
+ * match_matches_window()).
  *
  */
 struct Assignment {
@@ -376,6 +396,10 @@ struct Assignment {
     TAILQ_ENTRY(Assignment) assignments;
 };
 
+/**
+ * A 'Con' represents everything from the X11 root window down to a single X11 window.
+ *
+ */
 struct Con {
     bool mapped;
     enum {
