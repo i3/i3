@@ -82,7 +82,7 @@ bool event_is_ignored(const int sequence, const int response_type) {
  * the bound action to parse_command().
  *
  */
-static int handle_key_press(xcb_key_press_event_t *event) {
+static void handle_key_press(xcb_key_press_event_t *event) {
 
     last_timestamp = event->time;
 
@@ -114,13 +114,13 @@ static int handle_key_press(xcb_key_press_event_t *event) {
         if ((bind = get_binding(state_filtered, event->detail)) == NULL) {
             ELOG("Could not lookup key binding (modifiers %d, keycode %d)\n",
                  state_filtered, event->detail);
-            return 1;
+            return;
         }
     }
 
     char *json_result = parse_cmd(bind->command);
     FREE(json_result);
-    return 1;
+    return;
 }
 
 /*
@@ -163,7 +163,7 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
  * When the user moves the mouse pointer onto a window, this callback gets called.
  *
  */
-static int handle_enter_notify(xcb_enter_notify_event_t *event) {
+static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     Con *con;
 
     last_timestamp = event->time;
@@ -173,13 +173,13 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
     DLOG("coordinates %d, %d\n", event->event_x, event->event_y);
     if (event->mode != XCB_NOTIFY_MODE_NORMAL) {
         DLOG("This was not a normal notify, ignoring\n");
-        return 1;
+        return;
     }
     /* Some events are not interesting, because they were not generated
      * actively by the user, but by reconfiguration of windows */
     if (event_is_ignored(event->sequence, XCB_ENTER_NOTIFY)) {
         DLOG("Event ignored\n");
-        return 1;
+        return;
     }
 
     bool enter_child = false;
@@ -193,12 +193,12 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
     if (con == NULL) {
         DLOG("Getting screen at %d x %d\n", event->root_x, event->root_y);
         check_crossing_screen_boundary(event->root_x, event->root_y);
-        return 1;
+        return;
     }
 
     if (con->parent->type == CT_DOCKAREA) {
         DLOG("Ignoring, this is a dock client\n");
-        return 1;
+        return;
     }
 
     /* see if the user entered the window on a certain window decoration */
@@ -224,7 +224,7 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
 #endif
 
     if (config.disable_focus_follows_mouse)
-        return 1;
+        return;
 
     /* Get the currently focused workspace to check if the focus change also
      * involves changing workspaces. If so, we need to call workspace_show() to
@@ -236,7 +236,7 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
     con_focus(con_descend_focused(con));
     tree_render();
 
-    return 1;
+    return;
 }
 
 /*
@@ -245,26 +245,26 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
  * and crossing virtual screen boundaries), this callback gets called.
  *
  */
-static int handle_motion_notify(xcb_motion_notify_event_t *event) {
+static void handle_motion_notify(xcb_motion_notify_event_t *event) {
 
     last_timestamp = event->time;
 
     /* Skip events where the pointer was over a child window, we are only
      * interested in events on the root window. */
     if (event->child != 0)
-        return 1;
+        return;
 
     Con *con;
     if ((con = con_by_frame_id(event->event)) == NULL) {
         check_crossing_screen_boundary(event->root_x, event->root_y);
-        return 1;
+        return;
     }
 
     if (config.disable_focus_follows_mouse)
-        return 1;
+        return;
 
     if (con->layout != L_DEFAULT)
-        return 1;
+        return;
 
     /* see over which rect the user is */
     Con *current;
@@ -274,14 +274,14 @@ static int handle_motion_notify(xcb_motion_notify_event_t *event) {
 
         /* We found the rect, let’s see if this window is focused */
         if (TAILQ_FIRST(&(con->focus_head)) == current)
-            return 1;
+            return;
 
         con_focus(current);
         x_push_changes(croot);
-        return 1;
+        return;
     }
 
-    return 1;
+    return;
 }
 
 /*
@@ -289,10 +289,10 @@ static int handle_motion_notify(xcb_motion_notify_event_t *event) {
  * we need to update our key bindings then (re-translate symbols).
  *
  */
-static int handle_mapping_notify(xcb_mapping_notify_event_t *event) {
+static void handle_mapping_notify(xcb_mapping_notify_event_t *event) {
     if (event->request != XCB_MAPPING_KEYBOARD &&
         event->request != XCB_MAPPING_MODIFIER)
-        return 0;
+        return;
 
     DLOG("Received mapping_notify for keyboard or modifier mapping, re-grabbing keys\n");
     xcb_refresh_keyboard_mapping(keysyms, event);
@@ -303,14 +303,14 @@ static int handle_mapping_notify(xcb_mapping_notify_event_t *event) {
     translate_keysyms();
     grab_all_keys(conn, false);
 
-    return 0;
+    return;
 }
 
 /*
  * A new window appeared on the screen (=was mapped), so let’s manage it.
  *
  */
-static int handle_map_request(xcb_map_request_event_t *event) {
+static void handle_map_request(xcb_map_request_event_t *event) {
     xcb_get_window_attributes_cookie_t cookie;
 
     cookie = xcb_get_window_attributes_unchecked(conn, event->window);
@@ -320,16 +320,18 @@ static int handle_map_request(xcb_map_request_event_t *event) {
 
     manage_window(event->window, cookie, false);
     x_push_changes(croot);
-    return 1;
+    return;
 }
 
 /*
- * Configure requests are received when the application wants to resize windows on their own.
+ * Configure requests are received when the application wants to resize windows
+ * on their own.
  *
- * We generate a synthethic configure notify event to signalize the client its "new" position.
+ * We generate a synthethic configure notify event to signalize the client its
+ * "new" position.
  *
  */
-static int handle_configure_request(xcb_configure_request_event_t *event) {
+static void handle_configure_request(xcb_configure_request_event_t *event) {
     Con *con;
 
     DLOG("window 0x%08x wants to be at %dx%d with %dx%d\n",
@@ -361,7 +363,7 @@ static int handle_configure_request(xcb_configure_request_event_t *event) {
         xcb_configure_window(conn, event->window, mask, values);
         xcb_flush(conn);
 
-        return 1;
+        return;
     }
 
     DLOG("Configure request!\n");
@@ -402,7 +404,7 @@ static int handle_configure_request(xcb_configure_request_event_t *event) {
 
         DLOG("Container is a floating leaf node, will do that.\n");
         floating_reposition(floatingcon, newrect);
-        return 1;
+        return;
     }
 
     /* Dock windows can be reconfigured in their height */
@@ -418,7 +420,7 @@ static int handle_configure_request(xcb_configure_request_event_t *event) {
 
     fake_absolute_configure_notify(con);
 
-    return 1;
+    return;
 }
 #if 0
 
@@ -442,14 +444,14 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
  * changes the screen configuration in any way (mode, position, …)
  *
  */
-static int handle_screen_change(xcb_generic_event_t *e) {
+static void handle_screen_change(xcb_generic_event_t *e) {
     DLOG("RandR screen change\n");
 
     randr_query_outputs();
 
     ipc_send_event("output", I3_IPC_EVENT_OUTPUT, "{\"change\":\"unspecified\"}");
 
-    return 1;
+    return;
 }
 
 /*
@@ -457,7 +459,7 @@ static int handle_screen_change(xcb_generic_event_t *e) {
  * now, so we better clean up before.
  *
  */
-static int handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
+static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
     /* If the client (as opposed to i3) destroyed or unmapped a window, an
      * EnterNotify event will follow (indistinguishable from an EnterNotify
      * event caused by moving your mouse), causing i3 to set focus to whichever
@@ -481,63 +483,24 @@ static int handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
         con = con_by_frame_id(event->window);
         if (con == NULL) {
             LOG("Not a managed window, ignoring UnmapNotify event\n");
-            return 1;
+            return;
         }
         if (con->ignore_unmap > 0)
             con->ignore_unmap--;
         DLOG("ignore_unmap = %d for frame of container %p\n", con->ignore_unmap, con);
-        return 1;
+        return;
     }
 
     if (con->ignore_unmap > 0) {
         DLOG("ignore_unmap = %d, dec\n", con->ignore_unmap);
         con->ignore_unmap--;
-        return 1;
+        return;
     }
 
     tree_close(con, DONT_KILL_WINDOW, false, false);
     tree_render();
     x_push_changes(croot);
-    return 1;
-
-#if 0
-        if (client == NULL) {
-                DLOG("not a managed window. Ignoring.\n");
-
-                /* This was most likely the destroyed frame of a client which is
-                 * currently being unmapped, so we add this sequence (again!) to
-                 * the ignore list (enter_notify events will get sent for both,
-                 * the child and its frame). */
-                add_ignore_event(event->sequence);
-
-                return 0;
-        }
-#endif
-
-
-#if 0
-        /* Let’s see how many clients there are left on the workspace to delete it if it’s empty */
-        bool workspace_empty = SLIST_EMPTY(&(client->workspace->focus_stack));
-        bool workspace_focused = (c_ws == client->workspace);
-        Client *to_focus = (!workspace_empty ? SLIST_FIRST(&(client->workspace->focus_stack)) : NULL);
-
-        /* If this workspace is currently visible, we don’t delete it */
-        if (workspace_is_visible(client->workspace))
-                workspace_empty = false;
-
-        if (workspace_empty) {
-                client->workspace->output = NULL;
-                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"empty\"}");
-        }
-
-        /* Remove the urgency flag if set */
-        client->urgent = false;
-        workspace_update_urgent_flag(client->workspace);
-
-        render_layout(conn);
-#endif
-
-        return 1;
+    return;
 }
 
 /*
@@ -549,7 +512,7 @@ static int handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
  * important fields in the event data structure).
  *
  */
-static int handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
+static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
     DLOG("destroy notify for 0x%08x, 0x%08x\n", event->event, event->window);
 
     xcb_unmap_notify_event_t unmap;
@@ -557,7 +520,7 @@ static int handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
     unmap.event = event->event;
     unmap.window = event->window;
 
-    return handle_unmap_notify_event(&unmap);
+    handle_unmap_notify_event(&unmap);
 }
 
 /*
@@ -631,14 +594,14 @@ static int handle_windowclass_change(void *data, xcb_connection_t *conn, uint8_t
  * Expose event means we should redraw our windows (= title bar)
  *
  */
-static int handle_expose_event(xcb_expose_event_t *event) {
+static void handle_expose_event(xcb_expose_event_t *event) {
     Con *parent;
 
     DLOG("window = %08x\n", event->window);
 
     if ((parent = con_by_frame_id(event->window)) == NULL) {
         LOG("expose event for unknown window, ignoring\n");
-        return 1;
+        return;
     }
 
     /* Since we render to our pixmap on every change anyways, expose events
@@ -650,7 +613,7 @@ static int handle_expose_event(xcb_expose_event_t *event) {
                   event->width, event->height);
     xcb_flush(conn);
 
-    return 1;
+    return;
 }
 
 /*
@@ -882,16 +845,6 @@ static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_
 
     tree_render();
 
-#if 0
-    /* If the workspace this client is on is not visible, we need to redraw
-     * the workspace bar */
-    if (!workspace_is_visible(client->workspace)) {
-            Output *output = client->workspace->output;
-            render_workspace(conn, output, output->current_workspace);
-            xcb_flush(conn);
-    }
-#endif
-
     FREE(reply);
     return true;
 }
@@ -920,14 +873,6 @@ static bool handle_transient_for(void *data, xcb_connection_t *conn, uint8_t sta
     }
 
     window_update_transient_for(con->window, prop);
-
-    // TODO: put window in floating mode if con->window->transient_for != XCB_NONE:
-#if 0
-    if (client->floating == FLOATING_AUTO_OFF) {
-        DLOG("This is a popup window, putting into floating\n");
-        toggle_floating_mode(conn, client, true);
-    }
-#endif
 
     return true;
 }
@@ -961,33 +906,33 @@ static bool handle_clientleader_change(void *data, xcb_connection_t *conn, uint8
  * decorations accordingly.
  *
  */
-static int handle_focus_in(xcb_focus_in_event_t *event) {
+static void handle_focus_in(xcb_focus_in_event_t *event) {
     DLOG("focus change in, for window 0x%08x\n", event->event);
     Con *con;
     if ((con = con_by_window_id(event->event)) == NULL || con->window == NULL)
-        return 1;
+        return;
     DLOG("That is con %p / %s\n", con, con->name);
 
     if (event->mode == XCB_NOTIFY_MODE_GRAB ||
         event->mode == XCB_NOTIFY_MODE_UNGRAB) {
         DLOG("FocusIn event for grab/ungrab, ignoring\n");
-        return 1;
+        return;
     }
 
     if (event->detail == XCB_NOTIFY_DETAIL_POINTER) {
         DLOG("notify detail is pointer, ignoring this event\n");
-        return 1;
+        return;
     }
 
     if (focused_id == event->event) {
         DLOG("focus matches the currently focused window, not doing anything\n");
-        return 1;
+        return;
     }
 
     /* Skip dock clients, they cannot get the i3 focus. */
     if (con->parent->type == CT_DOCKAREA) {
         DLOG("This is a dock client, not focusing.\n");
-        return 1;
+        return;
     }
 
     DLOG("focus is different, updating decorations\n");
@@ -1003,7 +948,7 @@ static int handle_focus_in(xcb_focus_in_event_t *event) {
     /* We update focused_id because we don’t need to set focus again */
     focused_id = event->event;
     x_push_changes(croot);
-    return 1;
+    return;
 }
 
 /* Returns false if the event could not be processed (e.g. the window could not
