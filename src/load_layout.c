@@ -156,6 +156,28 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
             json_node->mark = buf;
+        } else if (strcasecmp(last_key, "floating") == 0) {
+            char *buf = NULL;
+            sasprintf(&buf, "%.*s", (int)len, val);
+            if (strcasecmp(buf, "auto_off") == 0)
+                json_node->floating = FLOATING_AUTO_OFF;
+            else if (strcasecmp(buf, "auto_on") == 0)
+                json_node->floating = FLOATING_AUTO_ON;
+            else if (strcasecmp(buf, "user_off") == 0)
+                json_node->floating = FLOATING_USER_OFF;
+            else if (strcasecmp(buf, "user_on") == 0)
+                json_node->floating = FLOATING_USER_ON;
+            free(buf);
+        } else if (strcasecmp(last_key, "scratchpad_state") == 0) {
+            char *buf = NULL;
+            sasprintf(&buf, "%.*s", (int)len, val);
+            if (strcasecmp(buf, "none") == 0)
+                json_node->scratchpad_state = SCRATCHPAD_NONE;
+            else if (strcasecmp(buf, "fresh") == 0)
+                json_node->scratchpad_state = SCRATCHPAD_FRESH;
+            else if (strcasecmp(buf, "changed") == 0)
+                json_node->scratchpad_state = SCRATCHPAD_CHANGED;
+            free(buf);
         }
     }
     return 1;

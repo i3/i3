@@ -274,6 +274,22 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("fullscreen_mode");
     y(integer, con->fullscreen_mode);
 
+    ystr("floating");
+    switch (con->floating) {
+        case FLOATING_AUTO_OFF:
+            ystr("auto_off");
+            break;
+        case FLOATING_AUTO_ON:
+            ystr("auto_on");
+            break;
+        case FLOATING_USER_OFF:
+            ystr("user_off");
+            break;
+        case FLOATING_USER_ON:
+            ystr("user_on");
+            break;
+    }
+
     ystr("swallows");
     y(array_open);
     Match *match;

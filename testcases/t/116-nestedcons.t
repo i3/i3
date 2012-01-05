@@ -46,6 +46,7 @@ my $expected = {
     swallows => $ignore,
     percent => undef,
     layout => 'default',
+    floating => 'auto_off',
     scratchpad_state => 'none',
     focus => $ignore,
     focused => JSON::XS::false,
