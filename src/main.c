@@ -335,7 +335,7 @@ int main(int argc, char *argv[]) {
                     break;
                 } else if (strcmp(long_options[option_index].name, "get-socketpath") == 0 ||
                            strcmp(long_options[option_index].name, "get_socketpath") == 0) {
-                    char *socket_path = socket_path_from_x11();
+                    char *socket_path = root_atom_contents("I3_SOCKET_PATH");
                     if (socket_path) {
                         printf("%s\n", socket_path);
                         return 0;
@@ -416,7 +416,7 @@ int main(int argc, char *argv[]) {
             optind++;
         }
         LOG("Command is: %s (%d bytes)\n", payload, strlen(payload));
-        char *socket_path = socket_path_from_x11();
+        char *socket_path = root_atom_contents("I3_SOCKET_PATH");
         if (!socket_path) {
             ELOG("Could not get i3 IPC socket path\n");
             return 1;

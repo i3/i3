@@ -40,9 +40,6 @@
 /** Request the configuration for a specific 'bar' */
 #define I3_IPC_MESSAGE_TYPE_GET_BAR_CONFIG      6
 
-/** Request the SHM debug log start/wrap markers */
-#define I3_IPC_MESSAGE_TYPE_GET_LOG_MARKERS     7
-
 /*
  * Messages from i3 to clients
  *
@@ -68,9 +65,6 @@
 
 /** Bar config reply type */
 #define I3_IPC_REPLY_TYPE_BAR_CONFIG            6
-
-/** Request the SHM debug log start/wrap markers */
-#define I3_IPC_REPLY_TYPE_LOG_MARKERS           7
 
 /*
  * Events from i3 to clients. Events have the first bit set high.

@@ -47,13 +47,14 @@ struct Font {
 #endif
 
 /**
- * Try to get the socket path from X11 and return NULL if it doesn’t work.
+ * Try to get the contents of the given atom (for example I3_SOCKET_PATH) from
+ * the X11 root window and return NULL if it doesn’t work.
  *
- * The memory for the socket path is dynamically allocated and has to be
+ * The memory for the contents is dynamically allocated and has to be
  * free()d by the caller.
  *
  */
-char *socket_path_from_x11();
+char *root_atom_contents(const char *atomname);
 
 /**
  * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that

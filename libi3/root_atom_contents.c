@@ -16,13 +16,14 @@
 #include "libi3.h"
 
 /*
- * Try to get the socket path from X11 and return NULL if it doesn’t work.
+ * Try to get the contents of the given atom (for example I3_SOCKET_PATH) from
+ * the X11 root window and return NULL if it doesn’t work.
  *
- * The memory for the socket path is dynamically allocated and has to be
+ * The memory for the contents is dynamically allocated and has to be
  * free()d by the caller.
  *
  */
-char *socket_path_from_x11() {
+char *root_atom_contents(const char *atomname) {
     xcb_connection_t *conn;
     xcb_intern_atom_cookie_t atom_cookie;
     xcb_intern_atom_reply_t *atom_reply;
@@ -33,7 +34,7 @@ char *socket_path_from_x11() {
         xcb_connection_has_error(conn))
         return NULL;
 
-    atom_cookie = xcb_intern_atom(conn, 0, strlen("I3_SOCKET_PATH"), "I3_SOCKET_PATH");
+    atom_cookie = xcb_intern_atom(conn, 0, strlen(atomname), atomname);
 
     xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screen);
     xcb_window_t root = root_screen->root;

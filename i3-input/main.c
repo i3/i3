@@ -342,7 +342,7 @@ int main(int argc, char *argv[]) {
     printf("using format \"%s\"\n", format);
 
     if (socket_path == NULL)
-        socket_path = socket_path_from_x11();
+        socket_path = root_atom_contents("I3_SOCKET_PATH");
 
     if (socket_path == NULL)
         socket_path = "/tmp/i3-ipc.sock";

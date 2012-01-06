@@ -644,48 +644,6 @@ IPC_HANDLER(get_bar_config) {
 }
 
 /*
- * Formats the reply message for a GET_LOG_MARKERS request and sends it to the
- * client.
- *
- */
-IPC_HANDLER(get_log_markers) {
-#if YAJL_MAJOR >= 2
-    yajl_gen gen = yajl_gen_alloc(NULL);
-#else
-    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
-#endif
-
-    int offset_next_write, offset_last_wrap, logsize;
-    get_log_markers(&offset_next_write, &offset_last_wrap, &logsize);
-
-    y(map_open);
-    ystr("offset_next_write");
-    y(integer, offset_next_write);
-
-    ystr("offset_last_wrap");
-    y(integer, offset_last_wrap);
-
-    ystr("shmname");
-    ystr(shmlogname);
-
-    ystr("size");
-    y(integer, logsize);
-
-    y(map_close);
-
-    const unsigned char *payload;
-#if YAJL_MAJOR >= 2
-    size_t length;
-#else
-    unsigned int length;
-#endif
-    y(get_buf, &payload, &length);
-
-    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_LOG_MARKERS, payload);
-    y(free);
-}
-
-/*
  * Callback for the YAJL parser (will be called when a string is parsed).
  *
  */
@@ -770,7 +728,7 @@ IPC_HANDLER(subscribe) {
 
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[8] = {
+handler_t handlers[7] = {
     handle_command,
     handle_get_workspaces,
     handle_subscribe,
@@ -778,7 +736,6 @@ handler_t handlers[8] = {
     handle_tree,
     handle_get_marks,
     handle_get_bar_config,
-    handle_get_log_markers
 };
 
 /*

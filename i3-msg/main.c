@@ -73,11 +73,9 @@ int main(int argc, char *argv[]) {
                 message_type = I3_IPC_MESSAGE_TYPE_GET_MARKS;
             else if (strcasecmp(optarg, "get_bar_config") == 0)
                 message_type = I3_IPC_MESSAGE_TYPE_GET_BAR_CONFIG;
-            else if (strcasecmp(optarg, "get_log_markers") == 0)
-                message_type = I3_IPC_MESSAGE_TYPE_GET_LOG_MARKERS;
             else {
                 printf("Unknown message type\n");
-                printf("Known types: command, get_workspaces, get_outputs, get_tree, get_marks, get_bar_config, get_log_markers\n");
+                printf("Known types: command, get_workspaces, get_outputs, get_tree, get_marks, get_bar_config\n");
                 exit(EXIT_FAILURE);
             }
         } else if (o == 'q') {
@@ -93,7 +91,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (socket_path == NULL)
-        socket_path = socket_path_from_x11();
+        socket_path = root_atom_contents("I3_SOCKET_PATH");
 
     /* Fall back to the default socket path */
     if (socket_path == NULL)
