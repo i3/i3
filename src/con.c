@@ -656,8 +656,10 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     con_fix_percent(next);
 
     /* 7: focus the con on the target workspace (the X focus is only updated by
-     * calling tree_render(), so for the "real" focus this is a no-op). */
-    con_focus(con_descend_focused(con));
+     * calling tree_render(), so for the "real" focus this is a no-op).
+     * We don’t focus when there is a fullscreen con on that workspace. */
+    if (con_get_fullscreen_con(workspace, CF_OUTPUT) == NULL)
+        con_focus(con_descend_focused(con));
 
     /* 8: when moving to a visible workspace on a different output, we keep the
      * con focused. Otherwise, we leave the focus on the current workspace as we
