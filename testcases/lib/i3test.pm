@@ -271,7 +271,34 @@ sub get_unused_workspace {
     $tmp
 }
 
+=head2 fresh_workspace(...)
+
+Switches to an unused workspace and returns the name of that workspace.
+
+Optionally switches to the specified output first.
+
+    my $ws = fresh_workspace;
+
+    # Get a fresh workspace on the second output.
+    my $ws = fresh_workspace(output => 1);
+
+=cut
 sub fresh_workspace {
+    my %args = @_;
+    if (exists($args{output})) {
+        my $i3 = i3(get_socket_path());
+        my $tree = $i3->get_tree->recv;
+        my $output = first { $_->{name} eq "xinerama-$args{output}" }
+                        @{$tree->{nodes}};
+        die "BUG: Could not find output $args{output}" unless defined($output);
+        # Get the focused workspace on that output and switch to it.
+        my $content = first { $_->{type} == 2 } @{$output->{nodes}};
+        my $focused = $content->{focus}->[0];
+        my $workspace = first { $_->{id} == $focused } @{$content->{nodes}};
+        $workspace = $workspace->{name};
+        cmd("workspace $workspace");
+    }
+
     my $unused = get_unused_workspace;
     cmd("workspace $unused");
     $unused
