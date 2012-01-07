@@ -297,6 +297,54 @@ is(scalar @{$ws->{nodes}}, 1, 'still precisely one window on current ws');
 is(scalar @{$ws->{floating_nodes}}, 1, 'precisely one floating windows on current ws');
 is($ws->{floating_nodes}->[0]->{scratchpad_state}, 'changed', 'scratchpad_state is "changed"');
 
+################################################################################
+# 10: on an empty workspace, ensure the 'move scratchpad' command does nothing
+################################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'move scratchpad';
+
+does_i3_live;
+
+################################################################################
+# 11: focus a workspace and move all of its children to the scratchpad area
+################################################################################
+
+$tmp = fresh_workspace;
+
+my $first = open_window;
+my $second = open_window;
+
+cmd 'focus parent';
+cmd 'move scratchpad';
+
+does_i3_live;
+
+$ws = get_ws($tmp);
+is(scalar @{$ws->{nodes}}, 0, 'no windows on ws');
+is(scalar @{$ws->{floating_nodes}}, 0, 'no floating windows on ws');
+
+# show the first window.
+cmd 'scratchpad show';
+
+$ws = get_ws($tmp);
+is(scalar @{$ws->{nodes}}, 0, 'no windows on ws');
+is(scalar @{$ws->{floating_nodes}}, 1, 'one floating windows on ws');
+
+$old_focus = get_focused($tmp);
+
+cmd 'scratchpad show';
+
+# show the second window.
+cmd 'scratchpad show';
+
+$ws = get_ws($tmp);
+is(scalar @{$ws->{nodes}}, 0, 'no windows on ws');
+is(scalar @{$ws->{floating_nodes}}, 1, 'one floating windows on ws');
+
+isnt(get_focused($tmp), $old_focus, 'focus changed');
+
 # TODO: make i3bar display *something* when a window on the scratchpad has the urgency hint
 
 done_testing;

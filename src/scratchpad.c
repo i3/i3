@@ -17,6 +17,18 @@
  *
  */
 void scratchpad_move(Con *con) {
+    if (con->type == CT_WORKSPACE) {
+        LOG("'move scratchpad' used on a workspace \"%s\". Calling it "
+            "recursively on all windows on this workspace.\n", con->name);
+        Con *current;
+        current = TAILQ_FIRST(&(con->focus_head));
+        while (current) {
+            Con *next = TAILQ_NEXT(current, focused);
+            scratchpad_move(current);
+            current = next;
+        }
+        return;
+    }
     DLOG("should move con %p to __i3_scratch\n", con);
 
     Con *__i3_scratch = workspace_get("__i3_scratch", NULL);
