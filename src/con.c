@@ -808,7 +808,7 @@ Con *con_get_next(Con *con, char way, orientation_t orientation) {
  */
 Con *con_descend_focused(Con *con) {
     Con *next = con;
-    while (!TAILQ_EMPTY(&(next->focus_head)))
+    while (next != focused && !TAILQ_EMPTY(&(next->focus_head)))
         next = TAILQ_FIRST(&(next->focus_head));
     return next;
 }
@@ -825,6 +825,8 @@ Con *con_descend_tiling_focused(Con *con) {
     Con *next = con;
     Con *before;
     Con *child;
+    if (next == focused)
+        return next;
     do {
         before = next;
         TAILQ_FOREACH(child, &(next->focus_head), focused) {
@@ -834,7 +836,7 @@ Con *con_descend_tiling_focused(Con *con) {
             next = child;
             break;
         }
-    } while (before != next);
+    } while (before != next && next != focused);
     return next;
 }
 
