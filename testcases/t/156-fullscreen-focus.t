@@ -68,4 +68,30 @@ sync_with_i3($x);
 
 is($x->input_focus, $third->id, 'third window focused');
 
+################################################################################
+# Ensure that moving a window to a workspace which has a fullscreen window does
+# not focus it (otherwise the user cannot get out of fullscreen mode anymore).
+################################################################################
+
+$tmp = fresh_workspace;
+
+my $fullscreen_window = open_window;
+cmd 'fullscreen';
+
+my $nodes = get_ws_content($tmp);
+is(scalar @$nodes, 1, 'precisely one window');
+is($nodes->[0]->{focused}, 1, 'fullscreen window focused');
+my $old_id = $nodes->[0]->{id};
+
+$tmp2 = fresh_workspace;
+my $move_window = open_window;
+cmd "move workspace $tmp";
+
+cmd "workspace $tmp";
+
+$nodes = get_ws_content($tmp);
+is(scalar @$nodes, 2, 'precisely two windows');
+is($nodes->[0]->{id}, $old_id, 'id unchanged');
+is($nodes->[0]->{focused}, 1, 'fullscreen window focused');
+
 done_testing;
