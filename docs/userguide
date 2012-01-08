@@ -847,25 +847,30 @@ bar {
 
 You can have i3bar either be visible permanently at one edge of the screen
 (+dock+ mode) or make it show up when you press your modifier key (+hide+
-mode).
+mode). The modifier key can be configured using the +modifier+ option.
 
 The hide mode maximizes screen space that can be used for actual windows. Also,
 i3bar sends the +SIGSTOP+ and +SIGCONT+ signals to the statusline process to
 save battery power.
 
-The default is dock mode.
+The default is dock mode; in hide mode, the default modifier is Mod4 (usually
+the windows key).
 
 *Syntax*:
 ----------------
 mode <dock|hide>
+modifier <Modifier>
 ----------------
 
 *Example*:
 ----------------
 bar {
     mode hide
+    modifier Mod1
 }
 ----------------
+
+Available modifiers are Mod1-Mod5, Shift, Control (see +xmodmap(1)+).
 
 [[i3bar_position]]
 === Position
