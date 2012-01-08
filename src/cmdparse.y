@@ -529,7 +529,7 @@ focus:
         tree_render();
     }
     | TOK_FOCUS TOK_OUTPUT STR
-    {   
+    {
         owindow *current;
 
         HANDLE_EMPTY_MATCH;
@@ -552,15 +552,13 @@ focus:
             output = get_output_next(D_DOWN, current_output);
         else
             output = get_output_by_name($3);
-        
+
         free($3);
 
         if (!output) {
             printf("No such output found.\n");
             break;
         }
-
-
 
         /* get visible workspace on output */
         Con *ws = NULL;
