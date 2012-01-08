@@ -82,9 +82,17 @@ void floating_enable(Con *con, bool automatic) {
      * otherwise. */
     Con *ws = con_get_workspace(con);
     nc->parent = ws;
+    nc->orientation = NO_ORIENTATION;
+    nc->type = CT_FLOATING_CON;
+    /* We insert nc already, even though its rect is not yet calculated. This
+     * is necessary because otherwise the workspace might be empty (and get
+     * closed in tree_close()) even though it’s not. */
+    TAILQ_INSERT_TAIL(&(ws->floating_head), nc, floating_windows);
+    TAILQ_INSERT_TAIL(&(ws->focus_head), nc, focused);
 
     /* check if the parent container is empty and close it if so */
-    if ((con->parent->type == CT_CON || con->parent->type == CT_FLOATING_CON) && con_num_children(con->parent) == 0) {
+    if ((con->parent->type == CT_CON || con->parent->type == CT_FLOATING_CON) &&
+        con_num_children(con->parent) == 0) {
         DLOG("Old container empty after setting this child to floating, closing\n");
         tree_close(con->parent, DONT_KILL_WINDOW, false, false);
     }
@@ -158,10 +166,6 @@ void floating_enable(Con *con, bool automatic) {
     }
 
     DLOG("Floating rect: (%d, %d) with %d x %d\n", nc->rect.x, nc->rect.y, nc->rect.width, nc->rect.height);
-    nc->orientation = NO_ORIENTATION;
-    nc->type = CT_FLOATING_CON;
-    TAILQ_INSERT_TAIL(&(ws->floating_head), nc, floating_windows);
-    TAILQ_INSERT_TAIL(&(ws->focus_head), nc, focused);
 
     /* 3: attach the child to the new parent container */
     con->parent = nc;
