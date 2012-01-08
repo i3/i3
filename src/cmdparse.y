@@ -155,6 +155,8 @@ bool definitelyGreaterThan(float a, float b, float epsilon) {
 %token              TOK_OPEN            "open"
 %token              TOK_NEXT            "next"
 %token              TOK_PREV            "prev"
+%token              TOK_NEXT_ON_OUTPUT  "next_on_output"
+%token              TOK_PREV_ON_OUTPUT  "prev_on_output"
 %token              TOK_SCRATCHPAD      "scratchpad"
 %token              TOK_SHOW            "show"
 %token              TOK_SPLIT           "split"
@@ -680,6 +682,16 @@ workspace:
         workspace_show(workspace_prev());
         tree_render();
     }
+    | TOK_WORKSPACE TOK_NEXT_ON_OUTPUT
+    {
+        workspace_show(workspace_next_on_output());
+        tree_render();
+    }
+    | TOK_WORKSPACE TOK_PREV_ON_OUTPUT
+    {
+        workspace_show(workspace_prev_on_output());
+        tree_render();
+    }
     | TOK_WORKSPACE TOK_BACK_AND_FORTH
     {
         workspace_back_and_forth();
@@ -902,6 +914,38 @@ move:
 
         /* get the workspace */
         Con *ws = workspace_prev();
+
+        HANDLE_EMPTY_MATCH;
+
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            printf("matching: %p / %s\n", current->con, current->con->name);
+            con_move_to_workspace(current->con, ws, true, false);
+        }
+
+        tree_render();
+    }
+    | TOK_MOVE TOK_WORKSPACE TOK_NEXT_ON_OUTPUT
+    {
+        owindow *current;
+
+        /* get the workspace */
+        Con *ws = workspace_next_on_output();
+
+        HANDLE_EMPTY_MATCH;
+
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            printf("matching: %p / %s\n", current->con, current->con->name);
+            con_move_to_workspace(current->con, ws, true, false);
+        }
+
+        tree_render();
+    }
+    | TOK_MOVE TOK_WORKSPACE TOK_PREV_ON_OUTPUT
+    {
+        owindow *current;
+
+        /* get the workspace */
+        Con *ws = workspace_prev_on_output();
 
         HANDLE_EMPTY_MATCH;
 

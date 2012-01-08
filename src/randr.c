@@ -420,11 +420,15 @@ void init_ws_for_output(Output *output, Con *content) {
             continue;
         DLOG("relevant command = %s\n", bind->command);
         char *target = bind->command + strlen("workspace ");
-        /* We check if this is the workspace next/prev/back_and_forth command.
-         * Beware: The workspace names "next", "prev" and "back_and_forth" are
-         * OK, so we check before stripping the double quotes */
+        /* We check if this is the workspace
+         * next/prev/next_on_output/prev_on_output/back_and_forth command.
+         * Beware: The workspace names "next", "prev", "next_on_output",
+         * "prev_on_output" and "back_and_forth" are OK, so we check before
+         * stripping the double quotes */
         if (strncasecmp(target, "next", strlen("next")) == 0 ||
             strncasecmp(target, "prev", strlen("prev")) == 0 ||
+            strncasecmp(target, "next_on_output", strlen("next_on_output")) == 0 ||
+            strncasecmp(target, "prev_on_output", strlen("prev_on_output")) == 0 ||
             strncasecmp(target, "back_and_forth", strlen("back_and_forth")) == 0)
             continue;
         if (*target == '"')

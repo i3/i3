@@ -70,6 +70,18 @@ Con* workspace_next();
 Con* workspace_prev();
 
 /**
+ * Returns the next workspace on the same output
+ *
+ */
+Con* workspace_next_on_output();
+
+/**
+ * Returns the previous workspace on the same output
+ *
+ */
+Con* workspace_prev_on_output();
+
+/**
  * Focuses the previously focused workspace.
  *
  */

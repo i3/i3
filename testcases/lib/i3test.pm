@@ -383,18 +383,19 @@ sub workspace_exists {
     ($name ~~ @{get_workspace_names()})
 }
 
+=head2 focused_ws
+
+Returns the name of the currently focused workspace.
+
+=cut
 sub focused_ws {
     my $i3 = i3(get_socket_path());
     my $tree = $i3->get_tree->recv;
-    my @outputs = @{$tree->{nodes}};
-    my @cons;
-    for my $output (@outputs) {
-        next if $output->{name} eq '__i3';
-        # get the first CT_CON of each output
-        my $content = first { $_->{type} == 2 } @{$output->{nodes}};
-        my $first = first { $_->{fullscreen_mode} == 1 } @{$content->{nodes}};
-        return $first->{name}
-    }
+    my $focused = $tree->{focus}->[0];
+    my $output = first { $_->{id} == $focused } @{$tree->{nodes}};
+    my $content = first { $_->{type} == 2 } @{$output->{nodes}};
+    my $first = first { $_->{fullscreen_mode} == 1 } @{$content->{nodes}};
+    return $first->{name}
 }
 
 #
