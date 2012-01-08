@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael+i3@stapelberg.de>
-October 2011
+January 2012
 
 This document contains all the information you need to configure and use the i3
 window manager. If it does not, please contact us on IRC (preferred) or post your
@@ -1168,7 +1168,8 @@ bindsym mod+t floating toggle
 
 === Focusing/Moving containers
 
-To change the focus, use the focus command: +focus left+, +focus right+, +focus down+ and +focus up+.
+To change the focus, use the focus command: +focus left+, +focus right+, +focus
+down+ and +focus up+.
 
 There are a few special parameters you can use for the focus command:
 
@@ -1183,6 +1184,9 @@ tiling::
 	Sets focus to the last focused tiling container.
 mode_toggle::
 	Toggles between floating/tiling containers.
+output::
+	Followed by a direction or an output name, this will focus the
+	corresponding output.
 
 For moving, use +move left+, +move right+, +move down+ and +move up+.
 
@@ -1190,6 +1194,7 @@ For moving, use +move left+, +move right+, +move down+ and +move up+.
 -----------------------------------
 focus <left|right|down|up>
 focus <parent|child|floating|tiling|mode_toggle>
+focus output <<left|right|down|up>|output>
 move <left|right|down|up> [<px> px]
 -----------------------------------
 
@@ -1209,6 +1214,12 @@ bindsym mod+u focus parent
 
 # Focus last floating/tiling container
 bindsym mod+g focus mode_toggle
+
+# Focus the output right to the current one
+bindsym mod+x focus output right
+
+# Focus the big output
+bindsym mod+x focus output HDMI-2
 
 # Move container to the left, bottom, top, right:
 bindsym mod+j move left
