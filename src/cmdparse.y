@@ -542,16 +542,23 @@ focus:
             current_output = get_output_containing(current->con->rect.x, current->con->rect.y);
         assert(current_output != NULL);
 
-        if (strcasecmp($3, "left") == 0)
+        if (strcasecmp($3, "left") == 0) {
             output = get_output_next(D_LEFT, current_output);
-        else if (strcasecmp($3, "right") == 0)
+            if (!output)
+                output = get_output_most(D_RIGHT, current_output);
+        } else if (strcasecmp($3, "right") == 0) {
             output = get_output_next(D_RIGHT, current_output);
-        else if (strcasecmp($3, "up") == 0)
+            if (!output)
+                output = get_output_most(D_LEFT, current_output);
+        } else if (strcasecmp($3, "up") == 0) {
             output = get_output_next(D_UP, current_output);
-        else if (strcasecmp($3, "down") == 0)
+            if (!output)
+                output = get_output_most(D_DOWN, current_output);
+        } else if (strcasecmp($3, "down") == 0) {
             output = get_output_next(D_DOWN, current_output);
-        else
-            output = get_output_by_name($3);
+            if (!output)
+                output = get_output_most(D_UP, current_output);
+        } else output = get_output_by_name($3);
 
         free($3);
 
