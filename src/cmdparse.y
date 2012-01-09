@@ -130,6 +130,7 @@ bool definitelyGreaterThan(float a, float b, float epsilon) {
 %token              TOK_RESTART         "restart"
 %token              TOK_KILL            "kill"
 %token              TOK_WINDOW          "window"
+%token              TOK_CONTAINER       "container"
 %token              TOK_CLIENT          "client"
 %token              TOK_FULLSCREEN      "fullscreen"
 %token              TOK_GLOBAL          "global"
@@ -179,6 +180,7 @@ bool definitelyGreaterThan(float a, float b, float epsilon) {
 %token              TOK_NOP             "nop"
 %token              TOK_BACK_AND_FORTH  "back_and_forth"
 %token              TOK_NO_STARTUP_ID   "--no-startup-id"
+%token              TOK_TO              "to"
 
 %token              TOK_CLASS           "class"
 %token              TOK_INSTANCE        "instance"

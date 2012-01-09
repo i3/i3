@@ -316,10 +316,10 @@ sub convert_command {
     if ($command =~ /^m[0-9]+/) {
         my ($number) = ($command =~ /^m([0-9]+)/);
         if (exists $workspace_names{$number}) {
-            print qq|$statement $key move workspace $workspace_names{$number}\n|;
+            print qq|$statement $key move container to workspace $workspace_names{$number}\n|;
             return;
         } else {
-            print qq|$statement $key move workspace $number\n|;
+            print qq|$statement $key move container to workspace $number\n|;
             return;
         }
     }
