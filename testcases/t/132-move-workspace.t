@@ -1,7 +1,7 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 #
-# Checks if the 'move workspace' command works correctly
+# Checks if the 'move [window/container] to workspace' command works correctly
 #
 use i3test;
 
@@ -11,30 +11,40 @@ my $i3 = i3(get_socket_path());
 # be set to the window under the cursor
 $x->root->warp_pointer(0, 0);
 
-my $tmp = get_unused_workspace();
-my $tmp2 = get_unused_workspace();
-cmd "workspace $tmp";
+sub move_workspace_test {
+    my ($movecmd) = @_;
 
-ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
+    my $tmp = get_unused_workspace();
+    my $tmp2 = get_unused_workspace();
+    cmd "workspace $tmp";
 
-my $first = open_empty_con($i3);
-my $second = open_empty_con($i3);
-ok(@{get_ws_content($tmp)} == 2, 'two containers on first ws');
+    ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
-cmd "workspace $tmp2";
-ok(@{get_ws_content($tmp2)} == 0, 'no containers on second ws yet');
+    my $first = open_empty_con($i3);
+    my $second = open_empty_con($i3);
+    ok(@{get_ws_content($tmp)} == 2, 'two containers on first ws');
 
-cmd "workspace $tmp";
+    cmd "workspace $tmp2";
+    ok(@{get_ws_content($tmp2)} == 0, 'no containers on second ws yet');
 
-cmd "move workspace $tmp2";
-ok(@{get_ws_content($tmp)} == 1, 'one container on first ws anymore');
-ok(@{get_ws_content($tmp2)} == 1, 'one container on second ws');
-my ($nodes, $focus) = get_ws_content($tmp2);
+    cmd "workspace $tmp";
 
-is($focus->[0], $second, 'same container on different ws');
+    cmd "$movecmd $tmp2";
+    ok(@{get_ws_content($tmp)} == 1, 'one container on first ws anymore');
+    ok(@{get_ws_content($tmp2)} == 1, 'one container on second ws');
+    my ($nodes, $focus) = get_ws_content($tmp2);
 
-($nodes, $focus) = get_ws_content($tmp);
-ok($nodes->[0]->{focused}, 'first container focused on first ws');
+    is($focus->[0], $second, 'same container on different ws');
+
+    ($nodes, $focus) = get_ws_content($tmp);
+    ok($nodes->[0]->{focused}, 'first container focused on first ws');
+}
+
+move_workspace_test('move workspace');  # supported for legacy reasons
+move_workspace_test('move to workspace');
+# Those are just synonyms and more verbose ways of saying the same thing:
+move_workspace_test('move window to workspace');
+move_workspace_test('move container to workspace');
 
 ###################################################################
 # check if 'move workspace next' and 'move workspace prev' work
@@ -43,12 +53,12 @@ ok($nodes->[0]->{focused}, 'first container focused on first ws');
 # Open two containers on the first workspace, one container on the second
 # workspace. Because the workspaces are named, they will be sorted by order of
 # creation.
-$tmp = get_unused_workspace();
-$tmp2 = get_unused_workspace();
+my $tmp = get_unused_workspace();
+my $tmp2 = get_unused_workspace();
 cmd "workspace $tmp";
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
-$first = open_empty_con($i3);
-$second = open_empty_con($i3);
+my $first = open_empty_con($i3);
+my $second = open_empty_con($i3);
 ok(@{get_ws_content($tmp)} == 2, 'two containers on first ws');
 
 cmd "workspace $tmp2";

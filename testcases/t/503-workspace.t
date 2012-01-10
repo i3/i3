@@ -12,12 +12,12 @@ use i3test;
 
 is(focused_ws, '1', 'starting on workspace 1');
 # ensure workspace 1 stays open
-cmd 'open';
+open_window;
 
 cmd 'focus output right';
 is(focused_ws, '2', 'workspace 2 on second output');
 # ensure workspace 2 stays open
-cmd 'open';
+open_window;
 
 cmd 'focus output right';
 is(focused_ws, '1', 'back on workspace 1');
@@ -25,8 +25,8 @@ is(focused_ws, '1', 'back on workspace 1');
 # We don’t use fresh_workspace with named workspaces here since they come last
 # when using 'workspace next'.
 cmd 'workspace 5';
-# ensure workspace $tmp stays open
-cmd 'open';
+# ensure workspace 5 stays open
+open_window;
 
 ################################################################################
 # Use workspace next and verify the correct order.

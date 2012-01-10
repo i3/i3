@@ -1055,9 +1055,9 @@ specific workspace and immediately switch to that workspace, you can configure
 the following keybinding:
 
 *Example*:
--------------------------------------------
-bindsym mod+x move workspace 3; workspace 3
--------------------------------------------
+--------------------------------------------------------
+bindsym mod+x move container to workspace 3; workspace 3
+--------------------------------------------------------
 
 [[command_criteria]]
 
@@ -1241,24 +1241,29 @@ bindsym mod+j move left 20 px
 
 To change to a specific workspace, use the +workspace+ command, followed by the
 number or name of the workspace. To move containers to specific workspaces, use
-+move workspace+.
++move container to workspace+.
 
 You can also switch to the next and previous workspace with the commands
 +workspace next+ and +workspace prev+, which is handy, for example, if you have
 workspace 1, 3, 4 and 9 and you want to cycle through them with a single key
 combination. To restrict those to the current output, use +workspace
 next_on_output+ and +workspace prev_on_output+. Similarly, you can use +move
-workspace next+ and +move workspace prev+ to move a container to the
-next/previous workspace.
+container to workspace next+ and +move container to workspace prev+ to move a
+container to the next/previous workspace.
 
 [[back_and_forth]]
 To switch back to the previously focused workspace, use +workspace
 back_and_forth+.
 
 To move a container to another xrandr output such as +LVDS1+ or +VGA1+, you can
-use the +move output+ command followed by the name of the target output. You
-may also use +left+, +right+, +up+, +down+ instead of the xrandr output name to
-move to the next output in the specified direction.
+use the +move container to output+ command followed by the name of the target
+output. You may also use +left+, +right+, +up+, +down+ instead of the xrandr
+output name to move to the next output in the specified direction.
+
+To move a whole workspace to another xrandr output such as +LVDS1+ or +VGA1+,
+you can use the +move workspace to output+ command followed by the name of the
+target output. You may also use +left+, +right+, +up+, +down+ instead of the
+xrandr output name to move to the next output in the specified direction.
 
 *Examples*:
 -------------------------
@@ -1266,12 +1271,15 @@ bindsym mod+1 workspace 1
 bindsym mod+2 workspace 2
 ...
 
-bindsym mod+Shift+1 move workspace 1
-bindsym mod+Shift+2 move workspace 2
+bindsym mod+Shift+1 move container to workspace 1
+bindsym mod+Shift+2 move container to workspace 2
 ...
 
 # switch between the current and the previously focused one
 bindsym mod+b workspace back_and_forth
+
+# move the whole workspace to the next output
+bindsym mod+x move workspace to output right
 -------------------------
 
 ==== Named workspaces

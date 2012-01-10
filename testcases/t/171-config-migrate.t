@@ -315,7 +315,7 @@ $output = migrate_config('bindsym Mod1+3 3');
 ok(line_exists($output, qr|^bindsym Mod1\+3 workspace 3|), 'workspace changed');
 
 $output = migrate_config('bindsym Mod1+3 m3');
-ok(line_exists($output, qr|^bindsym Mod1\+3 move workspace 3|), 'move workspace changed');
+ok(line_exists($output, qr|^bindsym Mod1\+3 move container to workspace 3|), 'move workspace changed');
 
 $input = <<EOT;
     workspace 3 work
@@ -323,7 +323,7 @@ $input = <<EOT;
 EOT
 $output = migrate_config($input);
 ok(!line_exists($output, qr|^workspace|), 'workspace name not present');
-ok(line_exists($output, qr|^bindsym Mod1\+3 move workspace work|), 'move to named workspace in bindings');
+ok(line_exists($output, qr|^bindsym Mod1\+3 move container to workspace work|), 'move to named workspace in bindings');
 
 #####################################################################
 # check whether an i3bar call is added if the workspace bar bar was enabled

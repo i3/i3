@@ -48,6 +48,9 @@ EOL (\r?\n)
 /* handle a quoted string or everything up to the next whitespace */
 %s WANT_QSTRING
 
+%x MOVE
+%x MOVE_WS
+
 %x EXEC
 
 %x BUFFER_LINE
@@ -74,13 +77,37 @@ EOL (\r?\n)
     cmdyycolumn = 1;
 }
 
-    /* the next/prev/back_and_forth tokens are here to recognize them *before*
-     * handling strings ('workspace' command) */
+    /* The next/prev/back_and_forth tokens are here to recognize them *before*
+     * handling strings ('workspace' command). While flex uses the longest
+     * match, in case of a tie the order of rules becomes relevant. Since the
+     * input is fully consumed (these are the last tokens), it comes to a tie.
+     * */
 next                            { BEGIN(INITIAL); return TOK_NEXT; }
 prev                            { BEGIN(INITIAL); return TOK_PREV; }
 next_on_output                  { BEGIN(INITIAL); return TOK_NEXT_ON_OUTPUT; }
 prev_on_output                  { BEGIN(INITIAL); return TOK_PREV_ON_OUTPUT; }
 back_and_forth                  { BEGIN(INITIAL); return TOK_BACK_AND_FORTH; }
+
+    /* MOVE is the state after a 'move' token was processed. We need this state
+     * to skip some tokens (for making the commands clearer) and to properly
+     * move to the MOVE_WS state. */
+<MOVE>to                        { /* eat this token */ }
+<MOVE>window                    { /* eat this token */ }
+<MOVE>container                 { /* eat this token */ }
+<MOVE>workspace                 { yy_pop_state(); yy_push_state(MOVE_WS); yy_push_state(EAT_WHITESPACE); return TOK_WORKSPACE; }
+<MOVE>scratchpad                { yy_pop_state(); return TOK_SCRATCHPAD; }
+<MOVE>up                        { yy_pop_state(); return TOK_UP; }
+<MOVE>down                      { yy_pop_state(); return TOK_DOWN; }
+<MOVE>left                      { yy_pop_state(); return TOK_LEFT; }
+<MOVE>right                     { yy_pop_state(); return TOK_RIGHT; }
+
+    /* MOVE_WS is the state after a 'workspace' token was processed in the MOVE
+     * state. We need a separate state to deal with the fact that the old
+     * 'move workspace <ws>' command needs to be supported (the new command is
+     * 'move to workspace') while we also need to support
+     * 'move workspace to output <output>'. */
+<MOVE_WS>to                     { yy_pop_state(); return TOK_TO; }
+<MOVE_WS>[^to]                  { yy_pop_state(); yy_push_state(WANT_STRING); yyless(0); }
 
 <WANT_STRING>\"[^\"]+\"         {
                                   BEGIN(INITIAL);
@@ -113,6 +140,7 @@ reload                          { return TOK_RELOAD; }
 restart                         { return TOK_RESTART; }
 kill                            { return TOK_KILL; }
 window                          { return TOK_WINDOW; }
+container                       { return TOK_CONTAINER; }
 client                          { return TOK_CLIENT; }
 fullscreen                      { return TOK_FULLSCREEN; }
 global                          { return TOK_GLOBAL; }
@@ -133,7 +161,7 @@ mode_toggle                     { return TOK_MODE_TOGGLE; }
 workspace                       { WS_STRING; return TOK_WORKSPACE; }
 output                          { WS_STRING; return TOK_OUTPUT; }
 focus                           { return TOK_FOCUS; }
-move                            { return TOK_MOVE; }
+move                            { yy_push_state(MOVE); return TOK_MOVE; }
 open                            { return TOK_OPEN; }
 scratchpad                      { return TOK_SCRATCHPAD; }
 show                            { return TOK_SHOW; }
@@ -152,6 +180,7 @@ grow                            { return TOK_GROW; }
 px                              { return TOK_PX; }
 or                              { return TOK_OR; }
 ppt                             { return TOK_PPT; }
+to                              { return TOK_TO; }
 nop                             { WS_STRING; return TOK_NOP; }
 append_layout                   { WS_STRING; return TOK_APPEND_LAYOUT; }
 mark                            { WS_STRING; return TOK_MARK; }

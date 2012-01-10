@@ -105,6 +105,31 @@ char *parse_cmd(const char *new) {
     return json_output;
 }
 
+static Output *get_output_from_string(Output *current_output, const char *output_str) {
+    Output *output;
+
+    if (strcasecmp(output_str, "left") == 0) {
+        output = get_output_next(D_LEFT, current_output);
+        if (!output)
+            output = get_output_most(D_RIGHT, current_output);
+    } else if (strcasecmp(output_str, "right") == 0) {
+        output = get_output_next(D_RIGHT, current_output);
+        if (!output)
+            output = get_output_most(D_LEFT, current_output);
+    } else if (strcasecmp(output_str, "up") == 0) {
+        output = get_output_next(D_UP, current_output);
+        if (!output)
+            output = get_output_most(D_DOWN, current_output);
+    } else if (strcasecmp(output_str, "down") == 0) {
+        output = get_output_next(D_DOWN, current_output);
+        if (!output)
+            output = get_output_most(D_UP, current_output);
+    } else output = get_output_by_name(output_str);
+
+    return output;
+}
+
+
 /*
  * Returns true if a is definitely greater than b (using the given epsilon)
  *
@@ -130,6 +155,7 @@ bool definitelyGreaterThan(float a, float b, float epsilon) {
 %token              TOK_RESTART         "restart"
 %token              TOK_KILL            "kill"
 %token              TOK_WINDOW          "window"
+%token              TOK_CONTAINER       "container"
 %token              TOK_CLIENT          "client"
 %token              TOK_FULLSCREEN      "fullscreen"
 %token              TOK_GLOBAL          "global"
@@ -179,6 +205,7 @@ bool definitelyGreaterThan(float a, float b, float epsilon) {
 %token              TOK_NOP             "nop"
 %token              TOK_BACK_AND_FORTH  "back_and_forth"
 %token              TOK_NO_STARTUP_ID   "--no-startup-id"
+%token              TOK_TO              "to"
 
 %token              TOK_CLASS           "class"
 %token              TOK_INSTANCE        "instance"
@@ -544,23 +571,7 @@ focus:
             current_output = get_output_containing(current->con->rect.x, current->con->rect.y);
         assert(current_output != NULL);
 
-        if (strcasecmp($3, "left") == 0) {
-            output = get_output_next(D_LEFT, current_output);
-            if (!output)
-                output = get_output_most(D_RIGHT, current_output);
-        } else if (strcasecmp($3, "right") == 0) {
-            output = get_output_next(D_RIGHT, current_output);
-            if (!output)
-                output = get_output_most(D_LEFT, current_output);
-        } else if (strcasecmp($3, "up") == 0) {
-            output = get_output_next(D_UP, current_output);
-            if (!output)
-                output = get_output_most(D_DOWN, current_output);
-        } else if (strcasecmp($3, "down") == 0) {
-            output = get_output_next(D_DOWN, current_output);
-            if (!output)
-                output = get_output_most(D_UP, current_output);
-        } else output = get_output_by_name($3);
+        output = get_output_from_string(current_output, $3);
 
         free($3);
 
@@ -1013,6 +1024,51 @@ move:
         TAILQ_FOREACH(current, &owindows, owindows) {
             printf("matching: %p / %s\n", current->con, current->con->name);
             scratchpad_move(current->con);
+        }
+
+        tree_render();
+    }
+    | TOK_MOVE TOK_WORKSPACE TOK_TO TOK_OUTPUT STR
+    {
+        printf("should move workspace to output %s\n", $5);
+
+        HANDLE_EMPTY_MATCH;
+
+        owindow *current;
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            Output *current_output = get_output_containing(current->con->rect.x,
+                                                           current->con->rect.y);
+            Output *output = get_output_from_string(current_output, $5);
+            if (!output) {
+                printf("No such output\n");
+                break;
+            }
+
+            Con *content = output_get_content(output->con);
+            LOG("got output %p with content %p\n", output, content);
+
+            Con *ws = con_get_workspace(current->con);
+            printf("should move workspace %p / %s\n", ws, ws->name);
+            if (con_num_children(ws->parent) == 1) {
+                printf("Not moving workspace \"%s\", it is the only workspace on its output.\n", ws->name);
+                continue;
+            }
+            bool workspace_was_visible = workspace_is_visible(ws);
+            Con *old_content = ws->parent;
+            con_detach(ws);
+            if (workspace_was_visible) {
+                /* The workspace which we just detached was visible, so focus
+                 * the next one in the focus-stack. */
+                Con *focus_ws = TAILQ_FIRST(&(old_content->focus_head));
+                printf("workspace was visible, focusing %p / %s now\n", focus_ws, focus_ws->name);
+                workspace_show(focus_ws);
+            }
+            con_attach(ws, content, false);
+            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"move\"}");
+            if (workspace_was_visible) {
+                /* Focus the moved workspace on the destination output. */
+                workspace_show(ws);
+            }
         }
 
         tree_render();
