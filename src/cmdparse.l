@@ -107,7 +107,7 @@ back_and_forth                  { BEGIN(INITIAL); return TOK_BACK_AND_FORTH; }
      * 'move to workspace') while we also need to support
      * 'move workspace to output <output>'. */
 <MOVE_WS>to                     { yy_pop_state(); return TOK_TO; }
-<MOVE_WS>[^to]                  { yy_pop_state(); yy_push_state(WANT_STRING); yyless(0); }
+<MOVE_WS>[^t]                   { yy_pop_state(); yy_push_state(WANT_STRING); yyless(0); }
 
 <WANT_STRING>\"[^\"]+\"         {
                                   BEGIN(INITIAL);
