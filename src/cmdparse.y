@@ -16,20 +16,6 @@
 
 #include "all.h"
 
-/** When the command did not include match criteria (!), we use the currently
- * focused command. Do not confuse this case with a command which included
- * criteria but which did not match any windows. This macro has to be called in
- * every command.
- */
-#define HANDLE_EMPTY_MATCH do { \
-    if (match_is_empty(&current_match)) { \
-        owindow *ow = smalloc(sizeof(owindow)); \
-        ow->con = focused; \
-        TAILQ_INIT(&owindows); \
-        TAILQ_INSERT_TAIL(&owindows, ow, owindows); \
-    } \
-} while (0)
-
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int cmdyylex(struct context *context);
 extern int cmdyyparse(void);
@@ -39,17 +25,6 @@ YY_BUFFER_STATE cmdyy_scan_string(const char *);
 
 static struct context *context;
 static Match current_match;
-
-/*
- * Helper data structure for an operation window (window on which the operation
- * will be performed). Used to build the TAILQ owindows.
- *
- */
-typedef struct owindow {
-    Con *con;
-    TAILQ_ENTRY(owindow) owindows;
-} owindow;
-static TAILQ_HEAD(owindows_head, owindow) owindows;
 
 /* Holds the JSON which will be returned via IPC or NULL for the default return
  * message */
@@ -80,11 +55,19 @@ int cmdyywrap() {
 }
 
 char *parse_cmd(const char *new) {
+    cmd_MIGRATION_enable();
+    char *output = parse_command(new);
+    if (output != NULL) {
+        printf("MIGRATION: new output != NULL: %s\n", output);
+        free(output);
+    }
+    cmd_MIGRATION_disable();
+
     json_output = NULL;
     LOG("COMMAND: *%s*\n", new);
     cmdyy_scan_string(new);
 
-    match_init(&current_match);
+    cmd_criteria_init(&current_match);
     context = scalloc(sizeof(struct context));
     context->filename = "cmd";
     if (cmdyyparse() != 0) {
@@ -98,44 +81,13 @@ char *parse_cmd(const char *new) {
     }
     printf("done, json output = %s\n", json_output);
 
+    cmd_MIGRATION_validate();
+
     cmdyylex_destroy();
     FREE(context->line_copy);
     FREE(context->compact_error);
     free(context);
     return json_output;
-}
-
-static Output *get_output_from_string(Output *current_output, const char *output_str) {
-    Output *output;
-
-    if (strcasecmp(output_str, "left") == 0) {
-        output = get_output_next(D_LEFT, current_output);
-        if (!output)
-            output = get_output_most(D_RIGHT, current_output);
-    } else if (strcasecmp(output_str, "right") == 0) {
-        output = get_output_next(D_RIGHT, current_output);
-        if (!output)
-            output = get_output_most(D_LEFT, current_output);
-    } else if (strcasecmp(output_str, "up") == 0) {
-        output = get_output_next(D_UP, current_output);
-        if (!output)
-            output = get_output_most(D_DOWN, current_output);
-    } else if (strcasecmp(output_str, "down") == 0) {
-        output = get_output_next(D_DOWN, current_output);
-        if (!output)
-            output = get_output_most(D_UP, current_output);
-    } else output = get_output_by_name(output_str);
-
-    return output;
-}
-
-
-/*
- * Returns true if a is definitely greater than b (using the given epsilon)
- *
- */
-bool definitelyGreaterThan(float a, float b, float epsilon) {
-    return (a - b) > ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon);
 }
 
 %}
@@ -237,15 +189,7 @@ commands:
     commands ';' command
     | command
     {
-        owindow *current;
-
-        printf("single command completely parsed, dropping state...\n");
-        while (!TAILQ_EMPTY(&owindows)) {
-            current = TAILQ_FIRST(&owindows);
-            TAILQ_REMOVE(&owindows, current, owindows);
-            free(current);
-        }
-        match_init(&current_match);
+        cmd_criteria_init(&current_match);
     }
     ;
 
@@ -255,72 +199,16 @@ command:
 
 match:
     | matchstart criteria matchend
-    {
-        printf("match parsed\n");
-    }
     ;
 
 matchstart:
     '['
-    {
-        printf("start\n");
-        match_init(&current_match);
-        TAILQ_INIT(&owindows);
-        /* copy all_cons */
-        Con *con;
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
-            owindow *ow = smalloc(sizeof(owindow));
-            ow->con = con;
-            TAILQ_INSERT_TAIL(&owindows, ow, owindows);
-        }
-    }
     ;
 
 matchend:
     ']'
     {
-        owindow *next, *current;
-
-        printf("match specification finished, matching...\n");
-        /* copy the old list head to iterate through it and start with a fresh
-         * list which will contain only matching windows */
-        struct owindows_head old = owindows;
-        TAILQ_INIT(&owindows);
-        for (next = TAILQ_FIRST(&old); next != TAILQ_END(&old);) {
-            /* make a copy of the next pointer and advance the pointer to the
-             * next element as we are going to invalidate the element’s
-             * next/prev pointers by calling TAILQ_INSERT_TAIL later */
-            current = next;
-            next = TAILQ_NEXT(next, owindows);
-
-            printf("checking if con %p / %s matches\n", current->con, current->con->name);
-            if (current_match.con_id != NULL) {
-                if (current_match.con_id == current->con) {
-                    printf("matches container!\n");
-                    TAILQ_INSERT_TAIL(&owindows, current, owindows);
-
-                }
-            } else if (current_match.mark != NULL && current->con->mark != NULL &&
-                       regex_matches(current_match.mark, current->con->mark)) {
-                printf("match by mark\n");
-                TAILQ_INSERT_TAIL(&owindows, current, owindows);
-            } else {
-                if (current->con->window == NULL)
-                    continue;
-                if (match_matches_window(&current_match, current->con->window)) {
-                    printf("matches window!\n");
-                    TAILQ_INSERT_TAIL(&owindows, current, owindows);
-                } else {
-                    printf("doesnt match\n");
-                    free(current);
-                }
-            }
-        }
-
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-        }
-
+        json_output = cmd_criteria_match_windows(&current_match);
     }
     ;
 
@@ -332,62 +220,37 @@ criteria:
 criterion:
     TOK_CLASS '=' STR
     {
-        printf("criteria: class = %s\n", $3);
-        current_match.class = regex_new($3);
+        cmd_criteria_add(&current_match, "class", $3);
         free($3);
     }
     | TOK_INSTANCE '=' STR
     {
-        printf("criteria: instance = %s\n", $3);
-        current_match.instance = regex_new($3);
+        cmd_criteria_add(&current_match, "instance", $3);
         free($3);
     }
     | TOK_WINDOW_ROLE '=' STR
     {
-        printf("criteria: window_role = %s\n", $3);
-        current_match.role = regex_new($3);
+        cmd_criteria_add(&current_match, "window_role", $3);
         free($3);
     }
     | TOK_CON_ID '=' STR
     {
-        printf("criteria: id = %s\n", $3);
-        char *end;
-        long parsed = strtol($3, &end, 10);
-        if (parsed == LONG_MIN ||
-            parsed == LONG_MAX ||
-            parsed < 0 ||
-            (end && *end != '\0')) {
-            ELOG("Could not parse con id \"%s\"\n", $3);
-        } else {
-            current_match.con_id = (Con*)parsed;
-            printf("id as int = %p\n", current_match.con_id);
-        }
+        cmd_criteria_add(&current_match, "con_id", $3);
+        free($3);
     }
     | TOK_ID '=' STR
     {
-        printf("criteria: window id = %s\n", $3);
-        char *end;
-        long parsed = strtol($3, &end, 10);
-        if (parsed == LONG_MIN ||
-            parsed == LONG_MAX ||
-            parsed < 0 ||
-            (end && *end != '\0')) {
-            ELOG("Could not parse window id \"%s\"\n", $3);
-        } else {
-            current_match.id = parsed;
-            printf("window id as int = %d\n", current_match.id);
-        }
+        cmd_criteria_add(&current_match, "id", $3);
+        free($3);
     }
     | TOK_MARK '=' STR
     {
-        printf("criteria: mark = %s\n", $3);
-        current_match.mark = regex_new($3);
+        cmd_criteria_add(&current_match, "con_mark", $3);
         free($3);
     }
     | TOK_TITLE '=' STR
     {
-        printf("criteria: title = %s\n", $3);
-        current_match.title = regex_new($3);
+        cmd_criteria_add(&current_match, "title", $3);
         free($3);
     }
     ;
@@ -423,11 +286,7 @@ operation:
 exec:
     TOK_EXEC optional_no_startup_id STR
     {
-        char *command = $3;
-        bool no_startup_id = $2;
-
-        printf("should execute %s, no_startup_id = %d\n", command, no_startup_id);
-        start_application(command, no_startup_id);
+        json_output = cmd_exec(&current_match, ($2 ? "--no-startup-id" : NULL), $3);
         free($3);
     }
     ;
@@ -440,208 +299,53 @@ optional_no_startup_id:
 exit:
     TOK_EXIT
     {
-        printf("exit, bye bye\n");
-        exit(0);
+        json_output = cmd_exit(&current_match);
     }
     ;
 
 reload:
     TOK_RELOAD
     {
-        printf("reloading\n");
-        kill_configerror_nagbar(false);
-        load_configuration(conn, NULL, true);
-        x_set_i3_atoms();
-        /* Send an IPC event just in case the ws names have changed */
-        ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"reload\"}");
+        json_output = cmd_reload(&current_match);
     }
     ;
 
 restart:
     TOK_RESTART
     {
-        printf("restarting i3\n");
-        i3_restart(false);
+        json_output = cmd_restart(&current_match);
     }
     ;
 
 focus:
     TOK_FOCUS
     {
-        if (focused &&
-            focused->type != CT_WORKSPACE &&
-            focused->fullscreen_mode != CF_NONE) {
-            LOG("Cannot change focus while in fullscreen mode.\n");
-            break;
-        }
-
-        owindow *current;
-
-        if (match_is_empty(&current_match)) {
-            ELOG("You have to specify which window/container should be focused.\n");
-            ELOG("Example: [class=\"urxvt\" title=\"irssi\"] focus\n");
-
-            sasprintf(&json_output, "{\"success\":false, \"error\":\"You have to "
-                      "specify which window/container should be focused\"}");
-            break;
-        }
-
-        int count = 0;
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            Con *ws = con_get_workspace(current->con);
-            /* If no workspace could be found, this was a dock window.
-             * Just skip it, you cannot focus dock windows. */
-            if (!ws)
-                continue;
-
-            /* If the container is not on the current workspace,
-             * workspace_show() will switch to a different workspace and (if
-             * enabled) trigger a mouse pointer warp to the currently focused
-             * container (!) on the target workspace.
-             *
-             * Therefore, before calling workspace_show(), we make sure that
-             * 'current' will be focused on the workspace. However, we cannot
-             * just con_focus(current) because then the pointer will not be
-             * warped at all (the code thinks we are already there).
-             *
-             * So we focus 'current' to make it the currently focused window of
-             * the target workspace, then revert focus. */
-            Con *currently_focused = focused;
-            con_focus(current->con);
-            con_focus(currently_focused);
-
-            /* Now switch to the workspace, then focus */
-            workspace_show(ws);
-            LOG("focusing %p / %s\n", current->con, current->con->name);
-            con_focus(current->con);
-            count++;
-        }
-
-        if (count > 1)
-            LOG("WARNING: Your criteria for the focus command matches %d containers, "
-                "while only exactly one container can be focused at a time.\n", count);
-
-        tree_render();
+        json_output = cmd_focus(&current_match);
     }
     | TOK_FOCUS direction
     {
-        if (focused &&
-            focused->type != CT_WORKSPACE &&
-            focused->fullscreen_mode != CF_NONE) {
-            LOG("Cannot change focus while in fullscreen mode.\n");
-            break;
-        }
-
-        int direction = $2;
-        switch (direction) {
-            case TOK_LEFT:
-                LOG("Focusing left\n");
-                tree_next('p', HORIZ);
-                break;
-            case TOK_RIGHT:
-                LOG("Focusing right\n");
-                tree_next('n', HORIZ);
-                break;
-            case TOK_UP:
-                LOG("Focusing up\n");
-                tree_next('p', VERT);
-                break;
-            case TOK_DOWN:
-                LOG("Focusing down\n");
-                tree_next('n', VERT);
-                break;
-            default:
-                ELOG("Invalid focus direction (%d)\n", direction);
-                break;
-        }
-
-        tree_render();
+        json_output = cmd_focus_direction(&current_match,
+                            ($2 == TOK_LEFT ? "left" :
+                             ($2 == TOK_RIGHT ? "right" :
+                              ($2 == TOK_UP ? "up" :
+                               "down"))));
     }
     | TOK_FOCUS TOK_OUTPUT STR
     {
-        owindow *current;
-
-        HANDLE_EMPTY_MATCH;
-
-        /* get the output */
-        Output *current_output = NULL;
-        Output *output;
-
-        TAILQ_FOREACH(current, &owindows, owindows)
-            current_output = get_output_containing(current->con->rect.x, current->con->rect.y);
-        assert(current_output != NULL);
-
-        output = get_output_from_string(current_output, $3);
-
+        json_output = cmd_focus_output(&current_match, $3);
         free($3);
-
-        if (!output) {
-            printf("No such output found.\n");
-            break;
-        }
-
-        /* get visible workspace on output */
-        Con *ws = NULL;
-        GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
-        if (!ws)
-            break;
-
-        workspace_show(ws);
-        tree_render();
     }
     | TOK_FOCUS window_mode
     {
-        if (focused &&
-            focused->type != CT_WORKSPACE &&
-            focused->fullscreen_mode != CF_NONE) {
-            LOG("Cannot change focus while in fullscreen mode.\n");
-            break;
-        }
 
-        printf("should focus: ");
-
-        if ($2 == TOK_TILING)
-            printf("tiling\n");
-        else if ($2 == TOK_FLOATING)
-            printf("floating\n");
-        else printf("mode toggle\n");
-
-        Con *ws = con_get_workspace(focused);
-        Con *current;
-        if (ws != NULL) {
-            int to_focus = $2;
-            if ($2 == TOK_MODE_TOGGLE) {
-                current = TAILQ_FIRST(&(ws->focus_head));
-                if (current != NULL && current->type == CT_FLOATING_CON)
-                    to_focus = TOK_TILING;
-                else to_focus = TOK_FLOATING;
-            }
-            TAILQ_FOREACH(current, &(ws->focus_head), focused) {
-                if ((to_focus == TOK_FLOATING && current->type != CT_FLOATING_CON) ||
-                    (to_focus == TOK_TILING && current->type == CT_FLOATING_CON))
-                    continue;
-
-                con_focus(con_descend_focused(current));
-                break;
-            }
-        }
-
-        tree_render();
+        json_output = cmd_focus_window_mode(&current_match,
+                              ($2 == TOK_TILING ? "tiling" :
+                               ($2 == TOK_FLOATING ? "floating" :
+                                "mode_toggle")));
     }
     | TOK_FOCUS level
     {
-        if (focused &&
-            focused->type != CT_WORKSPACE &&
-            focused->fullscreen_mode != CF_NONE) {
-            LOG("Cannot change focus while in fullscreen mode.\n");
-            break;
-        }
-
-        if ($2 == TOK_PARENT)
-            level_up();
-        else level_down();
-
-        tree_render();
+        json_output = cmd_focus_level(&current_match, ($2 == TOK_PARENT ? "parent" : "child"));
     }
     ;
 
@@ -659,20 +363,7 @@ level:
 kill:
     TOK_KILL optional_kill_mode
     {
-        owindow *current;
-
-        printf("killing!\n");
-        /* check if the match is empty, not if the result is empty */
-        if (match_is_empty(&current_match))
-            tree_close_con($2);
-        else {
-            TAILQ_FOREACH(current, &owindows, owindows) {
-                printf("matching: %p / %s\n", current->con, current->con->name);
-                tree_close(current->con, $2, false, false);
-            }
-        }
-
-        tree_render();
+        json_output = cmd_kill(&current_match, ($2 == KILL_WINDOW ? "window" : "client"));
     }
     ;
 
@@ -685,84 +376,42 @@ optional_kill_mode:
 workspace:
     TOK_WORKSPACE TOK_NEXT
     {
-        workspace_show(workspace_next());
-        tree_render();
+        json_output = cmd_workspace(&current_match, "next");
     }
     | TOK_WORKSPACE TOK_PREV
     {
-        workspace_show(workspace_prev());
-        tree_render();
+        json_output = cmd_workspace(&current_match, "prev");
     }
     | TOK_WORKSPACE TOK_NEXT_ON_OUTPUT
     {
-        workspace_show(workspace_next_on_output());
-        tree_render();
+        json_output = cmd_workspace(&current_match, "next_on_output");
     }
     | TOK_WORKSPACE TOK_PREV_ON_OUTPUT
     {
-        workspace_show(workspace_prev_on_output());
-        tree_render();
+        json_output = cmd_workspace(&current_match, "prev_on_output");
     }
     | TOK_WORKSPACE TOK_BACK_AND_FORTH
     {
-        workspace_back_and_forth();
-        tree_render();
+        json_output = cmd_workspace_back_and_forth(&current_match);
     }
     | TOK_WORKSPACE STR
     {
-        if (strncasecmp($2, "__i3_", strlen("__i3_")) == 0) {
-            printf("You cannot switch to the i3 internal workspaces.\n");
-            break;
-        }
-
-        printf("should switch to workspace %s\n", $2);
-
-        Con *ws = con_get_workspace(focused);
-
-        /* Check if the command wants to switch to the current workspace */
-        if (strcmp(ws->name, $2) == 0) {
-            printf("This workspace is already focused.\n");
-            if (config.workspace_auto_back_and_forth) {
-                workspace_back_and_forth();
-                free($2);
-                tree_render();
-            }
-            break;
-        }
-
-        workspace_show_by_name($2);
+        json_output = cmd_workspace_name(&current_match, $2);
         free($2);
-
-        tree_render();
     }
     ;
 
 open:
     TOK_OPEN
     {
-        printf("opening new container\n");
-        Con *con = tree_open_con(NULL, NULL);
-        con_focus(con);
-        sasprintf(&json_output, "{\"success\":true, \"id\":%ld}", (long int)con);
-
-        tree_render();
+        json_output = cmd_open(&current_match);
     }
     ;
 
 fullscreen:
     TOK_FULLSCREEN fullscreen_mode
     {
-        printf("toggling fullscreen, mode = %s\n", ($2 == CF_OUTPUT ? "normal" : "global"));
-        owindow *current;
-
-        HANDLE_EMPTY_MATCH;
-
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            con_toggle_fullscreen(current->con, $2);
-        }
-
-        tree_render();
+        json_output = cmd_fullscreen(&current_match, ($2 == CF_OUTPUT ? "output" : "global"));
     }
     ;
 
@@ -774,11 +423,9 @@ fullscreen_mode:
 split:
     TOK_SPLIT split_direction
     {
-        /* TODO: use matches */
-        printf("splitting in direction %c\n", $2);
-        tree_split(focused, ($2 == 'v' ? VERT : HORIZ));
-
-        tree_render();
+        char buf[2] = {'\0', '\0'};
+        buf[0] = $2;
+        json_output = cmd_split(&current_match, buf);
     }
     ;
 
@@ -792,25 +439,10 @@ split_direction:
 floating:
     TOK_FLOATING boolean
     {
-        HANDLE_EMPTY_MATCH;
-
-        owindow *current;
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            if ($2 == TOK_TOGGLE) {
-                printf("should toggle mode\n");
-                toggle_floating_mode(current->con, false);
-            } else {
-                printf("should switch mode to %s\n", ($2 == TOK_FLOATING ? "floating" : "tiling"));
-                if ($2 == TOK_ENABLE) {
-                    floating_enable(current->con, false);
-                } else {
-                    floating_disable(current->con, false);
-                }
-            }
-        }
-
-        tree_render();
+        json_output = cmd_floating(&current_match,
+                     ($2 == TOK_ENABLE ? "enable" :
+                      ($2 == TOK_DISABLE ? "disable" :
+                       "toggle")));
     }
     ;
 
@@ -823,22 +455,11 @@ boolean:
 border:
     TOK_BORDER border_style
     {
-        printf("border style should be changed to %d\n", $2);
-        owindow *current;
-
-        HANDLE_EMPTY_MATCH;
-
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            int border_style = current->con->border_style;
-            if ($2 == TOK_TOGGLE) {
-                border_style++;
-                border_style %= 3;
-            } else border_style = $2;
-            con_set_border_style(current->con, border_style);
-        }
-
-        tree_render();
+        json_output = cmd_border(&current_match,
+                   ($2 == BS_NORMAL ? "normal" :
+                    ($2 == BS_NONE ? "none" :
+                     ($2 == BS_1PIXEL ? "1pixel" :
+                      "toggle"))));
     }
     ;
 
@@ -852,256 +473,66 @@ border_style:
 move:
     TOK_MOVE direction resize_px
     {
-        int direction = $2;
-        int px = $3;
-
-        /* TODO: make 'move' work with criteria. */
-        printf("moving in direction %d\n", direction);
-        if (con_is_floating(focused)) {
-            printf("floating move with %d pixels\n", px);
-            Rect newrect = focused->parent->rect;
-            if (direction == TOK_LEFT) {
-                newrect.x -= px;
-            } else if (direction == TOK_RIGHT) {
-                newrect.x += px;
-            } else if (direction == TOK_UP) {
-                newrect.y -= px;
-            } else if (direction == TOK_DOWN) {
-                newrect.y += px;
-            }
-            floating_reposition(focused->parent, newrect);
-        } else {
-            tree_move(direction);
-            tree_render();
-        }
+        char buffer[128];
+        snprintf(buffer, sizeof(buffer), "%d", $3);
+        json_output = cmd_move_direction(&current_match,
+                           ($2 == TOK_LEFT ? "left" :
+                            ($2 == TOK_RIGHT ? "right" :
+                             ($2 == TOK_UP ? "up" :
+                              "down"))),
+                           buffer);
     }
     | TOK_MOVE TOK_WORKSPACE STR
     {
-        if (strncasecmp($3, "__i3_", strlen("__i3_")) == 0) {
-            printf("You cannot switch to the i3 internal workspaces.\n");
-            break;
-        }
-
-        owindow *current;
-
-        /* Error out early to not create a non-existing workspace (in
-         * workspace_get()) if we are not actually able to move anything. */
-        if (match_is_empty(&current_match) && focused->type == CT_WORKSPACE)
-            break;
-
-        printf("should move window to workspace %s\n", $3);
-        /* get the workspace */
-        Con *ws = workspace_get($3, NULL);
-        free($3);
-
-        HANDLE_EMPTY_MATCH;
-
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            con_move_to_workspace(current->con, ws, true, false);
-        }
-
-        tree_render();
+        json_output = cmd_move_con_to_workspace_name(&current_match, $3);
     }
     | TOK_MOVE TOK_WORKSPACE TOK_NEXT
     {
-        owindow *current;
-
-        /* get the workspace */
-        Con *ws = workspace_next();
-
-        HANDLE_EMPTY_MATCH;
-
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            con_move_to_workspace(current->con, ws, true, false);
-        }
-
-        tree_render();
+        json_output = cmd_move_con_to_workspace(&current_match, "next");
     }
     | TOK_MOVE TOK_WORKSPACE TOK_PREV
     {
-        owindow *current;
-
-        /* get the workspace */
-        Con *ws = workspace_prev();
-
-        HANDLE_EMPTY_MATCH;
-
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            con_move_to_workspace(current->con, ws, true, false);
-        }
-
-        tree_render();
+        json_output = cmd_move_con_to_workspace(&current_match, "prev");
     }
     | TOK_MOVE TOK_WORKSPACE TOK_NEXT_ON_OUTPUT
     {
-        owindow *current;
-
-        /* get the workspace */
-        Con *ws = workspace_next_on_output();
-
-        HANDLE_EMPTY_MATCH;
-
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            con_move_to_workspace(current->con, ws, true, false);
-        }
-
-        tree_render();
+        json_output = cmd_move_con_to_workspace(&current_match, "next_on_output");
     }
     | TOK_MOVE TOK_WORKSPACE TOK_PREV_ON_OUTPUT
     {
-        owindow *current;
-
-        /* get the workspace */
-        Con *ws = workspace_prev_on_output();
-
-        HANDLE_EMPTY_MATCH;
-
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            con_move_to_workspace(current->con, ws, true, false);
-        }
-
-        tree_render();
+        json_output = cmd_move_con_to_workspace(&current_match, "prev_on_output");
     }
     | TOK_MOVE TOK_OUTPUT STR
     {
-        owindow *current;
-
-        printf("should move window to output %s\n", $3);
-
-        HANDLE_EMPTY_MATCH;
-
-        /* get the output */
-        Output *current_output = NULL;
-        Output *output;
-
-        TAILQ_FOREACH(current, &owindows, owindows)
-            current_output = get_output_containing(current->con->rect.x, current->con->rect.y);
-
-        assert(current_output != NULL);
-
-        if (strcasecmp($3, "up") == 0)
-            output = get_output_next(D_UP, current_output);
-        else if (strcasecmp($3, "down") == 0)
-            output = get_output_next(D_DOWN, current_output);
-        else if (strcasecmp($3, "left") == 0)
-            output = get_output_next(D_LEFT, current_output);
-        else if (strcasecmp($3, "right") == 0)
-            output = get_output_next(D_RIGHT, current_output);
-        else
-            output = get_output_by_name($3);
+        json_output = cmd_move_con_to_output(&current_match, $3);
         free($3);
-
-        if (!output) {
-            printf("No such output found.\n");
-            break;
-        }
-
-        /* get visible workspace on output */
-        Con *ws = NULL;
-        GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
-        if (!ws)
-            break;
-
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            con_move_to_workspace(current->con, ws, true, false);
-        }
-
-        tree_render();
     }
     | TOK_MOVE TOK_SCRATCHPAD
     {
-        printf("should move window to scratchpad\n");
-        owindow *current;
-
-        HANDLE_EMPTY_MATCH;
-
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            scratchpad_move(current->con);
-        }
-
-        tree_render();
+        json_output = cmd_move_scratchpad(&current_match);
     }
     | TOK_MOVE TOK_WORKSPACE TOK_TO TOK_OUTPUT STR
     {
-        printf("should move workspace to output %s\n", $5);
-
-        HANDLE_EMPTY_MATCH;
-
-        owindow *current;
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            Output *current_output = get_output_containing(current->con->rect.x,
-                                                           current->con->rect.y);
-            Output *output = get_output_from_string(current_output, $5);
-            if (!output) {
-                printf("No such output\n");
-                break;
-            }
-
-            Con *content = output_get_content(output->con);
-            LOG("got output %p with content %p\n", output, content);
-
-            Con *ws = con_get_workspace(current->con);
-            printf("should move workspace %p / %s\n", ws, ws->name);
-            if (con_num_children(ws->parent) == 1) {
-                printf("Not moving workspace \"%s\", it is the only workspace on its output.\n", ws->name);
-                continue;
-            }
-            bool workspace_was_visible = workspace_is_visible(ws);
-            Con *old_content = ws->parent;
-            con_detach(ws);
-            if (workspace_was_visible) {
-                /* The workspace which we just detached was visible, so focus
-                 * the next one in the focus-stack. */
-                Con *focus_ws = TAILQ_FIRST(&(old_content->focus_head));
-                printf("workspace was visible, focusing %p / %s now\n", focus_ws, focus_ws->name);
-                workspace_show(focus_ws);
-            }
-            con_attach(ws, content, false);
-            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"move\"}");
-            if (workspace_was_visible) {
-                /* Focus the moved workspace on the destination output. */
-                workspace_show(ws);
-            }
-        }
-
-        tree_render();
+        json_output = cmd_move_workspace_to_output(&current_match, $5);
+        free($5);
     }
     ;
 
 append_layout:
     TOK_APPEND_LAYOUT STR
     {
-        printf("restoring \"%s\"\n", $2);
-        tree_append_json($2);
+        json_output = cmd_append_layout(&current_match, $2);
         free($2);
-        tree_render();
     }
     ;
 
 layout:
     TOK_LAYOUT layout_mode
     {
-        printf("changing layout to %d\n", $2);
-        owindow *current;
-
-        /* check if the match is empty, not if the result is empty */
-        if (match_is_empty(&current_match))
-            con_set_layout(focused->parent, $2);
-        else {
-            TAILQ_FOREACH(current, &owindows, owindows) {
-                printf("matching: %p / %s\n", current->con, current->con->name);
-                con_set_layout(current->con, $2);
-            }
-        }
-
-        tree_render();
+        json_output = cmd_layout(&current_match,
+                   ($2 == L_DEFAULT ? "default" :
+                    ($2 == L_STACKED ? "stacked" :
+                     "tabbed")));
     }
     ;
 
@@ -1114,34 +545,15 @@ layout_mode:
 mark:
     TOK_MARK STR
     {
-        printf("Clearing all windows which have that mark first\n");
-
-        Con *con;
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
-            if (con->mark && strcmp(con->mark, $2) == 0)
-                FREE(con->mark);
-        }
-
-        printf("marking window with str %s\n", $2);
-        owindow *current;
-
-        HANDLE_EMPTY_MATCH;
-
-        TAILQ_FOREACH(current, &owindows, owindows) {
-            printf("matching: %p / %s\n", current->con, current->con->name);
-            current->con->mark = $2;
-        }
-
-        tree_render();
+        json_output = cmd_mark(&current_match, $2);
+        free($2);
     }
     ;
 
 nop:
     TOK_NOP STR
     {
-        printf("-------------------------------------------------\n");
-        printf("  NOP: %s\n", $2);
-        printf("-------------------------------------------------\n");
+        json_output = cmd_nop(&current_match, $2);
         free($2);
     }
     ;
@@ -1149,19 +561,7 @@ nop:
 scratchpad:
     TOK_SCRATCHPAD TOK_SHOW
     {
-        printf("should show scratchpad window\n");
-        owindow *current;
-
-        if (match_is_empty(&current_match)) {
-            scratchpad_show(NULL);
-        } else {
-            TAILQ_FOREACH(current, &owindows, owindows) {
-                printf("matching: %p / %s\n", current->con, current->con->name);
-                scratchpad_show(current->con);
-            }
-        }
-
-        tree_render();
+        json_output = cmd_scratchpad_show(&current_match);
     }
     ;
 
@@ -1169,98 +569,17 @@ scratchpad:
 resize:
     TOK_RESIZE resize_way direction resize_px resize_tiling
     {
-        /* resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt] */
-        printf("resizing in way %d, direction %d, px %d or ppt %d\n", $2, $3, $4, $5);
-        int direction = $3;
-        int px = $4;
-        int ppt = $5;
-        if ($2 == TOK_SHRINK) {
-            px *= -1;
-            ppt *= -1;
-        }
-
-        Con *floating_con;
-        if ((floating_con = con_inside_floating(focused))) {
-            printf("floating resize\n");
-            if (direction == TOK_UP) {
-                floating_con->rect.y -= px;
-                floating_con->rect.height += px;
-            } else if (direction == TOK_DOWN) {
-                floating_con->rect.height += px;
-            } else if (direction == TOK_LEFT) {
-                floating_con->rect.x -= px;
-                floating_con->rect.width += px;
-            } else {
-                floating_con->rect.width += px;
-            }
-        } else {
-            LOG("tiling resize\n");
-            /* get the appropriate current container (skip stacked/tabbed cons) */
-            Con *current = focused;
-            while (current->parent->layout == L_STACKED ||
-                   current->parent->layout == L_TABBED)
-                current = current->parent;
-
-            /* Then further go up until we find one with the matching orientation. */
-            orientation_t search_orientation =
-                (direction == TOK_LEFT || direction == TOK_RIGHT ? HORIZ : VERT);
-
-            while (current->type != CT_WORKSPACE &&
-                   current->type != CT_FLOATING_CON &&
-                   current->parent->orientation != search_orientation)
-                current = current->parent;
-
-            /* get the default percentage */
-            int children = con_num_children(current->parent);
-            Con *other;
-            LOG("ins. %d children\n", children);
-            double percentage = 1.0 / children;
-            LOG("default percentage = %f\n", percentage);
-
-            orientation_t orientation = current->parent->orientation;
-
-            if ((orientation == HORIZ &&
-                 (direction == TOK_UP || direction == TOK_DOWN)) ||
-                (orientation == VERT &&
-                 (direction == TOK_LEFT || direction == TOK_RIGHT))) {
-                LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
-                    (orientation == HORIZ ? "horizontal" : "vertical"));
-                break;
-            }
-
-            if (direction == TOK_UP || direction == TOK_LEFT) {
-                other = TAILQ_PREV(current, nodes_head, nodes);
-            } else {
-                other = TAILQ_NEXT(current, nodes);
-            }
-            if (other == TAILQ_END(workspaces)) {
-                LOG("No other container in this direction found, cannot resize.\n");
-                break;
-            }
-            LOG("other->percent = %f\n", other->percent);
-            LOG("current->percent before = %f\n", current->percent);
-            if (current->percent == 0.0)
-                current->percent = percentage;
-            if (other->percent == 0.0)
-                other->percent = percentage;
-            double new_current_percent = current->percent + ((double)ppt / 100.0);
-            double new_other_percent = other->percent - ((double)ppt / 100.0);
-            LOG("new_current_percent = %f\n", new_current_percent);
-            LOG("new_other_percent = %f\n", new_other_percent);
-            /* Ensure that the new percentages are positive and greater than
-             * 0.05 to have a reasonable minimum size. */
-            if (definitelyGreaterThan(new_current_percent, 0.05, DBL_EPSILON) &&
-                definitelyGreaterThan(new_other_percent, 0.05, DBL_EPSILON)) {
-                current->percent += ((double)ppt / 100.0);
-                other->percent -= ((double)ppt / 100.0);
-                LOG("current->percent after = %f\n", current->percent);
-                LOG("other->percent after = %f\n", other->percent);
-            } else {
-                LOG("Not resizing, already at minimum size\n");
-            }
-        }
-
-        tree_render();
+        char buffer1[128], buffer2[128];
+        snprintf(buffer1, sizeof(buffer1), "%d", $4);
+        snprintf(buffer2, sizeof(buffer2), "%d", $5);
+        json_output = cmd_resize(&current_match,
+                   ($2 == TOK_SHRINK ? "shrink" : "grow"),
+                   ($3 == TOK_LEFT ? "left" :
+                    ($3 == TOK_RIGHT ? "right" :
+                     ($3 == TOK_DOWN ? "down" :
+                      "up"))),
+                   buffer1,
+                   buffer2);
     }
     ;
 
@@ -1301,6 +620,7 @@ direction:
 mode:
     TOK_MODE STR
     {
-        switch_mode($2);
+        json_output = cmd_mode(&current_match, $2);
+        free($2);
     }
     ;

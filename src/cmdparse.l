@@ -96,6 +96,7 @@ back_and_forth                  { BEGIN(INITIAL); return TOK_BACK_AND_FORTH; }
 <MOVE>container                 { /* eat this token */ }
 <MOVE>workspace                 { yy_pop_state(); yy_push_state(MOVE_WS); yy_push_state(EAT_WHITESPACE); return TOK_WORKSPACE; }
 <MOVE>scratchpad                { yy_pop_state(); return TOK_SCRATCHPAD; }
+<MOVE>output                    { yy_pop_state(); return TOK_OUTPUT; }
 <MOVE>up                        { yy_pop_state(); return TOK_UP; }
 <MOVE>down                      { yy_pop_state(); return TOK_DOWN; }
 <MOVE>left                      { yy_pop_state(); return TOK_LEFT; }

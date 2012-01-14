@@ -195,7 +195,7 @@ cmd 'move left 20 px';
 
 ($absolute, $top) = $floatwin->rect;
 
-is($absolute->x, ($absolute_before->x - 20), 'moved 10 px to the left');
+is($absolute->x, ($absolute_before->x - 20), 'moved 20 px to the left');
 is($absolute->y, $absolute_before->y, 'y not changed');
 is($absolute->width, $absolute_before->width, 'width not changed');
 is($absolute->height, $absolute_before->height, 'height not changed');
