@@ -74,5 +74,6 @@
 #include "startup.h"
 #include "scratchpad.h"
 #include "commands.h"
+#include "commands_parser.h"
 
 #endif

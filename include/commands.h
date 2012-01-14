@@ -22,6 +22,12 @@ typedef struct owindow {
 
 typedef TAILQ_HEAD(owindows_head, owindow) owindows_head;
 
+void cmd_MIGRATION_enable();
+void cmd_MIGRATION_disable();
+void cmd_MIGRATION_save_new_parameters(Match *current_match, ...);
+void cmd_MIGRATION_save_old_parameters(Match *current_match, ...);
+void cmd_MIGRATION_validate();
+
 char *cmd_criteria_init(Match *current_match);
 char *cmd_criteria_match_windows(Match *current_match);
 char *cmd_criteria_add(Match *current_match, char *ctype, char *cvalue);

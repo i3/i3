@@ -55,6 +55,14 @@ int cmdyywrap() {
 }
 
 char *parse_cmd(const char *new) {
+    cmd_MIGRATION_enable();
+    char *output = parse_command(new);
+    if (output != NULL) {
+        printf("MIGRATION: new output != NULL: %s\n", output);
+        free(output);
+    }
+    cmd_MIGRATION_disable();
+
     json_output = NULL;
     LOG("COMMAND: *%s*\n", new);
     cmdyy_scan_string(new);
@@ -72,6 +80,8 @@ char *parse_cmd(const char *new) {
         return json_output;
     }
     printf("done, json output = %s\n", json_output);
+
+    cmd_MIGRATION_validate();
 
     cmdyylex_destroy();
     FREE(context->line_copy);
@@ -276,7 +286,7 @@ operation:
 exec:
     TOK_EXEC optional_no_startup_id STR
     {
-        json_output = cmd_exec(&current_match, ($2 ? "nosn" : NULL), $3);
+        json_output = cmd_exec(&current_match, ($2 ? "--no-startup-id" : NULL), $3);
         free($3);
     }
     ;
