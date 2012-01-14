@@ -73,5 +73,6 @@
 #include "libi3.h"
 #include "startup.h"
 #include "scratchpad.h"
+#include "commands.h"
 
 #endif
