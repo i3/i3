@@ -787,10 +787,41 @@ char *cmd_move_workspace_to_output(Match *current_match, char *name) {
 
         Con *ws = con_get_workspace(current->con);
         LOG("should move workspace %p / %s\n", ws, ws->name);
+
         if (con_num_children(ws->parent) == 1) {
-            LOG("Not moving workspace \"%s\", it is the only workspace on its output.\n", ws->name);
-            continue;
+            LOG("Creating a new workspace to replace \"%s\" (last on its output).\n", ws->name);
+
+            /* check if we can find a workspace assigned to this output */
+            bool used_assignment = false;
+            struct Workspace_Assignment *assignment;
+            TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+                if (strcmp(assignment->output, current_output->name) != 0)
+                    continue;
+
+                /* check if this workspace is already attached to the tree */
+                Con *workspace = NULL, *out;
+                TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
+                    GREP_FIRST(workspace, output_get_content(out),
+                               !strcasecmp(child->name, assignment->name));
+                if (workspace != NULL)
+                    continue;
+
+                /* so create the workspace referenced to by this assignment */
+                LOG("Creating workspace from assignment %s.\n", assignment->name);
+                workspace_get(assignment->name, NULL);
+                used_assignment = true;
+                break;
+            }
+
+            /* if we couldn't create the workspace using an assignment, create
+             * it on the output */
+            if (!used_assignment)
+                create_workspace_on_output(current_output, ws->parent);
+
+            /* notify the IPC listeners */
+            ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
         }
+
         bool workspace_was_visible = workspace_is_visible(ws);
         Con *old_content = ws->parent;
         con_detach(ws);

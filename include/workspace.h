@@ -26,6 +26,14 @@
  */
 Con *workspace_get(const char *num, bool *created);
 
+/*
+ * Returns a pointer to a new workspace in the given output. The workspace
+ * is created attached to the tree hierarchy through the given content
+ * container.
+ *
+ */
+Con *create_workspace_on_output(Output *output, Con *content);
+
 #if 0
 /**
  * Sets the name (or just its number) for the given workspace. This has to
