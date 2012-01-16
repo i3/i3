@@ -672,41 +672,122 @@ floating windows:
 
 /////////////////////////////////////////////////////////////////////////////////
 
-== User commands / commandmode (src/cmdparse.{l,y})
+== User commands (parser-specs/commands.spec)
 
-*********************************************************************************
-This section has not been updated for v4.0 yet, sorry! We wanted to release on
-time, but we will update this soon. Please talk to us on IRC if you need to
-know stuff *NOW* :).
-*********************************************************************************
+In the configuration file and when using i3 interactively (with +i3-msg+, for
+example), you use commands to make i3 do things, like focus a different window,
+set a window to fullscreen, and so on. An example command is +floating enable+,
+which enables floating mode for the currently focused window. See the
+appropriate section in the link:userguide.html[User’s Guide] for a reference of
+all commands.
 
-/////////////////////////////////////////////////////////////////////////////////
+In earlier versions of i3, interpreting these commands was done using lex and
+yacc, but experience has shown that lex and yacc are not well suited for our
+command language. Therefore, starting from version 4.2, we use a custom parser.
+The input specification for this parser can be found in the file
++parser-specs/commands.spec+. Should you happen to use Vim as an editor, use
+:source parser-specs/highlighting.vim to get syntax highlighting for this file
+(highlighting files for other editors are welcome).
 
+.Excerpt from commands.spec
+-----------------------------------------------------------------------
+state INITIAL:
+  '[' -> call cmd_criteria_init(); CRITERIA
+  'move' -> MOVE
+  'exec' -> EXEC
+  'workspace' -> WORKSPACE
+  'exit' -> call cmd_exit()
+  'restart' -> call cmd_restart()
+  'reload' -> call cmd_reload()
+-----------------------------------------------------------------------
 
-Like in vim, you can control i3 using commands. They are intended to be a
-powerful alternative to lots of shortcuts, because they can be combined. There
-are a few special commands, which are the following:
+The input specification is written in an extremely simple format. The
+specification is then converted into C code by the Perl script
+generate-commands-parser.pl (the output file names begin with GENERATED and the
+files are stored in the +include+ directory). The parser implementation
++src/commands_parser.c+ includes the generated C code at compile-time.
 
-exec <command>::
-Starts the given command by passing it to `/bin/sh`.
+The above excerpt from commands.spec illustrates nearly all features of our
+specification format: You describe different states and what can happen within
+each state. State names are all-caps; the state in the above excerpt is called
+INITIAL. A list of tokens and their actions (separated by an ASCII arrow)
+follows. In the excerpt, all tokens are literals, that is, simple text strings
+which will be compared with the input. An action is either the name of a state
+in which the parser will transition into, or the keyword 'call', followed by
+the name of a function (and optionally a state).
 
-restart::
-Restarts i3 by executing `argv[0]` (the path with which you started i3) without
-forking.
+=== Example: The WORKSPACE state
 
-w::
-"With". This is used to select a bunch of windows. Currently, only selecting
-the whole container in which the window is in, is supported by specifying "w".
+Let’s have a look at the WORKSPACE state, which is a good example of all
+features. This is its definition:
 
-f, s, d::
-Toggle fullscreen, stacking, default mode for the current window/container.
+.WORKSPACE state (commands.spec)
+----------------------------------------------------------------
+# workspace next|prev|next_on_output|prev_on_output
+# workspace back_and_forth
+# workspace <name>
+state WORKSPACE:
+  direction = 'next_on_output', 'prev_on_output', 'next', 'prev'
+      -> call cmd_workspace($direction)
+  'back_and_forth'
+      -> call cmd_workspace_back_and_forth()
+  workspace = string
+      -> call cmd_workspace_name($workspace)
+----------------------------------------------------------------
 
-The other commands are to be combined with a direction. The directions are h,
-j, k and l, like in vim (h = left, j = down, k = up, l = right). When you just
-specify the direction keys, i3 will move the focus in that direction. You can
-provide "m" or "s" before the direction to move a window respectively or snap.
+As you can see from the commands, there are multiple different valid variants
+of the workspace command:
 
-/////////////////////////////////////////////////////////////////////////////////
+workspace <direction>::
+	The word 'workspace' can be followed by any of the tokens 'next',
+	'prev', 'next_on_output' or 'prev_on_output'. This command will
+	switch to the next or previous workspace (optionally on the same
+	output). +
+	There is one function called +cmd_workspace+, which is defined
+	in +src/commands.c+. It will handle this kind of command. To know which
+	direction was specified, the direction token is stored on the stack
+	with the name "direction", which is what the "direction = " means in
+	the beginning. +
+
+NOTE: Note that you can specify multiple literals in the same line. This has
+	exactly the same effect as if you specified `direction =
+	'next_on_output' -> call cmd_workspace($direction)` and so forth. +
+
+NOTE: Also note that the order of literals is important here: If 'next' were
+	ordered before 'next_on_output', then 'next_on_output' would never
+	match.
+
+workspace back_and_forth::
+	This is a very simple case: When the literal 'back_and_forth' is found
+	in the input, the function +cmd_workspace_back_and_forth+ will be
+	called without parameters and the parser will return to the INITIAL
+	state (since no other state was specified).
+workspace <name>::
+	In this case, the workspace command is followed by an arbitrary string,
+	possibly in quotes, for example "workspace 3" or "workspace bleh". +
+	This is the first time that the token is actually not a literal (not in
+	single quotes), but just called string. Other possible tokens are word
+	(the same as string, but stops matching at a whitespace) and end
+	(matches the end of the input).
+
+=== Introducing a new command
+
+The following steps have to be taken in order to properly introduce a new
+command (or possibly extend an existing command):
+
+1. Define a function beginning with +cmd_+ in the file +src/commands.c+. Copy
+   the prototype of an existing function.
+2. After adding a comment on what the function does, copy the comment and
+   function definition to +include/commands.h+. Make the comment in the header
+   file use double asterisks to make doxygen pick it up.
+3. Write a test case (or extend an existing test case) for your feature, see
+   link:testsuite.html[i3 testsuite]. For now, it is sufficient to simply call
+   your command in all the various possible ways.
+4. Extend the parser specification in +parser-specs/commands.spec+. Run the
+   testsuite and see if your new function gets called with the appropriate
+   arguments for the appropriate input.
+5. Actually implement the feature.
+6. Document the feature in the link:userguide.html[User’s Guide].
 
 == Moving containers
 
