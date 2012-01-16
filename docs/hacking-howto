@@ -683,7 +683,8 @@ all commands.
 
 In earlier versions of i3, interpreting these commands was done using lex and
 yacc, but experience has shown that lex and yacc are not well suited for our
-command language. Therefore, starting from version 4.2, we use a custom parser.
+command language. Therefore, starting from version 4.2, we use a custom parser
+for user commands (not yet for the configuration file).
 The input specification for this parser can be found in the file
 +parser-specs/commands.spec+. Should you happen to use Vim as an editor, use
 :source parser-specs/highlighting.vim to get syntax highlighting for this file
