@@ -90,7 +90,7 @@ for my $line (@lines) {
                 next_state => $action,
             };
             if (exists $states{$current_state}) {
-                push $states{$current_state}, $store_token;
+                push @{$states{$current_state}}, $store_token;
             } else {
                 $states{$current_state} = [ $store_token ];
             }
