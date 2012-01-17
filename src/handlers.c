@@ -457,7 +457,35 @@ static int handle_screen_change(xcb_generic_event_t *e) {
  * now, so we better clean up before.
  *
  */
-static int handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
+static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
+    DLOG("UnmapNotify for 0x%08x (received from 0x%08x), serial %d\n", event->window, event->event, event->sequence);
+    Con *con = con_by_window_id(event->window);
+    if (con == NULL) {
+        /* This could also be an UnmapNotify for the frame. We need to
+         * decrement the ignore_unmap counter. */
+        con = con_by_frame_id(event->window);
+        if (con == NULL) {
+            LOG("Not a managed window, ignoring UnmapNotify event\n");
+            return;
+        }
+
+        if (con->ignore_unmap > 0)
+            con->ignore_unmap--;
+        DLOG("ignore_unmap = %d for frame of container %p\n", con->ignore_unmap, con);
+        goto ignore_end;
+    }
+
+    if (con->ignore_unmap > 0) {
+        DLOG("ignore_unmap = %d, dec\n", con->ignore_unmap);
+        con->ignore_unmap--;
+        goto ignore_end;
+    }
+
+    tree_close(con, DONT_KILL_WINDOW, false, false);
+    tree_render();
+    x_push_changes(croot);
+
+ignore_end:
     /* If the client (as opposed to i3) destroyed or unmapped a window, an
      * EnterNotify event will follow (indistinguishable from an EnterNotify
      * event caused by moving your mouse), causing i3 to set focus to whichever
@@ -472,72 +500,6 @@ static int handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
      * Therefore, we ignore all EnterNotify events which have the same sequence
      * as an UnmapNotify event. */
     add_ignore_event(event->sequence, XCB_ENTER_NOTIFY);
-
-    DLOG("UnmapNotify for 0x%08x (received from 0x%08x), serial %d\n", event->window, event->event, event->sequence);
-    Con *con = con_by_window_id(event->window);
-    if (con == NULL) {
-        /* This could also be an UnmapNotify for the frame. We need to
-         * decrement the ignore_unmap counter. */
-        con = con_by_frame_id(event->window);
-        if (con == NULL) {
-            LOG("Not a managed window, ignoring UnmapNotify event\n");
-            return 1;
-        }
-        if (con->ignore_unmap > 0)
-            con->ignore_unmap--;
-        DLOG("ignore_unmap = %d for frame of container %p\n", con->ignore_unmap, con);
-        return 1;
-    }
-
-    if (con->ignore_unmap > 0) {
-        DLOG("ignore_unmap = %d, dec\n", con->ignore_unmap);
-        con->ignore_unmap--;
-        return 1;
-    }
-
-    tree_close(con, DONT_KILL_WINDOW, false, false);
-    tree_render();
-    x_push_changes(croot);
-    return 1;
-
-#if 0
-        if (client == NULL) {
-                DLOG("not a managed window. Ignoring.\n");
-
-                /* This was most likely the destroyed frame of a client which is
-                 * currently being unmapped, so we add this sequence (again!) to
-                 * the ignore list (enter_notify events will get sent for both,
-                 * the child and its frame). */
-                add_ignore_event(event->sequence);
-
-                return 0;
-        }
-#endif
-
-
-#if 0
-        /* Let’s see how many clients there are left on the workspace to delete it if it’s empty */
-        bool workspace_empty = SLIST_EMPTY(&(client->workspace->focus_stack));
-        bool workspace_focused = (c_ws == client->workspace);
-        Client *to_focus = (!workspace_empty ? SLIST_FIRST(&(client->workspace->focus_stack)) : NULL);
-
-        /* If this workspace is currently visible, we don’t delete it */
-        if (workspace_is_visible(client->workspace))
-                workspace_empty = false;
-
-        if (workspace_empty) {
-                client->workspace->output = NULL;
-                ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"empty\"}");
-        }
-
-        /* Remove the urgency flag if set */
-        client->urgent = false;
-        workspace_update_urgent_flag(client->workspace);
-
-        render_layout(conn);
-#endif
-
-        return 1;
 }
 
 /*
