@@ -460,6 +460,34 @@ static void handle_screen_change(xcb_generic_event_t *e) {
  *
  */
 static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
+    DLOG("UnmapNotify for 0x%08x (received from 0x%08x), serial %d\n", event->window, event->event, event->sequence);
+    Con *con = con_by_window_id(event->window);
+    if (con == NULL) {
+        /* This could also be an UnmapNotify for the frame. We need to
+         * decrement the ignore_unmap counter. */
+        con = con_by_frame_id(event->window);
+        if (con == NULL) {
+            LOG("Not a managed window, ignoring UnmapNotify event\n");
+            return;
+        }
+
+        if (con->ignore_unmap > 0)
+            con->ignore_unmap--;
+        DLOG("ignore_unmap = %d for frame of container %p\n", con->ignore_unmap, con);
+        goto ignore_end;
+    }
+
+    if (con->ignore_unmap > 0) {
+        DLOG("ignore_unmap = %d, dec\n", con->ignore_unmap);
+        con->ignore_unmap--;
+        goto ignore_end;
+    }
+
+    tree_close(con, DONT_KILL_WINDOW, false, false);
+    tree_render();
+    x_push_changes(croot);
+
+ignore_end:
     /* If the client (as opposed to i3) destroyed or unmapped a window, an
      * EnterNotify event will follow (indistinguishable from an EnterNotify
      * event caused by moving your mouse), causing i3 to set focus to whichever
@@ -474,33 +502,6 @@ static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
      * Therefore, we ignore all EnterNotify events which have the same sequence
      * as an UnmapNotify event. */
     add_ignore_event(event->sequence, XCB_ENTER_NOTIFY);
-
-    DLOG("UnmapNotify for 0x%08x (received from 0x%08x), serial %d\n", event->window, event->event, event->sequence);
-    Con *con = con_by_window_id(event->window);
-    if (con == NULL) {
-        /* This could also be an UnmapNotify for the frame. We need to
-         * decrement the ignore_unmap counter. */
-        con = con_by_frame_id(event->window);
-        if (con == NULL) {
-            LOG("Not a managed window, ignoring UnmapNotify event\n");
-            return;
-        }
-        if (con->ignore_unmap > 0)
-            con->ignore_unmap--;
-        DLOG("ignore_unmap = %d for frame of container %p\n", con->ignore_unmap, con);
-        return;
-    }
-
-    if (con->ignore_unmap > 0) {
-        DLOG("ignore_unmap = %d, dec\n", con->ignore_unmap);
-        con->ignore_unmap--;
-        return;
-    }
-
-    tree_close(con, DONT_KILL_WINDOW, false, false);
-    tree_render();
-    x_push_changes(croot);
-    return;
 }
 
 /*
