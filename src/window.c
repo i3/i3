@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * window.c: Updates window attributes (X11 hints/properties).
  *
@@ -248,6 +248,31 @@ void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool befo
     }
 
     run_assignments(win);
+
+    free(prop);
+}
+
+/*
+ * Updates the WM_HINTS (we only care about the input focus handling part).
+ *
+ */
+void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop) {
+    if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+        DLOG("WM_HINTS not set.\n");
+        FREE(prop);
+        return;
+    }
+
+    xcb_icccm_wm_hints_t hints;
+
+    if (!xcb_icccm_get_wm_hints_from_reply(&hints, prop)) {
+        DLOG("Could not get WM_HINTS\n");
+        free(prop);
+        return;
+    }
+
+    win->doesnt_accept_focus = !hints.input;
+    LOG("WM_HINTS.input changed to \"%d\"\n", hints.input);
 
     free(prop);
 }

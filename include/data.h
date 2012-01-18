@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * include/data.h: This file defines all data structures used by i3
  *
@@ -292,6 +292,10 @@ struct Window {
 
     /** Whether the application needs to receive WM_TAKE_FOCUS */
     bool needs_take_focus;
+
+    /** Whether this window accepts focus. We store this inverted so that the
+     * default will be 'accepts focus'. */
+    bool doesnt_accept_focus;
 
     /** Whether the window says it is a dock window */
     enum { W_NODOCK = 0, W_DOCK_TOP = 1, W_DOCK_BOTTOM = 2 } dock;
