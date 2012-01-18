@@ -855,18 +855,16 @@ static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_
 
     xcb_icccm_wm_hints_t hints;
 
-    if (reply != NULL) {
-        if (!xcb_icccm_get_wm_hints_from_reply(&hints, reply))
+    if (reply == NULL)
+        if (!(reply = xcb_get_property_reply(conn, xcb_icccm_get_wm_hints(conn, window), NULL)))
             return false;
-    } else {
-        if (!xcb_icccm_get_wm_hints_reply(conn, xcb_icccm_get_wm_hints_unchecked(conn, con->window->id), &hints, NULL))
-            return false;
-    }
+
+    if (!xcb_icccm_get_wm_hints_from_reply(&hints, reply))
+        return false;
 
     if (!con->urgent && focused == con) {
         DLOG("Ignoring urgency flag for current client\n");
-        FREE(reply);
-        return true;
+        goto end;
     }
 
     /* Update the flag on the client directly */
@@ -882,17 +880,10 @@ static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_
 
     tree_render();
 
-#if 0
-    /* If the workspace this client is on is not visible, we need to redraw
-     * the workspace bar */
-    if (!workspace_is_visible(client->workspace)) {
-            Output *output = client->workspace->output;
-            render_workspace(conn, output, output->current_workspace);
-            xcb_flush(conn);
-    }
-#endif
-
-    FREE(reply);
+end:
+    if (con->window)
+        window_update_hints(con->window, reply);
+    else free(reply);
     return true;
 }
 
