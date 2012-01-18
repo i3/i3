@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * x.c: Interface to X11, transfers our in-memory state to X11 (see also
  *      render.c). Basically a big state machine.
@@ -824,12 +824,17 @@ void x_push_changes(Con *con) {
             /* Invalidate focused_id to correctly focus new windows with the same ID */
             focused_id = XCB_NONE;
         } else {
+            bool set_focus = true;
             if (focused->window != NULL &&
                 focused->window->needs_take_focus) {
-                DLOG("Updating focus by sending WM_TAKE_FOCUS to window 0x%08x only (focused: %p / %s)\n",
+                DLOG("Updating focus by sending WM_TAKE_FOCUS to window 0x%08x (focused: %p / %s)\n",
                      to_focus, focused, focused->name);
                 send_take_focus(to_focus);
-            } else {
+                set_focus = !focused->window->doesnt_accept_focus;
+                DLOG("set_focus = %d\n", set_focus);
+            }
+
+            if (set_focus) {
                 DLOG("Updating focus (focused: %p / %s)\n", focused, focused->name);
                 /* We remove XCB_EVENT_MASK_FOCUS_CHANGE from the event mask to get
                  * no focus change events for our own focus changes. We only want
