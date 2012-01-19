@@ -287,7 +287,6 @@ char *parse_command(const char *input) {
                 DLOG("checking for the end token.\n");
                 if (*walk == '\0' || *walk == ',' || *walk == ';') {
                     DLOG("yes, indeed. end\n");
-                    walk++;
                     next_state(token);
                     token_handled = true;
                     /* To make sure we start with an appropriate matching
@@ -299,6 +298,7 @@ char *parse_command(const char *input) {
                     if (*walk == '\0' || *walk == ';')
                         cmd_criteria_init(&current_match);
 #endif
+                    walk++;
                     break;
                }
            }
