@@ -67,8 +67,8 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
 static int config_string_cb(void *params_, const unsigned char *val, unsigned int _len) {
 #endif
     int len = (int)_len;
-    /* The id is ignored, we already have it in config.bar_id */
-    if (!strcmp(cur_key, "id"))
+    /* The id and socket_path are ignored, we already know them. */
+    if (!strcmp(cur_key, "id") || !strcmp(cur_key, "socket_path"))
         return 1;
 
     if (!strcmp(cur_key, "mode")) {
