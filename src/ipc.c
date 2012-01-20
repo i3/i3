@@ -646,14 +646,18 @@ IPC_HANDLER(get_bar_config) {
         y(map_open);
         YSTR_IF_SET(background);
         YSTR_IF_SET(statusline);
-        YSTR_IF_SET(focused_workspace_text);
+        YSTR_IF_SET(focused_workspace_border);
         YSTR_IF_SET(focused_workspace_bg);
-        YSTR_IF_SET(active_workspace_text);
+        YSTR_IF_SET(focused_workspace_text);
+        YSTR_IF_SET(active_workspace_border);
         YSTR_IF_SET(active_workspace_bg);
-        YSTR_IF_SET(inactive_workspace_text);
+        YSTR_IF_SET(active_workspace_text);
+        YSTR_IF_SET(inactive_workspace_border);
         YSTR_IF_SET(inactive_workspace_bg);
-        YSTR_IF_SET(urgent_workspace_text);
+        YSTR_IF_SET(inactive_workspace_text);
+        YSTR_IF_SET(urgent_workspace_border);
         YSTR_IF_SET(urgent_workspace_bg);
+        YSTR_IF_SET(urgent_workspace_text);
         y(map_close);
 
 #undef YSTR_IF_SET

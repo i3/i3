@@ -30,12 +30,16 @@ struct xcb_color_strings_t {
     char *bar_bg;
     char *active_ws_fg;
     char *active_ws_bg;
+    char *active_ws_border;
     char *inactive_ws_fg;
     char *inactive_ws_bg;
+    char *inactive_ws_border;
     char *focus_ws_bg;
     char *focus_ws_fg;
+    char *focus_ws_border;
     char *urgent_ws_bg;
     char *urgent_ws_fg;
+    char *urgent_ws_border;
 };
 
 typedef struct xcb_colors_t xcb_colors_t;

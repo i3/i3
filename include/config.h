@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * include/config.h: Contains all structs/variables for the configurable
  * part of i3 as well as functions handling the configuration file (calling
@@ -237,17 +237,21 @@ struct Barconfig {
         char *background;
         char *statusline;
 
-        char *focused_workspace_text;
+        char *focused_workspace_border;
         char *focused_workspace_bg;
+        char *focused_workspace_text;
 
-        char *active_workspace_text;
+        char *active_workspace_border;
         char *active_workspace_bg;
+        char *active_workspace_text;
 
-        char *inactive_workspace_text;
+        char *inactive_workspace_border;
         char *inactive_workspace_bg;
+        char *inactive_workspace_text;
 
-        char *urgent_workspace_text;
+        char *urgent_workspace_border;
         char *urgent_workspace_bg;
+        char *urgent_workspace_text;
     } colors;
 
     TAILQ_ENTRY(Barconfig) configs;

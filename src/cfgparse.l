@@ -37,7 +37,8 @@ int yycolumn = 1;
     yy_push_state(EAT_WHITESPACE); \
 } while (0)
 
-#define BAR_DOUBLE_COLOR do { \
+#define BAR_TRIPLE_COLOR do { \
+    yy_push_state(BAR_COLOR); \
     yy_push_state(BAR_COLOR); \
     yy_push_state(BAR_COLOR); \
 } while (0)
@@ -122,10 +123,10 @@ EOL     (\r?\n)
 <BAR_COLORS>^[ \t]*#[^\n]*      { return TOKCOMMENT; }
 <BAR_COLORS>background          { yy_push_state(BAR_COLOR); return TOK_BAR_COLOR_BACKGROUND; }
 <BAR_COLORS>statusline          { yy_push_state(BAR_COLOR); return TOK_BAR_COLOR_STATUSLINE; }
-<BAR_COLORS>focused_workspace   { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_FOCUSED_WORKSPACE; }
-<BAR_COLORS>active_workspace    { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_ACTIVE_WORKSPACE; }
-<BAR_COLORS>inactive_workspace  { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_INACTIVE_WORKSPACE; }
-<BAR_COLORS>urgent_workspace    { BAR_DOUBLE_COLOR; return TOK_BAR_COLOR_URGENT_WORKSPACE; }
+<BAR_COLORS>focused_workspace   { BAR_TRIPLE_COLOR; return TOK_BAR_COLOR_FOCUSED_WORKSPACE; }
+<BAR_COLORS>active_workspace    { BAR_TRIPLE_COLOR; return TOK_BAR_COLOR_ACTIVE_WORKSPACE; }
+<BAR_COLORS>inactive_workspace  { BAR_TRIPLE_COLOR; return TOK_BAR_COLOR_INACTIVE_WORKSPACE; }
+<BAR_COLORS>urgent_workspace    { BAR_TRIPLE_COLOR; return TOK_BAR_COLOR_URGENT_WORKSPACE; }
 <BAR_COLOR>#[0-9a-fA-F]+        { yy_pop_state(); yylval.string = sstrdup(yytext); return HEXCOLOR; }
 <BAR,BAR_COLORS,BAR_MODE,BAR_MODIFIER,BAR_POSITION>[a-zA-Z]+ { yylval.string = sstrdup(yytext); return WORD; }
 

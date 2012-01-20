@@ -92,10 +92,10 @@ bar {
         background #ff0000
         statusline   #00ff00
 
-        focused_workspace   #ffffff #285577
-        active_workspace    #888888 #222222
-        inactive_workspace  #888888 #222222
-        urgent_workspace    #ffffff #900000
+        focused_workspace   #4c7899 #285577 #ffffff
+        active_workspace    #333333 #222222 #888888
+        inactive_workspace  #333333 #222222 #888888
+        urgent_workspace    #2f343a #900000 #ffffff
     }
 }
 EOT
@@ -122,12 +122,16 @@ is_deeply($bar_config->{colors},
     {
         background => '#ff0000',
         statusline => '#00ff00',
+        focused_workspace_border => '#4c7899',
         focused_workspace_text => '#ffffff',
         focused_workspace_bg => '#285577',
+        active_workspace_border => '#333333',
         active_workspace_text => '#888888',
         active_workspace_bg => '#222222',
+        inactive_workspace_border => '#333333',
         inactive_workspace_text => '#888888',
         inactive_workspace_bg => '#222222',
+        urgent_workspace_border => '#2f343a',
         urgent_workspace_text => '#ffffff',
         urgent_workspace_bg => '#900000',
     }, 'colors ok');

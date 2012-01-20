@@ -79,12 +79,16 @@ struct xcb_colors_t {
     uint32_t bar_bg;
     uint32_t active_ws_fg;
     uint32_t active_ws_bg;
+    uint32_t active_ws_border;
     uint32_t inactive_ws_fg;
     uint32_t inactive_ws_bg;
+    uint32_t inactive_ws_border;
     uint32_t urgent_ws_bg;
     uint32_t urgent_ws_fg;
+    uint32_t urgent_ws_border;
     uint32_t focus_ws_bg;
     uint32_t focus_ws_fg;
+    uint32_t focus_ws_border;
 };
 struct xcb_colors_t colors;
 
@@ -205,12 +209,16 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR(bar_bg, "#000000");
     PARSE_COLOR(active_ws_fg, "#FFFFFF");
     PARSE_COLOR(active_ws_bg, "#333333");
+    PARSE_COLOR(active_ws_border, "#333333");
     PARSE_COLOR(inactive_ws_fg, "#888888");
     PARSE_COLOR(inactive_ws_bg, "#222222");
+    PARSE_COLOR(inactive_ws_border, "#333333");
     PARSE_COLOR(urgent_ws_fg, "#FFFFFF");
     PARSE_COLOR(urgent_ws_bg, "#900000");
+    PARSE_COLOR(urgent_ws_border, "#2f343a");
     PARSE_COLOR(focus_ws_fg, "#FFFFFF");
     PARSE_COLOR(focus_ws_bg, "#285577");
+    PARSE_COLOR(focus_ws_border, "#4c7899");
 #undef PARSE_COLOR
 }
 
@@ -1367,29 +1375,44 @@ void draw_bars() {
             DLOG("Drawing Button for WS %s at x = %d\n", ws_walk->name, i);
             uint32_t fg_color = colors.inactive_ws_fg;
             uint32_t bg_color = colors.inactive_ws_bg;
+            uint32_t border_color = colors.inactive_ws_border;
             if (ws_walk->visible) {
                 if (!ws_walk->focused) {
                     fg_color = colors.active_ws_fg;
                     bg_color = colors.active_ws_bg;
+                    border_color = colors.active_ws_border;
                 } else {
                     fg_color = colors.focus_ws_fg;
                     bg_color = colors.focus_ws_bg;
+                    border_color = colors.focus_ws_border;
                 }
             }
             if (ws_walk->urgent) {
                 DLOG("WS %s is urgent!\n", ws_walk->name);
                 fg_color = colors.urgent_ws_fg;
                 bg_color = colors.urgent_ws_bg;
+                border_color = colors.urgent_ws_border;
                 /* The urgent-hint should get noticed, so we unhide the bars shortly */
                 unhide_bars();
             }
             uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+            uint32_t vals_border[] = { border_color, border_color };
+            xcb_change_gc(xcb_connection,
+                          outputs_walk->bargc,
+                          mask,
+                          vals_border);
+            xcb_rectangle_t rect_border = { i + 1, 0, ws_walk->name_width + 10, font.height + 4 };
+            xcb_poly_fill_rectangle(xcb_connection,
+                                    outputs_walk->buffer,
+                                    outputs_walk->bargc,
+                                    1,
+                                    &rect_border);
             uint32_t vals[] = { bg_color, bg_color };
             xcb_change_gc(xcb_connection,
                           outputs_walk->bargc,
                           mask,
                           vals);
-            xcb_rectangle_t rect = { i + 1, 1, ws_walk->name_width + 8, font.height + 4 };
+            xcb_rectangle_t rect = { i + 2, 1, ws_walk->name_width + 8, font.height + 2 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1397,8 +1420,8 @@ void draw_bars() {
                                     &rect);
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
             draw_text((char*)ws_walk->ucs2_name, ws_walk->name_glyphs, true,
-                    outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, ws_walk->name_width);
-            i += 10 + ws_walk->name_width;
+                    outputs_walk->buffer, outputs_walk->bargc, i + 6, 2, ws_walk->name_width);
+            i += 12 + ws_walk->name_width;
         }
 
         i = 0;
