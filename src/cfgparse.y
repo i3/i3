@@ -1208,8 +1208,16 @@ bar_color_statusline:
     ;
 
 bar_color_focused_workspace:
-    TOK_BAR_COLOR_FOCUSED_WORKSPACE HEXCOLOR HEXCOLOR HEXCOLOR
+    TOK_BAR_COLOR_FOCUSED_WORKSPACE HEXCOLOR HEXCOLOR
     {
+        /* Old syntax: text / background */
+        DLOG("focused_ws = %s, %s (old)\n", $2, $3);
+        current_bar.colors.focused_workspace_bg = $3;
+        current_bar.colors.focused_workspace_text = $2;
+    }
+    | TOK_BAR_COLOR_FOCUSED_WORKSPACE HEXCOLOR HEXCOLOR HEXCOLOR
+    {
+        /* New syntax: border / background / text */
         DLOG("focused_ws = %s, %s and %s\n", $2, $3, $4);
         current_bar.colors.focused_workspace_border = $2;
         current_bar.colors.focused_workspace_bg = $3;
@@ -1218,8 +1226,16 @@ bar_color_focused_workspace:
     ;
 
 bar_color_active_workspace:
-    TOK_BAR_COLOR_ACTIVE_WORKSPACE HEXCOLOR HEXCOLOR HEXCOLOR
+    TOK_BAR_COLOR_ACTIVE_WORKSPACE HEXCOLOR HEXCOLOR
     {
+        /* Old syntax: text / background */
+        DLOG("active_ws = %s, %s (old)\n", $2, $3);
+        current_bar.colors.active_workspace_bg = $3;
+        current_bar.colors.active_workspace_text = $2;
+    }
+    | TOK_BAR_COLOR_ACTIVE_WORKSPACE HEXCOLOR HEXCOLOR HEXCOLOR
+    {
+        /* New syntax: border / background / text */
         DLOG("active_ws = %s, %s and %s\n", $2, $3, $4);
         current_bar.colors.active_workspace_border = $2;
         current_bar.colors.active_workspace_bg = $3;
@@ -1228,7 +1244,14 @@ bar_color_active_workspace:
     ;
 
 bar_color_inactive_workspace:
-    TOK_BAR_COLOR_INACTIVE_WORKSPACE HEXCOLOR HEXCOLOR HEXCOLOR
+    TOK_BAR_COLOR_INACTIVE_WORKSPACE HEXCOLOR HEXCOLOR
+    {
+        /* Old syntax: text / background */
+        DLOG("inactive_ws = %s, %s (old)\n", $2, $3);
+        current_bar.colors.inactive_workspace_bg = $3;
+        current_bar.colors.inactive_workspace_text = $2;
+    }
+    | TOK_BAR_COLOR_INACTIVE_WORKSPACE HEXCOLOR HEXCOLOR HEXCOLOR
     {
         DLOG("inactive_ws = %s, %s and %s\n", $2, $3, $4);
         current_bar.colors.inactive_workspace_border = $2;
@@ -1238,7 +1261,14 @@ bar_color_inactive_workspace:
     ;
 
 bar_color_urgent_workspace:
-    TOK_BAR_COLOR_URGENT_WORKSPACE HEXCOLOR HEXCOLOR HEXCOLOR
+    TOK_BAR_COLOR_URGENT_WORKSPACE HEXCOLOR HEXCOLOR
+    {
+        /* Old syntax: text / background */
+        DLOG("urgent_ws = %s, %s (old)\n", $2, $3);
+        current_bar.colors.urgent_workspace_bg = $3;
+        current_bar.colors.urgent_workspace_text = $2;
+    }
+    | TOK_BAR_COLOR_URGENT_WORKSPACE HEXCOLOR HEXCOLOR HEXCOLOR
     {
         DLOG("urgent_ws = %s, %s and %s\n", $2, $3, $4);
         current_bar.colors.urgent_workspace_border = $2;

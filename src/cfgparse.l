@@ -128,6 +128,12 @@ EOL     (\r?\n)
 <BAR_COLORS>inactive_workspace  { BAR_TRIPLE_COLOR; return TOK_BAR_COLOR_INACTIVE_WORKSPACE; }
 <BAR_COLORS>urgent_workspace    { BAR_TRIPLE_COLOR; return TOK_BAR_COLOR_URGENT_WORKSPACE; }
 <BAR_COLOR>#[0-9a-fA-F]+        { yy_pop_state(); yylval.string = sstrdup(yytext); return HEXCOLOR; }
+<BAR_COLOR>{EOL}                {
+                                  yy_pop_state();
+                                  FREE(context->line_copy);
+                                  context->line_number++;
+                                  yy_push_state(BUFFER_LINE);
+                                }
 <BAR,BAR_COLORS,BAR_MODE,BAR_MODIFIER,BAR_POSITION>[a-zA-Z]+ { yylval.string = sstrdup(yytext); return WORD; }
 
 
