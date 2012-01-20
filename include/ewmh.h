@@ -40,4 +40,10 @@ void ewmh_update_active_window(xcb_window_t window);
  */
 void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows);
 
+/**
+ * Set up the EWMH hints on the root window.
+ *
+ */
+void ewmh_setup_hints();
+
 #endif

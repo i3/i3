@@ -126,3 +126,41 @@ void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows) {
         num_windows,
         stack);
 }
+
+/*
+ * Set up the EWMH hints on the root window.
+ *
+ */
+void ewmh_setup_hints() {
+    xcb_atom_t supported_atoms[] = {
+#define xmacro(atom) A_ ## atom,
+#include "atoms.xmacro"
+#undef xmacro
+    };
+
+    /* Set up the window manager’s name. According to EWMH, section "Root Window
+     * Properties", to indicate that an EWMH-compliant window manager is
+     * present, a child window has to be created (and kept alive as long as the
+     * window manager is running) which has the _NET_SUPPORTING_WM_CHECK and
+     * _NET_WM_ATOMS. */
+    xcb_window_t child_window = xcb_generate_id(conn);
+    xcb_create_window(
+        conn,
+        XCB_COPY_FROM_PARENT, /* depth */
+        child_window, /* window id */
+        root, /* parent */
+        0, 0, 1, 1, /* dimensions (x, y, w, h) */
+        0, /* border */
+        XCB_WINDOW_CLASS_INPUT_ONLY, /* window class */
+        XCB_COPY_FROM_PARENT, /* visual */
+        0,
+        NULL);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, child_window, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &child_window);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, child_window, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &child_window);
+
+    /* I’m not entirely sure if we need to keep _NET_WM_NAME on root. */
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_WM_NAME, A_UTF8_STRING, 8, strlen("i3"), "i3");
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A__NET_SUPPORTED, XCB_ATOM_ATOM, 32, 16, supported_atoms);
+}
