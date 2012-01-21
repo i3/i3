@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * For more information on RandR, please see the X.org RandR specification at
  * http://cgit.freedesktop.org/xorg/proto/randrproto/tree/randrproto.txt
@@ -511,8 +511,6 @@ void init_ws_for_output(Output *output, Con *content) {
  *
  */
 static void output_change_mode(xcb_connection_t *conn, Output *output) {
-    //i3Font *font = load_font(conn, config.font);
-
     DLOG("Output mode changed, updating rect\n");
     assert(output->con != NULL);
     output->con->rect = output->rect;
@@ -521,6 +519,14 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
 
     /* Point content to the container of the workspaces */
     content = output_get_content(output->con);
+
+    /* Fix the position of all floating windows on this output.
+     * The 'rect' of each workspace will be updated in src/render.c. */
+    TAILQ_FOREACH(workspace, &(content->nodes_head), nodes) {
+        TAILQ_FOREACH(child, &(workspace->floating_head), floating_windows) {
+            floating_fix_coordinates(child, &(workspace->rect), &(output->con->rect));
+        }
+    }
 
     /* If default_orientation is NO_ORIENTATION, we change the orientation of
      * the workspaces and their childs depending on output resolution. This is
