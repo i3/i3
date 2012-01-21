@@ -511,7 +511,7 @@ ignore_end:
  * important fields in the event data structure).
  *
  */
-static int handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
+static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
     DLOG("destroy notify for 0x%08x, 0x%08x\n", event->event, event->window);
 
     xcb_unmap_notify_event_t unmap;
@@ -519,7 +519,7 @@ static int handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
     unmap.event = event->event;
     unmap.window = event->window;
 
-    return handle_unmap_notify_event(&unmap);
+    handle_unmap_notify_event(&unmap);
 }
 
 /*
