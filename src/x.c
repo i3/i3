@@ -447,7 +447,14 @@ void x_draw_decoration(Con *con) {
      * on the border pixels on the right side of a window. Therefore, we draw
      * the right border again after rendering the text (and the unconnected
      * lines in border color). */
-    xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->background });
+
+    /* Draw a separator line after every tab (except the last one), so that
+     * tabs can be easily distinguished. */
+    if (parent->layout == L_TABBED && TAILQ_NEXT(con, nodes) != NULL) {
+        xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->border });
+    } else {
+        xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->background });
+    }
     xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, parent->pixmap, parent->pm_gc, 4,
                   (xcb_point_t[]){
                       { dr->x + dr->width - 1, dr->y },
