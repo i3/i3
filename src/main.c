@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * main.c: Initialization, main loop
  *
@@ -27,6 +27,9 @@ struct rlimit original_rlimit_core;
 
 /* Whether this version of i3 is a debug build or a release build. */
 bool debug_build = false;
+
+/** The number of file descriptors passed via socket activation. */
+int listen_fds;
 
 static int xkb_event_base;
 
@@ -662,14 +665,26 @@ int main(int argc, char *argv[]) {
     /* Also handle the UNIX domain sockets passed via socket activation. The
      * parameter 1 means "remove the environment variables", we don’t want to
      * pass these to child processes. */
-    int fds = sd_listen_fds(1);
-    if (fds < 0)
+    listen_fds = sd_listen_fds(0);
+    if (listen_fds < 0)
         ELOG("socket activation: Error in sd_listen_fds\n");
-    else if (fds == 0)
+    else if (listen_fds == 0)
         DLOG("socket activation: no sockets passed\n");
     else {
-        for (int fd = SD_LISTEN_FDS_START; fd < (SD_LISTEN_FDS_START + fds); fd++) {
+        int flags;
+        for (int fd = SD_LISTEN_FDS_START;
+             fd < (SD_LISTEN_FDS_START + listen_fds);
+             fd++) {
             DLOG("socket activation: also listening on fd %d\n", fd);
+
+            /* sd_listen_fds() enables FD_CLOEXEC by default.
+             * However, we need to keep the file descriptors open for in-place
+             * restarting, therefore we explicitly disable FD_CLOEXEC. */
+            if ((flags = fcntl(fd, F_GETFD)) < 0 ||
+                fcntl(fd, F_SETFD, flags & ~FD_CLOEXEC) < 0) {
+                ELOG("Could not disable FD_CLOEXEC on fd %d\n", fd);
+            }
+
             struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
             ev_io_init(ipc_io, ipc_new_client, fd, EV_READ);
             ev_io_start(main_loop, ipc_io);

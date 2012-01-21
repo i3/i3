@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3.h: global variables that are used all over i3.
  *
@@ -30,6 +30,8 @@
 extern struct rlimit original_rlimit_core;
 /** Whether this version of i3 is a debug build or a release build. */
 extern bool debug_build;
+/** The number of file descriptors passed via socket activation. */
+extern int listen_fds;
 extern xcb_connection_t *conn;
 extern int conn_screen;
 /** The last timestamp we got from X11 (timestamps are included in some events

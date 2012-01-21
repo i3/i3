@@ -278,7 +278,6 @@ my $old_nodes = scalar @{$__i3_scratch->{nodes}};
 my $old_floating_nodes = scalar @{$__i3_scratch->{floating_nodes}};
 
 cmd 'restart';
-sleep 1;
 
 does_i3_live;
 

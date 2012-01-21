@@ -15,7 +15,6 @@ is(scalar @{$ws->{nodes}}, 0, 'no tiling nodes');
 is(scalar @{$ws->{floating_nodes}}, 1, 'precisely one floating node');
 
 cmd 'restart';
-sleep 0.5;
 
 diag('Checking if i3 still lives');
 

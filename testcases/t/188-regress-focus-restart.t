@@ -20,7 +20,6 @@ is($focus->[0], $nodes->[0]->{id}, 'first node focused');
 is($focus->[1], $nodes->[1]->{id}, 'second node second in focus stack');
 
 cmd 'restart';
-sleep 1;
 
 does_i3_live;
 

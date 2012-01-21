@@ -38,8 +38,6 @@ is($docknode->{rect}->{height}, 30, 'dock node has unchanged height');
 # perform an inplace-restart
 cmd 'restart';
 
-sleep 0.25;
-
 does_i3_live;
 
 
@@ -78,7 +76,6 @@ $docknode = $docked[0];
 is($docknode->{rect}->{height}, 20, 'dock node has unchanged height');
 
 cmd 'restart';
-sleep 0.25;
 
 @docked = get_dock_clients;
 is(@docked, 1, 'one dock client found');

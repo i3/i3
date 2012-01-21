@@ -17,7 +17,6 @@ cmd 'fullscreen';
 sync_with_i3;
 
 cmd 'restart';
-sleep 1;
 
 does_i3_live;
 

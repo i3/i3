@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * startup.c: Startup notification code. Ensures a startup notification context
  *            is setup when launching applications. We store the current
@@ -11,6 +11,7 @@
  *
  */
 #include "all.h"
+#include "sd-daemon.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -113,6 +114,15 @@ void start_application(const char *command, bool no_startup_id) {
         /* Child process */
         setsid();
         setrlimit(RLIMIT_CORE, &original_rlimit_core);
+        /* Close all socket activation file descriptors explicitly, we disabled
+         * FD_CLOEXEC to keep them open when restarting i3. */
+        for (int fd = SD_LISTEN_FDS_START;
+             fd < (SD_LISTEN_FDS_START + listen_fds);
+             fd++) {
+            close(fd);
+        }
+        unsetenv("LISTEN_PID");
+        unsetenv("LISTEN_FDS");
         if (fork() == 0) {
             /* Setup the environment variable(s) */
             if (!no_startup_id)

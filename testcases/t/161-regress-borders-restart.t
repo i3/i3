@@ -28,8 +28,6 @@ is(get_border_style(), '1pixel', 'border style 1pixel after changing');
 # perform an inplace-restart
 cmd 'restart';
 
-sleep 0.25;
-
 does_i3_live;
 
 is(get_border_style(), '1pixel', 'border style still 1pixel after restart');
