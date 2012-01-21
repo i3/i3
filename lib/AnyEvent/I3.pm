@@ -147,6 +147,7 @@ sub connect {
                 for my $type (keys %{$cb}) {
                     next if ($type & $event_mask) == $event_mask;
                     $cb->{$type}->();
+                    delete $cb->{$type};
                 }
 
                 # Trigger _error callback, if set
