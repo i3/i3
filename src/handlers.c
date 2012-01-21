@@ -461,6 +461,7 @@ static void handle_screen_change(xcb_generic_event_t *e) {
  */
 static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
     DLOG("UnmapNotify for 0x%08x (received from 0x%08x), serial %d\n", event->window, event->event, event->sequence);
+    xcb_get_input_focus_cookie_t cookie;
     Con *con = con_by_window_id(event->window);
     if (con == NULL) {
         /* This could also be an UnmapNotify for the frame. We need to
@@ -473,9 +474,14 @@ static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
 
         if (con->ignore_unmap > 0)
             con->ignore_unmap--;
+        /* See the end of this function. */
+        cookie = xcb_get_input_focus(conn);
         DLOG("ignore_unmap = %d for frame of container %p\n", con->ignore_unmap, con);
         goto ignore_end;
     }
+
+    /* See the end of this function. */
+    cookie = xcb_get_input_focus(conn);
 
     if (con->ignore_unmap > 0) {
         DLOG("ignore_unmap = %d, dec\n", con->ignore_unmap);
@@ -502,6 +508,13 @@ ignore_end:
      * Therefore, we ignore all EnterNotify events which have the same sequence
      * as an UnmapNotify event. */
     add_ignore_event(event->sequence, XCB_ENTER_NOTIFY);
+
+    /* Since we just ignored the sequence of this UnmapNotify, we want to make
+     * sure that following events use a different sequence. When putting xterm
+     * into fullscreen and moving the pointer to a different window, without
+     * using GetInputFocus, subsequent (legitimate) EnterNotify events arrived
+     * with the same sequence and thus were ignored (see ticket #609). */
+    free(xcb_get_input_focus_reply(conn, cookie, NULL));
 }
 
 /*
