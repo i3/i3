@@ -357,6 +357,11 @@ struct Match {
      */
     enum { M_HERE = 0, M_ASSIGN_WS, M_BELOW } insert_where;
 
+    /* Whether this match was generated when restarting i3 inplace.
+     * Leads to not setting focus when managing a new window, because the old
+     * focus stack should be restored. */
+    bool restart_mode;
+
     TAILQ_ENTRY(Match) matches;
 };
 
@@ -514,6 +519,10 @@ struct Con {
         SCRATCHPAD_FRESH = 1,
         SCRATCHPAD_CHANGED = 2
     } scratchpad_state;
+
+    /* The ID of this container before restarting. Necessary to correctly
+     * interpret back-references in the JSON (such as the focus stack). */
+    int old_id;
 };
 
 #endif

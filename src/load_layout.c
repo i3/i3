@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * load_layout.c: Restore (parts of) the layout, for example after an inplace
  *                restart.
@@ -24,7 +24,18 @@ static bool parsing_swallows;
 static bool parsing_rect;
 static bool parsing_window_rect;
 static bool parsing_geometry;
+static bool parsing_focus;
 struct Match *current_swallow;
+
+/* This list is used for reordering the focus stack after parsing the 'focus'
+ * array. */
+struct focus_mapping {
+    int old_id;
+    TAILQ_ENTRY(focus_mapping) focus_mappings;
+};
+
+static TAILQ_HEAD(focus_mappings_head, focus_mapping) focus_mappings =
+  TAILQ_HEAD_INITIALIZER(focus_mappings);
 
 static int json_start_map(void *ctx) {
     LOG("start of map, last_key = %s\n", last_key);
@@ -70,6 +81,29 @@ static int json_end_map(void *ctx) {
 static int json_end_array(void *ctx) {
     LOG("end of array\n");
     parsing_swallows = false;
+    if (parsing_focus) {
+        /* Clear the list of focus mappings */
+        struct focus_mapping *mapping;
+        TAILQ_FOREACH_REVERSE(mapping, &focus_mappings, focus_mappings_head, focus_mappings) {
+            LOG("focus (reverse) %d\n", mapping->old_id);
+            Con *con;
+            TAILQ_FOREACH(con, &(json_node->focus_head), focused) {
+                if (con->old_id != mapping->old_id)
+                    continue;
+                LOG("got it! %p\n", con);
+                /* Move this entry to the top of the focus list. */
+                TAILQ_REMOVE(&(json_node->focus_head), con, focused);
+                TAILQ_INSERT_HEAD(&(json_node->focus_head), con, focused);
+                break;
+            }
+        }
+        while (!TAILQ_EMPTY(&focus_mappings)) {
+            mapping = TAILQ_FIRST(&focus_mappings);
+            TAILQ_REMOVE(&focus_mappings, mapping, focus_mappings);
+            free(mapping);
+        }
+        parsing_focus = false;
+    }
     return 1;
 }
 
@@ -82,15 +116,21 @@ static int json_key(void *ctx, const unsigned char *val, size_t len) {
     FREE(last_key);
     last_key = scalloc((len+1) * sizeof(char));
     memcpy(last_key, val, len);
-    if (strcasecmp(last_key, "swallows") == 0) {
+    if (strcasecmp(last_key, "swallows") == 0)
         parsing_swallows = true;
-    }
+
     if (strcasecmp(last_key, "rect") == 0)
         parsing_rect = true;
+
     if (strcasecmp(last_key, "window_rect") == 0)
         parsing_window_rect = true;
+
     if (strcasecmp(last_key, "geometry") == 0)
         parsing_geometry = true;
+
+    if (strcasecmp(last_key, "focus") == 0)
+        parsing_focus = true;
+
     return 1;
 }
 
@@ -190,14 +230,23 @@ static int json_int(void *ctx, long long val) {
 static int json_int(void *ctx, long val) {
     LOG("int %ld for key %s\n", val, last_key);
 #endif
-    if (strcasecmp(last_key, "type") == 0) {
+    if (strcasecmp(last_key, "type") == 0)
         json_node->type = val;
-    }
-    if (strcasecmp(last_key, "fullscreen_mode") == 0) {
+
+    if (strcasecmp(last_key, "fullscreen_mode") == 0)
         json_node->fullscreen_mode = val;
-    }
+
     if (strcasecmp(last_key, "num") == 0)
         json_node->num = val;
+
+    if (!parsing_swallows && strcasecmp(last_key, "id") == 0)
+        json_node->old_id = val;
+
+    if (parsing_focus) {
+        struct focus_mapping *focus_mapping = scalloc(sizeof(struct focus_mapping));
+        focus_mapping->old_id = val;
+        TAILQ_INSERT_TAIL(&focus_mappings, focus_mapping, focus_mappings);
+    }
 
     if (parsing_rect || parsing_window_rect || parsing_geometry) {
         Rect *r;
@@ -237,6 +286,11 @@ static int json_bool(void *ctx, int val) {
     LOG("bool %d for key %s\n", val, last_key);
     if (strcasecmp(last_key, "focused") == 0 && val) {
         to_focus = json_node;
+    }
+
+    if (parsing_swallows) {
+        if (strcasecmp(last_key, "restart_mode") == 0)
+            current_swallow->restart_mode = val;
     }
 
     return 1;

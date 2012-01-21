@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * manage.c: Initially managing new windows (or existing ones on restart).
  *
@@ -216,7 +216,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     DLOG("Initial geometry: (%d, %d, %d, %d)\n", geom->x, geom->y, geom->width, geom->height);
 
     Con *nc = NULL;
-    Match *match;
+    Match *match = NULL;
     Assignment *assignment;
 
     /* TODO: two matches for one container */
@@ -286,7 +286,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             Con *target_output = con_get_output(ws);
 
             if (workspace_is_visible(ws) && current_output == target_output) {
-                con_focus(nc);
+                if (!match || !match->restart_mode) {
+                    con_focus(nc);
+                } else DLOG("not focusing, matched with restart_mode == true\n");
             } else DLOG("workspace not visible, not focusing\n");
         } else DLOG("dock, not focusing\n");
     } else {
