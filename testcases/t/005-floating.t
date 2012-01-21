@@ -18,7 +18,7 @@ ok($absolute->{x} != 0 && $absolute->{y} != 0, 'i3 did not map it to (0x0)');
 
 $window->unmap;
 
-$window = open_floating_window(rect => [ 1, 1, 80, 90 ]);
+$window = open_floating_window(rect => [ 20, 20, 80, 90 ]);
 
 isa_ok($window, 'X11::XCB::Window');
 
@@ -27,10 +27,8 @@ isa_ok($window, 'X11::XCB::Window');
 cmp_ok($absolute->{width}, '==', 80, "i3 let the width at 80");
 cmp_ok($absolute->{height}, '==', 90, "i3 let the height at 90");
 
-# We need to compare the position with decorations due to the way
-# we do decoration rendering (on the parent frame) in the tree branch
-cmp_ok($top->{x}, '==', 1, 'i3 mapped it to x=1');
-cmp_ok($top->{y}, '==', 19, 'i3 mapped it to y=18');
+cmp_ok($top->{x}, '==', 20, 'i3 mapped it to x=20');
+cmp_ok($top->{y}, '==', 20, 'i3 mapped it to y=20');
 
 $window->unmap;
 
