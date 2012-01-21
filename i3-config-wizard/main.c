@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-config-wizard: Program to convert configs using keycodes to configs using
  *                   keysyms.
@@ -155,8 +155,8 @@ static int handle_expose() {
         set_font(&bold_font);
         set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
         if (modifier == MOD_Mod4)
-            txt(31, 4, "<Win>");
-        else txt(31, 5, "<Alt>");
+            txt(10, 4, "-> <Win>");
+        else txt(10, 5, "-> <Alt>");
 
         /* green */
         set_font(&font);
