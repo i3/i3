@@ -176,6 +176,14 @@ void floating_enable(Con *con, bool automatic) {
     if (automatic)
         con->border_style = config.default_floating_border;
 
+    /* 5: Subtract the deco_height in order to make the floating window appear
+     * at precisely the position it specified in its original geometry (which
+     * is what applications might remember). */
+    deco_height = (con->border_style == BS_NORMAL ? config.font.height + 5 : 0);
+    nc->rect.y -= deco_height;
+
+    DLOG("Corrected y = %d (deco_height = %d)\n", nc->rect.y, deco_height);
+
     TAILQ_INSERT_TAIL(&(nc->nodes_head), con, nodes);
     TAILQ_INSERT_TAIL(&(nc->focus_head), con, focused);
 
