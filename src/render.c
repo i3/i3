@@ -143,8 +143,17 @@ void render_con(Con *con, bool render_fullscreen) {
         inset->width -= (2 * con->border_width);
         inset->height -= (2 * con->border_width);
 
-        /* Obey the aspect ratio, if any */
-        if (con->proportional_height != 0 &&
+        /* Obey the aspect ratio, if any, unless we are in fullscreen mode.
+         *
+         * The spec isn’t explicit on whether the aspect ratio hints should be
+         * respected during fullscreen mode. Other WMs such as Openbox don’t do
+         * that, and this post suggests that this is the correct way to do it:
+         * http://mail.gnome.org/archives/wm-spec-list/2003-May/msg00007.html
+         *
+         * Ignoring aspect ratio during fullscreen was necessary to fix MPlayer
+         * subtitle rendering, see http://bugs.i3wm.org/594 */
+        if (!render_fullscreen &&
+            con->proportional_height != 0 &&
             con->proportional_width != 0) {
             double new_height = inset->height + 1;
             int new_width = inset->width;
