@@ -384,7 +384,7 @@ void x_draw_decoration(Con *con) {
         }
     }
 
-    /* if this is a borderless/1pixel window, we don’t * need to render the
+    /* if this is a borderless/1pixel window, we don’t need to render the
      * decoration. */
     if (p->border_style != BS_NORMAL)
         goto copy_pixmaps;
@@ -442,6 +442,22 @@ void x_draw_decoration(Con *con) {
             parent->pixmap, parent->pm_gc,
             con->deco_rect.x + 2 + indent_px, con->deco_rect.y + text_offset_y,
             con->deco_rect.width - 2 - indent_px);
+
+    /* Since we don’t clip the text at all, it might in some cases be painted
+     * on the border pixels on the right side of a window. Therefore, we draw
+     * the right border again after rendering the text (and the unconnected
+     * lines in border color). */
+    xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->background });
+    xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, parent->pixmap, parent->pm_gc, 4,
+                  (xcb_point_t[]){
+                      { dr->x + dr->width - 1, dr->y },
+                      { dr->x + dr->width - 1, dr->y + dr->height },
+                      { dr->x + dr->width - 2, dr->y },
+                      { dr->x + dr->width - 2, dr->y + dr->height }
+                  });
+
+    xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->border });
+    xcb_poly_segment(conn, parent->pixmap, parent->pm_gc, 2, segments);
 
 copy_pixmaps:
     xcb_copy_area(conn, con->pixmap, con->frame, con->pm_gc, 0, 0, 0, 0, con->rect.width, con->rect.height);
