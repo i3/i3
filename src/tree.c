@@ -347,6 +347,8 @@ void tree_split(Con *con, orientation_t orientation) {
      * orientation (more intuitive than splitting again) */
     if (con_num_children(parent) == 1) {
         parent->orientation = orientation;
+        FREE(con->deco_render_params);
+        FREE(parent->deco_render_params);
         DLOG("Just changing orientation of existing container\n");
         return;
     }
