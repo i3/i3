@@ -195,5 +195,8 @@ end:
      * container(s) would still point to the old container(s)). */
     con_focus(con);
 
+    /* force re-painting the indicators */
+    FREE(con->deco_render_params);
+
     tree_flatten(croot);
 }
