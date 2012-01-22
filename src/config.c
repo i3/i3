@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * config.c: Configuration file (calling the parser (src/cfgparse.y) with the
  *           correct path, switching key bindings mode).
@@ -361,21 +361,24 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     memset(&config, 0, sizeof(config));
 
     /* Initialize default colors */
-#define INIT_COLOR(x, cborder, cbackground, ctext) \
+#define INIT_COLOR(x, cborder, cbackground, ctext, cindicator) \
     do { \
         x.border = get_colorpixel(cborder); \
         x.background = get_colorpixel(cbackground); \
         x.text = get_colorpixel(ctext); \
+        x.indicator = get_colorpixel(cindicator); \
     } while (0)
 
     config.client.background = get_colorpixel("#000000");
-    INIT_COLOR(config.client.focused, "#4c7899", "#285577", "#ffffff");
-    INIT_COLOR(config.client.focused_inactive, "#333333", "#5f676a", "#ffffff");
-    INIT_COLOR(config.client.unfocused, "#333333", "#222222", "#888888");
-    INIT_COLOR(config.client.urgent, "#2f343a", "#900000", "#ffffff");
-    INIT_COLOR(config.bar.focused, "#4c7899", "#285577", "#ffffff");
-    INIT_COLOR(config.bar.unfocused, "#333333", "#222222", "#888888");
-    INIT_COLOR(config.bar.urgent, "#2f343a", "#900000", "#ffffff");
+    INIT_COLOR(config.client.focused, "#4c7899", "#285577", "#ffffff", "#2e9ef4");
+    INIT_COLOR(config.client.focused_inactive, "#333333", "#5f676a", "#ffffff", "#484e50");
+    INIT_COLOR(config.client.unfocused, "#333333", "#222222", "#888888", "#292d2e");
+    INIT_COLOR(config.client.urgent, "#2f343a", "#900000", "#ffffff", "#900000");
+
+    /* the last argument (indicator color) is ignored for bar colors */
+    INIT_COLOR(config.bar.focused, "#4c7899", "#285577", "#ffffff", "#000000");
+    INIT_COLOR(config.bar.unfocused, "#333333", "#222222", "#888888", "#000000");
+    INIT_COLOR(config.bar.urgent, "#2f343a", "#900000", "#ffffff", "#000000");
 
     config.default_border = BS_NORMAL;
     config.default_floating_border = BS_NORMAL;

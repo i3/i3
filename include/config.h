@@ -54,6 +54,7 @@ struct Colortriple {
     uint32_t border;
     uint32_t background;
     uint32_t text;
+    uint32_t indicator;
 };
 
 /**

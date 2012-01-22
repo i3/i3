@@ -382,6 +382,23 @@ void x_draw_decoration(Con *con) {
             xcb_rectangle_t topline = { br.x, 0, con->rect.width + br.width + br.x, br.y };
             xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &topline);
         }
+
+        /* Highlight the side of the border at which the next window will be
+         * opened if we are rendering a single window within a split container
+         * (which is undistinguishable from a single window outside a split
+         * container otherwise. */
+        if (TAILQ_NEXT(con, nodes) == NULL &&
+            TAILQ_PREV(con, nodes_head, nodes) == NULL &&
+            con->parent->type != CT_FLOATING_CON) {
+            xcb_change_gc(conn, con->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->indicator });
+            if (con_orientation(con->parent) == HORIZ)
+                xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
+                        { r->width + br.width + br.x, 0, r->width, r->height + br.height } });
+            else
+                xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
+                        { br.x, r->height + br.height + br.y, r->width - (2 * br.x), r->height } });
+        }
+
     }
 
     /* if this is a borderless/1pixel window, we don’t need to render the

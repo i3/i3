@@ -160,6 +160,12 @@ EOL     (\r?\n)
 <OUTPUT_COND>[a-zA-Z0-9_-]+     { yy_pop_state(); yylval.string = sstrdup(yytext); return OUTPUT; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
 <COLOR_COND>#[0-9a-fA-F]+       { yy_pop_state(); yylval.string = sstrdup(yytext); return HEXCOLOR; }
+<COLOR_COND>{EOL}               {
+                                  yy_pop_state();
+                                  FREE(context->line_copy);
+                                  context->line_number++;
+                                  yy_push_state(BUFFER_LINE);
+                                }
 <ASSIGN_TARGET_COND>[ \t]*→[ \t]*     { BEGIN(WANT_STRING); }
 <ASSIGN_TARGET_COND>[ \t]+      { BEGIN(WANT_STRING); }
 <EXEC>--no-startup-id           { printf("no startup id\n"); yy_pop_state(); return TOK_NO_STARTUP_ID; }
@@ -220,10 +226,10 @@ rows                            { /* yylval.number = STACK_LIMIT_ROWS; */return 
 exec                            { WS_STRING; yy_push_state(EXEC); yy_push_state(EAT_WHITESPACE); return TOKEXEC; }
 exec_always                     { WS_STRING; yy_push_state(EXEC); yy_push_state(EAT_WHITESPACE); return TOKEXEC_ALWAYS; }
 client.background               { yy_push_state(COLOR_COND); yylval.single_color = &config.client.background; return TOKSINGLECOLOR; }
-client.focused                  { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.focused; return TOKCOLOR; }
-client.focused_inactive         { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.focused_inactive; return TOKCOLOR; }
-client.unfocused                { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.unfocused; return TOKCOLOR; }
-client.urgent                   { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.urgent; return TOKCOLOR; }
+client.focused                  { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.focused; return TOKCOLOR; }
+client.focused_inactive         { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.focused_inactive; return TOKCOLOR; }
+client.unfocused                { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.unfocused; return TOKCOLOR; }
+client.urgent                   { yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yy_push_state(COLOR_COND); yylval.color = &config.client.urgent; return TOKCOLOR; }
 bar.focused                     { yy_push_state(COLOR_COND); yylval.color = &config.bar.focused; return TOKCOLOR; }
 bar.unfocused                   { yy_push_state(COLOR_COND); yylval.color = &config.bar.unfocused; return TOKCOLOR; }
 bar.urgent                      { yy_push_state(COLOR_COND); yylval.color = &config.bar.urgent; return TOKCOLOR; }

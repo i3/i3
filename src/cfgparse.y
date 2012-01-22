@@ -1649,6 +1649,15 @@ color:
         dest->background = $3;
         dest->text = $4;
     }
+    | TOKCOLOR colorpixel colorpixel colorpixel colorpixel
+    {
+        struct Colortriple *dest = $1;
+
+        dest->border = $2;
+        dest->background = $3;
+        dest->text = $4;
+        dest->indicator = $5;
+    }
     ;
 
 colorpixel:

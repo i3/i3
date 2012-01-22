@@ -591,7 +591,7 @@ You can change all colors which i3 uses to draw the window decorations.
 
 *Syntax*:
 --------------------------------------------
-colorclass border background text
+colorclass border background text indicator
 --------------------------------------------
 
 Where colorclass can be one of:
@@ -624,17 +624,23 @@ area of the terminal and the i3 border.
 Colors are in HTML hex format (#rrggbb), see the following example:
 
 *Examples (default colors)*:
------------------------------------------------
-# class                 border  backgr. text
-client.focused          #4c7899 #285577 #ffffff
-client.focused_inactive #333333 #5f676a #ffffff
-client.unfocused        #333333 #222222 #888888
-client.urgent           #2f343a #900000 #ffffff
------------------------------------------------
+---------------------------------------------------------
+# class                 border  backgr. text    indicator
+client.focused          #4c7899 #285577 #ffffff #2e9ef4
+client.focused_inactive #333333 #5f676a #ffffff #484e50
+client.unfocused        #333333 #222222 #888888 #292d2e
+client.urgent           #2f343a #900000 #ffffff #900000
+---------------------------------------------------------
 
 Note that for the window decorations, the color around the child window is the
 background color, and the border color is only the two thin lines at the top of
 the window.
+
+The indicator color is used for indicating where a new window will be opened.
+For horizontal split containers, the right border will be painted in indicator
+color, for vertical split containers, the bottom border. This only applies to
+single windows within a split container, which are otherwise indistinguishable
+from single windows outside of a split container.
 
 === Interprocess communication
 
