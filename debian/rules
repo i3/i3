@@ -28,8 +28,7 @@ binary-indep: install
 binary: binary-arch binary-indep
 
 override_dh_auto_build:
-	env
-	$(MAKE) -d
+	$(MAKE)
 	$(MAKE) -C man
 	$(MAKE) -C docs
 

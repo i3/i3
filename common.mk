@@ -124,12 +124,10 @@ CPPFLAGS += -D_GNU_SOURCE
 endif
 
 ifeq ($(DEBUG),1)
-$(warning "DEBUG build")
 # Extended debugging flags, macros shall be available in gcc
 CFLAGS += -gdwarf-2
 CFLAGS += -g3
 else
-$(warning "non-DEBUG build, enabling optimization")
 CFLAGS += -O2
 CFLAGS += -freorder-blocks-and-partition
 endif
@@ -140,7 +138,7 @@ LIBS += -lgcov
 endif
 
 # Don’t print command lines which are run
-#.SILENT:
+.SILENT:
 
 # Always remake the following targets
 .PHONY: install clean dist distclean
