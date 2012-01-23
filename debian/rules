@@ -4,6 +4,11 @@
 DPKG_EXPORT_BUILDFLAGS = 1
 -include /usr/share/dpkg/buildflags.mk
 
+ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+    NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+    MAKEFLAGS += -j$(NUMJOBS)
+endif
+
 build: build-arch build-indep
 build-arch: build-stamp
 build-indep: build-stamp
