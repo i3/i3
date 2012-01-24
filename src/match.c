@@ -22,6 +22,7 @@
 void match_init(Match *match) {
     memset(match, 0, sizeof(Match));
     match->dock = -1;
+    match->urgent = U_DONTCHECK;
 }
 
 /*
@@ -39,6 +40,7 @@ bool match_is_empty(Match *match) {
             match->class == NULL &&
             match->instance == NULL &&
             match->role == NULL &&
+            match->urgent == U_DONTCHECK &&
             match->id == XCB_NONE &&
             match->con_id == NULL &&
             match->dock == -1 &&
@@ -118,6 +120,38 @@ bool match_matches_window(Match *match, i3Window *window) {
         } else {
             return false;
         }
+    }
+
+    Con *con = NULL;
+    if (match->urgent == U_LATEST) {
+        /* if the window isn't urgent, no sense in searching */
+        if (window->urgent == 0) {
+            return false;
+        }
+        /* if we find a window that is newer than this one, bail */
+        TAILQ_FOREACH(con, &all_cons, all_cons) {
+            if ((con->window != NULL) &&
+                (con->window->urgent > window->urgent)) {
+                return false;
+            }
+        }
+        LOG("urgent matches latest\n");
+    }
+
+    if (match->urgent == U_OLDEST) {
+        /* if the window isn't urgent, no sense in searching */
+        if (window->urgent == 0) {
+            return false;
+        }
+        /* if we find a window that is older than this one (and not 0), bail */
+        TAILQ_FOREACH(con, &all_cons, all_cons) {
+            if ((con->window != NULL) &&
+                (con->window->urgent != 0) &&
+                (con->window->urgent < window->urgent)) {
+                return false;
+            }
+        }
+        LOG("urgent matches oldest\n");
     }
 
     if (match->dock != -1) {

@@ -1092,6 +1092,10 @@ id::
 	Compares the X11 window ID, which you can get via +xwininfo+ for example.
 title::
 	Compares the X11 window title (_NET_WM_NAME or WM_NAME as fallback).
+urgent::
+	Compares the urgent state of the window. Can be "latest" or "oldest".
+	Matches the latest or oldest urgent window, respectively.
+	(The following aliases are also available: newest, last, recent, first)
 con_mark::
 	Compares the mark set for this container, see <<vim_like_marks>>.
 con_id::

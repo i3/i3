@@ -250,6 +250,7 @@ id                              { yy_push_state(WANT_QSTRING); return TOK_ID; }
 con_id                          { yy_push_state(WANT_QSTRING); return TOK_CON_ID; }
 con_mark                        { yy_push_state(WANT_QSTRING); return TOK_MARK; }
 title                           { yy_push_state(WANT_QSTRING); return TOK_TITLE; }
+urgent                          { yy_push_state(WANT_QSTRING); return TOK_URGENT; }
 
 <*>{EOL}                        {
                                   FREE(context->line_copy);

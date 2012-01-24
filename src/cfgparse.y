@@ -740,6 +740,7 @@ void parse_file(const char *f) {
 %token              TOK_ID              "id"
 %token              TOK_CON_ID          "con_id"
 %token              TOK_TITLE           "title"
+%token              TOK_URGENT          "urgent"
 
 %type   <binding>       binding
 %type   <binding>       bindcode
@@ -951,6 +952,20 @@ criterion:
     {
         printf("criteria: title = %s\n", $3);
         current_match.title = regex_new($3);
+        free($3);
+    }
+    | TOK_URGENT '=' STR
+    {
+        printf("criteria: urgent = %s\n", $3);
+        if (strcasecmp($3, "latest") == 0 ||
+            strcasecmp($3, "newest") == 0 ||
+            strcasecmp($3, "recent") == 0 ||
+            strcasecmp($3, "last") == 0) {
+            current_match.urgent = U_LATEST;
+        } else if (strcasecmp($3, "oldest") == 0 ||
+                   strcasecmp($3, "first") == 0) {
+            current_match.urgent = U_OLDEST;
+        }
         free($3);
     }
     ;

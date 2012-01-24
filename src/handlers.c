@@ -841,12 +841,20 @@ static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_
 
     if (!con->urgent && focused == con) {
         DLOG("Ignoring urgency flag for current client\n");
+        con->window->urgent = 0;
         goto end;
     }
 
     /* Update the flag on the client directly */
     con->urgent = (xcb_icccm_wm_hints_get_urgency(&hints) != 0);
     //CLIENT_LOG(con);
+    if (con->window) {
+        if (con->urgent) {
+            con->window->urgent = time(NULL);
+        } else {
+            con->window->urgent = 0;
+        }
+    }
     LOG("Urgency flag changed to %d\n", con->urgent);
 
     Con *ws;

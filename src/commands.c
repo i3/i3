@@ -307,6 +307,19 @@ char *cmd_criteria_add(Match *current_match, char *ctype, char *cvalue) {
         return NULL;
     }
 
+    if (strcmp(ctype, "urgent") == 0) {
+        if (strcasecmp(cvalue, "latest") == 0 ||
+            strcasecmp(cvalue, "newest") == 0 ||
+            strcasecmp(cvalue, "recent") == 0 ||
+            strcasecmp(cvalue, "last") == 0) {
+            current_match->urgent = U_LATEST;
+        } else if (strcasecmp(cvalue, "oldest") == 0 ||
+                   strcasecmp(cvalue, "first") == 0) {
+            current_match->urgent = U_OLDEST;
+        }
+        return NULL;
+    }
+
     ELOG("Unknown criterion: %s\n", ctype);
 
     /* This command is internal and does not generate a JSON reply. */

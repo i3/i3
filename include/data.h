@@ -304,6 +304,9 @@ struct Window {
     /** Whether the application needs to receive WM_TAKE_FOCUS */
     bool needs_take_focus;
 
+    /** When this window was marked urgent. 0 means not urgent */
+    time_t urgent;
+
     /** Whether this window accepts focus. We store this inverted so that the
      * default will be 'accepts focus'. */
     bool doesnt_accept_focus;
@@ -335,6 +338,11 @@ struct Match {
     struct regex *instance;
     struct regex *mark;
     struct regex *role;
+    enum {
+        U_DONTCHECK = -1,
+        U_LATEST = 0,
+        U_OLDEST = 1
+    } urgent;
     enum {
         M_DONTCHECK = -1,
         M_NODOCK = 0,

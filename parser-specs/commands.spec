@@ -43,6 +43,7 @@ state CRITERIA:
   ctype = 'id' -> CRITERION
   ctype = 'con_mark' -> CRITERION
   ctype = 'title' -> CRITERION
+  ctype = 'urgent' -> CRITERION
   ']' -> call cmd_criteria_match_windows(); INITIAL
 
 state CRITERION:
