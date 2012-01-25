@@ -12,7 +12,7 @@ sub parser_calls {
 
     # TODO: use a timeout, so that we can error out if it doesn’t terminate
     # TODO: better way of passing arguments
-    my $stdout = qx(../test.commands_parser '$command');
+    my $stdout = qx(../test.commands_parser '$command' 2>&-);
 
     # Filter out all debugging output.
     my @lines = split("\n", $stdout);
@@ -128,6 +128,17 @@ is(parser_calls('[con_mark="yay"] focus'),
    "cmd_criteria_add(con_mark, yay)\n" .
    "cmd_focus()",
    'quoted criteria focus ok');
+
+# Make sure trailing whitespace is stripped off: While this is not an issue for
+# commands being parsed due to the configuration, people might send IPC
+# commands with leading or trailing newlines.
+is(parser_calls("workspace test\n"),
+   'cmd_workspace_name(test)',
+   'trailing whitespace stripped off ok');
+
+is(parser_calls("\nworkspace test"),
+   'cmd_workspace_name(test)',
+   'trailing whitespace stripped off ok');
 
 ################################################################################
 # 2: Verify that the parser spits out the right error message on commands which

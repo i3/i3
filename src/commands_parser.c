@@ -214,8 +214,9 @@ char *parse_command(const char *input) {
     /* The "<=" operator is intentional: We also handle the terminating 0-byte
      * explicitly by looking for an 'end' token. */
     while ((walk - input) <= len) {
-        /* skip whitespace before every token */
-        while ((*walk == ' ' || *walk == '\t') && *walk != '\0')
+        /* skip whitespace and newlines before every token */
+        while ((*walk == ' ' || *walk == '\t' ||
+                *walk == '\r' || *walk == '\n') && *walk != '\0')
             walk++;
 
         DLOG("remaining input = %s\n", walk);
@@ -255,15 +256,20 @@ char *parse_command(const char *input) {
                     if (token->name[0] == 's') {
                         /* For a string (starting with 's'), the delimiters are
                          * comma (,) and semicolon (;) which introduce a new
-                         * operation or command, respectively. */
-                        while (*walk != ';' && *walk != ',' && *walk != '\0')
+                         * operation or command, respectively. Also, newlines
+                         * end a command. */
+                        while (*walk != ';' && *walk != ',' &&
+                               *walk != '\0' && *walk != '\r' &&
+                               *walk != '\n')
                             walk++;
                     } else {
                         /* For a word, the delimiters are white space (' ' or
                          * '\t'), closing square bracket (]), comma (,) and
                          * semicolon (;). */
-                        while (*walk != ' ' && *walk != '\t' && *walk != ']' &&
-                               *walk != ',' && *walk !=  ';' && *walk != '\0')
+                        while (*walk != ' ' && *walk != '\t' &&
+                               *walk != ']' && *walk != ',' &&
+                               *walk !=  ';' && *walk != '\r' &&
+                               *walk != '\n' && *walk != '\0')
                             walk++;
                     }
                 }
@@ -382,8 +388,8 @@ void debuglog(uint64_t lev, char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
-    fprintf(stdout, "# ");
-    vfprintf(stdout, fmt, args);
+    fprintf(stderr, "# ");
+    vfprintf(stderr, fmt, args);
     va_end(args);
 }
 
