@@ -267,10 +267,10 @@ void handle_button(xcb_button_press_event_t *event) {
              * and set cur_ws accordingly */
             TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
                 DLOG("x = %d\n", x);
-                if (x < cur_ws->name_width + 10) {
+                if (x < cur_ws->name_width + 12) {
                     break;
                 }
-                x -= cur_ws->name_width + 10;
+                x -= cur_ws->name_width + 12;
             }
             if (cur_ws == NULL) {
                 return;
