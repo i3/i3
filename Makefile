@@ -98,6 +98,7 @@ install: all
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(SYSCONFDIR)/i3
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/include/i3
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/share/xsessions
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/share/applications
 	$(INSTALL) -m 0755 i3 $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-migrate-config-to-v4 $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-sensible-editor $(DESTDIR)$(PREFIX)/bin/
@@ -106,7 +107,8 @@ install: all
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)$(SYSCONFDIR)/i3/config
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes || $(INSTALL) -m 0644 i3.config.keycodes $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes
 	$(INSTALL) -m 0644 i3.welcome $(DESTDIR)$(SYSCONFDIR)/i3/welcome
-	$(INSTALL) -m 0644 i3.desktop $(DESTDIR)$(PREFIX)/share/xsessions/
+	$(INSTALL) -m 0644 i3.xsession.desktop $(DESTDIR)$(PREFIX)/share/xsessions/i3.desktop
+	$(INSTALL) -m 0644 i3.applications.desktop $(DESTDIR)$(PREFIX)/share/applications/i3.desktop
 	$(INSTALL) -m 0644 include/i3/ipc.h $(DESTDIR)$(PREFIX)/include/i3/
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir install; \
@@ -116,7 +118,7 @@ dist: distclean
 	[ ! -d i3-${VERSION} ] || rm -rf i3-${VERSION}
 	[ ! -e i3-${VERSION}.tar.bz2 ] || rm i3-${VERSION}.tar.bz2
 	mkdir i3-${VERSION}
-	cp i3-migrate-config-to-v4 generate-command-parser.pl i3-sensible-* i3.config.keycodes DEPENDS GOALS LICENSE PACKAGE-MAINTAINER RELEASE-NOTES-${VERSION} i3.config i3.desktop i3.welcome pseudo-doc.doxygen i3-wsbar Makefile i3-${VERSION}
+	cp i3-migrate-config-to-v4 generate-command-parser.pl i3-sensible-* i3.config.keycodes DEPENDS GOALS LICENSE PACKAGE-MAINTAINER RELEASE-NOTES-${VERSION} i3.config i3.xsession.desktop i3.applications.desktop i3.welcome pseudo-doc.doxygen i3-wsbar Makefile i3-${VERSION}
 	cp -r src libi3 i3-msg i3-nagbar i3-config-wizard i3bar i3-dump-log yajl-fallback include man parser-specs i3-${VERSION}
 	# Only copy toplevel documentation (important stuff)
 	mkdir i3-${VERSION}/docs
