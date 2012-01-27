@@ -13,12 +13,16 @@ our @EXPORT = qw(worker worker_next);
 
 use File::Basename qw(basename);
 my @x;
+my $options;
 
 sub worker {
-    my ($display, $x, $outdir) = @_;
+    my ($display, $x, $outdir, $optref) = @_;
 
     # make sure $x hangs around
     push @x, $x;
+
+    # store the options hashref
+    $options = $optref;
 
     socketpair(my $ipc_child, my $ipc, AF_UNIX, SOCK_DGRAM, PF_UNSPEC)
         or die "socketpair: $!";
@@ -102,7 +106,13 @@ sub worker_wait {
             $test->todo_output(\*STDOUT);
 
             @ENV{qw(DISPLAY TESTNAME OUTDIR VALGRIND STRACE COVERAGE RESTART)}
-                = ($self->{display}, basename($file), $outdir, 0, 0, 0, 0);
+                = ($self->{display},
+                   basename($file),
+                   $outdir,
+                   $options->{valgrind},
+                   $options->{strace},
+                   $options->{coverage},
+                   $options->{restart});
 
             package main;
             local $@;

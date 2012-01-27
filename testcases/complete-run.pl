@@ -37,20 +37,23 @@ my $log;
 sub Log { say $log "@_" }
 
 my %timings;
-my $coverage_testing = 0;
-my $valgrind = 0;
-my $strace = 0;
 my $help = 0;
 # Number of tests to run in parallel. Important to know how many Xdummy
 # instances we need to start (unless @displays are given). Defaults to
 # num_cores * 2.
 my $parallel = undef;
 my @displays = ();
+my %options = (
+    valgrind => 0,
+    strace => 0,
+    coverage => 0,
+    restart => 0,
+);
 
 my $result = GetOptions(
-    "coverage-testing" => \$coverage_testing,
-    "valgrind" => \$valgrind,
-    "strace" => \$strace,
+    "coverage-testing" => \$options{coverage},
+    "valgrind" => \$options{valgrind},
+    "strace" => \$options{strace},
     "display=s" => \@displays,
     "parallel=i" => \$parallel,
     "help|?" => \$help,
@@ -104,7 +107,7 @@ for my $display (@displays) {
         die "Could not connect to display $display\n";
     } else {
         # start a TestWorker for each display
-        push @single_worker, worker($display, $x, $outdir);
+        push @single_worker, worker($display, $x, $outdir, \%options);
     }
 }
 
@@ -114,7 +117,7 @@ if (defined($multidpy)) {
     if ($x->has_error) {
         die "Could not connect to multi-monitor display $multidpy\n";
     } else {
-        push @multi_worker, worker($multidpy, $x, $outdir);
+        push @multi_worker, worker($multidpy, $x, $outdir, \%options);
     }
 }
 
