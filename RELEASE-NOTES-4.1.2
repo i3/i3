@@ -1,0 +1,37 @@
+
+ ┌──────────────────────────────┐
+ │ Release notes for i3 v4.1.2  │
+ └──────────────────────────────┘
+
+This is the second minor release of i3 v4.1. It is a bugfix release and
+considered stable. All users of i3 v4.1.1 are strongly encouraged to upgrade.
+
+i3 developers will be present at FOSDEM in Brussels.
+Please get in touch and have a nice chat with us :).
+
+
+ ┌────────────────────────────┐
+ │ Changes in v4.1.2          │
+ └────────────────────────────┘
+
+  • Bugfix: Don’t lose focus on fullscreen windows when another window gets
+    moved to that workspace
+  • Bugfix: Open new windows in the correct place when assignments match
+  • Bugfix: Fix assignments of floating windows to (yet) unused workspaces
+  • Bugfix: Either use SetInputFocus *or* send WM_TAKE_FOCUS, not both
+  • Bugfix: Respect WM_HINTS.input for WM_TAKE_FOCUS clients
+  • Bugfix: Setup the _NET_SUPPORTING_WM_CHECK atom in a standards-compliant way
+  • Bugfix: Only ignore EnterNotify events after UnmapNotifies from managed windows
+  • Bugfix: Force a new sequence number after UnmapNotify
+  • Bugfix: Position floating windows exactly where their geometry specified
+  • Bugfix: Fix coordinates when the rect of an output changes
+
+ ┌────────────────────────────┐
+ │ Thanks!                    │
+ └────────────────────────────┘
+
+Thanks for testing, bugfixes, discussions and everything I forgot go out to:
+
+  B-Con, David Coppa, Don, Paul, rami, zeus
+
+-- Michael Stapelberg, 2012-01-27
