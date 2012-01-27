@@ -59,12 +59,12 @@ state EXEC:
   command = string
       -> call cmd_exec($nosn, $command)
 
-# border <normal|none|1pixel|toggle>
+# border normal|none|1pixel|toggle
 state BORDER:
   border_style = 'normal', 'none', '1pixel', 'toggle'
       -> call cmd_border($border_style)
 
-# layout <default|stacked|stacking|tabbed>
+# layout default|stacked|stacking|tabbed
 state LAYOUT:
   layout_mode = 'default', 'stacked', 'stacking', 'tabbed'
       -> call cmd_layout($layout_mode)
@@ -105,16 +105,14 @@ state FOCUS_OUTPUT:
   output = string
       -> call cmd_focus_output($output)
 
-# kill window|client
-# kill
+# kill [window|client]
 state KILL:
   kill_mode = 'window', 'client'
       -> call cmd_kill($kill_mode)
   end
       -> call cmd_kill($kill_mode)
 
-# fullscreen global
-# fullscreen
+# fullscreen [global]
 state FULLSCREEN:
   fullscreen_mode = 'global'
       -> call cmd_fullscreen($fullscreen_mode)

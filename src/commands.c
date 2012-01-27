@@ -36,6 +36,11 @@ static bool definitelyGreaterThan(float a, float b, float epsilon) {
     return (a - b) > ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon);
 }
 
+/*
+ * Returns an 'output' corresponding to one of left/right/down/up or a specific
+ * output name.
+ *
+ */
 static Output *get_output_from_string(Output *current_output, const char *output_str) {
     Output *output;
 
@@ -160,6 +165,11 @@ void cmd_MIGRATION_start_nagbar() {
  * Criteria functions.
  ******************************************************************************/
 
+/*
+ * Initializes the specified 'Match' data structure and the initial state of
+ * commands.c for matching target windows of a command.
+ *
+ */
 char *cmd_criteria_init(Match *current_match) {
     Con *con;
     owindow *ow;
@@ -183,6 +193,11 @@ char *cmd_criteria_init(Match *current_match) {
     return NULL;
 }
 
+/*
+ * A match specification just finished (the closing square bracket was found),
+ * so we filter the list of owindows.
+ *
+ */
 char *cmd_criteria_match_windows(Match *current_match) {
     owindow *next, *current;
 
@@ -229,6 +244,11 @@ char *cmd_criteria_match_windows(Match *current_match) {
     return NULL;
 }
 
+/*
+ * Interprets a ctype=cvalue pair and adds it to the current match
+ * specification.
+ *
+ */
 char *cmd_criteria_add(Match *current_match, char *ctype, char *cvalue) {
     DLOG("ctype=*%s*, cvalue=*%s*\n", ctype, cvalue);
 
@@ -293,6 +313,11 @@ char *cmd_criteria_add(Match *current_match, char *ctype, char *cvalue) {
     return NULL;
 }
 
+/*
+ * Implementation of 'move [window|container] [to] workspace
+ * next|prev|next_on_output|prev_on_output'.
+ *
+ */
 char *cmd_move_con_to_workspace(Match *current_match, char *which) {
     owindow *current;
 
@@ -326,6 +351,10 @@ char *cmd_move_con_to_workspace(Match *current_match, char *which) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'move [window|container] [to] workspace <name>'.
+ *
+ */
 char *cmd_move_con_to_workspace_name(Match *current_match, char *name) {
     if (strncasecmp(name, "__i3_", strlen("__i3_")) == 0) {
         LOG("You cannot switch to the i3 internal workspaces.\n");
@@ -356,6 +385,10 @@ char *cmd_move_con_to_workspace_name(Match *current_match, char *name) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'resize grow|shrink <direction> [<px> px] [or <ppt> ppt]'.
+ *
+ */
 char *cmd_resize(Match *current_match, char *way, char *direction, char *resize_px, char *resize_ppt) {
     /* resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt] */
     DLOG("resizing in way %s, direction %s, px %s or ppt %s\n", way, direction, resize_px, resize_ppt);
@@ -454,6 +487,10 @@ char *cmd_resize(Match *current_match, char *way, char *direction, char *resize_
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'border normal|none|1pixel|toggle'.
+ *
+ */
 char *cmd_border(Match *current_match, char *border_style_str) {
     DLOG("border style should be changed to %s\n", border_style_str);
     owindow *current;
@@ -487,6 +524,10 @@ char *cmd_border(Match *current_match, char *border_style_str) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'nop <comment>'.
+ *
+ */
 char *cmd_nop(Match *current_match, char *comment) {
     LOG("-------------------------------------------------\n");
     LOG("  NOP: %s\n", comment);
@@ -495,6 +536,10 @@ char *cmd_nop(Match *current_match, char *comment) {
     return NULL;
 }
 
+/*
+ * Implementation of 'append_layout <path>'.
+ *
+ */
 char *cmd_append_layout(Match *current_match, char *path) {
     LOG("Appending layout \"%s\"\n", path);
     tree_append_json(path);
@@ -504,6 +549,10 @@ char *cmd_append_layout(Match *current_match, char *path) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'workspace next|prev|next_on_output|prev_on_output'.
+ *
+ */
 char *cmd_workspace(Match *current_match, char *which) {
     Con *ws;
 
@@ -529,6 +578,10 @@ char *cmd_workspace(Match *current_match, char *which) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'workspace back_and_forth'.
+ *
+ */
 char *cmd_workspace_back_and_forth(Match *current_match) {
     workspace_back_and_forth();
     tree_render();
@@ -537,6 +590,10 @@ char *cmd_workspace_back_and_forth(Match *current_match) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'workspace <name>'
+ *
+ */
 char *cmd_workspace_name(Match *current_match, char *name) {
     if (strncasecmp(name, "__i3_", strlen("__i3_")) == 0) {
         LOG("You cannot switch to the i3 internal workspaces.\n");
@@ -565,6 +622,10 @@ char *cmd_workspace_name(Match *current_match, char *name) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'mark <mark>'
+ *
+ */
 char *cmd_mark(Match *current_match, char *mark) {
     DLOG("Clearing all windows which have that mark first\n");
 
@@ -590,6 +651,10 @@ char *cmd_mark(Match *current_match, char *mark) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'mode <string>'.
+ *
+ */
 char *cmd_mode(Match *current_match, char *mode) {
     DLOG("mode=%s\n", mode);
     switch_mode(mode);
@@ -598,6 +663,10 @@ char *cmd_mode(Match *current_match, char *mode) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'move [window|container] [to] output <str>'.
+ *
+ */
 char *cmd_move_con_to_output(Match *current_match, char *name) {
     owindow *current;
 
@@ -649,6 +718,10 @@ char *cmd_move_con_to_output(Match *current_match, char *name) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'floating enable|disable|toggle'
+ *
+ */
 char *cmd_floating(Match *current_match, char *floating_mode) {
     owindow *current;
 
@@ -677,6 +750,10 @@ char *cmd_floating(Match *current_match, char *floating_mode) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'move workspace to [output] <str>'.
+ *
+ */
 char *cmd_move_workspace_to_output(Match *current_match, char *name) {
     DLOG("should move workspace to output %s\n", name);
 
@@ -725,6 +802,10 @@ char *cmd_move_workspace_to_output(Match *current_match, char *name) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'split v|h|vertical|horizontal'.
+ *
+ */
 char *cmd_split(Match *current_match, char *direction) {
     /* TODO: use matches */
     LOG("splitting in direction %c\n", direction[0]);
@@ -736,6 +817,10 @@ char *cmd_split(Match *current_match, char *direction) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementaiton of 'kill [window|client]'.
+ *
+ */
 char *cmd_kill(Match *current_match, char *kill_mode_str) {
     if (kill_mode_str == NULL)
         kill_mode_str = "window";
@@ -769,6 +854,10 @@ char *cmd_kill(Match *current_match, char *kill_mode_str) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'exec [--no-startup-id] <command>'.
+ *
+ */
 char *cmd_exec(Match *current_match, char *nosn, char *command) {
     bool no_startup_id = (nosn != NULL);
 
@@ -779,6 +868,10 @@ char *cmd_exec(Match *current_match, char *nosn, char *command) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'focus left|right|up|down'.
+ *
+ */
 char *cmd_focus_direction(Match *current_match, char *direction) {
     if (focused &&
         focused->type != CT_WORKSPACE &&
@@ -808,6 +901,10 @@ char *cmd_focus_direction(Match *current_match, char *direction) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'focus tiling|floating|mode_toggle'.
+ *
+ */
 char *cmd_focus_window_mode(Match *current_match, char *window_mode) {
     if (focused &&
         focused->type != CT_WORKSPACE &&
@@ -843,6 +940,10 @@ char *cmd_focus_window_mode(Match *current_match, char *window_mode) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'focus parent|child'.
+ *
+ */
 char *cmd_focus_level(Match *current_match, char *level) {
     if (focused &&
         focused->type != CT_WORKSPACE &&
@@ -863,6 +964,10 @@ char *cmd_focus_level(Match *current_match, char *level) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'focus'.
+ *
+ */
 char *cmd_focus(Match *current_match) {
     DLOG("current_match = %p\n", current_match);
     if (focused &&
@@ -925,6 +1030,10 @@ char *cmd_focus(Match *current_match) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'fullscreen [global]'.
+ *
+ */
 char *cmd_fullscreen(Match *current_match, char *fullscreen_mode) {
     if (fullscreen_mode == NULL)
         fullscreen_mode = "output";
@@ -944,6 +1053,10 @@ char *cmd_fullscreen(Match *current_match, char *fullscreen_mode) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'move <direction> [<pixels> [px]]'.
+ *
+ */
 char *cmd_move_direction(Match *current_match, char *direction, char *move_px) {
     // TODO: We could either handle this in the parser itself as a separate token (and make the stack typed) or we need a better way to convert a string to a number with error checking
     int px = atoi(move_px);
@@ -976,6 +1089,10 @@ char *cmd_move_direction(Match *current_match, char *direction, char *move_px) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'layout default|stacked|stacking|tabbed'.
+ *
+ */
 char *cmd_layout(Match *current_match, char *layout_str) {
     if (strcmp(layout_str, "stacking") == 0)
         layout_str = "stacked";
@@ -1001,6 +1118,10 @@ char *cmd_layout(Match *current_match, char *layout_str) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementaiton of 'exit'.
+ *
+ */
 char *cmd_exit(Match *current_match) {
     LOG("Exiting due to user command.\n");
     exit(0);
@@ -1008,6 +1129,10 @@ char *cmd_exit(Match *current_match) {
     /* unreached */
 }
 
+/*
+ * Implementaiton of 'reload'.
+ *
+ */
 char *cmd_reload(Match *current_match) {
     LOG("reloading\n");
     kill_configerror_nagbar(false);
@@ -1020,6 +1145,10 @@ char *cmd_reload(Match *current_match) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementaiton of 'restart'.
+ *
+ */
 char *cmd_restart(Match *current_match) {
     LOG("restarting i3\n");
     i3_restart(false);
@@ -1028,6 +1157,10 @@ char *cmd_restart(Match *current_match) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementaiton of 'open'.
+ *
+ */
 char *cmd_open(Match *current_match) {
     LOG("opening new container\n");
     Con *con = tree_open_con(NULL, NULL);
@@ -1040,6 +1173,10 @@ char *cmd_open(Match *current_match) {
     return json_output;
 }
 
+/*
+ * Implementation of 'focus output <output>'.
+ *
+ */
 char *cmd_focus_output(Match *current_match, char *name) {
     owindow *current;
 
@@ -1075,6 +1212,10 @@ char *cmd_focus_output(Match *current_match, char *name) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'move scratchpad'.
+ *
+ */
 char *cmd_move_scratchpad(Match *current_match) {
     DLOG("should move window to scratchpad\n");
     owindow *current;
@@ -1092,6 +1233,10 @@ char *cmd_move_scratchpad(Match *current_match) {
     return sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'scratchpad show'.
+ *
+ */
 char *cmd_scratchpad_show(Match *current_match) {
     DLOG("should show scratchpad window\n");
     owindow *current;
