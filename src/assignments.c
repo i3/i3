@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * assignments.c: Assignments for specific windows (for_window).
  *
@@ -41,7 +41,7 @@ void run_assignments(i3Window *window) {
             DLOG("execute command %s\n", current->dest.command);
             char *full_command;
             sasprintf(&full_command, "[id=\"%d\"] %s", window->id, current->dest.command);
-            char *json_result = parse_cmd(full_command);
+            char *json_result = parse_command(full_command);
             FREE(full_command);
             FREE(json_result);
         }

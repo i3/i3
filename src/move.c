@@ -9,8 +9,6 @@
  */
 #include "all.h"
 
-#include "cmdparse.tab.h"
-
 typedef enum { BEFORE, AFTER } position_t;
 
 /*
@@ -88,8 +86,8 @@ static void attach_to_workspace(Con *con, Con *ws) {
 }
 
 /*
- * Moves the current container in the given direction (TOK_LEFT, TOK_RIGHT,
- * TOK_UP, TOK_DOWN from cmdparse.l)
+ * Moves the current container in the given direction (D_LEFT, D_RIGHT,
+ * D_UP, D_DOWN).
  *
  */
 void tree_move(int direction) {
@@ -107,7 +105,7 @@ void tree_move(int direction) {
         return;
     }
 
-    orientation_t o = (direction == TOK_LEFT || direction == TOK_RIGHT ? HORIZ : VERT);
+    orientation_t o = (direction == D_LEFT || direction == D_RIGHT ? HORIZ : VERT);
 
     Con *same_orientation = con_parent_with_orientation(con, o);
     /* The do {} while is used to 'restart' at this point with a different
@@ -136,14 +134,14 @@ void tree_move(int direction) {
         if (same_orientation == con->parent) {
             DLOG("We are in the same container\n");
             Con *swap;
-            if ((swap = (direction == TOK_LEFT || direction == TOK_UP ?
+            if ((swap = (direction == D_LEFT || direction == D_UP ?
                           TAILQ_PREV(con, nodes_head, nodes) :
                           TAILQ_NEXT(con, nodes)))) {
                 if (!con_is_leaf(swap)) {
                     insert_con_into(con, con_descend_focused(swap), AFTER);
                     goto end;
                 }
-                if (direction == TOK_LEFT || direction == TOK_UP)
+                if (direction == D_LEFT || direction == D_UP)
                     TAILQ_SWAP(swap, con, &(swap->parent->nodes_head), nodes);
                 else TAILQ_SWAP(con, swap, &(swap->parent->nodes_head), nodes);
 
@@ -174,7 +172,7 @@ void tree_move(int direction) {
     DLOG("above = %p\n", above);
     Con *next;
     position_t position;
-    if (direction == TOK_UP || direction == TOK_LEFT) {
+    if (direction == D_UP || direction == D_LEFT) {
         position = BEFORE;
         next = TAILQ_PREV(above, nodes_head, nodes);
     } else {

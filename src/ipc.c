@@ -119,7 +119,7 @@ IPC_HANDLER(command) {
     char *command = scalloc(message_size + 1);
     strncpy(command, (const char*)message, message_size);
     LOG("IPC: received: *%s*\n", command);
-    char *reply = parse_cmd((const char*)command);
+    char *reply = parse_command((const char*)command);
     char *save_reply = reply;
     free(command);
 

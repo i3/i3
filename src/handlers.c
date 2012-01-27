@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * handlers.c: Small handlers for various events (keypresses, focus changes,
  *             …).
@@ -118,7 +118,7 @@ static void handle_key_press(xcb_key_press_event_t *event) {
         }
     }
 
-    char *json_result = parse_cmd(bind->command);
+    char *json_result = parse_command(bind->command);
     FREE(json_result);
     return;
 }

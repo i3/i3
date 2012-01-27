@@ -11,7 +11,6 @@
 #include <stdarg.h>
 
 #include "all.h"
-#include "cmdparse.tab.h"
 
 /** When the command did not include match criteria (!), we use the currently
  * focused command. Do not confuse this case with a command which included
@@ -61,113 +60,9 @@ static Output *get_output_from_string(Output *current_output, const char *output
     return output;
 }
 
-/*******************************************************************************
- * Helper functions for the migration testing. We let the new parser call every
- * function here and save the stack (current_match plus all parameters. Then we
- * let the old parser call every function and actually execute the code. When
- * there are differences between the first and the second invocation (or if
- * there has not been a first invocation at all), we generate an error.
- ******************************************************************************/
-
-static bool migration_test = false;
-typedef struct stackframe {
-    Match match;
-    int n_args;
-    char *args[10];
-    TAILQ_ENTRY(stackframe) stackframes;
-} stackframe;
-static TAILQ_HEAD(stackframes_head, stackframe) old_stackframes =
-  TAILQ_HEAD_INITIALIZER(old_stackframes);
-static struct stackframes_head new_stackframes =
-  TAILQ_HEAD_INITIALIZER(new_stackframes);
-/* We use this char* to uniquely terminate the list of parameters to save. */
-static char *last_parameter = "0";
-
-void cmd_MIGRATION_enable() {
-    migration_test = true;
-    /* clear the current stack */
-    while (!TAILQ_EMPTY(&old_stackframes)) {
-        stackframe *current = TAILQ_FIRST(&old_stackframes);
-        for (int c = 0; c < current->n_args; c++)
-            if (current->args[c])
-                free(current->args[c]);
-        TAILQ_REMOVE(&old_stackframes, current, stackframes);
-        free(current);
-    }
-    while (!TAILQ_EMPTY(&new_stackframes)) {
-        stackframe *current = TAILQ_FIRST(&new_stackframes);
-        for (int c = 0; c < current->n_args; c++)
-            if (current->args[c])
-                free(current->args[c]);
-        TAILQ_REMOVE(&new_stackframes, current, stackframes);
-        free(current);
-    }
-}
-
-void cmd_MIGRATION_disable() {
-    migration_test = false;
-}
-
-void cmd_MIGRATION_save_new_parameters(Match *current_match, ...) {
-    va_list args;
-
-    DLOG("saving parameters.\n");
-    stackframe *frame = scalloc(sizeof(stackframe));
-    match_copy(&(frame->match), current_match);
-
-    /* All parameters are char*s */
-    va_start(args, current_match);
-    while (true) {
-        char *parameter = va_arg(args, char*);
-        if (parameter == last_parameter)
-            break;
-        DLOG("parameter = %s\n", parameter);
-        if (parameter)
-            frame->args[frame->n_args] = sstrdup(parameter);
-        frame->n_args++;
-    }
-    va_end(args);
-
-    TAILQ_INSERT_TAIL(&new_stackframes, frame, stackframes);
-}
-
-void cmd_MIGRATION_save_old_parameters(Match *current_match, ...) {
-    va_list args;
-
-    DLOG("saving new parameters.\n");
-    stackframe *frame = scalloc(sizeof(stackframe));
-    match_copy(&(frame->match), current_match);
-
-    /* All parameters are char*s */
-    va_start(args, current_match);
-    while (true) {
-        char *parameter = va_arg(args, char*);
-        if (parameter == last_parameter)
-            break;
-        DLOG("parameter = %s\n", parameter);
-        if (parameter)
-            frame->args[frame->n_args] = sstrdup(parameter);
-        frame->n_args++;
-    }
-    va_end(args);
-
-    TAILQ_INSERT_TAIL(&old_stackframes, frame, stackframes);
-}
-
-static bool re_differ(struct regex *new, struct regex *old) {
-    return ((new == NULL && old != NULL) ||
-        (new != NULL && old == NULL) ||
-        (new != NULL && old != NULL &&
-         strcmp(new->pattern, old->pattern) != 0));
-}
-
-static bool str_differ(char *new, char *old) {
-    return ((new == NULL && old != NULL) ||
-        (new != NULL && old == NULL) ||
-        (new != NULL && old != NULL &&
-         strcmp(new, old) != 0));
-}
-
+// This code is commented out because we might recycle it for popping up error
+// messages on parser errors.
+#if 0
 static pid_t migration_pid = -1;
 
 /*
@@ -259,69 +154,7 @@ void cmd_MIGRATION_start_nagbar() {
 #endif
 }
 
-void cmd_MIGRATION_validate() {
-    DLOG("validating the different stacks now\n");
-    int old_count = 0;
-    int new_count = 0;
-    stackframe *current;
-    TAILQ_FOREACH(current, &new_stackframes, stackframes)
-        new_count++;
-    TAILQ_FOREACH(current, &old_stackframes, stackframes)
-        old_count++;
-    if (new_count != old_count) {
-        ELOG("FAILED, new_count == %d != old_count == %d\n", new_count, old_count);
-        cmd_MIGRATION_start_nagbar();
-        return;
-    }
-    DLOG("parameter count matching, comparing one by one...\n");
-
-    stackframe *new_frame = TAILQ_FIRST(&new_stackframes),
-               *old_frame = TAILQ_FIRST(&old_stackframes);
-    for (int i = 0; i < new_count; i++) {
-        if (new_frame->match.dock != old_frame->match.dock ||
-            new_frame->match.id != old_frame->match.id ||
-            new_frame->match.con_id != old_frame->match.con_id ||
-            new_frame->match.floating != old_frame->match.floating ||
-            new_frame->match.insert_where != old_frame->match.insert_where ||
-            re_differ(new_frame->match.title, old_frame->match.title)  ||
-            re_differ(new_frame->match.application, old_frame->match.application)  ||
-            re_differ(new_frame->match.class, old_frame->match.class)  ||
-            re_differ(new_frame->match.instance, old_frame->match.instance)  ||
-            re_differ(new_frame->match.mark, old_frame->match.mark)  ||
-            re_differ(new_frame->match.role, old_frame->match.role) ) {
-            ELOG("FAILED, new_frame->match != old_frame->match (frame %d)\n", i);
-            cmd_MIGRATION_start_nagbar();
-            return;
-        }
-        if (new_frame->n_args != old_frame->n_args) {
-            ELOG("FAILED, new_frame->n_args == %d != old_frame->n_args == %d (frame %d)\n",
-                 new_frame->n_args, old_frame->n_args, i);
-            cmd_MIGRATION_start_nagbar();
-            return;
-        }
-        for (int j = 0; j < new_frame->n_args; j++) {
-            if (str_differ(new_frame->args[j], old_frame->args[j])) {
-                ELOG("FAILED, new_frame->args[%d] == %s != old_frame->args[%d] == %s (frame %d)\n",
-                     j, new_frame->args[j], j, old_frame->args[j], i);
-                cmd_MIGRATION_start_nagbar();
-                return;
-            }
-        }
-        new_frame = TAILQ_NEXT(new_frame, stackframes);
-        old_frame = TAILQ_NEXT(old_frame, stackframes);
-    }
-    DLOG("OK\n");
-}
-
-#define MIGRATION_init(x, ...) do { \
-    if (migration_test) { \
-        cmd_MIGRATION_save_new_parameters(current_match, __FUNCTION__, ##__VA_ARGS__ , last_parameter); \
-        return NULL; \
-    } else { \
-        cmd_MIGRATION_save_old_parameters(current_match, __FUNCTION__, ##__VA_ARGS__ , last_parameter); \
-    } \
-} while (0)
-
+#endif
 
 /*******************************************************************************
  * Criteria functions.
@@ -352,13 +185,6 @@ char *cmd_criteria_init(Match *current_match) {
 
 char *cmd_criteria_match_windows(Match *current_match) {
     owindow *next, *current;
-
-    /* The same as MIGRATION_init, but doesn’t return */
-    if (migration_test) {
-        cmd_MIGRATION_save_new_parameters(current_match, __FUNCTION__, last_parameter);
-    } else {
-        cmd_MIGRATION_save_old_parameters(current_match, __FUNCTION__, last_parameter);
-    }
 
     DLOG("match specification finished, matching...\n");
     /* copy the old list head to iterate through it and start with a fresh
@@ -404,13 +230,6 @@ char *cmd_criteria_match_windows(Match *current_match) {
 }
 
 char *cmd_criteria_add(Match *current_match, char *ctype, char *cvalue) {
-    /* The same as MIGRATION_init, but doesn’t return */
-    if (migration_test) {
-        cmd_MIGRATION_save_new_parameters(current_match, __FUNCTION__, last_parameter);
-    } else {
-        cmd_MIGRATION_save_old_parameters(current_match, __FUNCTION__, last_parameter);
-    }
-
     DLOG("ctype=*%s*, cvalue=*%s*\n", ctype, cvalue);
 
     if (strcmp(ctype, "class") == 0) {
@@ -477,8 +296,6 @@ char *cmd_criteria_add(Match *current_match, char *ctype, char *cvalue) {
 char *cmd_move_con_to_workspace(Match *current_match, char *which) {
     owindow *current;
 
-    MIGRATION_init(x, which);
-
     DLOG("which=%s\n", which);
 
     HANDLE_EMPTY_MATCH;
@@ -510,8 +327,6 @@ char *cmd_move_con_to_workspace(Match *current_match, char *which) {
 }
 
 char *cmd_move_con_to_workspace_name(Match *current_match, char *name) {
-    MIGRATION_init(x, name);
-
     if (strncasecmp(name, "__i3_", strlen("__i3_")) == 0) {
         LOG("You cannot switch to the i3 internal workspaces.\n");
         return sstrdup("{\"sucess\": false}");
@@ -542,7 +357,6 @@ char *cmd_move_con_to_workspace_name(Match *current_match, char *name) {
 }
 
 char *cmd_resize(Match *current_match, char *way, char *direction, char *resize_px, char *resize_ppt) {
-    MIGRATION_init(x, way, direction, resize_px, resize_ppt);
     /* resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt] */
     DLOG("resizing in way %s, direction %s, px %s or ppt %s\n", way, direction, resize_px, resize_ppt);
     // TODO: We could either handle this in the parser itself as a separate token (and make the stack typed) or we need a better way to convert a string to a number with error checking
@@ -641,7 +455,6 @@ char *cmd_resize(Match *current_match, char *way, char *direction, char *resize_
 }
 
 char *cmd_border(Match *current_match, char *border_style_str) {
-    MIGRATION_init(x, border_style_str);
     DLOG("border style should be changed to %s\n", border_style_str);
     owindow *current;
 
@@ -675,7 +488,6 @@ char *cmd_border(Match *current_match, char *border_style_str) {
 }
 
 char *cmd_nop(Match *current_match, char *comment) {
-    MIGRATION_init(x, comment);
     LOG("-------------------------------------------------\n");
     LOG("  NOP: %s\n", comment);
     LOG("-------------------------------------------------\n");
@@ -684,7 +496,6 @@ char *cmd_nop(Match *current_match, char *comment) {
 }
 
 char *cmd_append_layout(Match *current_match, char *path) {
-    MIGRATION_init(x, path);
     LOG("Appending layout \"%s\"\n", path);
     tree_append_json(path);
     tree_render();
@@ -694,7 +505,6 @@ char *cmd_append_layout(Match *current_match, char *path) {
 }
 
 char *cmd_workspace(Match *current_match, char *which) {
-    MIGRATION_init(x, which);
     Con *ws;
 
     DLOG("which=%s\n", which);
@@ -720,7 +530,6 @@ char *cmd_workspace(Match *current_match, char *which) {
 }
 
 char *cmd_workspace_back_and_forth(Match *current_match) {
-    MIGRATION_init(x);
     workspace_back_and_forth();
     tree_render();
 
@@ -729,7 +538,6 @@ char *cmd_workspace_back_and_forth(Match *current_match) {
 }
 
 char *cmd_workspace_name(Match *current_match, char *name) {
-    MIGRATION_init(x, name);
     if (strncasecmp(name, "__i3_", strlen("__i3_")) == 0) {
         LOG("You cannot switch to the i3 internal workspaces.\n");
         return sstrdup("{\"sucess\": false}");
@@ -758,7 +566,6 @@ char *cmd_workspace_name(Match *current_match, char *name) {
 }
 
 char *cmd_mark(Match *current_match, char *mark) {
-    MIGRATION_init(x, mark);
     DLOG("Clearing all windows which have that mark first\n");
 
     Con *con;
@@ -784,7 +591,6 @@ char *cmd_mark(Match *current_match, char *mark) {
 }
 
 char *cmd_mode(Match *current_match, char *mode) {
-    MIGRATION_init(x, mode);
     DLOG("mode=%s\n", mode);
     switch_mode(mode);
 
@@ -793,7 +599,6 @@ char *cmd_mode(Match *current_match, char *mode) {
 }
 
 char *cmd_move_con_to_output(Match *current_match, char *name) {
-    MIGRATION_init(x, name);
     owindow *current;
 
     DLOG("should move window to output %s\n", name);
@@ -845,7 +650,6 @@ char *cmd_move_con_to_output(Match *current_match, char *name) {
 }
 
 char *cmd_floating(Match *current_match, char *floating_mode) {
-    MIGRATION_init(x, floating_mode);
     owindow *current;
 
     DLOG("floating_mode=%s\n", floating_mode);
@@ -874,7 +678,6 @@ char *cmd_floating(Match *current_match, char *floating_mode) {
 }
 
 char *cmd_move_workspace_to_output(Match *current_match, char *name) {
-    MIGRATION_init(x, name);
     DLOG("should move workspace to output %s\n", name);
 
     HANDLE_EMPTY_MATCH;
@@ -923,7 +726,6 @@ char *cmd_move_workspace_to_output(Match *current_match, char *name) {
 }
 
 char *cmd_split(Match *current_match, char *direction) {
-    MIGRATION_init(x, direction);
     /* TODO: use matches */
     LOG("splitting in direction %c\n", direction[0]);
     tree_split(focused, (direction[0] == 'v' ? VERT : HORIZ));
@@ -937,7 +739,6 @@ char *cmd_split(Match *current_match, char *direction) {
 char *cmd_kill(Match *current_match, char *kill_mode_str) {
     if (kill_mode_str == NULL)
         kill_mode_str = "window";
-    MIGRATION_init(x, kill_mode_str);
     owindow *current;
 
     DLOG("kill_mode=%s\n", kill_mode_str);
@@ -969,7 +770,6 @@ char *cmd_kill(Match *current_match, char *kill_mode_str) {
 }
 
 char *cmd_exec(Match *current_match, char *nosn, char *command) {
-    MIGRATION_init(x, nosn, command);
     bool no_startup_id = (nosn != NULL);
 
     DLOG("should execute %s, no_startup_id = %d\n", command, no_startup_id);
@@ -980,7 +780,6 @@ char *cmd_exec(Match *current_match, char *nosn, char *command) {
 }
 
 char *cmd_focus_direction(Match *current_match, char *direction) {
-    MIGRATION_init(x, direction);
     if (focused &&
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
@@ -1010,7 +809,6 @@ char *cmd_focus_direction(Match *current_match, char *direction) {
 }
 
 char *cmd_focus_window_mode(Match *current_match, char *window_mode) {
-    MIGRATION_init(x, window_mode);
     if (focused &&
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
@@ -1046,7 +844,6 @@ char *cmd_focus_window_mode(Match *current_match, char *window_mode) {
 }
 
 char *cmd_focus_level(Match *current_match, char *level) {
-    MIGRATION_init(x, level);
     if (focused &&
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
@@ -1067,7 +864,6 @@ char *cmd_focus_level(Match *current_match, char *level) {
 }
 
 char *cmd_focus(Match *current_match) {
-    MIGRATION_init(x);
     DLOG("current_match = %p\n", current_match);
     if (focused &&
         focused->type != CT_WORKSPACE &&
@@ -1132,7 +928,6 @@ char *cmd_focus(Match *current_match) {
 char *cmd_fullscreen(Match *current_match, char *fullscreen_mode) {
     if (fullscreen_mode == NULL)
         fullscreen_mode = "output";
-    MIGRATION_init(x, fullscreen_mode);
     DLOG("toggling fullscreen, mode = %s\n", fullscreen_mode);
     owindow *current;
 
@@ -1150,7 +945,6 @@ char *cmd_fullscreen(Match *current_match, char *fullscreen_mode) {
 }
 
 char *cmd_move_direction(Match *current_match, char *direction, char *move_px) {
-    MIGRATION_init(x, direction, move_px);
     // TODO: We could either handle this in the parser itself as a separate token (and make the stack typed) or we need a better way to convert a string to a number with error checking
     int px = atoi(move_px);
 
@@ -1170,10 +964,10 @@ char *cmd_move_direction(Match *current_match, char *direction, char *move_px) {
         }
         floating_reposition(focused->parent, newrect);
     } else {
-        tree_move((strcmp(direction, "right") == 0 ? TOK_RIGHT :
-                   (strcmp(direction, "left") == 0 ? TOK_LEFT :
-                    (strcmp(direction, "up") == 0 ? TOK_UP :
-                     TOK_DOWN))));
+        tree_move((strcmp(direction, "right") == 0 ? D_RIGHT :
+                   (strcmp(direction, "left") == 0 ? D_LEFT :
+                    (strcmp(direction, "up") == 0 ? D_UP :
+                     D_DOWN))));
         tree_render();
     }
 
@@ -1185,7 +979,6 @@ char *cmd_move_direction(Match *current_match, char *direction, char *move_px) {
 char *cmd_layout(Match *current_match, char *layout_str) {
     if (strcmp(layout_str, "stacking") == 0)
         layout_str = "stacked";
-    MIGRATION_init(x, layout_str);
     DLOG("changing layout to %s\n", layout_str);
     owindow *current;
     int layout = (strcmp(layout_str, "default") == 0 ? L_DEFAULT :
@@ -1209,7 +1002,6 @@ char *cmd_layout(Match *current_match, char *layout_str) {
 }
 
 char *cmd_exit(Match *current_match) {
-    MIGRATION_init(x);
     LOG("Exiting due to user command.\n");
     exit(0);
 
@@ -1217,7 +1009,6 @@ char *cmd_exit(Match *current_match) {
 }
 
 char *cmd_reload(Match *current_match) {
-    MIGRATION_init(x);
     LOG("reloading\n");
     kill_configerror_nagbar(false);
     load_configuration(conn, NULL, true);
@@ -1230,7 +1021,6 @@ char *cmd_reload(Match *current_match) {
 }
 
 char *cmd_restart(Match *current_match) {
-    MIGRATION_init(x);
     LOG("restarting i3\n");
     i3_restart(false);
 
@@ -1239,7 +1029,6 @@ char *cmd_restart(Match *current_match) {
 }
 
 char *cmd_open(Match *current_match) {
-    MIGRATION_init(x);
     LOG("opening new container\n");
     Con *con = tree_open_con(NULL, NULL);
     con_focus(con);
@@ -1252,7 +1041,6 @@ char *cmd_open(Match *current_match) {
 }
 
 char *cmd_focus_output(Match *current_match, char *name) {
-    MIGRATION_init(x, name);
     owindow *current;
 
     DLOG("name = %s\n", name);
@@ -1288,7 +1076,6 @@ char *cmd_focus_output(Match *current_match, char *name) {
 }
 
 char *cmd_move_scratchpad(Match *current_match) {
-    MIGRATION_init(x);
     DLOG("should move window to scratchpad\n");
     owindow *current;
 
@@ -1306,7 +1093,6 @@ char *cmd_move_scratchpad(Match *current_match) {
 }
 
 char *cmd_scratchpad_show(Match *current_match) {
-    MIGRATION_init(x);
     DLOG("should show scratchpad window\n");
     owindow *current;
 
