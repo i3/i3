@@ -1,3 +1,9 @@
+i3-wm (4.1.2-2) unstable; urgency=low
+
+  * Rebuild against libyajl and libxcb from unstable
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Fri, 27 Jan 2012 19:50:29 +0000
+
 i3-wm (4.1.2-1) unstable; urgency=low
 
   * Bugfix: Don’t lose focus on fullscreen windows when another window gets
