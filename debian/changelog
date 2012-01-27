@@ -1,8 +1,26 @@
-i3-wm (4.1.2-0) unstable; urgency=low
+i3-wm (4.1.3-0) unstable; urgency=low
 
   * NOT YET RELEASED
 
- -- Michael Stapelberg <michael@stapelberg.de>  Sat, 24 Dec 2011 16:29:16 +0100
+ -- Michael Stapelberg <michael@stapelberg.de>  Fri, 27 Jan 2012 19:34:11 +0000
+
+i3-wm (4.1.2-1) unstable; urgency=low
+
+  * Bugfix: Don’t lose focus on fullscreen windows when another window gets
+    moved to that workspace
+  * Bugfix: Open new windows in the correct place when assignments match
+  * Bugfix: Fix assignments of floating windows to (yet) unused workspaces
+  * Bugfix: Either use SetInputFocus *or* send WM_TAKE_FOCUS, not both
+  * Bugfix: Respect WM_HINTS.input for WM_TAKE_FOCUS clients
+  * Bugfix: Setup the _NET_SUPPORTING_WM_CHECK atom in a standards-compliant
+    way
+  * Bugfix: Only ignore EnterNotify events after UnmapNotifies from managed
+    windows
+  * Bugfix: Force a new sequence number after UnmapNotify
+  * Bugfix: Position floating windows exactly where their geometry specified
+  * Bugfix: Fix coordinates when the rect of an output changes
+
+ -- Michael Stapelberg <michael@stapelberg.de>  Fri, 27 Jan 2012 19:04:28 +0000
 
 i3-wm (4.1.1-1) unstable; urgency=low
 
