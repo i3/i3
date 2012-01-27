@@ -328,13 +328,20 @@ void cmd_MIGRATION_validate() {
  ******************************************************************************/
 
 char *cmd_criteria_init(Match *current_match) {
+    Con *con;
+    owindow *ow;
+
     DLOG("Initializing criteria, current_match = %p\n", current_match);
     match_init(current_match);
+    while (!TAILQ_EMPTY(&owindows)) {
+        ow = TAILQ_FIRST(&owindows);
+        TAILQ_REMOVE(&owindows, ow, owindows);
+        free(ow);
+    }
     TAILQ_INIT(&owindows);
     /* copy all_cons */
-    Con *con;
     TAILQ_FOREACH(con, &all_cons, all_cons) {
-        owindow *ow = smalloc(sizeof(owindow));
+        ow = smalloc(sizeof(owindow));
         ow->con = con;
         TAILQ_INSERT_TAIL(&owindows, ow, owindows);
     }
