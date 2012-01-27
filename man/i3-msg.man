@@ -1,7 +1,7 @@
 i3-msg(1)
 =========
 Michael Stapelberg <michael+i3@stapelberg.de>
-v3.delta, November 2009
+v4.2, January 2012
 
 == NAME
 
@@ -9,19 +9,52 @@ i3-msg - send messages to i3 window manager
 
 == SYNOPSIS
 
-i3-msg "message"
+i3-msg [-t type] [message]
+
+== IPC MESSAGE TYPES
+
+command::
+The payload of the message is a command for i3 (like the commands you can bind
+to keys in the configuration file) and will be executed directly after
+receiving it.
+
+get_workspaces::
+Gets the current workspaces. The reply will be a JSON-encoded list of
+workspaces.
+
+get_outputs::
+Gets the current outputs. The reply will be a JSON-encoded list of outputs (see
+the reply section).
+
+get_tree::
+Gets the layout tree. i3 uses a tree as data structure which includes every
+container. The reply will be the JSON-encoded tree.
+
+get_marks::
+Gets a list of marks (identifiers for containers to easily jump to them later).
+The reply will be a JSON-encoded list of window marks.
+
+get_bar_config::
+Gets the configuration (as JSON map) of the workspace bar with the given ID. If
+no ID is provided, an array with all configured bar IDs is returned instead.
+
 
 == DESCRIPTION
 
 i3-msg is a sample implementation for a client using the unix socket IPC
-interface to i3. At the moment, it can only be used for sending commands
-(like in configuration file for key bindings), but this may change in the
-future (staying backwards-compatible, of course).
+interface to i3.
 
-== EXAMPLE
+== EXAMPLES
 
 ------------------------------------------------
-i3-msg "bp" # Use 1-px border for current client
+# Use 1-px border for current client
+i3-msg "border 1pixel"
+
+# You can leave out the quotes
+i3-msg border normal
+
+# Dump the layout tree
+i3-msg -t get_tree
 ------------------------------------------------
 
 == ENVIRONMENT
