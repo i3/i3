@@ -31,7 +31,6 @@
 #include <stdint.h>
 
 #include "all.h"
-#include "queue.h"
 
 /*******************************************************************************
  * The data structures used for parsing. Essentially the current state and a
@@ -233,7 +232,7 @@ char *parse_command(const char *input) {
                 if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
                     DLOG("found literal, moving to next state\n");
                     if (token->identifier != NULL)
-                        push_string(token->identifier, strdup(token->name + 1));
+                        push_string(token->identifier, sstrdup(token->name + 1));
                     walk += strlen(token->name) - 1;
                     next_state(token);
                     token_handled = true;
@@ -274,7 +273,7 @@ char *parse_command(const char *input) {
                     }
                 }
                 if (walk != beginning) {
-                    char *str = calloc(walk-beginning + 1, 1);
+                    char *str = scalloc(walk-beginning + 1);
                     strncpy(str, beginning, walk-beginning);
                     if (token->identifier)
                         push_string(token->identifier, str);
@@ -321,7 +320,7 @@ char *parse_command(const char *input) {
              * full input, and underline the position where the parser
              * currently is. */
             char *errormessage;
-            char *possible_tokens = malloc(tokenlen + 1);
+            char *possible_tokens = smalloc(tokenlen + 1);
             char *tokenwalk = possible_tokens;
             for (c = 0; c < ptr->n; c++) {
                 token = &(ptr->array[c]);
@@ -346,13 +345,13 @@ char *parse_command(const char *input) {
                 }
             }
             *tokenwalk = '\0';
-            asprintf(&errormessage, "Expected one of these tokens: %s",
-                     possible_tokens);
+            sasprintf(&errormessage, "Expected one of these tokens: %s",
+                      possible_tokens);
             free(possible_tokens);
 
             /* Contains the same amount of characters as 'input' has, but with
              * the unparseable part highlighted using ^ characters. */
-            char *position = malloc(len + 1);
+            char *position = smalloc(len + 1);
             for (const char *copywalk = input; *copywalk != '\0'; copywalk++)
                 position[(copywalk - input)] = (copywalk >= walk ? '^' : ' ');
             position[len] = '\0';
