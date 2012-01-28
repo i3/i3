@@ -764,6 +764,12 @@ void randr_query_outputs() {
                 Con *old_content = output_get_content(output->con);
                 while (!TAILQ_EMPTY(&(old_content->nodes_head))) {
                     current = TAILQ_FIRST(&(old_content->nodes_head));
+                    if (current != next && TAILQ_EMPTY(&(current->focus_head))) {
+                        /* the workspace is empty and not focused, get rid of it */
+                        DLOG("Getting rid of current = %p / %s (empty, unfocused)\n", current, current->name);
+                        tree_close(current, DONT_KILL_WINDOW, false, false);
+                        continue;
+                    }
                     DLOG("Detaching current = %p / %s\n", current, current->name);
                     con_detach(current);
                     DLOG("Re-attaching current = %p / %s\n", current, current->name);
