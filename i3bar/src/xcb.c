@@ -1421,7 +1421,7 @@ void draw_bars() {
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
             draw_text((char*)ws_walk->ucs2_name, ws_walk->name_glyphs, true,
                     outputs_walk->buffer, outputs_walk->bargc, i + 6, 2, ws_walk->name_width);
-            i += 12 + ws_walk->name_width;
+            i += 11 + ws_walk->name_width;
         }
 
         i = 0;
