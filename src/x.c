@@ -90,15 +90,28 @@ void x_con_init(Con *con) {
      * get the initial geometry right */
 
     uint32_t mask = 0;
-    uint32_t values[2];
+    uint32_t values[5];
+
+    /* We explicitly set a background color and border color (even though we
+     * don’t even have a border) because the X11 server requires us to when
+     * using 32 bit color depths, see
+     * http://stackoverflow.com/questions/3645632 */
+    mask |= XCB_CW_BACK_PIXEL;
+    values[0] = root_screen->black_pixel;
+
+    mask |= XCB_CW_BORDER_PIXEL;
+    values[1] = root_screen->black_pixel;
 
     /* our own frames should not be managed */
     mask |= XCB_CW_OVERRIDE_REDIRECT;
-    values[0] = 1;
+    values[2] = 1;
 
     /* see include/xcb.h for the FRAME_EVENT_MASK */
     mask |= XCB_CW_EVENT_MASK;
-    values[1] = FRAME_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
+    values[3] = FRAME_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
+
+    mask |= XCB_CW_COLORMAP;
+    values[4] = colormap;
 
     Rect dims = { -15, -15, 10, 10 };
     con->frame = create_window(conn, dims, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);

@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
 #include <stdlib.h>
@@ -32,5 +32,7 @@ uint32_t get_colorpixel(const char *hex) {
     uint8_t g = strtol(strgroups[1], NULL, 16);
     uint8_t b = strtol(strgroups[2], NULL, 16);
 
-    return (r << 16 | g << 8 | b);
+    /* We set the first 8 bits high to have 100% opacity in case of a 32 bit
+     * color depth visual. */
+    return (0xFF << 24) | (r << 16 | g << 8 | b);
 }

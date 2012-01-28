@@ -20,8 +20,17 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
         enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values) {
     xcb_window_t result = xcb_generate_id(conn);
 
-    /* If the window class is XCB_WINDOW_CLASS_INPUT_ONLY, depth has to be 0 */
-    uint16_t depth = (window_class == XCB_WINDOW_CLASS_INPUT_ONLY ? 0 : XCB_COPY_FROM_PARENT);
+    /* By default, the color depth determined in src/main.c is used (32 bit if
+     * available, otherwise the X11 root window’s default depth). */
+    uint16_t depth = root_depth;
+    xcb_visualid_t visual = visual_id;
+
+    /* If the window class is XCB_WINDOW_CLASS_INPUT_ONLY, we copy depth and
+     * visual id from the parent window. */
+    if (window_class == XCB_WINDOW_CLASS_INPUT_ONLY) {
+        depth = XCB_COPY_FROM_PARENT;
+        visual = XCB_COPY_FROM_PARENT;
+    }
 
     xcb_create_window(conn,
             depth,
@@ -30,7 +39,7 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_cl
             dims.x, dims.y, dims.width, dims.height, /* dimensions */
             0, /* border = 0, we draw our own */
             window_class,
-            XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
+            visual,
             mask,
             values);
 
