@@ -363,17 +363,24 @@ static void handle_client_message(xcb_client_message_event_t* event) {
             bool map_it = true;
             int xe_version = 1;
             xcb_get_property_cookie_t xembedc;
-            xembedc = xcb_get_property_unchecked(xcb_connection,
-                                                 0,
-                                                 client,
-                                                 atoms[_XEMBED_INFO],
-                                                 XCB_GET_PROPERTY_TYPE_ANY,
-                                                 0,
-                                                 2 * 32);
+            xcb_generic_error_t *error;
+            xembedc = xcb_get_property(xcb_connection,
+                                       0,
+                                       client,
+                                       atoms[_XEMBED_INFO],
+                                       XCB_GET_PROPERTY_TYPE_ANY,
+                                       0,
+                                       2 * 32);
 
             xcb_get_property_reply_t *xembedr = xcb_get_property_reply(xcb_connection,
                                                                        xembedc,
-                                                                       NULL);
+                                                                       &error);
+            if (error != NULL) {
+                ELOG("Error getting _XEMBED_INFO property: error_code %d\n",
+                     error->error_code);
+                free(error);
+                return;
+            }
             if (xembedr != NULL && xembedr->length != 0) {
                 DLOG("xembed format = %d, len = %d\n", xembedr->format, xembedr->length);
                 uint32_t *xembed = xcb_get_property_value(xembedr);
