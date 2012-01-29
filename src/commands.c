@@ -822,6 +822,7 @@ char *cmd_move_workspace_to_output(Match *current_match, char *name) {
             ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
         }
 
+        /* detach from the old output and attach to the new output */
         bool workspace_was_visible = workspace_is_visible(ws);
         Con *old_content = ws->parent;
         con_detach(ws);
@@ -833,6 +834,12 @@ char *cmd_move_workspace_to_output(Match *current_match, char *name) {
             workspace_show(focus_ws);
         }
         con_attach(ws, content, false);
+
+        /* fix the coordinates of the floating containers */
+        Con *floating_con;
+        TAILQ_FOREACH(floating_con, &(ws->floating_head), floating_windows)
+            floating_fix_coordinates(floating_con, &(old_content->rect), &(content->rect));
+
         ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"move\"}");
         if (workspace_was_visible) {
             /* Focus the moved workspace on the destination output. */
