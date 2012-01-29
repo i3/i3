@@ -267,10 +267,10 @@ void handle_button(xcb_button_press_event_t *event) {
              * and set cur_ws accordingly */
             TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
                 DLOG("x = %d\n", x);
-                if (x < cur_ws->name_width + 12) {
+                if (x >= 1 && x <= cur_ws->name_width + 9) {
                     break;
                 }
-                x -= cur_ws->name_width + 12;
+                x -= cur_ws->name_width + 10;
             }
             if (cur_ws == NULL) {
                 return;
@@ -1379,7 +1379,7 @@ void draw_bars() {
 
         i3_ws *ws_walk;
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
-            DLOG("Drawing Button for WS %s at x = %d\n", ws_walk->name, i);
+            DLOG("Drawing Button for WS %s at x = %d, len = %d\n", ws_walk->name, i, ws_walk->name_width);
             uint32_t fg_color = colors.inactive_ws_fg;
             uint32_t bg_color = colors.inactive_ws_bg;
             uint32_t border_color = colors.inactive_ws_border;
@@ -1408,7 +1408,7 @@ void draw_bars() {
                           outputs_walk->bargc,
                           mask,
                           vals_border);
-            xcb_rectangle_t rect_border = { i + 1, 0, ws_walk->name_width + 10, font.height + 4 };
+            xcb_rectangle_t rect_border = { i + 1, 0, ws_walk->name_width + 9, font.height + 4 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1419,7 +1419,7 @@ void draw_bars() {
                           outputs_walk->bargc,
                           mask,
                           vals);
-            xcb_rectangle_t rect = { i + 2, 1, ws_walk->name_width + 8, font.height + 2 };
+            xcb_rectangle_t rect = { i + 2, 1, ws_walk->name_width + 7, font.height + 2 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1428,7 +1428,7 @@ void draw_bars() {
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
             draw_text((char*)ws_walk->ucs2_name, ws_walk->name_glyphs, true,
                     outputs_walk->buffer, outputs_walk->bargc, i + 6, 2, ws_walk->name_width);
-            i += 11 + ws_walk->name_width;
+            i += 10 + ws_walk->name_width;
         }
 
         i = 0;
