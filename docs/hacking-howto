@@ -936,6 +936,11 @@ Without much ado, here is the list of cases which need to be considered:
   leads to code which looks like it works fine but which does not work under
   certain conditions.
 
+* Forgetting to call `floating_fix_coordinates(con, old_rect, new_rect)` after
+  moving workspaces across outputs. Coordinates for floating containers are
+  not relative to workspace boundaries, so you must correct their coordinates
+  or those containers will show up in the wrong workspace or not at all.
+
 == Using git / sending patches
 
 For a short introduction into using git, see
