@@ -758,7 +758,8 @@ void randr_query_outputs() {
                     DLOG("next = %p\n", next);
                 }
 
-                /* 2: iterate through workspaces and re-assign them */
+                /* 2: iterate through workspaces and re-assign them, fixing the coordinates
+                 * of floating containers as we go */
                 Con *current;
                 Con *old_content = output_get_content(output->con);
                 while (!TAILQ_EMPTY(&(old_content->nodes_head))) {
@@ -767,6 +768,10 @@ void randr_query_outputs() {
                     con_detach(current);
                     DLOG("Re-attaching current = %p / %s\n", current, current->name);
                     con_attach(current, first_content, false);
+                    DLOG("Fixing the coordinates of floating containers\n");
+                    Con *floating_con;
+                    TAILQ_FOREACH(floating_con, &(current->floating_head), floating_windows)
+                        floating_fix_coordinates(floating_con, &(old_content->rect), &(first_content->rect));
                     DLOG("Done, next\n");
                 }
                 DLOG("re-attached all workspaces\n");
