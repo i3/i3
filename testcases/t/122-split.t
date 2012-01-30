@@ -89,4 +89,25 @@ cmd 'split v';
 my $count = sum_nodes(\@content);
 is($count, $old_count, 'not more windows after splitting again');
 
+######################################################################
+# In the special case of being inside a stacked or tabbed container, we don’t
+# want this to happen.
+######################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'open';
+@content = @{get_ws_content($tmp)};
+is(scalar @content, 1, 'Precisely one container on this ws');
+cmd 'layout stacked';
+@content = @{get_ws_content($tmp)};
+is(scalar @content, 1, 'Still one container on this ws');
+is(scalar @{$content[0]->{nodes}}, 1, 'Stacked con has one child node');
+
+cmd 'split h';
+cmd 'open';
+@content = @{get_ws_content($tmp)};
+is(scalar @content, 1, 'Still one container on this ws');
+is(scalar @{$content[0]->{nodes}}, 1, 'Stacked con still has one child node');
+
 done_testing;
