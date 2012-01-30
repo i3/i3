@@ -274,7 +274,18 @@ char *parse_command(const char *input) {
                 }
                 if (walk != beginning) {
                     char *str = scalloc(walk-beginning + 1);
-                    strncpy(str, beginning, walk-beginning);
+                    /* We copy manually to handle escaping of characters. */
+                    int inpos, outpos;
+                    for (inpos = 0, outpos = 0;
+                         inpos < (walk-beginning);
+                         inpos++, outpos++) {
+                        /* We only handle escaped double quotes to not break
+                         * backwards compatibility with people using \w in
+                         * regular expressions etc. */
+                        if (beginning[inpos] == '\\' && beginning[inpos+1] == '"')
+                            inpos++;
+                        str[outpos] = beginning[inpos];
+                    }
                     if (token->identifier)
                         push_string(token->identifier, str);
                     DLOG("str is \"%s\"\n", str);

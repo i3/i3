@@ -157,4 +157,16 @@ is(parser_calls('move something to somewhere'),
    "                   ^^^^^^^^^^^^^^^^^^^^^^",
    'error for unknown literal ok');
 
+################################################################################
+# 3: Verify that escaping of double quotes works correctly
+################################################################################
+
+is(parser_calls('workspace "foo"'),
+   'cmd_workspace_name(foo)',
+   'Command with simple double quotes ok');
+
+is(parser_calls('workspace "foo \"bar"'),
+   'cmd_workspace_name(foo "bar)',
+   'Command with escaped double quotes ok');
+
 done_testing;
