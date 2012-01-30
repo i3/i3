@@ -237,7 +237,7 @@ static char *get_config_path(const char *override_configpath) {
 
     die("Unable to find the configuration file (looked at "
             "~/.i3/config, $XDG_CONFIG_HOME/i3/config, "
-            SYSCONFDIR "i3/config and $XDG_CONFIG_DIRS/i3/config)");
+            SYSCONFDIR "/i3/config and $XDG_CONFIG_DIRS/i3/config)");
 }
 
 /*
