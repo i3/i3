@@ -238,10 +238,9 @@ void floating_disable(Con *con, bool automatic) {
     /* con_fix_percent will adjust the percent value */
     con->percent = 0.0;
 
-    TAILQ_INSERT_TAIL(&(con->parent->nodes_head), con, nodes);
-    TAILQ_INSERT_TAIL(&(con->parent->focus_head), con, focused);
-
     con->floating = FLOATING_USER_OFF;
+
+    con_attach(con, con->parent, false);
 
     con_fix_percent(con->parent);
     // TODO: don’t influence focus handling when Con was not focused before.
