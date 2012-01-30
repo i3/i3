@@ -23,7 +23,7 @@ delete $ENV{XDG_RUNTIME_DIR};
 # See which files exist in /tmp before to not mistakenly check an already
 # existing tmpdir of another i3 instance.
 my @files_before = </tmp/i3-*>;
-my $pid = launch_with_config($config, dont_add_socket_path => 1);
+my $pid = launch_with_config($config, dont_add_socket_path => 1, dont_create_temp_dir => 1);
 my @files_after = </tmp/i3-*>;
 @files_after = grep { !($_ ~~ @files_before) } @files_after;
 
@@ -49,7 +49,7 @@ ok(! -e "$rtdir/i3", "$rtdir/i3 does not exist yet");
 
 $ENV{XDG_RUNTIME_DIR} = $rtdir;
 
-$pid = launch_with_config($config, dont_add_socket_path => 1);
+$pid = launch_with_config($config, dont_add_socket_path => 1, dont_create_temp_dir => 1);
 
 ok(-d "$rtdir/i3", "$rtdir/i3 exists and is a directory");
 $socketpath = "$rtdir/i3/ipc-socket." . $pid;
@@ -71,7 +71,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 ipc-socket $socketpath
 EOT
 
-$pid = launch_with_config($config, dont_add_socket_path => 1);
+$pid = launch_with_config($config, dont_add_socket_path => 1, dont_create_temp_dir => 1);
 
 ok(-S $socketpath, "file $socketpath exists and is a socket");
 

@@ -513,6 +513,8 @@ sub launch_with_config {
 
     $tmp_socket_path = "/tmp/nested-$ENV{DISPLAY}";
 
+    $args{dont_create_temp_dir} //= 0;
+
     my ($fh, $tmpfile) = tempfile("i3-cfg-for-$ENV{TESTNAME}-XXXXX", UNLINK => 1);
 
     if ($config ne '-default') {
@@ -540,6 +542,7 @@ sub launch_with_config {
         strace => $ENV{STRACE},
         restart => $ENV{RESTART},
         cv => $cv,
+        dont_create_temp_dir => $args{dont_create_temp_dir},
     );
 
     # force update of the cached socket path in lib/i3test
