@@ -199,12 +199,18 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         goto done;
     }
 
-    /* 2: focus this con */
+    /* 2: focus this con. If the workspace is on another output we need to
+     * do a workspace_show in order for i3bar (and others) to notice the
+     * change in workspace. */
+    Con *ws = con_get_workspace(con);
+    Con *focused_workspace = con_get_workspace(focused);
+
+    if (ws != focused_workspace)
+        workspace_show(ws);
     con_focus(con);
 
     /* 3: For floating containers, we also want to raise them on click.
      * We will skip handling events on floating cons in fullscreen mode */
-    Con *ws = con_get_workspace(con);
     Con *fs = (ws ? con_get_fullscreen_con(ws, CF_OUTPUT) : NULL);
     if (floatingcon != NULL && fs == NULL) {
         floating_raise_con(floatingcon);
