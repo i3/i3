@@ -439,6 +439,22 @@ void init_ws_for_output(Output *output, Con *content) {
             ws->name[strlen(ws->name)-1] = '\0';
         DLOG("trying name *%s*\n", ws->name);
 
+        /* Ensure that this workspace is not assigned to a different output —
+         * otherwise we would create it, then move it over to its output, then
+         * find a new workspace, etc… */
+        bool assigned = false;
+        TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+            if (strcmp(assignment->name, ws->name) != 0 ||
+                strcmp(assignment->output, output->name) == 0)
+                continue;
+
+            assigned = true;
+            break;
+        }
+
+        if (assigned)
+            continue;
+
         current = NULL;
         TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
             GREP_FIRST(current, output_get_content(out), !strcasecmp(child->name, ws->name));
