@@ -291,7 +291,8 @@ void tree_split(Con *con, orientation_t orientation) {
     /* if we are in a container whose parent contains only one
      * child (its split functionality is unused so far), we just change the
      * orientation (more intuitive than splitting again) */
-    if (con_num_children(parent) == 1) {
+    if (con_num_children(parent) == 1 &&
+        parent->layout == L_DEFAULT) {
         parent->orientation = orientation;
         DLOG("Just changing orientation of existing container\n");
         return;
