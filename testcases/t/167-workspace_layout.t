@@ -114,6 +114,24 @@ is($content[1]->{layout}, 'stacked', 'layout stacked');
 is(@content, 1, 'one con on target workspace');
 is($content[0]->{layout}, 'stacked', 'layout stacked');
 
+#####################################################################
+# 7: toggle floating mode and check that we have a stacked con when
+# re-inserting a floating container.
+#####################################################################
+
+$tmp = fresh_workspace;
+
+$first = open_window;
+cmd 'floating toggle';
+cmd 'floating toggle';
+
+$second = open_window;
+
+is($x->input_focus, $second->id, 'second window focused');
+@content = @{get_ws_content($tmp)};
+ok(@content == 1, 'one con at workspace level');
+is($content[0]->{layout}, 'stacked', 'layout stacked');
+
 exit_gracefully($pid);
 
 done_testing;
