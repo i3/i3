@@ -170,7 +170,7 @@ void cmd_MIGRATION_start_nagbar() {
  * commands.c for matching target windows of a command.
  *
  */
-char *cmd_criteria_init(Match *current_match) {
+void cmd_criteria_init(I3_CMD) {
     Con *con;
     owindow *ow;
 
@@ -188,9 +188,6 @@ char *cmd_criteria_init(Match *current_match) {
         ow->con = con;
         TAILQ_INSERT_TAIL(&owindows, ow, owindows);
     }
-
-    /* This command is internal and does not generate a JSON reply. */
-    return NULL;
 }
 
 /*
@@ -198,7 +195,7 @@ char *cmd_criteria_init(Match *current_match) {
  * so we filter the list of owindows.
  *
  */
-char *cmd_criteria_match_windows(Match *current_match) {
+void cmd_criteria_match_windows(I3_CMD) {
     owindow *next, *current;
 
     DLOG("match specification finished, matching...\n");
@@ -239,9 +236,6 @@ char *cmd_criteria_match_windows(Match *current_match) {
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
     }
-
-    /* This command is internal and does not generate a JSON reply. */
-    return NULL;
 }
 
 /*
@@ -249,22 +243,22 @@ char *cmd_criteria_match_windows(Match *current_match) {
  * specification.
  *
  */
-char *cmd_criteria_add(Match *current_match, char *ctype, char *cvalue) {
+void cmd_criteria_add(I3_CMD, char *ctype, char *cvalue) {
     DLOG("ctype=*%s*, cvalue=*%s*\n", ctype, cvalue);
 
     if (strcmp(ctype, "class") == 0) {
         current_match->class = regex_new(cvalue);
-        return NULL;
+        return;
     }
 
     if (strcmp(ctype, "instance") == 0) {
         current_match->instance = regex_new(cvalue);
-        return NULL;
+        return;
     }
 
     if (strcmp(ctype, "window_role") == 0) {
         current_match->role = regex_new(cvalue);
-        return NULL;
+        return;
     }
 
     if (strcmp(ctype, "con_id") == 0) {
@@ -279,7 +273,7 @@ char *cmd_criteria_add(Match *current_match, char *ctype, char *cvalue) {
             current_match->con_id = (Con*)parsed;
             printf("id as int = %p\n", current_match->con_id);
         }
-        return NULL;
+        return;
     }
 
     if (strcmp(ctype, "id") == 0) {
@@ -294,17 +288,17 @@ char *cmd_criteria_add(Match *current_match, char *ctype, char *cvalue) {
             current_match->id = parsed;
             printf("window id as int = %d\n", current_match->id);
         }
-        return NULL;
+        return;
     }
 
     if (strcmp(ctype, "con_mark") == 0) {
         current_match->mark = regex_new(cvalue);
-        return NULL;
+        return;
     }
 
     if (strcmp(ctype, "title") == 0) {
         current_match->title = regex_new(cvalue);
-        return NULL;
+        return;
     }
 
     if (strcmp(ctype, "urgent") == 0) {
@@ -317,13 +311,10 @@ char *cmd_criteria_add(Match *current_match, char *ctype, char *cvalue) {
                    strcasecmp(cvalue, "first") == 0) {
             current_match->urgent = U_OLDEST;
         }
-        return NULL;
+        return;
     }
 
     ELOG("Unknown criterion: %s\n", ctype);
-
-    /* This command is internal and does not generate a JSON reply. */
-    return NULL;
 }
 
 /*
@@ -331,7 +322,7 @@ char *cmd_criteria_add(Match *current_match, char *ctype, char *cvalue) {
  * next|prev|next_on_output|prev_on_output'.
  *
  */
-char *cmd_move_con_to_workspace(Match *current_match, char *which) {
+void cmd_move_con_to_workspace(I3_CMD, char *which) {
     owindow *current;
 
     DLOG("which=%s\n", which);
@@ -350,7 +341,8 @@ char *cmd_move_con_to_workspace(Match *current_match, char *which) {
         ws = workspace_prev_on_output();
     else {
         ELOG("BUG: called with which=%s\n", which);
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
     TAILQ_FOREACH(current, &owindows, owindows) {
@@ -358,28 +350,30 @@ char *cmd_move_con_to_workspace(Match *current_match, char *which) {
         con_move_to_workspace(current->con, ws, true, false);
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'move [window|container] [to] workspace <name>'.
  *
  */
-char *cmd_move_con_to_workspace_name(Match *current_match, char *name) {
+void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
     if (strncasecmp(name, "__i3_", strlen("__i3_")) == 0) {
         LOG("You cannot switch to the i3 internal workspaces.\n");
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
     owindow *current;
 
     /* Error out early to not create a non-existing workspace (in
      * workspace_get()) if we are not actually able to move anything. */
-    if (match_is_empty(current_match) && focused->type == CT_WORKSPACE)
-        return sstrdup("{\"sucess\": false}");
+    if (match_is_empty(current_match) && focused->type == CT_WORKSPACE) {
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
+    }
 
     LOG("should move window to workspace %s\n", name);
     /* get the workspace */
@@ -392,17 +386,16 @@ char *cmd_move_con_to_workspace_name(Match *current_match, char *name) {
         con_move_to_workspace(current->con, ws, true, false);
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'resize grow|shrink <direction> [<px> px] [or <ppt> ppt]'.
  *
  */
-char *cmd_resize(Match *current_match, char *way, char *direction, char *resize_px, char *resize_ppt) {
+void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resize_ppt) {
     /* resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt] */
     DLOG("resizing in way %s, direction %s, px %s or ppt %s\n", way, direction, resize_px, resize_ppt);
     // TODO: We could either handle this in the parser itself as a separate token (and make the stack typed) or we need a better way to convert a string to a number with error checking
@@ -459,7 +452,8 @@ char *cmd_resize(Match *current_match, char *way, char *direction, char *resize_
              (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0))) {
             LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
                 (orientation == HORIZ ? "horizontal" : "vertical"));
-            return sstrdup("{\"sucess\": false}");
+            cmd_output->json_output = sstrdup("{\"sucess\": false}");
+            return;
         }
 
         if (strcmp(direction, "up") == 0 || strcmp(direction, "left") == 0) {
@@ -469,7 +463,8 @@ char *cmd_resize(Match *current_match, char *way, char *direction, char *resize_
         }
         if (other == TAILQ_END(workspaces)) {
             LOG("No other container in this direction found, cannot resize.\n");
-            return sstrdup("{\"sucess\": false}");
+            cmd_output->json_output = sstrdup("{\"sucess\": false}");
+            return;
         }
         LOG("other->percent = %f\n", other->percent);
         LOG("current->percent before = %f\n", current->percent);
@@ -494,17 +489,16 @@ char *cmd_resize(Match *current_match, char *way, char *direction, char *resize_
         }
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'border normal|none|1pixel|toggle'.
  *
  */
-char *cmd_border(Match *current_match, char *border_style_str) {
+void cmd_border(I3_CMD, char *border_style_str) {
     DLOG("border style should be changed to %s\n", border_style_str);
     owindow *current;
 
@@ -525,48 +519,46 @@ char *cmd_border(Match *current_match, char *border_style_str) {
                 border_style = BS_1PIXEL;
             else {
                 ELOG("BUG: called with border_style=%s\n", border_style_str);
-                return sstrdup("{\"sucess\": false}");
+                cmd_output->json_output = sstrdup("{\"sucess\": false}");
+                return;
             }
         }
         con_set_border_style(current->con, border_style);
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'nop <comment>'.
  *
  */
-char *cmd_nop(Match *current_match, char *comment) {
+void cmd_nop(I3_CMD, char *comment) {
     LOG("-------------------------------------------------\n");
     LOG("  NOP: %s\n", comment);
     LOG("-------------------------------------------------\n");
-
-    return NULL;
 }
 
 /*
  * Implementation of 'append_layout <path>'.
  *
  */
-char *cmd_append_layout(Match *current_match, char *path) {
+void cmd_append_layout(I3_CMD, char *path) {
     LOG("Appending layout \"%s\"\n", path);
     tree_append_json(path);
-    tree_render();
 
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'workspace next|prev|next_on_output|prev_on_output'.
  *
  */
-char *cmd_workspace(Match *current_match, char *which) {
+void cmd_workspace(I3_CMD, char *which) {
     Con *ws;
 
     DLOG("which=%s\n", which);
@@ -581,36 +573,38 @@ char *cmd_workspace(Match *current_match, char *which) {
         ws = workspace_prev_on_output();
     else {
         ELOG("BUG: called with which=%s\n", which);
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
     workspace_show(ws);
-    tree_render();
 
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'workspace back_and_forth'.
  *
  */
-char *cmd_workspace_back_and_forth(Match *current_match) {
+void cmd_workspace_back_and_forth(I3_CMD) {
     workspace_back_and_forth();
-    tree_render();
 
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'workspace <name>'
  *
  */
-char *cmd_workspace_name(Match *current_match, char *name) {
+void cmd_workspace_name(I3_CMD, char *name) {
     if (strncasecmp(name, "__i3_", strlen("__i3_")) == 0) {
         LOG("You cannot switch to the i3 internal workspaces.\n");
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
     DLOG("should switch to workspace %s\n", name);
@@ -624,22 +618,22 @@ char *cmd_workspace_name(Match *current_match, char *name) {
             workspace_back_and_forth();
             tree_render();
         }
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
     workspace_show_by_name(name);
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'mark <mark>'
  *
  */
-char *cmd_mark(Match *current_match, char *mark) {
+void cmd_mark(I3_CMD, char *mark) {
     DLOG("Clearing all windows which have that mark first\n");
 
     Con *con;
@@ -658,29 +652,28 @@ char *cmd_mark(Match *current_match, char *mark) {
         current->con->mark = sstrdup(mark);
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'mode <string>'.
  *
  */
-char *cmd_mode(Match *current_match, char *mode) {
+void cmd_mode(I3_CMD, char *mode) {
     DLOG("mode=%s\n", mode);
     switch_mode(mode);
 
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'move [window|container] [to] output <str>'.
  *
  */
-char *cmd_move_con_to_output(Match *current_match, char *name) {
+void cmd_move_con_to_output(I3_CMD, char *name) {
     owindow *current;
 
     DLOG("should move window to output %s\n", name);
@@ -711,31 +704,33 @@ char *cmd_move_con_to_output(Match *current_match, char *name) {
 
     if (!output) {
         LOG("No such output found.\n");
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
     /* get visible workspace on output */
     Con *ws = NULL;
     GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
-    if (!ws)
-        return sstrdup("{\"sucess\": false}");
+    if (!ws) {
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
+    }
 
     TAILQ_FOREACH(current, &owindows, owindows) {
         DLOG("matching: %p / %s\n", current->con, current->con->name);
         con_move_to_workspace(current->con, ws, true, false);
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'floating enable|disable|toggle'
  *
  */
-char *cmd_floating(Match *current_match, char *floating_mode) {
+void cmd_floating(I3_CMD, char *floating_mode) {
     owindow *current;
 
     DLOG("floating_mode=%s\n", floating_mode);
@@ -757,17 +752,16 @@ char *cmd_floating(Match *current_match, char *floating_mode) {
         }
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'move workspace to [output] <str>'.
  *
  */
-char *cmd_move_workspace_to_output(Match *current_match, char *name) {
+void cmd_move_workspace_to_output(I3_CMD, char *name) {
     DLOG("should move workspace to output %s\n", name);
 
     HANDLE_EMPTY_MATCH;
@@ -779,7 +773,8 @@ char *cmd_move_workspace_to_output(Match *current_match, char *name) {
         Output *output = get_output_from_string(current_output, name);
         if (!output) {
             LOG("No such output\n");
-            return sstrdup("{\"sucess\": false}");
+            cmd_output->json_output = sstrdup("{\"sucess\": false}");
+            return;
         }
 
         Con *content = output_get_content(output->con);
@@ -847,32 +842,30 @@ char *cmd_move_workspace_to_output(Match *current_match, char *name) {
         }
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'split v|h|vertical|horizontal'.
  *
  */
-char *cmd_split(Match *current_match, char *direction) {
+void cmd_split(I3_CMD, char *direction) {
     /* TODO: use matches */
     LOG("splitting in direction %c\n", direction[0]);
     tree_split(focused, (direction[0] == 'v' ? VERT : HORIZ));
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementaiton of 'kill [window|client]'.
  *
  */
-char *cmd_kill(Match *current_match, char *kill_mode_str) {
+void cmd_kill(I3_CMD, char *kill_mode_str) {
     if (kill_mode_str == NULL)
         kill_mode_str = "window";
     owindow *current;
@@ -886,7 +879,8 @@ char *cmd_kill(Match *current_match, char *kill_mode_str) {
         kill_mode = KILL_CLIENT;
     else {
         ELOG("BUG: called with kill_mode=%s\n", kill_mode_str);
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
     /* check if the match is empty, not if the result is empty */
@@ -899,36 +893,36 @@ char *cmd_kill(Match *current_match, char *kill_mode_str) {
         }
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'exec [--no-startup-id] <command>'.
  *
  */
-char *cmd_exec(Match *current_match, char *nosn, char *command) {
+void cmd_exec(I3_CMD, char *nosn, char *command) {
     bool no_startup_id = (nosn != NULL);
 
     DLOG("should execute %s, no_startup_id = %d\n", command, no_startup_id);
     start_application(command, no_startup_id);
 
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'focus left|right|up|down'.
  *
  */
-char *cmd_focus_direction(Match *current_match, char *direction) {
+void cmd_focus_direction(I3_CMD, char *direction) {
     if (focused &&
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
         LOG("Cannot change focus while in fullscreen mode.\n");
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
     DLOG("direction = *%s*\n", direction);
@@ -943,25 +937,26 @@ char *cmd_focus_direction(Match *current_match, char *direction) {
         tree_next('n', VERT);
     else {
         ELOG("Invalid focus direction (%s)\n", direction);
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'focus tiling|floating|mode_toggle'.
  *
  */
-char *cmd_focus_window_mode(Match *current_match, char *window_mode) {
+void cmd_focus_window_mode(I3_CMD, char *window_mode) {
     if (focused &&
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
         LOG("Cannot change focus while in fullscreen mode.\n");
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
     DLOG("window_mode = %s\n", window_mode);
@@ -985,22 +980,22 @@ char *cmd_focus_window_mode(Match *current_match, char *window_mode) {
         }
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'focus parent|child'.
  *
  */
-char *cmd_focus_level(Match *current_match, char *level) {
+void cmd_focus_level(I3_CMD, char *level) {
     if (focused &&
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
         LOG("Cannot change focus while in fullscreen mode.\n");
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
     DLOG("level = %s\n", level);
@@ -1009,23 +1004,23 @@ char *cmd_focus_level(Match *current_match, char *level) {
         level_up();
     else level_down();
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'focus'.
  *
  */
-char *cmd_focus(Match *current_match) {
+void cmd_focus(I3_CMD) {
     DLOG("current_match = %p\n", current_match);
     if (focused &&
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
         LOG("Cannot change focus while in fullscreen mode.\n");
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
     owindow *current;
@@ -1034,10 +1029,10 @@ char *cmd_focus(Match *current_match) {
         ELOG("You have to specify which window/container should be focused.\n");
         ELOG("Example: [class=\"urxvt\" title=\"irssi\"] focus\n");
 
-        char *json_output;
-        sasprintf(&json_output, "{\"success\":false, \"error\":\"You have to "
+        sasprintf(&(cmd_output->json_output),
+                  "{\"success\":false, \"error\":\"You have to "
                   "specify which window/container should be focused\"}");
-        return json_output;
+        return;
     }
 
     int count = 0;
@@ -1075,17 +1070,16 @@ char *cmd_focus(Match *current_match) {
         LOG("WARNING: Your criteria for the focus command matches %d containers, "
             "while only exactly one container can be focused at a time.\n", count);
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'fullscreen [global]'.
  *
  */
-char *cmd_fullscreen(Match *current_match, char *fullscreen_mode) {
+void cmd_fullscreen(I3_CMD, char *fullscreen_mode) {
     if (fullscreen_mode == NULL)
         fullscreen_mode = "output";
     DLOG("toggling fullscreen, mode = %s\n", fullscreen_mode);
@@ -1098,17 +1092,16 @@ char *cmd_fullscreen(Match *current_match, char *fullscreen_mode) {
         con_toggle_fullscreen(current->con, (strcmp(fullscreen_mode, "global") == 0 ? CF_GLOBAL : CF_OUTPUT));
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'move <direction> [<pixels> [px]]'.
  *
  */
-char *cmd_move_direction(Match *current_match, char *direction, char *move_px) {
+void cmd_move_direction(I3_CMD, char *direction, char *move_px) {
     // TODO: We could either handle this in the parser itself as a separate token (and make the stack typed) or we need a better way to convert a string to a number with error checking
     int px = atoi(move_px);
 
@@ -1132,19 +1125,18 @@ char *cmd_move_direction(Match *current_match, char *direction, char *move_px) {
                    (strcmp(direction, "left") == 0 ? D_LEFT :
                     (strcmp(direction, "up") == 0 ? D_UP :
                      D_DOWN))));
-        tree_render();
+        cmd_output->needs_tree_render = true;
     }
 
-
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'layout default|stacked|stacking|tabbed'.
  *
  */
-char *cmd_layout(Match *current_match, char *layout_str) {
+void cmd_layout(I3_CMD, char *layout_str) {
     if (strcmp(layout_str, "stacking") == 0)
         layout_str = "stacked";
     DLOG("changing layout to %s\n", layout_str);
@@ -1163,17 +1155,16 @@ char *cmd_layout(Match *current_match, char *layout_str) {
         }
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementaiton of 'exit'.
  *
  */
-char *cmd_exit(Match *current_match) {
+void cmd_exit(I3_CMD) {
     LOG("Exiting due to user command.\n");
     exit(0);
 
@@ -1184,7 +1175,7 @@ char *cmd_exit(Match *current_match) {
  * Implementaiton of 'reload'.
  *
  */
-char *cmd_reload(Match *current_match) {
+void cmd_reload(I3_CMD) {
     LOG("reloading\n");
     kill_configerror_nagbar(false);
     load_configuration(conn, NULL, true);
@@ -1193,42 +1184,40 @@ char *cmd_reload(Match *current_match) {
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"reload\"}");
 
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementaiton of 'restart'.
  *
  */
-char *cmd_restart(Match *current_match) {
+void cmd_restart(I3_CMD) {
     LOG("restarting i3\n");
     i3_restart(false);
 
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementaiton of 'open'.
  *
  */
-char *cmd_open(Match *current_match) {
+void cmd_open(I3_CMD) {
     LOG("opening new container\n");
     Con *con = tree_open_con(NULL, NULL);
     con_focus(con);
-    char *json_output;
-    sasprintf(&json_output, "{\"success\":true, \"id\":%ld}", (long int)con);
+    sasprintf(&(cmd_output->json_output),
+              "{\"success\":true, \"id\":%ld}", (long int)con);
 
-    tree_render();
-
-    return json_output;
+    cmd_output->needs_tree_render = true;
 }
 
 /*
  * Implementation of 'focus output <output>'.
  *
  */
-char *cmd_focus_output(Match *current_match, char *name) {
+void cmd_focus_output(I3_CMD, char *name) {
     owindow *current;
 
     DLOG("name = %s\n", name);
@@ -1247,27 +1236,30 @@ char *cmd_focus_output(Match *current_match, char *name) {
 
     if (!output) {
         LOG("No such output found.\n");
-        return sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
     }
 
     /* get visible workspace on output */
     Con *ws = NULL;
     GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
-    if (!ws)
-        return sstrdup("{\"sucess\": false}");
+    if (!ws) {
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
+    }
 
     workspace_show(ws);
-    tree_render();
 
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'move scratchpad'.
  *
  */
-char *cmd_move_scratchpad(Match *current_match) {
+void cmd_move_scratchpad(I3_CMD) {
     DLOG("should move window to scratchpad\n");
     owindow *current;
 
@@ -1278,17 +1270,16 @@ char *cmd_move_scratchpad(Match *current_match) {
         scratchpad_move(current->con);
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
 /*
  * Implementation of 'scratchpad show'.
  *
  */
-char *cmd_scratchpad_show(Match *current_match) {
+void cmd_scratchpad_show(I3_CMD) {
     DLOG("should show scratchpad window\n");
     owindow *current;
 
@@ -1301,8 +1292,7 @@ char *cmd_scratchpad_show(Match *current_match) {
         }
     }
 
-    tree_render();
-
+    cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    return sstrdup("{\"success\": true}");
+    cmd_output->json_output = sstrdup("{\"success\": true}");
 }

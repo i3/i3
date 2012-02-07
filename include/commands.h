@@ -10,6 +10,11 @@
 #ifndef _COMMANDS_H
 #define _COMMANDS_H
 
+#include "commands_parser.h"
+
+/** The beginning of the prototype for every cmd_ function. */
+#define I3_CMD Match *current_match, struct CommandResult *cmd_output
+
 /*
  * Helper data structure for an operation window (window on which the operation
  * will be performed). Used to build the TAILQ owindows.
@@ -27,207 +32,207 @@ typedef TAILQ_HEAD(owindows_head, owindow) owindows_head;
  * commands.c for matching target windows of a command.
  *
  */
-char *cmd_criteria_init(Match *current_match);
+void cmd_criteria_init(I3_CMD);
 
 /**
  * A match specification just finished (the closing square bracket was found),
  * so we filter the list of owindows.
  *
  */
-char *cmd_criteria_match_windows(Match *current_match);
+void cmd_criteria_match_windows(I3_CMD);
 
 /**
  * Interprets a ctype=cvalue pair and adds it to the current match
  * specification.
  *
  */
-char *cmd_criteria_add(Match *current_match, char *ctype, char *cvalue);
+void cmd_criteria_add(I3_CMD, char *ctype, char *cvalue);
 
 /**
  * Implementation of 'move [window|container] [to] workspace
  * next|prev|next_on_output|prev_on_output'.
  *
  */
-char *cmd_move_con_to_workspace(Match *current_match, char *which);
+void cmd_move_con_to_workspace(I3_CMD, char *which);
 
 /**
  * Implementation of 'move [window|container] [to] workspace <name>'.
  *
  */
-char *cmd_move_con_to_workspace_name(Match *current_match, char *name);
+void cmd_move_con_to_workspace_name(I3_CMD, char *name);
 
 /**
  * Implementation of 'resize grow|shrink <direction> [<px> px] [or <ppt> ppt]'.
  *
  */
-char *cmd_resize(Match *current_match, char *way, char *direction, char *resize_px, char *resize_ppt);
+void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resize_ppt);
 
 /**
  * Implementation of 'border normal|none|1pixel|toggle'.
  *
  */
-char *cmd_border(Match *current_match, char *border_style_str);
+void cmd_border(I3_CMD, char *border_style_str);
 
 /**
  * Implementation of 'nop <comment>'.
  *
  */
-char *cmd_nop(Match *current_match, char *comment);
+void cmd_nop(I3_CMD, char *comment);
 
 /**
  * Implementation of 'append_layout <path>'.
  *
  */
-char *cmd_append_layout(Match *current_match, char *path);
+void cmd_append_layout(I3_CMD, char *path);
 
 /**
  * Implementation of 'workspace next|prev|next_on_output|prev_on_output'.
  *
  */
-char *cmd_workspace(Match *current_match, char *which);
+void cmd_workspace(I3_CMD, char *which);
 
 /**
  * Implementation of 'workspace back_and_forth'.
  *
  */
-char *cmd_workspace_back_and_forth(Match *current_match);
+void cmd_workspace_back_and_forth(I3_CMD);
 
 /**
  * Implementation of 'workspace <name>'
  *
  */
-char *cmd_workspace_name(Match *current_match, char *name);
+void cmd_workspace_name(I3_CMD, char *name);
 
 /**
  * Implementation of 'mark <mark>'
  *
  */
-char *cmd_mark(Match *current_match, char *mark);
+void cmd_mark(I3_CMD, char *mark);
 
 /**
  * Implementation of 'mode <string>'.
  *
  */
-char *cmd_mode(Match *current_match, char *mode);
+void cmd_mode(I3_CMD, char *mode);
 
 /**
  * Implementation of 'move [window|container] [to] output <str>'.
  *
  */
-char *cmd_move_con_to_output(Match *current_match, char *name);
+void cmd_move_con_to_output(I3_CMD, char *name);
 
 /**
  * Implementation of 'floating enable|disable|toggle'
  *
  */
-char *cmd_floating(Match *current_match, char *floating_mode);
+void cmd_floating(I3_CMD, char *floating_mode);
 
 /**
  * Implementation of 'move workspace to [output] <str>'.
  *
  */
-char *cmd_move_workspace_to_output(Match *current_match, char *name);
+void cmd_move_workspace_to_output(I3_CMD, char *name);
 
 /**
  * Implementation of 'split v|h|vertical|horizontal'.
  *
  */
-char *cmd_split(Match *current_match, char *direction);
+void cmd_split(I3_CMD, char *direction);
 
 /**
  * Implementaiton of 'kill [window|client]'.
  *
  */
-char *cmd_kill(Match *current_match, char *kill_mode);
+void cmd_kill(I3_CMD, char *kill_mode_str);
 
 /**
  * Implementation of 'exec [--no-startup-id] <command>'.
  *
  */
-char *cmd_exec(Match *current_match, char *nosn, char *command);
+void cmd_exec(I3_CMD, char *nosn, char *command);
 
 /**
  * Implementation of 'focus left|right|up|down'.
  *
  */
-char *cmd_focus_direction(Match *current_match, char *direction);
+void cmd_focus_direction(I3_CMD, char *direction);
 
 /**
  * Implementation of 'focus tiling|floating|mode_toggle'.
  *
  */
-char *cmd_focus_window_mode(Match *current_match, char *window_mode);
+void cmd_focus_window_mode(I3_CMD, char *window_mode);
 
 /**
  * Implementation of 'focus parent|child'.
  *
  */
-char *cmd_focus_level(Match *current_match, char *level);
+void cmd_focus_level(I3_CMD, char *level);
 
 /**
  * Implementation of 'focus'.
  *
  */
-char *cmd_focus(Match *current_match);
+void cmd_focus(I3_CMD);
 
 /**
  * Implementation of 'fullscreen [global]'.
  *
  */
-char *cmd_fullscreen(Match *current_match, char *fullscreen_mode);
+void cmd_fullscreen(I3_CMD, char *fullscreen_mode);
 
 /**
  * Implementation of 'move <direction> [<pixels> [px]]'.
  *
  */
-char *cmd_move_direction(Match *current_match, char *direction, char *px);
+void cmd_move_direction(I3_CMD, char *direction, char *move_px);
 
 /**
  * Implementation of 'layout default|stacked|stacking|tabbed'.
  *
  */
-char *cmd_layout(Match *current_match, char *layout);
+void cmd_layout(I3_CMD, char *layout_str);
 
 /**
  * Implementaiton of 'exit'.
  *
  */
-char *cmd_exit(Match *current_match);
+void cmd_exit(I3_CMD);
 
 /**
  * Implementaiton of 'reload'.
  *
  */
-char *cmd_reload(Match *current_match);
+void cmd_reload(I3_CMD);
 
 /**
  * Implementaiton of 'restart'.
  *
  */
-char *cmd_restart(Match *current_match);
+void cmd_restart(I3_CMD);
 
 /**
  * Implementaiton of 'open'.
  *
  */
-char *cmd_open(Match *current_match);
+void cmd_open(I3_CMD);
 
 /**
  * Implementation of 'focus output <output>'.
  *
  */
-char *cmd_focus_output(Match *current_match, char *name);
+void cmd_focus_output(I3_CMD, char *name);
 
 /**
  * Implementation of 'move scratchpad'.
  *
  */
-char *cmd_move_scratchpad(Match *current_match);
+void cmd_move_scratchpad(I3_CMD);
 
 /**
  * Implementation of 'scratchpad show'.
  *
  */
-char *cmd_scratchpad_show(Match *current_match);
+void cmd_scratchpad_show(I3_CMD);
 
 #endif

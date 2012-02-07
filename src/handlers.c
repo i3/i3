@@ -118,9 +118,12 @@ static void handle_key_press(xcb_key_press_event_t *event) {
         }
     }
 
-    char *json_result = parse_command(bind->command);
-    FREE(json_result);
-    return;
+    struct CommandResult *command_output = parse_command(bind->command);
+
+    if (command_output->needs_tree_render)
+        tree_render();
+
+    free(command_output->json_output);
 }
 
 /*

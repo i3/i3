@@ -119,16 +119,18 @@ IPC_HANDLER(command) {
     char *command = scalloc(message_size + 1);
     strncpy(command, (const char*)message, message_size);
     LOG("IPC: received: *%s*\n", command);
-    char *reply = parse_command((const char*)command);
-    char *save_reply = reply;
+    struct CommandResult *command_output = parse_command((const char*)command);
     free(command);
 
-    /* If no reply was provided, we just use the default success message */
-    if (reply == NULL)
-        reply = "{\"success\":true}";
-    ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_COMMAND, (const uint8_t*)reply);
+    if (command_output->needs_tree_render)
+        tree_render();
 
-    FREE(save_reply);
+    /* If no reply was provided, we just use the default success message */
+    ipc_send_message(fd, strlen(command_output->json_output),
+                     I3_IPC_REPLY_TYPE_COMMAND,
+                     (const uint8_t*)command_output->json_output);
+
+    free(command_output->json_output);
 }
 
 static void dump_rect(yajl_gen gen, const char *name, Rect r) {

@@ -118,8 +118,7 @@ close($enumfh);
 
 # Third step: Generate the call function.
 open(my $callfh, '>', 'GENERATED_call.h');
-say $callfh 'static char *GENERATED_call(const int call_identifier) {';
-say $callfh '    char *output = NULL;';
+say $callfh 'static void GENERATED_call(const int call_identifier, struct CommandResult *result) {';
 say $callfh '    switch (call_identifier) {';
 my $call_id = 0;
 for my $state (@keys) {
@@ -143,11 +142,11 @@ for my $state (@keys) {
         say $callfh '#ifndef TEST_PARSER';
         my $real_cmd = $cmd;
         if ($real_cmd =~ /\(\)/) {
-            $real_cmd =~ s/\(/(&current_match/;
+            $real_cmd =~ s/\(/(&current_match, result/;
         } else {
-            $real_cmd =~ s/\(/(&current_match, /;
+            $real_cmd =~ s/\(/(&current_match, result, /;
         }
-        say $callfh "             output = $real_cmd;";
+        say $callfh "             $real_cmd;";
         say $callfh '#else';
         # debug
         $cmd =~ s/[^(]+\(//;
@@ -164,7 +163,6 @@ for my $state (@keys) {
 say $callfh '        default:';
 say $callfh '            printf("BUG in the parser. state = %d\n", call_identifier);';
 say $callfh '    }';
-say $callfh '    return output;';
 say $callfh '}';
 close($callfh);
 

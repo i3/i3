@@ -173,7 +173,8 @@ static cmdp_state state;
 #ifndef TEST_PARSER
 static Match current_match;
 #endif
-static char *json_output;
+static struct CommandResult subcommand_output;
+static struct CommandResult command_output;
 
 #include "GENERATED_call.h"
 
@@ -182,7 +183,24 @@ static void next_state(const cmdp_token *token) {
     if (token->next_state == __CALL) {
         DLOG("should call stuff, yay. call_id = %d\n",
                 token->extra.call_identifier);
-        json_output = GENERATED_call(token->extra.call_identifier);
+        subcommand_output.json_output = NULL;
+        subcommand_output.needs_tree_render = false;
+        GENERATED_call(token->extra.call_identifier, &subcommand_output);
+        if (subcommand_output.json_output) {
+            DLOG("Subcommand JSON output: %s\n", subcommand_output.json_output);
+            char *buffer;
+            /* In the beginning, the contents of json_output are "[\0". */
+            if (command_output.json_output[1] == '\0')
+                sasprintf(&buffer, "%s%s", command_output.json_output, subcommand_output.json_output);
+            else sasprintf(&buffer, "%s, %s", command_output.json_output, subcommand_output.json_output);
+            free(command_output.json_output);
+            command_output.json_output = buffer;
+            DLOG("merged command JSON output: %s\n", command_output.json_output);
+        }
+        /* If any subcommand requires a tree_render(), we need to make the
+         * whole parser result request a tree_render(). */
+        if (subcommand_output.needs_tree_render)
+            command_output.needs_tree_render = true;
         clear_stack();
         return;
     }
@@ -194,10 +212,11 @@ static void next_state(const cmdp_token *token) {
 }
 
 /* TODO: Return parsing errors via JSON. */
-char *parse_command(const char *input) {
+struct CommandResult *parse_command(const char *input) {
     DLOG("new parser handling: %s\n", input);
     state = INITIAL;
-    json_output = NULL;
+    command_output.json_output = sstrdup("[");
+    command_output.needs_tree_render = false;
 
     const char *walk = input;
     const size_t len = strlen(input);
@@ -207,7 +226,7 @@ char *parse_command(const char *input) {
 
     // TODO: make this testable
 #ifndef TEST_PARSER
-    cmd_criteria_init(&current_match);
+    cmd_criteria_init(&current_match, &subcommand_output);
 #endif
 
     /* The "<=" operator is intentional: We also handle the terminating 0-byte
@@ -312,7 +331,7 @@ char *parse_command(const char *input) {
                     // TODO: make this testable
 #ifndef TEST_PARSER
                     if (*walk == '\0' || *walk == ';')
-                        cmd_criteria_init(&current_match);
+                        cmd_criteria_init(&current_match, &subcommand_output);
 #endif
                     walk++;
                     break;
@@ -377,8 +396,13 @@ char *parse_command(const char *input) {
         }
     }
 
-    DLOG("json_output = %s\n", json_output);
-    return json_output;
+    char *buffer;
+    sasprintf(&buffer, "%s]", command_output.json_output);
+    free(command_output.json_output);
+    command_output.json_output = buffer;
+    DLOG("command_output.json_output = %s\n", command_output.json_output);
+    DLOG("command_output.needs_tree_render = %d\n", command_output.needs_tree_render);
+    return &command_output;
 }
 
 /*******************************************************************************

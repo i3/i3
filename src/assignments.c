@@ -41,9 +41,13 @@ void run_assignments(i3Window *window) {
             DLOG("execute command %s\n", current->dest.command);
             char *full_command;
             sasprintf(&full_command, "[id=\"%d\"] %s", window->id, current->dest.command);
-            char *json_result = parse_command(full_command);
-            FREE(full_command);
-            FREE(json_result);
+            struct CommandResult *command_output = parse_command(full_command);
+            free(full_command);
+
+            if (command_output->needs_tree_render)
+                tree_render();
+
+            free(command_output->json_output);
         }
 
         /* Store that we ran this assignment to not execute it again */

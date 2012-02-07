@@ -247,7 +247,7 @@ sub open_empty_con {
     my ($i3) = @_;
 
     my $reply = $i3->command('open')->recv;
-    return $reply->{id};
+    return $reply->[0]->{id};
 }
 
 sub get_workspace_names {
