@@ -1,7 +1,7 @@
 IPC interface (interprocess communication)
 ==========================================
-Michael Stapelberg <michael+i3@stapelberg.de>
-December 2011
+Michael Stapelberg <michael@i3wm.org>
+February 2012
 
 This document describes how to interface with i3 from a separate process. This
 is useful for example to remote-control i3 (to write test cases for example) or
@@ -70,10 +70,6 @@ GET_BAR_CONFIG (6)::
 	Gets the configuration (as JSON map) of the workspace bar with the
 	given ID. If no ID is provided, an array with all configured bar IDs is
 	returned instead.
-GET_LOG_MARKERS (7)::
-	Gets the SHM log markers for the current position, the last wrap, the
-	SHM segment name and segment size. This is necessary for tools like
-	i3-dump-log which want to display the SHM log.
 
 So, a typical message could look like this:
 --------------------------------------------------
@@ -129,8 +125,6 @@ MARKS (5)::
 	Reply to the GET_MARKS message.
 BAR_CONFIG (6)::
 	Reply to the GET_BAR_CONFIG message.
-LOG_MARKERS (7)::
-	Reply to the GET_LOG_MARKERS message.
 
 === COMMAND reply
 
@@ -531,40 +525,6 @@ urgent_workspace_text/urgent_workspace_bar::
  }
 }
 --------------
-
-=== LOG_MARKERS reply
-
-Gets the SHM log markers for the current position, the last wrap, the
-SHM segment name and segment size. This is necessary for tools like
-i3-dump-log which want to display the SHM log.
-
-The reply is a JSON map with the following entries:
-
-shmname (string)::
-	The name of the SHM segment, will be of the format +/i3-log-<pid>+.
-size (integer)::
-	The size (in bytes) of the SHM segment. If this is 0, SHM logging is
-	disabled.
-offset_next_write (integer)::
-	The offset in the SHM segment at which the next write will happen.
-	Tools should start printing lines from here, since the bytes following
-	this offset are the oldest log lines. However, the first line might be
-	garbled, so it makes sense to skip all bytes until the first \0.
-offset_last_wrap (integer)::
-	The offset in the SHM segment at which the last wrap occured. i3 only
-	stores entire messages in the SHM log, so it might waste a few bytes at
-	the end to be more efficient. Tools should not print content after the
-	offset_last_wrap.
-
-*Example*:
------------------------------
-{
-  "offset_next_write":132839,
-  "offset_last_wrap":26214400,
-  "shmname":"/i3-log-3392",
-  "size":26214400
-}
------------------------------
 
 == Events
 
