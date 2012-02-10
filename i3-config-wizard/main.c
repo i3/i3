@@ -293,6 +293,7 @@ static void finish() {
     FILE *ks_config = fopen(config_path, "w");
     if (ks_config == NULL)
         err(1, "Could not open output config file \"%s\"", config_path);
+    free(config_path);
 
     char *line = NULL;
     size_t len = 0;
