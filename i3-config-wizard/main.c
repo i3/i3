@@ -329,8 +329,11 @@ static void finish() {
 
         /* Skip leading whitespace */
         char *walk = line;
-        while (isspace(*walk) && walk < (line + len))
+        while (isspace(*walk) && walk < (line + len)) {
+            /* Pre-output the skipped whitespaces to keep proper indentation */
+            fputc(*walk, ks_config);
             walk++;
+        }
 
         /* Set the modifier the user chose */
         if (strncmp(walk, "set $mod ", strlen("set $mod ")) == 0) {
@@ -343,7 +346,7 @@ static void finish() {
         /* Check for 'bindcode'. If it’s not a bindcode line, we
          * just copy it to the output file */
         if (strncmp(walk, "bindcode", strlen("bindcode")) != 0) {
-            fputs(line, ks_config);
+            fputs(walk, ks_config);
             continue;
         }
         char *result = rewrite_binding(walk);
