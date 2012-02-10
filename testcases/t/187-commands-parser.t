@@ -165,6 +165,10 @@ is(parser_calls('workspace "foo"'),
    'cmd_workspace_name(foo)',
    'Command with simple double quotes ok');
 
+is(parser_calls('workspace "foo'),
+   'cmd_workspace_name(foo)',
+   'Command without ending double quotes ok');
+
 is(parser_calls('workspace "foo \"bar"'),
    'cmd_workspace_name(foo "bar)',
    'Command with escaped double quotes ok');

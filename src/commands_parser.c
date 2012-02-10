@@ -249,7 +249,7 @@ char *parse_command(const char *input) {
                 if (*walk == '"') {
                     beginning++;
                     walk++;
-                    while (*walk != '"' || *(walk-1) == '\\')
+                    while (*walk != '\0' && (*walk != '"' || *(walk-1) == '\\'))
                         walk++;
                 } else {
                     if (token->name[0] == 's') {
