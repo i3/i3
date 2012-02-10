@@ -321,7 +321,7 @@ void handle_button(xcb_button_press_event_t *event) {
         }
         buffer[outpos] = cur_ws->name[inpos];
     }
-    buffer[++outpos] = '"';
+    buffer[outpos] = '"';
     i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, buffer);
     free(buffer);
 }
