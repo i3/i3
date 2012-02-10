@@ -8,6 +8,19 @@
  *                   keysyms.
  *
  */
+#if defined(__FreeBSD__)
+#include <sys/param.h>
+#endif
+
+/* For systems without getline, fall back to fgetln */
+#if defined(__APPLE__) || (defined(__FreeBSD__) && __FreeBSD_version < 800000)
+#define USE_FGETLN
+#elif defined(__FreeBSD__)
+/* Defining this macro before including stdio.h is necessary in order to have
+ * a prototype for getline in FreeBSD. */
+#define _WITH_GETLINE
+#endif
+
 #include <ev.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -285,7 +298,7 @@ static void finish() {
 
     char *line = NULL;
     size_t len = 0;
-#if !defined(__APPLE__) && (!defined(__FreeBSD__) || __FreeBSD_version >= 800000)
+#ifndef USE_FGETLN
     ssize_t read;
 #endif
     bool head_of_file = true;
@@ -298,10 +311,16 @@ static void finish() {
     fputs("# this file and re-run i3-config-wizard(1).\n", ks_config);
     fputs("#\n", ks_config);
 
-#if defined(__APPLE__) || (defined(__FreeBSD__) && __FreeBSD_version < 800000)
-    while ((line = fgetln(kc_config, &len)) != NULL) {
+#ifdef USE_FGETLN
+    char *buf = NULL;
+    while ((buf = fgetln(kc_config, &len)) != NULL) {
+        /* fgetln does not return null-terminated strings */
+        FREE(line);
+        sasprintf(&line, "%.*s", len, buf);
 #else
-    while ((read = getline(&line, &len, kc_config)) != -1) {
+    size_t linecap = 0;
+    while ((read = getline(&line, &linecap, kc_config)) != -1) {
+        len = strlen(line);
 #endif
         /* skip the warning block at the beginning of the input file */
         if (head_of_file &&
@@ -338,7 +357,10 @@ static void finish() {
     fflush(ks_config);
     fsync(fileno(ks_config));
 
+#ifndef USE_FGETLN
     free(line);
+#endif
+
     fclose(kc_config);
     fclose(ks_config);
 
