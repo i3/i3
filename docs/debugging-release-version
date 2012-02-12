@@ -1,0 +1,126 @@
+Debugging i3: How To (release version)
+======================================
+Michael Stapelberg <michael@i3wm.org>
+February 2012
+
+This document describes how to debug i3 suitably for sending us useful bug
+reports, even if you have no clue of C programming.
+
+First of all: Thank you for being interested in debugging i3. It really means
+something to us to get your bug fixed. If you have any questions about the
+debugging and/or need further help, do not hesitate to contact us!
+
+NOTE: This document is for the release version of i3. If you are using a
+development version, please see link:debugging.html[Debugging i3: How To]
+instead.
+
+== Consider using the development version
+
+This document is for the release version of i3. In many cases, bugs are already
+fixed in the development version of i3. If they aren’t, we will still ask you
+to reproduce your error with the most recent development version of i3.
+Therefore, please upgrade to a development version and continue reading at
+link:debugging.html[Debugging i3: How To].
+
+If you absolutely cannot upgrade to a development version of i3, you may
+continue reading this document.
+
+== Enabling logging
+
+i3 logs useful information to stdout. To have a clearly defined place where log
+files will be saved, you should redirect stdout and stderr in your
++~/.xsession+. While you’re at it, putting each run of i3 in a separate log
+file with date/time in its filename is a good idea to not get confused about
+the different log files later on.
+
+--------------------------------------------------------------------
+exec /usr/bin/i3 >~/i3log-$(date +'%F-%k-%M-%S') 2>&1
+--------------------------------------------------------------------
+
+To enable verbose output and all levels of debug output (required when
+attaching logfiles to bugreports), add the parameters +-V -d all+, like this:
+
+--------------------------------------------------------------------
+exec /usr/bin/i3 -V -d all >~/i3log-$(date +'%F-%k-%M-%S') 2>&1
+--------------------------------------------------------------------
+
+== Enabling core dumps
+
+When i3 crashes, often you have the chance of getting a 'core dump' (an image
+of the memory of the i3 process which can be loaded into a debugger). To get a
+core dump, you have to make sure that the user limit for core dump files is set
+high enough. Many systems ship with a default value which even forbids core
+dumps completely. To disable the limit completely and thus enable core dumps,
+use the following command (in your +~/.xsession+, before starting i3):
+
+-------------------
+ulimit -c unlimited
+-------------------
+
+Furthermore, to easily recognize core dumps and allow multiple of them, you
+should set a custom core dump filename pattern, using a command like the
+following:
+
+---------------------------------------------
+sudo sysctl -w kernel.core_pattern=core.%e.%p
+---------------------------------------------
+
+This will generate files which have the executable’s file name (%e) and the
+process id (%p) in it. You can save this setting across reboots using
++/etc/sysctl.conf+.
+
+== Compiling with debug symbols
+
+To actually get useful core dumps, you should make sure that your version of i3
+is compiled with debug symbols, that is, that the symbols are not stripped
+during the build process. You can check whether your executable contains
+symbols by issuing the following command:
+
+----------------
+file $(which i3)
+----------------
+
+You should get an output like this:
+------------------------------------------------------------------------------
+/usr/bin/i3: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically
+linked (uses shared libs), for GNU/Linux 2.6.18, not stripped
+------------------------------------------------------------------------------
+
+Notice the +not stripped+, which is the important part. If you have a version
+which is stripped, please have a look if your distribution provides debug
+symbols (package +i3-wm-dbg+ on Debian for example) or if you can turn off
+stripping. If nothing helps, please build i3 from source.
+
+== Generating a backtrace
+
+Once you have made sure that your i3 is compiled with debug symbols and that
+core dumps are enabled, you can start making sense out of the core dumps.
+
+Because the core dump depends on the original executable (and its debug
+symbols), please do this as soon as you encounter the problem. If you
+re-compile i3, your core dump might be useless afterwards.
+
+Please install +gdb+, a debugger for C. No worries, you don’t need to learn it
+now.  Start gdb using the following command (replacing the actual name of the
+core dump of course):
+
+----------------------------
+gdb $(which i3) core.i3.3849
+----------------------------
+
+Then, generate a backtrace using:
+
+--------------
+backtrace full
+--------------
+
+== Sending bug reports/debugging on IRC
+
+When sending bug reports, please paste the relevant part of the log (if in
+doubt, please send us rather too much information than too less) and the whole
+backtrace (if there was a core dump).
+
+When debugging with us in IRC, be prepared to use a so called nopaste service
+such as http://nopaste.info or http://pastebin.com because pasting large
+amounts of text in IRC sometimes leads to incomplete lines (servers have line
+length limitations) or flood kicks.

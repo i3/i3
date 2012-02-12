@@ -1,12 +1,15 @@
 # To pass additional parameters for asciidoc
 ASCIIDOC=asciidoc
 
-all: hacking-howto.html debugging.html userguide.html ipc.html multi-monitor.html wsbar.html refcard.pdf testsuite.html
+all: hacking-howto.html debugging.html debugging-release-version.html userguide.html ipc.html multi-monitor.html wsbar.html refcard.pdf testsuite.html
 
 hacking-howto.html: hacking-howto
 	$(ASCIIDOC) -a toc -n $<
 
 debugging.html: debugging
+	$(ASCIIDOC) -n $<
+
+debugging-release-version.html: debugging-release-version
 	$(ASCIIDOC) -n $<
 
 userguide.html: userguide
