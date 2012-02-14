@@ -49,6 +49,7 @@ is(@urgent, 0, 'no window got the urgent flag after re-setting urgency hint');
 #####################################################################
 # Check if the workspace urgency hint gets set/cleared correctly
 #####################################################################
+
 my $ws = get_ws($tmp);
 ok(!$ws->{urgent}, 'urgent flag not set on workspace');
 
@@ -64,5 +65,79 @@ cmd "workspace $tmp";
 
 $ws = get_ws($tmp);
 ok(!$ws->{urgent}, 'urgent flag not set on workspace after switching');
+
+################################################################################
+# Use the 'urgent' criteria to switch to windows which have the urgency hint set.
+################################################################################
+
+# Go to a new workspace, open a different window, verify focus is on it.
+$otmp = fresh_workspace;
+my $different_window = open_window;
+is($x->input_focus, $different_window->id, 'new window focused');
+
+# Add the urgency hint on the other window.
+$top->add_hint('urgency');
+sync_with_i3;
+
+# Now try to switch to that window and see if focus changes.
+cmd '[urgent=latest] focus';
+isnt($x->input_focus, $different_window->id, 'window no longer focused');
+is($x->input_focus, $top->id, 'urgent window focused');
+
+################################################################################
+# Same thing, but with multiple windows and using the 'urgency=latest' criteria
+# (verify that it works in the correct order).
+################################################################################
+
+cmd "workspace $otmp";
+is($x->input_focus, $different_window->id, 'new window focused again');
+
+$top->add_hint('urgency');
+sync_with_i3;
+
+# Unfortunately, we cannot get rid of this delay. We need it because i3 stores
+# the time of an urgency hint with second precision.
+sleep 1;
+
+$bottom->add_hint('urgency');
+sync_with_i3;
+
+cmd '[urgent=latest] focus';
+is($x->input_focus, $bottom->id, 'latest urgent window focused');
+$bottom->delete_hint('urgency');
+sync_with_i3;
+
+cmd '[urgent=latest] focus';
+is($x->input_focus, $top->id, 'second urgent window focused');
+$top->delete_hint('urgency');
+sync_with_i3;
+
+################################################################################
+# Same thing, but with multiple windows and using the 'urgency=oldest' criteria
+# (verify that it works in the correct order).
+################################################################################
+
+cmd "workspace $otmp";
+is($x->input_focus, $different_window->id, 'new window focused again');
+
+$top->add_hint('urgency');
+sync_with_i3;
+
+# Unfortunately, we cannot get rid of this delay. We need it because i3 stores
+# the time of an urgency hint with second precision.
+sleep 1;
+
+$bottom->add_hint('urgency');
+sync_with_i3;
+
+cmd '[urgent=oldest] focus';
+is($x->input_focus, $top->id, 'oldest urgent window focused');
+$top->delete_hint('urgency');
+sync_with_i3;
+
+cmd '[urgent=oldest] focus';
+is($x->input_focus, $bottom->id, 'oldest urgent window focused');
+$bottom->delete_hint('urgency');
+sync_with_i3;
 
 done_testing;
