@@ -17,6 +17,8 @@
 void run_assignments(i3Window *window) {
     DLOG("Checking if any assignments match this window\n");
 
+    bool needs_tree_render = false;
+
     /* Check if any assignments match */
     Assignment *current;
     TAILQ_FOREACH(current, &assignments, assignments) {
@@ -45,7 +47,7 @@ void run_assignments(i3Window *window) {
             free(full_command);
 
             if (command_output->needs_tree_render)
-                tree_render();
+                needs_tree_render = true;
 
             free(command_output->json_output);
         }
@@ -55,6 +57,10 @@ void run_assignments(i3Window *window) {
         window->ran_assignments = srealloc(window->ran_assignments, sizeof(Assignment*) * window->nr_assignments);
         window->ran_assignments[window->nr_assignments-1] = current;
     }
+
+    /* If any of the commands required re-rendering, we will do that now. */
+    if (needs_tree_render)
+        tree_render();
 }
 
 /*
