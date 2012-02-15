@@ -67,14 +67,17 @@ sub workspaces_per_screen {
 ok('5' ~~ @$x1, 'workspace 5 now on xinerama-1');
 
 ################################################################################
-# Verify that the last workspace on an output cannot be moved.
+# Verify that a new workspace will be created when moving the last workspace.
 ################################################################################
+
+is_deeply($x0, [ '1' ], 'only workspace 1 remaining on xinerama-0');
 
 cmd 'workspace 1';
 cmd 'move workspace to output xinerama-1';
 
 ($x0, $x1) = workspaces_per_screen();
-ok('1' ~~ @$x0, 'workspace 1 still on xinerama-0');
+ok('1' ~~ @$x1, 'workspace 1 now on xinerama-1');
+is_deeply($x0, [ '3' ], 'workspace 2 created on xinerama-0');
 
 ################################################################################
 # Verify that 'move workspace to output <direction>' works
