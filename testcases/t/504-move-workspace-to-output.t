@@ -89,5 +89,23 @@ cmd 'move workspace to output left';
 ($x0, $x1) = workspaces_per_screen();
 ok('5' ~~ @$x0, 'workspace 5 back on xinerama-0');
 
+################################################################################
+# Verify that coordinates of floating windows are fixed correctly when moving a
+# workspace to a different output.
+################################################################################
+
+cmd 'workspace 5';
+my $floating_window = open_floating_window;
+
+my $old_rect = $floating_window->rect;
+
+cmd 'move workspace to output right';
+
+my $new_rect = $floating_window->rect;
+
+isnt($old_rect->{x}, $new_rect->{x}, 'x coordinate changed');
+is($old_rect->{y}, $new_rect->{y}, 'y coordinate unchanged');
+is($old_rect->{width}, $new_rect->{width}, 'width unchanged');
+is($old_rect->{height}, $new_rect->{height}, 'height unchanged');
 
 done_testing;
