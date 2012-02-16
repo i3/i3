@@ -130,7 +130,7 @@ dist: distclean
 	rm -rf i3-${VERSION}
 
 clean:
-	rm -f src/*.o src/*.gcno src/cfgparse.tab.{c,h} src/cfgparse.yy.c src/cfgparse.{output,dot} loglevels.tmp include/loglevels.h include/GENERATED_*
+	rm -f src/*.o src/*.gcno src/cmdparse.* src/cfgparse.tab.{c,h} src/cfgparse.yy.c src/cfgparse.{output,dot} loglevels.tmp include/loglevels.h include/GENERATED_*
 	(which lcov >/dev/null 2>&1 && lcov -d . --zerocounters) || true
 	$(MAKE) -C libi3 clean
 	$(MAKE) -C docs clean
