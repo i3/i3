@@ -1,0 +1,148 @@
+i3bar input protocol
+====================
+Michael Stapelberg <michael@i3wm.org>
+February 2012
+
+This document explains the protocol in which i3bar expects its input. It
+provides support for colors, urgency, shortening and easy manipulation.
+
+== Rationale for chosing JSON
+
+Before describing the protocol, let’s cover why JSON is a building block of
+this protocol.
+
+1. Other bar display programs such as dzen2 or xmobar are using in-band
+   signaling: they recognize certain sequences (like ^fg(#330000) in your input
+   text). We would like to avoid that and separate information from
+   meta-information. By information, we mean the actual output, like the IP
+   address of your ethernet adapter and by meta-information, we mean in which
+   color it should be displayed right now.
+2. It is easy to write a simple script which manipulates part(s) of the input.
+   Each block of information (like a block for the disk space indicator, a block
+   for the current IP address, etc.) can be identified specifically and modified
+   in whichever way you like.
+3. It remains easy to write a simple script which just suffixes (or prefixes) a
+   status line input, because tools like i3status will output their JSON in
+   such a way that each line array will be terminated by a newline. Therefore,
+   you are not required to use a streaming JSON parser, but you can use any
+   JSON parser and write your script in any programming language. In fact, you
+   can decide to not bother with the JSON parsing at all and just inject your
+   output at a specific position (beginning or end).
+4. Relying on JSON does not introduce any new dependencies. In fact, the IPC
+   interface of i3 also uses JSON, therefore i3bar already depends on JSON.
+
+The only point against using JSON is computational complexity. If that really
+bothers you, just use the plain text input format (which i3bar will continue to
+support).
+
+== The protocol
+
+The first message of the protocol is a header block, which contains (at least)
+the version of the protocol to be used. In case there are significant changes
+(not only additions), the version will be incremented. i3bar will still
+understand the old protocol version, but in order to use the new one, you need
+to provide the correct version. The header block is terminated by a newline and
+consists of a single JSON hash:
+
+*Example*:
+----------------
+{ "version": 1 }
+----------------
+
+What follows is an infinite array (so it should be parsed by a streaming JSON
+parser, but as described above you can go for a simpler solution), whose
+elements are one array per status line. A status line is one unit of
+information which should be displayed at a time. i3bar will not display any
+input until the status line is complete. In each status line, every block will
+be represented by a JSON hash:
+
+*Example*:
+------
+[
+
+ [
+  {
+   "full_text": "E: 10.0.0.1 (1000 Mbit/s)",
+   "color": "#00ff00"
+  },
+  {
+   "full_text": "2012-01-05 20:00:01"
+  }
+ ],
+
+ [
+  {
+   "full_text": "E: 10.0.0.1 (1000 Mbit/s)",
+   "color": "#00ff00"
+  },
+  {
+   "full_text": "2012-01-05 20:00:02"
+  }
+ ],
+ …
+------
+
+Please note that this example was pretty printed for human consumption.
+i3status and others will output single statuslines in one line, separated by
+\n.
+
+=== Blocks in detail
+
+full_text::
+	The most simple block you can think of is one which just includes the
+	only required key, the +full_text+ key. i3bar will display the string
+	value and that’s it.
+short_text::
+	Where appropriate, the +short_text+ (string) entry should also be
+	provided. It will be used in case the status line needs to be shortened
+	because it uses more space than your screen provides. For example, when
+	displaying an IPv6 address, the prefix is usually (!) more relevant
+	than the suffix, because the latter stays constant when using autoconf,
+	while the prefix changes. When displaying the date, the time is more
+	important than the date (it is more likely that you know which day it
+	is than what time it is).
+color::
+	To make the current state of the information easy to spot, colors can
+	be used. For example, the wireless block could be displayed in red
+	(using the +color+ (string) entry) if the card is not associated with
+	any network and in green or yellow (depending on the signal strength)
+	when it is associated.
+	Colors are specified in hex (like in HTML), starting with a leading
+	hash sign. For example, +#ff0000+ means red.
+name and instance::
+	Every block should have a unique +name+ (string) entry so that it can
+	be easily identified in scripts which process the output. i3bar
+	completely ignores the name and instance fields. Make sure to also
+	specify an +instance+ (string) entry where appropriate. For example,
+	the user can have multiple disk space blocks for multiple mount points.
+urgent::
+	A boolean which specifies whether the current value is urgent. Examples
+	are battery charge values below 1 percent or no more available disk
+	space (for non-root users). The presentation of urgency is up to i3bar.
+
+If you want to put in your own entries into a block, prefix the key with an
+underscore (_). i3bar will ignore all keys it doesn’t understand, and prefixing
+them with an underscore makes it clear in every script that they are not part
+of the i3bar protocol.
+
+*Example*:
+------------------------------------------
+{
+ "full_text": "E: 10.0.0.1 (1000 Mbit/s)",
+ "_ethernet_vendor": "Intel"
+}
+------------------------------------------
+
+An example of a block which uses all possible entries follows:
+
+*Example*:
+------------------------------------------
+{
+ "full_text": "E: 10.0.0.1 (1000 Mbit/s)",
+ "short_text": "10.0.0.1",
+ "color": "#00ff00",
+ "urgent": false,
+ "name": "ethernet",
+ "instance": "eth0"
+}
+------------------------------------------
