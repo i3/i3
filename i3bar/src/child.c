@@ -20,6 +20,7 @@
 #include <ev.h>
 #include <yajl/yajl_common.h>
 #include <yajl/yajl_parse.h>
+#include <yajl/yajl_version.h>
 
 #include "common.h"
 
@@ -97,14 +98,22 @@ static int stdin_start_map(void *context) {
     return 1;
 }
 
+#if YAJL_MAJOR >= 2
 static int stdin_map_key(void *context, const unsigned char *key, size_t len) {
+#else
+static int stdin_map_key(void *context, const unsigned char *key, unsigned int len) {
+#endif
     parser_ctx *ctx = context;
     FREE(ctx->last_map_key);
     sasprintf(&(ctx->last_map_key), "%.*s", len, key);
     return 1;
 }
 
+#if YAJL_MAJOR >= 2
 static int stdin_string(void *context, const unsigned char *val, size_t len) {
+#else
+static int stdin_string(void *context, const unsigned char *val, unsigned int len) {
+#endif
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "full_text") == 0) {
         sasprintf(&(ctx->block.full_text), "%.*s", len, val);
@@ -240,7 +249,13 @@ void start_child(char *command) {
     callbacks.yajl_end_array = stdin_end_array;
     callbacks.yajl_start_map = stdin_start_map;
     callbacks.yajl_end_map = stdin_end_map;
+#if YAJL_MAJOR < 2
+    yajl_parser_config parse_conf = { 0, 0 };
+
+    parser = yajl_alloc(&callbacks, &parse_conf, NULL, (void*)&parser_context);
+#else
     parser = yajl_alloc(&callbacks, NULL, &parser_context);
+#endif
 
     child_pid = 0;
     if (command != NULL) {
