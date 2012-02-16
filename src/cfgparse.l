@@ -170,7 +170,7 @@ EOL     (\r?\n)
 <ASSIGN_TARGET_COND>[ \t]+      { BEGIN(WANT_STRING); }
 <EXEC>--no-startup-id           { printf("no startup id\n"); yy_pop_state(); return TOK_NO_STARTUP_ID; }
 <EXEC>.                         { printf("anything else: *%s*\n", yytext); yyless(0); yy_pop_state(); yy_pop_state(); }
-[0-9]+                          { yylval.number = atoi(yytext); return NUMBER; }
+[0-9-]+                         { yylval.number = atoi(yytext); return NUMBER; }
 bar                             { yy_push_state(BAR); return TOK_BAR; }
 mode                            { return TOKMODE; }
 bind                            { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
