@@ -176,6 +176,8 @@ mode                            { return TOKMODE; }
 bind                            { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
 bindcode                        { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
 bindsym                         { yy_push_state(BINDSYM_COND); yy_push_state(EAT_WHITESPACE); return TOKBINDSYM; }
+floating_maximum_size           { return TOKFLOATING_MAXIMUM_SIZE; }
+floating_minimum_size           { return TOKFLOATING_MINIMUM_SIZE; }
 floating_modifier               { return TOKFLOATING_MODIFIER; }
 workspace                       { return TOKWORKSPACE; }
 output                          { yy_push_state(OUTPUT_COND); yy_push_state(EAT_WHITESPACE); return TOKOUTPUT; }

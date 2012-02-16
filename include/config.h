@@ -150,6 +150,12 @@ struct Config {
      * buttons to do things with floating windows (move, resize) */
     uint32_t floating_modifier;
 
+    /** Maximum and minimum dimensions of a floating window */
+    uint16_t floating_maximum_width;
+    uint16_t floating_maximum_height;
+    uint16_t floating_minimum_width;
+    uint16_t floating_minimum_height;
+
     /* Color codes are stored here */
     struct config_client {
         uint32_t background;

@@ -370,6 +370,27 @@ floating_modifier <Modifiers>
 floating_modifier Mod1
 --------------------------------
 
+=== Constraining floating window size
+
+The maximum and minimum dimensions of floating windows can be specified. If
+either dimension of +floating_maximum_size+ is specified as -1, that dimension
+will be unconstrained with respect to its maximum value. If either dimension of
++floating_maximum_size+ is undefined, or specified as 0, i3 will use a default
+value to constrain the maximum size. +floating_minimum_size+ is treated in a
+manner analogous to +floating_maximum_size+.
+
+*Syntax*:
+----------------------------------------
+floating_minimum_size <width> x <height>
+floating_maximum_size <width> x <height>
+----------------------------------------
+
+*Example*:
+--------------------------------------
+floating_minimum_size 75 x 50
+floating_maximum_size -1 x -1
+--------------------------------------
+
 === Orientation for new workspaces
 
 New workspaces get a reasonable default orientation: Wide-screen monitors

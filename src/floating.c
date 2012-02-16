@@ -11,6 +11,21 @@
 
 extern xcb_connection_t *conn;
 
+/*
+ * Calculates sum of heights and sum of widths of all currently active outputs
+ *
+ */
+Rect total_outputs_dimensions() {
+    Output *output;
+    /* Use Rect to encapsulate dimensions, ignoring x/y */
+    Rect outputs_dimensions = {0, 0, 0, 0};
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        outputs_dimensions.height += output->rect.height;
+        outputs_dimensions.width += output->rect.width;
+    }
+    return outputs_dimensions;
+}
+
 void floating_enable(Con *con, bool automatic) {
     bool set_focus = (con == focused);
 
@@ -120,9 +135,45 @@ void floating_enable(Con *con, bool automatic) {
             nc->rect.height = max(nc->rect.height, child->geometry.height);
         }
     }
-    /* Raise the width/height to at least 75x50 (minimum size for windows) */
-    nc->rect.width = max(nc->rect.width, 75);
-    nc->rect.height = max(nc->rect.height, 50);
+
+    /* Define reasonable minimal and maximal sizes for floating windows */
+    const int floating_sane_min_height = 50;
+    const int floating_sane_min_width = 75;
+
+    Rect floating_sane_max_dimensions;
+    floating_sane_max_dimensions = total_outputs_dimensions();
+
+    /* Unless user requests otherwise (-1), ensure width/height do not exceed
+     * configured maxima or, if unconfigured, limit to combined width of all
+     * outputs */
+    if (config.floating_maximum_height != -1) {
+        if (config.floating_maximum_height == 0)
+            nc->rect.height = min(nc->rect.height, floating_sane_max_dimensions.height);
+        else
+            nc->rect.height = min(nc->rect.height, config.floating_maximum_height);
+    }
+    if (config.floating_maximum_width != -1) {
+        if (config.floating_maximum_width == 0)
+            nc->rect.width = min(nc->rect.width, floating_sane_max_dimensions.width);
+        else
+            nc->rect.width = min(nc->rect.width, config.floating_maximum_width);
+    }
+
+    /* Unless user requests otherwise (-1), raise the width/height to
+     * reasonable minimum dimensions */
+    if (config.floating_minimum_height != -1) {
+        if (config.floating_minimum_height == 0)
+            nc->rect.height = max(nc->rect.height, floating_sane_min_height);
+        else
+            nc->rect.height = max(nc->rect.height, config.floating_minimum_height);
+    }
+    if (config.floating_minimum_width != -1) {
+        if (config.floating_minimum_width == 0)
+            nc->rect.width = max(nc->rect.width, floating_sane_min_width);
+        else
+            nc->rect.width = max(nc->rect.width, config.floating_minimum_width);
+    }
+
     /* add pixels for the decoration */
     /* TODO: don’t add them when the user automatically puts new windows into
      * 1pixel/borderless mode */

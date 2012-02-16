@@ -664,6 +664,8 @@ void parse_file(const char *f) {
 %token                  TOKCONTROL                  "control"
 %token                  TOKSHIFT                    "shift"
 %token                  TOKFLOATING_MODIFIER        "floating_modifier"
+%token                  TOKFLOATING_MAXIMUM_SIZE    "floating_maximum_size"
+%token                  TOKFLOATING_MINIMUM_SIZE    "floating_minimum_size"
 %token  <string>        QUOTEDSTRING                "<quoted string>"
 %token                  TOKWORKSPACE                "workspace"
 %token                  TOKOUTPUT                   "output"
@@ -778,6 +780,8 @@ line:
     | for_window
     | mode
     | bar
+    | floating_maximum_size
+    | floating_minimum_size
     | floating_modifier
     | orientation
     | workspace_layout
@@ -1289,6 +1293,26 @@ bar_color_urgent_workspace:
         current_bar.colors.urgent_workspace_border = $2;
         current_bar.colors.urgent_workspace_bg = $3;
         current_bar.colors.urgent_workspace_text = $4;
+    }
+    ;
+
+floating_maximum_size:
+    TOKFLOATING_MAXIMUM_SIZE NUMBER WORD NUMBER
+    {
+        printf("floating_maximum_width = %d\n", $2);
+        printf("floating_maximum_height = %d\n", $4);
+        config.floating_maximum_width = $2;
+        config.floating_maximum_height = $4;
+    }
+    ;
+
+floating_minimum_size:
+    TOKFLOATING_MINIMUM_SIZE NUMBER WORD NUMBER
+    {
+        printf("floating_minimum_width = %d\n", $2);
+        printf("floating_minimum_height = %d\n", $4);
+        config.floating_minimum_width = $2;
+        config.floating_minimum_height = $4;
     }
     ;
 
