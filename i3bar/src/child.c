@@ -18,6 +18,8 @@
 #include <errno.h>
 #include <err.h>
 #include <ev.h>
+#include <yajl/yajl_common.h>
+#include <yajl/yajl_parse.h>
 
 #include "common.h"
 
@@ -28,7 +30,25 @@ pid_t child_pid;
 ev_io    *stdin_io;
 ev_child *child_sig;
 
+/* JSON parser for stdin */
+bool first_line = true;
+bool plaintext = false;
+yajl_callbacks callbacks;
+yajl_handle parser;
+
+typedef struct parser_ctx {
+    /* A copy of the last JSON map key. */
+    char *last_map_key;
+
+    /* The current block. Will be filled, then copied and put into the list of
+     * blocks. */
+    struct status_block block;
+} parser_ctx;
+
+parser_ctx parser_context;
+
 /* The buffer statusline points to */
+struct statusline_head statusline_head = TAILQ_HEAD_INITIALIZER(statusline_head);
 char *statusline_buffer = NULL;
 
 /*
@@ -51,6 +71,70 @@ void cleanup() {
 }
 
 /*
+ * The start of a new array is the start of a new status line, so we clear all
+ * previous entries.
+ *
+ */
+static int stdin_start_array(void *context) {
+    struct status_block *first;
+    while (!TAILQ_EMPTY(&statusline_head)) {
+        first = TAILQ_FIRST(&statusline_head);
+        FREE(first->full_text);
+        FREE(first->color);
+        TAILQ_REMOVE(&statusline_head, first, blocks);
+        free(first);
+    }
+    return 1;
+}
+
+/*
+ * The start of a map is the start of a single block of the status line.
+ *
+ */
+static int stdin_start_map(void *context) {
+    parser_ctx *ctx = context;
+    memset(&(ctx->block), '\0', sizeof(struct status_block));
+    return 1;
+}
+
+static int stdin_map_key(void *context, const unsigned char *key, size_t len) {
+    parser_ctx *ctx = context;
+    FREE(ctx->last_map_key);
+    sasprintf(&(ctx->last_map_key), "%.*s", len, key);
+    return 1;
+}
+
+static int stdin_string(void *context, const unsigned char *val, size_t len) {
+    parser_ctx *ctx = context;
+    if (strcasecmp(ctx->last_map_key, "full_text") == 0) {
+        sasprintf(&(ctx->block.full_text), "%.*s", len, val);
+    }
+    if (strcasecmp(ctx->last_map_key, "color") == 0) {
+        sasprintf(&(ctx->block.color), "%.*s", len, val);
+    }
+    return 1;
+}
+
+static int stdin_end_map(void *context) {
+    parser_ctx *ctx = context;
+    struct status_block *new_block = smalloc(sizeof(struct status_block));
+    memcpy(new_block, &(ctx->block), sizeof(struct status_block));
+    TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
+    return 1;
+}
+
+static int stdin_end_array(void *context) {
+    DLOG("dumping statusline:\n");
+    struct status_block *current;
+    TAILQ_FOREACH(current, &statusline_head, blocks) {
+        DLOG("full_text = %s\n", current->full_text);
+        DLOG("color = %s\n", current->color);
+    }
+    DLOG("end of dump\n");
+    return 1;
+}
+
+/*
  * Callbalk for stdin. We read a line from stdin and store the result
  * in statusline
  *
@@ -60,25 +144,19 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     int n = 0;
     int rec = 0;
     int buffer_len = STDIN_CHUNK_SIZE;
-    char *buffer = smalloc(buffer_len);
+    unsigned char *buffer = smalloc(buffer_len);
     buffer[0] = '\0';
     while(1) {
         n = read(fd, buffer + rec, buffer_len - rec);
         if (n == -1) {
             if (errno == EAGAIN) {
-                /* remove trailing newline and finish up */
-                buffer[rec-1] = '\0';
+                /* finish up */
                 break;
             }
             ELOG("read() failed!: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
-            if (rec != 0) {
-                /* remove trailing newline and finish up */
-                buffer[rec-1] = '\0';
-            }
-
             /* end of file, kill the watcher */
             ELOG("stdin: received EOF\n");
             cleanup();
@@ -96,13 +174,41 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         FREE(buffer);
         return;
     }
-    FREE(statusline_buffer);
-    statusline = statusline_buffer = buffer;
-    for (n = 0; buffer[n] != '\0'; ++n) {
-        if (buffer[n] == '\n')
-            statusline = &buffer[n + 1];
+
+    unsigned char *json_input = buffer;
+    if (first_line) {
+        DLOG("Detecting input type based on buffer *%.*s*\n", rec, buffer);
+        /* Detect whether this is JSON or plain text. */
+        plaintext = (strncasecmp((char*)buffer, "{\"version\":", strlen("{\"version\":")) != 0);
+        if (plaintext) {
+            /* In case of plaintext, we just add a single block and change its
+             * full_text pointer later. */
+            struct status_block *new_block = scalloc(sizeof(struct status_block));
+            TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
+        } else {
+            /* At the moment, we don’t care for the version. This might change
+             * in the future, but for now, we just discard it. */
+            while (*json_input != '\n' && *json_input != '\0') {
+                json_input++;
+                rec--;
+            }
+        }
+        first_line = false;
     }
-    DLOG("%s\n", statusline);
+    if (!plaintext) {
+        yajl_status status = yajl_parse(parser, json_input, rec);
+        if (status != yajl_status_ok) {
+            fprintf(stderr, "[i3bar] Could not parse JSON input: %.*s\n",
+                    rec, json_input);
+        }
+        free(buffer);
+    } else {
+        struct status_block *first = TAILQ_FIRST(&statusline_head);
+        /* Remove the trailing newline and terminate the string at the same
+         * time. */
+        buffer[rec-1] = '\0';
+        first->full_text = (char*)buffer;
+    }
     draw_bars();
 }
 
@@ -126,6 +232,16 @@ void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
  *
  */
 void start_child(char *command) {
+    /* Allocate a yajl parser which will be used to parse stdin. */
+    memset(&callbacks, '\0', sizeof(yajl_callbacks));
+    callbacks.yajl_map_key = stdin_map_key;
+    callbacks.yajl_string = stdin_string;
+    callbacks.yajl_start_array = stdin_start_array;
+    callbacks.yajl_end_array = stdin_end_array;
+    callbacks.yajl_start_map = stdin_start_map;
+    callbacks.yajl_end_map = stdin_end_map;
+    parser = yajl_alloc(&callbacks, NULL, &parser_context);
+
     child_pid = 0;
     if (command != NULL) {
         int fd[2];

@@ -108,28 +108,51 @@ int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
  *
  */
 void refresh_statusline() {
-    size_t glyph_count;
+    struct status_block *block;
 
-    if (statusline == NULL) {
-        return;
+    uint32_t old_statusline_width = statusline_width;
+    statusline_width = 0;
+
+    /* Convert all blocks from UTF-8 to UCS-2 and predict the text width (in
+     * pixels). */
+    TAILQ_FOREACH(block, &statusline_head, blocks) {
+        block->ucs2_full_text = (xcb_char2b_t*)convert_utf8_to_ucs2(block->full_text, &(block->glyph_count_full_text));
+        block->width = predict_text_width((char*)block->ucs2_full_text, block->glyph_count_full_text, true);
+        /* If this is not the last block, add some pixels for a separator. */
+        if (TAILQ_NEXT(block, blocks) != NULL)
+            block->width += 9;
+        statusline_width += block->width;
     }
 
-    xcb_char2b_t *text = (xcb_char2b_t*)convert_utf8_to_ucs2(statusline, &glyph_count);
-    uint32_t old_statusline_width = statusline_width;
-    statusline_width = predict_text_width((char*)text, glyph_count, true);
     /* If the statusline is bigger than our screen we need to make sure that
      * the pixmap provides enough space, so re-allocate if the width grew */
     if (statusline_width > xcb_screen->width_in_pixels &&
         statusline_width > old_statusline_width)
         realloc_sl_buffer();
 
+    /* Clear the statusline pixmap. */
     xcb_rectangle_t rect = { 0, 0, xcb_screen->width_in_pixels, font.height };
     xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_clear, 1, &rect);
-    set_font_colors(statusline_ctx, colors.bar_fg, colors.bar_bg);
-    draw_text((char*)text, glyph_count, true, statusline_pm, statusline_ctx,
-            0, 0, xcb_screen->width_in_pixels);
 
-    FREE(text);
+    /* Draw the text of each block. */
+    uint32_t x = 0;
+    TAILQ_FOREACH(block, &statusline_head, blocks) {
+        uint32_t colorpixel = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
+        set_font_colors(statusline_ctx, colorpixel, colors.bar_bg);
+        draw_text((char*)block->ucs2_full_text, block->glyph_count_full_text,
+                  true, statusline_pm, statusline_ctx, x, 0, block->width);
+        x += block->width;
+
+        if (TAILQ_NEXT(block, blocks) != NULL) {
+            /* This is not the last block, draw a separator. */
+            set_font_colors(statusline_ctx, get_colorpixel("#666666"), colors.bar_bg);
+            xcb_poly_line(xcb_connection, XCB_COORD_MODE_ORIGIN, statusline_pm,
+                          statusline_ctx, 2,
+                          (xcb_point_t[]){ { x - 5, 2 }, { x - 5, font.height - 2 } });
+        }
+
+        FREE(block->ucs2_full_text);
+    }
 }
 
 /*
@@ -1371,7 +1394,7 @@ void draw_bars() {
                                 1,
                                 &rect);
 
-        if (statusline != NULL) {
+        if (!TAILQ_EMPTY(&statusline_head)) {
             DLOG("Printing statusline!\n");
 
             /* Luckily we already prepared a seperate pixmap containing the rendered
