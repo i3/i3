@@ -24,7 +24,7 @@ static iconv_t ucs2_conversion_descriptor = (iconv_t)-1;
 char *convert_ucs2_to_utf8(xcb_char2b_t *text, size_t num_glyphs) {
     /* Allocate the output buffer (UTF-8 is at most 4 bytes per glyph) */
     size_t buffer_size = num_glyphs * 4 * sizeof(char) + 1;
-    char *buffer = scalloc(buffer_size * sizeof(char));
+    char *buffer = scalloc(buffer_size);
 
     /* We need to use an additional pointer, because iconv() modifies it */
     char *output = buffer;
