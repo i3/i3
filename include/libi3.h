@@ -224,7 +224,12 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
 /**
  * Draws text onto the specified X drawable (normally a pixmap) at the
  * specified coordinates (from the top left corner of the leftmost, uppermost
- * glyph) and using the provided gc. Text can be specified as UCS-2 or UTF-8.
+ * glyph) and using the provided gc.
+ *
+ * Text can be specified as UCS-2 or UTF-8. If it's specified as UCS-2, then
+ * text_len must be the number of glyphs in the string. If it's specified as
+ * UTF-8, then text_len must be the number of bytes in the string (not counting
+ * the null terminator).
  *
  */
 void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawable,
