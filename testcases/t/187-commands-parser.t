@@ -28,66 +28,51 @@ sub parser_calls {
 # 1: First that the parser properly recognizes commands which are ok.
 ################################################################################
 
+# The first call has only a single command, the following ones are consolidated
+# for performance.
 is(parser_calls('move workspace 3'),
    'cmd_move_con_to_workspace_name(3)',
    'single number (move workspace 3) ok');
 
-is(parser_calls('move to workspace 3'),
-   'cmd_move_con_to_workspace_name(3)',
-   'to (move to workspace 3) ok');
-
-is(parser_calls('move window to workspace 3'),
-   'cmd_move_con_to_workspace_name(3)',
-   'window to (move window to workspace 3) ok');
-
-is(parser_calls('move container to workspace 3'),
-   'cmd_move_con_to_workspace_name(3)',
-   'container to (move container to workspace 3) ok');
-
-is(parser_calls('move workspace foobar'),
-   'cmd_move_con_to_workspace_name(foobar)',
-   'single word (move workspace foobar) ok');
-
-is(parser_calls('move workspace 3: foobar'),
-   'cmd_move_con_to_workspace_name(3: foobar)',
-   'multiple words (move workspace 3: foobar) ok');
-
-is(parser_calls('move workspace "3: foobar"'),
-   'cmd_move_con_to_workspace_name(3: foobar)',
-   'double quotes (move workspace "3: foobar") ok');
-
-is(parser_calls('move workspace "3: foobar, baz"'),
-   'cmd_move_con_to_workspace_name(3: foobar, baz)',
-   'quotes with comma (move workspace "3: foobar, baz") ok');
+is(parser_calls(
+   'move to workspace 3; ' .
+   'move window to workspace 3; ' .
+   'move container to workspace 3; ' .
+   'move workspace foobar; ' .
+   'move workspace 3: foobar; ' .
+   'move workspace "3: foobar"; ' .
+   'move workspace "3: foobar, baz"; '),
+   "cmd_move_con_to_workspace_name(3)\n" .
+   "cmd_move_con_to_workspace_name(3)\n" .
+   "cmd_move_con_to_workspace_name(3)\n" .
+   "cmd_move_con_to_workspace_name(foobar)\n" .
+   "cmd_move_con_to_workspace_name(3: foobar)\n" .
+   "cmd_move_con_to_workspace_name(3: foobar)\n" .
+   "cmd_move_con_to_workspace_name(3: foobar, baz)",
+   'move ok');
 
 is(parser_calls('move workspace 3: foobar, nop foo'),
    "cmd_move_con_to_workspace_name(3: foobar)\n" .
    "cmd_nop(foo)",
    'multiple ops (move workspace 3: foobar, nop foo) ok');
 
-is(parser_calls('exec i3-sensible-terminal'),
-   'cmd_exec((null), i3-sensible-terminal)',
+is(parser_calls(
+   'exec i3-sensible-terminal; ' .
+   'exec --no-startup-id i3-sensible-terminal'),
+   "cmd_exec((null), i3-sensible-terminal)\n" .
+   "cmd_exec(--no-startup-id, i3-sensible-terminal)",
    'exec ok');
 
-is(parser_calls('exec --no-startup-id i3-sensible-terminal'),
-   'cmd_exec(--no-startup-id, i3-sensible-terminal)',
-   'exec --no-startup-id ok');
-
-is(parser_calls('resize shrink left'),
-   'cmd_resize(shrink, left, 10, 10)',
+is(parser_calls(
+   'resize shrink left; ' .
+   'resize shrink left 25 px; ' .
+   'resize shrink left 25 px or 33 ppt; ' .
+   'resize shrink left 25'),
+   "cmd_resize(shrink, left, 10, 10)\n" .
+   "cmd_resize(shrink, left, 25, 10)\n" .
+   "cmd_resize(shrink, left, 25, 33)\n" .
+   "cmd_resize(shrink, left, 25, 10)",
    'simple resize ok');
-
-is(parser_calls('resize shrink left 25 px'),
-   'cmd_resize(shrink, left, 25, 10)',
-   'px resize ok');
-
-is(parser_calls('resize shrink left 25 px or 33 ppt'),
-   'cmd_resize(shrink, left, 25, 33)',
-   'px + ppt resize ok');
-
-is(parser_calls('resize shrink left 25 px or 33 ppt'),
-   'cmd_resize(shrink, left, 25, 33)',
-   'px + ppt resize ok');
 
 is(parser_calls('resize shrink left 25 px or 33 ppt,'),
    'cmd_resize(shrink, left, 25, 33)',
@@ -96,10 +81,6 @@ is(parser_calls('resize shrink left 25 px or 33 ppt,'),
 is(parser_calls('resize shrink left 25 px or 33 ppt;'),
    'cmd_resize(shrink, left, 25, 33)',
    'trailing semicolon resize ok');
-
-is(parser_calls('resize shrink left 25'),
-   'cmd_resize(shrink, left, 25, 10)',
-   'resize early end ok');
 
 is(parser_calls('[con_mark=yay] focus'),
    "cmd_criteria_add(con_mark, yay)\n" .
