@@ -192,6 +192,22 @@ sleep 0.25;
 # ticket #501
 #####################################################################
 
+# Walks /proc to figure out whether a child process of $i3pid with the name
+# 'i3-nagbar' exists.
+sub i3nagbar_running {
+    my ($i3pid) = @_;
+
+    my @procfiles = grep { m,^/proc/[0-9]+$, } </proc/*>;
+    for my $path (@procfiles) {
+        open(my $fh, '<', "$path/stat") or next;
+        my $line = <$fh>;
+        close($fh);
+        my ($comm, $ppid) = ($line =~ /^[0-9]+ \(([^)]+)\) . ([0-9]+)/);
+        return 1 if $ppid == $i3pid && $comm eq 'i3-nagbar';
+    }
+    return 0;
+}
+
 $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
@@ -200,9 +216,11 @@ EOT
 
 $pid = launch_with_config($config);
 
-# TODO: replace this with checking the process hierarchy
-# XXX: give i3-nagbar some time to start up
-sleep 1;
+# Ensure that i3-nagbar is running. It should be started pretty quickly, so we
+# busy-loop with a short delay.
+while (!i3nagbar_running($pid)) {
+    sleep 0.05;
+}
 
 $tmp = fresh_workspace;
 
