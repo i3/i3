@@ -114,14 +114,15 @@ ok(line_exists($output, qr|^new_window none$|), 'new_window changed');
 # check whether new_window's parameters get changed correctly
 #####################################################################
 
-$output = migrate_config('new_window bb');
-ok(line_exists($output, qr|^new_window none$|), 'new_window bb changed');
-
-$output = migrate_config('new_window bn');
-ok(line_exists($output, qr|^new_window normal$|), 'new_window bn changed');
-
-$output = migrate_config('new_window bp');
-ok(line_exists($output, qr|^new_window 1pixel$|), 'new_window bp changed');
+$input = <<EOT;
+    new_window bb
+    new_window bn
+    new_window bp
+EOT
+$output = migrate_config($input);
+like($output->[0], qr|^new_window none$|, 'new_window bb changed');
+like($output->[1], qr|^new_window normal$|, 'new_window bn changed');
+like($output->[2], qr|^new_window 1pixel$|, 'new_window bp changed');
 
 #####################################################################
 # check that some commands remain untouched
@@ -232,56 +233,59 @@ ok(line_exists($output, qr|^bindsym Mod1\+s \[con_mark="foo"\] focus$|), 'goto r
 # check whether focus's parameters get changed correctly
 #####################################################################
 
-$output = migrate_config('bindsym Mod1+f focus 3');
-ok(line_exists($output, qr|^#.*focus.*obsolete.*focus 3$|), 'focus [number] gone');
+$input = <<EOT;
+bindsym Mod1+f focus 3
+bindsym Mod1+f focus floating
+bindsym Mod1+f focus tiling
+bindsym Mod1+f focus ft
+EOT
 
-$output = migrate_config('bindsym Mod1+f focus floating');
-ok(line_exists($output, qr|^bindsym Mod1\+f focus floating$|), 'focus floating unchanged');
-
-$output = migrate_config('bindsym Mod1+f focus tiling');
-ok(line_exists($output, qr|^bindsym Mod1\+f focus tiling$|), 'focus tiling unchanged');
-
-$output = migrate_config('bindsym Mod1+f focus ft');
-ok(line_exists($output, qr|^bindsym Mod1\+f focus mode_toggle$|), 'focus ft changed');
+$output = migrate_config($input);
+like($output->[0], qr|^#.*focus.*obsolete.*focus 3$|, 'focus [number] gone');
+like($output->[1], qr|^bindsym Mod1\+f focus floating$|, 'focus floating unchanged');
+like($output->[2], qr|^bindsym Mod1\+f focus tiling$|, 'focus tiling unchanged');
+like($output->[3], qr|^bindsym Mod1\+f focus mode_toggle$|, 'focus ft changed');
 
 #####################################################################
 # check whether resize's parameters get changed correctly
 #####################################################################
 
-$output = migrate_config('bindsym Mod1+f resize left +10');
-ok(line_exists($output, qr|^bindsym Mod1\+f resize grow left 10 px$|), 'resize left changed');
+$input = <<EOT;
+bindsym Mod1+f resize left +10
+bindsym Mod1+f resize top -20
+bindsym Mod1+f resize right -20
+bindsym Mod1+f resize bottom +23
+bindsym Mod1+f resize          left    \t +10
+EOT
 
-$output = migrate_config('bindsym Mod1+f resize top -20');
-ok(line_exists($output, qr|^bindsym Mod1\+f resize shrink up 20 px$|), 'resize top changed');
-
-$output = migrate_config('bindsym Mod1+f resize right -20');
-ok(line_exists($output, qr|^bindsym Mod1\+f resize shrink right 20 px$|), 'resize right changed');
-
-$output = migrate_config('bindsym Mod1+f resize bottom +23');
-ok(line_exists($output, qr|^bindsym Mod1\+f resize grow down 23 px$|), 'resize bottom changed');
+$output = migrate_config($input);
+like($output->[0], qr|^bindsym Mod1\+f resize grow left 10 px$|, 'resize left changed');
+like($output->[1], qr|^bindsym Mod1\+f resize shrink up 20 px$|, 'resize top changed');
+like($output->[2], qr|^bindsym Mod1\+f resize shrink right 20 px$|, 'resize right changed');
+like($output->[3], qr|^bindsym Mod1\+f resize grow down 23 px$|, 'resize bottom changed');
 
 #####################################################################
 # also resizing, but with indention this time
 #####################################################################
 
-$output = migrate_config("bindsym Mod1+f resize          left    \t +10");
-ok(line_exists($output, qr|^bindsym Mod1\+f resize grow left 10 px$|), 'resize left changed');
+like($output->[4], qr|^bindsym Mod1\+f resize grow left 10 px$|, 'resize left changed');
 
 #####################################################################
 # check whether jump's parameters get changed correctly
 #####################################################################
 
-$output = migrate_config('bindsym Mod1+f jump 3');
-ok(line_exists($output, qr|^#.*obsolete.*jump 3$|), 'jump to workspace removed');
+$input = <<EOT;
+bindsym Mod1+f jump 3
+bindsym Mod1+f jump 3 4 5
+bindsym Mod1+f jump "XTerm"
+bindsym Mod1+f jump "XTerm/irssi"
+EOT
 
-$output = migrate_config('bindsym Mod1+f jump 3 4 5');
-ok(line_exists($output, qr|^#.*obsolete.*jump 3 4 5$|), 'jump to workspace + col/row removed');
-
-$output = migrate_config('bindsym Mod1+f jump "XTerm"');
-ok(line_exists($output, qr|^bindsym Mod1\+f \[class="XTerm"\] focus$|), 'jump changed');
-
-$output = migrate_config('bindsym Mod1+f jump "XTerm/irssi"');
-ok(line_exists($output, qr|^bindsym Mod1\+f \[class="XTerm" title="irssi"\] focus$|), 'jump changed');
+$output = migrate_config($input);
+like($output->[0], qr|^#.*obsolete.*jump 3$|, 'jump to workspace removed');
+like($output->[1], qr|^#.*obsolete.*jump 3 4 5$|, 'jump to workspace + col/row removed');
+like($output->[2], qr|^bindsym Mod1\+f \[class="XTerm"\] focus$|, 'jump changed');
+like($output->[3], qr|^bindsym Mod1\+f \[class="XTerm" title="irssi"\] focus$|, 'jump changed');
 
 #####################################################################
 # check whether workspace commands are handled correctly
