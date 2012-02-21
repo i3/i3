@@ -30,10 +30,15 @@ sub open_special {
     my $wm_class = delete($args{wm_class}) || 'special';
     $args{name} //= 'special window';
 
-    return open_window(
+    # We use dont_map because i3 will not map the window on the current
+    # workspace. Thus, open_window would time out in wait_for_map (2 seconds).
+    my $window = open_window(
         %args,
         before_map => sub { set_wm_class($_->id, $wm_class, $wm_class) },
+        dont_map => 1,
     );
+    $window->map;
+    return $window;
 }
 
 #####################################################################
