@@ -13,6 +13,12 @@
  */
 #include "all.h"
 
+/* From sys/time.h, not sure if it’s available on all systems. */
+# define _i3_timercmp(a, b, CMP)                                                  \
+  (((a).tv_sec == (b).tv_sec) ?                                             \
+   ((a).tv_usec CMP (b).tv_usec) :                                          \
+   ((a).tv_sec CMP (b).tv_sec))
+
 /*
  * Initializes the Match data structure. This function is necessary because the
  * members representing boolean values (like dock) need to be initialized with
@@ -125,13 +131,13 @@ bool match_matches_window(Match *match, i3Window *window) {
     Con *con = NULL;
     if (match->urgent == U_LATEST) {
         /* if the window isn't urgent, no sense in searching */
-        if (window->urgent == 0) {
+        if (window->urgent.tv_sec == 0) {
             return false;
         }
         /* if we find a window that is newer than this one, bail */
         TAILQ_FOREACH(con, &all_cons, all_cons) {
             if ((con->window != NULL) &&
-                (con->window->urgent > window->urgent)) {
+                _i3_timercmp(con->window->urgent, window->urgent, >)) {
                 return false;
             }
         }
@@ -140,14 +146,14 @@ bool match_matches_window(Match *match, i3Window *window) {
 
     if (match->urgent == U_OLDEST) {
         /* if the window isn't urgent, no sense in searching */
-        if (window->urgent == 0) {
+        if (window->urgent.tv_sec == 0) {
             return false;
         }
         /* if we find a window that is older than this one (and not 0), bail */
         TAILQ_FOREACH(con, &all_cons, all_cons) {
             if ((con->window != NULL) &&
-                (con->window->urgent != 0) &&
-                (con->window->urgent < window->urgent)) {
+                (con->window->urgent.tv_sec != 0) &&
+                _i3_timercmp(con->window->urgent, window->urgent, <)) {
                 return false;
             }
         }

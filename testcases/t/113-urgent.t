@@ -95,10 +95,6 @@ is($x->input_focus, $different_window->id, 'new window focused again');
 $top->add_hint('urgency');
 sync_with_i3;
 
-# Unfortunately, we cannot get rid of this delay. We need it because i3 stores
-# the time of an urgency hint with second precision.
-sleep 1;
-
 $bottom->add_hint('urgency');
 sync_with_i3;
 
@@ -122,10 +118,6 @@ is($x->input_focus, $different_window->id, 'new window focused again');
 
 $top->add_hint('urgency');
 sync_with_i3;
-
-# Unfortunately, we cannot get rid of this delay. We need it because i3 stores
-# the time of an urgency hint with second precision.
-sleep 1;
 
 $bottom->add_hint('urgency');
 sync_with_i3;

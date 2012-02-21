@@ -17,6 +17,7 @@
 #include <xcb/xcb_atom.h>
 #include <stdbool.h>
 #include <pcre.h>
+#include <sys/time.h>
 
 #include "queue.h"
 
@@ -305,7 +306,7 @@ struct Window {
     bool needs_take_focus;
 
     /** When this window was marked urgent. 0 means not urgent */
-    time_t urgent;
+    struct timeval urgent;
 
     /** Whether this window accepts focus. We store this inverted so that the
      * default will be 'accepts focus'. */

@@ -11,6 +11,7 @@
 #include "all.h"
 
 #include <time.h>
+#include <sys/time.h>
 #include <xcb/randr.h>
 #include <X11/XKBlib.h>
 #define SN_API_NOT_YET_FROZEN 1
@@ -844,7 +845,8 @@ static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_
 
     if (!con->urgent && focused == con) {
         DLOG("Ignoring urgency flag for current client\n");
-        con->window->urgent = 0;
+        con->window->urgent.tv_sec = 0;
+        con->window->urgent.tv_usec = 0;
         goto end;
     }
 
@@ -853,9 +855,10 @@ static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_
     //CLIENT_LOG(con);
     if (con->window) {
         if (con->urgent) {
-            con->window->urgent = time(NULL);
+            gettimeofday(&con->window->urgent, NULL);
         } else {
-            con->window->urgent = 0;
+            con->window->urgent.tv_sec = 0;
+            con->window->urgent.tv_usec = 0;
         }
     }
     LOG("Urgency flag changed to %d\n", con->urgent);
