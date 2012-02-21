@@ -9,8 +9,10 @@ subtest 'Window without WM_TAKE_FOCUS', sub {
     fresh_workspace;
 
     my $window = open_window;
-
-    ok(!wait_for_event(1, sub { $_[0]->{response_type} == 161 }), 'did not receive ClientMessage');
+    # sync_with_i3 will send a ClientMessage to i3 and receive one targeted to
+    # $window->id. If it receives WM_TAKE_FOCUS instead, it will return 0, thus
+    # the test will fail.
+    ok(sync_with_i3(window_id => $window->id), 'did not receive ClientMessage');
 
     done_testing;
 };

@@ -414,12 +414,16 @@ sub sync_with_i3 {
     # Since we need a (mapped) window for receiving a ClientMessage, we create
     # one on the first call of sync_with_i3. It will be re-used in all
     # subsequent calls.
-    if (!defined($_sync_window) || exists($args{no_cache})) {
+    if (!exists($args{window_id}) &&
+        (!defined($_sync_window) || exists($args{no_cache}))) {
         $_sync_window = open_window(
             rect => [ -15, -15, 10, 10 ],
             override_redirect => 1,
         );
     }
+
+    my $window_id = delete $args{window_id};
+    $window_id //= $_sync_window->id;
 
     my $root = $x->get_root_window();
     # Generate a random number to identify this particular ClientMessage.
@@ -433,7 +437,7 @@ sub sync_with_i3 {
          $root,  # destination window
          $x->atom(name => 'I3_SYNC')->id,
 
-         $_sync_window->id,    # data[0]: our own window id
+         $window_id,    # data[0]: our own window id
          $myrnd, # data[1]: a random value to identify the request
          0,
          0,
