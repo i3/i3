@@ -409,10 +409,12 @@ sub focused_ws {
 # See also docs/testsuite for a long explanation
 #
 sub sync_with_i3 {
+    my %args = @_ == 1 ? %{$_[0]} : @_;
+
     # Since we need a (mapped) window for receiving a ClientMessage, we create
     # one on the first call of sync_with_i3. It will be re-used in all
     # subsequent calls.
-    if (!defined($_sync_window)) {
+    if (!defined($_sync_window) || exists($args{no_cache})) {
         $_sync_window = open_window(
             rect => [ -15, -15, 10, 10 ],
             override_redirect => 1,

@@ -28,8 +28,7 @@ sub two_windows {
 my $tmp = two_windows;
 
 cmd 'kill';
-
-sleep 0.25;
+sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 1, 'one container left after killing');
 
@@ -41,8 +40,7 @@ ok(@{get_ws_content($tmp)} == 1, 'one container left after killing');
 $tmp = two_windows;
 
 cmd 'kill window';
-
-sleep 0.25;
+sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 1, 'one container left after killing');
 
@@ -54,8 +52,9 @@ ok(@{get_ws_content($tmp)} == 1, 'one container left after killing');
 $tmp = two_windows;
 
 cmd 'kill client';
-
-sleep 0.25;
+# We need to re-establish the X11 connection which we just killed :).
+$x = i3test::X11->new;
+sync_with_i3(no_cache => 1);
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers left after killing');
 
