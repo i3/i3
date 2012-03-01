@@ -56,8 +56,8 @@ extern unsigned int xcb_numlock_mask;
  * generating an ID and checking for errors.
  *
  */
-xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t window_class,
-        enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values);
+xcb_window_t create_window(xcb_connection_t *conn, Rect r, uint16_t depth, xcb_visualid_t visual,
+        uint16_t window_class, enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values);
 
 /**
  * Draws a line from x,y to to_x,to_y using the given color
@@ -116,5 +116,9 @@ void xcb_warp_pointer_rect(xcb_connection_t *conn, Rect *rect);
  *
  */
 void xcb_set_root_cursor(int cursor);
+
+uint16_t get_visual_depth(xcb_visualid_t visual_id);
+
+xcb_visualid_t get_visualid_by_depth(uint16_t depth);
 
 #endif

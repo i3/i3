@@ -322,6 +322,9 @@ struct Window {
      * (assignments run only once) */
     uint32_t nr_assignments;
     Assignment **ran_assignments;
+
+    /** Depth of the window */
+    uint16_t depth;
 };
 
 /**

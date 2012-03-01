@@ -16,14 +16,10 @@ unsigned int xcb_numlock_mask;
  * for errors.
  *
  */
-xcb_window_t create_window(xcb_connection_t *conn, Rect dims, uint16_t window_class,
+xcb_window_t create_window(xcb_connection_t *conn, Rect dims,
+        uint16_t depth, xcb_visualid_t visual, uint16_t window_class,
         enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values) {
     xcb_window_t result = xcb_generate_id(conn);
-
-    /* By default, the color depth determined in src/main.c is used (32 bit if
-     * available, otherwise the X11 root window’s default depth). */
-    uint16_t depth = root_depth;
-    xcb_visualid_t visual = visual_id;
 
     /* If the window class is XCB_WINDOW_CLASS_INPUT_ONLY, we copy depth and
      * visual id from the parent window. */
@@ -202,4 +198,47 @@ void xcb_set_root_cursor(int cursor) {
     xcb_change_window_attributes(conn, root, XCB_CW_CURSOR, &cursor_id);
     xcb_free_cursor(conn, cursor_id);
     xcb_flush(conn);
+}
+
+/*
+ * Get depth of visual specified by visualid
+ *
+ */
+uint16_t get_visual_depth(xcb_visualid_t visual_id){
+    xcb_depth_iterator_t depth_iter;
+
+    depth_iter = xcb_screen_allowed_depths_iterator(root_screen);
+    for (; depth_iter.rem; xcb_depth_next(&depth_iter)) {
+        xcb_visualtype_iterator_t visual_iter;
+
+        visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
+        for (; visual_iter.rem; xcb_visualtype_next(&visual_iter)) {
+            if (visual_id == visual_iter.data->visual_id) {
+                return depth_iter.data->depth;
+            }
+        }
+    }
+    return 0;
+}
+
+/*
+ * Get visualid with specified depth
+ *
+ */
+xcb_visualid_t get_visualid_by_depth(uint16_t depth){
+    xcb_depth_iterator_t depth_iter;
+
+    depth_iter = xcb_screen_allowed_depths_iterator(root_screen);
+    for (; depth_iter.rem; xcb_depth_next(&depth_iter)) {
+        if (depth_iter.data->depth != depth)
+            continue;
+
+        xcb_visualtype_iterator_t visual_iter;
+
+        visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
+        if (!visual_iter.rem)
+            continue;
+        return visual_iter.data->visual_id;
+    }
+    return 0;
 }

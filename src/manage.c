@@ -149,6 +149,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     i3Window *cwindow = scalloc(sizeof(i3Window));
     cwindow->id = window;
+    cwindow->depth = get_visual_depth(attr->visual);
 
     /* We need to grab the mouse buttons for click to focus */
     xcb_grab_button(conn, false, window, XCB_EVENT_MASK_BUTTON_PRESS,

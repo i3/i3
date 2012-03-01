@@ -49,8 +49,10 @@ Con *con_new(Con *parent, i3Window *window) {
     cnt++;
     if ((cnt % (sizeof(colors) / sizeof(char*))) == 0)
         cnt = 0;
-
-    x_con_init(new);
+    if (window)
+        x_con_init(new, window->depth);
+    else
+        x_con_init(new, XCB_COPY_FROM_PARENT);
 
     TAILQ_INIT(&(new->floating_head));
     TAILQ_INIT(&(new->nodes_head));

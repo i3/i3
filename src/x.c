@@ -85,7 +85,7 @@ static con_state *state_for_frame(xcb_window_t window) {
  * every container from con_new().
  *
  */
-void x_con_init(Con *con) {
+void x_con_init(Con *con, uint16_t depth) {
     /* TODO: maybe create the window when rendering first? we could then even
      * get the initial geometry right */
 
@@ -96,25 +96,44 @@ void x_con_init(Con *con) {
      * don’t even have a border) because the X11 server requires us to when
      * using 32 bit color depths, see
      * http://stackoverflow.com/questions/3645632 */
-    mask |= XCB_CW_BACK_PIXEL;
-    values[0] = root_screen->black_pixel;
+    xcb_visualid_t visual = XCB_COPY_FROM_PARENT;
+    if (depth != root_depth && depth != XCB_COPY_FROM_PARENT) {
+        visual = get_visualid_by_depth(depth);
+        xcb_colormap_t win_colormap = xcb_generate_id(conn);
+        xcb_create_colormap_checked(conn, XCB_COLORMAP_ALLOC_NONE, win_colormap, root, visual);
 
-    mask |= XCB_CW_BORDER_PIXEL;
-    values[1] = root_screen->black_pixel;
+        mask |= XCB_CW_BACK_PIXEL;
+        values[0] = root_screen->black_pixel;
 
-    /* our own frames should not be managed */
-    mask |= XCB_CW_OVERRIDE_REDIRECT;
-    values[2] = 1;
+        mask |= XCB_CW_BORDER_PIXEL;
+        values[1] = root_screen->black_pixel;
 
-    /* see include/xcb.h for the FRAME_EVENT_MASK */
-    mask |= XCB_CW_EVENT_MASK;
-    values[3] = FRAME_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
+        /* our own frames should not be managed */
+        mask |= XCB_CW_OVERRIDE_REDIRECT;
+        values[2] = 1;
 
-    mask |= XCB_CW_COLORMAP;
-    values[4] = colormap;
+        /* see include/xcb.h for the FRAME_EVENT_MASK */
+        mask |= XCB_CW_EVENT_MASK;
+        values[3] = FRAME_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
+
+        mask |= XCB_CW_COLORMAP;
+        values[4] = win_colormap;
+    } else {
+        mask = XCB_CW_OVERRIDE_REDIRECT;
+        values[0] = 1;
+
+        mask |= XCB_CW_EVENT_MASK;
+        values[1] = FRAME_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
+
+        mask |= XCB_CW_COLORMAP;
+        values[2] = colormap;
+    }
 
     Rect dims = { -15, -15, 10, 10 };
-    con->frame = create_window(conn, dims, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
+    con->frame = create_window(conn, dims, depth, visual, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
+
+    if (depth != root_depth && depth != XCB_COPY_FROM_PARENT)
+        xcb_free_colormap(conn, values[4]);
 
     struct con_state *state = scalloc(sizeof(struct con_state));
     state->id = con->frame;
@@ -614,7 +633,13 @@ void x_push_node(Con *con) {
                 xcb_free_pixmap(conn, con->pixmap);
                 xcb_free_gc(conn, con->pm_gc);
             }
-            xcb_create_pixmap(conn, root_depth, con->pixmap, con->frame, rect.width, rect.height);
+
+            uint16_t win_depth = root_depth;
+            if (con->window)
+                win_depth = con->window->depth;
+
+            xcb_create_pixmap(conn, win_depth, con->pixmap, con->frame, rect.width, rect.height);
+
             /* For the graphics context, we disable GraphicsExposure events.
              * Those will be sent when a CopyArea request cannot be fulfilled
              * properly due to parts of the source being unmapped or otherwise

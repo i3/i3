@@ -253,7 +253,6 @@ int main(int argc, char *argv[]) {
     bool delete_layout_path = false;
     bool force_xinerama = false;
     bool disable_signalhandler = false;
-    bool enable_32bit_visual = false;
     static struct option long_options[] = {
         {"no-autostart", no_argument, 0, 'a'},
         {"config", required_argument, 0, 'c'},
@@ -268,8 +267,6 @@ int main(int argc, char *argv[]) {
         {"shmlog_size", required_argument, 0, 0},
         {"get-socketpath", no_argument, 0, 0},
         {"get_socketpath", no_argument, 0, 0},
-        {"enable-32bit-visual", no_argument, 0, 0},
-        {"enable_32bit_visual", no_argument, 0, 0},
         {0, 0, 0, 0}
     };
     int option_index = 0, opt;
@@ -371,11 +368,6 @@ int main(int argc, char *argv[]) {
                     layout_path = sstrdup(optarg);
                     delete_layout_path = true;
                     break;
-                } else if (strcmp(long_options[option_index].name, "enable_32bit_visual") == 0 ||
-                           strcmp(long_options[option_index].name, "enable-32bit-visual") == 0) {
-                    LOG("Enabling 32 bit visual (if available)\n");
-                    enable_32bit_visual = true;
-                    break;
                 }
                 /* fall-through */
             default:
@@ -401,10 +393,6 @@ int main(int argc, char *argv[]) {
                                 "\tLimits the size of the i3 SHM log to <limit> bytes. Setting this\n"
                                 "\tto 0 disables SHM logging entirely.\n"
                                 "\tThe default is %d bytes.\n", shmlog_size);
-                fprintf(stderr, "\n");
-                fprintf(stderr, "\t--enable-32bit-visual\n"
-                                "\tMakes i3 use a 32 bit visual, if available. Necessary for\n"
-                                "\tpseudo-transparency with xcompmgr.\n");
                 fprintf(stderr, "\n");
                 fprintf(stderr, "If you pass plain text arguments, i3 will interpret them as a command\n"
                                 "to send to a currently running i3 (like i3-msg). This allows you to\n"
@@ -524,27 +512,6 @@ int main(int argc, char *argv[]) {
     root_depth = root_screen->root_depth;
     visual_id = root_screen->root_visual;
     colormap = root_screen->default_colormap;
-
-    if (enable_32bit_visual) {
-        xcb_depth_iterator_t depth_iter;
-        xcb_visualtype_iterator_t visual_iter;
-        for (depth_iter = xcb_screen_allowed_depths_iterator(root_screen);
-             depth_iter.rem;
-             xcb_depth_next(&depth_iter)) {
-            if (depth_iter.data->depth != 32)
-                continue;
-            visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
-            if (!visual_iter.rem)
-                continue;
-
-            visual_id = visual_iter.data->visual_id;
-            root_depth = depth_iter.data->depth;
-            colormap = xcb_generate_id(conn);
-            colormap_cookie = xcb_create_colormap_checked(conn, XCB_COLORMAP_ALLOC_NONE, colormap, root, visual_id);
-            DLOG("Found a visual with 32 bit depth.\n");
-            break;
-        }
-    }
 
     DLOG("root_depth = %d, visual_id = 0x%08x.\n", root_depth, visual_id);
 

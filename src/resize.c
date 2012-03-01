@@ -69,7 +69,8 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
 
     /* Open a new window, the resizebar. Grab the pointer and move the window around
        as the user moves the pointer. */
-    xcb_window_t grabwin = create_window(conn, output->rect, XCB_WINDOW_CLASS_INPUT_ONLY, XCURSOR_CURSOR_POINTER, true, mask, values);
+    xcb_window_t grabwin = create_window(conn, output->rect, XCB_COPY_FROM_PARENT, XCB_COPY_FROM_PARENT,
+            XCB_WINDOW_CLASS_INPUT_ONLY, XCURSOR_CURSOR_POINTER, true, mask, values);
 
     Rect helprect;
     if (orientation == HORIZ) {
@@ -92,8 +93,8 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     mask |= XCB_CW_OVERRIDE_REDIRECT;
     values[1] = 1;
 
-    xcb_window_t helpwin = create_window(conn, helprect, XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                         (orientation == HORIZ ?
+    xcb_window_t helpwin = create_window(conn, helprect, XCB_COPY_FROM_PARENT, XCB_COPY_FROM_PARENT,
+            XCB_WINDOW_CLASS_INPUT_OUTPUT, (orientation == HORIZ ?
                                           XCURSOR_CURSOR_RESIZE_HORIZONTAL :
                                           XCURSOR_CURSOR_RESIZE_VERTICAL), true, mask, values);
 
