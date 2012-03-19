@@ -213,6 +213,8 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         free(buffer);
     } else {
         struct status_block *first = TAILQ_FIRST(&statusline_head);
+        /* Clear the old buffer if any. */
+        FREE(first->full_text);
         /* Remove the trailing newline and terminate the string at the same
          * time. */
         buffer[rec-1] = '\0';
