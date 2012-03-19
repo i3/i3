@@ -10,6 +10,7 @@
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
 #include <xcb/xcb_atom.h>
+#include <xcb/xcb_aux.h>
 
 #ifdef XCB_COMPAT
 #include "xcb_compat.h"
@@ -810,7 +811,7 @@ char *init_xcb_early() {
     #define ATOM_DO(name) atom_cookies[name] = xcb_intern_atom(xcb_connection, 0, strlen(#name), #name);
     #include "xcb_atoms.def"
 
-    xcb_screen = xcb_setup_roots_iterator(xcb_get_setup(xcb_connection)).data;
+    xcb_screen = xcb_aux_get_screen(xcb_connection, screen);
     xcb_root = xcb_screen->root;
 
     /* We draw the statusline to a seperate pixmap, because it looks the same on all bars and
