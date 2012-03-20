@@ -88,16 +88,21 @@ void scratchpad_show(Con *con) {
 
     /* If this was 'scratchpad show' with criteria, we check if it matches a
      * currently visible scratchpad window and hide it. */
+    Con *active = con_get_workspace(focused);
+    Con *current = con_get_workspace(con);
     if (con &&
         (floating = con_inside_floating(con)) &&
         floating->scratchpad_state != SCRATCHPAD_NONE &&
-        con_get_workspace(con) != __i3_scratch) {
-        DLOG("Window is a scratchpad window, hiding it.\n");
-        scratchpad_move(con);
-        return;
+        current != __i3_scratch) {
+        /* If scratchpad window is on the active workspace, then we should hide
+         * it, otherwise we should move it to the active workspace. */
+        if (current == active) {
+            DLOG("Window is a scratchpad window, hiding it.\n");
+            scratchpad_move(con);
+            return;
+        }
     }
 
-    Con *ws = con_get_workspace(focused);
     if (con == NULL) {
         /* Use the container on __i3_scratch which is highest in the focus
          * stack. When moving windows to __i3_scratch, they get inserted at the
@@ -112,7 +117,7 @@ void scratchpad_show(Con *con) {
     }
 
     /* 1: Move the window from __i3_scratch to the current workspace. */
-    con_move_to_workspace(con, ws, true, false);
+    con_move_to_workspace(con, active, true, false);
 
     /* 2: Adjust the size if this window was not adjusted yet. */
     if (con->scratchpad_state == SCRATCHPAD_FRESH) {
@@ -125,6 +130,12 @@ void scratchpad_show(Con *con) {
         con->rect.y = output->rect.y +
                       ((output->rect.height / 2.0) - (con->rect.height / 2.0));
         con->scratchpad_state = SCRATCHPAD_CHANGED;
+    }
+
+    /* Activate active workspace if window is from another workspace to ensure
+     * proper focus. */
+    if (current != active) {
+        workspace_show(active);
     }
 
     con_focus(con_descend_focused(con));
