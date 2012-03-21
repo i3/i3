@@ -244,6 +244,9 @@ static void handle_signal(int sig, siginfo_t *info, void *data) {
 }
 
 int main(int argc, char *argv[]) {
+    /* Keep a symbol pointing to the I3_VERSION string constant so that we have
+     * it in gdb backtraces. */
+    const char *i3_version = I3_VERSION;
     char *override_configpath = NULL;
     bool autostart = true;
     char *layout_path = NULL;
@@ -288,13 +291,13 @@ int main(int argc, char *argv[]) {
      * (file) logging. */
     init_logging();
 
-    /* I3_VERSION contains either something like this:
+    /* i3_version contains either something like this:
      *     "4.0.2 (2011-11-11, branch "release")".
      * or: "4.0.2-123-gCOFFEEBABE (2011-11-11, branch "next")".
      *
      * So we check for the offset of the first opening round bracket to
      * determine whether this is a git version or a release version. */
-    debug_build = ((strchr(I3_VERSION, '(') - I3_VERSION) > 10);
+    debug_build = ((strchr(i3_version, '(') - i3_version) > 10);
 
     /* On non-release builds, disable SHM logging by default. */
     shmlog_size = (debug_build ? 25 * 1024 * 1024 : 0);
