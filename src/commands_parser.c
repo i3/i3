@@ -91,7 +91,9 @@ static void push_string(const char *identifier, char *str) {
     /* When we arrive here, the stack is full. This should not happen and
      * means there’s either a bug in this parser or the specification
      * contains a command with more than 10 identified tokens. */
-    printf("argh! stack full\n");
+    fprintf(stderr, "BUG: commands_parser stack full. This means either a bug "
+                    "in the code, or a new command which contains more than "
+                    "10 identified tokens.\n");
     exit(1);
 }
 
@@ -392,6 +394,7 @@ struct CommandResult *parse_command(const char *input) {
 
             free(position);
             free(errormessage);
+            clear_stack();
             break;
         }
     }
