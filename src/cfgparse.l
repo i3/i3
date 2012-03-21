@@ -130,6 +130,8 @@ EOL     (\r?\n)
                                   return '[';
                                 }
 <EAT_WHITESPACE>[ \t]*          { yy_pop_state(); }
+<EAT_WHITESPACE>{EOL}           { yy_pop_state(); }
+<BINDSYM_COND>{EOL}             { yy_pop_state(); }
 <WANT_QSTRING>\"[^\"]+\"        {
                                   yy_pop_state();
                                   /* strip quotes */
