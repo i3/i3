@@ -233,6 +233,7 @@ static int handle_enter_notify(xcb_enter_notify_event_t *event) {
     if (ws != con_get_workspace(focused))
         workspace_show(ws);
 
+    focused_id = XCB_NONE;
     con_focus(con_descend_focused(con));
     tree_render();
 
