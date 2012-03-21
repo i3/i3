@@ -274,7 +274,7 @@ void floating_disable(Con *con, bool automatic) {
     /* 2: kill parent container */
     TAILQ_REMOVE(&(con->parent->parent->floating_head), con->parent, floating_windows);
     TAILQ_REMOVE(&(con->parent->parent->focus_head), con->parent, focused);
-    tree_close(con->parent, DONT_KILL_WINDOW, false, false);
+    tree_close(con->parent, DONT_KILL_WINDOW, true, false);
 
     /* 3: re-attach to the parent of the currently focused con on the workspace
      * this floating con was on */
