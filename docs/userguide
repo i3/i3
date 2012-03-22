@@ -303,7 +303,8 @@ also mix your bindings, though i3 will not protect you from overlapping ones).
 * A keysym (key symbol) is a description for a specific symbol, like "a"
   or "b", but also more strange ones like "underscore" instead of "_". These
   are the ones you use in Xmodmap to remap your keys. To get the current
-  mapping of your keys, use +xmodmap -pke+.
+  mapping of your keys, use +xmodmap -pke+. To interactively enter a key and
+  see what keysym it is configured to, use +xev+.
 
 * Keycodes do not need to have a symbol assigned (handy for custom vendor
   hotkeys on some notebooks) and they will not change their meaning as you
