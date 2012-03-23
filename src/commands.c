@@ -1256,6 +1256,85 @@ void cmd_focus_output(I3_CMD, char *name) {
 }
 
 /*
+ * Implementation of 'move [window|container] [to] [absolute] position <px> [px] <px> [px]
+ *
+ */
+void cmd_move_window_to_position(I3_CMD, char *method, char *cx, char *cy) {
+
+    int x = atoi(cx);
+    int y = atoi(cy);
+
+    if (!con_is_floating(focused)) {
+        ELOG("Cannot change position. The window/container is not floating\n");
+        sasprintf(&(cmd_output->json_output),
+                  "{\"success\":false, \"error\":\"Cannot change position. "
+                  "The window/container is not floating.\"}");
+        return;
+    }
+
+    if (strcmp(method, "absolute") == 0) {
+        focused->parent->rect.x = x;
+        focused->parent->rect.y = y;
+
+        DLOG("moving to absolute position %d %d\n", x, y);
+        floating_maybe_reassign_ws(focused->parent);
+        cmd_output->needs_tree_render = true;
+    }
+
+    if (strcmp(method, "position") == 0) {
+        Rect newrect = focused->parent->rect;
+
+        DLOG("moving to position %d %d\n", x, y);
+        newrect.x = x;
+        newrect.y = y;
+
+        floating_reposition(focused->parent, newrect);
+    }
+
+    // XXX: default reply for now, make this a better reply
+    cmd_output->json_output = sstrdup("{\"success\": true}");
+}
+
+/*
+ * Implementation of 'move [window|container] [to] [absolute] position center
+ *
+ */
+void cmd_move_window_to_center(I3_CMD, char *method) {
+
+    if (!con_is_floating(focused)) {
+        ELOG("Cannot change position. The window/container is not floating\n");
+        sasprintf(&(cmd_output->json_output),
+                  "{\"success\":false, \"error\":\"Cannot change position. "
+                  "The window/container is not floating.\"}");
+    }
+
+    if (strcmp(method, "absolute") == 0) {
+        Rect *rect = &focused->parent->rect;
+
+        DLOG("moving to absolute center\n");
+        rect->x = croot->rect.width/2 - rect->width/2;
+        rect->y = croot->rect.height/2 - rect->height/2;
+
+        floating_maybe_reassign_ws(focused->parent);
+        cmd_output->needs_tree_render = true;
+    }
+
+    if (strcmp(method, "position") == 0) {
+        Rect *wsrect = &con_get_workspace(focused)->rect;
+        Rect newrect = focused->parent->rect;
+
+        DLOG("moving to center\n");
+        newrect.x = wsrect->width/2 - newrect.width/2;
+        newrect.y = wsrect->height/2 - newrect.height/2;
+
+        floating_reposition(focused->parent, newrect);
+    }
+
+    // XXX: default reply for now, make this a better reply
+    cmd_output->json_output = sstrdup("{\"success\": true}");
+}
+
+/*
  * Implementation of 'move scratchpad'.
  *
  */

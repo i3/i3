@@ -200,6 +200,29 @@ is($absolute->y, $absolute_before->y, 'y not changed');
 is($absolute->width, $absolute_before->width, 'width not changed');
 is($absolute->height, $absolute_before->height, 'height not changed');
 
+######################################################################
+# 6) test moving floating window to a specified position
+#    and to absolute center
+######################################################################
 
+$tmp = fresh_workspace;
+open_floating_window; my @floatcon;
+
+cmd 'move position 5 px 15 px';
+
+@floatcon = @{get_ws($tmp)->{floating_nodes}};
+
+is($floatcon[0]->{rect}->{x}, 5, 'moved to position 5 x');
+is($floatcon[0]->{rect}->{y}, 15, 'moved to position 15 y');
+
+cmd 'move absolute position center';
+
+@floatcon = @{get_ws($tmp)->{floating_nodes}};
+
+my $center_x = int($x->root->rect->width/2) - int($floatcon[0]->{rect}->{width}/2);
+my $center_y = int($x->root->rect->height/2) - int($floatcon[0]->{rect}->{height}/2);
+
+is($floatcon[0]->{rect}->{x}, $center_x, "moved to center at position $center_x x");
+is($floatcon[0]->{rect}->{y}, $center_y, "moved to center at position $center_y y");
 
 done_testing;

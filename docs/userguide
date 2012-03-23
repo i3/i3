@@ -1233,6 +1233,7 @@ focus <left|right|down|up>
 focus <parent|child|floating|tiling|mode_toggle>
 focus output <<left|right|down|up>|output>
 move <left|right|down|up> [<px> px]
+move [absolute] position [[<px> px] [<px> px]|center]
 -----------------------------------
 
 Note that the amount of pixels you can specify for the +move+ command is only
@@ -1267,6 +1268,10 @@ bindsym mod+semicolon move right
 # Move container, but make floating containers
 # move more than the default
 bindsym mod+j move left 20 px
+
+# Move floating container to the center
+# of all outputs
+bindsym mod+c move absolute position center
 ----------------------
 
 === Changing (named) workspaces/moving to workspaces

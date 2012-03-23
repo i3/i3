@@ -224,6 +224,18 @@ void cmd_open(I3_CMD);
 void cmd_focus_output(I3_CMD, char *name);
 
 /**
+ * Implementation of 'move [window|container] [to] [absolute] position <px> [px] <px> [px]
+ *
+ */
+void cmd_move_window_to_position(I3_CMD, char *method, char *x, char *y);
+
+/**
+ * Implementation of 'move [window|container] [to] [absolute] position center
+ *
+ */
+void cmd_move_window_to_center(I3_CMD, char *method);
+
+/**
  * Implementation of 'move scratchpad'.
  *
  */

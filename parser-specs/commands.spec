@@ -172,6 +172,7 @@ state RESIZE_TILING_OR:
 # move [window|container] [to] scratchpad
 # move workspace to [output] <str>
 # move scratchpad
+# move [window|container] [to] [absolute] position [ [<pixels> [px] <pixels> [px]] | center ]
 state MOVE:
   'window'
       ->
@@ -187,6 +188,10 @@ state MOVE:
       -> call cmd_move_scratchpad()
   direction = 'left', 'right', 'up', 'down'
       -> MOVE_DIRECTION
+  method = 'position'
+      -> MOVE_TO_POSITION
+  method = 'absolute'
+      -> MOVE_TO_ABSOLUTE_POSITION
 
 state MOVE_DIRECTION:
   pixels = word
@@ -217,6 +222,26 @@ state MOVE_WORKSPACE_TO_OUTPUT:
       ->
   output = string
       -> call cmd_move_workspace_to_output($output)
+
+state MOVE_TO_ABSOLUTE_POSITION:
+  'position'
+      -> MOVE_TO_POSITION
+
+state MOVE_TO_POSITION:
+  'center'
+      -> call cmd_move_window_to_center($method)
+  coord_x = word
+      -> MOVE_TO_POSITION_X
+
+state MOVE_TO_POSITION_X:
+  'px'
+      ->
+  coord_y = word
+      -> MOVE_TO_POSITION_Y
+
+state MOVE_TO_POSITION_Y:
+  'px', end
+      -> call cmd_move_window_to_position($method, $coord_x, $coord_y)
 
 # mode <string>
 state MODE:

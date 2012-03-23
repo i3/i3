@@ -133,7 +133,7 @@ is(parser_calls('unknown_literal'),
    'error for unknown literal ok');
 
 is(parser_calls('move something to somewhere'),
-   "Expected one of these tokens: 'window', 'container', 'to', 'workspace', 'output', 'scratchpad', 'left', 'right', 'up', 'down'\n" .
+   "Expected one of these tokens: 'window', 'container', 'to', 'workspace', 'output', 'scratchpad', 'left', 'right', 'up', 'down', 'position', 'absolute'\n" .
    "Your command: move something to somewhere\n" .
    "                   ^^^^^^^^^^^^^^^^^^^^^^",
    'error for unknown literal ok');
