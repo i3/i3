@@ -99,7 +99,7 @@ sub start_xdummy {
         # Xorg configuration. The tests should be independant from the
         # actual system X configuration.
         my $socket = fork_xserver($displaynum, './Xdummy', ":$displaynum",
-                '-config', '/dev/null');
+                '-config', '/dev/null', '-nolisten', 'tcp');
         push(@displays, ":$displaynum");
         push(@sockets_waiting, $socket);
         $displaynum++;
