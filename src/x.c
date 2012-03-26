@@ -92,16 +92,19 @@ void x_con_init(Con *con, uint16_t depth) {
     uint32_t mask = 0;
     uint32_t values[5];
 
-    /* We explicitly set a background color and border color (even though we
-     * don’t even have a border) because the X11 server requires us to when
-     * using 32 bit color depths, see
-     * http://stackoverflow.com/questions/3645632 */
     xcb_visualid_t visual = XCB_COPY_FROM_PARENT;
+    xcb_colormap_t win_colormap = XCB_NONE;
     if (depth != root_depth && depth != XCB_COPY_FROM_PARENT) {
+        /* For custom visuals, we need to create a colormap before creating
+         * this window. It will be freed directly after creating the window. */
         visual = get_visualid_by_depth(depth);
-        xcb_colormap_t win_colormap = xcb_generate_id(conn);
+        win_colormap = xcb_generate_id(conn);
         xcb_create_colormap_checked(conn, XCB_COLORMAP_ALLOC_NONE, win_colormap, root, visual);
 
+        /* We explicitly set a background color and border color (even though we
+         * don’t even have a border) because the X11 server requires us to when
+         * using 32 bit color depths, see
+         * http://stackoverflow.com/questions/3645632 */
         mask |= XCB_CW_BACK_PIXEL;
         values[0] = root_screen->black_pixel;
 
@@ -119,9 +122,11 @@ void x_con_init(Con *con, uint16_t depth) {
         mask |= XCB_CW_COLORMAP;
         values[4] = win_colormap;
     } else {
+        /* our own frames should not be managed */
         mask = XCB_CW_OVERRIDE_REDIRECT;
         values[0] = 1;
 
+        /* see include/xcb.h for the FRAME_EVENT_MASK */
         mask |= XCB_CW_EVENT_MASK;
         values[1] = FRAME_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
 
@@ -132,8 +137,8 @@ void x_con_init(Con *con, uint16_t depth) {
     Rect dims = { -15, -15, 10, 10 };
     con->frame = create_window(conn, dims, depth, visual, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCURSOR_CURSOR_POINTER, false, mask, values);
 
-    if (depth != root_depth && depth != XCB_COPY_FROM_PARENT)
-        xcb_free_colormap(conn, values[4]);
+    if (win_colormap != XCB_NONE)
+        xcb_free_colormap(conn, win_colormap);
 
     struct con_state *state = scalloc(sizeof(struct con_state));
     state->id = con->frame;

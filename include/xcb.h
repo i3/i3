@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * xcb.c: Helper functions for easier usage of XCB
  *
@@ -117,8 +117,16 @@ void xcb_warp_pointer_rect(xcb_connection_t *conn, Rect *rect);
  */
 void xcb_set_root_cursor(int cursor);
 
+/**
+ * Get depth of visual specified by visualid
+ *
+ */
 uint16_t get_visual_depth(xcb_visualid_t visual_id);
 
+/**
+ * Get visualid with specified depth
+ *
+ */
 xcb_visualid_t get_visualid_by_depth(uint16_t depth);
 
 #endif
