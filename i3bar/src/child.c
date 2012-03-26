@@ -311,6 +311,18 @@ void start_child(char *command) {
     ev_child_init(child_sig, &child_sig_cb, child_pid, 0);
     ev_child_start(main_loop, child_sig);
 
+    atexit(kill_child_at_exit);
+}
+
+/*
+ * kill()s the child-process (if any). Called when exit()ing.
+ *
+ */
+void kill_child_at_exit() {
+    if (child_pid != 0) {
+        kill(child_pid, SIGCONT);
+        kill(child_pid, SIGTERM);
+    }
 }
 
 /*

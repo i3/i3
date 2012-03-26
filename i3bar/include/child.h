@@ -21,7 +21,13 @@
 void start_child(char *command);
 
 /*
- * kill()s the child-prozess (if existend) and closes and
+ * kill()s the child-process (if any). Called when exit()ing.
+ *
+ */
+void kill_child_at_exit();
+
+/*
+ * kill()s the child-process (if any) and closes and
  * free()s the stdin- and sigchild-watchers
  *
  */
