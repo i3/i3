@@ -90,7 +90,7 @@ static void query_screens(xcb_connection_t *conn) {
  * information to setup workspaces for each screen.
  *
  */
-void xinerama_init() {
+void xinerama_init(void) {
     if (!xcb_get_extension_data(conn, &xcb_xinerama_id)->present) {
         DLOG("Xinerama extension not found, disabling.\n");
         disable_randr(conn);

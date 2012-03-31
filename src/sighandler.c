@@ -192,7 +192,7 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
  * Setup signal handlers to safely handle SIGSEGV and SIGFPE
  *
  */
-void setup_signal_handler() {
+void setup_signal_handler(void) {
     struct sigaction action;
 
     action.sa_sigaction = handle_signal;

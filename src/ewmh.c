@@ -16,7 +16,7 @@
  * and _NET_NUMBER_OF_DESKTOPS - 1.
  *
  */
-void ewmh_update_current_desktop() {
+void ewmh_update_current_desktop(void) {
     Con *focused_ws = con_get_workspace(focused);
     Con *output;
     uint32_t idx = 0;
@@ -59,7 +59,7 @@ void ewmh_update_active_window(xcb_window_t window) {
  * desktop applications to place desktop icons appropriately.
  *
  */
-void ewmh_update_workarea() {
+void ewmh_update_workarea(void) {
     int num_workspaces = 0, count = 0;
     Rect last_rect = {0, 0, 0, 0};
     Con *output;
@@ -131,7 +131,7 @@ void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows) {
  * Set up the EWMH hints on the root window.
  *
  */
-void ewmh_setup_hints() {
+void ewmh_setup_hints(void) {
     xcb_atom_t supported_atoms[] = {
 #define xmacro(atom) A_ ## atom,
 #include "atoms.xmacro"

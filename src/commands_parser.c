@@ -110,7 +110,7 @@ static char *get_string(const char *identifier) {
     return NULL;
 }
 
-static void clear_stack() {
+static void clear_stack(void) {
     DLOG("clearing stack.\n");
     for (int c = 0; c < 10; c++) {
         if (stack[c].str != NULL)

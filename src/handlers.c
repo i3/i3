@@ -1007,7 +1007,7 @@ static struct property_handler_t property_handlers[] = {
  * received from X11
  *
  */
-void property_handlers_init() {
+void property_handlers_init(void) {
 
     sn_monitor_context_new(sndisplay, conn_screen, startup_monitor_event, NULL, NULL);
 

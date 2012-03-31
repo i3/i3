@@ -222,7 +222,7 @@ char *get_process_filename(const char *prefix) {
 #define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
 #define ystr(str) yajl_gen_string(gen, (unsigned char*)str, strlen(str))
 
-char *store_restart_layout() {
+char *store_restart_layout(void) {
     setlocale(LC_NUMERIC, "C");
 #if YAJL_MAJOR >= 2
     yajl_gen gen = yajl_gen_alloc(NULL);

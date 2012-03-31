@@ -19,6 +19,6 @@
  * Xinerama information to setup workspaces for each screen.
  *
  */
-void xinerama_init();
+void xinerama_init(void);
 
 #endif

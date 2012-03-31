@@ -78,7 +78,7 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
  * when exiting or restarting only!
  *
  */
-void ipc_shutdown();
+void ipc_shutdown(void);
 
 void dump_node(yajl_gen gen, Con *con, bool inplace_restart);
 

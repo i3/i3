@@ -87,7 +87,7 @@ void set_font(i3Font *font) {
  * Frees the resources taken by the current font.
  *
  */
-void free_font() {
+void free_font(void) {
     /* Close the font and free the info */
     xcb_close_font(conn, savedFont->id);
     if (savedFont->info)

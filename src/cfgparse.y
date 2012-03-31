@@ -51,7 +51,7 @@ void yyerror(const char *error_message) {
     ELOG("\n");
 }
 
-int yywrap() {
+int yywrap(void) {
     return 1;
 }
 

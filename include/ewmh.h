@@ -17,7 +17,7 @@
  * and _NET_NUMBER_OF_DESKTOPS - 1.
  *
  */
-void ewmh_update_current_desktop();
+void ewmh_update_current_desktop(void);
 
 /**
  * Updates _NET_ACTIVE_WINDOW with the currently focused window.
@@ -44,6 +44,6 @@ void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows);
  * Set up the EWMH hints on the root window.
  *
  */
-void ewmh_setup_hints();
+void ewmh_setup_hints(void);
 
 #endif

@@ -81,7 +81,7 @@ Binding *get_binding(uint16_t modifiers, xcb_keycode_t keycode) {
  * Translates keysymbols to keycodes for all bindings which use keysyms.
  *
  */
-void translate_keysyms() {
+void translate_keysyms(void) {
     Binding *bind;
     xcb_keysym_t keysym;
     int col;

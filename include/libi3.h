@@ -197,7 +197,7 @@ void set_font(i3Font *font);
  * Frees the resources taken by the current font.
  *
  */
-void free_font();
+void free_font(void);
 
 /**
  * Converts the given string to UTF-8 from UCS-2 big endian. The return value

@@ -31,7 +31,7 @@ static Cursor load_cursor(const char *name) {
     return c;
 }
 
-void xcursor_load_cursors() {
+void xcursor_load_cursors(void) {
     cursors[XCURSOR_CURSOR_POINTER] = load_cursor("left_ptr");
     cursors[XCURSOR_CURSOR_RESIZE_HORIZONTAL] = load_cursor("sb_h_double_arrow");
     cursors[XCURSOR_CURSOR_RESIZE_VERTICAL] = load_cursor("sb_v_double_arrow");

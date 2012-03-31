@@ -212,7 +212,7 @@ static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
  * Exit handler which destroys the main_loop. Will trigger cleanup handlers.
  *
  */
-static void i3_exit() {
+static void i3_exit(void) {
 /* We need ev >= 4 for the following code. Since it is not *that* important (it
  * only makes sure that there are no i3-nagbar instances left behind) we still
  * support old systems with libev 3. */

@@ -1013,7 +1013,7 @@ void x_set_name(Con *con, const char *name) {
  * Sets up i3 specific atoms (I3_SOCKET_PATH and I3_CONFIG_PATH)
  *
  */
-void x_set_i3_atoms() {
+void x_set_i3_atoms(void) {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_SOCKET_PATH, A_UTF8_STRING, 8,
                         (current_socketpath == NULL ? 0 : strlen(current_socketpath)),
                         current_socketpath);

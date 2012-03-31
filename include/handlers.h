@@ -43,7 +43,7 @@ void handle_event(int type, xcb_generic_event_t *event);
  * received from X11
  *
  */
-void property_handlers_init();
+void property_handlers_init(void);
 
 #if 0
 /**

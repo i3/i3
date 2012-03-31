@@ -61,13 +61,13 @@ void init_ws_for_output(Output *output, Con *content);
  * (Re-)queries the outputs via RandR and stores them in the list of outputs.
  *
  */
-void randr_query_outputs();
+void randr_query_outputs(void);
 
 /**
  * Returns the first output which is active.
  *
  */
-Output *get_first_output();
+Output *get_first_output(void);
 
 /**
  * Returns the output with the given name if it is active (!) or NULL.

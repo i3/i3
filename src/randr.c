@@ -60,7 +60,7 @@ Output *get_output_by_name(const char *name) {
  * Returns the first output which is active.
  *
  */
-Output *get_first_output() {
+Output *get_first_output(void) {
     Output *output;
 
     TAILQ_FOREACH(output, &outputs, outputs)
@@ -539,7 +539,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
  * (Re-)queries the outputs via RandR and stores them in the list of outputs.
  *
  */
-void randr_query_outputs() {
+void randr_query_outputs(void) {
     Output *output, *other, *first;
     xcb_randr_get_output_primary_cookie_t pcookie;
     xcb_randr_get_screen_resources_current_cookie_t rcookie;

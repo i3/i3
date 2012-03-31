@@ -19,7 +19,7 @@ struct all_cons_head all_cons = TAILQ_HEAD_INITIALIZER(all_cons);
  * __i3_scratch will live there.
  *
  */
-static Con *_create___i3() {
+static Con *_create___i3(void) {
     Con *__i3 = con_new(croot, NULL);
     FREE(__i3->name);
     __i3->name = sstrdup("__i3");
@@ -378,7 +378,7 @@ void tree_split(Con *con, orientation_t orientation) {
  * Moves focus one level up.
  *
  */
-void level_up() {
+void level_up(void) {
     /* We cannot go up when we are in fullscreen mode at the moment, that would
      * be totally not intuitive */
     if (focused->fullscreen_mode != CF_NONE) {
@@ -399,7 +399,7 @@ void level_up() {
  * Moves focus one level down.
  *
  */
-void level_down() {
+void level_down(void) {
     /* Go down the focus stack of the current node */
     Con *next = TAILQ_FIRST(&(focused->focus_head));
     if (next == TAILQ_END(&(focused->focus_head))) {
@@ -428,7 +428,7 @@ static void mark_unmapped(Con *con) {
  * pushing the changes to X11 using x_push_changes().
  *
  */
-void tree_render() {
+void tree_render(void) {
     if (croot == NULL)
         return;
 

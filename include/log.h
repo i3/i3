@@ -29,7 +29,7 @@ extern int shmlog_size;
  * XDG_RUNTIME_DIR, see get_process_filename()).
  *
  */
-void init_logging();
+void init_logging(void);
 
 /**
  * Enables the given loglevel.

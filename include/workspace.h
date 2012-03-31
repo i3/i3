@@ -69,31 +69,31 @@ void workspace_show_by_name(const char *num);
  * Returns the next workspace.
  *
  */
-Con* workspace_next();
+Con* workspace_next(void);
 
 /**
  * Returns the previous workspace.
  *
  */
-Con* workspace_prev();
+Con* workspace_prev(void);
 
 /**
  * Returns the next workspace on the same output
  *
  */
-Con* workspace_next_on_output();
+Con* workspace_next_on_output(void);
 
 /**
  * Returns the previous workspace on the same output
  *
  */
-Con* workspace_prev_on_output();
+Con* workspace_prev_on_output(void);
 
 /**
  * Focuses the previously focused workspace.
  *
  */
-void workspace_back_and_forth();
+void workspace_back_and_forth(void);
 
 
 #if 0

@@ -20,7 +20,7 @@ enum xcursor_cursor_t {
     XCURSOR_CURSOR_MAX
 };
 
-void xcursor_load_cursors();
+void xcursor_load_cursors(void);
 Cursor xcursor_get_cursor(enum xcursor_cursor_t c);
 int xcursor_get_xcb_cursor(enum xcursor_cursor_t c);
 

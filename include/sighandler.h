@@ -16,6 +16,6 @@
  * Setup signal handlers to safely handle SIGSEGV and SIGFPE
  *
  */
-void setup_signal_handler();
+void setup_signal_handler(void);
 
 #endif

@@ -97,7 +97,7 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
  * when exiting or restarting only!
  *
  */
-void ipc_shutdown() {
+void ipc_shutdown(void) {
     ipc_client *current;
     while (!TAILQ_EMPTY(&all_clients)) {
         current = TAILQ_FIRST(&all_clients);

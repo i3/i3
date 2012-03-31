@@ -59,7 +59,7 @@ static int logbuffer_shm;
  * Necessary to print the i3 SHM log in the correct order.
  *
  */
-static void store_log_markers() {
+static void store_log_markers(void) {
     i3_shmlog_header *header = (i3_shmlog_header*)logbuffer;
 
     header->offset_next_write = (logwalk - logbuffer);
@@ -74,7 +74,7 @@ static void store_log_markers() {
  * Will be called twice if --shmlog-size is specified.
  *
  */
-void init_logging() {
+void init_logging(void) {
     if (!errorfilename) {
         if (!(errorfilename = get_process_filename("errorlog")))
             ELOG("Could not initialize errorlog\n");

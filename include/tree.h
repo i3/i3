@@ -42,20 +42,20 @@ void tree_split(Con *con, orientation_t orientation);
  * Moves focus one level up.
  *
  */
-void level_up();
+void level_up(void);
 
 /**
  * Moves focus one level down.
  *
  */
-void level_down();
+void level_down(void);
 
 /**
  * Renders the tree, that is rendering all outputs using render_con() and
  * pushing the changes to X11 using x_push_changes().
  *
  */
-void tree_render();
+void tree_render(void);
 
 /**
  * Closes the current container using tree_close().

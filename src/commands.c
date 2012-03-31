@@ -108,7 +108,7 @@ static void nagbar_cleanup(EV_P_ ev_cleanup *watcher, int revent) {
 }
 #endif
 
-void cmd_MIGRATION_start_nagbar() {
+void cmd_MIGRATION_start_nagbar(void) {
     if (migration_pid != -1) {
         fprintf(stderr, "i3-nagbar already running.\n");
         return;

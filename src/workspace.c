@@ -393,7 +393,7 @@ void workspace_show_by_name(const char *num) {
  * Focuses the next workspace.
  *
  */
-Con* workspace_next() {
+Con* workspace_next(void) {
     Con *current = con_get_workspace(focused);
     Con *next = NULL;
     Con *output;
@@ -463,7 +463,7 @@ workspace_next_end:
  * Focuses the previous workspace.
  *
  */
-Con* workspace_prev() {
+Con* workspace_prev(void) {
     Con *current = con_get_workspace(focused);
     Con *prev = NULL;
     Con *output;
@@ -535,7 +535,7 @@ workspace_prev_end:
  * Focuses the next workspace on the same output.
  *
  */
-Con* workspace_next_on_output() {
+Con* workspace_next_on_output(void) {
     Con *current = con_get_workspace(focused);
     Con *next = NULL;
     Con *output  = con_get_output(focused);
@@ -590,7 +590,7 @@ workspace_next_on_output_end:
  * Focuses the previous workspace on same output.
  *
  */
-Con* workspace_prev_on_output() {
+Con* workspace_prev_on_output(void) {
     Con *current = con_get_workspace(focused);
     Con *prev = NULL;
     Con *output  = con_get_output(focused);
@@ -646,7 +646,7 @@ workspace_prev_on_output_end:
  * Focuses the previously focused workspace.
  *
  */
-void workspace_back_and_forth() {
+void workspace_back_and_forth(void) {
     if (!previous_workspace_name) {
         DLOG("No previous workspace name set. Not switching.");
         return;

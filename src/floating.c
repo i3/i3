@@ -15,7 +15,7 @@ extern xcb_connection_t *conn;
  * Calculates sum of heights and sum of widths of all currently active outputs
  *
  */
-Rect total_outputs_dimensions() {
+static Rect total_outputs_dimensions(void) {
     Output *output;
     /* Use Rect to encapsulate dimensions, ignoring x/y */
     Rect outputs_dimensions = {0, 0, 0, 0};
