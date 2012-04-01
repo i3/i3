@@ -450,9 +450,12 @@ static void handle_client_message(xcb_client_message_event_t* event) {
             SLIST_FOREACH(walk, outputs, slist) {
                 if (!walk->active)
                     continue;
-                if (config.tray_output &&
-                    strcasecmp(walk->name, config.tray_output) != 0)
-                    continue;
+                if (config.tray_output) {
+                    if ((strcasecmp(walk->name, config.tray_output) != 0) &&
+                        (!walk->primary || strcasecmp("primary", config.tray_output) != 0))
+                        continue;
+                }
+
                 DLOG("using output %s\n", walk->name);
                 output = walk;
             }

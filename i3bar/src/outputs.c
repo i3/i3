@@ -45,15 +45,19 @@ static int outputs_null_cb(void *params_) {
 static int outputs_boolean_cb(void *params_, int val) {
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
 
-    if (strcmp(params->cur_key, "active")) {
-        return 0;
+    if (!strcmp(params->cur_key, "active")) {
+        params->outputs_walk->active = val;
+        FREE(params->cur_key);
+        return 1;
     }
 
-    params->outputs_walk->active = val;
+    if (!strcmp(params->cur_key, "primary")) {
+        params->outputs_walk->primary = val;
+        FREE(params->cur_key);
+        return 1;
+    }
 
-    FREE(params->cur_key);
-
-    return 1;
+    return 0;
 }
 
 /*

@@ -443,6 +443,9 @@ IPC_HANDLER(get_outputs) {
         ystr("active");
         y(bool, output->active);
 
+        ystr("primary");
+        y(bool, output->primary);
+
         ystr("rect");
         y(map_open);
         ystr("x");

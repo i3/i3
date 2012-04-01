@@ -40,6 +40,7 @@ i3_output* get_output_by_name(char* name);
 struct i3_output {
     char*          name;          /* Name of the output */
     bool           active;        /* If the output is active */
+    bool           primary;       /* If it is the primary output */
     int            ws;            /* The number of the currently visible ws */
     rect           rect;          /* The rect (relative to the root-win) */
 
