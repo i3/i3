@@ -153,7 +153,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     int n = 0;
     int rec = 0;
     int buffer_len = STDIN_CHUNK_SIZE;
-    unsigned char *buffer = smalloc(buffer_len);
+    unsigned char *buffer = smalloc(buffer_len+1);
     buffer[0] = '\0';
     while(1) {
         n = read(fd, buffer + rec, buffer_len - rec);
@@ -217,7 +217,9 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         FREE(first->full_text);
         /* Remove the trailing newline and terminate the string at the same
          * time. */
-        buffer[rec-1] = '\0';
+        if (buffer[rec-1] == '\n' || buffer[rec-1] == '\r')
+            buffer[rec-1] = '\0';
+        else buffer[rec] = '\0';
         first->full_text = (char*)buffer;
     }
     draw_bars();
