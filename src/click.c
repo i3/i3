@@ -207,6 +207,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
 
     if (ws != focused_workspace)
         workspace_show(ws);
+    focused_id = XCB_NONE;
     con_focus(con);
 
     /* 3: For floating containers, we also want to raise them on click.
