@@ -141,7 +141,7 @@ state RESIZE:
       -> RESIZE_DIRECTION
 
 state RESIZE_DIRECTION:
-  direction = 'up', 'down', 'left', 'right'
+  direction = 'up', 'down', 'left', 'right', 'width', 'height'
       -> RESIZE_PX
 
 state RESIZE_PX:

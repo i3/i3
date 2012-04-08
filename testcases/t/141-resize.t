@@ -88,6 +88,45 @@ cmd 'resize grow left 10 px or 25 ppt';
 is($nodes->[0]->{percent}, 0.25, 'left window got 25%');
 is($nodes->[1]->{percent}, 0.75, 'right window got 75%');
 
+################################################################################
+# Check that the resize grow/shrink width/height syntax works.
+################################################################################
+
+# Use two windows
+$tmp = fresh_workspace;
+
+$left = open_window;
+$right = open_window;
+
+cmd 'resize grow width 10 px or 25 ppt';
+
+($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[0]->{percent}, 0.25, 'left window got 25%');
+is($nodes->[1]->{percent}, 0.75, 'right window got 75%');
+
+# Now test it with four windows
+$tmp = fresh_workspace;
+
+open_window for (1..4);
+
+cmd 'resize grow width 10 px or 25 ppt';
+
+($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[0]->{percent}, 0.166666666666667, 'first window got 16%');
+is($nodes->[1]->{percent}, 0.166666666666667, 'second window got 16%');
+is($nodes->[2]->{percent}, 0.166666666666667, 'third window got 16%');
+is($nodes->[3]->{percent}, 0.50, 'fourth window got 50%');
+
+# height should be a no-op in this situation
+cmd 'resize grow height 10 px or 25 ppt';
+
+($nodes, $focus) = get_ws_content($tmp);
+is($nodes->[0]->{percent}, 0.166666666666667, 'first window got 16%');
+is($nodes->[1]->{percent}, 0.166666666666667, 'second window got 16%');
+is($nodes->[2]->{percent}, 0.166666666666667, 'third window got 16%');
+is($nodes->[3]->{percent}, 0.50, 'fourth window got 50%');
+
+
 ############################################################
 # checks that resizing floating windows works
 ############################################################

@@ -391,6 +391,171 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
     cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
+static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floating_con, int px) {
+    LOG("floating resize\n");
+    if (strcmp(direction, "up") == 0) {
+        floating_con->rect.y -= px;
+        floating_con->rect.height += px;
+    } else if (strcmp(direction, "down") == 0) {
+        floating_con->rect.height += px;
+    } else if (strcmp(direction, "left") == 0) {
+        floating_con->rect.x -= px;
+        floating_con->rect.width += px;
+    } else {
+        floating_con->rect.width += px;
+    }
+}
+
+static void cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int ppt) {
+    LOG("tiling resize\n");
+    /* get the appropriate current container (skip stacked/tabbed cons) */
+    Con *current = focused;
+    while (current->parent->layout == L_STACKED ||
+           current->parent->layout == L_TABBED)
+        current = current->parent;
+
+    /* Then further go up until we find one with the matching orientation. */
+    orientation_t search_orientation =
+        (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0 ? HORIZ : VERT);
+
+    while (current->type != CT_WORKSPACE &&
+           current->type != CT_FLOATING_CON &&
+           current->parent->orientation != search_orientation)
+        current = current->parent;
+
+    /* get the default percentage */
+    int children = con_num_children(current->parent);
+    Con *other;
+    LOG("ins. %d children\n", children);
+    double percentage = 1.0 / children;
+    LOG("default percentage = %f\n", percentage);
+
+    orientation_t orientation = current->parent->orientation;
+
+    if ((orientation == HORIZ &&
+         (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0)) ||
+        (orientation == VERT &&
+         (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0))) {
+        LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
+            (orientation == HORIZ ? "horizontal" : "vertical"));
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
+    }
+
+    if (strcmp(direction, "up") == 0 || strcmp(direction, "left") == 0) {
+        other = TAILQ_PREV(current, nodes_head, nodes);
+    } else {
+        other = TAILQ_NEXT(current, nodes);
+    }
+    if (other == TAILQ_END(workspaces)) {
+        LOG("No other container in this direction found, cannot resize.\n");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
+    }
+    LOG("other->percent = %f\n", other->percent);
+    LOG("current->percent before = %f\n", current->percent);
+    if (current->percent == 0.0)
+        current->percent = percentage;
+    if (other->percent == 0.0)
+        other->percent = percentage;
+    double new_current_percent = current->percent + ((double)ppt / 100.0);
+    double new_other_percent = other->percent - ((double)ppt / 100.0);
+    LOG("new_current_percent = %f\n", new_current_percent);
+    LOG("new_other_percent = %f\n", new_other_percent);
+    /* Ensure that the new percentages are positive and greater than
+     * 0.05 to have a reasonable minimum size. */
+    if (definitelyGreaterThan(new_current_percent, 0.05, DBL_EPSILON) &&
+        definitelyGreaterThan(new_other_percent, 0.05, DBL_EPSILON)) {
+        current->percent += ((double)ppt / 100.0);
+        other->percent -= ((double)ppt / 100.0);
+        LOG("current->percent after = %f\n", current->percent);
+        LOG("other->percent after = %f\n", other->percent);
+    } else {
+        LOG("Not resizing, already at minimum size\n");
+    }
+}
+
+static void cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, int ppt) {
+    LOG("width/height resize\n");
+    /* get the appropriate current container (skip stacked/tabbed cons) */
+    Con *current = focused;
+    while (current->parent->layout == L_STACKED ||
+           current->parent->layout == L_TABBED)
+        current = current->parent;
+
+    /* Then further go up until we find one with the matching orientation. */
+    orientation_t search_orientation =
+        (strcmp(direction, "width") == 0 ? HORIZ : VERT);
+
+    while (current->type != CT_WORKSPACE &&
+           current->type != CT_FLOATING_CON &&
+           current->parent->orientation != search_orientation)
+        current = current->parent;
+
+    /* get the default percentage */
+    int children = con_num_children(current->parent);
+    LOG("ins. %d children\n", children);
+    double percentage = 1.0 / children;
+    LOG("default percentage = %f\n", percentage);
+
+    orientation_t orientation = current->parent->orientation;
+
+    if ((orientation == HORIZ &&
+         strcmp(direction, "height") == 0) ||
+        (orientation == VERT &&
+         strcmp(direction, "width") == 0)) {
+        LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
+            (orientation == HORIZ ? "horizontal" : "vertical"));
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
+    }
+
+    if (children == 1) {
+        LOG("This is the only container, cannot resize.\n");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
+    }
+
+    /* Ensure all the other children have a percentage set. */
+    Con *child;
+    TAILQ_FOREACH(child, &(current->parent->nodes_head), nodes) {
+        LOG("child->percent = %f (child %p)\n", child->percent, child);
+        if (child->percent == 0.0)
+            child->percent = percentage;
+    }
+
+    double new_current_percent = current->percent + ((double)ppt / 100.0);
+    double subtract_percent = ((double)ppt / 100.0) / (children - 1);
+    LOG("new_current_percent = %f\n", new_current_percent);
+    LOG("subtract_percent = %f\n", subtract_percent);
+    /* Ensure that the new percentages are positive and greater than
+     * 0.05 to have a reasonable minimum size. */
+    TAILQ_FOREACH(child, &(current->parent->nodes_head), nodes) {
+        if (child == current)
+            continue;
+        if (!definitelyGreaterThan(child->percent - subtract_percent, 0.05, DBL_EPSILON)) {
+            LOG("Not resizing, already at minimum size (child %p would end up with a size of %.f\n", child, child->percent - subtract_percent);
+            cmd_output->json_output = sstrdup("{\"sucess\": false}");
+            return;
+        }
+    }
+    if (!definitelyGreaterThan(new_current_percent, 0.05, DBL_EPSILON)) {
+        LOG("Not resizing, already at minimum size\n");
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
+    }
+
+    current->percent += ((double)ppt / 100.0);
+    LOG("current->percent after = %f\n", current->percent);
+
+    TAILQ_FOREACH(child, &(current->parent->nodes_head), nodes) {
+        if (child == current)
+            continue;
+        child->percent -= subtract_percent;
+        LOG("child->percent after (%p) = %f\n", child, child->percent);
+    }
+}
+
 /*
  * Implementation of 'resize grow|shrink <direction> [<px> px] [or <ppt> ppt]'.
  *
@@ -408,85 +573,12 @@ void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resiz
 
     Con *floating_con;
     if ((floating_con = con_inside_floating(focused))) {
-        printf("floating resize\n");
-        if (strcmp(direction, "up") == 0) {
-            floating_con->rect.y -= px;
-            floating_con->rect.height += px;
-        } else if (strcmp(direction, "down") == 0) {
-            floating_con->rect.height += px;
-        } else if (strcmp(direction, "left") == 0) {
-            floating_con->rect.x -= px;
-            floating_con->rect.width += px;
-        } else {
-            floating_con->rect.width += px;
-        }
+        cmd_resize_floating(current_match, cmd_output, way, direction, floating_con, px);
     } else {
-        LOG("tiling resize\n");
-        /* get the appropriate current container (skip stacked/tabbed cons) */
-        Con *current = focused;
-        while (current->parent->layout == L_STACKED ||
-               current->parent->layout == L_TABBED)
-            current = current->parent;
-
-        /* Then further go up until we find one with the matching orientation. */
-        orientation_t search_orientation =
-            (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0 ? HORIZ : VERT);
-
-        while (current->type != CT_WORKSPACE &&
-               current->type != CT_FLOATING_CON &&
-               current->parent->orientation != search_orientation)
-            current = current->parent;
-
-        /* get the default percentage */
-        int children = con_num_children(current->parent);
-        Con *other;
-        LOG("ins. %d children\n", children);
-        double percentage = 1.0 / children;
-        LOG("default percentage = %f\n", percentage);
-
-        orientation_t orientation = current->parent->orientation;
-
-        if ((orientation == HORIZ &&
-             (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0)) ||
-            (orientation == VERT &&
-             (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0))) {
-            LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
-                (orientation == HORIZ ? "horizontal" : "vertical"));
-            cmd_output->json_output = sstrdup("{\"sucess\": false}");
-            return;
-        }
-
-        if (strcmp(direction, "up") == 0 || strcmp(direction, "left") == 0) {
-            other = TAILQ_PREV(current, nodes_head, nodes);
-        } else {
-            other = TAILQ_NEXT(current, nodes);
-        }
-        if (other == TAILQ_END(workspaces)) {
-            LOG("No other container in this direction found, cannot resize.\n");
-            cmd_output->json_output = sstrdup("{\"sucess\": false}");
-            return;
-        }
-        LOG("other->percent = %f\n", other->percent);
-        LOG("current->percent before = %f\n", current->percent);
-        if (current->percent == 0.0)
-            current->percent = percentage;
-        if (other->percent == 0.0)
-            other->percent = percentage;
-        double new_current_percent = current->percent + ((double)ppt / 100.0);
-        double new_other_percent = other->percent - ((double)ppt / 100.0);
-        LOG("new_current_percent = %f\n", new_current_percent);
-        LOG("new_other_percent = %f\n", new_other_percent);
-        /* Ensure that the new percentages are positive and greater than
-         * 0.05 to have a reasonable minimum size. */
-        if (definitelyGreaterThan(new_current_percent, 0.05, DBL_EPSILON) &&
-            definitelyGreaterThan(new_other_percent, 0.05, DBL_EPSILON)) {
-            current->percent += ((double)ppt / 100.0);
-            other->percent -= ((double)ppt / 100.0);
-            LOG("current->percent after = %f\n", current->percent);
-            LOG("other->percent after = %f\n", other->percent);
-        } else {
-            LOG("Not resizing, already at minimum size\n");
-        }
+        if (strcmp(direction, "width") == 0 ||
+            strcmp(direction, "height") == 0)
+            cmd_resize_tiling_width_height(current_match, cmd_output, way, direction, ppt);
+        else cmd_resize_tiling_direction(current_match, cmd_output, way, direction, ppt);
     }
 
     cmd_output->needs_tree_render = true;

@@ -110,34 +110,20 @@ bindcode $mod+Shift+26 exit
 mode "resize" {
         # These bindings trigger as soon as you enter the resize mode
 
-        # They resize the border in the direction you pressed, e.g.
-        # when pressing left, the window is resized so that it has
-        # more space on its left
-
-        bindcode 44 resize shrink left 10 px or 10 ppt
-        bindcode Shift+44 resize grow   left 10 px or 10 ppt
-
-        bindcode 45 resize shrink down 10 px or 10 ppt
-        bindcode Shift+45 resize grow   down 10 px or 10 ppt
-
-        bindcode 46 resize shrink up 10 px or 10 ppt
-        bindcode Shift+46 resize grow   up 10 px or 10 ppt
-
-        bindcode 47 resize shrink right 10 px or 10 ppt
-        bindcode Shift+47 resize grow   right 10 px or 10 ppt
+        # Pressing left will shrink the window’s width.
+        # Pressing right will grow the window’s width.
+        # Pressing up will shrink the window’s height.
+        # Pressing down will grow the window’s height.
+        bindcode 44 resize shrink width 10 px or 10 ppt
+        bindcode 45 resize grow height 10 px or 10 ppt
+        bindcode 46 resize shrink height 10 px or 10 ppt
+        bindcode 47 resize grow width 10 px or 10 ppt
 
         # same bindings, but for the arrow keys
-        bindcode 113 resize shrink left 10 px or 10 ppt
-        bindcode Shift+113 resize grow   left 10 px or 10 ppt
-
-        bindcode 116 resize shrink down 10 px or 10 ppt
-        bindcode Shift+116 resize grow   down 10 px or 10 ppt
-
-        bindcode 111 resize shrink up 10 px or 10 ppt
-        bindcode Shift+111 resize grow   up 10 px or 10 ppt
-
-        bindcode 114 resize shrink right 10 px or 10 ppt
-        bindcode Shift+114 resize grow   right 10 px or 10 ppt
+        bindsym 113 resize shrink width 10 px or 10 ppt
+        bindsym 116 resize grow height 10 px or 10 ppt
+        bindsym 111 resize shrink height 10 px or 10 ppt
+        bindsym 114 resize grow width 10 px or 10 ppt
 
         # back to normal: Enter or Escape
         bindcode 36 mode "default"
