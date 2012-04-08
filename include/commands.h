@@ -62,6 +62,12 @@ void cmd_move_con_to_workspace(I3_CMD, char *which);
 void cmd_move_con_to_workspace_name(I3_CMD, char *name);
 
 /**
+ * Implementation of 'move [window|container] [to] workspace number <number>'.
+ *
+ */
+void cmd_move_con_to_workspace_number(I3_CMD, char *which);
+
+/**
  * Implementation of 'resize grow|shrink <direction> [<px> px] [or <ppt> ppt]'.
  *
  */

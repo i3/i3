@@ -217,8 +217,14 @@ state MOVE_WORKSPACE:
       -> MOVE_WORKSPACE_TO_OUTPUT
   workspace = 'next', 'prev', 'next_on_output', 'prev_on_output'
       -> call cmd_move_con_to_workspace($workspace)
+  'number'
+      -> MOVE_WORKSPACE_NUMBER
   workspace = string
       -> call cmd_move_con_to_workspace_name($workspace)
+
+state MOVE_WORKSPACE_NUMBER:
+  number = string
+      -> call cmd_move_con_to_workspace_number($number)
 
 state MOVE_TO_OUTPUT:
   output = string

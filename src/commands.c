@@ -391,6 +391,58 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
     cmd_output->json_output = sstrdup("{\"success\": true}");
 }
 
+/*
+ * Implementation of 'move [window|container] [to] workspace number <number>'.
+ *
+ */
+void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
+    owindow *current;
+
+    /* Error out early to not create a non-existing workspace (in
+     * workspace_get()) if we are not actually able to move anything. */
+    if (match_is_empty(current_match) && focused->type == CT_WORKSPACE) {
+        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        return;
+    }
+
+    LOG("should move window to workspace with number %d\n", which);
+    /* get the workspace */
+    Con *output, *workspace;
+
+    char *endptr = NULL;
+    long parsed_num = strtol(which, &endptr, 10);
+    if (parsed_num == LONG_MIN ||
+        parsed_num == LONG_MAX ||
+        parsed_num < 0 ||
+        *endptr != '\0') {
+        LOG("Could not parse \"%s\" as a number.\n", which);
+        cmd_output->json_output = sstrdup("{\"success\": false, "
+                "\"error\": \"Could not parse number\"}");
+        return;
+    }
+
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
+        GREP_FIRST(workspace, output_get_content(output),
+            child->num == parsed_num);
+
+    if (!workspace) {
+        cmd_output->json_output = sstrdup("{\"success\": false, "
+                "\"error\": \"No such workspace\"}");
+        return;
+    }
+
+    HANDLE_EMPTY_MATCH;
+
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        DLOG("matching: %p / %s\n", current->con, current->con->name);
+        con_move_to_workspace(current->con, workspace, true, false);
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    cmd_output->json_output = sstrdup("{\"success\": true}");
+}
+
 static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floating_con, int px) {
     LOG("floating resize\n");
     if (strcmp(direction, "up") == 0) {

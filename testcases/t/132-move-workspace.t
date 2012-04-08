@@ -46,6 +46,26 @@ move_workspace_test('move to workspace');
 move_workspace_test('move window to workspace');
 move_workspace_test('move container to workspace');
 
+################################################################################
+# Check that 'move to workspace number <number>' works to move a window to
+# named workspaces which start with <number>.
+################################################################################
+
+cmd 'workspace 13: meh';
+cmd 'open';
+ok(@{get_ws_content('13: meh')} == 1, 'one container on 13: meh');
+
+ok(!workspace_exists('13'), 'workspace 13 does not exist yet');
+
+cmd 'workspace 12';
+cmd 'open';
+
+cmd 'move to workspace number 13';
+ok(@{get_ws_content('13: meh')} == 2, 'two containers on 13: meh');
+ok(@{get_ws_content('12')} == 0, 'no container on 12 anymore');
+
+ok(!workspace_exists('13'), 'workspace 13 does still not exist');
+
 ###################################################################
 # check if 'move workspace next' and 'move workspace prev' work
 ###################################################################
