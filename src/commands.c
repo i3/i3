@@ -677,6 +677,43 @@ void cmd_workspace(I3_CMD, char *which) {
 }
 
 /*
+ * Implementation of 'workspace number <number>'
+ *
+ */
+void cmd_workspace_number(I3_CMD, char *which) {
+    Con *output, *workspace;
+
+    char *endptr = NULL;
+    long parsed_num = strtol(which, &endptr, 10);
+    if (parsed_num == LONG_MIN ||
+        parsed_num == LONG_MAX ||
+        parsed_num < 0 ||
+        *endptr != '\0') {
+        LOG("Could not parse \"%s\" as a number.\n", which);
+        cmd_output->json_output = sstrdup("{\"success\": false, "
+                "\"error\": \"Could not parse number\"}");
+        return;
+    }
+
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
+        GREP_FIRST(workspace, output_get_content(output),
+            child->num == parsed_num);
+
+    if (!workspace) {
+        LOG("There is no workspace with number %d.\n", parsed_num);
+        cmd_output->json_output = sstrdup("{\"success\": false, "
+                "\"error\": \"No such workspace\"}");
+        return;
+    }
+
+    workspace_show(workspace);
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    cmd_output->json_output = sstrdup("{\"success\": true}");
+}
+
+/*
  * Implementation of 'workspace back_and_forth'.
  *
  */

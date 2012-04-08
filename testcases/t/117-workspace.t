@@ -117,4 +117,21 @@ $ws = get_ws("aa: $tmp");
 ok(defined($ws), "workspace aa: $tmp was created");
 is($ws->{num}, -1, 'workspace number is -1');
 
+################################################################################
+# Check that we can go to workspace "4: foo" with the command
+# "workspace number 4".
+################################################################################
+
+ok(!workspace_exists('4'), 'workspace 4 does not exist');
+ok(!workspace_exists('4: foo'), 'workspace 4: foo does not exist yet');
+cmd 'workspace 4: foo';
+ok(workspace_exists('4: foo'), 'workspace 4: foo was created');
+cmd 'open';
+
+cmd 'workspace 3';
+ok(workspace_exists('4: foo'), 'workspace 4: foo still open');
+cmd 'workspace number 4';
+is(focused_ws(), '4: foo', 'now on workspace 4: foo');
+ok(!workspace_exists('4'), 'workspace 4 still does not exist');
+
 done_testing;

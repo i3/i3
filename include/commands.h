@@ -92,6 +92,12 @@ void cmd_append_layout(I3_CMD, char *path);
 void cmd_workspace(I3_CMD, char *which);
 
 /**
+ * Implementation of 'workspace number <number>'
+ *
+ */
+void cmd_workspace_number(I3_CMD, char *which);
+
+/**
  * Implementation of 'workspace back_and_forth'.
  *
  */

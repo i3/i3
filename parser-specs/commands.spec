@@ -77,13 +77,20 @@ state APPEND_LAYOUT:
 # workspace next|prev|next_on_output|prev_on_output
 # workspace back_and_forth
 # workspace <name>
+# workspace number <number>
 state WORKSPACE:
   direction = 'next_on_output', 'prev_on_output', 'next', 'prev'
       -> call cmd_workspace($direction)
   'back_and_forth'
       -> call cmd_workspace_back_and_forth()
+  'number'
+      -> WORKSPACE_NUMBER
   workspace = string 
       -> call cmd_workspace_name($workspace)
+
+state WORKSPACE_NUMBER:
+  workspace = string
+      -> call cmd_workspace_number($workspace)
 
 # focus left|right|up|down
 # focus output <output>
