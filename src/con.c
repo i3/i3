@@ -520,10 +520,12 @@ void con_toggle_fullscreen(Con *con, int fullscreen_mode) {
             fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
         }
         if (fullscreen != NULL) {
-            LOG("Not entering fullscreen mode, container (%p/%s) "
-                "already is in fullscreen mode\n",
+            /* Disable fullscreen for the currently fullscreened
+             * container and enable it for the one the user wants
+             * to have in fullscreen mode. */
+            LOG("Disabling fullscreen for (%p/%s) upon user request\n",
                 fullscreen, fullscreen->name);
-            goto update_netwm_state;
+            fullscreen->fullscreen_mode = CF_NONE;
         }
 
         /* 2: enable fullscreen */
@@ -533,7 +535,6 @@ void con_toggle_fullscreen(Con *con, int fullscreen_mode) {
         con->fullscreen_mode = CF_NONE;
     }
 
-update_netwm_state:
     DLOG("mode now: %d\n", con->fullscreen_mode);
 
     /* update _NET_WM_STATE if this container has a window */

@@ -104,9 +104,10 @@ ok(($wrect->{y} - $orect->{y}) < $threshold, 'y coordinate fullscreen');
 ok(abs($wrect->{width} - $orect->{width}) < $threshold, 'width coordinate fullscreen');
 ok(abs($wrect->{height} - $orect->{height}) < $threshold, 'height coordinate fullscreen');
 
-###############################################################################
-# test if setting two windows in fullscreen mode at the same time does not work
-###############################################################################
+################################################################################
+# Verify that when one window wants to go into fullscreen mode, the old
+# fullscreen window will be replaced.
+################################################################################
 
 $original_rect = X11::XCB::Rect->new(x => 0, y => 0, width => 30, height => 30);
 my $swindow = open_window(
@@ -130,7 +131,7 @@ is(fullscreen_windows(), 1, 'amount of fullscreen windows');
 
 $window->fullscreen(0);
 sync_with_i3;
-is(fullscreen_windows(), 0, 'amount of fullscreen windows');
+is(fullscreen_windows(), 1, 'amount of fullscreen windows');
 
 ok($swindow->mapped, 'window mapped after other fullscreen ended');
 
