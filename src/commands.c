@@ -1556,3 +1556,63 @@ void cmd_scratchpad_show(I3_CMD) {
     // XXX: default reply for now, make this a better reply
     cmd_output->json_output = sstrdup("{\"success\": true}");
 }
+
+/*
+ * Implementation of 'rename workspace <name> to <name>'
+ *
+ */
+void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
+    LOG("Renaming workspace \"%s\" to \"%s\"\n", old_name, new_name);
+
+    Con *output, *workspace = NULL;
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
+        GREP_FIRST(workspace, output_get_content(output),
+            !strcasecmp(child->name, old_name));
+
+    if (!workspace) {
+        // TODO: we should include the old workspace name here and use yajl for
+        // generating the reply.
+        cmd_output->json_output = sstrdup("{\"success\": false, "
+            "\"error\":\"Old workspace not found\"}");
+        return;
+    }
+
+    Con *check_dest = NULL;
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
+        GREP_FIRST(check_dest, output_get_content(output),
+            !strcasecmp(child->name, new_name));
+
+    if (check_dest != NULL) {
+        // TODO: we should include the new workspace name here and use yajl for
+        // generating the reply.
+        cmd_output->json_output = sstrdup("{\"success\": false, "
+            "\"error\":\"New workspace already exists\"}");
+        return;
+    }
+
+    /* Change the name and try to parse it as a number. */
+    FREE(workspace->name);
+    workspace->name = sstrdup(new_name);
+    char *endptr = NULL;
+    long parsed_num = strtol(new_name, &endptr, 10);
+    if (parsed_num == LONG_MIN ||
+        parsed_num == LONG_MAX ||
+        parsed_num < 0 ||
+        endptr == new_name)
+        workspace->num = -1;
+    else workspace->num = parsed_num;
+    LOG("num = %d\n", workspace->num);
+
+    /* By re-attaching, the sort order will be correct afterwards. */
+    Con *previously_focused = focused;
+    Con *parent = workspace->parent;
+    con_detach(workspace);
+    con_attach(workspace, parent, false);
+    /* Restore the previous focus since con_attach messes with the focus. */
+    con_focus(previously_focused);
+
+    cmd_output->needs_tree_render = true;
+    cmd_output->json_output = sstrdup("{\"success\": true}");
+
+    ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"rename\"}");
+}

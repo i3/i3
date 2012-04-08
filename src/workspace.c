@@ -52,8 +52,8 @@ Con *workspace_get(const char *num, bool *created) {
         workspace->type = CT_WORKSPACE;
         FREE(workspace->name);
         workspace->name = sstrdup(num);
-        /* We set ->num to the number if this workspace’s name consists only of
-         * a positive number. Otherwise it’s a named ws and num will be -1. */
+        /* We set ->num to the number if this workspace’s name begins with a
+         * positive number. Otherwise it’s a named ws and num will be -1. */
         char *endptr = NULL;
         long parsed_num = strtol(num, &endptr, 10);
         if (parsed_num == LONG_MIN ||

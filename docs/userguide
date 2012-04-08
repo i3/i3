@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael+i3@stapelberg.de>
-January 2012
+April 2012
 
 This document contains all the information you need to configure and use the i3
 window manager. If it does not, please contact us on IRC (preferred) or post your
@@ -1355,6 +1355,24 @@ will order them numerically. Also, you will be able to use +workspace number 1+
 to switch to the workspace which begins with number 1, regardless of which name
 it has. This is useful in case you are changing the workspace’s name
 dynamically.
+
+=== Renaming workspaces
+
+You can rename workspaces. This might be useful to start with the default
+numbered workspaces, do your work, and rename the workspaces afterwards to
+reflect what’s actually on them.
+
+*Syntax*:
+----------------------------------------------------
+rename workspace <old_name> to <new_name>
+----------------------------------------------------
+
+*Examples*:
+------------------------------------------------
+i3-msg 'rename workspace 5 to 6'
+i3-msg 'rename workspace 1 to "1: www"'
+i3-msg 'rename workspace "1: www" to "10: www"'
+------------------------------------------------
 
 [[resizingconfig]]
 

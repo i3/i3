@@ -127,7 +127,7 @@ is(parser_calls("\nworkspace test"),
 ################################################################################
 
 is(parser_calls('unknown_literal'),
-   "Expected one of these tokens: <end>, '[', 'move', 'exec', 'exit', 'restart', 'reload', 'border', 'layout', 'append_layout', 'workspace', 'focus', 'kill', 'open', 'fullscreen', 'split', 'floating', 'mark', 'resize', 'nop', 'scratchpad', 'mode'\n" .
+   "Expected one of these tokens: <end>, '[', 'move', 'exec', 'exit', 'restart', 'reload', 'border', 'layout', 'append_layout', 'workspace', 'focus', 'kill', 'open', 'fullscreen', 'split', 'floating', 'mark', 'resize', 'rename', 'nop', 'scratchpad', 'mode'\n" .
    "Your command: unknown_literal\n" .
    "              ^^^^^^^^^^^^^^^",
    'error for unknown literal ok');

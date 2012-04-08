@@ -31,6 +31,7 @@ state INITIAL:
   'floating' -> FLOATING
   'mark' -> MARK
   'resize' -> RESIZE
+  'rename' -> RENAME
   'nop' -> NOP
   'scratchpad' -> SCRATCHPAD
   'mode' -> MODE
@@ -172,6 +173,21 @@ state RESIZE_TILING_OR:
       ->
   end
       -> call cmd_resize($way, $direction, $resize_px, $resize_ppt)
+
+# rename workspace <name> to <name>
+state RENAME:
+  'workspace'
+      -> RENAME_WORKSPACE
+
+state RENAME_WORKSPACE:
+  old_name = word
+      -> RENAME_WORKSPACE_TO
+
+state RENAME_WORKSPACE_TO:
+  'to'
+      ->
+  new_name = string
+      -> call cmd_rename_workspace($old_name, $new_name)
 
 # move <direction> [<pixels> [px]]
 # move [window|container] [to] workspace <str>

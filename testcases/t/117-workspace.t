@@ -134,4 +134,83 @@ cmd 'workspace number 4';
 is(focused_ws(), '4: foo', 'now on workspace 4: foo');
 ok(!workspace_exists('4'), 'workspace 4 still does not exist');
 
+################################################################################
+# Verify that renaming workspaces works.
+################################################################################
+
+sub workspace_numbers_sorted {
+    my ($name) = @_;
+    my $i3 = i3(get_socket_path());
+    my $tree = $i3->get_tree->recv;
+
+    my @outputs = @{$tree->{nodes}};
+    my @workspaces;
+    for my $output (@outputs) {
+        # get the first CT_CON of each output
+        my $content = first { $_->{type} == 2 } @{$output->{nodes}};
+        @workspaces = (@workspaces, @{$content->{nodes}});
+    }
+
+    my @numbers = grep { $_ != -1 } map { $_->{num} } @workspaces;
+    is_deeply(
+        [ sort { $a <=> $b } @numbers ],
+        \@numbers,
+        'workspace numbers sorted');
+}
+
+# 1: numbered workspace
+cmd 'workspace 10';
+cmd 'open';
+cmd 'workspace 13';
+cmd 'open';
+
+workspace_numbers_sorted();
+
+cmd 'workspace 9';
+is(focused_ws(), '9', 'now on workspace 9');
+
+ok(!workspace_exists('12'), 'workspace 12 does not exist yet');
+cmd 'rename workspace 9 to 12';
+ok(!workspace_exists('9'), 'workspace 9 does not exist anymore');
+is(focused_ws(), '12', 'now on workspace 12');
+$ws = get_ws('12');
+is($ws->{num}, 12, 'number correctly changed');
+
+workspace_numbers_sorted();
+
+# 2: numbered + named workspace
+cmd 'workspace 9: foo';
+is(focused_ws(), '9: foo', 'now on workspace 9: foo');
+
+ok(!workspace_exists('11: bar'), 'workspace 11: bar does not exist yet');
+cmd 'rename workspace "9: foo" to "11: bar"';
+ok(!workspace_exists('9: foo'), 'workspace 9 does not exist anymore');
+is(focused_ws(), '11: bar', 'now on workspace 10');
+$ws = get_ws('11: bar');
+is($ws->{num}, 11, 'number correctly changed');
+workspace_numbers_sorted();
+# keep that one open, we need it later
+cmd 'open';
+
+# 3: named workspace
+cmd 'workspace bleh';
+is(focused_ws(), 'bleh', 'now on workspace bleh');
+
+ok(!workspace_exists('qux'), 'workspace qux does not exist yet');
+cmd 'rename workspace bleh to qux';
+ok(!workspace_exists('bleh'), 'workspace 9 does not exist anymore');
+is(focused_ws(), 'qux', 'now on workspace qux');
+$ws = get_ws('qux');
+is($ws->{num}, -1, 'number correctly changed');
+workspace_numbers_sorted();
+
+# 5: already existing workspace
+my $result = cmd 'rename workspace qux to 11: bar';
+ok(!$result->[0]->{success}, 'renaming workspace to an already existing one failed');
+
+# 6: non-existing old workspace (verify command result)
+$result = cmd 'rename workspace notexistant to bleh';
+ok(!$result->[0]->{success}, 'renaming workspace which does not exist failed');
+
+
 done_testing;

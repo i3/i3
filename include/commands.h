@@ -259,4 +259,10 @@ void cmd_move_scratchpad(I3_CMD);
  */
 void cmd_scratchpad_show(I3_CMD);
 
+/**
+ * Implementation of 'rename workspace <name> to <name>'
+ *
+ */
+void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name);
+
 #endif
