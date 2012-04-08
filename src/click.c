@@ -223,7 +223,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         floating_raise_con(floatingcon);
 
         /* 4: floating_modifier plus left mouse button drags */
-        if (mod_pressed && event->detail == 1) {
+        if (mod_pressed && event->detail == XCB_BUTTON_INDEX_1) {
             floating_drag_window(floatingcon, event);
             return 1;
         }
@@ -272,7 +272,9 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
             return 1;
     }
     /* 8: otherwise, check for border/decoration clicks and resize */
-    else if (dest == CLICK_BORDER || dest == CLICK_DECORATION) {
+    else if ((dest == CLICK_BORDER || dest == CLICK_DECORATION) &&
+             (event->detail == XCB_BUTTON_INDEX_1 ||
+              event->detail == XCB_BUTTON_INDEX_3)) {
         DLOG("Trying to resize (tiling)\n");
         tiling_resize(con, event, dest);
     }
