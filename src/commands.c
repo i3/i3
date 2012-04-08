@@ -407,7 +407,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
 
     LOG("should move window to workspace with number %d\n", which);
     /* get the workspace */
-    Con *output, *workspace;
+    Con *output, *workspace = NULL;
 
     char *endptr = NULL;
     long parsed_num = strtol(which, &endptr, 10);
@@ -733,7 +733,7 @@ void cmd_workspace(I3_CMD, char *which) {
  *
  */
 void cmd_workspace_number(I3_CMD, char *which) {
-    Con *output, *workspace;
+    Con *output, *workspace = NULL;
 
     char *endptr = NULL;
     long parsed_num = strtol(which, &endptr, 10);
