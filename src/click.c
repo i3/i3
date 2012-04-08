@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * click.c: Button press (mouse click) events.
  *
@@ -193,9 +193,15 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
          event->detail == XCB_BUTTON_INDEX_5)) {
         DLOG("Scrolling on a window decoration\n");
         orientation_t orientation = (con->parent->layout == L_STACKED ? VERT : HORIZ);
-        if (event->detail == XCB_BUTTON_INDEX_4)
+        /* To prevent scrolling from going outside the container (see ticket
+         * #557), we first check if scrolling is possible at all. */
+        Con *focused = con_descend_focused(con->parent);
+        bool scroll_prev_possible = (TAILQ_PREV(focused, nodes_head, nodes) != NULL);
+        bool scroll_next_possible = (TAILQ_NEXT(focused, nodes) != NULL);
+        if (event->detail == XCB_BUTTON_INDEX_4 && scroll_prev_possible)
             tree_next('p', orientation);
-        else tree_next('n', orientation);
+        else if (event->detail == XCB_BUTTON_INDEX_5 && scroll_next_possible)
+            tree_next('n', orientation);
         goto done;
     }
 
