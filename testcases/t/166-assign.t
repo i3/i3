@@ -171,6 +171,7 @@ $workspaces = get_workspace_names;
 ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 
 $window = open_special(wm_class => 'SPEcial');
+wait_for_map $window;
 
 $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
