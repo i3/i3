@@ -3,8 +3,16 @@
 #
 # Verifies the 'focus output' command works properly.
 
-use i3test;
+use i3test i3_autostart => 0;
 use List::Util qw(first);
+
+my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+fake-outputs 1024x768+0+0,1024x768+1024+0
+EOT
+my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 my $i3 = i3(get_socket_path());
@@ -20,31 +28,33 @@ sub focused_output {
     return $output->{name};
 }
 
-is(focused_output, 'xinerama-0', 'focus on first output');
+is(focused_output, 'fake-0', 'focus on first output');
 
 cmd 'focus output right';
-is(focused_output, 'xinerama-1', 'focus on second output');
+is(focused_output, 'fake-1', 'focus on second output');
 
 # focus should wrap when we focus to the right again.
 cmd 'focus output right';
-is(focused_output, 'xinerama-0', 'focus on first output again');
+is(focused_output, 'fake-0', 'focus on first output again');
 
 cmd 'focus output left';
-is(focused_output, 'xinerama-1', 'focus back on second output');
+is(focused_output, 'fake-1', 'focus back on second output');
 
 cmd 'focus output left';
-is(focused_output, 'xinerama-0', 'focus on first output again');
+is(focused_output, 'fake-0', 'focus on first output again');
 
 cmd 'focus output up';
-is(focused_output, 'xinerama-0', 'focus still on first output');
+is(focused_output, 'fake-0', 'focus still on first output');
 
 cmd 'focus output down';
-is(focused_output, 'xinerama-0', 'focus still on first output');
+is(focused_output, 'fake-0', 'focus still on first output');
 
-cmd 'focus output xinerama-1';
-is(focused_output, 'xinerama-1', 'focus on second output');
+cmd 'focus output fake-1';
+is(focused_output, 'fake-1', 'focus on second output');
 
-cmd 'focus output xinerama-0';
-is(focused_output, 'xinerama-0', 'focus on first output');
+cmd 'focus output fake-0';
+is(focused_output, 'fake-0', 'focus on first output');
+
+exit_gracefully($pid);
 
 done_testing;

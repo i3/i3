@@ -203,6 +203,8 @@ none                            { return TOK_NONE; }
 focus_follows_mouse             { return TOKFOCUSFOLLOWSMOUSE; }
 force_focus_wrapping            { return TOK_FORCE_FOCUS_WRAPPING; }
 force_xinerama                  { return TOK_FORCE_XINERAMA; }
+fake_outputs                    { WS_STRING; return TOK_FAKE_OUTPUTS; }
+fake-outputs                    { WS_STRING; return TOK_FAKE_OUTPUTS; }
 workspace_auto_back_and_forth   { return TOK_WORKSPACE_AUTO_BAF; }
 workspace_bar                   { return TOKWORKSPACEBAR; }
 popup_during_fullscreen         { return TOK_POPUP_DURING_FULLSCREEN; }

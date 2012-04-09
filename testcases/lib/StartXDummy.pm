@@ -75,16 +75,11 @@ sub start_xdummy {
     # If /proc/cpuinfo does not exist, we fall back to 2 cores.
     $num_cores ||= 2;
 
-    # If unset, we use num_cores * 2, plus two extra xdummys to combine to a
-    # multi-monitor setup using Xdmx.
-    $parallel ||= ($num_cores * 2) + 2;
+    # If unset, we use num_cores * 2.
+    $parallel ||= ($num_cores * 2);
 
     # If we are running a small number of tests, don’t over-parallelize.
     $parallel = $numtests if $numtests < $parallel;
-
-    # Ensure we have at least 1 X-Server plus two X-Servers for multi-monitor
-    # tests.
-    $parallel = 3 if $parallel < 3;
 
     # First get the last used display number, then increment it by one.
     # Effectively falls back to 1 if no X server is running.
@@ -107,20 +102,7 @@ sub start_xdummy {
 
     wait_for_x(\@sockets_waiting);
 
-    # Now combine the last two displays to a multi-monitor display using Xdmx
-    my $first = pop @displays;
-    my $second = pop @displays;
-
-    # make sure this display isn’t in use yet
-    $displaynum++ while -e ($x_socketpath . $displaynum);
-    say 'starting xdmx on display :' . $displaynum;
-
-    my $multidpy = ":$displaynum";
-    my $socket = fork_xserver($displaynum, 'Xdmx', '+xinerama', '-xinput',
-            'local', '-display', $first, '-display', $second, '-ac', $multidpy);
-    wait_for_x([ $socket ]);
-
-    return \@displays, $multidpy;
+    return @displays;
 }
 
 1

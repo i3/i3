@@ -75,5 +75,6 @@
 #include "scratchpad.h"
 #include "commands.h"
 #include "commands_parser.h"
+#include "fake_outputs.h"
 
 #endif

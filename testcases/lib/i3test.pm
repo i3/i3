@@ -288,7 +288,7 @@ sub fresh_workspace {
     if (exists($args{output})) {
         my $i3 = i3(get_socket_path());
         my $tree = $i3->get_tree->recv;
-        my $output = first { $_->{name} eq "xinerama-$args{output}" }
+        my $output = first { $_->{name} eq "fake-$args{output}" }
                         @{$tree->{nodes}};
         die "BUG: Could not find output $args{output}" unless defined($output);
         # Get the focused workspace on that output and switch to it.

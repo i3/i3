@@ -252,6 +252,7 @@ int main(int argc, char *argv[]) {
     char *layout_path = NULL;
     bool delete_layout_path = false;
     bool force_xinerama = false;
+    char *fake_outputs = NULL;
     bool disable_signalhandler = false;
     static struct option long_options[] = {
         {"no-autostart", no_argument, 0, 'a'},
@@ -267,6 +268,8 @@ int main(int argc, char *argv[]) {
         {"shmlog_size", required_argument, 0, 0},
         {"get-socketpath", no_argument, 0, 0},
         {"get_socketpath", no_argument, 0, 0},
+        {"fake_outputs", required_argument, 0, 0},
+        {"fake-outputs", required_argument, 0, 0},
         {0, 0, 0, 0}
     };
     int option_index = 0, opt;
@@ -367,6 +370,11 @@ int main(int argc, char *argv[]) {
                     FREE(layout_path);
                     layout_path = sstrdup(optarg);
                     delete_layout_path = true;
+                    break;
+                } else if (strcmp(long_options[option_index].name, "fake-outputs") == 0 ||
+                           strcmp(long_options[option_index].name, "fake_outputs") == 0) {
+                    LOG("Initializing fake outputs: %s\n", optarg);
+                    fake_outputs = sstrdup(optarg);
                     break;
                 }
                 /* fall-through */
@@ -656,10 +664,18 @@ int main(int argc, char *argv[]) {
 
     free(greply);
 
-    /* Force Xinerama (for drivers which don't support RandR yet, esp. the
-     * nVidia binary graphics driver), when specified either in the config
-     * file or on command-line */
-    if (force_xinerama || config.force_xinerama) {
+    /* Setup fake outputs for testing */
+    if (fake_outputs == NULL && config.fake_outputs != NULL)
+        fake_outputs = config.fake_outputs;
+
+    if (fake_outputs != NULL) {
+        fake_outputs_init(fake_outputs);
+        FREE(fake_outputs);
+        config.fake_outputs = NULL;
+    } else if (force_xinerama || config.force_xinerama) {
+        /* Force Xinerama (for drivers which don't support RandR yet, esp. the
+         * nVidia binary graphics driver), when specified either in the config
+         * file or on command-line */
         xinerama_init();
     } else {
         DLOG("Checking for XRandR...\n");

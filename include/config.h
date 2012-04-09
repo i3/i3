@@ -134,6 +134,9 @@ struct Config {
      * is fetched once and never updated. */
     bool force_xinerama;
 
+    /** Overwrites output detection (for testing), see src/fake_outputs.c */
+    char *fake_outputs;
+
     /** Automatic workspace back and forth switching. If this is set, a
      * switch to the currently active workspace will switch to the
      * previously focused one instead, making it possible to fast toggle

@@ -72,16 +72,9 @@ my @testfiles = @ARGV;
 
 my $numtests = scalar @testfiles;
 
-# When the user specifies displays, we don’t run multi-monitor tests at all
-# (because we don’t know which displaynumber is the X-Server with multiple
-# monitors).
-my $multidpy = undef;
-
 # No displays specified, let’s start some Xdummy instances.
 if (@displays == 0) {
-    my $dpyref;
-    ($dpyref, $multidpy) = start_xdummy($parallel, $numtests);
-    @displays = @$dpyref;
+    @displays = start_xdummy($parallel, $numtests);
 }
 
 # 1: create an output directory for this test-run
@@ -108,16 +101,6 @@ for my $display (@displays) {
     } else {
         # start a TestWorker for each display
         push @single_worker, worker($display, $x, $outdir, \%options);
-    }
-}
-
-my @multi_worker;
-if (defined($multidpy)) {
-    my $x = X11::XCB::Connection->new(display => $multidpy);
-    if ($x->has_error) {
-        die "Could not connect to multi-monitor display $multidpy\n";
-    } else {
-        push @multi_worker, worker($multidpy, $x, $outdir, \%options);
     }
 }
 
@@ -149,30 +132,21 @@ my @done;
 my $num = @testfiles;
 my $harness = TAP::Harness->new({ });
 
-my @single_monitor_tests = grep { m,^t/([0-9]+)-, && $1 < 500 } @testfiles;
-my @multi_monitor_tests = grep { m,^t/([0-9]+)-, && $1 >= 500 } @testfiles;
-
 my $aggregator = TAP::Parser::Aggregator->new();
 $aggregator->start();
 
-status_init(displays => [ @displays, $multidpy ], tests => $num);
+status_init(displays => \@displays, tests => $num);
 
 my $single_cv = AE::cv;
-my $multi_cv = AE::cv;
 
 # We start tests concurrently: For each display, one test gets started. Every
 # test starts another test after completing.
 for (@single_worker) {
     $single_cv->begin;
-    take_job($_, $single_cv, \@single_monitor_tests);
-}
-for (@multi_worker) {
-    $multi_cv->begin;
-    take_job($_, $multi_cv, \@multi_monitor_tests);
+    take_job($_, $single_cv, \@testfiles);
 }
 
 $single_cv->recv;
-$multi_cv->recv;
 
 $aggregator->stop();
 

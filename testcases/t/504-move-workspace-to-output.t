@@ -4,10 +4,18 @@
 # Tests whether the 'move workspace <ws> to [output] <output>' command works
 #
 use List::Util qw(first);
-use i3test;
+use i3test i3_autostart => 0;
 
 # TODO:
 # introduce 'move workspace 3 to output <output>' with synonym 'move workspace 3 to <output>'
+
+my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+fake-outputs 1024x768+0+0,1024x768+1024+0
+EOT
+my $pid = launch_with_config($config);
 
 ################################################################################
 # Setup workspaces so that they stay open (with an empty container).
@@ -42,42 +50,42 @@ cmd 'workspace 5';
 is(focused_ws, '5', 'workspace 5 focused');
 
 my ($x0, $x1) = workspaces_per_screen();
-ok('5' ~~ @$x0, 'workspace 5 on xinerama-0');
+ok('5' ~~ @$x0, 'workspace 5 on fake-0');
 
-cmd 'move workspace to output xinerama-1';
+cmd 'move workspace to output fake-1';
 
 sub workspaces_per_screen {
     my $i3 = i3(get_socket_path());
     my $tree = $i3->get_tree->recv;
     my @outputs = @{$tree->{nodes}};
 
-    my $xinerama0 = first { $_->{name} eq 'xinerama-0' } @outputs;
-    my $xinerama0_content = first { $_->{type} == 2 } @{$xinerama0->{nodes}};
+    my $fake0 = first { $_->{name} eq 'fake-0' } @outputs;
+    my $fake0_content = first { $_->{type} == 2 } @{$fake0->{nodes}};
 
-    my $xinerama1 = first { $_->{name} eq 'xinerama-1' } @outputs;
-    my $xinerama1_content = first { $_->{type} == 2 } @{$xinerama1->{nodes}};
+    my $fake1 = first { $_->{name} eq 'fake-1' } @outputs;
+    my $fake1_content = first { $_->{type} == 2 } @{$fake1->{nodes}};
 
-    my @xinerama0_workspaces = map { $_->{name} } @{$xinerama0_content->{nodes}};
-    my @xinerama1_workspaces = map { $_->{name} } @{$xinerama1_content->{nodes}};
+    my @fake0_workspaces = map { $_->{name} } @{$fake0_content->{nodes}};
+    my @fake1_workspaces = map { $_->{name} } @{$fake1_content->{nodes}};
 
-    return \@xinerama0_workspaces, \@xinerama1_workspaces;
+    return \@fake0_workspaces, \@fake1_workspaces;
 }
 
 ($x0, $x1) = workspaces_per_screen();
-ok('5' ~~ @$x1, 'workspace 5 now on xinerama-1');
+ok('5' ~~ @$x1, 'workspace 5 now on fake-1');
 
 ################################################################################
 # Verify that a new workspace will be created when moving the last workspace.
 ################################################################################
 
-is_deeply($x0, [ '1' ], 'only workspace 1 remaining on xinerama-0');
+is_deeply($x0, [ '1' ], 'only workspace 1 remaining on fake-0');
 
 cmd 'workspace 1';
-cmd 'move workspace to output xinerama-1';
+cmd 'move workspace to output fake-1';
 
 ($x0, $x1) = workspaces_per_screen();
-ok('1' ~~ @$x1, 'workspace 1 now on xinerama-1');
-is_deeply($x0, [ '3' ], 'workspace 2 created on xinerama-0');
+ok('1' ~~ @$x1, 'workspace 1 now on fake-1');
+is_deeply($x0, [ '3' ], 'workspace 2 created on fake-0');
 
 ################################################################################
 # Verify that 'move workspace to output <direction>' works
@@ -87,7 +95,7 @@ cmd 'workspace 5';
 cmd 'move workspace to output left';
 
 ($x0, $x1) = workspaces_per_screen();
-ok('5' ~~ @$x0, 'workspace 5 back on xinerama-0');
+ok('5' ~~ @$x0, 'workspace 5 back on fake-0');
 
 ################################################################################
 # Verify that coordinates of floating windows are fixed correctly when moving a
@@ -107,5 +115,7 @@ isnt($old_rect->{x}, $new_rect->{x}, 'x coordinate changed');
 is($old_rect->{y}, $new_rect->{y}, 'y coordinate unchanged');
 is($old_rect->{width}, $new_rect->{width}, 'width unchanged');
 is($old_rect->{height}, $new_rect->{height}, 'height unchanged');
+
+exit_gracefully($pid);
 
 done_testing;
