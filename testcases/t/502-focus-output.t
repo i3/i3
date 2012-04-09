@@ -28,6 +28,9 @@ sub focused_output {
     return $output->{name};
 }
 
+$x->root->warp_pointer(0, 0);
+sync_with_i3;
+
 is(focused_output, 'fake-0', 'focus on first output');
 
 cmd 'focus output right';

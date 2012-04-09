@@ -594,6 +594,7 @@ Con* workspace_prev_on_output(void) {
     Con *current = con_get_workspace(focused);
     Con *prev = NULL;
     Con *output  = con_get_output(focused);
+    DLOG("output = %s\n", output->name);
 
     if (current->num == -1) {
         /* If named workspace, find previous named workspace. */

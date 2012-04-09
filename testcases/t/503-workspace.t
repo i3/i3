@@ -18,6 +18,9 @@ my $pid = launch_with_config($config);
 # Setup workspaces so that they stay open (with an empty container).
 ################################################################################
 
+$x->root->warp_pointer(0, 0);
+sync_with_i3;
+
 is(focused_ws, '1', 'starting on workspace 1');
 # ensure workspace 1 stays open
 open_window;
@@ -65,6 +68,12 @@ cmd 'workspace prev_on_output';
 is(focused_ws, '1', 'workspace 1 focused');
 
 cmd 'workspace 2';
+
+# XXX: This is to avoid EnterNotifies changing the focus. Not sure why they
+# appear sometimes in the first place. Only happens when running the full
+# testsuite.
+$x->root->warp_pointer(1025, 0);
+sync_with_i3;
 
 cmd 'workspace prev_on_output';
 is(focused_ws, '2', 'workspace 2 focused');
