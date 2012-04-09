@@ -92,8 +92,6 @@ $window->destroy;
 
 exit_gracefully($pid);
 
-sleep 0.25;
-
 #####################################################################
 # start a window and see that it gets assigned to a workspace which has content
 # already, next to the existing node.
@@ -154,8 +152,6 @@ $window->destroy;
 
 exit_gracefully($pid);
 
-sleep 0.25;
-
 #####################################################################
 # make sure that assignments are case-insensitive in the old syntax.
 #####################################################################
@@ -183,8 +179,6 @@ ok(@{$content->{floating_nodes}} == 1, 'one floating con');
 $window->destroy;
 
 exit_gracefully($pid);
-
-sleep 0.25;
 
 #####################################################################
 # regression test: dock clients with floating assignments should not crash
