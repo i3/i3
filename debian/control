@@ -3,7 +3,7 @@ Section: utils
 Priority: extra
 Maintainer: Michael Stapelberg <michael@stapelberg.de>
 DM-Upload-Allowed: yes
-Build-Depends: debhelper (>= 7.0.50~), libx11-dev, libxcb-util0-dev (>= 0.3.8), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-randr0-dev, libxcb-icccm4-dev, libxcursor-dev, asciidoc (>= 8.4.4), xmlto, docbook-xml, pkg-config, libev-dev, flex, bison, libyajl-dev, texlive-latex-base, texlive-latex-recommended, texlive-latex-extra, libpcre3-dev, libstartup-notification0-dev (>= 0.10)
+Build-Depends: debhelper (>= 7.0.50~), libx11-dev, libxcb-util0-dev (>= 0.3.8), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-randr0-dev, libxcb-icccm4-dev, libxcursor-dev, asciidoc (>= 8.4.4), xmlto, docbook-xml, pkg-config, libev-dev, flex, bison, libyajl-dev, libpcre3-dev, libstartup-notification0-dev (>= 0.10)
 Standards-Version: 3.9.2
 Homepage: http://i3wm.org/
 
