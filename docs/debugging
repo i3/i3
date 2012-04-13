@@ -24,7 +24,7 @@ Your version can look like this:
 4.1.2::
 You are using a release version. Please
 upgrade to a development version first, or read
-link:debugging-release-version[Debugging i3: How To (release version)].
+link:debugging-release-version.html[Debugging i3: How To (release version)].
 
 4.1.2-248-g51728ba::
 Your version is 248 commits newer than 4.1.2, and the git revision of your
