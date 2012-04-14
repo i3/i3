@@ -623,5 +623,5 @@ Ruby::
 Perl::
 	http://search.cpan.org/search?query=AnyEvent::I3
 Python::
-	http://github.com/thepub/i3ipc
-	http://github.com/jzib/i3-py (includes higher-level features)
+	https://github.com/whitelynx/i3ipc
+	https://github.com/ziberna/i3-py (includes higher-level features)
