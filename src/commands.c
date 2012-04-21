@@ -1238,15 +1238,6 @@ void cmd_focus_level(I3_CMD, char *level) {
  */
 void cmd_focus(I3_CMD) {
     DLOG("current_match = %p\n", current_match);
-    if (focused &&
-        focused->type != CT_WORKSPACE &&
-        focused->fullscreen_mode != CF_NONE) {
-        LOG("Cannot change focus while in fullscreen mode.\n");
-        ysuccess(false);
-        return;
-    }
-
-    owindow *current;
 
     if (match_is_empty(current_match)) {
         ELOG("You have to specify which window/container should be focused.\n");
@@ -1263,12 +1254,24 @@ void cmd_focus(I3_CMD) {
     }
 
     int count = 0;
+    owindow *current;
     TAILQ_FOREACH(current, &owindows, owindows) {
         Con *ws = con_get_workspace(current->con);
         /* If no workspace could be found, this was a dock window.
          * Just skip it, you cannot focus dock windows. */
         if (!ws)
             continue;
+
+        /* Don't allow the focus switch if the focused and current
+         * containers are in the same workspace. */
+        if (focused &&
+            focused->type != CT_WORKSPACE &&
+            focused->fullscreen_mode != CF_NONE &&
+            con_get_workspace(focused) == ws) {
+            LOG("Cannot change focus while in fullscreen mode (same workspace).\n");
+            ysuccess(false);
+            return;
+        }
 
         /* If the container is not on the current workspace,
          * workspace_show() will switch to a different workspace and (if
