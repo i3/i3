@@ -1055,18 +1055,8 @@ void init_tray() {
  */
 void clean_xcb() {
     i3_output *o_walk;
-    trayclient *trayclient;
     free_workspaces();
     SLIST_FOREACH(o_walk, outputs, slist) {
-        TAILQ_FOREACH(trayclient, o_walk->trayclients, tailq) {
-            /* Unmap, then reparent (to root) the tray client windows */
-            xcb_unmap_window(xcb_connection, trayclient->win);
-            xcb_reparent_window(xcb_connection,
-                                trayclient->win,
-                                xcb_root,
-                                0,
-                                0);
-        }
         destroy_window(o_walk);
         FREE(o_walk->trayclients);
         FREE(o_walk->workspaces);
@@ -1117,6 +1107,18 @@ void destroy_window(i3_output *output) {
     if (output->bar == XCB_NONE) {
         return;
     }
+
+    trayclient *trayclient;
+    TAILQ_FOREACH(trayclient, output->trayclients, tailq) {
+        /* Unmap, then reparent (to root) the tray client windows */
+        xcb_unmap_window(xcb_connection, trayclient->win);
+        xcb_reparent_window(xcb_connection,
+                            trayclient->win,
+                            xcb_root,
+                            0,
+                            0);
+    }
+
     xcb_destroy_window(xcb_connection, output->bar);
     output->bar = XCB_NONE;
 }
