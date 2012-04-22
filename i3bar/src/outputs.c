@@ -219,6 +219,7 @@ static int outputs_end_map_cb(void *params_) {
         SLIST_INSERT_HEAD(outputs, params->outputs_walk, slist);
     } else {
         target->active = params->outputs_walk->active;
+        target->primary = params->outputs_walk->primary;
         target->ws = params->outputs_walk->ws;
         target->rect = params->outputs_walk->rect;
     }
