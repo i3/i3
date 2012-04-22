@@ -1110,7 +1110,8 @@ void get_atoms() {
  */
 void kick_tray_clients(i3_output *output) {
     trayclient *trayclient;
-    TAILQ_FOREACH(trayclient, output->trayclients, tailq) {
+    while (!TAILQ_EMPTY(output->trayclients)) {
+        trayclient = TAILQ_FIRST(output->trayclients);
         /* Unmap, then reparent (to root) the tray client windows */
         xcb_unmap_window(xcb_connection, trayclient->win);
         xcb_reparent_window(xcb_connection,
@@ -1118,7 +1119,14 @@ void kick_tray_clients(i3_output *output) {
                             xcb_root,
                             0,
                             0);
+
+        /* We remove the trayclient right here. We might receive an UnmapNotify
+         * event afterwards, but better safe than sorry. */
+        TAILQ_REMOVE(output->trayclients, trayclient, tailq);
     }
+
+    /* Trigger an update, we now have more space for the statusline */
+    draw_bars();
 }
 
 /*
