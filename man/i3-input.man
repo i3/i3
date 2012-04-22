@@ -1,7 +1,7 @@
 i3-input(1)
 =========
 Michael Stapelberg <michael+i3@stapelberg.de>
-v4.1, September 2011
+v4.1.2, April 2012
 
 == NAME
 
@@ -14,17 +14,44 @@ i3-input [-s <socket>] [-F <format>] [-l <limit>] [-P <prompt>] [-f <font>] [-v]
 == DESCRIPTION
 
 i3-input is a tool to take commands (or parts of a command) composed by
-the user, and send it/them to i3. This is useful, for example, for the
-mark/goto command.
+the user, and send it/them to i3 (unles the user hits Escape before inputing <limit> characters.
+This is useful, for example, for the mark/goto command.
 
-The -F option takes a format string. In this string, every occurence of %s is
-replaced by the user input.
+== OPTIONS
 
-== EXAMPLE
+-s <socket>::
+Specify a path to an IPC socket for comunication with i3.
 
+-F <format>::
+Every occurence of "%s" in the <format> string is replaced by the user input,
+and the result is sent to i3 as a command. Default value is "%s".
+
+-l <limit>::
+Set the maximum allowed length of the user input to <limit> characters.
+i3-input will automatically issues the command as if the user hit Return
+when the user input length reaches that value.
+
+-P <prompt>::
+Display the <prompt> string in front of user input text field.
+The prompt string is not included in the user input/command.
+
+-f <font>::
+Use specified X11 font.
+
+-v::
+Show version and exit without issuing any commands.
+
+== EXAMPLES
+
+Mark a container with a single character:
 ------------------------------------------------
 i3-input -F 'mark %s' -l 1 -P 'Mark: '
 ------------------------------------------------
+
+Go to the container marked with above example:
+-----------------------------------------------------
+i3-input -F '[con_mark="%s"] focus' -l 1 -P 'Go to: '
+-----------------------------------------------------
 
 == ENVIRONMENT
 
