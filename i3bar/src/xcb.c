@@ -458,6 +458,18 @@ static void handle_client_message(xcb_client_message_event_t* event) {
 
                 DLOG("using output %s\n", walk->name);
                 output = walk;
+                break;
+            }
+            /* In case of tray_output == primary and there is no primary output
+             * configured, we fall back to the first available output. */
+            if (output == NULL && strcasecmp("primary", config.tray_output) == 0) {
+                SLIST_FOREACH(walk, outputs, slist) {
+                    if (!walk->active)
+                        continue;
+                    DLOG("Falling back to output %s because no primary output is configured\n", walk->name);
+                    output = walk;
+                    break;
+                }
             }
             if (output == NULL) {
                 ELOG("No output found\n");
