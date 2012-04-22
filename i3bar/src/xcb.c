@@ -1088,6 +1088,28 @@ void get_atoms() {
 }
 
 /*
+ * Reparents all tray clients of the specified output to the root window. This
+ * is either used when shutting down, when an output appears (xrandr --output
+ * VGA1 --off) or when the primary output changes.
+ *
+ * Applications using the tray will start the protocol from the beginning again
+ * afterwards.
+ *
+ */
+void kick_tray_clients(i3_output *output) {
+    trayclient *trayclient;
+    TAILQ_FOREACH(trayclient, output->trayclients, tailq) {
+        /* Unmap, then reparent (to root) the tray client windows */
+        xcb_unmap_window(xcb_connection, trayclient->win);
+        xcb_reparent_window(xcb_connection,
+                            trayclient->win,
+                            xcb_root,
+                            0,
+                            0);
+    }
+}
+
+/*
  * Destroy the bar of the specified output
  *
  */
@@ -1099,17 +1121,7 @@ void destroy_window(i3_output *output) {
         return;
     }
 
-    trayclient *trayclient;
-    TAILQ_FOREACH(trayclient, output->trayclients, tailq) {
-        /* Unmap, then reparent (to root) the tray client windows */
-        xcb_unmap_window(xcb_connection, trayclient->win);
-        xcb_reparent_window(xcb_connection,
-                            trayclient->win,
-                            xcb_root,
-                            0,
-                            0);
-    }
-
+    kick_tray_clients(output);
     xcb_destroy_window(xcb_connection, output->bar);
     output->bar = XCB_NONE;
 }

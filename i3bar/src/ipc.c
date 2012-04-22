@@ -65,6 +65,11 @@ void got_output_reply(char *reply) {
     DLOG("Reconfiguring Windows...\n");
     realloc_sl_buffer();
     reconfig_windows();
+
+    i3_output *o_walk;
+    SLIST_FOREACH(o_walk, outputs, slist) {
+        kick_tray_clients(o_walk);
+    }
 }
 
 /*
