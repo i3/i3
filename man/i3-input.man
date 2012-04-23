@@ -14,13 +14,16 @@ i3-input [-s <socket>] [-F <format>] [-l <limit>] [-P <prompt>] [-f <font>] [-v]
 == DESCRIPTION
 
 i3-input is a tool to take commands (or parts of a command) composed by
-the user, and send it/them to i3 (unles the user hits Escape before inputing <limit> characters.
-This is useful, for example, for the mark/goto command.
+the user, and send it/them to i3. This is useful, for example, for the
+mark/goto command.
+
+You can press Escape to close i3-input without sending any commands.
 
 == OPTIONS
 
 -s <socket>::
-Specify a path to an IPC socket for comunication with i3.
+Specify the path to the i3 IPC socket (it should not be necessary to use this
+option, i3-input will figure out the path on its own).
 
 -F <format>::
 Every occurence of "%s" in the <format> string is replaced by the user input,
@@ -28,18 +31,18 @@ and the result is sent to i3 as a command. Default value is "%s".
 
 -l <limit>::
 Set the maximum allowed length of the user input to <limit> characters.
-i3-input will automatically issues the command as if the user hit Return
-when the user input length reaches that value.
+i3-input will automatically issue the command when the user input reaches that
+length.
 
 -P <prompt>::
 Display the <prompt> string in front of user input text field.
 The prompt string is not included in the user input/command.
 
 -f <font>::
-Use specified X11 font.
+Use the specified X11 core font (use +xfontsel+ to chose a font).
 
 -v::
-Show version and exit without issuing any commands.
+Show version and exit.
 
 == EXAMPLES
 
