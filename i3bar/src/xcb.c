@@ -1124,9 +1124,6 @@ void kick_tray_clients(i3_output *output) {
          * event afterwards, but better safe than sorry. */
         TAILQ_REMOVE(output->trayclients, trayclient, tailq);
     }
-
-    /* Trigger an update, we now have more space for the statusline */
-    draw_bars();
 }
 
 /*

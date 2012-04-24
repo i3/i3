@@ -70,6 +70,8 @@ void got_output_reply(char *reply) {
     SLIST_FOREACH(o_walk, outputs, slist) {
         kick_tray_clients(o_walk);
     }
+
+    draw_bars();
 }
 
 /*
