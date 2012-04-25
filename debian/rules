@@ -37,6 +37,9 @@ override_dh_auto_build:
 	$(MAKE) -C man
 	$(MAKE) -C docs
 
+override_dh_installchangelogs:
+	dh_installchangelogs RELEASE-NOTES-4.2
+
 override_dh_install:
 	$(MAKE) DESTDIR=$(CURDIR)/debian/i3-wm/ install
 
