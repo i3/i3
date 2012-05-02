@@ -341,7 +341,7 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
         ws = workspace_prev_on_output();
     else {
         ELOG("BUG: called with which=%s\n", which);
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -362,7 +362,7 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
 void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
     if (strncasecmp(name, "__i3_", strlen("__i3_")) == 0) {
         LOG("You cannot switch to the i3 internal workspaces.\n");
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -371,7 +371,7 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
     /* Error out early to not create a non-existing workspace (in
      * workspace_get()) if we are not actually able to move anything. */
     if (match_is_empty(current_match) && focused->type == CT_WORKSPACE) {
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -401,7 +401,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
     /* Error out early to not create a non-existing workspace (in
      * workspace_get()) if we are not actually able to move anything. */
     if (match_is_empty(current_match) && focused->type == CT_WORKSPACE) {
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -490,7 +490,7 @@ static void cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
          (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0))) {
         LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
             (orientation == HORIZ ? "horizontal" : "vertical"));
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -501,7 +501,7 @@ static void cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
     }
     if (other == TAILQ_END(workspaces)) {
         LOG("No other container in this direction found, cannot resize.\n");
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
     LOG("other->percent = %f\n", other->percent);
@@ -558,13 +558,13 @@ static void cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, i
          strcmp(direction, "width") == 0)) {
         LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
             (orientation == HORIZ ? "horizontal" : "vertical"));
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
     if (children == 1) {
         LOG("This is the only container, cannot resize.\n");
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -587,13 +587,13 @@ static void cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, i
             continue;
         if (!definitelyGreaterThan(child->percent - subtract_percent, 0.05, DBL_EPSILON)) {
             LOG("Not resizing, already at minimum size (child %p would end up with a size of %.f\n", child, child->percent - subtract_percent);
-            cmd_output->json_output = sstrdup("{\"sucess\": false}");
+            cmd_output->json_output = sstrdup("{\"success\": false}");
             return;
         }
     }
     if (!definitelyGreaterThan(new_current_percent, 0.05, DBL_EPSILON)) {
         LOG("Not resizing, already at minimum size\n");
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -663,7 +663,7 @@ void cmd_border(I3_CMD, char *border_style_str) {
                 border_style = BS_1PIXEL;
             else {
                 ELOG("BUG: called with border_style=%s\n", border_style_str);
-                cmd_output->json_output = sstrdup("{\"sucess\": false}");
+                cmd_output->json_output = sstrdup("{\"success\": false}");
                 return;
             }
         }
@@ -717,7 +717,7 @@ void cmd_workspace(I3_CMD, char *which) {
         ws = workspace_prev_on_output();
     else {
         ELOG("BUG: called with which=%s\n", which);
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -784,7 +784,7 @@ void cmd_workspace_back_and_forth(I3_CMD) {
 void cmd_workspace_name(I3_CMD, char *name) {
     if (strncasecmp(name, "__i3_", strlen("__i3_")) == 0) {
         LOG("You cannot switch to the i3 internal workspaces.\n");
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -799,7 +799,7 @@ void cmd_workspace_name(I3_CMD, char *name) {
             workspace_back_and_forth();
             tree_render();
         }
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -885,7 +885,7 @@ void cmd_move_con_to_output(I3_CMD, char *name) {
 
     if (!output) {
         LOG("No such output found.\n");
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -893,7 +893,7 @@ void cmd_move_con_to_output(I3_CMD, char *name) {
     Con *ws = NULL;
     GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
     if (!ws) {
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -954,7 +954,7 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
         Output *output = get_output_from_string(current_output, name);
         if (!output) {
             LOG("No such output\n");
-            cmd_output->json_output = sstrdup("{\"sucess\": false}");
+            cmd_output->json_output = sstrdup("{\"success\": false}");
             return;
         }
 
@@ -1060,7 +1060,7 @@ void cmd_kill(I3_CMD, char *kill_mode_str) {
         kill_mode = KILL_CLIENT;
     else {
         ELOG("BUG: called with kill_mode=%s\n", kill_mode_str);
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -1102,7 +1102,7 @@ void cmd_focus_direction(I3_CMD, char *direction) {
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
         LOG("Cannot change focus while in fullscreen mode.\n");
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -1118,7 +1118,7 @@ void cmd_focus_direction(I3_CMD, char *direction) {
         tree_next('n', VERT);
     else {
         ELOG("Invalid focus direction (%s)\n", direction);
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -1136,7 +1136,7 @@ void cmd_focus_window_mode(I3_CMD, char *window_mode) {
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
         LOG("Cannot change focus while in fullscreen mode.\n");
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -1175,7 +1175,7 @@ void cmd_focus_level(I3_CMD, char *level) {
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
         LOG("Cannot change focus while in fullscreen mode.\n");
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -1200,7 +1200,7 @@ void cmd_focus(I3_CMD) {
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
         LOG("Cannot change focus while in fullscreen mode.\n");
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -1417,7 +1417,7 @@ void cmd_focus_output(I3_CMD, char *name) {
 
     if (!output) {
         LOG("No such output found.\n");
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
@@ -1425,7 +1425,7 @@ void cmd_focus_output(I3_CMD, char *name) {
     Con *ws = NULL;
     GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
     if (!ws) {
-        cmd_output->json_output = sstrdup("{\"sucess\": false}");
+        cmd_output->json_output = sstrdup("{\"success\": false}");
         return;
     }
 
