@@ -35,6 +35,9 @@
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
 
+#include <yajl/yajl_gen.h>
+#include <yajl/yajl_version.h>
+
 /* Contains compatibility definitions for old libxcb versions */
 #ifdef XCB_COMPAT
 #include "xcb_compat.h"

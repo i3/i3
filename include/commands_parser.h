@@ -10,6 +10,8 @@
 #ifndef _COMMANDS_PARSER_H
 #define _COMMANDS_PARSER_H
 
+#include <yajl/yajl_gen.h>
+
 /*
  * Holds the result of a call to any command. When calling
  * parse_command("floating enable, border none"), the parser will internally
@@ -20,8 +22,8 @@
  *
  */
 struct CommandResult {
-    /* The JSON-serialized output of this command. */
-    char *json_output;
+    /* The JSON generator to append a reply to. */
+    yajl_gen json_gen;
 
     /* Whether the command requires calling tree_render. */
     bool needs_tree_render;

@@ -12,6 +12,16 @@
 
 #include "all.h"
 
+// Macros to make the YAJL API a bit easier to use.
+#define y(x, ...) yajl_gen_ ## x (cmd_output->json_gen, ##__VA_ARGS__)
+#define ystr(str) yajl_gen_string(cmd_output->json_gen, (unsigned char*)str, strlen(str))
+#define ysuccess(success) do { \
+    y(map_open); \
+    ystr("success"); \
+    y(bool, success); \
+    y(map_close); \
+} while (0)
+
 /** When the command did not include match criteria (!), we use the currently
  * focused command. Do not confuse this case with a command which included
  * criteria but which did not match any windows. This macro has to be called in
@@ -341,7 +351,7 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
         ws = workspace_prev_on_output();
     else {
         ELOG("BUG: called with which=%s\n", which);
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -352,7 +362,7 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -362,7 +372,7 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
 void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
     if (strncasecmp(name, "__i3_", strlen("__i3_")) == 0) {
         LOG("You cannot switch to the i3 internal workspaces.\n");
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -371,7 +381,7 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
     /* Error out early to not create a non-existing workspace (in
      * workspace_get()) if we are not actually able to move anything. */
     if (match_is_empty(current_match) && focused->type == CT_WORKSPACE) {
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -388,7 +398,7 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -401,7 +411,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
     /* Error out early to not create a non-existing workspace (in
      * workspace_get()) if we are not actually able to move anything. */
     if (match_is_empty(current_match) && focused->type == CT_WORKSPACE) {
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -416,8 +426,13 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
         parsed_num < 0 ||
         *endptr != '\0') {
         LOG("Could not parse \"%s\" as a number.\n", which);
-        cmd_output->json_output = sstrdup("{\"success\": false, "
-                "\"error\": \"Could not parse number\"}");
+        y(map_open);
+        ystr("success");
+        y(bool, false);
+        ystr("error");
+        // TODO: better error message
+        ystr("Could not parse number");
+        y(map_close);
         return;
     }
 
@@ -426,8 +441,13 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
             child->num == parsed_num);
 
     if (!workspace) {
-        cmd_output->json_output = sstrdup("{\"success\": false, "
-                "\"error\": \"No such workspace\"}");
+        y(map_open);
+        ystr("success");
+        y(bool, false);
+        ystr("error");
+        // TODO: better error message
+        ystr("No such workspace");
+        y(map_close);
         return;
     }
 
@@ -440,7 +460,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floating_con, int px) {
@@ -490,7 +510,7 @@ static void cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
          (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0))) {
         LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
             (orientation == HORIZ ? "horizontal" : "vertical"));
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -501,7 +521,7 @@ static void cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
     }
     if (other == TAILQ_END(workspaces)) {
         LOG("No other container in this direction found, cannot resize.\n");
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
     LOG("other->percent = %f\n", other->percent);
@@ -558,13 +578,13 @@ static void cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, i
          strcmp(direction, "width") == 0)) {
         LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
             (orientation == HORIZ ? "horizontal" : "vertical"));
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
     if (children == 1) {
         LOG("This is the only container, cannot resize.\n");
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -587,13 +607,13 @@ static void cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, i
             continue;
         if (!definitelyGreaterThan(child->percent - subtract_percent, 0.05, DBL_EPSILON)) {
             LOG("Not resizing, already at minimum size (child %p would end up with a size of %.f\n", child, child->percent - subtract_percent);
-            cmd_output->json_output = sstrdup("{\"success\": false}");
+            ysuccess(false);
             return;
         }
     }
     if (!definitelyGreaterThan(new_current_percent, 0.05, DBL_EPSILON)) {
         LOG("Not resizing, already at minimum size\n");
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -635,7 +655,7 @@ void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resiz
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -663,7 +683,7 @@ void cmd_border(I3_CMD, char *border_style_str) {
                 border_style = BS_1PIXEL;
             else {
                 ELOG("BUG: called with border_style=%s\n", border_style_str);
-                cmd_output->json_output = sstrdup("{\"success\": false}");
+                ysuccess(false);
                 return;
             }
         }
@@ -672,7 +692,7 @@ void cmd_border(I3_CMD, char *border_style_str) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -695,7 +715,7 @@ void cmd_append_layout(I3_CMD, char *path) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -717,7 +737,7 @@ void cmd_workspace(I3_CMD, char *which) {
         ws = workspace_prev_on_output();
     else {
         ELOG("BUG: called with which=%s\n", which);
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -725,7 +745,7 @@ void cmd_workspace(I3_CMD, char *which) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -742,8 +762,14 @@ void cmd_workspace_number(I3_CMD, char *which) {
         parsed_num < 0 ||
         *endptr != '\0') {
         LOG("Could not parse \"%s\" as a number.\n", which);
-        cmd_output->json_output = sstrdup("{\"success\": false, "
-                "\"error\": \"Could not parse number\"}");
+        y(map_open);
+        ystr("success");
+        y(bool, false);
+        ystr("error");
+        // TODO: better error message
+        ystr("Could not parse number");
+        y(map_close);
+
         return;
     }
 
@@ -753,8 +779,12 @@ void cmd_workspace_number(I3_CMD, char *which) {
 
     if (!workspace) {
         LOG("There is no workspace with number %d.\n", parsed_num);
-        cmd_output->json_output = sstrdup("{\"success\": false, "
-                "\"error\": \"No such workspace\"}");
+        y(map_open);
+        ystr("success");
+        y(bool, false);
+        ystr("error");
+        ystr("No such workspace");
+        y(map_close);
         return;
     }
 
@@ -762,7 +792,7 @@ void cmd_workspace_number(I3_CMD, char *which) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -774,7 +804,7 @@ void cmd_workspace_back_and_forth(I3_CMD) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -784,7 +814,7 @@ void cmd_workspace_back_and_forth(I3_CMD) {
 void cmd_workspace_name(I3_CMD, char *name) {
     if (strncasecmp(name, "__i3_", strlen("__i3_")) == 0) {
         LOG("You cannot switch to the i3 internal workspaces.\n");
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -799,7 +829,7 @@ void cmd_workspace_name(I3_CMD, char *name) {
             workspace_back_and_forth();
             tree_render();
         }
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -807,7 +837,7 @@ void cmd_workspace_name(I3_CMD, char *name) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -835,7 +865,7 @@ void cmd_mark(I3_CMD, char *mark) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -847,7 +877,7 @@ void cmd_mode(I3_CMD, char *mode) {
     switch_mode(mode);
 
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -885,7 +915,7 @@ void cmd_move_con_to_output(I3_CMD, char *name) {
 
     if (!output) {
         LOG("No such output found.\n");
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -893,7 +923,7 @@ void cmd_move_con_to_output(I3_CMD, char *name) {
     Con *ws = NULL;
     GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
     if (!ws) {
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -904,7 +934,7 @@ void cmd_move_con_to_output(I3_CMD, char *name) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -935,7 +965,7 @@ void cmd_floating(I3_CMD, char *floating_mode) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -954,7 +984,7 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
         Output *output = get_output_from_string(current_output, name);
         if (!output) {
             LOG("No such output\n");
-            cmd_output->json_output = sstrdup("{\"success\": false}");
+            ysuccess(false);
             return;
         }
 
@@ -1025,7 +1055,7 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1039,7 +1069,7 @@ void cmd_split(I3_CMD, char *direction) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1060,7 +1090,7 @@ void cmd_kill(I3_CMD, char *kill_mode_str) {
         kill_mode = KILL_CLIENT;
     else {
         ELOG("BUG: called with kill_mode=%s\n", kill_mode_str);
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -1076,7 +1106,7 @@ void cmd_kill(I3_CMD, char *kill_mode_str) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1090,7 +1120,7 @@ void cmd_exec(I3_CMD, char *nosn, char *command) {
     start_application(command, no_startup_id);
 
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1102,7 +1132,7 @@ void cmd_focus_direction(I3_CMD, char *direction) {
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
         LOG("Cannot change focus while in fullscreen mode.\n");
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -1118,13 +1148,13 @@ void cmd_focus_direction(I3_CMD, char *direction) {
         tree_next('n', VERT);
     else {
         ELOG("Invalid focus direction (%s)\n", direction);
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1136,7 +1166,7 @@ void cmd_focus_window_mode(I3_CMD, char *window_mode) {
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
         LOG("Cannot change focus while in fullscreen mode.\n");
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -1163,7 +1193,7 @@ void cmd_focus_window_mode(I3_CMD, char *window_mode) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1175,7 +1205,7 @@ void cmd_focus_level(I3_CMD, char *level) {
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
         LOG("Cannot change focus while in fullscreen mode.\n");
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -1187,7 +1217,7 @@ void cmd_focus_level(I3_CMD, char *level) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1200,7 +1230,7 @@ void cmd_focus(I3_CMD) {
         focused->type != CT_WORKSPACE &&
         focused->fullscreen_mode != CF_NONE) {
         LOG("Cannot change focus while in fullscreen mode.\n");
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -1210,9 +1240,13 @@ void cmd_focus(I3_CMD) {
         ELOG("You have to specify which window/container should be focused.\n");
         ELOG("Example: [class=\"urxvt\" title=\"irssi\"] focus\n");
 
-        sasprintf(&(cmd_output->json_output),
-                  "{\"success\":false, \"error\":\"You have to "
-                  "specify which window/container should be focused\"}");
+        y(map_open);
+        ystr("success");
+        y(bool, false);
+        ystr("error");
+        ystr("You have to specify which window/container should be focused");
+        y(map_close);
+
         return;
     }
 
@@ -1253,7 +1287,7 @@ void cmd_focus(I3_CMD) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1275,7 +1309,7 @@ void cmd_fullscreen(I3_CMD, char *fullscreen_mode) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1310,7 +1344,7 @@ void cmd_move_direction(I3_CMD, char *direction, char *move_px) {
     }
 
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1338,7 +1372,7 @@ void cmd_layout(I3_CMD, char *layout_str) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1365,7 +1399,7 @@ void cmd_reload(I3_CMD) {
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"reload\"}");
 
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1377,7 +1411,7 @@ void cmd_restart(I3_CMD) {
     i3_restart(false);
 
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1388,8 +1422,13 @@ void cmd_open(I3_CMD) {
     LOG("opening new container\n");
     Con *con = tree_open_con(NULL, NULL);
     con_focus(con);
-    sasprintf(&(cmd_output->json_output),
-              "{\"success\":true, \"id\":%ld}", (long int)con);
+
+    y(map_open);
+    ystr("success");
+    y(bool, true);
+    ystr("id");
+    y(integer, (long int)con);
+    y(map_close);
 
     cmd_output->needs_tree_render = true;
 }
@@ -1417,7 +1456,7 @@ void cmd_focus_output(I3_CMD, char *name) {
 
     if (!output) {
         LOG("No such output found.\n");
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -1425,7 +1464,7 @@ void cmd_focus_output(I3_CMD, char *name) {
     Con *ws = NULL;
     GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
     if (!ws) {
-        cmd_output->json_output = sstrdup("{\"success\": false}");
+        ysuccess(false);
         return;
     }
 
@@ -1433,7 +1472,7 @@ void cmd_focus_output(I3_CMD, char *name) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1447,9 +1486,12 @@ void cmd_move_window_to_position(I3_CMD, char *method, char *cx, char *cy) {
 
     if (!con_is_floating(focused)) {
         ELOG("Cannot change position. The window/container is not floating\n");
-        sasprintf(&(cmd_output->json_output),
-                  "{\"success\":false, \"error\":\"Cannot change position. "
-                  "The window/container is not floating.\"}");
+        y(map_open);
+        ystr("success");
+        y(bool, false);
+        ystr("error");
+        ystr("Cannot change position. The window/container is not floating.");
+        y(map_close);
         return;
     }
 
@@ -1473,7 +1515,7 @@ void cmd_move_window_to_position(I3_CMD, char *method, char *cx, char *cy) {
     }
 
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1484,9 +1526,12 @@ void cmd_move_window_to_center(I3_CMD, char *method) {
 
     if (!con_is_floating(focused)) {
         ELOG("Cannot change position. The window/container is not floating\n");
-        sasprintf(&(cmd_output->json_output),
-                  "{\"success\":false, \"error\":\"Cannot change position. "
-                  "The window/container is not floating.\"}");
+        y(map_open);
+        ystr("success");
+        y(bool, false);
+        ystr("error");
+        ystr("Cannot change position. The window/container is not floating.");
+        y(map_close);
     }
 
     if (strcmp(method, "absolute") == 0) {
@@ -1512,7 +1557,7 @@ void cmd_move_window_to_center(I3_CMD, char *method) {
     }
 
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1532,7 +1577,7 @@ void cmd_move_scratchpad(I3_CMD) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1554,7 +1599,7 @@ void cmd_scratchpad_show(I3_CMD) {
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 }
 
 /*
@@ -1572,8 +1617,13 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     if (!workspace) {
         // TODO: we should include the old workspace name here and use yajl for
         // generating the reply.
-        cmd_output->json_output = sstrdup("{\"success\": false, "
-            "\"error\":\"Old workspace not found\"}");
+        y(map_open);
+        ystr("success");
+        y(bool, false);
+        ystr("error");
+        // TODO: better error message
+        ystr("Old workspace not found");
+        y(map_close);
         return;
     }
 
@@ -1585,8 +1635,13 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     if (check_dest != NULL) {
         // TODO: we should include the new workspace name here and use yajl for
         // generating the reply.
-        cmd_output->json_output = sstrdup("{\"success\": false, "
-            "\"error\":\"New workspace already exists\"}");
+        y(map_open);
+        ystr("success");
+        y(bool, false);
+        ystr("error");
+        // TODO: better error message
+        ystr("New workspace already exists");
+        y(map_close);
         return;
     }
 
@@ -1612,7 +1667,7 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     con_focus(previously_focused);
 
     cmd_output->needs_tree_render = true;
-    cmd_output->json_output = sstrdup("{\"success\": true}");
+    ysuccess(true);
 
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"rename\"}");
 }

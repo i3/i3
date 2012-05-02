@@ -125,12 +125,18 @@ IPC_HANDLER(command) {
     if (command_output->needs_tree_render)
         tree_render();
 
-    /* If no reply was provided, we just use the default success message */
-    ipc_send_message(fd, strlen(command_output->json_output),
-                     I3_IPC_REPLY_TYPE_COMMAND,
-                     (const uint8_t*)command_output->json_output);
+    const unsigned char *reply;
+#if YAJL_MAJOR >= 2
+    size_t length;
+#else
+    unsigned int length;
+#endif
+    yajl_gen_get_buf(command_output->json_gen, &reply, &length);
 
-    free(command_output->json_output);
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_COMMAND,
+                     (const uint8_t*)reply);
+
+    yajl_gen_free(command_output->json_gen);
 }
 
 static void dump_rect(yajl_gen gen, const char *name, Rect r) {

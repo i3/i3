@@ -124,7 +124,7 @@ static void handle_key_press(xcb_key_press_event_t *event) {
     if (command_output->needs_tree_render)
         tree_render();
 
-    free(command_output->json_output);
+    yajl_gen_free(command_output->json_gen);
 }
 
 /*
