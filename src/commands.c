@@ -75,6 +75,26 @@ static Output *get_output_from_string(Output *current_output, const char *output
     return output;
 }
 
+/*
+ * Checks whether we switched to a new workspace and returns false in that case,
+ * signaling that further workspace switching should be done by the calling function
+ * If not, calls workspace_back_and_forth() if workspace_auto_back_and_forth is set
+ * and return true, signaling that no further workspace switching should occur in the calling function.
+ *
+ */
+bool maybe_back_and_forth(char *name) {
+    Con *ws = con_get_workspace(focused);
+
+    /* If we switched to a different workspace, do nothing */
+    if (strcmp(ws->name, name) != 0)
+        return false;
+
+    DLOG("This workspace is already focused.\n");
+    if (config.workspace_auto_back_and_forth)
+            workspace_back_and_forth();
+        return true;
+}
+
 // This code is commented out because we might recycle it for popping up error
 // messages on parser errors.
 #if 0
@@ -778,16 +798,18 @@ void cmd_workspace_number(I3_CMD, char *which) {
             child->num == parsed_num);
 
     if (!workspace) {
-        LOG("There is no workspace with number %d.\n", parsed_num);
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
-        ystr("No such workspace");
-        y(map_close);
+        LOG("There is no workspace with number %d, creating a new one.\n", parsed_num);
+        ysuccess(true);
+        /* terminate the which string after the endposition of the number */
+        *endptr = '\0';
+        if (maybe_back_and_forth(which))
+            return;
+        workspace_show_by_name(which);
+        cmd_output->needs_tree_render = true;
         return;
     }
-
+    if (maybe_back_and_forth(which))
+        return;
     workspace_show(workspace);
 
     cmd_output->needs_tree_render = true;
@@ -819,20 +841,8 @@ void cmd_workspace_name(I3_CMD, char *name) {
     }
 
     DLOG("should switch to workspace %s\n", name);
-
-    Con *ws = con_get_workspace(focused);
-
-    /* Check if the command wants to switch to the current workspace */
-    if (strcmp(ws->name, name) == 0) {
-        DLOG("This workspace is already focused.\n");
-        if (config.workspace_auto_back_and_forth) {
-            workspace_back_and_forth();
-            tree_render();
-        }
-        ysuccess(false);
+    if (maybe_back_and_forth(name))
         return;
-    }
-
     workspace_show_by_name(name);
 
     cmd_output->needs_tree_render = true;
