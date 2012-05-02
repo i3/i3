@@ -67,7 +67,7 @@ include/GENERATED_tokens.h: include/GENERATED_call.h
 # and once as an object file for i3.
 src/commands_parser.o: src/commands_parser.c ${HEADERS} ${CMDPARSE_HEADERS}
 	echo "[i3] CC $<"
-	$(CC) $(CPPFLAGS) $(CFLAGS) -DTEST_PARSER -DLOGLEVEL="((uint64_t)1 << $(shell awk '/$(shell basename $< .c)/ { print NR; exit 0; }' loglevels.tmp))" -o test.commands_parser $< $(LIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DTEST_PARSER -DLOGLEVEL="((uint64_t)1 << $(shell awk '/$(shell basename $< .c)/ { print NR; exit 0; }' loglevels.tmp))" -o test.commands_parser $< $(LIBS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DLOGLEVEL="((uint64_t)1 << $(shell awk '/$(shell basename $< .c)/ { print NR; exit 0; }' loglevels.tmp))" -c -o $@ $<
 
 src/cfgparse.yy.o: src/cfgparse.l src/cfgparse.y.o ${HEADERS}

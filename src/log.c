@@ -18,6 +18,10 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <errno.h>
+#if defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
 
 #include "util.h"
 #include "log.h"
@@ -93,8 +97,15 @@ void init_logging(void) {
          * For 512 MiB of RAM this will lead to a 5 MiB log buffer.
          * At the moment (2011-12-10), no testcase leads to an i3 log
          * of more than ~ 600 KiB. */
-        long long physical_mem_bytes = (long long)sysconf(_SC_PHYS_PAGES) *
-                                                  sysconf(_SC_PAGESIZE);
+        long long physical_mem_bytes;
+#if defined(__APPLE__)
+        int mib[2] = { CTL_HW, HW_MEMSIZE };
+        size_t length = sizeof(long long);
+        sysctl(mib, 2, &physical_mem_bytes, &length, NULL, 0);
+#else
+        physical_mem_bytes = (long long)sysconf(_SC_PHYS_PAGES) *
+                                        sysconf(_SC_PAGESIZE);
+#endif
         logbuffer_size = min(physical_mem_bytes * 0.01, shmlog_size);
         sasprintf(&shmlogname, "/i3-log-%d", getpid());
         logbuffer_shm = shm_open(shmlogname, O_RDWR | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
@@ -199,11 +210,6 @@ static void vlog(const bool print, const char *fmt, va_list args) {
         vprintf(fmt, args);
     } else {
         len += vsnprintf(message + len, sizeof(message) - len, fmt, args);
-        if (len < 0 ) {
-            fprintf(stderr, "BUG: something is overflowing here. Dropping the log entry\n");
-            return;
-        }
-
         if (len >= sizeof(message)) {
             fprintf(stderr, "BUG: single log message > 4k\n");
         }
