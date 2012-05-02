@@ -49,7 +49,7 @@ void run_assignments(i3Window *window) {
             if (command_output->needs_tree_render)
                 needs_tree_render = true;
 
-            free(command_output->json_output);
+            yajl_gen_free(command_output->json_gen);
         }
 
         /* Store that we ran this assignment to not execute it again */

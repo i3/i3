@@ -32,6 +32,10 @@
 
 #include "all.h"
 
+// Macros to make the YAJL API a bit easier to use.
+#define y(x, ...) yajl_gen_ ## x (command_output.json_gen, ##__VA_ARGS__)
+#define ystr(str) yajl_gen_string(command_output.json_gen, (unsigned char*)str, strlen(str))
+
 /*******************************************************************************
  * The data structures used for parsing. Essentially the current state and a
  * list of tokens for that state.
@@ -185,20 +189,9 @@ static void next_state(const cmdp_token *token) {
     if (token->next_state == __CALL) {
         DLOG("should call stuff, yay. call_id = %d\n",
                 token->extra.call_identifier);
-        subcommand_output.json_output = NULL;
+        subcommand_output.json_gen = command_output.json_gen;
         subcommand_output.needs_tree_render = false;
         GENERATED_call(token->extra.call_identifier, &subcommand_output);
-        if (subcommand_output.json_output) {
-            DLOG("Subcommand JSON output: %s\n", subcommand_output.json_output);
-            char *buffer;
-            /* In the beginning, the contents of json_output are "[\0". */
-            if (command_output.json_output[1] == '\0')
-                sasprintf(&buffer, "%s%s", command_output.json_output, subcommand_output.json_output);
-            else sasprintf(&buffer, "%s, %s", command_output.json_output, subcommand_output.json_output);
-            free(command_output.json_output);
-            command_output.json_output = buffer;
-            DLOG("merged command JSON output: %s\n", command_output.json_output);
-        }
         /* If any subcommand requires a tree_render(), we need to make the
          * whole parser result request a tree_render(). */
         if (subcommand_output.needs_tree_render)
@@ -217,7 +210,15 @@ static void next_state(const cmdp_token *token) {
 struct CommandResult *parse_command(const char *input) {
     DLOG("new parser handling: %s\n", input);
     state = INITIAL;
-    command_output.json_output = sstrdup("[");
+
+/* A YAJL JSON generator used for formatting replies. */
+#if YAJL_MAJOR >= 2
+    command_output.json_gen = yajl_gen_alloc(NULL);
+#else
+    command_output.json_gen = yajl_gen_alloc(NULL, NULL);
+#endif
+
+    y(array_open);
     command_output.needs_tree_render = false;
 
     const char *walk = input;
@@ -392,6 +393,18 @@ struct CommandResult *parse_command(const char *input) {
             printf("Your command: %s\n", input);
             printf("              %s\n", position);
 
+            /* Format this error message as a JSON reply. */
+            y(map_open);
+            ystr("success");
+            y(bool, false);
+            ystr("error");
+            ystr(errormessage);
+            ystr("input");
+            ystr(input);
+            ystr("errorposition");
+            ystr(position);
+            y(map_close);
+
             free(position);
             free(errormessage);
             clear_stack();
@@ -399,11 +412,8 @@ struct CommandResult *parse_command(const char *input) {
         }
     }
 
-    char *buffer;
-    sasprintf(&buffer, "%s]", command_output.json_output);
-    free(command_output.json_output);
-    command_output.json_output = buffer;
-    DLOG("command_output.json_output = %s\n", command_output.json_output);
+    y(array_close);
+
     DLOG("command_output.needs_tree_render = %d\n", command_output.needs_tree_render);
     return &command_output;
 }
