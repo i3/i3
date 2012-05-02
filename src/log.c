@@ -210,11 +210,6 @@ static void vlog(const bool print, const char *fmt, va_list args) {
         vprintf(fmt, args);
     } else {
         len += vsnprintf(message + len, sizeof(message) - len, fmt, args);
-        if (len < 0 ) {
-            fprintf(stderr, "BUG: something is overflowing here. Dropping the log entry\n");
-            return;
-        }
-
         if (len >= sizeof(message)) {
             fprintf(stderr, "BUG: single log message > 4k\n");
         }
