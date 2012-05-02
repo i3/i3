@@ -82,7 +82,7 @@ static Output *get_output_from_string(Output *current_output, const char *output
  * and return true, signaling that no further workspace switching should occur in the calling function.
  *
  */
-static bool maybe_back_and_forth(char *name) {
+static bool maybe_back_and_forth(struct CommandResult *cmd_output, char *name) {
     Con *ws = con_get_workspace(focused);
 
     /* If we switched to a different workspace, do nothing */
@@ -90,9 +90,11 @@ static bool maybe_back_and_forth(char *name) {
         return false;
 
     DLOG("This workspace is already focused.\n");
-    if (config.workspace_auto_back_and_forth)
-            workspace_back_and_forth();
-        return true;
+    if (config.workspace_auto_back_and_forth) {
+        workspace_back_and_forth();
+        cmd_output->needs_tree_render = true;
+    }
+    return true;
 }
 
 // This code is commented out because we might recycle it for popping up error
@@ -802,13 +804,13 @@ void cmd_workspace_number(I3_CMD, char *which) {
         ysuccess(true);
         /* terminate the which string after the endposition of the number */
         *endptr = '\0';
-        if (maybe_back_and_forth(which))
+        if (maybe_back_and_forth(cmd_output, which))
             return;
         workspace_show_by_name(which);
         cmd_output->needs_tree_render = true;
         return;
     }
-    if (maybe_back_and_forth(which))
+    if (maybe_back_and_forth(cmd_output, which))
         return;
     workspace_show(workspace);
 
@@ -841,8 +843,8 @@ void cmd_workspace_name(I3_CMD, char *name) {
     }
 
     DLOG("should switch to workspace %s\n", name);
-    if (maybe_back_and_forth(name))
-        return;
+    if (maybe_back_and_forth(cmd_output, name))
+       return;
     workspace_show_by_name(name);
 
     cmd_output->needs_tree_render = true;
