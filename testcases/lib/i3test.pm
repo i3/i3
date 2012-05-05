@@ -33,6 +33,7 @@ our @EXPORT = qw(
     open_floating_window
     get_dock_clients
     cmd
+    cmp_float
     sync_with_i3
     does_i3_live
     exit_gracefully
@@ -561,6 +562,14 @@ sub launch_with_config {
     $cv->recv;
 
     return $i3_pid;
+}
+
+# compares two floats and return true if they differ less
+# then 1e-6
+sub cmp_float {
+  my ($a, $b) = @_;
+
+  return abs($a - $b) < 1e-6;
 }
 
 package i3test::X11;
