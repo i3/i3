@@ -614,12 +614,12 @@ void floating_fix_coordinates(Con *con, Rect *old_rect, Rect *new_rect) {
     uint32_t rel_y = (con->rect.y - old_rect->y);
     /* Then we calculate a fraction, for example 0.63 for a window
      * which is at y = 1212 of a 1920 px high output */
-    double fraction_x = ((double)rel_x / old_rect->width);
-    double fraction_y = ((double)rel_y / old_rect->height);
     DLOG("rel_x = %d, rel_y = %d, fraction_x = %f, fraction_y = %f, output->w = %d, output->h = %d\n",
-         rel_x, rel_y, fraction_x, fraction_y, old_rect->width, old_rect->height);
-    con->rect.x = new_rect->x + (fraction_x * new_rect->width);
-    con->rect.y = new_rect->y + (fraction_y * new_rect->height);
+          rel_x, rel_y, (double)rel_x / old_rect->width, (double)rel_y / old_rect->height,
+          old_rect->width, old_rect->height);
+    /* Here we have to multiply at first. Or we will lose precision when not compiled with -msse2 */
+    con->rect.x = new_rect->x + (double)(rel_x * new_rect->width)  / old_rect->width;
+    con->rect.y = new_rect->y + (double)(rel_y * new_rect->height) / old_rect->height;
     DLOG("Resulting coordinates: x = %d, y = %d\n", con->rect.x, con->rect.y);
 }
 
