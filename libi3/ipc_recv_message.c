@@ -59,7 +59,6 @@ int ipc_recv_message(int sockfd, uint32_t message_type,
         fprintf(stderr, "IPC: unexpected reply type (got %d, expected %d)\n", *((uint32_t*)walk), message_type);
         return -2;
     }
-    walk += sizeof(uint32_t);
 
     *reply = smalloc(*reply_length);
 
