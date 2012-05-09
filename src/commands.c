@@ -82,7 +82,7 @@ static Output *get_output_from_string(Output *current_output, const char *output
  * and return true, signaling that no further workspace switching should occur in the calling function.
  *
  */
-bool maybe_back_and_forth(char *name) {
+static bool maybe_back_and_forth(char *name) {
     Con *ws = con_get_workspace(focused);
 
     /* If we switched to a different workspace, do nothing */
