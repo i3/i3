@@ -242,4 +242,11 @@ void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawabl
  */
 int predict_text_width(char *text, size_t text_len, bool is_ucs2);
 
+/**
+ * Returns true if this version of i3 is a debug build (anything which is not a
+ * release version), based on the git version number.
+ *
+ */
+bool is_debug_build() __attribute__((const));
+
 #endif
