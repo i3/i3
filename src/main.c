@@ -25,9 +25,6 @@
  * RLIM_INFINITY for i3 debugging versions. */
 struct rlimit original_rlimit_core;
 
-/* Whether this version of i3 is a debug build or a release build. */
-bool debug_build = false;
-
 /** The number of file descriptors passed via socket activation. */
 int listen_fds;
 
@@ -246,7 +243,7 @@ static void handle_signal(int sig, siginfo_t *info, void *data) {
 int main(int argc, char *argv[]) {
     /* Keep a symbol pointing to the I3_VERSION string constant so that we have
      * it in gdb backtraces. */
-    const char *i3_version = I3_VERSION;
+    const char *i3_version __attribute__ ((unused)) = I3_VERSION;
     char *override_configpath = NULL;
     bool autostart = true;
     char *layout_path = NULL;
@@ -291,16 +288,8 @@ int main(int argc, char *argv[]) {
      * (file) logging. */
     init_logging();
 
-    /* i3_version contains either something like this:
-     *     "4.0.2 (2011-11-11, branch "release")".
-     * or: "4.0.2-123-gCOFFEEBABE (2011-11-11, branch "next")".
-     *
-     * So we check for the offset of the first opening round bracket to
-     * determine whether this is a git version or a release version. */
-    debug_build = ((strchr(i3_version, '(') - i3_version) > 10);
-
     /* On non-release builds, disable SHM logging by default. */
-    shmlog_size = (debug_build ? 25 * 1024 * 1024 : 0);
+    shmlog_size = (is_debug_build() ? 25 * 1024 * 1024 : 0);
 
     start_argv = argv;
 
@@ -475,7 +464,7 @@ int main(int argc, char *argv[]) {
     init_logging();
 
     /* Try to enable core dumps by default when running a debug build */
-    if (debug_build) {
+    if (is_debug_build()) {
         struct rlimit limit = { RLIM_INFINITY, RLIM_INFINITY };
         setrlimit(RLIMIT_CORE, &limit);
 

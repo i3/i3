@@ -55,8 +55,35 @@ int main(int argc, char *argv[]) {
     }
 
     char *shmname = root_atom_contents("I3_SHMLOG_PATH");
-    if (shmname == NULL)
+    if (shmname == NULL) {
+        /* Something failed. Let’s invest a little effort to find out what it
+         * is. This is hugely helpful for users who want to debug i3 but are
+         * not used to the procedure yet. */
+        xcb_connection_t *conn;
+        int screen;
+        if ((conn = xcb_connect(NULL, &screen)) == NULL ||
+            xcb_connection_has_error(conn)) {
+            fprintf(stderr, "i3-dump-log: ERROR: Cannot connect to X11.\n\n");
+            if (getenv("DISPLAY") == NULL) {
+                fprintf(stderr, "Your DISPLAY environment variable is not set.\n");
+                fprintf(stderr, "Are you running i3-dump-log via SSH or on a virtual console?\n");
+                fprintf(stderr, "Try DISPLAY=:0 i3-dump-log\n");
+                exit(1);
+            }
+            fprintf(stderr, "FYI: The DISPLAY environment variable is set to \"%s\".\n", getenv("DISPLAY"));
+            exit(1);
+        }
+        if (root_atom_contents("I3_CONFIG_PATH") != NULL) {
+            fprintf(stderr, "i3-dump-log: ERROR: i3 is running, but SHM logging is not enabled.\n\n");
+            if (!is_debug_build()) {
+                fprintf(stderr, "You seem to be using a release version of i3:\n  %s\n\n", I3_VERSION);
+                fprintf(stderr, "Release versions do not use SHM logging by default,\ntherefore i3-dump-log does not work.\n\n");
+                fprintf(stderr, "Please follow this guide instead:\nhttp://i3wm.org/docs/debugging-release-version.html\n");
+                exit(1);
+            }
+        }
         errx(EXIT_FAILURE, "Cannot get I3_SHMLOG_PATH atom contents. Is i3 running on this display?");
+    }
 
     if (*shmname == '\0')
         errx(EXIT_FAILURE, "Cannot dump log: SHM logging is disabled in i3.");
