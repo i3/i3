@@ -587,6 +587,16 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         con = con->parent;
     }
 
+    Con *source_ws = con_get_workspace(con);
+    if (workspace == source_ws) {
+        DLOG("Not moving, already there\n");
+        return;
+    }
+
+    /* Save the current workspace. So we can call workspace_show() by the end
+     * of this function. */
+    Con *current_ws = con_get_workspace(focused);
+
     Con *source_output = con_get_output(con),
         *dest_output = con_get_output(workspace);
 
@@ -669,8 +679,12 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         /* Descend focus stack in case focus_next is a workspace which can
          * occur if we move to the same workspace.  Also show current workspace
          * to ensure it is focused. */
-        workspace_show(con_get_workspace(focus_next));
-        con_focus(con_descend_focused(focus_next));
+        workspace_show(current_ws);
+
+        /* Set focus only if con was on current workspace before moving.
+         * Otherwise we would give focus to some window on different workspace. */
+        if (source_ws == current_ws)
+            con_focus(con_descend_focused(focus_next));
     }
 
     CALL(parent, on_remove_child);

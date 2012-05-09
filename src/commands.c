@@ -359,6 +359,15 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
 
     DLOG("which=%s\n", which);
 
+    /* We have nothing to move:
+     *  when criteria was specified but didn't match any window or
+     *  when criteria wasn't specified and we don't have any window focused. */
+    if ((!match_is_empty(current_match) && TAILQ_EMPTY(&owindows)) ||
+        (match_is_empty(current_match) && focused->type == CT_WORKSPACE)) {
+        ysuccess(false);
+        return;
+    }
+
     HANDLE_EMPTY_MATCH;
 
     /* get the workspace */
@@ -400,9 +409,11 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
 
     owindow *current;
 
-    /* Error out early to not create a non-existing workspace (in
-     * workspace_get()) if we are not actually able to move anything. */
-    if (match_is_empty(current_match) && focused->type == CT_WORKSPACE) {
+    /* We have nothing to move:
+     *  when criteria was specified but didn't match any window or
+     *  when criteria wasn't specified and we don't have any window focused. */
+    if ((!match_is_empty(current_match) && TAILQ_EMPTY(&owindows)) ||
+        (match_is_empty(current_match) && focused->type == CT_WORKSPACE)) {
         ysuccess(false);
         return;
     }
@@ -430,9 +441,11 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
 void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
     owindow *current;
 
-    /* Error out early to not create a non-existing workspace (in
-     * workspace_get()) if we are not actually able to move anything. */
-    if (match_is_empty(current_match) && focused->type == CT_WORKSPACE) {
+    /* We have nothing to move:
+     *  when criteria was specified but didn't match any window or
+     *  when criteria wasn't specified and we don't have any window focused. */
+    if ((!match_is_empty(current_match) && TAILQ_EMPTY(&owindows)) ||
+        (match_is_empty(current_match) && focused->type == CT_WORKSPACE)) {
         ysuccess(false);
         return;
     }
