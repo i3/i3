@@ -23,7 +23,7 @@
 } while (0)
 
 /** When the command did not include match criteria (!), we use the currently
- * focused command. Do not confuse this case with a command which included
+ * focused container. Do not confuse this case with a command which included
  * criteria but which did not match any windows. This macro has to be called in
  * every command.
  */
