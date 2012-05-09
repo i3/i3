@@ -2,7 +2,8 @@
 # vim:ts=4:sw=4:expandtab
 #
 # Test if new containers get focused when there is a fullscreen container at
-# the time of launching the new one.
+# the time of launching the new one. Also make sure that focusing containers
+# in other workspaces work even when there is a fullscreen container.
 #
 use i3test;
 
@@ -84,5 +85,22 @@ $nodes = get_ws_content($tmp);
 is(scalar @$nodes, 2, 'precisely two windows');
 is($nodes->[0]->{id}, $old_id, 'id unchanged');
 is($nodes->[0]->{focused}, 1, 'fullscreen window focused');
+
+################################################################################
+# Make sure it's possible to focus a container in a different workspace even if
+# we are currently focusing a fullscreen container.
+################################################################################
+
+$tmp2 = fresh_workspace;
+my $focusable_window = open_window;
+
+cmd "workspace $tmp";
+cmd '[id="' . $focusable_window->id . '"] focus';
+
+is(focused_ws(), $tmp2, 'focus went to a different workspace');
+
+$nodes = get_ws_content($tmp2);
+is(scalar @$nodes, 1, 'precisely one window');
+is($nodes->[0]->{focused}, 1, 'focusable window focused');
 
 done_testing;
