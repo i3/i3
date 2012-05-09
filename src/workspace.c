@@ -303,7 +303,7 @@ static void workspace_reassign_sticky(Con *con) {
 }
 
 
-static void _workspace_show(Con *workspace, bool changed_num_workspaces) {
+static void _workspace_show(Con *workspace) {
     Con *current, *old = NULL;
 
     /* safe-guard against showing i3-internal workspaces like __i3_scratch */
@@ -347,7 +347,6 @@ static void _workspace_show(Con *workspace, bool changed_num_workspaces) {
             LOG("Closing old workspace (%p / %s), it is empty\n", old, old->name);
             tree_close(old, DONT_KILL_WINDOW, false, false);
             ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"empty\"}");
-            changed_num_workspaces = true;
         }
     }
 
@@ -375,7 +374,7 @@ static void _workspace_show(Con *workspace, bool changed_num_workspaces) {
  *
  */
 void workspace_show(Con *workspace) {
-    _workspace_show(workspace, false);
+    _workspace_show(workspace);
 }
 
 /*
@@ -386,7 +385,7 @@ void workspace_show_by_name(const char *num) {
     Con *workspace;
     bool changed_num_workspaces;
     workspace = workspace_get(num, &changed_num_workspaces);
-    _workspace_show(workspace, changed_num_workspaces);
+    _workspace_show(workspace);
 }
 
 /*

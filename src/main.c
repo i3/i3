@@ -270,7 +270,6 @@ int main(int argc, char *argv[]) {
         {0, 0, 0, 0}
     };
     int option_index = 0, opt;
-    xcb_void_cookie_t colormap_cookie;
 
     setlocale(LC_ALL, "");
 
@@ -540,20 +539,6 @@ int main(int argc, char *argv[]) {
     xcb_void_cookie_t cookie;
     cookie = xcb_change_window_attributes_checked(conn, root, mask, values);
     check_error(conn, cookie, "Another window manager seems to be running");
-
-    /* By now we already checked for replies once, so let’s see if colormap
-     * creation worked (if requested). */
-    if (colormap != root_screen->default_colormap) {
-        xcb_generic_error_t *error = xcb_request_check(conn, colormap_cookie);
-        if (error != NULL) {
-            ELOG("Could not create ColorMap for 32 bit visual, falling back to X11 default.\n");
-            root_depth = root_screen->root_depth;
-            visual_id = root_screen->root_visual;
-            colormap = root_screen->default_colormap;
-            DLOG("root_depth = %d, visual_id = 0x%08x.\n", root_depth, visual_id);
-            free(error);
-        }
-    }
 
     xcb_get_geometry_reply_t *greply = xcb_get_geometry_reply(conn, gcookie, NULL);
     if (greply == NULL) {
