@@ -135,6 +135,15 @@ is(focused_ws(), '4: foo', 'now on workspace 4: foo');
 ok(!workspace_exists('4'), 'workspace 4 still does not exist');
 
 ################################################################################
+# Check that we "workspace number 5" will create workspace 5 if it does not yet
+# exist.
+################################################################################
+
+ok(!workspace_exists('5'), 'workspace 5 does not exist');
+cmd 'workspace number 5';
+ok(workspace_exists('5'), 'workspace 5 was created');
+
+################################################################################
 # Verify that renaming workspaces works.
 ################################################################################
 
