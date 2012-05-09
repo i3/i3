@@ -59,6 +59,20 @@ ok(get_ws($third_ws)->{focused}, 'third workspace focused');
 cmd qq|workspace "$third_ws"|;
 ok(get_ws($second_ws)->{focused}, 'second workspace focused');
 
+################################################################################
+# Now see if "workspace number <number>" also works as expected with
+# workspace_auto_back_and_forth enabled.
+################################################################################
+
+cmd 'workspace number 5';
+ok(get_ws('5')->{focused}, 'workspace 5 focused');
+
+cmd 'workspace number 6';
+ok(get_ws('6')->{focused}, 'workspace 6 focused');
+
+cmd 'workspace number 6';
+ok(get_ws('5')->{focused}, 'workspace 5 focused again');
+
 exit_gracefully($pid);
 
 done_testing;
