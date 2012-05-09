@@ -351,7 +351,7 @@ void cmd_criteria_add(I3_CMD, char *ctype, char *cvalue) {
 
 /*
  * Implementation of 'move [window|container] [to] workspace
- * next|prev|next_on_output|prev_on_output'.
+ * next|prev|next_on_output|prev_on_output|current'.
  *
  */
 void cmd_move_con_to_workspace(I3_CMD, char *which) {
@@ -380,6 +380,8 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
         ws = workspace_next_on_output();
     else if (strcmp(which, "prev_on_output") == 0)
         ws = workspace_prev_on_output();
+    else if (strcmp(which, "current") == 0)
+        ws = con_get_workspace(focused);
     else {
         ELOG("BUG: called with which=%s\n", which);
         ysuccess(false);

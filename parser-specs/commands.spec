@@ -190,7 +190,7 @@ state RENAME_WORKSPACE_TO:
       -> call cmd_rename_workspace($old_name, $new_name)
 
 # move <direction> [<pixels> [px]]
-# move [window|container] [to] workspace <str>
+# move [window|container] [to] workspace [<str>|next|prev|current]
 # move [window|container] [to] output <str>
 # move [window|container] [to] scratchpad
 # move workspace to [output] <str>
@@ -231,7 +231,7 @@ state MOVE_DIRECTION_PX:
 state MOVE_WORKSPACE:
   'to'
       -> MOVE_WORKSPACE_TO_OUTPUT
-  workspace = 'next', 'prev', 'next_on_output', 'prev_on_output'
+  workspace = 'next', 'prev', 'next_on_output', 'prev_on_output', 'current'
       -> call cmd_move_con_to_workspace($workspace)
   'number'
       -> MOVE_WORKSPACE_NUMBER

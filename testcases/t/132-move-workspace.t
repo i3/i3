@@ -100,6 +100,26 @@ ok(@{get_ws_content($tmp)} == 3, 'three containers on first ws');
 ok(@{get_ws_content($tmp2)} == 0, 'no containers on second ws');
 
 ###################################################################
+# check if 'move workspace current' works
+###################################################################
+
+$tmp = get_unused_workspace();
+$tmp2 = get_unused_workspace();
+
+cmd "workspace $tmp";
+$first = open_window(name => 'win-name');
+ok(@{get_ws_content($tmp)} == 1, 'one container on first ws');
+
+cmd "workspace $tmp2";
+ok(@{get_ws_content($tmp2)} == 0, 'no containers yet');
+
+cmd qq|[title="win-name"] move workspace $tmp2|;
+ok(@{get_ws_content($tmp2)} == 1, 'one container on second ws');
+
+cmd qq|[title="win-name"] move workspace $tmp|;
+ok(@{get_ws_content($tmp2)} == 0, 'no containers on second ws');
+
+###################################################################
 # check if floating cons are moved to new workspaces properly
 # (that is, if they are floating on the target ws, too)
 ###################################################################
