@@ -128,6 +128,10 @@ static int stdin_end_map(void *context) {
     parser_ctx *ctx = context;
     struct status_block *new_block = smalloc(sizeof(struct status_block));
     memcpy(new_block, &(ctx->block), sizeof(struct status_block));
+    /* Ensure we have a full_text set, so that when it is missing (or null),
+     * i3bar doesn’t crash and the user gets an annoying message. */
+    if (!new_block->full_text)
+        new_block->full_text = sstrdup("SPEC VIOLATION (null)");
     TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
     return 1;
 }
