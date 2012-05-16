@@ -2,7 +2,7 @@ TOPDIR=$(shell pwd)
 
 include $(TOPDIR)/common.mk
 
-SUBDIRS:=i3-msg i3-input i3-nagbar i3-config-wizard i3bar i3-dump-log
+SUBDIRS:=i3-msg i3-input i3-nagbar i3bar i3-dump-log
 
 ALL_TARGETS =
 INSTALL_TARGETS =
@@ -13,6 +13,7 @@ all: real-all
 
 include libi3/libi3.mk
 include src/i3.mk
+include i3-config-wizard/i3-config-wizard.mk
 
 real-all: $(ALL_TARGETS) subdirs
 
