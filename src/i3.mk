@@ -1,0 +1,61 @@
+ALL_TARGETS += i3
+INSTALL_TARGETS += install-i3
+CLEAN_TARGETS += clean-i3
+
+i3_SOURCES_GENERATED = src/cfgparse.tab.c src/cfgparse.yy.c
+i3_SOURCES := $(filter-out $(i3_SOURCES_GENERATED),$(wildcard src/*.c))
+i3_HEADERS_CMDPARSER := $(wildcard include/GENERATED_*.h)
+i3_HEADERS := $(filter-out $(i3_HEADERS_CMDPARSER),$(wildcard include/*.h))
+
+i3_OBJECTS = $(i3_SOURCES_GENERATED:.c=.o) $(i3_SOURCES:.c=.o)
+
+src/%.o: src/%.c $(i3_HEADERS)
+	echo "[i3] CC $<"
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+src/cfgparse.yy.c: src/cfgparse.l src/cfgparse.tab.o $(i3_HEADERS)
+	echo "[i3] LEX $<"
+	$(FLEX) -i -o $@ $<
+
+src/cfgparse.tab.c: src/cfgparse.y $(i3_HEADERS)
+	echo "[i3] YACC $<"
+	$(BISON) --debug --verbose -b $(basename $< .y) -d $<
+
+# This target compiles the command parser twice:
+# Once with -DTEST_PARSER, creating a stand-alone executable used for tests,
+# and once as an object file for i3.
+src/commands_parser.o: src/commands_parser.c $(i3_HEADERS) i3-command-parser.stamp
+	echo "[i3] CC $<"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DTEST_PARSER -o test.commands_parser $< $(LIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+i3-command-parser.stamp: generate-command-parser.pl parser-specs/commands.spec
+	echo "[i3] Generating command parser"
+	(cd include; ../generate-command-parser.pl)
+	touch $@
+
+i3: libi3.a $(i3_OBJECTS)
+	echo "[i3] Link i3"
+	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(LIBS)
+
+install-i3: i3
+	echo "[i3] Install"
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/bin
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(SYSCONFDIR)/i3
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/include/i3
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/share/xsessions
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/share/applications
+	$(INSTALL) -m 0755 i3 $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -m 0755 i3-migrate-config-to-v4 $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -m 0755 i3-sensible-editor $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -m 0755 i3-sensible-pager $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -m 0755 i3-sensible-terminal $(DESTDIR)$(PREFIX)/bin/
+	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)$(SYSCONFDIR)/i3/config
+	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes || $(INSTALL) -m 0644 i3.config.keycodes $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes
+	$(INSTALL) -m 0644 i3.xsession.desktop $(DESTDIR)$(PREFIX)/share/xsessions/i3.desktop
+	$(INSTALL) -m 0644 i3.applications.desktop $(DESTDIR)$(PREFIX)/share/applications/i3.desktop
+	$(INSTALL) -m 0644 include/i3/ipc.h $(DESTDIR)$(PREFIX)/include/i3/
+
+clean-i3:
+	echo "[i3] Clean"
+	rm -f $(i3_OBJECTS) $(i3_SOURCES_GENERATED) $(i3_HEADERS_CMDPARSER) i3-command-parser.stamp i3 src/*.gcno src/cfgparse.{output,dot}
