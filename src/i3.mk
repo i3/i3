@@ -7,7 +7,7 @@ i3_SOURCES := $(filter-out $(i3_SOURCES_GENERATED),$(wildcard src/*.c))
 i3_HEADERS_CMDPARSER := $(wildcard include/GENERATED_*.h)
 i3_HEADERS := $(filter-out $(i3_HEADERS_CMDPARSER),$(wildcard include/*.h))
 
-i3_OBJECTS = $(i3_SOURCES_GENERATED:.c=.o) $(i3_SOURCES:.c=.o)
+i3_OBJECTS := $(i3_SOURCES_GENERATED:.c=.o) $(i3_SOURCES:.c=.o)
 
 src/%.o: src/%.c $(i3_HEADERS)
 	echo "[i3] CC $<"

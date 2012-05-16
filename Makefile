@@ -11,12 +11,10 @@ DISTCLEAN_TARGETS =
 
 all: real-all
 
+include libi3/libi3.mk
 include src/i3.mk
 
 real-all: $(ALL_TARGETS) subdirs
-
-libi3/%.a: libi3/*.c
-	$(MAKE) -C libi3
 
 subdirs:
 	for dir in $(SUBDIRS); do \
@@ -57,7 +55,6 @@ dist: distclean
 
 clean: $(CLEAN_TARGETS)
 	(which lcov >/dev/null 2>&1 && lcov -d . --zerocounters) || true
-	$(MAKE) -C libi3 clean
 	$(MAKE) -C docs clean
 	$(MAKE) -C man clean
 	for dir in $(SUBDIRS); do \

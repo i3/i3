@@ -72,7 +72,7 @@ LIBS += -lm
 ifneq ($(UNAME),Darwin)
 LIBS += -lrt
 endif
-LIBS += -L $(TOPDIR)/libi3 -li3
+LIBS += -L $(TOPDIR) -li3
 LIBS += $(call ldflags_for_lib, xcb-event,xcb-event)
 LIBS += $(call ldflags_for_lib, xcb-keysyms,xcb-keysyms)
 ifeq ($(shell pkg-config --exists xcb-util 2>/dev/null || echo 1),1)
