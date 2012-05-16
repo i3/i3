@@ -20,19 +20,9 @@ include i3-nagbar/i3-nagbar.mk
 include i3bar/i3bar.mk
 include i3-dump-log/i3-dump-log.mk
 
-real-all: $(ALL_TARGETS) subdirs
-
-subdirs:
-	for dir in $(SUBDIRS); do \
-		echo ""; \
-		echo "MAKE $$dir"; \
-		$(MAKE) -C $$dir; \
-	done
+real-all: $(ALL_TARGETS)
 
 install: $(INSTALL_TARGETS)
-	for dir in $(SUBDIRS); do \
-		$(MAKE) -C $$dir install; \
-	done
 
 dist: distclean
 	[ ! -d i3-${VERSION} ] || rm -rf i3-${VERSION}
@@ -63,19 +53,8 @@ clean: $(CLEAN_TARGETS)
 	(which lcov >/dev/null 2>&1 && lcov -d . --zerocounters) || true
 	$(MAKE) -C docs clean
 	$(MAKE) -C man clean
-	for dir in $(SUBDIRS); do \
-		echo ""; \
-		echo "CLEAN $$dir"; \
-		$(MAKE) TOPDIR=$(TOPDIR) -C $$dir distclean; \
-	done
 
 distclean: clean $(DISTCLEAN_TARGETS)
-	rm -f i3
-	for dir in $(SUBDIRS); do \
-		echo ""; \
-		echo "DISTCLEAN $$dir"; \
-		$(MAKE) TOPDIR=$(TOPDIR) -C $$dir distclean; \
-	done
 
 coverage:
 	rm -f /tmp/i3-coverage.info
