@@ -140,8 +140,11 @@ CFLAGS += -fprofile-arcs -ftest-coverage
 LIBS += -lgcov
 endif
 
+V ?= 0
+ifeq ($(V),0)
 # Don’t print command lines which are run
 .SILENT:
+endif
 
 # Always remake the following targets
 .PHONY: install clean dist distclean
