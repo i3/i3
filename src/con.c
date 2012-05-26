@@ -1132,3 +1132,59 @@ Rect con_minimum_size(Con *con) {
          con->type, con->layout, con->orientation);
     assert(false);
 }
+
+/*
+ * Returns true if changing the focus to con would be allowed considering
+ * the fullscreen focus constraints. Specifically, if a fullscreen container or
+ * any of its descendants is focused, this function returns true if and only if
+ * focusing con would mean that focus would still be visible on screen, i.e.,
+ * the newly focused container would not be obscured by a fullscreen container.
+ *
+ * In the simplest case, if a fullscreen container or any of its descendants is
+ * fullscreen, this functions returns true if con is the fullscreen container
+ * itself or any of its descendants, as this means focus wouldn't escape the
+ * boundaries of the fullscreen container.
+ *
+ * In case the fullscreen container is of type CF_OUTPUT, this function returns
+ * true if con is on a different workspace, as focus wouldn't be obscured by
+ * the fullscreen container that is constrained to a different workspace.
+ *
+ * Note that this same logic can be applied to moving containers. If a
+ * container can be focused under the fullscreen focus constraints, it can also
+ * become a parent or sibling to the currently focused container.
+ *
+ */
+bool con_fullscreen_permits_focusing(Con *con) {
+    /* No focus, no problem. */
+    if (!focused)
+        return true;
+
+    /* Find the first fullscreen ascendent. */
+    Con *fs = focused;
+    while (fs && fs->fullscreen_mode == CF_NONE)
+        fs = fs->parent;
+
+    /* The most common case is we hit the workspace level. In this
+     * situation, changing focus is also harmless. */
+    assert(fs->fullscreen_mode != CF_NONE);
+    if (fs->type == CT_WORKSPACE)
+        return true;
+
+    /* If fullscreen is per-output, the focus being in a different workspace is
+     * sufficient to guarantee that change won't leave fullscreen in bad shape. */
+    if (fs->fullscreen_mode == CF_OUTPUT &&
+        con_get_workspace(con) != con_get_workspace(fs)) {
+            return true;
+    }
+
+    /* Allow it only if the container to be focused is contained within the
+     * current fullscreen container. */
+    do {
+        if (con->parent == fs)
+            return true;
+        con = con->parent;
+    } while (con);
+
+    /* Focusing con would hide it behind a fullscreen window, disallow it. */
+    return false;
+}

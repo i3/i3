@@ -255,4 +255,27 @@ void con_set_layout(Con *con, int layout);
  */
 Rect con_minimum_size(Con *con);
 
+/**
+ * Returns true if changing the focus to con would be allowed considering
+ * the fullscreen focus constraints. Specifically, if a fullscreen container or
+ * any of its descendants is focused, this function returns true if and only if
+ * focusing con would mean that focus would still be visible on screen, i.e.,
+ * the newly focused container would not be obscured by a fullscreen container.
+ *
+ * In the simplest case, if a fullscreen container or any of its descendants is
+ * fullscreen, this functions returns true if con is the fullscreen container
+ * itself or any of its descendants, as this means focus wouldn't escape the
+ * boundaries of the fullscreen container.
+ *
+ * In case the fullscreen container is of type CF_OUTPUT, this function returns
+ * true if con is on a different workspace, as focus wouldn't be obscured by
+ * the fullscreen container that is constrained to a different workspace.
+ *
+ * Note that this same logic can be applied to moving containers. If a
+ * container can be focused under the fullscreen focus constraints, it can also
+ * become a parent or sibling to the currently focused container.
+ *
+ */
+bool con_fullscreen_permits_focusing(Con *con);
+
 #endif

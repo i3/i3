@@ -11,9 +11,9 @@ my $i3 = i3(get_socket_path());
 
 my $tmp = fresh_workspace;
 
-#####################################################################
-# open the left window
-#####################################################################
+################################################################################
+# Open the left window.
+################################################################################
 
 my $left = open_window({ background_color => '#ff0000' });
 
@@ -21,23 +21,26 @@ is($x->input_focus, $left->id, 'left window focused');
 
 diag("left = " . $left->id);
 
-#####################################################################
-# Open the right window
-#####################################################################
+################################################################################
+# Open the right window.
+################################################################################
 
 my $right = open_window({ background_color => '#00ff00' });
 
 diag("right = " . $right->id);
 
-#####################################################################
-# Set the right window to fullscreen
-#####################################################################
+################################################################################
+# Set the right window to fullscreen.
+################################################################################
+
 cmd 'nop setting fullscreen';
 cmd 'fullscreen';
 
-#####################################################################
-# Open a third window
-#####################################################################
+################################################################################
+# Open a third window. Since we're fullscreen, the window won't be # mapped, so
+# don't wait for it to be mapped. Instead, just send the map request and sync
+# with i3 to make sure i3 recognizes it.
+################################################################################
 
 my $third = open_window({
         background_color => '#0000ff',
@@ -51,13 +54,15 @@ sync_with_i3;
 
 diag("third = " . $third->id);
 
-# move the fullscreen window to a different ws
+################################################################################
+# Move the window to a different workspace, and verify that the third window now
+# gets focused in the current workspace.
+################################################################################
 
 my $tmp2 = get_unused_workspace;
 
 cmd "move workspace $tmp2";
 
-# verify that the third window has the focus
 is($x->input_focus, $third->id, 'third window focused');
 
 ################################################################################
@@ -87,20 +92,67 @@ is($nodes->[0]->{id}, $old_id, 'id unchanged');
 is($nodes->[0]->{focused}, 1, 'fullscreen window focused');
 
 ################################################################################
-# Make sure it's possible to focus a container in a different workspace even if
-# we are currently focusing a fullscreen container.
+# Ensure it's possible to change focus if it doesn't escape the fullscreen
+# container with fullscreen global. We can't even focus a container in a
+# different workspace.
 ################################################################################
 
-$tmp2 = fresh_workspace;
-my $focusable_window = open_window;
+cmd 'fullscreen';
 
+$tmp = fresh_workspace;
 cmd "workspace $tmp";
-cmd '[id="' . $focusable_window->id . '"] focus';
+my $diff_ws = open_window;
 
-is(focused_ws(), $tmp2, 'focus went to a different workspace');
+$tmp2 = fresh_workspace;
+cmd "workspace $tmp2";
+cmd 'split h';
 
-$nodes = get_ws_content($tmp2);
-is(scalar @$nodes, 1, 'precisely one window');
-is($nodes->[0]->{focused}, 1, 'focusable window focused');
+$left = open_window;
+my $right1 = open_window;
+cmd 'split v';
+my $right2 = open_window;
+$nodes = get_ws_content($tmp);
+
+cmd 'focus parent';
+cmd 'fullscreen global';
+
+cmd '[id="' . $right1->id . '"] focus';
+is($x->input_focus, $right1->id, 'upper right window focused');
+
+cmd '[id="' . $right2->id . '"] focus';
+is($x->input_focus, $right2->id, 'bottom right window focused');
+
+cmd '[id="' . $left->id . '"] focus';
+is($x->input_focus, $right2->id, 'prevented focus change to left window');
+
+cmd '[id="' . $diff_ws->id . '"] focus';
+is($x->input_focus, $right2->id, 'prevented focus change to different ws');
+
+################################################################################
+# Same tests when we're in non-global fullscreen mode. We toggle fullscreen on
+# and off to avoid testing whether focus level works in fullscreen for now. It
+# should now be possible to focus a container in a different workspace.
+################################################################################
+
+cmd 'fullscreen global';
+cmd 'fullscreen global';
+
+cmd '[id="' . $right1->id . '"] focus';
+is($x->input_focus, $right1->id, 'upper right window focused');
+
+cmd 'focus parent';
+cmd 'fullscreen';
+
+cmd '[id="' . $right1->id . '"] focus';
+is($x->input_focus, $right1->id, 'upper right window still focused');
+
+cmd '[id="' . $right2->id . '"] focus';
+is($x->input_focus, $right2->id, 'bottom right window focused');
+
+cmd '[id="' . $left->id . '"] focus';
+is($x->input_focus, $right2->id, 'prevented focus change to left window');
+
+cmd '[id="' . $diff_ws->id . '"] focus';
+is($x->input_focus, $diff_ws->id, 'allowed focus change to different ws');
 
 done_testing;

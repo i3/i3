@@ -1262,13 +1262,9 @@ void cmd_focus(I3_CMD) {
         if (!ws)
             continue;
 
-        /* Don't allow the focus switch if the focused and current
-         * containers are in the same workspace. */
-        if (focused &&
-            focused->type != CT_WORKSPACE &&
-            focused->fullscreen_mode != CF_NONE &&
-            con_get_workspace(focused) == ws) {
-            LOG("Cannot change focus while in fullscreen mode (same workspace).\n");
+        /* Check the fullscreen focus constraints. */
+        if (!con_fullscreen_permits_focusing(current->con)) {
+            LOG("Cannot change focus while in fullscreen mode (fullscreen rules).\n");
             ysuccess(false);
             return;
         }
