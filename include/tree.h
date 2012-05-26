@@ -39,16 +39,16 @@ Con *tree_open_con(Con *con, i3Window *window);
 void tree_split(Con *con, orientation_t orientation);
 
 /**
- * Moves focus one level up.
+ * Moves focus one level up. Returns true if focus changed.
  *
  */
-void level_up(void);
+bool level_up(void);
 
 /**
- * Moves focus one level down.
+ * Moves focus one level down. Returns true if focus changed.
  *
  */
-void level_down(void);
+bool level_down(void);
 
 /**
  * Renders the tree, that is rendering all outputs using render_con() and

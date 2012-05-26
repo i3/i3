@@ -1170,6 +1170,10 @@ bool con_fullscreen_permits_focusing(Con *con) {
     if (fs->type == CT_WORKSPACE)
         return true;
 
+    /* Allow it if the container itself is the fullscreen container. */
+    if (con == fs)
+        return true;
+
     /* If fullscreen is per-output, the focus being in a different workspace is
      * sufficient to guarantee that change won't leave fullscreen in bad shape. */
     if (fs->fullscreen_mode == CF_OUTPUT &&

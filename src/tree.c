@@ -375,38 +375,34 @@ void tree_split(Con *con, orientation_t orientation) {
 }
 
 /*
- * Moves focus one level up.
+ * Moves focus one level up. Returns true if focus changed.
  *
  */
-void level_up(void) {
-    /* We cannot go up when we are in fullscreen mode at the moment, that would
-     * be totally not intuitive */
-    if (focused->fullscreen_mode != CF_NONE) {
-        LOG("Currently in fullscreen, not going up\n");
-        return;
-    }
+bool level_up(void) {
     /* We can focus up to the workspace, but not any higher in the tree */
     if ((focused->parent->type != CT_CON &&
         focused->parent->type != CT_WORKSPACE) ||
         focused->type == CT_WORKSPACE) {
         LOG("Cannot go up any further\n");
-        return;
+        return false;
     }
     con_focus(focused->parent);
+    return true;
 }
 
 /*
- * Moves focus one level down.
+ * Moves focus one level down. Returns true if focus changed.
  *
  */
-void level_down(void) {
+bool level_down(void) {
     /* Go down the focus stack of the current node */
     Con *next = TAILQ_FIRST(&(focused->focus_head));
     if (next == TAILQ_END(&(focused->focus_head))) {
         printf("cannot go down\n");
-        return;
+        return false;
     }
     con_focus(next);
+    return true;
 }
 
 static void mark_unmapped(Con *con) {

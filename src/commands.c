@@ -1213,23 +1213,26 @@ void cmd_focus_window_mode(I3_CMD, char *window_mode) {
  *
  */
 void cmd_focus_level(I3_CMD, char *level) {
-    if (focused &&
-        focused->type != CT_WORKSPACE &&
-        focused->fullscreen_mode != CF_NONE) {
-        LOG("Cannot change focus while in fullscreen mode.\n");
-        ysuccess(false);
-        return;
+    DLOG("level = %s\n", level);
+    bool success = false;
+
+    /* Focusing the parent can only be allowed if the newly
+     * focused container won't escape the fullscreen container. */
+    if (strcmp(level, "parent") == 0) {
+        if (focused && focused->parent) {
+            if (con_fullscreen_permits_focusing(focused->parent))
+                success = level_up();
+            else
+                LOG("Currently in fullscreen, not going up\n");
+        }
     }
 
-    DLOG("level = %s\n", level);
+    /* Focusing a child should always be allowed. */
+    else success = level_down();
 
-    if (strcmp(level, "parent") == 0)
-        level_up();
-    else level_down();
-
-    cmd_output->needs_tree_render = true;
+    cmd_output->needs_tree_render = success;
     // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    ysuccess(success);
 }
 
 /*

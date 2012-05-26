@@ -122,6 +122,12 @@ is($x->input_focus, $right1->id, 'upper right window focused');
 cmd '[id="' . $right2->id . '"] focus';
 is($x->input_focus, $right2->id, 'bottom right window focused');
 
+cmd 'focus parent';
+isnt($x->input_focus, $right2->id, 'bottom right window no longer focused');
+
+cmd 'focus child';
+is($x->input_focus, $right2->id, 'bottom right window focused again');
+
 cmd '[id="' . $left->id . '"] focus';
 is($x->input_focus, $right2->id, 'prevented focus change to left window');
 
@@ -129,25 +135,25 @@ cmd '[id="' . $diff_ws->id . '"] focus';
 is($x->input_focus, $right2->id, 'prevented focus change to different ws');
 
 ################################################################################
-# Same tests when we're in non-global fullscreen mode. We toggle fullscreen on
-# and off to avoid testing whether focus level works in fullscreen for now. It
-# should now be possible to focus a container in a different workspace.
+# Same tests when we're in non-global fullscreen mode. It should now be possible
+# to focus a container in a different workspace.
 ################################################################################
 
+cmd 'focus parent';
 cmd 'fullscreen global';
-cmd 'fullscreen global';
+cmd 'fullscreen';
 
 cmd '[id="' . $right1->id . '"] focus';
 is($x->input_focus, $right1->id, 'upper right window focused');
 
-cmd 'focus parent';
-cmd 'fullscreen';
-
-cmd '[id="' . $right1->id . '"] focus';
-is($x->input_focus, $right1->id, 'upper right window still focused');
-
 cmd '[id="' . $right2->id . '"] focus';
 is($x->input_focus, $right2->id, 'bottom right window focused');
+
+cmd 'focus parent';
+isnt($x->input_focus, $right2->id, 'bottom right window no longer focused');
+
+cmd 'focus child';
+is($x->input_focus, $right2->id, 'bottom right window focused again');
 
 cmd '[id="' . $left->id . '"] focus';
 is($x->input_focus, $right2->id, 'prevented focus change to left window');
