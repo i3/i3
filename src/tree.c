@@ -556,6 +556,10 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         else next = TAILQ_LAST(&(parent->nodes_head), nodes_head);
     }
 
+    /* Don't violate fullscreen focus restrictions. */
+    if (!con_fullscreen_permits_focusing(next))
+        return false;
+
     /* 3: focus choice comes in here. at the moment we will go down
      * until we find a window */
     /* TODO: check for window, atm we only go down as far as possible */

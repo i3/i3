@@ -131,6 +131,24 @@ is($x->input_focus, $right2->id, 'bottom right window focused again');
 cmd '[id="' . $left->id . '"] focus';
 is($x->input_focus, $right2->id, 'prevented focus change to left window');
 
+cmd 'focus up';
+is($x->input_focus, $right1->id, 'allowed focus up');
+
+cmd 'focus down';
+is($x->input_focus, $right2->id, 'allowed focus down');
+
+cmd 'focus left';
+is($x->input_focus, $right2->id, 'prevented focus left');
+
+cmd 'focus right';
+is($x->input_focus, $right2->id, 'prevented focus right');
+
+cmd 'focus down';
+is($x->input_focus, $right1->id, 'allowed focus wrap (down)');
+
+cmd 'focus up';
+is($x->input_focus, $right2->id, 'allowed focus wrap (up)');
+
 cmd '[id="' . $diff_ws->id . '"] focus';
 is($x->input_focus, $right2->id, 'prevented focus change to different ws');
 
@@ -158,7 +176,62 @@ is($x->input_focus, $right2->id, 'bottom right window focused again');
 cmd '[id="' . $left->id . '"] focus';
 is($x->input_focus, $right2->id, 'prevented focus change to left window');
 
+cmd 'focus up';
+is($x->input_focus, $right1->id, 'allowed focus up');
+
+cmd 'focus down';
+is($x->input_focus, $right2->id, 'allowed focus down');
+
+cmd 'focus left';
+is($x->input_focus, $right2->id, 'prevented focus left');
+
+cmd 'focus right';
+is($x->input_focus, $right2->id, 'prevented focus right');
+
+cmd 'focus down';
+is($x->input_focus, $right1->id, 'allowed focus wrap (down)');
+
+cmd 'focus up';
+is($x->input_focus, $right2->id, 'allowed focus wrap (up)');
+
 cmd '[id="' . $diff_ws->id . '"] focus';
 is($x->input_focus, $diff_ws->id, 'allowed focus change to different ws');
+
+################################################################################
+# More testing of the interaction between wrapping and the fullscreen focus
+# restrictions.
+################################################################################
+
+cmd '[id="' . $right1->id . '"] focus';
+is($x->input_focus, $right1->id, 'upper right window focused');
+
+cmd 'focus parent';
+cmd 'fullscreen';
+cmd 'focus child';
+
+cmd 'split v';
+my $right12 = open_window;
+
+cmd 'focus down';
+is($x->input_focus, $right2->id, 'bottom right window focused');
+
+cmd 'split v';
+my $right22 = open_window;
+
+cmd 'focus parent';
+cmd 'fullscreen';
+cmd 'focus child';
+
+cmd 'focus down';
+is($x->input_focus, $right2->id, 'focus did not leave parent container (1)');
+
+cmd 'focus down';
+is($x->input_focus, $right22->id, 'focus did not leave parent container (2)');
+
+cmd 'focus up';
+is($x->input_focus, $right2->id, 'focus did not leave parent container (3)');
+
+cmd 'focus up';
+is($x->input_focus, $right22->id, 'focus did not leave parent container (4)');
 
 done_testing;
