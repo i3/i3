@@ -18,7 +18,7 @@ my $mid = open_window;
 my $right = open_window;
 
 # go to workspace level
-sync_cmd 'level up';
+sync_cmd 'focus parent';
 
 # make it floating
 sync_cmd 'mode toggle';
