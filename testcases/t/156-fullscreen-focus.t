@@ -111,7 +111,6 @@ $left = open_window;
 my $right1 = open_window;
 cmd 'split v';
 my $right2 = open_window;
-$nodes = get_ws_content($tmp);
 
 cmd 'focus parent';
 cmd 'fullscreen global';
@@ -233,5 +232,27 @@ is($x->input_focus, $right2->id, 'focus did not leave parent container (3)');
 
 cmd 'focus up';
 is($x->input_focus, $right22->id, 'focus did not leave parent container (4)');
+
+################################################################################
+# Ensure that moving in a direction doesn't violate the focus restrictions.
+################################################################################
+
+sub verify_move_prevented {
+    my $msg = shift;
+    my $nodes = get_ws_content($tmp2);
+    my $split = $nodes->[1];
+    my $fs = $split->{nodes}->[1];
+    is(scalar @{$fs->{nodes}}, 2, $msg);
+}
+
+cmd 'move left';
+verify_move_prevented('prevented move left');
+cmd 'move right';
+verify_move_prevented('prevented move right');
+cmd 'move down';
+verify_move_prevented('prevented move down');
+cmd 'move up';
+cmd 'move up';
+verify_move_prevented('prevented move up');
 
 done_testing;
