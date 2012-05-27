@@ -237,22 +237,59 @@ is($x->input_focus, $right22->id, 'focus did not leave parent container (4)');
 # Ensure that moving in a direction doesn't violate the focus restrictions.
 ################################################################################
 
-sub verify_move_prevented {
+sub verify_move {
+    my $num = shift;
     my $msg = shift;
     my $nodes = get_ws_content($tmp2);
     my $split = $nodes->[1];
     my $fs = $split->{nodes}->[1];
-    is(scalar @{$fs->{nodes}}, 2, $msg);
+    is(scalar @{$fs->{nodes}}, $num, $msg);
 }
 
 cmd 'move left';
-verify_move_prevented('prevented move left');
+verify_move(2, 'prevented move left');
 cmd 'move right';
-verify_move_prevented('prevented move right');
+verify_move(2, 'prevented move right');
 cmd 'move down';
-verify_move_prevented('prevented move down');
+verify_move(2, 'prevented move down');
 cmd 'move up';
 cmd 'move up';
-verify_move_prevented('prevented move up');
+verify_move(2, 'prevented move up');
+
+################################################################################
+# Moving to a different workspace is allowed with per-output fullscreen
+# containers.
+################################################################################
+
+cmd "move to workspace $tmp";
+verify_move(1, 'did not prevent move to workspace by name');
+
+cmd "workspace $tmp";
+cmd "move to workspace $tmp2";
+cmd "workspace $tmp2";
+
+cmd "move to workspace prev";
+verify_move(1, 'did not prevent move to workspace by position');
+
+################################################################################
+# Ensure that is not allowed with global fullscreen containers.
+################################################################################
+
+cmd "workspace $tmp";
+cmd "move to workspace $tmp2";
+cmd "workspace $tmp2";
+
+cmd 'focus parent';
+cmd 'fullscreen';
+cmd 'fullscreen global';
+cmd 'focus child';
+
+cmd "move to workspace $tmp";
+verify_move(2, 'prevented move to workspace by name');
+
+cmd "move to workspace prev";
+verify_move(2, 'prevented move to workspace by position');
+
+# TODO: Tests for "move to output" and "move workspace to output".
 
 done_testing;

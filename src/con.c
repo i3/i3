@@ -576,6 +576,12 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         return;
     }
 
+    /* Prevent moving if this would violate the fullscreen focus restrictions. */
+    if (!con_fullscreen_permits_focusing(workspace)) {
+        LOG("Cannot move out of a fullscreen container");
+        return;
+    }
+
     if (con_is_floating(con)) {
         DLOG("Using FLOATINGCON instead\n");
         con = con->parent;
