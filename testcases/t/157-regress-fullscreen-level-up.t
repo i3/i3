@@ -30,7 +30,7 @@ is($nodes->[0]->{fullscreen_mode}, 1, 'client fullscreen now');
 #####################################################################
 # send level up, try to un-fullscreen
 #####################################################################
-cmd 'level up';
+cmd 'focus parent';
 cmd 'fullscreen';
 
 $nodes = get_ws_content $tmp;
