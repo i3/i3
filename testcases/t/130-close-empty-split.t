@@ -22,10 +22,10 @@ my ($nodes, $focus) = get_ws_content($tmp);
 is($nodes->[0]->{focused}, 0, 'split container not focused');
 
 # focus the split container
-cmd 'level up';
+cmd 'focus parent';
 ($nodes, $focus) = get_ws_content($tmp);
 my $split = $focus->[0];
-cmd 'level down';
+cmd 'focus child';
 
 $second = open_empty_con($i3);
 
@@ -60,10 +60,10 @@ cmd 'split v';
 is($nodes->[0]->{focused}, 0, 'split container not focused');
 
 # focus the split container
-cmd 'level up';
+cmd 'focus parent';
 ($nodes, $focus) = get_ws_content($tmp);
 $split = $focus->[0];
-cmd 'level down';
+cmd 'focus child';
 
 $second = open_empty_con($i3);
 

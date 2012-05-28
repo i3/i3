@@ -9,8 +9,8 @@ use i3test;
 fresh_workspace;
 
 cmd 'open';
-cmd 'level up';
-cmd 'level up';
+cmd 'focus parent';
+cmd 'focus parent';
 cmd 'mode toggle';
 
 does_i3_live;
