@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include <X11/Xlib.h>
+#include <X11/XKBlib.h>
 
 #include "libi3.h"
 
@@ -139,7 +140,7 @@ bindcode:
              * more likely for special characters). */
             level = 1;
         }
-        KeySym sym = XKeycodeToKeysym(dpy, $4, level);
+        KeySym sym = XkbKeycodeToKeysym(dpy, $4, 0, level);
         char *str = XKeysymToString(sym);
         char *modifiers = modifier_to_string($<number>3);
         // TODO: modifier to string
