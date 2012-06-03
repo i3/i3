@@ -114,14 +114,15 @@ Con *create_workspace_on_output(Output *output, Con *content) {
         /* We check if this is the workspace
          * next/prev/next_on_output/prev_on_output/back_and_forth/number command.
          * Beware: The workspace names "next", "prev", "next_on_output",
-         * "prev_on_output", "number" and "back_and_forth" are OK, so we check
-         * before stripping the double quotes */
+         * "prev_on_output", "number", "back_and_forth" and "current" are OK,
+         * so we check before stripping the double quotes */
         if (strncasecmp(target, "next", strlen("next")) == 0 ||
             strncasecmp(target, "prev", strlen("prev")) == 0 ||
             strncasecmp(target, "next_on_output", strlen("next_on_output")) == 0 ||
             strncasecmp(target, "prev_on_output", strlen("prev_on_output")) == 0 ||
             strncasecmp(target, "number", strlen("number")) == 0 ||
-            strncasecmp(target, "back_and_forth", strlen("back_and_forth")) == 0)
+            strncasecmp(target, "back_and_forth", strlen("back_and_forth")) == 0 ||
+            strncasecmp(target, "current", strlen("current")) == 0)
             continue;
         if (*target == '"')
             target++;
