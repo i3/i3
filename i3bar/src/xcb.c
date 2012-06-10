@@ -281,7 +281,7 @@ void handle_button(xcb_button_press_event_t *event) {
         return;
     }
 
-    int32_t x = event->event_x;
+    int32_t x = event->event_x >= 0 ? event->event_x : 0;
 
     DLOG("Got Button %d\n", event->detail);
 
