@@ -434,7 +434,8 @@ workspace_layout tabbed
 
 === Border style for new windows
 
-This option determines which border style new windows will have.
+This option determines which border style new windows will have. The default is
+"normal".
 
 *Syntax*:
 ---------------------------------------------
@@ -691,11 +692,12 @@ the next section.
 
 === Focus follows mouse
 
-If you have a setup where your mouse usually is in your way (like a touchpad
-on your laptop which you do not want to disable completely), you might want
-to disable 'focus follows mouse' and control focus only by using your keyboard.
-The mouse will still be useful inside the currently active window (for example
-to click on links in your browser window).
+By default, window focus follows your mouse movements. However, if you have a
+setup where your mouse usually is in your way (like a touchpad on your laptop
+which you do not want to disable completely), you might want to disable 'focus
+follows mouse' and control focus only by using your keyboard.  The mouse will
+still be useful inside the currently active window (for example to click on
+links in your browser window).
 
 *Syntax*:
 ----------------------------
