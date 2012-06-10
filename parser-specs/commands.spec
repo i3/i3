@@ -130,7 +130,7 @@ state FULLSCREEN:
 
 # split v|h|vertical|horizontal
 state SPLIT:
-  direction = 'v', 'h', 'vertical', 'horizontal'
+  direction = 'horizontal', 'vertical', 'v', 'h'
       -> call cmd_split($direction)
 
 # floating enable|disable|toggle
