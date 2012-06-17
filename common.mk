@@ -147,6 +147,7 @@ ifeq ($(V),0)
 
 # echo-ing vars
 V_ASCIIDOC = echo ASCIIDOC $@;
+V_A2X = echo A2X $@;
 endif
 
 # Always remake the following targets
