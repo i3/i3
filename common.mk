@@ -144,6 +144,9 @@ V ?= 0
 ifeq ($(V),0)
 # Don’t print command lines which are run
 .SILENT:
+
+# echo-ing vars
+V_ASCIIDOC = echo ASCIIDOC $@;
 endif
 
 # Always remake the following targets

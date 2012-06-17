@@ -19,6 +19,7 @@ include i3-input/i3-input.mk
 include i3-nagbar/i3-nagbar.mk
 include i3bar/i3bar.mk
 include i3-dump-log/i3-dump-log.mk
+include docs/docs.mk
 
 real-all: $(ALL_TARGETS)
 
@@ -33,7 +34,7 @@ dist: distclean
 	# Only copy toplevel documentation (important stuff)
 	mkdir i3-${VERSION}/docs
 	# Pre-generate documentation
-	$(MAKE) -C docs
+	$(MAKE) docs
 	$(MAKE) -C i3bar/doc
 	# Cleanup τεχ output files
 	find docs -regex ".*\.\(aux\|out\|log\|toc\|bm\|dvi\|log\)" -exec rm '{}' \;
@@ -51,7 +52,6 @@ dist: distclean
 
 clean: $(CLEAN_TARGETS)
 	(which lcov >/dev/null 2>&1 && lcov -d . --zerocounters) || true
-	$(MAKE) -C docs clean
 	$(MAKE) -C man clean
 
 distclean: clean $(DISTCLEAN_TARGETS)
