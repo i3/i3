@@ -1,6 +1,7 @@
 *.o
 tags
 include/loglevels.h
+include/GENERATED_*.h
 loglevels.tmp
 *.swp
 *.gcda
@@ -8,6 +9,7 @@ loglevels.tmp
 testcases/testsuite-*
 testcases/latest
 testcases/Makefile
+test.commands_parser
 *.output
 *.tab.*
 *.yy.c
@@ -32,5 +34,6 @@ i3-input/i3-input
 i3-nagbar/i3-nagbar
 i3-msg/i3-msg
 i3-config-wizard/i3-config-wizard
+i3-dump-log/i3-dump-log
 libi3/libi3.a
 docs/*.pdf
