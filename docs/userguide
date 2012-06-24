@@ -235,6 +235,24 @@ windows will be opened to the right of the +Vertical Split Container+:
 
 image::tree-shot3.png["shot3",title="Focus parent, then open new terminal"]
 
+=== Implicit containers
+
+In some cases, i3 needs to implicitly create a container to fulfill your
+command.
+
+One example is the following scenario: You start i3 with a single monitor and a
+single workspace on which you open three terminal windows. All these terminal
+windows are directly attached to one node inside i3’s layout tree, the
+workspace node. By default, the workspace node’s orientation is +horizontal+.
+
+Now you move one of these terminals down (+mod+k+ by default). The workspace
+node’s orientation will be changed to +vertical+. The terminal window you moved
+down is directly attached to the workspace and appears on the bottom of the
+screen. A new (horizontal) container was created to accomodate the other two
+terminal windows. You will notice this when switching to tabbed mode (for
+example). You would end up having one tab called "another container" and the
+other one being the terminal window you moved down.
+
 [[configuring]]
 == Configuring i3
 
