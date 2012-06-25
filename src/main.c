@@ -405,7 +405,7 @@ int main(int argc, char *argv[]) {
     /* If the user passes more arguments, we act like i3-msg would: Just send
      * the arguments as an IPC message to i3. This allows for nice semantic
      * commands such as 'i3 border none'. */
-    if (optind < argc) {
+    if (!only_check_config && optind < argc) {
         /* We enable verbose mode so that the user knows what’s going on.
          * This should make it easier to find mistakes when the user passes
          * arguments by mistake. */
