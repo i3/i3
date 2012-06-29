@@ -57,6 +57,7 @@ my $tmp = fresh_workspace;
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 
 my $window = open_special;
+wait_for_map($window);
 
 ok(@{get_ws_content($tmp)} == 1, 'special window got managed to current (random) workspace');
 
