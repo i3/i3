@@ -5,6 +5,7 @@
 #
 use i3test i3_autostart => 0;
 use File::Temp qw(tempfile tempdir);
+use File::Basename;
 use POSIX qw(getuid);
 use v5.10;
 
@@ -20,21 +21,14 @@ EOT
 # ensure XDG_RUNTIME_DIR is not set
 delete $ENV{XDG_RUNTIME_DIR};
 
-# See which files exist in /tmp before to not mistakenly check an already
-# existing tmpdir of another i3 instance.
-my @files_before = </tmp/i3-*>;
 my $pid = launch_with_config($config, dont_add_socket_path => 1, dont_create_temp_dir => 1);
-my @files_after = </tmp/i3-*>;
-@files_after = grep { !($_ ~~ @files_before) } @files_after;
-
-is(@files_after, 1, 'one new temp directory');
-
+my $socketpath = get_socket_path(0);
 my $folder = "/tmp/i3-" . getpwuid(getuid());
-like($files_after[0], qr/^$folder/, 'temp directory matches expected pattern');
-$folder = $files_after[0];
+like(dirname($socketpath), qr/^$folder/, 'temp directory matches expected pattern');
+$folder = dirname($socketpath);
 
 ok(-d $folder, "folder $folder exists");
-my $socketpath = "$folder/ipc-socket." . $pid;
+$socketpath = "$folder/ipc-socket." . $pid;
 ok(-S $socketpath, "file $socketpath exists and is a socket");
 
 exit_gracefully($pid);
