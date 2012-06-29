@@ -1410,6 +1410,7 @@ void cmd_layout(I3_CMD, char *layout_str) {
  */
 void cmd_exit(I3_CMD) {
     LOG("Exiting due to user command.\n");
+    xcb_disconnect(conn);
     exit(0);
 
     /* unreached */
