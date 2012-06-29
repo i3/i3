@@ -9,6 +9,10 @@ use i3test i3_autostart => 0;
 # TODO:
 # introduce 'move workspace 3 to output <output>' with synonym 'move workspace 3 to <output>'
 
+# Ensure the pointer is at (0, 0) so that we really start on the first
+# (the left) workspace.
+$x->root->warp_pointer(0, 0);
+
 my $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
