@@ -206,24 +206,16 @@ sub i3nagbar_running {
 $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-assign "special" → ~
+for_window [title="special"] floating enable
 EOT
 
 $pid = launch_with_config($config);
-
-# Ensure that i3-nagbar is running. It should be started pretty quickly, so we
-# busy-loop with a short delay.
-while (!i3nagbar_running($pid)) {
-    sleep 0.05;
-}
 
 $tmp = fresh_workspace;
 
 ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 my @docked = get_dock_clients;
-# We expect i3-nagbar as the first dock client due to using the old assign
-# syntax
-is(@docked, 1, 'one dock client yet');
+is(@docked, 0, 'one dock client yet');
 
 $window = open_special(
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
@@ -233,7 +225,7 @@ $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
 ok(@{$content->{floating_nodes}} == 0, 'one floating con');
 @docked = get_dock_clients;
-is(@docked, 2, 'two dock clients now');
+is(@docked, 1, 'one dock client now');
 
 $window->destroy;
 
