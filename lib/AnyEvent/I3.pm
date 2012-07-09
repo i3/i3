@@ -421,7 +421,7 @@ sub command {
 
 =head1 AUTHOR
 
-Michael Stapelberg, C<< <michael at stapelberg.de> >>
+Michael Stapelberg, C<< <michael at i3wm.org> >>
 
 =head1 BUGS
 
@@ -447,7 +447,7 @@ L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=AnyEvent-I3>
 
 =item * The i3 window manager website
 
-L<http://i3.zekjur.net/>
+L<http://i3wm.org>
 
 =back
 
@@ -457,7 +457,7 @@ L<http://i3.zekjur.net/>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2010 Michael Stapelberg.
+Copyright 2010-2012 Michael Stapelberg.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
