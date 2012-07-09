@@ -29,7 +29,7 @@ then subscribe to events or send messages and receive their replies.
 
     use AnyEvent::I3 qw(:all);
 
-    my $i3 = i3("~/.i3/ipc.sock");
+    my $i3 = i3();
 
     $i3->connect->recv or die "Error connecting";
     say "Connected to i3";
@@ -48,8 +48,12 @@ then subscribe to events or send messages and receive their replies.
 
 =head2 $i3 = i3([ $path ]);
 
-Creates a new C<AnyEvent::I3> object and returns it. C<path> is the path of
-the UNIX socket to connect to.
+Creates a new C<AnyEvent::I3> object and returns it.
+
+C<path> is an optional path of the UNIX socket to connect to. It is strongly
+advised to NOT specify this unless you're absolutely sure you need it.
+C<AnyEvent::I3> will automatically figure it out by querying the running i3
+instance on the current DISPLAY which is almost always what you want.
 
 =head1 SUBROUTINES/METHODS
 
@@ -91,13 +95,37 @@ sub i3 {
 
 =head2 $i3 = AnyEvent::I3->new([ $path ])
 
-Creates a new C<AnyEvent::I3> object and returns it. C<path> is the path of
-the UNIX socket to connect to.
+Creates a new C<AnyEvent::I3> object and returns it.
+
+C<path> is an optional path of the UNIX socket to connect to. It is strongly
+advised to NOT specify this unless you're absolutely sure you need it.
+C<AnyEvent::I3> will automatically figure it out by querying the running i3
+instance on the current DISPLAY which is almost always what you want.
 
 =cut
 sub new {
     my ($class, $path) = @_;
 
+    if (!$path) {
+        # This effectively circumvents taint mode checking for $ENV{PATH}. We
+        # do this because users might specify PATH explicitly to call i3 in a
+        # custom location (think ~/.bin/).
+        my $paths = $ENV{PATH};
+        if ($paths =~ /^(.*)$/) {
+            $ENV{PATH} = $1;
+        }
+        chomp($path = qx(i3 --get-socketpath));
+        # Circumventing taint mode again: the socket can be anywhere on the
+        # system and that’s okay.
+        if ($path =~ /^([^\0]+)$/) {
+            $path = $1;
+        } else {
+            warn "Asking i3 for the socket path failed. Is DISPLAY set and is i3 in your PATH?";
+        }
+    }
+
+    # This is the old default path (v3.*). This fallback line can be removed in
+    # a year from now. -- Michael, 2012-07-09
     $path ||= '~/.i3/ipc.sock';
 
     # Check if we need to resolve ~
@@ -292,7 +320,7 @@ sub _ensure_connection {
 
     return if defined($self->{ipchdl});
 
-    $self->connect->recv or die "Unable to connect to i3"
+    $self->connect->recv or die "Unable to connect to i3 (socket path " . $self->{path} . ")";
 }
 
 =head2 get_workspaces
