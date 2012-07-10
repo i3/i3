@@ -1042,7 +1042,7 @@ void init_tray() {
     xcb_send_event(xcb_connection,
                    0,
                    xcb_root,
-                   XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+                   0xFFFFFF,
                    (char*)ev);
     free(event);
     free(tray_reply);
