@@ -114,6 +114,8 @@ sub new {
         if ($paths =~ /^(.*)$/) {
             $ENV{PATH} = $1;
         }
+        # Otherwise the qx() operator wont work:
+        delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
         chomp($path = qx(i3 --get-socketpath));
         # Circumventing taint mode again: the socket can be anywhere on the
         # system and that’s okay.
