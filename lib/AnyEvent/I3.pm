@@ -8,6 +8,7 @@ use AnyEvent::Handle;
 use AnyEvent::Socket;
 use AnyEvent;
 use Encode;
+use Scalar::Util qw(tainted);
 
 =head1 NAME
 
@@ -107,12 +108,25 @@ sub new {
     my ($class, $path) = @_;
 
     if (!$path) {
+        my $path_tainted = tainted($ENV{PATH});
         # This effectively circumvents taint mode checking for $ENV{PATH}. We
         # do this because users might specify PATH explicitly to call i3 in a
         # custom location (think ~/.bin/).
-        my $paths = $ENV{PATH};
-        if ($paths =~ /^(.*)$/) {
-            $ENV{PATH} = $1;
+        (local $ENV{PATH}) = ($ENV{PATH} =~ /(.*)/);
+
+        # In taint mode, we also need to remove all relative directories from
+        # PATH (like . or ../bin). We only do this in taint mode and warn the
+        # user, since this might break a real-world use case for some people.
+        if ($path_tainted) {
+            my @dirs = split /:/, $ENV{PATH};
+            my @filtered = grep !/^\./, @dirs;
+            if (scalar @dirs != scalar @filtered) {
+                $ENV{PATH} = join ':', @filtered;
+                warn qq|Removed relative directories from PATH because you | .
+                     qq|are running Perl with taint mode enabled. Remove -T | .
+                     qq|to be able to use relative directories in PATH. | .
+                     qq|New PATH is "$ENV{PATH}"|;
+            }
         }
         # Otherwise the qx() operator wont work:
         delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
