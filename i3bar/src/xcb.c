@@ -117,6 +117,9 @@ void refresh_statusline() {
     /* Convert all blocks from UTF-8 to UCS-2 and predict the text width (in
      * pixels). */
     TAILQ_FOREACH(block, &statusline_head, blocks) {
+        if (strlen(block->full_text) == 0)
+            continue;
+
         block->ucs2_full_text = (xcb_char2b_t*)convert_utf8_to_ucs2(block->full_text, &(block->glyph_count_full_text));
         block->width = predict_text_width((char*)block->ucs2_full_text, block->glyph_count_full_text, true);
         /* If this is not the last block, add some pixels for a separator. */
@@ -138,6 +141,9 @@ void refresh_statusline() {
     /* Draw the text of each block. */
     uint32_t x = 0;
     TAILQ_FOREACH(block, &statusline_head, blocks) {
+        if (strlen(block->full_text) == 0)
+            continue;
+
         uint32_t colorpixel = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
         set_font_colors(statusline_ctx, colorpixel, colors.bar_bg);
         draw_text((char*)block->ucs2_full_text, block->glyph_count_full_text,
