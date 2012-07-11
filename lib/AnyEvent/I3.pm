@@ -16,11 +16,11 @@ AnyEvent::I3 - communicate with the i3 window manager
 
 =cut
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =head1 SYNOPSIS
 
