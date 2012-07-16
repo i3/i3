@@ -210,9 +210,13 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     }
     if (!plaintext) {
         yajl_status status = yajl_parse(parser, json_input, rec);
+#if YAJL_MAJOR >= 2
         if (status != yajl_status_ok) {
-            fprintf(stderr, "[i3bar] Could not parse JSON input: %.*s\n",
-                    rec, json_input);
+#else
+        if (status != yajl_status_ok && status != yajl_status_insufficient_data) {
+#endif
+            fprintf(stderr, "[i3bar] Could not parse JSON input (code %d): %.*s\n",
+                    status, rec, json_input);
         }
         free(buffer);
     } else {
