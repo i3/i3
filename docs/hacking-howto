@@ -141,7 +141,7 @@ src/load_layout.c::
 Contains code for loading layouts from JSON files.
 
 src/log.c::
-Handles the setting of loglevels, contains the logging functions.
+Contains the logging functions.
 
 src/main.c::
 Initializes the window manager.

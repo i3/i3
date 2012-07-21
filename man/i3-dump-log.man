@@ -14,7 +14,7 @@ i3-dump-log [-s <socketpath>]
 == DESCRIPTION
 
 Debug versions of i3 automatically use 1% of your RAM (but 25 MiB max) to store
-full debug loglevel log output. This is extremely helpful for bugreports and
+full debug log output. This is extremely helpful for bugreports and
 figuring out what is going on, without permanently logging to a file.
 
 With i3-dump-log, you can dump the SHM log to stdout.

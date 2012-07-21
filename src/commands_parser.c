@@ -427,11 +427,11 @@ struct CommandResult *parse_command(const char *input) {
 
 /*
  * Logs the given message to stdout while prefixing the current time to it,
- * but only if the corresponding debug loglevel was activated.
+ * but only if debug logging was activated.
  * This is to be called by DLOG() which includes filename/linenumber
  *
  */
-void debuglog(uint64_t lev, char *fmt, ...) {
+void debuglog(char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);

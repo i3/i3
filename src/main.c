@@ -318,8 +318,8 @@ int main(int argc, char *argv[]) {
                 set_verbosity(true);
                 break;
             case 'd':
-                LOG("Enabling debug loglevel %s\n", optarg);
-                add_loglevel(optarg);
+                LOG("Enabling debug logging\n");
+                set_debug_logging(true);
                 break;
             case 'l':
                 /* DEPRECATED, ignored for the next 3 versions (3.e, 3.f, 3.g) */
@@ -367,12 +367,12 @@ int main(int argc, char *argv[]) {
                 }
                 /* fall-through */
             default:
-                fprintf(stderr, "Usage: %s [-c configfile] [-d loglevel] [-a] [-v] [-V] [-C]\n", argv[0]);
+                fprintf(stderr, "Usage: %s [-c configfile] [-d all] [-a] [-v] [-V] [-C]\n", argv[0]);
                 fprintf(stderr, "\n");
                 fprintf(stderr, "\t-a          disable autostart ('exec' lines in config)\n");
                 fprintf(stderr, "\t-c <file>   use the provided configfile instead\n");
                 fprintf(stderr, "\t-C          validate configuration file and exit\n");
-                fprintf(stderr, "\t-d <level>  enable debug output with the specified loglevel\n");
+                fprintf(stderr, "\t-d all      enable debug output\n");
                 fprintf(stderr, "\t-L <file>   path to the serialized layout during restarts\n");
                 fprintf(stderr, "\t-v          display version and exit\n");
                 fprintf(stderr, "\t-V          enable verbose mode\n");

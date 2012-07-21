@@ -1,8 +1,6 @@
 *.o
 tags
-include/loglevels.h
 include/GENERATED_*.h
-loglevels.tmp
 *.swp
 *.gcda
 *.gcno
