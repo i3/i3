@@ -4,8 +4,8 @@ CLEAN_TARGETS += clean-i3bar
 
 i3bar_SOURCES := $(wildcard i3bar/src/*.c)
 i3bar_HEADERS := $(wildcard i3bar/include/*.h)
-i3bar_CFLAGS   = $(LIBEV_CFLAGS)
-i3bar_LIBS     = $(LIBEV_LIBS)
+i3bar_CFLAGS   = $(YAJL_CFLAGS) $(LIBEV_CFLAGS)
+i3bar_LIBS     = $(YAJL_LIBS) $(LIBEV_LIBS)
 
 i3bar_OBJECTS := $(i3bar_SOURCES:.c=.o)
 

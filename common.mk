@@ -77,10 +77,6 @@ CFLAGS += $(call cflags_for_lib, xcb-randr)
 CFLAGS += $(call cflags_for_lib, xcb)
 CFLAGS += $(call cflags_for_lib, xcursor)
 CFLAGS += $(call cflags_for_lib, x11)
-CFLAGS += $(call cflags_for_lib, yajl)
-# Fallback for libyajl 1 which did not include yajl_version.h. We need
-# YAJL_MAJOR from that file to decide which code path should be used.
-CFLAGS += -idirafter $(TOPDIR)/yajl-fallback
 
 LIBS += -lm
 LIBS += -L $(TOPDIR) -li3
@@ -98,7 +94,13 @@ LIBS += $(call ldflags_for_lib, xcb-randr,xcb-randr)
 LIBS += $(call ldflags_for_lib, xcb,xcb)
 LIBS += $(call ldflags_for_lib, xcursor,Xcursor)
 LIBS += $(call ldflags_for_lib, x11,X11)
-LIBS += $(call ldflags_for_lib, yajl,yajl)
+
+# yajl
+YAJL_CFLAGS := $(call cflags_for_lib, yajl)
+# Fallback for libyajl 1 which did not include yajl_version.h. We need
+# YAJL_MAJOR from that file to decide which code path should be used.
+YAJL_CFLAGS += -idirafter $(TOPDIR)/yajl-fallback
+YAJL_LIBS   := $(call ldflags_for_lib, yajl,yajl)
 
 #libev
 LIBEV_CFLAGS := $(call cflags_for_lib, libev)
