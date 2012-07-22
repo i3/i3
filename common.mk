@@ -63,9 +63,6 @@ endif
 cflags_for_lib = $(shell pkg-config --silence-errors --cflags $(1) 2>/dev/null)
 ldflags_for_lib = $(shell pkg-config --exists 2>/dev/null $(1) && pkg-config --libs $(1) 2>/dev/null || echo -l$(2))
 
-
-LIBS += -L $(TOPDIR) -li3
-
 # XCB common stuff
 XCB_CFLAGS  := $(call cflags_for_lib, xcb)
 XCB_CFLAGS  += $(call cflags_for_lib, xcb-event)
@@ -123,6 +120,8 @@ PCRE_LIBS   := $(call ldflags_for_lib, libpcre,pcre)
 LIBSN_CFLAGS := $(call cflags_for_lib, libstartup-notification-1.0)
 LIBSN_LIBS   := $(call ldflags_for_lib, libstartup-notification-1.0,startup-notification-1)
 
+# libi3
+LIBS = -L$(TOPDIR) -li3
 
 ## Platform-specific flags
 
