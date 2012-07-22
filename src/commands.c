@@ -515,7 +515,7 @@ static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floatin
     }
 }
 
-static void cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int ppt) {
+static bool cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int ppt) {
     LOG("tiling resize\n");
     /* get the appropriate current container (skip stacked/tabbed cons) */
     Con *current = focused;
@@ -548,7 +548,7 @@ static void cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
         LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
             (orientation == HORIZ ? "horizontal" : "vertical"));
         ysuccess(false);
-        return;
+        return false;
     }
 
     if (strcmp(direction, "up") == 0 || strcmp(direction, "left") == 0) {
@@ -559,7 +559,7 @@ static void cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
     if (other == TAILQ_END(workspaces)) {
         LOG("No other container in this direction found, cannot resize.\n");
         ysuccess(false);
-        return;
+        return false;
     }
     LOG("other->percent = %f\n", other->percent);
     LOG("current->percent before = %f\n", current->percent);
@@ -582,9 +582,11 @@ static void cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
     } else {
         LOG("Not resizing, already at minimum size\n");
     }
+
+    return true;
 }
 
-static void cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, int ppt) {
+static bool cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, int ppt) {
     LOG("width/height resize\n");
     /* get the appropriate current container (skip stacked/tabbed cons) */
     Con *current = focused;
@@ -616,13 +618,13 @@ static void cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, i
         LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
             (orientation == HORIZ ? "horizontal" : "vertical"));
         ysuccess(false);
-        return;
+        return false;
     }
 
     if (children == 1) {
         LOG("This is the only container, cannot resize.\n");
         ysuccess(false);
-        return;
+        return false;
     }
 
     /* Ensure all the other children have a percentage set. */
@@ -645,13 +647,13 @@ static void cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, i
         if (!definitelyGreaterThan(child->percent - subtract_percent, 0.05, DBL_EPSILON)) {
             LOG("Not resizing, already at minimum size (child %p would end up with a size of %.f\n", child, child->percent - subtract_percent);
             ysuccess(false);
-            return;
+            return false;
         }
     }
     if (!definitelyGreaterThan(new_current_percent, 0.05, DBL_EPSILON)) {
         LOG("Not resizing, already at minimum size\n");
         ysuccess(false);
-        return;
+        return false;
     }
 
     current->percent += ((double)ppt / 100.0);
@@ -663,6 +665,8 @@ static void cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, i
         child->percent -= subtract_percent;
         LOG("child->percent after (%p) = %f\n", child, child->percent);
     }
+
+    return true;
 }
 
 /*
@@ -685,9 +689,13 @@ void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resiz
         cmd_resize_floating(current_match, cmd_output, way, direction, floating_con, px);
     } else {
         if (strcmp(direction, "width") == 0 ||
-            strcmp(direction, "height") == 0)
-            cmd_resize_tiling_width_height(current_match, cmd_output, way, direction, ppt);
-        else cmd_resize_tiling_direction(current_match, cmd_output, way, direction, ppt);
+            strcmp(direction, "height") == 0) {
+            if (!cmd_resize_tiling_width_height(current_match, cmd_output, way, direction, ppt))
+                return;
+        } else {
+            if (!cmd_resize_tiling_direction(current_match, cmd_output, way, direction, ppt))
+                return;
+        }
     }
 
     cmd_output->needs_tree_render = true;
