@@ -75,7 +75,6 @@ CFLAGS += $(call cflags_for_lib, xcb-icccm)
 CFLAGS += $(call cflags_for_lib, xcb-xinerama)
 CFLAGS += $(call cflags_for_lib, xcb-randr)
 CFLAGS += $(call cflags_for_lib, xcb)
-CFLAGS += $(call cflags_for_lib, x11)
 
 LIBS += -L $(TOPDIR) -li3
 LIBS += $(call ldflags_for_lib, xcb-event,xcb-event)
@@ -90,7 +89,10 @@ LIBS += $(call ldflags_for_lib, xcb-icccm,xcb-icccm)
 LIBS += $(call ldflags_for_lib, xcb-xinerama,xcb-xinerama)
 LIBS += $(call ldflags_for_lib, xcb-randr,xcb-randr)
 LIBS += $(call ldflags_for_lib, xcb,xcb)
-LIBS += $(call ldflags_for_lib, x11,X11)
+
+# Xlib
+X11_CFLAGS := $(call cflags_for_lib, x11)
+X11_LIBS   := $(call ldflags_for_lib, x11,X11)
 
 # Xcursor
 XCURSOR_CFLAGS := $(call cflags_for_lib, xcursor)
