@@ -519,6 +519,8 @@ static bool cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
     LOG("tiling resize\n");
     /* get the appropriate current container (skip stacked/tabbed cons) */
     Con *current = focused;
+    Con *other = NULL;
+    double percentage = 0;
     while (current->parent->layout == L_STACKED ||
            current->parent->layout == L_TABBED)
         current = current->parent;
@@ -527,40 +529,50 @@ static bool cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
     orientation_t search_orientation =
         (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0 ? HORIZ : VERT);
 
-    while (current->type != CT_WORKSPACE &&
-           current->type != CT_FLOATING_CON &&
-           current->parent->orientation != search_orientation)
-        current = current->parent;
+    do {
+        if (current->parent->orientation != search_orientation) {
+            current = current->parent;
+            continue;
+        }
 
-    /* get the default percentage */
-    int children = con_num_children(current->parent);
-    Con *other;
-    LOG("ins. %d children\n", children);
-    double percentage = 1.0 / children;
-    LOG("default percentage = %f\n", percentage);
+        /* get the default percentage */
+        int children = con_num_children(current->parent);
+        LOG("ins. %d children\n", children);
+        percentage = 1.0 / children;
+        LOG("default percentage = %f\n", percentage);
 
-    orientation_t orientation = current->parent->orientation;
+        orientation_t orientation = current->parent->orientation;
 
-    if ((orientation == HORIZ &&
-         (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0)) ||
-        (orientation == VERT &&
-         (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0))) {
-        LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
-            (orientation == HORIZ ? "horizontal" : "vertical"));
+        if ((orientation == HORIZ &&
+             (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0)) ||
+            (orientation == VERT &&
+             (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0))) {
+            LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
+                (orientation == HORIZ ? "horizontal" : "vertical"));
+            ysuccess(false);
+            return false;
+        }
+
+        if (strcmp(direction, "up") == 0 || strcmp(direction, "left") == 0) {
+            other = TAILQ_PREV(current, nodes_head, nodes);
+        } else {
+            other = TAILQ_NEXT(current, nodes);
+        }
+        if (other == TAILQ_END(workspaces)) {
+            LOG("No other container in this direction found, trying to look further up in the tree...\n");
+            current = current->parent;
+            continue;
+        }
+        break;
+    } while (current->type != CT_WORKSPACE &&
+             current->type != CT_FLOATING_CON);
+
+    if (other == NULL) {
+        LOG("No other container in this direction found, trying to look further up in the tree...\n");
         ysuccess(false);
         return false;
     }
 
-    if (strcmp(direction, "up") == 0 || strcmp(direction, "left") == 0) {
-        other = TAILQ_PREV(current, nodes_head, nodes);
-    } else {
-        other = TAILQ_NEXT(current, nodes);
-    }
-    if (other == TAILQ_END(workspaces)) {
-        LOG("No other container in this direction found, cannot resize.\n");
-        ysuccess(false);
-        return false;
-    }
     LOG("other->percent = %f\n", other->percent);
     LOG("current->percent before = %f\n", current->percent);
     if (current->percent == 0.0)
