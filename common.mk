@@ -63,24 +63,23 @@ endif
 cflags_for_lib = $(shell pkg-config --silence-errors --cflags $(1) 2>/dev/null)
 ldflags_for_lib = $(shell pkg-config --exists 2>/dev/null $(1) && pkg-config --libs $(1) 2>/dev/null || echo -l$(2))
 
-ifeq ($(shell pkg-config --exists xcb-util 2>/dev/null || echo 1),1)
-I3_CPPFLAGS += -DXCB_COMPAT
-CFLAGS += $(call cflags_for_lib, xcb-atom)
-CFLAGS += $(call cflags_for_lib, xcb-aux)
-else
-CFLAGS += $(call cflags_for_lib, xcb-util)
-endif
-CFLAGS += $(call cflags_for_lib, xcb)
 
 LIBS += -L $(TOPDIR) -li3
-LIBS += $(call ldflags_for_lib, xcb-event,xcb-event)
+
+# XCB common stuff
+XCB_CFLAGS  := $(call cflags_for_lib, xcb)
+XCB_CFLAGS  += $(call cflags_for_lib, xcb-event)
+XCB_LIBS    := $(call ldflags_for_lib, xcb,xcb)
+XCB_LIBS    += $(call ldflags_for_lib, xcb-event,xcb-event)
 ifeq ($(shell pkg-config --exists xcb-util 2>/dev/null || echo 1),1)
-LIBS += $(call ldflags_for_lib, xcb-atom,xcb-atom)
-LIBS += $(call ldflags_for_lib, xcb-aux,xcb-aux)
+XCB_CFLAGS  += $(call cflags_for_lib, xcb-atom)
+XCB_CFLAGS  += $(call cflags_for_lib, xcb-aux)
+XCB_LIBS    += $(call ldflags_for_lib, xcb-atom,xcb-atom)
+XCB_LIBS    += $(call ldflags_for_lib, xcb-aux,xcb-aux)
 else
-LIBS += $(call ldflags_for_lib, xcb-util)
+XCB_CFLAGS  += $(call cflags_for_lib, xcb-util)
+XCB_LIBS    += $(call ldflags_for_lib, xcb-util)
 endif
-LIBS += $(call ldflags_for_lib, xcb,xcb)
 
 # XCB keyboard stuff
 XCB_KBD_CFLAGS := $(call cflags_for_lib, xcb-keysyms)
