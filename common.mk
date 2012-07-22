@@ -18,6 +18,34 @@ endif
 GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch $(shell [ -f $(TOPDIR)/.git/HEAD ] && sed 's/ref: refs\/heads\/\(.*\)/\\\\\\"\1\\\\\\"/g' $(TOPDIR)/.git/HEAD || echo 'unknown'))"
 VERSION:=$(shell git describe --tags --abbrev=0)
 
+
+## Generic flags
+
+# Default CFLAGS that users should be able to override
+ifeq ($(DEBUG),1)
+# Extended debugging flags, macros shall be available in gcc
+CFLAGS ?= -pipe -gdwarf-2 -g3
+else
+CFLAGS ?= -pipe -O2 -freorder-blocks-and-partition
+endif
+
+# Default LDFLAGS that users should be able to override
+LDFLAGS ?= $(as_needed_LDFLAG)
+
+# Common CFLAGS for all i3 related binaries
+I3_CFLAGS  = -std=c99
+I3_CFLAGS += -Wall
+# unused-function, unused-label, unused-variable are turned on by -Wall
+# We don’t want unused-parameter because of the use of many callbacks
+I3_CFLAGS += -Wunused-value
+I3_CFLAGS += -Iinclude
+
+I3_CPPFLAGS  = -DI3_VERSION=\"${GIT_VERSION}\"
+I3_CPPFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
+
+
+## Libraries flags
+
 ifeq ($(shell which pkg-config 2>/dev/null 1>/dev/null || echo 1),1)
 $(error "pkg-config was not found")
 endif
@@ -35,16 +63,9 @@ endif
 cflags_for_lib = $(shell pkg-config --silence-errors --cflags $(1) 2>/dev/null)
 ldflags_for_lib = $(shell pkg-config --exists 2>/dev/null $(1) && pkg-config --libs $(1) 2>/dev/null || echo -l$(2))
 
-CFLAGS += -std=c99
-CFLAGS += -pipe
-CFLAGS += -Wall
-# unused-function, unused-label, unused-variable are turned on by -Wall
-# We don’t want unused-parameter because of the use of many callbacks
-CFLAGS += -Wunused-value
-CFLAGS += -Iinclude
 CFLAGS += $(call cflags_for_lib, xcb-keysyms)
 ifeq ($(shell pkg-config --exists xcb-util 2>/dev/null || echo 1),1)
-CPPFLAGS += -DXCB_COMPAT
+I3_CPPFLAGS += -DXCB_COMPAT
 CFLAGS += $(call cflags_for_lib, xcb-atom)
 CFLAGS += $(call cflags_for_lib, xcb-aux)
 else
@@ -57,21 +78,17 @@ CFLAGS += $(call cflags_for_lib, xcb)
 CFLAGS += $(call cflags_for_lib, xcursor)
 CFLAGS += $(call cflags_for_lib, x11)
 CFLAGS += $(call cflags_for_lib, yajl)
+# Fallback for libyajl 1 which did not include yajl_version.h. We need
+# YAJL_MAJOR from that file to decide which code path should be used.
+CFLAGS += -idirafter $(TOPDIR)/yajl-fallback
 CFLAGS += $(call cflags_for_lib, libev)
 CFLAGS += $(call cflags_for_lib, libpcre)
-CFLAGS += $(call cflags_for_lib, libstartup-notification-1.0)
-CPPFLAGS += -DI3_VERSION=\"${GIT_VERSION}\"
-CPPFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
-
 ifeq ($(shell pkg-config --atleast-version=8.10 libpcre 2>/dev/null && echo 1),1)
-CPPFLAGS += -DPCRE_HAS_UCP=1
+I3_CPPFLAGS += -DPCRE_HAS_UCP=1
 endif
+CFLAGS += $(call cflags_for_lib, libstartup-notification-1.0)
 
 LIBS += -lm
-# Darwin (Mac OS X) doesn’t have librt
-ifneq ($(UNAME),Darwin)
-LIBS += -lrt
-endif
 LIBS += -L $(TOPDIR) -li3
 LIBS += $(call ldflags_for_lib, xcb-event,xcb-event)
 LIBS += $(call ldflags_for_lib, xcb-keysyms,xcb-keysyms)
@@ -92,22 +109,25 @@ LIBS += $(call ldflags_for_lib, libev,ev)
 LIBS += $(call ldflags_for_lib, libpcre,pcre)
 LIBS += $(call ldflags_for_lib, libstartup-notification-1.0,startup-notification-1)
 
+
+## Platform-specific flags
+
 # Please test if -Wl,--as-needed works on your platform and send me a patch.
 # it is known not to work on Darwin (Mac OS X)
 ifneq (,$(filter Linux GNU GNU/%, $(UNAME)))
-LDFLAGS += -Wl,--as-needed
+as_needed_LDFLAG = -Wl,--as-needed
 endif
 
 ifeq ($(UNAME),NetBSD)
 # We need -idirafter instead of -I to prefer the system’s iconv over GNU libiconv
-CFLAGS += -idirafter /usr/pkg/include
-LDFLAGS += -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
+I3_CFLAGS += -idirafter /usr/pkg/include
+I3_LDFLAGS += -Wl,-rpath,/usr/local/lib -Wl,-rpath,/usr/pkg/lib
 endif
 
 ifeq ($(UNAME),OpenBSD)
-CFLAGS += -I${X11BASE}/include
+I3_CFLAGS += -I${X11BASE}/include
 LIBS += -liconv
-LDFLAGS += -L${X11BASE}/lib
+I3_LDFLAGS += -L${X11BASE}/lib
 endif
 
 ifeq ($(UNAME),FreeBSD)
@@ -116,27 +136,18 @@ endif
 
 ifeq ($(UNAME),Darwin)
 LIBS += -liconv
+else
+# Darwin (Mac OS X) doesn’t have librt
+LIBS += -lrt
 endif
-
-# Fallback for libyajl 1 which did not include yajl_version.h. We need
-# YAJL_MAJOR from that file to decide which code path should be used.
-CFLAGS += -idirafter $(TOPDIR)/yajl-fallback
 
 ifneq (,$(filter Linux GNU GNU/%, $(UNAME)))
-CPPFLAGS += -D_GNU_SOURCE
+I3_CPPFLAGS += -D_GNU_SOURCE
 endif
 
-ifeq ($(DEBUG),1)
-# Extended debugging flags, macros shall be available in gcc
-CFLAGS += -gdwarf-2
-CFLAGS += -g3
-else
-CFLAGS += -O2
-CFLAGS += -freorder-blocks-and-partition
-endif
 
 ifeq ($(COVERAGE),1)
-CFLAGS += -fprofile-arcs -ftest-coverage
+I3_CFLAGS += -fprofile-arcs -ftest-coverage
 LIBS += -lgcov
 endif
 

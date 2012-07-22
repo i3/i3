@@ -12,11 +12,11 @@ i3bar_OBJECTS := $(i3bar_SOURCES:.c=.o)
 
 i3bar/src/%.o: i3bar/src/%.c $(i3bar_HEADERS)
 	echo "[i3bar] CC $<"
-	$(CC) $(CPPFLAGS) $(i3bar_CFLAGS) $(CFLAGS) -Ii3bar/include -c -o $@ $<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3bar_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -Ii3bar/include -c -o $@ $<
 
 i3bar/i3bar: libi3.a $(i3bar_OBJECTS)
 	echo "[i3bar] Link i3bar"
-	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3bar_LIBS) $(LIBS)
+	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3bar_LIBS) $(LIBS)
 
 install-i3bar: i3bar/i3bar
 	echo "[i3bar] Install"

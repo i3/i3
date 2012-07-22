@@ -13,7 +13,7 @@ i3_config_wizard_OBJECTS := $(i3_config_wizard_SOURCES_GENERATED:.c=.o) $(i3_con
 
 i3-config-wizard/%.o: i3-config-wizard/%.c $(i3_config_wizard_HEADERS)
 	echo "[i3-config-wizard] CC $<"
-	$(CC) $(CPPFLAGS) $(i3_config_wizard_CFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_config_wizard_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
 
 i3-config-wizard/cfgparse.yy.c: i3-config-wizard/cfgparse.l i3-config-wizard/cfgparse.tab.o $(i3_config_wizard_HEADERS)
 	echo "[i3-config-wizard] LEX $<"
@@ -25,7 +25,7 @@ i3-config-wizard/cfgparse.tab.c: i3-config-wizard/cfgparse.y $(i3_config_wizard_
 
 i3-config-wizard/i3-config-wizard: libi3.a $(i3_config_wizard_OBJECTS)
 	echo "[i3-config-wizard] Link i3-config-wizard"
-	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3_config_wizard_LIBS) $(LIBS)
+	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3_config_wizard_LIBS) $(LIBS)
 
 install-i3-config-wizard: i3-config-wizard/i3-config-wizard
 	echo "[i3-config-wizard] Install"

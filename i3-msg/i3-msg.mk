@@ -12,11 +12,11 @@ i3_msg_OBJECTS := $(i3_msg_SOURCES:.c=.o)
 
 i3-msg/%.o: i3-msg/%.c $(i3_msg_HEADERS)
 	echo "[i3-msg] CC $<"
-	$(CC) $(CPPFLAGS) $(i3_msg_CFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_msg_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
 
 i3-msg/i3-msg: libi3.a $(i3_msg_OBJECTS)
 	echo "[i3-msg] Link i3-msg"
-	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3_msg_LIBS) $(LIBS)
+	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3_msg_LIBS) $(LIBS)
 
 install-i3-msg: i3-msg/i3-msg
 	echo "[i3-msg] Install"

@@ -12,11 +12,11 @@ i3_nagbar_OBJECTS := $(i3_nagbar_SOURCES:.c=.o)
 
 i3-nagbar/%.o: i3-nagbar/%.c $(i3_nagbar_HEADERS)
 	echo "[i3-nagbar] CC $<"
-	$(CC) $(CPPFLAGS) $(i3_nagbar_CFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_nagbar_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
 
 i3-nagbar/i3-nagbar: libi3.a $(i3_nagbar_OBJECTS)
 	echo "[i3-nagbar] Link i3-nagbar"
-	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3_nagbar_LIBS) $(LIBS)
+	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3_nagbar_LIBS) $(LIBS)
 
 install-i3-nagbar: i3-nagbar/i3-nagbar
 	echo "[i3-nagbar] Install"
