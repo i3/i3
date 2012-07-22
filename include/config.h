@@ -108,6 +108,11 @@ struct Config {
      * It is not planned to add any different focus models. */
     bool disable_focus_follows_mouse;
 
+    /** Remove vertical borders if they are adjacent to the screen edge.
+     * This is useful if you are reaching scrollbar on the edge of the
+     * screen. By default, this is disabled. */
+    bool hide_edge_borders;
+
     /** By default, a workspace bar is drawn at the bottom of the screen.
      * If you want to have a more fancy bar, it is recommended to replace
      * the whole bar by dzen2, for example using the i3-wsbar script which

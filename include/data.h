@@ -60,6 +60,11 @@ typedef enum { BS_NORMAL = 0, BS_NONE = 1, BS_1PIXEL = 2 } border_style_t;
  * only this specific window or the whole X11 client */
 typedef enum { DONT_KILL_WINDOW = 0, KILL_WINDOW = 1, KILL_CLIENT = 2 } kill_window_t;
 
+/** describes if the window is adjacent to the output (physical screen) edges. */
+typedef enum { ADJ_NONE = 0,
+               ADJ_LEFT_SCREEN_EDGE = 1,
+               ADJ_RIGHT_SCREEN_EDGE = 2} adjacent_t;
+
 enum {
     BIND_NONE = 0,
     BIND_SHIFT = XCB_MOD_MASK_SHIFT,        /* (1 << 0) */

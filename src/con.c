@@ -934,12 +934,32 @@ Con *con_descend_direction(Con *con, direction_t direction) {
  *
  */
 Rect con_border_style_rect(Con *con) {
+    adjacent_t adjacent_to = ADJ_NONE;
+    Rect result;
+    if (config.hide_edge_borders)
+        adjacent_to = con_adjacent_borders(con);
     switch (con_border_style(con)) {
     case BS_NORMAL:
-        return (Rect){2, 0, -(2 * 2), -2};
+        result = (Rect){2, 0, -(2 * 2), -2};
+        if (adjacent_to & ADJ_LEFT_SCREEN_EDGE) {
+            result.x -= 2;
+            result.width += 2;
+        }
+        if (adjacent_to & ADJ_RIGHT_SCREEN_EDGE) {
+            result.width += 2;
+        }
+        return result;
 
     case BS_1PIXEL:
-        return (Rect){1, 1, -2, -2};
+        result = (Rect){1, 1, -2, -2};
+        if (adjacent_to & ADJ_LEFT_SCREEN_EDGE) {
+            result.x -= 1;
+            result.width += 1;
+        }
+        if (adjacent_to & ADJ_RIGHT_SCREEN_EDGE) {
+            result.width += 1;
+        }
+        return result;
 
     case BS_NONE:
         return (Rect){0, 0, 0, 0};
@@ -947,6 +967,20 @@ Rect con_border_style_rect(Con *con) {
     default:
         assert(false);
     }
+}
+
+/*
+ * Returns adjacent borders of the window. We need this if hide_edge_borders is
+ * enabled.
+ */
+adjacent_t con_adjacent_borders(Con *con) {
+    adjacent_t result = ADJ_NONE;
+    Con *output = con_get_output(con);
+    if (con->rect.x == output->rect.x)
+        result |= ADJ_LEFT_SCREEN_EDGE;
+    if (con->rect.x + con->rect.width == output->rect.x + output->rect.width)
+        result |= ADJ_RIGHT_SCREEN_EDGE;
+    return result;
 }
 
 /*

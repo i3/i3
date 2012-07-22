@@ -200,6 +200,7 @@ new_float                       { return TOKNEWFLOAT; }
 normal                          { return TOK_NORMAL; }
 none                            { return TOK_NONE; }
 1pixel                          { return TOK_1PIXEL; }
+hide_edge_borders               { return TOK_HIDE_EDGE_BORDERS; }
 focus_follows_mouse             { return TOKFOCUSFOLLOWSMOUSE; }
 force_focus_wrapping            { return TOK_FORCE_FOCUS_WRAPPING; }
 force_xinerama                  { return TOK_FORCE_XINERAMA; }

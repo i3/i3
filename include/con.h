@@ -222,6 +222,12 @@ Con *con_descend_direction(Con *con, direction_t direction);
 Rect con_border_style_rect(Con *con);
 
 /**
+ * Returns adjacent borders of the window. We need this if hide_edge_borders is
+ * enabled.
+ */
+adjacent_t con_adjacent_borders(Con *con);
+
+/**
  * Use this function to get a container’s border style. This is important
  * because when inside a stack, the border style is always BS_NORMAL.
  * For tabbed mode, the same applies, with one exception: when the container is

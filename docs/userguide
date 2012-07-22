@@ -468,6 +468,22 @@ new_window <normal|1pixel|none>
 new_window 1pixel
 ---------------------
 
+=== Hiding vertical borders
+
+You can hide vertical borders adjacent to the screen edges using
++hide_edge_borders+. This is useful if you are using scrollbars. This option is
+disabled by default.
+
+*Syntax*:
+----------------------------
+hide_edge_borders <yes|no>
+----------------------------
+
+*Example*:
+----------------------
+hide_edge_borders yes
+----------------------
+
 === Arbitrary commands for specific windows (for_window)
 
 With the +for_window+ command, you can let i3 execute any command when it

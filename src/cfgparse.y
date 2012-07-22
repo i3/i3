@@ -735,6 +735,7 @@ void parse_file(const char *f) {
 %token                  TOK_NORMAL                  "normal"
 %token                  TOK_NONE                    "none"
 %token                  TOK_1PIXEL                  "1pixel"
+%token                  TOK_HIDE_EDGE_BORDERS       "hide_edge_borders"
 %token                  TOKFOCUSFOLLOWSMOUSE        "focus_follows_mouse"
 %token                  TOK_FORCE_FOCUS_WRAPPING    "force_focus_wrapping"
 %token                  TOK_FORCE_XINERAMA          "force_xinerama"
@@ -833,6 +834,7 @@ line:
     | workspace_layout
     | new_window
     | new_float
+    | hide_edge_borders
     | focus_follows_mouse
     | force_focus_wrapping
     | force_xinerama
@@ -1471,6 +1473,14 @@ bool:
               strcasecmp($1, "on") == 0 ||
               strcasecmp($1, "enable") == 0 ||
               strcasecmp($1, "active") == 0);
+    }
+    ;
+
+hide_edge_borders:
+    TOK_HIDE_EDGE_BORDERS bool
+    {
+        DLOG("hide edge borders = %d\n", $2);
+        config.hide_edge_borders = $2;
     }
     ;
 

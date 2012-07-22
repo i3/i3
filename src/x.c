@@ -299,6 +299,9 @@ void x_window_kill(xcb_window_t window, kill_window_t kill_window) {
 void x_draw_decoration(Con *con) {
     Con *parent = con->parent;
     bool leaf = con_is_leaf(con);
+    adjacent_t adjacent_to = ADJ_NONE;
+    if (config.hide_edge_borders)
+        adjacent_to = con_adjacent_borders(con);
     /* This code needs to run for:
      *  • leaf containers
      *  • non-leaf containers which are in a stacked/tabbed container
@@ -408,12 +411,16 @@ void x_draw_decoration(Con *con) {
          * rectangle because some childs are not freely resizable and we want
          * their background color to "shine through". */
         xcb_change_gc(conn, con->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->background });
-        xcb_rectangle_t borders[] = {
-            { 0, 0, br.x, r->height },
-            { 0, r->height + br.height + br.y, r->width, r->height },
-            { r->width + br.width + br.x, 0, r->width, r->height }
-        };
-        xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 3, borders);
+        if (!(adjacent_to & ADJ_LEFT_SCREEN_EDGE)) {
+            xcb_rectangle_t leftline = { 0, 0, br.x, r->height };
+            xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &leftline);
+        }
+        if (!(adjacent_to & ADJ_RIGHT_SCREEN_EDGE)) {
+            xcb_rectangle_t rightline = { r->width + br.width + br.x, 0, r->width, r->height };
+            xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &rightline);
+        }
+        xcb_rectangle_t bottomline = { 0, r->height + br.height + br.y, r->width, r->height };
+        xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &bottomline);
         /* 1pixel border needs an additional line at the top */
         if (p->border_style == BS_1PIXEL) {
             xcb_rectangle_t topline = { br.x, 0, con->rect.width + br.width + br.x, br.y };
