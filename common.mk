@@ -71,9 +71,6 @@ CFLAGS += $(call cflags_for_lib, xcb-aux)
 else
 CFLAGS += $(call cflags_for_lib, xcb-util)
 endif
-CFLAGS += $(call cflags_for_lib, xcb-icccm)
-CFLAGS += $(call cflags_for_lib, xcb-xinerama)
-CFLAGS += $(call cflags_for_lib, xcb-randr)
 CFLAGS += $(call cflags_for_lib, xcb)
 
 LIBS += -L $(TOPDIR) -li3
@@ -85,10 +82,15 @@ LIBS += $(call ldflags_for_lib, xcb-aux,xcb-aux)
 else
 LIBS += $(call ldflags_for_lib, xcb-util)
 endif
-LIBS += $(call ldflags_for_lib, xcb-icccm,xcb-icccm)
-LIBS += $(call ldflags_for_lib, xcb-xinerama,xcb-xinerama)
-LIBS += $(call ldflags_for_lib, xcb-randr,xcb-randr)
 LIBS += $(call ldflags_for_lib, xcb,xcb)
+
+# XCB WM stuff
+XCB_WM_CFLAGS := $(call cflags_for_lib, xcb-icccm)
+XCB_WM_CFLAGS += $(call cflags_for_lib, xcb-xinerama)
+XCB_WM_CFLAGS += $(call cflags_for_lib, xcb-randr)
+XCB_WM_LIBS   := $(call ldflags_for_lib, xcb-icccm,xcb-icccm)
+XCB_WM_LIBS   += $(call ldflags_for_lib, xcb-xinerama,xcb-xinerama)
+XCB_WM_LIBS   += $(call ldflags_for_lib, xcb-randr,xcb-randr)
 
 # Xlib
 X11_CFLAGS := $(call cflags_for_lib, x11)
