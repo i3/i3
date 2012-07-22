@@ -4,17 +4,19 @@ CLEAN_TARGETS += clean-i3-dump-log
 
 i3_dump_log_SOURCES := $(wildcard i3-dump-log/*.c)
 i3_dump_log_HEADERS := $(wildcard i3-dump-log/*.h)
+i3_dump_log_CFLAGS   =
+i3_dump_log_LIBS     =
 
 i3_dump_log_OBJECTS := $(i3_dump_log_SOURCES:.c=.o)
 
 
 i3-dump-log/%.o: i3-dump-log/%.c $(i3_dump_log_HEADERS)
 	echo "[i3-dump-log] CC $<"
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(i3_dump_log_CFLAGS) $(CFLAGS) -c -o $@ $<
 
 i3-dump-log/i3-dump-log: libi3.a $(i3_dump_log_OBJECTS)
 	echo "[i3-dump-log] Link i3-dump-log"
-	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3_dump_log_LIBS) $(LIBS)
 
 install-i3-dump-log: i3-dump-log/i3-dump-log
 	echo "[i3-dump-log] Install"
