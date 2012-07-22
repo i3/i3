@@ -77,7 +77,6 @@ CFLAGS += $(call cflags_for_lib, xcb-randr)
 CFLAGS += $(call cflags_for_lib, xcb)
 CFLAGS += $(call cflags_for_lib, x11)
 
-LIBS += -lm
 LIBS += -L $(TOPDIR) -li3
 LIBS += $(call ldflags_for_lib, xcb-event,xcb-event)
 LIBS += $(call ldflags_for_lib, xcb-keysyms,xcb-keysyms)
