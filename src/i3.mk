@@ -6,8 +6,8 @@ i3_SOURCES_GENERATED  = src/cfgparse.tab.c src/cfgparse.yy.c
 i3_SOURCES           := $(filter-out $(i3_SOURCES_GENERATED),$(wildcard src/*.c))
 i3_HEADERS_CMDPARSER := $(wildcard include/GENERATED_*.h)
 i3_HEADERS           := $(filter-out $(i3_HEADERS_CMDPARSER),$(wildcard include/*.h))
-i3_CFLAGS             = $(XCB_WM_CFLAGS) $(X11_CFLAGS) $(XCURSOR_CFLAGS) $(YAJL_CFLAGS) $(LIBEV_CFLAGS) $(PCRE_CFLAGS) $(LIBSN_CFLAGS)
-i3_LIBS               = $(XCB_WM_LIBS) $(X11_LIBS) $(XCURSOR_LIBS) $(YAJL_LIBS) $(LIBEV_LIBS) $(PCRE_LIBS) $(LIBSN_LIBS) -lm
+i3_CFLAGS             = $(XCB_KBD_CFLAGS) $(XCB_WM_CFLAGS) $(X11_CFLAGS) $(XCURSOR_CFLAGS) $(YAJL_CFLAGS) $(LIBEV_CFLAGS) $(PCRE_CFLAGS) $(LIBSN_CFLAGS)
+i3_LIBS               = $(XCB_KBD_LIBS) $(XCB_WM_LIBS) $(X11_LIBS) $(XCURSOR_LIBS) $(YAJL_LIBS) $(LIBEV_LIBS) $(PCRE_LIBS) $(LIBSN_LIBS) -lm
 
 i3_OBJECTS := $(i3_SOURCES_GENERATED:.c=.o) $(i3_SOURCES:.c=.o)
 

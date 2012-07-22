@@ -63,7 +63,6 @@ endif
 cflags_for_lib = $(shell pkg-config --silence-errors --cflags $(1) 2>/dev/null)
 ldflags_for_lib = $(shell pkg-config --exists 2>/dev/null $(1) && pkg-config --libs $(1) 2>/dev/null || echo -l$(2))
 
-CFLAGS += $(call cflags_for_lib, xcb-keysyms)
 ifeq ($(shell pkg-config --exists xcb-util 2>/dev/null || echo 1),1)
 I3_CPPFLAGS += -DXCB_COMPAT
 CFLAGS += $(call cflags_for_lib, xcb-atom)
@@ -75,7 +74,6 @@ CFLAGS += $(call cflags_for_lib, xcb)
 
 LIBS += -L $(TOPDIR) -li3
 LIBS += $(call ldflags_for_lib, xcb-event,xcb-event)
-LIBS += $(call ldflags_for_lib, xcb-keysyms,xcb-keysyms)
 ifeq ($(shell pkg-config --exists xcb-util 2>/dev/null || echo 1),1)
 LIBS += $(call ldflags_for_lib, xcb-atom,xcb-atom)
 LIBS += $(call ldflags_for_lib, xcb-aux,xcb-aux)
@@ -83,6 +81,10 @@ else
 LIBS += $(call ldflags_for_lib, xcb-util)
 endif
 LIBS += $(call ldflags_for_lib, xcb,xcb)
+
+# XCB keyboard stuff
+XCB_KBD_CFLAGS := $(call cflags_for_lib, xcb-keysyms)
+XCB_KBD_LIBS   := $(call ldflags_for_lib, xcb-keysyms,xcb-keysyms)
 
 # XCB WM stuff
 XCB_WM_CFLAGS := $(call cflags_for_lib, xcb-icccm)
