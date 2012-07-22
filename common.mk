@@ -82,10 +82,6 @@ CFLAGS += $(call cflags_for_lib, yajl)
 # YAJL_MAJOR from that file to decide which code path should be used.
 CFLAGS += -idirafter $(TOPDIR)/yajl-fallback
 CFLAGS += $(call cflags_for_lib, libev)
-CFLAGS += $(call cflags_for_lib, libpcre)
-ifeq ($(shell pkg-config --atleast-version=8.10 libpcre 2>/dev/null && echo 1),1)
-I3_CPPFLAGS += -DPCRE_HAS_UCP=1
-endif
 
 LIBS += -lm
 LIBS += -L $(TOPDIR) -li3
@@ -105,7 +101,13 @@ LIBS += $(call ldflags_for_lib, xcursor,Xcursor)
 LIBS += $(call ldflags_for_lib, x11,X11)
 LIBS += $(call ldflags_for_lib, yajl,yajl)
 LIBS += $(call ldflags_for_lib, libev,ev)
-LIBS += $(call ldflags_for_lib, libpcre,pcre)
+
+# libpcre
+PCRE_CFLAGS := $(call cflags_for_lib, libpcre)
+ifeq ($(shell pkg-config --atleast-version=8.10 libpcre 2>/dev/null && echo 1),1)
+I3_CPPFLAGS += -DPCRE_HAS_UCP=1
+endif
+PCRE_LIBS   := $(call ldflags_for_lib, libpcre,pcre)
 
 # startup-notification
 LIBSN_CFLAGS := $(call cflags_for_lib, libstartup-notification-1.0)
