@@ -41,7 +41,7 @@ dist: distclean
 	find docs -maxdepth 1 -type f ! \( -name "*.xcf" -or -name "*.svg" \) -exec cp '{}' i3-${VERSION}/docs \;
 	# Only copy source code from i3-input
 	mkdir i3-${VERSION}/i3-input
-	find i3-input -maxdepth 1 -type f \( -name "*.c" -or -name "*.h" -or -name "Makefile" \) -exec cp '{}' i3-${VERSION}/i3-input \;
+	find i3-input -maxdepth 1 -type f \( -name "*.c" -or -name "*.mk" -or -name "*.h" -or -name "Makefile" \) -exec cp '{}' i3-${VERSION}/i3-input \;
 	sed -e 's/^GIT_VERSION:=\(.*\)/GIT_VERSION:=$(shell /bin/echo '${GIT_VERSION}' | sed 's/\\/\\\\/g')/g;s/^VERSION:=\(.*\)/VERSION:=${VERSION}/g' common.mk > i3-${VERSION}/common.mk
 	# Pre-generate a manpage to allow distributors to skip this step and save some dependencies
 	$(MAKE) mans
