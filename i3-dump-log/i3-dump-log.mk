@@ -16,7 +16,7 @@ i3-dump-log/%.o: i3-dump-log/%.c $(i3_dump_log_HEADERS)
 
 i3-dump-log/i3-dump-log: libi3.a $(i3_dump_log_OBJECTS)
 	echo "[i3-dump-log] Link i3-dump-log"
-	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3_dump_log_LIBS) $(LIBS)
+	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(LIBS) $(i3_dump_log_LIBS)
 
 install-i3-dump-log: i3-dump-log/i3-dump-log
 	echo "[i3-dump-log] Install"

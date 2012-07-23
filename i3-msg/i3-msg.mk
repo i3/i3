@@ -16,7 +16,7 @@ i3-msg/%.o: i3-msg/%.c $(i3_msg_HEADERS)
 
 i3-msg/i3-msg: libi3.a $(i3_msg_OBJECTS)
 	echo "[i3-msg] Link i3-msg"
-	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3_msg_LIBS) $(LIBS)
+	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(LIBS) $(i3_msg_LIBS)
 
 install-i3-msg: i3-msg/i3-msg
 	echo "[i3-msg] Install"
