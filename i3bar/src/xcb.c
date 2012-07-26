@@ -1464,6 +1464,9 @@ void draw_bars() {
         }
 
         i3_ws *ws_walk;
+        static char *last_urgent_ws = NULL;
+        bool has_urgent = false, walks_away = true;
+
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
             DLOG("Drawing Button for WS %s at x = %d, len = %d\n", ws_walk->name, i, ws_walk->name_width);
             uint32_t fg_color = colors.inactive_ws_fg;
@@ -1478,6 +1481,8 @@ void draw_bars() {
                     fg_color = colors.focus_ws_fg;
                     bg_color = colors.focus_ws_bg;
                     border_color = colors.focus_ws_border;
+                    if (last_urgent_ws && strcmp(ws_walk->name, last_urgent_ws) == 0)
+                        walks_away = false;
                 }
             }
             if (ws_walk->urgent) {
@@ -1485,6 +1490,11 @@ void draw_bars() {
                 fg_color = colors.urgent_ws_fg;
                 bg_color = colors.urgent_ws_bg;
                 border_color = colors.urgent_ws_border;
+                has_urgent = true;
+                if (!ws_walk->focused) {
+                    FREE(last_urgent_ws);
+                    last_urgent_ws = sstrdup(ws_walk->name);
+                }
                 /* The urgent-hint should get noticed, so we unhide the bars shortly */
                 unhide_bars();
             }
@@ -1515,6 +1525,11 @@ void draw_bars() {
             draw_text((char*)ws_walk->ucs2_name, ws_walk->name_glyphs, true,
                     outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, ws_walk->name_width);
             i += 10 + ws_walk->name_width + 1;
+        }
+
+        if (!has_urgent && !mod_pressed && walks_away) {
+            FREE(last_urgent_ws);
+            hide_bars();
         }
 
         i = 0;
