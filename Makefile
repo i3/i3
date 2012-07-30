@@ -30,7 +30,7 @@ dist: distclean
 	[ ! -d i3-${VERSION} ] || rm -rf i3-${VERSION}
 	[ ! -e i3-${VERSION}.tar.bz2 ] || rm i3-${VERSION}.tar.bz2
 	mkdir i3-${VERSION}
-	cp i3-migrate-config-to-v4 generate-command-parser.pl i3-sensible-* i3.config.keycodes DEPENDS LICENSE PACKAGE-MAINTAINER RELEASE-NOTES-${VERSION} i3.config i3.xsession.desktop i3.applications.desktop pseudo-doc.doxygen Makefile i3-${VERSION}
+	cp i3-migrate-config-to-v4 generate-command-parser.pl i3-sensible-* i3.config.keycodes DEPENDS LICENSE PACKAGE-MAINTAINER RELEASE-NOTES-${VERSION} i3.config i3.xsession.desktop i3.applications.desktop pseudo-doc.doxygen common.mk Makefile i3-${VERSION}
 	cp -r src libi3 i3-msg i3-nagbar i3-config-wizard i3bar i3-dump-log yajl-fallback include man parser-specs i3-${VERSION}
 	# Only copy toplevel documentation (important stuff)
 	mkdir i3-${VERSION}/docs
@@ -42,7 +42,7 @@ dist: distclean
 	# Only copy source code from i3-input
 	mkdir i3-${VERSION}/i3-input
 	find i3-input -maxdepth 1 -type f \( -name "*.c" -or -name "*.mk" -or -name "*.h" -or -name "Makefile" \) -exec cp '{}' i3-${VERSION}/i3-input \;
-	sed -e 's/^GIT_VERSION:=\(.*\)/GIT_VERSION:=$(shell /bin/echo '${GIT_VERSION}' | sed 's/\\/\\\\/g')/g;s/^VERSION:=\(.*\)/VERSION:=${VERSION}/g' common.mk > i3-${VERSION}/common.mk
+	echo -n '${VERSION} ($(shell git log --pretty=format:%cd --date=short -n1))' > i3-${VERSION}/VERSION
 	# Pre-generate a manpage to allow distributors to skip this step and save some dependencies
 	$(MAKE) mans
 	cp man/*.1 i3-${VERSION}/man/

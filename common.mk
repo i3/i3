@@ -14,9 +14,14 @@ ifndef SYSCONFDIR
     SYSCONFDIR=$(PREFIX)/etc
   endif
 endif
-# The escaping is absurd, but we need to escape for shell, sed, make, define
-GIT_VERSION:="$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch $(shell [ -f $(TOPDIR)/.git/HEAD ] && sed 's/ref: refs\/heads\/\(.*\)/\\\\\\"\1\\\\\\"/g' $(TOPDIR)/.git/HEAD || echo 'unknown'))"
-VERSION:=$(shell git describe --tags --abbrev=0)
+
+I3_VERSION := '$(shell [ -f $(TOPDIR)/VERSION ] && cat $(TOPDIR)/VERSION)'
+ifeq ('',$(I3_VERSION))
+VERSION := $(shell git describe --tags --abbrev=0)
+I3_VERSION := '$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch \"$(shell git describe --tags --always --all | sed s:heads/::)\")'
+else
+VERSION := ${I3_VERSION}
+endif
 
 
 ## Generic flags
@@ -40,7 +45,7 @@ I3_CFLAGS += -Wall
 I3_CFLAGS += -Wunused-value
 I3_CFLAGS += -Iinclude
 
-I3_CPPFLAGS  = -DI3_VERSION=\"${GIT_VERSION}\"
+I3_CPPFLAGS  = -DI3_VERSION=\"${I3_VERSION}\"
 I3_CPPFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
 
 
