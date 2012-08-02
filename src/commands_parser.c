@@ -389,9 +389,9 @@ struct CommandResult *parse_command(const char *input) {
                 position[(copywalk - input)] = (copywalk >= walk ? '^' : ' ');
             position[len] = '\0';
 
-            printf("%s\n", errormessage);
-            printf("Your command: %s\n", input);
-            printf("              %s\n", position);
+            ELOG("%s\n", errormessage);
+            ELOG("Your command: %s\n", input);
+            ELOG("              %s\n", position);
 
             /* Format this error message as a JSON reply. */
             y(map_open);
@@ -435,7 +435,15 @@ void debuglog(char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
-    fprintf(stderr, "# ");
+    fprintf(stdout, "# ");
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+}
+
+void errorlog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     va_end(args);
 }

@@ -152,7 +152,7 @@ for my $state (@keys) {
         $cmd =~ s/[^(]+\(//;
         $cmd =~ s/\)$//;
         $cmd = ", $cmd" if length($cmd) > 0;
-        say $callfh qq|           printf("$fmt\\n"$cmd);|;
+        say $callfh qq|           fprintf(stderr, "$fmt\\n"$cmd);|;
         say $callfh '#endif';
         say $callfh "             state = $next_state;";
         say $callfh "             break;";

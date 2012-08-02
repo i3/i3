@@ -303,6 +303,7 @@ void i3_restart(bool forget_layout) {
     char *restart_filename = forget_layout ? NULL : store_restart_layout();
 
     kill_configerror_nagbar(true);
+    kill_commanderror_nagbar(true);
 
     restore_geometry();
 
