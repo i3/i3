@@ -19,6 +19,9 @@ static Barconfig current_bar;
  * store this in a separate variable because in the i3 config struct we just
  * store the i3Font. */
 static char *font_pattern;
+/* The path to the temporary script files used by i3-nagbar. We need to keep
+ * them around to delete the files in the i3-nagbar SIGCHLD handler. */
+static char *edit_script_path, *pager_script_path;
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(struct context *context);
@@ -233,6 +236,12 @@ static char *migrate_config(char *input, off_t size) {
  */
 static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
     ev_child_stop(EV_A_ watcher);
+
+    if (unlink(edit_script_path) != 0)
+        warn("Could not delete temporary i3-nagbar script %s", edit_script_path);
+    if (unlink(pager_script_path) != 0)
+        warn("Could not delete temporary i3-nagbar script %s", pager_script_path);
+
     if (!WIFEXITED(watcher->rstatus)) {
         fprintf(stderr, "ERROR: i3-nagbar did not exit normally.\n");
         return;
@@ -265,6 +274,23 @@ static void nagbar_cleanup(EV_P_ ev_cleanup *watcher, int revent) {
 #endif
 
 /*
+ * Writes the given command as a shell script to path.
+ * Returns true unless something went wrong.
+ *
+ */
+static bool write_nagbar_script(const char *path, const char *command) {
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IXUSR);
+    if (fd == -1) {
+        warn("Could not create temporary script to store the nagbar command");
+        return false;
+    }
+    write(fd, "#!/bin/sh\n", strlen("#!/bin/sh\n"));
+    write(fd, command, strlen(command));
+    close(fd);
+    return true;
+}
+
+/*
  * Starts an i3-nagbar process which alerts the user that his configuration
  * file contains one or more errors. Also offers two buttons: One to launch an
  * $EDITOR on the config file and another one to launch a $PAGER on the error
@@ -276,6 +302,18 @@ static void start_configerror_nagbar(const char *config_path) {
         return;
 
     fprintf(stderr, "Starting i3-nagbar due to configuration errors\n");
+
+    /* We need to create a custom script containing our actual command
+     * since not every terminal emulator which is contained in
+     * i3-sensible-terminal supports -e with multiple arguments (and not
+     * all of them support -e with one quoted argument either).
+     *
+     * NB: The paths need to be unique, that is, don’t assume users close
+     * their nagbars at any point in time (and they still need to work).
+     * */
+    edit_script_path = get_process_filename("nagbar-cfgerror-edit");
+    pager_script_path = get_process_filename("nagbar-cfgerror-pager");
+
     configerror_pid = fork();
     if (configerror_pid == -1) {
         warn("Could not fork()");
@@ -284,10 +322,17 @@ static void start_configerror_nagbar(const char *config_path) {
 
     /* child */
     if (configerror_pid == 0) {
+        char *edit_command, *pager_command;
+        sasprintf(&edit_command, "i3-sensible-editor \"%s\" && i3-msg reload\n", config_path);
+        sasprintf(&pager_command, "i3-sensible-pager \"%s\"\n", errorfilename);
+        if (!write_nagbar_script(edit_script_path, edit_command) ||
+            !write_nagbar_script(pager_script_path, pager_command))
+            return;
+
         char *editaction,
              *pageraction;
-        sasprintf(&editaction, "i3-sensible-terminal -e sh -c \"i3-sensible-editor \\\"%s\\\" && i3-msg reload\"", config_path);
-        sasprintf(&pageraction, "i3-sensible-terminal -e i3-sensible-pager \"%s\"", errorfilename);
+        sasprintf(&editaction, "i3-sensible-terminal -e \"%s\"", edit_script_path);
+        sasprintf(&pageraction, "i3-sensible-terminal -e \"%s\"", pager_script_path);
         char *argv[] = {
             NULL, /* will be replaced by the executable path */
             "-t",
