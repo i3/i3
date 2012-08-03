@@ -296,7 +296,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
             }
         }
         else {
-            DLOG("not focusing because we're not killing anybody");
+            DLOG("not focusing because we're not killing anybody\n");
         }
     } else {
         DLOG("not focusing, was not mapped\n");
