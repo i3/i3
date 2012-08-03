@@ -42,7 +42,7 @@ dist: distclean
 	# Only copy source code from i3-input
 	mkdir i3-${VERSION}/i3-input
 	find i3-input -maxdepth 1 -type f \( -name "*.c" -or -name "*.mk" -or -name "*.h" -or -name "Makefile" \) -exec cp '{}' i3-${VERSION}/i3-input \;
-	echo -n '${VERSION} ($(shell git log --pretty=format:%cd --date=short -n1))' > i3-${VERSION}/VERSION
+	echo -n ${I3_VERSION} > i3-${VERSION}/VERSION
 	# Pre-generate a manpage to allow distributors to skip this step and save some dependencies
 	$(MAKE) mans
 	cp man/*.1 i3-${VERSION}/man/
