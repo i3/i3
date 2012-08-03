@@ -46,6 +46,7 @@ my @displays = ();
 my %options = (
     valgrind => 0,
     strace => 0,
+    xtrace => 0,
     coverage => 0,
     restart => 0,
 );
@@ -54,6 +55,7 @@ my $result = GetOptions(
     "coverage-testing" => \$options{coverage},
     "valgrind" => \$options{valgrind},
     "strace" => \$options{strace},
+    "xtrace" => \$options{xtrace},
     "display=s" => \@displays,
     "parallel=i" => \$parallel,
     "help|?" => \$help,
@@ -341,6 +343,11 @@ C<latest/valgrind-for-$test.log>.
 
 Runs i3 under strace to trace system calls. The output will be available in
 C<latest/strace-for-$test.log>.
+
+=item B<--xtrace>
+
+Runs i3 under xtrace to trace X11 requests/replies. The output will be
+available in C<latest/xtrace-for-$test.log>.
 
 =item B<--coverage-testing>
 

@@ -547,6 +547,7 @@ sub launch_with_config {
         testname => $ENV{TESTNAME},
         valgrind => $ENV{VALGRIND},
         strace => $ENV{STRACE},
+        xtrace => $ENV{XTRACE},
         restart => $ENV{RESTART},
         cv => $cv,
         dont_create_temp_dir => $args{dont_create_temp_dir},
