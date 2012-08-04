@@ -1028,9 +1028,14 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
     TAILQ_FOREACH(current, &owindows, owindows) {
         Output *current_output = get_output_containing(current->con->rect.x,
                                                        current->con->rect.y);
+        if (!current_output) {
+            ELOG("Cannot get current output. This is a bug in i3.\n");
+            ysuccess(false);
+            return;
+        }
         Output *output = get_output_from_string(current_output, name);
         if (!output) {
-            LOG("No such output\n");
+            ELOG("Could not get output from string \"%s\"\n", name);
             ysuccess(false);
             return;
         }
