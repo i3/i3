@@ -59,7 +59,7 @@ Instead, see the i3 documentation, especially the User’s Guide.
 
 == SEE ALSO
 
-+i3status(1)+ or +conky(1)+ for programs generating a statusline.
++i3status(1)+, +j4status(1)+ or +conky(1)+ for programs generating a statusline.
 
 +dzen2(1)+ or +xmobar(1)+ for similar programs to i3bar.
 
