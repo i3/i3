@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
-Michael Stapelberg <michael+i3@stapelberg.de>
-April 2012
+Michael Stapelberg <michael@i3wm.org>
+August 2012
 
 This document contains all the information you need to configure and use the i3
 window manager. If it does not, please contact us on IRC (preferred) or post your
@@ -68,9 +68,11 @@ To split a window vertically, press +mod+v+. To split it horizontally, press
 
 A split container can have one of the following layouts:
 
-default::
+splith/splitv::
 Windows are sized so that every window gets an equal amount of space in the
-container.
+container. splith distributes the windows horizontally (windows are right next
+to each other), splitv distributes them vertically (windows are on top of each
+other).
 stacking::
 Only the focused window in the container is displayed. You get a list of
 windows at the top of the container.
@@ -78,8 +80,8 @@ tabbed::
 The same principle as +stacking+, but the list of windows at the top is only
 a single line which is vertically split.
 
-To switch modes, press +mod+e+ for default, +mod+s+ for stacking and
-+mod+w+ for tabbed.
+To switch modes, press +mod+e+ for splith/splitv (it toggles), +mod+s+ for
+stacking and +mod+w+ for tabbed.
 
 image:modes.png[Container modes]
 
@@ -196,20 +198,21 @@ image::tree-shot4.png["shot4",title="Two terminals on standard workspace"]
 
 It is only natural to use so-called +Split Containers+ in order to build a
 layout when using a tree as data structure. In i3, every +Container+ has an
-orientation (horizontal, vertical or unspecified). So, in our example with the
-workspace, the default orientation of the workspace +Container+ is horizontal
-(most monitors are widescreen nowadays). If you change the orientation to
-vertical (+mod+v+ in the default config) and *then* open two terminals, i3 will
-configure your windows like this:
+orientation (horizontal, vertical or unspecified) and the orientation depends
+on the layout the container is in (vertical for splitv and stacking, horizontal
+for splith and tabbed). So, in our example with the workspace, the default
+layout of the workspace +Container+ is splith (most monitors are widescreen
+nowadays). If you change the layout to splitv (+mod+l+ in the default config)
+and *then* open two terminals, i3 will configure your windows like this:
 
 image::tree-shot2.png["shot2",title="Vertical Workspace Orientation"]
 
-An interesting new feature of the tree branch is the ability to split anything:
-Let’s assume you have two terminals on a workspace (with horizontal
-orientation), focus is on the right terminal. Now you want to open another
-terminal window below the current one. If you would just open a new terminal
-window, it would show up to the right due to the horizontal workspace
-orientation. Instead, press +mod+v+ to create a +Vertical Split Container+ (to
+An interesting new feature of i3 since version 4 is the ability to split anything:
+Let’s assume you have two terminals on a workspace (with splith layout, that is
+horizontal orientation), focus is on the right terminal. Now you want to open
+another terminal window below the current one. If you would just open a new
+terminal window, it would show up to the right due to the splith layout.
+Instead, press +mod+v+ to split the container with the splitv layout (to
 open a +Horizontal Split Container+, use +mod+h+). Now you can open a new
 terminal and it will open below the current one:
 
@@ -1190,13 +1193,15 @@ cursor for 60 seconds.
 === Splitting containers
 
 The split command makes the current window a split container. Split containers
-can contain multiple windows. Every split container has an orientation, it is
-either split horizontally (a new window gets placed to the right of the current
-one) or vertically (a new window gets placed below the current one).
+can contain multiple windows. Depending on the layout of the split container,
+new windows get placed to the right of the current one (splith) or new windows
+get placed below the current one (splitv).
 
 If you apply this command to a split container with the same orientation,
 nothing will happen. If you use a different orientation, the split container’s
-orientation will be changed (if it does not have more than one window).
+orientation will be changed (if it does not have more than one window). Use
++layout toggle split+ to change the layout of any split container from splitv
+to splith or vice-versa.
 
 *Syntax*:
 ---------------------------
@@ -1211,18 +1216,31 @@ bindsym mod+h split horizontal
 
 === Manipulating layout
 
-Use +layout default+, +layout stacking+ or +layout tabbed+ to change the
-current container layout to default, stacking or tabbed layout, respectively.
+Use +layout toggle split+, +layout stacking+ or +layout tabbed+ to change the
+current container layout to splith/splitv, stacking or tabbed layout,
+respectively.
 
 To make the current window (!) fullscreen, use +fullscreen+, to make
 it floating (or tiling again) use +floating enable+ respectively +floating disable+
 (or +floating toggle+):
 
+*Syntax*:
+--------------
+layout <tabbed|stacking>
+layout toggle [split|all]
+--------------
+
 *Examples*:
 --------------
 bindsym mod+s layout stacking
-bindsym mod+l layout default
+bindsym mod+l layout toggle split
 bindsym mod+w layout tabbed
+
+# Toggle between stacking/tabbed/split:
+bindsym mod+x layout toggle
+
+# Toggle between stacking/tabbed/splith/splitv:
+bindsym mod+x layout toggle all
 
 # Toggle fullscreen
 bindsym mod+f fullscreen

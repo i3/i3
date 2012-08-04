@@ -40,7 +40,7 @@ void floating_enable(Con *con, bool automatic) {
     }
 
     /* 1: If the container is a workspace container, we need to create a new
-     * split-container with the same orientation and make that one floating. We
+     * split-container with the same layout and make that one floating. We
      * cannot touch the workspace container itself because floating containers
      * are children of the workspace. */
     if (con->type == CT_WORKSPACE) {
@@ -52,7 +52,7 @@ void floating_enable(Con *con, bool automatic) {
         /* TODO: refactor this with src/con.c:con_set_layout */
         Con *new = con_new(NULL, NULL);
         new->parent = con;
-        new->orientation = con->orientation;
+        new->layout = con->layout;
 
         /* since the new container will be set into floating mode directly
          * afterwards, we need to copy the workspace rect. */
@@ -97,8 +97,9 @@ void floating_enable(Con *con, bool automatic) {
      * otherwise. */
     Con *ws = con_get_workspace(con);
     nc->parent = ws;
-    nc->orientation = NO_ORIENTATION;
+    nc->split = true;
     nc->type = CT_FLOATING_CON;
+    nc->layout = L_SPLITH;
     /* We insert nc already, even though its rect is not yet calculated. This
      * is necessary because otherwise the workspace might be empty (and get
      * closed in tree_close()) even though it’s not. */

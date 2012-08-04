@@ -39,6 +39,7 @@ static Con *_create___i3(void) {
     content->type = CT_CON;
     FREE(content->name);
     content->name = sstrdup("content");
+    content->layout = L_SPLITH;
 
     x_set_name(content, "[i3 con] content __i3");
     con_attach(content, __i3, false);
@@ -48,6 +49,7 @@ static Con *_create___i3(void) {
     ws->type = CT_WORKSPACE;
     ws->num = -1;
     ws->name = sstrdup("__i3_scratch");
+    ws->layout = L_SPLITH;
     con_attach(ws, content, false);
     x_set_name(ws, "[i3 con] workspace __i3_scratch");
     ws->fullscreen_mode = CF_OUTPUT;
@@ -112,6 +114,7 @@ void tree_init(xcb_get_geometry_reply_t *geometry) {
     FREE(croot->name);
     croot->name = "root";
     croot->type = CT_ROOT;
+    croot->layout = L_SPLITH;
     croot->rect = (Rect){
         geometry->x,
         geometry->y,
@@ -151,6 +154,7 @@ Con *tree_open_con(Con *con, i3Window *window) {
 
     /* 3. create the container and attach it to its parent */
     Con *new = con_new(con, window);
+    new->layout = L_SPLITH;
 
     /* 4: re-calculate child->percent for each child */
     con_fix_percent(con);
@@ -337,7 +341,7 @@ void tree_split(Con *con, orientation_t orientation) {
     /* for a workspace, we just need to change orientation */
     if (con->type == CT_WORKSPACE) {
         DLOG("Workspace, simply changing orientation to %d\n", orientation);
-        con->orientation = orientation;
+        con->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
         return;
     }
 
@@ -351,8 +355,9 @@ void tree_split(Con *con, orientation_t orientation) {
      * child (its split functionality is unused so far), we just change the
      * orientation (more intuitive than splitting again) */
     if (con_num_children(parent) == 1 &&
-        parent->layout == L_DEFAULT) {
-        parent->orientation = orientation;
+        (parent->layout == L_SPLITH ||
+         parent->layout == L_SPLITV)) {
+        parent->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
         DLOG("Just changing orientation of existing container\n");
         return;
     }
@@ -364,7 +369,8 @@ void tree_split(Con *con, orientation_t orientation) {
     TAILQ_REPLACE(&(parent->nodes_head), con, new, nodes);
     TAILQ_REPLACE(&(parent->focus_head), con, new, focused);
     new->parent = parent;
-    new->orientation = orientation;
+    new->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
+    new->split = true;
 
     /* 3: swap 'percent' (resize factor) */
     new->percent = con->percent;
@@ -594,7 +600,9 @@ void tree_flatten(Con *con) {
     DLOG("Checking if I can flatten con = %p / %s\n", con, con->name);
 
     /* We only consider normal containers without windows */
-    if (con->type != CT_CON || con->window != NULL)
+    if (con->type != CT_CON ||
+        parent->layout == L_OUTPUT || /* con == "content" */
+        con->window != NULL)
         goto recurse;
 
     /* Ensure it got only one child */
@@ -602,12 +610,14 @@ void tree_flatten(Con *con) {
     if (child == NULL || TAILQ_NEXT(child, nodes) != NULL)
         goto recurse;
 
+    DLOG("child = %p, con = %p, parent = %p\n", child, con, parent);
+
     /* The child must have a different orientation than the con but the same as
      * the con’s parent to be redundant */
-    if (con->orientation == NO_ORIENTATION ||
-        child->orientation == NO_ORIENTATION ||
-        con->orientation == child->orientation ||
-        child->orientation != parent->orientation)
+    if (con->split ||
+        child->split ||
+        con_orientation(con) == con_orientation(child) ||
+        con_orientation(child) != con_orientation(parent))
         goto recurse;
 
     DLOG("Alright, I have to flatten this situation now. Stay calm.\n");

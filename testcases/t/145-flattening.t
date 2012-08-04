@@ -22,7 +22,7 @@ cmd 'move up';
 cmd 'move right';
 my $ws = get_ws($tmp);
 
-is($ws->{orientation}, 'horizontal', 'workspace orientation is horizontal');
+is($ws->{layout}, 'splith', 'workspace layout is splith');
 is(@{$ws->{nodes}}, 3, 'all three windows on workspace level');
 
 done_testing;

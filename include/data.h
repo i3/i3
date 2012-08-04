@@ -423,6 +423,8 @@ struct Assignment {
  */
 struct Con {
     bool mapped;
+    /** whether this is a split container or not */
+    bool split;
     enum {
         CT_ROOT = 0,
         CT_OUTPUT = 1,
@@ -431,7 +433,6 @@ struct Con {
         CT_WORKSPACE = 4,
         CT_DOCKAREA = 5
     } type;
-    orientation_t orientation;
     struct Con *parent;
 
     struct Rect rect;
@@ -496,7 +497,15 @@ struct Con {
     TAILQ_HEAD(swallow_head, Match) swallow_head;
 
     enum { CF_NONE = 0, CF_OUTPUT = 1, CF_GLOBAL = 2 } fullscreen_mode;
-    enum { L_DEFAULT = 0, L_STACKED = 1, L_TABBED = 2, L_DOCKAREA = 3, L_OUTPUT = 4 } layout;
+    enum {
+        L_DEFAULT = 0,
+        L_STACKED = 1,
+        L_TABBED = 2,
+        L_DOCKAREA = 3,
+        L_OUTPUT = 4,
+        L_SPLITV = 5,
+        L_SPLITH = 6
+    } layout, last_split_layout;
     border_style_t border_style;
     /** floating? (= not in tiling layout) This cannot be simply a bool
      * because we want to keep track of whether the status was set by the

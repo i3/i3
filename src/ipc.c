@@ -161,17 +161,14 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("type");
     y(integer, con->type);
 
+    /* provided for backwards compatibility only. */
     ystr("orientation");
-    switch (con->orientation) {
-        case NO_ORIENTATION:
-            ystr("none");
-            break;
-        case HORIZ:
+    if (!con->split)
+        ystr("none");
+    else {
+        if (con_orientation(con) == HORIZ)
             ystr("horizontal");
-            break;
-        case VERT:
-            ystr("vertical");
-            break;
+        else ystr("vertical");
     }
 
     ystr("scratchpad_state");
@@ -203,10 +200,20 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("focused");
     y(bool, (con == focused));
 
+    ystr("split");
+    y(bool, con->split);
+
     ystr("layout");
     switch (con->layout) {
         case L_DEFAULT:
-            ystr("default");
+            DLOG("About to dump layout=default, this is a bug in the code.\n");
+            assert(false);
+            break;
+        case L_SPLITV:
+            ystr("splitv");
+            break;
+        case L_SPLITH:
+            ystr("splith");
             break;
         case L_STACKED:
             ystr("stacked");
@@ -219,6 +226,16 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
             break;
         case L_OUTPUT:
             ystr("output");
+            break;
+    }
+
+    ystr("last_split_layout");
+    switch (con->layout) {
+        case L_SPLITV:
+            ystr("splitv");
+            break;
+        default:
+            ystr("splith");
             break;
     }
 

@@ -530,7 +530,7 @@ static bool cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
         (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0 ? HORIZ : VERT);
 
     do {
-        if (current->parent->orientation != search_orientation) {
+        if (con_orientation(current->parent) != search_orientation) {
             current = current->parent;
             continue;
         }
@@ -541,7 +541,7 @@ static bool cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
         percentage = 1.0 / children;
         LOG("default percentage = %f\n", percentage);
 
-        orientation_t orientation = current->parent->orientation;
+        orientation_t orientation = con_orientation(current->parent);
 
         if ((orientation == HORIZ &&
              (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0)) ||
@@ -612,7 +612,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, i
 
     while (current->type != CT_WORKSPACE &&
            current->type != CT_FLOATING_CON &&
-           current->parent->orientation != search_orientation)
+           con_orientation(current->parent) != search_orientation)
         current = current->parent;
 
     /* get the default percentage */
@@ -621,7 +621,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, i
     double percentage = 1.0 / children;
     LOG("default percentage = %f\n", percentage);
 
-    orientation_t orientation = current->parent->orientation;
+    orientation_t orientation = con_orientation(current->parent);
 
     if ((orientation == HORIZ &&
          strcmp(direction, "height") == 0) ||
@@ -1397,17 +1397,27 @@ void cmd_move_direction(I3_CMD, char *direction, char *move_px) {
 }
 
 /*
- * Implementation of 'layout default|stacked|stacking|tabbed'.
+ * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith'.
  *
  */
 void cmd_layout(I3_CMD, char *layout_str) {
     if (strcmp(layout_str, "stacking") == 0)
         layout_str = "stacked";
-    DLOG("changing layout to %s\n", layout_str);
     owindow *current;
-    int layout = (strcmp(layout_str, "default") == 0 ? L_DEFAULT :
-                  (strcmp(layout_str, "stacked") == 0 ? L_STACKED :
-                   L_TABBED));
+    int layout;
+    /* default is a special case which will be handled in con_set_layout(). */
+    if (strcmp(layout_str, "default") == 0)
+        layout = L_DEFAULT;
+    else if (strcmp(layout_str, "stacked") == 0)
+        layout = L_STACKED;
+    else if (strcmp(layout_str, "tabbed") == 0)
+        layout = L_TABBED;
+    else if (strcmp(layout_str, "splitv") == 0)
+        layout = L_SPLITV;
+    else if (strcmp(layout_str, "splith") == 0)
+        layout = L_SPLITH;
+
+    DLOG("changing layout to %s (%d)\n", layout_str, layout);
 
     /* check if the match is empty, not if the result is empty */
     if (match_is_empty(current_match))
@@ -1416,6 +1426,33 @@ void cmd_layout(I3_CMD, char *layout_str) {
         TAILQ_FOREACH(current, &owindows, owindows) {
             DLOG("matching: %p / %s\n", current->con, current->con->name);
             con_set_layout(current->con, layout);
+        }
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
+ * Implementation of 'layout toggle [all|split]'.
+ *
+ */
+void cmd_layout_toggle(I3_CMD, char *toggle_mode) {
+    owindow *current;
+
+    if (toggle_mode == NULL)
+        toggle_mode = "default";
+
+    DLOG("toggling layout (mode = %s)\n", toggle_mode);
+
+    /* check if the match is empty, not if the result is empty */
+    if (match_is_empty(current_match))
+        con_toggle_layout(focused->parent, toggle_mode);
+    else {
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            DLOG("matching: %p / %s\n", current->con, current->con->name);
+            con_toggle_layout(current->con, toggle_mode);
         }
     }
 
@@ -1472,6 +1509,7 @@ void cmd_restart(I3_CMD) {
 void cmd_open(I3_CMD) {
     LOG("opening new container\n");
     Con *con = tree_open_con(NULL, NULL);
+    con->layout = L_SPLITH;
     con_focus(con);
 
     y(map_open);

@@ -19,10 +19,10 @@ sub verify_split_layout {
     $tmp = fresh_workspace;
 
     $ws = get_ws($tmp);
-    is($ws->{orientation}, 'horizontal', 'orientation horizontal by default');
+    is($ws->{layout}, 'splith', 'orientation horizontal by default');
     cmd 'split v';
     $ws = get_ws($tmp);
-    is($ws->{orientation}, 'vertical', 'split v changes workspace orientation');
+    is($ws->{layout}, 'splitv', 'split v changes workspace orientation');
 
     cmd 'open';
     cmd 'open';
@@ -47,7 +47,7 @@ sub verify_split_layout {
 
     is(@{$first->{nodes}}, 0, 'first container has no children');
     isnt($second->{name}, $old_name, 'second container was replaced');
-    is($second->{orientation}, 'horizontal', 'orientation is horizontal');
+    is($second->{layout}, 'splith', 'orientation is horizontal');
     is(@{$second->{nodes}}, 2, 'second container has 2 children');
     is($second->{nodes}->[0]->{name}, $old_name, 'found old second container');
 }
@@ -66,10 +66,10 @@ verify_split_layout(split_command => 'split horizontal');
 $tmp = fresh_workspace;
 
 $ws = get_ws($tmp);
-is($ws->{orientation}, 'horizontal', 'orientation horizontal by default');
+is($ws->{layout}, 'splith', 'orientation horizontal by default');
 cmd 'split v';
 $ws = get_ws($tmp);
-is($ws->{orientation}, 'vertical', 'split v changes workspace orientation');
+is($ws->{layout}, 'splitv', 'split v changes workspace orientation');
 
 cmd 'open';
 my @content = @{get_ws_content($tmp)};

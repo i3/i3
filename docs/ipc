@@ -1,7 +1,7 @@
 IPC interface (interprocess communication)
 ==========================================
 Michael Stapelberg <michael@i3wm.org>
-July 2012
+August 2012
 
 This document describes how to interface with i3 from a separate process. This
 is useful for example to remote-control i3 (to write test cases for example) or
@@ -270,12 +270,15 @@ border (string)::
 	Can be either "normal", "none" or "1pixel", dependending on the
 	container’s border style.
 layout (string)::
-	Can be either "default", "stacked", "tabbed", "dockarea" or "output".
+	Can be either "splith", "splitv", "stacked", "tabbed", "dockarea" or
+	"output".
 	Other values might be possible in the future, should we add new
 	layouts.
 orientation (string)::
 	Can be either "none" (for non-split containers), "horizontal" or
 	"vertical".
+	THIS FIELD IS OBSOLETE. It is still present, but your code should not
+	use it. Instead, rely on the layout field.
 percent (float)::
 	The percentage which this container takes in its parent. A value of
 	+null+ means that the percent property does not make sense for this

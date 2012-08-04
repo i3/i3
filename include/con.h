@@ -249,6 +249,15 @@ void con_set_border_style(Con *con, int border_style);
 void con_set_layout(Con *con, int layout);
 
 /**
+ * This function toggles the layout of a given container. toggle_mode can be
+ * either 'default' (toggle only between stacked/tabbed/last_split_layout),
+ * 'split' (toggle only between splitv/splith) or 'all' (toggle between all
+ * layouts).
+ *
+ */
+void con_toggle_layout(Con *con, const char *toggle_mode);
+
+/**
  * Determines the minimum size of the given con by looking at its children (for
  * split/stacked/tabbed cons). Will be called when resizing floating cons
  *

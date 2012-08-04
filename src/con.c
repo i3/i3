@@ -217,8 +217,8 @@ bool con_accepts_window(Con *con) {
     if (con->type == CT_WORKSPACE)
         return false;
 
-    if (con->orientation != NO_ORIENTATION) {
-        DLOG("container %p does not accepts windows, orientation != NO_ORIENTATION\n", con);
+    if (con->split) {
+        DLOG("container %p does not accept windows, it is a split container.\n", con);
         return false;
     }
 
@@ -265,8 +265,11 @@ Con *con_parent_with_orientation(Con *con, orientation_t orientation) {
     while (con_orientation(parent) != orientation) {
         DLOG("Need to go one level further up\n");
         parent = parent->parent;
-        /* Abort when we reach a floating con */
-        if (parent && parent->type == CT_FLOATING_CON)
+        /* Abort when we reach a floating con, or an output con */
+        if (parent &&
+            (parent->type == CT_FLOATING_CON ||
+             parent->type == CT_OUTPUT ||
+             (parent->parent && parent->parent->type == CT_OUTPUT)))
             parent = NULL;
         if (parent == NULL)
             break;
@@ -697,14 +700,32 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
  *
  */
 int con_orientation(Con *con) {
-    /* stacking containers behave like they are in vertical orientation */
-    if (con->layout == L_STACKED)
-        return VERT;
+    switch (con->layout) {
+        case L_SPLITV:
+        /* stacking containers behave like they are in vertical orientation */
+        case L_STACKED:
+            return VERT;
 
-    if (con->layout == L_TABBED)
-        return HORIZ;
+        case L_SPLITH:
+        /* tabbed containers behave like they are in vertical orientation */
+        case L_TABBED:
+            return HORIZ;
 
-    return con->orientation;
+        case L_DEFAULT:
+            DLOG("Someone called con_orientation() on a con with L_DEFAULT, this is a bug in the code.\n");
+            assert(false);
+            return HORIZ;
+
+        case L_DOCKAREA:
+        case L_OUTPUT:
+            DLOG("con_orientation() called on dockarea/output (%d) container %p\n", con->layout, con);
+            assert(false);
+            return HORIZ;
+
+        default:
+            DLOG("con_orientation() ran into default\n");
+            assert(false);
+    }
 }
 
 /*
@@ -1017,23 +1038,16 @@ void con_set_layout(Con *con, int layout) {
         Con *new = con_new(NULL, NULL);
         new->parent = con;
 
-        /* 2: set the requested layout on the split con */
+        /* 2: Set the requested layout on the split container and mark it as
+         * split. */
         new->layout = layout;
-
-        /* 3: While the layout is irrelevant in stacked/tabbed mode, it needs
-         * to be set. Otherwise, this con will not be interpreted as a split
-         * container. */
-        if (config.default_orientation == NO_ORIENTATION) {
-            new->orientation = (con->rect.height > con->rect.width) ? VERT : HORIZ;
-        } else {
-            new->orientation = config.default_orientation;
-        }
+        new->split = true;
 
         Con *old_focused = TAILQ_FIRST(&(con->focus_head));
         if (old_focused == TAILQ_END(&(con->focus_head)))
             old_focused = NULL;
 
-        /* 4: move the existing cons of this workspace below the new con */
+        /* 3: move the existing cons of this workspace below the new con */
         DLOG("Moving cons\n");
         Con *child;
         while (!TAILQ_EMPTY(&(con->nodes_head))) {
@@ -1054,7 +1068,66 @@ void con_set_layout(Con *con, int layout) {
         return;
     }
 
-    con->layout = layout;
+    if (layout == L_DEFAULT) {
+        /* Special case: the layout formerly known as "default" (in combination
+         * with an orientation). Since we switched to splith/splitv layouts,
+         * using the "default" layout (which "only" should happen when using
+         * legacy configs) is using the last split layout (either splith or
+         * splitv) in order to still do the same thing.
+         *
+         * Starting from v4.6 though, we will nag users about using "layout
+         * default", and in v4.9 we will remove it entirely (with an
+         * appropriate i3-migrate-config mechanism). */
+        con->layout = con->last_split_layout;
+    } else {
+        /* We fill in last_split_layout when switching to a different layout
+         * since there are many places in the code that don’t use
+         * con_set_layout(). */
+        if (con->layout == L_SPLITH || con->layout == L_SPLITV)
+            con->last_split_layout = con->layout;
+        con->layout = layout;
+    }
+}
+
+/*
+ * This function toggles the layout of a given container. toggle_mode can be
+ * either 'default' (toggle only between stacked/tabbed/last_split_layout),
+ * 'split' (toggle only between splitv/splith) or 'all' (toggle between all
+ * layouts).
+ *
+ */
+void con_toggle_layout(Con *con, const char *toggle_mode) {
+    if (strcmp(toggle_mode, "split") == 0) {
+        /* Toggle between splits. When the current layout is not a split
+         * layout, we just switch back to last_split_layout. Otherwise, we
+         * change to the opposite split layout. */
+        if (con->layout != L_SPLITH && con->layout != L_SPLITV)
+            con_set_layout(con, con->last_split_layout);
+        else {
+            if (con->layout == L_SPLITH)
+                con_set_layout(con, L_SPLITV);
+            else con_set_layout(con, L_SPLITH);
+        }
+    } else {
+        if (con->layout == L_STACKED)
+            con_set_layout(con, L_TABBED);
+        else if (con->layout == L_TABBED) {
+            if (strcmp(toggle_mode, "all") == 0)
+                con_set_layout(con, L_SPLITH);
+            else con_set_layout(con, con->last_split_layout);
+        } else if (con->layout == L_SPLITH || con->layout == L_SPLITV) {
+            if (strcmp(toggle_mode, "all") == 0) {
+                /* When toggling through all modes, we toggle between
+                 * splith/splitv, whereas normally we just directly jump to
+                 * stacked. */
+                if (con->layout == L_SPLITH)
+                    con_set_layout(con, L_SPLITV);
+                else con_set_layout(con, L_STACKED);
+            } else {
+                con_set_layout(con, L_STACKED);
+            }
+        }
+    }
 }
 
 /*
@@ -1131,12 +1204,12 @@ Rect con_minimum_size(Con *con) {
     /* For horizontal/vertical split containers we sum up the width (h-split)
      * or height (v-split) and use the maximum of the height (h-split) or width
      * (v-split) as minimum size. */
-    if (con->orientation == HORIZ || con->orientation == VERT) {
+    if (con->split) {
         uint32_t width = 0, height = 0;
         Con *child;
         TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
             Rect min = con_minimum_size(child);
-            if (con->orientation == HORIZ) {
+            if (con->layout == L_SPLITH) {
                 width += min.width;
                 height = max(height, min.height);
             } else {
@@ -1148,8 +1221,8 @@ Rect con_minimum_size(Con *con) {
         return (Rect){ 0, 0, width, height };
     }
 
-    ELOG("Unhandled case, type = %d, layout = %d, orientation = %d\n",
-         con->type, con->layout, con->orientation);
+    ELOG("Unhandled case, type = %d, layout = %d, split = %d\n",
+         con->type, con->layout, con->split);
     assert(false);
 }
 

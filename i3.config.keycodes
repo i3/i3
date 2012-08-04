@@ -58,10 +58,10 @@ bindcode $mod+55 split v
 # enter fullscreen mode for the focused container
 bindcode $mod+41 fullscreen
 
-# change container layout (stacked, tabbed, default)
+# change container layout (stacked, tabbed, toggle split)
 bindcode $mod+39 layout stacking
 bindcode $mod+25 layout tabbed
-bindcode $mod+26 layout default
+bindcode $mod+26 layout toggle split
 
 # toggle tiling / floating
 bindcode $mod+Shift+65 floating toggle

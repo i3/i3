@@ -256,7 +256,6 @@ void output_init_con(Output *output) {
     Con *topdock = con_new(NULL, NULL);
     topdock->type = CT_DOCKAREA;
     topdock->layout = L_DOCKAREA;
-    topdock->orientation = VERT;
     /* this container swallows dock clients */
     Match *match = scalloc(sizeof(Match));
     match_init(match);
@@ -278,6 +277,7 @@ void output_init_con(Output *output) {
     DLOG("adding main content container\n");
     Con *content = con_new(NULL, NULL);
     content->type = CT_CON;
+    content->layout = L_SPLITH;
     FREE(content->name);
     content->name = sstrdup("content");
 
@@ -290,7 +290,6 @@ void output_init_con(Output *output) {
     Con *bottomdock = con_new(NULL, NULL);
     bottomdock->type = CT_DOCKAREA;
     bottomdock->layout = L_DOCKAREA;
-    bottomdock->orientation = VERT;
     /* this container swallows dock clients */
     match = scalloc(sizeof(Match));
     match_init(match);
@@ -447,11 +446,11 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
             if (con_num_children(workspace) > 1)
                 continue;
 
-            workspace->orientation = (output->rect.height > output->rect.width) ? VERT : HORIZ;
-            DLOG("Setting workspace [%d,%s]'s orientation to %d.\n", workspace->num, workspace->name, workspace->orientation);
+            workspace->layout = (output->rect.height > output->rect.width) ? L_SPLITV : L_SPLITH;
+            DLOG("Setting workspace [%d,%s]'s layout to %d.\n", workspace->num, workspace->name, workspace->layout);
             if ((child = TAILQ_FIRST(&(workspace->nodes_head)))) {
-                child->orientation = workspace->orientation;
-                DLOG("Setting child [%d,%s]'s orientation to %d.\n", child->num, child->name, child->orientation);
+                child->layout = workspace->layout;
+                DLOG("Setting child [%d,%s]'s layout to %d.\n", child->num, child->name, child->layout);
             }
         }
     }
