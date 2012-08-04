@@ -695,7 +695,7 @@ void randr_query_outputs(void) {
                     DLOG("Fixing the coordinates of floating containers\n");
                     Con *floating_con;
                     TAILQ_FOREACH(floating_con, &(current->floating_head), floating_windows)
-                        floating_fix_coordinates(floating_con, &(old_content->rect), &(first_content->rect));
+                        floating_fix_coordinates(floating_con, &(output->con->rect), &(first->con->rect));
                     DLOG("Done, next\n");
                 }
                 DLOG("re-attached all workspaces\n");
