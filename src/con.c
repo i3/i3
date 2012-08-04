@@ -1040,7 +1040,7 @@ void con_set_layout(Con *con, int layout) {
 
         /* 2: Set the requested layout on the split container and mark it as
          * split. */
-        new->layout = layout;
+        con_set_layout(new, layout);
         new->split = true;
 
         Con *old_focused = TAILQ_FIRST(&(con->focus_head));
@@ -1079,6 +1079,9 @@ void con_set_layout(Con *con, int layout) {
          * default", and in v4.9 we will remove it entirely (with an
          * appropriate i3-migrate-config mechanism). */
         con->layout = con->last_split_layout;
+        /* In case last_split_layout was not initialized… */
+        if (con->layout == L_DEFAULT)
+            con->layout = L_SPLITH;
     } else {
         /* We fill in last_split_layout when switching to a different layout
          * since there are many places in the code that don’t use
