@@ -624,10 +624,9 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         tree_render();
         x_push_changes(croot);
     } else if (event->type == A_I3_SYNC) {
-        DLOG("i3 sync, yay\n");
         xcb_window_t window = event->data.data32[0];
         uint32_t rnd = event->data.data32[1];
-        DLOG("Sending random value %d back to X11 window 0x%08x\n", rnd, window);
+        DLOG("[i3 sync protocol] Sending random value %d back to X11 window 0x%08x\n", rnd, window);
 
         void *reply = scalloc(32);
         xcb_client_message_event_t *ev = reply;
