@@ -359,6 +359,19 @@ void init_ws_for_output(Output *output, Con *content) {
             workspace_show(previous);
         }
 
+        /* Render the output on which the workspace was to get correct Rects.
+         * Then, we need to work with the "content" container, since we cannot
+         * be sure that the workspace itself was rendered at all (in case it’s
+         * invisible, it won’t be rendered). */
+        render_con(workspace_out, false);
+        Con *ws_out_content = output_get_content(workspace_out);
+
+        Con *floating_con;
+        TAILQ_FOREACH(floating_con, &(workspace->floating_head), floating_windows)
+            /* NB: We use output->con here because content is not yet rendered,
+             * so it has a rect of {0, 0, 0, 0}. */
+            floating_fix_coordinates(floating_con, &(ws_out_content->rect), &(output->con->rect));
+
         con_detach(workspace);
         con_attach(workspace, content, false);
 
