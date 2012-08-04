@@ -202,7 +202,7 @@ sub convert_command {
     # simple replacements
     my @replace = (
         qr/^s/ => 'layout stacking',
-        qr/^d/ => 'layout default',
+        qr/^d/ => 'layout toggle split',
         qr/^T/ => 'layout tabbed',
         qr/^f($|[^go])/ => 'fullscreen',
         qr/^fg/ => 'fullscreen global',

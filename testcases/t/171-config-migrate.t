@@ -195,7 +195,7 @@ EOT
 
 $output = migrate_config($input);
 ok(line_exists($output, qr|^bindsym Mod1\+s layout stacking$|), 's replaced');
-ok(line_exists($output, qr|^bindsym Mod1\+s layout default$|), 'd replaced');
+ok(line_exists($output, qr|^bindsym Mod1\+s layout toggle split$|), 'd replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s layout tabbed$|), 'T replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s fullscreen$|), 'f replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s fullscreen global$|), 'fg replaced');
