@@ -54,6 +54,7 @@ static uint32_t color_text;              /* color of the text */
 
 xcb_window_t root;
 xcb_connection_t *conn;
+xcb_screen_t *root_screen;
 
 /*
  * Starts the given application by passing it through a shell. We use double fork
@@ -280,7 +281,7 @@ int main(int argc, char *argv[]) {
     #include "atoms.xmacro"
     #undef xmacro
 
-    xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
+    root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
 
     if (bar_type == TYPE_ERROR) {

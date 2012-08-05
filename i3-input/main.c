@@ -54,6 +54,7 @@ static int prompt_offset = 0;
 static int limit;
 xcb_window_t root;
 xcb_connection_t *conn;
+xcb_screen_t *root_screen;
 
 /*
  * Concats the glyphs (either UCS-2 or UTF-8) to a single string, suitable for
@@ -340,7 +341,7 @@ int main(int argc, char *argv[]) {
     if (!conn || xcb_connection_has_error(conn))
         die("Cannot open display\n");
 
-    xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
+    root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
 
     symbols = xcb_key_symbols_alloc(conn);

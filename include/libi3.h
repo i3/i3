@@ -18,6 +18,10 @@
 #include <xcb/xproto.h>
 #include <xcb/xcb_keysyms.h>
 
+#if PANGO_SUPPORT
+#include <pango/pango.h>
+#endif
+
 /**
  * Opaque data structure for storing strings.
  *
@@ -54,6 +58,11 @@ struct Font {
             /** Font table for this font (may be NULL) */
             xcb_charinfo_t *table;
         } xcb;
+
+#if PANGO_SUPPORT
+        /** The pango font description */
+        PangoFontDescription *pango_desc;
+#endif
     } specific;
 };
 

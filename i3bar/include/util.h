@@ -11,7 +11,9 @@
 #include "queue.h"
 
 /* Get the maximum/minimum of x and y */
+#undef MAX
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
+#undef MIN
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 
 /* Securely free p */

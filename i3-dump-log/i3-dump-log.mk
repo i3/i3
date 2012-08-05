@@ -4,7 +4,7 @@ CLEAN_TARGETS += clean-i3-dump-log
 
 i3_dump_log_SOURCES := $(wildcard i3-dump-log/*.c)
 i3_dump_log_HEADERS := $(wildcard i3-dump-log/*.h)
-i3_dump_log_CFLAGS   = $(XCB_CFLAGS)
+i3_dump_log_CFLAGS   = $(XCB_CFLAGS) $(PANGO_CFLAGS)
 i3_dump_log_LIBS     = $(XCB_LIBS)
 
 i3_dump_log_OBJECTS := $(i3_dump_log_SOURCES:.c=.o)

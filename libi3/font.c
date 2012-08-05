@@ -12,10 +12,117 @@
 #include <stdbool.h>
 #include <err.h>
 
+#if PANGO_SUPPORT
+#include <cairo/cairo-xcb.h>
+#include <pango/pangocairo.h>
+#endif
+
 #include "libi3.h"
 
 extern xcb_connection_t *conn;
+extern xcb_screen_t *root_screen;
+
 static const i3Font *savedFont = NULL;
+
+#if PANGO_SUPPORT
+static xcb_visualtype_t *root_visual_type;
+static double pango_font_red;
+static double pango_font_green;
+static double pango_font_blue;
+
+/*
+ * Loads a Pango font description into an i3Font structure. Returns true
+ * on success, false otherwise.
+ *
+ */
+static bool load_pango_font(i3Font *font, const char *desc) {
+    /* Load the font description */
+    font->specific.pango_desc = pango_font_description_from_string(desc);
+    if (!font->specific.pango_desc)
+        return false;
+
+    /* We cache root_visual_type here, since you must call
+     * load_pango_font before any other pango function
+     * that would need root_visual_type */
+    root_visual_type = get_visualtype(root_screen);
+
+    /* Create a dummy Pango layout to compute the font height */
+    cairo_surface_t *surface = cairo_xcb_surface_create(conn, root_screen->root, root_visual_type, 1, 1);
+    cairo_t *cr = cairo_create(surface);
+    PangoLayout *layout = pango_cairo_create_layout(cr);
+    pango_layout_set_font_description(layout, font->specific.pango_desc);
+
+    /* Get the font height */
+    gint height;
+    pango_layout_get_pixel_size(layout, NULL, &height);
+    font->height = height;
+
+    /* Free resources */
+    g_object_unref(layout);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+
+    /* Set the font type and return successfully */
+    font->type = FONT_TYPE_PANGO;
+    return true;
+}
+
+/*
+ * Draws text using Pango rendering.
+ *
+ */
+static void draw_text_pango(const char *text, size_t text_len,
+        xcb_drawable_t drawable, int x, int y, int max_width) {
+    /* Create the Pango layout */
+    /* root_visual_type is cached in load_pango_font */
+    cairo_surface_t *surface = cairo_xcb_surface_create(conn, drawable,
+            root_visual_type, x + max_width, y + savedFont->height);
+    cairo_t *cr = cairo_create(surface);
+    PangoLayout *layout = pango_cairo_create_layout(cr);
+    pango_layout_set_font_description(layout, savedFont->specific.pango_desc);
+    pango_layout_set_width(layout, max_width * PANGO_SCALE);
+    pango_layout_set_wrap(layout, PANGO_WRAP_CHAR);
+    pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
+
+    /* Do the drawing */
+    cairo_set_source_rgb(cr, pango_font_red, pango_font_green, pango_font_blue);
+    cairo_move_to(cr, x, y);
+    pango_layout_set_text(layout, text, text_len);
+    pango_cairo_update_layout(cr, layout);
+    pango_cairo_show_layout(cr, layout);
+
+    /* Free resources */
+    g_object_unref(layout);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+}
+
+/*
+ * Calculate the text width using Pango rendering.
+ *
+ */
+static int predict_text_width_pango(const char *text, size_t text_len) {
+    /* Create a dummy Pango layout */
+    /* root_visual_type is cached in load_pango_font */
+    cairo_surface_t *surface = cairo_xcb_surface_create(conn, root_screen->root, root_visual_type, 1, 1);
+    cairo_t *cr = cairo_create(surface);
+    PangoLayout *layout = pango_cairo_create_layout(cr);
+
+    /* Get the font width */
+    gint width;
+    pango_layout_set_font_description(layout, savedFont->specific.pango_desc);
+    pango_layout_set_text(layout, text, text_len);
+    pango_cairo_update_layout(cr, layout);
+    pango_layout_get_pixel_size(layout, &width, NULL);
+
+    /* Free resources */
+    g_object_unref(layout);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+
+    return width;
+}
+#endif
 
 /*
  * Loads a font for usage, also getting its metrics. If fallback is true,
@@ -26,6 +133,14 @@ i3Font load_font(const char *pattern, const bool fallback) {
     i3Font font;
     font.type = FONT_TYPE_NONE;
 
+#if PANGO_SUPPORT
+    /* Try to load a pango font if specified */
+    if (strlen(pattern) > strlen("xft:") && !strncmp(pattern, "xft:", strlen("xft:"))) {
+        pattern += strlen("xft:");
+        if (load_pango_font(&font, pattern))
+            return font;
+    }
+#endif
 
     /* Send all our requests first */
     font.specific.xcb.id = xcb_generate_id(conn);
@@ -105,6 +220,12 @@ void free_font(void) {
                 free(savedFont->specific.xcb.info);
             break;
         }
+#if PANGO_SUPPORT
+        case FONT_TYPE_PANGO:
+            /* Free the font description */
+            pango_font_description_free(savedFont->specific.pango_desc);
+            break;
+#endif
         default:
             assert(false);
             break;
@@ -129,6 +250,14 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
             xcb_change_gc(conn, gc, mask, values);
             break;
         }
+#if PANGO_SUPPORT
+        case FONT_TYPE_PANGO:
+            /* Save the foreground font */
+            pango_font_red = ((foreground >> 16) & 0xff) / 255.0;
+            pango_font_green = ((foreground >> 8) & 0xff) / 255.0;
+            pango_font_blue = (foreground & 0xff) / 255.0;
+            break;
+#endif
         default:
             assert(false);
             break;
@@ -186,6 +315,13 @@ void draw_text(i3String *text, xcb_drawable_t drawable,
             draw_text_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text),
                       drawable, gc, x, y, max_width);
             break;
+#if PANGO_SUPPORT
+        case FONT_TYPE_PANGO:
+            /* Render the text using Pango */
+            draw_text_pango(i3string_as_utf8(text), i3string_get_num_bytes(text),
+                            drawable, x, y, max_width);
+            return;
+#endif
         default:
             assert(false);
     }
@@ -219,6 +355,13 @@ void draw_text_ascii(const char *text, xcb_drawable_t drawable,
             }
             break;
         }
+#if PANGO_SUPPORT
+        case FONT_TYPE_PANGO:
+            /* Render the text using Pango */
+            draw_text_pango(text, strlen(text),
+                            drawable, x, y, max_width);
+            return;
+#endif
         default:
             assert(false);
     }
@@ -309,6 +452,11 @@ int predict_text_width(i3String *text) {
             return 0;
         case FONT_TYPE_XCB:
             return predict_text_width_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text));
+#if PANGO_SUPPORT
+        case FONT_TYPE_PANGO:
+            /* Calculate extents using Pango */
+            return predict_text_width_pango(i3string_as_utf8(text), i3string_get_num_bytes(text));
+#endif
         default:
             assert(false);
             return 0;

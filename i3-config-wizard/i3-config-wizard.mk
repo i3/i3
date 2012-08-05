@@ -5,8 +5,8 @@ CLEAN_TARGETS += clean-i3-config-wizard
 i3_config_wizard_SOURCES_GENERATED  = i3-config-wizard/cfgparse.tab.c i3-config-wizard/cfgparse.yy.c
 i3_config_wizard_SOURCES           := $(filter-out $(i3_config_wizard_SOURCES_GENERATED),$(wildcard i3-config-wizard/*.c))
 i3_config_wizard_HEADERS           := $(wildcard i3-config-wizard/*.h)
-i3_config_wizard_CFLAGS             = $(XCB_CFLAGS) $(XCB_KBD_CFLAGS) $(X11_CFLAGS)
-i3_config_wizard_LIBS               = $(XCB_LIBS) $(XCB_KBD_LIBS) $(X11_LIBS)
+i3_config_wizard_CFLAGS             = $(XCB_CFLAGS) $(XCB_KBD_CFLAGS) $(X11_CFLAGS) $(PANGO_CFLAGS)
+i3_config_wizard_LIBS               = $(XCB_LIBS) $(XCB_KBD_LIBS) $(X11_LIBS) $(PANGO_LIBS)
 
 i3_config_wizard_OBJECTS := $(i3_config_wizard_SOURCES_GENERATED:.c=.o) $(i3_config_wizard_SOURCES:.c=.o)
 

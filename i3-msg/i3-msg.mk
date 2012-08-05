@@ -4,7 +4,7 @@ CLEAN_TARGETS += clean-i3-msg
 
 i3_msg_SOURCES := $(wildcard i3-msg/*.c)
 i3_msg_HEADERS := $(wildcard i3-msg/*.h)
-i3_msg_CFLAGS   = $(XCB_CFLAGS)
+i3_msg_CFLAGS   = $(XCB_CFLAGS) $(PANGO_CFLAGS)
 i3_msg_LIBS     = $(XCB_LIBS)
 
 i3_msg_OBJECTS := $(i3_msg_SOURCES:.c=.o)

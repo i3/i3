@@ -69,6 +69,7 @@ enum { MOD_Mod1, MOD_Mod4 } modifier = MOD_Mod4;
 static char *config_path;
 static uint32_t xcb_numlock_mask;
 xcb_connection_t *conn;
+xcb_screen_t *root_screen;
 static xcb_get_modifier_mapping_reply_t *modmap_reply;
 static i3Font font;
 static i3Font bold_font;
@@ -456,7 +457,7 @@ int main(int argc, char *argv[]) {
     #include "atoms.xmacro"
     #undef xmacro
 
-    xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
+    root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
 
     if (!(modmap_reply = xcb_get_modifier_mapping_reply(conn, modmap_cookie, NULL)))
