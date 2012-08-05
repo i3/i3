@@ -15,12 +15,12 @@ ifndef SYSCONFDIR
   endif
 endif
 
-I3_VERSION := '$(shell [ -f $(TOPDIR)/VERSION ] && cat $(TOPDIR)/VERSION)'
+# In dist tarballs, the version is stored in the I3_VERSION and VERSION files.
+I3_VERSION := '$(shell [ -f $(TOPDIR)/I3_VERSION ] && cat $(TOPDIR)/I3_VERSION)'
+VERSION := '$(shell [ -f $(TOPDIR)/VERSION ] && cat $(TOPDIR)/VERSION)'
 ifeq ('',$(I3_VERSION))
 VERSION := $(shell git describe --tags --abbrev=0)
 I3_VERSION := '$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch \"$(shell git describe --tags --always --all | sed s:heads/::)\")'
-else
-VERSION := ${I3_VERSION}
 endif
 
 MAJOR_VERSION := $(shell echo ${VERSION} | cut -d '.' -f 1)
