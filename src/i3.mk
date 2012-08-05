@@ -9,24 +9,38 @@ i3_HEADERS           := $(filter-out $(i3_HEADERS_CMDPARSER),$(wildcard include/
 i3_CFLAGS             = $(XCB_CFLAGS) $(XCB_KBD_CFLAGS) $(XCB_WM_CFLAGS) $(X11_CFLAGS) $(XCURSOR_CFLAGS) $(YAJL_CFLAGS) $(LIBEV_CFLAGS) $(PCRE_CFLAGS) $(LIBSN_CFLAGS)
 i3_LIBS               = $(XCB_LIBS) $(XCB_KBD_LIBS) $(XCB_WM_LIBS) $(X11_LIBS) $(XCURSOR_LIBS) $(YAJL_LIBS) $(LIBEV_LIBS) $(PCRE_LIBS) $(LIBSN_LIBS) -lm
 
+# When using clang, we use pre-compiled headers to speed up the build. With
+# gcc, this actually makes the build slower.
+ifeq ($(CC),clang)
+i3_HEADERS_DEP       := $(i3_HEADERS) include/all.h.pch
+PCH_FLAGS            := -include include/all.h
+else
+i3_HEADERS_DEP       := $(i3_HEADERS)
+PCH_FLAGS            :=
+endif
+
 i3_OBJECTS := $(i3_SOURCES_GENERATED:.c=.o) $(i3_SOURCES:.c=.o)
 
-src/%.o: src/%.c $(i3_HEADERS)
-	echo "[i3] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
+include/all.h.pch: $(i3_HEADERS)
+	echo "[i3] PCH all.h"
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -x c-header include/all.h -o include/all.h.pch
 
-src/cfgparse.yy.c: src/cfgparse.l src/cfgparse.tab.o $(i3_HEADERS)
+src/%.o: src/%.c $(i3_HEADERS_DEP)
+	echo "[i3] CC $<"
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(PCH_FLAGS) -c -o $@ $<
+
+src/cfgparse.yy.c: src/cfgparse.l src/cfgparse.tab.o $(i3_HEADERS_DEP)
 	echo "[i3] LEX $<"
 	$(FLEX) -i -o $@ $<
 
-src/cfgparse.tab.c: src/cfgparse.y $(i3_HEADERS)
+src/cfgparse.tab.c: src/cfgparse.y $(i3_HEADERS_DEP)
 	echo "[i3] YACC $<"
 	$(BISON) --debug --verbose -b $(basename $< .y) -d $<
 
 # This target compiles the command parser twice:
 # Once with -DTEST_PARSER, creating a stand-alone executable used for tests,
 # and once as an object file for i3.
-src/commands_parser.o: src/commands_parser.c $(i3_HEADERS) i3-command-parser.stamp
+src/commands_parser.o: src/commands_parser.c $(i3_HEADERS_DEP) i3-command-parser.stamp
 	echo "[i3] CC $<"
 	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -o test.commands_parser $< $(i3_LIBS) $(LIBS)
 	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
@@ -60,4 +74,4 @@ install-i3: i3
 
 clean-i3:
 	echo "[i3] Clean"
-	rm -f $(i3_OBJECTS) $(i3_SOURCES_GENERATED) $(i3_HEADERS_CMDPARSER) i3-command-parser.stamp i3 src/*.gcno src/cfgparse.{output,dot}
+	rm -f $(i3_OBJECTS) $(i3_SOURCES_GENERATED) $(i3_HEADERS_CMDPARSER) include/all.h.pch i3-command-parser.stamp i3 src/*.gcno src/cfgparse.{output,dot}
