@@ -389,7 +389,7 @@ bool level_up(void) {
     if ((focused->parent->type != CT_CON &&
         focused->parent->type != CT_WORKSPACE) ||
         focused->type == CT_WORKSPACE) {
-        LOG("Cannot go up any further\n");
+        ELOG("'focus parent': Focus is already on the workspace, cannot go higher than that.\n");
         return false;
     }
     con_focus(focused->parent);

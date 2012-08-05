@@ -1263,7 +1263,7 @@ void cmd_focus_level(I3_CMD, char *level) {
             if (con_fullscreen_permits_focusing(focused->parent))
                 success = level_up();
             else
-                LOG("Currently in fullscreen, not going up\n");
+                ELOG("'focus parent': Currently in fullscreen, not going up\n");
         }
     }
 

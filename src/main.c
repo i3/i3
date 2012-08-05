@@ -121,7 +121,7 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
                 DLOG("Expected X11 Error received for sequence %x\n", event->sequence);
             else {
                 xcb_generic_error_t *error = (xcb_generic_error_t*)event;
-                ELOG("X11 Error received! sequence 0x%x, error_code = %d\n",
+                DLOG("X11 Error received (probably harmless)! sequence 0x%x, error_code = %d\n",
                      error->sequence, error->error_code);
             }
             free(event);
