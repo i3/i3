@@ -45,6 +45,28 @@ then subscribe to events or send messages and receive their replies.
     my $workspaces = i3->get_workspaces->recv;
     say "Currently, you use " . @{$workspaces} . " workspaces";
 
+A somewhat more involved example which dumps the i3 layout tree whenever there
+is a workspace event:
+
+    use Data::Dumper;
+    use AnyEvent;
+    use AnyEvent::I3;
+
+    my $i3 = i3();
+
+    $i3->connect->recv or die "Error connecting to i3";
+
+    $i3->subscribe({
+        workspace => sub {
+            $i3->get_tree->cb(sub {
+                my ($tree) = @_;
+                say "tree: " . Dumper($tree);
+            });
+        }
+    })->recv->{success} or die "Error subscribing to events";
+
+    AE::cv->recv
+
 =head1 EXPORT
 
 =head2 $i3 = i3([ $path ]);
