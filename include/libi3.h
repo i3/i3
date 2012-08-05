@@ -18,6 +18,12 @@
 #include <xcb/xproto.h>
 #include <xcb/xcb_keysyms.h>
 
+/**
+ * Opaque data structure for storing strings.
+ *
+ */
+typedef struct _i3String i3String;
+
 typedef struct Font i3Font;
 
 /**
@@ -90,6 +96,71 @@ char *sstrdup(const char *str);
  *
  */
 int sasprintf(char **strp, const char *fmt, ...);
+
+/**
+ * Build an i3String from an UTF-8 encoded string.
+ * Returns the newly-allocated i3String.
+ *
+ */
+i3String *i3string_from_utf8(const char *from_utf8);
+
+/**
+ * Build an i3String from an UTF-8 encoded string with fixed length.
+ * To be used when no proper NUL-terminaison is available.
+ * Returns the newly-allocated i3String.
+ *
+ */
+i3String *i3string_from_utf8_with_length(const char *from_utf8, size_t num_bytes);
+
+/**
+ * Build an i3String from an UCS-2 encoded string.
+ * Returns the newly-allocated i3String.
+ *
+ */
+i3String *i3string_from_ucs2(const xcb_char2b_t *from_ucs2, size_t num_glyphs);
+
+/**
+ * Free an i3String.
+ *
+ */
+void i3string_free(i3String *str);
+
+/**
+ * Securely i3string_free by setting the pointer to NULL
+ * to prevent accidentally using freed memory.
+ *
+ */
+#define I3STRING_FREE(str) \
+do { \
+ if (str != NULL) { \
+ i3string_free(str); \
+ str = NULL; \
+ } \
+} while (0)
+
+/**
+ * Returns the UTF-8 encoded version of the i3String.
+ *
+ */
+const char *i3string_as_utf8(i3String *str);
+
+/**
+ * Returns the UCS-2 encoded version of the i3String.
+ *
+ */
+const xcb_char2b_t *i3string_as_ucs2(i3String *str);
+
+/**
+ * Returns the number of bytes (UTF-8 encoded) in an i3String.
+ *
+ */
+size_t i3string_get_num_bytes(i3String *str);
+
+/**
+ * Returns the number of glyphs in an i3String.
+ *
+ */
+size_t i3string_get_num_glyphs(i3String *str);
 
 /**
  * Connects to the i3 IPC socket and returns the file descriptor for the
