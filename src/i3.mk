@@ -21,21 +21,29 @@ endif
 
 i3_OBJECTS := $(i3_SOURCES_GENERATED:.c=.o) $(i3_SOURCES:.c=.o)
 
+# The basename/readlink calls are for canonicalizing the path: Instead
+# of src/main.c, we will see something like ../i3-4.2/src/main.c in
+# debugger backtraces, making it clearer which code belongs to i3 and
+# which code doesn’t.
+# We only do this for src/ since all the other subdirectories contain i3 in
+# their name already.
+canonical_path := ../$(shell basename $(shell readlink -f .))
+
 include/all.h.pch: $(i3_HEADERS)
 	echo "[i3] PCH all.h"
 	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -x c-header include/all.h -o include/all.h.pch
 
 src/%.o: src/%.c $(i3_HEADERS_DEP)
 	echo "[i3] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(PCH_FLAGS) -c -o $@ $<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(PCH_FLAGS) -c -o $@ ${canonical_path}/$<
 
 src/cfgparse.yy.c: src/cfgparse.l src/cfgparse.tab.o $(i3_HEADERS_DEP)
 	echo "[i3] LEX $<"
-	$(FLEX) -i -o $@ $<
+	$(FLEX) -i -o $@ ${canonical_path}/$<
 
 src/cfgparse.tab.c: src/cfgparse.y $(i3_HEADERS_DEP)
 	echo "[i3] YACC $<"
-	$(BISON) --debug --verbose -b $(basename $< .y) -d $<
+	$(BISON) --debug --verbose -b $(basename $< .y) -d ${canonical_path}/$<
 
 # This target compiles the command parser twice:
 # Once with -DTEST_PARSER, creating a stand-alone executable used for tests,
@@ -43,7 +51,7 @@ src/cfgparse.tab.c: src/cfgparse.y $(i3_HEADERS_DEP)
 src/commands_parser.o: src/commands_parser.c $(i3_HEADERS_DEP) i3-command-parser.stamp
 	echo "[i3] CC $<"
 	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -o test.commands_parser $< $(i3_LIBS) $(LIBS)
-	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
 i3-command-parser.stamp: generate-command-parser.pl parser-specs/commands.spec
 	echo "[i3] Generating command parser"
