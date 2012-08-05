@@ -1062,6 +1062,12 @@ void con_set_border_style(Con *con, int border_style) {
  *
  */
 void con_set_layout(Con *con, int layout) {
+    /* We fill in last_split_layout when switching to a different layout
+     * since there are many places in the code that don’t use
+     * con_set_layout(). */
+    if (con->layout == L_SPLITH || con->layout == L_SPLITV)
+        con->last_split_layout = con->layout;
+
     /* When the container type is CT_WORKSPACE, the user wants to change the
      * whole workspace into stacked/tabbed mode. To do this and still allow
      * intuitive operations (like level-up and then opening a new window), we
@@ -1075,6 +1081,7 @@ void con_set_layout(Con *con, int layout) {
         /* 2: Set the requested layout on the split container and mark it as
          * split. */
         con_set_layout(new, layout);
+        new->last_split_layout = con->last_split_layout;
         new->split = true;
 
         Con *old_focused = TAILQ_FIRST(&(con->focus_head));
@@ -1117,11 +1124,6 @@ void con_set_layout(Con *con, int layout) {
         if (con->layout == L_DEFAULT)
             con->layout = L_SPLITH;
     } else {
-        /* We fill in last_split_layout when switching to a different layout
-         * since there are many places in the code that don’t use
-         * con_set_layout(). */
-        if (con->layout == L_SPLITH || con->layout == L_SPLITV)
-            con->last_split_layout = con->layout;
         con->layout = layout;
     }
 }
