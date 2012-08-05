@@ -211,7 +211,7 @@ default) or whether a JSON parse error occurred.
 { "success": true }
 -------------------
 
-=== GET_OUTPUTS reply
+=== OUTPUTS reply
 
 The reply consists of a serialized list of outputs. Each output has the
 following properties:
@@ -539,7 +539,7 @@ urgent_workspace_text/urgent_workspace_bar::
 }
 --------------
 
-=== Version reply
+=== VERSION reply
 
 The reply consists of a single JSON dictionary with the following keys:
 
