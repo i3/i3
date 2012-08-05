@@ -70,6 +70,9 @@ GET_BAR_CONFIG (6)::
 	Gets the configuration (as JSON map) of the workspace bar with the
 	given ID. If no ID is provided, an array with all configured bar IDs is
 	returned instead.
+GET_VERSION (7)::
+	Gets the version of i3. The reply will be a JSON-encoded dictionary
+	with the major, minor, patch and human-readable version.
 
 So, a typical message could look like this:
 --------------------------------------------------
@@ -125,6 +128,8 @@ MARKS (5)::
 	Reply to the GET_MARKS message.
 BAR_CONFIG (6)::
 	Reply to the GET_BAR_CONFIG message.
+VERSION (7)::
+	Reply to the GET_VERSION message.
 
 === COMMAND reply
 
@@ -533,6 +538,35 @@ urgent_workspace_text/urgent_workspace_bar::
  }
 }
 --------------
+
+=== Version reply
+
+The reply consists of a single JSON dictionary with the following keys:
+
+major (integer)::
+	The major version of i3, such as +4+.
+minor (integer)::
+	The minor version of i3, such as +2+. Changes in the IPC interface (new
+	features) will only occur with new minor (or major) releases. However,
+	bugfixes might be introduced in patch releases, too.
+patch (integer)::
+	The patch version of i3, such as +1+ (when the complete version is
+	+4.2.1+).
+human_readable (string)::
+	A human-readable version of i3 containing the precise git version,
+	build date and branch name. When you need to display the i3 version to
+	your users, use the human-readable version whenever possible (since
+	this is what +i3 --version+ displays, too).
+
+*Example:*
+-------------------
+{
+   "human_readable" : "4.2-169-gf80b877 (2012-08-05, branch \"next\")",
+   "minor" : 2,
+   "patch" : 0,
+   "major" : 4
+}
+-------------------
 
 == Events
 

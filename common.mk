@@ -23,6 +23,12 @@ else
 VERSION := ${I3_VERSION}
 endif
 
+MAJOR_VERSION := $(shell echo ${VERSION} | cut -d '.' -f 1)
+MINOR_VERSION := $(shell echo ${VERSION} | cut -d '.' -f 2)
+PATCH_VERSION := $(shell echo ${VERSION} | cut -d '.' -f 3)
+ifeq (${PATCH_VERSION},)
+PATCH_VERSION := 0
+endif
 
 ## Generic flags
 
@@ -46,6 +52,9 @@ I3_CFLAGS += -Wunused-value
 I3_CFLAGS += -Iinclude
 
 I3_CPPFLAGS  = -DI3_VERSION=\"${I3_VERSION}\"
+I3_CPPFLAGS += -DMAJOR_VERSION=${MAJOR_VERSION}
+I3_CPPFLAGS += -DMINOR_VERSION=${MINOR_VERSION}
+I3_CPPFLAGS += -DPATCH_VERSION=${PATCH_VERSION}
 I3_CPPFLAGS += -DSYSCONFDIR=\"${SYSCONFDIR}\"
 
 

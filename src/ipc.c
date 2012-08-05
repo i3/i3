@@ -537,6 +537,44 @@ IPC_HANDLER(get_marks) {
 }
 
 /*
+ * Returns the version of i3
+ *
+ */
+IPC_HANDLER(get_version) {
+#if YAJL_MAJOR >= 2
+    yajl_gen gen = yajl_gen_alloc(NULL);
+#else
+    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+#endif
+    y(map_open);
+
+    ystr("major");
+    y(integer, MAJOR_VERSION);
+
+    ystr("minor");
+    y(integer, MINOR_VERSION);
+
+    ystr("patch");
+    y(integer, PATCH_VERSION);
+
+    ystr("human_readable");
+    ystr(I3_VERSION);
+
+    y(map_close);
+
+    const unsigned char *payload;
+#if YAJL_MAJOR >= 2
+    size_t length;
+#else
+    unsigned int length;
+#endif
+    y(get_buf, &payload, &length);
+
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_VERSION, payload);
+    y(free);
+}
+
+/*
  * Formats the reply message for a GET_BAR_CONFIG request and sends it to the
  * client.
  *
@@ -792,7 +830,7 @@ IPC_HANDLER(subscribe) {
 
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[7] = {
+handler_t handlers[8] = {
     handle_command,
     handle_get_workspaces,
     handle_subscribe,
@@ -800,6 +838,7 @@ handler_t handlers[7] = {
     handle_tree,
     handle_get_marks,
     handle_get_bar_config,
+    handle_get_version,
 };
 
 /*
