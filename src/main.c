@@ -424,7 +424,7 @@ int main(int argc, char *argv[]) {
             }
             optind++;
         }
-        LOG("Command is: %s (%d bytes)\n", payload, strlen(payload));
+        DLOG("Command is: %s (%zd bytes)\n", payload, strlen(payload));
         char *socket_path = root_atom_contents("I3_SOCKET_PATH");
         if (!socket_path) {
             ELOG("Could not get i3 IPC socket path\n");
@@ -660,7 +660,6 @@ int main(int argc, char *argv[]) {
     Output *output = NULL;
     if (!(pointerreply = xcb_query_pointer_reply(conn, pointercookie, NULL))) {
         ELOG("Could not query pointer position, using first screen\n");
-        output = get_first_output();
     } else {
         DLOG("Pointer at %d, %d\n", pointerreply->root_x, pointerreply->root_y);
         output = get_output_containing(pointerreply->root_x, pointerreply->root_y);

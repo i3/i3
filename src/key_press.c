@@ -291,7 +291,7 @@ void handle_key_press(xcb_key_press_event_t *event) {
     command_failed = false;
     yajl_status state = yajl_parse(handle, reply, length);
     if (state != yajl_status_ok) {
-        ELOG("Could not parse my own reply. That's weird. reply is %.*s\n", length, reply);
+        ELOG("Could not parse my own reply. That's weird. reply is %.*s\n", (int)length, reply);
     } else {
         if (command_failed)
             start_commanderror_nagbar();

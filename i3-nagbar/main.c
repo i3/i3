@@ -216,7 +216,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
 }
 
 int main(int argc, char *argv[]) {
-    char *pattern = strdup("-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1");
+    char *pattern = sstrdup("-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1");
     int o, option_index = 0;
     enum { TYPE_ERROR = 0, TYPE_WARNING = 1 } bar_type = TYPE_ERROR;
 
@@ -232,7 +232,7 @@ int main(int argc, char *argv[]) {
 
     char *options_string = "b:f:m:t:vh";
 
-    prompt = strdup("Please do not run this program.");
+    prompt = sstrdup("Please do not run this program.");
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         switch (o) {
@@ -241,11 +241,11 @@ int main(int argc, char *argv[]) {
                 return 0;
             case 'f':
                 FREE(pattern);
-                pattern = strdup(optarg);
+                pattern = sstrdup(optarg);
                 break;
             case 'm':
                 FREE(prompt);
-                prompt = strdup(optarg);
+                prompt = sstrdup(optarg);
                 break;
             case 't':
                 bar_type = (strcasecmp(optarg, "warning") == 0 ? TYPE_WARNING : TYPE_ERROR);
@@ -431,6 +431,8 @@ int main(int argc, char *argv[]) {
 
         free(event);
     }
+
+    FREE(pattern);
 
     return 0;
 }

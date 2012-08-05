@@ -139,7 +139,7 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
 #else
 static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
 #endif
-    LOG("string: %.*s for key %s\n", len, val, last_key);
+    LOG("string: %.*s for key %s\n", (int)len, val, last_key);
     if (parsing_swallows) {
         /* TODO: the other swallowing keys */
         if (strcasecmp(last_key, "class") == 0) {

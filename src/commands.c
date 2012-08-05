@@ -452,7 +452,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
         return;
     }
 
-    LOG("should move window to workspace with number %d\n", which);
+    LOG("should move window to workspace %s\n", which);
     /* get the workspace */
     Con *output, *workspace = NULL;
 
@@ -835,7 +835,7 @@ void cmd_workspace_number(I3_CMD, char *which) {
             child->num == parsed_num);
 
     if (!workspace) {
-        LOG("There is no workspace with number %d, creating a new one.\n", parsed_num);
+        LOG("There is no workspace with number %ld, creating a new one.\n", parsed_num);
         ysuccess(true);
         /* terminate the which string after the endposition of the number */
         *endptr = '\0';
@@ -1421,6 +1421,10 @@ void cmd_layout(I3_CMD, char *layout_str) {
         layout = L_SPLITV;
     else if (strcmp(layout_str, "splith") == 0)
         layout = L_SPLITH;
+    else {
+        ELOG("Unknown layout \"%s\", this is a mismatch between code and parser spec.\n", layout_str);
+        return;
+    }
 
     DLOG("changing layout to %s (%d)\n", layout_str, layout);
 

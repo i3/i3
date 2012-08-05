@@ -1260,6 +1260,9 @@ bool con_fullscreen_permits_focusing(Con *con) {
     while (fs && fs->fullscreen_mode == CF_NONE)
         fs = fs->parent;
 
+    /* fs must be non-NULL since the workspace con doesn’t have CF_NONE and
+     * there always has to be a workspace con in the hierarchy. */
+    assert(fs != NULL);
     /* The most common case is we hit the workspace level. In this
      * situation, changing focus is also harmless. */
     assert(fs->fullscreen_mode != CF_NONE);

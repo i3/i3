@@ -758,7 +758,7 @@ static int add_subscription(void *extra, const unsigned char *s,
 #endif
     ipc_client *client = extra;
 
-    DLOG("should add subscription to extra %p, sub %.*s\n", client, len, s);
+    DLOG("should add subscription to extra %p, sub %.*s\n", client, (int)len, s);
     int event = client->num_events;
 
     client->num_events++;

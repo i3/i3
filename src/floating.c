@@ -493,7 +493,7 @@ void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
                 confine_to, border_t border, callback_t callback, const void *extra)
 {
     uint32_t new_x, new_y;
-    Rect old_rect;
+    Rect old_rect = { 0, 0, 0, 0 };
     if (con != NULL)
         memcpy(&old_rect, &(con->rect), sizeof(Rect));
 

@@ -126,16 +126,6 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
 static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_event_t *event) {
     printf("releasing %d, state raw = %d\n", event->detail, event->state);
 
-    /* See the documentation of xcb_key_symbols_get_keysym for this one.
-     * Basically: We get either col 0 or col 1, depending on whether shift is
-     * pressed. */
-    int col = (event->state & XCB_MOD_MASK_SHIFT);
-
-    /* If modeswitch is currently active, we need to look in group 2 or 3,
-     * respectively. */
-    if (modeswitch_active)
-        col += 2;
-
     xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, event->state);
     if (sym == XK_Mode_switch) {
         printf("Mode switch disabled\n");
