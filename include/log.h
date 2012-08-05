@@ -67,11 +67,4 @@ void errorlog(char *fmt, ...)
 void verboselog(char *fmt, ...)
     __attribute__ ((format (printf, 1, 2)));
 
-/**
- * Logs the given message to stdout while prefixing the current time to it.
- * This is to be called by LOG() which includes filename/linenumber
- *
- */
-void slog(char *fmt, va_list args);
-
 #endif
