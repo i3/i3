@@ -934,30 +934,40 @@ Con *con_descend_direction(Con *con, direction_t direction) {
  *
  */
 Rect con_border_style_rect(Con *con) {
-    adjacent_t adjacent_to = ADJ_NONE;
+    adjacent_t borders_to_hide = ADJ_NONE;
     Rect result;
-    if (config.hide_edge_borders)
-        adjacent_to = con_adjacent_borders(con);
+    borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
     switch (con_border_style(con)) {
     case BS_NORMAL:
         result = (Rect){2, 0, -(2 * 2), -2};
-        if (adjacent_to & ADJ_LEFT_SCREEN_EDGE) {
+        if (borders_to_hide & ADJ_LEFT_SCREEN_EDGE) {
             result.x -= 2;
             result.width += 2;
         }
-        if (adjacent_to & ADJ_RIGHT_SCREEN_EDGE) {
+        if (borders_to_hide & ADJ_RIGHT_SCREEN_EDGE) {
             result.width += 2;
+        }
+        /* With normal borders we never hide the upper border */
+        if (borders_to_hide & ADJ_LOWER_SCREEN_EDGE) {
+            result.height += 2;
         }
         return result;
 
     case BS_1PIXEL:
         result = (Rect){1, 1, -2, -2};
-        if (adjacent_to & ADJ_LEFT_SCREEN_EDGE) {
+        if (borders_to_hide & ADJ_LEFT_SCREEN_EDGE) {
             result.x -= 1;
             result.width += 1;
         }
-        if (adjacent_to & ADJ_RIGHT_SCREEN_EDGE) {
+        if (borders_to_hide & ADJ_RIGHT_SCREEN_EDGE) {
             result.width += 1;
+        }
+        if (borders_to_hide & ADJ_UPPER_SCREEN_EDGE) {
+            result.y -= 1;
+            result.height += 1;
+        }
+        if (borders_to_hide & ADJ_LOWER_SCREEN_EDGE) {
+            result.height += 1;
         }
         return result;
 
@@ -975,11 +985,15 @@ Rect con_border_style_rect(Con *con) {
  */
 adjacent_t con_adjacent_borders(Con *con) {
     adjacent_t result = ADJ_NONE;
-    Con *output = con_get_output(con);
-    if (con->rect.x == output->rect.x)
+    Con *workspace = con_get_workspace(con);
+    if (con->rect.x == workspace->rect.x)
         result |= ADJ_LEFT_SCREEN_EDGE;
-    if (con->rect.x + con->rect.width == output->rect.x + output->rect.width)
+    if (con->rect.x + con->rect.width == workspace->rect.x + workspace->rect.width)
         result |= ADJ_RIGHT_SCREEN_EDGE;
+    if (con->rect.y == workspace->rect.y)
+        result |= ADJ_UPPER_SCREEN_EDGE;
+    if (con->rect.y + con->rect.height == workspace->rect.y + workspace->rect.height)
+        result |= ADJ_LOWER_SCREEN_EDGE;
     return result;
 }
 

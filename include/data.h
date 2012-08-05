@@ -62,8 +62,10 @@ typedef enum { DONT_KILL_WINDOW = 0, KILL_WINDOW = 1, KILL_CLIENT = 2 } kill_win
 
 /** describes if the window is adjacent to the output (physical screen) edges. */
 typedef enum { ADJ_NONE = 0,
-               ADJ_LEFT_SCREEN_EDGE = 1,
-               ADJ_RIGHT_SCREEN_EDGE = 2} adjacent_t;
+               ADJ_LEFT_SCREEN_EDGE = (1 << 0),
+               ADJ_RIGHT_SCREEN_EDGE = (1 << 1),
+               ADJ_UPPER_SCREEN_EDGE = (1 << 2),
+               ADJ_LOWER_SCREEN_EDGE = (1 << 4)} adjacent_t;
 
 enum {
     BIND_NONE = 0,

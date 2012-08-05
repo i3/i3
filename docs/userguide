@@ -471,17 +471,17 @@ new_window 1pixel
 === Hiding vertical borders
 
 You can hide vertical borders adjacent to the screen edges using
-+hide_edge_borders+. This is useful if you are using scrollbars. This option is
-disabled by default.
++hide_edge_borders+. This is useful if you are using scrollbars, or do not want
+to waste even two pixels in displayspace. Default is none.
 
 *Syntax*:
 ----------------------------
-hide_edge_borders <yes|no>
+hide_edge_borders <none|vertical|horizontal|both>
 ----------------------------
 
 *Example*:
 ----------------------
-hide_edge_borders yes
+hide_edge_borders vertical
 ----------------------
 
 === Arbitrary commands for specific windows (for_window)

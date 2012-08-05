@@ -736,6 +736,7 @@ void parse_file(const char *f) {
 %token                  TOK_NONE                    "none"
 %token                  TOK_1PIXEL                  "1pixel"
 %token                  TOK_HIDE_EDGE_BORDERS       "hide_edge_borders"
+%token                  TOK_BOTH                    "both"
 %token                  TOKFOCUSFOLLOWSMOUSE        "focus_follows_mouse"
 %token                  TOK_FORCE_FOCUS_WRAPPING    "force_focus_wrapping"
 %token                  TOK_FORCE_XINERAMA          "force_xinerama"
@@ -800,6 +801,8 @@ void parse_file(const char *f) {
 %type   <number>        layout_mode
 %type   <number>        border_style
 %type   <number>        new_window
+%type   <number>        hide_edge_borders
+%type   <number>        edge_hiding_mode
 %type   <number>        new_float
 %type   <number>        colorpixel
 %type   <number>        bool
@@ -1477,11 +1480,19 @@ bool:
     ;
 
 hide_edge_borders:
-    TOK_HIDE_EDGE_BORDERS bool
+    TOK_HIDE_EDGE_BORDERS edge_hiding_mode
     {
         DLOG("hide edge borders = %d\n", $2);
         config.hide_edge_borders = $2;
     }
+    ;
+
+edge_hiding_mode:
+    TOK_NONE        { $$ = ADJ_NONE; }
+    | TOK_VERT      { $$ = ADJ_LEFT_SCREEN_EDGE | ADJ_RIGHT_SCREEN_EDGE; }
+    | TOK_HORIZ     { $$ = ADJ_UPPER_SCREEN_EDGE | ADJ_LOWER_SCREEN_EDGE; }
+    | TOK_BOTH      { $$ = ADJ_LEFT_SCREEN_EDGE | ADJ_RIGHT_SCREEN_EDGE | ADJ_UPPER_SCREEN_EDGE | ADJ_LOWER_SCREEN_EDGE; }
+    | bool          { $$ = ($1 ? ADJ_LEFT_SCREEN_EDGE | ADJ_RIGHT_SCREEN_EDGE : ADJ_NONE); }
     ;
 
 focus_follows_mouse:

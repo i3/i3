@@ -108,10 +108,11 @@ struct Config {
      * It is not planned to add any different focus models. */
     bool disable_focus_follows_mouse;
 
-    /** Remove vertical borders if they are adjacent to the screen edge.
+    /** Remove borders if they are adjacent to the screen edge.
      * This is useful if you are reaching scrollbar on the edge of the
-     * screen. By default, this is disabled. */
-    bool hide_edge_borders;
+     * screen or do not want to waste a single pixel of displayspace.
+     * By default, this is disabled. */
+    adjacent_t hide_edge_borders;
 
     /** By default, a workspace bar is drawn at the bottom of the screen.
      * If you want to have a more fancy bar, it is recommended to replace
