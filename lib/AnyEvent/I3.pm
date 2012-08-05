@@ -94,10 +94,11 @@ use constant TYPE_GET_OUTPUTS => 3;
 use constant TYPE_GET_TREE => 4;
 use constant TYPE_GET_MARKS => 5;
 use constant TYPE_GET_BAR_CONFIG => 6;
+use constant TYPE_GET_VERSION => 7;
 
 our %EXPORT_TAGS = ( 'all' => [
     qw(i3 TYPE_COMMAND TYPE_GET_WORKSPACES TYPE_SUBSCRIBE TYPE_GET_OUTPUTS
-       TYPE_GET_TREE TYPE_GET_MARKS TYPE_GET_BAR_CONFIG)
+       TYPE_GET_TREE TYPE_GET_MARKS TYPE_GET_BAR_CONFIG TYPE_GET_VERSION)
 ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
@@ -116,6 +117,43 @@ sub i3 {
     AnyEvent::I3->new(@_)
 }
 
+# Calls i3, even when running in taint mode.
+sub _call_i3 {
+    my ($args) = @_;
+
+    my $path_tainted = tainted($ENV{PATH});
+    # This effectively circumvents taint mode checking for $ENV{PATH}. We
+    # do this because users might specify PATH explicitly to call i3 in a
+    # custom location (think ~/.bin/).
+    (local $ENV{PATH}) = ($ENV{PATH} =~ /(.*)/);
+
+    # In taint mode, we also need to remove all relative directories from
+    # PATH (like . or ../bin). We only do this in taint mode and warn the
+    # user, since this might break a real-world use case for some people.
+    if ($path_tainted) {
+        my @dirs = split /:/, $ENV{PATH};
+        my @filtered = grep !/^\./, @dirs;
+        if (scalar @dirs != scalar @filtered) {
+            $ENV{PATH} = join ':', @filtered;
+            warn qq|Removed relative directories from PATH because you | .
+                 qq|are running Perl with taint mode enabled. Remove -T | .
+                 qq|to be able to use relative directories in PATH. | .
+                 qq|New PATH is "$ENV{PATH}"|;
+        }
+    }
+    # Otherwise the qx() operator wont work:
+    delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
+    chomp(my $result = qx(i3 $args));
+    # Circumventing taint mode again: the socket can be anywhere on the
+    # system and that’s okay.
+    if ($result =~ /^([^\0]+)$/) {
+        return $1;
+    }
+
+    warn "Calling i3 $args failed. Is DISPLAY set and is i3 in your PATH?";
+    return undef;
+}
+
 =head2 $i3 = AnyEvent::I3->new([ $path ])
 
 Creates a new C<AnyEvent::I3> object and returns it.
@@ -129,38 +167,7 @@ instance on the current DISPLAY which is almost always what you want.
 sub new {
     my ($class, $path) = @_;
 
-    if (!$path) {
-        my $path_tainted = tainted($ENV{PATH});
-        # This effectively circumvents taint mode checking for $ENV{PATH}. We
-        # do this because users might specify PATH explicitly to call i3 in a
-        # custom location (think ~/.bin/).
-        (local $ENV{PATH}) = ($ENV{PATH} =~ /(.*)/);
-
-        # In taint mode, we also need to remove all relative directories from
-        # PATH (like . or ../bin). We only do this in taint mode and warn the
-        # user, since this might break a real-world use case for some people.
-        if ($path_tainted) {
-            my @dirs = split /:/, $ENV{PATH};
-            my @filtered = grep !/^\./, @dirs;
-            if (scalar @dirs != scalar @filtered) {
-                $ENV{PATH} = join ':', @filtered;
-                warn qq|Removed relative directories from PATH because you | .
-                     qq|are running Perl with taint mode enabled. Remove -T | .
-                     qq|to be able to use relative directories in PATH. | .
-                     qq|New PATH is "$ENV{PATH}"|;
-            }
-        }
-        # Otherwise the qx() operator wont work:
-        delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
-        chomp($path = qx(i3 --get-socketpath));
-        # Circumventing taint mode again: the socket can be anywhere on the
-        # system and that’s okay.
-        if ($path =~ /^([^\0]+)$/) {
-            $path = $1;
-        } else {
-            warn "Asking i3 for the socket path failed. Is DISPLAY set and is i3 in your PATH?";
-        }
-    }
+    $path = _call_i3('--get-socketpath') unless $path;
 
     # This is the old default path (v3.*). This fallback line can be removed in
     # a year from now. -- Michael, 2012-07-09
@@ -439,6 +446,54 @@ sub get_bar_config {
     $self->_ensure_connection;
 
     $self->message(TYPE_GET_BAR_CONFIG, $id)
+}
+
+=head2 get_version
+
+Gets the i3 version via IPC, with a fall-back that parses the output of i3
+--version (for i3 < v4.3).
+
+    my $version = i3->get_version()->recv;
+    say "major: " . $version->{major} . ", minor = " . $version->{minor};
+
+=cut
+sub get_version {
+    my ($self) = @_;
+
+    $self->_ensure_connection;
+
+    my $cv = AnyEvent->condvar;
+
+    my $version_cv = $self->message(TYPE_GET_VERSION);
+    my $timeout;
+    $timeout = AnyEvent->timer(
+        after => 1,
+        cb => sub {
+            warn "Falling back to i3 --version since the running i3 doesn’t support GET_VERSION yet.";
+            my $version = _call_i3('--version');
+            $version =~ s/^i3 version //;
+            my $patch = 0;
+            my ($major, $minor) = ($version =~ /^([0-9]+)\.([0-9]+)/);
+            if ($version =~ /^[0-9]+\.[0-9]+\.([0-9]+)/) {
+                $patch = $1;
+            }
+            # Strip everything from the © sign on.
+            $version =~ s/ ©.*$//g;
+            $cv->send({
+                major => int($major),
+                minor => int($minor),
+                patch => int($patch),
+                human_readable => $version,
+            });
+            undef $timeout;
+        },
+    );
+    $version_cv->cb(sub {
+        undef $timeout;
+        $cv->send($version_cv->recv);
+    });
+
+    return $cv;
 }
 
 =head2 command($content)
