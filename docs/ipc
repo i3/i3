@@ -551,7 +551,7 @@ minor (integer)::
 	bugfixes might be introduced in patch releases, too.
 patch (integer)::
 	The patch version of i3, such as +1+ (when the complete version is
-	+4.2.1+).
+	+4.2.1+). For versions such as +4.2+, patch will be set to +0+.
 human_readable (string)::
 	A human-readable version of i3 containing the precise git version,
 	build date and branch name. When you need to display the i3 version to
