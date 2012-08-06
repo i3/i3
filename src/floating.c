@@ -175,6 +175,12 @@ void floating_enable(Con *con, bool automatic) {
             nc->rect.width = max(nc->rect.width, config.floating_minimum_width);
     }
 
+    /* 3: attach the child to the new parent container. We need to do this
+     * because con_border_style_rect() needs to access con->parent. */
+    con->parent = nc;
+    con->percent = 1.0;
+    con->floating = FLOATING_USER_ON;
+
     /* Add pixels for the decoration. */
     Rect border_style_rect = con_border_style_rect(con);
 
@@ -223,10 +229,6 @@ void floating_enable(Con *con, bool automatic) {
 
     DLOG("Floating rect: (%d, %d) with %d x %d\n", nc->rect.x, nc->rect.y, nc->rect.width, nc->rect.height);
 
-    /* 3: attach the child to the new parent container */
-    con->parent = nc;
-    con->percent = 1.0;
-    con->floating = FLOATING_USER_ON;
 
     /* 4: set the border style as specified with new_float */
     if (automatic)
