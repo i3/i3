@@ -936,8 +936,12 @@ Con *con_descend_direction(Con *con, direction_t direction) {
 Rect con_border_style_rect(Con *con) {
     adjacent_t borders_to_hide = ADJ_NONE;
     Rect result;
+    /* Shortcut to avoid calling con_adjacent_borders() on dock containers. */
+    int border_style = con_border_style(con);
+    if (border_style == BS_NONE)
+        return (Rect){ 0, 0, 0, 0 };
     borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
-    switch (con_border_style(con)) {
+    switch (border_style) {
     case BS_NORMAL:
         result = (Rect){2, 0, -(2 * 2), -2};
         if (borders_to_hide & ADJ_LEFT_SCREEN_EDGE) {

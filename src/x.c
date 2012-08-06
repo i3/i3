@@ -305,13 +305,14 @@ void x_draw_decoration(Con *con) {
      *  • non-leaf containers which are in a stacked/tabbed container
      *
      * It does not need to run for:
-     *  • direct children of outputs
+     *  • direct children of outputs or dockareas
      *  • floating containers (they don’t have a decoration)
      */
     if ((!leaf &&
          parent->layout != L_STACKED &&
          parent->layout != L_TABBED) ||
         parent->type == CT_OUTPUT ||
+        parent->type == CT_DOCKAREA ||
         con->type == CT_FLOATING_CON)
         return;
 
