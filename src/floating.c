@@ -175,11 +175,15 @@ void floating_enable(Con *con, bool automatic) {
             nc->rect.width = max(nc->rect.width, config.floating_minimum_width);
     }
 
-    /* add pixels for the decoration */
-    /* TODO: don’t add them when the user automatically puts new windows into
-     * 1pixel/borderless mode */
-    nc->rect.height += deco_height + 2;
-    nc->rect.width += 4;
+    /* Add pixels for the decoration. */
+    Rect border_style_rect = con_border_style_rect(con);
+
+    nc->rect.height -= border_style_rect.height;
+    nc->rect.width -= border_style_rect.width;
+
+    /* Add some more pixels for the title bar */
+    if(con_border_style(con) == BS_NORMAL)
+        nc->rect.height += deco_height;
 
     /* Honor the X11 border */
     nc->rect.height += con->border_width * 2;
