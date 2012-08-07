@@ -622,6 +622,16 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         }
 
         tree_render();
+    } else if (event->type == A__NET_ACTIVE_WINDOW) {
+        DLOG("_NET_ACTIVE_WINDOW: Window 0x%08x should be activated\n", event->window);
+        Con *con = con_by_window_id(event->window);
+        if (con == NULL) {
+            DLOG("Could not get window for client message\n");
+            return;
+        }
+
+        con_focus(con);
+        tree_render();
     } else if (event->type == A_I3_SYNC) {
         xcb_window_t window = event->data.data32[0];
         uint32_t rnd = event->data.data32[1];
