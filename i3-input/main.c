@@ -49,8 +49,8 @@ static char *glyphs_ucs[512];
 static char *glyphs_utf8[512];
 static int input_position;
 static i3Font font;
-static char *prompt;
-static size_t prompt_len;
+static i3String *prompt;
+static int prompt_offset = 0;
 static int limit;
 xcb_window_t root;
 xcb_connection_t *conn;
@@ -96,25 +96,21 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
     /* restore font color */
     set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
 
-    /* draw the text */
-    uint8_t *con = concat_strings(glyphs_ucs, input_position);
-    char *full_text = (char*)con;
+    /* draw the prompt … */
     if (prompt != NULL) {
-        full_text = malloc((prompt_len + input_position) * 2 + 1);
-        if (full_text == NULL)
-            err(EXIT_FAILURE, "malloc() failed\n");
-        memcpy(full_text, prompt, prompt_len * 2);
-        memcpy(full_text + (prompt_len * 2), con, input_position * 2);
+        draw_text((char *)i3string_as_ucs2(prompt), i3string_get_num_glyphs(prompt), true, pixmap, pixmap_gc, 4, 4, 492);
     }
-    if (input_position + prompt_len != 0)
-        draw_text(full_text, input_position + prompt_len, true, pixmap, pixmap_gc, 4, 4, 492);
+    /* … and the text */
+    if (input_position > 0)
+    {
+        char *full_text = (char *)concat_strings(glyphs_ucs, input_position);
+        draw_text(full_text, input_position, true, pixmap, pixmap_gc, 4, 4 + prompt_offset, 492 - prompt_offset);
+        free(full_text);
+    }
 
     /* Copy the contents of the pixmap to the real window */
     xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, /* */ 500, font.height + 8);
     xcb_flush(conn);
-    free(con);
-    if (prompt != NULL)
-        free(full_text);
 
     return 1;
 }
@@ -308,8 +304,8 @@ int main(int argc, char *argv[]) {
                 limit = atoi(optarg);
                 break;
             case 'P':
-                FREE(prompt);
-                prompt = strdup(optarg);
+                i3string_free(prompt);
+                prompt = i3string_from_utf8(optarg);
                 break;
             case 'f':
                 FREE(pattern);
@@ -340,7 +336,7 @@ int main(int argc, char *argv[]) {
     sockfd = ipc_connect(socket_path);
 
     if (prompt != NULL)
-        prompt = (char*)convert_utf8_to_ucs2(prompt, &prompt_len);
+        prompt_offset = predict_text_width((char *)i3string_as_ucs2(prompt), i3string_get_num_glyphs(prompt), true);
 
     int screens;
     conn = xcb_connect(NULL, &screens);
