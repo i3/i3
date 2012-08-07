@@ -60,31 +60,11 @@ void window_update_name(i3Window *win, xcb_get_property_reply_t *prop, bool befo
         return;
     }
 
-    /* Save the old pointer to make the update atomic */
-    char *new_name;
-    if (asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop),
-                 (char*)xcb_get_property_value(prop)) == -1) {
-        perror("asprintf()");
-        DLOG("Could not get window name\n");
-        free(prop);
-        return;
-    }
-    /* Convert it to UCS-2 here for not having to convert it later every time we want to pass it to X */
-    size_t len;
-    xcb_char2b_t *ucs2_name = convert_utf8_to_ucs2(new_name, &len);
-    if (ucs2_name == NULL) {
-        LOG("Could not convert _NET_WM_NAME to UCS-2, ignoring new hint\n");
-        FREE(new_name);
-        free(prop);
-        return;
-    }
-    FREE(win->name_x);
-    FREE(win->name_json);
-    win->name_json = new_name;
-    win->name_x = (char*)ucs2_name;
-    win->name_len = len;
+    i3string_free(win->name);
+    win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
+                                               xcb_get_property_value_length(prop));
     win->name_x_changed = true;
-    LOG("_NET_WM_NAME changed to \"%s\"\n", win->name_json);
+    LOG("_NET_WM_NAME changed to \"%s\"\n", i3string_as_utf8(win->name));
 
     win->uses_net_wm_name = true;
 
@@ -118,24 +98,14 @@ void window_update_name_legacy(i3Window *win, xcb_get_property_reply_t *prop, bo
         return;
     }
 
-    char *new_name;
-    if (asprintf(&new_name, "%.*s", xcb_get_property_value_length(prop),
-                 (char*)xcb_get_property_value(prop)) == -1) {
-        perror("asprintf()");
-        DLOG("Could not get legacy window name\n");
-        free(prop);
-        return;
-    }
+    i3string_free(win->name);
+    win->name = i3string_from_utf8_with_length(xcb_get_property_value(prop),
+                                               xcb_get_property_value_length(prop));
 
-    LOG("WM_NAME changed to \"%s\"\n", new_name);
+    LOG("WM_NAME changed to \"%s\"\n", i3string_as_utf8(win->name));
     LOG("Using legacy window title. Note that in order to get Unicode window "
         "titles in i3, the application has to set _NET_WM_NAME (UTF-8)\n");
 
-    FREE(win->name_x);
-    FREE(win->name_json);
-    win->name_x = new_name;
-    win->name_json = sstrdup(new_name);
-    win->name_len = strlen(new_name);
     win->name_x_changed = true;
 
     if (before_mgmt) {

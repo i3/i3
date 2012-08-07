@@ -481,7 +481,7 @@ void x_draw_decoration(Con *con) {
     int text_offset_y = (con->deco_rect.height - config.font.height) / 2;
 
     struct Window *win = con->window;
-    if (win == NULL || win->name_x == NULL) {
+    if (win == NULL || win->name == NULL) {
         /* this is a non-leaf container, we need to make up a good description */
         // TODO: use a good description instead of just "another container"
         draw_text("another container", strlen("another container"), false,
@@ -508,7 +508,7 @@ void x_draw_decoration(Con *con) {
     //DLOG("indent_level = %d, indent_mult = %d\n", indent_level, indent_mult);
     int indent_px = (indent_level * 5) * indent_mult;
 
-    draw_text(win->name_x, win->name_len, win->uses_net_wm_name,
+    draw_text((char *)i3string_as_ucs2(win->name), i3string_get_num_glyphs(win->name), true,
             parent->pixmap, parent->pm_gc,
             con->deco_rect.x + 2 + indent_px, con->deco_rect.y + text_offset_y,
             con->deco_rect.width - 2 - indent_px);

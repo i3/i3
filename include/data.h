@@ -19,6 +19,7 @@
 #include <pcre.h>
 #include <sys/time.h>
 
+#include "libi3.h"
 #include "queue.h"
 
 /*
@@ -287,9 +288,8 @@ struct Window {
     char *class_class;
     char *class_instance;
 
-    /** The name of the window as it will be passed to X11 (in UCS2 if the
-     * application supports _NET_WM_NAME, in COMPOUND_TEXT otherwise). */
-    char *name_x;
+    /** The name of the window. */
+    i3String *name;
 
     /** The WM_WINDOW_ROLE of this window (for example, the pidgin buddy window
      * sets "buddy list"). Useful to match specific windows in assignments or
@@ -298,13 +298,6 @@ struct Window {
 
     /** Flag to force re-rendering the decoration upon changes */
     bool name_x_changed;
-
-    /** The name of the window as used in JSON (in UTF-8 if the application
-     * supports _NET_WM_NAME, in COMPOUND_TEXT otherwise) */
-    char *name_json;
-
-    /** The length of the name in glyphs (not bytes) */
-    size_t name_len;
 
     /** Whether the application used _NET_WM_NAME */
     bool uses_net_wm_name;

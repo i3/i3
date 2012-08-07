@@ -247,8 +247,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
         }
         FREE(con->window->class_class);
         FREE(con->window->class_instance);
-        FREE(con->window->name_x);
-        FREE(con->window->name_json);
+        i3string_free(con->window->name);
         free(con->window);
     }
 

@@ -259,8 +259,8 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     dump_rect(gen, "geometry", con->geometry);
 
     ystr("name");
-    if (con->window && con->window->name_json)
-        ystr(con->window->name_json);
+    if (con->window && con->window->name)
+        ystr(i3string_as_utf8(con->window->name));
     else
         ystr(con->name);
 

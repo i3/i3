@@ -113,9 +113,9 @@ bool match_matches_window(Match *match, i3Window *window) {
     }
 
     if (match->title != NULL) {
-        if (window->name_json != NULL &&
-            regex_matches(match->title, window->name_json)) {
-            LOG("title matches (%s)\n", window->name_json);
+        if (window->name != NULL &&
+            regex_matches(match->title, i3string_as_utf8(window->name))) {
+            LOG("title matches (%s)\n", i3string_as_utf8(window->name));
         } else {
             return false;
         }
