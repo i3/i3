@@ -39,7 +39,7 @@ static int crash_text_longest = 5;
  * Draw the window containing the info text
  *
  */
-static int sig_draw_window(xcb_window_t win, int width, int height, int font_height) {
+static int sig_draw_window(xcb_window_t win, int width, int height, int font_height, i3String **crash_text_i3strings) {
     /* re-draw the background */
     xcb_rectangle_t border = { 0, 0, width, height},
                     inner = { 2, 2, width - 4, height - 4};
@@ -51,8 +51,8 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
     /* restore font color */
     set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
 
-    for (int i = 0; i < sizeof(crash_text) / sizeof(char*); i++) {
-        draw_text(crash_text[i], strlen(crash_text[i]), false, pixmap, pixmap_gc,
+    for (int i = 0; crash_text_i3strings[i] != NULL; ++i) {
+        draw_text((char *)i3string_as_ucs2(crash_text_i3strings[i]), i3string_get_num_glyphs(crash_text_i3strings[i]), true, pixmap, pixmap_gc,
                 8, 5 + i * font_height, width - 16);
     }
 
@@ -147,10 +147,15 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
     int crash_text_num = sizeof(crash_text) / sizeof(char*);
     int height = 13 + (crash_text_num * config.font.height);
 
+    int crash_text_length = sizeof(crash_text) / sizeof(char*);
+    i3String **crash_text_i3strings = smalloc(sizeof(i3String *) * (crash_text_length + 1));
+    /* Pre-compute i3Strings for our text */
+    for (int i = 0; i < crash_text_length; ++i) {
+        crash_text_i3strings[i] = i3string_from_utf8(crash_text[i]);
+    }
+    crash_text_i3strings[crash_text_length] = NULL;
     /* calculate width for longest text */
-    size_t text_len = strlen(crash_text[crash_text_longest]);
-    xcb_char2b_t *longest_text = convert_utf8_to_ucs2(crash_text[crash_text_longest], &text_len);
-    int font_width = predict_text_width((char *)longest_text, text_len, true);
+    int font_width = predict_text_width((char *)i3string_as_ucs2(crash_text_i3strings[crash_text_longest]), i3string_get_num_glyphs(crash_text_i3strings[crash_text_longest]), true);
     int width = font_width + 20;
 
     /* Open a popup window on each virtual screen */
@@ -174,7 +179,7 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
         xcb_grab_pointer(conn, false, win, XCB_NONE, XCB_GRAB_MODE_ASYNC,
                          XCB_GRAB_MODE_ASYNC, win, XCB_NONE, XCB_CURRENT_TIME);
 
-        sig_draw_window(win, width, height, config.font.height);
+        sig_draw_window(win, width, height, config.font.height, crash_text_i3strings);
         xcb_flush(conn);
     }
 
