@@ -1,3 +1,4 @@
+#line 2 "key_press.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *

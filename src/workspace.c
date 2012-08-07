@@ -1,3 +1,4 @@
+#line 2 "workspace.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *

@@ -1,3 +1,4 @@
+#line 2 "randr.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *

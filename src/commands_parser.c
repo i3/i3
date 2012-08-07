@@ -1,3 +1,4 @@
+#line 2 "commands_parser.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
