@@ -32,9 +32,7 @@ void free_workspaces();
 
 struct i3_ws {
     int                num;         /* The internal number of the ws */
-    char               *name;       /* The name (in utf8) of the ws */
-    xcb_char2b_t       *ucs2_name;  /* The name (in ucs2) of the ws */
-    int                name_glyphs; /* The length (in glyphs) of the name */
+    i3String           *name;       /* The name of the ws */
     int                name_width;  /* The rendered width of the name */
     bool               visible;     /* If the ws is currently visible on an output */
     bool               focused;     /* If the ws is currently focused */

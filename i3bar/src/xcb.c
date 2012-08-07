@@ -114,14 +114,12 @@ void refresh_statusline() {
     uint32_t old_statusline_width = statusline_width;
     statusline_width = 0;
 
-    /* Convert all blocks from UTF-8 to UCS-2 and predict the text width (in
-     * pixels). */
+    /* Predict the text width of all blocks (in pixels). */
     TAILQ_FOREACH(block, &statusline_head, blocks) {
-        if (strlen(block->full_text) == 0)
+        if (i3string_get_num_bytes(block->full_text) == 0)
             continue;
 
-        block->ucs2_full_text = (xcb_char2b_t*)convert_utf8_to_ucs2(block->full_text, &(block->glyph_count_full_text));
-        block->width = predict_text_width((char*)block->ucs2_full_text, block->glyph_count_full_text, true);
+        block->width = predict_text_width((char *)i3string_as_ucs2(block->full_text), i3string_get_num_glyphs(block->full_text), true);
         /* If this is not the last block, add some pixels for a separator. */
         if (TAILQ_NEXT(block, blocks) != NULL)
             block->width += 9;
@@ -141,12 +139,12 @@ void refresh_statusline() {
     /* Draw the text of each block. */
     uint32_t x = 0;
     TAILQ_FOREACH(block, &statusline_head, blocks) {
-        if (strlen(block->full_text) == 0)
+        if (i3string_get_num_bytes(block->full_text) == 0)
             continue;
 
         uint32_t colorpixel = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
         set_font_colors(statusline_ctx, colorpixel, colors.bar_bg);
-        draw_text((char*)block->ucs2_full_text, block->glyph_count_full_text,
+        draw_text((char *)i3string_as_ucs2(block->full_text), i3string_get_num_glyphs(block->full_text),
                   true, statusline_pm, statusline_ctx, x, 0, block->width);
         x += block->width;
 
@@ -157,8 +155,6 @@ void refresh_statusline() {
                           statusline_ctx, 2,
                           (xcb_point_t[]){ { x - 5, 2 }, { x - 5, font.height - 2 } });
         }
-
-        FREE(block->ucs2_full_text);
     }
 }
 
@@ -326,7 +322,8 @@ void handle_button(xcb_button_press_event_t *event) {
      * buffer, then we copy character by character. */
     int num_quotes = 0;
     size_t namelen = 0;
-    for (char *walk = cur_ws->name; *walk != '\0'; walk++) {
+    const char *utf8_name = i3string_as_utf8(cur_ws->name);
+    for (const char *walk = utf8_name; *walk != '\0'; walk++) {
         if (*walk == '"')
             num_quotes++;
         /* While we’re looping through the name anyway, we can save one
@@ -341,11 +338,11 @@ void handle_button(xcb_button_press_event_t *event) {
     for (inpos = 0, outpos = strlen("workspace \"");
          inpos < namelen;
          inpos++, outpos++) {
-        if (cur_ws->name[inpos] == '"') {
+        if (utf8_name[inpos] == '"') {
             buffer[outpos] = '\\';
             outpos++;
         }
-        buffer[outpos] = cur_ws->name[inpos];
+        buffer[outpos] = utf8_name[inpos];
     }
     buffer[outpos] = '"';
     i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, buffer);
@@ -1468,7 +1465,7 @@ void draw_bars() {
         bool has_urgent = false, walks_away = true;
 
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
-            DLOG("Drawing Button for WS %s at x = %d, len = %d\n", ws_walk->name, i, ws_walk->name_width);
+            DLOG("Drawing Button for WS %s at x = %d, len = %d\n", i3string_as_utf8(ws_walk->name), i, ws_walk->name_width);
             uint32_t fg_color = colors.inactive_ws_fg;
             uint32_t bg_color = colors.inactive_ws_bg;
             uint32_t border_color = colors.inactive_ws_border;
@@ -1481,19 +1478,19 @@ void draw_bars() {
                     fg_color = colors.focus_ws_fg;
                     bg_color = colors.focus_ws_bg;
                     border_color = colors.focus_ws_border;
-                    if (last_urgent_ws && strcmp(ws_walk->name, last_urgent_ws) == 0)
+                    if (last_urgent_ws && strcmp(i3string_as_utf8(ws_walk->name), last_urgent_ws) == 0)
                         walks_away = false;
                 }
             }
             if (ws_walk->urgent) {
-                DLOG("WS %s is urgent!\n", ws_walk->name);
+                DLOG("WS %s is urgent!\n", i3string_as_utf8(ws_walk->name));
                 fg_color = colors.urgent_ws_fg;
                 bg_color = colors.urgent_ws_bg;
                 border_color = colors.urgent_ws_border;
                 has_urgent = true;
                 if (!ws_walk->focused) {
                     FREE(last_urgent_ws);
-                    last_urgent_ws = sstrdup(ws_walk->name);
+                    last_urgent_ws = sstrdup(i3string_as_utf8(ws_walk->name));
                 }
                 /* The urgent-hint should get noticed, so we unhide the bars shortly */
                 unhide_bars();
@@ -1522,7 +1519,7 @@ void draw_bars() {
                                     1,
                                     &rect);
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
-            draw_text((char*)ws_walk->ucs2_name, ws_walk->name_glyphs, true,
+            draw_text((char*)i3string_as_ucs2(ws_walk->name), i3string_get_num_glyphs(ws_walk->name), true,
                     outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, ws_walk->name_width);
             i += 10 + ws_walk->name_width + 1;
         }

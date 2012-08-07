@@ -116,7 +116,7 @@ static int stdin_string(void *context, const unsigned char *val, unsigned int le
 #endif
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "full_text") == 0) {
-        sasprintf(&(ctx->block.full_text), "%.*s", len, val);
+        ctx->block.full_text = i3string_from_utf8_with_length((const char *)val, len);
     }
     if (strcasecmp(ctx->last_map_key, "color") == 0) {
         sasprintf(&(ctx->block.color), "%.*s", len, val);
@@ -131,7 +131,7 @@ static int stdin_end_map(void *context) {
     /* Ensure we have a full_text set, so that when it is missing (or null),
      * i3bar doesn’t crash and the user gets an annoying message. */
     if (!new_block->full_text)
-        new_block->full_text = sstrdup("SPEC VIOLATION (null)");
+        new_block->full_text = i3string_from_utf8("SPEC VIOLATION (null)");
     TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
     return 1;
 }
@@ -140,7 +140,7 @@ static int stdin_end_array(void *context) {
     DLOG("dumping statusline:\n");
     struct status_block *current;
     TAILQ_FOREACH(current, &statusline_head, blocks) {
-        DLOG("full_text = %s\n", current->full_text);
+        DLOG("full_text = %s\n", i3string_as_utf8(current->full_text));
         DLOG("color = %s\n", current->color);
     }
     DLOG("end of dump\n");
@@ -221,13 +221,13 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     } else {
         struct status_block *first = TAILQ_FIRST(&statusline_head);
         /* Clear the old buffer if any. */
-        FREE(first->full_text);
+        I3STRING_FREE(first->full_text);
         /* Remove the trailing newline and terminate the string at the same
          * time. */
         if (buffer[rec-1] == '\n' || buffer[rec-1] == '\r')
             buffer[rec-1] = '\0';
         else buffer[rec] = '\0';
-        first->full_text = (char*)buffer;
+        first->full_text = i3string_from_utf8((const char *)buffer);
     }
     draw_bars();
 }
