@@ -297,13 +297,17 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
  * specified coordinates (from the top left corner of the leftmost, uppermost
  * glyph) and using the provided gc.
  *
- * Text can be specified as UCS-2 or UTF-8. If it's specified as UCS-2, then
- * text_len must be the number of glyphs in the string. If it's specified as
- * UTF-8, then text_len must be the number of bytes in the string (not counting
- * the null terminator).
+ * Text must be specified as an i3String.
  *
  */
-void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawable,
+void draw_text(i3String *text, xcb_drawable_t drawable,
+        xcb_gcontext_t gc, int x, int y, int max_width);
+
+/**
+ * ASCII version of draw_text to print static strings.
+ *
+ */
+void draw_text_ascii(const char *text, xcb_drawable_t drawable,
         xcb_gcontext_t gc, int x, int y, int max_width);
 
 /**

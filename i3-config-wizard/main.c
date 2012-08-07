@@ -128,7 +128,7 @@ static int handle_expose() {
     set_font(&font);
 
 #define txt(x, row, text) \
-    draw_text(text, strlen(text), false, pixmap, pixmap_gc,\
+    draw_text_ascii(text, pixmap, pixmap_gc,\
             x, (row - 1) * font.height + 4, 300 - x * 2)
 
     if (current_step == STEP_WELCOME) {

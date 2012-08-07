@@ -98,11 +98,15 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
 
     /* draw the prompt … */
     if (prompt != NULL) {
-        draw_text((char *)i3string_as_ucs2(prompt), i3string_get_num_glyphs(prompt), true, pixmap, pixmap_gc, 4, 4, 492);
+        draw_text(prompt, pixmap, pixmap_gc, 4, 4, 492);
     }
     /* … and the text */
     if (input_position > 0)
-        draw_text((char *)glyphs_ucs, input_position, true, pixmap, pixmap_gc, 4, 4 + prompt_offset, 492 - prompt_offset);
+    {
+        i3String *input = i3string_from_ucs2(glyphs_ucs, input_position);
+        draw_text(input, pixmap, pixmap_gc, 4, 4, 492);
+        i3string_free(input);
+    }
 
     /* Copy the contents of the pixmap to the real window */
     xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, /* */ 500, font.height + 8);

@@ -105,45 +105,21 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
     xcb_change_gc(conn, gc, mask, values);
 }
 
-/*
- * Draws text onto the specified X drawable (normally a pixmap) at the
- * specified coordinates (from the top left corner of the leftmost, uppermost
- * glyph) and using the provided gc.
- *
- * Text can be specified as UCS-2 or UTF-8. If it's specified as UCS-2, then
- * text_len must be the number of glyphs in the string. If it's specified as
- * UTF-8, then text_len must be the number of bytes in the string (not counting
- * the null terminator).
- *
- */
-void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawable,
+static void draw_text_xcb(const xcb_char2b_t *text, size_t text_len, xcb_drawable_t drawable,
                xcb_gcontext_t gc, int x, int y, int max_width) {
-    assert(savedFont != NULL);
-    assert(text_len != 0);
-
     /* X11 coordinates for fonts start at the baseline */
     int pos_y = y + savedFont->info->font_ascent;
 
-    /* As an optimization, check if we can bypass conversion */
-    if (!is_ucs2 && text_len <= 255) {
-        xcb_image_text_8(conn, text_len, drawable, gc, x, pos_y, text);
-        return;
-    }
-
-    /* Convert the text into UCS-2 so we can do basic pointer math */
-    char *input = (is_ucs2 ? text : (char*)convert_utf8_to_ucs2(text, &text_len));
-
     /* The X11 protocol limits text drawing to 255 chars, so we may need
      * multiple calls */
-    int pos_x = x;
     int offset = 0;
     for (;;) {
         /* Calculate the size of this chunk */
         int chunk_size = (text_len > 255 ? 255 : text_len);
-        xcb_char2b_t *chunk = (xcb_char2b_t*)input + offset;
+        const xcb_char2b_t *chunk = text + offset;
 
         /* Draw it */
-        xcb_image_text_16(conn, chunk_size, drawable, gc, pos_x, pos_y, chunk);
+        xcb_image_text_16(conn, chunk_size, drawable, gc, x, pos_y, chunk);
 
         /* Advance the offset and length of the text to draw */
         offset += chunk_size;
@@ -154,12 +130,46 @@ void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawabl
             break;
 
         /* Advance pos_x based on the predicted text width */
-        pos_x += predict_text_width((char*)chunk, chunk_size, true);
+        x += predict_text_width((char*)chunk, chunk_size, true);
     }
+}
 
-    /* If we had to convert, free the converted string */
-    if (!is_ucs2)
-        free(input);
+/*
+ * Draws text onto the specified X drawable (normally a pixmap) at the
+ * specified coordinates (from the top left corner of the leftmost, uppermost
+ * glyph) and using the provided gc.
+ *
+ * Text must be specified as an i3String.
+ *
+ */
+void draw_text(i3String *text, xcb_drawable_t drawable,
+               xcb_gcontext_t gc, int x, int y, int max_width) {
+    assert(savedFont != NULL);
+
+    draw_text_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text),
+              drawable, gc, x, y, max_width);
+}
+
+/*
+ * ASCII version of draw_text to print static strings.
+ *
+ */
+void draw_text_ascii(const char *text, xcb_drawable_t drawable,
+               xcb_gcontext_t gc, int x, int y, int max_width) {
+    assert(savedFont != NULL);
+
+    size_t text_len = strlen(text);
+    if (text_len > 255) {
+        /* The text is too long to draw it directly to X */
+        i3String *str = i3string_from_utf8(text);
+        draw_text(str, drawable, gc, x, y, max_width);
+        i3string_free(str);
+    } else {
+        /* X11 coordinates for fonts start at the baseline */
+        int pos_y = y + savedFont->info->font_ascent;
+
+        xcb_image_text_8(conn, text_len, drawable, gc, x, pos_y, text);
+    }
 }
 
 static int xcb_query_text_width(xcb_char2b_t *text, size_t text_len) {

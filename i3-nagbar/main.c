@@ -132,7 +132,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
 
     /* restore font color */
     set_font_colors(pixmap_gc, color_text, color_background);
-    draw_text((char *)i3string_as_ucs2(prompt), i3string_get_num_glyphs(prompt), true, pixmap, pixmap_gc,
+    draw_text(prompt, pixmap, pixmap_gc,
             4 + 4, 4 + 4, rect.width - 4 - 4);
 
     /* render close button */
@@ -159,7 +159,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
 
     values[0] = 1;
     set_font_colors(pixmap_gc, color_text, color_button_background);
-    draw_text("X", 1, false, pixmap, pixmap_gc, y - w - line_width + w / 2 - 4,
+    draw_text_ascii("X", pixmap, pixmap_gc, y - w - line_width + w / 2 - 4,
             4 + 4 - 1, rect.width - y + w + line_width - w / 2 + 4);
     y -= w;
 
@@ -190,7 +190,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
         values[0] = color_text;
         values[1] = color_button_background;
         set_font_colors(pixmap_gc, color_text, color_button_background);
-        draw_text((char *)i3string_as_ucs2(buttons[c].label), i3string_get_num_glyphs(buttons[c].label), true, pixmap, pixmap_gc,
+        draw_text(buttons[c].label, pixmap, pixmap_gc,
                 y - w - line_width + 6, 4 + 3, rect.width - y + w + line_width - 6);
 
         y -= w;

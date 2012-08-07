@@ -144,8 +144,7 @@ void refresh_statusline() {
 
         uint32_t colorpixel = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
         set_font_colors(statusline_ctx, colorpixel, colors.bar_bg);
-        draw_text((char *)i3string_as_ucs2(block->full_text), i3string_get_num_glyphs(block->full_text),
-                  true, statusline_pm, statusline_ctx, x, 0, block->width);
+        draw_text(block->full_text, statusline_pm, statusline_ctx, x, 0, block->width);
         x += block->width;
 
         if (TAILQ_NEXT(block, blocks) != NULL) {
@@ -1519,8 +1518,7 @@ void draw_bars() {
                                     1,
                                     &rect);
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
-            draw_text((char*)i3string_as_ucs2(ws_walk->name), i3string_get_num_glyphs(ws_walk->name), true,
-                    outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, ws_walk->name_width);
+            draw_text(ws_walk->name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, ws_walk->name_width);
             i += 10 + ws_walk->name_width + 1;
         }
 

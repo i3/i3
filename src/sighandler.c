@@ -52,7 +52,7 @@ static int sig_draw_window(xcb_window_t win, int width, int height, int font_hei
     set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
 
     for (int i = 0; crash_text_i3strings[i] != NULL; ++i) {
-        draw_text((char *)i3string_as_ucs2(crash_text_i3strings[i]), i3string_get_num_glyphs(crash_text_i3strings[i]), true, pixmap, pixmap_gc,
+        draw_text(crash_text_i3strings[i], pixmap, pixmap_gc,
                 8, 5 + i * font_height, width - 16);
     }
 
