@@ -119,7 +119,7 @@ void refresh_statusline() {
         if (i3string_get_num_bytes(block->full_text) == 0)
             continue;
 
-        block->width = predict_text_width((char *)i3string_as_ucs2(block->full_text), i3string_get_num_glyphs(block->full_text), true);
+        block->width = predict_text_width(block->full_text);
         /* If this is not the last block, add some pixels for a separator. */
         if (TAILQ_NEXT(block, blocks) != NULL)
             block->width += 9;

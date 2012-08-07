@@ -333,7 +333,7 @@ int main(int argc, char *argv[]) {
     sockfd = ipc_connect(socket_path);
 
     if (prompt != NULL)
-        prompt_offset = predict_text_width((char *)i3string_as_ucs2(prompt), i3string_get_num_glyphs(prompt), true);
+        prompt_offset = predict_text_width(prompt);
 
     int screens;
     conn = xcb_connect(NULL, &screens);

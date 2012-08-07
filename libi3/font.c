@@ -105,6 +105,8 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
     xcb_change_gc(conn, gc, mask, values);
 }
 
+static int predict_text_width_xcb(const xcb_char2b_t *text, size_t text_len);
+
 static void draw_text_xcb(const xcb_char2b_t *text, size_t text_len, xcb_drawable_t drawable,
                xcb_gcontext_t gc, int x, int y, int max_width) {
     /* X11 coordinates for fonts start at the baseline */
@@ -130,7 +132,7 @@ static void draw_text_xcb(const xcb_char2b_t *text, size_t text_len, xcb_drawabl
             break;
 
         /* Advance pos_x based on the predicted text width */
-        x += predict_text_width((char*)chunk, chunk_size, true);
+        x += predict_text_width_xcb(chunk, chunk_size);
     }
 }
 
@@ -172,7 +174,7 @@ void draw_text_ascii(const char *text, xcb_drawable_t drawable,
     }
 }
 
-static int xcb_query_text_width(xcb_char2b_t *text, size_t text_len) {
+static int xcb_query_text_width(const xcb_char2b_t *text, size_t text_len) {
     /* Make the user know we’re using the slow path, but only once. */
     static bool first_invocation = true;
     if (first_invocation) {
@@ -199,18 +201,9 @@ static int xcb_query_text_width(xcb_char2b_t *text, size_t text_len) {
     return width;
 }
 
-/*
- * Predict the text width in pixels for the given text. Text can be specified
- * as UCS-2 or UTF-8.
- *
- */
-int predict_text_width(char *text, size_t text_len, bool is_ucs2) {
-    /* Convert the text into UTF-16 so we can do basic pointer math */
-    xcb_char2b_t *input;
-    if (is_ucs2)
-        input = (xcb_char2b_t*)text;
-    else
-        input = convert_utf8_to_ucs2(text, &text_len);
+static int predict_text_width_xcb(const xcb_char2b_t *input, size_t text_len) {
+    if (text_len == 0)
+        return 0;
 
     int width;
     if (savedFont->table == NULL) {
@@ -249,9 +242,14 @@ int predict_text_width(char *text, size_t text_len, bool is_ucs2) {
         }
     }
 
-    /* If we had to convert, free the converted string */
-    if (!is_ucs2)
-        free(input);
-
     return width;
+}
+
+/*
+ * Predict the text width in pixels for the given text. Text must be
+ * specified as an i3String.
+ *
+ */
+int predict_text_width(i3String *text) {
+    return predict_text_width_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text));
 }

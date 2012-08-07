@@ -155,7 +155,7 @@ void handle_signal(int sig, siginfo_t *info, void *data) {
     }
     crash_text_i3strings[crash_text_length] = NULL;
     /* calculate width for longest text */
-    int font_width = predict_text_width((char *)i3string_as_ucs2(crash_text_i3strings[crash_text_longest]), i3string_get_num_glyphs(crash_text_i3strings[crash_text_longest]), true);
+    int font_width = predict_text_width(crash_text_i3strings[crash_text_longest]);
     int width = font_width + 20;
 
     /* Open a popup window on each virtual screen */

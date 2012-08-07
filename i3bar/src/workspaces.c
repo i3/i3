@@ -116,10 +116,9 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
             /* Save the name */
             params->workspaces_walk->name = i3string_from_utf8_with_length((const char *)val, len);
 
-            /* Convert the name to ucs2, save its length in glyphs and calculate its rendered width */
+            /* Save its rendered width */
             params->workspaces_walk->name_width =
-                predict_text_width((char *)i3string_as_ucs2(params->workspaces_walk->name),
-                i3string_get_num_glyphs(params->workspaces_walk->name), true);
+                predict_text_width(params->workspaces_walk->name);
 
             DLOG("Got Workspace %s, name_width: %d, glyphs: %zu\n",
                  i3string_as_utf8(params->workspaces_walk->name),

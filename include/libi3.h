@@ -311,11 +311,11 @@ void draw_text_ascii(const char *text, xcb_drawable_t drawable,
         xcb_gcontext_t gc, int x, int y, int max_width);
 
 /**
- * Predict the text width in pixels for the given text. Text can be specified
- * as UCS-2 or UTF-8.
+ * Predict the text width in pixels for the given text. Text must be
+ * specified as an i3String.
  *
  */
-int predict_text_width(char *text, size_t text_len, bool is_ucs2);
+int predict_text_width(i3String *text);
 
 /**
  * Returns true if this version of i3 is a debug build (anything which is not a
