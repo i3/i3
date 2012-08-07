@@ -622,7 +622,6 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         }
 
         tree_render();
-        x_push_changes(croot);
     } else if (event->type == A_I3_SYNC) {
         xcb_window_t window = event->data.data32[0];
         uint32_t rnd = event->data.data32[1];
