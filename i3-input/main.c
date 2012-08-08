@@ -45,7 +45,7 @@ static bool modeswitch_active = false;
 static xcb_window_t win;
 static xcb_pixmap_t pixmap;
 static xcb_gcontext_t pixmap_gc;
-static char *glyphs_ucs[512];
+static xcb_char2b_t glyphs_ucs[512];
 static char *glyphs_utf8[512];
 static int input_position;
 static i3Font font;
@@ -102,11 +102,7 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
     }
     /* … and the text */
     if (input_position > 0)
-    {
-        char *full_text = (char *)concat_strings(glyphs_ucs, input_position);
-        draw_text(full_text, input_position, true, pixmap, pixmap_gc, 4, 4 + prompt_offset, 492 - prompt_offset);
-        free(full_text);
-    }
+        draw_text((char *)glyphs_ucs, input_position, true, pixmap, pixmap_gc, 4, 4 + prompt_offset, 492 - prompt_offset);
 
     /* Copy the contents of the pixmap to the real window */
     xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, /* */ 500, font.height + 8);
@@ -212,7 +208,6 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
             return 1;
 
         input_position--;
-        free(glyphs_ucs[input_position]);
         free(glyphs_utf8[input_position]);
 
         handle_expose(NULL, conn, NULL);
@@ -243,18 +238,16 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
         return 1;
     }
 
-    /* store the UCS into a string */
-    uint8_t inp[3] = {(ucs & 0xFF00) >> 8, (ucs & 0xFF), 0};
+    xcb_char2b_t inp;
+    inp.byte1 = ( ucs & 0xff00 ) >> 2;
+    inp.byte2 = ( ucs & 0x00ff ) >> 0;
 
-    printf("inp[0] = %02x, inp[1] = %02x, inp[2] = %02x\n", inp[0], inp[1], inp[2]);
+    printf("inp.byte1 = %02x, inp.byte2 = %02x\n", inp.byte1, inp.byte2);
     /* convert it to UTF-8 */
-    char *out = convert_ucs2_to_utf8((xcb_char2b_t*)inp, 1);
+    char *out = convert_ucs2_to_utf8(&inp, 1);
     printf("converted to %s\n", out);
 
-    glyphs_ucs[input_position] = malloc(3 * sizeof(uint8_t));
-    if (glyphs_ucs[input_position] == NULL)
-        err(EXIT_FAILURE, "malloc() failed\n");
-    memcpy(glyphs_ucs[input_position], inp, 3);
+    glyphs_ucs[input_position] = inp;
     glyphs_utf8[input_position] = out;
     input_position++;
 
