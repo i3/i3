@@ -212,6 +212,7 @@ static void handle_motion_notify(xcb_motion_notify_event_t *event) {
 
     Con *con;
     if ((con = con_by_frame_id(event->event)) == NULL) {
+        DLOG("MotionNotify for an unknown container, checking if it crosses screen boundaries.\n");
         check_crossing_screen_boundary(event->root_x, event->root_y);
         return;
     }
@@ -404,6 +405,8 @@ static void handle_screen_change(xcb_generic_event_t *e) {
     DLOG("RandR screen change\n");
 
     randr_query_outputs();
+
+    scratchpad_fix_resolution();
 
     ipc_send_event("output", I3_IPC_EVENT_OUTPUT, "{\"change\":\"unspecified\"}");
 

@@ -30,7 +30,9 @@ static Con *_create___i3(void) {
     x_set_name(__i3, "[i3 con] pseudo-output __i3");
     /* For retaining the correct position/size of a scratchpad window, the
      * dimensions of the real outputs should be multiples of the __i3
-     * pseudo-output. */
+     * pseudo-output. Ensuring that is the job of scratchpad_fix_resolution()
+     * which gets called after this function and after detecting all the
+     * outputs (or whenever an output changes). */
     __i3->rect.width = 1280;
     __i3->rect.height = 1024;
 

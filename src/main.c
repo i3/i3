@@ -657,6 +657,8 @@ int main(int argc, char *argv[]) {
         randr_init(&randr_base);
     }
 
+    scratchpad_fix_resolution();
+
     xcb_query_pointer_reply_t *pointerreply;
     Output *output = NULL;
     if (!(pointerreply = xcb_query_pointer_reply(conn, pointercookie, NULL))) {

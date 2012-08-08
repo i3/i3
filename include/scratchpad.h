@@ -30,4 +30,14 @@ void scratchpad_move(Con *con);
  */
 void scratchpad_show(Con *con);
 
+/**
+ * When starting i3 initially (and after each change to the connected outputs),
+ * this function fixes the resolution of the __i3 pseudo-output. When that
+ * resolution is not set to a function which shares a common divisor with every
+ * active output’s resolution, floating point calculation errors will lead to
+ * the scratchpad window moving when shown repeatedly.
+ *
+ */
+void scratchpad_fix_resolution(void);
+
 #endif
