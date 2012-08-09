@@ -182,6 +182,10 @@ void floating_enable(Con *con, bool automatic) {
     con->percent = 1.0;
     con->floating = FLOATING_USER_ON;
 
+    /* 4: set the border style as specified with new_float */
+    if (automatic)
+        con->border_style = config.default_floating_border;
+
     /* Add pixels for the decoration. */
     Rect border_style_rect = con_border_style_rect(con);
 
@@ -229,11 +233,6 @@ void floating_enable(Con *con, bool automatic) {
     }
 
     DLOG("Floating rect: (%d, %d) with %d x %d\n", nc->rect.x, nc->rect.y, nc->rect.width, nc->rect.height);
-
-
-    /* 4: set the border style as specified with new_float */
-    if (automatic)
-        con->border_style = config.default_floating_border;
 
     /* 5: Subtract the deco_height in order to make the floating window appear
      * at precisely the position it specified in its original geometry (which
