@@ -67,4 +67,11 @@ void errorlog(char *fmt, ...)
 void verboselog(char *fmt, ...)
     __attribute__ ((format (printf, 1, 2)));
 
+/**
+ * Deletes the unused log files. Useful if i3 exits immediately, eg.
+ * because --get-socketpath was called. We don't care for syscall
+ * failures. This function is invoked automatically when exiting.
+ */
+void purge_zerobyte_logfile(void);
+
 #endif

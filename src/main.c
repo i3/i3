@@ -343,10 +343,10 @@ int main(int argc, char *argv[]) {
                     char *socket_path = root_atom_contents("I3_SOCKET_PATH");
                     if (socket_path) {
                         printf("%s\n", socket_path);
-                        return 0;
+                        exit(EXIT_SUCCESS);
                     }
 
-                    return 1;
+                    exit(EXIT_FAILURE);
                 } else if (strcmp(long_options[option_index].name, "shmlog-size") == 0 ||
                            strcmp(long_options[option_index].name, "shmlog_size") == 0) {
                     shmlog_size = atoi(optarg);

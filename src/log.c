@@ -131,6 +131,7 @@ void init_logging(void) {
         loglastwrap = logbuffer + logbuffer_size;
         store_log_markers();
     }
+    atexit(purge_zerobyte_logfile);
 }
 
 /*
@@ -267,4 +268,31 @@ void debuglog(char *fmt, ...) {
     va_start(args, fmt);
     vlog(debug_logging, fmt, args);
     va_end(args);
+}
+
+/*
+ * Deletes the unused log files. Useful if i3 exits immediately, eg.
+ * because --get-socketpath was called. We don't care for syscall
+ * failures. This function is invoked automatically when exiting.
+ */
+void purge_zerobyte_logfile(void) {
+    struct stat st;
+    char *slash;
+
+    if (!errorfilename)
+        return;
+
+    /* don't delete the log file if it contains something */
+    if ((stat(errorfilename, &st)) == -1 || st.st_size > 0)
+        return;
+
+    if (unlink(errorfilename) == -1)
+        return;
+
+    if ((slash = strrchr(errorfilename, '/')) != NULL) {
+        *slash = '\0';
+        /* possibly fails with ENOTEMPTY if there are files (or
+         * sockets) left. */
+        rmdir(errorfilename);
+    }
 }
