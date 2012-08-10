@@ -16,6 +16,11 @@
 /** ##__VA_ARGS__ means: leave out __VA_ARGS__ completely if it is empty, that
    is, delete the preceding comma */
 #define LOG(fmt, ...) verboselog(fmt, ##__VA_ARGS__)
+/* We will include libi3.h which define its own version of ELOG.
+ * We want *our* version, so we undef the libi3 one. */
+#if defined(ELOG)
+#undef ELOG
+#endif
 #define ELOG(fmt, ...) errorlog("ERROR: " fmt, ##__VA_ARGS__)
 #define DLOG(fmt, ...) debuglog("%s:%s:%d - " fmt, I3__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
