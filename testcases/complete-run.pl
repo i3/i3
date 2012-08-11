@@ -15,6 +15,7 @@ use TAP::Harness;
 use TAP::Parser;
 use TAP::Parser::Aggregator;
 use Time::HiRes qw(time);
+use IO::Handle;
 # these are shipped with the testsuite
 use lib qw(lib);
 use StartXDummy;
@@ -127,6 +128,7 @@ printf("\nRough time estimate for this run: %.2f seconds\n\n", $timings{GLOBAL})
 
 my $logfile = "$outdir/complete-run.log";
 open $log, '>', $logfile or die "Could not create '$logfile': $!";
+$log->autoflush(1);
 say "Writing logfile to '$logfile'...";
 
 # 3: run all tests
