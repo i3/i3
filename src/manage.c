@@ -324,7 +324,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         (cwindow->leader != XCB_NONE &&
          cwindow->leader != cwindow->id &&
          con_by_window_id(cwindow->leader) != NULL)) {
-        LOG("This window is transiert for another window, setting floating\n");
+        LOG("This window is transient for another window, setting floating\n");
         want_floating = true;
 
         if (config.popup_during_fullscreen == PDF_LEAVE_FULLSCREEN &&
