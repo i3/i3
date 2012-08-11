@@ -50,7 +50,7 @@ src/cfgparse.tab.c: src/cfgparse.y $(i3_HEADERS_DEP)
 # and once as an object file for i3.
 src/commands_parser.o: src/commands_parser.c $(i3_HEADERS_DEP) i3-command-parser.stamp
 	echo "[i3] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -o test.commands_parser $< $(i3_LIBS) $(LIBS)
+	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -o test.commands_parser $< $(LIBS) $(i3_LIBS)
 	$(CC) $(I3_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
 i3-command-parser.stamp: generate-command-parser.pl parser-specs/commands.spec
@@ -60,7 +60,7 @@ i3-command-parser.stamp: generate-command-parser.pl parser-specs/commands.spec
 
 i3: libi3.a $(i3_OBJECTS)
 	echo "[i3] Link i3"
-	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3_LIBS) $(LIBS)
+	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(LIBS) $(i3_LIBS)
 
 install-i3: i3
 	echo "[i3] Install"

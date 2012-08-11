@@ -16,7 +16,7 @@ i3-nagbar/%.o: i3-nagbar/%.c $(i3_nagbar_HEADERS)
 
 i3-nagbar/i3-nagbar: libi3.a $(i3_nagbar_OBJECTS)
 	echo "[i3-nagbar] Link i3-nagbar"
-	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3_nagbar_LIBS) $(LIBS)
+	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(LIBS) $(i3_nagbar_LIBS)
 
 install-i3-nagbar: i3-nagbar/i3-nagbar
 	echo "[i3-nagbar] Install"

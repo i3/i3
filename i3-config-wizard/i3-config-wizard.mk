@@ -25,7 +25,7 @@ i3-config-wizard/cfgparse.tab.c: i3-config-wizard/cfgparse.y $(i3_config_wizard_
 
 i3-config-wizard/i3-config-wizard: libi3.a $(i3_config_wizard_OBJECTS)
 	echo "[i3-config-wizard] Link i3-config-wizard"
-	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(i3_config_wizard_LIBS) $(LIBS)
+	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(LIBS) $(i3_config_wizard_LIBS)
 
 install-i3-config-wizard: i3-config-wizard/i3-config-wizard
 	echo "[i3-config-wizard] Install"
