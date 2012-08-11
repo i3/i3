@@ -52,6 +52,7 @@ sub activate_i3 {
         $ENV{LISTEN_PID} = $$;
         $ENV{LISTEN_FDS} = 1;
         delete $ENV{DESKTOP_STARTUP_ID};
+        delete $ENV{I3SOCK};
         unless ($args{dont_create_temp_dir}) {
             $ENV{XDG_RUNTIME_DIR} = '/tmp/i3-testsuite/';
             mkdir $ENV{XDG_RUNTIME_DIR};
