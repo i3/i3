@@ -192,19 +192,18 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     if (first_line) {
         DLOG("Detecting input type based on buffer *%.*s*\n", rec, buffer);
         /* Detect whether this is JSON or plain text. */
-        plaintext = (strncasecmp((char*)buffer, "{\"version\":", strlen("{\"version\":")) != 0);
+        unsigned int consumed = 0;
+        /* At the moment, we don’t care for the version. This might change
+         * in the future, but for now, we just discard it. */
+        plaintext = (determine_json_version(buffer, buffer_len, &consumed) == -1);
         if (plaintext) {
             /* In case of plaintext, we just add a single block and change its
              * full_text pointer later. */
             struct status_block *new_block = scalloc(sizeof(struct status_block));
             TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
         } else {
-            /* At the moment, we don’t care for the version. This might change
-             * in the future, but for now, we just discard it. */
-            while (*json_input != '\n' && *json_input != '\0') {
-                json_input++;
-                rec--;
-            }
+            json_input += consumed;
+            rec -= consumed;
         }
         first_line = false;
     }

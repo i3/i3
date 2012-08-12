@@ -56,5 +56,6 @@ TAILQ_HEAD(statusline_head, status_block) statusline_head;
 #include "xcb.h"
 #include "config.h"
 #include "libi3.h"
+#include "determine_json_version.h"
 
 #endif
