@@ -635,6 +635,15 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             return;
         }
 
+        Con *ws = con_get_workspace(con);
+        if (!workspace_is_visible(ws)) {
+            DLOG("Workspace not visible, ignoring _NET_ACTIVE_WINDOW\n");
+            return;
+        }
+
+        if (ws != con_get_workspace(focused))
+            workspace_show(ws);
+
         con_focus(con);
         tree_render();
     } else if (event->type == A_I3_SYNC) {
