@@ -20,6 +20,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <pthread.h>
 #if defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/sysctl.h>
@@ -48,6 +49,8 @@ int shmlog_size = 0;
 static char *logbuffer;
 /* A pointer (within logbuffer) where data will be written to next. */
 static char *logwalk;
+/* A pointer to the shmlog header */
+static i3_shmlog_header *header;
 /* A pointer to the byte where we last wrapped. Necessary to not print the
  * left-overs at the end of the ringbuffer. */
 static char *loglastwrap;
@@ -63,8 +66,6 @@ static int logbuffer_shm;
  *
  */
 static void store_log_markers(void) {
-    i3_shmlog_header *header = (i3_shmlog_header*)logbuffer;
-
     header->offset_next_write = (logwalk - logbuffer);
     header->offset_last_wrap = (loglastwrap - logbuffer);
     header->size = logbuffer_size;
@@ -128,6 +129,18 @@ void init_logging(void) {
             logbuffer = NULL;
             return;
         }
+
+        /* Initialize with 0-bytes, just to be sure… */
+        memset(logbuffer, '\0', logbuffer_size);
+
+        header = (i3_shmlog_header*)logbuffer;
+
+        pthread_condattr_t cond_attr;
+        pthread_condattr_init(&cond_attr);
+        if (pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED) != 0)
+            ELOG("pthread_condattr_setpshared() failed, i3-dump-log -f will not work!\n");
+        pthread_cond_init(&(header->condvar), &cond_attr);
+
         logwalk = logbuffer + sizeof(i3_shmlog_header);
         loglastwrap = logbuffer + logbuffer_size;
         store_log_markers();
@@ -199,21 +212,24 @@ static void vlog(const bool print, const char *fmt, va_list args) {
             fprintf(stderr, "BUG: single log message > 4k\n");
         }
 
-        /* If there is no space for the current message (plus trailing
-         * nullbyte) in the ringbuffer, we need to wrap and write to the
-         * beginning again. */
-        if ((len+1) >= (logbuffer_size - (logwalk - logbuffer))) {
+        /* If there is no space for the current message in the ringbuffer, we
+         * need to wrap and write to the beginning again. */
+        if (len >= (logbuffer_size - (logwalk - logbuffer))) {
             loglastwrap = logwalk;
             logwalk = logbuffer + sizeof(i3_shmlog_header);
+            store_log_markers();
+            header->wrap_count++;
         }
 
-        /* Copy the buffer, terminate it, move the write pointer to the byte after
-         * our current message. */
+        /* Copy the buffer, move the write pointer to the byte after our
+         * current message. */
         strncpy(logwalk, message, len);
-        logwalk[len] = '\0';
-        logwalk += len + 1;
+        logwalk += len;
 
         store_log_markers();
+
+        /* Wake up all (i3-dump-log) processes waiting for condvar. */
+        pthread_cond_broadcast(&(header->condvar));
 
         if (print)
             fwrite(message, len, 1, stdout);

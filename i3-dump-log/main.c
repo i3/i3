@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-dump-log/main.c: Dumps the i3 SHM log to stdout.
  *
@@ -28,18 +28,47 @@
 #include "shmlog.h"
 #include <i3/ipc.h>
 
+static uint32_t offset_next_write,
+                wrap_count;
+
+static i3_shmlog_header *header;
+static char *logbuffer,
+            *walk;
+
+static int check_for_wrap(void) {
+    if (wrap_count == header->wrap_count)
+        return 0;
+
+    /* The log wrapped. Print the remaining content and reset walk to the top
+     * of the log. */
+    wrap_count = header->wrap_count;
+    write(STDOUT_FILENO, walk, ((logbuffer + header->offset_last_wrap) - walk));
+    walk = logbuffer + sizeof(i3_shmlog_header);
+    return 1;
+}
+
+static void print_till_end(void) {
+    check_for_wrap();
+    int n = write(STDOUT_FILENO, walk, ((logbuffer + header->offset_next_write) - walk));
+    if (n > 0) {
+        walk += n;
+    }
+}
+
 int main(int argc, char *argv[]) {
     int o, option_index = 0;
-    bool verbose = false;
+    bool verbose = false,
+         follow = false;
 
     static struct option long_options[] = {
         {"version", no_argument, 0, 'v'},
         {"verbose", no_argument, 0, 'V'},
+        {"follow", no_argument, 0, 'f'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
 
-    char *options_string = "s:vVh";
+    char *options_string = "s:vfVh";
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         if (o == 'v') {
@@ -47,9 +76,11 @@ int main(int argc, char *argv[]) {
             return 0;
         } else if (o == 'V') {
             verbose = true;
+        } else if (o == 'f') {
+            follow = true;
         } else if (o == 'h') {
             printf("i3-dump-log " I3_VERSION "\n");
-            printf("i3-dump-log [-s <socket>]\n");
+            printf("i3-dump-log [-f] [-s <socket>]\n");
             return 0;
         }
     }
@@ -90,45 +121,61 @@ int main(int argc, char *argv[]) {
 
     struct stat statbuf;
 
-    int logbuffer_shm = shm_open(shmname, O_RDONLY, 0);
+    /* NB: While we must never read, we need O_RDWR for the pthread condvar. */
+    int logbuffer_shm = shm_open(shmname, O_RDWR, 0);
     if (logbuffer_shm == -1)
         err(EXIT_FAILURE, "Could not shm_open SHM segment for the i3 log (%s)", shmname);
 
     if (fstat(logbuffer_shm, &statbuf) != 0)
         err(EXIT_FAILURE, "stat(%s)", shmname);
 
-    char *logbuffer = mmap(NULL, statbuf.st_size, PROT_READ, MAP_SHARED, logbuffer_shm, 0);
+    /* NB: While we must never read, we need O_RDWR for the pthread condvar. */
+    logbuffer = mmap(NULL, statbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, logbuffer_shm, 0);
     if (logbuffer == MAP_FAILED)
         err(EXIT_FAILURE, "Could not mmap SHM segment for the i3 log");
 
-    i3_shmlog_header *header = (i3_shmlog_header*)logbuffer;
+    header = (i3_shmlog_header*)logbuffer;
 
     if (verbose)
         printf("next_write = %d, last_wrap = %d, logbuffer_size = %d, shmname = %s\n",
                header->offset_next_write, header->offset_last_wrap, header->size, shmname);
-    int chars;
-    char *walk = logbuffer + header->offset_next_write;
-    /* Skip the first line, it very likely is mangled. Not a problem, though,
-     * the log is chatty enough to have plenty lines left. */
-    while (*walk != '\0')
-        walk++;
+    walk = logbuffer + header->offset_next_write;
 
-    /* Print the oldest log lines. We use printf("%s") to stop on \0. */
-    while (walk < (logbuffer + header->offset_last_wrap)) {
-        chars = printf("%s", walk);
-        /* Shortcut: If there are two consecutive \0 bytes, this part of the
-         * buffer was never touched. To not call printf() for every byte of the
-         * buffer, we directly exit the loop. */
-        if (*walk == '\0' && *(walk+1) == '\0')
-            break;
-        walk += (chars > 0 ? chars : 1);
+    /* We first need to print old content in case there was at least one
+     * wrapping already. */
+
+    if (*walk != '\0') {
+        /* In case there was a write to the buffer already, skip the first
+         * old line, it very likely is mangled. Not a problem, though, the log
+         * is chatty enough to have plenty lines left. */
+        while (*walk != '\n')
+            walk++;
+        walk++;
     }
+
+    /* In case there was no wrapping, this is a no-op, otherwise it prints the
+     * old lines. */
+    wrap_count = 0;
+    check_for_wrap();
 
     /* Then start from the beginning and print the newer lines */
     walk = logbuffer + sizeof(i3_shmlog_header);
-    while (walk < (logbuffer + header->offset_next_write)) {
-        chars = printf("%s", walk);
-        walk += (chars > 0 ? chars : 1);
+    print_till_end();
+
+    if (follow) {
+        /* Since pthread_cond_wait() expects a mutex, we need to provide one.
+         * To not lock i3 (that’s bad, mhkay?) we just define one outside of
+         * the shared memory. */
+        pthread_mutex_t dummy_mutex = PTHREAD_MUTEX_INITIALIZER;
+        pthread_mutex_lock(&dummy_mutex);
+        while (1) {
+            pthread_cond_wait(&(header->condvar), &dummy_mutex);
+            /* If this was not a spurious wakeup, print the new lines. */
+            if (header->offset_next_write != offset_next_write) {
+                offset_next_write = header->offset_next_write;
+                print_till_end();
+            }
+        }
     }
 
     return 0;
