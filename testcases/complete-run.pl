@@ -265,9 +265,16 @@ sub take_job {
 
             for (1 .. $lines) {
                 my $result = $parser->next;
-                if (defined($result) and $result->is_test) {
+                next unless defined($result);
+                if ($result->is_test) {
                     $tests_completed++;
                     status($display, "$test: [$tests_completed/??] ");
+                } elsif ($result->is_bailout) {
+                    Log status($display, "$test: BAILOUT");
+                    status_completed(scalar @done);
+                    say "";
+                    say "test $test bailed out: " . $result->explanation;
+                    exit 1;
                 }
             }
 
