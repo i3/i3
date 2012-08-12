@@ -120,7 +120,7 @@ void display_running_version(void) {
 
     yajl_status state = yajl_parse(handle, (const unsigned char*)reply, (int)reply_length);
     if (state != yajl_status_ok)
-        err(EXIT_FAILURE, "Could not parse my own reply. That's weird. reply is %.*s", (int)reply_length, reply);
+        errx(EXIT_FAILURE, "Could not parse my own reply. That's weird. reply is %.*s", (int)reply_length, reply);
 
     printf("\rRunning i3 version: %s (pid %s)\n", human_readable_version, pid_from_atom);
     printf("\n");
