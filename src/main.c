@@ -257,6 +257,9 @@ int main(int argc, char *argv[]) {
         {"no-autostart", no_argument, 0, 'a'},
         {"config", required_argument, 0, 'c'},
         {"version", no_argument, 0, 'v'},
+        {"moreversion", no_argument, 0, 'm'},
+        {"more-version", no_argument, 0, 'm'},
+        {"more_version", no_argument, 0, 'm'},
         {"help", no_argument, 0, 'h'},
         {"layout", required_argument, 0, 'L'},
         {"restart", required_argument, 0, 0},
@@ -294,7 +297,7 @@ int main(int argc, char *argv[]) {
 
     start_argv = argv;
 
-    while ((opt = getopt_long(argc, argv, "c:CvaL:hld:V", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "c:CvmaL:hld:V", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'a':
                 LOG("Autostart disabled using -a\n");
@@ -316,6 +319,12 @@ int main(int argc, char *argv[]) {
             case 'v':
                 printf("i3 version " I3_VERSION " © 2009-2012 Michael Stapelberg and contributors\n");
                 exit(EXIT_SUCCESS);
+                break;
+            case 'm':
+                printf("Binary i3 version:  " I3_VERSION " © 2009-2012 Michael Stapelberg and contributors\n");
+                display_running_version();
+                exit(EXIT_SUCCESS);
+                break;
             case 'V':
                 set_verbosity(true);
                 break;

@@ -80,5 +80,6 @@
 #include "commands.h"
 #include "commands_parser.h"
 #include "fake_outputs.h"
+#include "display_version.h"
 
 #endif
