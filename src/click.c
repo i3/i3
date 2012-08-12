@@ -1,4 +1,5 @@
-#line 2 "click.c"
+#undef I3__FILE__
+#define I3__FILE__ "click.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *

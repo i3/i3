@@ -1,4 +1,5 @@
-#line 2 "xinerama.c"
+#undef I3__FILE__
+#define I3__FILE__ "xinerama.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *

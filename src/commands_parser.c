@@ -1,4 +1,5 @@
-#line 2 "commands_parser.c"
+#undef I3__FILE__
+#define I3__FILE__ "commands_parser.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *

@@ -1,4 +1,5 @@
-#line 2 "floating.c"
+#undef I3__FILE__
+#define I3__FILE__ "floating.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *

@@ -1,4 +1,5 @@
-#line 2 "key_press.c"
+#undef I3__FILE__
+#define I3__FILE__ "key_press.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *

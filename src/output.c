@@ -1,4 +1,5 @@
-#line 2 "output.c"
+#undef I3__FILE__
+#define I3__FILE__ "output.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
