@@ -494,7 +494,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    LOG("i3 (tree) version " I3_VERSION " starting\n");
+    LOG("i3 " I3_VERSION " starting\n");
 
     conn = xcb_connect(NULL, &conn_screen);
     if (xcb_connection_has_error(conn))
