@@ -294,11 +294,21 @@ a # and can only be used at the beginning of a line:
 # This is a comment
 -------------------
 
+[[fonts]]
+
 === Fonts
 
-i3 uses X core fonts (not Xft) for rendering window titles. You can use
-+xfontsel(1)+ to generate such a font description. To see special characters
-(Unicode), you need to use a font which supports the ISO-10646 encoding.
+i3 has support for both X core fonts and FreeType fonts (through Pango) to
+render window titles.
+
+To generate an X core font description, you can use +xfontsel(1)+. To see
+special characters (Unicode), you need to use a font which supports the
+ISO-10646 encoding.
+
+A FreeType font description is composed by a font family, a style, a weight,
+a variant, a stretch and a size.
+FreeType fonts support right-to-left rendering and contain often more
+Unicode glyphs than X core fonts.
 
 If i3 cannot open the configured font, it will output an error in the logfile
 and fall back to a working font.
@@ -306,11 +316,13 @@ and fall back to a working font.
 *Syntax*:
 ------------------------------
 font <X core font description>
+font xft:<a FreeType font description>
 ------------------------------
 
 *Examples*:
 --------------------------------------------------------------
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+font xft:DejaVu Sans Mono 10
 --------------------------------------------------------------
 
 [[keybindings]]
@@ -1029,8 +1041,7 @@ xrandr --output <output> --primary
 
 === Font
 
-Specifies the font (again, X core font, not Xft, just like in i3) to be used in
-the bar.
+Specifies the font to be used in the bar. See <<fonts>>.
 
 *Syntax*:
 ---------------------
@@ -1041,6 +1052,7 @@ font <font>
 --------------------------------------------------------------
 bar {
     font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+    font xft:DejaVu Sans Mono 10
 }
 --------------------------------------------------------------
 
