@@ -1,7 +1,7 @@
 i3bar input protocol
 ====================
 Michael Stapelberg <michael@i3wm.org>
-February 2012
+August 2012
 
 This document explains the protocol in which i3bar expects its input. It
 provides support for colors, urgency, shortening and easy manipulation.
@@ -49,6 +49,9 @@ consists of a single JSON hash:
 { "version": 1 }
 ----------------
 
+(Note that before i3 v4.3 the precise format had to be +{"version":1}+,
+byte-for-byte.)
+
 What follows is an infinite array (so it should be parsed by a streaming JSON
 parser, but as described above you can go for a simpler solution), whose
 elements are one array per status line. A status line is one unit of
@@ -85,6 +88,10 @@ be represented by a JSON hash:
 Please note that this example was pretty printed for human consumption.
 i3status and others will output single statuslines in one line, separated by
 \n.
+
+You can find an example of a shell script which can be used as your
++status_command+ in the bar configuration at
+http://code.stapelberg.de/git/i3/tree/contrib/trivial-bar-script.sh?h=next
 
 === Blocks in detail
 
