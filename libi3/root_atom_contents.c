@@ -28,7 +28,7 @@ char *root_atom_contents(const char *atomname) {
     xcb_intern_atom_cookie_t atom_cookie;
     xcb_intern_atom_reply_t *atom_reply;
     int screen;
-    char *socket_path;
+    char *content;
 
     if ((conn = xcb_connect(NULL, &screen)) == NULL ||
         xcb_connection_has_error(conn))
@@ -50,10 +50,17 @@ char *root_atom_contents(const char *atomname) {
     prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
     if (prop_reply == NULL || xcb_get_property_value_length(prop_reply) == 0)
         return NULL;
-    if (asprintf(&socket_path, "%.*s", xcb_get_property_value_length(prop_reply),
-                 (char*)xcb_get_property_value(prop_reply)) == -1)
-        return NULL;
+    if (prop_reply->type == XCB_ATOM_CARDINAL) {
+        /* We treat a CARDINAL as a >= 32-bit unsigned int. The only CARDINAL
+         * we query is I3_PID, which is 32-bit. */
+        if (asprintf(&content, "%u", *((unsigned int*)xcb_get_property_value(prop_reply))) == -1)
+            return NULL;
+    } else {
+        if (asprintf(&content, "%.*s", xcb_get_property_value_length(prop_reply),
+                     (char*)xcb_get_property_value(prop_reply)) == -1)
+            return NULL;
+    }
     xcb_disconnect(conn);
-    return socket_path;
+    return content;
 }
 
