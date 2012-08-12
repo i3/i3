@@ -39,7 +39,15 @@ static bool load_pango_font(i3Font *font, const char *desc) {
     /* Load the font description */
     font->specific.pango_desc = pango_font_description_from_string(desc);
     if (!font->specific.pango_desc)
+    {
+        ELOG("Could not open font %s with Pango, fallback to X font.\n", desc);
         return false;
+    }
+
+    LOG("Using Pango font %s, size %d",
+        pango_font_description_get_family(font->specific.pango_desc),
+        pango_font_description_get_size(font->specific.pango_desc)
+        );
 
     /* We cache root_visual_type here, since you must call
      * load_pango_font before any other pango function
@@ -177,6 +185,8 @@ i3Font load_font(const char *pattern, const bool fallback) {
                      "(fixed or -misc-*): X11 error %d", error->error_code);
         }
     }
+
+    LOG("Using X font %s", pattern);
 
     /* Get information (height/name) for this font */
     if (!(font.specific.xcb.info = xcb_query_font_reply(conn, info_cookie, NULL)))
