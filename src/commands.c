@@ -416,8 +416,14 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
     /* We have nothing to move:
      *  when criteria was specified but didn't match any window or
      *  when criteria wasn't specified and we don't have any window focused. */
-    if ((!match_is_empty(current_match) && TAILQ_EMPTY(&owindows)) ||
-        (match_is_empty(current_match) && focused->type == CT_WORKSPACE)) {
+    if (!match_is_empty(current_match) && TAILQ_EMPTY(&owindows)) {
+        ELOG("No windows match your criteria, cannot move.\n");
+        ysuccess(false);
+        return;
+    }
+
+    if (match_is_empty(current_match) && focused->type == CT_WORKSPACE) {
+        ELOG("No window to move, you have focused a workspace.\n");
         ysuccess(false);
         return;
     }
