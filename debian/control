@@ -2,7 +2,26 @@ Source: i3-wm
 Section: x11
 Priority: extra
 Maintainer: Michael Stapelberg <stapelberg@debian.org>
-Build-Depends: debhelper (>= 7.0.50~), libx11-dev, libxcb-util0-dev (>= 0.3.8), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-randr0-dev, libxcb-icccm4-dev, libxcursor-dev, asciidoc (>= 8.4.4), xmlto, docbook-xml, pkg-config, libev-dev, flex, bison, libyajl-dev, libpcre3-dev, libstartup-notification0-dev (>= 0.10)
+Build-Depends: debhelper (>= 7.0.50~),
+               libx11-dev,
+               libxcb-util0-dev (>= 0.3.8),
+               libxcb-keysyms1-dev,
+               libxcb-xinerama0-dev (>= 1.1),
+               libxcb-randr0-dev,
+               libxcb-icccm4-dev,
+               libxcursor-dev,
+               asciidoc (>= 8.4.4),
+               xmlto,
+               docbook-xml,
+               pkg-config,
+               libev-dev,
+               flex,
+               bison,
+               libyajl-dev,
+               libpcre3-dev,
+               libstartup-notification0-dev (>= 0.10),
+               libcairo2-dev,
+               libpango1.0-dev
 Standards-Version: 3.9.3
 Homepage: http://i3wm.org/
 
