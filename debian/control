@@ -28,7 +28,7 @@ Homepage: http://i3wm.org/
 Package: i3
 Architecture: any
 Depends: i3-wm (=${binary:Version}), ${misc:Depends}
-Recommends: i3lock (>= 2.2), suckless-tools, i3status (>= 2.3)
+Recommends: i3lock (>= 2.2), suckless-tools, i3status (>= 2.3), dunst
 Description: metapackage (i3 window manager, screen locker, menu, statusbar)
  This metapackage installs the i3 window manager (i3-wm), the i3lock screen
  locker, i3status (for system information) and suckless-tools (for dmenu).
