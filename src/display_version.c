@@ -123,18 +123,25 @@ void display_running_version(void) {
         errx(EXIT_FAILURE, "Could not parse my own reply. That's weird. reply is %.*s", (int)reply_length, reply);
 
     printf("\rRunning i3 version: %s (pid %s)\n", human_readable_version, pid_from_atom);
-    printf("\n");
-    char resolved_path[PATH_MAX];
-    if (realpath(start_argv[0], resolved_path) == NULL)
-        err(EXIT_FAILURE, "realpath(%s)", start_argv[0]);
-    printf("The i3 binary you just called: %s\n", resolved_path);
 
 #ifdef __linux__
     char exepath[PATH_MAX],
          destpath[PATH_MAX];
+    ssize_t linksize;
+
+    snprintf(exepath, sizeof(exepath), "/proc/%d/exe", getpid());
+
+    if ((linksize = readlink(exepath, destpath, sizeof(destpath))) == -1)
+        err(EXIT_FAILURE, "readlink(%s)", exepath);
+
+    /* readlink() does not NULL-terminate strings, so we have to. */
+    destpath[linksize] = '\0';
+
+    printf("\n");
+    printf("The i3 binary you just called: %s\n", destpath);
+
     snprintf(exepath, sizeof(exepath), "/proc/%s/exe", pid_from_atom);
 
-    ssize_t linksize;
     if ((linksize = readlink(exepath, destpath, sizeof(destpath))) == -1)
         err(EXIT_FAILURE, "readlink(%s)", exepath);
 
