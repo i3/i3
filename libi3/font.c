@@ -45,7 +45,7 @@ static bool load_pango_font(i3Font *font, const char *desc) {
 
     LOG("Using Pango font %s, size %d\n",
         pango_font_description_get_family(font->specific.pango_desc),
-        pango_font_description_get_size(font->specific.pango_desc)
+        pango_font_description_get_size(font->specific.pango_desc) / PANGO_SCALE
         );
 
     /* We cache root_visual_type here, since you must call
