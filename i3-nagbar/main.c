@@ -57,6 +57,26 @@ xcb_connection_t *conn;
 xcb_screen_t *root_screen;
 
 /*
+ * Having verboselog() and errorlog() is necessary when using libi3.
+ *
+ */
+void verboselog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+}
+
+void errorlog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+}
+
+/*
  * Starts the given application by passing it through a shell. We use double fork
  * to avoid zombie processes. As the started application’s parent exits (immediately),
  * the application is reparented to init (process-id 1), which correctly handles

@@ -38,13 +38,12 @@ static double pango_font_blue;
 static bool load_pango_font(i3Font *font, const char *desc) {
     /* Load the font description */
     font->specific.pango_desc = pango_font_description_from_string(desc);
-    if (!font->specific.pango_desc)
-    {
+    if (!font->specific.pango_desc) {
         ELOG("Could not open font %s with Pango, fallback to X font.\n", desc);
         return false;
     }
 
-    LOG("Using Pango font %s, size %d",
+    LOG("Using Pango font %s, size %d\n",
         pango_font_description_get_family(font->specific.pango_desc),
         pango_font_description_get_size(font->specific.pango_desc)
         );
@@ -186,7 +185,7 @@ i3Font load_font(const char *pattern, const bool fallback) {
         }
     }
 
-    LOG("Using X font %s", pattern);
+    LOG("Using X font %s\n", pattern);
 
     /* Get information (height/name) for this font */
     if (!(font.specific.xcb.info = xcb_query_font_reply(conn, info_cookie, NULL)))

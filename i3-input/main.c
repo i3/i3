@@ -57,6 +57,26 @@ xcb_connection_t *conn;
 xcb_screen_t *root_screen;
 
 /*
+ * Having verboselog() and errorlog() is necessary when using libi3.
+ *
+ */
+void verboselog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+}
+
+void errorlog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+}
+
+/*
  * Concats the glyphs (either UCS-2 or UTF-8) to a single string, suitable for
  * rendering it (UCS-2) or sending it to i3 (UTF-8).
  *

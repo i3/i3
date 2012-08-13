@@ -85,6 +85,26 @@ char *rewrite_binding(const char *bindingline);
 static void finish();
 
 /*
+ * Having verboselog() and errorlog() is necessary when using libi3.
+ *
+ */
+void verboselog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+}
+
+void errorlog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+}
+
+/*
  * This function resolves ~ in pathnames.
  * It may resolve wildcards in the first part of the path, but if no match
  * or multiple matches are found, it just returns a copy of path as given.
