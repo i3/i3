@@ -464,7 +464,8 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
             workspace->layout = (output->rect.height > output->rect.width) ? L_SPLITV : L_SPLITH;
             DLOG("Setting workspace [%d,%s]'s layout to %d.\n", workspace->num, workspace->name, workspace->layout);
             if ((child = TAILQ_FIRST(&(workspace->nodes_head)))) {
-                child->layout = workspace->layout;
+                if (child->layout == L_SPLITV || child->layout == L_SPLITH)
+                    child->layout = workspace->layout;
                 DLOG("Setting child [%d,%s]'s layout to %d.\n", child->num, child->name, child->layout);
             }
         }
