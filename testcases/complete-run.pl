@@ -51,9 +51,11 @@ my %options = (
     coverage => 0,
     restart => 0,
 );
+my $keep_xdummy_output = 0;
 
 my $result = GetOptions(
     "coverage-testing" => \$options{coverage},
+    "keep-xdummy-output" => \$keep_xdummy_output,
     "valgrind" => \$options{valgrind},
     "strace" => \$options{strace},
     "xtrace" => \$options{xtrace},
@@ -77,7 +79,7 @@ my $numtests = scalar @testfiles;
 
 # No displays specified, let’s start some Xdummy instances.
 if (@displays == 0) {
-    @displays = start_xdummy($parallel, $numtests);
+    @displays = start_xdummy($parallel, $numtests, $keep_xdummy_output);
 }
 
 # 1: create an output directory for this test-run
