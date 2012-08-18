@@ -22,6 +22,8 @@
 │ Xlib        │ 1.3.3  │ 1.4.3  │ http://ftp.x.org/pub/current/src/lib/  │
 │ PCRE        │ 8.12   │ 8.12   │ http://www.pcre.org/                   │
 │ libsn¹      │ 0.10   │ 0.12   │ http://freedesktop.org/wiki/Software/startup-notification
+│ pango       │ 1.30.0 | 1.30.0 │ http://www.pango.org/                  │
+│ cairo       │ 1.12.2 │ 1.12.2 │ http://cairographics.org/              │
 └─────────────┴────────┴────────┴────────────────────────────────────────┘
  ¹ libsn = libstartup-notification
 
