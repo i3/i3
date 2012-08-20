@@ -486,14 +486,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
             child->num == parsed_num);
 
     if (!workspace) {
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
-        // TODO: better error message
-        ystr("No such workspace");
-        y(map_close);
-        return;
+        workspace = workspace_get(which, NULL);
     }
 
     HANDLE_EMPTY_MATCH;
