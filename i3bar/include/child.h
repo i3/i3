@@ -10,6 +10,8 @@
 #ifndef CHILD_H_
 #define CHILD_H_
 
+#include <stdbool.h>
+
 #define STDIN_CHUNK_SIZE 1024
 
 typedef struct {
@@ -21,6 +23,16 @@ typedef struct {
      * even an int8_t, but still…
      */
     uint32_t version;
+
+    bool stopped;
+    /**
+     * The signal requested by the client to inform it of the hidden state of i3bar
+     */
+    int stop_signal;
+    /**
+     * The signal requested by the client to inform it of theun hidden state of i3bar
+     */
+    int cont_signal;
 } i3bar_child;
 
 /*

@@ -29,6 +29,8 @@
 
 static enum {
     KEY_VERSION,
+    KEY_STOP_SIGNAL,
+    KEY_CONT_SIGNAL,
     NO_KEY
 } current_key;
 
@@ -42,6 +44,12 @@ static int header_integer(void *ctx, long val) {
     switch (current_key) {
         case KEY_VERSION:
             child->version = val;
+            break;
+        case KEY_STOP_SIGNAL:
+            child->stop_signal = val;
+            break;
+        case KEY_CONT_SIGNAL:
+            child->cont_signal = val;
             break;
         default:
             break;
@@ -59,6 +67,10 @@ static int header_map_key(void *ctx, const unsigned char *stringval, unsigned in
 #endif
     if (CHECK_KEY("version")) {
         current_key = KEY_VERSION;
+    } else if (CHECK_KEY("stop_signal")) {
+        current_key = KEY_STOP_SIGNAL;
+    } else if (CHECK_KEY("cont_signal")) {
+        current_key = KEY_CONT_SIGNAL;
     }
     return 1;
 }
@@ -79,6 +91,8 @@ static yajl_callbacks version_callbacks = {
 
 static void child_init(i3bar_child *child) {
     child->version = 0;
+    child->stop_signal = SIGSTOP;
+    child->cont_signal = SIGCONT;
 }
 
 /*

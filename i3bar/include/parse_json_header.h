@@ -13,15 +13,12 @@
 
 #include <stdint.h>
 
-/*
- * Determines the JSON i3bar protocol version from the given buffer. In case
- * the buffer does not contain valid JSON, or no version field is found, this
- * function returns -1. The amount of bytes consumed by parsing the header is
- * returned in *consumed (if non-NULL).
- *
- * The return type is an int32_t to avoid machines with different sizes of
- * 'int' to allow different values here. It’s highly unlikely we ever exceed
- * even an int8_t, but still…
+/**
+ * Parse the JSON protocol header to determine protocol version and features.
+ * In case the buffer does not contain a valid header (invalid JSON, or no
+ * version field found), the 'correct' field of the returned header is set to
+ * false. The amount of bytes consumed by parsing the header is returned in
+ * *consumed (if non-NULL).
  *
  */
 void parse_json_header(i3bar_child *child, const unsigned char *buffer, int length, unsigned int *consumed);

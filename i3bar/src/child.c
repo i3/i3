@@ -251,6 +251,11 @@ void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
      * in the future, but for now, we just discard it. */
     parse_json_header(&child, buffer, rec, &consumed);
     if (child.version > 0) {
+        /* If hide-on-modifier is set, we start of by sending the
+         * child a SIGSTOP, because the bars aren't mapped at start */
+        if (config.hide_on_modifier) {
+            stop_child();
+        }
         read_json_input(buffer + consumed, rec - consumed);
     } else {
         /* In case of plaintext, we just add a single block and change its
@@ -330,12 +335,6 @@ void start_child(char *command) {
 
                 dup2(fd[0], STDIN_FILENO);
 
-                /* If hide-on-modifier is set, we start of by sending the
-                 * child a SIGSTOP, because the bars aren't mapped at start */
-                if (config.hide_on_modifier) {
-                    stop_child();
-                }
-
                 break;
         }
     }
@@ -361,7 +360,8 @@ void start_child(char *command) {
  */
 void kill_child_at_exit(void) {
     if (child.pid > 0) {
-        kill(child.pid, SIGCONT);
+        if (child.cont_signal > 0 && child.stopped)
+            kill(child.pid, child.cont_signal);
         kill(child.pid, SIGTERM);
     }
 }
@@ -373,7 +373,8 @@ void kill_child_at_exit(void) {
  */
 void kill_child(void) {
     if (child.pid > 0) {
-        kill(child.pid, SIGCONT);
+        if (child.cont_signal > 0 && child.stopped)
+            kill(child.pid, child.cont_signal);
         kill(child.pid, SIGTERM);
         int status;
         waitpid(child.pid, &status, 0);
@@ -386,8 +387,9 @@ void kill_child(void) {
  *
  */
 void stop_child(void) {
-    if (child.pid > 0) {
-        kill(child.pid, SIGSTOP);
+    if (child.stop_signal > 0 && !child.stopped) {
+        child.stopped = true;
+        kill(child.pid, child.stop_signal);
     }
 }
 
@@ -396,7 +398,8 @@ void stop_child(void) {
  *
  */
 void cont_child(void) {
-    if (child.pid > 0) {
-        kill(child.pid, SIGCONT);
+    if (child.cont_signal > 0 && child.stopped) {
+        child.stopped = false;
+        kill(child.pid, child.cont_signal);
     }
 }
