@@ -44,9 +44,14 @@ understand the old protocol version, but in order to use the new one, you need
 to provide the correct version. The header block is terminated by a newline and
 consists of a single JSON hash:
 
-*Example*:
+*Minimal example*:
 ----------------
 { "version": 1 }
+----------------
+
+*All features example*:
+----------------
+{ "version": 1, "stop_signal": 10, "cont_signal": 12 }
 ----------------
 
 (Note that before i3 v4.3 the precise format had to be +{"version":1}+,
@@ -92,6 +97,19 @@ i3status and others will output single statuslines in one line, separated by
 You can find an example of a shell script which can be used as your
 +status_command+ in the bar configuration at
 http://code.stapelberg.de/git/i3/tree/contrib/trivial-bar-script.sh?h=next
+
+=== Header in detail
+
+version::
+	The version number (as an integer) of the i3bar protocol you will use.
+stop_signal::
+	Specify to i3bar the signal (as an integer) to send to stop your
+	processing.
+	The default value (if none is specified) is SIGSTOP.
+cont_signal::
+	Specify to i3bar the signal (as an integer)to send to continue your
+	processing.
+	The default value (if none is specified) is SIGCONT.
 
 === Blocks in detail
 
