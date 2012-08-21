@@ -531,7 +531,7 @@ static void handle_client_message(xcb_client_message_event_t* event) {
             /* Trigger an update to copy the statusline text to the appropriate
              * position */
             configure_trayclients();
-            draw_bars();
+            draw_bars(false);
         }
     }
 }
@@ -559,7 +559,7 @@ static void handle_unmap_notify(xcb_unmap_notify_event_t* event) {
 
             /* Trigger an update, we now have more space for the statusline */
             configure_trayclients();
-            draw_bars();
+            draw_bars(false);
             return;
         }
     }
@@ -624,13 +624,13 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
             xcb_unmap_window(xcb_connection, trayclient->win);
             trayclient->mapped = map_it;
             configure_trayclients();
-            draw_bars();
+            draw_bars(false);
         } else if (!trayclient->mapped && map_it) {
             /* need to map the window */
             xcb_map_window(xcb_connection, trayclient->win);
             trayclient->mapped = map_it;
             configure_trayclients();
-            draw_bars();
+            draw_bars(false);
         }
         free(xembedr);
     }
@@ -1398,14 +1398,13 @@ void reconfig_windows(void) {
  * Render the bars, with buttons and statusline
  *
  */
-void draw_bars(void) {
+void draw_bars(bool unhide) {
     DLOG("Drawing Bars...\n");
     int i = 0;
 
     refresh_statusline();
 
     static char *last_urgent_ws = NULL;
-    bool unhide = false;
     bool walks_away = true;
 
     i3_output *outputs_walk;

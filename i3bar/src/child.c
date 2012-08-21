@@ -172,7 +172,7 @@ static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
             /* end of file, kill the watcher */
             ELOG("stdin: received EOF\n");
             cleanup();
-            draw_bars();
+            draw_bars(false);
             *ret_buffer_len = -1;
             return NULL;
         }
@@ -231,7 +231,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         read_flat_input((char*)buffer, rec);
     }
     free(buffer);
-    draw_bars();
+    draw_bars(false);
 }
 
 /*

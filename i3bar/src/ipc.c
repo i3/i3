@@ -42,7 +42,7 @@ void got_command_reply(char *reply) {
 void got_workspace_reply(char *reply) {
     DLOG("Got Workspace-Data!\n");
     parse_workspaces_json(reply);
-    draw_bars();
+    draw_bars(false);
 }
 
 /*
@@ -71,7 +71,7 @@ void got_output_reply(char *reply) {
         kick_tray_clients(o_walk);
     }
 
-    draw_bars();
+    draw_bars(false);
 }
 
 /*
