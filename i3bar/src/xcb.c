@@ -1404,6 +1404,10 @@ void draw_bars(void) {
 
     refresh_statusline();
 
+    static char *last_urgent_ws = NULL;
+    bool unhide = false;
+    bool walks_away = true;
+
     i3_output *outputs_walk;
     SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (!outputs_walk->active) {
@@ -1460,8 +1464,6 @@ void draw_bars(void) {
         }
 
         i3_ws *ws_walk;
-        static char *last_urgent_ws = NULL;
-        bool has_urgent = false, walks_away = true;
 
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
             DLOG("Drawing Button for WS %s at x = %d, len = %d\n", i3string_as_utf8(ws_walk->name), i, ws_walk->name_width);
@@ -1486,13 +1488,11 @@ void draw_bars(void) {
                 fg_color = colors.urgent_ws_fg;
                 bg_color = colors.urgent_ws_bg;
                 border_color = colors.urgent_ws_border;
-                has_urgent = true;
+                unhide = true;
                 if (!ws_walk->focused) {
                     FREE(last_urgent_ws);
                     last_urgent_ws = sstrdup(i3string_as_utf8(ws_walk->name));
                 }
-                /* The urgent-hint should get noticed, so we unhide the bars shortly */
-                unhide_bars();
             }
             uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
             uint32_t vals_border[] = { border_color, border_color };
@@ -1522,12 +1522,17 @@ void draw_bars(void) {
             i += 10 + ws_walk->name_width + 1;
         }
 
-        if (!has_urgent && !mod_pressed && walks_away) {
+        i = 0;
+    }
+
+    if (!mod_pressed) {
+        if (unhide) {
+            /* The urgent-hint should get noticed, so we unhide the bars shortly */
+            unhide_bars();
+        } else if (walks_away) {
             FREE(last_urgent_ws);
             hide_bars();
         }
-
-        i = 0;
     }
 
     redraw_bars();
