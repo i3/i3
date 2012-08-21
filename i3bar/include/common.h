@@ -34,6 +34,8 @@ struct status_block {
 
     char *color;
 
+    bool urgent;
+
     /* The amount of pixels necessary to render this block. This variable is
      * only temporarily used in refresh_statusline(). */
     uint32_t width;

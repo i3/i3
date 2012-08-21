@@ -36,6 +36,9 @@ yajl_callbacks callbacks;
 yajl_handle parser;
 
 typedef struct parser_ctx {
+    /* True if one of the parsed blocks was urgent */
+    bool has_urgent;
+
     /* A copy of the last JSON map key. */
     char *last_map_key;
 
@@ -109,6 +112,14 @@ static int stdin_map_key(void *context, const unsigned char *key, unsigned int l
     return 1;
 }
 
+static int stdin_boolean(void *context, int val) {
+    parser_ctx *ctx = context;
+    if (strcasecmp(ctx->last_map_key, "urgent") == 0) {
+        ctx->block.urgent = val;
+    }
+    return 1;
+}
+
 #if YAJL_MAJOR >= 2
 static int stdin_string(void *context, const unsigned char *val, size_t len) {
 #else
@@ -132,6 +143,8 @@ static int stdin_end_map(void *context) {
      * i3bar doesn’t crash and the user gets an annoying message. */
     if (!new_block->full_text)
         new_block->full_text = i3string_from_utf8("SPEC VIOLATION (null)");
+    if (new_block->urgent)
+        ctx->has_urgent = true;
     TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
     return 1;
 }
@@ -203,8 +216,9 @@ static void read_flat_input(char *buffer, int length) {
     first->full_text = i3string_from_utf8(buffer);
 }
 
-static void read_json_input(unsigned char *input, int length) {
+static bool read_json_input(unsigned char *input, int length) {
     yajl_status status = yajl_parse(parser, input, length);
+    bool has_urgent = false;
 #if YAJL_MAJOR >= 2
     if (status != yajl_status_ok) {
 #else
@@ -212,7 +226,10 @@ static void read_json_input(unsigned char *input, int length) {
 #endif
         fprintf(stderr, "[i3bar] Could not parse JSON input (code %d): %.*s\n",
                 status, length, input);
+    } else if (parser_context.has_urgent) {
+        has_urgent = true;
     }
+    return has_urgent;
 }
 
 /*
@@ -225,13 +242,14 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     unsigned char *buffer = get_buffer(watcher, &rec);
     if (buffer == NULL)
         return;
+    bool has_urgent = false;
     if (child.version > 0) {
-        read_json_input(buffer, rec);
+        has_urgent = read_json_input(buffer, rec);
     } else {
         read_flat_input((char*)buffer, rec);
     }
     free(buffer);
-    draw_bars(false);
+    draw_bars(has_urgent);
 }
 
 /*
@@ -293,6 +311,7 @@ void start_child(char *command) {
     /* Allocate a yajl parser which will be used to parse stdin. */
     memset(&callbacks, '\0', sizeof(yajl_callbacks));
     callbacks.yajl_map_key = stdin_map_key;
+    callbacks.yajl_boolean = stdin_boolean;
     callbacks.yajl_string = stdin_string;
     callbacks.yajl_start_array = stdin_start_array;
     callbacks.yajl_end_array = stdin_end_array;
