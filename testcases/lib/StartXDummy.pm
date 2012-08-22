@@ -80,6 +80,9 @@ sub start_xdummy {
         return unless @pids == 0;
         print STDERR "All Xdummy processes died.\n";
         print STDERR "Use ./complete-run.pl --parallel 1 --keep-xdummy-output\n";
+        print STDERR "";
+        print STDERR "A frequent cause for this is missing the DUMMY Xorg module,\n";
+        print STDERR "package xserver-xorg-video-dummy on Debian.\n";
         exit 1;
     };
 
