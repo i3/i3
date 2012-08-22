@@ -846,7 +846,7 @@ void cmd_workspace_number(I3_CMD, char *which) {
         cmd_output->needs_tree_render = true;
         return;
     }
-    if (maybe_back_and_forth(cmd_output, which))
+    if (maybe_back_and_forth(cmd_output, workspace->name))
         return;
     workspace_show(workspace);
 
