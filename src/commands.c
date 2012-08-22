@@ -840,8 +840,6 @@ void cmd_workspace_number(I3_CMD, char *which) {
         ysuccess(true);
         /* terminate the which string after the endposition of the number */
         *endptr = '\0';
-        if (maybe_back_and_forth(cmd_output, which))
-            return;
         workspace_show_by_name(which);
         cmd_output->needs_tree_render = true;
         return;
