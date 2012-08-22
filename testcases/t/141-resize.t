@@ -197,4 +197,48 @@ cmp_ok($content[0]->{rect}->{y}, '==', $oldrect->{y}, 'y the same as before');
 cmp_ok($content[0]->{rect}->{height}, '>', $oldrect->{height}, 'height bigger than before');
 cmp_ok($content[0]->{rect}->{width}, '==', $oldrect->{width}, 'width the same as before');
 
+# grow width
+$oldrect = $content[0]->{rect};
+
+cmd 'resize grow width 10px or 10ppt';
+
+@content = @{get_ws($tmp)->{floating_nodes}};
+cmp_ok($content[0]->{rect}->{x}, '==', $oldrect->{x}, 'x the same as before');
+cmp_ok($content[0]->{rect}->{y}, '==', $oldrect->{y}, 'y the same as before');
+cmp_ok($content[0]->{rect}->{height}, '==', $oldrect->{height}, 'height the same as before');
+cmp_ok($content[0]->{rect}->{width}, '>', $oldrect->{width}, 'width bigger than before');
+
+# shrink width
+$oldrect = $content[0]->{rect};
+
+cmd 'resize shrink width 10px or 10ppt';
+
+@content = @{get_ws($tmp)->{floating_nodes}};
+cmp_ok($content[0]->{rect}->{x}, '==', $oldrect->{x}, 'x the same as before');
+cmp_ok($content[0]->{rect}->{y}, '==', $oldrect->{y}, 'y the same as before');
+cmp_ok($content[0]->{rect}->{height}, '==', $oldrect->{height}, 'height the same as before');
+cmp_ok($content[0]->{rect}->{width}, '<', $oldrect->{width}, 'width smaller than before');
+
+# grow height
+$oldrect = $content[0]->{rect};
+
+cmd 'resize grow height 10px or 10ppt';
+
+@content = @{get_ws($tmp)->{floating_nodes}};
+cmp_ok($content[0]->{rect}->{x}, '==', $oldrect->{x}, 'x the same as before');
+cmp_ok($content[0]->{rect}->{y}, '==', $oldrect->{y}, 'y the same as before');
+cmp_ok($content[0]->{rect}->{height}, '>', $oldrect->{height}, 'height bigger than before');
+cmp_ok($content[0]->{rect}->{width}, '==', $oldrect->{width}, 'width the same as before');
+
+# shrink height
+$oldrect = $content[0]->{rect};
+
+cmd 'resize shrink height 10px or 10ppt';
+
+@content = @{get_ws($tmp)->{floating_nodes}};
+cmp_ok($content[0]->{rect}->{x}, '==', $oldrect->{x}, 'x the same as before');
+cmp_ok($content[0]->{rect}->{y}, '==', $oldrect->{y}, 'y the same as before');
+cmp_ok($content[0]->{rect}->{height}, '<', $oldrect->{height}, 'height smaller than before');
+cmp_ok($content[0]->{rect}->{width}, '==', $oldrect->{width}, 'width the same as before');
+
 done_testing;
