@@ -141,4 +141,26 @@ $ws = get_ws($tmp2);
 is(@{$ws->{nodes}}, 0, 'no nodes on workspace');
 is(@{$ws->{floating_nodes}}, 1, 'one floating node on workspace');
 
+################################################################################
+# Check that 'move workspace number' works correctly.
+################################################################################
+
+$tmp = get_unused_workspace();
+cmd 'open';
+
+cmd 'workspace 16';
+cmd 'open';
+is(@{get_ws('16')->{nodes}}, 1, 'one node on ws 16');
+
+cmd "workspace $tmp";
+cmd 'open';
+cmd 'move workspace number 16';
+is(@{get_ws('16')->{nodes}}, 2, 'two nodes on ws 16');
+
+ok(!workspace_exists('17'), 'workspace 17 does not exist yet');
+cmd 'open';
+cmd 'move workspace number 17';
+ok(workspace_exists('17'), 'workspace 17 created by moving');
+is(@{get_ws('17')->{nodes}}, 1, 'one node on ws 16');
+
 done_testing;
