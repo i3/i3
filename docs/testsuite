@@ -45,6 +45,8 @@ For several reasons, the i3 testsuite has been implemented in Perl:
 
 2. Perl is widely available and has a well-working package infrastructure.
 3. The author is familiar with Perl :).
+4. It is a good idea to use a different language for the tests than the
+   implementation itself.
 
 Please do not start programming language flamewars at this point.
 
