@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
  * child.c: Getting Input for the statusline
  *
@@ -56,7 +56,7 @@ char *statusline_buffer = NULL;
  * Stop and free() the stdin- and sigchild-watchers
  *
  */
-void cleanup() {
+void cleanup(void) {
     if (stdin_io != NULL) {
         ev_io_stop(main_loop, stdin_io);
         FREE(stdin_io);
@@ -327,7 +327,7 @@ void start_child(char *command) {
  * kill()s the child-process (if any). Called when exit()ing.
  *
  */
-void kill_child_at_exit() {
+void kill_child_at_exit(void) {
     if (child_pid != 0) {
         kill(child_pid, SIGCONT);
         kill(child_pid, SIGTERM);
@@ -339,7 +339,7 @@ void kill_child_at_exit() {
  * free()s the stdin- and sigchild-watchers
  *
  */
-void kill_child() {
+void kill_child(void) {
     if (child_pid != 0) {
         kill(child_pid, SIGCONT);
         kill(child_pid, SIGTERM);
@@ -354,7 +354,7 @@ void kill_child() {
  * Sends a SIGSTOP to the child-process (if existent)
  *
  */
-void stop_child() {
+void stop_child(void) {
     if (child_pid != 0) {
         kill(child_pid, SIGSTOP);
     }
@@ -364,7 +364,7 @@ void stop_child() {
  * Sends a SIGCONT to the child-process (if existent)
  *
  */
-void cont_child() {
+void cont_child(void) {
     if (child_pid != 0) {
         kill(child_pid, SIGCONT);
     }

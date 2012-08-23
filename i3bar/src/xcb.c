@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
  * xcb.c: Communicating with X
  *
@@ -108,7 +108,7 @@ int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
  * Redraws the statusline to the buffer
  *
  */
-void refresh_statusline() {
+void refresh_statusline(void) {
     struct status_block *block;
 
     uint32_t old_statusline_width = statusline_width;
@@ -161,7 +161,7 @@ void refresh_statusline() {
  * Hides all bars (unmaps them)
  *
  */
-void hide_bars() {
+void hide_bars(void) {
     if (!config.hide_on_modifier) {
         return;
     }
@@ -180,7 +180,7 @@ void hide_bars() {
  * Unhides all bars (maps them)
  *
  */
-void unhide_bars() {
+void unhide_bars(void) {
     if (!config.hide_on_modifier) {
         return;
     }
@@ -353,7 +353,7 @@ void handle_button(xcb_button_press_event_t *event) {
  * new tray client or removing an old one.
  *
  */
-static void configure_trayclients() {
+static void configure_trayclients(void) {
     trayclient *trayclient;
     i3_output *output;
     SLIST_FOREACH(output, outputs, slist) {
@@ -966,7 +966,7 @@ void init_xcb_late(char *fontname) {
  * atom. Afterwards, tray clients will send ClientMessages to our window.
  *
  */
-void init_tray() {
+void init_tray(void) {
     DLOG("Initializing system tray functionality\n");
     /* request the tray manager atom for the X11 display we are running on */
     char atomname[strlen("_NET_SYSTEM_TRAY_S") + 11];
@@ -1055,7 +1055,7 @@ void init_tray() {
  * Called once, before the program terminates.
  *
  */
-void clean_xcb() {
+void clean_xcb(void) {
     i3_output *o_walk;
     free_workspaces();
     SLIST_FOREACH(o_walk, outputs, slist) {
@@ -1083,7 +1083,7 @@ void clean_xcb() {
  * Get the earlier requested atoms and save them in the prepared data structure
  *
  */
-void get_atoms() {
+void get_atoms(void) {
     xcb_intern_atom_reply_t *reply;
     #define ATOM_DO(name) reply = xcb_intern_atom_reply(xcb_connection, atom_cookies[name], NULL); \
         if (reply == NULL) { \
@@ -1145,7 +1145,7 @@ void destroy_window(i3_output *output) {
  * Reallocate the statusline-buffer
  *
  */
-void realloc_sl_buffer() {
+void realloc_sl_buffer(void) {
     DLOG("Re-allocating statusline-buffer, statusline_width = %d, root_screen->width_in_pixels = %d\n",
          statusline_width, root_screen->width_in_pixels);
     xcb_free_pixmap(xcb_connection, statusline_pm);
@@ -1189,7 +1189,7 @@ void realloc_sl_buffer() {
  * Reconfigure all bars and create new bars for recently activated outputs
  *
  */
-void reconfig_windows() {
+void reconfig_windows(void) {
     uint32_t mask;
     uint32_t values[5];
     static bool tray_configured = false;
@@ -1398,7 +1398,7 @@ void reconfig_windows() {
  * Render the bars, with buttons and statusline
  *
  */
-void draw_bars() {
+void draw_bars(void) {
     DLOG("Drawing Bars...\n");
     int i = 0;
 
@@ -1537,7 +1537,7 @@ void draw_bars() {
  * Redraw the bars, i.e. simply copy the buffer to the barwindow
  *
  */
-void redraw_bars() {
+void redraw_bars(void) {
     i3_output *outputs_walk;
     SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (!outputs_walk->active) {

@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
  * workspaces.c: Maintaining the workspace-lists
  *
@@ -262,7 +262,7 @@ void parse_workspaces_json(char *json) {
  * free() all workspace data-structures. Does not free() the heads of the tailqueues.
  *
  */
-void free_workspaces() {
+void free_workspaces(void) {
     i3_output *outputs_walk;
     if (outputs == NULL) {
         return;

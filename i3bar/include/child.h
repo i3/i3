@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
  * child.c: Getting Input for the statusline
  *
@@ -24,25 +24,25 @@ void start_child(char *command);
  * kill()s the child-process (if any). Called when exit()ing.
  *
  */
-void kill_child_at_exit();
+void kill_child_at_exit(void);
 
 /*
  * kill()s the child-process (if any) and closes and
  * free()s the stdin- and sigchild-watchers
  *
  */
-void kill_child();
+void kill_child(void);
 
 /*
  * Sends a SIGSTOP to the child-process (if existent)
  *
  */
-void stop_child();
+void stop_child(void);
 
 /*
  * Sends a SIGCONT to the child-process (if existent)
  *
  */
-void cont_child();
+void cont_child(void);
 
 #endif

@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
  * xcb.c: Communicating with X
  *
@@ -69,13 +69,13 @@ void init_colors(const struct xcb_color_strings_t *colors);
  * Called once, before the program terminates.
  *
  */
-void clean_xcb();
+void clean_xcb(void);
 
 /*
  * Get the earlier requested atoms and save them in the prepared data-structure
  *
  */
-void get_atoms();
+void get_atoms(void);
 
 /*
  * Reparents all tray clients of the specified output to the root window. This
@@ -98,24 +98,24 @@ void destroy_window(i3_output *output);
  * Reallocate the statusline-buffer
  *
  */
-void realloc_sl_buffer();
+void realloc_sl_buffer(void);
 
 /*
  * Reconfigure all bars and create new for newly activated outputs
  *
  */
-void reconfig_windows();
+void reconfig_windows(void);
 
 /*
  * Render the bars, with buttons and statusline
  *
  */
-void draw_bars();
+void draw_bars(void);
 
 /*
  * Redraw the bars, i.e. simply copy the buffer to the barwindow
  *
  */
-void redraw_bars();
+void redraw_bars(void);
 
 #endif
