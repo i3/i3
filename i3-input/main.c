@@ -353,9 +353,6 @@ int main(int argc, char *argv[]) {
 
     sockfd = ipc_connect(socket_path);
 
-    if (prompt != NULL)
-        prompt_offset = predict_text_width(prompt);
-
     int screens;
     conn = xcb_connect(NULL, &screens);
     if (!conn || xcb_connection_has_error(conn))
@@ -368,6 +365,9 @@ int main(int argc, char *argv[]) {
 
     font = load_font(pattern, true);
     set_font(&font);
+
+    if (prompt != NULL)
+        prompt_offset = predict_text_width(prompt);
 
     /* Open an input window */
     win = xcb_generate_id(conn);
