@@ -92,6 +92,12 @@ are connected to these outputs.
 
 Here is a short overview of the default keybindings:
 
+Mod1+Enter::
+Open a new terminal emulator window.
+
+Mod1+d::
+Open dmenu for starting any application by typing (part of) its name.
+
 j/k/l/;::
 Direction keys (left, down, up, right). They are on your homerow (see the mark
 on your "j" key). Alternatively, you can use the cursor keys.
