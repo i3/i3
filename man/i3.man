@@ -1,7 +1,7 @@
 i3(1)
 =====
-Michael Stapelberg <michael+i3@stapelberg.de>
-v4.0, July 2011
+Michael Stapelberg <michael@i3wm.org>
+v4.2, August 2012
 
 == NAME
 
@@ -48,8 +48,8 @@ Please be aware that i3 is primarily targeted at advanced users and developers.
 === IMPORTANT NOTE TO nVidia BINARY DRIVER USERS
 
 If you are using the nVidia binary graphics driver (also known as 'blob')
-you need to use the +--force-xinerama+ flag (in your ~/.xsession) when starting
-i3, like so:
+before version 302.17, you need to use the +--force-xinerama+ flag (in your
+~/.xsession) when starting i3, like so:
 
 ----------------------------------------------
 exec i3 --force-xinerama -V >>~/.i3/i3log 2>&1
