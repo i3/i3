@@ -125,7 +125,7 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
     if (input_position > 0)
     {
         i3String *input = i3string_from_ucs2(glyphs_ucs, input_position);
-        draw_text(input, pixmap, pixmap_gc, 4, 4, 492);
+        draw_text(input, pixmap, pixmap_gc, prompt_offset + 4, 4, 492);
         i3string_free(input);
     }
 
