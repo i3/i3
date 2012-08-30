@@ -61,8 +61,8 @@ windows.
 
 TODO: picture of the tree
 
-To split a window vertically, press +mod+v+. To split it horizontally, press
-+mod+h+.
+To split a window vertically, press +mod+v+ before you create the new window.
+To split it horizontally, press +mod+h+.
 
 === Changing the container layout
 
