@@ -502,7 +502,7 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
 }
 
 /*
- * Implementation of 'move [window|container] [to] workspace number <number>'.
+ * Implementation of 'move [window|container] [to] workspace number <name>'.
  *
  */
 void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
@@ -526,8 +526,8 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
     if (parsed_num == LONG_MIN ||
         parsed_num == LONG_MAX ||
         parsed_num < 0 ||
-        *endptr != '\0') {
-        LOG("Could not parse \"%s\" as a number.\n", which);
+        endptr == which) {
+        LOG("Could not parse initial part of \"%s\" as a number.\n", which);
         y(map_open);
         ystr("success");
         y(bool, false);
@@ -866,7 +866,7 @@ void cmd_workspace(I3_CMD, char *which) {
 }
 
 /*
- * Implementation of 'workspace number <number>'
+ * Implementation of 'workspace number <name>'
  *
  */
 void cmd_workspace_number(I3_CMD, char *which) {
@@ -877,8 +877,8 @@ void cmd_workspace_number(I3_CMD, char *which) {
     if (parsed_num == LONG_MIN ||
         parsed_num == LONG_MAX ||
         parsed_num < 0 ||
-        *endptr != '\0') {
-        LOG("Could not parse \"%s\" as a number.\n", which);
+        endptr == which) {
+        LOG("Could not parse initial part of \"%s\" as a number.\n", which);
         y(map_open);
         ystr("success");
         y(bool, false);
@@ -897,8 +897,6 @@ void cmd_workspace_number(I3_CMD, char *which) {
     if (!workspace) {
         LOG("There is no workspace with number %ld, creating a new one.\n", parsed_num);
         ysuccess(true);
-        /* terminate the which string after the endposition of the number */
-        *endptr = '\0';
         workspace_show_by_name(which);
         cmd_output->needs_tree_render = true;
         return;

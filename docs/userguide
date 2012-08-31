@@ -1427,10 +1427,10 @@ workspace using +move container to workspace back_and_forth+.
 workspace <next|prev|next_on_output|prev_on_output>
 workspace back_and_forth
 workspace <name>
-workspace number <number>
+workspace number <name>
 
 move [window|container] [to] workspace <name>
-move [window|container] [to] workspace number <number>
+move [window|container] [to] workspace number <name>
 move [window|container] [to] workspace <prev|next|current>
 -----------------------------------
 
@@ -1482,7 +1482,8 @@ workspaces are ordered the way they appeared. When they start with a number, i3
 will order them numerically. Also, you will be able to use +workspace number 1+
 to switch to the workspace which begins with number 1, regardless of which name
 it has. This is useful in case you are changing the workspace’s name
-dynamically.
+dynamically. To combine both commands you can use +workspace number 1: mail+ to
+specify a default name if there's currently no workspace starting with a "1".
 
 ==== Renaming workspaces
 

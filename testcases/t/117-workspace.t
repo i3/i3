@@ -157,6 +157,34 @@ cmd 'workspace number 5';
 ok(workspace_exists('5'), 'workspace 5 was created');
 
 ################################################################################
+# Check that we can go to workspace "7: foo" with the command
+# "workspace number 7: bar", i.e. the additional workspace name is ignored.
+################################################################################
+
+ok(!workspace_exists('7'), 'workspace 7 does not exist');
+ok(!workspace_exists('7: bar'), 'workspace 7: bar does not exist');
+ok(!workspace_exists('7: foo'), 'workspace 7: foo does not exist yet');
+cmd 'workspace 7: foo';
+ok(workspace_exists('7: foo'), 'workspace 7: foo was created');
+cmd 'open';
+
+cmd 'workspace 6';
+ok(workspace_exists('7: foo'), 'workspace 7: foo still open');
+cmd 'workspace number 7: bar';
+is(focused_ws(), '7: foo', 'now on workspace 7: foo');
+ok(!workspace_exists('7'), 'workspace 7 still does not exist');
+ok(!workspace_exists('7: bar'), 'workspace 7: bar still does not exist');
+
+################################################################################
+# Check that "workspace number 8: foo" will create workspace "8: foo" if it
+# does not yet exist (just like "workspace 8: foo" would).
+################################################################################
+
+ok(!workspace_exists('8: foo'), 'workspace 8: foo does not exist');
+cmd 'workspace number 8: foo';
+ok(workspace_exists('8: foo'), 'workspace 8: foo was created');
+
+################################################################################
 # Verify that renaming workspaces works.
 ################################################################################
 

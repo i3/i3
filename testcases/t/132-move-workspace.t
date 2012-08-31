@@ -79,6 +79,28 @@ is_num_children('12', 0, 'no container on 12 anymore');
 
 ok(!workspace_exists('13'), 'workspace 13 does still not exist');
 
+################################################################################
+# Check that 'move to workspace number <number><name>' works to move a window to
+# named workspaces which start with <number>.
+################################################################################
+
+cmd 'workspace 15: meh';
+cmd 'open';
+is_num_children('15: meh', 1, 'one container on 15: meh');
+
+ok(!workspace_exists('15'), 'workspace 15 does not exist yet');
+ok(!workspace_exists('15: duh'), 'workspace 15: duh does not exist yet');
+
+cmd 'workspace 14';
+cmd 'open';
+
+cmd 'move to workspace number 15: duh';
+is_num_children('15: meh', 2, 'two containers on 15: meh');
+is_num_children('14', 0, 'no container on 14 anymore');
+
+ok(!workspace_exists('15'), 'workspace 15 does still not exist');
+ok(!workspace_exists('15: duh'), 'workspace 15 does still not exist');
+
 ###################################################################
 # check if 'move workspace next' and 'move workspace prev' work
 ###################################################################
