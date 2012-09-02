@@ -80,7 +80,7 @@ static int stdin_start_array(void *context) {
     struct status_block *first;
     while (!TAILQ_EMPTY(&statusline_head)) {
         first = TAILQ_FIRST(&statusline_head);
-        FREE(first->full_text);
+        I3STRING_FREE(first->full_text);
         FREE(first->color);
         TAILQ_REMOVE(&statusline_head, first, blocks);
         free(first);
