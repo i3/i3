@@ -217,7 +217,6 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
             fprintf(stderr, "[i3bar] Could not parse JSON input (code %d): %.*s\n",
                     status, rec, json_input);
         }
-        free(buffer);
     } else {
         struct status_block *first = TAILQ_FIRST(&statusline_head);
         /* Clear the old buffer if any. */
@@ -229,6 +228,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         else buffer[rec] = '\0';
         first->full_text = i3string_from_utf8((const char *)buffer);
     }
+    free(buffer);
     draw_bars();
 }
 
