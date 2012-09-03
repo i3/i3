@@ -755,7 +755,29 @@ int main(int argc, char *argv[]) {
 
     xcb_flush(conn);
 
-    manage_existing_windows(root);
+    /* What follows is a fugly consequence of X11 protocol race conditions like
+     * the following: In an i3 in-place restart, i3 will reparent all windows
+     * to the root window, then exec() itself. In the new process, it calls
+     * manage_existing_windows. However, in case any application sent a
+     * generated UnmapNotify message to the WM (as GIMP does), this message
+     * will be handled by i3 *after* managing the window, thus i3 thinks the
+     * window just closed itself. In reality, the message was sent in the time
+     * period where i3 wasn’t running yet.
+     *
+     * To prevent this, we grab the server (disables processing of any other
+     * connections), then discard all pending events (since we didn’t do
+     * anything, there cannot be any meaningful responses), then ungrab the
+     * server. */
+    xcb_grab_server(conn);
+    {
+        xcb_aux_sync(conn);
+        xcb_generic_event_t *event;
+        while ((event = xcb_poll_for_event(conn)) != NULL) {
+            free(event);
+        }
+        manage_existing_windows(root);
+    }
+    xcb_ungrab_server(conn);
 
     struct sigaction action;
 
