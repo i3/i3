@@ -293,4 +293,17 @@ Rect con_minimum_size(Con *con);
  */
 bool con_fullscreen_permits_focusing(Con *con);
 
+/**
+ * Checks if the given container has an urgent child.
+ *
+ */
+bool con_has_urgent_child(Con *con);
+
+/**
+ * Make all parent containers urgent if con is urgent or clear the urgent flag
+ * of all parent containers if there are no more urgent children left.
+ *
+ */
+void con_update_parents_urgency(Con *con);
+
 #endif

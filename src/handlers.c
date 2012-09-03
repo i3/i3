@@ -852,6 +852,9 @@ static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_
             con->window->urgent.tv_usec = 0;
         }
     }
+
+    con_update_parents_urgency(con);
+
     LOG("Urgency flag changed to %d\n", con->urgent);
 
     Con *ws;

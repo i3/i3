@@ -195,8 +195,14 @@ void con_focus(Con *con) {
         con_focus(con->parent);
 
     focused = con;
-    if (con->urgent) {
+    /* We can't blindly reset non-leaf containers since they might have
+     * other urgent children. Therefore we only reset leafs and propagate
+     * the changes upwards via con_update_parents_urgency() which does proper
+     * checks before resetting the urgency.
+     */
+    if (con->urgent && con_is_leaf(con)) {
         con->urgent = false;
+        con_update_parents_urgency(con);
         workspace_update_urgent_flag(con_get_workspace(con));
     }
 }
@@ -1370,4 +1376,47 @@ bool con_fullscreen_permits_focusing(Con *con) {
 
     /* Focusing con would hide it behind a fullscreen window, disallow it. */
     return false;
+}
+
+/*
+ *
+ * Checks if the given container has an urgent child.
+ *
+ */
+bool con_has_urgent_child(Con *con) {
+    Con *child;
+
+    if (con_is_leaf(con))
+        return con->urgent;
+
+    /* We are not interested in floating windows since they can only be
+     * attached to a workspace → nodes_head instead of focus_head */
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        if (con_has_urgent_child(child))
+            return true;
+    }
+
+    return false;
+}
+
+/*
+ * Make all parent containers urgent if con is urgent or clear the urgent flag
+ * of all parent containers if there are no more urgent children left.
+ *
+ */
+void con_update_parents_urgency(Con *con) {
+    Con *parent = con->parent;
+
+    bool new_urgency_value = con->urgent;
+    while (parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {
+        if (new_urgency_value) {
+            parent->urgent = true;
+        } else {
+            /* We can only reset the urgency when the parent
+             * has no other urgent children */
+            if (!con_has_urgent_child(parent))
+                parent->urgent = false;
+        }
+        parent = parent->parent;
+    }
 }
