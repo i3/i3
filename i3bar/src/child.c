@@ -191,6 +191,18 @@ static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
     return buffer;
 }
 
+static void read_flat_input(char *buffer, int length) {
+    struct status_block *first = TAILQ_FIRST(&statusline_head);
+    /* Clear the old buffer if any. */
+    I3STRING_FREE(first->full_text);
+    /* Remove the trailing newline and terminate the string at the same
+     * time. */
+    if (buffer[length-1] == '\n' || buffer[length-1] == '\r')
+        buffer[length-1] = '\0';
+    else buffer[length] = '\0';
+    first->full_text = i3string_from_utf8(buffer);
+}
+
 /*
  * Callbalk for stdin. We read a line from stdin and store the result
  * in statusline
@@ -231,15 +243,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
                     status, rec, json_input);
         }
     } else {
-        struct status_block *first = TAILQ_FIRST(&statusline_head);
-        /* Clear the old buffer if any. */
-        I3STRING_FREE(first->full_text);
-        /* Remove the trailing newline and terminate the string at the same
-         * time. */
-        if (buffer[rec-1] == '\n' || buffer[rec-1] == '\r')
-            buffer[rec-1] = '\0';
-        else buffer[rec] = '\0';
-        first->full_text = i3string_from_utf8((const char *)buffer);
+        read_flat_input((char*)buffer, rec);
     }
     free(buffer);
     draw_bars();
