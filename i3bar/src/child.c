@@ -32,7 +32,6 @@ ev_io    *stdin_io;
 ev_child *child_sig;
 
 /* JSON parser for stdin */
-bool first_line = true;
 bool plaintext = false;
 yajl_callbacks callbacks;
 yajl_handle parser;
@@ -225,32 +224,44 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     unsigned char *buffer = get_buffer(watcher, &rec);
     if (buffer == NULL)
         return;
-    unsigned char *json_input = buffer;
-    if (first_line) {
-        DLOG("Detecting input type based on buffer *%.*s*\n", rec, buffer);
-        /* Detect whether this is JSON or plain text. */
-        unsigned int consumed = 0;
-        /* At the moment, we don’t care for the version. This might change
-         * in the future, but for now, we just discard it. */
-        plaintext = (determine_json_version(buffer, rec, &consumed) == -1);
-        if (plaintext) {
-            /* In case of plaintext, we just add a single block and change its
-             * full_text pointer later. */
-            struct status_block *new_block = scalloc(sizeof(struct status_block));
-            TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
-        } else {
-            json_input += consumed;
-            rec -= consumed;
-        }
-        first_line = false;
-    }
     if (!plaintext) {
-        read_json_input(json_input, rec);
+        read_json_input(buffer, rec);
     } else {
         read_flat_input((char*)buffer, rec);
     }
     free(buffer);
     draw_bars();
+}
+
+/*
+ * Callbalk for stdin first line. We read the first line to detect
+ * whether this is JSON or plain text
+ *
+ */
+void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+    int rec;
+    unsigned char *buffer = get_buffer(watcher, &rec);
+    if (buffer == NULL)
+        return;
+    DLOG("Detecting input type based on buffer *%.*s*\n", rec, buffer);
+    /* Detect whether this is JSON or plain text. */
+    unsigned int consumed = 0;
+    /* At the moment, we don’t care for the version. This might change
+     * in the future, but for now, we just discard it. */
+    plaintext = (determine_json_version(buffer, rec, &consumed) == -1);
+    if (plaintext) {
+        /* In case of plaintext, we just add a single block and change its
+         * full_text pointer later. */
+        struct status_block *new_block = scalloc(sizeof(struct status_block));
+        TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
+        read_flat_input((char*)buffer, rec);
+    } else {
+        read_json_input(buffer + consumed, rec - consumed);
+    }
+    free(buffer);
+    ev_io_stop(main_loop, stdin_io);
+    ev_io_init(stdin_io, &stdin_io_cb, STDIN_FILENO, EV_READ);
+    ev_io_start(main_loop, stdin_io);
 }
 
 /*
@@ -333,7 +344,7 @@ void start_child(char *command) {
     fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
 
     stdin_io = smalloc(sizeof(ev_io));
-    ev_io_init(stdin_io, &stdin_io_cb, STDIN_FILENO, EV_READ);
+    ev_io_init(stdin_io, &stdin_io_first_line_cb, STDIN_FILENO, EV_READ);
     ev_io_start(main_loop, stdin_io);
 
     /* We must cleanup, if the child unexpectedly terminates */
