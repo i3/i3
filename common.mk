@@ -88,6 +88,7 @@ XCB_CFLAGS  += $(call cflags_for_lib, xcb-atom)
 XCB_CFLAGS  += $(call cflags_for_lib, xcb-aux)
 XCB_LIBS    += $(call ldflags_for_lib, xcb-atom,xcb-atom)
 XCB_LIBS    += $(call ldflags_for_lib, xcb-aux,xcb-aux)
+XCB_CPPFLAGS+= -DXCB_COMPAT
 else
 XCB_CFLAGS  += $(call cflags_for_lib, xcb-util)
 XCB_LIBS    += $(call ldflags_for_lib, xcb-util)
