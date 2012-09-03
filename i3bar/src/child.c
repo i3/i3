@@ -148,11 +148,10 @@ static int stdin_end_array(void *context) {
 }
 
 /*
- * Callbalk for stdin. We read a line from stdin and store the result
- * in statusline
+ * Helper function to read stdin
  *
  */
-void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
     int fd = watcher->fd;
     int n = 0;
     int rec = 0;
@@ -174,7 +173,8 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
             ELOG("stdin: received EOF\n");
             cleanup();
             draw_bars();
-            return;
+            *ret_buffer_len = -1;
+            return NULL;
         }
         rec += n;
 
@@ -185,9 +185,22 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     }
     if (*buffer == '\0') {
         FREE(buffer);
-        return;
+        rec = -1;
     }
+    *ret_buffer_len = rec;
+    return buffer;
+}
 
+/*
+ * Callbalk for stdin. We read a line from stdin and store the result
+ * in statusline
+ *
+ */
+void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+    int rec;
+    unsigned char *buffer = get_buffer(watcher, &rec);
+    if (buffer == NULL)
+        return;
     unsigned char *json_input = buffer;
     if (first_line) {
         DLOG("Detecting input type based on buffer *%.*s*\n", rec, buffer);
@@ -195,7 +208,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         unsigned int consumed = 0;
         /* At the moment, we don’t care for the version. This might change
          * in the future, but for now, we just discard it. */
-        plaintext = (determine_json_version(buffer, buffer_len, &consumed) == -1);
+        plaintext = (determine_json_version(buffer, rec, &consumed) == -1);
         if (plaintext) {
             /* In case of plaintext, we just add a single block and change its
              * full_text pointer later. */
