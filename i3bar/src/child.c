@@ -203,6 +203,18 @@ static void read_flat_input(char *buffer, int length) {
     first->full_text = i3string_from_utf8(buffer);
 }
 
+static void read_json_input(unsigned char *input, int length) {
+    yajl_status status = yajl_parse(parser, input, length);
+#if YAJL_MAJOR >= 2
+    if (status != yajl_status_ok) {
+#else
+    if (status != yajl_status_ok && status != yajl_status_insufficient_data) {
+#endif
+        fprintf(stderr, "[i3bar] Could not parse JSON input (code %d): %.*s\n",
+                status, length, input);
+    }
+}
+
 /*
  * Callbalk for stdin. We read a line from stdin and store the result
  * in statusline
@@ -233,15 +245,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         first_line = false;
     }
     if (!plaintext) {
-        yajl_status status = yajl_parse(parser, json_input, rec);
-#if YAJL_MAJOR >= 2
-        if (status != yajl_status_ok) {
-#else
-        if (status != yajl_status_ok && status != yajl_status_insufficient_data) {
-#endif
-            fprintf(stderr, "[i3bar] Could not parse JSON input (code %d): %.*s\n",
-                    status, rec, json_input);
-        }
+        read_json_input(json_input, rec);
     } else {
         read_flat_input((char*)buffer, rec);
     }
