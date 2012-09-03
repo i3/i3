@@ -4,12 +4,12 @@
  * i3bar - an xcb-based status- and ws-bar for i3
  * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
- * determine_json_version.c: Determines the JSON protocol version based on the
- *                           first line of input from a child program.
+ * parse_json_header.c: Parse the JSON protocol header to determine
+ *                      protocol version and features.
  *
  */
-#ifndef DETERMINE_JSON_VERSION_H_
-#define DETERMINE_JSON_VERSION_H_
+#ifndef PARSE_JSON_HEADER_H_
+#define PARSE_JSON_HEADER_H_
 
 #include <stdint.h>
 
@@ -24,6 +24,6 @@
  * even an int8_t, but still…
  *
  */
-int32_t determine_json_version(const unsigned char *buffer, int length, unsigned int *consumed);
+void parse_json_header(i3bar_child *child, const unsigned char *buffer, int length, unsigned int *consumed);
 
 #endif

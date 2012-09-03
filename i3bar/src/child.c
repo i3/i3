@@ -249,7 +249,7 @@ void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     unsigned int consumed = 0;
     /* At the moment, we don’t care for the version. This might change
      * in the future, but for now, we just discard it. */
-    child.version = determine_json_version(buffer, rec, &consumed);
+    parse_json_header(&child, buffer, rec, &consumed);
     if (child.version > 0) {
         read_json_input(buffer + consumed, rec - consumed);
     } else {
