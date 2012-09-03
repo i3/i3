@@ -12,6 +12,17 @@
 
 #define STDIN_CHUNK_SIZE 1024
 
+typedef struct {
+    pid_t pid;
+
+    /**
+     * The version number is an uint32_t to avoid machines with different sizes of
+     * 'int' to allow different values here. It’s highly unlikely we ever exceed
+     * even an int8_t, but still…
+     */
+    uint32_t version;
+} i3bar_child;
+
 /*
  * Start a child-process with the specified command and reroute stdin.
  * We actually start a $SHELL to execute the command so we don't have to care

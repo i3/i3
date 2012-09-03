@@ -25,14 +25,13 @@
 #include "common.h"
 
 /* Global variables for child_*() */
-pid_t child_pid;
+i3bar_child child = { 0 };
 
 /* stdin- and sigchild-watchers */
 ev_io    *stdin_io;
 ev_child *child_sig;
 
 /* JSON parser for stdin */
-bool plaintext = false;
 yajl_callbacks callbacks;
 yajl_handle parser;
 
@@ -68,6 +67,8 @@ void cleanup(void) {
         ev_child_stop(main_loop, child_sig);
         FREE(child_sig);
     }
+
+    memset(&child, 0, sizeof(i3bar_child));
 }
 
 /*
@@ -224,7 +225,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     unsigned char *buffer = get_buffer(watcher, &rec);
     if (buffer == NULL)
         return;
-    if (!plaintext) {
+    if (child.version > 0) {
         read_json_input(buffer, rec);
     } else {
         read_flat_input((char*)buffer, rec);
@@ -248,15 +249,15 @@ void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     unsigned int consumed = 0;
     /* At the moment, we don’t care for the version. This might change
      * in the future, but for now, we just discard it. */
-    plaintext = (determine_json_version(buffer, rec, &consumed) == -1);
-    if (plaintext) {
+    child.version = determine_json_version(buffer, rec, &consumed);
+    if (child.version > 0) {
+        read_json_input(buffer + consumed, rec - consumed);
+    } else {
         /* In case of plaintext, we just add a single block and change its
          * full_text pointer later. */
         struct status_block *new_block = scalloc(sizeof(struct status_block));
         TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
         read_flat_input((char*)buffer, rec);
-    } else {
-        read_json_input(buffer + consumed, rec - consumed);
     }
     free(buffer);
     ev_io_stop(main_loop, stdin_io);
@@ -272,7 +273,7 @@ void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  */
 void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
     ELOG("Child (pid: %d) unexpectedly exited with status %d\n",
-           child_pid,
+           child.pid,
            watcher->rstatus);
     cleanup();
 }
@@ -300,14 +301,13 @@ void start_child(char *command) {
     parser = yajl_alloc(&callbacks, NULL, &parser_context);
 #endif
 
-    child_pid = 0;
     if (command != NULL) {
         int fd[2];
         if (pipe(fd) == -1)
             err(EXIT_FAILURE, "pipe(fd)");
 
-        child_pid = fork();
-        switch (child_pid) {
+        child.pid = fork();
+        switch (child.pid) {
             case -1:
                 ELOG("Couldn't fork(): %s\n", strerror(errno));
                 exit(EXIT_FAILURE);
@@ -349,7 +349,7 @@ void start_child(char *command) {
 
     /* We must cleanup, if the child unexpectedly terminates */
     child_sig = smalloc(sizeof(ev_child));
-    ev_child_init(child_sig, &child_sig_cb, child_pid, 0);
+    ev_child_init(child_sig, &child_sig_cb, child.pid, 0);
     ev_child_start(main_loop, child_sig);
 
     atexit(kill_child_at_exit);
@@ -360,9 +360,9 @@ void start_child(char *command) {
  *
  */
 void kill_child_at_exit(void) {
-    if (child_pid != 0) {
-        kill(child_pid, SIGCONT);
-        kill(child_pid, SIGTERM);
+    if (child.pid > 0) {
+        kill(child.pid, SIGCONT);
+        kill(child.pid, SIGTERM);
     }
 }
 
@@ -372,12 +372,11 @@ void kill_child_at_exit(void) {
  *
  */
 void kill_child(void) {
-    if (child_pid != 0) {
-        kill(child_pid, SIGCONT);
-        kill(child_pid, SIGTERM);
+    if (child.pid > 0) {
+        kill(child.pid, SIGCONT);
+        kill(child.pid, SIGTERM);
         int status;
-        waitpid(child_pid, &status, 0);
-        child_pid = 0;
+        waitpid(child.pid, &status, 0);
         cleanup();
     }
 }
@@ -387,8 +386,8 @@ void kill_child(void) {
  *
  */
 void stop_child(void) {
-    if (child_pid != 0) {
-        kill(child_pid, SIGSTOP);
+    if (child.pid > 0) {
+        kill(child.pid, SIGSTOP);
     }
 }
 
@@ -397,7 +396,7 @@ void stop_child(void) {
  *
  */
 void cont_child(void) {
-    if (child_pid != 0) {
-        kill(child_pid, SIGCONT);
+    if (child.pid > 0) {
+        kill(child.pid, SIGCONT);
     }
 }
