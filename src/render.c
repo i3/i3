@@ -346,13 +346,15 @@ void render_con(Con *con, bool render_fullscreen) {
             child->rect.height = rect.height;
 
             child->deco_rect.width = child->rect.width / children;
-            child->deco_rect.height = deco_height;
             child->deco_rect.x = x - con->rect.x + i * child->deco_rect.width;
             child->deco_rect.y = y - con->rect.y;
 
             if (children > 1 || (child->border_style != BS_1PIXEL && child->border_style != BS_NONE)) {
                 child->rect.y += deco_height;
                 child->rect.height -= deco_height;
+                child->deco_rect.height = deco_height;
+            } else {
+                child->deco_rect.height = (child->border_style == BS_1PIXEL ? 1 : 0);
             }
         }
 
