@@ -1082,6 +1082,15 @@ void con_set_border_style(Con *con, int border_style) {
  *
  */
 void con_set_layout(Con *con, int layout) {
+    DLOG("con_set_layout(%p, %d), con->type = %d\n",
+         con, layout, con->type);
+
+    /* Users can focus workspaces, but not any higher in the hierarchy.
+     * Focus on the workspace is a special case, since in every other case, the
+     * user means "change the layout of the parent split container". */
+    if (con->type != CT_WORKSPACE)
+        con = con->parent;
+
     /* We fill in last_split_layout when switching to a different layout
      * since there are many places in the code that don’t use
      * con_set_layout(). */
@@ -1092,7 +1101,8 @@ void con_set_layout(Con *con, int layout) {
      * whole workspace into stacked/tabbed mode. To do this and still allow
      * intuitive operations (like level-up and then opening a new window), we
      * need to create a new split container. */
-    if (con->type == CT_WORKSPACE) {
+    if (con->type == CT_WORKSPACE &&
+        (layout == L_STACKED || layout == L_TABBED)) {
         DLOG("Creating new split container\n");
         /* 1: create a new split container */
         Con *new = con_new(NULL, NULL);
@@ -1100,7 +1110,7 @@ void con_set_layout(Con *con, int layout) {
 
         /* 2: Set the requested layout on the split container and mark it as
          * split. */
-        con_set_layout(new, layout);
+        new->layout = layout;
         new->last_split_layout = con->last_split_layout;
         new->split = true;
 
@@ -1156,30 +1166,38 @@ void con_set_layout(Con *con, int layout) {
  *
  */
 void con_toggle_layout(Con *con, const char *toggle_mode) {
+    Con *parent = con;
+    /* Users can focus workspaces, but not any higher in the hierarchy.
+     * Focus on the workspace is a special case, since in every other case, the
+     * user means "change the layout of the parent split container". */
+    if (con->type != CT_WORKSPACE)
+        parent = con->parent;
+    DLOG("con_toggle_layout(%p, %s), parent = %p\n", con, toggle_mode, parent);
+
     if (strcmp(toggle_mode, "split") == 0) {
         /* Toggle between splits. When the current layout is not a split
          * layout, we just switch back to last_split_layout. Otherwise, we
          * change to the opposite split layout. */
-        if (con->layout != L_SPLITH && con->layout != L_SPLITV)
-            con_set_layout(con, con->last_split_layout);
+        if (parent->layout != L_SPLITH && parent->layout != L_SPLITV)
+            con_set_layout(con, parent->last_split_layout);
         else {
-            if (con->layout == L_SPLITH)
+            if (parent->layout == L_SPLITH)
                 con_set_layout(con, L_SPLITV);
             else con_set_layout(con, L_SPLITH);
         }
     } else {
-        if (con->layout == L_STACKED)
+        if (parent->layout == L_STACKED)
             con_set_layout(con, L_TABBED);
-        else if (con->layout == L_TABBED) {
+        else if (parent->layout == L_TABBED) {
             if (strcmp(toggle_mode, "all") == 0)
                 con_set_layout(con, L_SPLITH);
-            else con_set_layout(con, con->last_split_layout);
-        } else if (con->layout == L_SPLITH || con->layout == L_SPLITV) {
+            else con_set_layout(con, parent->last_split_layout);
+        } else if (parent->layout == L_SPLITH || parent->layout == L_SPLITV) {
             if (strcmp(toggle_mode, "all") == 0) {
                 /* When toggling through all modes, we toggle between
                  * splith/splitv, whereas normally we just directly jump to
                  * stacked. */
-                if (con->layout == L_SPLITH)
+                if (parent->layout == L_SPLITH)
                     con_set_layout(con, L_SPLITV);
                 else con_set_layout(con, L_STACKED);
             } else {

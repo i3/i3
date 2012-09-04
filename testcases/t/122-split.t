@@ -4,6 +4,7 @@
 # Tests splitting
 #
 use i3test;
+use List::Util qw(first);
 
 my $tmp;
 my $ws;
@@ -118,5 +119,30 @@ cmd 'open';
 @content = @{get_ws_content($tmp)};
 is(scalar @content, 1, 'Still one container on this ws');
 is(scalar @{$content[0]->{nodes}}, 1, 'Stacked con still has one child node');
+
+################################################################################
+# When focusing the workspace, changing the layout should have an effect on the
+# workspace, not on the parent (CT_CONTENT) container.
+################################################################################
+
+sub get_output_content {
+    my $tree = i3(get_socket_path())->get_tree->recv;
+
+    my @outputs = grep { $_->{name} !~ /^__/ } @{$tree->{nodes}};
+    is(scalar @outputs, 1, 'exactly one output (testcase not multi-monitor capable)');
+    my $output = $outputs[0];
+    # get the first (and only) CT_CON
+    return first { $_->{type} == 2 } @{$output->{nodes}};
+}
+
+$tmp = fresh_workspace;
+
+cmd 'open';
+cmd 'split v';
+cmd 'open';
+cmd 'focus parent';
+is(get_output_content()->{layout}, 'splith', 'content container layout ok');
+cmd 'layout stacked';
+is(get_output_content()->{layout}, 'splith', 'content container layout still ok');
 
 done_testing;

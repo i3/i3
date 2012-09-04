@@ -1114,9 +1114,17 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
  *
  */
 void cmd_split(I3_CMD, char *direction) {
+    owindow *current;
     /* TODO: use matches */
     LOG("splitting in direction %c\n", direction[0]);
-    tree_split(focused, (direction[0] == 'v' ? VERT : HORIZ));
+    if (match_is_empty(current_match))
+        tree_split(focused, (direction[0] == 'v' ? VERT : HORIZ));
+    else {
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            DLOG("matching: %p / %s\n", current->con, current->con->name);
+            tree_split(current->con, (direction[0] == 'v' ? VERT : HORIZ));
+        }
+    }
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
@@ -1429,7 +1437,7 @@ void cmd_layout(I3_CMD, char *layout_str) {
 
     /* check if the match is empty, not if the result is empty */
     if (match_is_empty(current_match))
-        con_set_layout(focused->parent, layout);
+        con_set_layout(focused, layout);
     else {
         TAILQ_FOREACH(current, &owindows, owindows) {
             DLOG("matching: %p / %s\n", current->con, current->con->name);
@@ -1456,7 +1464,7 @@ void cmd_layout_toggle(I3_CMD, char *toggle_mode) {
 
     /* check if the match is empty, not if the result is empty */
     if (match_is_empty(current_match))
-        con_toggle_layout(focused->parent, toggle_mode);
+        con_toggle_layout(focused, toggle_mode);
     else {
         TAILQ_FOREACH(current, &owindows, owindows) {
             DLOG("matching: %p / %s\n", current->con, current->con->name);
