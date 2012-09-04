@@ -22,15 +22,13 @@ sync_with_i3;
 sub verify_scratchpad_doesnt_move {
     my ($ws) = @_;
 
-    is(scalar @{get_ws($ws)->{nodes}}, 0, 'no nodes on this ws');
+    is_num_children($ws, 0, 'no nodes on this ws');
 
     my $window = open_window;
-
-    is(scalar @{get_ws($ws)->{nodes}}, 1, 'one nodes on this ws');
+    is_num_children($ws, 1, 'one node on this ws');
 
     cmd 'move scratchpad';
-
-    is(scalar @{get_ws($ws)->{nodes}}, 0, 'no nodes on this ws');
+    is_num_children($ws, 0, 'no nodes on this ws');
 
     my $last_x = -1;
     for (1 .. 20) {

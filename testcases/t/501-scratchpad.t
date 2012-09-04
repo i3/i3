@@ -25,18 +25,18 @@ my $i3 = i3(get_socket_path());
 sub verify_scratchpad_on_same_ws {
     my ($ws) = @_;
 
-    is(scalar @{get_ws($ws)->{nodes}}, 0, 'no nodes on this ws');
+    is_num_children($ws, 0, 'no nodes on this ws');
 
     my $window = open_window;
 
-    is(scalar @{get_ws($ws)->{nodes}}, 1, 'one nodes on this ws');
+    is_num_children($ws, 1, 'one nodes on this ws');
 
     cmd 'move scratchpad';
 
-    is(scalar @{get_ws($ws)->{nodes}}, 0, 'no nodes on this ws');
+    is_num_children($ws, 0, 'no nodes on this ws');
 
     cmd 'scratchpad show';
-    is(scalar @{get_ws($ws)->{nodes}}, 0, 'no nodes on this ws');
+    is_num_children($ws, 0, 'no nodes on this ws');
     is(scalar @{get_ws($ws)->{floating_nodes}}, 1, 'one floating node on this ws');
 }
 
@@ -61,21 +61,21 @@ sub verify_scratchpad_switch {
 
     cmd "workspace $first";
 
-    is(scalar @{get_ws($first)->{nodes}}, 0, 'no nodes on this ws');
+    is_num_children($first, 0, 'no nodes on this ws');
 
     my $window = open_window;
 
-    is(scalar @{get_ws($first)->{nodes}}, 1, 'one nodes on this ws');
+    is_num_children($first, 1, 'one nodes on this ws');
 
     cmd 'move scratchpad';
 
-    is(scalar @{get_ws($first)->{nodes}}, 0, 'no nodes on this ws');
+    is_num_children($first, 0, 'no nodes on this ws');
 
     cmd "workspace $second";
 
     cmd 'scratchpad show';
     my $ws = get_ws($second);
-    is(scalar @{$ws->{nodes}}, 0, 'no nodes on this ws');
+    is_num_children($second, 0, 'no nodes on this ws');
     is(scalar @{$ws->{floating_nodes}}, 1, 'one floating node on this ws');
 
     # Verify that the coordinates are within bounds.

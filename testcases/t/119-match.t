@@ -26,8 +26,7 @@ my $win = $content->[0];
 cmd q|[class=".*"] kill|;
 cmd q|[con_id="99999"] kill|;
 
-$content = get_ws_content($tmp);
-ok(@{$content} == 1, 'window still there');
+is_num_children($tmp, 1, 'window still there');
 
 # now kill the window
 cmd 'nop now killing the window';
@@ -37,8 +36,7 @@ cmd qq|[con_id="$id"] kill|;
 wait_for_unmap $window;
 
 cmd 'nop checking if its gone';
-$content = get_ws_content($tmp);
-ok(@{$content} == 0, 'window killed');
+is_num_children($tmp, 0, 'window killed');
 
 # TODO: same test, but with pcre expressions
 
@@ -86,15 +84,13 @@ my $right = open_special(name => 'right');
 ok($right->mapped, 'right window mapped');
 
 # two windows should be here
-$content = get_ws_content($tmp);
-ok(@{$content} == 2, 'two windows opened');
+is_num_children($tmp, 2, 'two windows opened');
 
 cmd '[class="special" title="left"] kill';
 
 sync_with_i3;
 
-$content = get_ws_content($tmp);
-is(@{$content}, 1, 'one window still there');
+is_num_children($tmp, 1, 'one window still there');
 
 ######################################################################
 # check that regular expressions work
@@ -104,17 +100,11 @@ $tmp = fresh_workspace;
 
 $left = open_special(name => 'left', wm_class => 'special7');
 ok($left->mapped, 'left window mapped');
-
-# two windows should be here
-$content = get_ws_content($tmp);
-ok(@{$content} == 1, 'window opened');
+is_num_children($tmp, 1, 'window opened');
 
 cmd '[class="^special[0-9]$"] kill';
-
 wait_for_unmap $left;
-
-$content = get_ws_content($tmp);
-is(@{$content}, 0, 'window killed');
+is_num_children($tmp, 0, 'window killed');
 
 ######################################################################
 # check that UTF-8 works when matching
@@ -124,16 +114,10 @@ $tmp = fresh_workspace;
 
 $left = open_special(name => 'ä 3', wm_class => 'special7');
 ok($left->mapped, 'left window mapped');
-
-# two windows should be here
-$content = get_ws_content($tmp);
-ok(@{$content} == 1, 'window opened');
+is_num_children($tmp, 1, 'window opened');
 
 cmd '[title="^\w [3]$"] kill';
-
 wait_for_unmap $left;
-
-$content = get_ws_content($tmp);
-is(@{$content}, 0, 'window killed');
+is_num_children($tmp, 0, 'window killed');
 
 done_testing;

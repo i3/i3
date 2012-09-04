@@ -15,11 +15,11 @@ my $keep_open_con = open_empty_con($i3);
 my $tmp = fresh_workspace;
 my $con = open_empty_con($i3);
 
-is(@{get_ws_content($tmp)}, 1, 'one container');
-is(@{get_ws_content($old)}, 1, 'one container on old ws');
+is_num_children($tmp, 1, 'one container');
+is_num_children($old, 1, 'one container on old ws');
 
 cmd 'move workspace prev; workspace prev';
 
-is(@{get_ws_content($old)}, 2, 'container moved away');
+is_num_children($old, 2, 'container moved away');
 
 done_testing;

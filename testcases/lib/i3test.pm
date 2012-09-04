@@ -116,6 +116,7 @@ use Test::More $test_more_args;
 use Data::Dumper;
 use AnyEvent::I3;
 use Time::HiRes qw(sleep);
+use i3test::Test;
 __
     $tester->BAIL_OUT("$@") if $@;
     feature->import(":5.10");

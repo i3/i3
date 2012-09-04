@@ -100,14 +100,12 @@ is($nodes->[1]->{id}, $second, 'second container on bottom');
 
 # move it outside again
 cmd 'move left';
-$content = get_ws_content($tmp);
-is(@{$content}, 3, 'three nodes on this workspace');
+is_num_children($tmp, 3, 'three containers after moving left');
 
 # due to automatic flattening/cleanup, the remaining split container
 # will be replaced by the con itself, so we will still have 3 nodes
 cmd 'move right';
-$content = get_ws_content($tmp);
-is(@{$content}, 2, 'two nodes on this workspace');
+is_num_children($tmp, 2, 'two containers after moving right (flattening)');
 
 ######################################################################
 # 4) We create two v-split containers on the workspace, then we move
@@ -128,8 +126,7 @@ cmd "move right";
 cmd 'focus left';
 cmd "move right";
 
-$content = get_ws_content($otmp);
-is(@{$content}, 1, 'only one nodes on this workspace');
+is_num_children($otmp, 1, 'only one node on this workspace');
 
 ######################################################################
 # 5) test moving floating containers.

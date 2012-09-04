@@ -22,29 +22,21 @@ my $i3 = i3(get_socket_path(0));
 cmd 'workspace targetws';
 
 open_window(name => "testcase");
-
-my $nodes = get_ws_content('targetws');
-is(scalar @$nodes, 1, 'precisely one window');
+is_num_children('targetws', 1, 'precisely one window');
 
 open_window(name => "testcase");
-
-$nodes = get_ws_content('targetws');
-is(scalar @$nodes, 2, 'precisely two windows');
+is_num_children('targetws', 2, 'precisely two windows');
 
 cmd 'split v';
 
 open_window(name => "testcase");
-
-$nodes = get_ws_content('targetws');
-is(scalar @$nodes, 2, 'still two windows');
+is_num_children('targetws', 2, 'still two windows');
 
 # focus parent. the new window should now be opened right next to the last one.
 cmd 'focus parent';
 
 open_window(name => "testcase");
-
-$nodes = get_ws_content('targetws');
-is(scalar @$nodes, 3, 'new window opened next to last one');
+is_num_children('targetws', 3, 'new window opened next to last one');
 
 exit_gracefully($pid);
 

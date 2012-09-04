@@ -18,20 +18,20 @@ sub move_workspace_test {
     my $tmp2 = get_unused_workspace();
     cmd "workspace $tmp";
 
-    ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
+    is_num_children($tmp, 0, 'no containers yet');
 
     my $first = open_empty_con($i3);
     my $second = open_empty_con($i3);
-    ok(@{get_ws_content($tmp)} == 2, 'two containers on first ws');
+    is_num_children($tmp, 2, 'two containers on first ws');
 
     cmd "workspace $tmp2";
-    ok(@{get_ws_content($tmp2)} == 0, 'no containers on second ws yet');
+    is_num_children($tmp2, 0, 'no containers on second ws yet');
 
     cmd "workspace $tmp";
 
     cmd "$movecmd $tmp2";
-    ok(@{get_ws_content($tmp)} == 1, 'one container on first ws anymore');
-    ok(@{get_ws_content($tmp2)} == 1, 'one container on second ws');
+    is_num_children($tmp, 1, 'one container on first ws anymore');
+    is_num_children($tmp2, 1, 'one container on second ws');
     my ($nodes, $focus) = get_ws_content($tmp2);
 
     is($focus->[0], $second, 'same container on different ws');
@@ -53,7 +53,7 @@ move_workspace_test('move container to workspace');
 
 cmd 'workspace 13: meh';
 cmd 'open';
-ok(@{get_ws_content('13: meh')} == 1, 'one container on 13: meh');
+is_num_children('13: meh', 1, 'one container on 13: meh');
 
 ok(!workspace_exists('13'), 'workspace 13 does not exist yet');
 
@@ -61,8 +61,8 @@ cmd 'workspace 12';
 cmd 'open';
 
 cmd 'move to workspace number 13';
-ok(@{get_ws_content('13: meh')} == 2, 'two containers on 13: meh');
-ok(@{get_ws_content('12')} == 0, 'no container on 12 anymore');
+is_num_children('13: meh', 2, 'one container on 13: meh');
+is_num_children('12', 0, 'no container on 12 anymore');
 
 ok(!workspace_exists('13'), 'workspace 13 does still not exist');
 
@@ -76,28 +76,28 @@ ok(!workspace_exists('13'), 'workspace 13 does still not exist');
 my $tmp = get_unused_workspace();
 my $tmp2 = get_unused_workspace();
 cmd "workspace $tmp";
-ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
+is_num_children($tmp, 0, 'no containers yet');
 my $first = open_empty_con($i3);
 my $second = open_empty_con($i3);
-ok(@{get_ws_content($tmp)} == 2, 'two containers on first ws');
+is_num_children($tmp, 2, 'two containers');
 
 cmd "workspace $tmp2";
-ok(@{get_ws_content($tmp2)} == 0, 'no containers yet');
+is_num_children($tmp2, 0, 'no containers yet');
 my $third = open_empty_con($i3);
-ok(@{get_ws_content($tmp2)} == 1, 'one container on second ws');
+is_num_children($tmp2, 1, 'one container on second ws');
 
 # go back to the first workspace, move one of the containers to the next one
 cmd "workspace $tmp";
 cmd 'move workspace next';
-ok(@{get_ws_content($tmp)} == 1, 'one container on first ws');
-ok(@{get_ws_content($tmp2)} == 2, 'two containers on second ws');
+is_num_children($tmp, 1, 'one container on first ws');
+is_num_children($tmp2, 2, 'two containers on second ws');
 
 # go to the second workspace and move two containers to the first one
 cmd "workspace $tmp2";
 cmd 'move workspace prev';
 cmd 'move workspace prev';
-ok(@{get_ws_content($tmp)} == 3, 'three containers on first ws');
-ok(@{get_ws_content($tmp2)} == 0, 'no containers on second ws');
+is_num_children($tmp, 3, 'three containers on first ws');
+is_num_children($tmp2, 0, 'no containers on second ws');
 
 ###################################################################
 # check if 'move workspace current' works
@@ -108,16 +108,16 @@ $tmp2 = get_unused_workspace();
 
 cmd "workspace $tmp";
 $first = open_window(name => 'win-name');
-ok(@{get_ws_content($tmp)} == 1, 'one container on first ws');
+is_num_children($tmp, 1, 'one container on first ws');
 
 cmd "workspace $tmp2";
-ok(@{get_ws_content($tmp2)} == 0, 'no containers yet');
+is_num_children($tmp2, 0, 'no containers yet');
 
 cmd qq|[title="win-name"] move workspace $tmp2|;
-ok(@{get_ws_content($tmp2)} == 1, 'one container on second ws');
+is_num_children($tmp2, 1, 'one container on second ws');
 
 cmd qq|[title="win-name"] move workspace $tmp|;
-ok(@{get_ws_content($tmp2)} == 0, 'no containers on second ws');
+is_num_children($tmp2, 0, 'no containers on second ws');
 
 ###################################################################
 # check if floating cons are moved to new workspaces properly
@@ -150,12 +150,12 @@ cmd 'open';
 
 cmd 'workspace 16';
 cmd 'open';
-is(@{get_ws('16')->{nodes}}, 1, 'one node on ws 16');
+is_num_children('16', 1, 'one node on ws 16');
 
 cmd "workspace $tmp";
 cmd 'open';
 cmd 'move workspace number 16';
-is(@{get_ws('16')->{nodes}}, 2, 'two nodes on ws 16');
+is_num_children('16', 2, 'two nodes on ws 16');
 
 ok(!workspace_exists('17'), 'workspace 17 does not exist yet');
 cmd 'open';

@@ -45,8 +45,7 @@ my $win = open_window;
 my $scratch = open_special;
 cmd '[class="special"] move scratchpad';
 
-my ($nodes, $focus) = get_ws_content($tmp);
-is(scalar @$nodes, 1, 'one window on current ws');
+is_num_children($tmp, 1, 'one window on current ws');
 
 my $otmp = fresh_workspace;
 cmd 'scratchpad show';
