@@ -325,7 +325,19 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
     }
 
     DLOG("Configure request!\n");
-    if (con_is_floating(con) && con_is_leaf(con)) {
+
+    Con *workspace = con_get_workspace(con),
+        *fullscreen = NULL;
+
+    /* There might not be a corresponding workspace for dock cons, therefore we
+     * have to be careful here. */
+    if (workspace) {
+        fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
+        if (!fullscreen)
+            fullscreen = con_get_fullscreen_con(workspace, CF_GLOBAL);
+    }
+
+    if (fullscreen != con && con_is_floating(con) && con_is_leaf(con)) {
         /* find the height for the decorations */
         int deco_height = config.font.height + 5;
         /* we actually need to apply the size/position changes to the *parent*
