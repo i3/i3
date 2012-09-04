@@ -8,7 +8,6 @@
 │ dependency  │ min.   │ lkgv   │ URL                                    │
 ├─────────────┼────────┼────────┼────────────────────────────────────────┤
 │ pkg-config  │ 0.25   │ 0.26   │ http://pkgconfig.freedesktop.org/      │
-│ xcb-proto   │ 1.3    │ 1.6    │ http://xcb.freedesktop.org/dist/       │
 │ libxcb      │ 1.1.93 │ 1.7    │ http://xcb.freedesktop.org/dist/       │
 │ xcb-util    │ 0.3.3  │ 0.3.8  │ http://xcb.freedesktop.org/dist/       │
 │ libev       │ 4.0    │ 4.04   │ http://libev.schmorp.de/               │
