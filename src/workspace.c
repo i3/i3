@@ -392,8 +392,7 @@ void workspace_show(Con *workspace) {
  */
 void workspace_show_by_name(const char *num) {
     Con *workspace;
-    bool changed_num_workspaces;
-    workspace = workspace_get(num, &changed_num_workspaces);
+    workspace = workspace_get(num, NULL);
     _workspace_show(workspace);
 }
 
@@ -662,6 +661,22 @@ void workspace_back_and_forth(void) {
     }
 
     workspace_show_by_name(previous_workspace_name);
+}
+
+/*
+ * Returns the previously focused workspace con, or NULL if unavailable.
+ *
+ */
+Con *workspace_back_and_forth_get(void) {
+    if (!previous_workspace_name) {
+        DLOG("no previous workspace name set.");
+        return NULL;
+    }
+
+    Con *workspace;
+    workspace = workspace_get(previous_workspace_name, NULL);
+
+    return workspace;
 }
 
 static bool get_urgency_flag(Con *con) {

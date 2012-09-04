@@ -95,6 +95,12 @@ Con* workspace_prev_on_output(void);
  */
 void workspace_back_and_forth(void);
 
+/**
+ * Returns the previously focused workspace con, or NULL if unavailable.
+ *
+ */
+Con *workspace_back_and_forth_get(void);
+
 
 #if 0
 /**

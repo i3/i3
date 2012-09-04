@@ -1395,7 +1395,8 @@ RandR output.
 
 [[back_and_forth]]
 To switch back to the previously focused workspace, use +workspace
-back_and_forth+.
+back_and_forth+; likewise, you can move containers to the previously focused
+workspace using +move container to workspace back_and_forth+.
 
 *Syntax*:
 -----------------------------------
@@ -1421,6 +1422,7 @@ bindsym mod+Shift+2 move container to workspace 2
 
 # switch between the current and the previously focused one
 bindsym mod+b workspace back_and_forth
+bindsym mod+Shift+b move container to workspace back_and_forth
 
 # move the whole workspace to the next output
 bindsym mod+x move workspace to output right

@@ -56,6 +56,12 @@ void cmd_criteria_add(I3_CMD, char *ctype, char *cvalue);
 void cmd_move_con_to_workspace(I3_CMD, char *which);
 
 /**
+ * Implementation of 'move [window|container] [to] workspace back_and_forth'.
+ *
+ */
+void cmd_move_con_to_workspace_back_and_forth(I3_CMD);
+
+/**
  * Implementation of 'move [window|container] [to] workspace <name>'.
  *
  */

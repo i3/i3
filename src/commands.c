@@ -99,6 +99,29 @@ static bool maybe_back_and_forth(struct CommandResult *cmd_output, char *name) {
     return true;
 }
 
+/*
+ * Return the passed workspace unless it is the current one and auto back and
+ * forth is enabled, in which case the back_and_forth workspace is returned.
+ */
+static Con *maybe_auto_back_and_forth_workspace(Con *workspace) {
+    Con *current, *baf;
+
+    if (!config.workspace_auto_back_and_forth)
+        return workspace;
+
+    current = con_get_workspace(focused);
+
+    if (current == workspace) {
+        baf = workspace_back_and_forth_get();
+        if (baf != NULL) {
+            DLOG("Substituting workspace with back_and_forth, as it is focused.\n");
+            return baf;
+        }
+    }
+
+    return workspace;
+}
+
 // This code is commented out because we might recycle it for popping up error
 // messages on parser errors.
 #if 0
@@ -400,6 +423,38 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
     ysuccess(true);
 }
 
+/**
+ * Implementation of 'move [window|container] [to] workspace back_and_forth'.
+ *
+ */
+void cmd_move_con_to_workspace_back_and_forth(I3_CMD) {
+    owindow *current;
+    Con *ws;
+
+    ws = workspace_back_and_forth_get();
+
+    if (ws == NULL) {
+        y(map_open);
+        ystr("success");
+        y(bool, false);
+        ystr("error");
+        ystr("No workspace was previously active.");
+        y(map_close);
+        return;
+    }
+
+    HANDLE_EMPTY_MATCH;
+
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        DLOG("matching: %p / %s\n", current->con, current->con->name);
+        con_move_to_workspace(current->con, ws, true, false);
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
 /*
  * Implementation of 'move [window|container] [to] workspace <name>'.
  *
@@ -431,6 +486,8 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
     LOG("should move window to workspace %s\n", name);
     /* get the workspace */
     Con *ws = workspace_get(name, NULL);
+
+    ws = maybe_auto_back_and_forth_workspace(ws);
 
     HANDLE_EMPTY_MATCH;
 
@@ -488,6 +545,8 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
     if (!workspace) {
         workspace = workspace_get(which, NULL);
     }
+
+    workspace = maybe_auto_back_and_forth_workspace(workspace);
 
     HANDLE_EMPTY_MATCH;
 
