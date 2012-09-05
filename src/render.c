@@ -345,7 +345,7 @@ void render_con(Con *con, bool render_fullscreen) {
             child->rect.width = rect.width;
             child->rect.height = rect.height;
 
-            child->deco_rect.width = child->rect.width / children;
+            child->deco_rect.width = ceil((float)child->rect.width / children);
             child->deco_rect.x = x - con->rect.x + i * child->deco_rect.width;
             child->deco_rect.y = y - con->rect.y;
 
