@@ -604,6 +604,22 @@ logfile first (see http://i3wm.org/docs/debugging.html). It includes more
 details about the matching process and the window’s actual class, instance and
 title when starting up.
 
+Note that if you want to start an application just once on a specific
+workspace, but you don’t want to assign all instances of it permanently, you
+can make use of i3’s startup-notification support (see <<exec>>) in your config
+file in the following way:
+
+*Start iceweasel on workspace 3 (once)*:
+-------------------------------------------------------------------------------
+# Start iceweasel on workspace 3, then switch back to workspace 1
+# (Being a command-line utility, i3-msg does not support startup notifications,
+#  hence the exec --no-startup-id.)
+# (Starting iceweasel with i3’s exec command is important in order to make i3
+#  create a startup notification context, without which the iceweasel window(s)
+#  cannot be matched onto the workspace on which the command was started.)
+exec --no-startup-id i3-msg 'workspace 3; exec iceweasel; workspace 1'
+-------------------------------------------------------------------------------
+
 === Automatically starting applications on i3 startup
 
 By using the +exec+ keyword outside a keybinding, you can configure
