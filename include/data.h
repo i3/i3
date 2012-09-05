@@ -168,6 +168,9 @@ struct Startup_Sequence {
     char *workspace;
     /** libstartup-notification context for this launch */
     SnLauncherContext *context;
+    /** time at which this sequence should be deleted (after it was marked as
+     * completed) */
+    time_t delete_at;
 
     TAILQ_ENTRY(Startup_Sequence) sequences;
 };

@@ -58,6 +58,57 @@ static void startup_timeout(EV_P_ ev_timer *w, int revents) {
 }
 
 /*
+ * Some applications (such as Firefox) mark a startup sequence as completede
+ * *before* they even map a window. Therefore, we cannot entirely delete the
+ * startup sequence once it’s marked as complete. Instead, we’ll mark it for
+ * deletion in 30 seconds and use that chance to delete old sequences.
+ *
+ * This function returns the number of active (!) startup notifications, that
+ * is, those which are not marked for deletion yet. This is used for changing
+ * the root window cursor.
+ *
+ */
+static int _delete_startup_sequence(struct Startup_Sequence *sequence) {
+    time_t current_time = time(NULL);
+    int active_sequences = 0;
+
+    /* Mark the given sequence for deletion in 30 seconds. */
+    sequence->delete_at = current_time + 30;
+    DLOG("Will delete startup sequence %s at timestamp %d\n",
+         sequence->id, sequence->delete_at);
+
+    /* Traverse the list and delete everything which was marked for deletion 30
+     * seconds ago or earlier. */
+    struct Startup_Sequence *current, *next;
+    for (next = TAILQ_FIRST(&startup_sequences);
+         next != TAILQ_END(&startup_sequences);
+         ) {
+        current = next;
+        next = TAILQ_NEXT(next, sequences);
+
+        if (current->delete_at == 0) {
+            active_sequences++;
+            continue;
+        }
+
+        if (current_time <= current->delete_at)
+            continue;
+
+        DLOG("Deleting startup sequence %s, delete_at = %d, current_time = %d\n",
+             current->id, current->delete_at, current_time);
+
+        /* Unref the context, will be free()d */
+        sn_launcher_context_unref(current->context);
+
+        /* Delete our internal sequence */
+        TAILQ_REMOVE(&startup_sequences, current, sequences);
+    }
+
+    return active_sequences;
+
+}
+
+/*
  * Starts the given application by passing it through a shell. We use double fork
  * to avoid zombie processes. As the started application’s parent exits (immediately),
  * the application is reparented to init (process-id 1), which correctly handles
@@ -182,13 +233,7 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
         case SN_MONITOR_EVENT_COMPLETED:
             DLOG("startup sequence %s completed\n", sn_startup_sequence_get_id(snsequence));
 
-            /* Unref the context, will be free()d */
-            sn_launcher_context_unref(sequence->context);
-
-            /* Delete our internal sequence */
-            TAILQ_REMOVE(&startup_sequences, sequence, sequences);
-
-            if (TAILQ_EMPTY(&startup_sequences)) {
+            if (_delete_startup_sequence(sequence) == 0) {
                 DLOG("No more startup sequences running, changing root window cursor to default pointer.\n");
                 /* Change the pointer of the root window to indicate progress */
                 if (xcursor_supported)
@@ -250,13 +295,14 @@ char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *
         break;
     }
 
-    free(startup_id);
-    free(startup_id_reply);
-
     if (!sequence) {
         DLOG("WARNING: This sequence (ID %s) was not found\n", startup_id);
+        free(startup_id);
+        free(startup_id_reply);
         return NULL;
     }
 
+    free(startup_id);
+    free(startup_id_reply);
     return sequence->workspace;
 }
