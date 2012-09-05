@@ -74,7 +74,7 @@ static int _delete_startup_sequence(struct Startup_Sequence *sequence) {
 
     /* Mark the given sequence for deletion in 30 seconds. */
     sequence->delete_at = current_time + 30;
-    DLOG("Will delete startup sequence %s at timestamp %d\n",
+    DLOG("Will delete startup sequence %s at timestamp %ld\n",
          sequence->id, sequence->delete_at);
 
     /* Traverse the list and delete everything which was marked for deletion 30
@@ -94,7 +94,7 @@ static int _delete_startup_sequence(struct Startup_Sequence *sequence) {
         if (current_time <= current->delete_at)
             continue;
 
-        DLOG("Deleting startup sequence %s, delete_at = %d, current_time = %d\n",
+        DLOG("Deleting startup sequence %s, delete_at = %ld, current_time = %ld\n",
              current->id, current->delete_at, current_time);
 
         /* Unref the context, will be free()d */
