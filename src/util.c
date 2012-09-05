@@ -93,7 +93,7 @@ void exec_i3_utility(char *name, char *argv[]) {
     char buffer[BUFSIZ];
     if (readlink("/proc/self/exe", buffer, BUFSIZ) == -1) {
         warn("could not read /proc/self/exe");
-        exit(1);
+        _exit(1);
     }
     dir = dirname(buffer);
     sasprintf(&migratepath, "%s/%s", dir, name);
@@ -102,7 +102,7 @@ void exec_i3_utility(char *name, char *argv[]) {
 #endif
 
     warn("Could not start %s", name);
-    exit(2);
+    _exit(2);
 }
 
 /*
