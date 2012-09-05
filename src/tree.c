@@ -617,8 +617,8 @@ void tree_flatten(Con *con) {
 
     /* The child must have a different orientation than the con but the same as
      * the con’s parent to be redundant */
-    if (con->split ||
-        child->split ||
+    if (!con->split ||
+        !child->split ||
         con_orientation(con) == con_orientation(child) ||
         con_orientation(child) != con_orientation(parent))
         goto recurse;

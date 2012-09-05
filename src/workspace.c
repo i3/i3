@@ -699,6 +699,7 @@ void ws_force_orientation(Con *ws, orientation_t orientation) {
     /* 1: create a new split container */
     Con *split = con_new(NULL, NULL);
     split->parent = ws;
+    split->split = true;
 
     /* 2: copy layout from workspace */
     split->layout = ws->layout;
@@ -715,9 +716,10 @@ void ws_force_orientation(Con *ws, orientation_t orientation) {
 
     /* 4: switch workspace layout */
     ws->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
+    DLOG("split->layout = %d, ws->layout = %d\n", split->layout, ws->layout);
 
     /* 5: attach the new split container to the workspace */
-    DLOG("Attaching new split to ws\n");
+    DLOG("Attaching new split (%p) to ws (%p)\n", split, ws);
     con_attach(split, ws, false);
 
     /* 6: fix the percentages */
