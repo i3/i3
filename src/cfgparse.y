@@ -431,8 +431,10 @@ static void check_for_duplicate_bindings(struct context *context) {
             /* Check if the keycodes or modifiers are different. If so, they
              * can't be duplicate */
             if (bind->keycode != current->keycode ||
-                bind->mods != current->mods)
+                bind->mods != current->mods ||
+                bind->release != current->release)
                 continue;
+
             context->has_errors = true;
             if (current->keycode != 0) {
                 ELOG("Duplicate keybinding in config file:\n  modmask %d with keycode %d, command \"%s\"\n",
