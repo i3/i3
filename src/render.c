@@ -246,26 +246,13 @@ void render_con(Con *con, bool render_fullscreen) {
             Con *content = output_get_content(output);
             Con *workspace = TAILQ_FIRST(&(content->focus_head));
 
-            /* Check for (floating!) fullscreen nodes */
+            /* Check for fullscreen nodes */
             /* XXX: This code duplication is unfortunate. Keep in mind to fix
              * this when we clean up the whole render.c */
             Con *fullscreen = NULL;
             fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
-            if (fullscreen) {
-                /* Either the fullscreen window is inside the floating
-                 * container, then we need to render and raise it now… */
-                if (con_inside_floating(fullscreen)) {
-                    fullscreen->rect = output->rect;
-                    x_raise_con(fullscreen);
-                    render_con(fullscreen, true);
+            if (fullscreen)
                     continue;
-                } else {
-                    /* …or it’s a tiling window, in which case the floating
-                     * windows should not overlap it, so we skip rendering this
-                     * output. */
-                    continue;
-                }
-            }
 
             Con *child;
             TAILQ_FOREACH(child, &(workspace->floating_head), floating_windows) {
