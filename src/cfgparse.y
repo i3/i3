@@ -3,6 +3,8 @@
  * vim:ts=4:sw=4:expandtab
  *
  */
+#undef I3__FILE__
+#define I3__FILE__ "cfgparse.y"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -782,6 +784,7 @@ void parse_file(const char *f) {
 %token                  TOK_BAR_COLOR_INACTIVE_WORKSPACE "inactive_workspace"
 %token                  TOK_BAR_COLOR_URGENT_WORKSPACE "urgent_workspace"
 %token                  TOK_NO_STARTUP_ID           "--no-startup-id"
+%token                  TOK_RELEASE                 "--release"
 
 %token              TOK_MARK            "mark"
 %token              TOK_CLASS           "class"
@@ -811,6 +814,7 @@ void parse_file(const char *f) {
 %type   <number>        bar_mode_mode
 %type   <number>        bar_modifier_modifier
 %type   <number>        optional_no_startup_id
+%type   <number>        optional_release
 %type   <string>        command
 %type   <string>        word_or_number
 %type   <string>        qstring_or_number
@@ -879,31 +883,38 @@ binding:
     ;
 
 bindcode:
-    binding_modifiers NUMBER command
+    optional_release binding_modifiers NUMBER command
     {
-        printf("\tFound keycode binding mod%d with key %d and command %s\n", $1, $2, $3);
+        DLOG("bindcode: release = %d, mod = %d, key = %d, command = %s\n", $1, $2, $3, $4);
         Binding *new = scalloc(sizeof(Binding));
 
-        new->keycode = $2;
-        new->mods = $1;
-        new->command = $3;
+        new->release = $1;
+        new->keycode = $3;
+        new->mods = $2;
+        new->command = $4;
 
         $$ = new;
     }
     ;
 
 bindsym:
-    binding_modifiers word_or_number command
+    optional_release binding_modifiers word_or_number command
     {
-        printf("\tFound keysym binding mod%d with key %s and command %s\n", $1, $2, $3);
+        DLOG("bindsym: release = %d, mod = %d, key = %s, command = %s\n", $1, $2, $3, $4);
         Binding *new = scalloc(sizeof(Binding));
 
-        new->symbol = $2;
-        new->mods = $1;
-        new->command = $3;
+        new->release = $1;
+        new->symbol = $3;
+        new->mods = $2;
+        new->command = $4;
 
         $$ = new;
     }
+    ;
+
+optional_release:
+    /* empty */ { $$ = false; }
+    | TOK_RELEASE  { $$ = true; }
     ;
 
 for_window:

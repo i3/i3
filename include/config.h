@@ -312,7 +312,7 @@ void switch_mode(const char *new_mode);
  * or NULL if no such binding exists.
  *
  */
-Binding *get_binding(uint16_t modifiers, xcb_keycode_t keycode);
+Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode);
 
 /**
  * Kills the configerror i3-nagbar process, if any.

@@ -54,12 +54,16 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
  * or NULL if no such binding exists.
  *
  */
-Binding *get_binding(uint16_t modifiers, xcb_keycode_t keycode) {
+Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode) {
     Binding *bind;
 
     TAILQ_FOREACH(bind, bindings, bindings) {
         /* First compare the modifiers */
         if (bind->mods != modifiers)
+            continue;
+
+        /* Check if the binding is for a KeyPress or a KeyRelease event */
+        if (bind->release != key_release)
             continue;
 
         /* If a symbol was specified by the user, we need to look in

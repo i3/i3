@@ -1045,6 +1045,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
 
     switch (type) {
         case XCB_KEY_PRESS:
+        case XCB_KEY_RELEASE:
             handle_key_press((xcb_key_press_event_t*)event);
             break;
 

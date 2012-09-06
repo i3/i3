@@ -200,6 +200,10 @@ struct regex {
  *
  */
 struct Binding {
+    /** If true, the binding should be executed upon a KeyRelease event, not a
+     * KeyPress (the default). */
+    bool release;
+
     /** Symbol the user specified in configfile, if any. This needs to be
      * stored with the binding to be able to re-convert it into a keycode
      * if the keyboard mapping changes (using Xmodmap for example) */

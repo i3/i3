@@ -227,15 +227,17 @@ static yajl_callbacks command_error_callbacks = {
 };
 
 /*
- * There was a key press. We compare this key code with our bindings table and pass
- * the bound action to parse_command().
+ * There was a KeyPress or KeyRelease (both events have the same fields). We
+ * compare this key code with our bindings table and pass the bound action to
+ * parse_command().
  *
  */
 void handle_key_press(xcb_key_press_event_t *event) {
+    bool key_release = (event->response_type == XCB_KEY_RELEASE);
 
     last_timestamp = event->time;
 
-    DLOG("Keypress %d, state raw = %d\n", event->detail, event->state);
+    DLOG("%s %d, state raw = %d\n", (key_release ? "KeyRelease" : "KeyPress"), event->detail, event->state);
 
     /* Remove the numlock bit, all other bits are modifiers we can bind to */
     uint16_t state_filtered = event->state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK);
@@ -251,7 +253,7 @@ void handle_key_press(xcb_key_press_event_t *event) {
     DLOG("(checked mode_switch, state %d)\n", state_filtered);
 
     /* Find the binding */
-    Binding *bind = get_binding(state_filtered, event->detail);
+    Binding *bind = get_binding(state_filtered, key_release, event->detail);
 
     /* No match? Then the user has Mode_switch enabled but does not have a
      * specific keybinding. Fall back to the default keybindings (without
@@ -260,8 +262,13 @@ void handle_key_press(xcb_key_press_event_t *event) {
     if (bind == NULL) {
         state_filtered &= ~(BIND_MODE_SWITCH);
         DLOG("no match, new state_filtered = %d\n", state_filtered);
-        if ((bind = get_binding(state_filtered, event->detail)) == NULL) {
-            ELOG("Could not lookup key binding (modifiers %d, keycode %d)\n",
+        if ((bind = get_binding(state_filtered, key_release, event->detail)) == NULL) {
+            /* This is not a real error since we can have release and
+             * non-release keybindings. On a KeyPress event for which there is
+             * only a !release-binding, but no release-binding, the
+             * corresponding KeyRelease event will trigger this. No problem,
+             * though. */
+            DLOG("Could not lookup key binding (modifiers %d, keycode %d)\n",
                  state_filtered, event->detail);
             return;
         }
