@@ -59,6 +59,18 @@ Another very important change is that we now support pango for rendering text.
   in. In case you are working on a very low-spec embedded device, it is easy
   enough to disable pango support, see common.mk.
 
+
+Also, the 'layout' command now always works on the parent split container. This
+  allows you to do things like this:
+
+      for_window [class="XTerm"] layout tabbed
+
+  When you now open XTerm on an empty workspace, the whole workspace will be
+  set to tabbed. In case you want to open XTerm in its own tabbed split
+  container, you need to split before:
+
+      for_window [class="XTerm"] split v, layout tabbed
+
  ┌────────────────────────────┐
  │ Changes in v4.3            │
  └────────────────────────────┘
@@ -106,6 +118,9 @@ Another very important change is that we now support pango for rendering text.
   • i3bar: be less strict about the {"version":1} JSON header
   • shm-logging: implement i3-dump-log -f (follow)
   • Implement pango support
+  • 'move workspace number n' will now create the workspace if it doesn’t exist
+  • Accept slashes in RandR output names
+  • Keep startup-notification sequences around for 30s after completion
 
  ┌────────────────────────────┐
  │ Bugfixes                   │
@@ -134,6 +149,15 @@ Another very important change is that we now support pango for rendering text.
   • Fix moving scratchpad window
   • Cleanup zero-byte logfile on immediate exit (they are created by i3
     --get-socketpath for example).
+  • Fix resizing floating windows by height
+  • Fix back_and_forth in 'workspace number' for named workspaces
+  • Grab server and process pending events before managing existing windows
+    (fixes problems with GIMP windows not being managed after an in-place
+     restart)
+  • Don’t allow ConfigureRequests while in fullscreen (fixes a compatibility
+    issue with gnome-terminal and xfce’s terminal)
+  • Fix flickering with 1pixel border tabbed layouts
+  • Use _exit() instead of exit() when i3 utility programs cannot be executed
 
  ┌────────────────────────────┐
  │ Thanks!                    │
@@ -142,9 +166,9 @@ Another very important change is that we now support pango for rendering text.
 Thanks for testing, bugfixes, discussions and everything I forgot go out to:
 
   aksr, Axel Wagner, darkraven, David Coppa, eeemsi, Felicitus, Fernando Tarlá
-  Cardoso Lemos, Iakov Davydov, jh, Julius Plenz, Marcel Hellwig, Marcus,
-  Michael Stapelberg, mloskot, Moritz Bandemer, oblique, Ondrej Grover, Pavel
-  Löbl, Philipp Middendorf, prg, Quentin Glidic, somelauw, stfn, tucos,
+  Cardoso Lemos, Iakov Davydov, jh, Joel Stemmer, Julius Plenz, Marcel Hellwig,
+  Marcus, mloskot, Moritz Bandemer, oblique, Ondrej Grover, Pavel Löbl, Philipp
+  Middendorf, prg, Quentin Glidic, Sebastian Ullrich, somelauw, stfn, tucos,
   TunnelWicht, Valentin Haenel
 
--- Michael Stapelberg, 2012-08-18
+-- Michael Stapelberg, 2012-09-06
