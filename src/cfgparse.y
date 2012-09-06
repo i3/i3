@@ -913,8 +913,8 @@ bindsym:
     ;
 
 optional_release:
-    /* empty */ { $$ = false; }
-    | TOK_RELEASE  { $$ = true; }
+    /* empty */ { $$ = B_UPON_KEYPRESS; }
+    | TOK_RELEASE  { $$ = B_UPON_KEYRELEASE; }
     ;
 
 for_window:

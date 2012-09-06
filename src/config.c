@@ -57,13 +57,35 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
 Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode) {
     Binding *bind;
 
+    if (!key_release) {
+        /* On a KeyPress event, we first reset all
+         * B_UPON_KEYRELEASE_IGNORE_MODS bindings back to B_UPON_KEYRELEASE */
+        TAILQ_FOREACH(bind, bindings, bindings) {
+            if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS)
+                bind->release = B_UPON_KEYRELEASE;
+        }
+
+        /* Then we transition the KeyRelease bindings into a state where the
+         * modifiers no longer matter for the KeyRelease event so that users
+         * can release the modifier key before releasing the actual key. */
+        TAILQ_FOREACH(bind, bindings, bindings) {
+            if (bind->release == B_UPON_KEYRELEASE && !key_release)
+                bind->release = B_UPON_KEYRELEASE_IGNORE_MODS;
+        }
+    }
+
     TAILQ_FOREACH(bind, bindings, bindings) {
-        /* First compare the modifiers */
-        if (bind->mods != modifiers)
+        /* First compare the modifiers (unless this is a
+         * B_UPON_KEYRELEASE_IGNORE_MODS binding and this is a KeyRelease
+         * event) */
+        if (bind->mods != modifiers &&
+            (bind->release != B_UPON_KEYRELEASE_IGNORE_MODS ||
+             !key_release))
             continue;
 
         /* Check if the binding is for a KeyPress or a KeyRelease event */
-        if (bind->release != key_release)
+        if ((bind->release == B_UPON_KEYPRESS && key_release) ||
+            (bind->release >= B_UPON_KEYRELEASE && !key_release))
             continue;
 
         /* If a symbol was specified by the user, we need to look in

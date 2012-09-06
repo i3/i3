@@ -202,7 +202,17 @@ struct regex {
 struct Binding {
     /** If true, the binding should be executed upon a KeyRelease event, not a
      * KeyPress (the default). */
-    bool release;
+    enum {
+        /* This binding will only be executed upon KeyPress events */
+        B_UPON_KEYPRESS = 0,
+        /* This binding will be executed either upon a KeyRelease event, or… */
+        B_UPON_KEYRELEASE = 1,
+        /* …upon a KeyRelease event, even if the modifiers don’t match. This
+         * state is triggered from get_binding() when the corresponding
+         * KeyPress (!) happens, so that users can release the modifier keys
+         * before releasing the actual key. */
+        B_UPON_KEYRELEASE_IGNORE_MODS = 2,
+    } release;
 
     /** Symbol the user specified in configfile, if any. This needs to be
      * stored with the binding to be able to re-convert it into a keycode
