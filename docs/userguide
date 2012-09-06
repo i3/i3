@@ -363,7 +363,7 @@ bindsym mod+f fullscreen
 bindsym mod+Shift+r restart
 
 # Notebook-specific hotkeys
-bindcode 214 exec /home/michael/toggle_beamer.sh
+bindcode 214 exec --no-startup-id /home/michael/toggle_beamer.sh
 --------------------------------
 
 Available Modifiers:
