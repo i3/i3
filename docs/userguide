@@ -348,10 +348,15 @@ your bindings in the same physical location on the keyboard, use keycodes.
 If you don’t switch layouts, and want a clean and simple config file, use
 keysyms.
 
+Some tools (such as +import+ or +xdotool+) might be unable to run upon a
+KeyPress event, because the keyboard/pointer is still grabbed. For these
+situations, the +--release+ flag can be used, which will execute the command
+after the keys have been released.
+
 *Syntax*:
 ----------------------------------
-bindsym [Modifiers+]keysym command
-bindcode [Modifiers+]keycode command
+bindsym [--release] [Modifiers+]keysym command
+bindcode [--release] [Modifiers+]keycode command
 ----------------------------------
 
 *Examples*:
@@ -364,6 +369,12 @@ bindsym mod+Shift+r restart
 
 # Notebook-specific hotkeys
 bindcode 214 exec --no-startup-id /home/michael/toggle_beamer.sh
+
+# Simulate ctrl+v upon pressing $mod+x
+bindsym --release $mod+x exec --no-startup-id xdotool key --clearmodifiers ctrl+v
+
+# Take a screenshot upon pressing $mod+x (select an area)
+bindsym --release $mod+x exec --no-startup-id import /tmp/latest-screenshot.png
 --------------------------------
 
 Available Modifiers:
