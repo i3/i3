@@ -482,12 +482,20 @@ void x_draw_decoration(Con *con) {
 
     struct Window *win = con->window;
     if (win == NULL || win->name == NULL) {
-        /* this is a non-leaf container, we need to make up a good description */
-        // TODO: use a good description instead of just "another container"
-        draw_text_ascii("another container",
+        /* we have a split container which gets a representation
+         * of its children as title
+         */
+        char *title;
+        char *tree = con_get_tree_representation(con);
+        sasprintf(&title, "i3: %s", tree);
+        free(tree);
+
+        draw_text_ascii(title,
                 parent->pixmap, parent->pm_gc,
                 con->deco_rect.x + 2, con->deco_rect.y + text_offset_y,
                 con->deco_rect.width - 2);
+        free(title);
+
         goto copy_pixmaps;
     }
 

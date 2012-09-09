@@ -306,4 +306,10 @@ bool con_has_urgent_child(Con *con);
  */
 void con_update_parents_urgency(Con *con);
 
+/**
+ * Create a string representing the subtree under con.
+ *
+ */
+char *con_get_tree_representation(Con *con);
+
 #endif

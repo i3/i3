@@ -29,6 +29,20 @@ char *colors[] = {
 static void con_on_remove_child(Con *con);
 
 /*
+ * force parent split containers to be redrawn
+ *
+ */
+static void con_force_split_parents_redraw(Con *con) {
+    Con *parent = con;
+
+    while (parent && parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {
+        if (parent->split)
+            FREE(parent->deco_render_params);
+        parent = parent->parent;
+    }
+}
+
+/*
  * Create a new container (and attach it to the given parent, if not NULL).
  * This function initializes the data structures and creates the appropriate
  * X11 IDs using x_con_init().
@@ -162,6 +176,7 @@ add_to_focus_head:
      * This way, we have the option to insert Cons without having
      * to focus them. */
     TAILQ_INSERT_TAIL(focus_head, con, focused);
+    con_force_split_parents_redraw(con);
 }
 
 /*
@@ -169,6 +184,7 @@ add_to_focus_head:
  *
  */
 void con_detach(Con *con) {
+    con_force_split_parents_redraw(con);
     if (con->type == CT_FLOATING_CON) {
         TAILQ_REMOVE(&(con->parent->floating_head), con, floating_windows);
         TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
@@ -1148,6 +1164,7 @@ void con_set_layout(Con *con, int layout) {
 
             tree_flatten(croot);
         }
+        con_force_split_parents_redraw(con);
         return;
     }
 
@@ -1168,6 +1185,7 @@ void con_set_layout(Con *con, int layout) {
     } else {
         con->layout = layout;
     }
+    con_force_split_parents_redraw(con);
 }
 
 /*
@@ -1246,6 +1264,8 @@ static void con_on_remove_child(Con *con) {
         }
         return;
     }
+
+    con_force_split_parents_redraw(con);
 
     /* TODO: check if this container would swallow any other client and
      * don’t close it automatically. */
@@ -1419,4 +1439,62 @@ void con_update_parents_urgency(Con *con) {
         }
         parent = parent->parent;
     }
+}
+
+/*
+ * Create a string representing the subtree under con.
+ *
+ */
+char *con_get_tree_representation(Con *con) {
+    /* this code works as follows:
+     *  1) create a string with the layout type (D/V/H/T/S) and an opening bracket
+     *  2) append the tree representation of the children to the string
+     *  3) add closing bracket
+     *
+     * The recursion ends when we hit a leaf, in which case we return the
+     * class_instance of the contained window.
+     */
+
+    /* end of recursion */
+    if (con_is_leaf(con)) {
+        if (!con->window)
+            return sstrdup("nowin");
+
+        if (!con->window->class_instance)
+            return sstrdup("noinstance");
+
+        return sstrdup(con->window->class_instance);
+    }
+
+    char *buf;
+    /* 1) add the Layout type to buf */
+    if (con->layout == L_DEFAULT)
+        buf = sstrdup("D[");
+    else if (con->layout == L_SPLITV)
+        buf = sstrdup("V[");
+    else if (con->layout == L_SPLITH)
+        buf = sstrdup("H[");
+    else if (con->layout == L_TABBED)
+        buf = sstrdup("T[");
+    else if (con->layout == L_STACKED)
+        buf = sstrdup("S[");
+
+    /* 2) append representation of children */
+    Con *child;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        char *child_txt = con_get_tree_representation(child);
+
+        char *tmp_buf;
+        sasprintf(&tmp_buf, "%s%s%s", buf,
+                (TAILQ_FIRST(&(con->nodes_head)) == child ? "" : " "), child_txt);
+        free(buf);
+        buf = tmp_buf;
+    }
+
+    /* 3) close the brackets */
+    char *complete_buf;
+    sasprintf(&complete_buf, "%s]", buf);
+    free(buf);
+
+    return complete_buf;
 }
