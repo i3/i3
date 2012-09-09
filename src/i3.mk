@@ -21,13 +21,13 @@ endif
 
 i3_OBJECTS := $(i3_SOURCES_GENERATED:.c=.o) $(i3_SOURCES:.c=.o)
 
-# The basename/readlink calls are for canonicalizing the path: Instead
+# The basename/pwd calls are for canonicalizing the path: Instead
 # of src/main.c, we will see something like ../i3-4.2/src/main.c in
 # debugger backtraces, making it clearer which code belongs to i3 and
 # which code doesn’t.
 # We only do this for src/ since all the other subdirectories contain i3 in
 # their name already.
-canonical_path := ../$(shell basename $(shell readlink -f .))
+canonical_path := ../$(shell basename $(shell pwd -P))
 
 include/all.h.pch: $(i3_HEADERS)
 	echo "[i3] PCH all.h"
