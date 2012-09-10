@@ -1,0 +1,90 @@
+#!/usr/bin/env perl
+# vim:ts=4:sw=4:expandtab
+
+use strict;
+use warnings;
+use Pod::Simple::HTML;
+use v5.10;
+
+$Pod::Simple::HTML::Tagmap{'Verbatim'} = '<pre><tt>';
+$Pod::Simple::HTML::Tagmap{'VerbatimFormatted'} = '<pre><tt>';
+$Pod::Simple::HTML::Tagmap{'/Verbatim'} = '</tt></pre>';
+$Pod::Simple::HTML::Tagmap{'/VerbatimFormatted'} = '</tt></pre>';
+
+if (@ARGV < 2) {
+    say STDERR "Syntax: i3-pod2html <pod-input-path> <html-output-path>";
+    exit 1;
+}
+
+open(my $in, '<', $ARGV[0]) or die "Couldn’t open $ARGV[0] for reading: $!\n";
+open(my $out, '>', $ARGV[1]) or die "Couldn’t open $ARGV[1] for writing: $!\n";
+
+my $parser = Pod::Simple::HTML->new();
+
+$parser->index(1);
+$parser->html_header_before_title(
+<<'EOF'
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta charset="utf-8">
+<meta name="generator" content="Pod::Simple::HTML">
+<meta name="description" content="i3 Perl documentation (testsuite)">
+<link rel="stylesheet" href="http://i3wm.org/css/style.css" type="text/css" />
+<style type="text/css">
+.pod pre {
+    background: #333;
+    border: 1px solid #555;
+    border-left: 5px solid #555;
+    padding: 0.5em;
+    padding-left: 0;
+    padding-right: 0.5em;
+    white-space: pre;
+    color: white;
+}
+
+.pod ul {
+    list-style-type: none;
+}
+.pod li {
+    margin-bottom: 0 !important;
+}
+
+tt {
+    font-family: 'Droid Sans Mono', sans-serif;
+    font-size: inherit;
+}
+
+.pod h1 a, .pod h2 a, .pod h3 a, .pod h4 a {
+    text-decoration: none;
+    color: white;
+}
+</style>
+<title>
+EOF
+);
+$parser->html_header_after_title(
+<<'EOF'
+</title>
+</head>
+<body>
+
+        <div id="main">
+            <a href="/"><h1 id="title">i3 - improved tiling WM</h1></a>
+			<ul id="nav">
+				<li><a style="border-bottom: 2px solid #fff" href="/docs">Docs</a></li>
+				<li><a href="/screenshots">Screens</a></li>
+				<li><a href="http://faq.i3wm.org/">FAQ</a></li>
+				<li><a href="/contact">Contact</a></li>
+				<li><a href="http://bugs.i3wm.org/">Bugs</a></li>
+			</ul>
+	<br style="clear: both">
+<div id="content" class="pod">
+<h1>i3 Perl documentation (testsuite)</h1>
+
+EOF
+);
+
+$parser->output_fh($out);
+$parser->parse_file($in);
