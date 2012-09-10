@@ -23,7 +23,7 @@ cmd 'resize grow left 10px or 25ppt';
 
 my ($nodes, $focus) = get_ws_content($tmp);
 
-ok(cmp_float($nodes->[0]->{percent}, 0.25), 'left container got only 25%');
-ok(cmp_float($nodes->[1]->{percent}, 0.75), 'right container got 75%');
+cmp_float($nodes->[0]->{percent}, 0.25, 'left container got only 25%');
+cmp_float($nodes->[1]->{percent}, 0.75, 'right container got 75%');
 
 done_testing;

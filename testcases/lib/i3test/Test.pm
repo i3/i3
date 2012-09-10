@@ -1,8 +1,12 @@
 package i3test::Test;
+# vim:ts=4:sw=4:expandtab
 
 use base 'Test::Builder::Module';
 
-our @EXPORT = qw(is_num_children);
+our @EXPORT = qw(
+    is_num_children
+    cmp_float
+);
 
 my $CLASS = __PACKAGE__;
 
@@ -52,6 +56,31 @@ sub is_num_children {
     my $got_num_children = scalar @{$con->{nodes}};
 
     $tb->is_num($got_num_children, $num_children, $name);
+}
+
+=head2 cmp_float($a, $b)
+
+Compares floating point numbers C<$a> and C<$b> and returns true if they differ
+less then 1e-6.
+
+  $tmp = fresh_workspace;
+
+  open_window for (1..4);
+
+  cmd 'resize grow width 10 px or 25 ppt';
+
+  ($nodes, $focus) = get_ws_content($tmp);
+  ok(cmp_float($nodes->[0]->{percent}, 0.166666666666667), 'first window got 16%');
+  ok(cmp_float($nodes->[1]->{percent}, 0.166666666666667), 'second window got 16%');
+  ok(cmp_float($nodes->[2]->{percent}, 0.166666666666667), 'third window got 16%');
+  ok(cmp_float($nodes->[3]->{percent}, 0.50), 'fourth window got 50%');
+
+=cut
+sub cmp_float {
+  my ($a, $b, $name) = @_;
+  my $tb = $CLASS->builder;
+
+  $tb->cmp_ok(abs($a - $b), '<', 1e-6, $name);
 }
 
 =head1 AUTHOR
