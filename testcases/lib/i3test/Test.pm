@@ -6,6 +6,7 @@ use base 'Test::Builder::Module';
 our @EXPORT = qw(
     is_num_children
     cmp_float
+    does_i3_live
 );
 
 my $CLASS = __PACKAGE__;
@@ -81,6 +82,22 @@ sub cmp_float {
   my $tb = $CLASS->builder;
 
   $tb->cmp_ok(abs($a - $b), '<', 1e-6, $name);
+}
+
+=head2 does_i3_live
+
+Returns true if the layout tree can still be received from i3.
+
+  # i3 used to crash on invalid commands in revision X
+  cmd 'invalid command';
+  does_i3_live;
+
+=cut
+sub does_i3_live {
+    my $tree = i3test::i3(i3test::get_socket_path())->get_tree->recv;
+    my @nodes = @{$tree->{nodes}};
+    my $tb = $CLASS->builder;
+    $tb->ok((@nodes > 0), 'i3 still lives');
 }
 
 =head1 AUTHOR

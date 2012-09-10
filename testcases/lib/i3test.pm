@@ -34,7 +34,6 @@ our @EXPORT = qw(
     get_dock_clients
     cmd
     sync_with_i3
-    does_i3_live
     exit_gracefully
     workspace_exists
     focused_ws
@@ -459,13 +458,6 @@ sub sync_with_i3 {
     };
 }
 
-sub does_i3_live {
-    my $tree = i3(get_socket_path())->get_tree->recv;
-    my @nodes = @{$tree->{nodes}};
-    my $ok = (@nodes > 0);
-    $tester->ok($ok, 'i3 still lives');
-    return $ok;
-}
 
 # Tries to exit i3 gracefully (with the 'exit' cmd) or kills the PID if that fails
 sub exit_gracefully {
