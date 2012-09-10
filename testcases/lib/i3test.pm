@@ -281,7 +281,7 @@ watching the testcases.
 
 =item event_mask
 
-An arrayref contining strings which describe the X11 event mask we use for that
+An arrayref containing strings which describe the X11 event mask we use for that
 window. The default is C<< [ 'structure_notify' ] >>.
 
 =item name
