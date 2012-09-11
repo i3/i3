@@ -174,19 +174,11 @@ void render_con(Con *con, bool render_fullscreen) {
             inset->width = new_width;
         }
 
-        if (con->height_increment > 1) {
-            int old_height = inset->height;
-            inset->height -= (inset->height - con->base_height) % con->height_increment;
-            DLOG("Lost %d pixel due to client's height_increment (%d px, base_height = %d)\n",
-                old_height - inset->height, con->height_increment, con->base_height);
-        }
-
-        if (con->width_increment > 1) {
-            int old_width = inset->width;
-            inset->width -= (inset->width - con->base_width) % con->width_increment;
-            DLOG("Lost %d pixel due to client's width_increment (%d px, base_width = %d)\n",
-                old_width - inset->width, con->width_increment, con->base_width);
-        }
+        /* NB: We used to respect resize increment size hints for tiling
+         * windows up until commit 0db93d9 here. However, since all terminal
+         * emulators cope with ignoring the size hints in a better way than we
+         * can (by providing their fake-transparency or background color), this
+         * code was removed. See also http://bugs.i3wm.org/540 */
 
         DLOG("child will be at %dx%d with size %dx%d\n", inset->x, inset->y, inset->width, inset->height);
     }
