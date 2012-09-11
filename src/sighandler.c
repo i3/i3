@@ -62,6 +62,11 @@ static int backtrace(void) {
         return -1;
     } else if (pid_gdb == 0) {
         /* child */
+        int stdin_pipe[2],
+            stdout_pipe[2];
+
+        pipe(stdin_pipe);
+        pipe(stdout_pipe);
 
         /* close standard streams in case i3 is started from a terminal; gdb
          * needs to run without controlling terminal for it to work properly in
@@ -69,6 +74,12 @@ static int backtrace(void) {
         close(STDIN_FILENO);
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
+
+        /* We provide pipe file descriptors for stdin/stdout because gdb < 7.5
+         * crashes otherwise, see
+         * http://sourceware.org/bugzilla/show_bug.cgi?id=14114 */
+        dup2(stdin_pipe[0], STDIN_FILENO);
+        dup2(stdout_pipe[1], STDOUT_FILENO);
 
         char *pid_s = NULL;
         sasprintf(&pid_s, "%d", pid_parent);
