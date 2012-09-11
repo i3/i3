@@ -52,7 +52,15 @@ static int backtrace(void) {
     pid_t pid_parent = getpid();
 
     char *filename = NULL;
-    sasprintf(&filename, "%s/i3-backtrace.%d.txt", tmpdir, pid_parent);
+    int suffix = 0;
+    struct stat bt;
+    /* Find a unique filename for the backtrace (since the PID of i3 stays the
+     * same), so that we don’t overwrite earlier backtraces. */
+    do {
+        FREE(filename);
+        sasprintf(&filename, "%s/i3-backtrace.%d.%d.txt", tmpdir, pid_parent, suffix);
+        suffix++;
+    } while (stat(filename, &bt) == 0);
 
     pid_t pid_gdb = fork();
     if (pid_gdb < 0) {
@@ -101,7 +109,6 @@ static int backtrace(void) {
         exit(1);
     }
     int status = 0;
-    struct stat bt;
 
     waitpid(pid_gdb, &status, 0);
 
