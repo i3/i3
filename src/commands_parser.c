@@ -204,7 +204,6 @@ static void next_state(const cmdp_token *token) {
     }
 }
 
-/* TODO: Return parsing errors via JSON. */
 struct CommandResult *parse_command(const char *input) {
     DLOG("COMMAND: *%s*\n", input);
     state = INITIAL;
@@ -386,6 +385,11 @@ struct CommandResult *parse_command(const char *input) {
             y(map_open);
             ystr("success");
             y(bool, false);
+            /* We set parse_error to true to distinguish this from other
+             * errors. i3-nagbar is spawned upon keypresses only for parser
+             * errors. */
+            ystr("parse_error");
+            y(bool, true);
             ystr("error");
             ystr(errormessage);
             ystr("input");

@@ -16,7 +16,7 @@
 #include "all.h"
 
 static int current_nesting_level;
-static bool success_key;
+static bool parse_error_key;
 static bool command_failed;
 
 /* XXX: I don’t want to touch too much of the nagbar code at once, but we
@@ -184,9 +184,9 @@ void kill_commanderror_nagbar(bool wait_for_it) {
 }
 
 static int json_boolean(void *ctx, int boolval) {
-    DLOG("Got bool: %d, success_key %d, nesting_level %d\n", boolval, success_key, current_nesting_level);
+    DLOG("Got bool: %d, parse_error_key %d, nesting_level %d\n", boolval, parse_error_key, current_nesting_level);
 
-    if (success_key && current_nesting_level == 1 && !boolval)
+    if (parse_error_key && current_nesting_level == 1 && boolval)
         command_failed = true;
 
     return 1;
@@ -197,8 +197,8 @@ static int json_map_key(void *ctx, const unsigned char *stringval, size_t string
 #else
 static int json_map_key(void *ctx, const unsigned char *stringval, unsigned int stringlen) {
 #endif
-    success_key = (stringlen >= strlen("success") &&
-                   strncmp((const char*)stringval, "success", strlen("success")) == 0);
+    parse_error_key = (stringlen >= strlen("parse_error") &&
+                       strncmp((const char*)stringval, "parse_error", strlen("parse_error")) == 0);
     return 1;
 }
 
@@ -296,7 +296,7 @@ void handle_key_press(xcb_key_press_event_t *event) {
     yajl_gen_get_buf(command_output->json_gen, &reply, &length);
 
     current_nesting_level = 0;
-    success_key = false;
+    parse_error_key = false;
     command_failed = false;
     yajl_status state = yajl_parse(handle, reply, length);
     if (state != yajl_status_ok) {
