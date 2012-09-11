@@ -6,19 +6,10 @@
 This is the third release of the new major version of i3, v4.3. It is
 considered stable. All users of i3 are strongly encouraged to upgrade.
 
-One of the most visible changes is probably that commands which lead to an
-  error will now spawn i3-nagbar. This will make you immediately aware of
-  problems such as typos in your configuration file (such as "bindsym $mod+x exc
-  firefox" instead of "exec"). This is not restricted to parser errors, but all
-  errors (such as when trying to move a window to another workspace without
-  actually having a window focused). If this is annoying to you for some specific
-  key configuration, you can turn it off by replacing a binding like:
-      bindsym $mod+x move absolute position center
-  with something like this:
-      bindsym $mod+x exec --no-startup-id i3-msg move absolute position center >/dev/null 2>&1
-  (Yes, this is somewhat painful, but intended. You should not suppress errors in
-  general, so we don’t want to make it too easy.)
-
+One rather visible change is that commands which could not be parsed properly
+ will now spawn i3-nagbar. In case you used "bindsym $mod+x firefox" (and
+ forgot the "exec" keyword) or you made a typo in your config, you will now
+ notice that :).
 
 We also made the orientation (horizontal/vertical) part of the layout
   mechanism: Before, we got the default layout and you could change
