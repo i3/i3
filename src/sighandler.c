@@ -52,9 +52,7 @@ static int backtrace(void) {
     pid_t pid_parent = getpid();
 
     char *filename = NULL;
-    if (sasprintf(&filename, "%s/i3-backtrace.%d.txt", tmpdir, pid_parent) == -1
-            || filename == NULL)
-        filename = "i3-backtrace.txt";
+    sasprintf(&filename, "%s/i3-backtrace.%d.txt", tmpdir, pid_parent);
 
     pid_t pid_gdb = fork();
     if (pid_gdb < 0) {
@@ -81,13 +79,9 @@ static int backtrace(void) {
         dup2(stdin_pipe[0], STDIN_FILENO);
         dup2(stdout_pipe[1], STDOUT_FILENO);
 
-        char *pid_s = NULL;
+        char *pid_s, *gdb_log_cmd;
         sasprintf(&pid_s, "%d", pid_parent);
-
-        char *gdb_log_cmd = NULL;
-        if (sasprintf(&gdb_log_cmd, "set logging file %s", filename) == -1
-                || gdb_log_cmd == NULL)
-            gdb_log_cmd = "set logging file i3-backtrace.txt";
+        sasprintf(&gdb_log_cmd, "set logging file %s", filename);
 
         char *args[] = {
             "gdb",
