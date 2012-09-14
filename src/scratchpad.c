@@ -60,7 +60,8 @@ void scratchpad_move(Con *con) {
 
     /* 4: Fix focus. Normally, when moving a window to a different output, the
      * destination output gets focused. In this case, we don’t want that. */
-    con_focus(focus_next);
+    if (con_get_workspace(focus_next) == con_get_workspace(focused))
+        con_focus(focus_next);
 }
 
 /*

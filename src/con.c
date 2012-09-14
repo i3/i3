@@ -678,7 +678,9 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
      * con focused. Otherwise, we leave the focus on the current workspace as we
      * don’t want to focus invisible workspaces */
     if (source_output != dest_output &&
-        workspace_is_visible(workspace)) {
+        workspace_is_visible(workspace) &&
+        workspace->name[0] != '_' &&
+        workspace->name[1] != '_') {
         DLOG("Moved to a different output, focusing target\n");
     } else {
         /* Descend focus stack in case focus_next is a workspace which can
