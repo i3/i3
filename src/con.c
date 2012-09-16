@@ -135,7 +135,7 @@ void con_attach(Con *con, Con *parent, bool ignore_focus) {
          */
         if (con->window != NULL &&
             parent->type == CT_WORKSPACE &&
-            config.default_layout != L_DEFAULT) {
+            parent->workspace_layout != L_DEFAULT) {
             DLOG("Parent is a workspace. Applying default layout...\n");
             Con *target = workspace_attach_to(parent);
 
@@ -1105,39 +1105,43 @@ void con_set_layout(Con *con, int layout) {
      * need to create a new split container. */
     if (con->type == CT_WORKSPACE &&
         (layout == L_STACKED || layout == L_TABBED)) {
-        DLOG("Creating new split container\n");
-        /* 1: create a new split container */
-        Con *new = con_new(NULL, NULL);
-        new->parent = con;
+        if (con_num_children(con) == 0) {
+            DLOG("Setting workspace_layout to %d\n", layout);
+            con->workspace_layout = layout;
+        } else {
+            DLOG("Creating new split container\n");
+            /* 1: create a new split container */
+            Con *new = con_new(NULL, NULL);
+            new->parent = con;
 
-        /* 2: Set the requested layout on the split container and mark it as
-         * split. */
-        new->layout = layout;
-        new->last_split_layout = con->last_split_layout;
-        new->split = true;
+            /* 2: Set the requested layout on the split container and mark it as
+             * split. */
+            new->layout = layout;
+            new->last_split_layout = con->last_split_layout;
+            new->split = true;
 
-        Con *old_focused = TAILQ_FIRST(&(con->focus_head));
-        if (old_focused == TAILQ_END(&(con->focus_head)))
-            old_focused = NULL;
+            Con *old_focused = TAILQ_FIRST(&(con->focus_head));
+            if (old_focused == TAILQ_END(&(con->focus_head)))
+                old_focused = NULL;
 
-        /* 3: move the existing cons of this workspace below the new con */
-        DLOG("Moving cons\n");
-        Con *child;
-        while (!TAILQ_EMPTY(&(con->nodes_head))) {
-            child = TAILQ_FIRST(&(con->nodes_head));
-            con_detach(child);
-            con_attach(child, new, true);
+            /* 3: move the existing cons of this workspace below the new con */
+            DLOG("Moving cons\n");
+            Con *child;
+            while (!TAILQ_EMPTY(&(con->nodes_head))) {
+                child = TAILQ_FIRST(&(con->nodes_head));
+                con_detach(child);
+                con_attach(child, new, true);
+            }
+
+            /* 4: attach the new split container to the workspace */
+            DLOG("Attaching new split to ws\n");
+            con_attach(new, con, false);
+
+            if (old_focused)
+                con_focus(old_focused);
+
+            tree_flatten(croot);
         }
-
-        /* 4: attach the new split container to the workspace */
-        DLOG("Attaching new split to ws\n");
-        con_attach(new, con, false);
-
-        if (old_focused)
-            con_focus(old_focused);
-
-        tree_flatten(croot);
-
         return;
     }
 

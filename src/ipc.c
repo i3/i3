@@ -231,6 +231,23 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
             break;
     }
 
+    ystr("workspace_layout");
+    switch (con->workspace_layout) {
+        case L_DEFAULT:
+            ystr("default");
+            break;
+        case L_STACKED:
+            ystr("stacked");
+            break;
+        case L_TABBED:
+            ystr("tabbed");
+            break;
+        default:
+            DLOG("About to dump workspace_layout=%d (none of default/stacked/tabbed), this is a bug.\n", con->workspace_layout);
+            assert(false);
+            break;
+    }
+
     ystr("last_split_layout");
     switch (con->layout) {
         case L_SPLITV:

@@ -68,6 +68,7 @@ my $expected = {
     urgent => JSON::XS::false,
     border => 'normal',
     'floating_nodes' => $ignore,
+    workspace_layout => 'default',
 };
 
 # a shallow copy is sufficient, since we only ignore values at the root

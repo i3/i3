@@ -514,6 +514,20 @@ struct Con {
     TAILQ_HEAD(swallow_head, Match) swallow_head;
 
     enum { CF_NONE = 0, CF_OUTPUT = 1, CF_GLOBAL = 2 } fullscreen_mode;
+    /* layout is the layout of this container: one of split[v|h], stacked or
+     * tabbed. Special containers in the tree (above workspaces) have special
+     * layouts like dockarea or output.
+     *
+     * last_split_layout is one of splitv or splith to support the old "layout
+     * default" command which by now should be "layout splitv" or "layout
+     * splith" explicitly.
+     *
+     * workspace_layout is only for type == CT_WORKSPACE cons. When you change
+     * the layout of a workspace without any children, i3 cannot just set the
+     * layout (because workspaces need to be splitv/splith to allow focus
+     * parent and opening new containers). Instead, it stores the requested
+     * layout in workspace_layout and creates a new split container with that
+     * layout whenever a new container is attached to the workspace. */
     enum {
         L_DEFAULT = 0,
         L_STACKED = 1,
@@ -522,7 +536,7 @@ struct Con {
         L_OUTPUT = 4,
         L_SPLITV = 5,
         L_SPLITH = 6
-    } layout, last_split_layout;
+    } layout, last_split_layout, workspace_layout;
     border_style_t border_style;
     /** floating? (= not in tiling layout) This cannot be simply a bool
      * because we want to keep track of whether the status was set by the

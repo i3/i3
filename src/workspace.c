@@ -73,6 +73,7 @@ Con *workspace_get(const char *num, bool *created) {
         workspace->type = CT_WORKSPACE;
         FREE(workspace->name);
         workspace->name = sstrdup(num);
+        workspace->workspace_layout = config.default_layout;
         /* We set ->num to the number if this workspace’s name begins with a
          * positive number. Otherwise it’s a named ws and num will be -1. */
         char *endptr = NULL;
@@ -742,7 +743,7 @@ void ws_force_orientation(Con *ws, orientation_t orientation) {
 Con *workspace_attach_to(Con *ws) {
     DLOG("Attaching a window to workspace %p / %s\n", ws, ws->name);
 
-    if (config.default_layout == L_DEFAULT) {
+    if (ws->workspace_layout == L_DEFAULT) {
         DLOG("Default layout, just attaching it to the workspace itself.\n");
         return ws;
     }
@@ -754,7 +755,7 @@ Con *workspace_attach_to(Con *ws) {
     new->split = true;
 
     /* 2: set the requested layout on the split con */
-    new->layout = config.default_layout;
+    new->layout = ws->workspace_layout;
 
     /* 4: attach the new split container to the workspace */
     DLOG("Attaching new split %p to workspace %p\n", new, ws);

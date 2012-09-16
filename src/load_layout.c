@@ -211,6 +211,17 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
                 json_node->layout = L_SPLITV;
             else LOG("Unhandled \"layout\": %s\n", buf);
             free(buf);
+        } else if (strcasecmp(last_key, "workspace_layout") == 0) {
+            char *buf = NULL;
+            sasprintf(&buf, "%.*s", (int)len, val);
+            if (strcasecmp(buf, "default") == 0)
+                json_node->workspace_layout = L_DEFAULT;
+            else if (strcasecmp(buf, "stacked") == 0)
+                json_node->workspace_layout = L_STACKED;
+            else if (strcasecmp(buf, "tabbed") == 0)
+                json_node->workspace_layout = L_TABBED;
+            else LOG("Unhandled \"workspace_layout\": %s\n", buf);
+            free(buf);
         } else if (strcasecmp(last_key, "last_split_layout") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
