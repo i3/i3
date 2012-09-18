@@ -66,6 +66,22 @@ my $result = GetOptions(
 
 pod2usage(-verbose => 2, -exitcode => 0) if $help;
 
+# Check for missing executables
+my @binaries = qw(
+                   ../i3
+                   ../i3bar/i3bar
+                   ../i3-config-wizard/i3-config-wizard
+                   ../i3-dump-log/i3-dump-log
+                   ../i3-input/i3-input
+                   ../i3-msg/i3-msg
+                   ../i3-nagbar/i3-nagbar
+               );
+
+foreach my $binary (@binaries) {
+    die "$binary executable not found" unless -e $binary;
+    die "$binary is not an executable" unless -x $binary;
+}
+
 @displays = split(/,/, join(',', @displays));
 @displays = map { s/ //g; $_ } @displays;
 
