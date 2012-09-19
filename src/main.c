@@ -391,7 +391,8 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "\t--force-xinerama\n"
                                 "\tUse Xinerama instead of RandR.\n"
                                 "\tThis option should only be used if you are stuck with the\n"
-                                "\tnvidia closed source driver which does not support RandR.\n");
+                                "\told nVidia closed source driver (older than 302.17), which does\n"
+                                "\tnot support RandR.\n");
                 fprintf(stderr, "\n");
                 fprintf(stderr, "\t--get-socketpath\n"
                                 "\tRetrieve the i3 IPC socket path from X11, print it, then exit.\n");
