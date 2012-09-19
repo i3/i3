@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
  * xcb.c: Communicating with X
  *
@@ -47,7 +47,7 @@ xcb_atom_t               atoms[NUM_ATOMS];
 /* Variables, that are the same for all functions at all times */
 xcb_connection_t *xcb_connection;
 int              screen;
-xcb_screen_t     *xcb_screen;
+xcb_screen_t     *root_screen;
 xcb_window_t     xcb_root;
 
 /* This is needed for integration with libi3 */
@@ -108,20 +108,18 @@ int _xcb_request_failed(xcb_void_cookie_t cookie, char *err_msg, int line) {
  * Redraws the statusline to the buffer
  *
  */
-void refresh_statusline() {
+void refresh_statusline(void) {
     struct status_block *block;
 
     uint32_t old_statusline_width = statusline_width;
     statusline_width = 0;
 
-    /* Convert all blocks from UTF-8 to UCS-2 and predict the text width (in
-     * pixels). */
+    /* Predict the text width of all blocks (in pixels). */
     TAILQ_FOREACH(block, &statusline_head, blocks) {
-        if (strlen(block->full_text) == 0)
+        if (i3string_get_num_bytes(block->full_text) == 0)
             continue;
 
-        block->ucs2_full_text = (xcb_char2b_t*)convert_utf8_to_ucs2(block->full_text, &(block->glyph_count_full_text));
-        block->width = predict_text_width((char*)block->ucs2_full_text, block->glyph_count_full_text, true);
+        block->width = predict_text_width(block->full_text);
         /* If this is not the last block, add some pixels for a separator. */
         if (TAILQ_NEXT(block, blocks) != NULL)
             block->width += 9;
@@ -130,24 +128,23 @@ void refresh_statusline() {
 
     /* If the statusline is bigger than our screen we need to make sure that
      * the pixmap provides enough space, so re-allocate if the width grew */
-    if (statusline_width > xcb_screen->width_in_pixels &&
+    if (statusline_width > root_screen->width_in_pixels &&
         statusline_width > old_statusline_width)
         realloc_sl_buffer();
 
     /* Clear the statusline pixmap. */
-    xcb_rectangle_t rect = { 0, 0, xcb_screen->width_in_pixels, font.height };
+    xcb_rectangle_t rect = { 0, 0, root_screen->width_in_pixels, font.height };
     xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_clear, 1, &rect);
 
     /* Draw the text of each block. */
     uint32_t x = 0;
     TAILQ_FOREACH(block, &statusline_head, blocks) {
-        if (strlen(block->full_text) == 0)
+        if (i3string_get_num_bytes(block->full_text) == 0)
             continue;
 
         uint32_t colorpixel = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
         set_font_colors(statusline_ctx, colorpixel, colors.bar_bg);
-        draw_text((char*)block->ucs2_full_text, block->glyph_count_full_text,
-                  true, statusline_pm, statusline_ctx, x, 0, block->width);
+        draw_text(block->full_text, statusline_pm, statusline_ctx, x, 0, block->width);
         x += block->width;
 
         if (TAILQ_NEXT(block, blocks) != NULL) {
@@ -157,8 +154,6 @@ void refresh_statusline() {
                           statusline_ctx, 2,
                           (xcb_point_t[]){ { x - 5, 2 }, { x - 5, font.height - 2 } });
         }
-
-        FREE(block->ucs2_full_text);
     }
 }
 
@@ -166,7 +161,7 @@ void refresh_statusline() {
  * Hides all bars (unmaps them)
  *
  */
-void hide_bars() {
+void hide_bars(void) {
     if (!config.hide_on_modifier) {
         return;
     }
@@ -185,7 +180,7 @@ void hide_bars() {
  * Unhides all bars (maps them)
  *
  */
-void unhide_bars() {
+void unhide_bars(void) {
     if (!config.hide_on_modifier) {
         return;
     }
@@ -326,7 +321,8 @@ void handle_button(xcb_button_press_event_t *event) {
      * buffer, then we copy character by character. */
     int num_quotes = 0;
     size_t namelen = 0;
-    for (char *walk = cur_ws->name; *walk != '\0'; walk++) {
+    const char *utf8_name = i3string_as_utf8(cur_ws->name);
+    for (const char *walk = utf8_name; *walk != '\0'; walk++) {
         if (*walk == '"')
             num_quotes++;
         /* While we’re looping through the name anyway, we can save one
@@ -341,11 +337,11 @@ void handle_button(xcb_button_press_event_t *event) {
     for (inpos = 0, outpos = strlen("workspace \"");
          inpos < namelen;
          inpos++, outpos++) {
-        if (cur_ws->name[inpos] == '"') {
+        if (utf8_name[inpos] == '"') {
             buffer[outpos] = '\\';
             outpos++;
         }
-        buffer[outpos] = cur_ws->name[inpos];
+        buffer[outpos] = utf8_name[inpos];
     }
     buffer[outpos] = '"';
     i3_send_msg(I3_IPC_MESSAGE_TYPE_COMMAND, buffer);
@@ -357,7 +353,7 @@ void handle_button(xcb_button_press_event_t *event) {
  * new tray client or removing an old one.
  *
  */
-static void configure_trayclients() {
+static void configure_trayclients(void) {
     trayclient *trayclient;
     i3_output *output;
     SLIST_FOREACH(output, outputs, slist) {
@@ -828,8 +824,8 @@ char *init_xcb_early() {
     #define ATOM_DO(name) atom_cookies[name] = xcb_intern_atom(xcb_connection, 0, strlen(#name), #name);
     #include "xcb_atoms.def"
 
-    xcb_screen = xcb_aux_get_screen(xcb_connection, screen);
-    xcb_root = xcb_screen->root;
+    root_screen = xcb_aux_get_screen(xcb_connection, screen);
+    xcb_root = root_screen->root;
 
     /* We draw the statusline to a seperate pixmap, because it looks the same on all bars and
      * this way, we can choose to crop it */
@@ -852,11 +848,11 @@ char *init_xcb_early() {
 
     statusline_pm = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                               xcb_screen->root_depth,
+                                                               root_screen->root_depth,
                                                                statusline_pm,
                                                                xcb_root,
-                                                               xcb_screen->width_in_pixels,
-                                                               xcb_screen->height_in_pixels);
+                                                               root_screen->width_in_pixels,
+                                                               root_screen->height_in_pixels);
 
 
     /* The various Watchers to communicate with xcb */
@@ -970,7 +966,7 @@ void init_xcb_late(char *fontname) {
  * atom. Afterwards, tray clients will send ClientMessages to our window.
  *
  */
-void init_tray() {
+void init_tray(void) {
     DLOG("Initializing system tray functionality\n");
     /* request the tray manager atom for the X11 display we are running on */
     char atomname[strlen("_NET_SYSTEM_TRAY_S") + 11];
@@ -984,14 +980,14 @@ void init_tray() {
     uint32_t selmask = XCB_CW_OVERRIDE_REDIRECT;
     uint32_t selval[] = { 1 };
     xcb_create_window(xcb_connection,
-                      xcb_screen->root_depth,
+                      root_screen->root_depth,
                       selwin,
                       xcb_root,
                       -1, -1,
                       1, 1,
                       1,
                       XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                      xcb_screen->root_visual,
+                      root_screen->root_visual,
                       selmask,
                       selval);
 
@@ -1059,7 +1055,7 @@ void init_tray() {
  * Called once, before the program terminates.
  *
  */
-void clean_xcb() {
+void clean_xcb(void) {
     i3_output *o_walk;
     free_workspaces();
     SLIST_FOREACH(o_walk, outputs, slist) {
@@ -1087,7 +1083,7 @@ void clean_xcb() {
  * Get the earlier requested atoms and save them in the prepared data structure
  *
  */
-void get_atoms() {
+void get_atoms(void) {
     xcb_intern_atom_reply_t *reply;
     #define ATOM_DO(name) reply = xcb_intern_atom_reply(xcb_connection, atom_cookies[name], NULL); \
         if (reply == NULL) { \
@@ -1149,17 +1145,17 @@ void destroy_window(i3_output *output) {
  * Reallocate the statusline-buffer
  *
  */
-void realloc_sl_buffer() {
-    DLOG("Re-allocating statusline-buffer, statusline_width = %d, xcb_screen->width_in_pixels = %d\n",
-         statusline_width, xcb_screen->width_in_pixels);
+void realloc_sl_buffer(void) {
+    DLOG("Re-allocating statusline-buffer, statusline_width = %d, root_screen->width_in_pixels = %d\n",
+         statusline_width, root_screen->width_in_pixels);
     xcb_free_pixmap(xcb_connection, statusline_pm);
     statusline_pm = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                               xcb_screen->root_depth,
+                                                               root_screen->root_depth,
                                                                statusline_pm,
                                                                xcb_root,
-                                                               MAX(xcb_screen->width_in_pixels, statusline_width),
-                                                               xcb_screen->height_in_pixels);
+                                                               MAX(root_screen->width_in_pixels, statusline_width),
+                                                               root_screen->height_in_pixels);
 
     uint32_t mask = XCB_GC_FOREGROUND;
     uint32_t vals[2] = { colors.bar_bg, colors.bar_bg };
@@ -1193,7 +1189,7 @@ void realloc_sl_buffer() {
  * Reconfigure all bars and create new bars for recently activated outputs
  *
  */
-void reconfig_windows() {
+void reconfig_windows(void) {
     uint32_t mask;
     uint32_t values[5];
     static bool tray_configured = false;
@@ -1229,20 +1225,20 @@ void reconfig_windows() {
                 values[2] |= XCB_EVENT_MASK_BUTTON_PRESS;
             }
             xcb_void_cookie_t win_cookie = xcb_create_window_checked(xcb_connection,
-                                                                     xcb_screen->root_depth,
+                                                                     root_screen->root_depth,
                                                                      walk->bar,
                                                                      xcb_root,
                                                                      walk->rect.x, walk->rect.y + walk->rect.h - font.height - 6,
                                                                      walk->rect.w, font.height + 6,
                                                                      1,
                                                                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                                                     xcb_screen->root_visual,
+                                                                     root_screen->root_visual,
                                                                      mask,
                                                                      values);
 
             /* The double-buffer we use to render stuff off-screen */
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                                    xcb_screen->root_depth,
+                                                                    root_screen->root_depth,
                                                                     walk->buffer,
                                                                     walk->bar,
                                                                     walk->rect.w,
@@ -1382,7 +1378,7 @@ void reconfig_windows() {
 
             DLOG("Recreating buffer for output %s", walk->name);
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
-                                                                    xcb_screen->root_depth,
+                                                                    root_screen->root_depth,
                                                                     walk->buffer,
                                                                     walk->bar,
                                                                     walk->rect.w,
@@ -1402,7 +1398,7 @@ void reconfig_windows() {
  * Render the bars, with buttons and statusline
  *
  */
-void draw_bars() {
+void draw_bars(void) {
     DLOG("Drawing Bars...\n");
     int i = 0;
 
@@ -1464,8 +1460,11 @@ void draw_bars() {
         }
 
         i3_ws *ws_walk;
+        static char *last_urgent_ws = NULL;
+        bool has_urgent = false, walks_away = true;
+
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
-            DLOG("Drawing Button for WS %s at x = %d, len = %d\n", ws_walk->name, i, ws_walk->name_width);
+            DLOG("Drawing Button for WS %s at x = %d, len = %d\n", i3string_as_utf8(ws_walk->name), i, ws_walk->name_width);
             uint32_t fg_color = colors.inactive_ws_fg;
             uint32_t bg_color = colors.inactive_ws_bg;
             uint32_t border_color = colors.inactive_ws_border;
@@ -1478,13 +1477,20 @@ void draw_bars() {
                     fg_color = colors.focus_ws_fg;
                     bg_color = colors.focus_ws_bg;
                     border_color = colors.focus_ws_border;
+                    if (last_urgent_ws && strcmp(i3string_as_utf8(ws_walk->name), last_urgent_ws) == 0)
+                        walks_away = false;
                 }
             }
             if (ws_walk->urgent) {
-                DLOG("WS %s is urgent!\n", ws_walk->name);
+                DLOG("WS %s is urgent!\n", i3string_as_utf8(ws_walk->name));
                 fg_color = colors.urgent_ws_fg;
                 bg_color = colors.urgent_ws_bg;
                 border_color = colors.urgent_ws_border;
+                has_urgent = true;
+                if (!ws_walk->focused) {
+                    FREE(last_urgent_ws);
+                    last_urgent_ws = sstrdup(i3string_as_utf8(ws_walk->name));
+                }
                 /* The urgent-hint should get noticed, so we unhide the bars shortly */
                 unhide_bars();
             }
@@ -1512,9 +1518,13 @@ void draw_bars() {
                                     1,
                                     &rect);
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
-            draw_text((char*)ws_walk->ucs2_name, ws_walk->name_glyphs, true,
-                    outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, ws_walk->name_width);
+            draw_text(ws_walk->name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, ws_walk->name_width);
             i += 10 + ws_walk->name_width + 1;
+        }
+
+        if (!has_urgent && !mod_pressed && walks_away) {
+            FREE(last_urgent_ws);
+            hide_bars();
         }
 
         i = 0;
@@ -1527,7 +1537,7 @@ void draw_bars() {
  * Redraw the bars, i.e. simply copy the buffer to the barwindow
  *
  */
-void redraw_bars() {
+void redraw_bars(void) {
     i3_output *outputs_walk;
     SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (!outputs_walk->active) {

@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "scratchpad.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -150,4 +152,68 @@ void scratchpad_show(Con *con) {
     }
 
     con_focus(con_descend_focused(con));
+}
+
+/*
+ * Greatest common divisor, implemented only for the least common multiple
+ * below.
+ *
+ */
+static int _gcd(const int m, const int n) {
+    if (n == 0)
+        return m;
+    return _gcd(n, (m % n));
+}
+
+/*
+ * Least common multiple. We use it to determine the (ideally not too large)
+ * resolution for the __i3 pseudo-output on which the scratchpad is on (see
+ * below). We could just multiply the resolutions, but for some pathetic cases
+ * (many outputs), using the LCM will achieve better results.
+ *
+ * Man, when you were learning about these two algorithms for the first time,
+ * did you think you’d ever need them in a real-world software project of
+ * yours? I certainly didn’t until now. :-D
+ *
+ */
+static int _lcm(const int m, const int n) {
+    const int o = _gcd(m, n);
+    return ((m * n) / o);
+}
+
+/*
+ * When starting i3 initially (and after each change to the connected outputs),
+ * this function fixes the resolution of the __i3 pseudo-output. When that
+ * resolution is not set to a function which shares a common divisor with every
+ * active output’s resolution, floating point calculation errors will lead to
+ * the scratchpad window moving when shown repeatedly.
+ *
+ */
+void scratchpad_fix_resolution(void) {
+    Con *__i3_scratch = workspace_get("__i3_scratch", NULL);
+    Con *__i3_output = con_get_output(__i3_scratch);
+    DLOG("Current resolution: (%d, %d) %d x %d\n",
+         __i3_output->rect.x, __i3_output->rect.y,
+         __i3_output->rect.width, __i3_output->rect.height);
+    Con *output;
+    int new_width = -1,
+        new_height = -1;
+    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+        if (output == __i3_output)
+            continue;
+        DLOG("output %s's resolution: (%d, %d) %d x %d\n",
+             output->name, output->rect.x, output->rect.y,
+             output->rect.width, output->rect.height);
+        if (new_width == -1) {
+            new_width = output->rect.width;
+            new_height = output->rect.height;
+        } else {
+            new_width = _lcm(new_width, output->rect.width);
+            new_height = _lcm(new_height, output->rect.height);
+        }
+    }
+    DLOG("new width = %d, new height = %d\n",
+         new_width, new_height);
+    __i3_output->rect.width = new_width;
+    __i3_output->rect.height = new_height;
 }

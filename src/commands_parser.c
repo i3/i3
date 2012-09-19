@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "commands_parser.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -104,7 +106,6 @@ static void push_string(const char *identifier, char *str) {
 // XXX: ideally, this would be const char. need to check if that works with all
 // called functions.
 static char *get_string(const char *identifier) {
-    DLOG("Getting string %s from stack...\n", identifier);
     for (int c = 0; c < 10; c++) {
         if (stack[c].identifier == NULL)
             break;
@@ -115,7 +116,6 @@ static char *get_string(const char *identifier) {
 }
 
 static void clear_stack(void) {
-    DLOG("clearing stack.\n");
     for (int c = 0; c < 10; c++) {
         if (stack[c].str != NULL)
             free(stack[c].str);
@@ -187,8 +187,6 @@ static struct CommandResult command_output;
 
 static void next_state(const cmdp_token *token) {
     if (token->next_state == __CALL) {
-        DLOG("should call stuff, yay. call_id = %d\n",
-                token->extra.call_identifier);
         subcommand_output.json_gen = command_output.json_gen;
         subcommand_output.needs_tree_render = false;
         GENERATED_call(token->extra.call_identifier, &subcommand_output);
@@ -206,9 +204,8 @@ static void next_state(const cmdp_token *token) {
     }
 }
 
-/* TODO: Return parsing errors via JSON. */
 struct CommandResult *parse_command(const char *input) {
-    DLOG("new parser handling: %s\n", input);
+    DLOG("COMMAND: *%s*\n", input);
     state = INITIAL;
 
 /* A YAJL JSON generator used for formatting replies. */
@@ -240,19 +237,14 @@ struct CommandResult *parse_command(const char *input) {
                 *walk == '\r' || *walk == '\n') && *walk != '\0')
             walk++;
 
-        DLOG("remaining input = %s\n", walk);
-
         cmdp_token_ptr *ptr = &(tokens[state]);
         token_handled = false;
         for (c = 0; c < ptr->n; c++) {
             token = &(ptr->array[c]);
-            DLOG("trying token %d = %s\n", c, token->name);
 
             /* A literal. */
             if (token->name[0] == '\'') {
-                DLOG("literal\n");
                 if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
-                    DLOG("found literal, moving to next state\n");
                     if (token->identifier != NULL)
                         push_string(token->identifier, sstrdup(token->name + 1));
                     walk += strlen(token->name) - 1;
@@ -265,7 +257,6 @@ struct CommandResult *parse_command(const char *input) {
 
             if (strcmp(token->name, "string") == 0 ||
                 strcmp(token->name, "word") == 0) {
-                DLOG("parsing this as a string\n");
                 const char *beginning = walk;
                 /* Handle quoted strings (or words). */
                 if (*walk == '"') {
@@ -310,7 +301,6 @@ struct CommandResult *parse_command(const char *input) {
                     }
                     if (token->identifier)
                         push_string(token->identifier, str);
-                    DLOG("str is \"%s\"\n", str);
                     /* If we are at the end of a quoted string, skip the ending
                      * double quote. */
                     if (*walk == '"')
@@ -322,9 +312,7 @@ struct CommandResult *parse_command(const char *input) {
             }
 
             if (strcmp(token->name, "end") == 0) {
-                DLOG("checking for the end token.\n");
                 if (*walk == '\0' || *walk == ',' || *walk == ';') {
-                    DLOG("yes, indeed. end\n");
                     next_state(token);
                     token_handled = true;
                     /* To make sure we start with an appropriate matching
@@ -389,14 +377,19 @@ struct CommandResult *parse_command(const char *input) {
                 position[(copywalk - input)] = (copywalk >= walk ? '^' : ' ');
             position[len] = '\0';
 
-            printf("%s\n", errormessage);
-            printf("Your command: %s\n", input);
-            printf("              %s\n", position);
+            ELOG("%s\n", errormessage);
+            ELOG("Your command: %s\n", input);
+            ELOG("              %s\n", position);
 
             /* Format this error message as a JSON reply. */
             y(map_open);
             ystr("success");
             y(bool, false);
+            /* We set parse_error to true to distinguish this from other
+             * errors. i3-nagbar is spawned upon keypresses only for parser
+             * errors. */
+            ystr("parse_error");
+            y(bool, true);
             ystr("error");
             ystr(errormessage);
             ystr("input");
@@ -414,7 +407,6 @@ struct CommandResult *parse_command(const char *input) {
 
     y(array_close);
 
-    DLOG("command_output.needs_tree_render = %d\n", command_output.needs_tree_render);
     return &command_output;
 }
 
@@ -427,15 +419,23 @@ struct CommandResult *parse_command(const char *input) {
 
 /*
  * Logs the given message to stdout while prefixing the current time to it,
- * but only if the corresponding debug loglevel was activated.
+ * but only if debug logging was activated.
  * This is to be called by DLOG() which includes filename/linenumber
  *
  */
-void debuglog(uint64_t lev, char *fmt, ...) {
+void debuglog(char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
-    fprintf(stderr, "# ");
+    fprintf(stdout, "# ");
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+}
+
+void errorlog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     va_end(args);
 }

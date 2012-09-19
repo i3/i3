@@ -69,6 +69,7 @@ enum { MOD_Mod1, MOD_Mod4 } modifier = MOD_Mod4;
 static char *config_path;
 static uint32_t xcb_numlock_mask;
 xcb_connection_t *conn;
+xcb_screen_t *root_screen;
 static xcb_get_modifier_mapping_reply_t *modmap_reply;
 static i3Font font;
 static i3Font bold_font;
@@ -82,6 +83,26 @@ Display *dpy;
 
 char *rewrite_binding(const char *bindingline);
 static void finish();
+
+/*
+ * Having verboselog() and errorlog() is necessary when using libi3.
+ *
+ */
+void verboselog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+}
+
+void errorlog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+}
 
 /*
  * This function resolves ~ in pathnames.
@@ -128,7 +149,7 @@ static int handle_expose() {
     set_font(&font);
 
 #define txt(x, row, text) \
-    draw_text(text, strlen(text), false, pixmap, pixmap_gc,\
+    draw_text_ascii(text, pixmap, pixmap_gc,\
             x, (row - 1) * font.height + 4, 300 - x * 2)
 
     if (current_step == STEP_WELCOME) {
@@ -456,7 +477,7 @@ int main(int argc, char *argv[]) {
     #include "atoms.xmacro"
     #undef xmacro
 
-    xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
+    root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
 
     if (!(modmap_reply = xcb_get_modifier_mapping_reply(conn, modmap_cookie, NULL)))

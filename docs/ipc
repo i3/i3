@@ -1,7 +1,7 @@
 IPC interface (interprocess communication)
 ==========================================
 Michael Stapelberg <michael@i3wm.org>
-February 2012
+August 2012
 
 This document describes how to interface with i3 from a separate process. This
 is useful for example to remote-control i3 (to write test cases for example) or
@@ -70,6 +70,9 @@ GET_BAR_CONFIG (6)::
 	Gets the configuration (as JSON map) of the workspace bar with the
 	given ID. If no ID is provided, an array with all configured bar IDs is
 	returned instead.
+GET_VERSION (7)::
+	Gets the version of i3. The reply will be a JSON-encoded dictionary
+	with the major, minor, patch and human-readable version.
 
 So, a typical message could look like this:
 --------------------------------------------------
@@ -125,6 +128,8 @@ MARKS (5)::
 	Reply to the GET_MARKS message.
 BAR_CONFIG (6)::
 	Reply to the GET_BAR_CONFIG message.
+VERSION (7)::
+	Reply to the GET_VERSION message.
 
 === COMMAND reply
 
@@ -206,7 +211,7 @@ default) or whether a JSON parse error occurred.
 { "success": true }
 -------------------
 
-=== GET_OUTPUTS reply
+=== OUTPUTS reply
 
 The reply consists of a serialized list of outputs. Each output has the
 following properties:
@@ -270,12 +275,15 @@ border (string)::
 	Can be either "normal", "none" or "1pixel", dependending on the
 	container’s border style.
 layout (string)::
-	Can be either "default", "stacked", "tabbed", "dockarea" or "output".
+	Can be either "splith", "splitv", "stacked", "tabbed", "dockarea" or
+	"output".
 	Other values might be possible in the future, should we add new
 	layouts.
 orientation (string)::
 	Can be either "none" (for non-split containers), "horizontal" or
 	"vertical".
+	THIS FIELD IS OBSOLETE. It is still present, but your code should not
+	use it. Instead, rely on the layout field.
 percent (float)::
 	The percentage which this container takes in its parent. A value of
 	+null+ means that the percent property does not make sense for this
@@ -296,6 +304,11 @@ window_rect (map)::
 geometry (map)::
 	The original geometry the window specified when i3 mapped it. Used when
 	switching a window to floating mode, for example.
+window (integer)::
+	The X11 window ID of the *actual client window* inside this container.
+	This field is set to null for split containers or otherwise empty
+	containers. This ID corresponds to what xwininfo(1) and other
+	X11-related tools display (usually in hex).
 urgent (bool)::
 	Whether this container (window or workspace) has the urgency hint set.
 focused (bool)::
@@ -526,6 +539,35 @@ urgent_workspace_text/urgent_workspace_bar::
 }
 --------------
 
+=== VERSION reply
+
+The reply consists of a single JSON dictionary with the following keys:
+
+major (integer)::
+	The major version of i3, such as +4+.
+minor (integer)::
+	The minor version of i3, such as +2+. Changes in the IPC interface (new
+	features) will only occur with new minor (or major) releases. However,
+	bugfixes might be introduced in patch releases, too.
+patch (integer)::
+	The patch version of i3, such as +1+ (when the complete version is
+	+4.2.1+). For versions such as +4.2+, patch will be set to +0+.
+human_readable (string)::
+	A human-readable version of i3 containing the precise git version,
+	build date and branch name. When you need to display the i3 version to
+	your users, use the human-readable version whenever possible (since
+	this is what +i3 --version+ displays, too).
+
+*Example:*
+-------------------
+{
+   "human_readable" : "4.2-169-gf80b877 (2012-08-05, branch \"next\")",
+   "minor" : 2,
+   "patch" : 0,
+   "major" : 4
+}
+-------------------
+
 == Events
 
 [[events]]
@@ -621,7 +663,7 @@ C::
 Ruby::
 	http://github.com/badboy/i3-ipc
 Perl::
-	http://search.cpan.org/search?query=AnyEvent::I3
+	https://metacpan.org/module/AnyEvent::I3
 Python::
-	https://github.com/whitelynx/i3ipc
-	https://github.com/ziberna/i3-py (includes higher-level features)
+	* https://github.com/whitelynx/i3ipc
+	* https://github.com/ziberna/i3-py (includes higher-level features)

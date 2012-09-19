@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "con.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -133,7 +135,7 @@ void con_attach(Con *con, Con *parent, bool ignore_focus) {
          */
         if (con->window != NULL &&
             parent->type == CT_WORKSPACE &&
-            config.default_layout != L_DEFAULT) {
+            parent->workspace_layout != L_DEFAULT) {
             DLOG("Parent is a workspace. Applying default layout...\n");
             Con *target = workspace_attach_to(parent);
 
@@ -217,8 +219,8 @@ bool con_accepts_window(Con *con) {
     if (con->type == CT_WORKSPACE)
         return false;
 
-    if (con->orientation != NO_ORIENTATION) {
-        DLOG("container %p does not accepts windows, orientation != NO_ORIENTATION\n", con);
+    if (con->split) {
+        DLOG("container %p does not accept windows, it is a split container.\n", con);
         return false;
     }
 
@@ -265,8 +267,11 @@ Con *con_parent_with_orientation(Con *con, orientation_t orientation) {
     while (con_orientation(parent) != orientation) {
         DLOG("Need to go one level further up\n");
         parent = parent->parent;
-        /* Abort when we reach a floating con */
-        if (parent && parent->type == CT_FLOATING_CON)
+        /* Abort when we reach a floating con, or an output con */
+        if (parent &&
+            (parent->type == CT_FLOATING_CON ||
+             parent->type == CT_OUTPUT ||
+             (parent->parent && parent->parent->type == CT_OUTPUT)))
             parent = NULL;
         if (parent == NULL)
             break;
@@ -576,10 +581,26 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         return;
     }
 
+    /* Prevent moving if this would violate the fullscreen focus restrictions. */
+    if (!con_fullscreen_permits_focusing(workspace)) {
+        LOG("Cannot move out of a fullscreen container");
+        return;
+    }
+
     if (con_is_floating(con)) {
         DLOG("Using FLOATINGCON instead\n");
         con = con->parent;
     }
+
+    Con *source_ws = con_get_workspace(con);
+    if (workspace == source_ws) {
+        DLOG("Not moving, already there\n");
+        return;
+    }
+
+    /* Save the current workspace. So we can call workspace_show() by the end
+     * of this function. */
+    Con *current_ws = con_get_workspace(focused);
 
     Con *source_output = con_get_output(con),
         *dest_output = con_get_output(workspace);
@@ -665,8 +686,12 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         /* Descend focus stack in case focus_next is a workspace which can
          * occur if we move to the same workspace.  Also show current workspace
          * to ensure it is focused. */
-        workspace_show(con_get_workspace(focus_next));
-        con_focus(con_descend_focused(focus_next));
+        workspace_show(current_ws);
+
+        /* Set focus only if con was on current workspace before moving.
+         * Otherwise we would give focus to some window on different workspace. */
+        if (source_ws == current_ws)
+            con_focus(con_descend_focused(focus_next));
     }
 
     CALL(parent, on_remove_child);
@@ -679,14 +704,32 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
  *
  */
 int con_orientation(Con *con) {
-    /* stacking containers behave like they are in vertical orientation */
-    if (con->layout == L_STACKED)
-        return VERT;
+    switch (con->layout) {
+        case L_SPLITV:
+        /* stacking containers behave like they are in vertical orientation */
+        case L_STACKED:
+            return VERT;
 
-    if (con->layout == L_TABBED)
-        return HORIZ;
+        case L_SPLITH:
+        /* tabbed containers behave like they are in vertical orientation */
+        case L_TABBED:
+            return HORIZ;
 
-    return con->orientation;
+        case L_DEFAULT:
+            DLOG("Someone called con_orientation() on a con with L_DEFAULT, this is a bug in the code.\n");
+            assert(false);
+            return HORIZ;
+
+        case L_DOCKAREA:
+        case L_OUTPUT:
+            DLOG("con_orientation() called on dockarea/output (%d) container %p\n", con->layout, con);
+            assert(false);
+            return HORIZ;
+
+        default:
+            DLOG("con_orientation() ran into default\n");
+            assert(false);
+    }
 }
 
 /*
@@ -895,12 +938,46 @@ Con *con_descend_direction(Con *con, direction_t direction) {
  *
  */
 Rect con_border_style_rect(Con *con) {
-    switch (con_border_style(con)) {
+    adjacent_t borders_to_hide = ADJ_NONE;
+    Rect result;
+    /* Shortcut to avoid calling con_adjacent_borders() on dock containers. */
+    int border_style = con_border_style(con);
+    if (border_style == BS_NONE)
+        return (Rect){ 0, 0, 0, 0 };
+    borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
+    switch (border_style) {
     case BS_NORMAL:
-        return (Rect){2, 0, -(2 * 2), -2};
+        result = (Rect){2, 0, -(2 * 2), -2};
+        if (borders_to_hide & ADJ_LEFT_SCREEN_EDGE) {
+            result.x -= 2;
+            result.width += 2;
+        }
+        if (borders_to_hide & ADJ_RIGHT_SCREEN_EDGE) {
+            result.width += 2;
+        }
+        /* With normal borders we never hide the upper border */
+        if (borders_to_hide & ADJ_LOWER_SCREEN_EDGE) {
+            result.height += 2;
+        }
+        return result;
 
     case BS_1PIXEL:
-        return (Rect){1, 1, -2, -2};
+        result = (Rect){1, 1, -2, -2};
+        if (borders_to_hide & ADJ_LEFT_SCREEN_EDGE) {
+            result.x -= 1;
+            result.width += 1;
+        }
+        if (borders_to_hide & ADJ_RIGHT_SCREEN_EDGE) {
+            result.width += 1;
+        }
+        if (borders_to_hide & ADJ_UPPER_SCREEN_EDGE) {
+            result.y -= 1;
+            result.height += 1;
+        }
+        if (borders_to_hide & ADJ_LOWER_SCREEN_EDGE) {
+            result.height += 1;
+        }
+        return result;
 
     case BS_NONE:
         return (Rect){0, 0, 0, 0};
@@ -908,6 +985,24 @@ Rect con_border_style_rect(Con *con) {
     default:
         assert(false);
     }
+}
+
+/*
+ * Returns adjacent borders of the window. We need this if hide_edge_borders is
+ * enabled.
+ */
+adjacent_t con_adjacent_borders(Con *con) {
+    adjacent_t result = ADJ_NONE;
+    Con *workspace = con_get_workspace(con);
+    if (con->rect.x == workspace->rect.x)
+        result |= ADJ_LEFT_SCREEN_EDGE;
+    if (con->rect.x + con->rect.width == workspace->rect.x + workspace->rect.width)
+        result |= ADJ_RIGHT_SCREEN_EDGE;
+    if (con->rect.y == workspace->rect.y)
+        result |= ADJ_UPPER_SCREEN_EDGE;
+    if (con->rect.y + con->rect.height == workspace->rect.y + workspace->rect.height)
+        result |= ADJ_LOWER_SCREEN_EDGE;
+    return result;
 }
 
 /*
@@ -989,54 +1084,133 @@ void con_set_border_style(Con *con, int border_style) {
  *
  */
 void con_set_layout(Con *con, int layout) {
+    DLOG("con_set_layout(%p, %d), con->type = %d\n",
+         con, layout, con->type);
+
+    /* Users can focus workspaces, but not any higher in the hierarchy.
+     * Focus on the workspace is a special case, since in every other case, the
+     * user means "change the layout of the parent split container". */
+    if (con->type != CT_WORKSPACE)
+        con = con->parent;
+
+    /* We fill in last_split_layout when switching to a different layout
+     * since there are many places in the code that don’t use
+     * con_set_layout(). */
+    if (con->layout == L_SPLITH || con->layout == L_SPLITV)
+        con->last_split_layout = con->layout;
+
     /* When the container type is CT_WORKSPACE, the user wants to change the
      * whole workspace into stacked/tabbed mode. To do this and still allow
      * intuitive operations (like level-up and then opening a new window), we
      * need to create a new split container. */
-    if (con->type == CT_WORKSPACE) {
-        DLOG("Creating new split container\n");
-        /* 1: create a new split container */
-        Con *new = con_new(NULL, NULL);
-        new->parent = con;
-
-        /* 2: set the requested layout on the split con */
-        new->layout = layout;
-
-        /* 3: While the layout is irrelevant in stacked/tabbed mode, it needs
-         * to be set. Otherwise, this con will not be interpreted as a split
-         * container. */
-        if (config.default_orientation == NO_ORIENTATION) {
-            new->orientation = (con->rect.height > con->rect.width) ? VERT : HORIZ;
+    if (con->type == CT_WORKSPACE &&
+        (layout == L_STACKED || layout == L_TABBED)) {
+        if (con_num_children(con) == 0) {
+            DLOG("Setting workspace_layout to %d\n", layout);
+            con->workspace_layout = layout;
         } else {
-            new->orientation = config.default_orientation;
+            DLOG("Creating new split container\n");
+            /* 1: create a new split container */
+            Con *new = con_new(NULL, NULL);
+            new->parent = con;
+
+            /* 2: Set the requested layout on the split container and mark it as
+             * split. */
+            new->layout = layout;
+            new->last_split_layout = con->last_split_layout;
+            new->split = true;
+
+            Con *old_focused = TAILQ_FIRST(&(con->focus_head));
+            if (old_focused == TAILQ_END(&(con->focus_head)))
+                old_focused = NULL;
+
+            /* 3: move the existing cons of this workspace below the new con */
+            DLOG("Moving cons\n");
+            Con *child;
+            while (!TAILQ_EMPTY(&(con->nodes_head))) {
+                child = TAILQ_FIRST(&(con->nodes_head));
+                con_detach(child);
+                con_attach(child, new, true);
+            }
+
+            /* 4: attach the new split container to the workspace */
+            DLOG("Attaching new split to ws\n");
+            con_attach(new, con, false);
+
+            if (old_focused)
+                con_focus(old_focused);
+
+            tree_flatten(croot);
         }
-
-        Con *old_focused = TAILQ_FIRST(&(con->focus_head));
-        if (old_focused == TAILQ_END(&(con->focus_head)))
-            old_focused = NULL;
-
-        /* 4: move the existing cons of this workspace below the new con */
-        DLOG("Moving cons\n");
-        Con *child;
-        while (!TAILQ_EMPTY(&(con->nodes_head))) {
-            child = TAILQ_FIRST(&(con->nodes_head));
-            con_detach(child);
-            con_attach(child, new, true);
-        }
-
-        /* 4: attach the new split container to the workspace */
-        DLOG("Attaching new split to ws\n");
-        con_attach(new, con, false);
-
-        if (old_focused)
-            con_focus(old_focused);
-
-        tree_flatten(croot);
-
         return;
     }
 
-    con->layout = layout;
+    if (layout == L_DEFAULT) {
+        /* Special case: the layout formerly known as "default" (in combination
+         * with an orientation). Since we switched to splith/splitv layouts,
+         * using the "default" layout (which "only" should happen when using
+         * legacy configs) is using the last split layout (either splith or
+         * splitv) in order to still do the same thing.
+         *
+         * Starting from v4.6 though, we will nag users about using "layout
+         * default", and in v4.9 we will remove it entirely (with an
+         * appropriate i3-migrate-config mechanism). */
+        con->layout = con->last_split_layout;
+        /* In case last_split_layout was not initialized… */
+        if (con->layout == L_DEFAULT)
+            con->layout = L_SPLITH;
+    } else {
+        con->layout = layout;
+    }
+}
+
+/*
+ * This function toggles the layout of a given container. toggle_mode can be
+ * either 'default' (toggle only between stacked/tabbed/last_split_layout),
+ * 'split' (toggle only between splitv/splith) or 'all' (toggle between all
+ * layouts).
+ *
+ */
+void con_toggle_layout(Con *con, const char *toggle_mode) {
+    Con *parent = con;
+    /* Users can focus workspaces, but not any higher in the hierarchy.
+     * Focus on the workspace is a special case, since in every other case, the
+     * user means "change the layout of the parent split container". */
+    if (con->type != CT_WORKSPACE)
+        parent = con->parent;
+    DLOG("con_toggle_layout(%p, %s), parent = %p\n", con, toggle_mode, parent);
+
+    if (strcmp(toggle_mode, "split") == 0) {
+        /* Toggle between splits. When the current layout is not a split
+         * layout, we just switch back to last_split_layout. Otherwise, we
+         * change to the opposite split layout. */
+        if (parent->layout != L_SPLITH && parent->layout != L_SPLITV)
+            con_set_layout(con, parent->last_split_layout);
+        else {
+            if (parent->layout == L_SPLITH)
+                con_set_layout(con, L_SPLITV);
+            else con_set_layout(con, L_SPLITH);
+        }
+    } else {
+        if (parent->layout == L_STACKED)
+            con_set_layout(con, L_TABBED);
+        else if (parent->layout == L_TABBED) {
+            if (strcmp(toggle_mode, "all") == 0)
+                con_set_layout(con, L_SPLITH);
+            else con_set_layout(con, parent->last_split_layout);
+        } else if (parent->layout == L_SPLITH || parent->layout == L_SPLITV) {
+            if (strcmp(toggle_mode, "all") == 0) {
+                /* When toggling through all modes, we toggle between
+                 * splith/splitv, whereas normally we just directly jump to
+                 * stacked. */
+                if (parent->layout == L_SPLITH)
+                    con_set_layout(con, L_SPLITV);
+                else con_set_layout(con, L_STACKED);
+            } else {
+                con_set_layout(con, L_STACKED);
+            }
+        }
+    }
 }
 
 /*
@@ -1113,12 +1287,12 @@ Rect con_minimum_size(Con *con) {
     /* For horizontal/vertical split containers we sum up the width (h-split)
      * or height (v-split) and use the maximum of the height (h-split) or width
      * (v-split) as minimum size. */
-    if (con->orientation == HORIZ || con->orientation == VERT) {
+    if (con->split) {
         uint32_t width = 0, height = 0;
         Con *child;
         TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
             Rect min = con_minimum_size(child);
-            if (con->orientation == HORIZ) {
+            if (con->layout == L_SPLITH) {
                 width += min.width;
                 height = max(height, min.height);
             } else {
@@ -1130,7 +1304,70 @@ Rect con_minimum_size(Con *con) {
         return (Rect){ 0, 0, width, height };
     }
 
-    ELOG("Unhandled case, type = %d, layout = %d, orientation = %d\n",
-         con->type, con->layout, con->orientation);
+    ELOG("Unhandled case, type = %d, layout = %d, split = %d\n",
+         con->type, con->layout, con->split);
     assert(false);
+}
+
+/*
+ * Returns true if changing the focus to con would be allowed considering
+ * the fullscreen focus constraints. Specifically, if a fullscreen container or
+ * any of its descendants is focused, this function returns true if and only if
+ * focusing con would mean that focus would still be visible on screen, i.e.,
+ * the newly focused container would not be obscured by a fullscreen container.
+ *
+ * In the simplest case, if a fullscreen container or any of its descendants is
+ * fullscreen, this functions returns true if con is the fullscreen container
+ * itself or any of its descendants, as this means focus wouldn't escape the
+ * boundaries of the fullscreen container.
+ *
+ * In case the fullscreen container is of type CF_OUTPUT, this function returns
+ * true if con is on a different workspace, as focus wouldn't be obscured by
+ * the fullscreen container that is constrained to a different workspace.
+ *
+ * Note that this same logic can be applied to moving containers. If a
+ * container can be focused under the fullscreen focus constraints, it can also
+ * become a parent or sibling to the currently focused container.
+ *
+ */
+bool con_fullscreen_permits_focusing(Con *con) {
+    /* No focus, no problem. */
+    if (!focused)
+        return true;
+
+    /* Find the first fullscreen ascendent. */
+    Con *fs = focused;
+    while (fs && fs->fullscreen_mode == CF_NONE)
+        fs = fs->parent;
+
+    /* fs must be non-NULL since the workspace con doesn’t have CF_NONE and
+     * there always has to be a workspace con in the hierarchy. */
+    assert(fs != NULL);
+    /* The most common case is we hit the workspace level. In this
+     * situation, changing focus is also harmless. */
+    assert(fs->fullscreen_mode != CF_NONE);
+    if (fs->type == CT_WORKSPACE)
+        return true;
+
+    /* Allow it if the container itself is the fullscreen container. */
+    if (con == fs)
+        return true;
+
+    /* If fullscreen is per-output, the focus being in a different workspace is
+     * sufficient to guarantee that change won't leave fullscreen in bad shape. */
+    if (fs->fullscreen_mode == CF_OUTPUT &&
+        con_get_workspace(con) != con_get_workspace(fs)) {
+            return true;
+    }
+
+    /* Allow it only if the container to be focused is contained within the
+     * current fullscreen container. */
+    do {
+        if (con->parent == fs)
+            return true;
+        con = con->parent;
+    } while (con);
+
+    /* Focusing con would hide it behind a fullscreen window, disallow it. */
+    return false;
 }

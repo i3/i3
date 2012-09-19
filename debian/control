@@ -2,14 +2,34 @@ Source: i3-wm
 Section: x11
 Priority: extra
 Maintainer: Michael Stapelberg <stapelberg@debian.org>
-Build-Depends: debhelper (>= 7.0.50~), libx11-dev, libxcb-util0-dev (>= 0.3.8), libxcb-keysyms1-dev, libxcb-xinerama0-dev (>= 1.1), libxcb-randr0-dev, libxcb-icccm4-dev, libxcursor-dev, asciidoc (>= 8.4.4), xmlto, docbook-xml, pkg-config, libev-dev, flex, bison, libyajl-dev, libpcre3-dev, libstartup-notification0-dev (>= 0.10)
+Build-Depends: debhelper (>= 7.0.50~),
+               libx11-dev,
+               libxcb-util0-dev (>= 0.3.8),
+               libxcb-keysyms1-dev,
+               libxcb-xinerama0-dev (>= 1.1),
+               libxcb-randr0-dev,
+               libxcb-icccm4-dev,
+               libxcursor-dev,
+               asciidoc (>= 8.4.4),
+               xmlto,
+               docbook-xml,
+               pkg-config,
+               libev-dev,
+               flex,
+               bison,
+               libyajl-dev,
+               libpcre3-dev,
+               libstartup-notification0-dev (>= 0.10),
+               libcairo2-dev,
+               libpango1.0-dev,
+               libpod-simple-perl
 Standards-Version: 3.9.3
 Homepage: http://i3wm.org/
 
 Package: i3
 Architecture: any
 Depends: i3-wm (=${binary:Version}), ${misc:Depends}
-Recommends: i3lock (>= 2.2), suckless-tools, i3status (>= 2.3)
+Recommends: i3lock (>= 2.2), suckless-tools, i3status (>= 2.3), dunst
 Description: metapackage (i3 window manager, screen locker, menu, statusbar)
  This metapackage installs the i3 window manager (i3-wm), the i3lock screen
  locker, i3status (for system information) and suckless-tools (for dmenu).

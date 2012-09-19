@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "config.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -24,27 +26,27 @@ struct barconfig_head barconfigs = TAILQ_HEAD_INITIALIZER(barconfigs);
  *
  */
 void ungrab_all_keys(xcb_connection_t *conn) {
-        DLOG("Ungrabbing all keys\n");
-        xcb_ungrab_key(conn, XCB_GRAB_ANY, root, XCB_BUTTON_MASK_ANY);
+    DLOG("Ungrabbing all keys\n");
+    xcb_ungrab_key(conn, XCB_GRAB_ANY, root, XCB_BUTTON_MASK_ANY);
 }
 
 static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint32_t keycode) {
-        DLOG("Grabbing %d\n", keycode);
-        /* Grab the key in all combinations */
-        #define GRAB_KEY(modifier) \
-                do { \
-                        xcb_grab_key(conn, 0, root, modifier, keycode, \
-                                     XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC); \
-                } while (0)
-        int mods = bind->mods;
-        if ((bind->mods & BIND_MODE_SWITCH) != 0) {
-                mods &= ~BIND_MODE_SWITCH;
-                if (mods == 0)
-                        mods = XCB_MOD_MASK_ANY;
-        }
-        GRAB_KEY(mods);
-        GRAB_KEY(mods | xcb_numlock_mask);
-        GRAB_KEY(mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
+    DLOG("Grabbing %d\n", keycode);
+    /* Grab the key in all combinations */
+    #define GRAB_KEY(modifier) \
+        do { \
+            xcb_grab_key(conn, 0, root, modifier, keycode, \
+                         XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC); \
+        } while (0)
+    int mods = bind->mods;
+    if ((bind->mods & BIND_MODE_SWITCH) != 0) {
+        mods &= ~BIND_MODE_SWITCH;
+        if (mods == 0)
+            mods = XCB_MOD_MASK_ANY;
+    }
+    GRAB_KEY(mods);
+    GRAB_KEY(mods | xcb_numlock_mask);
+    GRAB_KEY(mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
 }
 
 /*
@@ -52,29 +54,55 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
  * or NULL if no such binding exists.
  *
  */
-Binding *get_binding(uint16_t modifiers, xcb_keycode_t keycode) {
-        Binding *bind;
+Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode) {
+    Binding *bind;
 
+    if (!key_release) {
+        /* On a KeyPress event, we first reset all
+         * B_UPON_KEYRELEASE_IGNORE_MODS bindings back to B_UPON_KEYRELEASE */
         TAILQ_FOREACH(bind, bindings, bindings) {
-                /* First compare the modifiers */
-                if (bind->mods != modifiers)
-                        continue;
-
-                /* If a symbol was specified by the user, we need to look in
-                 * the array of translated keycodes for the event’s keycode */
-                if (bind->symbol != NULL) {
-                        if (memmem(bind->translated_to,
-                                   bind->number_keycodes * sizeof(xcb_keycode_t),
-                                   &keycode, sizeof(xcb_keycode_t)) != NULL)
-                                break;
-                } else {
-                        /* This case is easier: The user specified a keycode */
-                        if (bind->keycode == keycode)
-                                break;
-                }
+            if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS)
+                bind->release = B_UPON_KEYRELEASE;
         }
 
-        return (bind == TAILQ_END(bindings) ? NULL : bind);
+        /* Then we transition the KeyRelease bindings into a state where the
+         * modifiers no longer matter for the KeyRelease event so that users
+         * can release the modifier key before releasing the actual key. */
+        TAILQ_FOREACH(bind, bindings, bindings) {
+            if (bind->release == B_UPON_KEYRELEASE && !key_release)
+                bind->release = B_UPON_KEYRELEASE_IGNORE_MODS;
+        }
+    }
+
+    TAILQ_FOREACH(bind, bindings, bindings) {
+        /* First compare the modifiers (unless this is a
+         * B_UPON_KEYRELEASE_IGNORE_MODS binding and this is a KeyRelease
+         * event) */
+        if (bind->mods != modifiers &&
+            (bind->release != B_UPON_KEYRELEASE_IGNORE_MODS ||
+             !key_release))
+            continue;
+
+        /* Check if the binding is for a KeyPress or a KeyRelease event */
+        if ((bind->release == B_UPON_KEYPRESS && key_release) ||
+            (bind->release >= B_UPON_KEYRELEASE && !key_release))
+            continue;
+
+        /* If a symbol was specified by the user, we need to look in
+         * the array of translated keycodes for the event’s keycode */
+        if (bind->symbol != NULL) {
+            if (memmem(bind->translated_to,
+                       bind->number_keycodes * sizeof(xcb_keycode_t),
+                       &keycode, sizeof(xcb_keycode_t)) != NULL)
+                break;
+        } else {
+            /* This case is easier: The user specified a keycode */
+            if (bind->keycode == keycode)
+                break;
+        }
+    }
+
+    return (bind == TAILQ_END(bindings) ? NULL : bind);
 }
 
 /*
@@ -131,22 +159,22 @@ void translate_keysyms(void) {
  *
  */
 void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch) {
-        Binding *bind;
-        TAILQ_FOREACH(bind, bindings, bindings) {
-                if ((bind_mode_switch && (bind->mods & BIND_MODE_SWITCH) == 0) ||
-                    (!bind_mode_switch && (bind->mods & BIND_MODE_SWITCH) != 0))
-                        continue;
+    Binding *bind;
+    TAILQ_FOREACH(bind, bindings, bindings) {
+        if ((bind_mode_switch && (bind->mods & BIND_MODE_SWITCH) == 0) ||
+            (!bind_mode_switch && (bind->mods & BIND_MODE_SWITCH) != 0))
+            continue;
 
-                /* The easy case: the user specified a keycode directly. */
-                if (bind->keycode > 0) {
-                        grab_keycode_for_binding(conn, bind, bind->keycode);
-                        continue;
-                }
-
-                xcb_keycode_t *walk = bind->translated_to;
-                for (int i = 0; i < bind->number_keycodes; i++)
-                        grab_keycode_for_binding(conn, bind, *walk++);
+        /* The easy case: the user specified a keycode directly. */
+        if (bind->keycode > 0) {
+            grab_keycode_for_binding(conn, bind, bind->keycode);
+            continue;
         }
+
+        xcb_keycode_t *walk = bind->translated_to;
+        for (int i = 0; i < bind->number_keycodes; i++)
+            grab_keycode_for_binding(conn, bind, *walk++);
+    }
 }
 
 /*
@@ -154,22 +182,22 @@ void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch) {
  *
  */
 void switch_mode(const char *new_mode) {
-        struct Mode *mode;
+    struct Mode *mode;
 
-        LOG("Switching to mode %s\n", new_mode);
+    LOG("Switching to mode %s\n", new_mode);
 
-        SLIST_FOREACH(mode, &modes, modes) {
-                if (strcasecmp(mode->name, new_mode) != 0)
-                        continue;
+    SLIST_FOREACH(mode, &modes, modes) {
+        if (strcasecmp(mode->name, new_mode) != 0)
+            continue;
 
-                ungrab_all_keys(conn);
-                bindings = mode->bindings;
-                translate_keysyms();
-                grab_all_keys(conn, false);
-                return;
-        }
+        ungrab_all_keys(conn);
+        bindings = mode->bindings;
+        translate_keysyms();
+        grab_all_keys(conn, false);
+        return;
+    }
 
-        ELOG("ERROR: Mode not found\n");
+    ELOG("ERROR: Mode not found\n");
 }
 
 /*
@@ -392,7 +420,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
         grab_all_keys(conn, false);
     }
 
-    if (config.font.id == 0) {
+    if (config.font.type == FONT_TYPE_NONE) {
         ELOG("You did not specify required configuration option \"font\"\n");
         config.font = load_font("fixed", true);
         set_font(&config.font);

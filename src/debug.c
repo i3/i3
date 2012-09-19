@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "debug.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *

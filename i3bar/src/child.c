@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
  * child.c: Getting Input for the statusline
  *
@@ -56,7 +56,7 @@ char *statusline_buffer = NULL;
  * Stop and free() the stdin- and sigchild-watchers
  *
  */
-void cleanup() {
+void cleanup(void) {
     if (stdin_io != NULL) {
         ev_io_stop(main_loop, stdin_io);
         FREE(stdin_io);
@@ -80,7 +80,7 @@ static int stdin_start_array(void *context) {
     struct status_block *first;
     while (!TAILQ_EMPTY(&statusline_head)) {
         first = TAILQ_FIRST(&statusline_head);
-        FREE(first->full_text);
+        I3STRING_FREE(first->full_text);
         FREE(first->color);
         TAILQ_REMOVE(&statusline_head, first, blocks);
         free(first);
@@ -116,7 +116,7 @@ static int stdin_string(void *context, const unsigned char *val, unsigned int le
 #endif
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "full_text") == 0) {
-        sasprintf(&(ctx->block.full_text), "%.*s", len, val);
+        ctx->block.full_text = i3string_from_utf8_with_length((const char *)val, len);
     }
     if (strcasecmp(ctx->last_map_key, "color") == 0) {
         sasprintf(&(ctx->block.color), "%.*s", len, val);
@@ -131,7 +131,7 @@ static int stdin_end_map(void *context) {
     /* Ensure we have a full_text set, so that when it is missing (or null),
      * i3bar doesn’t crash and the user gets an annoying message. */
     if (!new_block->full_text)
-        new_block->full_text = sstrdup("SPEC VIOLATION (null)");
+        new_block->full_text = i3string_from_utf8("SPEC VIOLATION (null)");
     TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
     return 1;
 }
@@ -140,7 +140,7 @@ static int stdin_end_array(void *context) {
     DLOG("dumping statusline:\n");
     struct status_block *current;
     TAILQ_FOREACH(current, &statusline_head, blocks) {
-        DLOG("full_text = %s\n", current->full_text);
+        DLOG("full_text = %s\n", i3string_as_utf8(current->full_text));
         DLOG("color = %s\n", current->color);
     }
     DLOG("end of dump\n");
@@ -192,19 +192,18 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     if (first_line) {
         DLOG("Detecting input type based on buffer *%.*s*\n", rec, buffer);
         /* Detect whether this is JSON or plain text. */
-        plaintext = (strncasecmp((char*)buffer, "{\"version\":", strlen("{\"version\":")) != 0);
+        unsigned int consumed = 0;
+        /* At the moment, we don’t care for the version. This might change
+         * in the future, but for now, we just discard it. */
+        plaintext = (determine_json_version(buffer, buffer_len, &consumed) == -1);
         if (plaintext) {
             /* In case of plaintext, we just add a single block and change its
              * full_text pointer later. */
             struct status_block *new_block = scalloc(sizeof(struct status_block));
             TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
         } else {
-            /* At the moment, we don’t care for the version. This might change
-             * in the future, but for now, we just discard it. */
-            while (*json_input != '\n' && *json_input != '\0') {
-                json_input++;
-                rec--;
-            }
+            json_input += consumed;
+            rec -= consumed;
         }
         first_line = false;
     }
@@ -218,18 +217,18 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
             fprintf(stderr, "[i3bar] Could not parse JSON input (code %d): %.*s\n",
                     status, rec, json_input);
         }
-        free(buffer);
     } else {
         struct status_block *first = TAILQ_FIRST(&statusline_head);
         /* Clear the old buffer if any. */
-        FREE(first->full_text);
+        I3STRING_FREE(first->full_text);
         /* Remove the trailing newline and terminate the string at the same
          * time. */
         if (buffer[rec-1] == '\n' || buffer[rec-1] == '\r')
             buffer[rec-1] = '\0';
         else buffer[rec] = '\0';
-        first->full_text = (char*)buffer;
+        first->full_text = i3string_from_utf8((const char *)buffer);
     }
+    free(buffer);
     draw_bars();
 }
 
@@ -328,7 +327,7 @@ void start_child(char *command) {
  * kill()s the child-process (if any). Called when exit()ing.
  *
  */
-void kill_child_at_exit() {
+void kill_child_at_exit(void) {
     if (child_pid != 0) {
         kill(child_pid, SIGCONT);
         kill(child_pid, SIGTERM);
@@ -340,7 +339,7 @@ void kill_child_at_exit() {
  * free()s the stdin- and sigchild-watchers
  *
  */
-void kill_child() {
+void kill_child(void) {
     if (child_pid != 0) {
         kill(child_pid, SIGCONT);
         kill(child_pid, SIGTERM);
@@ -355,7 +354,7 @@ void kill_child() {
  * Sends a SIGSTOP to the child-process (if existent)
  *
  */
-void stop_child() {
+void stop_child(void) {
     if (child_pid != 0) {
         kill(child_pid, SIGSTOP);
     }
@@ -365,7 +364,7 @@ void stop_child() {
  * Sends a SIGCONT to the child-process (if existent)
  *
  */
-void cont_child() {
+void cont_child(void) {
     if (child_pid != 0) {
         kill(child_pid, SIGCONT);
     }

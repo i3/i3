@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-msg/main.c: Utility which sends messages to a running i3-instance using
  * IPC via UNIX domain sockets.
@@ -73,9 +73,11 @@ int main(int argc, char *argv[]) {
                 message_type = I3_IPC_MESSAGE_TYPE_GET_MARKS;
             else if (strcasecmp(optarg, "get_bar_config") == 0)
                 message_type = I3_IPC_MESSAGE_TYPE_GET_BAR_CONFIG;
+            else if (strcasecmp(optarg, "get_version") == 0)
+                message_type = I3_IPC_MESSAGE_TYPE_GET_VERSION;
             else {
                 printf("Unknown message type\n");
-                printf("Known types: command, get_workspaces, get_outputs, get_tree, get_marks, get_bar_config\n");
+                printf("Known types: command, get_workspaces, get_outputs, get_tree, get_marks, get_bar_config, get_version\n");
                 exit(EXIT_FAILURE);
             }
         } else if (o == 'q') {

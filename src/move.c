@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "move.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -168,6 +170,12 @@ void tree_move(int direction) {
     Con *above = con;
     while (above->parent != same_orientation)
         above = above->parent;
+
+    /* Enforce the fullscreen focus restrictions. */
+    if (!con_fullscreen_permits_focusing(above->parent)) {
+        LOG("Cannot move out of fullscreen container\n");
+        return;
+    }
 
     DLOG("above = %p\n", above);
     Con *next;

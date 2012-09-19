@@ -9,6 +9,7 @@ use v5.10;
 
 our @EXPORT = qw(start_xdummy);
 
+my @pids;
 my $x_socketpath = '/tmp/.X11-unix/X';
 
 # reads in a whole file
@@ -20,13 +21,16 @@ sub slurp {
 
 # forks an Xdummy or Xdmx process
 sub fork_xserver {
+    my $keep_xdummy_output = shift;
     my $displaynum = shift;
     my $pid = fork();
     die "Could not fork: $!" unless defined($pid);
     if ($pid == 0) {
         # Child, close stdout/stderr, then start Xdummy.
-        close STDOUT;
-        close STDERR;
+        if (!$keep_xdummy_output) {
+            close STDOUT;
+            close STDERR;
+        }
 
         exec @_;
         exit 1;
@@ -36,6 +40,8 @@ sub fork_xserver {
         # Unlink the X11 socket, Xdmx seems to leave it there.
         unlink($x_socketpath . $displaynum);
     });
+
+    push @pids, $pid;
 
     return $x_socketpath . $displaynum;
 }
@@ -63,10 +69,22 @@ the Xdummy processes and a list of PIDs of the processes.
 =cut
 
 sub start_xdummy {
-    my ($parallel, $numtests) = @_;
+    my ($parallel, $numtests, $keep_xdummy_output) = @_;
 
     my @displays = ();
     my @childpids = ();
+
+    $SIG{CHLD} = sub {
+        my $child = waitpid -1, POSIX::WNOHANG;
+        @pids = grep { $_ != $child } @pids;
+        return unless @pids == 0;
+        print STDERR "All Xdummy processes died.\n";
+        print STDERR "Use ./complete-run.pl --parallel 1 --keep-xdummy-output\n";
+        print STDERR "";
+        print STDERR "A frequent cause for this is missing the DUMMY Xorg module,\n";
+        print STDERR "package xserver-xorg-video-dummy on Debian.\n";
+        exit 1;
+    };
 
     # Yeah, I know it’s non-standard, but Perl’s POSIX module doesn’t have
     # _SC_NPROCESSORS_CONF.
@@ -93,8 +111,9 @@ sub start_xdummy {
         # We use -config /dev/null to prevent Xdummy from using the system
         # Xorg configuration. The tests should be independant from the
         # actual system X configuration.
-        my $socket = fork_xserver($displaynum, './Xdummy', ":$displaynum",
-                '-config', '/dev/null', '-nolisten', 'tcp');
+        my $socket = fork_xserver($keep_xdummy_output, $displaynum,
+                './Xdummy', ":$displaynum", '-config', '/dev/null',
+                '-nolisten', 'tcp');
         push(@displays, ":$displaynum");
         push(@sockets_waiting, $socket);
         $displaynum++;

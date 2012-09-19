@@ -8,6 +8,8 @@ use IO::Handle; # for ->autoflush
 
 use POSIX ();
 
+use Errno qw(EAGAIN);
+
 use Exporter 'import';
 our @EXPORT = qw(worker worker_next);
 
@@ -74,7 +76,12 @@ sub worker_wait {
     my $ipc = $self->{ipc};
     my $ipc_fd = fileno($ipc);
 
-    while (defined(my $file = $ipc->getline)) {
+    while (1) {
+        my $file = $ipc->getline;
+        if (!defined($file)) {
+            next if $! == EAGAIN;
+            last;
+        }
         chomp $file;
 
         exit unless $file;
@@ -105,12 +112,13 @@ sub worker_wait {
             $test->failure_output(\*STDERR);
             $test->todo_output(\*STDOUT);
 
-            @ENV{qw(DISPLAY TESTNAME OUTDIR VALGRIND STRACE COVERAGE RESTART)}
+            @ENV{qw(DISPLAY TESTNAME OUTDIR VALGRIND STRACE XTRACE COVERAGE RESTART)}
                 = ($self->{display},
                    basename($file),
                    $outdir,
                    $options->{valgrind},
                    $options->{strace},
+                   $options->{xtrace},
                    $options->{coverage},
                    $options->{restart});
 

@@ -108,6 +108,12 @@ struct Config {
      * It is not planned to add any different focus models. */
     bool disable_focus_follows_mouse;
 
+    /** Remove borders if they are adjacent to the screen edge.
+     * This is useful if you are reaching scrollbar on the edge of the
+     * screen or do not want to waste a single pixel of displayspace.
+     * By default, this is disabled. */
+    adjacent_t hide_edge_borders;
+
     /** By default, a workspace bar is drawn at the bottom of the screen.
      * If you want to have a more fancy bar, it is recommended to replace
      * the whole bar by dzen2, for example using the i3-wsbar script which
@@ -306,7 +312,7 @@ void switch_mode(const char *new_mode);
  * or NULL if no such binding exists.
  *
  */
-Binding *get_binding(uint16_t modifiers, xcb_keycode_t keycode);
+Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode);
 
 /**
  * Kills the configerror i3-nagbar process, if any.

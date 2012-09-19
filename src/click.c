@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "click.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -35,13 +37,13 @@ static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press
     Con *resize_con = con;
     while (resize_con->type != CT_WORKSPACE &&
            resize_con->type != CT_FLOATING_CON &&
-           resize_con->parent->orientation != orientation)
+           con_orientation(resize_con->parent) != orientation)
         resize_con = resize_con->parent;
 
     DLOG("resize_con = %p\n", resize_con);
     if (resize_con->type != CT_WORKSPACE &&
         resize_con->type != CT_FLOATING_CON &&
-        resize_con->parent->orientation == orientation) {
+        con_orientation(resize_con->parent) == orientation) {
         first = resize_con;
         second = (way == 'n') ? TAILQ_NEXT(first, nodes) : TAILQ_PREV(first, nodes_head, nodes);
         if (second == TAILQ_END(&(first->nodes_head))) {
@@ -145,7 +147,7 @@ static bool tiling_resize(Con *con, xcb_button_press_event_t *event, const click
 
         if ((check_con->layout == L_STACKED ||
              check_con->layout == L_TABBED ||
-             check_con->orientation == HORIZ) &&
+             con_orientation(check_con) == HORIZ) &&
             con_num_children(check_con) > 1) {
             DLOG("Not handling this resize, this container has > 1 child.\n");
             return false;

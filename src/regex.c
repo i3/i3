@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "regex.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -67,7 +69,7 @@ void regex_free(struct regex *regex) {
 /*
  * Checks if the given regular expression matches the given input and returns
  * true if it does. In either case, it logs the outcome using LOG(), so it will
- * be visible without any debug loglevel.
+ * be visible without debug logging.
  *
  */
 bool regex_matches(struct regex *regex, const char *input) {

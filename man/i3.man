@@ -1,7 +1,7 @@
 i3(1)
 =====
-Michael Stapelberg <michael+i3@stapelberg.de>
-v4.0, July 2011
+Michael Stapelberg <michael@i3wm.org>
+v4.3, September 2012
 
 == NAME
 
@@ -9,7 +9,7 @@ i3 - an improved dynamic, tiling window manager
 
 == SYNOPSIS
 
-i3 [-a] [-c configfile] [-C] [-d <loglevel>] [-v] [-V]
+i3 [-a] [-c configfile] [-C] [-d all] [-v] [-V]
 
 == OPTIONS
 
@@ -22,14 +22,27 @@ Specifies an alternate configuration file path.
 -C::
 Check the configuration file for validity and exit.
 
--d::
-Specifies the debug loglevel. To see the most output, use -d all.
+-d all::
+Enables debug logging.
+The 'all' parameter is present for historical reasons.
 
 -v::
 Display version number (and date of the last commit).
 
 -V::
 Be verbose.
+
+--force-xinerama::
+Use Xinerama instead of RandR. This option should only be used if you are stuck
+with the old nVidia closed source driver (older than 302.17) which does not
+support RandR.
+
+--get-socketpath::
+Retrieve the i3 IPC socket path from X11, print it, then exit.
+
+--shmlog-size <limit>::
+Limits the size of the i3 SHM log to <limit> bytes. Setting this to 0 disables
+SHM logging entirely. The default is 0 bytes.
 
 == DESCRIPTION
 
@@ -47,8 +60,8 @@ Please be aware that i3 is primarily targeted at advanced users and developers.
 === IMPORTANT NOTE TO nVidia BINARY DRIVER USERS
 
 If you are using the nVidia binary graphics driver (also known as 'blob')
-you need to use the +--force-xinerama+ flag (in your ~/.xsession) when starting
-i3, like so:
+before version 302.17, you need to use the +--force-xinerama+ flag (in your
+~/.xsession) when starting i3, like so:
 
 ----------------------------------------------
 exec i3 --force-xinerama -V >>~/.i3/i3log 2>&1
@@ -90,6 +103,12 @@ are connected to these outputs.
 == KEYBINDINGS
 
 Here is a short overview of the default keybindings:
+
+Mod1+Enter::
+Open a new terminal emulator window.
+
+Mod1+d::
+Open dmenu for starting any application by typing (part of) its name.
 
 j/k/l/;::
 Direction keys (left, down, up, right). They are on your homerow (see the mark
@@ -261,19 +280,15 @@ xset -b
 # Enable zapping (C-A-<Bksp> kills X)
 setxkbmap -option terminate:ctrl_alt_bksp
 
-# Enforce correct locales from the beginning
-unset LC_COLLATE
-export LC_CTYPE=de_DE.UTF-8
-export LC_TIME=de_DE.UTF-8
-export LC_NUMERIC=de_DE.UTF-8
-export LC_MONETARY=de_DE.UTF-8
+# Enforce correct locales from the beginning:
+# LC_ALL is unset since it overwrites everything
+# LANG=de_DE.UTF-8 is used, except for:
+# LC_MESSAGES=C never translates program output
+# LC_TIME=en_DK leads to yyyy-mm-dd hh:mm date/time output
+unset LC_ALL
+export LANG=de_DE.UTF-8
 export LC_MESSAGES=C
-export LC_PAPER=de_DE.UTF-8
-export LC_NAME=de_DE.UTF-8
-export LC_ADDRESS=de_DE.UTF-8
-export LC_TELEPHONE=de_DE.UTF-8
-export LC_MEASUREMENT=de_DE.UTF-8
-export LC_IDENTIFICATION=de_DE.UTF-8
+export LC_TIME=en_DK.UTF-8
 
 # Use XToolkit in java applications
 export AWT_TOOLKIT=XToolkit
@@ -313,7 +328,7 @@ and the "how to hack" guide. If you are building from source, run:
 
 You can also access these documents online at http://i3wm.org/
 
-i3-input(1), i3-msg(1), i3-wsbar(1), i3-nagbar(1), i3-config-wizard(1),
+i3-input(1), i3-msg(1), i3bar(1), i3-nagbar(1), i3-config-wizard(1),
 i3-migrate-config-to-v4(1)
 
 == AUTHOR

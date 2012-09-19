@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
  * workspaces.c: Maintaining the workspace-lists
  *
@@ -28,13 +28,11 @@ void parse_workspaces_json(char *json);
  * free() all workspace data-structures
  *
  */
-void free_workspaces();
+void free_workspaces(void);
 
 struct i3_ws {
     int                num;         /* The internal number of the ws */
-    char               *name;       /* The name (in utf8) of the ws */
-    xcb_char2b_t       *ucs2_name;  /* The name (in ucs2) of the ws */
-    int                name_glyphs; /* The length (in glyphs) of the name */
+    i3String           *name;       /* The name of the ws */
     int                name_width;  /* The rendered width of the name */
     bool               visible;     /* If the ws is currently visible on an output */
     bool               focused;     /* If the ws is currently focused */

@@ -1,6 +1,19 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 #
+# Please read the following documents before working on tests:
+# • http://build.i3wm.org/docs/testsuite.html
+#   (or docs/testsuite)
+#
+# • http://build.i3wm.org/docs/lib-i3test.html
+#   (alternatively: perldoc ./testcases/lib/i3test.pm)
+#
+# • http://build.i3wm.org/docs/ipc.html
+#   (or docs/ipc)
+#
+# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+#   (unless you are already familiar with Perl)
+#
 # Test for the startup notification protocol.
 #
 
@@ -58,7 +71,7 @@ END_OF_C_CODE
 
 my $first_ws = fresh_workspace;
 
-is(@{get_ws_content($first_ws)}, 0, 'no containers on this workspace yet');
+is_num_children($first_ws, 0, 'no containers on this workspace yet');
 
 ######################################################################
 # 1) initiate startup, switch workspace, create window
@@ -95,7 +108,7 @@ is(get_startup_id(), $startup_id, 'libstartup-notification returns the same id')
 
 my $second_ws = fresh_workspace;
 
-is(@{get_ws_content($second_ws)}, 0, 'no containers on the second workspace yet');
+is_num_children($second_ws, 0, 'no containers on the second workspace yet');
 
 my $win = open_window({ dont_map => 1 });
 mark_window($win->id);
@@ -105,8 +118,8 @@ $win->map;
 # We sync with i3 here to make sure $x->input_focus is updated.
 sync_with_i3;
 
-is(@{get_ws_content($second_ws)}, 0, 'still no containers on the second workspace');
-is(@{get_ws_content($first_ws)}, 1, 'one container on the first workspace');
+is_num_children($second_ws, 0, 'still no containers on the second workspace');
+is_num_children($first_ws, 1, 'one container on the first workspace');
 
 ######################################################################
 # same thing, but with _NET_STARTUP_ID set on the leader
@@ -119,8 +132,8 @@ $win = open_window({ dont_map => 1, client_leader => $leader });
 $win->map;
 sync_with_i3;
 
-is(@{get_ws_content($second_ws)}, 0, 'still no containers on the second workspace');
-is(@{get_ws_content($first_ws)}, 2, 'two containers on the first workspace');
+is_num_children($second_ws, 0, 'still no containers on the second workspace');
+is_num_children($first_ws, 2, 'two containers on the first workspace');
 
 ######################################################################
 # 2) open another window after the startup process is completed
@@ -131,7 +144,7 @@ complete_startup();
 sync_with_i3;
 
 my $otherwin = open_window;
-is(@{get_ws_content($second_ws)}, 1, 'one container on the second workspace');
+is_num_children($second_ws, 1, 'one container on the second workspace');
 
 ######################################################################
 # 3) test that the --no-startup-id flag for exec leads to no DESKTOP_STARTUP_ID
@@ -165,6 +178,5 @@ close($fh);
 unlink($tmp);
 
 is($startup_id, '', 'startup_id empty');
-
 
 done_testing;

@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
+#include "libi3.h"
 #include "queue.h"
 
 typedef struct rect_t rect;
@@ -29,14 +30,9 @@ struct rect_t {
 /* This data structure represents one JSON dictionary, multiple of these make
  * up one status line. */
 struct status_block {
-    char *full_text;
+    i3String *full_text;
 
     char *color;
-
-    /* full_text, but converted to UCS-2. This variable is only temporarily
-     * used in refresh_statusline(). */
-    xcb_char2b_t *ucs2_full_text;
-    size_t glyph_count_full_text;
 
     /* The amount of pixels necessary to render this block. This variable is
      * only temporarily used in refresh_statusline(). */
@@ -56,5 +52,6 @@ TAILQ_HEAD(statusline_head, status_block) statusline_head;
 #include "xcb.h"
 #include "config.h"
 #include "libi3.h"
+#include "determine_json_version.h"
 
 #endif

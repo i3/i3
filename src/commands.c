@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "commands.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -23,7 +25,7 @@
 } while (0)
 
 /** When the command did not include match criteria (!), we use the currently
- * focused command. Do not confuse this case with a command which included
+ * focused container. Do not confuse this case with a command which included
  * criteria but which did not match any windows. This macro has to be called in
  * every command.
  */
@@ -351,13 +353,22 @@ void cmd_criteria_add(I3_CMD, char *ctype, char *cvalue) {
 
 /*
  * Implementation of 'move [window|container] [to] workspace
- * next|prev|next_on_output|prev_on_output'.
+ * next|prev|next_on_output|prev_on_output|current'.
  *
  */
 void cmd_move_con_to_workspace(I3_CMD, char *which) {
     owindow *current;
 
     DLOG("which=%s\n", which);
+
+    /* We have nothing to move:
+     *  when criteria was specified but didn't match any window or
+     *  when criteria wasn't specified and we don't have any window focused. */
+    if ((!match_is_empty(current_match) && TAILQ_EMPTY(&owindows)) ||
+        (match_is_empty(current_match) && focused->type == CT_WORKSPACE)) {
+        ysuccess(false);
+        return;
+    }
 
     HANDLE_EMPTY_MATCH;
 
@@ -371,6 +382,8 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
         ws = workspace_next_on_output();
     else if (strcmp(which, "prev_on_output") == 0)
         ws = workspace_prev_on_output();
+    else if (strcmp(which, "current") == 0)
+        ws = con_get_workspace(focused);
     else {
         ELOG("BUG: called with which=%s\n", which);
         ysuccess(false);
@@ -400,9 +413,17 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
 
     owindow *current;
 
-    /* Error out early to not create a non-existing workspace (in
-     * workspace_get()) if we are not actually able to move anything. */
+    /* We have nothing to move:
+     *  when criteria was specified but didn't match any window or
+     *  when criteria wasn't specified and we don't have any window focused. */
+    if (!match_is_empty(current_match) && TAILQ_EMPTY(&owindows)) {
+        ELOG("No windows match your criteria, cannot move.\n");
+        ysuccess(false);
+        return;
+    }
+
     if (match_is_empty(current_match) && focused->type == CT_WORKSPACE) {
+        ELOG("No window to move, you have focused a workspace.\n");
         ysuccess(false);
         return;
     }
@@ -430,14 +451,16 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
 void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
     owindow *current;
 
-    /* Error out early to not create a non-existing workspace (in
-     * workspace_get()) if we are not actually able to move anything. */
-    if (match_is_empty(current_match) && focused->type == CT_WORKSPACE) {
+    /* We have nothing to move:
+     *  when criteria was specified but didn't match any window or
+     *  when criteria wasn't specified and we don't have any window focused. */
+    if ((!match_is_empty(current_match) && TAILQ_EMPTY(&owindows)) ||
+        (match_is_empty(current_match) && focused->type == CT_WORKSPACE)) {
         ysuccess(false);
         return;
     }
 
-    LOG("should move window to workspace with number %d\n", which);
+    LOG("should move window to workspace %s\n", which);
     /* get the workspace */
     Con *output, *workspace = NULL;
 
@@ -463,14 +486,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
             child->num == parsed_num);
 
     if (!workspace) {
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
-        // TODO: better error message
-        ystr("No such workspace");
-        y(map_close);
-        return;
+        workspace = workspace_get(which, NULL);
     }
 
     HANDLE_EMPTY_MATCH;
@@ -504,6 +520,8 @@ static bool cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
     LOG("tiling resize\n");
     /* get the appropriate current container (skip stacked/tabbed cons) */
     Con *current = focused;
+    Con *other = NULL;
+    double percentage = 0;
     while (current->parent->layout == L_STACKED ||
            current->parent->layout == L_TABBED)
         current = current->parent;
@@ -512,40 +530,50 @@ static bool cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
     orientation_t search_orientation =
         (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0 ? HORIZ : VERT);
 
-    while (current->type != CT_WORKSPACE &&
-           current->type != CT_FLOATING_CON &&
-           current->parent->orientation != search_orientation)
-        current = current->parent;
+    do {
+        if (con_orientation(current->parent) != search_orientation) {
+            current = current->parent;
+            continue;
+        }
 
-    /* get the default percentage */
-    int children = con_num_children(current->parent);
-    Con *other;
-    LOG("ins. %d children\n", children);
-    double percentage = 1.0 / children;
-    LOG("default percentage = %f\n", percentage);
+        /* get the default percentage */
+        int children = con_num_children(current->parent);
+        LOG("ins. %d children\n", children);
+        percentage = 1.0 / children;
+        LOG("default percentage = %f\n", percentage);
 
-    orientation_t orientation = current->parent->orientation;
+        orientation_t orientation = con_orientation(current->parent);
 
-    if ((orientation == HORIZ &&
-         (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0)) ||
-        (orientation == VERT &&
-         (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0))) {
-        LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
-            (orientation == HORIZ ? "horizontal" : "vertical"));
+        if ((orientation == HORIZ &&
+             (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0)) ||
+            (orientation == VERT &&
+             (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0))) {
+            LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
+                (orientation == HORIZ ? "horizontal" : "vertical"));
+            ysuccess(false);
+            return false;
+        }
+
+        if (strcmp(direction, "up") == 0 || strcmp(direction, "left") == 0) {
+            other = TAILQ_PREV(current, nodes_head, nodes);
+        } else {
+            other = TAILQ_NEXT(current, nodes);
+        }
+        if (other == TAILQ_END(workspaces)) {
+            LOG("No other container in this direction found, trying to look further up in the tree...\n");
+            current = current->parent;
+            continue;
+        }
+        break;
+    } while (current->type != CT_WORKSPACE &&
+             current->type != CT_FLOATING_CON);
+
+    if (other == NULL) {
+        LOG("No other container in this direction found, trying to look further up in the tree...\n");
         ysuccess(false);
         return false;
     }
 
-    if (strcmp(direction, "up") == 0 || strcmp(direction, "left") == 0) {
-        other = TAILQ_PREV(current, nodes_head, nodes);
-    } else {
-        other = TAILQ_NEXT(current, nodes);
-    }
-    if (other == TAILQ_END(workspaces)) {
-        LOG("No other container in this direction found, cannot resize.\n");
-        ysuccess(false);
-        return false;
-    }
     LOG("other->percent = %f\n", other->percent);
     LOG("current->percent before = %f\n", current->percent);
     if (current->percent == 0.0)
@@ -585,7 +613,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, i
 
     while (current->type != CT_WORKSPACE &&
            current->type != CT_FLOATING_CON &&
-           current->parent->orientation != search_orientation)
+           con_orientation(current->parent) != search_orientation)
         current = current->parent;
 
     /* get the default percentage */
@@ -594,7 +622,7 @@ static bool cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, i
     double percentage = 1.0 / children;
     LOG("default percentage = %f\n", percentage);
 
-    orientation_t orientation = current->parent->orientation;
+    orientation_t orientation = con_orientation(current->parent);
 
     if ((orientation == HORIZ &&
          strcmp(direction, "height") == 0) ||
@@ -808,17 +836,15 @@ void cmd_workspace_number(I3_CMD, char *which) {
             child->num == parsed_num);
 
     if (!workspace) {
-        LOG("There is no workspace with number %d, creating a new one.\n", parsed_num);
+        LOG("There is no workspace with number %ld, creating a new one.\n", parsed_num);
         ysuccess(true);
         /* terminate the which string after the endposition of the number */
         *endptr = '\0';
-        if (maybe_back_and_forth(cmd_output, which))
-            return;
         workspace_show_by_name(which);
         cmd_output->needs_tree_render = true;
         return;
     }
-    if (maybe_back_and_forth(cmd_output, which))
+    if (maybe_back_and_forth(cmd_output, workspace->name))
         return;
     workspace_show(workspace);
 
@@ -1088,9 +1114,17 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
  *
  */
 void cmd_split(I3_CMD, char *direction) {
+    owindow *current;
     /* TODO: use matches */
     LOG("splitting in direction %c\n", direction[0]);
-    tree_split(focused, (direction[0] == 'v' ? VERT : HORIZ));
+    if (match_is_empty(current_match))
+        tree_split(focused, (direction[0] == 'v' ? VERT : HORIZ));
+    else {
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            DLOG("matching: %p / %s\n", current->con, current->con->name);
+            tree_split(current->con, (direction[0] == 'v' ? VERT : HORIZ));
+        }
+    }
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply
@@ -1226,23 +1260,26 @@ void cmd_focus_window_mode(I3_CMD, char *window_mode) {
  *
  */
 void cmd_focus_level(I3_CMD, char *level) {
-    if (focused &&
-        focused->type != CT_WORKSPACE &&
-        focused->fullscreen_mode != CF_NONE) {
-        LOG("Cannot change focus while in fullscreen mode.\n");
-        ysuccess(false);
-        return;
+    DLOG("level = %s\n", level);
+    bool success = false;
+
+    /* Focusing the parent can only be allowed if the newly
+     * focused container won't escape the fullscreen container. */
+    if (strcmp(level, "parent") == 0) {
+        if (focused && focused->parent) {
+            if (con_fullscreen_permits_focusing(focused->parent))
+                success = level_up();
+            else
+                ELOG("'focus parent': Currently in fullscreen, not going up\n");
+        }
     }
 
-    DLOG("level = %s\n", level);
+    /* Focusing a child should always be allowed. */
+    else success = level_down();
 
-    if (strcmp(level, "parent") == 0)
-        level_up();
-    else level_down();
-
-    cmd_output->needs_tree_render = true;
+    cmd_output->needs_tree_render = success;
     // XXX: default reply for now, make this a better reply
-    ysuccess(true);
+    ysuccess(success);
 }
 
 /*
@@ -1275,13 +1312,9 @@ void cmd_focus(I3_CMD) {
         if (!ws)
             continue;
 
-        /* Don't allow the focus switch if the focused and current
-         * containers are in the same workspace. */
-        if (focused &&
-            focused->type != CT_WORKSPACE &&
-            focused->fullscreen_mode != CF_NONE &&
-            con_get_workspace(focused) == ws) {
-            LOG("Cannot change focus while in fullscreen mode (same workspace).\n");
+        /* Check the fullscreen focus constraints. */
+        if (!con_fullscreen_permits_focusing(current->con)) {
+            LOG("Cannot change focus while in fullscreen mode (fullscreen rules).\n");
             ysuccess(false);
             return;
         }
@@ -1376,25 +1409,66 @@ void cmd_move_direction(I3_CMD, char *direction, char *move_px) {
 }
 
 /*
- * Implementation of 'layout default|stacked|stacking|tabbed'.
+ * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith'.
  *
  */
 void cmd_layout(I3_CMD, char *layout_str) {
     if (strcmp(layout_str, "stacking") == 0)
         layout_str = "stacked";
-    DLOG("changing layout to %s\n", layout_str);
     owindow *current;
-    int layout = (strcmp(layout_str, "default") == 0 ? L_DEFAULT :
-                  (strcmp(layout_str, "stacked") == 0 ? L_STACKED :
-                   L_TABBED));
+    int layout;
+    /* default is a special case which will be handled in con_set_layout(). */
+    if (strcmp(layout_str, "default") == 0)
+        layout = L_DEFAULT;
+    else if (strcmp(layout_str, "stacked") == 0)
+        layout = L_STACKED;
+    else if (strcmp(layout_str, "tabbed") == 0)
+        layout = L_TABBED;
+    else if (strcmp(layout_str, "splitv") == 0)
+        layout = L_SPLITV;
+    else if (strcmp(layout_str, "splith") == 0)
+        layout = L_SPLITH;
+    else {
+        ELOG("Unknown layout \"%s\", this is a mismatch between code and parser spec.\n", layout_str);
+        return;
+    }
+
+    DLOG("changing layout to %s (%d)\n", layout_str, layout);
 
     /* check if the match is empty, not if the result is empty */
     if (match_is_empty(current_match))
-        con_set_layout(focused->parent, layout);
+        con_set_layout(focused, layout);
     else {
         TAILQ_FOREACH(current, &owindows, owindows) {
             DLOG("matching: %p / %s\n", current->con, current->con->name);
             con_set_layout(current->con, layout);
+        }
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
+ * Implementation of 'layout toggle [all|split]'.
+ *
+ */
+void cmd_layout_toggle(I3_CMD, char *toggle_mode) {
+    owindow *current;
+
+    if (toggle_mode == NULL)
+        toggle_mode = "default";
+
+    DLOG("toggling layout (mode = %s)\n", toggle_mode);
+
+    /* check if the match is empty, not if the result is empty */
+    if (match_is_empty(current_match))
+        con_toggle_layout(focused, toggle_mode);
+    else {
+        TAILQ_FOREACH(current, &owindows, owindows) {
+            DLOG("matching: %p / %s\n", current->con, current->con->name);
+            con_toggle_layout(current->con, toggle_mode);
         }
     }
 
@@ -1409,6 +1483,7 @@ void cmd_layout(I3_CMD, char *layout_str) {
  */
 void cmd_exit(I3_CMD) {
     LOG("Exiting due to user command.\n");
+    xcb_disconnect(conn);
     exit(0);
 
     /* unreached */
@@ -1421,6 +1496,7 @@ void cmd_exit(I3_CMD) {
 void cmd_reload(I3_CMD) {
     LOG("reloading\n");
     kill_configerror_nagbar(false);
+    kill_commanderror_nagbar(false);
     load_configuration(conn, NULL, true);
     x_set_i3_atoms();
     /* Send an IPC event just in case the ws names have changed */
@@ -1449,6 +1525,7 @@ void cmd_restart(I3_CMD) {
 void cmd_open(I3_CMD) {
     LOG("opening new container\n");
     Con *con = tree_open_con(NULL, NULL);
+    con->layout = L_SPLITH;
     con_focus(con);
 
     y(map_open);

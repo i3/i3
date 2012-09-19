@@ -11,7 +11,9 @@
 #include "queue.h"
 
 /* Get the maximum/minimum of x and y */
+#undef MAX
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
+#undef MIN
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 
 /* Securely free p */
@@ -51,6 +53,11 @@
     } \
 } while(0)
 
+/* We will include libi3.h which define its own version of ELOG.
+ * We want *our* version, so we undef the libi3 one. */
+#if defined(ELOG)
+#undef ELOG
+#endif
 #define ELOG(fmt, ...) do { \
     fprintf(stderr, "[%s:%d] ERROR: " fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
 } while(0)

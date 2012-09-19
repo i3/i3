@@ -39,6 +39,8 @@ extern FILE *yyin;
 YY_BUFFER_STATE yy_scan_string(const char *);
 
 static struct context *context;
+static xcb_connection_t *conn;
+static xcb_key_symbols_t *keysyms;
 
 /* We don’t need yydebug for now, as we got decent error messages using
  * yyerror(). Should you ever want to extend the parser, it might be handy
@@ -67,6 +69,13 @@ int yywrap() {
 char *rewrite_binding(const char *bindingline) {
     char *result = NULL;
 
+    conn = xcb_connect(NULL, NULL);
+    if (conn == NULL || xcb_connection_has_error(conn)) {
+        fprintf(stderr, "Cannot open display\n");
+        exit(1);
+    }
+    keysyms = xcb_key_symbols_alloc(conn);
+
     context = calloc(sizeof(struct context), 1);
 
     yy_scan_string(bindingline);
@@ -81,6 +90,8 @@ char *rewrite_binding(const char *bindingline) {
     if (context->line_copy)
         free(context->line_copy);
     free(context);
+    xcb_key_symbols_free(keysyms);
+    xcb_disconnect(conn);
 
     return result;
 }
@@ -99,6 +110,28 @@ static char *modifier_to_string(int modifiers) {
     else if (modifiers == (1 << 0))
         return strdup("Shift+");
     else return strdup("");
+}
+
+/*
+ * Returns true if sym is bound to any key except for 'except_keycode' on the
+ * first four layers (normal, shift, mode_switch, mode_switch + shift).
+ *
+ */
+static bool keysym_used_on_other_key(KeySym sym, xcb_keycode_t except_keycode) {
+    xcb_keycode_t i,
+                  min_keycode = xcb_get_setup(conn)->min_keycode,
+                  max_keycode = xcb_get_setup(conn)->max_keycode;
+
+    for (i = min_keycode; i && i <= max_keycode; i++) {
+        if (i == except_keycode)
+            continue;
+        for (int level = 0; level < 4; level++) {
+            if (xcb_key_symbols_get_keysym(keysyms, i, level) != sym)
+                continue;
+            return true;
+        }
+    }
+    return false;
 }
 
 %}
@@ -139,11 +172,22 @@ bindcode:
              * different key than the upper-case one (unlikely for letters, but
              * more likely for special characters). */
             level = 1;
+
+            /* Try to use the keysym on the first level (lower-case). In case
+             * this doesn’t make it ambiguous (think of a keyboard layout
+             * having '1' on two different keys, but '!' only on keycode 10),
+             * we’ll stick with the keysym of the first level.
+             *
+             * This reduces a lot of confusion for users who switch keyboard
+             * layouts from qwerty to qwertz or other slight variations of
+             * qwerty (yes, that happens quite often). */
+            KeySym sym = XkbKeycodeToKeysym(dpy, $4, 0, 0);
+            if (!keysym_used_on_other_key(sym, $4))
+                level = 0;
         }
         KeySym sym = XkbKeycodeToKeysym(dpy, $4, 0, level);
         char *str = XKeysymToString(sym);
         char *modifiers = modifier_to_string($<number>3);
-        // TODO: modifier to string
         sasprintf(&(context->result), "bindsym %s%s %s\n", modifiers, str, $<string>6);
         free(modifiers);
     }

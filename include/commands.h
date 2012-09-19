@@ -200,10 +200,16 @@ void cmd_fullscreen(I3_CMD, char *fullscreen_mode);
 void cmd_move_direction(I3_CMD, char *direction, char *move_px);
 
 /**
- * Implementation of 'layout default|stacked|stacking|tabbed'.
+ * Implementation of 'layout default|stacked|stacking|tabbed|splitv|splith'.
  *
  */
 void cmd_layout(I3_CMD, char *layout_str);
+
+/**
+ * Implementation of 'layout toggle [all|split]'.
+ *
+ */
+void cmd_layout_toggle(I3_CMD, char *toggle_mode);
 
 /**
  * Implementaiton of 'exit'.

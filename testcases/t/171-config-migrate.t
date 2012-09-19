@@ -1,6 +1,19 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 #
+# Please read the following documents before working on tests:
+# • http://build.i3wm.org/docs/testsuite.html
+#   (or docs/testsuite)
+#
+# • http://build.i3wm.org/docs/lib-i3test.html
+#   (alternatively: perldoc ./testcases/lib/i3test.pm)
+#
+# • http://build.i3wm.org/docs/ipc.html
+#   (or docs/ipc)
+#
+# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+#   (unless you are already familiar with Perl)
+#
 # Tests if i3-migrate-config-to-v4 correctly migrates all config file
 # directives and commands
 #
@@ -195,7 +208,7 @@ EOT
 
 $output = migrate_config($input);
 ok(line_exists($output, qr|^bindsym Mod1\+s layout stacking$|), 's replaced');
-ok(line_exists($output, qr|^bindsym Mod1\+s layout default$|), 'd replaced');
+ok(line_exists($output, qr|^bindsym Mod1\+s layout toggle split$|), 'd replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s layout tabbed$|), 'T replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s fullscreen$|), 'f replaced');
 ok(line_exists($output, qr|^bindsym Mod1\+s fullscreen global$|), 'fg replaced');

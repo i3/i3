@@ -45,15 +45,36 @@ static bool modeswitch_active = false;
 static xcb_window_t win;
 static xcb_pixmap_t pixmap;
 static xcb_gcontext_t pixmap_gc;
-static char *glyphs_ucs[512];
+static xcb_char2b_t glyphs_ucs[512];
 static char *glyphs_utf8[512];
 static int input_position;
 static i3Font font;
-static char *prompt;
-static size_t prompt_len;
+static i3String *prompt;
+static int prompt_offset = 0;
 static int limit;
 xcb_window_t root;
 xcb_connection_t *conn;
+xcb_screen_t *root_screen;
+
+/*
+ * Having verboselog() and errorlog() is necessary when using libi3.
+ *
+ */
+void verboselog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+}
+
+void errorlog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+}
 
 /*
  * Concats the glyphs (either UCS-2 or UTF-8) to a single string, suitable for
@@ -96,25 +117,21 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
     /* restore font color */
     set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
 
-    /* draw the text */
-    uint8_t *con = concat_strings(glyphs_ucs, input_position);
-    char *full_text = (char*)con;
+    /* draw the prompt … */
     if (prompt != NULL) {
-        full_text = malloc((prompt_len + input_position) * 2 + 1);
-        if (full_text == NULL)
-            err(EXIT_FAILURE, "malloc() failed\n");
-        memcpy(full_text, prompt, prompt_len * 2);
-        memcpy(full_text + (prompt_len * 2), con, input_position * 2);
+        draw_text(prompt, pixmap, pixmap_gc, 4, 4, 492);
     }
-    if (input_position + prompt_len != 0)
-        draw_text(full_text, input_position + prompt_len, true, pixmap, pixmap_gc, 4, 4, 492);
+    /* … and the text */
+    if (input_position > 0)
+    {
+        i3String *input = i3string_from_ucs2(glyphs_ucs, input_position);
+        draw_text(input, pixmap, pixmap_gc, prompt_offset + 4, 4, 492);
+        i3string_free(input);
+    }
 
     /* Copy the contents of the pixmap to the real window */
     xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, /* */ 500, font.height + 8);
     xcb_flush(conn);
-    free(con);
-    if (prompt != NULL)
-        free(full_text);
 
     return 1;
 }
@@ -125,16 +142,6 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
  */
 static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_release_event_t *event) {
     printf("releasing %d, state raw = %d\n", event->detail, event->state);
-
-    /* See the documentation of xcb_key_symbols_get_keysym for this one.
-     * Basically: We get either col 0 or col 1, depending on whether shift is
-     * pressed. */
-    int col = (event->state & XCB_MOD_MASK_SHIFT);
-
-    /* If modeswitch is currently active, we need to look in group 2 or 3,
-     * respectively. */
-    if (modeswitch_active)
-        col += 2;
 
     xcb_keysym_t sym = xcb_key_press_lookup_keysym(symbols, event, event->state);
     if (sym == XK_Mode_switch) {
@@ -226,7 +233,6 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
             return 1;
 
         input_position--;
-        free(glyphs_ucs[input_position]);
         free(glyphs_utf8[input_position]);
 
         handle_expose(NULL, conn, NULL);
@@ -257,18 +263,16 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
         return 1;
     }
 
-    /* store the UCS into a string */
-    uint8_t inp[3] = {(ucs & 0xFF00) >> 8, (ucs & 0xFF), 0};
+    xcb_char2b_t inp;
+    inp.byte1 = ( ucs & 0xff00 ) >> 2;
+    inp.byte2 = ( ucs & 0x00ff ) >> 0;
 
-    printf("inp[0] = %02x, inp[1] = %02x, inp[2] = %02x\n", inp[0], inp[1], inp[2]);
+    printf("inp.byte1 = %02x, inp.byte2 = %02x\n", inp.byte1, inp.byte2);
     /* convert it to UTF-8 */
-    char *out = convert_ucs2_to_utf8((xcb_char2b_t*)inp, 1);
+    char *out = convert_ucs2_to_utf8(&inp, 1);
     printf("converted to %s\n", out);
 
-    glyphs_ucs[input_position] = malloc(3 * sizeof(uint8_t));
-    if (glyphs_ucs[input_position] == NULL)
-        err(EXIT_FAILURE, "malloc() failed\n");
-    memcpy(glyphs_ucs[input_position], inp, 3);
+    glyphs_ucs[input_position] = inp;
     glyphs_utf8[input_position] = out;
     input_position++;
 
@@ -318,8 +322,8 @@ int main(int argc, char *argv[]) {
                 limit = atoi(optarg);
                 break;
             case 'P':
-                FREE(prompt);
-                prompt = strdup(optarg);
+                i3string_free(prompt);
+                prompt = i3string_from_utf8(optarg);
                 break;
             case 'f':
                 FREE(pattern);
@@ -349,21 +353,21 @@ int main(int argc, char *argv[]) {
 
     sockfd = ipc_connect(socket_path);
 
-    if (prompt != NULL)
-        prompt = (char*)convert_utf8_to_ucs2(prompt, &prompt_len);
-
     int screens;
     conn = xcb_connect(NULL, &screens);
     if (!conn || xcb_connection_has_error(conn))
         die("Cannot open display\n");
 
-    xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
+    root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
 
     symbols = xcb_key_symbols_alloc(conn);
 
     font = load_font(pattern, true);
     set_font(&font);
+
+    if (prompt != NULL)
+        prompt_offset = predict_text_width(prompt);
 
     /* Open an input window */
     win = xcb_generate_id(conn);

@@ -1,5 +1,19 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
+#
+# Please read the following documents before working on tests:
+# • http://build.i3wm.org/docs/testsuite.html
+#   (or docs/testsuite)
+#
+# • http://build.i3wm.org/docs/lib-i3test.html
+#   (alternatively: perldoc ./testcases/lib/i3test.pm)
+#
+# • http://build.i3wm.org/docs/ipc.html
+#   (or docs/ipc)
+#
+# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+#   (unless you are already familiar with Perl)
+#
 # Tests resizing tiling containers
 use i3test;
 
@@ -22,8 +36,8 @@ cmd 'resize grow up 10 px or 25 ppt';
 
 my ($nodes, $focus) = get_ws_content($tmp);
 
-is($nodes->[0]->{percent}, 0.25, 'top window got only 25%');
-is($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
+cmp_float($nodes->[0]->{percent}, 0.25, 'top window got only 25%');
+cmp_float($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
 
 
 ############################################################
@@ -34,8 +48,8 @@ cmd 'split h';
 
 ($nodes, $focus) = get_ws_content($tmp);
 
-is($nodes->[0]->{percent}, 0.25, 'top window got only 25%');
-is($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
+cmp_float($nodes->[0]->{percent}, 0.25, 'top window got only 25%');
+cmp_float($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
 
 ############################################################
 # checks that resizing within stacked/tabbed cons works
@@ -52,14 +66,14 @@ cmd 'split h';
 cmd 'layout stacked';
 
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[0]->{percent}, 0.5, 'top window got 50%');
-is($nodes->[1]->{percent}, 0.5, 'bottom window got 50%');
+cmp_float($nodes->[0]->{percent}, 0.5, 'top window got 50%');
+cmp_float($nodes->[1]->{percent}, 0.5, 'bottom window got 50%');
 
 cmd 'resize grow up 10 px or 25 ppt';
 
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[0]->{percent}, 0.25, 'top window got 25%');
-is($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
+cmp_float($nodes->[0]->{percent}, 0.25, 'top window got 25%');
+cmp_float($nodes->[1]->{percent}, 0.75, 'bottom window got 75%');
 
 ############################################################
 # Checks that resizing in the parent's parent's orientation works.
@@ -79,14 +93,14 @@ $top = open_window;
 $bottom = open_window;
 
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[0]->{percent}, 0.5, 'left window got 50%');
-is($nodes->[1]->{percent}, 0.5, 'right window got 50%');
+cmp_float($nodes->[0]->{percent}, 0.5, 'left window got 50%');
+cmp_float($nodes->[1]->{percent}, 0.5, 'right window got 50%');
 
 cmd 'resize grow left 10 px or 25 ppt';
 
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[0]->{percent}, 0.25, 'left window got 25%');
-is($nodes->[1]->{percent}, 0.75, 'right window got 75%');
+cmp_float($nodes->[0]->{percent}, 0.25, 'left window got 25%');
+cmp_float($nodes->[1]->{percent}, 0.75, 'right window got 75%');
 
 ################################################################################
 # Check that the resize grow/shrink width/height syntax works.
@@ -101,8 +115,8 @@ $right = open_window;
 cmd 'resize grow width 10 px or 25 ppt';
 
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[0]->{percent}, 0.25, 'left window got 25%');
-is($nodes->[1]->{percent}, 0.75, 'right window got 75%');
+cmp_float($nodes->[0]->{percent}, 0.25, 'left window got 25%');
+cmp_float($nodes->[1]->{percent}, 0.75, 'right window got 75%');
 
 # Now test it with four windows
 $tmp = fresh_workspace;
@@ -112,19 +126,19 @@ open_window for (1..4);
 cmd 'resize grow width 10 px or 25 ppt';
 
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[0]->{percent}, 0.166666666666667, 'first window got 16%');
-is($nodes->[1]->{percent}, 0.166666666666667, 'second window got 16%');
-is($nodes->[2]->{percent}, 0.166666666666667, 'third window got 16%');
-is($nodes->[3]->{percent}, 0.50, 'fourth window got 50%');
+cmp_float($nodes->[0]->{percent}, 0.166666666666667, 'first window got 16%');
+cmp_float($nodes->[1]->{percent}, 0.166666666666667, 'second window got 16%');
+cmp_float($nodes->[2]->{percent}, 0.166666666666667, 'third window got 16%');
+cmp_float($nodes->[3]->{percent}, 0.50, 'fourth window got 50%');
 
 # height should be a no-op in this situation
 cmd 'resize grow height 10 px or 25 ppt';
 
 ($nodes, $focus) = get_ws_content($tmp);
-is($nodes->[0]->{percent}, 0.166666666666667, 'first window got 16%');
-is($nodes->[1]->{percent}, 0.166666666666667, 'second window got 16%');
-is($nodes->[2]->{percent}, 0.166666666666667, 'third window got 16%');
-is($nodes->[3]->{percent}, 0.50, 'fourth window got 50%');
+cmp_float($nodes->[0]->{percent}, 0.166666666666667, 'first window got 16%');
+cmp_float($nodes->[1]->{percent}, 0.166666666666667, 'second window got 16%');
+cmp_float($nodes->[2]->{percent}, 0.166666666666667, 'third window got 16%');
+cmp_float($nodes->[3]->{percent}, 0.50, 'fourth window got 50%');
 
 
 ############################################################

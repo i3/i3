@@ -12,10 +12,124 @@
 #include <stdbool.h>
 #include <err.h>
 
+#if PANGO_SUPPORT
+#include <cairo/cairo-xcb.h>
+#include <pango/pangocairo.h>
+#endif
+
 #include "libi3.h"
 
 extern xcb_connection_t *conn;
+extern xcb_screen_t *root_screen;
+
 static const i3Font *savedFont = NULL;
+
+#if PANGO_SUPPORT
+static xcb_visualtype_t *root_visual_type;
+static double pango_font_red;
+static double pango_font_green;
+static double pango_font_blue;
+
+/*
+ * Loads a Pango font description into an i3Font structure. Returns true
+ * on success, false otherwise.
+ *
+ */
+static bool load_pango_font(i3Font *font, const char *desc) {
+    /* Load the font description */
+    font->specific.pango_desc = pango_font_description_from_string(desc);
+    if (!font->specific.pango_desc) {
+        ELOG("Could not open font %s with Pango, fallback to X font.\n", desc);
+        return false;
+    }
+
+    LOG("Using Pango font %s, size %d\n",
+        pango_font_description_get_family(font->specific.pango_desc),
+        pango_font_description_get_size(font->specific.pango_desc) / PANGO_SCALE
+        );
+
+    /* We cache root_visual_type here, since you must call
+     * load_pango_font before any other pango function
+     * that would need root_visual_type */
+    root_visual_type = get_visualtype(root_screen);
+
+    /* Create a dummy Pango layout to compute the font height */
+    cairo_surface_t *surface = cairo_xcb_surface_create(conn, root_screen->root, root_visual_type, 1, 1);
+    cairo_t *cr = cairo_create(surface);
+    PangoLayout *layout = pango_cairo_create_layout(cr);
+    pango_layout_set_font_description(layout, font->specific.pango_desc);
+
+    /* Get the font height */
+    gint height;
+    pango_layout_get_pixel_size(layout, NULL, &height);
+    font->height = height;
+
+    /* Free resources */
+    g_object_unref(layout);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+
+    /* Set the font type and return successfully */
+    font->type = FONT_TYPE_PANGO;
+    return true;
+}
+
+/*
+ * Draws text using Pango rendering.
+ *
+ */
+static void draw_text_pango(const char *text, size_t text_len,
+        xcb_drawable_t drawable, int x, int y, int max_width) {
+    /* Create the Pango layout */
+    /* root_visual_type is cached in load_pango_font */
+    cairo_surface_t *surface = cairo_xcb_surface_create(conn, drawable,
+            root_visual_type, x + max_width, y + savedFont->height);
+    cairo_t *cr = cairo_create(surface);
+    PangoLayout *layout = pango_cairo_create_layout(cr);
+    pango_layout_set_font_description(layout, savedFont->specific.pango_desc);
+    pango_layout_set_width(layout, max_width * PANGO_SCALE);
+    pango_layout_set_wrap(layout, PANGO_WRAP_CHAR);
+    pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
+
+    /* Do the drawing */
+    cairo_set_source_rgb(cr, pango_font_red, pango_font_green, pango_font_blue);
+    cairo_move_to(cr, x, y);
+    pango_layout_set_text(layout, text, text_len);
+    pango_cairo_update_layout(cr, layout);
+    pango_cairo_show_layout(cr, layout);
+
+    /* Free resources */
+    g_object_unref(layout);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+}
+
+/*
+ * Calculate the text width using Pango rendering.
+ *
+ */
+static int predict_text_width_pango(const char *text, size_t text_len) {
+    /* Create a dummy Pango layout */
+    /* root_visual_type is cached in load_pango_font */
+    cairo_surface_t *surface = cairo_xcb_surface_create(conn, root_screen->root, root_visual_type, 1, 1);
+    cairo_t *cr = cairo_create(surface);
+    PangoLayout *layout = pango_cairo_create_layout(cr);
+
+    /* Get the font width */
+    gint width;
+    pango_layout_set_font_description(layout, savedFont->specific.pango_desc);
+    pango_layout_set_text(layout, text, text_len);
+    pango_cairo_update_layout(cr, layout);
+    pango_layout_get_pixel_size(layout, &width, NULL);
+
+    /* Free resources */
+    g_object_unref(layout);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+
+    return width;
+}
+#endif
 
 /*
  * Loads a font for usage, also getting its metrics. If fallback is true,
@@ -24,12 +138,22 @@ static const i3Font *savedFont = NULL;
  */
 i3Font load_font(const char *pattern, const bool fallback) {
     i3Font font;
+    font.type = FONT_TYPE_NONE;
+
+#if PANGO_SUPPORT
+    /* Try to load a pango font if specified */
+    if (strlen(pattern) > strlen("xft:") && !strncmp(pattern, "xft:", strlen("xft:"))) {
+        pattern += strlen("xft:");
+        if (load_pango_font(&font, pattern))
+            return font;
+    }
+#endif
 
     /* Send all our requests first */
-    font.id = xcb_generate_id(conn);
-    xcb_void_cookie_t font_cookie = xcb_open_font_checked(conn, font.id,
+    font.specific.xcb.id = xcb_generate_id(conn);
+    xcb_void_cookie_t font_cookie = xcb_open_font_checked(conn, font.specific.xcb.id,
             strlen(pattern), pattern);
-    xcb_query_font_cookie_t info_cookie = xcb_query_font(conn, font.id);
+    xcb_query_font_cookie_t info_cookie = xcb_query_font(conn, font.specific.xcb.id);
 
     /* Check for errors. If errors, fall back to default font. */
     xcb_generic_error_t *error;
@@ -40,8 +164,9 @@ i3Font load_font(const char *pattern, const bool fallback) {
         ELOG("Could not open font %s (X error %d). Trying fallback to 'fixed'.\n",
              pattern, error->error_code);
         pattern = "fixed";
-        font_cookie = xcb_open_font_checked(conn, font.id, strlen(pattern), pattern);
-        info_cookie = xcb_query_font(conn, font.id);
+        font_cookie = xcb_open_font_checked(conn, font.specific.xcb.id,
+                strlen(pattern), pattern);
+        info_cookie = xcb_query_font(conn, font.specific.xcb.id);
 
         /* Check if we managed to open 'fixed' */
         error = xcb_request_check(conn, font_cookie);
@@ -50,8 +175,9 @@ i3Font load_font(const char *pattern, const bool fallback) {
         if (error != NULL) {
             ELOG("Could not open fallback font 'fixed', trying with '-misc-*'.\n");
             pattern = "-misc-*";
-            font_cookie = xcb_open_font_checked(conn, font.id, strlen(pattern), pattern);
-            info_cookie = xcb_query_font(conn, font.id);
+            font_cookie = xcb_open_font_checked(conn, font.specific.xcb.id,
+                    strlen(pattern), pattern);
+            info_cookie = xcb_query_font(conn, font.specific.xcb.id);
 
             if ((error = xcb_request_check(conn, font_cookie)) != NULL)
                 errx(EXIT_FAILURE, "Could open neither requested font nor fallbacks "
@@ -59,19 +185,23 @@ i3Font load_font(const char *pattern, const bool fallback) {
         }
     }
 
+    LOG("Using X font %s\n", pattern);
+
     /* Get information (height/name) for this font */
-    if (!(font.info = xcb_query_font_reply(conn, info_cookie, NULL)))
+    if (!(font.specific.xcb.info = xcb_query_font_reply(conn, info_cookie, NULL)))
         errx(EXIT_FAILURE, "Could not load font \"%s\"", pattern);
 
     /* Get the font table, if possible */
-    if (xcb_query_font_char_infos_length(font.info) == 0)
-        font.table = NULL;
+    if (xcb_query_font_char_infos_length(font.specific.xcb.info) == 0)
+        font.specific.xcb.table = NULL;
     else
-        font.table = xcb_query_font_char_infos(font.info);
+        font.specific.xcb.table = xcb_query_font_char_infos(font.specific.xcb.info);
 
     /* Calculate the font height */
-    font.height = font.info->font_ascent + font.info->font_descent;
+    font.height = font.specific.xcb.info->font_ascent + font.specific.xcb.info->font_descent;
 
+    /* Set the font type and return successfully */
+    font.type = FONT_TYPE_XCB;
     return font;
 }
 
@@ -88,10 +218,27 @@ void set_font(i3Font *font) {
  *
  */
 void free_font(void) {
-    /* Close the font and free the info */
-    xcb_close_font(conn, savedFont->id);
-    if (savedFont->info)
-        free(savedFont->info);
+    switch (savedFont->type) {
+        case FONT_TYPE_NONE:
+            /* Nothing to do */
+            break;
+        case FONT_TYPE_XCB: {
+            /* Close the font and free the info */
+            xcb_close_font(conn, savedFont->specific.xcb.id);
+            if (savedFont->specific.xcb.info)
+                free(savedFont->specific.xcb.info);
+            break;
+        }
+#if PANGO_SUPPORT
+        case FONT_TYPE_PANGO:
+            /* Free the font description */
+            pango_font_description_free(savedFont->specific.pango_desc);
+            break;
+#endif
+        default:
+            assert(false);
+            break;
+    }
 }
 
 /*
@@ -100,50 +247,49 @@ void free_font(void) {
  */
 void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background) {
     assert(savedFont != NULL);
-    uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-    uint32_t values[] = { foreground, background, savedFont->id };
-    xcb_change_gc(conn, gc, mask, values);
+
+    switch (savedFont->type) {
+        case FONT_TYPE_NONE:
+            /* Nothing to do */
+            break;
+        case FONT_TYPE_XCB: {
+            /* Change the font and colors in the GC */
+            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
+            uint32_t values[] = { foreground, background, savedFont->specific.xcb.id };
+            xcb_change_gc(conn, gc, mask, values);
+            break;
+        }
+#if PANGO_SUPPORT
+        case FONT_TYPE_PANGO:
+            /* Save the foreground font */
+            pango_font_red = ((foreground >> 16) & 0xff) / 255.0;
+            pango_font_green = ((foreground >> 8) & 0xff) / 255.0;
+            pango_font_blue = (foreground & 0xff) / 255.0;
+            break;
+#endif
+        default:
+            assert(false);
+            break;
+    }
 }
 
-/*
- * Draws text onto the specified X drawable (normally a pixmap) at the
- * specified coordinates (from the top left corner of the leftmost, uppermost
- * glyph) and using the provided gc.
- *
- * Text can be specified as UCS-2 or UTF-8. If it's specified as UCS-2, then
- * text_len must be the number of glyphs in the string. If it's specified as
- * UTF-8, then text_len must be the number of bytes in the string (not counting
- * the null terminator).
- *
- */
-void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawable,
+static int predict_text_width_xcb(const xcb_char2b_t *text, size_t text_len);
+
+static void draw_text_xcb(const xcb_char2b_t *text, size_t text_len, xcb_drawable_t drawable,
                xcb_gcontext_t gc, int x, int y, int max_width) {
-    assert(savedFont != NULL);
-    assert(text_len != 0);
-
     /* X11 coordinates for fonts start at the baseline */
-    int pos_y = y + savedFont->info->font_ascent;
-
-    /* As an optimization, check if we can bypass conversion */
-    if (!is_ucs2 && text_len <= 255) {
-        xcb_image_text_8(conn, text_len, drawable, gc, x, pos_y, text);
-        return;
-    }
-
-    /* Convert the text into UCS-2 so we can do basic pointer math */
-    char *input = (is_ucs2 ? text : (char*)convert_utf8_to_ucs2(text, &text_len));
+    int pos_y = y + savedFont->specific.xcb.info->font_ascent;
 
     /* The X11 protocol limits text drawing to 255 chars, so we may need
      * multiple calls */
-    int pos_x = x;
     int offset = 0;
     for (;;) {
         /* Calculate the size of this chunk */
         int chunk_size = (text_len > 255 ? 255 : text_len);
-        xcb_char2b_t *chunk = (xcb_char2b_t*)input + offset;
+        const xcb_char2b_t *chunk = text + offset;
 
         /* Draw it */
-        xcb_image_text_16(conn, chunk_size, drawable, gc, pos_x, pos_y, chunk);
+        xcb_image_text_16(conn, chunk_size, drawable, gc, x, pos_y, chunk);
 
         /* Advance the offset and length of the text to draw */
         offset += chunk_size;
@@ -154,15 +300,83 @@ void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawabl
             break;
 
         /* Advance pos_x based on the predicted text width */
-        pos_x += predict_text_width((char*)chunk, chunk_size, true);
+        x += predict_text_width_xcb(chunk, chunk_size);
     }
-
-    /* If we had to convert, free the converted string */
-    if (!is_ucs2)
-        free(input);
 }
 
-static int xcb_query_text_width(xcb_char2b_t *text, size_t text_len) {
+/*
+ * Draws text onto the specified X drawable (normally a pixmap) at the
+ * specified coordinates (from the top left corner of the leftmost, uppermost
+ * glyph) and using the provided gc.
+ *
+ * Text must be specified as an i3String.
+ *
+ */
+void draw_text(i3String *text, xcb_drawable_t drawable,
+               xcb_gcontext_t gc, int x, int y, int max_width) {
+    assert(savedFont != NULL);
+
+    switch (savedFont->type) {
+        case FONT_TYPE_NONE:
+            /* Nothing to do */
+            return;
+        case FONT_TYPE_XCB:
+            draw_text_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text),
+                      drawable, gc, x, y, max_width);
+            break;
+#if PANGO_SUPPORT
+        case FONT_TYPE_PANGO:
+            /* Render the text using Pango */
+            draw_text_pango(i3string_as_utf8(text), i3string_get_num_bytes(text),
+                            drawable, x, y, max_width);
+            return;
+#endif
+        default:
+            assert(false);
+    }
+}
+
+/*
+ * ASCII version of draw_text to print static strings.
+ *
+ */
+void draw_text_ascii(const char *text, xcb_drawable_t drawable,
+               xcb_gcontext_t gc, int x, int y, int max_width) {
+    assert(savedFont != NULL);
+
+    switch (savedFont->type) {
+        case FONT_TYPE_NONE:
+            /* Nothing to do */
+            return;
+        case FONT_TYPE_XCB:
+        {
+            size_t text_len = strlen(text);
+            if (text_len > 255) {
+                /* The text is too long to draw it directly to X */
+                i3String *str = i3string_from_utf8(text);
+                draw_text(str, drawable, gc, x, y, max_width);
+                i3string_free(str);
+            } else {
+                /* X11 coordinates for fonts start at the baseline */
+                int pos_y = y + savedFont->specific.xcb.info->font_ascent;
+
+                xcb_image_text_8(conn, text_len, drawable, gc, x, pos_y, text);
+            }
+            break;
+        }
+#if PANGO_SUPPORT
+        case FONT_TYPE_PANGO:
+            /* Render the text using Pango */
+            draw_text_pango(text, strlen(text),
+                            drawable, x, y, max_width);
+            return;
+#endif
+        default:
+            assert(false);
+    }
+}
+
+static int xcb_query_text_width(const xcb_char2b_t *text, size_t text_len) {
     /* Make the user know we’re using the slow path, but only once. */
     static bool first_invocation = true;
     if (first_invocation) {
@@ -173,7 +387,7 @@ static int xcb_query_text_width(xcb_char2b_t *text, size_t text_len) {
     /* Query the text width */
     xcb_generic_error_t *error;
     xcb_query_text_extents_cookie_t cookie = xcb_query_text_extents(conn,
-            savedFont->id, text_len, (xcb_char2b_t*)text);
+            savedFont->specific.xcb.id, text_len, (xcb_char2b_t*)text);
     xcb_query_text_extents_reply_t *reply = xcb_query_text_extents_reply(conn,
             cookie, &error);
     if (reply == NULL) {
@@ -181,7 +395,7 @@ static int xcb_query_text_width(xcb_char2b_t *text, size_t text_len) {
          * a crash. Plus, the user will see the error in his log. */
         fprintf(stderr, "Could not get text extents (X error code %d)\n",
                 error->error_code);
-        return savedFont->info->max_bounds.character_width * text_len;
+        return savedFont->specific.xcb.info->max_bounds.character_width * text_len;
     }
 
     int width = reply->overall_width;
@@ -189,27 +403,18 @@ static int xcb_query_text_width(xcb_char2b_t *text, size_t text_len) {
     return width;
 }
 
-/*
- * Predict the text width in pixels for the given text. Text can be specified
- * as UCS-2 or UTF-8.
- *
- */
-int predict_text_width(char *text, size_t text_len, bool is_ucs2) {
-    /* Convert the text into UTF-16 so we can do basic pointer math */
-    xcb_char2b_t *input;
-    if (is_ucs2)
-        input = (xcb_char2b_t*)text;
-    else
-        input = convert_utf8_to_ucs2(text, &text_len);
+static int predict_text_width_xcb(const xcb_char2b_t *input, size_t text_len) {
+    if (text_len == 0)
+        return 0;
 
     int width;
-    if (savedFont->table == NULL) {
+    if (savedFont->specific.xcb.table == NULL) {
         /* If we don't have a font table, fall back to querying the server */
         width = xcb_query_text_width(input, text_len);
     } else {
         /* Save some pointers for convenience */
-        xcb_query_font_reply_t *font_info = savedFont->info;
-        xcb_charinfo_t *font_table = savedFont->table;
+        xcb_query_font_reply_t *font_info = savedFont->specific.xcb.info;
+        xcb_charinfo_t *font_table = savedFont->specific.xcb.table;
 
         /* Calculate the width using the font table */
         width = 0;
@@ -239,9 +444,30 @@ int predict_text_width(char *text, size_t text_len, bool is_ucs2) {
         }
     }
 
-    /* If we had to convert, free the converted string */
-    if (!is_ucs2)
-        free(input);
-
     return width;
+}
+
+/*
+ * Predict the text width in pixels for the given text. Text must be
+ * specified as an i3String.
+ *
+ */
+int predict_text_width(i3String *text) {
+    assert(savedFont != NULL);
+
+    switch (savedFont->type) {
+        case FONT_TYPE_NONE:
+            /* Nothing to do */
+            return 0;
+        case FONT_TYPE_XCB:
+            return predict_text_width_xcb(i3string_as_ucs2(text), i3string_get_num_glyphs(text));
+#if PANGO_SUPPORT
+        case FONT_TYPE_PANGO:
+            /* Calculate extents using Pango */
+            return predict_text_width_pango(i3string_as_utf8(text), i3string_get_num_bytes(text));
+#endif
+        default:
+            assert(false);
+            return 0;
+    }
 }

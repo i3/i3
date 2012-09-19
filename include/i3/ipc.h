@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2010 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * This public header defines the different constants and message types to use
  * for the IPC interface to i3 (see docs/ipc for more information).
@@ -40,6 +40,9 @@
 /** Request the configuration for a specific 'bar' */
 #define I3_IPC_MESSAGE_TYPE_GET_BAR_CONFIG      6
 
+/** Request the i3 version */
+#define I3_IPC_MESSAGE_TYPE_GET_VERSION         7
+
 /*
  * Messages from i3 to clients
  *
@@ -65,6 +68,9 @@
 
 /** Bar config reply type */
 #define I3_IPC_REPLY_TYPE_BAR_CONFIG            6
+
+/** i3 version reply type */
+#define I3_IPC_REPLY_TYPE_VERSION               7
 
 /*
  * Events from i3 to clients. Events have the first bit set high.

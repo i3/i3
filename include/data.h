@@ -19,6 +19,7 @@
 #include <pcre.h>
 #include <sys/time.h>
 
+#include "libi3.h"
 #include "queue.h"
 
 /*
@@ -59,6 +60,13 @@ typedef enum { BS_NORMAL = 0, BS_NONE = 1, BS_1PIXEL = 2 } border_style_t;
 /** parameter to specify whether tree_close() and x_window_kill() should kill
  * only this specific window or the whole X11 client */
 typedef enum { DONT_KILL_WINDOW = 0, KILL_WINDOW = 1, KILL_CLIENT = 2 } kill_window_t;
+
+/** describes if the window is adjacent to the output (physical screen) edges. */
+typedef enum { ADJ_NONE = 0,
+               ADJ_LEFT_SCREEN_EDGE = (1 << 0),
+               ADJ_RIGHT_SCREEN_EDGE = (1 << 1),
+               ADJ_UPPER_SCREEN_EDGE = (1 << 2),
+               ADJ_LOWER_SCREEN_EDGE = (1 << 4)} adjacent_t;
 
 enum {
     BIND_NONE = 0,
@@ -160,6 +168,9 @@ struct Startup_Sequence {
     char *workspace;
     /** libstartup-notification context for this launch */
     SnLauncherContext *context;
+    /** time at which this sequence should be deleted (after it was marked as
+     * completed) */
+    time_t delete_at;
 
     TAILQ_ENTRY(Startup_Sequence) sequences;
 };
@@ -189,6 +200,20 @@ struct regex {
  *
  */
 struct Binding {
+    /** If true, the binding should be executed upon a KeyRelease event, not a
+     * KeyPress (the default). */
+    enum {
+        /* This binding will only be executed upon KeyPress events */
+        B_UPON_KEYPRESS = 0,
+        /* This binding will be executed either upon a KeyRelease event, or… */
+        B_UPON_KEYRELEASE = 1,
+        /* …upon a KeyRelease event, even if the modifiers don’t match. This
+         * state is triggered from get_binding() when the corresponding
+         * KeyPress (!) happens, so that users can release the modifier keys
+         * before releasing the actual key. */
+        B_UPON_KEYRELEASE_IGNORE_MODS = 2,
+    } release;
+
     /** Symbol the user specified in configfile, if any. This needs to be
      * stored with the binding to be able to re-convert it into a keycode
      * if the keyboard mapping changes (using Xmodmap for example) */
@@ -280,9 +305,8 @@ struct Window {
     char *class_class;
     char *class_instance;
 
-    /** The name of the window as it will be passed to X11 (in UCS2 if the
-     * application supports _NET_WM_NAME, in COMPOUND_TEXT otherwise). */
-    char *name_x;
+    /** The name of the window. */
+    i3String *name;
 
     /** The WM_WINDOW_ROLE of this window (for example, the pidgin buddy window
      * sets "buddy list"). Useful to match specific windows in assignments or
@@ -291,13 +315,6 @@ struct Window {
 
     /** Flag to force re-rendering the decoration upon changes */
     bool name_x_changed;
-
-    /** The name of the window as used in JSON (in UTF-8 if the application
-     * supports _NET_WM_NAME, in COMPOUND_TEXT otherwise) */
-    char *name_json;
-
-    /** The length of the name in glyphs (not bytes) */
-    size_t name_len;
 
     /** Whether the application used _NET_WM_NAME */
     bool uses_net_wm_name;
@@ -423,6 +440,8 @@ struct Assignment {
  */
 struct Con {
     bool mapped;
+    /** whether this is a split container or not */
+    bool split;
     enum {
         CT_ROOT = 0,
         CT_OUTPUT = 1,
@@ -431,7 +450,6 @@ struct Con {
         CT_WORKSPACE = 4,
         CT_DOCKAREA = 5
     } type;
-    orientation_t orientation;
     struct Con *parent;
 
     struct Rect rect;
@@ -496,7 +514,29 @@ struct Con {
     TAILQ_HEAD(swallow_head, Match) swallow_head;
 
     enum { CF_NONE = 0, CF_OUTPUT = 1, CF_GLOBAL = 2 } fullscreen_mode;
-    enum { L_DEFAULT = 0, L_STACKED = 1, L_TABBED = 2, L_DOCKAREA = 3, L_OUTPUT = 4 } layout;
+    /* layout is the layout of this container: one of split[v|h], stacked or
+     * tabbed. Special containers in the tree (above workspaces) have special
+     * layouts like dockarea or output.
+     *
+     * last_split_layout is one of splitv or splith to support the old "layout
+     * default" command which by now should be "layout splitv" or "layout
+     * splith" explicitly.
+     *
+     * workspace_layout is only for type == CT_WORKSPACE cons. When you change
+     * the layout of a workspace without any children, i3 cannot just set the
+     * layout (because workspaces need to be splitv/splith to allow focus
+     * parent and opening new containers). Instead, it stores the requested
+     * layout in workspace_layout and creates a new split container with that
+     * layout whenever a new container is attached to the workspace. */
+    enum {
+        L_DEFAULT = 0,
+        L_STACKED = 1,
+        L_TABBED = 2,
+        L_DOCKAREA = 3,
+        L_OUTPUT = 4,
+        L_SPLITV = 5,
+        L_SPLITH = 6
+    } layout, last_split_layout, workspace_layout;
     border_style_t border_style;
     /** floating? (= not in tiling layout) This cannot be simply a bool
      * because we want to keep track of whether the status was set by the

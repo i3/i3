@@ -1,6 +1,19 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 #
+# Please read the following documents before working on tests:
+# • http://build.i3wm.org/docs/testsuite.html
+#   (or docs/testsuite)
+#
+# • http://build.i3wm.org/docs/lib-i3test.html
+#   (alternatively: perldoc ./testcases/lib/i3test.pm)
+#
+# • http://build.i3wm.org/docs/ipc.html
+#   (or docs/ipc)
+#
+# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+#   (unless you are already familiar with Perl)
+#
 # The command "move workspace prev; workspace prev" will lead to an error.
 # This regression is present in 7f9b65f6a752e454c492447be4e21e2ee8faf8fd
 use i3test;
@@ -15,11 +28,11 @@ my $keep_open_con = open_empty_con($i3);
 my $tmp = fresh_workspace;
 my $con = open_empty_con($i3);
 
-is(@{get_ws_content($tmp)}, 1, 'one container');
-is(@{get_ws_content($old)}, 1, 'one container on old ws');
+is_num_children($tmp, 1, 'one container');
+is_num_children($old, 1, 'one container on old ws');
 
 cmd 'move workspace prev; workspace prev';
 
-is(@{get_ws_content($old)}, 2, 'container moved away');
+is_num_children($old, 2, 'container moved away');
 
 done_testing;

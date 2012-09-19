@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
  * outputs.c: Maintaining the output-list
  *
@@ -29,7 +29,7 @@ void parse_outputs_json(char* json);
  * Initiate the output-list
  *
  */
-void init_outputs();
+void init_outputs(void);
 
 /*
  * Returns the output with the given name

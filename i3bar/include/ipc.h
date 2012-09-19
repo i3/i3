@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
  * ipc.c: Communicating with i3
  *
@@ -23,7 +23,7 @@ int init_connection(const char *socket_path);
  * Destroy the connection to i3.
  *
  */
-void destroy_connection();
+void destroy_connection(void);
 
 /*
  * Sends a Message to i3.
@@ -36,6 +36,6 @@ int i3_send_msg(uint32_t type, const char* payload);
  * Subscribe to all the i3-events, we need
  *
  */
-void subscribe_events();
+void subscribe_events(void);
 
 #endif

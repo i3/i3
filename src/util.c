@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "util.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -303,6 +305,7 @@ void i3_restart(bool forget_layout) {
     char *restart_filename = forget_layout ? NULL : store_restart_layout();
 
     kill_configerror_nagbar(true);
+    kill_commanderror_nagbar(true);
 
     restore_geometry();
 

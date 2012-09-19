@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "render.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -106,9 +108,9 @@ static void render_l_output(Con *con) {
  */
 void render_con(Con *con, bool render_fullscreen) {
     int children = con_num_children(con);
-    DLOG("Rendering %snode %p / %s / layout %d / children %d / orient %d\n",
+    DLOG("Rendering %snode %p / %s / layout %d / children %d\n",
          (render_fullscreen ? "fullscreen " : ""), con, con->name, con->layout,
-         children, con->orientation);
+         children);
 
     /* Copy container rect, subtract container border */
     /* This is the actually usable space inside this container for clients */
@@ -172,19 +174,11 @@ void render_con(Con *con, bool render_fullscreen) {
             inset->width = new_width;
         }
 
-        if (con->height_increment > 1) {
-            int old_height = inset->height;
-            inset->height -= (inset->height - con->base_height) % con->height_increment;
-            DLOG("Lost %d pixel due to client's height_increment (%d px, base_height = %d)\n",
-                old_height - inset->height, con->height_increment, con->base_height);
-        }
-
-        if (con->width_increment > 1) {
-            int old_width = inset->width;
-            inset->width -= (inset->width - con->base_width) % con->width_increment;
-            DLOG("Lost %d pixel due to client's width_increment (%d px, base_width = %d)\n",
-                old_width - inset->width, con->width_increment, con->base_width);
-        }
+        /* NB: We used to respect resize increment size hints for tiling
+         * windows up until commit 0db93d9 here. However, since all terminal
+         * emulators cope with ignoring the size hints in a better way than we
+         * can (by providing their fake-transparency or background color), this
+         * code was removed. See also http://bugs.i3wm.org/540 */
 
         DLOG("child will be at %dx%d with size %dx%d\n", inset->x, inset->y, inset->width, inset->height);
     }
@@ -208,11 +202,11 @@ void render_con(Con *con, bool render_fullscreen) {
 
     /* precalculate the sizes to be able to correct rounding errors */
     int sizes[children];
-    if (con->layout == L_DEFAULT && children > 0) {
+    if ((con->layout == L_SPLITH || con->layout == L_SPLITV) && children > 0) {
         assert(!TAILQ_EMPTY(&con->nodes_head));
         Con *child;
         int i = 0, assigned = 0;
-        int total = con->orientation == HORIZ ? rect.width : rect.height;
+        int total = con_orientation(con) == HORIZ ? rect.width : rect.height;
         TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
             double percentage = child->percent > 0.0 ? child->percent : 1.0 / children;
             assigned += sizes[i++] = percentage * total;
@@ -289,8 +283,8 @@ void render_con(Con *con, bool render_fullscreen) {
         assert(children > 0);
 
         /* default layout */
-        if (con->layout == L_DEFAULT) {
-            if (con->orientation == HORIZ) {
+        if (con->layout == L_SPLITH || con->layout == L_SPLITV) {
+            if (con->layout == L_SPLITH) {
                 child->rect.x = x;
                 child->rect.y = y;
                 child->rect.width = sizes[i];
@@ -343,7 +337,7 @@ void render_con(Con *con, bool render_fullscreen) {
             child->rect.width = rect.width;
             child->rect.height = rect.height;
 
-            child->deco_rect.width = child->rect.width / children;
+            child->deco_rect.width = ceil((float)child->rect.width / children);
             child->deco_rect.x = x - con->rect.x + i * child->deco_rect.width;
             child->deco_rect.y = y - con->rect.y;
 

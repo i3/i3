@@ -18,6 +18,16 @@
 #include <xcb/xproto.h>
 #include <xcb/xcb_keysyms.h>
 
+#if PANGO_SUPPORT
+#include <pango/pango.h>
+#endif
+
+/**
+ * Opaque data structure for storing strings.
+ *
+ */
+typedef struct _i3String i3String;
+
 typedef struct Font i3Font;
 
 /**
@@ -27,23 +37,44 @@ typedef struct Font i3Font;
  *
  */
 struct Font {
-    /** The xcb-id for the font */
-    xcb_font_t id;
-
-    /** Font information gathered from the server */
-    xcb_query_font_reply_t *info;
-
-    /** Font table for this font (may be NULL) */
-    xcb_charinfo_t *table;
+    /** The type of font */
+    enum {
+        FONT_TYPE_NONE = 0,
+        FONT_TYPE_XCB,
+        FONT_TYPE_PANGO
+    } type;
 
     /** The height of the font, built from font_ascent + font_descent */
     int height;
+
+    union {
+        struct {
+            /** The xcb-id for the font */
+            xcb_font_t id;
+
+            /** Font information gathered from the server */
+            xcb_query_font_reply_t *info;
+
+            /** Font table for this font (may be NULL) */
+            xcb_charinfo_t *table;
+        } xcb;
+
+#if PANGO_SUPPORT
+        /** The pango font description */
+        PangoFontDescription *pango_desc;
+#endif
+    } specific;
 };
 
 /* Since this file also gets included by utilities which don’t use the i3 log
  * infrastructure, we define a fallback. */
+#if !defined(LOG)
+void verboselog(char *fmt, ...);
+#define LOG(fmt, ...) verboselog("[libi3] " __FILE__ " " fmt, ##__VA_ARGS__)
+#endif
 #if !defined(ELOG)
-#define ELOG(fmt, ...) fprintf(stderr, "ERROR: " fmt, ##__VA_ARGS__)
+void errorlog(char *fmt, ...);
+#define ELOG(fmt, ...) errorlog("[libi3] ERROR: " fmt, ##__VA_ARGS__)
 #endif
 
 /**
@@ -90,6 +121,71 @@ char *sstrdup(const char *str);
  *
  */
 int sasprintf(char **strp, const char *fmt, ...);
+
+/**
+ * Build an i3String from an UTF-8 encoded string.
+ * Returns the newly-allocated i3String.
+ *
+ */
+i3String *i3string_from_utf8(const char *from_utf8);
+
+/**
+ * Build an i3String from an UTF-8 encoded string with fixed length.
+ * To be used when no proper NUL-terminaison is available.
+ * Returns the newly-allocated i3String.
+ *
+ */
+i3String *i3string_from_utf8_with_length(const char *from_utf8, size_t num_bytes);
+
+/**
+ * Build an i3String from an UCS-2 encoded string.
+ * Returns the newly-allocated i3String.
+ *
+ */
+i3String *i3string_from_ucs2(const xcb_char2b_t *from_ucs2, size_t num_glyphs);
+
+/**
+ * Free an i3String.
+ *
+ */
+void i3string_free(i3String *str);
+
+/**
+ * Securely i3string_free by setting the pointer to NULL
+ * to prevent accidentally using freed memory.
+ *
+ */
+#define I3STRING_FREE(str) \
+do { \
+ if (str != NULL) { \
+ i3string_free(str); \
+ str = NULL; \
+ } \
+} while (0)
+
+/**
+ * Returns the UTF-8 encoded version of the i3String.
+ *
+ */
+const char *i3string_as_utf8(i3String *str);
+
+/**
+ * Returns the UCS-2 encoded version of the i3String.
+ *
+ */
+const xcb_char2b_t *i3string_as_ucs2(i3String *str);
+
+/**
+ * Returns the number of bytes (UTF-8 encoded) in an i3String.
+ *
+ */
+size_t i3string_get_num_bytes(i3String *str);
+
+/**
+ * Returns the number of glyphs in an i3String.
+ *
+ */
+size_t i3string_get_num_glyphs(i3String *str);
 
 /**
  * Connects to the i3 IPC socket and returns the file descriptor for the
@@ -226,21 +322,31 @@ void set_font_colors(xcb_gcontext_t gc, uint32_t foreground, uint32_t background
  * specified coordinates (from the top left corner of the leftmost, uppermost
  * glyph) and using the provided gc.
  *
- * Text can be specified as UCS-2 or UTF-8. If it's specified as UCS-2, then
- * text_len must be the number of glyphs in the string. If it's specified as
- * UTF-8, then text_len must be the number of bytes in the string (not counting
- * the null terminator).
+ * Text must be specified as an i3String.
  *
  */
-void draw_text(char *text, size_t text_len, bool is_ucs2, xcb_drawable_t drawable,
+void draw_text(i3String *text, xcb_drawable_t drawable,
         xcb_gcontext_t gc, int x, int y, int max_width);
 
 /**
- * Predict the text width in pixels for the given text. Text can be specified
- * as UCS-2 or UTF-8.
+ * ASCII version of draw_text to print static strings.
  *
  */
-int predict_text_width(char *text, size_t text_len, bool is_ucs2);
+void draw_text_ascii(const char *text, xcb_drawable_t drawable,
+        xcb_gcontext_t gc, int x, int y, int max_width);
+
+/**
+ * Predict the text width in pixels for the given text. Text must be
+ * specified as an i3String.
+ *
+ */
+int predict_text_width(i3String *text);
+
+/**
+ * Returns the visual type associated with the given screen.
+ *
+ */
+xcb_visualtype_t *get_visualtype(xcb_screen_t *screen);
 
 /**
  * Returns true if this version of i3 is a debug build (anything which is not a

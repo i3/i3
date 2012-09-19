@@ -124,6 +124,14 @@ sub activate_i3 {
                      'sh -c "export LISTEN_PID=\$\$; ' . $cmd . '"';
         }
 
+        if ($args{xtrace}) {
+            my $out = "$outdir/xtrace-for-$test.log";
+
+            # See comment in $args{strace} branch.
+            $cmd = qq|xtrace -n -o "$out" -- | .
+                     'sh -c "export LISTEN_PID=\$\$; ' . $cmd . '"';
+        }
+
         # We need to use the shell due to using output redirections.
         exec '/bin/sh', '-c', $cmd;
 

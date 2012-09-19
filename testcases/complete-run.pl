@@ -15,6 +15,7 @@ use TAP::Harness;
 use TAP::Parser;
 use TAP::Parser::Aggregator;
 use Time::HiRes qw(time);
+use IO::Handle;
 # these are shipped with the testsuite
 use lib qw(lib);
 use StartXDummy;
@@ -46,14 +47,18 @@ my @displays = ();
 my %options = (
     valgrind => 0,
     strace => 0,
+    xtrace => 0,
     coverage => 0,
     restart => 0,
 );
+my $keep_xdummy_output = 0;
 
 my $result = GetOptions(
     "coverage-testing" => \$options{coverage},
+    "keep-xdummy-output" => \$keep_xdummy_output,
     "valgrind" => \$options{valgrind},
     "strace" => \$options{strace},
+    "xtrace" => \$options{xtrace},
     "display=s" => \@displays,
     "parallel=i" => \$parallel,
     "help|?" => \$help,
@@ -74,7 +79,7 @@ my $numtests = scalar @testfiles;
 
 # No displays specified, let’s start some Xdummy instances.
 if (@displays == 0) {
-    @displays = start_xdummy($parallel, $numtests);
+    @displays = start_xdummy($parallel, $numtests, $keep_xdummy_output);
 }
 
 # 1: create an output directory for this test-run
@@ -125,6 +130,7 @@ printf("\nRough time estimate for this run: %.2f seconds\n\n", $timings{GLOBAL})
 
 my $logfile = "$outdir/complete-run.log";
 open $log, '>', $logfile or die "Could not create '$logfile': $!";
+$log->autoflush(1);
 say "Writing logfile to '$logfile'...";
 
 # 3: run all tests
@@ -261,9 +267,16 @@ sub take_job {
 
             for (1 .. $lines) {
                 my $result = $parser->next;
-                if (defined($result) and $result->is_test) {
+                next unless defined($result);
+                if ($result->is_test) {
                     $tests_completed++;
                     status($display, "$test: [$tests_completed/??] ");
+                } elsif ($result->is_bailout) {
+                    Log status($display, "$test: BAILOUT");
+                    status_completed(scalar @done);
+                    say "";
+                    say "test $test bailed out: " . $result->explanation;
+                    exit 1;
                 }
             }
 
@@ -341,6 +354,11 @@ C<latest/valgrind-for-$test.log>.
 
 Runs i3 under strace to trace system calls. The output will be available in
 C<latest/strace-for-$test.log>.
+
+=item B<--xtrace>
+
+Runs i3 under xtrace to trace X11 requests/replies. The output will be
+available in C<latest/xtrace-for-$test.log>.
 
 =item B<--coverage-testing>
 

@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "ipc.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -161,17 +163,14 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("type");
     y(integer, con->type);
 
+    /* provided for backwards compatibility only. */
     ystr("orientation");
-    switch (con->orientation) {
-        case NO_ORIENTATION:
-            ystr("none");
-            break;
-        case HORIZ:
+    if (!con->split)
+        ystr("none");
+    else {
+        if (con_orientation(con) == HORIZ)
             ystr("horizontal");
-            break;
-        case VERT:
-            ystr("vertical");
-            break;
+        else ystr("vertical");
     }
 
     ystr("scratchpad_state");
@@ -203,10 +202,20 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("focused");
     y(bool, (con == focused));
 
+    ystr("split");
+    y(bool, con->split);
+
     ystr("layout");
     switch (con->layout) {
         case L_DEFAULT:
-            ystr("default");
+            DLOG("About to dump layout=default, this is a bug in the code.\n");
+            assert(false);
+            break;
+        case L_SPLITV:
+            ystr("splitv");
+            break;
+        case L_SPLITH:
+            ystr("splith");
             break;
         case L_STACKED:
             ystr("stacked");
@@ -219,6 +228,33 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
             break;
         case L_OUTPUT:
             ystr("output");
+            break;
+    }
+
+    ystr("workspace_layout");
+    switch (con->workspace_layout) {
+        case L_DEFAULT:
+            ystr("default");
+            break;
+        case L_STACKED:
+            ystr("stacked");
+            break;
+        case L_TABBED:
+            ystr("tabbed");
+            break;
+        default:
+            DLOG("About to dump workspace_layout=%d (none of default/stacked/tabbed), this is a bug.\n", con->workspace_layout);
+            assert(false);
+            break;
+    }
+
+    ystr("last_split_layout");
+    switch (con->layout) {
+        case L_SPLITV:
+            ystr("splitv");
+            break;
+        default:
+            ystr("splith");
             break;
     }
 
@@ -240,8 +276,8 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     dump_rect(gen, "geometry", con->geometry);
 
     ystr("name");
-    if (con->window && con->window->name_json)
-        ystr(con->window->name_json);
+    if (con->window && con->window->name)
+        ystr(i3string_as_utf8(con->window->name));
     else
         ystr(con->name);
 
@@ -520,6 +556,44 @@ IPC_HANDLER(get_marks) {
 }
 
 /*
+ * Returns the version of i3
+ *
+ */
+IPC_HANDLER(get_version) {
+#if YAJL_MAJOR >= 2
+    yajl_gen gen = yajl_gen_alloc(NULL);
+#else
+    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
+#endif
+    y(map_open);
+
+    ystr("major");
+    y(integer, MAJOR_VERSION);
+
+    ystr("minor");
+    y(integer, MINOR_VERSION);
+
+    ystr("patch");
+    y(integer, PATCH_VERSION);
+
+    ystr("human_readable");
+    ystr(I3_VERSION);
+
+    y(map_close);
+
+    const unsigned char *payload;
+#if YAJL_MAJOR >= 2
+    size_t length;
+#else
+    unsigned int length;
+#endif
+    y(get_buf, &payload, &length);
+
+    ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_VERSION, payload);
+    y(free);
+}
+
+/*
  * Formats the reply message for a GET_BAR_CONFIG request and sends it to the
  * client.
  *
@@ -703,7 +777,7 @@ static int add_subscription(void *extra, const unsigned char *s,
 #endif
     ipc_client *client = extra;
 
-    DLOG("should add subscription to extra %p, sub %.*s\n", client, len, s);
+    DLOG("should add subscription to extra %p, sub %.*s\n", client, (int)len, s);
     int event = client->num_events;
 
     client->num_events++;
@@ -775,7 +849,7 @@ IPC_HANDLER(subscribe) {
 
 /* The index of each callback function corresponds to the numeric
  * value of the message type (see include/i3/ipc.h) */
-handler_t handlers[7] = {
+handler_t handlers[8] = {
     handle_command,
     handle_get_workspaces,
     handle_subscribe,
@@ -783,6 +857,7 @@ handler_t handlers[7] = {
     handle_tree,
     handle_get_marks,
     handle_get_bar_config,
+    handle_get_version,
 };
 
 /*

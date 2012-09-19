@@ -34,7 +34,6 @@ our @EXPORT = qw(
     get_dock_clients
     cmd
     sync_with_i3
-    does_i3_live
     exit_gracefully
     workspace_exists
     focused_ws
@@ -45,6 +44,39 @@ our @EXPORT = qw(
     wait_for_unmap
     $x
 );
+
+=head1 NAME
+
+i3test - Testcase setup module
+
+=encoding utf-8
+
+=head1 SYNOPSIS
+
+  use i3test;
+
+  my $ws = fresh_workspace;
+  is_num_children($ws, 0, 'no containers on this workspace yet');
+  cmd 'open';
+  is_num_children($ws, 1, 'one container after "open"');
+
+  done_testing;
+
+=head1 DESCRIPTION
+
+This module is used in every i3 testcase and takes care of automatically
+starting i3 before any test instructions run. It also saves you typing of lots
+of boilerplate in every test file.
+
+
+i3test automatically "use"s C<Test::More>, C<Data::Dumper>, C<AnyEvent::I3>,
+C<Time::HiRes>’s C<sleep> and C<i3test::Test> so that all of them are available
+to you in your testcase.
+
+See also C<i3test::Test> (L<http://build.i3wm.org/docs/lib-i3test-test.html>)
+which provides additional test instructions (like C<ok> or C<is>).
+
+=cut
 
 my $tester = Test::Builder->new();
 my $_cached_socket_path = undef;
@@ -115,6 +147,7 @@ use Test::More $test_more_args;
 use Data::Dumper;
 use AnyEvent::I3;
 use Time::HiRes qw(sleep);
+use i3test::Test;
 __
     $tester->BAIL_OUT("$@") if $@;
     feature->import(":5.10");
@@ -128,15 +161,19 @@ __
     goto \&Exporter::import;
 }
 
-#
-# Waits for the next event and calls the given callback for every event to
-# determine if this is the event we are waiting for.
-#
-# Can be used to wait until a window is mapped, until a ClientMessage is
-# received, etc.
-#
-# wait_for_event $x, 0.25, sub { $_[0]->{response_type} == MAP_NOTIFY };
-#
+=head1 EXPORT
+
+=head2 wait_for_event($timeout, $callback)
+
+Waits for the next event and calls the given callback for every event to
+determine if this is the event we are waiting for.
+
+Can be used to wait until a window is mapped, until a ClientMessage is
+received, etc.
+
+  wait_for_event 0.25, sub { $_[0]->{response_type} == MAP_NOTIFY };
+
+=cut
 sub wait_for_event {
     my ($timeout, $cb) = @_;
 
@@ -165,8 +202,24 @@ sub wait_for_event {
     return $result;
 }
 
-# thin wrapper around wait_for_event which waits for MAP_NOTIFY
-# make sure to include 'structure_notify' in the window’s event_mask attribute
+=head2 wait_for_map($window)
+
+Thin wrapper around wait_for_event which waits for MAP_NOTIFY.
+Make sure to include 'structure_notify' in the window’s event_mask attribute.
+
+This function is called by C<open_window>, so in most cases, you don’t need to
+call it on your own. If you need special setup of the window before mapping,
+you might have to map it on your own and use this function:
+
+  my $window = open_window(dont_map => 1);
+  # Do something special with the window first
+  # …
+
+  # Now map it and wait until it’s been mapped
+  $window->map;
+  wait_for_map($window);
+
+=cut
 sub wait_for_map {
     my ($win) = @_;
     my $id = (blessed($win) && $win->isa('X11::XCB::Window')) ? $win->id : $win;
@@ -175,9 +228,20 @@ sub wait_for_map {
     };
 }
 
-# Wrapper around wait_for_event which waits for UNMAP_NOTIFY. Also calls
-# sync_with_i3 to make sure i3 also picked up and processed the UnmapNotify
-# event.
+=head2 wait_for_unmap($window)
+
+Wrapper around C<wait_for_event> which waits for UNMAP_NOTIFY. Also calls
+C<sync_with_i3> to make sure i3 also picked up and processed the UnmapNotify
+event.
+
+  my $ws = fresh_workspace;
+  my $window = open_window;
+  is_num_children($ws, 1, 'one window on workspace');
+  $window->unmap;
+  wait_for_unmap;
+  is_num_children($ws, 0, 'no more windows on this workspace');
+
+=cut
 sub wait_for_unmap {
     my ($win) = @_;
     # my $id = (blessed($win) && $win->isa('X11::XCB::Window')) ? $win->id : $win;
@@ -187,25 +251,71 @@ sub wait_for_unmap {
     sync_with_i3();
 }
 
-#
-# Opens a new window (see X11::XCB::Window), maps it, waits until it got mapped
-# and synchronizes with i3.
-#
-# set dont_map to a true value to avoid mapping
-#
-# if you want to change aspects of your window before it would be mapped,
-# set before_map to a coderef. $window gets passed as $_ and as first argument.
-#
-# if you set both dont_map and before_map, the coderef will be called nevertheless
-#
-#
-# default values:
-#     class => WINDOW_CLASS_INPUT_OUTPUT
-#     rect => [ 0, 0, 30, 30 ]
-#     background_color => '#c0c0c0'
-#     event_mask => [ 'structure_notify' ]
-#     name => 'Window <n>'
-#
+=head2 open_window([ $args ])
+
+Opens a new window (see C<X11::XCB::Window>), maps it, waits until it got mapped
+and synchronizes with i3.
+
+The following arguments can be passed:
+
+=over 4
+
+=item class
+
+The X11 window class (e.g. WINDOW_CLASS_INPUT_OUTPUT), not to be confused with
+the WM_CLASS!
+
+=item rect
+
+An arrayref with 4 members specifying the initial geometry (position and size)
+of the window, e.g. C<< [ 0, 100, 70, 50 ] >> for a window appearing at x=0, y=100
+with width=70 and height=50.
+
+Note that this is entirely irrelevant for tiling windows.
+
+=item background_color
+
+The background pixel color of the window, formatted as "#rrggbb", like HTML
+color codes (e.g. #c0c0c0). This is useful to tell windows apart when actually
+watching the testcases.
+
+=item event_mask
+
+An arrayref containing strings which describe the X11 event mask we use for that
+window. The default is C<< [ 'structure_notify' ] >>.
+
+=item name
+
+The window’s C<_NET_WM_NAME> (UTF-8 window title). By default, this is "Window
+n" with n being replaced by a counter to keep windows apart.
+
+=item dont_map
+
+Set to a true value to avoid mapping the window (making it visible).
+
+=item before_map
+
+A coderef which is called before the window is mapped (unless C<dont_map> is
+true). The freshly created C<$window> is passed as C<$_> and as the first
+argument.
+
+=back
+
+The default values are equivalent to this call:
+
+  open_window(
+    class => WINDOW_CLASS_INPUT_OUTPUT
+    rect => [ 0, 0, 30, 30 ]
+    background_color => '#c0c0c0'
+    event_mask => [ 'structure_notify' ]
+    name => 'Window <n>'
+  );
+
+Usually, though, calls are simpler:
+
+  my $top_window = open_window;
+
+=cut
 sub open_window {
     my %args = @_ == 1 ? %{$_[0]} : @_;
 
@@ -233,8 +343,14 @@ sub open_window {
     return $window;
 }
 
-# Thin wrapper around open_window which sets window_type to
-# _NET_WM_WINDOW_TYPE_UTILITY to make the window floating.
+=head2 open_floating_window([ $args ])
+
+Thin wrapper around open_window which sets window_type to
+C<_NET_WM_WINDOW_TYPE_UTILITY> to make the window floating.
+
+The arguments are the same as those of C<open_window>.
+
+=cut
 sub open_floating_window {
     my %args = @_ == 1 ? %{$_[0]} : @_;
 
@@ -250,6 +366,15 @@ sub open_empty_con {
     return $reply->[0]->{id};
 }
 
+=head2 get_workspace_names()
+
+Returns an arrayref containing the name of every workspace (regardless of its
+output) which currently exists.
+
+  my $workspace_names = get_workspace_names;
+  is(scalar @$workspace_names, 3, 'three workspaces exist currently');
+
+=cut
 sub get_workspace_names {
     my $i3 = i3(get_socket_path());
     my $tree = $i3->get_tree->recv;
@@ -264,6 +389,15 @@ sub get_workspace_names {
     [ map { $_->{name} } @cons ]
 }
 
+=head2 get_unused_workspace
+
+Returns a workspace name which has not yet been used. See also
+C<fresh_workspace> which directly switches to an unused workspace.
+
+  my $ws = get_unused_workspace;
+  cmd "workspace $ws";
+
+=cut
 sub get_unused_workspace {
     my @names = get_workspace_names();
     my $tmp;
@@ -271,7 +405,7 @@ sub get_unused_workspace {
     $tmp
 }
 
-=head2 fresh_workspace(...)
+=head2 fresh_workspace([ $args ])
 
 Switches to an unused workspace and returns the name of that workspace.
 
@@ -304,6 +438,30 @@ sub fresh_workspace {
     $unused
 }
 
+=head2 get_ws($workspace)
+
+Returns the container (from the i3 layout tree) which represents C<$workspace>.
+
+  my $ws = fresh_workspace;
+  my $ws_con = get_ws($ws);
+  ok(!$ws_con->{urgent}, 'fresh workspace not marked urgent');
+
+Here is an example which counts the number of urgent containers recursively,
+starting from the workspace container:
+
+  sub count_urgent {
+      my ($con) = @_;
+
+      my @children = (@{$con->{nodes}}, @{$con->{floating_nodes}});
+      my $urgent = grep { $_->{urgent} } @children;
+      $urgent += count_urgent($_) for @children;
+      return $urgent;
+  }
+  my $urgent = count_urgent(get_ws($ws));
+  is($urgent, 3, "three urgent windows on workspace $ws");
+
+
+=cut
 sub get_ws {
     my ($name) = @_;
     my $i3 = i3(get_socket_path());
@@ -322,17 +480,61 @@ sub get_ws {
     return first { $_->{name} eq $name } @workspaces;
 }
 
-#
-# returns the content (== tree, starting from the node of a workspace)
-# of a workspace. If called in array context, also includes the focus
-# stack of the workspace
-#
+=head2 get_ws_content($workspace)
+
+Returns the content (== tree, starting from the node of a workspace)
+of a workspace. If called in array context, also includes the focus
+stack of the workspace.
+
+  my $nodes = get_ws_content($ws);
+  is(scalar @$nodes, 4, 'there are four containers at workspace-level');
+
+Or, in array context:
+
+  my $window = open_window;
+  my ($nodes, $focus) = get_ws_content($ws);
+  is($focus->[0], $window->id, 'newly opened window focused');
+
+Note that this function does not do recursion for you! It only returns the
+containers B<on workspace level>. If you want to work with all containers (even
+nested ones) on a workspace, you have to use recursion:
+
+  # NB: This function does not count floating windows
+  sub count_urgent {
+      my ($nodes) = @_;
+
+      my $urgent = 0;
+      for my $con (@$nodes) {
+          $urgent++ if $con->{urgent};
+          $urgent += count_urgent($con->{nodes});
+      }
+
+      return $urgent;
+  }
+  my $nodes = get_ws_content($ws);
+  my $urgent = count_urgent($nodes);
+  is($urgent, 3, "three urgent windows on workspace $ws");
+
+If you also want to deal with floating windows, you have to use C<get_ws>
+instead and access C<< ->{nodes} >> and C<< ->{floating_nodes} >> on your own.
+
+=cut
 sub get_ws_content {
     my ($name) = @_;
     my $con = get_ws($name);
     return wantarray ? ($con->{nodes}, $con->{focus}) : $con->{nodes};
 }
 
+=head2 get_focused($workspace)
+
+Returns the container ID of the currently focused container on C<$workspace>.
+
+  my $ws = fresh_workspace;
+  my $first_window = open_window;
+  my $second_window = open_window;
+  is(get_focused($ws), $second_window, 'second window focused');
+
+=cut
 sub get_focused {
     my ($ws) = @_;
     my $con = get_ws($ws);
@@ -350,6 +552,16 @@ sub get_focused {
     return $lf;
 }
 
+=head2 get_dock_clients([ $dockarea ])
+
+Returns an array of all dock containers in C<$dockarea> (one of "top" or
+"bottom"). If C<$dockarea> is not specified, returns an array of all dock
+containers in any dockarea.
+
+  my @docked = get_dock_clients;
+  is(scalar @docked, 0, 'no dock clients yet');
+
+=cut
 sub get_dock_clients {
     my $which = shift;
 
@@ -374,10 +586,30 @@ sub get_dock_clients {
     return @docked;
 }
 
+=head2 cmd($command)
+
+Sends the specified command to i3.
+
+  my $ws = unused_workspace;
+  cmd "workspace $ws";
+  cmd 'focus right';
+
+=cut
 sub cmd {
     i3(get_socket_path())->command(@_)->recv
 }
 
+=head2 workspace_exists($workspace)
+
+Returns true if C<$workspace> is the name of an existing workspace.
+
+  my $old_ws = focused_ws;
+  # switch away from where we currently are
+  fresh_workspace;
+
+  ok(workspace_exists($old_ws), 'old workspace still exists');
+
+=cut
 sub workspace_exists {
     my ($name) = @_;
     ($name ~~ @{get_workspace_names()})
@@ -386,6 +618,9 @@ sub workspace_exists {
 =head2 focused_ws
 
 Returns the name of the currently focused workspace.
+
+  my $ws = focused_ws;
+  is($ws, '1', 'i3 starts on workspace 1');
 
 =cut
 sub focused_ws {
@@ -398,16 +633,31 @@ sub focused_ws {
     return $first->{name}
 }
 
-#
-# Sends an I3_SYNC ClientMessage with a random value to the root window.
-# i3 will reply with the same value, but, due to the order of events it
-# processes, only after all other events are done.
-#
-# This can be used to ensure the results of a cmd 'focus left' are pushed to
-# X11 and that $x->input_focus returns the correct value afterwards.
-#
-# See also docs/testsuite for a long explanation
-#
+=head2 sync_with_i3([ $args ])
+
+Sends an I3_SYNC ClientMessage with a random value to the root window.
+i3 will reply with the same value, but, due to the order of events it
+processes, only after all other events are done.
+
+This can be used to ensure the results of a cmd 'focus left' are pushed to
+X11 and that C<< $x->input_focus >> returns the correct value afterwards.
+
+See also L<http://build.i3wm.org/docs/testsuite.html> for a longer explanation.
+
+  my $window = open_window;
+  $window->add_hint('urgency');
+  # Ensure i3 picked up the change
+  sync_with_i3;
+
+The only time when you need to use the C<no_cache> argument is when you just
+killed your own X11 connection:
+
+  cmd 'kill client';
+  # We need to re-establish the X11 connection which we just killed :).
+  $x = i3test::X11->new;
+  sync_with_i3(no_cache => 1);
+
+=cut
 sub sync_with_i3 {
     my %args = @_ == 1 ? %{$_[0]} : @_;
 
@@ -458,15 +708,22 @@ sub sync_with_i3 {
     };
 }
 
-sub does_i3_live {
-    my $tree = i3(get_socket_path())->get_tree->recv;
-    my @nodes = @{$tree->{nodes}};
-    my $ok = (@nodes > 0);
-    $tester->ok($ok, 'i3 still lives');
-    return $ok;
-}
+=head2 exit_gracefully($pid, [ $socketpath ])
 
-# Tries to exit i3 gracefully (with the 'exit' cmd) or kills the PID if that fails
+Tries to exit i3 gracefully (with the 'exit' cmd) or kills the PID if that fails.
+
+If C<$socketpath> is not specified, C<get_socket_path()> will be called.
+
+You only need to use this function if you have launched i3 on your own with
+C<launch_with_config>. Otherwise, it will be automatically called when the
+testcase ends.
+
+  use i3test i3_autostart => 0;
+  my $pid = launch_with_config($config);
+  # …
+  exit_gracefully($pid);
+
+=cut
 sub exit_gracefully {
     my ($pid, $socketpath) = @_;
     $socketpath ||= get_socket_path();
@@ -491,7 +748,20 @@ sub exit_gracefully {
     undef $i3_pid;
 }
 
-# Gets the socket path from the I3_SOCKET_PATH atom stored on the X11 root window
+=head2 get_socket_path([ $cache ])
+
+Gets the socket path from the C<I3_SOCKET_PATH> atom stored on the X11 root
+window. After the first call, this function will return a cached version of the
+socket path unless you specify a false value for C<$cache>.
+
+  my $i3 = i3(get_socket_path());
+  $i3->command('nop test example')->recv;
+
+To avoid caching:
+
+  my $i3 = i3(get_socket_path(0));
+
+=cut
 sub get_socket_path {
     my ($cache) = @_;
     $cache ||= 1;
@@ -511,9 +781,26 @@ sub get_socket_path {
     return $socketpath;
 }
 
-#
-# launches a new i3 process with the given string as configuration file.
-# useful for tests which test specific config file directives.
+=head2 launch_with_config($config, [ $args ])
+
+Launches a new i3 process with C<$config> as configuration file. Useful for
+tests which test specific config file directives.
+
+  use i3test i3_autostart => 0;
+
+  my $config = <<EOT;
+  # i3 config file (v4)
+  for_window [class="borderless"] border none
+  for_window [title="special borderless title"] border none
+  EOT
+
+  my $pid = launch_with_config($config);
+
+  # …
+
+  exit_gracefully($pid);
+
+=cut
 sub launch_with_config {
     my ($config, %args) = @_;
 
@@ -546,6 +833,7 @@ sub launch_with_config {
         testname => $ENV{TESTNAME},
         valgrind => $ENV{VALGRIND},
         strace => $ENV{STRACE},
+        xtrace => $ENV{XTRACE},
         restart => $ENV{RESTART},
         cv => $cv,
         dont_create_temp_dir => $args{dont_create_temp_dir},
@@ -562,6 +850,12 @@ sub launch_with_config {
 
     return $i3_pid;
 }
+
+=head1 AUTHOR
+
+Michael Stapelberg <michael@i3wm.org>
+
+=cut
 
 package i3test::X11;
 use parent 'X11::XCB::Connection';

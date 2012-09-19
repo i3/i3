@@ -54,6 +54,7 @@
 #include "i3.h"
 #include "x.h"
 #include "click.h"
+#include "key_press.h"
 #include "floating.h"
 #include "config.h"
 #include "handlers.h"
@@ -79,5 +80,6 @@
 #include "commands.h"
 #include "commands_parser.h"
 #include "fake_outputs.h"
+#include "display_version.h"
 
 #endif

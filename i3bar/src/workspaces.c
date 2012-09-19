@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3bar - an xcb-based status- and ws-bar for i3
- * © 2010-2011 Axel Wagner and contributors (see also: LICENSE)
+ * © 2010-2012 Axel Wagner and contributors (see also: LICENSE)
  *
  * workspaces.c: Maintaining the workspace-lists
  *
@@ -114,23 +114,16 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, unsigne
 
         if (!strcmp(params->cur_key, "name")) {
             /* Save the name */
-            params->workspaces_walk->name = smalloc(sizeof(const unsigned char) * (len + 1));
-            strncpy(params->workspaces_walk->name, (const char*) val, len);
-            params->workspaces_walk->name[len] = '\0';
+            params->workspaces_walk->name = i3string_from_utf8_with_length((const char *)val, len);
 
-            /* Convert the name to ucs2, save its length in glyphs and calculate its rendered width */
-            size_t ucs2_len;
-            xcb_char2b_t *ucs2_name = (xcb_char2b_t*) convert_utf8_to_ucs2(params->workspaces_walk->name, &ucs2_len);
-            params->workspaces_walk->ucs2_name = ucs2_name;
-            params->workspaces_walk->name_glyphs = ucs2_len;
+            /* Save its rendered width */
             params->workspaces_walk->name_width =
-                predict_text_width((char *)params->workspaces_walk->ucs2_name,
-                params->workspaces_walk->name_glyphs, true);
+                predict_text_width(params->workspaces_walk->name);
 
-            DLOG("Got Workspace %s, name_width: %d, glyphs: %d\n",
-                 params->workspaces_walk->name,
+            DLOG("Got Workspace %s, name_width: %d, glyphs: %zu\n",
+                 i3string_as_utf8(params->workspaces_walk->name),
                  params->workspaces_walk->name_width,
-                 params->workspaces_walk->name_glyphs);
+                 i3string_get_num_glyphs(params->workspaces_walk->name));
             FREE(params->cur_key);
 
             return 1;
@@ -269,7 +262,7 @@ void parse_workspaces_json(char *json) {
  * free() all workspace data-structures. Does not free() the heads of the tailqueues.
  *
  */
-void free_workspaces() {
+void free_workspaces(void) {
     i3_output *outputs_walk;
     if (outputs == NULL) {
         return;
@@ -279,8 +272,7 @@ void free_workspaces() {
     SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (outputs_walk->workspaces != NULL && !TAILQ_EMPTY(outputs_walk->workspaces)) {
             TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
-                FREE(ws_walk->name);
-                FREE(ws_walk->ucs2_name);
+                I3STRING_FREE(ws_walk->name);
             }
             FREE_TAILQ(outputs_walk->workspaces, i3_ws);
         }

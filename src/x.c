@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "x.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -299,16 +301,20 @@ void x_window_kill(xcb_window_t window, kill_window_t kill_window) {
 void x_draw_decoration(Con *con) {
     Con *parent = con->parent;
     bool leaf = con_is_leaf(con);
+
     /* This code needs to run for:
      *  • leaf containers
      *  • non-leaf containers which are in a stacked/tabbed container
      *
      * It does not need to run for:
+     *  • direct children of outputs or dockareas
      *  • floating containers (they don’t have a decoration)
      */
     if ((!leaf &&
          parent->layout != L_STACKED &&
          parent->layout != L_TABBED) ||
+        parent->type == CT_OUTPUT ||
+        parent->type == CT_DOCKAREA ||
         con->type == CT_FLOATING_CON)
         return;
 
@@ -396,6 +402,10 @@ void x_draw_decoration(Con *con) {
 
     /* 3: draw a rectangle in border color around the client */
     if (p->border_style != BS_NONE && p->con_is_leaf) {
+        /* We might hide some borders adjacent to the screen-edge */
+        adjacent_t borders_to_hide = ADJ_NONE;
+        borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
+
         Rect br = con_border_style_rect(con);
 #if 0
         DLOG("con->rect spans %d x %d\n", con->rect.width, con->rect.height);
@@ -408,14 +418,20 @@ void x_draw_decoration(Con *con) {
          * rectangle because some childs are not freely resizable and we want
          * their background color to "shine through". */
         xcb_change_gc(conn, con->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->background });
-        xcb_rectangle_t borders[] = {
-            { 0, 0, br.x, r->height },
-            { 0, r->height + br.height + br.y, r->width, r->height },
-            { r->width + br.width + br.x, 0, r->width, r->height }
-        };
-        xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 3, borders);
+        if (!(borders_to_hide & ADJ_LEFT_SCREEN_EDGE)) {
+            xcb_rectangle_t leftline = { 0, 0, br.x, r->height };
+            xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &leftline);
+        }
+        if (!(borders_to_hide & ADJ_RIGHT_SCREEN_EDGE)) {
+            xcb_rectangle_t rightline = { r->width + br.width + br.x, 0, r->width, r->height };
+            xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &rightline);
+        }
+        if (!(borders_to_hide & ADJ_LOWER_SCREEN_EDGE)) {
+            xcb_rectangle_t bottomline = { 0, r->height + br.height + br.y, r->width, r->height };
+            xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &bottomline);
+        }
         /* 1pixel border needs an additional line at the top */
-        if (p->border_style == BS_1PIXEL) {
+        if (p->border_style == BS_1PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
             xcb_rectangle_t topline = { br.x, 0, con->rect.width + br.width + br.x, br.y };
             xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &topline);
         }
@@ -465,10 +481,10 @@ void x_draw_decoration(Con *con) {
     int text_offset_y = (con->deco_rect.height - config.font.height) / 2;
 
     struct Window *win = con->window;
-    if (win == NULL || win->name_x == NULL) {
+    if (win == NULL || win->name == NULL) {
         /* this is a non-leaf container, we need to make up a good description */
         // TODO: use a good description instead of just "another container"
-        draw_text("another container", strlen("another container"), false,
+        draw_text_ascii("another container",
                 parent->pixmap, parent->pm_gc,
                 con->deco_rect.x + 2, con->deco_rect.y + text_offset_y,
                 con->deco_rect.width - 2);
@@ -492,7 +508,7 @@ void x_draw_decoration(Con *con) {
     //DLOG("indent_level = %d, indent_mult = %d\n", indent_level, indent_mult);
     int indent_px = (indent_level * 5) * indent_mult;
 
-    draw_text(win->name_x, win->name_len, win->uses_net_wm_name,
+    draw_text(win->name,
             parent->pixmap, parent->pm_gc,
             con->deco_rect.x + 2 + indent_px, con->deco_rect.y + text_offset_y,
             con->deco_rect.width - 2 - indent_px);
@@ -1014,9 +1030,11 @@ void x_set_name(Con *con, const char *name) {
  *
  */
 void x_set_i3_atoms(void) {
+    pid_t pid = getpid();
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_SOCKET_PATH, A_UTF8_STRING, 8,
                         (current_socketpath == NULL ? 0 : strlen(current_socketpath)),
                         current_socketpath);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_PID, XCB_ATOM_CARDINAL, 32, 1, &pid);
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_CONFIG_PATH, A_UTF8_STRING, 8,
                         strlen(current_configpath), current_configpath);
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_SHMLOG_PATH, A_UTF8_STRING, 8,

@@ -222,6 +222,12 @@ Con *con_descend_direction(Con *con, direction_t direction);
 Rect con_border_style_rect(Con *con);
 
 /**
+ * Returns adjacent borders of the window. We need this if hide_edge_borders is
+ * enabled.
+ */
+adjacent_t con_adjacent_borders(Con *con);
+
+/**
  * Use this function to get a container’s border style. This is important
  * because when inside a stack, the border style is always BS_NORMAL.
  * For tabbed mode, the same applies, with one exception: when the container is
@@ -249,10 +255,42 @@ void con_set_border_style(Con *con, int border_style);
 void con_set_layout(Con *con, int layout);
 
 /**
+ * This function toggles the layout of a given container. toggle_mode can be
+ * either 'default' (toggle only between stacked/tabbed/last_split_layout),
+ * 'split' (toggle only between splitv/splith) or 'all' (toggle between all
+ * layouts).
+ *
+ */
+void con_toggle_layout(Con *con, const char *toggle_mode);
+
+/**
  * Determines the minimum size of the given con by looking at its children (for
  * split/stacked/tabbed cons). Will be called when resizing floating cons
  *
  */
 Rect con_minimum_size(Con *con);
+
+/**
+ * Returns true if changing the focus to con would be allowed considering
+ * the fullscreen focus constraints. Specifically, if a fullscreen container or
+ * any of its descendants is focused, this function returns true if and only if
+ * focusing con would mean that focus would still be visible on screen, i.e.,
+ * the newly focused container would not be obscured by a fullscreen container.
+ *
+ * In the simplest case, if a fullscreen container or any of its descendants is
+ * fullscreen, this functions returns true if con is the fullscreen container
+ * itself or any of its descendants, as this means focus wouldn't escape the
+ * boundaries of the fullscreen container.
+ *
+ * In case the fullscreen container is of type CF_OUTPUT, this function returns
+ * true if con is on a different workspace, as focus wouldn't be obscured by
+ * the fullscreen container that is constrained to a different workspace.
+ *
+ * Note that this same logic can be applied to moving containers. If a
+ * container can be focused under the fullscreen focus constraints, it can also
+ * become a parent or sibling to the currently focused container.
+ *
+ */
+bool con_fullscreen_permits_focusing(Con *con);
 
 #endif

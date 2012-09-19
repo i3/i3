@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "handlers.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -75,58 +77,6 @@ bool event_is_ignored(const int sequence, const int response_type) {
     }
 
     return false;
-}
-
-
-/*
- * There was a key press. We compare this key code with our bindings table and pass
- * the bound action to parse_command().
- *
- */
-static void handle_key_press(xcb_key_press_event_t *event) {
-
-    last_timestamp = event->time;
-
-    DLOG("Keypress %d, state raw = %d\n", event->detail, event->state);
-
-    /* Remove the numlock bit, all other bits are modifiers we can bind to */
-    uint16_t state_filtered = event->state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK);
-    DLOG("(removed numlock, state = %d)\n", state_filtered);
-    /* Only use the lower 8 bits of the state (modifier masks) so that mouse
-     * button masks are filtered out */
-    state_filtered &= 0xFF;
-    DLOG("(removed upper 8 bits, state = %d)\n", state_filtered);
-
-    if (xkb_current_group == XkbGroup2Index)
-        state_filtered |= BIND_MODE_SWITCH;
-
-    DLOG("(checked mode_switch, state %d)\n", state_filtered);
-
-    /* Find the binding */
-    Binding *bind = get_binding(state_filtered, event->detail);
-
-    /* No match? Then the user has Mode_switch enabled but does not have a
-     * specific keybinding. Fall back to the default keybindings (without
-     * Mode_switch). Makes it much more convenient for users of a hybrid
-     * layout (like us, ru). */
-    if (bind == NULL) {
-        state_filtered &= ~(BIND_MODE_SWITCH);
-        DLOG("no match, new state_filtered = %d\n", state_filtered);
-        if ((bind = get_binding(state_filtered, event->detail)) == NULL) {
-            ELOG("Could not lookup key binding (modifiers %d, keycode %d)\n",
-                 state_filtered, event->detail);
-            return;
-        }
-    }
-
-    char *command_copy = sstrdup(bind->command);
-    struct CommandResult *command_output = parse_command(command_copy);
-    free(command_copy);
-
-    if (command_output->needs_tree_render)
-        tree_render();
-
-    yajl_gen_free(command_output->json_gen);
 }
 
 /*
@@ -263,6 +213,7 @@ static void handle_motion_notify(xcb_motion_notify_event_t *event) {
 
     Con *con;
     if ((con = con_by_frame_id(event->event)) == NULL) {
+        DLOG("MotionNotify for an unknown container, checking if it crosses screen boundaries.\n");
         check_crossing_screen_boundary(event->root_x, event->root_y);
         return;
     }
@@ -467,6 +418,8 @@ static void handle_screen_change(xcb_generic_event_t *e) {
     DLOG("RandR screen change\n");
 
     randr_query_outputs();
+
+    scratchpad_fix_resolution();
 
     ipc_send_event("output", I3_IPC_EVENT_OUTPUT, "{\"change\":\"unspecified\"}");
 
@@ -686,12 +639,29 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         }
 
         tree_render();
-        x_push_changes(croot);
+    } else if (event->type == A__NET_ACTIVE_WINDOW) {
+        DLOG("_NET_ACTIVE_WINDOW: Window 0x%08x should be activated\n", event->window);
+        Con *con = con_by_window_id(event->window);
+        if (con == NULL) {
+            DLOG("Could not get window for client message\n");
+            return;
+        }
+
+        Con *ws = con_get_workspace(con);
+        if (!workspace_is_visible(ws)) {
+            DLOG("Workspace not visible, ignoring _NET_ACTIVE_WINDOW\n");
+            return;
+        }
+
+        if (ws != con_get_workspace(focused))
+            workspace_show(ws);
+
+        con_focus(con);
+        tree_render();
     } else if (event->type == A_I3_SYNC) {
-        DLOG("i3 sync, yay\n");
         xcb_window_t window = event->data.data32[0];
         uint32_t rnd = event->data.data32[1];
-        DLOG("Sending random value %d back to X11 window 0x%08x\n", rnd, window);
+        DLOG("[i3 sync protocol] Sending random value %d back to X11 window 0x%08x\n", rnd, window);
 
         void *reply = scalloc(32);
         xcb_client_message_event_t *ev = reply;
@@ -1075,6 +1045,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
 
     switch (type) {
         case XCB_KEY_PRESS:
+        case XCB_KEY_RELEASE:
             handle_key_press((xcb_key_press_event_t*)event);
             break;
 

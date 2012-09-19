@@ -11,6 +11,7 @@ WriteMakefile(
         'AnyEvent::I3' => '0.09',
         'X11::XCB'     => '0.03',
         'Inline'       => 0,
+        'ExtUtils::PkgConfig' => 0,
         'Test::More'   => '0.94',
     },
     PM => {}, # do not install any files from this directory

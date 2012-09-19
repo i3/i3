@@ -66,10 +66,20 @@ state BORDER:
   border_style = 'normal', 'none', '1pixel', 'toggle'
       -> call cmd_border($border_style)
 
-# layout default|stacked|stacking|tabbed
+# layout default|stacked|stacking|tabbed|splitv|splith
+# layout toggle [split|all]
 state LAYOUT:
-  layout_mode = 'default', 'stacked', 'stacking', 'tabbed'
+  layout_mode = 'default', 'stacked', 'stacking', 'tabbed', 'splitv', 'splith'
       -> call cmd_layout($layout_mode)
+  'toggle'
+      -> LAYOUT_TOGGLE
+
+# layout toggle [split|all]
+state LAYOUT_TOGGLE:
+  end
+      -> call cmd_layout_toggle($toggle_mode)
+  toggle_mode = 'split', 'all'
+      -> call cmd_layout_toggle($toggle_mode)
 
 # append_layout <path>
 state APPEND_LAYOUT:
@@ -190,7 +200,7 @@ state RENAME_WORKSPACE_TO:
       -> call cmd_rename_workspace($old_name, $new_name)
 
 # move <direction> [<pixels> [px]]
-# move [window|container] [to] workspace <str>
+# move [window|container] [to] workspace [<str>|next|prev|current]
 # move [window|container] [to] output <str>
 # move [window|container] [to] scratchpad
 # move workspace to [output] <str>
@@ -231,7 +241,7 @@ state MOVE_DIRECTION_PX:
 state MOVE_WORKSPACE:
   'to'
       -> MOVE_WORKSPACE_TO_OUTPUT
-  workspace = 'next', 'prev', 'next_on_output', 'prev_on_output'
+  workspace = 'next', 'prev', 'next_on_output', 'prev_on_output', 'current'
       -> call cmd_move_con_to_workspace($workspace)
   'number'
       -> MOVE_WORKSPACE_NUMBER

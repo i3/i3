@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "workspace.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -13,6 +15,25 @@
 /* Stores a copy of the name of the last used workspace for the workspace
  * back-and-forth switching. */
 static char *previous_workspace_name = NULL;
+
+/*
+ * Sets ws->layout to splith/splitv if default_orientation was specified in the
+ * configfile. Otherwise, it uses splith/splitv depending on whether the output
+ * is higher than wide.
+ *
+ */
+static void _workspace_apply_default_orientation(Con *ws) {
+    /* If default_orientation is set to NO_ORIENTATION we determine
+     * orientation depending on output resolution. */
+    if (config.default_orientation == NO_ORIENTATION) {
+        Con *output = con_get_output(ws);
+        ws->layout = (output->rect.height > output->rect.width) ? L_SPLITV : L_SPLITH;
+        DLOG("Auto orientation. Workspace size set to (%d,%d), setting layout to %d.\n",
+             output->rect.width, output->rect.height, ws->layout);
+    } else {
+        ws->layout = (config.default_orientation == HORIZ) ? L_SPLITH : L_SPLITV;
+    }
+}
 
 /*
  * Returns a pointer to the workspace with the given number (starting at 0),
@@ -52,6 +73,7 @@ Con *workspace_get(const char *num, bool *created) {
         workspace->type = CT_WORKSPACE;
         FREE(workspace->name);
         workspace->name = sstrdup(num);
+        workspace->workspace_layout = config.default_layout;
         /* We set ->num to the number if this workspace’s name begins with a
          * positive number. Otherwise it’s a named ws and num will be -1. */
         char *endptr = NULL;
@@ -64,16 +86,8 @@ Con *workspace_get(const char *num, bool *created) {
         else workspace->num = parsed_num;
         LOG("num = %d\n", workspace->num);
 
-        /* If default_orientation is set to NO_ORIENTATION we
-         * determine workspace orientation from workspace size.
-         * Otherwise we just set the orientation to default_orientation. */
-        if (config.default_orientation == NO_ORIENTATION) {
-            workspace->orientation = (output->rect.height > output->rect.width) ? VERT : HORIZ;
-            DLOG("Auto orientation. Output resolution set to (%d,%d), setting orientation to %d.\n",
-                 workspace->rect.width, workspace->rect.height, workspace->orientation);
-        } else {
-            workspace->orientation = config.default_orientation;
-        }
+        workspace->parent = content;
+        _workspace_apply_default_orientation(workspace);
 
         con_attach(workspace, content, false);
 
@@ -114,14 +128,15 @@ Con *create_workspace_on_output(Output *output, Con *content) {
         /* We check if this is the workspace
          * next/prev/next_on_output/prev_on_output/back_and_forth/number command.
          * Beware: The workspace names "next", "prev", "next_on_output",
-         * "prev_on_output", "number" and "back_and_forth" are OK, so we check
-         * before stripping the double quotes */
+         * "prev_on_output", "number", "back_and_forth" and "current" are OK,
+         * so we check before stripping the double quotes */
         if (strncasecmp(target, "next", strlen("next")) == 0 ||
             strncasecmp(target, "prev", strlen("prev")) == 0 ||
             strncasecmp(target, "next_on_output", strlen("next_on_output")) == 0 ||
             strncasecmp(target, "prev_on_output", strlen("prev_on_output")) == 0 ||
             strncasecmp(target, "number", strlen("number")) == 0 ||
-            strncasecmp(target, "back_and_forth", strlen("back_and_forth")) == 0)
+            strncasecmp(target, "back_and_forth", strlen("back_and_forth")) == 0 ||
+            strncasecmp(target, "current", strlen("current")) == 0)
             continue;
         if (*target == '"')
             target++;
@@ -197,18 +212,11 @@ Con *create_workspace_on_output(Output *output, Con *content) {
 
     ws->fullscreen_mode = CF_OUTPUT;
 
-    /* If default_orientation is set to NO_ORIENTATION we determine
-     * orientation depending on output resolution. */
-    if (config.default_orientation == NO_ORIENTATION) {
-        ws->orientation = (output->rect.height > output->rect.width) ? VERT : HORIZ;
-        DLOG("Auto orientation. Workspace size set to (%d,%d), setting orientation to %d.\n",
-             output->rect.width, output->rect.height, ws->orientation);
-    } else {
-        ws->orientation = config.default_orientation;
-    }
+    _workspace_apply_default_orientation(ws);
 
     return ws;
 }
+
 
 /*
  * Returns true if the workspace is currently visible. Especially important for
@@ -685,18 +693,17 @@ void workspace_update_urgent_flag(Con *ws) {
 
 /*
  * 'Forces' workspace orientation by moving all cons into a new split-con with
- * the same orientation as the workspace and then changing the workspace
- * orientation.
+ * the same layout as the workspace and then changing the workspace layout.
  *
  */
 void ws_force_orientation(Con *ws, orientation_t orientation) {
     /* 1: create a new split container */
     Con *split = con_new(NULL, NULL);
     split->parent = ws;
+    split->split = true;
 
-    /* 2: copy layout and orientation from workspace */
+    /* 2: copy layout from workspace */
     split->layout = ws->layout;
-    split->orientation = ws->orientation;
 
     Con *old_focused = TAILQ_FIRST(&(ws->focus_head));
 
@@ -708,11 +715,12 @@ void ws_force_orientation(Con *ws, orientation_t orientation) {
         con_attach(child, split, true);
     }
 
-    /* 4: switch workspace orientation */
-    ws->orientation = orientation;
+    /* 4: switch workspace layout */
+    ws->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
+    DLOG("split->layout = %d, ws->layout = %d\n", split->layout, ws->layout);
 
     /* 5: attach the new split container to the workspace */
-    DLOG("Attaching new split to ws\n");
+    DLOG("Attaching new split (%p) to ws (%p)\n", split, ws);
     con_attach(split, ws, false);
 
     /* 6: fix the percentages */
@@ -735,7 +743,7 @@ void ws_force_orientation(Con *ws, orientation_t orientation) {
 Con *workspace_attach_to(Con *ws) {
     DLOG("Attaching a window to workspace %p / %s\n", ws, ws->name);
 
-    if (config.default_layout == L_DEFAULT) {
+    if (ws->workspace_layout == L_DEFAULT) {
         DLOG("Default layout, just attaching it to the workspace itself.\n");
         return ws;
     }
@@ -744,18 +752,10 @@ Con *workspace_attach_to(Con *ws) {
     /* 1: create a new split container */
     Con *new = con_new(NULL, NULL);
     new->parent = ws;
+    new->split = true;
 
     /* 2: set the requested layout on the split con */
-    new->layout = config.default_layout;
-
-    /* 3: While the layout is irrelevant in stacked/tabbed mode, it needs
-     * to be set. Otherwise, this con will not be interpreted as a split
-     * container. */
-    if (config.default_orientation == NO_ORIENTATION) {
-        new->orientation = (ws->rect.height > ws->rect.width) ? VERT : HORIZ;
-    } else {
-        new->orientation = config.default_orientation;
-    }
+    new->layout = ws->workspace_layout;
 
     /* 4: attach the new split container to the workspace */
     DLOG("Attaching new split %p to workspace %p\n", new, ws);

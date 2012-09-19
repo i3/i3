@@ -1,6 +1,19 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 #
+# Please read the following documents before working on tests:
+# • http://build.i3wm.org/docs/testsuite.html
+#   (or docs/testsuite)
+#
+# • http://build.i3wm.org/docs/lib-i3test.html
+#   (alternatively: perldoc ./testcases/lib/i3test.pm)
+#
+# • http://build.i3wm.org/docs/ipc.html
+#   (or docs/ipc)
+#
+# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+#   (unless you are already familiar with Perl)
+#
 # Test for ticket #676: 'scratchpad show' causes a segfault if the scratchpad
 # window is shown on another workspace.
 #
@@ -45,8 +58,7 @@ my $win = open_window;
 my $scratch = open_special;
 cmd '[class="special"] move scratchpad';
 
-my ($nodes, $focus) = get_ws_content($tmp);
-is(scalar @$nodes, 1, 'one window on current ws');
+is_num_children($tmp, 1, 'one window on current ws');
 
 my $otmp = fresh_workspace;
 cmd 'scratchpad show';

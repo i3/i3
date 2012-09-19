@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "main.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -121,7 +123,7 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
                 DLOG("Expected X11 Error received for sequence %x\n", event->sequence);
             else {
                 xcb_generic_error_t *error = (xcb_generic_error_t*)event;
-                ELOG("X11 Error received! sequence 0x%x, error_code = %d\n",
+                DLOG("X11 Error received (probably harmless)! sequence 0x%x, error_code = %d\n",
                      error->sequence, error->error_code);
             }
             free(event);
@@ -255,6 +257,9 @@ int main(int argc, char *argv[]) {
         {"no-autostart", no_argument, 0, 'a'},
         {"config", required_argument, 0, 'c'},
         {"version", no_argument, 0, 'v'},
+        {"moreversion", no_argument, 0, 'm'},
+        {"more-version", no_argument, 0, 'm'},
+        {"more_version", no_argument, 0, 'm'},
         {"help", no_argument, 0, 'h'},
         {"layout", required_argument, 0, 'L'},
         {"restart", required_argument, 0, 0},
@@ -292,7 +297,7 @@ int main(int argc, char *argv[]) {
 
     start_argv = argv;
 
-    while ((opt = getopt_long(argc, argv, "c:CvaL:hld:V", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "c:CvmaL:hld:V", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'a':
                 LOG("Autostart disabled using -a\n");
@@ -314,12 +319,18 @@ int main(int argc, char *argv[]) {
             case 'v':
                 printf("i3 version " I3_VERSION " © 2009-2012 Michael Stapelberg and contributors\n");
                 exit(EXIT_SUCCESS);
+                break;
+            case 'm':
+                printf("Binary i3 version:  " I3_VERSION " © 2009-2012 Michael Stapelberg and contributors\n");
+                display_running_version();
+                exit(EXIT_SUCCESS);
+                break;
             case 'V':
                 set_verbosity(true);
                 break;
             case 'd':
-                LOG("Enabling debug loglevel %s\n", optarg);
-                add_loglevel(optarg);
+                LOG("Enabling debug logging\n");
+                set_debug_logging(true);
                 break;
             case 'l':
                 /* DEPRECATED, ignored for the next 3 versions (3.e, 3.f, 3.g) */
@@ -342,10 +353,10 @@ int main(int argc, char *argv[]) {
                     char *socket_path = root_atom_contents("I3_SOCKET_PATH");
                     if (socket_path) {
                         printf("%s\n", socket_path);
-                        return 0;
+                        exit(EXIT_SUCCESS);
                     }
 
-                    return 1;
+                    exit(EXIT_FAILURE);
                 } else if (strcmp(long_options[option_index].name, "shmlog-size") == 0 ||
                            strcmp(long_options[option_index].name, "shmlog_size") == 0) {
                     shmlog_size = atoi(optarg);
@@ -367,12 +378,12 @@ int main(int argc, char *argv[]) {
                 }
                 /* fall-through */
             default:
-                fprintf(stderr, "Usage: %s [-c configfile] [-d loglevel] [-a] [-v] [-V] [-C]\n", argv[0]);
+                fprintf(stderr, "Usage: %s [-c configfile] [-d all] [-a] [-v] [-V] [-C]\n", argv[0]);
                 fprintf(stderr, "\n");
                 fprintf(stderr, "\t-a          disable autostart ('exec' lines in config)\n");
                 fprintf(stderr, "\t-c <file>   use the provided configfile instead\n");
                 fprintf(stderr, "\t-C          validate configuration file and exit\n");
-                fprintf(stderr, "\t-d <level>  enable debug output with the specified loglevel\n");
+                fprintf(stderr, "\t-d all      enable debug output\n");
                 fprintf(stderr, "\t-L <file>   path to the serialized layout during restarts\n");
                 fprintf(stderr, "\t-v          display version and exit\n");
                 fprintf(stderr, "\t-V          enable verbose mode\n");
@@ -380,7 +391,8 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "\t--force-xinerama\n"
                                 "\tUse Xinerama instead of RandR.\n"
                                 "\tThis option should only be used if you are stuck with the\n"
-                                "\tnvidia closed source driver which does not support RandR.\n");
+                                "\told nVidia closed source driver (older than 302.17), which does\n"
+                                "\tnot support RandR.\n");
                 fprintf(stderr, "\n");
                 fprintf(stderr, "\t--get-socketpath\n"
                                 "\tRetrieve the i3 IPC socket path from X11, print it, then exit.\n");
@@ -424,7 +436,7 @@ int main(int argc, char *argv[]) {
             }
             optind++;
         }
-        LOG("Command is: %s (%d bytes)\n", payload, strlen(payload));
+        DLOG("Command is: %s (%zd bytes)\n", payload, strlen(payload));
         char *socket_path = root_atom_contents("I3_SOCKET_PATH");
         if (!socket_path) {
             ELOG("Could not get i3 IPC socket path\n");
@@ -483,7 +495,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    LOG("i3 (tree) version " I3_VERSION " starting\n");
+    LOG("i3 " I3_VERSION " starting\n");
 
     conn = xcb_connect(NULL, &conn_screen);
     if (xcb_connection_has_error(conn))
@@ -656,11 +668,12 @@ int main(int argc, char *argv[]) {
         randr_init(&randr_base);
     }
 
+    scratchpad_fix_resolution();
+
     xcb_query_pointer_reply_t *pointerreply;
     Output *output = NULL;
     if (!(pointerreply = xcb_query_pointer_reply(conn, pointercookie, NULL))) {
         ELOG("Could not query pointer position, using first screen\n");
-        output = get_first_output();
     } else {
         DLOG("Pointer at %d, %d\n", pointerreply->root_x, pointerreply->root_y);
         output = get_output_containing(pointerreply->root_x, pointerreply->root_y);
@@ -743,7 +756,29 @@ int main(int argc, char *argv[]) {
 
     xcb_flush(conn);
 
-    manage_existing_windows(root);
+    /* What follows is a fugly consequence of X11 protocol race conditions like
+     * the following: In an i3 in-place restart, i3 will reparent all windows
+     * to the root window, then exec() itself. In the new process, it calls
+     * manage_existing_windows. However, in case any application sent a
+     * generated UnmapNotify message to the WM (as GIMP does), this message
+     * will be handled by i3 *after* managing the window, thus i3 thinks the
+     * window just closed itself. In reality, the message was sent in the time
+     * period where i3 wasn’t running yet.
+     *
+     * To prevent this, we grab the server (disables processing of any other
+     * connections), then discard all pending events (since we didn’t do
+     * anything, there cannot be any meaningful responses), then ungrab the
+     * server. */
+    xcb_grab_server(conn);
+    {
+        xcb_aux_sync(conn);
+        xcb_generic_event_t *event;
+        while ((event = xcb_poll_for_event(conn)) != NULL) {
+            free(event);
+        }
+        manage_existing_windows(root);
+    }
+    xcb_ungrab_server(conn);
 
     struct sigaction action;
 

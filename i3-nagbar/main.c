@@ -30,7 +30,7 @@
 #include "i3-nagbar.h"
 
 typedef struct {
-    char *label;
+    i3String *label;
     char *action;
     int16_t x;
     uint16_t width;
@@ -41,7 +41,7 @@ static xcb_pixmap_t pixmap;
 static xcb_gcontext_t pixmap_gc;
 static xcb_rectangle_t rect = { 0, 0, 600, 20 };
 static i3Font font;
-static char *prompt;
+static i3String *prompt;
 static button_t *buttons;
 static int buttoncnt;
 
@@ -54,6 +54,27 @@ static uint32_t color_text;              /* color of the text */
 
 xcb_window_t root;
 xcb_connection_t *conn;
+xcb_screen_t *root_screen;
+
+/*
+ * Having verboselog() and errorlog() is necessary when using libi3.
+ *
+ */
+void verboselog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+}
+
+void errorlog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+}
 
 /*
  * Starts the given application by passing it through a shell. We use double fork
@@ -132,7 +153,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
 
     /* restore font color */
     set_font_colors(pixmap_gc, color_text, color_background);
-    draw_text(prompt, strlen(prompt), false, pixmap, pixmap_gc,
+    draw_text(prompt, pixmap, pixmap_gc,
             4 + 4, 4 + 4, rect.width - 4 - 4);
 
     /* render close button */
@@ -159,7 +180,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
 
     values[0] = 1;
     set_font_colors(pixmap_gc, color_text, color_button_background);
-    draw_text("X", 1, false, pixmap, pixmap_gc, y - w - line_width + w / 2 - 4,
+    draw_text_ascii("X", pixmap, pixmap_gc, y - w - line_width + w / 2 - 4,
             4 + 4 - 1, rect.width - y + w + line_width - w / 2 + 4);
     y -= w;
 
@@ -190,7 +211,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
         values[0] = color_text;
         values[1] = color_button_background;
         set_font_colors(pixmap_gc, color_text, color_button_background);
-        draw_text(buttons[c].label, strlen(buttons[c].label), false, pixmap, pixmap_gc,
+        draw_text(buttons[c].label, pixmap, pixmap_gc,
                 y - w - line_width + 6, 4 + 3, rect.width - y + w + line_width - 6);
 
         y -= w;
@@ -216,7 +237,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
 }
 
 int main(int argc, char *argv[]) {
-    char *pattern = strdup("-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1");
+    char *pattern = sstrdup("-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1");
     int o, option_index = 0;
     enum { TYPE_ERROR = 0, TYPE_WARNING = 1 } bar_type = TYPE_ERROR;
 
@@ -232,7 +253,7 @@ int main(int argc, char *argv[]) {
 
     char *options_string = "b:f:m:t:vh";
 
-    prompt = strdup("Please do not run this program.");
+    prompt = i3string_from_utf8("Please do not run this program.");
 
     while ((o = getopt_long(argc, argv, options_string, long_options, &option_index)) != -1) {
         switch (o) {
@@ -241,11 +262,11 @@ int main(int argc, char *argv[]) {
                 return 0;
             case 'f':
                 FREE(pattern);
-                pattern = strdup(optarg);
+                pattern = sstrdup(optarg);
                 break;
             case 'm':
-                FREE(prompt);
-                prompt = strdup(optarg);
+                i3string_free(prompt);
+                prompt = i3string_from_utf8(optarg);
                 break;
             case 't':
                 bar_type = (strcasecmp(optarg, "warning") == 0 ? TYPE_WARNING : TYPE_ERROR);
@@ -256,10 +277,10 @@ int main(int argc, char *argv[]) {
                 return 0;
             case 'b':
                 buttons = realloc(buttons, sizeof(button_t) * (buttoncnt + 1));
-                buttons[buttoncnt].label = optarg;
+                buttons[buttoncnt].label = i3string_from_utf8(optarg);
                 buttons[buttoncnt].action = argv[optind];
                 printf("button with label *%s* and action *%s*\n",
-                        buttons[buttoncnt].label,
+                        i3string_as_utf8(buttons[buttoncnt].label),
                         buttons[buttoncnt].action);
                 buttoncnt++;
                 printf("now %d buttons\n", buttoncnt);
@@ -280,7 +301,7 @@ int main(int argc, char *argv[]) {
     #include "atoms.xmacro"
     #undef xmacro
 
-    xcb_screen_t *root_screen = xcb_aux_get_screen(conn, screens);
+    root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
 
     if (bar_type == TYPE_ERROR) {
@@ -431,6 +452,8 @@ int main(int argc, char *argv[]) {
 
         free(event);
     }
+
+    FREE(pattern);
 
     return 0;
 }

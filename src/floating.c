@@ -1,3 +1,5 @@
+#undef I3__FILE__
+#define I3__FILE__ "floating.c"
 /*
  * vim:ts=4:sw=4:expandtab
  *
@@ -40,7 +42,7 @@ void floating_enable(Con *con, bool automatic) {
     }
 
     /* 1: If the container is a workspace container, we need to create a new
-     * split-container with the same orientation and make that one floating. We
+     * split-container with the same layout and make that one floating. We
      * cannot touch the workspace container itself because floating containers
      * are children of the workspace. */
     if (con->type == CT_WORKSPACE) {
@@ -52,7 +54,7 @@ void floating_enable(Con *con, bool automatic) {
         /* TODO: refactor this with src/con.c:con_set_layout */
         Con *new = con_new(NULL, NULL);
         new->parent = con;
-        new->orientation = con->orientation;
+        new->layout = con->layout;
 
         /* since the new container will be set into floating mode directly
          * afterwards, we need to copy the workspace rect. */
@@ -97,8 +99,9 @@ void floating_enable(Con *con, bool automatic) {
      * otherwise. */
     Con *ws = con_get_workspace(con);
     nc->parent = ws;
-    nc->orientation = NO_ORIENTATION;
+    nc->split = true;
     nc->type = CT_FLOATING_CON;
+    nc->layout = L_SPLITH;
     /* We insert nc already, even though its rect is not yet calculated. This
      * is necessary because otherwise the workspace might be empty (and get
      * closed in tree_close()) even though it’s not. */
@@ -174,11 +177,25 @@ void floating_enable(Con *con, bool automatic) {
             nc->rect.width = max(nc->rect.width, config.floating_minimum_width);
     }
 
-    /* add pixels for the decoration */
-    /* TODO: don’t add them when the user automatically puts new windows into
-     * 1pixel/borderless mode */
-    nc->rect.height += deco_height + 2;
-    nc->rect.width += 4;
+    /* 3: attach the child to the new parent container. We need to do this
+     * because con_border_style_rect() needs to access con->parent. */
+    con->parent = nc;
+    con->percent = 1.0;
+    con->floating = FLOATING_USER_ON;
+
+    /* 4: set the border style as specified with new_float */
+    if (automatic)
+        con->border_style = config.default_floating_border;
+
+    /* Add pixels for the decoration. */
+    Rect border_style_rect = con_border_style_rect(con);
+
+    nc->rect.height -= border_style_rect.height;
+    nc->rect.width -= border_style_rect.width;
+
+    /* Add some more pixels for the title bar */
+    if(con_border_style(con) == BS_NORMAL)
+        nc->rect.height += deco_height;
 
     /* Honor the X11 border */
     nc->rect.height += con->border_width * 2;
@@ -217,15 +234,6 @@ void floating_enable(Con *con, bool automatic) {
     }
 
     DLOG("Floating rect: (%d, %d) with %d x %d\n", nc->rect.x, nc->rect.y, nc->rect.width, nc->rect.height);
-
-    /* 3: attach the child to the new parent container */
-    con->parent = nc;
-    con->percent = 1.0;
-    con->floating = FLOATING_USER_ON;
-
-    /* 4: set the border style as specified with new_float */
-    if (automatic)
-        con->border_style = config.default_floating_border;
 
     /* 5: Subtract the deco_height in order to make the floating window appear
      * at precisely the position it specified in its original geometry (which
@@ -492,7 +500,7 @@ void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
                 confine_to, border_t border, callback_t callback, const void *extra)
 {
     uint32_t new_x, new_y;
-    Rect old_rect;
+    Rect old_rect = { 0, 0, 0, 0 };
     if (con != NULL)
         memcpy(&old_rect, &(con->rect), sizeof(Rect));
 
@@ -619,12 +627,12 @@ void floating_fix_coordinates(Con *con, Rect *old_rect, Rect *new_rect) {
     int32_t rel_y = (con->rect.y - old_rect->y);
     /* Then we calculate a fraction, for example 0.63 for a window
      * which is at y = 1212 of a 1920 px high output */
-    double fraction_x = ((double)rel_x / (int32_t)old_rect->width);
-    double fraction_y = ((double)rel_y / (int32_t)old_rect->height);
     DLOG("rel_x = %d, rel_y = %d, fraction_x = %f, fraction_y = %f, output->w = %d, output->h = %d\n",
-         rel_x, rel_y, fraction_x, fraction_y, old_rect->width, old_rect->height);
-    con->rect.x = (int32_t)new_rect->x + (fraction_x * (int32_t)new_rect->width);
-    con->rect.y = (int32_t)new_rect->y + (fraction_y * (int32_t)new_rect->height);
+          rel_x, rel_y, (double)rel_x / old_rect->width, (double)rel_y / old_rect->height,
+          old_rect->width, old_rect->height);
+    /* Here we have to multiply at first. Or we will lose precision when not compiled with -msse2 */
+    con->rect.x = (int32_t)new_rect->x + (double)(rel_x * (int32_t)new_rect->width)  / (int32_t)old_rect->width;
+    con->rect.y = (int32_t)new_rect->y + (double)(rel_y * (int32_t)new_rect->height) / (int32_t)old_rect->height;
     DLOG("Resulting coordinates: x = %d, y = %d\n", con->rect.x, con->rect.y);
 }
 

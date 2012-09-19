@@ -10,8 +10,14 @@
 
 set $mod Mod1
 
-# font for window titles. ISO 10646 = Unicode
+# Font for window titles. Will also be used by the bar unless a different font
+# is used in the bar {} block below. ISO 10646 = Unicode
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+# The font above is very space-efficient, that is, it looks good, sharp and
+# clear in small sizes. However, if you need a lot of unicode glyphs or
+# right-to-left text rendering, you should instead use pango for rendering and
+# chose an xft font, such as:
+# font xft:DejaVu Sans Mono 10
 
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
@@ -58,10 +64,10 @@ bindcode $mod+55 split v
 # enter fullscreen mode for the focused container
 bindcode $mod+41 fullscreen
 
-# change container layout (stacked, tabbed, default)
+# change container layout (stacked, tabbed, toggle split)
 bindcode $mod+39 layout stacking
 bindcode $mod+25 layout tabbed
-bindcode $mod+26 layout default
+bindcode $mod+26 layout toggle split
 
 # toggle tiling / floating
 bindcode $mod+Shift+65 floating toggle
@@ -104,7 +110,7 @@ bindcode $mod+Shift+54 reload
 # restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
 bindcode $mod+Shift+27 restart
 # exit i3 (logs you out of your X session)
-bindcode $mod+Shift+26 exit
+bindcode $mod+Shift+26 exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
 
 # resize window (you can also use the mouse for that)
 mode "resize" {

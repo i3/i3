@@ -1,5 +1,18 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
+#
+# Please read the following documents before working on tests:
+# • http://build.i3wm.org/docs/testsuite.html
+#   (or docs/testsuite)
+#
+# • http://build.i3wm.org/docs/lib-i3test.html
+#   (alternatively: perldoc ./testcases/lib/i3test.pm)
+#
+# • http://build.i3wm.org/docs/ipc.html
+#   (or docs/ipc)
+#
+# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+#   (unless you are already familiar with Perl)
 
 use i3test;
 use List::Util qw(first);
@@ -39,20 +52,23 @@ my $expected = {
     name => 'root',
     orientation => $ignore,
     type => 0,
+    split => JSON::XS::false,
     id => $ignore,
     rect => $ignore,
     window_rect => $ignore,
     geometry => $ignore,
     swallows => $ignore,
     percent => undef,
-    layout => 'default',
+    layout => 'splith',
     floating => 'auto_off',
+    last_split_layout => 'splith',
     scratchpad_state => 'none',
     focus => $ignore,
     focused => JSON::XS::false,
     urgent => JSON::XS::false,
     border => 'normal',
     'floating_nodes' => $ignore,
+    workspace_layout => 'default',
 };
 
 # a shallow copy is sufficient, since we only ignore values at the root

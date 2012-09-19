@@ -66,6 +66,7 @@ EOL     (\r?\n)
 %x BAR_COLOR
 
 %x EXEC
+%x OPTRELEASE
 
 %%
 
@@ -159,7 +160,7 @@ EOL     (\r?\n)
                                   return STR;
                                 }
 <WANT_STRING>[^\n]+             { yy_pop_state(); yylval.string = sstrdup(yytext); return STR; }
-<OUTPUT_COND>[a-zA-Z0-9_-]+     { yy_pop_state(); yylval.string = sstrdup(yytext); return OUTPUT; }
+<OUTPUT_COND>[a-zA-Z0-9\/_-]+   { yy_pop_state(); yylval.string = sstrdup(yytext); return OUTPUT; }
 ^[ \t]*#[^\n]*                  { return TOKCOMMENT; }
 <COLOR_COND>#[0-9a-fA-F]+       { yy_pop_state(); yylval.string = sstrdup(yytext); return HEXCOLOR; }
 <COLOR_COND>{EOL}               {
@@ -172,12 +173,14 @@ EOL     (\r?\n)
 <ASSIGN_TARGET_COND>[ \t]+      { BEGIN(WANT_STRING); }
 <EXEC>--no-startup-id           { printf("no startup id\n"); yy_pop_state(); return TOK_NO_STARTUP_ID; }
 <EXEC>.                         { printf("anything else: *%s*\n", yytext); yyless(0); yy_pop_state(); yy_pop_state(); }
+<OPTRELEASE>--release           { printf("--release\n"); yy_pop_state(); return TOK_RELEASE; }
+<OPTRELEASE>.                   { printf("anything else (optrelease): *%s*\n", yytext); yyless(0); yy_pop_state(); yy_pop_state(); }
 [0-9-]+                         { yylval.number = atoi(yytext); return NUMBER; }
 bar                             { yy_push_state(BAR); return TOK_BAR; }
 mode                            { return TOKMODE; }
 bind                            { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
-bindcode                        { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
-bindsym                         { yy_push_state(BINDSYM_COND); yy_push_state(EAT_WHITESPACE); return TOKBINDSYM; }
+bindcode                        { yy_push_state(WANT_STRING); yy_push_state(EAT_WHITESPACE); yy_push_state(EAT_WHITESPACE); yy_push_state(OPTRELEASE); yy_push_state(EAT_WHITESPACE); return TOKBINDCODE; }
+bindsym                         { yy_push_state(BINDSYM_COND); yy_push_state(EAT_WHITESPACE); yy_push_state(OPTRELEASE); yy_push_state(EAT_WHITESPACE); return TOKBINDSYM; }
 floating_maximum_size           { return TOKFLOATING_MAXIMUM_SIZE; }
 floating_minimum_size           { return TOKFLOATING_MINIMUM_SIZE; }
 floating_modifier               { return TOKFLOATING_MODIFIER; }
@@ -200,6 +203,8 @@ new_float                       { return TOKNEWFLOAT; }
 normal                          { return TOK_NORMAL; }
 none                            { return TOK_NONE; }
 1pixel                          { return TOK_1PIXEL; }
+hide_edge_borders               { return TOK_HIDE_EDGE_BORDERS; }
+both                            { return TOK_BOTH; }
 focus_follows_mouse             { return TOKFOCUSFOLLOWSMOUSE; }
 force_focus_wrapping            { return TOK_FORCE_FOCUS_WRAPPING; }
 force_xinerama                  { return TOK_FORCE_XINERAMA; }

@@ -1,6 +1,19 @@
 #!perl
 # vim:ts=4:sw=4:expandtab
 #
+# Please read the following documents before working on tests:
+# • http://build.i3wm.org/docs/testsuite.html
+#   (or docs/testsuite)
+#
+# • http://build.i3wm.org/docs/lib-i3test.html
+#   (alternatively: perldoc ./testcases/lib/i3test.pm)
+#
+# • http://build.i3wm.org/docs/ipc.html
+#   (or docs/ipc)
+#
+# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+#   (unless you are already familiar with Perl)
+#
 # Tests the standalone parser binary to see if it calls the right code when
 # confronted with various commands, if it prints proper error messages for
 # wrong commands and if it terminates in every case.
@@ -12,7 +25,7 @@ sub parser_calls {
 
     # TODO: use a timeout, so that we can error out if it doesn’t terminate
     # TODO: better way of passing arguments
-    my $stdout = qx(../test.commands_parser '$command' 2>&-);
+    my $stdout = qx(../test.commands_parser '$command' 2>&1 >&-);
 
     # Filter out all debugging output.
     my @lines = split("\n", $stdout);
@@ -127,15 +140,15 @@ is(parser_calls("\nworkspace test"),
 ################################################################################
 
 is(parser_calls('unknown_literal'),
-   "Expected one of these tokens: <end>, '[', 'move', 'exec', 'exit', 'restart', 'reload', 'border', 'layout', 'append_layout', 'workspace', 'focus', 'kill', 'open', 'fullscreen', 'split', 'floating', 'mark', 'resize', 'rename', 'nop', 'scratchpad', 'mode'\n" .
-   "Your command: unknown_literal\n" .
-   "              ^^^^^^^^^^^^^^^",
+   "ERROR: Expected one of these tokens: <end>, '[', 'move', 'exec', 'exit', 'restart', 'reload', 'border', 'layout', 'append_layout', 'workspace', 'focus', 'kill', 'open', 'fullscreen', 'split', 'floating', 'mark', 'resize', 'rename', 'nop', 'scratchpad', 'mode'\n" .
+   "ERROR: Your command: unknown_literal\n" .
+   "ERROR:               ^^^^^^^^^^^^^^^",
    'error for unknown literal ok');
 
 is(parser_calls('move something to somewhere'),
-   "Expected one of these tokens: 'window', 'container', 'to', 'workspace', 'output', 'scratchpad', 'left', 'right', 'up', 'down', 'position', 'absolute'\n" .
-   "Your command: move something to somewhere\n" .
-   "                   ^^^^^^^^^^^^^^^^^^^^^^",
+   "ERROR: Expected one of these tokens: 'window', 'container', 'to', 'workspace', 'output', 'scratchpad', 'left', 'right', 'up', 'down', 'position', 'absolute'\n" .
+   "ERROR: Your command: move something to somewhere\n" .
+   "ERROR:                    ^^^^^^^^^^^^^^^^^^^^^^",
    'error for unknown literal ok');
 
 ################################################################################
