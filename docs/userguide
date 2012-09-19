@@ -1390,19 +1390,12 @@ container to workspace next+, +move container to workspace prev+ to move a
 container to the next/previous workspace and +move container to workspace current+
 (the last one makes sense only when used with criteria).
 
+See <<move_to_outputs>> for how to move a container/workspace to a different
+RandR output.
+
 [[back_and_forth]]
 To switch back to the previously focused workspace, use +workspace
 back_and_forth+.
-
-To move a container to another xrandr output such as +LVDS1+ or +VGA1+, you can
-use the +move container to output+ command followed by the name of the target
-output. You may also use +left+, +right+, +up+, +down+ instead of the xrandr
-output name to move to the next output in the specified direction.
-
-To move a whole workspace to another xrandr output such as +LVDS1+ or +VGA1+,
-you can use the +move workspace to output+ command followed by the name of the
-target output. You may also use +left+, +right+, +up+, +down+ instead of the
-xrandr output name to move to the next output in the specified direction.
 
 *Syntax*:
 -----------------------------------
@@ -1465,7 +1458,7 @@ to switch to the workspace which begins with number 1, regardless of which name
 it has. This is useful in case you are changing the workspace’s name
 dynamically.
 
-=== Renaming workspaces
+==== Renaming workspaces
 
 You can rename workspaces. This might be useful to start with the default
 numbered workspaces, do your work, and rename the workspaces afterwards to
@@ -1482,6 +1475,30 @@ i3-msg 'rename workspace 5 to 6'
 i3-msg 'rename workspace 1 to "1: www"'
 i3-msg 'rename workspace "1: www" to "10: www"'
 ------------------------------------------------
+
+=== Moving containers/workspaces to RandR outputs
+
+[[move_to_outputs]]
+
+To move a container to another RandR output (addressed by names like +LVDS1+ or
++VGA1+) or to a RandR output identified by a specific direction (like +left+,
++right+, +up+ or +down+), there are two commands:
+
+*Syntax*:
+--------------------------------------------------------
+move container to output <<left|right|down|up>|<output>>
+move workspace to output <<left|right|down|up>|<output>>
+--------------------------------------------------------
+
+*Examples*:
+--------------------------------------------------------
+# Move the current workspace to the next output
+# (effectively toggles when you only have two outputs)
+bindsym mod+x move workspace to output right
+
+# Put this window on the presentation output.
+bindsym mod+x move container to output VGA1
+--------------------------------------------------------
 
 [[resizingconfig]]
 
