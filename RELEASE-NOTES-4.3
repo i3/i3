@@ -3,40 +3,41 @@
  │ Release notes for i3 v4.3    │
  └──────────────────────────────┘
 
-This is the third release of the new major version of i3, v4.3. It is
-considered stable. All users of i3 are strongly encouraged to upgrade.
+This is the i3 v4.3. This version is considered stable. All users of i3 are
+strongly encouraged to upgrade.
 
 One rather visible change is that commands which could not be parsed properly
- will now spawn i3-nagbar. In case you used "bindsym $mod+x firefox" (and
- forgot the "exec" keyword) or you made a typo in your config, you will now
- notice that :).
+  will now spawn i3-nagbar. In case you used "bindsym $mod+x firefox" (and
+  forgot the "exec" keyword) or you made a typo in your config, you will now
+  notice that :).
+
 
 We also made the orientation (horizontal/vertical) part of the layout
   mechanism: Before, we got the default layout and you could change
   orientation. Now, there are two new layouts "splitv" and "splith", which
   replace the default layout. The "split h" and "split v" commands continue to
   work as before, they split the current container and you will end up in a
-  split container with layout splith (after "split h") or splitv (after "split
-  v").
+  split container with layout splith (after "split h") or splitv (after
+  "split v").
 
   To change a splith container into a splitv container, use either "layout
   splitv" or "layout toggle split". The latter command is used in the
-  default config as mod+l (previously "layout default"). In case you have
+  default config as mod+l (formerly "layout default"). In case you have
   "layout default" in your config file, it is recommended to just replace
   it by "layout toggle split", which will work as "layout default" did
   before when pressing it once, but toggle between horizontal/vertical
   when pressing it repeatedly.
 
-  The rationale behind this commit is that it’s cleaner to have all
+  The rationale behind this change is that it’s cleaner to have all
   parameters that influence how windows are rendered in the layout itself
-  rather than having a special parameter in combination with only one
-  layout. This enables us to change existing split containers in all cases
-  without breaking existing features (see ticket #464). Also, users should
-  feel more confident about whether they are actually splitting or just
-  changing an existing split container now.
+  rather than having one special layout in combination with an additional
+  orientation. This enables us to change existing split containers in all
+  cases without breaking existing features (see ticket #464). Also, users
+  should feel more confident about whether they are actually splitting or
+  just changing an existing split container now.
 
   As a nice side-effect, this commit brings back the "layout toggle"
-  feature we once had in i3 version 3 (see the userguide).
+  feature we once had in i3 v3 (see the userguide).
 
 
 Another very important change is that we now support pango for rendering text.
@@ -47,8 +48,8 @@ Another very important change is that we now support pango for rendering text.
   example) and to support right-to-left rendering (open http://www.ftpal.net/
   for an example). Supporting users from all over the planet is important, and
   as such I would strongly advise distribution packagers to leave pango support
-  in. In case you are working on a very low-spec embedded device, it is easy
-  enough to disable pango support, see common.mk.
+  enabled. In case you are working on a very low-spec embedded device, it is
+  easy enough to disable pango support, see common.mk.
 
 
 Also, the 'layout' command now always works on the parent split container. This
@@ -62,13 +63,25 @@ Also, the 'layout' command now always works on the parent split container. This
 
       for_window [class="XTerm"] split v, layout tabbed
 
+
+Furthermore, we decided to entirely ignore resize increment size hints for
+  tiling windows. These are set by terminal emulators (such as urxvt,
+  gnome-terminal, …) and specify that the window may only be resized in
+  multiples of the specified size. All terminal emulators cope with the window
+  manager ignoring these hints and by doing so, they can decide what to do with
+  the lost space (that is, pseudo-transparency now works without black bars in
+  urxvt).
+
  ┌────────────────────────────┐
  │ Changes in v4.3            │
  └────────────────────────────┘
 
+  • docs: there now is documentation about lib::i3test and lib::i3test::Test,
+    the main Perl modules used by our testsuite.
   • docs/refcard: update for v4
   • docs/userguide: clarify the default for focus_follows_mouse and new_window
   • docs/userguide: add section about implicit containers
+  • docs/userguide: give 'move <container|workspace> to output' its own section
   • docs/ipc: document the 'window' field in the GET_TREE reply
   • docs/ipc: update links to ipc libraries
   • docs/ipc: make the reply sections consistent
@@ -112,6 +125,13 @@ Also, the 'layout' command now always works on the parent split container. This
   • 'move workspace number n' will now create the workspace if it doesn’t exist
   • Accept slashes in RandR output names
   • Keep startup-notification sequences around for 30s after completion
+  • Introduce bindsym --release, which will trigger the binding not on the
+    KeyPress event, but on the KeyRelease event (useful for import(1) or
+    xdotool(1)).
+  • The signalhandler does not offer you to exit i3 anymore. Instead, there is
+    'b' for writing a backtrace to a file in /tmp (if gdb is installed)
+  • Remove support for resize increment hints for tiling windows
+  • Exit fullscreen mode when 'scratchpad show' is executed while in fullscreen
 
  ┌────────────────────────────┐
  │ Bugfixes                   │
@@ -149,6 +169,7 @@ Also, the 'layout' command now always works on the parent split container. This
     issue with gnome-terminal and xfce’s terminal)
   • Fix flickering with 1pixel border tabbed layouts
   • Use _exit() instead of exit() when i3 utility programs cannot be executed
+  • Don’t focus the wrong workspace when moving to scratchpad
 
  ┌────────────────────────────┐
  │ Thanks!                    │
@@ -157,9 +178,9 @@ Also, the 'layout' command now always works on the parent split container. This
 Thanks for testing, bugfixes, discussions and everything I forgot go out to:
 
   aksr, Axel Wagner, darkraven, David Coppa, eeemsi, Felicitus, Fernando Tarlá
-  Cardoso Lemos, Iakov Davydov, jh, Joel Stemmer, Julius Plenz, Marcel Hellwig,
-  Marcus, mloskot, Moritz Bandemer, oblique, Ondrej Grover, Pavel Löbl, Philipp
-  Middendorf, prg, Quentin Glidic, Sebastian Ullrich, somelauw, stfn, tucos,
-  TunnelWicht, Valentin Haenel
+  Cardoso Lemos, Iakov Davydov, jh, Joel Stemmer, Julius Plenz, loblik, Marcel
+  Hellwig, Marcus, mloskot, Moritz Bandemer, oblique, Ondrej Grover, Pavel
+  Löbl, Philipp Middendorf, prg, Quentin Glidic, Sebastian Ullrich, Simon
+  Elsbrock, somelauw, stfn, tucos, TunnelWicht, Valentin Haenel
 
--- Michael Stapelberg, 2012-09-06
+-- Michael Stapelberg, 2012-09-19
