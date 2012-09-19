@@ -1,3 +1,11 @@
+Description: list x-terminal-emulator as one of i3-sensible-terminal’s choices
+Author: Michael Stapelberg <stapelberg@debian.org>
+Origin: vendor
+Forwarded: not-needed
+Last-Update: 2011-12-28
+
+---
+
 Index: i3-4.1.1/man/i3-sensible-terminal.man
 ===================================================================
 --- i3-4.1.1.orig/man/i3-sensible-terminal.man	2011-12-28 23:56:55.487581000 +0100
