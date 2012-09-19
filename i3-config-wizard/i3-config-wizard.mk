@@ -34,4 +34,4 @@ install-i3-config-wizard: i3-config-wizard/i3-config-wizard
 
 clean-i3-config-wizard:
 	echo "[i3-config-wizard] Clean"
-	rm -f $(i3_config_wizard_OBJECTS) $(i3_config_wizard_SOURCES_GENERATED) i3-config-wizard/i3-config-wizard i3-config-wizard/cfgparse.{output,dot}
+	rm -f $(i3_config_wizard_OBJECTS) $(i3_config_wizard_SOURCES_GENERATED) i3-config-wizard/i3-config-wizard i3-config-wizard/cfgparse.{output,dot,tab.h,y.o}

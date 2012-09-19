@@ -82,4 +82,4 @@ install-i3: i3
 
 clean-i3:
 	echo "[i3] Clean"
-	rm -f $(i3_OBJECTS) $(i3_SOURCES_GENERATED) $(i3_HEADERS_CMDPARSER) include/loglevels.h loglevels.tmp include/all.h.pch i3-command-parser.stamp i3 src/*.gcno src/cfgparse.{output,dot} src/cmdparse.*
+	rm -f $(i3_OBJECTS) $(i3_SOURCES_GENERATED) $(i3_HEADERS_CMDPARSER) include/loglevels.h loglevels.tmp include/all.h.pch i3-command-parser.stamp i3 src/*.gcno src/cfgparse.{output,dot,tab.h,y.o} src/cmdparse.*
