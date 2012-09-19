@@ -1,7 +1,7 @@
 i3(1)
 =====
 Michael Stapelberg <michael@i3wm.org>
-v4.2, August 2012
+v4.3, September 2012
 
 == NAME
 
@@ -31,6 +31,18 @@ Display version number (and date of the last commit).
 
 -V::
 Be verbose.
+
+--force-xinerama::
+Use Xinerama instead of RandR. This option should only be used if you are stuck
+with the old nVidia closed source driver (older than 302.17) which does not
+support RandR.
+
+--get-socketpath::
+Retrieve the i3 IPC socket path from X11, print it, then exit.
+
+--shmlog-size <limit>::
+Limits the size of the i3 SHM log to <limit> bytes. Setting this to 0 disables
+SHM logging entirely. The default is 0 bytes.
 
 == DESCRIPTION
 
@@ -316,7 +328,7 @@ and the "how to hack" guide. If you are building from source, run:
 
 You can also access these documents online at http://i3wm.org/
 
-i3-input(1), i3-msg(1), i3-wsbar(1), i3-nagbar(1), i3-config-wizard(1),
+i3-input(1), i3-msg(1), i3bar(1), i3-nagbar(1), i3-config-wizard(1),
 i3-migrate-config-to-v4(1)
 
 == AUTHOR
