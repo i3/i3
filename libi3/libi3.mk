@@ -18,4 +18,4 @@ libi3.a: $(libi3_OBJECTS)
 
 clean-libi3:
 	echo "[libi3] Clean"
-	rm -f $(libi3_OBJECTS) libi3/libi3.a
+	rm -f $(libi3_OBJECTS) libi3/libi3.a libi3.a
