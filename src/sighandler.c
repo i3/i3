@@ -117,7 +117,7 @@ static int backtrace(void) {
         DLOG("GDB did not run properly\n");
         return -1;
     } else if (stat(filename, &bt) == -1) {
-        DLOG("GDB executed succesfully, but no backtrace was generated\n");
+        DLOG("GDB executed successfully, but no backtrace was generated\n");
         return -1;
     }
     return 1;
