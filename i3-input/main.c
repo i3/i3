@@ -8,7 +8,6 @@
  *                  to i3.
  *
  */
-#include <ev.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <stdlib.h>

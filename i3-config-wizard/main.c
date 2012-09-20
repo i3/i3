@@ -21,7 +21,6 @@
 #define _WITH_GETLINE
 #endif
 
-#include <ev.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <stdlib.h>
