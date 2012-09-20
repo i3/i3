@@ -8,7 +8,6 @@
  * when the user has an error in his configuration file.
  *
  */
-#include <ev.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/wait.h>

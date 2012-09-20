@@ -14,7 +14,6 @@
  * Additionally, it’s even useful sometimes :-).
  *
  */
-#include <ev.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <sys/types.h>
