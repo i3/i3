@@ -84,4 +84,7 @@
 /* The output event will be triggered upon changes in the output list */
 #define I3_IPC_EVENT_OUTPUT                     (I3_IPC_EVENT_MASK | 1)
 
+/* The output event will be triggered upon mode changes */
+#define I3_IPC_EVENT_MODE                       (I3_IPC_EVENT_MASK | 2)
+
 #endif

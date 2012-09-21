@@ -610,6 +610,8 @@ workspace (0)::
 output (1)::
 	Sent when RandR issues a change notification (of either screens,
 	outputs, CRTCs or output properties).
+mode (2)::
+	Sent whenever i3 changes its binding mode.
 
 *Example:*
 --------------------------------------------------------------------
@@ -649,6 +651,18 @@ This event consists of a single serialized map containing a property
 *Example:*
 ---------------------------
 { "change": "unspecified" }
+---------------------------
+
+=== mode event
+
+This event consists of a single serialized map containing a property
++change (string)+ which holds the name of current mode in use. The name
+is the same as specified in config when creating a mode. The default
+mode is simply named default.
+
+*Example:*
+---------------------------
+{ "change": "default" }
 ---------------------------
 
 == See also

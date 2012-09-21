@@ -194,6 +194,13 @@ void switch_mode(const char *new_mode) {
         bindings = mode->bindings;
         translate_keysyms();
         grab_all_keys(conn, false);
+
+        char *event_msg;
+        sasprintf(&event_msg, "{\"change\":\"%s\"}", mode->name);
+
+        ipc_send_event("mode", I3_IPC_EVENT_MODE, event_msg);
+        FREE(event_msg);
+
         return;
     }
 
