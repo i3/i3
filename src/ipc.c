@@ -52,7 +52,7 @@ static bool mkdirp(const char *path) {
         ELOG("mkdir(%s) failed: %s\n", path, strerror(errno));
         return false;
     }
-    char *copy = strdup(path);
+    char *copy = sstrdup(path);
     /* strip trailing slashes, if any */
     while (copy[strlen(copy)-1] == '/')
         copy[strlen(copy)-1] = '\0';

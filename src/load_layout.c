@@ -350,11 +350,22 @@ void tree_append_json(const char *filename) {
     /* TODO: percent of other windows are not correctly fixed at the moment */
     FILE *f;
     if ((f = fopen(filename, "r")) == NULL) {
-        LOG("Cannot open file\n");
+        LOG("Cannot open file \"%s\"\n", filename);
         return;
     }
-    char *buf = malloc(65535); /* TODO */
-    int n = fread(buf, 1, 65535, f);
+    struct stat stbuf;
+    if (fstat(fileno(f), &stbuf) != 0) {
+        LOG("Cannot fstat() the file\n");
+        fclose(f);
+        return;
+    }
+    char *buf = smalloc(stbuf.st_size);
+    int n = fread(buf, 1, stbuf.st_size, f);
+    if (n != stbuf.st_size) {
+        LOG("File \"%s\" could not be read entirely, not loading.\n", filename);
+        fclose(f);
+        return;
+    }
     LOG("read %d bytes\n", n);
     yajl_gen g;
     yajl_handle hand;
