@@ -7,8 +7,8 @@
  * floating.c: Floating windows.
  *
  */
-#ifndef _FLOATING_H
-#define _FLOATING_H
+#ifndef I3_FLOATING_H
+#define I3_FLOATING_H
 
 #include "tree.h"
 

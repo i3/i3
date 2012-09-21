@@ -9,8 +9,8 @@
  *        …).
  *
  */
-#ifndef _CON_H
-#define _CON_H
+#ifndef I3_CON_H
+#define I3_CON_H
 
 /**
  * Create a new container (and attach it to the given parent, if not NULL).

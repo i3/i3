@@ -7,8 +7,8 @@
  * click.c: Button press (mouse click) events.
  *
  */
-#ifndef _CLICK_H
-#define _CLICK_H
+#ifndef I3_CLICK_H
+#define I3_CLICK_H
 
 /**
  * The button press X callback. This function determines whether the floating

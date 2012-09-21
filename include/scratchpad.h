@@ -7,8 +7,8 @@
  * scratchpad.c: Scratchpad functions (TODO: more description)
  *
  */
-#ifndef _SCRATCHPAD_H
-#define _SCRATCHPAD_H
+#ifndef I3_SCRATCHPAD_H
+#define I3_SCRATCHPAD_H
 
 /**
  * Moves the specified window to the __i3_scratch workspace, making it floating

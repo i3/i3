@@ -7,8 +7,8 @@
  * commands.c: all command functions (see commands_parser.c)
  *
  */
-#ifndef _COMMANDS_PARSER_H
-#define _COMMANDS_PARSER_H
+#ifndef I3_COMMANDS_PARSER_H
+#define I3_COMMANDS_PARSER_H
 
 #include <yajl/yajl_gen.h>
 

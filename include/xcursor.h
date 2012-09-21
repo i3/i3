@@ -7,8 +7,8 @@
  * xcursor.c: libXcursor support for themed cursors.
  *
  */
-#ifndef _XCURSOR_CURSOR_H
-#define _XCURSOR_CURSOR_H
+#ifndef I3_XCURSOR_CURSOR_H
+#define I3_XCURSOR_CURSOR_H
 
 #include <X11/Xlib.h>
 

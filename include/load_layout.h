@@ -8,8 +8,8 @@
  *                restart.
  *
  */
-#ifndef _LOAD_LAYOUT_H
-#define _LOAD_LAYOUT_H
+#ifndef I3_LOAD_LAYOUT_H
+#define I3_LOAD_LAYOUT_H
 
 void tree_append_json(const char *filename);
 

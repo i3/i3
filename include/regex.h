@@ -7,8 +7,8 @@
  * regex.c: Interface to libPCRE (perl compatible regular expressions).
  *
  */
-#ifndef _REGEX_H
-#define _REGEX_H
+#ifndef I3_REGEX_H
+#define I3_REGEX_H
 
 /**
  * Creates a new 'regex' struct containing the given pattern and a PCRE

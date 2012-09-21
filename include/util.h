@@ -8,8 +8,8 @@
  *         also libi3).
  *
  */
-#ifndef _UTIL_H
-#define _UTIL_H
+#ifndef I3_UTIL_H
+#define I3_UTIL_H
 
 #include <err.h>
 

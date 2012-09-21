@@ -7,8 +7,8 @@
  * output.c: Output (monitor) related functions.
  *
  */
-#ifndef _OUTPUT_H
-#define _OUTPUT_H
+#ifndef I3_OUTPUT_H
+#define I3_OUTPUT_H
 
 /**
  * Returns the output container below the given output container.

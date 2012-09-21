@@ -7,8 +7,8 @@
  * display_version.c: displays the running i3 version, runs as part of
  *                    i3 --moreversion.
  */
-#ifndef _DISPLAY_VERSION_H
-#define _DISPLAY_VERSION_H
+#ifndef I3_DISPLAY_VERSION_H
+#define I3_DISPLAY_VERSION_H
 
 /**
  * Connects to i3 to find out the currently running version. Useful since it

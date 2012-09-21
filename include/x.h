@@ -8,8 +8,8 @@
  *      render.c). Basically a big state machine.
  *
  */
-#ifndef _X_H
-#define _X_H
+#ifndef I3_X_H
+#define I3_X_H
 
 /** Stores the X11 window ID of the currently focused window */
 extern xcb_window_t focused_id;

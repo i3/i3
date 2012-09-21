@@ -7,8 +7,8 @@
  * window.c: Updates window attributes (X11 hints/properties).
  *
  */
-#ifndef _WINDOW_H
-#define _WINDOW_H
+#ifndef I3_WINDOW_H
+#define I3_WINDOW_H
 
 /**
  * Updates the WM_CLASS (consisting of the class and instance) for the

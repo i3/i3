@@ -9,8 +9,8 @@
  *               older versions.
  *
  */
-#ifndef _XCB_COMPAT_H
-#define _XCB_COMPAT_H
+#ifndef I3_XCB_COMPAT_H
+#define I3_XCB_COMPAT_H
 
 #define xcb_icccm_get_wm_protocols_reply_t xcb_get_wm_protocols_reply_t
 #define xcb_icccm_get_wm_protocols xcb_get_wm_protocols

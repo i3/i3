@@ -8,8 +8,8 @@
  *             …).
  *
  */
-#ifndef _HANDLERS_H
-#define _HANDLERS_H
+#ifndef I3_HANDLERS_H
+#define I3_HANDLERS_H
 
 #include <xcb/randr.h>
 

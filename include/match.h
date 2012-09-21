@@ -11,8 +11,8 @@
  * match_matches_window() to find the windows affected by this command.
  *
  */
-#ifndef _MATCH_H
-#define _MATCH_H
+#ifndef I3_MATCH_H
+#define I3_MATCH_H
 
 /*
  * Initializes the Match data structure. This function is necessary because the

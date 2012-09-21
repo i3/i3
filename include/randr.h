@@ -9,8 +9,8 @@
  * (take your time to read it completely, it answers all questions).
  *
  */
-#ifndef _RANDR_H
-#define _RANDR_H
+#ifndef I3_RANDR_H
+#define I3_RANDR_H
 
 #include "data.h"
 #include <xcb/randr.h>

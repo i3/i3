@@ -7,8 +7,8 @@
  * include/data.h: This file defines all data structures used by i3
  *
  */
-#ifndef _DATA_H
-#define _DATA_H
+#ifndef I3_DATA_H
+#define I3_DATA_H
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>

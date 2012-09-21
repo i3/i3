@@ -10,8 +10,8 @@
  *            the appropriate workspace.
  *
  */
-#ifndef _STARTUP_H
-#define _STARTUP_H
+#ifndef I3_STARTUP_H
+#define I3_STARTUP_H
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-monitor.h>

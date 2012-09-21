@@ -10,8 +10,8 @@
  * mode).
  *
  */
-#ifndef _CONFIG_H
-#define _CONFIG_H
+#ifndef I3_CONFIG_H
+#define I3_CONFIG_H
 
 #include <stdbool.h>
 #include "queue.h"

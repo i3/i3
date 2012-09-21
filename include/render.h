@@ -8,8 +8,8 @@
  *           various rects. Needs to be pushed to X11 (see x.c) to be visible.
  *
  */
-#ifndef _RENDER_H
-#define _RENDER_H
+#ifndef I3_RENDER_H
+#define I3_RENDER_H
 
 /**
  * "Renders" the given container (and its children), meaning that all rects are

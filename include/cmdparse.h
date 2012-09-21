@@ -7,8 +7,8 @@
  * cmdparse.y: the parser for commands you send to i3 (or bind on keys)
  *
  */
-#ifndef _CMDPARSE_H
-#define _CMDPARSE_H
+#ifndef I3_CMDPARSE_H
+#define I3_CMDPARSE_H
 
 char *parse_cmd(const char *new);
 

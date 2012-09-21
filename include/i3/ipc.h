@@ -8,8 +8,8 @@
  * for the IPC interface to i3 (see docs/ipc for more information).
  *
  */
-#ifndef _I3_IPC_H
-#define _I3_IPC_H
+#ifndef I3_I3_IPC_H
+#define I3_I3_IPC_H
 
 /*
  * Messages from clients to i3

@@ -10,8 +10,8 @@
  * compile-time.
  *
  */
-#ifndef _ALL_H
-#define _ALL_H
+#ifndef I3_ALL_H
+#define I3_ALL_H
 
 #include <assert.h>
 #include <stdbool.h>

@@ -7,8 +7,8 @@
  * commands.c: all command functions (see commands_parser.c)
  *
  */
-#ifndef _COMMANDS_H
-#define _COMMANDS_H
+#ifndef I3_COMMANDS_H
+#define I3_COMMANDS_H
 
 #include "commands_parser.h"
 

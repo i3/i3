@@ -7,8 +7,8 @@
  * ewmh.c: Get/set certain EWMH properties easily.
  *
  */
-#ifndef _EWMH_C
-#define _EWMH_C
+#ifndef I3_EWMH_C
+#define I3_EWMH_C
 
 /**
  * Updates _NET_CURRENT_DESKTOP with the current desktop number.

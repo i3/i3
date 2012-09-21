@@ -7,8 +7,8 @@
  * log.c: Logging functions.
  *
  */
-#ifndef _LOG_H
-#define _LOG_H
+#ifndef I3_LOG_H
+#define I3_LOG_H
 
 #include <stdarg.h>
 #include <stdbool.h>

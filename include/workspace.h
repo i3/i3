@@ -8,8 +8,8 @@
  *              workspaces.
  *
  */
-#ifndef _WORKSPACE_H
-#define _WORKSPACE_H
+#ifndef I3_WORKSPACE_H
+#define I3_WORKSPACE_H
 
 #include "data.h"
 #include "tree.h"
