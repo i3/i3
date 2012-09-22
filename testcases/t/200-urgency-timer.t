@@ -106,4 +106,6 @@ cmd '[id="' . $w->id . '"] focus';
 @urgent = grep { $_->{urgent} } @content;
 is(@urgent, 0, 'window 1 not marked as urgent anymore');
 
+exit_gracefully($pid);
+
 done_testing;
