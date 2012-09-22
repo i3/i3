@@ -127,15 +127,15 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
             (direction == D_LEFT  && other->x < cur->x)) {
             /* Skip the output when it doesn’t overlap the other one’s y
              * coordinate at all. */
-            if ((other->y + other->height) < cur->y &&
-                (cur->y   + cur->height)   < other->y)
+            if ((other->y + other->height) <= cur->y ||
+                (cur->y   + cur->height)   <= other->y)
                 continue;
         } else if ((direction == D_DOWN && other->y > cur->y) ||
                    (direction == D_UP   && other->y < cur->y)) {
             /* Skip the output when it doesn’t overlap the other one’s x
              * coordinate at all. */
-            if ((other->x + other->width) < cur->x &&
-                (cur->x   + cur->width)   < other->x)
+            if ((other->x + other->width) <= cur->x ||
+                (cur->x   + cur->width)   <= other->x)
                 continue;
         } else
             continue;
