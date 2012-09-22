@@ -1057,7 +1057,8 @@ word_or_number:
     ;
 
 duration:
-    NUMBER TOK_TIME_MS { sasprintf(&$$, "%d", $1); }
+    NUMBER { sasprintf(&$$, "%d", $1); }
+    | NUMBER TOK_TIME_MS { sasprintf(&$$, "%d", $1); }
     ;
 
 mode:
