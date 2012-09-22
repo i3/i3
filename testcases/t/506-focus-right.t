@@ -57,12 +57,17 @@ sub test_focus_left_right {
     is($x->input_focus, $right_win->id, 'right window focused (wrapping)');
 
     ############################################################################
-    # Ensure that moving down from S0 doesn’t crash i3.
+    # Ensure that moving down/up from S0 doesn’t crash i3 and is a no-op.
     ############################################################################
 
     my $second = fresh_workspace(output => 1);
+    my $third_win = open_window;
 
     cmd "focus output down";
+    is($x->input_focus, $third_win->id, 'right window still focused');
+
+    cmd "focus output up";
+    is($x->input_focus, $third_win->id, 'right window still focused');
 
     does_i3_live;
 
