@@ -1,5 +1,9 @@
 Revision history for AnyEvent-I3
 
+0.14    2012-09-22
+
+    * support the mode event
+
 0.13    2012-08-05
 
     * support the GET_VERSION request with a fall-back to i3 --version
