@@ -133,6 +133,26 @@ is($old_rect->{y}, $new_rect->{y}, 'y coordinate unchanged');
 is($old_rect->{width}, $new_rect->{width}, 'width unchanged');
 is($old_rect->{height}, $new_rect->{height}, 'height unchanged');
 
+################################################################################
+# Verify that empty workspaces get cleaned up when moving a different workspace
+# to that output.
+################################################################################
+
+my $empty_ws = fresh_workspace(output => 0);
+my $other_output_ws = fresh_workspace(output => 1);
+cmd 'open';
+
+($x0, $x1) = workspaces_per_screen();
+ok($empty_ws ~~ @$x0, 'empty_ws on fake-0');
+ok($other_output_ws ~~ @$x1, 'other_output_ws on fake-1');
+
+cmd 'move workspace to output left';
+
+($x0, $x1) = workspaces_per_screen();
+ok(!($empty_ws ~~ @$x0), 'empty_ws not on fake-0');
+ok(!($empty_ws ~~ @$x1), 'empty_ws not on fake-1');
+ok($other_output_ws ~~ @$x0, 'other_output_ws on fake-0');
+
 exit_gracefully($pid);
 
 done_testing;

@@ -1099,8 +1099,12 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
         Con *content = output_get_content(output->con);
         LOG("got output %p with content %p\n", output, content);
 
+        Con *previously_visible_ws = TAILQ_FIRST(&(content->nodes_head));
+        LOG("Previously visible workspace = %p / %s\n", previously_visible_ws, previously_visible_ws->name);
+
         Con *ws = con_get_workspace(current->con);
         LOG("should move workspace %p / %s\n", ws, ws->name);
+        bool workspace_was_visible = workspace_is_visible(ws);
 
         if (con_num_children(ws->parent) == 1) {
             LOG("Creating a new workspace to replace \"%s\" (last on its output).\n", ws->name);
@@ -1137,7 +1141,6 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
         }
 
         /* detach from the old output and attach to the new output */
-        bool workspace_was_visible = workspace_is_visible(ws);
         Con *old_content = ws->parent;
         con_detach(ws);
         if (workspace_was_visible) {
@@ -1159,6 +1162,11 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
             /* Focus the moved workspace on the destination output. */
             workspace_show(ws);
         }
+
+        /* Call the on_remove_child callback of the workspace which previously
+         * was visible on the destination output. Since it is no longer
+         * visible, it might need to get cleaned up. */
+        CALL(previously_visible_ws, on_remove_child);
     }
 
     cmd_output->needs_tree_render = true;
