@@ -14,8 +14,16 @@
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 
-use i3test;
+use i3test i3_autostart => 0;
 use List::Util qw(first);
+
+my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+force_display_urgency_hint 0ms
+EOT
+my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -144,5 +152,7 @@ cmd '[urgent=oldest] focus';
 is($x->input_focus, $bottom->id, 'oldest urgent window focused');
 $bottom->delete_hint('urgency');
 sync_with_i3;
+
+exit_gracefully($pid);
 
 done_testing;
