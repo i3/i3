@@ -467,12 +467,20 @@ void x_draw_decoration(Con *con) {
     /* 5: draw two unconnected lines in border color */
     xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->border });
     Rect *dr = &(con->deco_rect);
+    int deco_diff_l = 2;
+    int deco_diff_r = 2;
+    if (parent->layout == L_TABBED) {
+        if (TAILQ_PREV(con, nodes_head, nodes) != NULL)
+            deco_diff_l = 0;
+        if (TAILQ_NEXT(con, nodes) != NULL)
+            deco_diff_r = 0;
+    }
     xcb_segment_t segments[] = {
         { dr->x,                 dr->y,
           dr->x + dr->width - 1, dr->y },
 
-        { dr->x + 2,             dr->y + dr->height - 1,
-          dr->x + dr->width - 3, dr->y + dr->height - 1 }
+        { dr->x + deco_diff_l,                 dr->y + dr->height - 1,
+          dr->x - deco_diff_r + dr->width - 1, dr->y + dr->height - 1 }
     };
     xcb_poly_segment(conn, parent->pixmap, parent->pm_gc, 2, segments);
 
