@@ -486,7 +486,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         else
             return false;
 
-        next_output = get_output_next(direction, current_output);
+        next_output = get_output_next(direction, current_output, CLOSEST_OUTPUT);
         if (!next_output)
             return false;
         DLOG("Next output is %s\n", next_output->name);

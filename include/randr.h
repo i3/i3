@@ -18,6 +18,11 @@
 TAILQ_HEAD(outputs_head, xoutput);
 extern struct outputs_head outputs;
 
+typedef enum {
+    CLOSEST_OUTPUT = 0,
+    FARTHEST_OUTPUT = 1
+} output_close_far_t;
+
 /**
  * We have just established a connection to the X server and need the initial
  * XRandR information to setup workspaces for each screen.
@@ -96,6 +101,6 @@ Output *get_output_most(direction_t direction, Output *current);
  * Gets the output which is the next one in the given direction.
  *
  */
-Output *get_output_next(direction_t direction, Output *current);
+Output *get_output_next(direction_t direction, Output *current, output_close_far_t close_far);
 
 #endif

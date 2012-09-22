@@ -57,19 +57,19 @@ static Output *get_output_from_string(Output *current_output, const char *output
     Output *output;
 
     if (strcasecmp(output_str, "left") == 0) {
-        output = get_output_next(D_LEFT, current_output);
+        output = get_output_next(D_LEFT, current_output, CLOSEST_OUTPUT);
         if (!output)
             output = get_output_most(D_RIGHT, current_output);
     } else if (strcasecmp(output_str, "right") == 0) {
-        output = get_output_next(D_RIGHT, current_output);
+        output = get_output_next(D_RIGHT, current_output, CLOSEST_OUTPUT);
         if (!output)
             output = get_output_most(D_LEFT, current_output);
     } else if (strcasecmp(output_str, "up") == 0) {
-        output = get_output_next(D_UP, current_output);
+        output = get_output_next(D_UP, current_output, CLOSEST_OUTPUT);
         if (!output)
             output = get_output_most(D_DOWN, current_output);
     } else if (strcasecmp(output_str, "down") == 0) {
-        output = get_output_next(D_DOWN, current_output);
+        output = get_output_next(D_DOWN, current_output, CLOSEST_OUTPUT);
         if (!output)
             output = get_output_most(D_UP, current_output);
     } else output = get_output_by_name(output_str);
@@ -1006,13 +1006,13 @@ void cmd_move_con_to_output(I3_CMD, char *name) {
 
     // TODO: clean this up with commands.spec as soon as we switched away from the lex/yacc command parser
     if (strcasecmp(name, "up") == 0)
-        output = get_output_next(D_UP, current_output);
+        output = get_output_next(D_UP, current_output, CLOSEST_OUTPUT);
     else if (strcasecmp(name, "down") == 0)
-        output = get_output_next(D_DOWN, current_output);
+        output = get_output_next(D_DOWN, current_output, CLOSEST_OUTPUT);
     else if (strcasecmp(name, "left") == 0)
-        output = get_output_next(D_LEFT, current_output);
+        output = get_output_next(D_LEFT, current_output, CLOSEST_OUTPUT);
     else if (strcasecmp(name, "right") == 0)
-        output = get_output_next(D_RIGHT, current_output);
+        output = get_output_next(D_RIGHT, current_output, CLOSEST_OUTPUT);
     else
         output = get_output_by_name(name);
 
