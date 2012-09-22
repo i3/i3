@@ -836,7 +836,13 @@ static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_
     }
 
     /* Update the flag on the client directly */
-    con->urgent = (xcb_icccm_wm_hints_get_urgency(&hints) != 0);
+    bool hint_urgent = (xcb_icccm_wm_hints_get_urgency(&hints) != 0);
+
+    if (con->urgency_timer == NULL) {
+        con->urgent = hint_urgent;
+    } else
+        DLOG("Discarding urgency WM_HINT because timer is running\n");
+
     //CLIENT_LOG(con);
     if (con->window) {
         if (con->urgent) {

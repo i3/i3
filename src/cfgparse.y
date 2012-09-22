@@ -728,6 +728,7 @@ void parse_file(const char *f) {
 %token  <color>         TOKCOLOR
 %token                  TOKARROW                    "→"
 %token                  TOKMODE                     "mode"
+%token                  TOK_TIME_MS                 "ms"
 %token                  TOK_BAR                     "bar"
 %token                  TOK_ORIENTATION             "default_orientation"
 %token                  TOK_HORIZ                   "horizontal"
@@ -746,6 +747,7 @@ void parse_file(const char *f) {
 %token                  TOK_FORCE_XINERAMA          "force_xinerama"
 %token                  TOK_FAKE_OUTPUTS            "fake_outputs"
 %token                  TOK_WORKSPACE_AUTO_BAF      "workspace_auto_back_and_forth"
+%token                  TOK_WORKSPACE_URGENCY_TIMER "force_display_urgency_hint"
 %token                  TOKWORKSPACEBAR             "workspace_bar"
 %token                  TOK_DEFAULT                 "default"
 %token                  TOK_STACKING                "stacking"
@@ -819,6 +821,7 @@ void parse_file(const char *f) {
 %type   <number>        optional_release
 %type   <string>        command
 %type   <string>        word_or_number
+%type   <string>        duration
 %type   <string>        qstring_or_number
 %type   <string>        optional_workspace_name
 %type   <string>        workspace_name
@@ -848,6 +851,7 @@ line:
     | force_focus_wrapping
     | force_xinerama
     | fake_outputs
+    | force_display_urgency_hint
     | workspace_back_and_forth
     | workspace_bar
     | workspace
@@ -1050,6 +1054,10 @@ word_or_number:
     {
         sasprintf(&$$, "%d", $1);
     }
+    ;
+
+duration:
+    NUMBER TOK_TIME_MS { sasprintf(&$$, "%d", $1); }
     ;
 
 mode:
@@ -1545,6 +1553,14 @@ workspace_back_and_forth:
     {
         DLOG("automatic workspace back-and-forth = %d\n", $2);
         config.workspace_auto_back_and_forth = $2;
+    }
+    ;
+
+force_display_urgency_hint:
+    TOK_WORKSPACE_URGENCY_TIMER duration
+    {
+        DLOG("workspace urgency_timer = %f\n", atoi($2) / 1000.0);
+        config.workspace_urgency_timer = atoi($2) / 1000.0;
     }
     ;
 

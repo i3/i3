@@ -311,6 +311,23 @@ static void workspace_reassign_sticky(Con *con) {
         workspace_reassign_sticky(current);
 }
 
+/*
+ * Callback to reset the urgent flag of the given con to false. May be started by
+ * _workspace_show to avoid urgency hints being lost by switching to a workspace
+ * focusing the con.
+ *
+ */
+static void workspace_defer_update_urgent_hint_cb(EV_P_ ev_timer *w, int revents) {
+    Con *con = w->data;
+
+    DLOG("Resetting urgency flag of con %p by timer\n", con);
+    con->urgent = false;
+    workspace_update_urgent_flag(con_get_workspace(con));
+    tree_render();
+
+    ev_timer_stop(main_loop, con->urgency_timer);
+    FREE(con->urgency_timer);
+}
 
 static void _workspace_show(Con *workspace) {
     Con *current, *old = NULL;
@@ -350,6 +367,43 @@ static void _workspace_show(Con *workspace) {
     LOG("switching to %p\n", workspace);
     Con *next = con_descend_focused(workspace);
 
+    /* Memorize current output */
+    Con *old_output = con_get_output(focused);
+
+    /* Display urgency hint for a while if the newly visible workspace would
+     * focus and thereby immediately destroy it */
+    if (next->urgent && (int)(config.workspace_urgency_timer * 1000) > 0) {
+        /* focus for now… */
+        con_focus(next);
+
+        /* … but immediately reset urgency flags; they will be set to false by
+         * the timer callback in case the container is focused at the time of
+         * its expiration */
+        focused->urgent = true;
+        workspace->urgent = true;
+
+        if (focused->urgency_timer == NULL) {
+            DLOG("Deferring reset of urgency flag of con %p on newly shown workspace %p\n",
+                    focused, workspace);
+            focused->urgency_timer = scalloc(sizeof(struct ev_timer));
+            /* use a repeating timer to allow for easy resets */
+            ev_timer_init(focused->urgency_timer, workspace_defer_update_urgent_hint_cb,
+                    config.workspace_urgency_timer, config.workspace_urgency_timer);
+            focused->urgency_timer->data = focused;
+            ev_timer_start(main_loop, focused->urgency_timer);
+        } else {
+            DLOG("Resetting urgency timer of con %p on workspace %p\n",
+                    focused, workspace);
+            ev_timer_again(main_loop, focused->urgency_timer);
+        }
+    } else
+        con_focus(next);
+
+    /* Close old workspace if necessary. This must be done *after* doing
+     * urgency handling, because tree_close() will do a con_focus() on the next
+     * client, which will clear the urgency flag too early. Also, there is no
+     * way for con_focus() to know about when to clear urgency immediately and
+     * when to defer it. */
     if (old && TAILQ_EMPTY(&(old->nodes_head)) && TAILQ_EMPTY(&(old->floating_head))) {
         /* check if this workspace is currently visible */
         if (!workspace_is_visible(old)) {
@@ -359,10 +413,6 @@ static void _workspace_show(Con *workspace) {
         }
     }
 
-    /* Memorize current output */
-    Con *old_output = con_get_output(focused);
-
-    con_focus(next);
     workspace->fullscreen_mode = CF_OUTPUT;
     LOG("focused now = %p / %s\n", focused, focused->name);
 

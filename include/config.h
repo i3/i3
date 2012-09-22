@@ -149,6 +149,13 @@ struct Config {
      * between two workspaces. */
     bool workspace_auto_back_and_forth;
 
+    /** By default, urgency is cleared immediately when switching to another
+     * workspace leads to focusing the con with the urgency hint. When having
+     * multiple windows on that workspace, the user needs to guess which
+     * application raised the event. To prevent this, the reset of the urgency
+     * flag can be delayed using an urgency timer. */
+    float workspace_urgency_timer;
+
     /** The default border style for new windows. */
     border_style_t default_border;
 

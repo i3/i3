@@ -496,6 +496,9 @@ struct Con {
      * inside this container (if any) sets the urgency hint, for example. */
     bool urgent;
 
+    /* timer used for disabling urgency */
+    struct ev_timer *urgency_timer;
+
     /* ids/pixmap/graphics context for the frame window */
     xcb_window_t frame;
     xcb_pixmap_t pixmap;

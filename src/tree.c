@@ -255,6 +255,15 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
     x_con_kill(con);
 
     con_detach(con);
+
+    /* disable urgency timer, if needed */
+    if (con->urgency_timer != NULL) {
+        DLOG("Removing urgency timer of con %p\n", con);
+        workspace_update_urgent_flag(con_get_workspace(con));
+        ev_timer_stop(main_loop, con->urgency_timer);
+        FREE(con->urgency_timer);
+    }
+
     if (con->type != CT_FLOATING_CON) {
         /* If the container is *not* floating, we might need to re-distribute
          * percentage values for the resized containers. */

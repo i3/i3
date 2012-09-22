@@ -420,6 +420,10 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     /* Set default_orientation to NO_ORIENTATION for auto orientation. */
     config.default_orientation = NO_ORIENTATION;
 
+    /* Set default urgency reset delay to 500ms */
+    if (config.workspace_urgency_timer == 0)
+        config.workspace_urgency_timer = 0.5;
+
     parse_configuration(override_configpath);
 
     if (reload) {

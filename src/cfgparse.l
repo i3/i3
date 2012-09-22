@@ -212,6 +212,8 @@ force-xinerama                  { return TOK_FORCE_XINERAMA; }
 fake_outputs                    { WS_STRING; return TOK_FAKE_OUTPUTS; }
 fake-outputs                    { WS_STRING; return TOK_FAKE_OUTPUTS; }
 workspace_auto_back_and_forth   { return TOK_WORKSPACE_AUTO_BAF; }
+force_display_urgency_hint      { return TOK_WORKSPACE_URGENCY_TIMER; }
+ms                              { return TOK_TIME_MS; }
 workspace_bar                   { return TOKWORKSPACEBAR; }
 popup_during_fullscreen         { return TOK_POPUP_DURING_FULLSCREEN; }
 ignore                          { return TOK_IGNORE; }

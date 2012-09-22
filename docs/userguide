@@ -874,6 +874,30 @@ workspace_auto_back_and_forth <yes|no>
 workspace_auto_back_and_forth yes
 ---------------------------------
 
+=== Delaying urgency hint reset on workspace change
+
+If an application on another workspace sets an urgency hint, switching to this
+workspace may lead to immediate focus of the application, which also means the
+window decoration color would be immediately resetted to +client.focused+. This
+may make it unnecessarily hard to tell which window originally raised the
+event.
+
+In order to prevent this, you can tell i3 to delay resetting the urgency state
+by a certain time using the +force_display_urgency_hint+ directive. Setting the
+value to 0 disables this feature.
+
+The default is 500ms.
+
+*Syntax*:
+---------------------------------------
+force_display_urgency_hint <timeout> ms
+---------------------------------------
+
+*Example*:
+---------------------------------
+force_display_urgency_hint 500 ms
+---------------------------------
+
 == Configuring i3bar
 
 The bar at the bottom of your monitor is drawn by a separate process called
