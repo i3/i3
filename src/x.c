@@ -481,7 +481,7 @@ void x_draw_decoration(Con *con) {
     int text_offset_y = (con->deco_rect.height - config.font.height) / 2;
 
     struct Window *win = con->window;
-    if (win == NULL || win->name == NULL) {
+    if (win == NULL) {
         /* we have a split container which gets a representation
          * of its children as title
          */
@@ -498,6 +498,9 @@ void x_draw_decoration(Con *con) {
 
         goto copy_pixmaps;
     }
+
+    if (win->name == NULL)
+        goto copy_pixmaps;
 
     int indent_level = 0,
         indent_mult = 0;
