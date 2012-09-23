@@ -405,7 +405,7 @@ IPC_HANDLER(get_workspaces) {
 
     Con *output;
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        if (output->name[0] == '_' && output->name[1] == '_')
+        if (con_is_internal(output))
             continue;
         Con *ws;
         TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {

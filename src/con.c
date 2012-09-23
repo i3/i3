@@ -359,6 +359,14 @@ Con *con_get_fullscreen_con(Con *con, int fullscreen_mode) {
     return NULL;
 }
 
+/**
+ * Returns true if the container is internal, such as __i3_scratch
+ *
+ */
+bool con_is_internal(Con *con) {
+    return (con->name[0] == '_' && con->name[1] == '_');
+}
+
 /*
  * Returns true if the node is floating.
  *
@@ -692,7 +700,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
      * calling tree_render(), so for the "real" focus this is a no-op).
      * We don’t focus the con for i3 pseudo workspaces like __i3_scratch and
      * we don’t focus when there is a fullscreen con on that workspace. */
-    if ((workspace->name[0] != '_' || workspace->name[1] != '_') &&
+    if (!con_is_internal(workspace) &&
         con_get_fullscreen_con(workspace, CF_OUTPUT) == NULL)
         con_focus(con_descend_focused(con));
 
@@ -701,8 +709,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
      * don’t want to focus invisible workspaces */
     if (source_output != dest_output &&
         workspace_is_visible(workspace) &&
-        workspace->name[0] != '_' &&
-        workspace->name[1] != '_') {
+        !con_is_internal(workspace)) {
         DLOG("Moved to a different output, focusing target\n");
     } else {
         /* Descend focus stack in case focus_next is a workspace which can

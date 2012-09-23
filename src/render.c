@@ -225,7 +225,7 @@ void render_con(Con *con, bool render_fullscreen) {
 
     if (con->layout == L_OUTPUT) {
         /* Skip i3-internal outputs */
-        if (con->name[0] == '_' && con->name[1] == '_')
+        if (con_is_internal(con))
             return;
         render_l_output(con);
     } else if (con->type == CT_ROOT) {
@@ -240,7 +240,7 @@ void render_con(Con *con, bool render_fullscreen) {
          * windows/containers so that they overlap on another output. */
         DLOG("Rendering floating windows:\n");
         TAILQ_FOREACH(output, &(con->nodes_head), nodes) {
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             /* Get the active workspace of that output */
             Con *content = output_get_content(output);

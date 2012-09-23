@@ -67,6 +67,12 @@ Con *con_parent_with_orientation(Con *con, orientation_t orientation);
 Con *con_get_fullscreen_con(Con *con, int fullscreen_mode);
 
 /**
+ * Returns true if the container is internal, such as __i3_scratch
+ *
+ */
+bool con_is_internal(Con *con);
+
+/**
  * Returns true if the node is floating.
  *
  */

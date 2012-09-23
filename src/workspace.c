@@ -333,7 +333,7 @@ static void _workspace_show(Con *workspace) {
     Con *current, *old = NULL;
 
     /* safe-guard against showing i3-internal workspaces like __i3_scratch */
-    if (workspace->name[0] == '_' && workspace->name[1] == '_')
+    if (con_is_internal(workspace))
         return;
 
     /* disable fullscreen for the other workspaces and get the workspace we are
@@ -462,7 +462,7 @@ Con* workspace_next(void) {
         /* If currently a numbered workspace, find next numbered workspace. */
         TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
             /* Skip outputs starting with __, they are internal. */
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             NODES_FOREACH(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
@@ -483,7 +483,7 @@ Con* workspace_next(void) {
         bool found_current = false;
         TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
             /* Skip outputs starting with __, they are internal. */
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             NODES_FOREACH(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
@@ -502,7 +502,7 @@ Con* workspace_next(void) {
     if (!next) {
         TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
             /* Skip outputs starting with __, they are internal. */
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             NODES_FOREACH(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
@@ -534,7 +534,7 @@ Con* workspace_prev(void) {
         /* If numbered workspace, find previous numbered workspace. */
         TAILQ_FOREACH_REVERSE(output, &(croot->nodes_head), nodes_head, nodes) {
             /* Skip outputs starting with __, they are internal. */
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             NODES_FOREACH_REVERSE(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE || child->num == -1)
@@ -553,7 +553,7 @@ Con* workspace_prev(void) {
         bool found_current = false;
         TAILQ_FOREACH_REVERSE(output, &(croot->nodes_head), nodes_head, nodes) {
             /* Skip outputs starting with __, they are internal. */
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             NODES_FOREACH_REVERSE(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
@@ -572,7 +572,7 @@ Con* workspace_prev(void) {
     if (!prev) {
         TAILQ_FOREACH_REVERSE(output, &(croot->nodes_head), nodes_head, nodes) {
             /* Skip outputs starting with __, they are internal. */
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             NODES_FOREACH_REVERSE(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
