@@ -266,10 +266,13 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         case BS_NONE:
             ystr("none");
             break;
-        case BS_1PIXEL:
-            ystr("1pixel");
+        case BS_PIXEL:
+            ystr("pixel");
             break;
     }
+
+    ystr("current_border_width");
+    y(integer, con->current_border_width);
 
     dump_rect(gen, "rect", con->rect);
     dump_rect(gen, "window_rect", con->window_rect);

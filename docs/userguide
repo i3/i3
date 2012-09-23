@@ -483,13 +483,25 @@ This option determines which border style new windows will have. The default is
 
 *Syntax*:
 ---------------------------------------------
-new_window <normal|1pixel|none>
+new_window <normal|1pixel|none|pixel>
 ---------------------------------------------
-
 *Example*:
 ---------------------
 new_window 1pixel
 ---------------------
+
+The "normal" and "pixel" border styles support an optional border width in
+pixels:
+
+*Example*:
+---------------------
+# The same as new_window none
+new_window pixel 0
+
+# A 3 px border
+new_window pixel 3
+---------------------
+
 
 === Hiding vertical borders
 

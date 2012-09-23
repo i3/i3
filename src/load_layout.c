@@ -183,8 +183,11 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             sasprintf(&buf, "%.*s", (int)len, val);
             if (strcasecmp(buf, "none") == 0)
                 json_node->border_style = BS_NONE;
-            else if (strcasecmp(buf, "1pixel") == 0)
-                json_node->border_style = BS_1PIXEL;
+            else if (strcasecmp(buf, "1pixel") == 0) {
+                json_node->border_style = BS_PIXEL;
+                json_node->current_border_width = 1;
+            } else if (strcasecmp(buf, "pixel") == 0)
+                json_node->border_style = BS_PIXEL;
             else if (strcasecmp(buf, "normal") == 0)
                 json_node->border_style = BS_NORMAL;
             else LOG("Unhandled \"border\": %s\n", buf);
@@ -277,6 +280,9 @@ static int json_int(void *ctx, long val) {
 
     if (strcasecmp(last_key, "num") == 0)
         json_node->num = val;
+
+    if (strcasecmp(last_key, "current_border_width") == 0)
+        json_node->current_border_width = val;
 
     if (!parsing_swallows && strcasecmp(last_key, "id") == 0)
         json_node->old_id = val;

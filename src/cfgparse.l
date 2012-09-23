@@ -56,6 +56,7 @@ EOL     (\r?\n)
 %s OUTPUT_COND
 %s FOR_WINDOW_COND
 %s EAT_WHITESPACE
+%s BORDER_WIDTH
 
 %x BUFFER_LINE
 %x BAR
@@ -171,6 +172,7 @@ EOL     (\r?\n)
                                 }
 <ASSIGN_TARGET_COND>[ \t]*→[ \t]*     { BEGIN(WANT_STRING); }
 <ASSIGN_TARGET_COND>[ \t]+      { BEGIN(WANT_STRING); }
+<BORDER_WIDTH>[^\n][0-9]+       { printf("Border width set to: %s\n", yytext); yylval.number = atoi(yytext); return NUMBER;}
 <EXEC>--no-startup-id           { printf("no startup id\n"); yy_pop_state(); return TOK_NO_STARTUP_ID; }
 <EXEC>.                         { printf("anything else: *%s*\n", yytext); yyless(0); yy_pop_state(); yy_pop_state(); }
 <OPTRELEASE>--release           { printf("--release\n"); yy_pop_state(); return TOK_RELEASE; }
@@ -200,9 +202,10 @@ auto                            { return TOK_AUTO; }
 workspace_layout                { return TOK_WORKSPACE_LAYOUT; }
 new_window                      { return TOKNEWWINDOW; }
 new_float                       { return TOKNEWFLOAT; }
-normal                          { return TOK_NORMAL; }
+normal                          { yy_push_state(BORDER_WIDTH); return TOK_NORMAL; }
 none                            { return TOK_NONE; }
 1pixel                          { return TOK_1PIXEL; }
+pixel                           { yy_push_state(BORDER_WIDTH); return TOK_PIXEL; }
 hide_edge_borders               { return TOK_HIDE_EDGE_BORDERS; }
 both                            { return TOK_BOTH; }
 focus_follows_mouse             { return TOKFOCUSFOLLOWSMOUSE; }

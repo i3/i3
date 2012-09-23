@@ -55,6 +55,7 @@ Con *con_new(Con *parent, i3Window *window) {
     new->type = CT_CON;
     new->window = window;
     new->border_style = config.default_border;
+    new->current_border_width = -1;
     static int cnt = 0;
     DLOG("opening window %d\n", cnt);
 
@@ -968,52 +969,38 @@ Con *con_descend_direction(Con *con, direction_t direction) {
  */
 Rect con_border_style_rect(Con *con) {
     adjacent_t borders_to_hide = ADJ_NONE;
+    int border_width = con->current_border_width;
+    DLOG("The border width for con is set to: %d\n", con->current_border_width);
     Rect result;
+    if (con->current_border_width < 0)
+        border_width = config.default_border_width;
+    DLOG("Effective border width is set to: %d\n", border_width);
     /* Shortcut to avoid calling con_adjacent_borders() on dock containers. */
     int border_style = con_border_style(con);
     if (border_style == BS_NONE)
         return (Rect){ 0, 0, 0, 0 };
     borders_to_hide = con_adjacent_borders(con) & config.hide_edge_borders;
-    switch (border_style) {
-    case BS_NORMAL:
-        result = (Rect){2, 0, -(2 * 2), -2};
-        if (borders_to_hide & ADJ_LEFT_SCREEN_EDGE) {
-            result.x -= 2;
-            result.width += 2;
-        }
-        if (borders_to_hide & ADJ_RIGHT_SCREEN_EDGE) {
-            result.width += 2;
-        }
-        /* With normal borders we never hide the upper border */
-        if (borders_to_hide & ADJ_LOWER_SCREEN_EDGE) {
-            result.height += 2;
-        }
-        return result;
-
-    case BS_1PIXEL:
-        result = (Rect){1, 1, -2, -2};
-        if (borders_to_hide & ADJ_LEFT_SCREEN_EDGE) {
-            result.x -= 1;
-            result.width += 1;
-        }
-        if (borders_to_hide & ADJ_RIGHT_SCREEN_EDGE) {
-            result.width += 1;
-        }
-        if (borders_to_hide & ADJ_UPPER_SCREEN_EDGE) {
-            result.y -= 1;
-            result.height += 1;
-        }
-        if (borders_to_hide & ADJ_LOWER_SCREEN_EDGE) {
-            result.height += 1;
-        }
-        return result;
-
-    case BS_NONE:
-        return (Rect){0, 0, 0, 0};
-
-    default:
-        assert(false);
+    if (border_style == BS_NORMAL) {
+        result = (Rect){border_width, 0 , -(2 * border_width), -(border_width)};
+    } else {
+        result = (Rect){border_width, border_width, -(2 * border_width), -(2 * border_width)};
     }
+    if (borders_to_hide & ADJ_LEFT_SCREEN_EDGE) {
+        result.x -= border_width;
+        result.width += border_width;
+    }
+    if (borders_to_hide & ADJ_RIGHT_SCREEN_EDGE) {
+        result.width += border_width;
+    }
+    if (borders_to_hide & ADJ_UPPER_SCREEN_EDGE && (border_style != BS_NORMAL)) {
+        result.y -= border_width;
+        result.height += border_width;
+    }
+    if (borders_to_hide & ADJ_LOWER_SCREEN_EDGE) {
+        result.height += border_width;
+    }
+    return result;
+
 }
 
 /*
@@ -1068,10 +1055,11 @@ int con_border_style(Con *con) {
  * floating window.
  *
  */
-void con_set_border_style(Con *con, int border_style) {
+void con_set_border_style(Con *con, int border_style, int border_width) {
     /* Handle the simple case: non-floating containerns */
     if (!con_is_floating(con)) {
         con->border_style = border_style;
+        con->current_border_width = border_width;
         return;
     }
 
@@ -1090,6 +1078,7 @@ void con_set_border_style(Con *con, int border_style) {
 
     /* Change the border style, get new border/decoration values. */
     con->border_style = border_style;
+    con->current_border_width = border_width;
     bsr = con_border_style_rect(con);
     int deco_height =
         (con->border_style == BS_NORMAL ? config.font.height + 5 : 0);

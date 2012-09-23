@@ -431,7 +431,7 @@ void x_draw_decoration(Con *con) {
             xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &bottomline);
         }
         /* 1pixel border needs an additional line at the top */
-        if (p->border_style == BS_1PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
+        if (p->border_style == BS_PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
             xcb_rectangle_t topline = { br.x, 0, con->rect.width + br.width + br.x, br.y };
             xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &topline);
         }

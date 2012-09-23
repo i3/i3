@@ -28,7 +28,7 @@ is($nodes[0]->{border}, 'normal', 'border style normal');
 
 cmd 'border 1pixel';
 @nodes = @{get_ws_content($tmp)};
-is($nodes[0]->{border}, '1pixel', 'border style 1pixel');
+is($nodes[0]->{border}, 'pixel', 'border style 1pixel');
 
 cmd 'border none';
 @nodes = @{get_ws_content($tmp)};
@@ -44,7 +44,7 @@ is($nodes[0]->{border}, 'none', 'border style none');
 
 cmd 'border toggle';
 @nodes = @{get_ws_content($tmp)};
-is($nodes[0]->{border}, '1pixel', 'border style 1pixel');
+is($nodes[0]->{border}, 'pixel', 'border style 1pixel');
 
 cmd 'border toggle';
 @nodes = @{get_ws_content($tmp)};

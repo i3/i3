@@ -108,6 +108,7 @@ static int detect_version(char *buf) {
                 strncasecmp(bind, "focus down", strlen("focus down")) == 0 ||
                 strncasecmp(bind, "border normal", strlen("border normal")) == 0 ||
                 strncasecmp(bind, "border 1pixel", strlen("border 1pixel")) == 0 ||
+                strncasecmp(bind, "border pixel", strlen("border pixel")) == 0 ||
                 strncasecmp(bind, "border borderless", strlen("border borderless")) == 0 ||
                 strncasecmp(bind, "--no-startup-id", strlen("--no-startup-id")) == 0 ||
                 strncasecmp(bind, "bar", strlen("bar")) == 0) {
@@ -739,6 +740,7 @@ void parse_file(const char *f) {
 %token                  TOKNEWFLOAT                 "new_float"
 %token                  TOK_NORMAL                  "normal"
 %token                  TOK_NONE                    "none"
+%token                  TOK_PIXEL                   "pixel"
 %token                  TOK_1PIXEL                  "1pixel"
 %token                  TOK_HIDE_EDGE_BORDERS       "hide_edge_borders"
 %token                  TOK_BOTH                    "both"
@@ -818,6 +820,7 @@ void parse_file(const char *f) {
 %type   <number>        bar_mode_mode
 %type   <number>        bar_modifier_modifier
 %type   <number>        optional_no_startup_id
+%type   <number>        optional_border_width
 %type   <number>        optional_release
 %type   <string>        command
 %type   <string>        word_or_number
@@ -1480,9 +1483,26 @@ new_float:
     ;
 
 border_style:
-    TOK_NORMAL      { $$ = BS_NORMAL; }
-    | TOK_NONE      { $$ = BS_NONE; }
-    | TOK_1PIXEL    { $$ = BS_1PIXEL; }
+    TOK_NORMAL optional_border_width
+    {
+        config.default_border_width = $2;
+        $$ = BS_NORMAL;
+    }
+    | TOK_1PIXEL
+    {
+        config.default_border_width = 1;
+        $$ = BS_PIXEL;
+    }
+    | TOK_NONE
+    {
+        config.default_border_width = 0;
+        $$ = BS_NONE;
+    }
+    | TOK_PIXEL optional_border_width
+    {
+        config.default_border_width = $2;
+        $$ = BS_PIXEL;
+    }
     ;
 
 bool:
@@ -1751,6 +1771,11 @@ exec_always:
         new->no_startup_id = $2;
         TAILQ_INSERT_TAIL(&autostarts_always, new, autostarts_always);
     }
+    ;
+
+optional_border_width:
+    /* empty */ { $$ = 2; } // 2 pixels is the default value for any type of border
+    | NUMBER  { $$ = $1; }
     ;
 
 optional_no_startup_id:

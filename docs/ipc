@@ -274,6 +274,8 @@ name (string)::
 border (string)::
 	Can be either "normal", "none" or "1pixel", dependending on the
 	container’s border style.
+current_border_width (integer)::
+	Number of pixels of the border width.
 layout (string)::
 	Can be either "splith", "splitv", "stacked", "tabbed", "dockarea" or
 	"output".

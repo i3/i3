@@ -61,10 +61,20 @@ state EXEC:
   command = string
       -> call cmd_exec($nosn, $command)
 
-# border normal|none|1pixel|toggle
+# border normal|none|1pixel|toggle|1pixel
 state BORDER:
-  border_style = 'normal', 'none', '1pixel', 'toggle'
-      -> call cmd_border($border_style)
+  border_style = 'normal', 'pixel'
+    -> BORDER_WIDTH
+  border_style = 'none', 'toggle'
+    -> call cmd_border($border_style, "0")
+  border_style = '1pixel'
+    -> call cmd_border($border_style, "1")
+
+state BORDER_WIDTH:
+  end
+    -> call cmd_border($border_style, "2")
+  border_width = word
+    -> call cmd_border($border_style, $border_width)
 
 # layout default|stacked|stacking|tabbed|splitv|splith
 # layout toggle [split|all]
