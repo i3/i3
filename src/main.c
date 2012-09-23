@@ -544,6 +544,7 @@ int main(int argc, char *argv[]) {
 
     uint32_t mask = XCB_CW_EVENT_MASK;
     uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
+                          XCB_EVENT_MASK_BUTTON_PRESS |
                           XCB_EVENT_MASK_STRUCTURE_NOTIFY |         /* when the user adds a screen (e.g. video
                                                                            projector), the root window gets a
                                                                            ConfigureNotify */

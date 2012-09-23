@@ -309,6 +309,25 @@ int handle_button_press(xcb_button_press_event_t *event) {
         return route_click(con, event, mod_pressed, CLICK_INSIDE);
 
     if (!(con = con_by_frame_id(event->event))) {
+        /* If the root window is clicked, find the relevant output from the
+         * click coordinates and focus the output's active workspace. */
+        if (event->event == root) {
+            Con *output, *ws;
+            TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+                if (con_is_internal(output) ||
+                    !rect_contains(output->rect, event->event_x, event->event_y))
+                    continue;
+
+                ws = TAILQ_FIRST(&(output_get_content(output)->focus_head));
+                if (ws != con_get_workspace(focused)) {
+                    workspace_show(ws);
+                    tree_render();
+                }
+                return 1;
+            }
+            return 0;
+        }
+
         ELOG("Clicked into unknown window?!\n");
         xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
         xcb_flush(conn);
