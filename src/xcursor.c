@@ -34,10 +34,15 @@ static Cursor load_cursor(const char *name) {
 }
 
 void xcursor_load_cursors(void) {
-    cursors[XCURSOR_CURSOR_POINTER] = load_cursor("left_ptr");
-    cursors[XCURSOR_CURSOR_RESIZE_HORIZONTAL] = load_cursor("sb_h_double_arrow");
-    cursors[XCURSOR_CURSOR_RESIZE_VERTICAL] = load_cursor("sb_v_double_arrow");
-    cursors[XCURSOR_CURSOR_WATCH] = load_cursor("watch");
+    cursors[XCURSOR_CURSOR_POINTER]             = load_cursor("left_ptr");
+    cursors[XCURSOR_CURSOR_RESIZE_HORIZONTAL]   = load_cursor("sb_h_double_arrow");
+    cursors[XCURSOR_CURSOR_RESIZE_VERTICAL]     = load_cursor("sb_v_double_arrow");
+    cursors[XCURSOR_CURSOR_WATCH]               = load_cursor("watch");
+    cursors[XCURSOR_CURSOR_MOVE]                = load_cursor("fleur");
+    cursors[XCURSOR_CURSOR_TOP_LEFT_CORNER]     = load_cursor("top_left_corner");
+    cursors[XCURSOR_CURSOR_TOP_RIGHT_CORNER]    = load_cursor("top_right_corner");
+    cursors[XCURSOR_CURSOR_BOTTOM_LEFT_CORNER]  = load_cursor("bottom_left_corner");
+    cursors[XCURSOR_CURSOR_BOTTOM_RIGHT_CORNER] = load_cursor("bottom_right_corner");
 }
 
 /*

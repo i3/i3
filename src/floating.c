@@ -395,7 +395,7 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
     tree_render();
 
     /* Drag the window */
-    drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback, event);
+    drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, XCURSOR_CURSOR_MOVE, drag_window_callback, event);
     tree_render();
 }
 
@@ -479,13 +479,21 @@ void floating_resize_window(Con *con, const bool proportional,
         corner |= BORDER_LEFT;
     else corner |= BORDER_RIGHT;
 
-    if (event->event_y <= (con->rect.height / 2))
+    int cursor = 0;
+    if (event->event_y <= (con->rect.height / 2)) {
         corner |= BORDER_TOP;
-    else corner |= BORDER_BOTTOM;
+        cursor = (corner & BORDER_LEFT) ?
+            XCURSOR_CURSOR_TOP_LEFT_CORNER : XCURSOR_CURSOR_TOP_RIGHT_CORNER;
+    }
+    else {
+        corner |= BORDER_BOTTOM;
+        cursor = (corner & BORDER_LEFT) ?
+            XCURSOR_CURSOR_BOTTOM_LEFT_CORNER : XCURSOR_CURSOR_BOTTOM_RIGHT_CORNER;
+    }
 
     struct resize_window_callback_params params = { corner, proportional, event };
 
-    drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, resize_window_callback, &params);
+    drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, cursor, resize_window_callback, &params);
 }
 
 /*
@@ -497,12 +505,15 @@ void floating_resize_window(Con *con, const bool proportional,
  *
  */
 void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
-                confine_to, border_t border, callback_t callback, const void *extra)
+                confine_to, border_t border, int cursor, callback_t callback, const void *extra)
 {
     uint32_t new_x, new_y;
     Rect old_rect = { 0, 0, 0, 0 };
     if (con != NULL)
         memcpy(&old_rect, &(con->rect), sizeof(Rect));
+
+    Cursor xcursor = (cursor && xcursor_supported) ?
+        xcursor_get_cursor(cursor) : XCB_NONE;
 
     /* Grab the pointer */
     xcb_grab_pointer_cookie_t cookie;
@@ -514,7 +525,7 @@ void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
         XCB_GRAB_MODE_ASYNC, /* pointer events should continue as normal */
         XCB_GRAB_MODE_ASYNC, /* keyboard mode */
         confine_to,          /* confine_to = in which window should the cursor stay */
-        XCB_NONE,            /* don’t display a special cursor */
+        xcursor,             /* possibly display a special cursor */
         XCB_CURRENT_TIME);
 
     if ((reply = xcb_grab_pointer_reply(conn, cookie, NULL)) == NULL) {

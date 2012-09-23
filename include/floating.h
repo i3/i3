@@ -134,8 +134,8 @@ void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace);
  *
  */
 void drag_pointer(Con *con, const xcb_button_press_event_t *event,
-                  xcb_window_t confine_to, border_t border, callback_t callback,
-                  const void *extra);
+                  xcb_window_t confine_to, border_t border, int cursor,
+                  callback_t callback, const void *extra);
 
 /**
  * Repositions the CT_FLOATING_CON to have the coordinates specified by
