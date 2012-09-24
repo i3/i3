@@ -592,6 +592,10 @@ static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floatin
     } else if (strcmp(direction, "left") == 0) {
         floating_con->rect.x -= (floating_con->rect.width - old_rect.width);
     }
+
+    /* If this is a scratchpad window, don't auto center it from now on. */
+    if (floating_con->scratchpad_state == SCRATCHPAD_FRESH)
+        floating_con->scratchpad_state = SCRATCHPAD_CHANGED;
 }
 
 static bool cmd_resize_tiling_direction(I3_CMD, Con *current, char *way, char *direction, int ppt) {

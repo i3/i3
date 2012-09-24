@@ -569,6 +569,8 @@ struct Con {
     /** callbacks */
     void(*on_remove_child)(Con *);
 
+    /** not a scratchpad window, auto centered scratchpad window, or
+     * user positioned scratchpad window. */
     enum {
         SCRATCHPAD_NONE = 0,
         SCRATCHPAD_FRESH = 1,

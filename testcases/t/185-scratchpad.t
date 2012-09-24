@@ -93,8 +93,7 @@ is(scalar @{$__i3_scratch->{floating_nodes}}, 0, '__i3_scratch ws empty');
 ################################################################################
 # 3: Verify that 'scratchpad toggle' sends a window to the __i3_scratch
 # workspace and sets the scratchpad flag to SCRATCHPAD_FRESH. The window’s size
-# and position will be changed (once!) on the next 'scratchpad show' and the
-# flag will be changed to SCRATCHPAD_CHANGED.
+# and position will be changed on the next 'scratchpad show'.
 ################################################################################
 
 my ($nodes, $focus) = get_ws_content($tmp);
@@ -165,10 +164,33 @@ $__i3_scratch = get_ws('__i3_scratch');
 @scratch_nodes = @{$__i3_scratch->{floating_nodes}};
 is(scalar @scratch_nodes, 1, '__i3_scratch contains our window');
 
-is($scratch_nodes[0]->{scratchpad_state}, 'changed', 'scratchpad_state changed');
+################################################################################
+# 6: Resizing the window should disable auto centering on scratchpad show
+################################################################################
+
+cmd 'scratchpad show';
+
+$ws = get_ws($tmp);
+is($ws->{floating_nodes}->[0]->{scratchpad_state}, 'fresh',
+   'scratchpad_state fresh');
+
+cmd 'resize grow width 10 px';
+cmd 'scratchpad show';
+cmd 'scratchpad show';
+
+$ws = get_ws($tmp);
+$scratchrect = $ws->{floating_nodes}->[0]->{rect};
+$outputrect = $output->{rect};
+
+is($ws->{floating_nodes}->[0]->{scratchpad_state}, 'changed',
+   'scratchpad_state changed');
+is($scratchrect->{width}, $outputrect->{width} * 0.5 + 10, 'scratch width is 50% + 10px');
+
+cmd 'resize shrink width 10 px';
+cmd 'scratchpad show';
 
 ################################################################################
-# 6: Verify that repeated 'scratchpad show' cycle through the stack, that is,
+# 7: Verify that repeated 'scratchpad show' cycle through the stack, that is,
 # toggling a visible window should insert it at the bottom of the stack of the
 # __i3_scratch workspace.
 ################################################################################
