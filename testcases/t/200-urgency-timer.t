@@ -106,6 +106,44 @@ cmd '[id="' . $w->id . '"] focus';
 @urgent = grep { $_->{urgent} } @content;
 is(@urgent, 0, 'window 1 not marked as urgent anymore');
 
+################################################################################
+# open a stack, mark one window as urgent, switch to that workspace and verify
+# it’s cleared correctly.
+################################################################################
+
+sub count_total_urgent {
+    my ($con) = @_;
+
+    my $urgent = ($con->{urgent} ? 1 : 0);
+    $urgent += count_total_urgent($_) for (@{$con->{nodes}}, @{$con->{floating_nodes}});
+    return $urgent;
+}
+
+my $tmp3 = fresh_workspace;
+open_window;
+open_window;
+cmd 'split v';
+my $split_left = open_window;
+cmd 'layout stacked';
+
+cmd "workspace $tmp2";
+
+is(count_total_urgent(get_ws($tmp3)), 0, "no urgent windows on workspace $tmp3");
+
+$split_left->add_hint('urgency');
+sync_with_i3;
+
+cmp_ok(count_total_urgent(get_ws($tmp3)), '>=', 0, "more than one urgent window on workspace $tmp3");
+
+cmd "workspace $tmp3";
+
+# Remove the urgency hint.
+$split_left->delete_hint('urgency');
+sync_with_i3;
+
+sleep(0.2);
+is(count_total_urgent(get_ws($tmp3)), 0, "no more urgent windows on workspace $tmp3");
+
 exit_gracefully($pid);
 
 done_testing;
