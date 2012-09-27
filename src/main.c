@@ -233,12 +233,9 @@ static void i3_exit(void) {
  *
  */
 static void handle_signal(int sig, siginfo_t *info, void *data) {
-    fprintf(stderr, "Received signal %d, terminating\n", sig);
     if (*shmlogname != '\0') {
-        fprintf(stderr, "Closing SHM log \"%s\"\n", shmlogname);
         shm_unlink(shmlogname);
     }
-    fflush(stderr);
     raise(sig);
 }
 
