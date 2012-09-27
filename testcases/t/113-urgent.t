@@ -213,6 +213,24 @@ sync_with_i3;
 $urgent = count_urgent(get_ws($tmp));
 is($urgent, 0, 'All urgent flags got cleared');
 
+################################################################################
+# Regression test: Check that urgent floating containers work properly (ticket
+# #821)
+################################################################################
+
+$tmp = fresh_workspace;
+my $floating_win = open_floating_window;
+
+# switch away
+fresh_workspace;
+
+$floating_win->add_hint('urgency');
+sync_with_i3;
+
+cmd "workspace $tmp";
+
+does_i3_live;
+
 exit_gracefully($pid);
 
 done_testing;
