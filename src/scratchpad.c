@@ -39,11 +39,17 @@ void scratchpad_move(Con *con) {
         return;
     }
 
-    /* 1: Ensure the window is floating. From now on, we deal with the
-     * CT_FLOATING_CON. We use automatic == false because the user made the
-     * choice that this window should be a scratchpad (and floating). */
-    floating_enable(con, false);
-    con = con->parent;
+    /* 1: Ensure the window or any parent is floating. From now on, we deal
+     * with the CT_FLOATING_CON. We use automatic == false because the user
+     * made the choice that this window should be a scratchpad (and floating).
+     */
+    Con *maybe_floating_con = con_inside_floating(con);
+    if (maybe_floating_con == NULL) {
+        floating_enable(con, false);
+        con = con->parent;
+    } else {
+        con = maybe_floating_con;
+    }
 
     /* 2: Send the window to the __i3_scratch workspace, mainting its
      * coordinates and not warping the pointer. */

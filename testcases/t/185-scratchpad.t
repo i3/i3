@@ -323,39 +323,51 @@ does_i3_live;
 # 11: focus a workspace and move all of its children to the scratchpad area
 ################################################################################
 
+sub verify_scratchpad_move_multiple_win {
+    my $floating = shift;
+
+    my $first = open_window;
+    my $second = open_window;
+
+    if ($floating) {
+        cmd 'floating toggle';
+        cmd 'focus tiling';
+    }
+
+    cmd 'focus parent';
+    cmd 'move scratchpad';
+
+    does_i3_live;
+
+    $ws = get_ws($tmp);
+    is(scalar @{$ws->{nodes}}, 0, 'no windows on ws');
+    is(scalar @{$ws->{floating_nodes}}, 0, 'no floating windows on ws');
+
+    # show the first window.
+    cmd 'scratchpad show';
+
+    $ws = get_ws($tmp);
+    is(scalar @{$ws->{nodes}}, 0, 'no windows on ws');
+    is(scalar @{$ws->{floating_nodes}}, 1, 'one floating windows on ws');
+
+    $old_focus = get_focused($tmp);
+
+    cmd 'scratchpad show';
+
+    # show the second window.
+    cmd 'scratchpad show';
+
+    $ws = get_ws($tmp);
+    is(scalar @{$ws->{nodes}}, 0, 'no windows on ws');
+    is(scalar @{$ws->{floating_nodes}}, 1, 'one floating windows on ws');
+
+    isnt(get_focused($tmp), $old_focus, 'focus changed');
+}
+
 $tmp = fresh_workspace;
-
-my $first = open_window;
-my $second = open_window;
-
-cmd 'focus parent';
-cmd 'move scratchpad';
-
-does_i3_live;
-
-$ws = get_ws($tmp);
-is(scalar @{$ws->{nodes}}, 0, 'no windows on ws');
-is(scalar @{$ws->{floating_nodes}}, 0, 'no floating windows on ws');
-
-# show the first window.
-cmd 'scratchpad show';
-
-$ws = get_ws($tmp);
-is(scalar @{$ws->{nodes}}, 0, 'no windows on ws');
-is(scalar @{$ws->{floating_nodes}}, 1, 'one floating windows on ws');
-
-$old_focus = get_focused($tmp);
-
-cmd 'scratchpad show';
-
-# show the second window.
-cmd 'scratchpad show';
-
-$ws = get_ws($tmp);
-is(scalar @{$ws->{nodes}}, 0, 'no windows on ws');
-is(scalar @{$ws->{floating_nodes}}, 1, 'one floating windows on ws');
-
-isnt(get_focused($tmp), $old_focus, 'focus changed');
+verify_scratchpad_move_multiple_win(0);
+$tmp = fresh_workspace;
+verify_scratchpad_move_multiple_win(1);
 
 # TODO: make i3bar display *something* when a window on the scratchpad has the urgency hint
 
