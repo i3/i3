@@ -232,15 +232,13 @@ static void i3_exit(void) {
  * Unlinks the SHM log and re-raises the signal.
  *
  */
-static void handle_signal(struct ev_loop *loop, ev_signal *w, int revents) {
-    int sig = w->signum;
+static void handle_signal(int sig, siginfo_t *info, void *data) {
     fprintf(stderr, "Received signal %d, terminating\n", sig);
     if (*shmlogname != '\0') {
         fprintf(stderr, "Closing SHM log \"%s\"\n", shmlogname);
         shm_unlink(shmlogname);
     }
     fflush(stderr);
-    ev_signal_stop(loop, w);
     raise(sig);
 }
 
@@ -783,32 +781,31 @@ int main(int argc, char *argv[]) {
     }
     xcb_ungrab_server(conn);
 
+    struct sigaction action;
 
-#define HANDLE_SIGNAL_EV(signum) \
-    do { \
-        struct ev_signal *signal_watcher = scalloc(sizeof(struct ev_signal)); \
-        ev_signal_init(signal_watcher, handle_signal, signum); \
-        ev_signal_start(main_loop, signal_watcher); \
-    } while (0)
+    action.sa_sigaction = handle_signal;
+    action.sa_flags = SA_NODEFER | SA_RESETHAND | SA_SIGINFO;
+    sigemptyset(&action.sa_mask);
 
     if (!disable_signalhandler)
         setup_signal_handler();
     else {
         /* Catch all signals with default action "Core", see signal(7) */
-        HANDLE_SIGNAL_EV(SIGQUIT);
-        HANDLE_SIGNAL_EV(SIGILL);
-        HANDLE_SIGNAL_EV(SIGABRT);
-        HANDLE_SIGNAL_EV(SIGFPE);
-        HANDLE_SIGNAL_EV(SIGSEGV);
+        if (sigaction(SIGQUIT, &action, NULL) == -1 ||
+            sigaction(SIGILL, &action, NULL) == -1 ||
+            sigaction(SIGABRT, &action, NULL) == -1 ||
+            sigaction(SIGFPE, &action, NULL) == -1 ||
+            sigaction(SIGSEGV, &action, NULL) == -1)
+            ELOG("Could not setup signal handler");
     }
 
     /* Catch all signals with default action "Term", see signal(7) */
-    HANDLE_SIGNAL_EV(SIGHUP);
-    HANDLE_SIGNAL_EV(SIGINT);
-    HANDLE_SIGNAL_EV(SIGALRM);
-    HANDLE_SIGNAL_EV(SIGTERM);
-    HANDLE_SIGNAL_EV(SIGUSR1);
-    HANDLE_SIGNAL_EV(SIGUSR2);
+    if (sigaction(SIGHUP, &action, NULL) == -1 ||
+        sigaction(SIGINT, &action, NULL) == -1 ||
+        sigaction(SIGALRM, &action, NULL) == -1 ||
+        sigaction(SIGUSR1, &action, NULL) == -1 ||
+        sigaction(SIGUSR2, &action, NULL) == -1)
+        ELOG("Could not setup signal handler");
 
     /* Ignore SIGPIPE to survive errors when an IPC client disconnects
      * while we are sending him a message */
