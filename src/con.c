@@ -1424,7 +1424,7 @@ void con_update_parents_urgency(Con *con) {
     Con *parent = con->parent;
 
     bool new_urgency_value = con->urgent;
-    while (parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {
+    while (parent && parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {
         if (new_urgency_value) {
             parent->urgent = true;
         } else {
