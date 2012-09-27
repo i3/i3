@@ -529,6 +529,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
             if (!next)
                 return false;
 
+            floating_raise_con(next);
             con_focus(con_descend_focused(next));
             return true;
         } else {
