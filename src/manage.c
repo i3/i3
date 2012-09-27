@@ -126,11 +126,22 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     uint32_t values[1];
 
     /* Set a temporary event mask for the new window, consisting only of
-     * PropertyChange. We need to be notified of PropertyChanges because the
-     * client can change its properties *after* we requested them but *before*
-     * we actually reparented it and have set our final event mask. */
-    values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE;
-    xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, values);
+     * PropertyChange and StructureNotify. We need to be notified of
+     * PropertyChanges because the client can change its properties *after* we
+     * requested them but *before* we actually reparented it and have set our
+     * final event mask.
+     * We need StructureNotify because the client may unmap the window before
+     * we get to re-parent it.
+     * If this request fails, we assume the client has already unmapped the
+     * window between the MapRequest and our event mask change. */
+    values[0] = XCB_EVENT_MASK_PROPERTY_CHANGE |
+                XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+    xcb_void_cookie_t event_mask_cookie =
+        xcb_change_window_attributes_checked(conn, window, XCB_CW_EVENT_MASK, values);
+    if (xcb_request_check(conn, event_mask_cookie) != NULL) {
+        LOG("Could not change event mask, the window probably already disappeared.\n");
+        goto out;
+    }
 
 #define GET_PROPERTY(atom, len) xcb_get_property(conn, false, window, atom, XCB_GET_PROPERTY_TYPE_ANY, 0, len)
 
