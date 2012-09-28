@@ -1158,6 +1158,7 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
             /* notify the IPC listeners */
             ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"init\"}");
         }
+        DLOG("Detaching\n");
 
         /* detach from the old output and attach to the new output */
         Con *old_content = ws->parent;
@@ -1182,10 +1183,21 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
             workspace_show(ws);
         }
 
-        /* Call the on_remove_child callback of the workspace which previously
-         * was visible on the destination output. Since it is no longer
-         * visible, it might need to get cleaned up. */
-        CALL(previously_visible_ws, on_remove_child);
+        /* NB: We cannot simply work with previously_visible_ws since it might
+         * have been cleaned up by workspace_show() already, depending on the
+         * focus order/number of other workspaces on the output.
+         * Instead, we loop through the available workspaces and only work with
+         * previously_visible_ws if we still find it. */
+        TAILQ_FOREACH(ws, &(content->nodes_head), nodes) {
+            if (ws != previously_visible_ws)
+                continue;
+
+            /* Call the on_remove_child callback of the workspace which previously
+             * was visible on the destination output. Since it is no longer
+             * visible, it might need to get cleaned up. */
+            CALL(previously_visible_ws, on_remove_child);
+            break;
+        }
     }
 
     cmd_output->needs_tree_render = true;

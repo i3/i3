@@ -365,7 +365,7 @@ static void _workspace_show(Con *workspace) {
 
     workspace_reassign_sticky(workspace);
 
-    LOG("switching to %p\n", workspace);
+    DLOG("switching to %p / %s\n", workspace, workspace->name);
     Con *next = con_descend_focused(workspace);
 
     /* Memorize current output */
@@ -400,6 +400,7 @@ static void _workspace_show(Con *workspace) {
     } else
         con_focus(next);
 
+    DLOG("old = %p / %s\n", old, (old ? old->name : "(null)"));
     /* Close old workspace if necessary. This must be done *after* doing
      * urgency handling, because tree_close() will do a con_focus() on the next
      * client, which will clear the urgency flag too early. Also, there is no
