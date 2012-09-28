@@ -575,10 +575,9 @@ static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floatin
     }
 }
 
-static bool cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int ppt) {
+static bool cmd_resize_tiling_direction(I3_CMD, Con *current, char *way, char *direction, int ppt) {
     LOG("tiling resize\n");
     /* get the appropriate current container (skip stacked/tabbed cons) */
-    Con *current = focused;
     Con *other = NULL;
     double percentage = 0;
     while (current->parent->layout == L_STACKED ||
@@ -658,10 +657,9 @@ static bool cmd_resize_tiling_direction(I3_CMD, char *way, char *direction, int 
     return true;
 }
 
-static bool cmd_resize_tiling_width_height(I3_CMD, char *way, char *direction, int ppt) {
+static bool cmd_resize_tiling_width_height(I3_CMD, Con *current, char *way, char *direction, int ppt) {
     LOG("width/height resize\n");
     /* get the appropriate current container (skip stacked/tabbed cons) */
-    Con *current = focused;
     while (current->parent->layout == L_STACKED ||
            current->parent->layout == L_TABBED)
         current = current->parent;
@@ -756,17 +754,22 @@ void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resiz
         ppt *= -1;
     }
 
-    Con *floating_con;
-    if ((floating_con = con_inside_floating(focused))) {
-        cmd_resize_floating(current_match, cmd_output, way, direction, floating_con, px);
-    } else {
-        if (strcmp(direction, "width") == 0 ||
-            strcmp(direction, "height") == 0) {
-            if (!cmd_resize_tiling_width_height(current_match, cmd_output, way, direction, ppt))
-                return;
+    HANDLE_EMPTY_MATCH;
+
+    owindow *current;
+    TAILQ_FOREACH(current, &owindows, owindows) {
+        Con *floating_con;
+        if ((floating_con = con_inside_floating(current->con))) {
+            cmd_resize_floating(current_match, cmd_output, way, direction, floating_con, px);
         } else {
-            if (!cmd_resize_tiling_direction(current_match, cmd_output, way, direction, ppt))
-                return;
+            if (strcmp(direction, "width") == 0 ||
+                strcmp(direction, "height") == 0) {
+                if (!cmd_resize_tiling_width_height(current_match, cmd_output, current->con, way, direction, ppt))
+                    return;
+            } else {
+                if (!cmd_resize_tiling_direction(current_match, cmd_output, current->con, way, direction, ppt))
+                    return;
+            }
         }
     }
 
