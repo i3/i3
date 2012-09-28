@@ -811,7 +811,7 @@ static void x_push_node_unmaps(Con *con) {
         }
 
         cookie = xcb_unmap_window(conn, con->frame);
-        DLOG("unmapping container (serial %d)\n", cookie.sequence);
+        DLOG("unmapping container %p / %s (serial %d)\n", con, con->name, cookie.sequence);
         /* we need to increase ignore_unmap for this container (if it
          * contains a window) and for every window "under" this one which
          * contains a window */

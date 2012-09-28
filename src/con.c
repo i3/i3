@@ -697,13 +697,20 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     con->percent = 0.0;
     con_fix_percent(next);
 
-    /* 7: focus the con on the target workspace (the X focus is only updated by
-     * calling tree_render(), so for the "real" focus this is a no-op).
+    /* 7: focus the con on the target workspace, but only within that
+     * workspace, that is, don’t move focus away if the target workspace is
+     * invisible.
      * We don’t focus the con for i3 pseudo workspaces like __i3_scratch and
      * we don’t focus when there is a fullscreen con on that workspace. */
     if (!con_is_internal(workspace) &&
-        con_get_fullscreen_con(workspace, CF_OUTPUT) == NULL)
+        con_get_fullscreen_con(workspace, CF_OUTPUT) == NULL) {
+        /* We need to save focus on workspace level and restore it afterwards.
+         * Otherwise, we might focus a different workspace without actually
+         * switching workspaces. */
+        Con *old_focus = TAILQ_FIRST(&(output_get_content(dest_output)->focus_head));
         con_focus(con_descend_focused(con));
+        con_focus(old_focus);
+    }
 
     /* 8: when moving to a visible workspace on a different output, we keep the
      * con focused. Otherwise, we leave the focus on the current workspace as we
