@@ -799,11 +799,11 @@ void cmd_border(I3_CMD, char *border_style_str, char *border_width ) {
             border_style++;
             border_style %= 3;
             if (border_style == BS_NORMAL)
-                current->con->current_border_width = 2;
+                tmp_border_width = 2;
             else if (border_style == BS_NONE)
-                current->con->current_border_width = 0;
+                tmp_border_width = 0;
             else if (border_style == BS_PIXEL)
-                current->con->current_border_width = 1;
+                tmp_border_width = 1;
         } else {
             if (strcmp(border_style_str, "normal") == 0)
                 border_style = BS_NORMAL;

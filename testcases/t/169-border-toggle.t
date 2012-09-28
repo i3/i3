@@ -29,25 +29,31 @@ is($nodes[0]->{border}, 'normal', 'border style normal');
 cmd 'border 1pixel';
 @nodes = @{get_ws_content($tmp)};
 is($nodes[0]->{border}, 'pixel', 'border style 1pixel');
+is($nodes[0]->{current_border_width}, 1, 'border width = 1px');
 
 cmd 'border none';
 @nodes = @{get_ws_content($tmp)};
 is($nodes[0]->{border}, 'none', 'border style none');
+is($nodes[0]->{current_border_width}, 0, 'border width = 0px');
 
 cmd 'border normal';
 @nodes = @{get_ws_content($tmp)};
 is($nodes[0]->{border}, 'normal', 'border style back to normal');
+is($nodes[0]->{current_border_width}, 2, 'border width = 2px');
 
 cmd 'border toggle';
 @nodes = @{get_ws_content($tmp)};
 is($nodes[0]->{border}, 'none', 'border style none');
+is($nodes[0]->{current_border_width}, 0, 'border width = 0px');
 
 cmd 'border toggle';
 @nodes = @{get_ws_content($tmp)};
 is($nodes[0]->{border}, 'pixel', 'border style 1pixel');
+is($nodes[0]->{current_border_width}, 1, 'border width = 1px');
 
 cmd 'border toggle';
 @nodes = @{get_ws_content($tmp)};
 is($nodes[0]->{border}, 'normal', 'border style back to normal');
+is($nodes[0]->{current_border_width}, 2, 'border width = 2px');
 
 done_testing;
