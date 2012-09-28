@@ -570,7 +570,7 @@ void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
                 free(inside_event);
         } while ((inside_event = xcb_poll_for_event(conn)) != NULL);
 
-        if (last_motion_notify == NULL)
+        if (last_motion_notify == NULL || loop_done)
             continue;
 
         new_x = ((xcb_motion_notify_event_t*)last_motion_notify)->root_x;
