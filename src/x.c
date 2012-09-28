@@ -446,7 +446,7 @@ void x_draw_decoration(Con *con) {
             xcb_change_gc(conn, con->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->indicator });
             if (con_orientation(con->parent) == HORIZ)
                 xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
-                        { r->width + br.width + br.x, 0, r->width, r->height + br.height } });
+                        { r->width + br.width + br.x, br.y, r->width, r->height + br.height } });
             else
                 xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
                         { br.x, r->height + br.height + br.y, r->width - (2 * br.x), r->height } });
