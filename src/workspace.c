@@ -830,3 +830,34 @@ Con *workspace_attach_to(Con *ws) {
 
     return new;
 }
+
+/**
+ * Creates a new container and re-parents all of children from the given
+ * workspace into it.
+ *
+ * The container inherits the layout from the workspace.
+ */
+Con *workspace_encapsulate(Con *ws) {
+    if (TAILQ_EMPTY(&(ws->nodes_head))) {
+        ELOG("Workspace %p / %s has no children to encapsulate\n", ws, ws->name);
+        return NULL;
+    }
+
+    Con *new = con_new(NULL, NULL);
+    new->parent = ws;
+    new->layout = ws->layout;
+
+    DLOG("Moving children of workspace %p / %s into container %p\n",
+        ws, ws->name, new);
+
+    Con *child;
+    while (!TAILQ_EMPTY(&(ws->nodes_head))) {
+        child = TAILQ_FIRST(&(ws->nodes_head));
+        con_detach(child);
+        con_attach(child, new, true);
+    }
+
+    con_attach(new, ws, true);
+
+    return new;
+}

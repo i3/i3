@@ -388,7 +388,8 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
      *  when criteria was specified but didn't match any window or
      *  when criteria wasn't specified and we don't have any window focused. */
     if ((!match_is_empty(current_match) && TAILQ_EMPTY(&owindows)) ||
-        (match_is_empty(current_match) && focused->type == CT_WORKSPACE)) {
+        (match_is_empty(current_match) && focused->type == CT_WORKSPACE &&
+        con_is_leaf(focused))) {
         ysuccess(false);
         return;
     }
@@ -476,9 +477,8 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
         ysuccess(false);
         return;
     }
-
-    if (match_is_empty(current_match) && focused->type == CT_WORKSPACE) {
-        ELOG("No window to move, you have focused a workspace.\n");
+    else if (match_is_empty(current_match) && focused->type == CT_WORKSPACE &&
+        con_is_leaf(focused)) {
         ysuccess(false);
         return;
     }
@@ -512,7 +512,8 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
      *  when criteria was specified but didn't match any window or
      *  when criteria wasn't specified and we don't have any window focused. */
     if ((!match_is_empty(current_match) && TAILQ_EMPTY(&owindows)) ||
-        (match_is_empty(current_match) && focused->type == CT_WORKSPACE)) {
+        (match_is_empty(current_match) && focused->type == CT_WORKSPACE &&
+        con_is_leaf(focused))) {
         ysuccess(false);
         return;
     }

@@ -607,11 +607,6 @@ void con_toggle_fullscreen(Con *con, int fullscreen_mode) {
  *
  */
 void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool dont_warp) {
-    if (con->type == CT_WORKSPACE) {
-        DLOG("Moving workspaces is not yet implemented.\n");
-        return;
-    }
-
     /* Prevent moving if this would violate the fullscreen focus restrictions. */
     if (!con_fullscreen_permits_focusing(workspace)) {
         LOG("Cannot move out of a fullscreen container");
@@ -627,6 +622,21 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     if (workspace == source_ws) {
         DLOG("Not moving, already there\n");
         return;
+    }
+
+    if (con->type == CT_WORKSPACE) {
+        con = workspace_encapsulate(con);
+        if (con == NULL) {
+            ELOG("Workspace failed to move its contents into a container!\n");
+            return;
+        }
+
+        /* Re-parent all of the old workspace's floating windows. */
+        Con *child;
+        while (!TAILQ_EMPTY(&(source_ws->floating_head))) {
+            child = TAILQ_FIRST(&(source_ws->floating_head));
+            con_move_to_workspace(child, workspace, true, true);
+        }
     }
 
     /* Save the current workspace. So we can call workspace_show() by the end

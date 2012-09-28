@@ -174,4 +174,11 @@ void ws_force_orientation(Con *ws, orientation_t orientation);
  */
 Con *workspace_attach_to(Con *ws);
 
+/**
+ * Creates a new container and re-parents all of children from the given
+ * workspace into it.
+ *
+ * The container inherits the layout from the workspace.
+ */
+Con *workspace_encapsulate(Con *ws);
 #endif
