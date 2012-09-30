@@ -179,6 +179,22 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     DLOG("--> OUTCOME = %p\n", con);
     DLOG("type = %d, name = %s\n", con->type, con->name);
 
+    /* Any click in a workspace should focus that workspace. If the
+     * workspace is on another output we need to do a workspace_show in
+     * order for i3bar (and others) to notice the change in workspace. */
+    Con *ws = con_get_workspace(con);
+    Con *focused_workspace = con_get_workspace(focused);
+
+    if (!ws) {
+        ws = TAILQ_FIRST(&(output_get_content(con_get_output(con))->focus_head));
+        if (!ws)
+            goto done;
+    }
+
+    if (ws != focused_workspace)
+        workspace_show(ws);
+    focused_id = XCB_NONE;
+
     /* don’t handle dockarea cons, they must not be focused */
     if (con->parent->type == CT_DOCKAREA)
         goto done;
@@ -207,15 +223,7 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         goto done;
     }
 
-    /* 2: focus this con. If the workspace is on another output we need to
-     * do a workspace_show in order for i3bar (and others) to notice the
-     * change in workspace. */
-    Con *ws = con_get_workspace(con);
-    Con *focused_workspace = con_get_workspace(focused);
-
-    if (ws != focused_workspace)
-        workspace_show(ws);
-    focused_id = XCB_NONE;
+    /* 2: focus this con. */
     con_focus(con);
 
     /* 3: For floating containers, we also want to raise them on click.
