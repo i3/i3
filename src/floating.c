@@ -220,17 +220,22 @@ void floating_enable(Con *con, bool automatic) {
 
     /* Sanity check: Are the coordinates on the appropriate output? If not, we
      * need to change them */
-    Output *current_output = get_output_containing(nc->rect.x, nc->rect.y);
+    Output *current_output = get_output_containing(nc->rect.x +
+        (nc->rect.width / 2), nc->rect.y + (nc->rect.height / 2));
+
     Con *correct_output = con_get_output(ws);
     if (!current_output || current_output->con != correct_output) {
         DLOG("This floating window is on the wrong output, fixing coordinates (currently (%d, %d))\n",
              nc->rect.x, nc->rect.y);
-        /* Take the relative coordinates of the current output, then add them
-         * to the coordinate space of the correct output */
-        uint32_t rel_x = (nc->rect.x - (current_output ? current_output->con->rect.x : 0));
-        uint32_t rel_y = (nc->rect.y - (current_output ? current_output->con->rect.y : 0));
-        nc->rect.x = correct_output->rect.x + rel_x;
-        nc->rect.y = correct_output->rect.y + rel_y;
+
+        /* If moving from one output to another, keep the relative position
+         * consistent (e.g. a centered dialog will remain centered). */
+        if (current_output)
+            floating_fix_coordinates(nc, &current_output->con->rect, &correct_output->rect);
+        else {
+            nc->rect.x = correct_output->rect.x;
+            nc->rect.y = correct_output->rect.y;
+        }
     }
 
     DLOG("Floating rect: (%d, %d) with %d x %d\n", nc->rect.x, nc->rect.y, nc->rect.width, nc->rect.height);
@@ -634,16 +639,18 @@ void floating_fix_coordinates(Con *con, Rect *old_rect, Rect *new_rect) {
          new_rect->x, new_rect->y, new_rect->width, new_rect->height);
     /* First we get the x/y coordinates relative to the x/y coordinates
      * of the output on which the window is on */
-    int32_t rel_x = (con->rect.x - old_rect->x);
-    int32_t rel_y = (con->rect.y - old_rect->y);
+    int32_t rel_x = con->rect.x - old_rect->x + (int32_t)(con->rect.width  / 2);
+    int32_t rel_y = con->rect.y - old_rect->y + (int32_t)(con->rect.height / 2);
     /* Then we calculate a fraction, for example 0.63 for a window
      * which is at y = 1212 of a 1920 px high output */
     DLOG("rel_x = %d, rel_y = %d, fraction_x = %f, fraction_y = %f, output->w = %d, output->h = %d\n",
           rel_x, rel_y, (double)rel_x / old_rect->width, (double)rel_y / old_rect->height,
           old_rect->width, old_rect->height);
     /* Here we have to multiply at first. Or we will lose precision when not compiled with -msse2 */
-    con->rect.x = (int32_t)new_rect->x + (double)(rel_x * (int32_t)new_rect->width)  / (int32_t)old_rect->width;
-    con->rect.y = (int32_t)new_rect->y + (double)(rel_y * (int32_t)new_rect->height) / (int32_t)old_rect->height;
+    con->rect.x = (int32_t)new_rect->x + (double)(rel_x * (int32_t)new_rect->width)
+        / (int32_t)old_rect->width - (int32_t)(con->rect.width / 2);
+    con->rect.y = (int32_t)new_rect->y + (double)(rel_y * (int32_t)new_rect->height)
+        / (int32_t)old_rect->height - (int32_t)(con->rect.height / 2);
     DLOG("Resulting coordinates: x = %d, y = %d\n", con->rect.x, con->rect.y);
 }
 
