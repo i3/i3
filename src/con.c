@@ -714,12 +714,15 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
      * we don’t focus when there is a fullscreen con on that workspace. */
     if (!con_is_internal(workspace) &&
         con_get_fullscreen_con(workspace, CF_OUTPUT) == NULL) {
-        /* We need to save focus on workspace level and restore it afterwards.
-         * Otherwise, we might focus a different workspace without actually
-         * switching workspaces. */
+        /* We need to save the focused workspace on the output in case the
+         * new workspace is hidden and it's necessary to immediately switch
+         * back to the originally-focused workspace. */
         Con *old_focus = TAILQ_FIRST(&(output_get_content(dest_output)->focus_head));
         con_focus(con_descend_focused(con));
-        con_focus(old_focus);
+
+        /* Restore focus if the output's focused workspace has changed. */
+        if (con_get_workspace(focused) != old_focus)
+            con_focus(old_focus);
     }
 
     /* 8: when moving to a visible workspace on a different output, we keep the
