@@ -1,7 +1,7 @@
 IPC interface (interprocess communication)
 ==========================================
 Michael Stapelberg <michael@i3wm.org>
-August 2012
+October 2012
 
 This document describes how to interface with i3 from a separate process. This
 is useful for example to remote-control i3 (to write test cases for example) or
@@ -82,7 +82,7 @@ So, a typical message could look like this:
 Or, as a hexdump:
 ------------------------------------------------------------------------------
 00000000  69 33 2d 69 70 63 04 00  00 00 00 00 00 00 65 78  |i3-ipc........ex|
-00000010  69 74 0a                                          |it.|
+00000010  69 74                                             |it|
 ------------------------------------------------------------------------------
 
 To generate and send such a message, you could use the following code in Perl:
