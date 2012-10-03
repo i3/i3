@@ -165,7 +165,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     /* provided for backwards compatibility only. */
     ystr("orientation");
-    if (!con->split)
+    if (!con_is_split(con))
         ystr("none");
     else {
         if (con_orientation(con) == HORIZ)
@@ -201,9 +201,6 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     ystr("focused");
     y(bool, (con == focused));
-
-    ystr("split");
-    y(bool, con->split);
 
     ystr("layout");
     switch (con->layout) {

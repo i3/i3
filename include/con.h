@@ -33,6 +33,12 @@ void con_focus(Con *con);
  */
 bool con_is_leaf(Con *con);
 
+/*
+ * Returns true if a container should be considered split.
+ *
+ */
+bool con_is_split(Con *con);
+
 /**
  * Returns true if this node accepts a window (if the node swallows windows,
  * it might already have swallowed enough and cannot hold any more).

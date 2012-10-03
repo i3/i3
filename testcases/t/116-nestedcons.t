@@ -52,7 +52,6 @@ my $expected = {
     name => 'root',
     orientation => $ignore,
     type => 0,
-    split => JSON::XS::false,
     id => $ignore,
     rect => $ignore,
     window_rect => $ignore,

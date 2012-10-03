@@ -768,7 +768,6 @@ void ws_force_orientation(Con *ws, orientation_t orientation) {
     /* 1: create a new split container */
     Con *split = con_new(NULL, NULL);
     split->parent = ws;
-    split->split = true;
 
     /* 2: copy layout from workspace */
     split->layout = ws->layout;
@@ -820,7 +819,6 @@ Con *workspace_attach_to(Con *ws) {
     /* 1: create a new split container */
     Con *new = con_new(NULL, NULL);
     new->parent = ws;
-    new->split = true;
 
     /* 2: set the requested layout on the split con */
     new->layout = ws->workspace_layout;

@@ -382,7 +382,6 @@ void tree_split(Con *con, orientation_t orientation) {
     TAILQ_REPLACE(&(parent->focus_head), con, new, focused);
     new->parent = parent;
     new->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
-    new->split = true;
 
     /* 3: swap 'percent' (resize factor) */
     new->percent = con->percent;
@@ -626,8 +625,8 @@ void tree_flatten(Con *con) {
 
     /* The child must have a different orientation than the con but the same as
      * the con’s parent to be redundant */
-    if (!con->split ||
-        !child->split ||
+    if (!con_is_split(con) ||
+        !con_is_split(child) ||
         con_orientation(con) == con_orientation(child) ||
         con_orientation(child) != con_orientation(parent))
         goto recurse;

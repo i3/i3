@@ -440,8 +440,6 @@ struct Assignment {
  */
 struct Con {
     bool mapped;
-    /** whether this is a split container or not */
-    bool split;
     enum {
         CT_ROOT = 0,
         CT_OUTPUT = 1,

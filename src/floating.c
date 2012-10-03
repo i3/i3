@@ -99,7 +99,6 @@ void floating_enable(Con *con, bool automatic) {
      * otherwise. */
     Con *ws = con_get_workspace(con);
     nc->parent = ws;
-    nc->split = true;
     nc->type = CT_FLOATING_CON;
     nc->layout = L_SPLITH;
     /* We insert nc already, even though its rect is not yet calculated. This

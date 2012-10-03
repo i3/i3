@@ -172,11 +172,6 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             else if (strcasecmp(buf, "vertical") == 0)
                 json_node->last_split_layout = L_SPLITV;
             else LOG("Unhandled orientation: %s\n", buf);
-
-            /* What used to be an implicit check whether orientation !=
-             * NO_ORIENTATION is now a proper separate flag. */
-            if (strcasecmp(buf, "none") != 0)
-                json_node->split = true;
             free(buf);
         } else if (strcasecmp(last_key, "border") == 0) {
             char *buf = NULL;
@@ -202,11 +197,9 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
                 json_node->layout = L_STACKED;
             else if (strcasecmp(buf, "tabbed") == 0)
                 json_node->layout = L_TABBED;
-            else if (strcasecmp(buf, "dockarea") == 0) {
+            else if (strcasecmp(buf, "dockarea") == 0)
                 json_node->layout = L_DOCKAREA;
-                /* Necessary for migrating from older versions of i3. */
-                json_node->split = false;
-            } else if (strcasecmp(buf, "output") == 0)
+            else if (strcasecmp(buf, "output") == 0)
                 json_node->layout = L_OUTPUT;
             else if (strcasecmp(buf, "splith") == 0)
                 json_node->layout = L_SPLITH;
@@ -332,9 +325,6 @@ static int json_bool(void *ctx, int val) {
     if (strcasecmp(last_key, "focused") == 0 && val) {
         to_focus = json_node;
     }
-
-    if (strcasecmp(last_key, "split") == 0)
-        json_node->split = val;
 
     if (parsing_swallows) {
         if (strcasecmp(last_key, "restart_mode") == 0)

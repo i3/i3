@@ -36,7 +36,7 @@ static void con_force_split_parents_redraw(Con *con) {
     Con *parent = con;
 
     while (parent && parent->type != CT_WORKSPACE && parent->type != CT_DOCKAREA) {
-        if (parent->split)
+        if (!con_is_leaf(parent))
             FREE(parent->deco_render_params);
         parent = parent->parent;
     }
@@ -233,6 +233,24 @@ bool con_is_leaf(Con *con) {
 }
 
 /*
+ * Returns true if a container should be considered split.
+ *
+ */
+bool con_is_split(Con *con) {
+    if (con_is_leaf(con))
+        return false;
+
+    switch (con->layout) {
+        case L_DOCKAREA:
+        case L_OUTPUT:
+            return false;
+
+        default:
+            return true;
+    }
+}
+
+/*
  * Returns true if this node accepts a window (if the node swallows windows,
  * it might already have swallowed enough and cannot hold any more).
  *
@@ -242,7 +260,7 @@ bool con_accepts_window(Con *con) {
     if (con->type == CT_WORKSPACE)
         return false;
 
-    if (con->split) {
+    if (con_is_split(con)) {
         DLOG("container %p does not accept windows, it is a split container.\n", con);
         return false;
     }
@@ -1163,7 +1181,6 @@ void con_set_layout(Con *con, int layout) {
              * split. */
             new->layout = layout;
             new->last_split_layout = con->last_split_layout;
-            new->split = true;
 
             Con *old_focused = TAILQ_FIRST(&(con->focus_head));
             if (old_focused == TAILQ_END(&(con->focus_head)))
@@ -1336,7 +1353,7 @@ Rect con_minimum_size(Con *con) {
     /* For horizontal/vertical split containers we sum up the width (h-split)
      * or height (v-split) and use the maximum of the height (h-split) or width
      * (v-split) as minimum size. */
-    if (con->split) {
+    if (con_is_split(con)) {
         uint32_t width = 0, height = 0;
         Con *child;
         TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
@@ -1354,7 +1371,7 @@ Rect con_minimum_size(Con *con) {
     }
 
     ELOG("Unhandled case, type = %d, layout = %d, split = %d\n",
-         con->type, con->layout, con->split);
+         con->type, con->layout, con_is_split(con));
     assert(false);
 }
 
