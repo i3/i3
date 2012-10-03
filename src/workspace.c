@@ -212,6 +212,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
 
     ws->fullscreen_mode = CF_OUTPUT;
 
+    ws->workspace_layout = config.default_layout;
     _workspace_apply_default_orientation(ws);
 
     return ws;
