@@ -398,7 +398,8 @@ void tree_split(Con *con, orientation_t orientation) {
 bool level_up(void) {
     /* We can focus up to the workspace, but not any higher in the tree */
     if ((focused->parent->type != CT_CON &&
-        focused->parent->type != CT_WORKSPACE) ||
+         focused->parent->type != CT_FLOATING_CON &&
+         focused->parent->type != CT_WORKSPACE) ||
         focused->type == CT_WORKSPACE) {
         ELOG("'focus parent': Focus is already on the workspace, cannot go higher than that.\n");
         return false;
