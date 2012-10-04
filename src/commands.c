@@ -402,7 +402,7 @@ void cmd_move_con_to_workspace(I3_CMD, char *which) {
      *  when criteria wasn't specified and we don't have any window focused. */
     if ((!match_is_empty(current_match) && TAILQ_EMPTY(&owindows)) ||
         (match_is_empty(current_match) && focused->type == CT_WORKSPACE &&
-        con_is_leaf(focused))) {
+        !con_has_children(focused))) {
         ysuccess(false);
         return;
     }
@@ -491,7 +491,7 @@ void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
         return;
     }
     else if (match_is_empty(current_match) && focused->type == CT_WORKSPACE &&
-        con_is_leaf(focused)) {
+        !con_has_children(focused)) {
         ysuccess(false);
         return;
     }
@@ -526,7 +526,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
      *  when criteria wasn't specified and we don't have any window focused. */
     if ((!match_is_empty(current_match) && TAILQ_EMPTY(&owindows)) ||
         (match_is_empty(current_match) && focused->type == CT_WORKSPACE &&
-        con_is_leaf(focused))) {
+        !con_has_children(focused))) {
         ysuccess(false);
         return;
     }

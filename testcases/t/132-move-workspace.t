@@ -318,4 +318,23 @@ $ws = get_ws($tmp2);
 is_num_children($tmp2, 1, 'one container on second workspace');
 is(@{$ws->{floating_nodes}}, 2, 'two floating nodes on second workspace');
 
+###################################################################
+# same as the above, but with only floating children
+###################################################################
+$tmp2 = get_unused_workspace();
+$tmp = fresh_workspace();
+cmd 'open';
+cmd 'floating toggle';
+
+$ws = get_ws($tmp);
+is_num_children($tmp, 0, 'no regular nodes on first workspace');
+is(@{$ws->{floating_nodes}}, 1, 'one floating node on first workspace');
+
+cmd 'focus parent';
+cmd "move workspace $tmp2";
+
+$ws = get_ws($tmp2);
+is_num_children($tmp2, 0, 'no regular nodes on second workspace');
+is(@{$ws->{floating_nodes}}, 1, 'one floating node on second workspace');
+
 done_testing;

@@ -232,6 +232,14 @@ bool con_is_leaf(Con *con) {
     return TAILQ_EMPTY(&(con->nodes_head));
 }
 
+/**
+ * Returns true if this node has regular or floating children.
+ *
+ */
+bool con_has_children(Con *con) {
+    return (!con_is_leaf(con) || !TAILQ_EMPTY(&(con->floating_head)));
+}
+
 /*
  * Returns true if a container should be considered split.
  *
@@ -643,17 +651,21 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
     }
 
     if (con->type == CT_WORKSPACE) {
-        con = workspace_encapsulate(con);
-        if (con == NULL) {
-            ELOG("Workspace failed to move its contents into a container!\n");
-            return;
-        }
-
         /* Re-parent all of the old workspace's floating windows. */
         Con *child;
         while (!TAILQ_EMPTY(&(source_ws->floating_head))) {
             child = TAILQ_FIRST(&(source_ws->floating_head));
             con_move_to_workspace(child, workspace, true, true);
+        }
+
+        /* If there are no non-floating children, ignore the workspace. */
+        if (con_is_leaf(con))
+            return;
+
+        con = workspace_encapsulate(con);
+        if (con == NULL) {
+            ELOG("Workspace failed to move its contents into a container!\n");
+            return;
         }
     }
 

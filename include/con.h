@@ -40,6 +40,12 @@ bool con_is_leaf(Con *con);
 bool con_is_split(Con *con);
 
 /**
+ * Returns true if this node has regular or floating children.
+ *
+ */
+bool con_has_children(Con *con);
+
+/**
  * Returns true if this node accepts a window (if the node swallows windows,
  * it might already have swallowed enough and cannot hold any more).
  *
