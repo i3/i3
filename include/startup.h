@@ -32,10 +32,25 @@
 void start_application(const char *command, bool no_startup_id);
 
 /**
+ * Deletes a startup sequence, ignoring whether its timeout has elapsed.
+ * Useful when e.g. a window is moved between workspaces and its children
+ * shouldn't spawn on the original workspace.
+ *
+ */
+void startup_sequence_delete(struct Startup_Sequence *sequence);
+
+/**
  * Called by libstartup-notification when something happens
  *
  */
 void startup_monitor_event(SnMonitorEvent *event, void *userdata);
+
+/**
+ * Gets the stored startup sequence for the _NET_STARTUP_ID of a given window.
+ *
+ */
+struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
+    xcb_get_property_reply_t *startup_id_reply, bool ignore_mapped_leader);
 
 /**
  * Checks if the given window belongs to a startup notification by checking if

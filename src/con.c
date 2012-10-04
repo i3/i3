@@ -769,6 +769,38 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
             con_focus(con_descend_focused(focus_next));
     }
 
+    /* If anything within the container is associated with a startup sequence,
+     * delete it so child windows won't be created on the old workspace. */
+    struct Startup_Sequence *sequence;
+    xcb_get_property_cookie_t cookie;
+    xcb_get_property_reply_t *startup_id_reply;
+
+    if (!con_is_leaf(con)) {
+        Con *child;
+        TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+            if (!child->window)
+                continue;
+
+            cookie = xcb_get_property(conn, false, child->window->id,
+                A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
+            startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
+
+            sequence = startup_sequence_get(child->window, startup_id_reply, true);
+            if (sequence != NULL)
+                startup_sequence_delete(sequence);
+        }
+    }
+
+    if (con->window) {
+        cookie = xcb_get_property(conn, false, con->window->id,
+            A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
+        startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
+
+        sequence = startup_sequence_get(con->window, startup_id_reply, true);
+        if (sequence != NULL)
+            startup_sequence_delete(sequence);
+    }
+
     CALL(parent, on_remove_child);
 }
 

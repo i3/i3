@@ -136,15 +136,48 @@ is_num_children($second_ws, 0, 'still no containers on the second workspace');
 is_num_children($first_ws, 2, 'two containers on the first workspace');
 
 ######################################################################
-# 2) open another window after the startup process is completed
-# (should be placed on the current workspace)
+# verifies that finishing startup doesn't immediately stop windows
+# from being placed on the sequence's workspace, but that moving
+# the leader actually deletes the startup sequence mapping
 ######################################################################
 
 complete_startup();
 sync_with_i3;
 
-my $otherwin = open_window;
+# Startup has completed but the 30-second deletion time hasn't elapsed,
+# so this window should still go on the leader's initial workspace.
+$win = open_window({ dont_map => 1, client_leader => $leader });
+$win->map;
+sync_with_i3;
+
+is_num_children($first_ws, 3, 'three containers on the first workspace');
+
+# Switch to the first workspace and move the focused window to the
+# second workspace.
+cmd "workspace $first_ws";
+cmd "move workspace $second_ws";
+
 is_num_children($second_ws, 1, 'one container on the second workspace');
+
+# Create and switch to a new workspace, just to be safe.
+my $third_ws = fresh_workspace;
+
+# Moving the window between workspaces should have immediately
+# removed the startup workspace mapping. New windows with that
+# leader should be created on the current workspace.
+$win = open_window({ dont_map => 1, client_leader => $leader });
+$win->map;
+sync_with_i3;
+
+is_num_children($third_ws, 1, 'one container on the third workspace');
+
+######################################################################
+# 2) open another window after the startup process is completed
+# (should be placed on the current workspace)
+######################################################################
+
+my $otherwin = open_window;
+is_num_children($third_ws, 2, 'two containers on the third workspace');
 
 ######################################################################
 # 3) test that the --no-startup-id flag for exec leads to no DESKTOP_STARTUP_ID
