@@ -696,6 +696,14 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         }
     }
 
+    /* If moving a fullscreen container and the destination already has a
+     * fullscreen window on it, un-fullscreen the target's fullscreen con. */
+    Con *fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
+    if (con->fullscreen_mode != CF_NONE && fullscreen != NULL) {
+        con_toggle_fullscreen(fullscreen, CF_OUTPUT);
+        fullscreen = NULL;
+    }
+
     DLOG("Re-attaching container to %p / %s\n", next, next->name);
     /* 5: re-attach the con to the parent of this focused container */
     Con *parent = con->parent;
@@ -712,8 +720,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
      * invisible.
      * We don’t focus the con for i3 pseudo workspaces like __i3_scratch and
      * we don’t focus when there is a fullscreen con on that workspace. */
-    if (!con_is_internal(workspace) &&
-        con_get_fullscreen_con(workspace, CF_OUTPUT) == NULL) {
+    if (!con_is_internal(workspace) && !fullscreen) {
         /* We need to save the focused workspace on the output in case the
          * new workspace is hidden and it's necessary to immediately switch
          * back to the originally-focused workspace. */

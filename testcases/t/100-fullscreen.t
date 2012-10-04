@@ -22,7 +22,10 @@ my $i3 = i3(get_socket_path());
 my $tmp = fresh_workspace;
 
 sub fullscreen_windows {
-    scalar grep { $_->{fullscreen_mode} != 0 } @{get_ws_content($tmp)}
+    my $ws = $tmp;
+    $ws = shift if @_;
+
+    scalar grep { $_->{fullscreen_mode} != 0 } @{get_ws_content($ws)}
 }
 
 # get the output of this workspace
@@ -187,5 +190,28 @@ is($x->input_focus, $window->id, 'fullscreen window focused');
 
 cmd 'focus left';
 is($x->input_focus, $window->id, 'fullscreen window still focused');
+
+################################################################################
+# Verify that fullscreening a window on a second workspace and moving it onto
+# the first workspace unfullscreens the first window.
+################################################################################
+
+my $tmp2 = fresh_workspace;
+$swindow = open_window;
+
+cmd 'fullscreen';
+
+is(fullscreen_windows($tmp2), 1, 'one fullscreen window on second ws');
+
+cmd "move workspace $tmp";
+
+is(fullscreen_windows($tmp2), 0, 'no fullscreen windows on second ws');
+is(fullscreen_windows($tmp), 1, 'one fullscreen window on first ws');
+
+$swindow->fullscreen(0);
+sync_with_i3;
+
+# Verify that $swindow was the one that initially remained fullscreen.
+is(fullscreen_windows($tmp), 0, 'no fullscreen windows on first ws');
 
 done_testing;
