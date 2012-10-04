@@ -108,7 +108,7 @@ void init_logging(void) {
 #endif
         logbuffer_size = min(physical_mem_bytes * 0.01, shmlog_size);
         sasprintf(&shmlogname, "/i3-log-%d", getpid());
-        logbuffer_shm = shm_open(shmlogname, O_RDWR | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
+        logbuffer_shm = shm_open(shmlogname, O_RDWR | O_CREAT, S_IREAD | S_IWRITE);
         if (logbuffer_shm == -1) {
             ELOG("Could not shm_open SHM segment for the i3 log: %s\n", strerror(errno));
             return;
