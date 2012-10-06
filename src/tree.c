@@ -466,6 +466,11 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
     /* Stop recursing at workspaces after attempting to switch to next
      * workspace if possible. */
     if (con->type == CT_WORKSPACE) {
+        if (con_get_fullscreen_con(con, CF_GLOBAL) ||
+            con_get_fullscreen_con(con, CF_OUTPUT)) {
+            DLOG("Cannot change workspace while in fullscreen mode.\n");
+            return false;
+        }
         Output *current_output = get_output_containing(con->rect.x, con->rect.y);
         Output *next_output;
 

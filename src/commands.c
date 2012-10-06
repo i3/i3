@@ -1297,14 +1297,6 @@ void cmd_exec(I3_CMD, char *nosn, char *command) {
  *
  */
 void cmd_focus_direction(I3_CMD, char *direction) {
-    if (focused &&
-        focused->type != CT_WORKSPACE &&
-        focused->fullscreen_mode != CF_NONE) {
-        LOG("Cannot change focus while in fullscreen mode.\n");
-        ysuccess(false);
-        return;
-    }
-
     DLOG("direction = *%s*\n", direction);
 
     if (strcmp(direction, "left") == 0)
@@ -1331,14 +1323,6 @@ void cmd_focus_direction(I3_CMD, char *direction) {
  *
  */
 void cmd_focus_window_mode(I3_CMD, char *window_mode) {
-    if (focused &&
-        focused->type != CT_WORKSPACE &&
-        focused->fullscreen_mode != CF_NONE) {
-        LOG("Cannot change focus while in fullscreen mode.\n");
-        ysuccess(false);
-        return;
-    }
-
     DLOG("window_mode = %s\n", window_mode);
 
     Con *ws = con_get_workspace(focused);
