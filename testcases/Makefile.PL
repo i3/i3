@@ -13,6 +13,7 @@ WriteMakefile(
         'Inline'       => 0,
         'ExtUtils::PkgConfig' => 0,
         'Test::More'   => '0.94',
+        'IPC::Run' => 0,
     },
     PM => {}, # do not install any files from this directory
     clean => {
