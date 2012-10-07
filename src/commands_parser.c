@@ -46,7 +46,7 @@
  * input parser-specs/commands.spec.
  ******************************************************************************/
 
-#include "GENERATED_enums.h"
+#include "GENERATED_commands_enums.h"
 
 typedef struct token {
     char *name;
@@ -63,7 +63,7 @@ typedef struct tokenptr {
     int n;
 } cmdp_token_ptr;
 
-#include "GENERATED_tokens.h"
+#include "GENERATED_commands_tokens.h"
 
 /*******************************************************************************
  * The (small) stack where identified literals are stored during the parsing
@@ -182,7 +182,7 @@ static Match current_match;
 static struct CommandResult subcommand_output;
 static struct CommandResult command_output;
 
-#include "GENERATED_call.h"
+#include "GENERATED_commands_call.h"
 
 
 static void next_state(const cmdp_token *token) {

@@ -12,7 +12,17 @@
 use strict;
 use warnings;
 use Data::Dumper;
+use Getopt::Long;
 use v5.10;
+
+my $input = '';
+my $prefix = '';
+my $result = GetOptions(
+    'input=s' => \$input,
+    'prefix=s' => \$prefix
+);
+
+die qq|Input file "$input" does not exist!| unless -e $input;
 
 # reads in a whole file
 sub slurp {
@@ -24,8 +34,6 @@ sub slurp {
 # Stores the different states.
 my %states;
 
-# XXX: don’t hardcode input and output
-my $input = '../parser-specs/commands.spec';
 my @raw_lines = split("\n", slurp($input));
 my @lines;
 
@@ -103,7 +111,7 @@ for my $line (@lines) {
 # It is important to keep the order the same, so we store the keys once.
 my @keys = keys %states;
 
-open(my $enumfh, '>', 'GENERATED_enums.h');
+open(my $enumfh, '>', "GENERATED_${prefix}_enums.h");
 
 # XXX: we might want to have a way to do this without a trailing comma, but gcc
 # seems to eat it.
@@ -117,7 +125,7 @@ say $enumfh '} cmdp_state;';
 close($enumfh);
 
 # Third step: Generate the call function.
-open(my $callfh, '>', 'GENERATED_call.h');
+open(my $callfh, '>', "GENERATED_${prefix}_call.h");
 say $callfh 'static void GENERATED_call(const int call_identifier, struct CommandResult *result) {';
 say $callfh '    switch (call_identifier) {';
 my $call_id = 0;
@@ -168,11 +176,11 @@ close($callfh);
 
 # Fourth step: Generate the token datastructures.
 
-open(my $tokfh, '>', 'GENERATED_tokens.h');
+open(my $tokfh, '>', "GENERATED_${prefix}_tokens.h");
 
 for my $state (@keys) {
     my $tokens = $states{$state};
-    say $tokfh 'cmdp_token tokens_' . $state . '[' . scalar @$tokens . '] = {';
+    say $tokfh 'static cmdp_token tokens_' . $state . '[' . scalar @$tokens . '] = {';
     for my $token (@$tokens) {
         my $call_identifier = 0;
         my $token_name = $token->{token};
@@ -192,7 +200,7 @@ for my $state (@keys) {
     say $tokfh '};';
 }
 
-say $tokfh 'cmdp_token_ptr tokens[' . scalar @keys . '] = {';
+say $tokfh 'static cmdp_token_ptr tokens[' . scalar @keys . '] = {';
 for my $state (@keys) {
     my $tokens = $states{$state};
     say $tokfh '    { tokens_' . $state . ', ' . scalar @$tokens . ' },';
