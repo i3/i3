@@ -10,6 +10,17 @@
  *
  * See also src/commands_parser.c for rationale on why we use a custom parser.
  *
+ * This parser works VERY MUCH like src/commands_parser.c, so read that first.
+ * The differences are:
+ *
+ * 1. config_parser supports the 'number' token type (in addition to 'word' and
+ *    'string'). Numbers are referred to using &num (like $str).
+ *
+ * 2. Criteria are not executed immediately, they are just stored.
+ *
+ * 3. config_parser recognizes \n and \r as 'end' token, while commands_parser
+ *    ignores them.
+ *
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,7 +70,14 @@ typedef struct tokenptr {
 struct stack_entry {
     /* Just a pointer, not dynamically allocated. */
     const char *identifier;
-    char *str;
+    enum {
+        STACK_STR = 0,
+        STACK_LONG = 1,
+    } type;
+    union {
+        char *str;
+        long num;
+    } val;
 };
 
 /* 10 entries should be enough for everybody. */
@@ -73,16 +91,17 @@ static struct stack_entry stack[10];
 static void push_string(const char *identifier, char *str) {
     for (int c = 0; c < 10; c++) {
         if (stack[c].identifier != NULL &&
-		    strcmp(stack[c].identifier, identifier) != 0)
+            strcmp(stack[c].identifier, identifier) != 0)
             continue;
-		if (stack[c].identifier == NULL) {
-			/* Found a free slot, let’s store it here. */
-			stack[c].identifier = identifier;
-			stack[c].str = str;
-		} else {
-			/* Append the value. */
-			sasprintf(&(stack[c].str), "%s,%s", stack[c].str, str);
-		}
+        if (stack[c].identifier == NULL) {
+            /* Found a free slot, let’s store it here. */
+            stack[c].identifier = identifier;
+            stack[c].val.str = str;
+            stack[c].type = STACK_STR;
+        } else {
+            /* Append the value. */
+            sasprintf(&(stack[c].val.str), "%s,%s", stack[c].val.str, str);
+        }
         return;
     }
 
@@ -95,24 +114,54 @@ static void push_string(const char *identifier, char *str) {
     exit(1);
 }
 
-// XXX: ideally, this would be const char. need to check if that works with all
-// called functions.
-static char *get_string(const char *identifier) {
+static void push_long(const char *identifier, long num) {
+    for (int c = 0; c < 10; c++) {
+        if (stack[c].identifier != NULL)
+            continue;
+        /* Found a free slot, let’s store it here. */
+        stack[c].identifier = identifier;
+        stack[c].val.num = num;
+        stack[c].type = STACK_LONG;
+        return;
+    }
+
+    /* When we arrive here, the stack is full. This should not happen and
+     * means there’s either a bug in this parser or the specification
+     * contains a command with more than 10 identified tokens. */
+    fprintf(stderr, "BUG: commands_parser stack full. This means either a bug "
+                    "in the code, or a new command which contains more than "
+                    "10 identified tokens.\n");
+    exit(1);
+
+}
+
+static const char *get_string(const char *identifier) {
     for (int c = 0; c < 10; c++) {
         if (stack[c].identifier == NULL)
             break;
         if (strcmp(identifier, stack[c].identifier) == 0)
-            return stack[c].str;
+            return stack[c].val.str;
     }
     return NULL;
 }
 
+static const long get_long(const char *identifier) {
+    for (int c = 0; c < 10; c++) {
+        if (stack[c].identifier == NULL)
+            break;
+        if (strcmp(identifier, stack[c].identifier) == 0)
+            return stack[c].val.num;
+    }
+    return 0;
+}
+
 static void clear_stack(void) {
     for (int c = 0; c < 10; c++) {
-        if (stack[c].str != NULL)
-            free(stack[c].str);
+        if (stack[c].type == STACK_STR && stack[c].val.str != NULL)
+            free(stack[c].val.str);
         stack[c].identifier = NULL;
-        stack[c].str = NULL;
+        stack[c].val.str = NULL;
+        stack[c].val.num = 0;
     }
 }
 
@@ -168,11 +217,9 @@ static void clear_criteria(void *unused_criteria) {
  ******************************************************************************/
 
 static cmdp_state state;
-#ifndef TEST_PARSER
 static Match current_match;
-#endif
-static struct CommandResult subcommand_output;
-static struct CommandResult command_output;
+static struct ConfigResult subcommand_output;
+static struct ConfigResult command_output;
 
 #include "GENERATED_config_call.h"
 
@@ -182,12 +229,7 @@ static void next_state(const cmdp_token *token) {
 	//printf("next_state = %d\n", token->next_state);
     if (token->next_state == __CALL) {
         subcommand_output.json_gen = command_output.json_gen;
-        subcommand_output.needs_tree_render = false;
         GENERATED_call(token->extra.call_identifier, &subcommand_output);
-        /* If any subcommand requires a tree_render(), we need to make the
-         * whole parser result request a tree_render(). */
-        if (subcommand_output.needs_tree_render)
-            command_output.needs_tree_render = true;
         clear_stack();
         return;
     }
@@ -198,8 +240,49 @@ static void next_state(const cmdp_token *token) {
     }
 }
 
-struct CommandResult *parse_config(const char *input) {
-    DLOG("COMMAND: *%s*\n", input);
+/*
+ * Returns a pointer to the start of the line (one byte after the previous \r,
+ * \n) or the start of the input, if this is the first line.
+ *
+ */
+static const char *start_of_line(const char *walk, const char *beginning) {
+    while (*walk != '\n' && *walk != '\r' && walk >= beginning) {
+        walk--;
+    }
+
+    return walk + 1;
+}
+
+/*
+ * Copies the line and terminates it at the next \n, if any.
+ *
+ * The caller has to free() the result.
+ *
+ */
+static char *single_line(const char *start) {
+    char *result = sstrdup(start);
+    char *end = strchr(result, '\n');
+    if (end != NULL)
+        *end = '\0';
+    return result;
+}
+
+struct ConfigResult *parse_config(const char *input, struct context *context) {
+    /* Dump the entire config file into the debug log. We cannot just use
+     * DLOG("%s", input); because one log message must not exceed 4 KiB. */
+    const char *dumpwalk = input;
+    int linecnt = 1;
+    while (*dumpwalk != '\0') {
+        char *next_nl = strchr(dumpwalk, '\n');
+        if (next_nl != NULL) {
+            DLOG("CONFIG(line %3d): %.*s\n", linecnt, (next_nl - dumpwalk), dumpwalk);
+            dumpwalk = next_nl + 1;
+        } else {
+            DLOG("CONFIG(line %3d): %s\n", linecnt, dumpwalk);
+            break;
+        }
+        linecnt++;
+    }
     state = INITIAL;
 
 /* A YAJL JSON generator used for formatting replies. */
@@ -210,25 +293,25 @@ struct CommandResult *parse_config(const char *input) {
 #endif
 
     y(array_open);
-    command_output.needs_tree_render = false;
 
     const char *walk = input;
     const size_t len = strlen(input);
     int c;
     const cmdp_token *token;
     bool token_handled;
+    linecnt = 1;
 
     // TODO: make this testable
 #ifndef TEST_PARSER
-    cmd_criteria_init(&current_match, &subcommand_output);
+    cfg_criteria_init(&current_match, &subcommand_output, INITIAL);
 #endif
 
     /* The "<=" operator is intentional: We also handle the terminating 0-byte
      * explicitly by looking for an 'end' token. */
     while ((walk - input) <= len) {
-        /* skip whitespace and newlines before every token */
-        while ((*walk == ' ' || *walk == '\t' ||
-                *walk == '\r' || *walk == '\n') && *walk != '\0')
+        /* Skip whitespace before every token, newlines are relevant since they
+         * separate configuration directives. */
+        while ((*walk == ' ' || *walk == '\t') && *walk != '\0')
             walk++;
 
 		//printf("remaining input: %s\n", walk);
@@ -251,6 +334,29 @@ struct CommandResult *parse_config(const char *input) {
                 continue;
             }
 
+            if (strcmp(token->name, "number") == 0) {
+                /* Handle numbers. We only accept decimal numbers for now. */
+                char *end = NULL;
+                errno = 0;
+                long int num = strtol(walk, &end, 10);
+                if ((errno == ERANGE && (num == LONG_MIN || num == LONG_MAX)) ||
+                    (errno != 0 && num == 0))
+                    continue;
+
+                /* No valid numbers found */
+                if (end == walk)
+                    continue;
+
+                if (token->identifier != NULL)
+                    push_long(token->identifier, num);
+
+                /* Set walk to the first non-number character */
+                walk = end;
+                next_state(token);
+                token_handled = true;
+                break;
+            }
+
             if (strcmp(token->name, "string") == 0 ||
                 strcmp(token->name, "word") == 0) {
                 const char *beginning = walk;
@@ -262,13 +368,7 @@ struct CommandResult *parse_config(const char *input) {
                         walk++;
                 } else {
                     if (token->name[0] == 's') {
-                        /* For a string (starting with 's'), the delimiters are
-                         * comma (,) and semicolon (;) which introduce a new
-                         * operation or command, respectively. Also, newlines
-                         * end a command. */
-                        while (*walk != ';' && *walk != ',' &&
-                               *walk != '\0' && *walk != '\r' &&
-                               *walk != '\n')
+                        while (*walk != '\0' && *walk != '\r' && *walk != '\n')
                             walk++;
                     } else {
                         /* For a word, the delimiters are white space (' ' or
@@ -308,7 +408,8 @@ struct CommandResult *parse_config(const char *input) {
             }
 
             if (strcmp(token->name, "end") == 0) {
-                if (*walk == '\0' || *walk == ',' || *walk == ';') {
+                //printf("checking for end: *%s*\n", walk);
+                if (*walk == '\0' || *walk == '\n' || *walk == '\r') {
                     next_state(token);
                     token_handled = true;
                     /* To make sure we start with an appropriate matching
@@ -317,9 +418,9 @@ struct CommandResult *parse_config(const char *input) {
                      * every command. */
                     // TODO: make this testable
 #ifndef TEST_PARSER
-                    if (*walk == '\0' || *walk == ';')
-                        cmd_criteria_init(&current_match, &subcommand_output);
+                    cfg_criteria_init(&current_match, &subcommand_output, INITIAL);
 #endif
+                    linecnt++;
                     walk++;
                     break;
                }
@@ -366,16 +467,52 @@ struct CommandResult *parse_config(const char *input) {
                       possible_tokens);
             free(possible_tokens);
 
+
+            /* Go back to the beginning of the line */
+            const char *error_line = start_of_line(walk, input);
+
             /* Contains the same amount of characters as 'input' has, but with
              * the unparseable part highlighted using ^ characters. */
-            char *position = smalloc(len + 1);
-            for (const char *copywalk = input; *copywalk != '\0'; copywalk++)
-                position[(copywalk - input)] = (copywalk >= walk ? '^' : ' ');
-            position[len] = '\0';
+            char *position = scalloc(strlen(error_line) + 1);
+            const char *copywalk;
+            for (copywalk = error_line;
+                 *copywalk != '\n' && *copywalk != '\r' && *copywalk != '\0';
+                 copywalk++)
+                position[(copywalk - error_line)] = (copywalk >= walk ? '^' : (*copywalk == '\t' ? '\t' : ' '));
+            position[(copywalk - error_line)] = '\0';
 
-            ELOG("%s\n", errormessage);
-            ELOG("Your command: %s\n", input);
-            ELOG("              %s\n", position);
+            ELOG("CONFIG: %s\n", errormessage);
+            ELOG("CONFIG: (in file %s)\n", context->filename);
+            char *error_copy = single_line(error_line);
+
+            /* Print context lines *before* the error, if any. */
+            if (linecnt > 1) {
+                const char *context_p1_start = start_of_line(error_line-2, input);
+                char *context_p1_line = single_line(context_p1_start);
+                if (linecnt > 2) {
+                    const char *context_p2_start = start_of_line(context_p1_start-2, input);
+                    char *context_p2_line = single_line(context_p2_start);
+                    ELOG("CONFIG: Line %3d: %s\n", linecnt - 2, context_p2_line);
+                    free(context_p2_line);
+                }
+                ELOG("CONFIG: Line %3d: %s\n", linecnt - 1, context_p1_line);
+                free(context_p1_line);
+            }
+            ELOG("CONFIG: Line %3d: %s\n", linecnt, error_copy);
+            ELOG("CONFIG:           %s\n", position);
+            free(error_copy);
+            /* Print context lines *after* the error, if any. */
+            for (int i = 0; i < 2; i++) {
+                char *error_line_end = strchr(error_line, '\n');
+                if (error_line_end != NULL && *(error_line_end + 1) != '\0') {
+                    error_line = error_line_end + 1;
+                    error_copy = single_line(error_line);
+                    ELOG("CONFIG: Line %3d: %s\n", linecnt + i + 1, error_copy);
+                    free(error_copy);
+                }
+            }
+
+            context->has_errors = true;
 
             /* Format this error message as a JSON reply. */
             y(map_open);
@@ -436,11 +573,26 @@ void errorlog(char *fmt, ...) {
     va_end(args);
 }
 
+static int criteria_next_state;
+
+void cfg_criteria_init(I3_CFG, int _state) {
+    criteria_next_state = _state;
+}
+
+void cfg_criteria_add(I3_CFG, const char *ctype, const char *cvalue) {
+}
+
+void cfg_criteria_pop_state(I3_CFG) {
+    result->next_state = criteria_next_state;
+}
+
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "Syntax: %s <command>\n", argv[0]);
         return 1;
     }
-    parse_config(argv[1]);
+    struct context context;
+    context.filename = "<stdin>";
+    parse_config(argv[1], &context);
 }
 #endif
