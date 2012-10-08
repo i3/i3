@@ -38,7 +38,6 @@
     } \
 } while (0)
 
-static owindows_head owindows;
 
 /*
  * Returns true if a is definitely greater than b (using the given epsilon)
@@ -221,6 +220,20 @@ void cmd_MIGRATION_start_nagbar(void) {
 /*******************************************************************************
  * Criteria functions.
  ******************************************************************************/
+
+/*
+ * Helper data structure for an operation window (window on which the operation
+ * will be performed). Used to build the TAILQ owindows.
+ *
+ */
+typedef struct owindow {
+    Con *con;
+    TAILQ_ENTRY(owindow) owindows;
+} owindow;
+
+typedef TAILQ_HEAD(owindows_head, owindow) owindows_head;
+
+static owindows_head owindows;
 
 /*
  * Initializes the specified 'Match' data structure and the initial state of

@@ -15,18 +15,6 @@
 /** The beginning of the prototype for every cmd_ function. */
 #define I3_CMD Match *current_match, struct CommandResult *cmd_output
 
-/*
- * Helper data structure for an operation window (window on which the operation
- * will be performed). Used to build the TAILQ owindows.
- *
- */
-typedef struct owindow {
-    Con *con;
-    TAILQ_ENTRY(owindow) owindows;
-} owindow;
-
-typedef TAILQ_HEAD(owindows_head, owindow) owindows_head;
-
 /**
  * Initializes the specified 'Match' data structure and the initial state of
  * commands.c for matching target windows of a command.
