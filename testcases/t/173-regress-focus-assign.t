@@ -62,7 +62,7 @@ sub open_special {
 my $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-assign "special" → targetws
+assign [class="special"] targetws
 EOT
 
 my $pid = launch_with_config($config);
