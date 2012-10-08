@@ -109,16 +109,21 @@ for my $line (@lines) {
 # Second step: Generate the enum values for all states.
 
 # It is important to keep the order the same, so we store the keys once.
-my @keys = keys %states;
+# We sort descendingly by length to be able to replace occurences of the state
+# name even when one state’s name is included in another one’s (like FOR_WINDOW
+# is in FOR_WINDOW_COMMAND).
+my @keys = sort { length($b) <=> length($a) } keys %states;
 
 open(my $enumfh, '>', "GENERATED_${prefix}_enums.h");
 
 # XXX: we might want to have a way to do this without a trailing comma, but gcc
 # seems to eat it.
+my %statenum;
 say $enumfh 'typedef enum {';
 my $cnt = 0;
 for my $state (@keys, '__CALL') {
     say $enumfh "    $state = $cnt,";
+    $statenum{$state} = $cnt;
     $cnt++;
 }
 say $enumfh '} cmdp_state;';
@@ -126,7 +131,8 @@ close($enumfh);
 
 # Third step: Generate the call function.
 open(my $callfh, '>', "GENERATED_${prefix}_call.h");
-say $callfh 'static void GENERATED_call(const int call_identifier, struct CommandResult *result) {';
+my $resultname = uc(substr($prefix, 0, 1)) . substr($prefix, 1) . 'Result';
+say $callfh "static void GENERATED_call(const int call_identifier, struct $resultname *result) {";
 say $callfh '    switch (call_identifier) {';
 my $call_id = 0;
 for my $state (@keys) {
@@ -140,13 +146,24 @@ for my $state (@keys) {
         $next_state ||= 'INITIAL';
         my $fmt = $cmd;
         # Replace the references to identified literals (like $workspace) with
-        # calls to get_string().
+        # calls to get_string(). Also replaces state names (like FOR_WINDOW)
+        # with their ID (useful for cfg_criteria_init(FOR_WINDOW) e.g.).
+        $cmd =~ s/$_/$statenum{$_}/g for @keys;
         $cmd =~ s/\$([a-z_]+)/get_string("$1")/g;
-        # Used only for debugging/testing.
+        $cmd =~ s/\&([a-z_]+)/get_long("$1")/g;
+        # For debugging/testing, we print the call using printf() and thus need
+        # to generate a format string. The format uses %d for <number>s,
+        # literal numbers or state IDs and %s for NULL, <string>s and literal
+        # strings.
+        $fmt =~ s/$_/%d/g for @keys;
         $fmt =~ s/\$([a-z_]+)/%s/g;
+        $fmt =~ s/\&([a-z_]+)/%ld/g;
+        $fmt =~ s/NULL/%s/g;
         $fmt =~ s/"([a-z0-9_]+)"/%s/g;
+        $fmt =~ s/(?:-?|\b)[0-9]+\b/%d/g;
 
         say $callfh "         case $call_id:";
+        say $callfh "             result->next_state = $next_state;";
         say $callfh '#ifndef TEST_PARSER';
         my $real_cmd = $cmd;
         if ($real_cmd =~ /\(\)/) {
@@ -161,8 +178,12 @@ for my $state (@keys) {
         $cmd =~ s/\)$//;
         $cmd = ", $cmd" if length($cmd) > 0;
         say $callfh qq|           fprintf(stderr, "$fmt\\n"$cmd);|;
+        # The cfg_criteria functions have side-effects which are important for
+        # testing. They are implemented as stubs in the test parser code.
+        if ($real_cmd =~ /^cfg_criteria/) {
+            say $callfh qq|       $real_cmd;|;
+        }
         say $callfh '#endif';
-        say $callfh "             state = $next_state;";
         say $callfh "             break;";
         $token->{next_state} = "call $call_id";
         $call_id++;
@@ -170,7 +191,9 @@ for my $state (@keys) {
 }
 say $callfh '        default:';
 say $callfh '            printf("BUG in the parser. state = %d\n", call_identifier);';
+say $callfh '            assert(false);';
 say $callfh '    }';
+say $callfh '    state = result->next_state;';
 say $callfh '}';
 close($callfh);
 
