@@ -179,6 +179,7 @@ CFGFUN(font, const char *font) {
 // TODO: refactor with mode_binding
 CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *command) {
     Binding *new_binding = scalloc(sizeof(Binding));
+    DLOG("bindtype %s, modifiers %s, key %s, release %s\n", bindtype, modifiers, key, release);
     new_binding->release = (release != NULL ? B_UPON_KEYRELEASE : B_UPON_KEYPRESS);
     if (strcmp(bindtype, "bindsym") == 0) {
         new_binding->symbol = sstrdup(key);
@@ -200,6 +201,7 @@ static struct bindings_head *current_bindings;
 
 CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *command) {
     Binding *new_binding = scalloc(sizeof(Binding));
+    DLOG("bindtype %s, modifiers %s, key %s, release %s\n", bindtype, modifiers, key, release);
     new_binding->release = (release != NULL ? B_UPON_KEYRELEASE : B_UPON_KEYPRESS);
     if (strcmp(bindtype, "bindsym") == 0) {
         new_binding->symbol = sstrdup(key);

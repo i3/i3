@@ -15,32 +15,32 @@ state INITIAL:
   # We have an end token here for all the commands which just call some
   # function without using an explicit 'end' token.
   end ->
-  '#'                                    -> IGNORE_LINE
-  'set'                                  -> IGNORE_LINE
-  bindtype = 'bindsym', 'bindcode'       -> BINDING
-  'bar'                                  -> BARBRACE
-  'font'                                 -> FONT
-  'mode'                                 -> MODENAME
-  'floating_minimum_size'                -> FLOATING_MINIMUM_SIZE_WIDTH
-  'floating_maximum_size'                -> FLOATING_MAXIMUM_SIZE_WIDTH
-  'floating_modifier'                    -> FLOATING_MODIFIER
-  'default_orientation'                  -> DEFAULT_ORIENTATION
-  'workspace_layout'                     -> WORKSPACE_LAYOUT
-  windowtype = 'new_window', 'new_float' -> NEW_WINDOW
-  'hide_edge_borders'                    -> HIDE_EDGE_BORDERS
-  'for_window'                           -> FOR_WINDOW
-  'assign'                               -> ASSIGN
-  'focus_follows_mouse'                  -> FOCUS_FOLLOWS_MOUSE
-  'force_focus_wrapping'                 -> FORCE_FOCUS_WRAPPING
-  'force_xinerama', 'force-xinerama'     -> FORCE_XINERAMA
-  'workspace_auto_back_and_forth'        -> WORKSPACE_BACK_AND_FORTH
-  'fake_outputs', 'fake-outputs'         -> FAKE_OUTPUTS
-  'force_display_urgency_hint'           -> FORCE_DISPLAY_URGENCY_HINT
-  'workspace'                            -> WORKSPACE
-  'ipc_socket', 'ipc-socket'             -> IPC_SOCKET
-  'restart_state'                        -> RESTART_STATE
-  'popup_during_fullscreen'              -> POPUP_DURING_FULLSCREEN
-  exectype = 'exec_always', 'exec'       -> EXEC
+  '#'                                      -> IGNORE_LINE
+  'set'                                    -> IGNORE_LINE
+  bindtype = 'bindsym', 'bindcode', 'bind' -> BINDING
+  'bar'                                    -> BARBRACE
+  'font'                                   -> FONT
+  'mode'                                   -> MODENAME
+  'floating_minimum_size'                  -> FLOATING_MINIMUM_SIZE_WIDTH
+  'floating_maximum_size'                  -> FLOATING_MAXIMUM_SIZE_WIDTH
+  'floating_modifier'                      -> FLOATING_MODIFIER
+  'default_orientation'                    -> DEFAULT_ORIENTATION
+  'workspace_layout'                       -> WORKSPACE_LAYOUT
+  windowtype = 'new_window', 'new_float'   -> NEW_WINDOW
+  'hide_edge_borders'                      -> HIDE_EDGE_BORDERS
+  'for_window'                             -> FOR_WINDOW
+  'assign'                                 -> ASSIGN
+  'focus_follows_mouse'                    -> FOCUS_FOLLOWS_MOUSE
+  'force_focus_wrapping'                   -> FORCE_FOCUS_WRAPPING
+  'force_xinerama', 'force-xinerama'       -> FORCE_XINERAMA
+  'workspace_auto_back_and_forth'          -> WORKSPACE_BACK_AND_FORTH
+  'fake_outputs', 'fake-outputs'           -> FAKE_OUTPUTS
+  'force_display_urgency_hint'             -> FORCE_DISPLAY_URGENCY_HINT
+  'workspace'                              -> WORKSPACE
+  'ipc_socket', 'ipc-socket'               -> IPC_SOCKET
+  'restart_state'                          -> RESTART_STATE
+  'popup_during_fullscreen'                -> POPUP_DURING_FULLSCREEN
+  exectype = 'exec_always', 'exec'         -> EXEC
   colorclass = 'client.background'
       -> COLOR_SINGLE
   colorclass = 'client.focused_inactive', 'client.focused', 'client.unfocused', 'client.urgent'
