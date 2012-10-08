@@ -13,6 +13,8 @@
 
 #include "all.h"
 
+bool force_old_config_parser = false;
+
 static pid_t configerror_pid = -1;
 
 static Match current_match;
@@ -625,15 +627,20 @@ void parse_file(const char *f) {
         }
     }
 
-    /* now lex/parse it */
-    yy_scan_string(new);
 
     context = scalloc(sizeof(struct context));
     context->filename = f;
 
-    if (yyparse() != 0) {
-        fprintf(stderr, "Could not parse configfile\n");
-        exit(1);
+    if (force_old_config_parser) {
+        /* now lex/parse it */
+        yy_scan_string(new);
+        if (yyparse() != 0) {
+            fprintf(stderr, "Could not parse configfile\n");
+            exit(1);
+        }
+    } else {
+        struct ConfigResult *config_output = parse_config(new, context);
+        yajl_gen_free(config_output->json_gen);
     }
 
     check_for_duplicate_bindings(context);
@@ -669,7 +676,8 @@ void parse_file(const char *f) {
         start_configerror_nagbar(f);
     }
 
-    yylex_destroy();
+    if (force_old_config_parser)
+        yylex_destroy();
     FREE(context->line_copy);
     free(context);
     FREE(font_pattern);
@@ -1485,6 +1493,7 @@ new_float:
 border_style:
     TOK_NORMAL optional_border_width
     {
+        /* FIXME: the whole border_style thing actually screws up when new_float is used because it overwrites earlier values :-/ */
         config.default_border_width = $2;
         $$ = BS_NORMAL;
     }

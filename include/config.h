@@ -24,6 +24,8 @@ extern char *current_configpath;
 extern Config config;
 extern SLIST_HEAD(modes_head, Mode) modes;
 extern TAILQ_HEAD(barconfig_head, Barconfig) barconfigs;
+/* defined in src/cfgparse.y */
+extern bool force_old_config_parser;
 
 /**
  * Used during the config file lexing/parsing to keep the state of the lexer
