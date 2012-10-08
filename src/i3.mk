@@ -63,7 +63,7 @@ src/config_parser.o: src/config_parser.c $(i3_HEADERS_DEP) i3-config-parser.stam
 
 i3-command-parser.stamp: generate-command-parser.pl parser-specs/commands.spec
 	echo "[i3] Generating command parser"
-	(cd include; ../generate-command-parser.pl --input=../parser-specs/commands.spec --prefix=commands)
+	(cd include; ../generate-command-parser.pl --input=../parser-specs/commands.spec --prefix=command)
 	touch $@
 
 i3-config-parser.stamp: generate-command-parser.pl parser-specs/config.spec
