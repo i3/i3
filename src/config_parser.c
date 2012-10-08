@@ -275,7 +275,7 @@ struct ConfigResult *parse_config(const char *input, struct context *context) {
     while (*dumpwalk != '\0') {
         char *next_nl = strchr(dumpwalk, '\n');
         if (next_nl != NULL) {
-            DLOG("CONFIG(line %3d): %.*s\n", linecnt, (next_nl - dumpwalk), dumpwalk);
+            DLOG("CONFIG(line %3d): %.*s\n", linecnt, (int)(next_nl - dumpwalk), dumpwalk);
             dumpwalk = next_nl + 1;
         } else {
             DLOG("CONFIG(line %3d): %s\n", linecnt, dumpwalk);
