@@ -463,12 +463,18 @@ void tree_render(void) {
  *
  */
 static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap) {
+    /* When dealing with fullscreen containers, it's necessary to go up to the
+     * workspace level, because 'focus $dir' will start at the con's real
+     * position in the tree, and it may not be possible to get to the edge
+     * normally due to fullscreen focusing restrictions. */
+    if (con->fullscreen_mode == CF_OUTPUT && con->type != CT_WORKSPACE)
+        con = con_get_workspace(con);
+
     /* Stop recursing at workspaces after attempting to switch to next
      * workspace if possible. */
     if (con->type == CT_WORKSPACE) {
-        if (con_get_fullscreen_con(con, CF_GLOBAL) ||
-            con_get_fullscreen_con(con, CF_OUTPUT)) {
-            DLOG("Cannot change workspace while in fullscreen mode.\n");
+        if (con_get_fullscreen_con(con, CF_GLOBAL)) {
+            DLOG("Cannot change workspace while in global fullscreen mode.\n");
             return false;
         }
         Output *current_output = get_output_containing(con->rect.x, con->rect.y);
@@ -505,6 +511,13 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
             return false;
 
         workspace_show(workspace);
+
+        /* If a workspace has an active fullscreen container, one of its
+         * children should always be focused. The above workspace_show()
+         * should be adequate for that, so return. */
+        if (con_get_fullscreen_con(workspace, CF_OUTPUT))
+            return true;
+
         Con *focus = con_descend_direction(workspace, direction);
         if (focus) {
             con_focus(focus);

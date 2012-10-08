@@ -125,9 +125,17 @@ is($nodes->[0]->{focused}, 1, 'fullscreen window focused');
 
 cmd 'fullscreen';
 
+# Focus screen 1
+$x->root->warp_pointer(1025, 0);
+sync_with_i3;
+
 $tmp = fresh_workspace;
 cmd "workspace $tmp";
 my $diff_ws = open_window;
+
+# Focus screen 0
+$x->root->warp_pointer(0, 0);
+sync_with_i3;
 
 $tmp2 = fresh_workspace;
 cmd "workspace $tmp2";
@@ -207,20 +215,23 @@ is($x->input_focus, $right1->id, 'allowed focus up');
 cmd 'focus down';
 is($x->input_focus, $right2->id, 'allowed focus down');
 
-cmd 'focus left';
-is($x->input_focus, $right2->id, 'prevented focus left');
-
-cmd 'focus right';
-is($x->input_focus, $right2->id, 'prevented focus right');
-
 cmd 'focus down';
 is($x->input_focus, $right1->id, 'allowed focus wrap (down)');
 
 cmd 'focus up';
 is($x->input_focus, $right2->id, 'allowed focus wrap (up)');
 
-cmd '[id="' . $diff_ws->id . '"] focus';
+cmd 'focus left';
+is($x->input_focus, $right2->id, 'focus left wrapped (no-op)');
+
+cmd 'focus right';
 is($x->input_focus, $diff_ws->id, 'allowed focus change to different ws');
+
+cmd 'focus left';
+is($x->input_focus, $right2->id, 'focused back into fullscreen container');
+
+cmd '[id="' . $diff_ws->id . '"] focus';
+is($x->input_focus, $diff_ws->id, 'allowed focus change to different ws by id');
 
 ################################################################################
 # More testing of the interaction between wrapping and the fullscreen focus
