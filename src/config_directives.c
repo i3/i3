@@ -6,7 +6,7 @@
  * i3 - an improved dynamic tiling window manager
  * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * config_directives.c: all command functions (see config_parser.c)
+ * config_directives.c: all config storing functions (see config_parser.c)
  *
  */
 #include <float.h>
@@ -24,9 +24,150 @@
     y(map_close); \
 } while (0)
 
+/*******************************************************************************
+ * Criteria functions.
+ ******************************************************************************/
+
+static int criteria_next_state;
+
+/*
+ * Initializes the specified 'Match' data structure and the initial state of
+ * commands.c for matching target windows of a command.
+ *
+ */
+CFGFUN(criteria_init, int _state) {
+    criteria_next_state = _state;
+
+    DLOG("Initializing criteria, current_match = %p, state = %d\n", current_match, _state);
+    match_init(current_match);
+}
+
+CFGFUN(criteria_pop_state) {
+    result->next_state = criteria_next_state;
+}
+
+/*
+ * Interprets a ctype=cvalue pair and adds it to the current match
+ * specification.
+ *
+ */
+CFGFUN(criteria_add, const char *ctype, const char *cvalue) {
+    DLOG("ctype=*%s*, cvalue=*%s*\n", ctype, cvalue);
+
+    if (strcmp(ctype, "class") == 0) {
+        current_match->class = regex_new(cvalue);
+        return;
+    }
+
+    if (strcmp(ctype, "instance") == 0) {
+        current_match->instance = regex_new(cvalue);
+        return;
+    }
+
+    if (strcmp(ctype, "window_role") == 0) {
+        current_match->role = regex_new(cvalue);
+        return;
+    }
+
+    if (strcmp(ctype, "con_id") == 0) {
+        char *end;
+        long parsed = strtol(cvalue, &end, 10);
+        if (parsed == LONG_MIN ||
+            parsed == LONG_MAX ||
+            parsed < 0 ||
+            (end && *end != '\0')) {
+            ELOG("Could not parse con id \"%s\"\n", cvalue);
+        } else {
+            current_match->con_id = (Con*)parsed;
+            printf("id as int = %p\n", current_match->con_id);
+        }
+        return;
+    }
+
+    if (strcmp(ctype, "id") == 0) {
+        char *end;
+        long parsed = strtol(cvalue, &end, 10);
+        if (parsed == LONG_MIN ||
+            parsed == LONG_MAX ||
+            parsed < 0 ||
+            (end && *end != '\0')) {
+            ELOG("Could not parse window id \"%s\"\n", cvalue);
+        } else {
+            current_match->id = parsed;
+            printf("window id as int = %d\n", current_match->id);
+        }
+        return;
+    }
+
+    if (strcmp(ctype, "con_mark") == 0) {
+        current_match->mark = regex_new(cvalue);
+        return;
+    }
+
+    if (strcmp(ctype, "title") == 0) {
+        current_match->title = regex_new(cvalue);
+        return;
+    }
+
+    if (strcmp(ctype, "urgent") == 0) {
+        if (strcasecmp(cvalue, "latest") == 0 ||
+            strcasecmp(cvalue, "newest") == 0 ||
+            strcasecmp(cvalue, "recent") == 0 ||
+            strcasecmp(cvalue, "last") == 0) {
+            current_match->urgent = U_LATEST;
+        } else if (strcasecmp(cvalue, "oldest") == 0 ||
+                   strcasecmp(cvalue, "first") == 0) {
+            current_match->urgent = U_OLDEST;
+        }
+        return;
+    }
+
+    ELOG("Unknown criterion: %s\n", ctype);
+}
+
+/* TODO: refactor the above criteria code into a single file (with src/commands.c). */
+
+/*******************************************************************************
+ * Utility functions
+ ******************************************************************************/
+
+static bool eval_boolstr(const char *str) {
+    return (strcasecmp(str, "1") == 0 ||
+            strcasecmp(str, "yes") == 0 ||
+            strcasecmp(str, "true") == 0 ||
+            strcasecmp(str, "on") == 0 ||
+            strcasecmp(str, "enable") == 0 ||
+            strcasecmp(str, "active") == 0);
+}
+
+static uint32_t modifiers_from_str(const char *str) {
+    /* It might be better to use strtok() here, but the simpler strstr() should
+     * do for now. */
+    uint32_t result = 0;
+    if (str == NULL)
+        return result;
+    if (strstr(str, "Mod1") != NULL)
+        result |= BIND_MOD1;
+    if (strstr(str, "Mod2") != NULL)
+        result |= BIND_MOD2;
+    if (strstr(str, "Mod3") != NULL)
+        result |= BIND_MOD3;
+    if (strstr(str, "Mod4") != NULL)
+        result |= BIND_MOD4;
+    if (strstr(str, "Mod5") != NULL)
+        result |= BIND_MOD5;
+    if (strstr(str, "Control") != NULL)
+        result |= BIND_CONTROL;
+    if (strstr(str, "Shift") != NULL)
+        result |= BIND_SHIFT;
+    if (strstr(str, "Mode_switch") != NULL)
+        result |= BIND_MODE_SWITCH;
+    return result;
+}
+
 static char *font_pattern;
 
-void cfg_font(I3_CFG, const char *font) {
+CFGFUN(font, const char *font) {
 	config.font = load_font(font, true);
 	set_font(&config.font);
 
@@ -35,16 +176,57 @@ void cfg_font(I3_CFG, const char *font) {
 	font_pattern = sstrdup(font);
 }
 
-void cfg_mode_binding(I3_CFG, const char *bindtype, const char *modifiers, const char *key, const char *command) {
-	printf("cfg_mode_binding: got bindtype\n");
+// TODO: refactor with mode_binding
+CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *command) {
+    Binding *new_binding = scalloc(sizeof(Binding));
+    new_binding->release = (release != NULL ? B_UPON_KEYRELEASE : B_UPON_KEYPRESS);
+    if (strcmp(bindtype, "bindsym") == 0) {
+        new_binding->symbol = sstrdup(key);
+    } else {
+        // TODO: strtol with proper error handling
+        new_binding->keycode = atoi(key);
+    }
+    new_binding->mods = modifiers_from_str(modifiers);
+    new_binding->command = sstrdup(command);
+    TAILQ_INSERT_TAIL(bindings, new_binding, bindings);
 }
 
-void cfg_enter_mode(I3_CFG, const char *mode) {
-	// TODO: error handling: if mode == '{', the mode name is missing
-	printf("mode name: %s\n", mode);
+
+/*******************************************************************************
+ * Mode handling
+ ******************************************************************************/
+
+static struct bindings_head *current_bindings;
+
+CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *command) {
+    Binding *new_binding = scalloc(sizeof(Binding));
+    new_binding->release = (release != NULL ? B_UPON_KEYRELEASE : B_UPON_KEYPRESS);
+    if (strcmp(bindtype, "bindsym") == 0) {
+        new_binding->symbol = sstrdup(key);
+    } else {
+        // TODO: strtol with proper error handling
+        new_binding->keycode = atoi(key);
+    }
+    new_binding->mods = modifiers_from_str(modifiers);
+    new_binding->command = sstrdup(command);
+    TAILQ_INSERT_TAIL(current_bindings, new_binding, bindings);
 }
 
-void cfg_exec(I3_CFG, const char *exectype, const char *no_startup_id, const char *command) {
+CFGFUN(enter_mode, const char *modename) {
+    if (strcasecmp(modename, "default") == 0) {
+        ELOG("You cannot use the name \"default\" for your mode\n");
+        exit(1);
+    }
+    DLOG("\t now in mode %s\n", modename);
+    struct Mode *mode = scalloc(sizeof(struct Mode));
+    mode->name = sstrdup(modename);
+    mode->bindings = scalloc(sizeof(struct bindings_head));
+    TAILQ_INIT(mode->bindings);
+    current_bindings = mode->bindings;
+    SLIST_INSERT_HEAD(&modes, mode, modes);
+}
+
+CFGFUN(exec, const char *exectype, const char *no_startup_id, const char *command) {
 	struct Autostart *new = smalloc(sizeof(struct Autostart));
 	new->command = sstrdup(command);
 	new->no_startup_id = (no_startup_id != NULL);
@@ -53,4 +235,316 @@ void cfg_exec(I3_CFG, const char *exectype, const char *no_startup_id, const cha
 	} else {
 		TAILQ_INSERT_TAIL(&autostarts_always, new, autostarts_always);
 	}
+}
+
+CFGFUN(for_window, const char *command) {
+    if (match_is_empty(current_match)) {
+        ELOG("Match is empty, ignoring this for_window statement\n");
+        return;
+    }
+    DLOG("\t should execute command %s for the criteria mentioned above\n", command);
+    Assignment *assignment = scalloc(sizeof(Assignment));
+    assignment->type = A_COMMAND;
+    match_copy(&(assignment->match), current_match);
+    assignment->dest.command = sstrdup(command);
+    TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
+}
+
+CFGFUN(floating_minimum_size, const long width, const long height) {
+    config.floating_minimum_width = width;
+    config.floating_minimum_height = height;
+}
+
+CFGFUN(floating_maximum_size, const long width, const long height) {
+    config.floating_maximum_width = width;
+    config.floating_maximum_height = height;
+}
+
+CFGFUN(floating_modifier, const char *modifiers) {
+    config.floating_modifier = modifiers_from_str(modifiers);
+}
+
+CFGFUN(default_orientation, const char *orientation) {
+    if (strcmp(orientation, "horizontal") == 0)
+        config.default_orientation = HORIZ;
+    else if (strcmp(orientation, "vertical") == 0)
+        config.default_orientation = VERT;
+    else config.default_orientation = NO_ORIENTATION;
+}
+
+CFGFUN(workspace_layout, const char *layout) {
+    if (strcmp(layout, "default") == 0)
+        config.default_layout = L_DEFAULT;
+    else if (strcmp(layout, "stacking") == 0 ||
+             strcmp(layout, "stacked") == 0)
+        config.default_layout = L_STACKED;
+    else config.default_layout = L_TABBED;
+}
+
+CFGFUN(new_window, const char *windowtype, const char *border, const long width) {
+    // FIXME: when using new_float *and* new_window with different border
+    // types, this breaks because default_border_width gets overwritten.
+
+    int border_style;
+    int border_width;
+
+    if (strcmp(border, "1pixel") == 0) {
+        border_style = BS_PIXEL;
+        border_width = 1;
+    } else if (strcmp(border, "none") == 0) {
+        border_style = BS_NONE;
+        border_width = 0;
+    } else if (strcmp(border, "pixel") == 0) {
+        border_style = BS_PIXEL;
+        border_width = width;
+    } else {
+        border_style = BS_NORMAL;
+        border_width = width;
+    }
+
+    if (strcmp(windowtype, "new_window") == 0) {
+        config.default_border = border_style;
+    } else {
+        config.default_floating_border = border_style;
+    }
+}
+
+CFGFUN(hide_edge_borders, const char *borders) {
+    if (strcmp(borders, "vertical") == 0)
+        config.hide_edge_borders = ADJ_LEFT_SCREEN_EDGE | ADJ_RIGHT_SCREEN_EDGE;
+    else if (strcmp(borders, "horizontal") == 0)
+        config.hide_edge_borders = ADJ_UPPER_SCREEN_EDGE | ADJ_LOWER_SCREEN_EDGE;
+    else if (strcmp(borders, "both") == 0)
+        config.hide_edge_borders = ADJ_LEFT_SCREEN_EDGE | ADJ_RIGHT_SCREEN_EDGE | ADJ_UPPER_SCREEN_EDGE | ADJ_LOWER_SCREEN_EDGE;
+    else if (strcmp(borders, "none") == 0)
+        config.hide_edge_borders = ADJ_NONE;
+    else if (eval_boolstr(borders))
+        config.hide_edge_borders = ADJ_LEFT_SCREEN_EDGE | ADJ_RIGHT_SCREEN_EDGE;
+    else config.hide_edge_borders = ADJ_NONE;
+}
+
+CFGFUN(focus_follows_mouse, const char *value) {
+    config.disable_focus_follows_mouse = !eval_boolstr(value);
+}
+
+CFGFUN(force_xinerama, const char *value) {
+    config.force_xinerama = eval_boolstr(value);
+}
+
+CFGFUN(force_focus_wrapping, const char *value) {
+    config.force_focus_wrapping = eval_boolstr(value);
+}
+
+CFGFUN(workspace_back_and_forth, const char *value) {
+    config.workspace_auto_back_and_forth = eval_boolstr(value);
+}
+
+CFGFUN(fake_outputs, const char *outputs) {
+    config.fake_outputs = sstrdup(outputs);
+}
+
+CFGFUN(force_display_urgency_hint, const long duration_ms) {
+    config.workspace_urgency_timer = duration_ms / 1000.0;
+}
+
+CFGFUN(workspace, const char *workspace, const char *output) {
+    DLOG("Assigning workspace \"%s\" to output \"%s\"\n", workspace, output);
+    /* Check for earlier assignments of the same workspace so that we
+     * don’t have assignments of a single workspace to different
+     * outputs */
+    struct Workspace_Assignment *assignment;
+    bool duplicate = false;
+    TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+        if (strcasecmp(assignment->name, workspace) == 0) {
+            ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
+                 workspace);
+            assignment->output = sstrdup(output);
+            duplicate = true;
+        }
+    }
+    if (!duplicate) {
+        assignment = scalloc(sizeof(struct Workspace_Assignment));
+        assignment->name = sstrdup(workspace);
+        assignment->output = sstrdup(output);
+        TAILQ_INSERT_TAIL(&ws_assignments, assignment, ws_assignments);
+    }
+}
+
+CFGFUN(ipc_socket, const char *path) {
+    config.ipc_socket_path = sstrdup(path);
+}
+
+CFGFUN(restart_state, const char *path) {
+    config.restart_state_path = sstrdup(path);
+}
+
+CFGFUN(popup_during_fullscreen, const char *value) {
+    config.popup_during_fullscreen =
+        (strcmp(value, "ignore") == 0 ? PDF_IGNORE : PDF_LEAVE_FULLSCREEN);
+}
+
+CFGFUN(color_single, const char *colorclass, const char *color) {
+    /* used for client.background only currently */
+    config.client.background = get_colorpixel(color);
+}
+
+CFGFUN(color, const char *colorclass, const char *border, const char *background, const char *text, const char *indicator) {
+#define APPLY_COLORS(classname) \
+    do { \
+        if (strcmp(colorclass, "client." #classname) == 0) { \
+            config.client.classname.border = get_colorpixel(border); \
+            config.client.classname.background = get_colorpixel(background); \
+            config.client.classname.text = get_colorpixel(text); \
+            if (indicator != NULL) { \
+                config.client. classname .indicator = get_colorpixel(indicator); \
+            } \
+        } \
+    } while (0)
+
+    APPLY_COLORS(focused_inactive);
+    APPLY_COLORS(focused);
+    APPLY_COLORS(unfocused);
+    APPLY_COLORS(urgent);
+
+#undef APPLY_COLORS
+}
+
+CFGFUN(assign, const char *workspace) {
+    if (match_is_empty(current_match)) {
+        ELOG("Match is empty, ignoring this assignment\n");
+        return;
+    }
+    DLOG("new assignment, using above criteria, to workspace %s\n", workspace);
+    Assignment *assignment = scalloc(sizeof(Assignment));
+    match_copy(&(assignment->match), current_match);
+    assignment->type = A_TO_WORKSPACE;
+    assignment->dest.workspace = sstrdup(workspace);
+    TAILQ_INSERT_TAIL(&assignments, assignment, assignments);
+}
+
+/*******************************************************************************
+ * Bar configuration (i3bar)
+ ******************************************************************************/
+
+static Barconfig current_bar;
+
+CFGFUN(bar_font, const char *font) {
+    FREE(current_bar.font);
+    current_bar.font = sstrdup(font);
+}
+
+CFGFUN(bar_mode, const char *mode) {
+    current_bar.mode = (strcmp(mode, "hide") == 0 ? M_HIDE : M_DOCK);
+}
+
+CFGFUN(bar_output, const char *output) {
+    int new_outputs = current_bar.num_outputs + 1;
+    current_bar.outputs = srealloc(current_bar.outputs, sizeof(char*) * new_outputs);
+    current_bar.outputs[current_bar.num_outputs] = sstrdup(output);
+    current_bar.num_outputs = new_outputs;
+}
+
+CFGFUN(bar_verbose, const char *verbose) {
+    current_bar.verbose = eval_boolstr(verbose);
+}
+
+CFGFUN(bar_modifier, const char *modifier) {
+    if (strcmp(modifier, "Mod1") == 0)
+        current_bar.modifier = M_MOD1;
+    else if (strcmp(modifier, "Mod2") == 0)
+        current_bar.modifier = M_MOD2;
+    else if (strcmp(modifier, "Mod3") == 0)
+        current_bar.modifier = M_MOD3;
+    else if (strcmp(modifier, "Mod4") == 0)
+        current_bar.modifier = M_MOD4;
+    else if (strcmp(modifier, "Mod5") == 0)
+        current_bar.modifier = M_MOD5;
+    else if (strcmp(modifier, "Control") == 0)
+        current_bar.modifier = M_CONTROL;
+    else if (strcmp(modifier, "Shift") == 0)
+        current_bar.modifier = M_SHIFT;
+}
+
+CFGFUN(bar_position, const char *position) {
+    current_bar.position = (strcmp(position, "top") == 0 ? P_TOP : P_BOTTOM);
+}
+
+CFGFUN(bar_i3bar_command, const char *i3bar_command) {
+    FREE(current_bar.i3bar_command);
+    current_bar.i3bar_command = sstrdup(i3bar_command);
+}
+
+CFGFUN(bar_color, const char *colorclass, const char *border, const char *background, const char *text) {
+#define APPLY_COLORS(classname) \
+    do { \
+        if (strcmp(colorclass, #classname) == 0) { \
+            if (text != NULL) { \
+                /* New syntax: border, background, text */ \
+                current_bar.colors. classname ## _border = sstrdup(border); \
+                current_bar.colors. classname ## _bg = sstrdup(background); \
+                current_bar.colors. classname ## _text = sstrdup(text); \
+            } else { \
+                /* Old syntax: text, background */ \
+                current_bar.colors. classname ## _bg = sstrdup(background); \
+                current_bar.colors. classname ## _text = sstrdup(border); \
+            } \
+        } \
+    } while (0)
+
+    APPLY_COLORS(focused_workspace);
+    APPLY_COLORS(active_workspace);
+    APPLY_COLORS(inactive_workspace);
+    APPLY_COLORS(urgent_workspace);
+
+#undef APPLY_COLORS
+}
+
+CFGFUN(bar_socket_path, const char *socket_path) {
+    FREE(current_bar.socket_path);
+    current_bar.socket_path = sstrdup(socket_path);
+}
+
+CFGFUN(bar_tray_output, const char *output) {
+    FREE(current_bar.tray_output);
+    current_bar.tray_output = sstrdup(output);
+}
+
+CFGFUN(bar_color_single, const char *colorclass, const char *color) {
+    if (strcmp(colorclass, "background") == 0)
+        current_bar.colors.background = sstrdup(color);
+    else current_bar.colors.statusline = sstrdup(color);
+}
+
+CFGFUN(bar_status_command, const char *command) {
+    FREE(current_bar.status_command);
+    current_bar.status_command = sstrdup(command);
+}
+
+CFGFUN(bar_workspace_buttons, const char *value) {
+    current_bar.hide_workspace_buttons = !eval_boolstr(value);
+}
+
+CFGFUN(bar_finish) {
+    DLOG("\t new bar configuration finished, saving.\n");
+    /* Generate a unique ID for this bar */
+    current_bar.id = sstrdup("bar-XXXXXX");
+    /* This works similar to mktemp in that it replaces the last six X with
+     * random letters, but without the restriction that the given buffer
+     * has to contain a valid path name. */
+    char *x = current_bar.id + strlen("bar-");
+    while (*x != '\0') {
+        *(x++) = (rand() % 26) + 'a';
+    }
+
+    /* If no font was explicitly set, we use the i3 font as default */
+    if (!current_bar.font && font_pattern)
+        current_bar.font = sstrdup(font_pattern);
+
+    /* Copy the current (static) structure into a dynamically allocated
+     * one, then cleanup our static one. */
+    Barconfig *bar_config = scalloc(sizeof(Barconfig));
+    memcpy(bar_config, &current_bar, sizeof(Barconfig));
+    TAILQ_INSERT_TAIL(&barconfigs, bar_config, configs);
+
+    memset(&current_bar, '\0', sizeof(Barconfig));
 }
