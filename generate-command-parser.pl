@@ -158,7 +158,6 @@ for my $state (@keys) {
         $fmt =~ s/$_/%d/g for @keys;
         $fmt =~ s/\$([a-z_]+)/%s/g;
         $fmt =~ s/\&([a-z_]+)/%ld/g;
-        $fmt =~ s/NULL/%s/g;
         $fmt =~ s/"([a-z0-9_]+)"/%s/g;
         $fmt =~ s/(?:-?|\b)[0-9]+\b/%d/g;
 
@@ -177,6 +176,7 @@ for my $state (@keys) {
         $cmd =~ s/[^(]+\(//;
         $cmd =~ s/\)$//;
         $cmd = ", $cmd" if length($cmd) > 0;
+        $cmd =~ s/, NULL//g;
         say $callfh qq|           fprintf(stderr, "$fmt\\n"$cmd);|;
         # The cfg_criteria functions have side-effects which are important for
         # testing. They are implemented as stubs in the test parser code.
