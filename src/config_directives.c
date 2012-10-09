@@ -156,7 +156,8 @@ static uint32_t modifiers_from_str(const char *str) {
         result |= BIND_MOD4;
     if (strstr(str, "Mod5") != NULL)
         result |= BIND_MOD5;
-    if (strstr(str, "Control") != NULL)
+    if (strstr(str, "Control") != NULL ||
+        strstr(str, "Ctrl") != NULL)
         result |= BIND_CONTROL;
     if (strstr(str, "Shift") != NULL)
         result |= BIND_SHIFT;
@@ -469,7 +470,8 @@ CFGFUN(bar_modifier, const char *modifier) {
         current_bar.modifier = M_MOD4;
     else if (strcmp(modifier, "Mod5") == 0)
         current_bar.modifier = M_MOD5;
-    else if (strcmp(modifier, "Control") == 0)
+    else if (strcmp(modifier, "Control") == 0 ||
+             strcmp(modifier, "Ctrl") == 0)
         current_bar.modifier = M_CONTROL;
     else if (strcmp(modifier, "Shift") == 0)
         current_bar.modifier = M_SHIFT;

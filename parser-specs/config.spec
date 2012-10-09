@@ -79,7 +79,7 @@ state FLOATING_MAXIMUM_SIZE_HEIGHT:
 
 # floating_modifier <modifier>
 state FLOATING_MODIFIER:
-  modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control'
+  modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl'
       ->
   '+'
       ->
@@ -269,7 +269,7 @@ state FONT:
 
 # bindsym/bindcode
 state BINDING:
-  modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Mode_switch'
+  modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl', 'Mode_switch'
       ->
   '+'
       ->
@@ -309,7 +309,7 @@ state MODE_IGNORE_LINE:
       -> MODE
 
 state MODE_BINDING:
-  modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Mode_switch'
+  modifiers = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Shift', 'Control', 'Ctrl', 'Mode_switch'
       ->
   '+'
       ->
@@ -371,7 +371,7 @@ state BAR_MODE:
       -> call cfg_bar_mode($mode); BAR
 
 state BAR_MODIFIER:
-  modifier = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Control', 'Shift'
+  modifier = 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Control', 'Ctrl', 'Shift'
       -> call cfg_bar_modifier($modifier); BAR
 
 state BAR_POSITION:
