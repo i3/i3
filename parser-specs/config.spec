@@ -298,7 +298,7 @@ state MODE:
   end ->
   '#' -> MODE_IGNORE_LINE
   'set' -> MODE_IGNORE_LINE
-  bindtype = 'bindsym', 'bindcode'
+  bindtype = 'bindsym', 'bindcode', 'bind'
       -> MODE_BINDING
   '}'
       -> INITIAL
