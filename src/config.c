@@ -46,6 +46,7 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
     }
     GRAB_KEY(mods);
     GRAB_KEY(mods | xcb_numlock_mask);
+    GRAB_KEY(mods | XCB_MOD_MASK_LOCK);
     GRAB_KEY(mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
 }
 
