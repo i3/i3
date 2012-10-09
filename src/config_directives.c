@@ -318,6 +318,8 @@ CFGFUN(new_window, const char *windowtype, const char *border, const long width)
     } else {
         config.default_floating_border = border_style;
     }
+
+    config.default_border_width = border_width;
 }
 
 CFGFUN(hide_edge_borders, const char *borders) {
