@@ -186,6 +186,10 @@ CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, co
     } else {
         // TODO: strtol with proper error handling
         new_binding->keycode = atoi(key);
+        if (new_binding->keycode == 0) {
+            ELOG("Could not parse \"%s\" as a keycode, ignoring this binding.\n", key);
+            return;
+        }
     }
     new_binding->mods = modifiers_from_str(modifiers);
     new_binding->command = sstrdup(command);
@@ -208,6 +212,10 @@ CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *ke
     } else {
         // TODO: strtol with proper error handling
         new_binding->keycode = atoi(key);
+        if (new_binding->keycode == 0) {
+            ELOG("Could not parse \"%s\" as a keycode, ignoring this binding.\n", key);
+            return;
+        }
     }
     new_binding->mods = modifiers_from_str(modifiers);
     new_binding->command = sstrdup(command);
