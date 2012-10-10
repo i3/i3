@@ -291,6 +291,8 @@ state MODENAME:
       -> call cfg_enter_mode($modename); MODEBRACE
 
 state MODEBRACE:
+  end
+      ->
   '{'
       -> MODE
 
@@ -327,6 +329,8 @@ state MODE_BINDCOMMAND:
 ################################################################################
 
 state BARBRACE:
+  end
+      ->
   '{'
       -> BAR
 
@@ -399,6 +403,8 @@ state BAR_VERBOSE:
       -> call cfg_bar_verbose($value); BAR
 
 state BAR_COLORS_BRACE:
+  end
+      ->
   '{'
       -> BAR_COLORS
 
