@@ -69,7 +69,7 @@ Output *get_first_output(void) {
         if (output->active)
             return output;
 
-    return NULL;
+    die("No usable outputs available.\n");
 }
 
 /*
@@ -647,8 +647,7 @@ void randr_query_outputs(void) {
             output->active = false;
             DLOG("Output %s disabled, re-assigning workspaces/docks\n", output->name);
 
-            if ((first = get_first_output()) == NULL)
-                die("No usable outputs available\n");
+            first = get_first_output();
 
             /* TODO: refactor the following code into a nice function. maybe
              * use an on_destroy callback which is implement differently for
@@ -735,6 +734,9 @@ void randr_query_outputs(void) {
         ELOG("No outputs found via RandR, disabling\n");
         disable_randr(conn);
     }
+
+    /* Verifies that there is at least one active output as a side-effect. */
+    get_first_output();
 
     /* Just go through each active output and assign one workspace */
     TAILQ_FOREACH(output, &outputs, outputs) {
