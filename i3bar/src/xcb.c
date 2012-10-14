@@ -302,16 +302,24 @@ void handle_button(xcb_button_press_event_t *event) {
             }
             break;
         case 4:
-            /* Mouse wheel down. We select the next ws */
-            if (cur_ws != TAILQ_FIRST(walk->workspaces)) {
-                cur_ws = TAILQ_PREV(cur_ws, ws_head, tailq);
-            }
+            /* Mouse wheel up. We select the previous ws, if any.
+             * If there is no more workspace, don’t even send the workspace
+             * command, otherwise (with workspace auto_back_and_forth) we’d end
+             * up on the wrong workspace. */
+            if (cur_ws == TAILQ_FIRST(walk->workspaces))
+                return;
+
+            cur_ws = TAILQ_PREV(cur_ws, ws_head, tailq);
             break;
         case 5:
-            /* Mouse wheel up. We select the previos ws */
-            if (cur_ws != TAILQ_LAST(walk->workspaces, ws_head)) {
-                cur_ws = TAILQ_NEXT(cur_ws, tailq);
-            }
+            /* Mouse wheel down. We select the next ws, if any.
+             * If there is no more workspace, don’t even send the workspace
+             * command, otherwise (with workspace auto_back_and_forth) we’d end
+             * up on the wrong workspace. */
+            if (cur_ws == TAILQ_LAST(walk->workspaces, ws_head))
+                return;
+
+            cur_ws = TAILQ_NEXT(cur_ws, tailq);
             break;
     }
 
