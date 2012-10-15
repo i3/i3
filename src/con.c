@@ -1005,6 +1005,7 @@ Con *con_descend_tiling_focused(Con *con) {
  */
 Con *con_descend_direction(Con *con, direction_t direction) {
     Con *most = NULL;
+    Con *current;
     int orientation = con_orientation(con);
     DLOG("con_descend_direction(%p, orientation %d, direction %d)\n", con, orientation, direction);
     if (direction == D_LEFT || direction == D_RIGHT) {
@@ -1018,7 +1019,12 @@ Con *con_descend_direction(Con *con, direction_t direction) {
             /* Wrong orientation. We use the last focused con. Within that con,
              * we recurse to chose the left/right con or at least the last
              * focused one. */
-            most = TAILQ_FIRST(&(con->focus_head));
+            TAILQ_FOREACH(current, &(con->focus_head), focused) {
+                if (current->type != CT_FLOATING_CON) {
+                    most = current;
+                    break;
+                }
+            }
         } else {
             /* If the con has no orientation set, it’s not a split container
              * but a container with a client window, so stop recursing */
@@ -1037,7 +1043,12 @@ Con *con_descend_direction(Con *con, direction_t direction) {
             /* Wrong orientation. We use the last focused con. Within that con,
              * we recurse to chose the top/bottom con or at least the last
              * focused one. */
-            most = TAILQ_FIRST(&(con->focus_head));
+            TAILQ_FOREACH(current, &(con->focus_head), focused) {
+                if (current->type != CT_FLOATING_CON) {
+                    most = current;
+                    break;
+                }
+            }
         } else {
             /* If the con has no orientation set, it’s not a split container
              * but a container with a client window, so stop recursing */
