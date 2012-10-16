@@ -197,4 +197,23 @@ cmd 'focus right';
 
 is($x->input_focus, $second->id, 'focus on second container');
 
+#############################################################################
+# 7: verify that focusing the parent of a window inside a floating con goes
+# up to the grandparent (workspace) and that focusing child from the ws
+# goes back down to the child of the floating con
+#############################################################################
+
+$tmp = fresh_workspace;
+
+my $tiled = open_window;
+my $floating = open_floating_window;
+is($x->input_focus, $floating->id, 'floating window focused');
+
+cmd 'focus parent';
+
+is(get_ws($tmp)->{focused}, 1, 'workspace is focused');
+cmd 'focus child';
+
+is($x->input_focus, $floating->id, 'floating window focused');
+
 done_testing;

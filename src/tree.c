@@ -356,6 +356,10 @@ void tree_split(Con *con, orientation_t orientation) {
         con->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
         return;
     }
+    else if (con->type == CT_FLOATING_CON) {
+        DLOG("Floating containers can't be split.\n");
+        return;
+    }
 
     Con *parent = con->parent;
 
@@ -396,9 +400,15 @@ void tree_split(Con *con, orientation_t orientation) {
  *
  */
 bool level_up(void) {
+    /* Skip over floating containers and go directly to the grandparent
+     * (which should always be a workspace) */
+    if (focused->parent->type == CT_FLOATING_CON) {
+        con_focus(focused->parent->parent);
+        return true;
+    }
+
     /* We can focus up to the workspace, but not any higher in the tree */
     if ((focused->parent->type != CT_CON &&
-         focused->parent->type != CT_FLOATING_CON &&
          focused->parent->type != CT_WORKSPACE) ||
         focused->type == CT_WORKSPACE) {
         ELOG("'focus parent': Focus is already on the workspace, cannot go higher than that.\n");
@@ -416,9 +426,21 @@ bool level_down(void) {
     /* Go down the focus stack of the current node */
     Con *next = TAILQ_FIRST(&(focused->focus_head));
     if (next == TAILQ_END(&(focused->focus_head))) {
-        printf("cannot go down\n");
+        DLOG("cannot go down\n");
         return false;
     }
+    else if (next->type == CT_FLOATING_CON) {
+        /* Floating cons shouldn't be directly focused; try immediately
+         * going to the grandchild of the focused con. */
+        Con *child = TAILQ_FIRST(&(next->focus_head));
+        if (child == TAILQ_END(&(next->focus_head))) {
+            DLOG("cannot go down\n");
+            return false;
+        }
+        else
+            next = TAILQ_FIRST(&(next->focus_head));
+    }
+
     con_focus(next);
     return true;
 }
