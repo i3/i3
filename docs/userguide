@@ -12,28 +12,28 @@ contact us on IRC (preferred) or post your question(s) on the mailing list.
 For the "too long; didn’t read" people, here is an overview of the default
 keybindings (click to see the full size image):
 
-*Keys to use with mod (alt):*
+*Keys to use with $mod (alt):*
 
-image:keyboard-layer1.png["Keys to use with mod (alt)",width=600,link="keyboard-layer1.png"]
+image:keyboard-layer1.png["Keys to use with $mod (alt)",width=600,link="keyboard-layer1.png"]
 
-*Keys to use with Shift+mod:*
+*Keys to use with Shift+$mod:*
 
-image:keyboard-layer2.png["Keys to use with Shift+mod",width=600,link="keyboard-layer2.png"]
+image:keyboard-layer2.png["Keys to use with Shift+$mod",width=600,link="keyboard-layer2.png"]
 
 The red keys are the modifiers you need to press (by default), the blue keys
 are your homerow.
 
 == Using i3
 
-Throughout this guide, the keyword +mod+ will be used to refer to the
+Throughout this guide, the keyword +$mod+ will be used to refer to the
 configured modifier. This is the alt key (Mod1) by default, with windows (Mod4)
 being a popular alternative.
 
 === Opening terminals and moving around
 
 One very basic operation is opening a new terminal. By default, the keybinding
-for this is mod+Enter, that is Alt+Enter in the default configuration. By
-pressing mod+Enter, a new terminal will be opened.  It will fill the whole
+for this is $mod+Enter, that is Alt+Enter in the default configuration. By
+pressing $mod+Enter, a new terminal will be opened.  It will fill the whole
 space available on your screen.
 
 image:single_terminal.png[Single terminal]
@@ -48,9 +48,9 @@ image:two_terminals.png[Two terminals]
 To move the focus between the two terminals, you can use the direction keys
 which you may know from the editor +vi+. However, in i3, your homerow is used
 for these keys (in +vi+, the keys are shifted to the left by one for
-compatibility with most keyboard layouts). Therefore, +mod+J+ is left, +mod+K+
-is down, +mod+L+ is up and `mod+;` is right. So, to switch between the
-terminals, use +mod+K+ or +mod+L+. Of course, you can also use the arrow keys.
+compatibility with most keyboard layouts). Therefore, +$mod+J+ is left, +$mod+K+
+is down, +$mod+L+ is up and `$mod+;` is right. So, to switch between the
+terminals, use +$mod+K+ or +$mod+L+. Of course, you can also use the arrow keys.
 
 At the moment, your workspace is split (it contains two terminals) in a
 specific direction (horizontal by default). Every window can be split
@@ -61,8 +61,8 @@ windows.
 
 TODO: picture of the tree
 
-To split a window vertically, press +mod+v+ before you create the new window.
-To split it horizontally, press +mod+h+.
+To split a window vertically, press +$mod+v+ before you create the new window.
+To split it horizontally, press +$mod+h+.
 
 === Changing the container layout
 
@@ -80,15 +80,15 @@ tabbed::
 The same principle as +stacking+, but the list of windows at the top is only
 a single line which is vertically split.
 
-To switch modes, press +mod+e+ for splith/splitv (it toggles), +mod+s+ for
-stacking and +mod+w+ for tabbed.
+To switch modes, press +$mod+e+ for splith/splitv (it toggles), +$mod+s+ for
+stacking and +$mod+w+ for tabbed.
 
 image:modes.png[Container modes]
 
 === Toggling fullscreen mode for a window
 
 To display a window in fullscreen mode or to go out of fullscreen mode again,
-press +mod+f+.
+press +$mod+f+.
 
 There is also a global fullscreen mode in i3 in which the client will span all
 available outputs (the command is +fullscreen global+).
@@ -96,7 +96,7 @@ available outputs (the command is +fullscreen global+).
 === Opening other applications
 
 Aside from opening applications from a terminal, you can also use the handy
-+dmenu+ which is opened by pressing +mod+d+ by default. Just type the name
++dmenu+ which is opened by pressing +$mod+d+ by default. Just type the name
 (or a part of it) of the application which you want to open. The corresponding
 application has to be in your +$PATH+ for this to work.
 
@@ -108,7 +108,7 @@ create a keybinding for starting the application directly. See the section
 
 If an application does not provide a mechanism for closing (most applications
 provide a menu, the escape key or a shortcut like +Control+W+ to close), you
-can press +mod+Shift+q+ to kill a window. For applications which support
+can press +$mod+Shift+q+ to kill a window. For applications which support
 the WM_DELETE protocol, this will correctly close the application (saving
 any modifications or doing other cleanup). If the application doesn’t support
 the WM_DELETE protocol your X server will kill the window and the behaviour
@@ -118,7 +118,7 @@ depends on the application.
 
 Workspaces are an easy way to group a set of windows. By default, you are on
 the first workspace, as the bar on the bottom left indicates. To switch to
-another workspace, press +mod+num+ where +num+ is the number of the workspace
+another workspace, press +$mod+num+ where +num+ is the number of the workspace
 you want to use. If the workspace does not exist yet, it will be created.
 
 A common paradigm is to put the web browser on one workspace, communication
@@ -132,7 +132,7 @@ focus to that screen.
 
 === Moving windows to workspaces
 
-To move a window to another workspace, simply press +mod+Shift+num+ where
+To move a window to another workspace, simply press +$mod+Shift+num+ where
 +num+ is (like when switching workspaces) the number of the target workspace.
 Similarly to switching workspaces, the target workspace will be created if
 it does not yet exist.
@@ -148,11 +148,11 @@ columns/rows with your keyboard.
 === Restarting i3 inplace
 
 To restart i3 inplace (and thus get into a clean state if there is a bug, or
-to upgrade to a newer version of i3) you can use +mod+Shift+r+.
+to upgrade to a newer version of i3) you can use +$mod+Shift+r+.
 
 === Exiting i3
 
-To cleanly exit i3 without killing your X server, you can use +mod+Shift+e+.
+To cleanly exit i3 without killing your X server, you can use +$mod+Shift+e+.
 
 === Floating
 
@@ -162,7 +162,7 @@ paradigm but can be useful for some corner cases like "Save as" dialog
 windows, or toolbar windows (GIMP or similar). Those windows usually set the
 appropriate hint and are opened in floating mode by default.
 
-You can toggle floating mode for a window by pressing +mod+Shift+Space+. By
+You can toggle floating mode for a window by pressing +$mod+Shift+Space+. By
 dragging the window’s titlebar with your mouse you can move the window
 around. By grabbing the borders and moving them you can resize the window. You
 can also do that by using the <<floating_modifier>>.
@@ -202,7 +202,7 @@ orientation (horizontal, vertical or unspecified) and the orientation depends
 on the layout the container is in (vertical for splitv and stacking, horizontal
 for splith and tabbed). So, in our example with the workspace, the default
 layout of the workspace +Container+ is splith (most monitors are widescreen
-nowadays). If you change the layout to splitv (+mod+l+ in the default config)
+nowadays). If you change the layout to splitv (+$mod+l+ in the default config)
 and *then* open two terminals, i3 will configure your windows like this:
 
 image::tree-shot2.png["shot2",title="Vertical Workspace Orientation"]
@@ -212,8 +212,8 @@ Let’s assume you have two terminals on a workspace (with splith layout, that i
 horizontal orientation), focus is on the right terminal. Now you want to open
 another terminal window below the current one. If you would just open a new
 terminal window, it would show up to the right due to the splith layout.
-Instead, press +mod+v+ to split the container with the splitv layout (to
-open a +Horizontal Split Container+, use +mod+h+). Now you can open a new
+Instead, press +$mod+v+ to split the container with the splitv layout (to
+open a +Horizontal Split Container+, use +$mod+h+). Now you can open a new
 terminal and it will open below the current one:
 
 image::tree-layout1.png["Layout",float="right"]
@@ -248,7 +248,7 @@ single workspace on which you open three terminal windows. All these terminal
 windows are directly attached to one node inside i3’s layout tree, the
 workspace node. By default, the workspace node’s orientation is +horizontal+.
 
-Now you move one of these terminals down (+mod+k+ by default). The workspace
+Now you move one of these terminals down (+$mod+k+ by default). The workspace
 node’s orientation will be changed to +vertical+. The terminal window you moved
 down is directly attached to the workspace and appears on the bottom of the
 screen. A new (horizontal) container was created to accomodate the other two
@@ -362,10 +362,10 @@ bindcode [--release] [Modifiers+]keycode command
 *Examples*:
 --------------------------------
 # Fullscreen
-bindsym mod+f fullscreen
+bindsym $mod+f fullscreen
 
 # Restart
-bindsym mod+Shift+r restart
+bindsym $mod+Shift+r restart
 
 # Notebook-specific hotkeys
 bindcode 214 exec --no-startup-id /home/michael/toggle_beamer.sh
@@ -874,7 +874,7 @@ This configuration directive enables automatic +workspace back_and_forth+ (see
 
 For instance: Assume you are on workspace "1: www" and switch to "2: IM" using
 mod+2 because somebody sent you a message. You don’t need to remember where you
-came from now, you can just press mod+2 again to switch back to "1: www".
+came from now, you can just press $mod+2 again to switch back to "1: www".
 
 *Syntax*:
 --------------------------------------
@@ -1206,7 +1206,7 @@ the following keybinding:
 
 *Example*:
 --------------------------------------------------------
-bindsym mod+x move container to workspace 3; workspace 3
+bindsym $mod+x move container to workspace 3; workspace 3
 --------------------------------------------------------
 
 [[command_criteria]]
@@ -1218,10 +1218,10 @@ which have the class Firefox, use:
 
 *Example*:
 ------------------------------------
-bindsym mod+x [class="Firefox"] kill
+bindsym $mod+x [class="Firefox"] kill
 
 # same thing, but case-insensitive
-bindsym mod+x [class="(?i)firefox"] kill
+bindsym $mod+x [class="(?i)firefox"] kill
 ------------------------------------
 
 The criteria which are currently implemented are:
@@ -1267,10 +1267,10 @@ exec [--no-startup-id] command
 *Example*:
 ------------------------------
 # Start the GIMP
-bindsym mod+g exec gimp
+bindsym $mod+g exec gimp
 
 # Start the terminal emulator urxvt which is not yet startup-notification-aware
-bindsym mod+Return exec --no-startup-id urxvt
+bindsym $mod+Return exec --no-startup-id urxvt
 ------------------------------
 
 The +--no-startup-id+ parameter disables startup-notification support for this
@@ -1301,8 +1301,8 @@ split <vertical|horizontal>
 
 *Example*:
 ------------------------------
-bindsym mod+v split vertical
-bindsym mod+h split horizontal
+bindsym $mod+v split vertical
+bindsym $mod+h split horizontal
 ------------------------------
 
 === Manipulating layout
@@ -1323,21 +1323,21 @@ layout toggle [split|all]
 
 *Examples*:
 --------------
-bindsym mod+s layout stacking
-bindsym mod+l layout toggle split
-bindsym mod+w layout tabbed
+bindsym $mod+s layout stacking
+bindsym $mod+l layout toggle split
+bindsym $mod+w layout tabbed
 
 # Toggle between stacking/tabbed/split:
-bindsym mod+x layout toggle
+bindsym $mod+x layout toggle
 
 # Toggle between stacking/tabbed/splith/splitv:
-bindsym mod+x layout toggle all
+bindsym $mod+x layout toggle all
 
 # Toggle fullscreen
-bindsym mod+f fullscreen
+bindsym $mod+f fullscreen
 
 # Toggle floating/tiling
-bindsym mod+t floating toggle
+bindsym $mod+t floating toggle
 --------------
 
 === Focusing/Moving containers
@@ -1379,36 +1379,36 @@ relevant for floating containers. The default amount is 10 pixels.
 *Examples*:
 ----------------------
 # Focus container on the left, bottom, top, right:
-bindsym mod+j focus left
-bindsym mod+k focus down
-bindsym mod+l focus up
-bindsym mod+semicolon focus right
+bindsym $mod+j focus left
+bindsym $mod+k focus down
+bindsym $mod+l focus up
+bindsym $mod+semicolon focus right
 
 # Focus parent container
-bindsym mod+u focus parent
+bindsym $mod+u focus parent
 
 # Focus last floating/tiling container
-bindsym mod+g focus mode_toggle
+bindsym $mod+g focus mode_toggle
 
 # Focus the output right to the current one
-bindsym mod+x focus output right
+bindsym $mod+x focus output right
 
 # Focus the big output
-bindsym mod+x focus output HDMI-2
+bindsym $mod+x focus output HDMI-2
 
 # Move container to the left, bottom, top, right:
-bindsym mod+j move left
-bindsym mod+k move down
-bindsym mod+l move up
-bindsym mod+semicolon move right
+bindsym $mod+j move left
+bindsym $mod+k move down
+bindsym $mod+l move up
+bindsym $mod+semicolon move right
 
 # Move container, but make floating containers
 # move more than the default
-bindsym mod+j move left 20 px
+bindsym $mod+j move left 20 px
 
 # Move floating container to the center
 # of all outputs
-bindsym mod+c move absolute position center
+bindsym $mod+c move absolute position center
 ----------------------
 
 === Changing (named) workspaces/moving to workspaces
@@ -1448,23 +1448,23 @@ move [window|container] [to] workspace <prev|next|current>
 
 *Examples*:
 -------------------------
-bindsym mod+1 workspace 1
-bindsym mod+2 workspace 2
+bindsym $mod+1 workspace 1
+bindsym $mod+2 workspace 2
 ...
 
-bindsym mod+Shift+1 move container to workspace 1
-bindsym mod+Shift+2 move container to workspace 2
+bindsym $mod+Shift+1 move container to workspace 1
+bindsym $mod+Shift+2 move container to workspace 2
 ...
 
 # switch between the current and the previously focused one
-bindsym mod+b workspace back_and_forth
-bindsym mod+Shift+b move container to workspace back_and_forth
+bindsym $mod+b workspace back_and_forth
+bindsym $mod+Shift+b move container to workspace back_and_forth
 
 # move the whole workspace to the next output
-bindsym mod+x move workspace to output right
+bindsym $mod+x move workspace to output right
 
 # move firefox to current workspace
-bindsym mod+F1 [class="Firefox"] move workspace current
+bindsym $mod+F1 [class="Firefox"] move workspace current
 -------------------------
 
 ==== Named workspaces
@@ -1474,7 +1474,7 @@ workspace command, you can use an arbitrary name:
 
 *Example*:
 -------------------------
-bindsym mod+1 workspace mail
+bindsym $mod+1 workspace mail
 ...
 -------------------------
 
@@ -1483,8 +1483,8 @@ number, like this:
 
 *Example*:
 -------------------------
-bindsym mod+1 workspace 1: mail
-bindsym mod+2 workspace 2: www
+bindsym $mod+1 workspace 1: mail
+bindsym $mod+2 workspace 2: www
 ...
 -------------------------
 
@@ -1533,10 +1533,10 @@ move workspace to output <<left|right|down|up>|<output>>
 --------------------------------------------------------
 # Move the current workspace to the next output
 # (effectively toggles when you only have two outputs)
-bindsym mod+x move workspace to output right
+bindsym $mod+x move workspace to output right
 
 # Put this window on the presentation output.
-bindsym mod+x move container to output VGA1
+bindsym $mod+x move container to output VGA1
 --------------------------------------------------------
 
 [[resizingconfig]]
@@ -1587,7 +1587,7 @@ mode "resize" {
 }
 
 # Enter resize mode
-bindsym mod+r mode "resize"
+bindsym $mod+r mode "resize"
 ----------------------------------------------------------------------
 
 === Jumping to specific windows
@@ -1608,7 +1608,7 @@ with criteria for that.
 *Examples*:
 ------------------------------------------------
 # Get me to the next open VIM instance
-bindsym mod+a [class="urxvt" title="VIM"] focus
+bindsym $mod+a [class="urxvt" title="VIM"] focus
 ------------------------------------------------
 
 === VIM-like marks (mark/goto)
@@ -1644,10 +1644,10 @@ TODO: make i3-input replace %s
 *Examples*:
 ---------------------------------------
 # Read 1 character and mark the current window with this character
-bindsym mod+m exec i3-input -p 'mark ' -l 1 -P 'Mark: '
+bindsym $mod+m exec i3-input -p 'mark ' -l 1 -P 'Mark: '
 
 # Read 1 character and go to the window with the character
-bindsym mod+g exec i3-input -p 'goto ' -l 1 -P 'Goto: '
+bindsym $mod+g exec i3-input -p 'goto ' -l 1 -P 'Goto: '
 ---------------------------------------
 
 Alternatively, if you do not want to mess with +i3-input+, you could create
@@ -1664,9 +1664,9 @@ There is also +border toggle+ which will toggle the different border styles.
 
 *Examples*:
 ----------------------------
-bindsym mod+t border normal
-bindsym mod+y border 1pixel
-bindsym mod+u border none
+bindsym $mod+t border normal
+bindsym $mod+y border 1pixel
+bindsym $mod+u border none
 ----------------------------
 
 [[stack-limit]]
@@ -1711,9 +1711,9 @@ however you don’t need to (simply killing your X session is fine as well).
 
 *Examples*:
 ----------------------------
-bindsym mod+Shift+r restart
-bindsym mod+Shift+w reload
-bindsym mod+Shift+e exit
+bindsym $mod+Shift+r restart
+bindsym $mod+Shift+w reload
+bindsym $mod+Shift+e exit
 ----------------------------
 
 === Scratchpad
@@ -1743,10 +1743,10 @@ scratchpad show
 *Examples*:
 ------------------------------------------------
 # Make the currently focused window a scratchpad
-bindsym mod+Shift+minus move scratchpad
+bindsym $mod+Shift+minus move scratchpad
 
 # Show the first scratchpad window
-bindsym mod+minus scratchpad show
+bindsym $mod+minus scratchpad show
 
 # Show the sup-mail scratchpad window, if any.
 bindsym mod4+s [title="^Sup ::"] scratchpad show
