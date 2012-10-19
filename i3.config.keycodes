@@ -79,7 +79,7 @@ bindcode $mod+65 focus mode_toggle
 bindcode $mod+38 focus parent
 
 # focus the child container
-#bindcode $mod+d focus child
+#bindsym $mod+d focus child
 
 # switch to workspace
 bindcode $mod+10 workspace 1
