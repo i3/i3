@@ -12,9 +12,9 @@ contact us on IRC (preferred) or post your question(s) on the mailing list.
 For the "too long; didn’t read" people, here is an overview of the default
 keybindings (click to see the full size image):
 
-*Keys to use with $mod (alt):*
+*Keys to use with $mod (Alt):*
 
-image:keyboard-layer1.png["Keys to use with $mod (alt)",width=600,link="keyboard-layer1.png"]
+image:keyboard-layer1.png["Keys to use with $mod (Alt)",width=600,link="keyboard-layer1.png"]
 
 *Keys to use with Shift+$mod:*
 
@@ -26,7 +26,7 @@ are your homerow.
 == Using i3
 
 Throughout this guide, the keyword +$mod+ will be used to refer to the
-configured modifier. This is the alt key (Mod1) by default, with windows (Mod4)
+configured modifier. This is the Alt key (Mod1) by default, with windows (Mod4)
 being a popular alternative.
 
 === Opening terminals and moving around
