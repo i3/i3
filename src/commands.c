@@ -1242,7 +1242,7 @@ void cmd_split(I3_CMD, char *direction) {
 }
 
 /*
- * Implementaiton of 'kill [window|client]'.
+ * Implementation of 'kill [window|client]'.
  *
  */
 void cmd_kill(I3_CMD, char *kill_mode_str) {
@@ -1572,7 +1572,7 @@ void cmd_layout_toggle(I3_CMD, char *toggle_mode) {
 }
 
 /*
- * Implementaiton of 'exit'.
+ * Implementation of 'exit'.
  *
  */
 void cmd_exit(I3_CMD) {
@@ -1584,7 +1584,7 @@ void cmd_exit(I3_CMD) {
 }
 
 /*
- * Implementaiton of 'reload'.
+ * Implementation of 'reload'.
  *
  */
 void cmd_reload(I3_CMD) {
@@ -1601,7 +1601,7 @@ void cmd_reload(I3_CMD) {
 }
 
 /*
- * Implementaiton of 'restart'.
+ * Implementation of 'restart'.
  *
  */
 void cmd_restart(I3_CMD) {
@@ -1613,7 +1613,7 @@ void cmd_restart(I3_CMD) {
 }
 
 /*
- * Implementaiton of 'open'.
+ * Implementation of 'open'.
  *
  */
 void cmd_open(I3_CMD) {
