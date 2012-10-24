@@ -245,18 +245,29 @@ void render_con(Con *con, bool render_fullscreen) {
             /* Get the active workspace of that output */
             Con *content = output_get_content(output);
             Con *workspace = TAILQ_FIRST(&(content->focus_head));
-
-            /* Check for fullscreen nodes */
-            /* XXX: This code duplication is unfortunate. Keep in mind to fix
-             * this when we clean up the whole render.c */
-            Con *fullscreen = NULL;
-            fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
-            if (fullscreen)
-                    continue;
-
+            Con *fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
             Con *child;
             TAILQ_FOREACH(child, &(workspace->floating_head), floating_windows) {
-                DLOG("floating child at (%d,%d) with %d x %d\n", child->rect.x, child->rect.y, child->rect.width, child->rect.height);
+                /* Don’t render floating windows when there is a fullscreen window
+                 * on that workspace. Necessary to make floating fullscreen work
+                 * correctly (ticket #564). */
+                if (fullscreen != NULL) {
+                    Con *floating_child = con_descend_focused(child);
+                    /* Exception to the above rule: smart
+                     * popup_during_fullscreen handling (popups belonging to
+                     * the fullscreen app will be rendered). */
+                    if (floating_child->window == NULL ||
+                        fullscreen->window == NULL ||
+                        floating_child->window->transient_for != fullscreen->window->id)
+                        continue;
+                    else {
+                        DLOG("Rendering floating child even though in fullscreen mode: "
+                             "floating->transient_for (0x%08x) == fullscreen->id (0x%08x)\n",
+                             floating_child->window->transient_for, fullscreen->window->id);
+                    }
+                }
+                DLOG("floating child at (%d,%d) with %d x %d\n",
+                     child->rect.x, child->rect.y, child->rect.width, child->rect.height);
                 x_raise_con(child);
                 render_con(child, false);
             }

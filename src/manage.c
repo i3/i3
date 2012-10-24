@@ -347,6 +347,12 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             fs != NULL) {
             LOG("There is a fullscreen window, leaving fullscreen mode\n");
             con_toggle_fullscreen(fs, CF_OUTPUT);
+        } else if (config.popup_during_fullscreen == PDF_SMART &&
+                   fs != NULL &&
+                   fs->window != NULL &&
+                   fs->window->id == cwindow->transient_for) {
+            LOG("This floating window belongs to the fullscreen window (popup_during_fullscreen == smart)\n");
+            con_focus(nc);
         }
     }
 

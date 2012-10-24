@@ -191,8 +191,15 @@ struct Config {
 
     /** What should happen when a new popup is opened during fullscreen mode */
     enum {
-        PDF_LEAVE_FULLSCREEN = 0,
-        PDF_IGNORE = 1
+        /* display (and focus) the popup when it belongs to the fullscreen
+         * window only. */
+        PDF_SMART = 0,
+
+        /* leave fullscreen mode unconditionally */
+        PDF_LEAVE_FULLSCREEN = 1,
+
+        /* just ignore the popup, that is, don’t map it */
+        PDF_IGNORE = 2,
     } popup_during_fullscreen;
 };
 

@@ -802,21 +802,23 @@ focus_follows_mouse no
 When you are in fullscreen mode, some applications still open popup windows
 (take Xpdf for example). This is because these applications may not be aware
 that they are in fullscreen mode (they do not check the corresponding hint).
-There are two things which are possible to do in this situation:
+There are three things which are possible to do in this situation:
 
-1. Just ignore the popup (don’t map it). This won’t interrupt you while you are
+1. Display the popup if it belongs to the fullscreen application only. This is
+   the default and should be reasonable behavior for most users.
+2. Just ignore the popup (don’t map it). This won’t interrupt you while you are
    in fullscreen. However, some apps might react badly to this (deadlock until
    you go out of fullscreen).
-2. Leave fullscreen mode. This is the default.
+3. Leave fullscreen mode.
 
 *Syntax*:
 -------------------------------------------------
-popup_during_fullscreen <ignore|leave_fullscreen>
+popup_during_fullscreen <smart|ignore|leave_fullscreen>
 -------------------------------------------------
 
 *Example*:
 ------------------------------
-popup_during_fullscreen ignore
+popup_during_fullscreen smart
 ------------------------------
 
 === Focus wrapping
