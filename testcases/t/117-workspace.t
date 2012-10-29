@@ -254,11 +254,38 @@ $ws = get_ws('qux');
 is($ws->{num}, -1, 'number correctly changed');
 workspace_numbers_sorted();
 
-# 5: already existing workspace
+# 4: rename current workspace
+cmd 'workspace 4711';
+is(focused_ws(), '4711', 'now on workspace 4711');
+
+ok(!workspace_exists('42'), 'workspace 42 does not exist yet');
+cmd 'rename workspace to 42';
+ok(!workspace_exists('4711'), 'workspace 4711 does not exist anymore');
+is(focused_ws(), '42', 'now on workspace 42');
+$ws = get_ws('42');
+is($ws->{num}, 42, 'number correctly changed');
+workspace_numbers_sorted();
+
+# 5: special cases
+cmd 'workspace bla';
+is(focused_ws(), 'bla', 'now on workspace to');
+
+ok(!workspace_exists('to'), 'workspace to does not exist yet');
+cmd 'rename workspace bla to to';
+ok(!workspace_exists('bla'), 'workspace bla does not exist anymore');
+is(focused_ws(), 'to', 'now on workspace to');
+cmd 'rename workspace to to bla';
+ok(!workspace_exists('to'), 'workspace to does not exist anymore');
+is(focused_ws(), 'bla', 'now on workspace bla');
+cmd 'rename workspace to to';
+ok(!workspace_exists('bla'), 'workspace bla does not exist anymore');
+is(focused_ws(), 'to', 'now on workspace to');
+
+# 6: already existing workspace
 my $result = cmd 'rename workspace qux to 11: bar';
 ok(!$result->[0]->{success}, 'renaming workspace to an already existing one failed');
 
-# 6: non-existing old workspace (verify command result)
+# 7: non-existing old workspace (verify command result)
 $result = cmd 'rename workspace notexistant to bleh';
 ok(!$result->[0]->{success}, 'renaming workspace which does not exist failed');
 

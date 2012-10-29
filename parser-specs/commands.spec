@@ -195,17 +195,30 @@ state RESIZE_TILING_OR:
       -> call cmd_resize($way, $direction, $resize_px, $resize_ppt)
 
 # rename workspace <name> to <name>
+# rename workspace to <name>
 state RENAME:
   'workspace'
       -> RENAME_WORKSPACE
 
 state RENAME_WORKSPACE:
+  old_name = 'to'
+      -> RENAME_WORKSPACE_LIKELY_TO
   old_name = word
       -> RENAME_WORKSPACE_TO
 
+state RENAME_WORKSPACE_LIKELY_TO:
+  'to'
+      -> RENAME_WORKSPACE_NEW_NAME
+  new_name = word
+      -> call cmd_rename_workspace(NULL, $new_name)
+
 state RENAME_WORKSPACE_TO:
   'to'
-      ->
+      -> RENAME_WORKSPACE_NEW_NAME
+
+state RENAME_WORKSPACE_NEW_NAME:
+  end
+      -> call cmd_rename_workspace(NULL, "to")
   new_name = string
       -> call cmd_rename_workspace($old_name, $new_name)
 

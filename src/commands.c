@@ -1802,16 +1802,24 @@ void cmd_scratchpad_show(I3_CMD) {
 }
 
 /*
- * Implementation of 'rename workspace <name> to <name>'
+ * Implementation of 'rename workspace [<name>] to <name>'
  *
  */
 void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
-    LOG("Renaming workspace \"%s\" to \"%s\"\n", old_name, new_name);
+    if (old_name) {
+        LOG("Renaming workspace \"%s\" to \"%s\"\n", old_name, new_name);
+    } else {
+        LOG("Renaming current workspace to \"%s\"\n", new_name);
+    }
 
     Con *output, *workspace = NULL;
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
-        GREP_FIRST(workspace, output_get_content(output),
-            !strcasecmp(child->name, old_name));
+    if (old_name) {
+        TAILQ_FOREACH(output, &(croot->nodes_head), nodes)
+            GREP_FIRST(workspace, output_get_content(output),
+                !strcasecmp(child->name, old_name));
+    } else {
+        workspace = con_get_workspace(focused);
+    }
 
     if (!workspace) {
         // TODO: we should include the old workspace name here and use yajl for
