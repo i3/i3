@@ -350,7 +350,10 @@ static void _workspace_focus_event(Con *current, Con *old) {
     dump_node(gen, current, false);
 
     ystr("old");
-    dump_node(gen, old, false);
+    if (old == NULL)
+        y(null);
+    else
+        dump_node(gen, old, false);
 
     y(map_close);
 
