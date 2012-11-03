@@ -644,11 +644,25 @@ if ($is_event) {
 
 This event consists of a single serialized map containing a property
 +change (string)+ which indicates the type of the change ("focus", "init",
-"empty", "urgent").
+"empty", "urgent").  Additionally, when the change is "focus", an +old
+(object)+ and a +current (object)+ properties will be present with the
+previous and current workspace respectively.
 
 *Example:*
 ---------------------
-{ "change": "focus" }
+{
+ "change": "focus",
+ "current": {
+  "id": 28489712,
+  "type":4,
+  ...
+ }
+ "old": {
+  "id": 28489715,
+  "type": 4,
+  ...
+ }
+}
 ---------------------
 
 === output event

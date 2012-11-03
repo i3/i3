@@ -11,6 +11,9 @@
  *
  */
 #include "all.h"
+#include "yajl_utils.h"
+
+#include <yajl/yajl_gen.h>
 
 /* Stores a copy of the name of the last used workspace for the workspace
  * back-and-forth switching. */
@@ -331,6 +334,34 @@ static void workspace_defer_update_urgent_hint_cb(EV_P_ ev_timer *w, int revents
     FREE(con->urgency_timer);
 }
 
+/*
+ * For the "focus" event we send, along the usual "change" field, also the
+ * current and previous workspace, in "current" and "old" respectively.
+ */
+static void _workspace_focus_event(Con *current, Con *old) {
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+
+    ystr("change");
+    ystr("focus");
+
+    ystr("current");
+    dump_node(gen, current, false);
+
+    ystr("old");
+    dump_node(gen, old, false);
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, (const char *)payload);
+    y(free);
+}
+
 static void _workspace_show(Con *workspace) {
     Con *current, *old = NULL;
 
@@ -433,7 +464,7 @@ static void _workspace_show(Con *workspace) {
     /* Update the EWMH hints */
     ewmh_update_current_desktop();
 
-    ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
+    _workspace_focus_event(workspace, current);
 }
 
 /*
