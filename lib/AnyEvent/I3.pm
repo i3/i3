@@ -277,7 +277,7 @@ key being the name of the event and the value being a callback.
         workspace => sub { say "Workspaces changed" }
     );
 
-    if ($i3->subscribe(\%callbacks)->recv->{success})
+    if ($i3->subscribe(\%callbacks)->recv->{success}) {
         say "Successfully subscribed";
     }
 
