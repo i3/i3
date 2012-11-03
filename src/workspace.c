@@ -338,7 +338,7 @@ static void workspace_defer_update_urgent_hint_cb(EV_P_ ev_timer *w, int revents
  * For the "focus" event we send, along the usual "change" field, also the
  * current and previous workspace, in "current" and "old" respectively.
  */
-static void _workspace_focus_event(Con *current, Con *old) {
+static void ipc_send_workspace_focus_event(Con *current, Con *old) {
     yajl_gen gen = ygenalloc();
 
     y(map_open);
@@ -440,6 +440,8 @@ static void _workspace_show(Con *workspace) {
     } else
         con_focus(next);
 
+    ipc_send_workspace_focus_event(workspace, old);
+
     DLOG("old = %p / %s\n", old, (old ? old->name : "(null)"));
     /* Close old workspace if necessary. This must be done *after* doing
      * urgency handling, because tree_close() will do a con_focus() on the next
@@ -466,8 +468,6 @@ static void _workspace_show(Con *workspace) {
 
     /* Update the EWMH hints */
     ewmh_update_current_desktop();
-
-    _workspace_focus_event(workspace, current);
 }
 
 /*
