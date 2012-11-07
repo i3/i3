@@ -316,13 +316,15 @@ and fall back to a working font.
 *Syntax*:
 ------------------------------
 font <X core font description>
-font xft:<a FreeType font description>
+font pango:[family list] [style options] [size]
 ------------------------------
 
 *Examples*:
 --------------------------------------------------------------
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-font xft:DejaVu Sans Mono 10
+font pango:DejaVu Sans Mono 10
+font pango:DejaVu Sans Mono, Terminus Bold Semi-Condensed 11
+font pango:Terminus 11x
 --------------------------------------------------------------
 
 [[keybindings]]
@@ -1117,7 +1119,7 @@ font <font>
 --------------------------------------------------------------
 bar {
     font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-    font xft:DejaVu Sans Mono 10
+    font pango:DejaVu Sans Mono 10
 }
 --------------------------------------------------------------
 
