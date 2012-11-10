@@ -118,4 +118,10 @@ void draw_bars(bool force_unhide);
  */
 void redraw_bars(void);
 
+/*
+ * Set the current binding mode
+ *
+ */
+void set_current_mode(struct mode *mode);
+
 #endif

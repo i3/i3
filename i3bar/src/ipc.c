@@ -138,10 +138,22 @@ void got_output_event(char *event) {
     }
 }
 
+/*
+ * Called, when a mode-event arrives (i3 changed binding mode).
+ *
+ */
+void got_mode_event(char *event) {
+    DLOG("Got Mode Event!\n");
+    parse_mode_json(event);
+    draw_bars(false);
+}
+
+
 /* Data-structure to easily call the reply-handlers later */
 handler_t event_handlers[] = {
     &got_workspace_event,
-    &got_output_event
+    &got_output_event,
+    &got_mode_event
 };
 
 /*
@@ -297,8 +309,8 @@ void destroy_connection(void) {
  */
 void subscribe_events(void) {
     if (config.disable_ws) {
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"output\" ]");
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"output\", \"mode\" ]");
     } else {
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"workspace\", \"output\" ]");
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"workspace\", \"output\", \"mode\" ]");
     }
 }

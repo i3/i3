@@ -74,6 +74,9 @@ ev_check   *xcb_chk;
 ev_io      *xcb_io;
 ev_io      *xkb_io;
 
+/* The name of current binding mode */
+static mode binding;
+
 /* The parsed colors */
 struct xcb_colors_t {
     uint32_t bar_fg;
@@ -1527,6 +1530,41 @@ void draw_bars(bool unhide) {
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
             draw_text(ws_walk->name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, ws_walk->name_width);
             i += 10 + ws_walk->name_width + 1;
+
+        }
+
+        if (binding.name) {
+
+            uint32_t fg_color = colors.urgent_ws_fg;
+            uint32_t bg_color = colors.urgent_ws_bg;
+            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+
+            uint32_t vals_border[] = { colors.urgent_ws_border, colors.urgent_ws_border };
+            xcb_change_gc(xcb_connection,
+                          outputs_walk->bargc,
+                          mask,
+                          vals_border);
+            xcb_rectangle_t rect_border = { i, 0, binding.width + 10, font.height + 4 };
+            xcb_poly_fill_rectangle(xcb_connection,
+                                    outputs_walk->buffer,
+                                    outputs_walk->bargc,
+                                    1,
+                                    &rect_border);
+
+            uint32_t vals[] = { bg_color, bg_color };
+            xcb_change_gc(xcb_connection,
+                          outputs_walk->bargc,
+                          mask,
+                          vals);
+            xcb_rectangle_t rect = { i + 1, 1, binding.width + 8, font.height + 2 };
+            xcb_poly_fill_rectangle(xcb_connection,
+                                    outputs_walk->buffer,
+                                    outputs_walk->bargc,
+                                    1,
+                                    &rect);
+
+            set_font_colors(outputs_walk->bargc, fg_color, bg_color);
+            draw_text(binding.name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, binding.width);
         }
 
         i = 0;
@@ -1565,4 +1603,14 @@ void redraw_bars(void) {
                       outputs_walk->rect.h);
         xcb_flush(xcb_connection);
     }
+}
+
+/*
+ * Set the current binding mode
+ *
+ */
+void set_current_mode(struct mode *current) {
+    I3STRING_FREE(binding.name);
+    binding = *current;
+    return;
 }
