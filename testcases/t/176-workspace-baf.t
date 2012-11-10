@@ -106,6 +106,23 @@ is(focused_ws, '6: baz', 'workspace 6 now focused');
 cmd 'workspace number 6';
 is(focused_ws, '5: foo', 'workspace 5 focused again');
 
+################################################################################
+# Place a window in the scratchpad, see if BAF works after showing the
+# scratchpad window.
+################################################################################
+
+my $scratchwin = open_window;
+cmd 'move scratchpad';
+
+# show scratchpad window
+cmd 'scratchpad show';
+
+# hide scratchpad window
+cmd 'scratchpad show';
+
+cmd 'workspace back_and_forth';
+is(focused_ws, '6: baz', 'workspace 6 now focused');
+
 exit_gracefully($pid);
 
 done_testing;
