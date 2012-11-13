@@ -22,19 +22,7 @@ my $i3 = i3(get_socket_path());
 # Workspaces requests and events
 ################################
 
-my $workspaces = $i3->get_workspaces->recv;
-
-ok(@{$workspaces} > 0, "More than zero workspaces found");
-
-# my $name_exists = all { defined($_->{name}) } @{$workspaces};
-# ok($name_exists, "All workspaces have a name");
-
-# Focused workspace
-my $focused;
-foreach (@{$workspaces}) {
-    $focused = $_ if $_->{focused};
-}
-ok($focused, "At least one workspace is focused");
+my $focused = get_ws(focused_ws());
 
 # Events
 
