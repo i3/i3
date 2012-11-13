@@ -137,6 +137,12 @@ my $timingsjson = StartXDummy::slurp('.last_run_timings.json');
              sort { $b->[1] <=> $a->[1] }
              map  { [$_, $timings{$_} // 999] } @testfiles;
 
+# Run 000-load-deps.t first to bail out early when dependencies are missing.
+my $loadtest = "t/000-load-deps.t";
+if ($loadtest ~~ @testfiles) {
+    @testfiles = ($loadtest, grep { $_ ne $loadtest } @testfiles);
+}
+
 printf("\nRough time estimate for this run: %.2f seconds\n\n", $timings{GLOBAL})
     if exists($timings{GLOBAL});
 
