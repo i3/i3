@@ -339,6 +339,7 @@ static void workspace_defer_update_urgent_hint_cb(EV_P_ ev_timer *w, int revents
  * current and previous workspace, in "current" and "old" respectively.
  */
 static void ipc_send_workspace_focus_event(Con *current, Con *old) {
+    setlocale(LC_NUMERIC, "C");
     yajl_gen gen = ygenalloc();
 
     y(map_open);
@@ -363,6 +364,7 @@ static void ipc_send_workspace_focus_event(Con *current, Con *old) {
 
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, (const char *)payload);
     y(free);
+    setlocale(LC_NUMERIC, "");
 }
 
 static void _workspace_show(Con *workspace) {
