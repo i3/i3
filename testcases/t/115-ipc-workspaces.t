@@ -17,6 +17,7 @@
 use i3test;
 
 my $i3 = i3(get_socket_path());
+$i3->connect()->recv;
 
 ################################
 # Workspaces requests and events
