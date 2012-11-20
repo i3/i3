@@ -21,6 +21,9 @@
  * 3. config_parser recognizes \n and \r as 'end' token, while commands_parser
  *    ignores them.
  *
+ * 4. config_parser skips the current line on invalid inputs and follows the
+ *    nearest <error> token.
+ *
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -221,23 +224,46 @@ static Match current_match;
 static struct ConfigResult subcommand_output;
 static struct ConfigResult command_output;
 
+/* A list which contains the states that lead to the current state, e.g.
+ * INITIAL, WORKSPACE_LAYOUT.
+ * When jumping back to INITIAL, statelist_idx will simply be set to 1
+ * (likewise for other states, e.g. MODE or BAR).
+ * This list is used to process the nearest error token. */
+static cmdp_state statelist[10] = { INITIAL };
+/* NB: statelist_idx points to where the next entry will be inserted */
+static int statelist_idx = 1;
+
 #include "GENERATED_config_call.h"
 
 
 static void next_state(const cmdp_token *token) {
+    cmdp_state _next_state = token->next_state;
+
 	//printf("token = name %s identifier %s\n", token->name, token->identifier);
 	//printf("next_state = %d\n", token->next_state);
     if (token->next_state == __CALL) {
         subcommand_output.json_gen = command_output.json_gen;
         GENERATED_call(token->extra.call_identifier, &subcommand_output);
+        _next_state = subcommand_output.next_state;
         clear_stack();
-        return;
     }
 
-    state = token->next_state;
+    state = _next_state;
     if (state == INITIAL) {
         clear_stack();
     }
+
+    /* See if we are jumping back to a state in which we were in previously
+     * (statelist contains INITIAL) and just move statelist_idx accordingly. */
+    for (int i = 0; i < statelist_idx; i++) {
+        if (statelist[i] != _next_state)
+            continue;
+        statelist_idx = i+1;
+        return;
+    }
+
+    /* Otherwise, the state is new and we add it to the list */
+    statelist[statelist_idx++] = _next_state;
 }
 
 /*
@@ -284,6 +310,7 @@ struct ConfigResult *parse_config(const char *input, struct context *context) {
         linecnt++;
     }
     state = INITIAL;
+    statelist_idx = 1;
 
 /* A YAJL JSON generator used for formatting replies. */
 #if YAJL_MAJOR >= 2
@@ -450,6 +477,10 @@ struct ConfigResult *parse_config(const char *input, struct context *context) {
                     tokenwalk += strlen(token->name + 1);
                     *tokenwalk++ = '\'';
                 } else {
+                    /* Skip error tokens in error messages, they are used
+                     * internally only and might confuse users. */
+                    if (strcmp(token->name, "error") == 0)
+                        continue;
                     /* Any other token is copied to the error message enclosed
                      * with angle brackets. */
                     *tokenwalk++ = '<';
@@ -531,10 +562,30 @@ struct ConfigResult *parse_config(const char *input, struct context *context) {
             ystr(position);
             y(map_close);
 
+            /* Skip the rest of this line, but continue parsing. */
+            while ((walk - input) <= len && *walk != '\n')
+                walk++;
+
             free(position);
             free(errormessage);
             clear_stack();
-            break;
+
+            /* To figure out in which state to go (e.g. MODE or INITIAL),
+             * we find the nearest state which contains an <error> token
+             * and follow that one. */
+            bool error_token_found = false;
+            for (int i = statelist_idx-1; (i >= 0) && !error_token_found; i--) {
+                cmdp_token_ptr *errptr = &(tokens[statelist[i]]);
+                for (int j = 0; j < errptr->n; j++) {
+                    if (strcmp(errptr->array[j].name, "error") != 0)
+                        continue;
+                    next_state(&(errptr->array[j]));
+                    error_token_found = true;
+                    break;
+                }
+            }
+
+            assert(error_token_found);
         }
     }
 

@@ -15,6 +15,7 @@ state INITIAL:
   # We have an end token here for all the commands which just call some
   # function without using an explicit 'end' token.
   end ->
+  error ->
   '#'                                      -> IGNORE_LINE
   'set'                                    -> IGNORE_LINE
   bindtype = 'bindsym', 'bindcode', 'bind' -> BINDING
@@ -298,6 +299,7 @@ state MODEBRACE:
 
 state MODE:
   end ->
+  error ->
   '#' -> MODE_IGNORE_LINE
   'set' -> MODE_IGNORE_LINE
   bindtype = 'bindsym', 'bindcode', 'bind'
@@ -336,6 +338,7 @@ state BARBRACE:
 
 state BAR:
   end ->
+  error ->
   '#' -> BAR_IGNORE_LINE
   'set' -> BAR_IGNORE_LINE
   'i3bar_command'     -> BAR_BAR_COMMAND

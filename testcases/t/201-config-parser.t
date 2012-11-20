@@ -363,6 +363,47 @@ is(parser_calls($config),
    'colors ok');
 
 ################################################################################
+# Verify that errors don’t harm subsequent valid statements
+################################################################################
+
+$config = <<'EOT';
+hide_edge_border both
+client.focused          #4c7899 #285577 #ffffff #2e9ef4
+EOT
+
+$expected = <<'EOT';
+ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'bindsym', 'bindcode', 'bind', 'bar', 'font', 'mode', 'floating_minimum_size', 'floating_maximum_size', 'floating_modifier', 'default_orientation', 'workspace_layout', 'new_window', 'new_float', 'hide_edge_borders', 'for_window', 'assign', 'focus_follows_mouse', 'force_focus_wrapping', 'force_xinerama', 'force-xinerama', 'workspace_auto_back_and_forth', 'fake_outputs', 'fake-outputs', 'force_display_urgency_hint', 'workspace', 'ipc_socket', 'ipc-socket', 'restart_state', 'popup_during_fullscreen', 'exec_always', 'exec', 'client.background', 'client.focused_inactive', 'client.focused', 'client.unfocused', 'client.urgent'
+ERROR: CONFIG: (in file <stdin>)
+ERROR: CONFIG: Line   1: hide_edge_border both
+ERROR: CONFIG:           ^^^^^^^^^^^^^^^^^^^^^
+ERROR: CONFIG: Line   2: client.focused          #4c7899 #285577 #ffffff #2e9ef4
+cfg_color(client.focused, #4c7899, #285577, #ffffff, #2e9ef4)
+EOT
+
+is(parser_calls($config),
+   $expected,
+   'errors dont harm subsequent statements');
+
+$config = <<'EOT';
+hide_edge_borders FOOBAR
+client.focused          #4c7899 #285577 #ffffff #2e9ef4
+EOT
+
+$expected = <<'EOT';
+ERROR: CONFIG: Expected one of these tokens: 'none', 'vertical', 'horizontal', 'both', '1', 'yes', 'true', 'on', 'enable', 'active'
+ERROR: CONFIG: (in file <stdin>)
+ERROR: CONFIG: Line   1: hide_edge_borders FOOBAR
+ERROR: CONFIG:                             ^^^^^^
+ERROR: CONFIG: Line   2: client.focused          #4c7899 #285577 #ffffff #2e9ef4
+cfg_color(client.focused, #4c7899, #285577, #ffffff, #2e9ef4)
+EOT
+
+is(parser_calls($config),
+   $expected,
+   'errors dont harm subsequent statements');
+
+
+################################################################################
 # Error message with 2+2 lines of context
 ################################################################################
 
@@ -524,6 +565,7 @@ ERROR: CONFIG: Line   2:     output LVDS-1
 ERROR: CONFIG: Line   3:     unknown qux
 ERROR: CONFIG:               ^^^^^^^^^^^
 ERROR: CONFIG: Line   4: }
+cfg_bar_finish()
 EOT
 
 is(parser_calls($config),

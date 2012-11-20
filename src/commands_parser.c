@@ -190,6 +190,7 @@ static void next_state(const cmdp_token *token) {
         subcommand_output.json_gen = command_output.json_gen;
         subcommand_output.needs_tree_render = false;
         GENERATED_call(token->extra.call_identifier, &subcommand_output);
+        state = subcommand_output.next_state;
         /* If any subcommand requires a tree_render(), we need to make the
          * whole parser result request a tree_render(). */
         if (subcommand_output.needs_tree_render)

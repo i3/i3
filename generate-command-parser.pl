@@ -193,7 +193,6 @@ say $callfh '        default:';
 say $callfh '            printf("BUG in the parser. state = %d\n", call_identifier);';
 say $callfh '            assert(false);';
 say $callfh '    }';
-say $callfh '    state = result->next_state;';
 say $callfh '}';
 close($callfh);
 
