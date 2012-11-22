@@ -128,4 +128,52 @@ is($rect->{height}, 2048, 'height = 2048');
 
 exit_gracefully($pid);
 
+################################################################################
+# 5: check floating_minimum_size with cmd_resize
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+# Test with different dimensions than the i3 default.
+floating_minimum_size 60 x 50
+EOT
+
+$pid = launch_with_config($config);
+
+$window = open_floating_window(rect => [ 0, 0, 100, 100 ]);
+cmd 'border none';
+cmd 'resize shrink height 80px or 80ppt';
+cmd 'resize shrink width 80px or 80ppt';
+$rect = $window->rect;
+is($rect->{width}, 60, 'width = 60');
+is($rect->{height}, 50, 'height = 50');
+
+exit_gracefully($pid);
+
+################################################################################
+# 6: check floating_maximum_size with cmd_resize
+################################################################################
+
+$config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+# Test with different dimensions than the i3 default.
+floating_maximum_size 100 x 100
+EOT
+
+$pid = launch_with_config($config);
+
+$window = open_floating_window(rect => [ 200, 200, 50, 50 ]);
+cmd 'border none';
+cmd 'resize grow height 100px or 100ppt';
+cmd 'resize grow width 100px or 100ppt';
+$rect = $window->rect;
+is($rect->{width}, 100, 'width = 100');
+is($rect->{height}, 100, 'height = 100');
+
+exit_gracefully($pid);
+
 done_testing;

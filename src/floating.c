@@ -28,6 +28,46 @@ static Rect total_outputs_dimensions(void) {
     return outputs_dimensions;
 }
 
+void floating_checkSize(Con *floating_con) {
+
+    /* Define reasonable minimal and maximal sizes for floating windows */
+    const int floating_sane_min_height = 50;
+    const int floating_sane_min_width = 75;
+    Rect floating_sane_max_dimensions;
+
+    /* Unless user requests otherwise (-1), ensure width/height do not exceed
+     * configured maxima or, if unconfigured, limit to combined width of all
+     * outputs */
+    if (config.floating_minimum_height != -1) {
+        if (config.floating_minimum_height == 0)
+            floating_con->rect.height = max(floating_con->rect.height, floating_sane_min_height);
+        else
+            floating_con->rect.height = max(floating_con->rect.height, config.floating_minimum_height);
+    }
+    if (config.floating_minimum_width != -1) {
+        if (config.floating_minimum_width == 0)
+            floating_con->rect.width = max(floating_con->rect.width, floating_sane_min_width);
+        else
+            floating_con->rect.width = max(floating_con->rect.width, config.floating_minimum_width);
+    }
+
+    /* Unless user requests otherwise (-1), raise the width/height to
+     * reasonable minimum dimensions */
+    floating_sane_max_dimensions = total_outputs_dimensions();
+    if (config.floating_maximum_height != -1) {
+        if (config.floating_maximum_height == 0)
+            floating_con->rect.height = min(floating_con->rect.height, floating_sane_max_dimensions.height);
+        else
+            floating_con->rect.height = min(floating_con->rect.height, config.floating_maximum_height);
+    }
+    if (config.floating_maximum_width != -1) {
+        if (config.floating_maximum_width == 0)
+            floating_con->rect.width = min(floating_con->rect.width, floating_sane_max_dimensions.width);
+        else
+            floating_con->rect.width = min(floating_con->rect.width, config.floating_maximum_width);
+    }
+}
+
 void floating_enable(Con *con, bool automatic) {
     bool set_focus = (con == focused);
 
@@ -138,43 +178,7 @@ void floating_enable(Con *con, bool automatic) {
         }
     }
 
-    /* Define reasonable minimal and maximal sizes for floating windows */
-    const int floating_sane_min_height = 50;
-    const int floating_sane_min_width = 75;
-
-    Rect floating_sane_max_dimensions;
-    floating_sane_max_dimensions = total_outputs_dimensions();
-
-    /* Unless user requests otherwise (-1), ensure width/height do not exceed
-     * configured maxima or, if unconfigured, limit to combined width of all
-     * outputs */
-    if (config.floating_maximum_height != -1) {
-        if (config.floating_maximum_height == 0)
-            nc->rect.height = min(nc->rect.height, floating_sane_max_dimensions.height);
-        else
-            nc->rect.height = min(nc->rect.height, config.floating_maximum_height);
-    }
-    if (config.floating_maximum_width != -1) {
-        if (config.floating_maximum_width == 0)
-            nc->rect.width = min(nc->rect.width, floating_sane_max_dimensions.width);
-        else
-            nc->rect.width = min(nc->rect.width, config.floating_maximum_width);
-    }
-
-    /* Unless user requests otherwise (-1), raise the width/height to
-     * reasonable minimum dimensions */
-    if (config.floating_minimum_height != -1) {
-        if (config.floating_minimum_height == 0)
-            nc->rect.height = max(nc->rect.height, floating_sane_min_height);
-        else
-            nc->rect.height = max(nc->rect.height, config.floating_minimum_height);
-    }
-    if (config.floating_minimum_width != -1) {
-        if (config.floating_minimum_width == 0)
-            nc->rect.width = max(nc->rect.width, floating_sane_min_width);
-        else
-            nc->rect.width = max(nc->rect.width, config.floating_minimum_width);
-    }
+    floating_checkSize(nc);
 
     /* 3: attach the child to the new parent container. We need to do this
      * because con_border_style_rect() needs to access con->parent. */

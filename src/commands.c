@@ -575,6 +575,7 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
 }
 
 static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floating_con, int px) {
+
     LOG("floating resize\n");
     if (strcmp(direction, "up") == 0) {
         floating_con->rect.y -= px;
@@ -587,6 +588,8 @@ static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floatin
     } else {
         floating_con->rect.width += px;
     }
+
+    floating_checkSize(floating_con);
 }
 
 static bool cmd_resize_tiling_direction(I3_CMD, Con *current, char *way, char *direction, int ppt) {
