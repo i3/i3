@@ -42,4 +42,4 @@ say $tmp "draw(n" . $tree->{id} . ", (0, 0));";
 close($tmp);
 my $rep = "$tmp";
 $rep =~ s/asy$/eps/;
-system("cd /tmp && asy $tmp && gv $rep && rm $rep");
+system("cd /tmp && asy $tmp && gv --scale=-1000 --noresize --widgetless $rep && rm $rep");
