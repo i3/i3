@@ -9,7 +9,7 @@ use AnyEvent::I3;
 use File::Temp;
 use v5.10;
 
-my $i3 = i3("/tmp/nestedcons");
+my $i3 = i3();
 
 my $tree = $i3->get_tree->recv;
 
