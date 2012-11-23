@@ -1,6 +1,12 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
 # renders the layout tree using asymptote
+#
+# ./dump-asy.pl
+#   will render the entire tree
+# ./dump-asy.pl 'name'
+#   will render the tree starting from the node with the specified name,
+#   e.g. ./dump-asy.pl 2 will render workspace 2 and below
 
 use strict;
 use warnings;
@@ -26,7 +32,13 @@ sub dump_node {
     my $w = (defined($n->{window}) ? $n->{window} : "N");
     my $na = $n->{name};
     $na =~ s/#/\\#/g;
-    my $name = "($na, $o, $w)";
+    $na =~ s/_/\\_/g;
+    $na =~ s/~/\\textasciitilde{}/g;
+    my $type = 'leaf';
+    if (!defined($n->{window})) {
+        $type = $n->{orientation} . '-split';
+    }
+    my $name = qq|\\"$na\\" ($type)|;
 
     print $tmp "TreeNode n" . $n->{id} . " = makeNode(";
 
@@ -36,8 +48,27 @@ sub dump_node {
 	dump_node($_, $n) for @{$n->{nodes}};
 }
 
-dump_node($tree);
-say $tmp "draw(n" . $tree->{id} . ", (0, 0));";
+sub find_node_with_name {
+    my ($node, $name) = @_;
+
+    return $node if ($node->{name} eq $name);
+    for my $child (@{$node->{nodes}}) {
+        my $res = find_node_with_name($child, $name);
+        return $res if defined($res);
+    }
+    return undef;
+}
+
+my $start = shift;
+my $root;
+if ($start) {
+    # Find the specified node in the tree
+    $root = find_node_with_name($tree, $start);
+} else {
+    $root = $tree;
+}
+dump_node($root);
+say $tmp "draw(n" . $root->{id} . ", (0, 0));";
 
 close($tmp);
 my $rep = "$tmp";
