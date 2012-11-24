@@ -91,7 +91,7 @@ static struct stack_entry stack[10];
  * single array, since the number of entries we have to store is very small.
  *
  */
-static void push_string(const char *identifier, char *str) {
+static void push_string(const char *identifier, const char *str) {
     for (int c = 0; c < 10; c++) {
         if (stack[c].identifier != NULL &&
             strcmp(stack[c].identifier, identifier) != 0)
@@ -99,11 +99,13 @@ static void push_string(const char *identifier, char *str) {
         if (stack[c].identifier == NULL) {
             /* Found a free slot, let’s store it here. */
             stack[c].identifier = identifier;
-            stack[c].val.str = str;
+            stack[c].val.str = sstrdup(str);
             stack[c].type = STACK_STR;
         } else {
             /* Append the value. */
-            sasprintf(&(stack[c].val.str), "%s,%s", stack[c].val.str, str);
+            char *prev = stack[c].val.str;
+            sasprintf(&(stack[c].val.str), "%s,%s", prev, str);
+            free(prev);
         }
         return;
     }
@@ -352,7 +354,7 @@ struct ConfigResult *parse_config(const char *input, struct context *context) {
             if (token->name[0] == '\'') {
                 if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
                     if (token->identifier != NULL)
-                        push_string(token->identifier, sstrdup(token->name + 1));
+                        push_string(token->identifier, token->name + 1);
                     walk += strlen(token->name) - 1;
                     next_state(token);
                     token_handled = true;
@@ -424,6 +426,7 @@ struct ConfigResult *parse_config(const char *input, struct context *context) {
                     }
                     if (token->identifier)
                         push_string(token->identifier, str);
+                    free(str);
                     /* If we are at the end of a quoted string, skip the ending
                      * double quote. */
                     if (*walk == '"')
