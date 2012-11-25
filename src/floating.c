@@ -28,8 +28,13 @@ static Rect total_outputs_dimensions(void) {
     return outputs_dimensions;
 }
 
-void floating_checkSize(Con *floating_con) {
-
+/**
+ * Called when a floating window is created or resized.
+ * This function resizes the window if its size is higher or lower than the
+ * configured maximum/minimum size, respectively.
+ *
+ */
+void floating_check_size(Con *floating_con) {
     /* Define reasonable minimal and maximal sizes for floating windows */
     const int floating_sane_min_height = 50;
     const int floating_sane_min_width = 75;
@@ -178,7 +183,7 @@ void floating_enable(Con *con, bool automatic) {
         }
     }
 
-    floating_checkSize(nc);
+    floating_check_size(nc);
 
     /* 3: attach the child to the new parent container. We need to do this
      * because con_border_style_rect() needs to access con->parent. */

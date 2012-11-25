@@ -100,12 +100,12 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event);
 void floating_resize_window(Con *con, const bool proportional, const xcb_button_press_event_t *event);
 
 /**
- * Called when the windows is created or resized
- * This function resize the windows if is size if higher or lower to the
- * limits.
+ * Called when a floating window is created or resized.
+ * This function resizes the window if its size is higher or lower than the
+ * configured maximum/minimum size, respectively.
  *
  */
-void floating_checkSize(Con *floating_con);
+void floating_check_size(Con *floating_con);
 
 #if 0
 /**
