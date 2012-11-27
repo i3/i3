@@ -174,6 +174,13 @@ $rect = $window->rect;
 is($rect->{width}, 100, 'width = 100');
 is($rect->{height}, 100, 'height = 100');
 
+my $old_x = $rect->{x};
+my $old_y = $rect->{y};
+cmd 'resize grow up 10px or 10ppt';
+$rect = $window->rect;
+is($rect->{x}, $old_x, 'window did not move when trying to resize');
+is($rect->{y}, $old_y, 'window did not move when trying to resize');
+
 exit_gracefully($pid);
 
 done_testing;

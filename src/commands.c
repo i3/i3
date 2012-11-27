@@ -576,19 +576,30 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
 
 static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floating_con, int px) {
     LOG("floating resize\n");
+    Rect old_rect = floating_con->rect;
+
     if (strcmp(direction, "up") == 0) {
-        floating_con->rect.y -= px;
         floating_con->rect.height += px;
     } else if (strcmp(direction, "down") == 0 || strcmp(direction, "height") == 0) {
         floating_con->rect.height += px;
     } else if (strcmp(direction, "left") == 0) {
-        floating_con->rect.x -= px;
         floating_con->rect.width += px;
     } else {
         floating_con->rect.width += px;
     }
 
     floating_check_size(floating_con);
+
+    /* Did we actually resize anything or did the size constraints prevent us?
+     * If we could not resize, exit now to not move the window. */
+    if (memcmp(&old_rect, &(floating_con->rect), sizeof(Rect)) == 0)
+        return;
+
+    if (strcmp(direction, "up") == 0) {
+        floating_con->rect.y -= px;
+    } else if (strcmp(direction, "left") == 0) {
+        floating_con->rect.x -= px;
+    }
 }
 
 static bool cmd_resize_tiling_direction(I3_CMD, Con *current, char *way, char *direction, int ppt) {
