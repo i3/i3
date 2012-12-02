@@ -481,12 +481,15 @@ workspace_layout tabbed
 === Border style for new windows
 
 This option determines which border style new windows will have. The default is
-"normal".
+"normal". Note that new_float applies only to windows which are starting out as
+floating windows, e.g. dialog windows.
 
 *Syntax*:
 ---------------------------------------------
 new_window <normal|1pixel|none|pixel>
+new_float <normal|1pixel|none|pixel>
 ---------------------------------------------
+
 *Example*:
 ---------------------
 new_window 1pixel
