@@ -134,6 +134,16 @@ color::
 	when it is associated.
 	Colors are specified in hex (like in HTML), starting with a leading
 	hash sign. For example, +#ff0000+ means red.
+min_width::
+	The minimum width (in pixels) of the block. If the content of the
+	+full_text+ key take less space than the specified min_width, the block
+	will be padded to the left and/or the right side, according to the +align+
+	key. This is useful when you want to prevent the whole status line to shift
+	when value take more or less space between each iteration.
+align::
+	Align text on the +center+ (default), +right+ or +left+ of the block, when
+	the minimum width of the latter, specified by the +min_width+ key, is not
+	reached.
 name and instance::
 	Every block should have a unique +name+ (string) entry so that it can
 	be easily identified in scripts which process the output. i3bar
@@ -166,6 +176,8 @@ An example of a block which uses all possible entries follows:
  "full_text": "E: 10.0.0.1 (1000 Mbit/s)",
  "short_text": "10.0.0.1",
  "color": "#00ff00",
+ "min_width": 300,
+ "align": "right",
  "urgent": false,
  "name": "ethernet",
  "instance": "eth0"

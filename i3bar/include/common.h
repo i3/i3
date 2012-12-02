@@ -27,18 +27,28 @@ struct rect_t {
     int h;
 };
 
+typedef enum {
+    ALIGN_LEFT,
+    ALIGN_CENTER,
+    ALIGN_RIGHT
+} blockalign_t;
+
 /* This data structure represents one JSON dictionary, multiple of these make
  * up one status line. */
 struct status_block {
     i3String *full_text;
 
     char *color;
+    uint32_t min_width;
+    blockalign_t align;
 
     bool urgent;
 
-    /* The amount of pixels necessary to render this block. This variable is
+    /* The amount of pixels necessary to render this block. These variables are
      * only temporarily used in refresh_statusline(). */
     uint32_t width;
+    uint32_t x_offset;
+    uint32_t x_append;
 
     TAILQ_ENTRY(status_block) blocks;
 };

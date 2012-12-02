@@ -123,10 +123,31 @@ void refresh_statusline(void) {
             continue;
 
         block->width = predict_text_width(block->full_text);
+
+        /* Compute offset and append for text aligment in min_width. */
+        if (block->min_width <= block->width) {
+            block->x_offset = 0;
+            block->x_append = 0;
+        } else {
+            uint32_t padding_width = block->min_width - block->width;
+            switch (block->align) {
+                case ALIGN_LEFT:
+                    block->x_append = padding_width;
+                    break;
+                case ALIGN_RIGHT:
+                    block->x_offset = padding_width;
+                    break;
+                case ALIGN_CENTER:
+                    block->x_offset = padding_width / 2;
+                    block->x_append = padding_width / 2 + padding_width % 2;
+                    break;
+            }
+        }
+
         /* If this is not the last block, add some pixels for a separator. */
         if (TAILQ_NEXT(block, blocks) != NULL)
             block->width += 9;
-        statusline_width += block->width;
+        statusline_width += block->width + block->x_offset + block->x_append;
     }
 
     /* If the statusline is bigger than our screen we need to make sure that
@@ -147,8 +168,8 @@ void refresh_statusline(void) {
 
         uint32_t colorpixel = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
         set_font_colors(statusline_ctx, colorpixel, colors.bar_bg);
-        draw_text(block->full_text, statusline_pm, statusline_ctx, x, 0, block->width);
-        x += block->width;
+        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, 0, block->width);
+        x += block->width + block->x_offset + block->x_append;
 
         if (TAILQ_NEXT(block, blocks) != NULL) {
             /* This is not the last block, draw a separator. */

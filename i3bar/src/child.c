@@ -132,6 +132,27 @@ static int stdin_string(void *context, const unsigned char *val, unsigned int le
     if (strcasecmp(ctx->last_map_key, "color") == 0) {
         sasprintf(&(ctx->block.color), "%.*s", len, val);
     }
+    if (strcasecmp(ctx->last_map_key, "align") == 0) {
+        if (len == strlen("left") && !strncmp((const char*)val, "left", strlen("left"))) {
+            ctx->block.align = ALIGN_LEFT;
+        } else if (len == strlen("right") && !strncmp((const char*)val, "right", strlen("right"))) {
+            ctx->block.align = ALIGN_RIGHT;
+        } else {
+            ctx->block.align = ALIGN_CENTER;
+        }
+    }
+    return 1;
+}
+
+#if YAJL_MAJOR >= 2
+static int stdin_integer(void *context, long long val) {
+#else
+static int stdin_integer(void *context, long val) {
+#endif
+    parser_ctx *ctx = context;
+    if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
+        ctx->block.min_width = (uint32_t)val;
+    }
     return 1;
 }
 
@@ -313,6 +334,7 @@ void start_child(char *command) {
     callbacks.yajl_map_key = stdin_map_key;
     callbacks.yajl_boolean = stdin_boolean;
     callbacks.yajl_string = stdin_string;
+    callbacks.yajl_integer = stdin_integer;
     callbacks.yajl_start_array = stdin_start_array;
     callbacks.yajl_end_array = stdin_end_array;
     callbacks.yajl_start_map = stdin_start_map;
