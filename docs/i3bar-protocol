@@ -45,14 +45,14 @@ to provide the correct version. The header block is terminated by a newline and
 consists of a single JSON hash:
 
 *Minimal example*:
-----------------
+------------------------------
 { "version": 1 }
-----------------
+------------------------------
 
 *All features example*:
-----------------
+------------------------------
 { "version": 1, "stop_signal": 10, "cont_signal": 12 }
-----------------
+------------------------------
 
 (Note that before i3 v4.3 the precise format had to be +{"version":1}+,
 byte-for-byte.)
