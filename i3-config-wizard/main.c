@@ -13,7 +13,7 @@
 #endif
 
 /* For systems without getline, fall back to fgetln */
-#if defined(__APPLE__) || (defined(__FreeBSD__) && __FreeBSD_version < 800000) || defined(__OpenBSD__)
+#if defined(__APPLE__) || (defined(__FreeBSD__) && __FreeBSD_version < 800000)
 #define USE_FGETLN
 #elif defined(__FreeBSD__)
 /* Defining this macro before including stdio.h is necessary in order to have
