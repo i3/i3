@@ -1,0 +1,445 @@
+#!/usr/bin/env perl
+# vim:ts=4:sw=4:expandtab
+#
+# © 2012 Michael Stapelberg
+#
+# No dependencies except for perl ≥ v5.10
+
+use strict;
+use warnings;
+use Data::Dumper;
+use IPC::Open2;
+use POSIX qw(locale_h);
+use File::Find;
+use File::Basename qw(basename);
+use File::Temp qw(tempfile);
+use Getopt::Long;
+use Pod::Usage;
+use v5.10;
+use utf8;
+use open ':encoding(utf8)';
+
+binmode STDOUT, ':utf8';
+binmode STDERR, ':utf8';
+
+# reads in a whole file
+sub slurp {
+    open(my $fh, '<', shift) or die "$!";
+    local $/;
+    <$fh>;
+}
+
+my $dmenu_cmd = 'dmenu -i';
+my $result = GetOptions(
+    'dmenu=s' => \$dmenu_cmd,
+    'version' => sub {
+        say "dmenu-desktop 1.0 © 2012 Michael Stapelberg";
+        exit 0;
+    },
+    'help' => sub {
+        pod2usage(-exitval => 0);
+    });
+
+die "Could not parse command line options" unless $result;
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ Convert LC_MESSAGES into an ordered list of suffixes to search for in the ┃
+# ┃ .desktop files (e.g. “Name[de_DE@euro]” for LC_MESSAGES=de_DE.UTF-8@euro  ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# For details on how the transformation of LC_MESSAGES to a list of keys that
+# should be looked up works, refer to “Localized values for keys” of the
+# “Desktop Entry Specification”:
+# http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s04.html
+my $lc_messages = setlocale(LC_MESSAGES);
+
+# Ignore the encoding (e.g. .UTF-8)
+$lc_messages =~ s/\.[^@]+//g;
+
+my @suffixes = ($lc_messages);
+
+# _COUNTRY and @MODIFIER are present
+if ($lc_messages =~ /_[^@]+@/) {
+    my $no_modifier = $lc_messages;
+    $no_modifier =~ s/@.*//g;
+    push @suffixes, $no_modifier;
+
+    my $no_country = $lc_messages;
+    $no_country =~ s/_[^@]+//g;
+    push @suffixes, $no_country;
+}
+
+# Strip _COUNTRY and @MODIFIER if present
+$lc_messages =~ s/[_@].*//g;
+push @suffixes, $lc_messages;
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ Read all .desktop files and store the values in which we are interested.  ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+my %desktops;
+# See http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html#variables
+my $xdg_data_home = $ENV{XDG_DATA_HOME};
+$xdg_data_home = $ENV{HOME} . '/.local/share' if
+    !defined($xdg_data_home) ||
+    $xdg_data_home eq '' ||
+    ! -d $xdg_data_home;
+
+my $xdg_data_dirs = $ENV{XDG_DATA_DIRS};
+$xdg_data_dirs = '/usr/local/share/:/usr/share/' if
+    !defined($xdg_data_dirs) ||
+    $xdg_data_dirs eq '';
+
+my @searchdirs = ("$xdg_data_home/applications/");
+for my $dir (split(':', $xdg_data_dirs)) {
+    push @searchdirs, "$dir/applications/";
+}
+
+# Cleanup the paths, maybe some application does not cope with double slashes
+# (the field code %k is replaced with the .desktop file location).
+@searchdirs = map { s,//,/,g; $_ } @searchdirs;
+
+# To avoid errors by File::Find’s find(), only pass existing directories.
+@searchdirs = grep { -d $_ } @searchdirs;
+
+find(
+    {
+        wanted => sub {
+            return unless substr($_, -1 * length('.desktop')) eq '.desktop';
+            my $relative = $File::Find::name;
+
+            # + 1 for the trailing /, which is missing in ::topdir.
+            substr($relative, 0, length($File::Find::topdir) + 1) = '';
+
+            # Don’t overwrite files with the same relative path, we search in
+            # descending order of importance.
+            return if exists($desktops{$relative});
+
+            $desktops{$relative} = $File::Find::name;
+        },
+        no_chdir => 1,
+    },
+    @searchdirs
+);
+
+my %apps;
+
+for my $file (values %desktops) {
+    my $base = basename($file);
+
+    # _ is an invalid character for a key, so we can use it for our own keys.
+    $apps{$base}->{_Location} = $file;
+
+    # Extract all “Name” and “Exec” keys from the [Desktop Entry] group
+    # and store them in $apps{$base}.
+    my %names;
+    my @lines = split("\n", slurp($file));
+    for my $line (@lines) {
+        my $first = substr($line, 0, 1);
+        next if $line eq '' || $first eq '#';
+        next unless ($line eq '[Desktop Entry]' ..
+                     ($first eq '[' &&
+                      substr($line, -1) eq ']' &&
+                      $line ne '[Desktop Entry]'));
+        next if $first eq '[';
+
+        my ($key, $value) = ($line =~ /^
+          (
+            [A-Za-z0-9-]+  # the spec specifies these as valid key characters
+            (?:\[[^]]+\])? # possibly, there as a locale suffix
+          )
+          \s* = \s*        # whitespace around = should be ignored
+          (.*)             # no restrictions on the values
+          $/x);
+
+        if ($key =~ /^Name/) {
+            $names{$key} = $value;
+        } elsif ($key eq 'Exec' ||
+                 $key eq 'TryExec') {
+            $apps{$base}->{$key} = $value;
+        } elsif ($key eq 'NoDisplay' ||
+                 $key eq 'Hidden' ||
+                 $key eq 'StartupNotify' ||
+                 $key eq 'Terminal') {
+            # Values of type boolean must either be string true or false,
+            # see “Possible value types”:
+            # http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s03.html
+            $apps{$base}->{$key} = ($value eq 'true');
+        }
+    }
+
+    for my $suffix (@suffixes) {
+        next unless exists($names{"Name[$suffix]"});
+        $apps{$base}->{Name} = $names{"Name[$suffix]"};
+        last;
+    }
+
+    # Fallback to unlocalized “Name”.
+    $apps{$base}->{Name} = $names{Name} unless exists($apps{$base}->{Name});
+}
+
+# %apps now looks like this:
+#
+# %apps = {
+#     'evince.desktop' => {
+#         'Exec' => 'evince %U',
+#         'Name' => 'Dokumentenbetrachter',
+#         '_Location' => '/usr/share/applications/evince.desktop'
+#       },
+#     'gedit.desktop' => {
+#         'Exec' => 'gedit %U',
+#         'Name' => 'gedit',
+#         '_Location' => '/usr/share/applications/gedit.desktop'
+#       }
+#   };
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ Turn %apps inside out to provide Name → filename lookup.                  ┃
+# ┃ The Name is what we display in dmenu later.                               ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+my %choices;
+for my $app (keys %apps) {
+    my $name = $apps{$app}->{Name};
+
+    # Don’t offer apps which have NoDisplay == true or Hidden == true.
+    # See http://wiki.xfce.org/howto/customize-menu#hide_menu_entries
+    # for the difference between NoDisplay and Hidden.
+    next if (exists($apps{$app}->{NoDisplay}) && $apps{$app}->{NoDisplay}) ||
+            (exists($apps{$app}->{Hidden}) && $apps{$app}->{Hidden});
+
+    if (exists($apps{$app}->{TryExec})) {
+        my $tryexec = $apps{$app}->{TryExec};
+        if (substr($tryexec, 0, 1) eq '/') {
+            # Skip if absolute path is not executable.
+            next unless -x $tryexec;
+        } else {
+            # Search in $PATH for the executable.
+            my $found = 0;
+            for my $path (split(':', $ENV{PATH})) {
+                next unless -x "$path/$tryexec";
+                $found = 1;
+                last;
+            }
+            next unless $found;
+        }
+    }
+
+    if (exists($choices{$name})) {
+        # There are two .desktop files which contain the same “Name” value.
+        # I’m not sure if that is allowed to happen, but we disambiguate the
+        # situation by appending “ (2)”, “ (3)”, etc. to the name.
+        #
+        # An example of this happening is exo-file-manager.desktop and
+        # thunar-settings.desktop, both of which contain “Name=File Manager”.
+        my $inc = 2;
+        $inc++ while exists($choices{"$name ($inc)"});
+        $name = "$name ($inc)";
+    }
+
+    $choices{$name} = $app;
+}
+
+# %choices now looks like this:
+#
+# %choices = {
+#     'Dokumentenbetrachter' => 'evince.desktop',
+#     'gedit' => 'gedit.desktop'
+#   };
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ Run dmenu to ask the user for her choice                                  ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# open2 will just make dmenu’s STDERR go to our own STDERR.
+my ($dmenu_out, $dmenu_in);
+my $pid = open2($dmenu_out, $dmenu_in, $dmenu_cmd);
+binmode $dmenu_in, ':utf8';
+binmode $dmenu_out, ':utf8';
+
+# Feed dmenu the possible choices.
+say $dmenu_in $_ for sort keys %choices;
+close($dmenu_in);
+
+waitpid($pid, 0);
+my $status = ($? >> 8);
+
+# Pass on dmenu’s exit status if there was an error.
+exit $status unless $status == 0;
+
+my $choice = <$dmenu_out>;
+my $app;
+# Exact match: the user chose “Avidemux (GTK+)”
+if (exists($choices{$choice})) {
+    $app = $apps{$choices{$choice}};
+    $choice = '';
+} else {
+    # Not an exact match: the user entered “Avidemux (GTK+) ~/movie.mp4”
+    for my $possibility (keys %choices) {
+        next unless substr($choice, 0, length($possibility)) eq $possibility;
+        $app = $apps{$choices{$possibility}};
+        substr($choice, 0, length($possibility)) = '';
+        # Remove whitespace separating the entry and arguments.
+        $choice =~ s/^\s//g;
+        last;
+    }
+    if (!defined($app)) {
+        die "Invalid input: “$choice” does not match any application.";
+    }
+}
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ Make i3 start the chosen application.                                     ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+my $name = $app->{Name};
+my $exec = $app->{Exec};
+my $location = $app->{_Location};
+
+# Quote as described by “The Exec key”:
+# http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
+sub quote {
+    my ($str) = @_;
+    $str =~ s/("|`|\$|\\)/\\$1/g;
+    $str = qq|"$str"| if $str ne "";
+    return $str;
+}
+
+$choice = quote($choice);
+$location = quote($location);
+
+# Remove deprecated field codes, as the spec dictates.
+$exec =~ s/%[dDnNvm]//g;
+
+# Replace filename field codes with the rest of the command line.
+# Note that we assume the user uses precisely one file name,
+# not multiple file names.
+$exec =~ s/%[fF]/$choice/g;
+
+# If the program works with URLs,
+# we assume the user provided a URL instead of a filename.
+# As per the spec, there must be at most one of %f, %u, %F or %U present.
+$exec =~ s/%[uU]/$choice/g;
+
+# The translated name of the application.
+$exec =~ s/%c/$name/g;
+
+# XXX: Icons are not implemented. Is the complexity (looking up the path if
+# only a name is given) actually worth it?
+#$exec =~ s/%i/--icon $icon/g;
+
+# location of .desktop file
+$exec =~ s/%k/$location/g;
+
+# Literal % characters are represented as %%.
+$exec =~ s/%%/%/g;
+
+my $nosn = '';
+my $cmd;
+if (exists($app->{Terminal}) && $app->{Terminal}) {
+    # For applications which specify “Terminal=true” (e.g. htop.desktop),
+    # we need to create a temporary script that contains the full command line
+    # as the syntax for starting commands with arguments varies from terminal
+    # emulator to terminal emulator.
+    # Then, we launch that script with i3-sensible-terminal.
+    my ($fh, $filename) = tempfile();
+    binmode($fh, ':utf8');
+    say $fh <<EOT;
+#!/bin/sh
+rm $filename
+exec $exec
+EOT
+    close($fh);
+    chmod 0755, $filename;
+
+    $cmd = qq|exec i3-sensible-terminal -e "$filename"|;
+} else {
+    # i3 executes applications by passing the argument to i3’s “exec” command
+    # as-is to $SHELL -c. The i3 parser supports quoted strings: When a string
+    # starts with a double quote ("), everything is parsed as-is until the next
+    # double quote which is NOT preceded by a backslash (\).
+    #
+    # Therefore, we escape all double quotes (") by replacing them with \"
+    $exec =~ s/"/\\"/g;
+
+    if (exists($app->{StartupNotify}) && !$app->{StartupNotify}) {
+        $nosn = '--no-startup-id';
+    }
+    $cmd = qq|exec $nosn "$exec"|;
+}
+
+system('i3-msg', $cmd) == 0 or die "Could not launch i3-msg: $?";
+
+=encoding utf-8
+
+=head1 NAME
+
+    i3-dmenu-desktop - run .desktop files with dmenu
+
+=head1 SYNOPSIS
+
+    i3-dmenu-desktop [--dmenu='dmenu -i']
+
+=head1 DESCRIPTION
+
+i3-dmenu-desktop is a script which extracts the (localized) name from
+application .desktop files, offers the user a choice via dmenu(1) and then
+starts the chosen application via i3 (for startup notification support).
+The advantage of using .desktop files instead of dmenu_run(1) is that dmenu_run
+offers B<all> binaries in your $PATH, including non-interactive utilities like
+"sed". Also, .desktop files contain a proper name, information about whether
+the application runs in a terminal and whether it supports startup
+notifications.
+
+The .desktop files are searched in $XDG_DATA_HOME/applications (by default
+$HOME/.local/share/applications) and in the "applications" subdirectory of each
+entry of $XDG_DATA_DIRS (by default /usr/local/share/:/usr/share/).
+
+Files with the same name in $XDG_DATA_HOME/applications take precedence over
+files in $XDG_DATA_DIRS, so that you can overwrite parts of the system-wide
+.desktop files by copying them to your local directory and making changes.
+
+i3-dmenu-desktop displays the "Name" value in the localized version depending
+on LC_MESSAGES as specified in the Desktop Entry Specification.
+
+You can pass a filename or URL (%f/%F and %u/%U field codes in the .desktop
+file respectively) by appending it to the name of the application. E.g., if you
+want to launch "GNU Emacs 24" with the patch /tmp/foobar.txt, you would type
+"emacs", press TAB, type " /tmp/foobar.txt" and press ENTER.
+
+.desktop files with Terminal=true are started using i3-sensible-terminal(1).
+
+.desktop files with NoDisplay=true or Hidden=true are skipped.
+
+UTF-8 is supported, of course, but dmenu does not support displaying all
+glyphs. E.g., xfce4-terminal.desktop's Name[fi]=Pääte will be displayed just
+fine, but not its Name[ru]=Терминал.
+
+=head1 OPTIONS
+
+=over
+
+=item B<--dmenu=command>
+
+Execute command instead of 'dmenu -i'. This option can be used to pass custom
+parameters to dmenu, or to make i3-dmenu-desktop start a custom (patched?)
+version of dmenu.
+
+=back
+
+=head1 VERSION
+
+Version 1.0
+
+=head1 AUTHOR
+
+Michael Stapelberg, C<< <michael at i3wm.org> >>
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2012 Michael Stapelberg.
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the BSD license.
+
+=cut
