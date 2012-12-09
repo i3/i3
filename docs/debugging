@@ -3,12 +3,12 @@ Debugging i3: How To
 Michael Stapelberg <michael@i3wm.org>
 December 2012
 
-This document describes how to debug i3 suitably for sending us useful bug
-reports, even if you have no clue of C programming.
+This document describes how to debug i3 to send us useful bug
+reports, even if you have no knowledge of C programming.
 
-First of all: Thank you for being interested in debugging i3. It really means
+Thank you for being interested in debugging i3. It really means
 something to us to get your bug fixed. If you have any questions about the
-debugging and/or need further help, do not hesitate to contact us!
+process and/or need further help, do not hesitate to contact us!
 
 == Verify you are using the latest (development) version
 
@@ -83,7 +83,7 @@ linked (uses shared libs), for GNU/Linux 2.6.18, not stripped
 ------------------------------------------------------------------------------
 
 Notice the +not stripped+, which is the important part. If you have a version
-which is stripped, please have a look if your distribution provides debug
+which is stripped, please check whether your distribution provides debug
 symbols (package +i3-wm-dbg+ on Debian for example) or if you can turn off
 stripping. If nothing helps, please build i3 from source.
 
