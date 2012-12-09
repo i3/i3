@@ -29,11 +29,13 @@ sub slurp {
     <$fh>;
 }
 
+my $entry_type = 'both';
 my $dmenu_cmd = 'dmenu -i';
 my $result = GetOptions(
     'dmenu=s' => \$dmenu_cmd,
+    'entry-type=s' => \$entry_type,
     'version' => sub {
-        say "dmenu-desktop 1.0 © 2012 Michael Stapelberg";
+        say "dmenu-desktop 1.1 © 2012 Michael Stapelberg";
         exit 0;
     },
     'help' => sub {
@@ -225,19 +227,26 @@ for my $app (keys %apps) {
         }
     }
 
-    if (exists($choices{$name})) {
-        # There are two .desktop files which contain the same “Name” value.
-        # I’m not sure if that is allowed to happen, but we disambiguate the
-        # situation by appending “ (2)”, “ (3)”, etc. to the name.
-        #
-        # An example of this happening is exo-file-manager.desktop and
-        # thunar-settings.desktop, both of which contain “Name=File Manager”.
-        my $inc = 2;
-        $inc++ while exists($choices{"$name ($inc)"});
-        $name = "$name ($inc)";
+    if ($entry_type eq 'name' || $entry_type eq 'both') {
+        if (exists($choices{$name})) {
+            # There are two .desktop files which contain the same “Name” value.
+            # I’m not sure if that is allowed to happen, but we disambiguate the
+            # situation by appending “ (2)”, “ (3)”, etc. to the name.
+            #
+            # An example of this happening is exo-file-manager.desktop and
+            # thunar-settings.desktop, both of which contain “Name=File Manager”.
+            my $inc = 2;
+            $inc++ while exists($choices{"$name ($inc)"});
+            $name = "$name ($inc)";
+        }
+
+        $choices{$name} = $app;
     }
 
-    $choices{$name} = $app;
+    if ($entry_type eq 'command' || $entry_type eq 'both') {
+        my ($command) = split(' ', $apps{$app}->{Exec});
+        $choices{basename($command)} = $app;
+    }
 }
 
 # %choices now looks like this:
@@ -378,7 +387,7 @@ system('i3-msg', $cmd) == 0 or die "Could not launch i3-msg: $?";
 
 =head1 SYNOPSIS
 
-    i3-dmenu-desktop [--dmenu='dmenu -i']
+    i3-dmenu-desktop [--dmenu='dmenu -i'] [--entry-type=both]
 
 =head1 DESCRIPTION
 
@@ -425,11 +434,19 @@ Execute command instead of 'dmenu -i'. This option can be used to pass custom
 parameters to dmenu, or to make i3-dmenu-desktop start a custom (patched?)
 version of dmenu.
 
+=item B<--entry-type=type>
+
+Display the (localized) "Name" (type = name) or the command (type = command) or
+both (type = both) in dmenu.
+
+Examples are "GNU Image Manipulation Program" (type = name), "gimp" (type =
+command) and both (type = both).
+
 =back
 
 =head1 VERSION
 
-Version 1.0
+Version 1.1
 
 =head1 AUTHOR
 
