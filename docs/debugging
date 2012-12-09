@@ -1,7 +1,7 @@
 Debugging i3: How To
 ====================
 Michael Stapelberg <michael@i3wm.org>
-February 2012
+December 2012
 
 This document describes how to debug i3 suitably for sending us useful bug
 reports, even if you have no clue of C programming.
@@ -21,25 +21,41 @@ i3 version 4.1.2-248-g51728ba (2012-02-12, branch "next")
 
 Your version can look like this:
 
-4.1.2::
-You are using a release version. Please
-upgrade to a development version first, or read
-link:debugging-release-version.html[Debugging i3: How To (release version)].
+4.1.2 (release version)::
+You are using a release version. In many cases, bugs are already
+fixed in the development version of i3. If they aren’t, we will still ask you
+to reproduce your error with the most recent development version of i3.
+Therefore, please upgrade to a development version if you can.
 
-4.1.2-248-g51728ba::
+4.1.2-248-g51728ba (development version)::
 Your version is 248 commits newer than 4.1.2, and the git revision of your
 version is +51728ba+. Go to http://code.i3wm.org/i3/commit/?h=next and see if
 the line "commit" starts with the same revision. If so, you are using the
 latest version.
 
-Development versions of i3 have several properties which make debugging easier:
+Development versions of i3 have logging enabled by default and are compiled
+with debug symbols.
 
-1. Shared memory debug logging is enabled by default. You do not have to enable
-   logging explicitly.
-2. Core dumps are enabled by default.
-3. If you are using a version from the Debian/Ubuntu autobuilder, it is
-   compiled without optimization. Debug symbols are available in the i3-wm-dbg
-   package. When compiling i3 yourself, debug mode is the default.
+== Enabling logging
+
+If you are using a development version (see previous section), you don’t need
+to do anything -- skip to section 3.
+
+If you are using a release version with a custom +~/.xsession+ (or xinitrc)
+file, execute i3 with a line like this:
+
+----------------------------------
+# Use 25 MiB of RAM for debug logs
+exec i3 --shmlog-size=26214400
+----------------------------------
+
+If you are *NOT* using an +~/.xsession+ file but you just chose "i3" from the
+list of sessions in your desktop manager (gdm, lxdm, …), edit
++/usr/share/xsessions/i3.desktop+ and replace the +Exec=i3+ line with:
+
+------------------------------
+Exec=i3 --shmlog-size=26214400
+------------------------------
 
 == Obtaining the debug logfile
 
@@ -49,34 +65,38 @@ crashed, the logfile provides all information necessary to debug the problem.
 To save a compressed version of the logfile (suitable for attaching it to a
 bugreport), use:
 --------------------------------------------------------------------
-i3-dump-log | gzip -9c > /tmp/i3.log.gz
---------------------------------------------------------------------
-
-This command does not depend on i3 (it also works when i3 currently displays
-the crash dialog), but it requires a working X11 connection. When running it
-from a virtual console (Ctrl-Alt-F1), use:
-
---------------------------------------------------------------------
 DISPLAY=:0 i3-dump-log | gzip -9c > /tmp/i3.log.gz
 --------------------------------------------------------------------
 
+This command does not depend on i3 (it also works while i3 displays
+the crash dialog), but it requires a working X11 connection.
+
+== Compiling with debug symbols
+
+To actually get useful backtraces, you should make sure that your version of i3
+is compiled with debug symbols:
+
+------------------------------------------------------------------------------
+$ file `which i3`
+/usr/bin/i3: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically
+linked (uses shared libs), for GNU/Linux 2.6.18, not stripped
+------------------------------------------------------------------------------
+
+Notice the +not stripped+, which is the important part. If you have a version
+which is stripped, please have a look if your distribution provides debug
+symbols (package +i3-wm-dbg+ on Debian for example) or if you can turn off
+stripping. If nothing helps, please build i3 from source.
+
 == Obtaining a backtrace
 
-When i3 displays its crash dialog, do the following:
+Once you have made sure that your i3 is compiled with debug symbols and the C
+debugger +gdb+ is installed on your machine, you can let i3 generate a
+backtrace in the crash dialog.
 
-1. Switch to a virtual console (Ctrl-Alt-F1) or login from a different computer
-2. Generate a backtrace (see below)
-3. Switch back to the crash dialog (Ctrl-Alt-F7)
-4. Restart i3 in-place (you will keep your session), continue working
-
-This is how you get a backtrace from a running i3 process:
-
------------------
-I3PID=$(pidof i3)
-gdb /proc/$I3PID/exe $I3PID \
-    --batch --quiet \
-    --ex 'backtrace full' > /tmp/i3-backtrace.txt 2>&1
------------------
+After pressing "b" in the crash dialog, you will get a file called
++/tmp/i3-backtrace.%d.%d.txt+ where the first +%d+ is replaced by i3’s process
+id (PID) and the second one is incremented each time you generate a backtrace,
+starting at 0.
 
 == Sending bug reports/debugging on IRC
 
