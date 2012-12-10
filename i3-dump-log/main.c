@@ -42,14 +42,19 @@ static int check_for_wrap(void) {
     /* The log wrapped. Print the remaining content and reset walk to the top
      * of the log. */
     wrap_count = header->wrap_count;
-    write(STDOUT_FILENO, walk, ((logbuffer + header->offset_last_wrap) - walk));
+    const int len = (logbuffer + header->offset_last_wrap) - walk;
+    if (write(STDOUT_FILENO, walk, len) != len)
+        err(EXIT_FAILURE, "write()");
     walk = logbuffer + sizeof(i3_shmlog_header);
     return 1;
 }
 
 static void print_till_end(void) {
     check_for_wrap();
-    int n = write(STDOUT_FILENO, walk, ((logbuffer + header->offset_next_write) - walk));
+    const int len = (logbuffer + header->offset_next_write) - walk;
+    const int n = write(STDOUT_FILENO, walk, len);
+    if (len != n)
+        err(EXIT_FAILURE, "write()");
     if (n > 0) {
         walk += n;
     }
