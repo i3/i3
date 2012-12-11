@@ -35,7 +35,7 @@ my $result = GetOptions(
     'dmenu=s' => \$dmenu_cmd,
     'entry-type=s' => \$entry_type,
     'version' => sub {
-        say "dmenu-desktop 1.1 © 2012 Michael Stapelberg";
+        say "dmenu-desktop 1.2 © 2012 Michael Stapelberg";
         exit 0;
     },
     'help' => sub {
@@ -157,7 +157,8 @@ for my $file (values %desktops) {
         if ($key =~ /^Name/) {
             $names{$key} = $value;
         } elsif ($key eq 'Exec' ||
-                 $key eq 'TryExec') {
+                 $key eq 'TryExec' ||
+                 $key eq 'Type') {
             $apps{$base}->{$key} = $value;
         } elsif ($key eq 'NoDisplay' ||
                  $key eq 'Hidden' ||
@@ -203,6 +204,10 @@ for my $file (values %desktops) {
 my %choices;
 for my $app (keys %apps) {
     my $name = $apps{$app}->{Name};
+
+    # Don’t try to use .desktop files which don’t have Type=application
+    next if (!exists($apps{$app}->{Type}) ||
+             $apps{$app}->{Type} ne 'Application');
 
     # Don’t offer apps which have NoDisplay == true or Hidden == true.
     # See http://wiki.xfce.org/howto/customize-menu#hide_menu_entries
@@ -446,7 +451,7 @@ command) and both (type = both).
 
 =head1 VERSION
 
-Version 1.1
+Version 1.2
 
 =head1 AUTHOR
 
