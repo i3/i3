@@ -195,6 +195,7 @@ ifeq ($(V),0)
 # echo-ing vars
 V_ASCIIDOC = echo ASCIIDOC $@;
 V_POD2HTML = echo POD2HTML $@;
+V_POD2MAN = echo POD2MAN $@;
 V_A2X = echo A2X $@;
 endif
 
