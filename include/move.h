@@ -7,8 +7,8 @@
  * move.c: Moving containers into some direction.
  *
  */
-#ifndef _MOVE_H
-#define _MOVE_H
+#ifndef I3_MOVE_H
+#define I3_MOVE_H
 
 /**
  * Moves the current container in the given direction (TOK_LEFT, TOK_RIGHT,

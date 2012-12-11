@@ -18,7 +18,20 @@
 # the time of launching the new one. Also make sure that focusing containers
 # in other workspaces work even when there is a fullscreen container.
 #
-use i3test;
+use i3test i3_autostart => 0;
+
+# Screen setup looks like this:
+# +----+----+
+# | S1 | S2 |
+# +----+----+
+my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+fake-outputs 1024x768+0+0,1024x768+1024+0
+EOT
+
+my $pid = launch_with_config($config);
 
 my $i3 = i3(get_socket_path());
 
@@ -112,9 +125,17 @@ is($nodes->[0]->{focused}, 1, 'fullscreen window focused');
 
 cmd 'fullscreen';
 
+# Focus screen 1
+$x->root->warp_pointer(1025, 0);
+sync_with_i3;
+
 $tmp = fresh_workspace;
 cmd "workspace $tmp";
 my $diff_ws = open_window;
+
+# Focus screen 0
+$x->root->warp_pointer(0, 0);
+sync_with_i3;
 
 $tmp2 = fresh_workspace;
 cmd "workspace $tmp2";
@@ -194,20 +215,23 @@ is($x->input_focus, $right1->id, 'allowed focus up');
 cmd 'focus down';
 is($x->input_focus, $right2->id, 'allowed focus down');
 
-cmd 'focus left';
-is($x->input_focus, $right2->id, 'prevented focus left');
-
-cmd 'focus right';
-is($x->input_focus, $right2->id, 'prevented focus right');
-
 cmd 'focus down';
 is($x->input_focus, $right1->id, 'allowed focus wrap (down)');
 
 cmd 'focus up';
 is($x->input_focus, $right2->id, 'allowed focus wrap (up)');
 
-cmd '[id="' . $diff_ws->id . '"] focus';
+cmd 'focus left';
+is($x->input_focus, $right2->id, 'focus left wrapped (no-op)');
+
+cmd 'focus right';
 is($x->input_focus, $diff_ws->id, 'allowed focus change to different ws');
+
+cmd 'focus left';
+is($x->input_focus, $right2->id, 'focused back into fullscreen container');
+
+cmd '[id="' . $diff_ws->id . '"] focus';
+is($x->input_focus, $diff_ws->id, 'allowed focus change to different ws by id');
 
 ################################################################################
 # More testing of the interaction between wrapping and the fullscreen focus
@@ -304,5 +328,7 @@ cmd "move to workspace prev";
 verify_move(2, 'prevented move to workspace by position');
 
 # TODO: Tests for "move to output" and "move workspace to output".
+
+exit_gracefully($pid);
 
 done_testing;

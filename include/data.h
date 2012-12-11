@@ -7,8 +7,8 @@
  * include/data.h: This file defines all data structures used by i3
  *
  */
-#ifndef _DATA_H
-#define _DATA_H
+#ifndef I3_DATA_H
+#define I3_DATA_H
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
@@ -55,7 +55,7 @@ typedef struct Window i3Window;
  *****************************************************************************/
 typedef enum { D_LEFT, D_RIGHT, D_UP, D_DOWN } direction_t;
 typedef enum { NO_ORIENTATION = 0, HORIZ, VERT } orientation_t;
-typedef enum { BS_NORMAL = 0, BS_NONE = 1, BS_1PIXEL = 2 } border_style_t;
+typedef enum { BS_NORMAL = 0, BS_NONE = 1, BS_PIXEL = 2 } border_style_t;
 
 /** parameter to specify whether tree_close() and x_window_kill() should kill
  * only this specific window or the whole X11 client */
@@ -441,8 +441,6 @@ struct Assignment {
  */
 struct Con {
     bool mapped;
-    /** whether this is a split container or not */
-    bool split;
     enum {
         CT_ROOT = 0,
         CT_OUTPUT = 1,
@@ -486,6 +484,7 @@ struct Con {
 
     /* the x11 border pixel attribute */
     int border_width;
+    int current_border_width;
 
     /* minimum increment size specified for the window (in pixels) */
     int width_increment;
@@ -496,6 +495,9 @@ struct Con {
     /* Should this container be marked urgent? This gets set when the window
      * inside this container (if any) sets the urgency hint, for example. */
     bool urgent;
+
+    /* timer used for disabling urgency */
+    struct ev_timer *urgency_timer;
 
     /* ids/pixmap/graphics context for the frame window */
     xcb_window_t frame;

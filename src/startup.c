@@ -58,7 +58,7 @@ static void startup_timeout(EV_P_ ev_timer *w, int revents) {
 }
 
 /*
- * Some applications (such as Firefox) mark a startup sequence as completede
+ * Some applications (such as Firefox) mark a startup sequence as completed
  * *before* they even map a window. Therefore, we cannot entirely delete the
  * startup sequence once it’s marked as complete. Instead, we’ll mark it for
  * deletion in 30 seconds and use that chance to delete old sequences.
@@ -68,14 +68,9 @@ static void startup_timeout(EV_P_ ev_timer *w, int revents) {
  * the root window cursor.
  *
  */
-static int _delete_startup_sequence(struct Startup_Sequence *sequence) {
+static int _prune_startup_sequences(void) {
     time_t current_time = time(NULL);
     int active_sequences = 0;
-
-    /* Mark the given sequence for deletion in 30 seconds. */
-    sequence->delete_at = current_time + 30;
-    DLOG("Will delete startup sequence %s at timestamp %ld\n",
-         sequence->id, sequence->delete_at);
 
     /* Traverse the list and delete everything which was marked for deletion 30
      * seconds ago or earlier. */
@@ -94,18 +89,33 @@ static int _delete_startup_sequence(struct Startup_Sequence *sequence) {
         if (current_time <= current->delete_at)
             continue;
 
-        DLOG("Deleting startup sequence %s, delete_at = %ld, current_time = %ld\n",
-             current->id, current->delete_at, current_time);
-
-        /* Unref the context, will be free()d */
-        sn_launcher_context_unref(current->context);
-
-        /* Delete our internal sequence */
-        TAILQ_REMOVE(&startup_sequences, current, sequences);
+        startup_sequence_delete(current);
     }
 
     return active_sequences;
 
+}
+
+/**
+ * Deletes a startup sequence, ignoring whether its timeout has elapsed.
+ * Useful when e.g. a window is moved between workspaces and its children
+ * shouldn't spawn on the original workspace.
+ *
+ */
+void startup_sequence_delete(struct Startup_Sequence *sequence) {
+    assert(sequence != NULL);
+    DLOG("Deleting startup sequence %s, delete_at = %ld, current_time = %ld\n",
+         sequence->id, sequence->delete_at, time(NULL));
+
+    /* Unref the context, will be free()d */
+    sn_launcher_context_unref(sequence->context);
+
+    /* Delete our internal sequence */
+    TAILQ_REMOVE(&startup_sequences, sequence, sequences);
+
+    free(sequence->id);
+    free(sequence->workspace);
+    FREE(sequence);
 }
 
 /*
@@ -233,7 +243,13 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
         case SN_MONITOR_EVENT_COMPLETED:
             DLOG("startup sequence %s completed\n", sn_startup_sequence_get_id(snsequence));
 
-            if (_delete_startup_sequence(sequence) == 0) {
+            /* Mark the given sequence for deletion in 30 seconds. */
+            time_t current_time = time(NULL);
+            sequence->delete_at = current_time + 30;
+            DLOG("Will delete startup sequence %s at timestamp %ld\n",
+                 sequence->id, sequence->delete_at);
+
+            if (_prune_startup_sequences() == 0) {
                 DLOG("No more startup sequences running, changing root window cursor to default pointer.\n");
                 /* Change the pointer of the root window to indicate progress */
                 if (xcursor_supported)
@@ -247,32 +263,44 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
     }
 }
 
-/*
- * Checks if the given window belongs to a startup notification by checking if
- * the _NET_STARTUP_ID property is set on the window (or on its leader, if it’s
- * unset).
- *
- * If so, returns the workspace on which the startup was initiated.
- * Returns NULL otherwise.
+/**
+ * Gets the stored startup sequence for the _NET_STARTUP_ID of a given window.
  *
  */
-char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *startup_id_reply) {
+struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
+    xcb_get_property_reply_t *startup_id_reply, bool ignore_mapped_leader) {
     /* The _NET_STARTUP_ID is only needed during this function, so we get it
      * here and don’t save it in the 'cwindow'. */
     if (startup_id_reply == NULL || xcb_get_property_value_length(startup_id_reply) == 0) {
         FREE(startup_id_reply);
-        DLOG("No _NET_STARTUP_ID set on this window\n");
+        DLOG("No _NET_STARTUP_ID set on window 0x%08x\n", cwindow->id);
         if (cwindow->leader == XCB_NONE)
             return NULL;
 
-        xcb_get_property_cookie_t cookie;
-        cookie = xcb_get_property(conn, false, cwindow->leader, A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
+        /* This is a special case that causes the leader's startup sequence
+         * to only be returned if it has never been mapped, useful primarily
+         * when trying to delete a sequence.
+         *
+         * It's generally inappropriate to delete a leader's sequence when
+         * moving a child window, but if the leader has no container, it's
+         * likely permanently unmapped and the child is the "real" window. */
+        if (ignore_mapped_leader && con_by_window_id(cwindow->leader) != NULL) {
+            DLOG("Ignoring leader window 0x%08x\n", cwindow->leader);
+            return NULL;
+        }
+
         DLOG("Checking leader window 0x%08x\n", cwindow->leader);
+
+        xcb_get_property_cookie_t cookie;
+
+        cookie = xcb_get_property(conn, false, cwindow->leader,
+            A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
         startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
 
-        if (startup_id_reply == NULL || xcb_get_property_value_length(startup_id_reply) == 0) {
-            DLOG("No _NET_STARTUP_ID set on the leader either\n");
+        if (startup_id_reply == NULL ||
+            xcb_get_property_value_length(startup_id_reply) == 0) {
             FREE(startup_id_reply);
+            DLOG("No _NET_STARTUP_ID set on the leader either\n");
             return NULL;
         }
     }
@@ -304,5 +332,31 @@ char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *
 
     free(startup_id);
     free(startup_id_reply);
+
+    return sequence;
+}
+
+/*
+ * Checks if the given window belongs to a startup notification by checking if
+ * the _NET_STARTUP_ID property is set on the window (or on its leader, if it’s
+ * unset).
+ *
+ * If so, returns the workspace on which the startup was initiated.
+ * Returns NULL otherwise.
+ *
+ */
+char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *startup_id_reply) {
+    struct Startup_Sequence *sequence = startup_sequence_get(cwindow, startup_id_reply, false);
+    if (sequence == NULL)
+        return NULL;
+
+    /* If the startup sequence's time span has elapsed, delete it. */
+    time_t current_time = time(NULL);
+    if (sequence->delete_at > 0 && current_time > sequence->delete_at) {
+        DLOG("Deleting expired startup sequence %s\n", sequence->id);
+        startup_sequence_delete(sequence);
+        return NULL;
+    }
+
     return sequence->workspace;
 }

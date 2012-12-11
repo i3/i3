@@ -8,8 +8,8 @@
  * which don’t support multi-monitor in a useful way) and for our testsuite.
  *
  */
-#ifndef _FAKE_OUTPUTS_H
-#define _FAKE_OUTPUTS_H
+#ifndef I3_FAKE_OUTPUTS_H
+#define I3_FAKE_OUTPUTS_H
 
 /**
  * Creates outputs according to the given specification.

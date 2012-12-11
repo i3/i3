@@ -1,7 +1,7 @@
 IPC interface (interprocess communication)
 ==========================================
 Michael Stapelberg <michael@i3wm.org>
-August 2012
+October 2012
 
 This document describes how to interface with i3 from a separate process. This
 is useful for example to remote-control i3 (to write test cases for example) or
@@ -18,6 +18,13 @@ calling +i3 --get-socketpath+.
 
 All i3 utilities, like +i3-msg+ and +i3-input+ will read the +I3_SOCKET_PATH+
 X11 property, stored on the X11 root window.
+
+[WARNING]
+.Use an existing library!
+There are existing libraries for many languages. You can have a look at
+<<libraries>> or search the web if your language of choice is not mentioned.
+Usually, it is not necessary to implement low-level communication with i3
+directly.
 
 == Establishing a connection
 
@@ -82,7 +89,7 @@ So, a typical message could look like this:
 Or, as a hexdump:
 ------------------------------------------------------------------------------
 00000000  69 33 2d 69 70 63 04 00  00 00 00 00 00 00 65 78  |i3-ipc........ex|
-00000010  69 74 0a                                          |it.|
+00000010  69 74                                             |it|
 ------------------------------------------------------------------------------
 
 To generate and send such a message, you could use the following code in Perl:
@@ -274,6 +281,8 @@ name (string)::
 border (string)::
 	Can be either "normal", "none" or "1pixel", dependending on the
 	container’s border style.
+current_border_width (integer)::
+	Number of pixels of the border width.
 layout (string)::
 	Can be either "splith", "splitv", "stacked", "tabbed", "dockarea" or
 	"output".
@@ -610,6 +619,8 @@ workspace (0)::
 output (1)::
 	Sent when RandR issues a change notification (of either screens,
 	outputs, CRTCs or output properties).
+mode (2)::
+	Sent whenever i3 changes its binding mode.
 
 *Example:*
 --------------------------------------------------------------------
@@ -635,9 +646,29 @@ This event consists of a single serialized map containing a property
 +change (string)+ which indicates the type of the change ("focus", "init",
 "empty", "urgent").
 
+Moreover, when the change is "focus", an +old (object)+ and a +current
+(object)+ properties will be present with the previous and current
+workspace respectively.  When the first switch occurs (when i3 focuses
+the workspace visible at the beginning) there is no previous
+workspace, and the +old+ property will be set to +null+.  Also note
+that if the previous is empty it will get destroyed when switching,
+but will still be present in the "old" property.
+
 *Example:*
 ---------------------
-{ "change": "focus" }
+{
+ "change": "focus",
+ "current": {
+  "id": 28489712,
+  "type":4,
+  ...
+ }
+ "old": {
+  "id": 28489715,
+  "type": 4,
+  ...
+ }
+}
 ---------------------
 
 === output event
@@ -651,7 +682,21 @@ This event consists of a single serialized map containing a property
 { "change": "unspecified" }
 ---------------------------
 
-== See also
+=== mode event
+
+This event consists of a single serialized map containing a property
++change (string)+ which holds the name of current mode in use. The name
+is the same as specified in config when creating a mode. The default
+mode is simply named default.
+
+*Example:*
+---------------------------
+{ "change": "default" }
+---------------------------
+
+== See also (existing libraries)
+
+[[libraries]]
 
 For some languages, libraries are available (so you don’t have to implement
 all this on your own). This list names some (if you wrote one, please let me

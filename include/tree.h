@@ -7,8 +7,8 @@
  * tree.c: Everything that primarily modifies the layout tree data structure.
  *
  */
-#ifndef _TREE_H
-#define _TREE_H
+#ifndef I3_TREE_H
+#define I3_TREE_H
 
 extern Con *croot;
 /* TODO: i am not sure yet how much access to the focused container should

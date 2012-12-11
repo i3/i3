@@ -61,10 +61,20 @@ state EXEC:
   command = string
       -> call cmd_exec($nosn, $command)
 
-# border normal|none|1pixel|toggle
+# border normal|none|1pixel|toggle|1pixel
 state BORDER:
-  border_style = 'normal', 'none', '1pixel', 'toggle'
-      -> call cmd_border($border_style)
+  border_style = 'normal', 'pixel'
+    -> BORDER_WIDTH
+  border_style = 'none', 'toggle'
+    -> call cmd_border($border_style, "0")
+  border_style = '1pixel'
+    -> call cmd_border($border_style, "1")
+
+state BORDER_WIDTH:
+  end
+    -> call cmd_border($border_style, "2")
+  border_width = word
+    -> call cmd_border($border_style, $border_width)
 
 # layout default|stacked|stacking|tabbed|splitv|splith
 # layout toggle [split|all]
@@ -185,17 +195,30 @@ state RESIZE_TILING_OR:
       -> call cmd_resize($way, $direction, $resize_px, $resize_ppt)
 
 # rename workspace <name> to <name>
+# rename workspace to <name>
 state RENAME:
   'workspace'
       -> RENAME_WORKSPACE
 
 state RENAME_WORKSPACE:
+  old_name = 'to'
+      -> RENAME_WORKSPACE_LIKELY_TO
   old_name = word
       -> RENAME_WORKSPACE_TO
 
+state RENAME_WORKSPACE_LIKELY_TO:
+  'to'
+      -> RENAME_WORKSPACE_NEW_NAME
+  new_name = word
+      -> call cmd_rename_workspace(NULL, $new_name)
+
 state RENAME_WORKSPACE_TO:
   'to'
-      ->
+      -> RENAME_WORKSPACE_NEW_NAME
+
+state RENAME_WORKSPACE_NEW_NAME:
+  end
+      -> call cmd_rename_workspace(NULL, "to")
   new_name = string
       -> call cmd_rename_workspace($old_name, $new_name)
 
@@ -243,6 +266,8 @@ state MOVE_WORKSPACE:
       -> MOVE_WORKSPACE_TO_OUTPUT
   workspace = 'next', 'prev', 'next_on_output', 'prev_on_output', 'current'
       -> call cmd_move_con_to_workspace($workspace)
+  'back_and_forth'
+      -> call cmd_move_con_to_workspace_back_and_forth()
   'number'
       -> MOVE_WORKSPACE_NUMBER
   workspace = string

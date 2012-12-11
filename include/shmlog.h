@@ -8,8 +8,8 @@
  * default (ringbuffer for storing the debug log).
  *
  */
-#ifndef _I3_SHMLOG_H
-#define _I3_SHMLOG_H
+#ifndef I3_I3_SHMLOG_H
+#define I3_I3_SHMLOG_H
 
 #include <stdint.h>
 #include <pthread.h>

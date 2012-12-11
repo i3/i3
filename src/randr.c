@@ -69,7 +69,7 @@ Output *get_first_output(void) {
         if (output->active)
             return output;
 
-    return NULL;
+    die("No usable outputs available.\n");
 }
 
 /*
@@ -101,89 +101,76 @@ Output *get_output_containing(int x, int y) {
  *
  */
 Output *get_output_most(direction_t direction, Output *current) {
-    Output *output, *candidate = NULL;
-    int position = 0;
-    TAILQ_FOREACH(output, &outputs, outputs) {
-        if (!output->active)
-            continue;
-
-        /* Repeated calls of WIN determine the winner of the comparison */
-        #define WIN(variable, condition) \
-            if (variable condition) { \
-                candidate = output; \
-                position = variable; \
-            } \
-            break;
-
-        if (((direction == D_UP) || (direction == D_DOWN)) &&
-            (current->rect.x != output->rect.x))
-            continue;
-
-        if (((direction == D_LEFT) || (direction == D_RIGHT)) &&
-            (current->rect.y != output->rect.y))
-            continue;
-
-        switch (direction) {
-            case D_UP:
-                WIN(output->rect.y, <= position);
-            case D_DOWN:
-                WIN(output->rect.y, >= position);
-            case D_LEFT:
-                WIN(output->rect.x, <= position);
-            case D_RIGHT:
-                WIN(output->rect.x, >= position);
-        }
-    }
-
-    assert(candidate != NULL);
-
-    return candidate;
+    Output *best = get_output_next(direction, current, FARTHEST_OUTPUT);
+    if (!best)
+        best = current;
+    DLOG("current = %s, best = %s\n", current->name, best->name);
+    return best;
 }
 
 /*
  * Gets the output which is the next one in the given direction.
  *
  */
-Output *get_output_next(direction_t direction, Output *current) {
-    Output *output, *candidate = NULL;
-
+Output *get_output_next(direction_t direction, Output *current, output_close_far_t close_far) {
+    Rect *cur = &(current->rect),
+         *other;
+    Output *output,
+           *best = NULL;
     TAILQ_FOREACH(output, &outputs, outputs) {
         if (!output->active)
             continue;
 
-        if (((direction == D_UP) || (direction == D_DOWN)) &&
-            (current->rect.x != output->rect.x))
+        other = &(output->rect);
+
+        if ((direction == D_RIGHT && other->x > cur->x) ||
+            (direction == D_LEFT  && other->x < cur->x)) {
+            /* Skip the output when it doesn’t overlap the other one’s y
+             * coordinate at all. */
+            if ((other->y + other->height) <= cur->y ||
+                (cur->y   + cur->height)   <= other->y)
+                continue;
+        } else if ((direction == D_DOWN && other->y > cur->y) ||
+                   (direction == D_UP   && other->y < cur->y)) {
+            /* Skip the output when it doesn’t overlap the other one’s x
+             * coordinate at all. */
+            if ((other->x + other->width) <= cur->x ||
+                (cur->x   + cur->width)   <= other->x)
+                continue;
+        } else
             continue;
 
-        if (((direction == D_LEFT) || (direction == D_RIGHT)) &&
-            (current->rect.y != output->rect.y))
+        /* No candidate yet? Start with this one. */
+        if (!best) {
+            best = output;
             continue;
+        }
 
-        switch (direction) {
-            case D_UP:
-                if (output->rect.y < current->rect.y &&
-                    (!candidate || output->rect.y < candidate->rect.y))
-                    candidate = output;
-                break;
-            case D_DOWN:
-                if (output->rect.y > current->rect.y &&
-                    (!candidate || output->rect.y > candidate->rect.y))
-                    candidate = output;
-                break;
-            case D_LEFT:
-                if (output->rect.x < current->rect.x &&
-                    (!candidate || output->rect.x > candidate->rect.x))
-                    candidate = output;
-                break;
-            case D_RIGHT:
-                if (output->rect.x > current->rect.x &&
-                    (!candidate || output->rect.x < candidate->rect.x))
-                    candidate = output;
-                break;
+        if (close_far == CLOSEST_OUTPUT) {
+            /* Is this output better (closer to the current output) than our
+             * current best bet? */
+            if ((direction == D_RIGHT && other->x < best->rect.x) ||
+                (direction == D_LEFT  && other->x > best->rect.x) ||
+                (direction == D_DOWN  && other->y < best->rect.y) ||
+                (direction == D_UP    && other->y > best->rect.y)) {
+                best = output;
+                continue;
+            }
+        } else {
+            /* Is this output better (farther to the current output) than our
+             * current best bet? */
+            if ((direction == D_RIGHT && other->x > best->rect.x) ||
+                (direction == D_LEFT  && other->x < best->rect.x) ||
+                (direction == D_DOWN  && other->y > best->rect.y) ||
+                (direction == D_UP    && other->y < best->rect.y)) {
+                best = output;
+                continue;
+            }
         }
     }
 
-    return candidate;
+    DLOG("current = %s, best = %s\n", current->name, (best ? best->name : "NULL"));
+    return best;
 }
 
 /*
@@ -660,8 +647,7 @@ void randr_query_outputs(void) {
             output->active = false;
             DLOG("Output %s disabled, re-assigning workspaces/docks\n", output->name);
 
-            if ((first = get_first_output()) == NULL)
-                die("No usable outputs available\n");
+            first = get_first_output();
 
             /* TODO: refactor the following code into a nice function. maybe
              * use an on_destroy callback which is implement differently for
@@ -748,6 +734,9 @@ void randr_query_outputs(void) {
         ELOG("No outputs found via RandR, disabling\n");
         disable_randr(conn);
     }
+
+    /* Verifies that there is at least one active output as a side-effect. */
+    get_first_output();
 
     /* Just go through each active output and assign one workspace */
     TAILQ_FOREACH(output, &outputs, outputs) {

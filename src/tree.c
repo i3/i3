@@ -255,6 +255,15 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
     x_con_kill(con);
 
     con_detach(con);
+
+    /* disable urgency timer, if needed */
+    if (con->urgency_timer != NULL) {
+        DLOG("Removing urgency timer of con %p\n", con);
+        workspace_update_urgent_flag(con_get_workspace(con));
+        ev_timer_stop(main_loop, con->urgency_timer);
+        FREE(con->urgency_timer);
+    }
+
     if (con->type != CT_FLOATING_CON) {
         /* If the container is *not* floating, we might need to re-distribute
          * percentage values for the resized containers. */
@@ -347,6 +356,10 @@ void tree_split(Con *con, orientation_t orientation) {
         con->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
         return;
     }
+    else if (con->type == CT_FLOATING_CON) {
+        DLOG("Floating containers can't be split.\n");
+        return;
+    }
 
     Con *parent = con->parent;
 
@@ -373,7 +386,6 @@ void tree_split(Con *con, orientation_t orientation) {
     TAILQ_REPLACE(&(parent->focus_head), con, new, focused);
     new->parent = parent;
     new->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
-    new->split = true;
 
     /* 3: swap 'percent' (resize factor) */
     new->percent = con->percent;
@@ -388,9 +400,16 @@ void tree_split(Con *con, orientation_t orientation) {
  *
  */
 bool level_up(void) {
+    /* Skip over floating containers and go directly to the grandparent
+     * (which should always be a workspace) */
+    if (focused->parent->type == CT_FLOATING_CON) {
+        con_focus(focused->parent->parent);
+        return true;
+    }
+
     /* We can focus up to the workspace, but not any higher in the tree */
     if ((focused->parent->type != CT_CON &&
-        focused->parent->type != CT_WORKSPACE) ||
+         focused->parent->type != CT_WORKSPACE) ||
         focused->type == CT_WORKSPACE) {
         ELOG("'focus parent': Focus is already on the workspace, cannot go higher than that.\n");
         return false;
@@ -407,9 +426,21 @@ bool level_down(void) {
     /* Go down the focus stack of the current node */
     Con *next = TAILQ_FIRST(&(focused->focus_head));
     if (next == TAILQ_END(&(focused->focus_head))) {
-        printf("cannot go down\n");
+        DLOG("cannot go down\n");
         return false;
     }
+    else if (next->type == CT_FLOATING_CON) {
+        /* Floating cons shouldn't be directly focused; try immediately
+         * going to the grandchild of the focused con. */
+        Con *child = TAILQ_FIRST(&(next->focus_head));
+        if (child == TAILQ_END(&(next->focus_head))) {
+            DLOG("cannot go down\n");
+            return false;
+        }
+        else
+            next = TAILQ_FIRST(&(next->focus_head));
+    }
+
     con_focus(next);
     return true;
 }
@@ -454,9 +485,20 @@ void tree_render(void) {
  *
  */
 static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap) {
+    /* When dealing with fullscreen containers, it's necessary to go up to the
+     * workspace level, because 'focus $dir' will start at the con's real
+     * position in the tree, and it may not be possible to get to the edge
+     * normally due to fullscreen focusing restrictions. */
+    if (con->fullscreen_mode == CF_OUTPUT && con->type != CT_WORKSPACE)
+        con = con_get_workspace(con);
+
     /* Stop recursing at workspaces after attempting to switch to next
      * workspace if possible. */
     if (con->type == CT_WORKSPACE) {
+        if (con_get_fullscreen_con(con, CF_GLOBAL)) {
+            DLOG("Cannot change workspace while in global fullscreen mode.\n");
+            return false;
+        }
         Output *current_output = get_output_containing(con->rect.x, con->rect.y);
         Output *next_output;
 
@@ -477,7 +519,7 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
         else
             return false;
 
-        next_output = get_output_next(direction, current_output);
+        next_output = get_output_next(direction, current_output, CLOSEST_OUTPUT);
         if (!next_output)
             return false;
         DLOG("Next output is %s\n", next_output->name);
@@ -491,6 +533,13 @@ static bool _tree_next(Con *con, char way, orientation_t orientation, bool wrap)
             return false;
 
         workspace_show(workspace);
+
+        /* If a workspace has an active fullscreen container, one of its
+         * children should always be focused. The above workspace_show()
+         * should be adequate for that, so return. */
+        if (con_get_fullscreen_con(workspace, CF_OUTPUT))
+            return true;
+
         Con *focus = con_descend_direction(workspace, direction);
         if (focus) {
             con_focus(focus);
@@ -617,8 +666,8 @@ void tree_flatten(Con *con) {
 
     /* The child must have a different orientation than the con but the same as
      * the con’s parent to be redundant */
-    if (!con->split ||
-        !child->split ||
+    if (!con_is_split(con) ||
+        !con_is_split(child) ||
         con_orientation(con) == con_orientation(child) ||
         con_orientation(child) != con_orientation(parent))
         goto recurse;

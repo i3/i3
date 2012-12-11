@@ -1,5 +1,5 @@
-#ifndef _XCB_H
-#define _XCB_H
+#ifndef I3_XCB_H
+#define I3_XCB_H
 
 /* from X11/keysymdef.h */
 #define XCB_NUM_LOCK                    0xff7f

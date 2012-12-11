@@ -233,12 +233,9 @@ static void i3_exit(void) {
  *
  */
 static void handle_signal(int sig, siginfo_t *info, void *data) {
-    fprintf(stderr, "Received signal %d, terminating\n", sig);
     if (*shmlogname != '\0') {
-        fprintf(stderr, "Closing SHM log \"%s\"\n", shmlogname);
         shm_unlink(shmlogname);
     }
-    fflush(stderr);
     raise(sig);
 }
 
@@ -272,6 +269,7 @@ int main(int argc, char *argv[]) {
         {"get_socketpath", no_argument, 0, 0},
         {"fake_outputs", required_argument, 0, 0},
         {"fake-outputs", required_argument, 0, 0},
+        {"force-old-config-parser-v4.4-only", no_argument, 0, 0},
         {0, 0, 0, 0}
     };
     int option_index = 0, opt;
@@ -374,6 +372,10 @@ int main(int argc, char *argv[]) {
                            strcmp(long_options[option_index].name, "fake_outputs") == 0) {
                     LOG("Initializing fake outputs: %s\n", optarg);
                     fake_outputs = sstrdup(optarg);
+                    break;
+                } else if (strcmp(long_options[option_index].name, "force-old-config-parser-v4.4-only") == 0) {
+                    LOG("FORCING OLD CONFIG PARSER!\n");
+                    force_old_config_parser = true;
                     break;
                 }
                 /* fall-through */
@@ -542,6 +544,7 @@ int main(int argc, char *argv[]) {
 
     uint32_t mask = XCB_CW_EVENT_MASK;
     uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
+                          XCB_EVENT_MASK_BUTTON_PRESS |
                           XCB_EVENT_MASK_STRUCTURE_NOTIFY |         /* when the user adds a screen (e.g. video
                                                                            projector), the root window gets a
                                                                            ConfigureNotify */

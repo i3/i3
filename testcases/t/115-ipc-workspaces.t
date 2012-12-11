@@ -17,21 +17,52 @@
 use i3test;
 
 my $i3 = i3(get_socket_path());
+$i3->connect()->recv;
 
-####################
-# Request workspaces
-####################
+################################
+# Workspaces requests and events
+################################
 
-SKIP: {
-    skip "IPC API not yet stabilized", 2;
+my $focused = get_ws(focused_ws());
 
-my $workspaces = $i3->get_workspaces->recv;
+# Events
 
-ok(@{$workspaces} > 0, "More than zero workspaces found");
+# We are switching to an empty workpspace from an empty workspace, so we expect
+# to receive "init", "focus", and "empty".
+my $init = AnyEvent->condvar;
+my $focus = AnyEvent->condvar;
+my $empty = AnyEvent->condvar;
+$i3->subscribe({
+    workspace => sub {
+        my ($event) = @_;
+        if ($event->{change} eq 'init') {
+            $init->send(1);
+        } elsif ($event->{change} eq 'focus') {
+            # Check that we have the old and new workspace
+            $focus->send(
+                $event->{current}->{name} == '2' &&
+                $event->{old}->{name} == $focused->{name}
+            );
+        } elsif ($event->{change} eq 'empty') {
+            $empty->send(1);
+        }
+    }
+})->recv;
 
-#my $name_exists = all { defined($_->{name}) } @{$workspaces};
-#ok($name_exists, "All workspaces have a name");
+cmd 'workspace 2';
 
-}
+my $t;
+$t = AnyEvent->timer(
+    after => 0.5,
+    cb => sub {
+        $init->send(0);
+        $focus->send(0);
+        $empty->send(0);
+    }
+);
+
+ok($init->recv, 'Workspace "init" event received');
+ok($focus->recv, 'Workspace "focus" event received');
+ok($empty->recv, 'Workspace "empty" event received');
 
 done_testing;

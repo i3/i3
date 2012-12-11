@@ -7,8 +7,8 @@
  * i3.h: global variables that are used all over i3.
  *
  */
-#ifndef _I3_H
-#define _I3_H
+#ifndef I3_I3_H
+#define I3_I3_H
 
 #include <sys/time.h>
 #include <sys/resource.h>

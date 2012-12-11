@@ -7,8 +7,8 @@
  * assignments.c: Assignments for specific windows (for_window).
  *
  */
-#ifndef _ASSIGNMENTS_H
-#define _ASSIGNMENTS_H
+#ifndef I3_ASSIGNMENTS_H
+#define I3_ASSIGNMENTS_H
 
 /**
  * Checks the list of assignments for the given window and runs all matching

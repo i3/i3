@@ -7,25 +7,13 @@
  * commands.c: all command functions (see commands_parser.c)
  *
  */
-#ifndef _COMMANDS_H
-#define _COMMANDS_H
+#ifndef I3_COMMANDS_H
+#define I3_COMMANDS_H
 
 #include "commands_parser.h"
 
 /** The beginning of the prototype for every cmd_ function. */
 #define I3_CMD Match *current_match, struct CommandResult *cmd_output
-
-/*
- * Helper data structure for an operation window (window on which the operation
- * will be performed). Used to build the TAILQ owindows.
- *
- */
-typedef struct owindow {
-    Con *con;
-    TAILQ_ENTRY(owindow) owindows;
-} owindow;
-
-typedef TAILQ_HEAD(owindows_head, owindow) owindows_head;
 
 /**
  * Initializes the specified 'Match' data structure and the initial state of
@@ -56,6 +44,12 @@ void cmd_criteria_add(I3_CMD, char *ctype, char *cvalue);
 void cmd_move_con_to_workspace(I3_CMD, char *which);
 
 /**
+ * Implementation of 'move [window|container] [to] workspace back_and_forth'.
+ *
+ */
+void cmd_move_con_to_workspace_back_and_forth(I3_CMD);
+
+/**
  * Implementation of 'move [window|container] [to] workspace <name>'.
  *
  */
@@ -77,7 +71,7 @@ void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resiz
  * Implementation of 'border normal|none|1pixel|toggle'.
  *
  */
-void cmd_border(I3_CMD, char *border_style_str);
+void cmd_border(I3_CMD, char *border_style_str, char *border_width);
 
 /**
  * Implementation of 'nop <comment>'.
@@ -152,7 +146,7 @@ void cmd_move_workspace_to_output(I3_CMD, char *name);
 void cmd_split(I3_CMD, char *direction);
 
 /**
- * Implementaiton of 'kill [window|client]'.
+ * Implementation of 'kill [window|client]'.
  *
  */
 void cmd_kill(I3_CMD, char *kill_mode_str);
@@ -212,25 +206,25 @@ void cmd_layout(I3_CMD, char *layout_str);
 void cmd_layout_toggle(I3_CMD, char *toggle_mode);
 
 /**
- * Implementaiton of 'exit'.
+ * Implementation of 'exit'.
  *
  */
 void cmd_exit(I3_CMD);
 
 /**
- * Implementaiton of 'reload'.
+ * Implementation of 'reload'.
  *
  */
 void cmd_reload(I3_CMD);
 
 /**
- * Implementaiton of 'restart'.
+ * Implementation of 'restart'.
  *
  */
 void cmd_restart(I3_CMD);
 
 /**
- * Implementaiton of 'open'.
+ * Implementation of 'open'.
  *
  */
 void cmd_open(I3_CMD);

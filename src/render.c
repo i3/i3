@@ -225,7 +225,7 @@ void render_con(Con *con, bool render_fullscreen) {
 
     if (con->layout == L_OUTPUT) {
         /* Skip i3-internal outputs */
-        if (con->name[0] == '_' && con->name[1] == '_')
+        if (con_is_internal(con))
             return;
         render_l_output(con);
     } else if (con->type == CT_ROOT) {
@@ -240,36 +240,34 @@ void render_con(Con *con, bool render_fullscreen) {
          * windows/containers so that they overlap on another output. */
         DLOG("Rendering floating windows:\n");
         TAILQ_FOREACH(output, &(con->nodes_head), nodes) {
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             /* Get the active workspace of that output */
             Con *content = output_get_content(output);
             Con *workspace = TAILQ_FIRST(&(content->focus_head));
-
-            /* Check for (floating!) fullscreen nodes */
-            /* XXX: This code duplication is unfortunate. Keep in mind to fix
-             * this when we clean up the whole render.c */
-            Con *fullscreen = NULL;
-            fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
-            if (fullscreen) {
-                /* Either the fullscreen window is inside the floating
-                 * container, then we need to render and raise it now… */
-                if (con_inside_floating(fullscreen)) {
-                    fullscreen->rect = output->rect;
-                    x_raise_con(fullscreen);
-                    render_con(fullscreen, true);
-                    continue;
-                } else {
-                    /* …or it’s a tiling window, in which case the floating
-                     * windows should not overlap it, so we skip rendering this
-                     * output. */
-                    continue;
-                }
-            }
-
+            Con *fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
             Con *child;
             TAILQ_FOREACH(child, &(workspace->floating_head), floating_windows) {
-                DLOG("floating child at (%d,%d) with %d x %d\n", child->rect.x, child->rect.y, child->rect.width, child->rect.height);
+                /* Don’t render floating windows when there is a fullscreen window
+                 * on that workspace. Necessary to make floating fullscreen work
+                 * correctly (ticket #564). */
+                if (fullscreen != NULL) {
+                    Con *floating_child = con_descend_focused(child);
+                    /* Exception to the above rule: smart
+                     * popup_during_fullscreen handling (popups belonging to
+                     * the fullscreen app will be rendered). */
+                    if (floating_child->window == NULL ||
+                        fullscreen->window == NULL ||
+                        floating_child->window->transient_for != fullscreen->window->id)
+                        continue;
+                    else {
+                        DLOG("Rendering floating child even though in fullscreen mode: "
+                             "floating->transient_for (0x%08x) == fullscreen->id (0x%08x)\n",
+                             floating_child->window->transient_for, fullscreen->window->id);
+                    }
+                }
+                DLOG("floating child at (%d,%d) with %d x %d\n",
+                     child->rect.x, child->rect.y, child->rect.width, child->rect.height);
                 x_raise_con(child);
                 render_con(child, false);
             }
@@ -324,7 +322,7 @@ void render_con(Con *con, bool render_fullscreen) {
             child->deco_rect.width = child->rect.width;
             child->deco_rect.height = deco_height;
 
-            if (children > 1 || (child->border_style != BS_1PIXEL && child->border_style != BS_NONE)) {
+            if (children > 1 || (child->border_style != BS_PIXEL && child->border_style != BS_NONE)) {
                 child->rect.y += (deco_height * children);
                 child->rect.height -= (deco_height * children);
             }
@@ -341,12 +339,12 @@ void render_con(Con *con, bool render_fullscreen) {
             child->deco_rect.x = x - con->rect.x + i * child->deco_rect.width;
             child->deco_rect.y = y - con->rect.y;
 
-            if (children > 1 || (child->border_style != BS_1PIXEL && child->border_style != BS_NONE)) {
+            if (children > 1 || (child->border_style != BS_PIXEL && child->border_style != BS_NONE)) {
                 child->rect.y += deco_height;
                 child->rect.height -= deco_height;
                 child->deco_rect.height = deco_height;
             } else {
-                child->deco_rect.height = (child->border_style == BS_1PIXEL ? 1 : 0);
+                child->deco_rect.height = (child->border_style == BS_PIXEL ? 1 : 0);
             }
         }
 

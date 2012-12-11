@@ -9,8 +9,8 @@
  *               to restart inplace).
  *
  */
-#ifndef _SIGHANDLER_H
-#define _SIGHANDLER_H
+#ifndef I3_SIGHANDLER_H
+#define I3_SIGHANDLER_H
 
 /**
  * Setup signal handlers to safely handle SIGSEGV and SIGFPE

@@ -9,8 +9,8 @@
  *        …).
  *
  */
-#ifndef _CON_H
-#define _CON_H
+#ifndef I3_CON_H
+#define I3_CON_H
 
 /**
  * Create a new container (and attach it to the given parent, if not NULL).
@@ -32,6 +32,18 @@ void con_focus(Con *con);
  *
  */
 bool con_is_leaf(Con *con);
+
+/*
+ * Returns true if a container should be considered split.
+ *
+ */
+bool con_is_split(Con *con);
+
+/**
+ * Returns true if this node has regular or floating children.
+ *
+ */
+bool con_has_children(Con *con);
 
 /**
  * Returns true if this node accepts a window (if the node swallows windows,
@@ -65,6 +77,12 @@ Con *con_parent_with_orientation(Con *con, orientation_t orientation);
  *
  */
 Con *con_get_fullscreen_con(Con *con, int fullscreen_mode);
+
+/**
+ * Returns true if the container is internal, such as __i3_scratch
+ *
+ */
+bool con_is_internal(Con *con);
 
 /**
  * Returns true if the node is floating.
@@ -244,7 +262,7 @@ int con_border_style(Con *con);
  * floating window.
  *
  */
-void con_set_border_style(Con *con, int border_style);
+void con_set_border_style(Con *con, int border_style, int border_width);
 
 /**
  * This function changes the layout of a given container. Use it to handle
@@ -292,5 +310,24 @@ Rect con_minimum_size(Con *con);
  *
  */
 bool con_fullscreen_permits_focusing(Con *con);
+
+/**
+ * Checks if the given container has an urgent child.
+ *
+ */
+bool con_has_urgent_child(Con *con);
+
+/**
+ * Make all parent containers urgent if con is urgent or clear the urgent flag
+ * of all parent containers if there are no more urgent children left.
+ *
+ */
+void con_update_parents_urgency(Con *con);
+
+/**
+ * Create a string representing the subtree under con.
+ *
+ */
+char *con_get_tree_representation(Con *con);
 
 #endif

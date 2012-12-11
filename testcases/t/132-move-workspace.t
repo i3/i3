@@ -79,6 +79,28 @@ is_num_children('12', 0, 'no container on 12 anymore');
 
 ok(!workspace_exists('13'), 'workspace 13 does still not exist');
 
+################################################################################
+# Check that 'move to workspace number <number><name>' works to move a window to
+# named workspaces which start with <number>.
+################################################################################
+
+cmd 'workspace 15: meh';
+cmd 'open';
+is_num_children('15: meh', 1, 'one container on 15: meh');
+
+ok(!workspace_exists('15'), 'workspace 15 does not exist yet');
+ok(!workspace_exists('15: duh'), 'workspace 15: duh does not exist yet');
+
+cmd 'workspace 14';
+cmd 'open';
+
+cmd 'move to workspace number 15: duh';
+is_num_children('15: meh', 2, 'two containers on 15: meh');
+is_num_children('14', 0, 'no container on 14 anymore');
+
+ok(!workspace_exists('15'), 'workspace 15 does still not exist');
+ok(!workspace_exists('15: duh'), 'workspace 15 does still not exist');
+
 ###################################################################
 # check if 'move workspace next' and 'move workspace prev' work
 ###################################################################
@@ -175,5 +197,144 @@ cmd 'open';
 cmd 'move workspace number 17';
 ok(workspace_exists('17'), 'workspace 17 created by moving');
 is(@{get_ws('17')->{nodes}}, 1, 'one node on ws 16');
+
+################################################################################
+# The following four tests verify the various 'move workspace' commands when
+# the selection is itself a workspace.
+################################################################################
+
+# borrowed from 122-split.t
+# recursively sums up all nodes and their children
+sub sum_nodes {
+    my ($nodes) = @_;
+
+    return 0 if !@{$nodes};
+
+    my @children = (map { @{$_->{nodes}} } @{$nodes},
+                    map { @{$_->{'floating_nodes'}} } @{$nodes});
+
+    return @{$nodes} + sum_nodes(\@children);
+}
+
+############################################################
+# move workspace 'next|prev'
+############################################################
+$tmp = get_unused_workspace();
+$tmp2 = get_unused_workspace();
+
+cmd "workspace $tmp";
+cmd 'open';
+is_num_children($tmp, 1, 'one container on first ws');
+
+cmd "workspace $tmp2";
+cmd 'open';
+is_num_children($tmp2, 1, 'one container on second ws');
+cmd 'open';
+is_num_children($tmp2, 2, 'two containers on second ws');
+
+cmd 'focus parent';
+cmd 'move workspace prev';
+
+is_num_children($tmp, 2, 'two child containers on first ws');
+is(sum_nodes(get_ws_content($tmp)), 4, 'four total containers on first ws');
+is_num_children($tmp2, 0, 'no containers on second ws');
+
+############################################################
+# move workspace current
+# This is a special case that should be a no-op.
+############################################################
+$tmp = fresh_workspace();
+
+cmd 'open';
+is_num_children($tmp, 1, 'one container on first ws');
+my $tmpcount = sum_nodes(get_ws_content($tmp));
+
+cmd 'focus parent';
+cmd "move workspace $tmp";
+
+is(sum_nodes(get_ws_content($tmp)), $tmpcount, 'number of containers in first ws unchanged');
+
+############################################################
+# move workspace '<name>'
+############################################################
+$tmp2 = get_unused_workspace();
+$tmp = fresh_workspace();
+
+cmd 'open';
+is_num_children($tmp, 1, 'one container on first ws');
+
+cmd "workspace $tmp2";
+cmd 'open';
+is_num_children($tmp2, 1, 'one container on second ws');
+cmd 'open';
+is_num_children($tmp2, 2, 'two containers on second ws');
+
+cmd 'focus parent';
+cmd "move workspace $tmp";
+
+is_num_children($tmp, 2, 'two child containers on first ws');
+is(sum_nodes(get_ws_content($tmp)), 4, 'four total containers on first ws');
+is_num_children($tmp2, 0, 'no containers on second ws');
+
+############################################################
+# move workspace number '<number>'
+############################################################
+cmd 'workspace 18';
+cmd 'open';
+is_num_children('18', 1, 'one container on ws 18');
+
+cmd 'workspace 19';
+cmd 'open';
+is_num_children('19', 1, 'one container on ws 19');
+cmd 'open';
+is_num_children('19', 2, 'two containers on ws 19');
+
+cmd 'focus parent';
+cmd 'move workspace number 18';
+
+is_num_children('18', 2, 'two child containers on ws 18');
+is(sum_nodes(get_ws_content('18')), 4, 'four total containers on ws 18');
+is_num_children('19', 0, 'no containers on ws 19');
+
+###################################################################
+# move workspace '<name>' with a floating child
+###################################################################
+$tmp2 = get_unused_workspace();
+$tmp = fresh_workspace();
+cmd 'open';
+cmd 'floating toggle';
+cmd 'open';
+cmd 'floating toggle';
+cmd 'open';
+
+$ws = get_ws($tmp);
+is_num_children($tmp, 1, 'one container on first workspace');
+is(@{$ws->{floating_nodes}}, 2, 'two floating nodes on first workspace');
+
+cmd 'focus parent';
+cmd "move workspace $tmp2";
+
+$ws = get_ws($tmp2);
+is_num_children($tmp2, 1, 'one container on second workspace');
+is(@{$ws->{floating_nodes}}, 2, 'two floating nodes on second workspace');
+
+###################################################################
+# same as the above, but with only floating children
+###################################################################
+$tmp2 = get_unused_workspace();
+$tmp = fresh_workspace();
+cmd 'open';
+cmd 'floating toggle';
+
+$ws = get_ws($tmp);
+is_num_children($tmp, 0, 'no regular nodes on first workspace');
+is(@{$ws->{floating_nodes}}, 1, 'one floating node on first workspace');
+
+cmd 'focus parent';
+cmd "move workspace $tmp2";
+
+$ws = get_ws($tmp2);
+is_num_children($tmp2, 0, 'no regular nodes on second workspace');
+is(@{$ws->{floating_nodes}}, 1, 'one floating node on second workspace');
 
 done_testing;

@@ -9,14 +9,19 @@
  * (take your time to read it completely, it answers all questions).
  *
  */
-#ifndef _RANDR_H
-#define _RANDR_H
+#ifndef I3_RANDR_H
+#define I3_RANDR_H
 
 #include "data.h"
 #include <xcb/randr.h>
 
 TAILQ_HEAD(outputs_head, xoutput);
 extern struct outputs_head outputs;
+
+typedef enum {
+    CLOSEST_OUTPUT = 0,
+    FARTHEST_OUTPUT = 1
+} output_close_far_t;
 
 /**
  * We have just established a connection to the X server and need the initial
@@ -96,6 +101,6 @@ Output *get_output_most(direction_t direction, Output *current);
  * Gets the output which is the next one in the given direction.
  *
  */
-Output *get_output_next(direction_t direction, Output *current);
+Output *get_output_next(direction_t direction, Output *current, output_close_far_t close_far);
 
 #endif

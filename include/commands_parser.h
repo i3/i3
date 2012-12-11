@@ -7,8 +7,8 @@
  * commands.c: all command functions (see commands_parser.c)
  *
  */
-#ifndef _COMMANDS_PARSER_H
-#define _COMMANDS_PARSER_H
+#ifndef I3_COMMANDS_PARSER_H
+#define I3_COMMANDS_PARSER_H
 
 #include <yajl/yajl_gen.h>
 
@@ -27,6 +27,11 @@ struct CommandResult {
 
     /* Whether the command requires calling tree_render. */
     bool needs_tree_render;
+
+    /* The next state to transition to. Passed to the function so that we can
+     * determine the next state as a result of a function call, like
+     * cfg_criteria_pop_state() does. */
+    int next_state;
 };
 
 struct CommandResult *parse_command(const char *input);

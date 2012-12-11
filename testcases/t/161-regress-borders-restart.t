@@ -36,13 +36,13 @@ is(get_border_style(), 'normal', 'border style normal');
 
 cmd 'border 1pixel';
 
-is(get_border_style(), '1pixel', 'border style 1pixel after changing');
+is(get_border_style(), 'pixel', 'border style 1pixel after changing');
 
 # perform an inplace-restart
 cmd 'restart';
 
 does_i3_live;
 
-is(get_border_style(), '1pixel', 'border style still 1pixel after restart');
+is(get_border_style(), 'pixel', 'border style still 1pixel after restart');
 
 done_testing;

@@ -63,6 +63,35 @@ For several reasons, the i3 testsuite has been implemented in Perl:
 
 Please do not start programming language flamewars at this point.
 
+=== Installing the dependencies
+
+As usual with Perl programs, the testsuite ships with a +Makefile.PL+.
+This file specifies which Perl modules the testsuite depends on and can be used
+to install all of them.
+
+Perl modules are distributed via CPAN, and there is the official, standard CPAN
+client, simply called +cpan+. It comes with every Perl installation and can be
+used to install the testsuite. Many users prefer to use the more modern
++cpanminus+ instead, though (because it asks no questions and just works):
+
+.Installing testsuite dependencies using cpanminus (preferred)
+--------------------------------------------------------------------------------
+$ cd ~/i3/testcases
+$ sudo apt-get install cpanminus
+$ sudo cpanm .
+--------------------------------------------------------------------------------
+
+If you don’t want to use cpanminus for some reason, the same works with cpan:
+
+.Installing testsuite dependencies using cpan
+--------------------------------------------------------------------------------
+$ cd ~/i3/testcases
+$ sudo cpan .
+--------------------------------------------------------------------------------
+
+In case you don’t have root permissions, you can also install into your home
+directory, see http://michael.stapelberg.de/cpan/
+
 === Mechanisms
 
 ==== Script: complete-run

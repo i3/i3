@@ -7,8 +7,8 @@
  * manage.c: Initially managing new windows (or existing ones on restart).
  *
  */
-#ifndef _MANAGE_H
-#define _MANAGE_H
+#ifndef I3_MANAGE_H
+#define I3_MANAGE_H
 
 #include "data.h"
 

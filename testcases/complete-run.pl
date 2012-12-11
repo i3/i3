@@ -66,6 +66,22 @@ my $result = GetOptions(
 
 pod2usage(-verbose => 2, -exitcode => 0) if $help;
 
+# Check for missing executables
+my @binaries = qw(
+                   ../i3
+                   ../i3bar/i3bar
+                   ../i3-config-wizard/i3-config-wizard
+                   ../i3-dump-log/i3-dump-log
+                   ../i3-input/i3-input
+                   ../i3-msg/i3-msg
+                   ../i3-nagbar/i3-nagbar
+               );
+
+foreach my $binary (@binaries) {
+    die "$binary executable not found" unless -e $binary;
+    die "$binary is not an executable" unless -x $binary;
+}
+
 @displays = split(/,/, join(',', @displays));
 @displays = map { s/ //g; $_ } @displays;
 
@@ -120,6 +136,12 @@ my $timingsjson = StartXDummy::slurp('.last_run_timings.json');
 @testfiles = map  { $_->[0] }
              sort { $b->[1] <=> $a->[1] }
              map  { [$_, $timings{$_} // 999] } @testfiles;
+
+# Run 000-load-deps.t first to bail out early when dependencies are missing.
+my $loadtest = "t/000-load-deps.t";
+if ($loadtest ~~ @testfiles) {
+    @testfiles = ($loadtest, grep { $_ ne $loadtest } @testfiles);
+}
 
 printf("\nRough time estimate for this run: %.2f seconds\n\n", $timings{GLOBAL})
     if exists($timings{GLOBAL});

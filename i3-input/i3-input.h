@@ -1,5 +1,5 @@
-#ifndef _I3_INPUT
-#define _I3_INPUT
+#ifndef I3_INPUT
+#define I3_INPUT
 
 #include <err.h>
 

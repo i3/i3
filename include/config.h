@@ -10,8 +10,8 @@
  * mode).
  *
  */
-#ifndef _CONFIG_H
-#define _CONFIG_H
+#ifndef I3_CONFIG_H
+#define I3_CONFIG_H
 
 #include <stdbool.h>
 #include "queue.h"
@@ -24,6 +24,8 @@ extern char *current_configpath;
 extern Config config;
 extern SLIST_HEAD(modes_head, Mode) modes;
 extern TAILQ_HEAD(barconfig_head, Barconfig) barconfigs;
+/* defined in src/cfgparse.y */
+extern bool force_old_config_parser;
 
 /**
  * Used during the config file lexing/parsing to keep the state of the lexer
@@ -98,6 +100,7 @@ struct Config {
     int default_layout;
     int container_stack_limit;
     int container_stack_limit_value;
+    int default_border_width;
 
     /** Default orientation for new containers */
     int default_orientation;
@@ -149,6 +152,13 @@ struct Config {
      * between two workspaces. */
     bool workspace_auto_back_and_forth;
 
+    /** By default, urgency is cleared immediately when switching to another
+     * workspace leads to focusing the con with the urgency hint. When having
+     * multiple windows on that workspace, the user needs to guess which
+     * application raised the event. To prevent this, the reset of the urgency
+     * flag can be delayed using an urgency timer. */
+    float workspace_urgency_timer;
+
     /** The default border style for new windows. */
     border_style_t default_border;
 
@@ -181,8 +191,15 @@ struct Config {
 
     /** What should happen when a new popup is opened during fullscreen mode */
     enum {
-        PDF_LEAVE_FULLSCREEN = 0,
-        PDF_IGNORE = 1
+        /* display (and focus) the popup when it belongs to the fullscreen
+         * window only. */
+        PDF_SMART = 0,
+
+        /* leave fullscreen mode unconditionally */
+        PDF_LEAVE_FULLSCREEN = 1,
+
+        /* just ignore the popup, that is, don’t map it */
+        PDF_IGNORE = 2,
     } popup_during_fullscreen;
 };
 

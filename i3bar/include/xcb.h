@@ -110,12 +110,18 @@ void reconfig_windows(void);
  * Render the bars, with buttons and statusline
  *
  */
-void draw_bars(void);
+void draw_bars(bool force_unhide);
 
 /*
  * Redraw the bars, i.e. simply copy the buffer to the barwindow
  *
  */
 void redraw_bars(void);
+
+/*
+ * Set the current binding mode
+ *
+ */
+void set_current_mode(struct mode *mode);
 
 #endif

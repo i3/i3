@@ -10,7 +10,30 @@
 #ifndef CHILD_H_
 #define CHILD_H_
 
+#include <stdbool.h>
+
 #define STDIN_CHUNK_SIZE 1024
+
+typedef struct {
+    pid_t pid;
+
+    /**
+     * The version number is an uint32_t to avoid machines with different sizes of
+     * 'int' to allow different values here. It’s highly unlikely we ever exceed
+     * even an int8_t, but still…
+     */
+    uint32_t version;
+
+    bool stopped;
+    /**
+     * The signal requested by the client to inform it of the hidden state of i3bar
+     */
+    int stop_signal;
+    /**
+     * The signal requested by the client to inform it of theun hidden state of i3bar
+     */
+    int cont_signal;
+} i3bar_child;
 
 /*
  * Start a child-process with the specified command and reroute stdin.

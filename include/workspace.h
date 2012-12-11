@@ -8,8 +8,8 @@
  *              workspaces.
  *
  */
-#ifndef _WORKSPACE_H
-#define _WORKSPACE_H
+#ifndef I3_WORKSPACE_H
+#define I3_WORKSPACE_H
 
 #include "data.h"
 #include "tree.h"
@@ -95,6 +95,12 @@ Con* workspace_prev_on_output(void);
  */
 void workspace_back_and_forth(void);
 
+/**
+ * Returns the previously focused workspace con, or NULL if unavailable.
+ *
+ */
+Con *workspace_back_and_forth_get(void);
+
 
 #if 0
 /**
@@ -168,4 +174,11 @@ void ws_force_orientation(Con *ws, orientation_t orientation);
  */
 Con *workspace_attach_to(Con *ws);
 
+/**
+ * Creates a new container and re-parents all of children from the given
+ * workspace into it.
+ *
+ * The container inherits the layout from the workspace.
+ */
+Con *workspace_encapsulate(Con *ws);
 #endif

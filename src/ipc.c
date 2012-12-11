@@ -10,6 +10,7 @@
  *
  */
 #include "all.h"
+#include "yajl_utils.h"
 
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -18,13 +19,8 @@
 #include <ev.h>
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
-#include <yajl/yajl_version.h>
 
 char *current_socketpath = NULL;
-
-/* Shorter names for all those yajl_gen_* functions */
-#define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
-#define ystr(str) yajl_gen_string(gen, (unsigned char*)str, strlen(str))
 
 TAILQ_HEAD(ipc_client_head, ipc_client) all_clients = TAILQ_HEAD_INITIALIZER(all_clients);
 
@@ -52,7 +48,7 @@ static bool mkdirp(const char *path) {
         ELOG("mkdir(%s) failed: %s\n", path, strerror(errno));
         return false;
     }
-    char *copy = strdup(path);
+    char *copy = sstrdup(path);
     /* strip trailing slashes, if any */
     while (copy[strlen(copy)-1] == '/')
         copy[strlen(copy)-1] = '\0';
@@ -128,11 +124,7 @@ IPC_HANDLER(command) {
         tree_render();
 
     const unsigned char *reply;
-#if YAJL_MAJOR >= 2
-    size_t length;
-#else
-    unsigned int length;
-#endif
+    ylength length;
     yajl_gen_get_buf(command_output->json_gen, &reply, &length);
 
     ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_COMMAND,
@@ -165,7 +157,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     /* provided for backwards compatibility only. */
     ystr("orientation");
-    if (!con->split)
+    if (!con_is_split(con))
         ystr("none");
     else {
         if (con_orientation(con) == HORIZ)
@@ -201,9 +193,6 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     ystr("focused");
     y(bool, (con == focused));
-
-    ystr("split");
-    y(bool, con->split);
 
     ystr("layout");
     switch (con->layout) {
@@ -266,10 +255,13 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         case BS_NONE:
             ystr("none");
             break;
-        case BS_1PIXEL:
-            ystr("1pixel");
+        case BS_PIXEL:
+            ystr("pixel");
             break;
     }
+
+    ystr("current_border_width");
+    y(integer, con->current_border_width);
 
     dump_rect(gen, "rect", con->rect);
     dump_rect(gen, "window_rect", con->window_rect);
@@ -367,20 +359,12 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
 IPC_HANDLER(tree) {
     setlocale(LC_NUMERIC, "C");
-#if YAJL_MAJOR >= 2
-    yajl_gen gen = yajl_gen_alloc(NULL);
-#else
-    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
-#endif
+    yajl_gen gen = ygenalloc();
     dump_node(gen, croot, false);
     setlocale(LC_NUMERIC, "");
 
     const unsigned char *payload;
-#if YAJL_MAJOR >= 2
-    size_t length;
-#else
-    unsigned int length;
-#endif
+    ylength length;
     y(get_buf, &payload, &length);
 
     ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_TREE, payload);
@@ -394,18 +378,14 @@ IPC_HANDLER(tree) {
  *
  */
 IPC_HANDLER(get_workspaces) {
-#if YAJL_MAJOR >= 2
-    yajl_gen gen = yajl_gen_alloc(NULL);
-#else
-    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
-#endif
+    yajl_gen gen = ygenalloc();
     y(array_open);
 
     Con *focused_ws = con_get_workspace(focused);
 
     Con *output;
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
-        if (output->name[0] == '_' && output->name[1] == '_')
+        if (con_is_internal(output))
             continue;
         Con *ws;
         TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
@@ -451,11 +431,7 @@ IPC_HANDLER(get_workspaces) {
     y(array_close);
 
     const unsigned char *payload;
-#if YAJL_MAJOR >= 2
-    size_t length;
-#else
-    unsigned int length;
-#endif
+    ylength length;
     y(get_buf, &payload, &length);
 
     ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_WORKSPACES, payload);
@@ -468,11 +444,7 @@ IPC_HANDLER(get_workspaces) {
  *
  */
 IPC_HANDLER(get_outputs) {
-#if YAJL_MAJOR >= 2
-    yajl_gen gen = yajl_gen_alloc(NULL);
-#else
-    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
-#endif
+    yajl_gen gen = ygenalloc();
     y(array_open);
 
     Output *output;
@@ -512,11 +484,7 @@ IPC_HANDLER(get_outputs) {
     y(array_close);
 
     const unsigned char *payload;
-#if YAJL_MAJOR >= 2
-    size_t length;
-#else
-    unsigned int length;
-#endif
+    ylength length;
     y(get_buf, &payload, &length);
 
     ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_OUTPUTS, payload);
@@ -529,11 +497,7 @@ IPC_HANDLER(get_outputs) {
  *
  */
 IPC_HANDLER(get_marks) {
-#if YAJL_MAJOR >= 2
-    yajl_gen gen = yajl_gen_alloc(NULL);
-#else
-    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
-#endif
+    yajl_gen gen = ygenalloc();
     y(array_open);
 
     Con *con;
@@ -544,11 +508,7 @@ IPC_HANDLER(get_marks) {
     y(array_close);
 
     const unsigned char *payload;
-#if YAJL_MAJOR >= 2
-    size_t length;
-#else
-    unsigned int length;
-#endif
+    ylength length;
     y(get_buf, &payload, &length);
 
     ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_MARKS, payload);
@@ -560,11 +520,7 @@ IPC_HANDLER(get_marks) {
  *
  */
 IPC_HANDLER(get_version) {
-#if YAJL_MAJOR >= 2
-    yajl_gen gen = yajl_gen_alloc(NULL);
-#else
-    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
-#endif
+    yajl_gen gen = ygenalloc();
     y(map_open);
 
     ystr("major");
@@ -582,11 +538,7 @@ IPC_HANDLER(get_version) {
     y(map_close);
 
     const unsigned char *payload;
-#if YAJL_MAJOR >= 2
-    size_t length;
-#else
-    unsigned int length;
-#endif
+    ylength length;
     y(get_buf, &payload, &length);
 
     ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_VERSION, payload);
@@ -599,11 +551,7 @@ IPC_HANDLER(get_version) {
  *
  */
 IPC_HANDLER(get_bar_config) {
-#if YAJL_MAJOR >= 2
-    yajl_gen gen = yajl_gen_alloc(NULL);
-#else
-    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
-#endif
+    yajl_gen gen = ygenalloc();
 
     /* If no ID was passed, we return a JSON array with all IDs */
     if (message_size == 0) {
@@ -615,11 +563,7 @@ IPC_HANDLER(get_bar_config) {
         y(array_close);
 
         const unsigned char *payload;
-#if YAJL_MAJOR >= 2
-        size_t length;
-#else
-        unsigned int length;
-#endif
+        ylength length;
         y(get_buf, &payload, &length);
 
         ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_BAR_CONFIG, payload);
@@ -753,11 +697,7 @@ IPC_HANDLER(get_bar_config) {
     y(map_close);
 
     const unsigned char *payload;
-#if YAJL_MAJOR >= 2
-    size_t length;
-#else
-    unsigned int length;
-#endif
+    ylength length;
     y(get_buf, &payload, &length);
 
     ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_BAR_CONFIG, payload);
@@ -768,13 +708,8 @@ IPC_HANDLER(get_bar_config) {
  * Callback for the YAJL parser (will be called when a string is parsed).
  *
  */
-#if YAJL_MAJOR < 2
 static int add_subscription(void *extra, const unsigned char *s,
-                            unsigned int len) {
-#else
-static int add_subscription(void *extra, const unsigned char *s,
-                            size_t len) {
-#endif
+                            ylength len) {
     ipc_client *client = extra;
 
     DLOG("should add subscription to extra %p, sub %.*s\n", client, (int)len, s);
@@ -824,11 +759,7 @@ IPC_HANDLER(subscribe) {
     memset(&callbacks, 0, sizeof(yajl_callbacks));
     callbacks.yajl_string = add_subscription;
 
-#if YAJL_MAJOR >= 2
-    p = yajl_alloc(&callbacks, NULL, (void*)client);
-#else
-    p = yajl_alloc(&callbacks, NULL, NULL, (void*)client);
-#endif
+    p = yalloc(&callbacks, (void*)client);
     stat = yajl_parse(p, (const unsigned char*)message, message_size);
     if (stat != yajl_status_ok) {
         unsigned char *err;

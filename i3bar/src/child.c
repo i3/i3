@@ -25,19 +25,20 @@
 #include "common.h"
 
 /* Global variables for child_*() */
-pid_t child_pid;
+i3bar_child child = { 0 };
 
 /* stdin- and sigchild-watchers */
 ev_io    *stdin_io;
 ev_child *child_sig;
 
 /* JSON parser for stdin */
-bool first_line = true;
-bool plaintext = false;
 yajl_callbacks callbacks;
 yajl_handle parser;
 
 typedef struct parser_ctx {
+    /* True if one of the parsed blocks was urgent */
+    bool has_urgent;
+
     /* A copy of the last JSON map key. */
     char *last_map_key;
 
@@ -69,6 +70,8 @@ void cleanup(void) {
         ev_child_stop(main_loop, child_sig);
         FREE(child_sig);
     }
+
+    memset(&child, 0, sizeof(i3bar_child));
 }
 
 /*
@@ -109,6 +112,14 @@ static int stdin_map_key(void *context, const unsigned char *key, unsigned int l
     return 1;
 }
 
+static int stdin_boolean(void *context, int val) {
+    parser_ctx *ctx = context;
+    if (strcasecmp(ctx->last_map_key, "urgent") == 0) {
+        ctx->block.urgent = val;
+    }
+    return 1;
+}
+
 #if YAJL_MAJOR >= 2
 static int stdin_string(void *context, const unsigned char *val, size_t len) {
 #else
@@ -121,6 +132,27 @@ static int stdin_string(void *context, const unsigned char *val, unsigned int le
     if (strcasecmp(ctx->last_map_key, "color") == 0) {
         sasprintf(&(ctx->block.color), "%.*s", len, val);
     }
+    if (strcasecmp(ctx->last_map_key, "align") == 0) {
+        if (len == strlen("left") && !strncmp((const char*)val, "left", strlen("left"))) {
+            ctx->block.align = ALIGN_LEFT;
+        } else if (len == strlen("right") && !strncmp((const char*)val, "right", strlen("right"))) {
+            ctx->block.align = ALIGN_RIGHT;
+        } else {
+            ctx->block.align = ALIGN_CENTER;
+        }
+    }
+    return 1;
+}
+
+#if YAJL_MAJOR >= 2
+static int stdin_integer(void *context, long long val) {
+#else
+static int stdin_integer(void *context, long val) {
+#endif
+    parser_ctx *ctx = context;
+    if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
+        ctx->block.min_width = (uint32_t)val;
+    }
     return 1;
 }
 
@@ -132,6 +164,8 @@ static int stdin_end_map(void *context) {
      * i3bar doesn’t crash and the user gets an annoying message. */
     if (!new_block->full_text)
         new_block->full_text = i3string_from_utf8("SPEC VIOLATION (null)");
+    if (new_block->urgent)
+        ctx->has_urgent = true;
     TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
     return 1;
 }
@@ -148,11 +182,10 @@ static int stdin_end_array(void *context) {
 }
 
 /*
- * Callbalk for stdin. We read a line from stdin and store the result
- * in statusline
+ * Helper function to read stdin
  *
  */
-void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
     int fd = watcher->fd;
     int n = 0;
     int rec = 0;
@@ -173,8 +206,9 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
             /* end of file, kill the watcher */
             ELOG("stdin: received EOF\n");
             cleanup();
-            draw_bars();
-            return;
+            draw_bars(false);
+            *ret_buffer_len = -1;
+            return NULL;
         }
         rec += n;
 
@@ -185,51 +219,94 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     }
     if (*buffer == '\0') {
         FREE(buffer);
-        return;
+        rec = -1;
     }
+    *ret_buffer_len = rec;
+    return buffer;
+}
 
-    unsigned char *json_input = buffer;
-    if (first_line) {
-        DLOG("Detecting input type based on buffer *%.*s*\n", rec, buffer);
-        /* Detect whether this is JSON or plain text. */
-        unsigned int consumed = 0;
-        /* At the moment, we don’t care for the version. This might change
-         * in the future, but for now, we just discard it. */
-        plaintext = (determine_json_version(buffer, buffer_len, &consumed) == -1);
-        if (plaintext) {
-            /* In case of plaintext, we just add a single block and change its
-             * full_text pointer later. */
-            struct status_block *new_block = scalloc(sizeof(struct status_block));
-            TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
-        } else {
-            json_input += consumed;
-            rec -= consumed;
-        }
-        first_line = false;
-    }
-    if (!plaintext) {
-        yajl_status status = yajl_parse(parser, json_input, rec);
+static void read_flat_input(char *buffer, int length) {
+    struct status_block *first = TAILQ_FIRST(&statusline_head);
+    /* Clear the old buffer if any. */
+    I3STRING_FREE(first->full_text);
+    /* Remove the trailing newline and terminate the string at the same
+     * time. */
+    if (buffer[length-1] == '\n' || buffer[length-1] == '\r')
+        buffer[length-1] = '\0';
+    else buffer[length] = '\0';
+    first->full_text = i3string_from_utf8(buffer);
+}
+
+static bool read_json_input(unsigned char *input, int length) {
+    yajl_status status = yajl_parse(parser, input, length);
+    bool has_urgent = false;
 #if YAJL_MAJOR >= 2
-        if (status != yajl_status_ok) {
+    if (status != yajl_status_ok) {
 #else
-        if (status != yajl_status_ok && status != yajl_status_insufficient_data) {
+    if (status != yajl_status_ok && status != yajl_status_insufficient_data) {
 #endif
-            fprintf(stderr, "[i3bar] Could not parse JSON input (code %d): %.*s\n",
-                    status, rec, json_input);
-        }
+        fprintf(stderr, "[i3bar] Could not parse JSON input (code %d): %.*s\n",
+                status, length, input);
+    } else if (parser_context.has_urgent) {
+        has_urgent = true;
+    }
+    return has_urgent;
+}
+
+/*
+ * Callbalk for stdin. We read a line from stdin and store the result
+ * in statusline
+ *
+ */
+void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+    int rec;
+    unsigned char *buffer = get_buffer(watcher, &rec);
+    if (buffer == NULL)
+        return;
+    bool has_urgent = false;
+    if (child.version > 0) {
+        has_urgent = read_json_input(buffer, rec);
     } else {
-        struct status_block *first = TAILQ_FIRST(&statusline_head);
-        /* Clear the old buffer if any. */
-        I3STRING_FREE(first->full_text);
-        /* Remove the trailing newline and terminate the string at the same
-         * time. */
-        if (buffer[rec-1] == '\n' || buffer[rec-1] == '\r')
-            buffer[rec-1] = '\0';
-        else buffer[rec] = '\0';
-        first->full_text = i3string_from_utf8((const char *)buffer);
+        read_flat_input((char*)buffer, rec);
     }
     free(buffer);
-    draw_bars();
+    draw_bars(has_urgent);
+}
+
+/*
+ * Callbalk for stdin first line. We read the first line to detect
+ * whether this is JSON or plain text
+ *
+ */
+void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+    int rec;
+    unsigned char *buffer = get_buffer(watcher, &rec);
+    if (buffer == NULL)
+        return;
+    DLOG("Detecting input type based on buffer *%.*s*\n", rec, buffer);
+    /* Detect whether this is JSON or plain text. */
+    unsigned int consumed = 0;
+    /* At the moment, we don’t care for the version. This might change
+     * in the future, but for now, we just discard it. */
+    parse_json_header(&child, buffer, rec, &consumed);
+    if (child.version > 0) {
+        /* If hide-on-modifier is set, we start of by sending the
+         * child a SIGSTOP, because the bars aren't mapped at start */
+        if (config.hide_on_modifier) {
+            stop_child();
+        }
+        read_json_input(buffer + consumed, rec - consumed);
+    } else {
+        /* In case of plaintext, we just add a single block and change its
+         * full_text pointer later. */
+        struct status_block *new_block = scalloc(sizeof(struct status_block));
+        TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
+        read_flat_input((char*)buffer, rec);
+    }
+    free(buffer);
+    ev_io_stop(main_loop, stdin_io);
+    ev_io_init(stdin_io, &stdin_io_cb, STDIN_FILENO, EV_READ);
+    ev_io_start(main_loop, stdin_io);
 }
 
 /*
@@ -240,7 +317,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  */
 void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
     ELOG("Child (pid: %d) unexpectedly exited with status %d\n",
-           child_pid,
+           child.pid,
            watcher->rstatus);
     cleanup();
 }
@@ -255,7 +332,9 @@ void start_child(char *command) {
     /* Allocate a yajl parser which will be used to parse stdin. */
     memset(&callbacks, '\0', sizeof(yajl_callbacks));
     callbacks.yajl_map_key = stdin_map_key;
+    callbacks.yajl_boolean = stdin_boolean;
     callbacks.yajl_string = stdin_string;
+    callbacks.yajl_integer = stdin_integer;
     callbacks.yajl_start_array = stdin_start_array;
     callbacks.yajl_end_array = stdin_end_array;
     callbacks.yajl_start_map = stdin_start_map;
@@ -268,14 +347,13 @@ void start_child(char *command) {
     parser = yajl_alloc(&callbacks, NULL, &parser_context);
 #endif
 
-    child_pid = 0;
     if (command != NULL) {
         int fd[2];
         if (pipe(fd) == -1)
             err(EXIT_FAILURE, "pipe(fd)");
 
-        child_pid = fork();
-        switch (child_pid) {
+        child.pid = fork();
+        switch (child.pid) {
             case -1:
                 ELOG("Couldn't fork(): %s\n", strerror(errno));
                 exit(EXIT_FAILURE);
@@ -298,12 +376,6 @@ void start_child(char *command) {
 
                 dup2(fd[0], STDIN_FILENO);
 
-                /* If hide-on-modifier is set, we start of by sending the
-                 * child a SIGSTOP, because the bars aren't mapped at start */
-                if (config.hide_on_modifier) {
-                    stop_child();
-                }
-
                 break;
         }
     }
@@ -312,12 +384,12 @@ void start_child(char *command) {
     fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
 
     stdin_io = smalloc(sizeof(ev_io));
-    ev_io_init(stdin_io, &stdin_io_cb, STDIN_FILENO, EV_READ);
+    ev_io_init(stdin_io, &stdin_io_first_line_cb, STDIN_FILENO, EV_READ);
     ev_io_start(main_loop, stdin_io);
 
     /* We must cleanup, if the child unexpectedly terminates */
     child_sig = smalloc(sizeof(ev_child));
-    ev_child_init(child_sig, &child_sig_cb, child_pid, 0);
+    ev_child_init(child_sig, &child_sig_cb, child.pid, 0);
     ev_child_start(main_loop, child_sig);
 
     atexit(kill_child_at_exit);
@@ -328,9 +400,10 @@ void start_child(char *command) {
  *
  */
 void kill_child_at_exit(void) {
-    if (child_pid != 0) {
-        kill(child_pid, SIGCONT);
-        kill(child_pid, SIGTERM);
+    if (child.pid > 0) {
+        if (child.cont_signal > 0 && child.stopped)
+            kill(child.pid, child.cont_signal);
+        kill(child.pid, SIGTERM);
     }
 }
 
@@ -340,12 +413,12 @@ void kill_child_at_exit(void) {
  *
  */
 void kill_child(void) {
-    if (child_pid != 0) {
-        kill(child_pid, SIGCONT);
-        kill(child_pid, SIGTERM);
+    if (child.pid > 0) {
+        if (child.cont_signal > 0 && child.stopped)
+            kill(child.pid, child.cont_signal);
+        kill(child.pid, SIGTERM);
         int status;
-        waitpid(child_pid, &status, 0);
-        child_pid = 0;
+        waitpid(child.pid, &status, 0);
         cleanup();
     }
 }
@@ -355,8 +428,9 @@ void kill_child(void) {
  *
  */
 void stop_child(void) {
-    if (child_pid != 0) {
-        kill(child_pid, SIGSTOP);
+    if (child.stop_signal > 0 && !child.stopped) {
+        child.stopped = true;
+        kill(child.pid, child.stop_signal);
     }
 }
 
@@ -365,7 +439,8 @@ void stop_child(void) {
  *
  */
 void cont_child(void) {
-    if (child_pid != 0) {
-        kill(child_pid, SIGCONT);
+    if (child.cont_signal > 0 && child.stopped) {
+        child.stopped = false;
+        kill(child.pid, child.cont_signal);
     }
 }

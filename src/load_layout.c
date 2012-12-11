@@ -172,19 +172,17 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
             else if (strcasecmp(buf, "vertical") == 0)
                 json_node->last_split_layout = L_SPLITV;
             else LOG("Unhandled orientation: %s\n", buf);
-
-            /* What used to be an implicit check whether orientation !=
-             * NO_ORIENTATION is now a proper separate flag. */
-            if (strcasecmp(buf, "none") != 0)
-                json_node->split = true;
             free(buf);
         } else if (strcasecmp(last_key, "border") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
             if (strcasecmp(buf, "none") == 0)
                 json_node->border_style = BS_NONE;
-            else if (strcasecmp(buf, "1pixel") == 0)
-                json_node->border_style = BS_1PIXEL;
+            else if (strcasecmp(buf, "1pixel") == 0) {
+                json_node->border_style = BS_PIXEL;
+                json_node->current_border_width = 1;
+            } else if (strcasecmp(buf, "pixel") == 0)
+                json_node->border_style = BS_PIXEL;
             else if (strcasecmp(buf, "normal") == 0)
                 json_node->border_style = BS_NORMAL;
             else LOG("Unhandled \"border\": %s\n", buf);
@@ -199,11 +197,9 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
                 json_node->layout = L_STACKED;
             else if (strcasecmp(buf, "tabbed") == 0)
                 json_node->layout = L_TABBED;
-            else if (strcasecmp(buf, "dockarea") == 0) {
+            else if (strcasecmp(buf, "dockarea") == 0)
                 json_node->layout = L_DOCKAREA;
-                /* Necessary for migrating from older versions of i3. */
-                json_node->split = false;
-            } else if (strcasecmp(buf, "output") == 0)
+            else if (strcasecmp(buf, "output") == 0)
                 json_node->layout = L_OUTPUT;
             else if (strcasecmp(buf, "splith") == 0)
                 json_node->layout = L_SPLITH;
@@ -278,6 +274,9 @@ static int json_int(void *ctx, long val) {
     if (strcasecmp(last_key, "num") == 0)
         json_node->num = val;
 
+    if (strcasecmp(last_key, "current_border_width") == 0)
+        json_node->current_border_width = val;
+
     if (!parsing_swallows && strcasecmp(last_key, "id") == 0)
         json_node->old_id = val;
 
@@ -327,9 +326,6 @@ static int json_bool(void *ctx, int val) {
         to_focus = json_node;
     }
 
-    if (strcasecmp(last_key, "split") == 0)
-        json_node->split = val;
-
     if (parsing_swallows) {
         if (strcasecmp(last_key, "restart_mode") == 0)
             current_swallow->restart_mode = val;
@@ -350,11 +346,22 @@ void tree_append_json(const char *filename) {
     /* TODO: percent of other windows are not correctly fixed at the moment */
     FILE *f;
     if ((f = fopen(filename, "r")) == NULL) {
-        LOG("Cannot open file\n");
+        LOG("Cannot open file \"%s\"\n", filename);
         return;
     }
-    char *buf = malloc(65535); /* TODO */
-    int n = fread(buf, 1, 65535, f);
+    struct stat stbuf;
+    if (fstat(fileno(f), &stbuf) != 0) {
+        LOG("Cannot fstat() the file\n");
+        fclose(f);
+        return;
+    }
+    char *buf = smalloc(stbuf.st_size);
+    int n = fread(buf, 1, stbuf.st_size, f);
+    if (n != stbuf.st_size) {
+        LOG("File \"%s\" could not be read entirely, not loading.\n", filename);
+        fclose(f);
+        return;
+    }
     LOG("read %d bytes\n", n);
     yajl_gen g;
     yajl_handle hand;

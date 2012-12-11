@@ -86,7 +86,7 @@ $window->destroy;
 $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-assign "special" → targetws
+assign [class="special"] → targetws
 EOT
 
 $pid = launch_with_config($config);
@@ -145,7 +145,7 @@ exit_gracefully($pid);
 $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-assign "special" → ~
+for_window [class="special"] floating enable
 EOT
 
 $pid = launch_with_config($config);
@@ -159,35 +159,6 @@ ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 $window = open_special;
 
 my $content = get_ws($tmp);
-ok(@{$content->{nodes}} == 0, 'no tiling cons');
-ok(@{$content->{floating_nodes}} == 1, 'one floating con');
-
-$window->destroy;
-
-exit_gracefully($pid);
-
-#####################################################################
-# make sure that assignments are case-insensitive in the old syntax.
-#####################################################################
-
-$config = <<EOT;
-# i3 config file (v4)
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-assign "special" → ~
-EOT
-
-$pid = launch_with_config($config);
-
-$tmp = fresh_workspace;
-
-ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
-$workspaces = get_workspace_names;
-ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
-
-$window = open_special(wm_class => 'SPEcial');
-wait_for_map $window;
-
-$content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
 ok(@{$content->{floating_nodes}} == 1, 'one floating con');
 

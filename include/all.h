@@ -10,8 +10,8 @@
  * compile-time.
  *
  */
-#ifndef _ALL_H
-#define _ALL_H
+#ifndef I3_ALL_H
+#define I3_ALL_H
 
 #include <assert.h>
 #include <stdbool.h>
@@ -79,6 +79,8 @@
 #include "scratchpad.h"
 #include "commands.h"
 #include "commands_parser.h"
+#include "config_directives.h"
+#include "config_parser.h"
 #include "fake_outputs.h"
 #include "display_version.h"
 

@@ -7,8 +7,8 @@
  * xcb.c: Helper functions for easier usage of XCB
  *
  */
-#ifndef _XCB_H
-#define _XCB_H
+#ifndef I3_XCB_H
+#define I3_XCB_H
 
 #include "data.h"
 #include "xcursor.h"

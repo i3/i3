@@ -172,9 +172,13 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     xcb_grab_button(conn, false, window, XCB_EVENT_MASK_BUTTON_PRESS,
                     XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                    3 /* right mouse button */,
+                    2 /* middle mouse button */,
                     XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
 
+    xcb_grab_button(conn, false, window, XCB_EVENT_MASK_BUTTON_PRESS,
+                    XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
+                    3 /* right mouse button */,
+                    XCB_BUTTON_MASK_ANY /* don’t filter for any modifiers */);
 
     /* update as much information as possible so far (some replies may be NULL) */
     window_update_class(cwindow, xcb_get_property_reply(conn, class_cookie, NULL), true);
@@ -343,6 +347,12 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             fs != NULL) {
             LOG("There is a fullscreen window, leaving fullscreen mode\n");
             con_toggle_fullscreen(fs, CF_OUTPUT);
+        } else if (config.popup_during_fullscreen == PDF_SMART &&
+                   fs != NULL &&
+                   fs->window != NULL &&
+                   fs->window->id == cwindow->transient_for) {
+            LOG("This floating window belongs to the fullscreen window (popup_during_fullscreen == smart)\n");
+            con_focus(nc);
         }
     }
 

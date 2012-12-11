@@ -46,6 +46,7 @@ static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint
     }
     GRAB_KEY(mods);
     GRAB_KEY(mods | xcb_numlock_mask);
+    GRAB_KEY(mods | XCB_MOD_MASK_LOCK);
     GRAB_KEY(mods | xcb_numlock_mask | XCB_MOD_MASK_LOCK);
 }
 
@@ -194,6 +195,13 @@ void switch_mode(const char *new_mode) {
         bindings = mode->bindings;
         translate_keysyms();
         grab_all_keys(conn, false);
+
+        char *event_msg;
+        sasprintf(&event_msg, "{\"change\":\"%s\"}", mode->name);
+
+        ipc_send_event("mode", I3_IPC_EVENT_MODE, event_msg);
+        FREE(event_msg);
+
         return;
     }
 
@@ -410,8 +418,13 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
     config.default_border = BS_NORMAL;
     config.default_floating_border = BS_NORMAL;
+    config.default_border_width = 2;
     /* Set default_orientation to NO_ORIENTATION for auto orientation. */
     config.default_orientation = NO_ORIENTATION;
+
+    /* Set default urgency reset delay to 500ms */
+    if (config.workspace_urgency_timer == 0)
+        config.workspace_urgency_timer = 0.5;
 
     parse_configuration(override_configpath);
 

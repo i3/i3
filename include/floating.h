@@ -7,8 +7,8 @@
  * floating.c: Floating windows.
  *
  */
-#ifndef _FLOATING_H
-#define _FLOATING_H
+#ifndef I3_FLOATING_H
+#define I3_FLOATING_H
 
 #include "tree.h"
 
@@ -99,6 +99,14 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event);
  */
 void floating_resize_window(Con *con, const bool proportional, const xcb_button_press_event_t *event);
 
+/**
+ * Called when a floating window is created or resized.
+ * This function resizes the window if its size is higher or lower than the
+ * configured maximum/minimum size, respectively.
+ *
+ */
+void floating_check_size(Con *floating_con);
+
 #if 0
 /**
  * Changes focus in the given direction for floating clients.
@@ -134,8 +142,8 @@ void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace);
  *
  */
 void drag_pointer(Con *con, const xcb_button_press_event_t *event,
-                  xcb_window_t confine_to, border_t border, callback_t callback,
-                  const void *extra);
+                  xcb_window_t confine_to, border_t border, int cursor,
+                  callback_t callback, const void *extra);
 
 /**
  * Repositions the CT_FLOATING_CON to have the coordinates specified by

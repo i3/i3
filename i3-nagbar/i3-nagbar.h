@@ -1,5 +1,5 @@
-#ifndef _I3_NAGBAR
-#define _I3_NAGBAR
+#ifndef I3_NAGBAR
+#define I3_NAGBAR
 
 #include <err.h>
 

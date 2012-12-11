@@ -9,7 +9,7 @@ syntax match i3specComment /#.*/
 highlight link i3specComment Comment
 
 syntax region i3specLiteral start=/'/ end=/'/
-syntax keyword i3specToken string word end
+syntax keyword i3specToken string word number end
 highlight link i3specLiteral String
 highlight link i3specToken String
 

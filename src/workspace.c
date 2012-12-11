@@ -11,6 +11,9 @@
  *
  */
 #include "all.h"
+#include "yajl_utils.h"
+
+#include <yajl/yajl_gen.h>
 
 /* Stores a copy of the name of the last used workspace for the workspace
  * back-and-forth switching. */
@@ -312,12 +315,63 @@ static void workspace_reassign_sticky(Con *con) {
         workspace_reassign_sticky(current);
 }
 
+/*
+ * Callback to reset the urgent flag of the given con to false. May be started by
+ * _workspace_show to avoid urgency hints being lost by switching to a workspace
+ * focusing the con.
+ *
+ */
+static void workspace_defer_update_urgent_hint_cb(EV_P_ ev_timer *w, int revents) {
+    Con *con = w->data;
+
+    DLOG("Resetting urgency flag of con %p by timer\n", con);
+    con->urgent = false;
+    con_update_parents_urgency(con);
+    workspace_update_urgent_flag(con_get_workspace(con));
+    tree_render();
+
+    ev_timer_stop(main_loop, con->urgency_timer);
+    FREE(con->urgency_timer);
+}
+
+/*
+ * For the "focus" event we send, along the usual "change" field, also the
+ * current and previous workspace, in "current" and "old" respectively.
+ */
+static void ipc_send_workspace_focus_event(Con *current, Con *old) {
+    setlocale(LC_NUMERIC, "C");
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+
+    ystr("change");
+    ystr("focus");
+
+    ystr("current");
+    dump_node(gen, current, false);
+
+    ystr("old");
+    if (old == NULL)
+        y(null);
+    else
+        dump_node(gen, old, false);
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, (const char *)payload);
+    y(free);
+    setlocale(LC_NUMERIC, "");
+}
 
 static void _workspace_show(Con *workspace) {
     Con *current, *old = NULL;
 
     /* safe-guard against showing i3-internal workspaces like __i3_scratch */
-    if (workspace->name[0] == '_' && workspace->name[1] == '_')
+    if (con_is_internal(workspace))
         return;
 
     /* disable fullscreen for the other workspaces and get the workspace we are
@@ -353,9 +407,49 @@ static void _workspace_show(Con *workspace) {
 
     workspace_reassign_sticky(workspace);
 
-    LOG("switching to %p\n", workspace);
+    DLOG("switching to %p / %s\n", workspace, workspace->name);
     Con *next = con_descend_focused(workspace);
 
+    /* Memorize current output */
+    Con *old_output = con_get_output(focused);
+
+    /* Display urgency hint for a while if the newly visible workspace would
+     * focus and thereby immediately destroy it */
+    if (next->urgent && (int)(config.workspace_urgency_timer * 1000) > 0) {
+        /* focus for now… */
+        con_focus(next);
+
+        /* … but immediately reset urgency flags; they will be set to false by
+         * the timer callback in case the container is focused at the time of
+         * its expiration */
+        focused->urgent = true;
+        workspace->urgent = true;
+
+        if (focused->urgency_timer == NULL) {
+            DLOG("Deferring reset of urgency flag of con %p on newly shown workspace %p\n",
+                    focused, workspace);
+            focused->urgency_timer = scalloc(sizeof(struct ev_timer));
+            /* use a repeating timer to allow for easy resets */
+            ev_timer_init(focused->urgency_timer, workspace_defer_update_urgent_hint_cb,
+                    config.workspace_urgency_timer, config.workspace_urgency_timer);
+            focused->urgency_timer->data = focused;
+            ev_timer_start(main_loop, focused->urgency_timer);
+        } else {
+            DLOG("Resetting urgency timer of con %p on workspace %p\n",
+                    focused, workspace);
+            ev_timer_again(main_loop, focused->urgency_timer);
+        }
+    } else
+        con_focus(next);
+
+    ipc_send_workspace_focus_event(workspace, old);
+
+    DLOG("old = %p / %s\n", old, (old ? old->name : "(null)"));
+    /* Close old workspace if necessary. This must be done *after* doing
+     * urgency handling, because tree_close() will do a con_focus() on the next
+     * client, which will clear the urgency flag too early. Also, there is no
+     * way for con_focus() to know about when to clear urgency immediately and
+     * when to defer it. */
     if (old && TAILQ_EMPTY(&(old->nodes_head)) && TAILQ_EMPTY(&(old->floating_head))) {
         /* check if this workspace is currently visible */
         if (!workspace_is_visible(old)) {
@@ -365,10 +459,6 @@ static void _workspace_show(Con *workspace) {
         }
     }
 
-    /* Memorize current output */
-    Con *old_output = con_get_output(focused);
-
-    con_focus(next);
     workspace->fullscreen_mode = CF_OUTPUT;
     LOG("focused now = %p / %s\n", focused, focused->name);
 
@@ -380,8 +470,6 @@ static void _workspace_show(Con *workspace) {
 
     /* Update the EWMH hints */
     ewmh_update_current_desktop();
-
-    ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"focus\"}");
 }
 
 /*
@@ -398,8 +486,7 @@ void workspace_show(Con *workspace) {
  */
 void workspace_show_by_name(const char *num) {
     Con *workspace;
-    bool changed_num_workspaces;
-    workspace = workspace_get(num, &changed_num_workspaces);
+    workspace = workspace_get(num, NULL);
     _workspace_show(workspace);
 }
 
@@ -419,7 +506,7 @@ Con* workspace_next(void) {
         /* If currently a numbered workspace, find next numbered workspace. */
         TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
             /* Skip outputs starting with __, they are internal. */
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             NODES_FOREACH(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
@@ -440,7 +527,7 @@ Con* workspace_next(void) {
         bool found_current = false;
         TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
             /* Skip outputs starting with __, they are internal. */
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             NODES_FOREACH(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
@@ -459,7 +546,7 @@ Con* workspace_next(void) {
     if (!next) {
         TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
             /* Skip outputs starting with __, they are internal. */
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             NODES_FOREACH(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
@@ -491,7 +578,7 @@ Con* workspace_prev(void) {
         /* If numbered workspace, find previous numbered workspace. */
         TAILQ_FOREACH_REVERSE(output, &(croot->nodes_head), nodes_head, nodes) {
             /* Skip outputs starting with __, they are internal. */
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             NODES_FOREACH_REVERSE(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE || child->num == -1)
@@ -510,7 +597,7 @@ Con* workspace_prev(void) {
         bool found_current = false;
         TAILQ_FOREACH_REVERSE(output, &(croot->nodes_head), nodes_head, nodes) {
             /* Skip outputs starting with __, they are internal. */
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             NODES_FOREACH_REVERSE(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
@@ -529,7 +616,7 @@ Con* workspace_prev(void) {
     if (!prev) {
         TAILQ_FOREACH_REVERSE(output, &(croot->nodes_head), nodes_head, nodes) {
             /* Skip outputs starting with __, they are internal. */
-            if (output->name[0] == '_' && output->name[1] == '_')
+            if (con_is_internal(output))
                 continue;
             NODES_FOREACH_REVERSE(output_get_content(output)) {
                 if (child->type != CT_WORKSPACE)
@@ -670,6 +757,22 @@ void workspace_back_and_forth(void) {
     workspace_show_by_name(previous_workspace_name);
 }
 
+/*
+ * Returns the previously focused workspace con, or NULL if unavailable.
+ *
+ */
+Con *workspace_back_and_forth_get(void) {
+    if (!previous_workspace_name) {
+        DLOG("no previous workspace name set.");
+        return NULL;
+    }
+
+    Con *workspace;
+    workspace = workspace_get(previous_workspace_name, NULL);
+
+    return workspace;
+}
+
 static bool get_urgency_flag(Con *con) {
     Con *child;
     TAILQ_FOREACH(child, &(con->nodes_head), nodes)
@@ -706,7 +809,6 @@ void ws_force_orientation(Con *ws, orientation_t orientation) {
     /* 1: create a new split container */
     Con *split = con_new(NULL, NULL);
     split->parent = ws;
-    split->split = true;
 
     /* 2: copy layout from workspace */
     split->layout = ws->layout;
@@ -758,7 +860,6 @@ Con *workspace_attach_to(Con *ws) {
     /* 1: create a new split container */
     Con *new = con_new(NULL, NULL);
     new->parent = ws;
-    new->split = true;
 
     /* 2: set the requested layout on the split con */
     new->layout = ws->workspace_layout;
@@ -766,6 +867,37 @@ Con *workspace_attach_to(Con *ws) {
     /* 4: attach the new split container to the workspace */
     DLOG("Attaching new split %p to workspace %p\n", new, ws);
     con_attach(new, ws, false);
+
+    return new;
+}
+
+/**
+ * Creates a new container and re-parents all of children from the given
+ * workspace into it.
+ *
+ * The container inherits the layout from the workspace.
+ */
+Con *workspace_encapsulate(Con *ws) {
+    if (TAILQ_EMPTY(&(ws->nodes_head))) {
+        ELOG("Workspace %p / %s has no children to encapsulate\n", ws, ws->name);
+        return NULL;
+    }
+
+    Con *new = con_new(NULL, NULL);
+    new->parent = ws;
+    new->layout = ws->layout;
+
+    DLOG("Moving children of workspace %p / %s into container %p\n",
+        ws, ws->name, new);
+
+    Con *child;
+    while (!TAILQ_EMPTY(&(ws->nodes_head))) {
+        child = TAILQ_FIRST(&(ws->nodes_head));
+        con_detach(child);
+        con_attach(child, new, true);
+    }
+
+    con_attach(new, ws, true);
 
     return new;
 }

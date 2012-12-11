@@ -8,8 +8,8 @@
  * as i3-msg, i3-config-wizard, …
  *
  */
-#ifndef _LIBI3_H
-#define _LIBI3_H
+#ifndef I3_LIBI3_H
+#define I3_LIBI3_H
 
 #include <stdbool.h>
 #include <stdarg.h>

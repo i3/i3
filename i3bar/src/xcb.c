@@ -74,6 +74,9 @@ ev_check   *xcb_chk;
 ev_io      *xcb_io;
 ev_io      *xkb_io;
 
+/* The name of current binding mode */
+static mode binding;
+
 /* The parsed colors */
 struct xcb_colors_t {
     uint32_t bar_fg;
@@ -120,10 +123,31 @@ void refresh_statusline(void) {
             continue;
 
         block->width = predict_text_width(block->full_text);
+
+        /* Compute offset and append for text aligment in min_width. */
+        if (block->min_width <= block->width) {
+            block->x_offset = 0;
+            block->x_append = 0;
+        } else {
+            uint32_t padding_width = block->min_width - block->width;
+            switch (block->align) {
+                case ALIGN_LEFT:
+                    block->x_append = padding_width;
+                    break;
+                case ALIGN_RIGHT:
+                    block->x_offset = padding_width;
+                    break;
+                case ALIGN_CENTER:
+                    block->x_offset = padding_width / 2;
+                    block->x_append = padding_width / 2 + padding_width % 2;
+                    break;
+            }
+        }
+
         /* If this is not the last block, add some pixels for a separator. */
         if (TAILQ_NEXT(block, blocks) != NULL)
             block->width += 9;
-        statusline_width += block->width;
+        statusline_width += block->width + block->x_offset + block->x_append;
     }
 
     /* If the statusline is bigger than our screen we need to make sure that
@@ -144,8 +168,8 @@ void refresh_statusline(void) {
 
         uint32_t colorpixel = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
         set_font_colors(statusline_ctx, colorpixel, colors.bar_bg);
-        draw_text(block->full_text, statusline_pm, statusline_ctx, x, 0, block->width);
-        x += block->width;
+        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, 0, block->width);
+        x += block->width + block->x_offset + block->x_append;
 
         if (TAILQ_NEXT(block, blocks) != NULL) {
             /* This is not the last block, draw a separator. */
@@ -302,16 +326,24 @@ void handle_button(xcb_button_press_event_t *event) {
             }
             break;
         case 4:
-            /* Mouse wheel down. We select the next ws */
-            if (cur_ws != TAILQ_FIRST(walk->workspaces)) {
-                cur_ws = TAILQ_PREV(cur_ws, ws_head, tailq);
-            }
+            /* Mouse wheel up. We select the previous ws, if any.
+             * If there is no more workspace, don’t even send the workspace
+             * command, otherwise (with workspace auto_back_and_forth) we’d end
+             * up on the wrong workspace. */
+            if (cur_ws == TAILQ_FIRST(walk->workspaces))
+                return;
+
+            cur_ws = TAILQ_PREV(cur_ws, ws_head, tailq);
             break;
         case 5:
-            /* Mouse wheel up. We select the previos ws */
-            if (cur_ws != TAILQ_LAST(walk->workspaces, ws_head)) {
-                cur_ws = TAILQ_NEXT(cur_ws, tailq);
-            }
+            /* Mouse wheel down. We select the next ws, if any.
+             * If there is no more workspace, don’t even send the workspace
+             * command, otherwise (with workspace auto_back_and_forth) we’d end
+             * up on the wrong workspace. */
+            if (cur_ws == TAILQ_LAST(walk->workspaces, ws_head))
+                return;
+
+            cur_ws = TAILQ_NEXT(cur_ws, tailq);
             break;
     }
 
@@ -531,7 +563,7 @@ static void handle_client_message(xcb_client_message_event_t* event) {
             /* Trigger an update to copy the statusline text to the appropriate
              * position */
             configure_trayclients();
-            draw_bars();
+            draw_bars(false);
         }
     }
 }
@@ -559,7 +591,7 @@ static void handle_unmap_notify(xcb_unmap_notify_event_t* event) {
 
             /* Trigger an update, we now have more space for the statusline */
             configure_trayclients();
-            draw_bars();
+            draw_bars(false);
             return;
         }
     }
@@ -624,13 +656,13 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
             xcb_unmap_window(xcb_connection, trayclient->win);
             trayclient->mapped = map_it;
             configure_trayclients();
-            draw_bars();
+            draw_bars(false);
         } else if (!trayclient->mapped && map_it) {
             /* need to map the window */
             xcb_map_window(xcb_connection, trayclient->win);
             trayclient->mapped = map_it;
             configure_trayclients();
-            draw_bars();
+            draw_bars(false);
         }
         free(xembedr);
     }
@@ -1398,11 +1430,14 @@ void reconfig_windows(void) {
  * Render the bars, with buttons and statusline
  *
  */
-void draw_bars(void) {
+void draw_bars(bool unhide) {
     DLOG("Drawing Bars...\n");
     int i = 0;
 
     refresh_statusline();
+
+    static char *last_urgent_ws = NULL;
+    bool walks_away = true;
 
     i3_output *outputs_walk;
     SLIST_FOREACH(outputs_walk, outputs, slist) {
@@ -1460,8 +1495,6 @@ void draw_bars(void) {
         }
 
         i3_ws *ws_walk;
-        static char *last_urgent_ws = NULL;
-        bool has_urgent = false, walks_away = true;
 
         TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
             DLOG("Drawing Button for WS %s at x = %d, len = %d\n", i3string_as_utf8(ws_walk->name), i, ws_walk->name_width);
@@ -1486,13 +1519,11 @@ void draw_bars(void) {
                 fg_color = colors.urgent_ws_fg;
                 bg_color = colors.urgent_ws_bg;
                 border_color = colors.urgent_ws_border;
-                has_urgent = true;
+                unhide = true;
                 if (!ws_walk->focused) {
                     FREE(last_urgent_ws);
                     last_urgent_ws = sstrdup(i3string_as_utf8(ws_walk->name));
                 }
-                /* The urgent-hint should get noticed, so we unhide the bars shortly */
-                unhide_bars();
             }
             uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
             uint32_t vals_border[] = { border_color, border_color };
@@ -1520,14 +1551,54 @@ void draw_bars(void) {
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
             draw_text(ws_walk->name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, ws_walk->name_width);
             i += 10 + ws_walk->name_width + 1;
+
         }
 
-        if (!has_urgent && !mod_pressed && walks_away) {
-            FREE(last_urgent_ws);
-            hide_bars();
+        if (binding.name) {
+
+            uint32_t fg_color = colors.urgent_ws_fg;
+            uint32_t bg_color = colors.urgent_ws_bg;
+            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+
+            uint32_t vals_border[] = { colors.urgent_ws_border, colors.urgent_ws_border };
+            xcb_change_gc(xcb_connection,
+                          outputs_walk->bargc,
+                          mask,
+                          vals_border);
+            xcb_rectangle_t rect_border = { i, 0, binding.width + 10, font.height + 4 };
+            xcb_poly_fill_rectangle(xcb_connection,
+                                    outputs_walk->buffer,
+                                    outputs_walk->bargc,
+                                    1,
+                                    &rect_border);
+
+            uint32_t vals[] = { bg_color, bg_color };
+            xcb_change_gc(xcb_connection,
+                          outputs_walk->bargc,
+                          mask,
+                          vals);
+            xcb_rectangle_t rect = { i + 1, 1, binding.width + 8, font.height + 2 };
+            xcb_poly_fill_rectangle(xcb_connection,
+                                    outputs_walk->buffer,
+                                    outputs_walk->bargc,
+                                    1,
+                                    &rect);
+
+            set_font_colors(outputs_walk->bargc, fg_color, bg_color);
+            draw_text(binding.name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, binding.width);
         }
 
         i = 0;
+    }
+
+    if (!mod_pressed) {
+        if (unhide) {
+            /* The urgent-hint should get noticed, so we unhide the bars shortly */
+            unhide_bars();
+        } else if (walks_away) {
+            FREE(last_urgent_ws);
+            hide_bars();
+        }
     }
 
     redraw_bars();
@@ -1553,4 +1624,14 @@ void redraw_bars(void) {
                       outputs_walk->rect.h);
         xcb_flush(xcb_connection);
     }
+}
+
+/*
+ * Set the current binding mode
+ *
+ */
+void set_current_mode(struct mode *current) {
+    I3STRING_FREE(binding.name);
+    binding = *current;
+    return;
 }

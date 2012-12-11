@@ -28,6 +28,51 @@ static Rect total_outputs_dimensions(void) {
     return outputs_dimensions;
 }
 
+/**
+ * Called when a floating window is created or resized.
+ * This function resizes the window if its size is higher or lower than the
+ * configured maximum/minimum size, respectively.
+ *
+ */
+void floating_check_size(Con *floating_con) {
+    /* Define reasonable minimal and maximal sizes for floating windows */
+    const int floating_sane_min_height = 50;
+    const int floating_sane_min_width = 75;
+    Rect floating_sane_max_dimensions;
+
+    /* Unless user requests otherwise (-1), ensure width/height do not exceed
+     * configured maxima or, if unconfigured, limit to combined width of all
+     * outputs */
+    if (config.floating_minimum_height != -1) {
+        if (config.floating_minimum_height == 0)
+            floating_con->rect.height = max(floating_con->rect.height, floating_sane_min_height);
+        else
+            floating_con->rect.height = max(floating_con->rect.height, config.floating_minimum_height);
+    }
+    if (config.floating_minimum_width != -1) {
+        if (config.floating_minimum_width == 0)
+            floating_con->rect.width = max(floating_con->rect.width, floating_sane_min_width);
+        else
+            floating_con->rect.width = max(floating_con->rect.width, config.floating_minimum_width);
+    }
+
+    /* Unless user requests otherwise (-1), raise the width/height to
+     * reasonable minimum dimensions */
+    floating_sane_max_dimensions = total_outputs_dimensions();
+    if (config.floating_maximum_height != -1) {
+        if (config.floating_maximum_height == 0)
+            floating_con->rect.height = min(floating_con->rect.height, floating_sane_max_dimensions.height);
+        else
+            floating_con->rect.height = min(floating_con->rect.height, config.floating_maximum_height);
+    }
+    if (config.floating_maximum_width != -1) {
+        if (config.floating_maximum_width == 0)
+            floating_con->rect.width = min(floating_con->rect.width, floating_sane_max_dimensions.width);
+        else
+            floating_con->rect.width = min(floating_con->rect.width, config.floating_maximum_width);
+    }
+}
+
 void floating_enable(Con *con, bool automatic) {
     bool set_focus = (con == focused);
 
@@ -99,7 +144,6 @@ void floating_enable(Con *con, bool automatic) {
      * otherwise. */
     Con *ws = con_get_workspace(con);
     nc->parent = ws;
-    nc->split = true;
     nc->type = CT_FLOATING_CON;
     nc->layout = L_SPLITH;
     /* We insert nc already, even though its rect is not yet calculated. This
@@ -139,43 +183,7 @@ void floating_enable(Con *con, bool automatic) {
         }
     }
 
-    /* Define reasonable minimal and maximal sizes for floating windows */
-    const int floating_sane_min_height = 50;
-    const int floating_sane_min_width = 75;
-
-    Rect floating_sane_max_dimensions;
-    floating_sane_max_dimensions = total_outputs_dimensions();
-
-    /* Unless user requests otherwise (-1), ensure width/height do not exceed
-     * configured maxima or, if unconfigured, limit to combined width of all
-     * outputs */
-    if (config.floating_maximum_height != -1) {
-        if (config.floating_maximum_height == 0)
-            nc->rect.height = min(nc->rect.height, floating_sane_max_dimensions.height);
-        else
-            nc->rect.height = min(nc->rect.height, config.floating_maximum_height);
-    }
-    if (config.floating_maximum_width != -1) {
-        if (config.floating_maximum_width == 0)
-            nc->rect.width = min(nc->rect.width, floating_sane_max_dimensions.width);
-        else
-            nc->rect.width = min(nc->rect.width, config.floating_maximum_width);
-    }
-
-    /* Unless user requests otherwise (-1), raise the width/height to
-     * reasonable minimum dimensions */
-    if (config.floating_minimum_height != -1) {
-        if (config.floating_minimum_height == 0)
-            nc->rect.height = max(nc->rect.height, floating_sane_min_height);
-        else
-            nc->rect.height = max(nc->rect.height, config.floating_minimum_height);
-    }
-    if (config.floating_minimum_width != -1) {
-        if (config.floating_minimum_width == 0)
-            nc->rect.width = max(nc->rect.width, floating_sane_min_width);
-        else
-            nc->rect.width = max(nc->rect.width, config.floating_minimum_width);
-    }
+    floating_check_size(nc);
 
     /* 3: attach the child to the new parent container. We need to do this
      * because con_border_style_rect() needs to access con->parent. */
@@ -220,17 +228,22 @@ void floating_enable(Con *con, bool automatic) {
 
     /* Sanity check: Are the coordinates on the appropriate output? If not, we
      * need to change them */
-    Output *current_output = get_output_containing(nc->rect.x, nc->rect.y);
+    Output *current_output = get_output_containing(nc->rect.x +
+        (nc->rect.width / 2), nc->rect.y + (nc->rect.height / 2));
+
     Con *correct_output = con_get_output(ws);
     if (!current_output || current_output->con != correct_output) {
         DLOG("This floating window is on the wrong output, fixing coordinates (currently (%d, %d))\n",
              nc->rect.x, nc->rect.y);
-        /* Take the relative coordinates of the current output, then add them
-         * to the coordinate space of the correct output */
-        uint32_t rel_x = (nc->rect.x - (current_output ? current_output->con->rect.x : 0));
-        uint32_t rel_y = (nc->rect.y - (current_output ? current_output->con->rect.y : 0));
-        nc->rect.x = correct_output->rect.x + rel_x;
-        nc->rect.y = correct_output->rect.y + rel_y;
+
+        /* If moving from one output to another, keep the relative position
+         * consistent (e.g. a centered dialog will remain centered). */
+        if (current_output)
+            floating_fix_coordinates(nc, &current_output->con->rect, &correct_output->rect);
+        else {
+            nc->rect.x = correct_output->rect.x;
+            nc->rect.y = correct_output->rect.y;
+        }
     }
 
     DLOG("Floating rect: (%d, %d) with %d x %d\n", nc->rect.x, nc->rect.y, nc->rect.width, nc->rect.height);
@@ -395,7 +408,7 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
     tree_render();
 
     /* Drag the window */
-    drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, drag_window_callback, event);
+    drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, XCURSOR_CURSOR_MOVE, drag_window_callback, event);
     tree_render();
 }
 
@@ -479,13 +492,21 @@ void floating_resize_window(Con *con, const bool proportional,
         corner |= BORDER_LEFT;
     else corner |= BORDER_RIGHT;
 
-    if (event->event_y <= (con->rect.height / 2))
+    int cursor = 0;
+    if (event->event_y <= (con->rect.height / 2)) {
         corner |= BORDER_TOP;
-    else corner |= BORDER_BOTTOM;
+        cursor = (corner & BORDER_LEFT) ?
+            XCURSOR_CURSOR_TOP_LEFT_CORNER : XCURSOR_CURSOR_TOP_RIGHT_CORNER;
+    }
+    else {
+        corner |= BORDER_BOTTOM;
+        cursor = (corner & BORDER_LEFT) ?
+            XCURSOR_CURSOR_BOTTOM_LEFT_CORNER : XCURSOR_CURSOR_BOTTOM_RIGHT_CORNER;
+    }
 
     struct resize_window_callback_params params = { corner, proportional, event };
 
-    drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, resize_window_callback, &params);
+    drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, cursor, resize_window_callback, &params);
 }
 
 /*
@@ -497,12 +518,15 @@ void floating_resize_window(Con *con, const bool proportional,
  *
  */
 void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
-                confine_to, border_t border, callback_t callback, const void *extra)
+                confine_to, border_t border, int cursor, callback_t callback, const void *extra)
 {
     uint32_t new_x, new_y;
     Rect old_rect = { 0, 0, 0, 0 };
     if (con != NULL)
         memcpy(&old_rect, &(con->rect), sizeof(Rect));
+
+    Cursor xcursor = (cursor && xcursor_supported) ?
+        xcursor_get_cursor(cursor) : XCB_NONE;
 
     /* Grab the pointer */
     xcb_grab_pointer_cookie_t cookie;
@@ -514,7 +538,7 @@ void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
         XCB_GRAB_MODE_ASYNC, /* pointer events should continue as normal */
         XCB_GRAB_MODE_ASYNC, /* keyboard mode */
         confine_to,          /* confine_to = in which window should the cursor stay */
-        XCB_NONE,            /* don’t display a special cursor */
+        xcursor,             /* possibly display a special cursor */
         XCB_CURRENT_TIME);
 
     if ((reply = xcb_grab_pointer_reply(conn, cookie, NULL)) == NULL) {
@@ -623,16 +647,18 @@ void floating_fix_coordinates(Con *con, Rect *old_rect, Rect *new_rect) {
          new_rect->x, new_rect->y, new_rect->width, new_rect->height);
     /* First we get the x/y coordinates relative to the x/y coordinates
      * of the output on which the window is on */
-    int32_t rel_x = (con->rect.x - old_rect->x);
-    int32_t rel_y = (con->rect.y - old_rect->y);
+    int32_t rel_x = con->rect.x - old_rect->x + (int32_t)(con->rect.width  / 2);
+    int32_t rel_y = con->rect.y - old_rect->y + (int32_t)(con->rect.height / 2);
     /* Then we calculate a fraction, for example 0.63 for a window
      * which is at y = 1212 of a 1920 px high output */
     DLOG("rel_x = %d, rel_y = %d, fraction_x = %f, fraction_y = %f, output->w = %d, output->h = %d\n",
           rel_x, rel_y, (double)rel_x / old_rect->width, (double)rel_y / old_rect->height,
           old_rect->width, old_rect->height);
     /* Here we have to multiply at first. Or we will lose precision when not compiled with -msse2 */
-    con->rect.x = (int32_t)new_rect->x + (double)(rel_x * (int32_t)new_rect->width)  / (int32_t)old_rect->width;
-    con->rect.y = (int32_t)new_rect->y + (double)(rel_y * (int32_t)new_rect->height) / (int32_t)old_rect->height;
+    con->rect.x = (int32_t)new_rect->x + (double)(rel_x * (int32_t)new_rect->width)
+        / (int32_t)old_rect->width - (int32_t)(con->rect.width / 2);
+    con->rect.y = (int32_t)new_rect->y + (double)(rel_y * (int32_t)new_rect->height)
+        / (int32_t)old_rect->height - (int32_t)(con->rect.height / 2);
     DLOG("Resulting coordinates: x = %d, y = %d\n", con->rect.x, con->rect.y);
 }
 

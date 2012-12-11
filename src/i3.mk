@@ -50,12 +50,25 @@ src/cfgparse.tab.c: src/cfgparse.y $(i3_HEADERS_DEP)
 # and once as an object file for i3.
 src/commands_parser.o: src/commands_parser.c $(i3_HEADERS_DEP) i3-command-parser.stamp
 	echo "[i3] CC $<"
-	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -o test.commands_parser $< $(LIBS) $(i3_LIBS)
+	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -g -o test.commands_parser $< $(LIBS) $(i3_LIBS)
+	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
+
+# This target compiles the command parser twice:
+# Once with -DTEST_PARSER, creating a stand-alone executable used for tests,
+# and once as an object file for i3.
+src/config_parser.o: src/config_parser.c $(i3_HEADERS_DEP) i3-config-parser.stamp
+	echo "[i3] CC $<"
+	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -g -o test.config_parser $< $(LIBS) $(i3_LIBS)
 	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
 i3-command-parser.stamp: generate-command-parser.pl parser-specs/commands.spec
 	echo "[i3] Generating command parser"
-	(cd include; ../generate-command-parser.pl)
+	(cd include; ../generate-command-parser.pl --input=../parser-specs/commands.spec --prefix=command)
+	touch $@
+
+i3-config-parser.stamp: generate-command-parser.pl parser-specs/config.spec
+	echo "[i3] Generating config parser"
+	(cd include; ../generate-command-parser.pl --input=../parser-specs/config.spec --prefix=config)
 	touch $@
 
 i3: libi3.a $(i3_OBJECTS)
@@ -74,6 +87,7 @@ install-i3: i3
 	$(INSTALL) -m 0755 i3-sensible-editor $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-sensible-pager $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-sensible-terminal $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -m 0755 i3-dmenu-desktop $(DESTDIR)$(PREFIX)/bin/
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)$(SYSCONFDIR)/i3/config
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes || $(INSTALL) -m 0644 i3.config.keycodes $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes
 	$(INSTALL) -m 0644 i3.xsession.desktop $(DESTDIR)$(PREFIX)/share/xsessions/i3.desktop
@@ -82,4 +96,4 @@ install-i3: i3
 
 clean-i3:
 	echo "[i3] Clean"
-	rm -f $(i3_OBJECTS) $(i3_SOURCES_GENERATED) $(i3_HEADERS_CMDPARSER) include/loglevels.h loglevels.tmp include/all.h.pch i3-command-parser.stamp i3 src/*.gcno src/cfgparse.{output,dot,tab.h,y.o} src/cmdparse.*
+	rm -f $(i3_OBJECTS) $(i3_SOURCES_GENERATED) $(i3_HEADERS_CMDPARSER) include/loglevels.h loglevels.tmp include/all.h.pch i3-command-parser.stamp i3-config-parser.stamp i3 src/*.gcno src/cfgparse.{output,dot,tab.h,y.o} src/cmdparse.*

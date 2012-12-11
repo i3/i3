@@ -255,4 +255,38 @@ cmp_ok($content[0]->{rect}->{y}, '==', $oldrect->{y}, 'y the same as before');
 cmp_ok($content[0]->{rect}->{height}, '<', $oldrect->{height}, 'height smaller than before');
 cmp_ok($content[0]->{rect}->{width}, '==', $oldrect->{width}, 'width the same as before');
 
+################################################################################
+# Check that resizing with criteria works
+################################################################################
+
+$tmp = fresh_workspace;
+
+my $left = open_floating_window;
+my $right = open_floating_window;
+
+sub get_floating_rect {
+    my ($window_id) = @_;
+
+    my $floating_nodes = get_ws($tmp)->{floating_nodes};
+    for my $floating_node (@$floating_nodes) {
+        # Get all the windows within that floating container
+        my @window_ids = map { $_->{window} } @{$floating_node->{nodes}};
+        if ($window_id ~~ @window_ids) {
+            return $floating_node->{rect};
+        }
+    }
+
+    return undef;
+}
+
+# focus is on the right window, so we resize the left one using criteria
+my $leftold = get_floating_rect($left->id);
+my $rightold = get_floating_rect($right->id);
+cmd '[id="' . $left->id . '"] resize shrink height 10px or 10ppt';
+
+my $leftnew = get_floating_rect($left->id);
+my $rightnew = get_floating_rect($right->id);
+is($rightnew->{height}, $rightold->{height}, 'height of right container unchanged');
+is($leftnew->{height}, $leftold->{height} - 10, 'height of left container changed');
+
 done_testing;

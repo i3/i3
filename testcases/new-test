@@ -1,0 +1,100 @@
+#!/usr/bin/env perl
+# vim:ts=4:sw=4:expandtab
+# © 2012 Michael Stapelberg and contributors
+# Script to create a new testcase from a template.
+#
+#     # Create (and edit) a new test for moving floating windows
+#     ./new-test floating move
+#
+#     # Create (and edit) a multi-monitor test for moving workspaces
+#     ./new-test -m move workspaces
+
+use strict;
+use warnings;
+use File::Basename qw(basename);
+use Getopt::Long;
+use v5.10;
+
+my $multi_monitor;
+
+my $result = GetOptions(
+    'multi-monitor|mm' => \$multi_monitor
+);
+
+my $testname = join(' ', @ARGV);
+$testname =~ s/ /-/g;
+
+my $header = <<'EOF';
+#!perl
+# vim:ts=4:sw=4:expandtab
+#
+# Please read the following documents before working on tests:
+# • http://build.i3wm.org/docs/testsuite.html
+#   (or docs/testsuite)
+#
+# • http://build.i3wm.org/docs/lib-i3test.html
+#   (alternatively: perldoc ./testcases/lib/i3test.pm)
+#
+# • http://build.i3wm.org/docs/ipc.html
+#   (or docs/ipc)
+#
+# • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
+#   (unless you are already familiar with Perl)
+#
+# TODO: Description of this file.
+# Ticket: #999
+# Bug still in: #GITREV#
+EOF
+
+# Figure out the next test filename.
+my @files;
+if ($multi_monitor) {
+    @files = grep { basename($_) =~ /^5/ } <t/*.t>;
+} else {
+    @files = grep { basename($_) !~ /^5/ } <t/*.t>;
+}
+my ($latest) = sort { $b cmp $a } @files;
+my ($num) = (basename($latest) =~ /^([0-9]+)/);
+my $filename = "t/" . ($num+1) . "-" . lc($testname) . ".t";
+
+# Get the current git revision.
+chomp(my $gitrev = qx(git describe --tags));
+$header =~ s/#GITREV#/$gitrev/g;
+
+# Create the file based on our template.
+open(my $fh, '>', $filename);
+print $fh $header;
+if ($multi_monitor) {
+    print $fh <<'EOF';
+use i3test i3_autostart => 0;
+
+# Ensure the pointer is at (0, 0) so that we really start on the first
+# (the left) workspace.
+$x->root->warp_pointer(0, 0);
+
+my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+fake-outputs 1024x768+0+0,1024x768+1024+0
+EOT
+
+
+
+exit_gracefully($pid);
+
+done_testing;
+EOF
+} else {
+    print $fh <<'EOF';
+use i3test;
+
+
+done_testing;
+EOF
+}
+close($fh);
+
+my $editor = $ENV{EDITOR};
+$editor ||= 'vi';
+exec $editor, $filename;

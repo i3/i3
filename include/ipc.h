@@ -7,8 +7,8 @@
  * ipc.c: UNIX domain socket IPC (initialization, client handling, protocol).
  *
  */
-#ifndef _IPC_H
-#define _IPC_H
+#ifndef I3_IPC_H
+#define I3_IPC_H
 
 #include <ev.h>
 #include <stdbool.h>

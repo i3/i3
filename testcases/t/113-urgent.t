@@ -14,8 +14,16 @@
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 
-use i3test;
+use i3test i3_autostart => 0;
 use List::Util qw(first);
+
+my $config = <<EOT;
+# i3 config file (v4)
+font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
+
+force_display_urgency_hint 0ms
+EOT
+my $pid = launch_with_config($config);
 
 my $tmp = fresh_workspace;
 
@@ -144,5 +152,85 @@ cmd '[urgent=oldest] focus';
 is($x->input_focus, $bottom->id, 'oldest urgent window focused');
 $bottom->delete_hint('urgency');
 sync_with_i3;
+
+################################################################################
+# Check if urgent flag gets propagated to parent containers
+################################################################################
+
+cmd 'split v';
+
+
+
+sub count_urgent {
+    my ($con) = @_;
+
+    my @children = (@{$con->{nodes}}, @{$con->{floating_nodes}});
+    my $urgent = grep { $_->{urgent} } @children;
+    $urgent += count_urgent($_) for @children;
+    return $urgent;
+}
+
+$tmp = fresh_workspace;
+
+my $win1 = open_window;
+my $win2 = open_window;
+cmd 'layout stacked';
+cmd 'split vertical';
+my $win3 = open_window;
+my $win4 = open_window;
+cmd 'split horizontal' ;
+my $win5 = open_window;
+my $win6 = open_window;
+
+sync_with_i3;
+
+
+my $urgent = count_urgent(get_ws($tmp));
+is($urgent, 0, 'no window got the urgent flag');
+
+cmd '[id="' . $win2->id . '"] focus';
+sync_with_i3;
+$win5->add_hint('urgency');
+$win6->add_hint('urgency');
+sync_with_i3;
+
+# we should have 5 urgent cons. win5, win6 and their 3 split parents.
+
+$urgent = count_urgent(get_ws($tmp));
+is($urgent, 5, '2 windows and 3 split containers got the urgent flag');
+
+cmd '[id="' . $win5->id . '"] focus';
+sync_with_i3;
+
+# now win5 and still the split parents should be urgent.
+$urgent = count_urgent(get_ws($tmp));
+is($urgent, 4, '1 window and 3 split containers got the urgent flag');
+
+cmd '[id="' . $win6->id . '"] focus';
+sync_with_i3;
+
+# now now window should be urgent.
+$urgent = count_urgent(get_ws($tmp));
+is($urgent, 0, 'All urgent flags got cleared');
+
+################################################################################
+# Regression test: Check that urgent floating containers work properly (ticket
+# #821)
+################################################################################
+
+$tmp = fresh_workspace;
+my $floating_win = open_floating_window;
+
+# switch away
+fresh_workspace;
+
+$floating_win->add_hint('urgency');
+sync_with_i3;
+
+cmd "workspace $tmp";
+
+does_i3_live;
+
+exit_gracefully($pid);
 
 done_testing;

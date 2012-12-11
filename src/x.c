@@ -432,7 +432,7 @@ void x_draw_decoration(Con *con) {
             xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &bottomline);
         }
         /* 1pixel border needs an additional line at the top */
-        if (p->border_style == BS_1PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
+        if (p->border_style == BS_PIXEL && !(borders_to_hide & ADJ_UPPER_SCREEN_EDGE)) {
             xcb_rectangle_t topline = { br.x, 0, con->rect.width + br.width + br.x, br.y };
             xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, &topline);
         }
@@ -468,12 +468,20 @@ void x_draw_decoration(Con *con) {
     /* 5: draw two unconnected lines in border color */
     xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->border });
     Rect *dr = &(con->deco_rect);
+    int deco_diff_l = 2;
+    int deco_diff_r = 2;
+    if (parent->layout == L_TABBED) {
+        if (TAILQ_PREV(con, nodes_head, nodes) != NULL)
+            deco_diff_l = 0;
+        if (TAILQ_NEXT(con, nodes) != NULL)
+            deco_diff_r = 0;
+    }
     xcb_segment_t segments[] = {
         { dr->x,                 dr->y,
           dr->x + dr->width - 1, dr->y },
 
-        { dr->x + 2,             dr->y + dr->height - 1,
-          dr->x + dr->width - 3, dr->y + dr->height - 1 }
+        { dr->x + deco_diff_l,                 dr->y + dr->height - 1,
+          dr->x - deco_diff_r + dr->width - 1, dr->y + dr->height - 1 }
     };
     xcb_poly_segment(conn, parent->pixmap, parent->pm_gc, 2, segments);
 
@@ -482,15 +490,26 @@ void x_draw_decoration(Con *con) {
     int text_offset_y = (con->deco_rect.height - config.font.height) / 2;
 
     struct Window *win = con->window;
-    if (win == NULL || win->name == NULL) {
-        /* this is a non-leaf container, we need to make up a good description */
-        // TODO: use a good description instead of just "another container"
-        draw_text_ascii("another container",
+    if (win == NULL) {
+        /* we have a split container which gets a representation
+         * of its children as title
+         */
+        char *title;
+        char *tree = con_get_tree_representation(con);
+        sasprintf(&title, "i3: %s", tree);
+        free(tree);
+
+        draw_text_ascii(title,
                 parent->pixmap, parent->pm_gc,
                 con->deco_rect.x + 2, con->deco_rect.y + text_offset_y,
                 con->deco_rect.width - 2);
+        free(title);
+
         goto copy_pixmaps;
     }
+
+    if (win->name == NULL)
+        goto copy_pixmaps;
 
     int indent_level = 0,
         indent_mult = 0;

@@ -16,8 +16,8 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 # The font above is very space-efficient, that is, it looks good, sharp and
 # clear in small sizes. However, if you need a lot of unicode glyphs or
 # right-to-left text rendering, you should instead use pango for rendering and
-# chose an xft font, such as:
-# font xft:DejaVu Sans Mono 10
+# chose a FreeType font, such as:
+# font pango:DejaVu Sans Mono 10
 
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
@@ -30,6 +30,10 @@ bindcode $mod+Shift+24 kill
 
 # start dmenu (a program launcher)
 bindcode $mod+40 exec dmenu_run
+# There also is the (new) i3-dmenu-desktop which only displays applications
+# shipping a .desktop file. It is a wrapper around dmenu, so you need that
+# installed.
+# bindsym $mod+d exec --no-startup-id i3-dmenu-desktop
 
 # change focus
 bindcode $mod+44 focus left
@@ -79,7 +83,7 @@ bindcode $mod+65 focus mode_toggle
 bindcode $mod+38 focus parent
 
 # focus the child container
-#bindcode $mod+d focus child
+#bindsym $mod+d focus child
 
 # switch to workspace
 bindcode $mod+10 workspace 1

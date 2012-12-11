@@ -179,6 +179,22 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
     DLOG("--> OUTCOME = %p\n", con);
     DLOG("type = %d, name = %s\n", con->type, con->name);
 
+    /* Any click in a workspace should focus that workspace. If the
+     * workspace is on another output we need to do a workspace_show in
+     * order for i3bar (and others) to notice the change in workspace. */
+    Con *ws = con_get_workspace(con);
+    Con *focused_workspace = con_get_workspace(focused);
+
+    if (!ws) {
+        ws = TAILQ_FIRST(&(output_get_content(con_get_output(con))->focus_head));
+        if (!ws)
+            goto done;
+    }
+
+    if (ws != focused_workspace)
+        workspace_show(ws);
+    focused_id = XCB_NONE;
+
     /* don’t handle dockarea cons, they must not be focused */
     if (con->parent->type == CT_DOCKAREA)
         goto done;
@@ -207,21 +223,13 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
         goto done;
     }
 
-    /* 2: focus this con. If the workspace is on another output we need to
-     * do a workspace_show in order for i3bar (and others) to notice the
-     * change in workspace. */
-    Con *ws = con_get_workspace(con);
-    Con *focused_workspace = con_get_workspace(focused);
-
-    if (ws != focused_workspace)
-        workspace_show(ws);
-    focused_id = XCB_NONE;
+    /* 2: focus this con. */
     con_focus(con);
 
     /* 3: For floating containers, we also want to raise them on click.
      * We will skip handling events on floating cons in fullscreen mode */
     Con *fs = (ws ? con_get_fullscreen_con(ws, CF_OUTPUT) : NULL);
-    if (floatingcon != NULL && fs == NULL) {
+    if (floatingcon != NULL && fs != con) {
         floating_raise_con(floatingcon);
 
         /* 4: floating_modifier plus left mouse button drags */
@@ -309,6 +317,25 @@ int handle_button_press(xcb_button_press_event_t *event) {
         return route_click(con, event, mod_pressed, CLICK_INSIDE);
 
     if (!(con = con_by_frame_id(event->event))) {
+        /* If the root window is clicked, find the relevant output from the
+         * click coordinates and focus the output's active workspace. */
+        if (event->event == root) {
+            Con *output, *ws;
+            TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+                if (con_is_internal(output) ||
+                    !rect_contains(output->rect, event->event_x, event->event_y))
+                    continue;
+
+                ws = TAILQ_FIRST(&(output_get_content(output)->focus_head));
+                if (ws != con_get_workspace(focused)) {
+                    workspace_show(ws);
+                    tree_render();
+                }
+                return 1;
+            }
+            return 0;
+        }
+
         ELOG("Clicked into unknown window?!\n");
         xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
         xcb_flush(conn);

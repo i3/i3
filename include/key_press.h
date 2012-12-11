@@ -7,8 +7,8 @@
  * key_press.c: key press handler
  *
  */
-#ifndef _KEY_PRESS_H
-#define _KEY_PRESS_H
+#ifndef I3_KEY_PRESS_H
+#define I3_KEY_PRESS_H
 
 /**
  * There was a key press. We compare this key code with our bindings table and pass

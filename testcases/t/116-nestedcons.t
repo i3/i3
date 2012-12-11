@@ -52,7 +52,6 @@ my $expected = {
     name => 'root',
     orientation => $ignore,
     type => 0,
-    split => JSON::XS::false,
     id => $ignore,
     rect => $ignore,
     window_rect => $ignore,
@@ -69,6 +68,7 @@ my $expected = {
     border => 'normal',
     'floating_nodes' => $ignore,
     workspace_layout => 'default',
+    current_border_width => -1,
 };
 
 # a shallow copy is sufficient, since we only ignore values at the root

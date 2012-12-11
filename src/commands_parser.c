@@ -46,7 +46,7 @@
  * input parser-specs/commands.spec.
  ******************************************************************************/
 
-#include "GENERATED_enums.h"
+#include "GENERATED_command_enums.h"
 
 typedef struct token {
     char *name;
@@ -63,7 +63,7 @@ typedef struct tokenptr {
     int n;
 } cmdp_token_ptr;
 
-#include "GENERATED_tokens.h"
+#include "GENERATED_command_tokens.h"
 
 /*******************************************************************************
  * The (small) stack where identified literals are stored during the parsing
@@ -182,7 +182,7 @@ static Match current_match;
 static struct CommandResult subcommand_output;
 static struct CommandResult command_output;
 
-#include "GENERATED_call.h"
+#include "GENERATED_command_call.h"
 
 
 static void next_state(const cmdp_token *token) {
@@ -190,6 +190,7 @@ static void next_state(const cmdp_token *token) {
         subcommand_output.json_gen = command_output.json_gen;
         subcommand_output.needs_tree_render = false;
         GENERATED_call(token->extra.call_identifier, &subcommand_output);
+        state = subcommand_output.next_state;
         /* If any subcommand requires a tree_render(), we need to make the
          * whole parser result request a tree_render(). */
         if (subcommand_output.needs_tree_render)
