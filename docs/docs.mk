@@ -5,8 +5,7 @@ ASCIIDOC = asciidoc
 I3POD2HTML = ./docs/i3-pod2html
 
 ASCIIDOC_NOTOC_TARGETS = \
-	docs/debugging.html \
-	docs/debugging-release-version.html
+	docs/debugging.html
 
 ASCIIDOC_TOC_TARGETS = \
 	docs/hacking-howto.html \
