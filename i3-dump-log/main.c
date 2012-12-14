@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
 
     struct stat statbuf;
 
-    /* NB: While we must never read, we need O_RDWR for the pthread condvar. */
+    /* NB: While we must never write, we need O_RDWR for the pthread condvar. */
     int logbuffer_shm = shm_open(shmname, O_RDWR, 0);
     if (logbuffer_shm == -1)
         err(EXIT_FAILURE, "Could not shm_open SHM segment for the i3 log (%s)", shmname);
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
     if (fstat(logbuffer_shm, &statbuf) != 0)
         err(EXIT_FAILURE, "stat(%s)", shmname);
 
-    /* NB: While we must never read, we need O_RDWR for the pthread condvar. */
+    /* NB: While we must never write, we need PROT_WRITE for the pthread condvar. */
     logbuffer = mmap(NULL, statbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, logbuffer_shm, 0);
     if (logbuffer == MAP_FAILED)
         err(EXIT_FAILURE, "Could not mmap SHM segment for the i3 log");
