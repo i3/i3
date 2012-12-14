@@ -397,7 +397,7 @@ static void _workspace_show(Con *workspace) {
      * the corresponding workspace is cleaned up.
      * NOTE: Internal cons such as __i3_scratch (when a scratchpad window is
      * focused) are skipped, see bug #868. */
-    if (current && !(current->name[0] == '_' && current->name[1] == '_')) {
+    if (current && !con_is_internal(current)) {
         FREE(previous_workspace_name);
         if (current) {
             previous_workspace_name = sstrdup(current->name);
