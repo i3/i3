@@ -14,7 +14,6 @@
 #include <libsn/sn-launcher.h>
 
 #include <xcb/randr.h>
-#include <xcb/xcb_atom.h>
 #include <stdbool.h>
 #include <pcre.h>
 #include <sys/time.h>

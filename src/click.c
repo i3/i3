@@ -14,7 +14,6 @@
 #include <time.h>
 #include <math.h>
 
-#include <xcb/xcb_atom.h>
 #include <xcb/xcb_icccm.h>
 
 #include <X11/XKBlib.h>
