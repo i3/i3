@@ -44,6 +44,7 @@ my $config = <<'EOT';
 mode "meh" {
     bindsym Mod1 + Shift +   x resize grow
     bindcode Mod1+44 resize shrink
+    bindsym --release Mod1+x exec foo
 }
 EOT
 
@@ -51,6 +52,7 @@ my $expected = <<'EOT';
 cfg_enter_mode(meh)
 cfg_mode_binding(bindsym, Mod1,Shift, x, (null), resize grow)
 cfg_mode_binding(bindcode, Mod1, 44, (null), resize shrink)
+cfg_mode_binding(bindsym, Mod1, x, --release, exec foo)
 EOT
 
 is(parser_calls($config),
