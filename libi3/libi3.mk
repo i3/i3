@@ -14,7 +14,7 @@ libi3/%.o: libi3/%.c $(libi3_HEADERS)
 
 libi3.a: $(libi3_OBJECTS)
 	echo "[libi3] AR libi3.a"
-	ar rcs $@ $^ $(libi3_LIBS)
+	$(AR) rcs $@ $^ $(libi3_LIBS)
 
 clean-libi3:
 	echo "[libi3] Clean"
