@@ -54,6 +54,7 @@ static int limit;
 xcb_window_t root;
 xcb_connection_t *conn;
 xcb_screen_t *root_screen;
+static xcb_get_input_focus_cookie_t focus_cookie;
 
 /*
  * Having verboselog() and errorlog() is necessary when using libi3.
@@ -282,6 +283,24 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     return 1;
 }
 
+/*
+ * Restores the X11 input focus to whereever it was before.
+ * This is necessary because i3-input’s window has override_redirect=1
+ * (→ unmanaged by the window manager) and thus i3-input changes focus itself.
+ * This function is called on exit().
+ *
+ */
+static void restore_input_focus(void) {
+    xcb_generic_error_t *error;
+    xcb_get_input_focus_reply_t *reply = xcb_get_input_focus_reply(conn, focus_cookie, &error);
+    if (error != NULL) {
+        fprintf(stderr, "[i3-input] ERROR: Could not restore input focus (X error %d)\n", error->error_code);
+        return;
+    }
+    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, reply->focus, XCB_CURRENT_TIME);
+    xcb_flush(conn);
+}
+
 int main(int argc, char *argv[]) {
     format = strdup("%s");
     socket_path = getenv("I3SOCK");
@@ -357,6 +376,9 @@ int main(int argc, char *argv[]) {
     if (!conn || xcb_connection_has_error(conn))
         die("Cannot open display\n");
 
+    /* Request the current InputFocus to restore when i3-input exits. */
+    focus_cookie = xcb_get_input_focus(conn);
+
     root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
 
@@ -398,6 +420,7 @@ int main(int argc, char *argv[]) {
     /* Set input focus (we have override_redirect=1, so the wm will not do
      * this for us) */
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, win, XCB_CURRENT_TIME);
+    atexit(restore_input_focus);
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);
