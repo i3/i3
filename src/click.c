@@ -210,9 +210,16 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
          event->detail == XCB_BUTTON_INDEX_5)) {
         DLOG("Scrolling on a window decoration\n");
         orientation_t orientation = (con->parent->layout == L_STACKED ? VERT : HORIZ);
+        /* Focus the currently focused container on the same level that the
+         * user scrolled on. e.g. the tabbed decoration contains
+         * "urxvt | i3: V[xterm geeqie] | firefox",
+         * focus is on the xterm, but the user scrolled on urxvt.
+         * The splitv container will be focused. */
+        Con *focused = con->parent;
+        focused = TAILQ_FIRST(&(focused->focus_head));
+        con_focus(focused);
         /* To prevent scrolling from going outside the container (see ticket
          * #557), we first check if scrolling is possible at all. */
-        Con *focused = con_descend_focused(con->parent);
         bool scroll_prev_possible = (TAILQ_PREV(focused, nodes_head, nodes) != NULL);
         bool scroll_next_possible = (TAILQ_NEXT(focused, nodes) != NULL);
         if (event->detail == XCB_BUTTON_INDEX_4 && scroll_prev_possible)
