@@ -505,7 +505,7 @@ void x_draw_decoration(Con *con) {
                 con->deco_rect.width - 2);
         free(title);
 
-        goto copy_pixmaps;
+        goto after_title;
     }
 
     if (win->name == NULL)
@@ -533,6 +533,7 @@ void x_draw_decoration(Con *con) {
             con->deco_rect.x + 2 + indent_px, con->deco_rect.y + text_offset_y,
             con->deco_rect.width - 2 - indent_px);
 
+after_title:
     /* Since we don’t clip the text at all, it might in some cases be painted
      * on the border pixels on the right side of a window. Therefore, we draw
      * the right border again after rendering the text (and the unconnected
