@@ -971,7 +971,8 @@ apply to the branch, preserving your commit message and name:
 git format-patch origin
 -----------------------
 
-Just send us the generated file via email.
+Just send the generated file via email to the i3-discuss mailing list, see
+http://i3wm.org/contact/
 
 == Thought experiments
 
