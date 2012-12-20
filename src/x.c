@@ -465,7 +465,7 @@ void x_draw_decoration(Con *con) {
     xcb_rectangle_t drect = { con->deco_rect.x, con->deco_rect.y, con->deco_rect.width, con->deco_rect.height };
     xcb_poly_fill_rectangle(conn, parent->pixmap, parent->pm_gc, 1, &drect);
 
-    /* 5: draw two unconnected lines in border color */
+    /* 5: draw two unconnected horizontal lines in border color */
     xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->border });
     Rect *dr = &(con->deco_rect);
     int deco_diff_l = 2;
@@ -539,19 +539,21 @@ after_title:
      * the right border again after rendering the text (and the unconnected
      * lines in border color). */
 
-    /* Draw a separator line after every tab (except the last one), so that
-     * tabs can be easily distinguished. */
-    if (parent->layout == L_TABBED && TAILQ_NEXT(con, nodes) != NULL) {
+    /* Draw a 1px separator line before and after every tab, so that tabs can
+     * be easily distinguished. */
+    if (parent->layout == L_TABBED) {
         xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->border });
     } else {
         xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->background });
     }
-    xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, parent->pixmap, parent->pm_gc, 4,
+    xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, parent->pixmap, parent->pm_gc, 6,
                   (xcb_point_t[]){
+                      { dr->x + dr->width, dr->y },
+                      { dr->x + dr->width, dr->y + dr->height },
                       { dr->x + dr->width - 1, dr->y },
                       { dr->x + dr->width - 1, dr->y + dr->height },
-                      { dr->x + dr->width - 2, dr->y },
-                      { dr->x + dr->width - 2, dr->y + dr->height }
+                      { dr->x, dr->y + dr->height },
+                      { dr->x, dr->y },
                   });
 
     xcb_change_gc(conn, parent->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->border });
