@@ -1612,7 +1612,7 @@ bindsym $mod+r mode "resize"
 Often when in a multi-monitor environment, you want to quickly jump to a
 specific window. For example, while working on workspace 3 you may want to
 jump to your mail client to email your boss that you’ve achieved some
-important goal. Instead of figuring out how to navigate to your mailclient,
+important goal. Instead of figuring out how to navigate to your mail client,
 it would be more convenient to have a shortcut. You can use the +focus+ command
 with criteria for that.
 
