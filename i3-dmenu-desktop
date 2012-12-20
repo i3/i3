@@ -35,7 +35,7 @@ my $result = GetOptions(
     'dmenu=s' => \$dmenu_cmd,
     'entry-type=s' => \$entry_type,
     'version' => sub {
-        say "dmenu-desktop 1.2 © 2012 Michael Stapelberg";
+        say "dmenu-desktop 1.3 © 2012 Michael Stapelberg";
         exit 0;
     },
     'help' => sub {
@@ -250,6 +250,11 @@ for my $app (keys %apps) {
 
     if ($entry_type eq 'command' || $entry_type eq 'both') {
         my ($command) = split(' ', $apps{$app}->{Exec});
+
+        # Don’t add “geany” if “Geany” is already present.
+        my @keys = map { lc } keys %choices;
+        next if lc(basename($command)) ~~ @keys;
+
         $choices{basename($command)} = $app;
     }
 }
@@ -451,7 +456,7 @@ command) and both (type = both).
 
 =head1 VERSION
 
-Version 1.2
+Version 1.3
 
 =head1 AUTHOR
 
