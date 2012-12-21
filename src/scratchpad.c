@@ -94,6 +94,24 @@ void scratchpad_show(Con *con) {
         con_toggle_fullscreen(focused, CF_OUTPUT);
     }
 
+    /* If this was 'scratchpad show' without criteria, we check if there is a
+     * visible scratchpad window on another workspace. In this case we move it
+     * to the current workspace. */
+    Con *walk_con;
+    Con *focused_ws = con_get_workspace(focused);
+    TAILQ_FOREACH(walk_con, &all_cons, all_cons) {
+        Con *walk_ws = con_get_workspace(walk_con);
+        if (walk_ws &&
+            !con_is_internal(walk_ws) && focused_ws != walk_ws &&
+            (floating = con_inside_floating(walk_con)) &&
+            floating->scratchpad_state != SCRATCHPAD_NONE) {
+            DLOG("Found a visible scratchpad window on another workspace,\n");
+            DLOG("moving it to this workspace: con = %p\n", walk_con);
+            con_move_to_workspace(walk_con, focused_ws, true, false);
+            return;
+        }
+    }
+
     /* If this was 'scratchpad show' without criteria, we check if the
      * currently focused window is a scratchpad window and should be hidden
      * again. */

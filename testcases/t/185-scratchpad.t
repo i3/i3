@@ -336,6 +336,70 @@ verify_scratchpad_move_multiple_win(0);
 $tmp = fresh_workspace;
 verify_scratchpad_move_multiple_win(1);
 
+################################################################################
+# 12: open a scratchpad window on a workspace, switch to another workspace and
+# call 'scratchpad show' again
+################################################################################
+
+sub verify_scratchpad_move_with_visible_scratch_con {
+    my ($first, $second, $cross_output) = @_;
+
+    cmd "workspace $first";
+
+    my $window1 = open_window;
+    cmd 'move scratchpad';
+
+    my $window2 = open_window;
+    cmd 'move scratchpad';
+
+    # this should bring up window 1
+    cmd 'scratchpad show';
+
+    my $ws = get_ws($first);
+    is(scalar @{$ws->{floating_nodes}}, 1, 'one floating node on ws1');
+    is($x->input_focus, $window1->id, "showed the correct scratchpad window1");
+
+    # this should bring up window 1
+    cmd "workspace $second";
+    cmd 'scratchpad show';
+    is($x->input_focus, $window1->id, "showed the correct scratchpad window1");
+
+    my $ws2 = get_ws($second);
+    is(scalar @{$ws2->{floating_nodes}}, 1, 'one floating node on ws2');
+    unless ($cross_output) {
+        ok(!workspace_exists($first), 'ws1 was empty and therefore closed');
+    } else {
+        $ws = get_ws($first);
+        is(scalar @{$ws->{floating_nodes}}, 0, 'ws1 has no floating nodes');
+    }
+
+    # hide window 1 again
+    cmd 'move scratchpad';
+
+    # this should bring up window 2
+    cmd "workspace $first";
+    cmd 'scratchpad show';
+    is($x->input_focus, $window2->id, "showed the correct scratchpad window");
+}
+
+# let's clear the scratchpad first
+sub clear_scratchpad {
+    while (scalar @{get_ws('__i3_scratch')->{floating_nodes}}) {
+        cmd 'scratchpad show';
+        cmd 'kill';
+    }
+}
+
+clear_scratchpad;
+is (scalar @{get_ws('__i3_scratch')->{floating_nodes}}, 0, "scratchpad is empty");
+
+my ($first, $second);
+$first = fresh_workspace;
+$second = fresh_workspace;
+
+verify_scratchpad_move_with_visible_scratch_con($first, $second, 0);
+does_i3_live;
+
 # TODO: make i3bar display *something* when a window on the scratchpad has the urgency hint
 
 done_testing;
