@@ -79,6 +79,7 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
 
+my $pid = launch_with_config($config);
 
 
 exit_gracefully($pid);
