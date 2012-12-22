@@ -349,6 +349,11 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
         }
         Con *floatingcon = con->parent;
 
+        if (strcmp(con_get_workspace(floatingcon)->name, "__i3_scratch") == 0) {
+            DLOG("This is a scratchpad container, ignoring ConfigureRequest\n");
+            return;
+        }
+
         Rect newrect = floatingcon->rect;
 
         if (event->value_mask & XCB_CONFIG_WINDOW_X) {
