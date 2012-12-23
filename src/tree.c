@@ -251,15 +251,29 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
         free(con->window);
     }
 
-    /* kill the X11 part of this container */
-    x_con_kill(con);
+    Con *ws = con_get_workspace(con);
 
+    /* Figure out which container to focus next before detaching 'con'. */
+    if (con_is_floating(con)) {
+        if (con == focused) {
+            DLOG("This is the focused container, i need to find another one to focus. I start looking at ws = %p\n", ws);
+            /* go down the focus stack as far as possible */
+            next = con_next_focused(con);
+
+            dont_kill_parent = true;
+            DLOG("Alright, focusing %p\n", next);
+        } else {
+            next = NULL;
+        }
+    }
+
+    /* Detach the container so that it will not be rendered anymore. */
     con_detach(con);
 
     /* disable urgency timer, if needed */
     if (con->urgency_timer != NULL) {
         DLOG("Removing urgency timer of con %p\n", con);
-        workspace_update_urgent_flag(con_get_workspace(con));
+        workspace_update_urgent_flag(ws);
         ev_timer_stop(main_loop, con->urgency_timer);
         FREE(con->urgency_timer);
     }
@@ -270,21 +284,24 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
         con_fix_percent(parent);
     }
 
+    /* Render the tree so that the surrounding containers take up the space
+     * which 'con' does no longer occupy. If we don’t render here, there will
+     * be a gap in our containers and that could trigger an EnterNotify for an
+     * underlying container, see ticket #660.
+     *
+     * Rendering has to be avoided when dont_kill_parent is set (when
+     * tree_close calls itself recursively) because the tree is in a
+     * non-renderable state during that time. */
+    if (!dont_kill_parent)
+        tree_render();
+
+    /* kill the X11 part of this container */
+    x_con_kill(con);
+
     if (con_is_floating(con)) {
-        Con *ws = con_get_workspace(con);
         DLOG("Container was floating, killing floating container\n");
         tree_close(parent, DONT_KILL_WINDOW, false, (con == focused));
         DLOG("parent container killed\n");
-        if (con == focused) {
-            DLOG("This is the focused container, i need to find another one to focus. I start looking at ws = %p\n", ws);
-            /* go down the focus stack as far as possible */
-            next = con_descend_focused(ws);
-
-            dont_kill_parent = true;
-            DLOG("Alright, focusing %p\n", next);
-        } else {
-            next = NULL;
-        }
     }
 
     free(con->name);
