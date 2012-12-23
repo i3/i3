@@ -257,8 +257,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
     if (con_is_floating(con)) {
         if (con == focused) {
             DLOG("This is the focused container, i need to find another one to focus. I start looking at ws = %p\n", ws);
-            /* go down the focus stack as far as possible */
-            next = con_next_focused(con);
+            next = con_next_focused(parent);
 
             dont_kill_parent = true;
             DLOG("Alright, focusing %p\n", next);
