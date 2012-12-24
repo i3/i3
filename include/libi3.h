@@ -355,4 +355,10 @@ xcb_visualtype_t *get_visualtype(xcb_screen_t *screen);
  */
 bool is_debug_build() __attribute__((const));
 
+/**
+ * Returns the name of a temporary file with the specified prefix.
+ *
+ */
+char *get_process_filename(const char *prefix);
+
 #endif

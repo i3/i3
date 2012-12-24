@@ -10,6 +10,7 @@
  */
 #include <stdio.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -20,6 +21,7 @@
 #include <stdint.h>
 #include <getopt.h>
 #include <limits.h>
+#include <fcntl.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -135,7 +137,38 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
     button_t *button = get_button_at(event->event_x, event->event_y);
     if (!button)
         return;
-    start_application(button->action);
+
+    /* We need to create a custom script containing our actual command
+     * since not every terminal emulator which is contained in
+     * i3-sensible-terminal supports -e with multiple arguments (and not
+     * all of them support -e with one quoted argument either).
+     *
+     * NB: The paths need to be unique, that is, don’t assume users close
+     * their nagbars at any point in time (and they still need to work).
+     * */
+    char *script_path = get_process_filename("nagbar-cmd");
+
+    int fd = open(script_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IXUSR);
+    if (fd == -1) {
+        warn("Could not create temporary script to store the nagbar command");
+        return;
+    }
+    FILE *script = fdopen(fd, "w");
+    if (script == NULL) {
+        warn("Could not fdopen() temporary script to store the nagbar command");
+        return;
+    }
+    fprintf(script, "#!/bin/sh\nrm %s\n%s", script_path, button->action);
+    /* Also closes fd */
+    fclose(script);
+
+    char *terminal_cmd;
+    sasprintf(&terminal_cmd, "i3-sensible-terminal -e \"%s\"", script_path);
+
+    start_application(terminal_cmd);
+
+    free(terminal_cmd);
+    free(script_path);
 
     /* TODO: unset flag, re-render */
 }

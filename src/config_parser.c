@@ -43,10 +43,7 @@
 #define ystr(str) yajl_gen_string(command_output.json_gen, (unsigned char*)str, strlen(str))
 
 #ifndef TEST_PARSER
-static pid_t configerror_pid = -1;
-/* The path to the temporary script files used by i3-nagbar. We need to keep
- * them around to delete the files in the i3-nagbar SIGCHLD handler. */
-static char *edit_script_path, *pager_script_path;
+pid_t config_error_nagbar_pid = -1;
 static struct context *context;
 #endif
 
@@ -665,93 +662,6 @@ int main(int argc, char *argv[]) {
 #else
 
 /*
- * Writes the given command as a shell script to path.
- * Returns true unless something went wrong.
- *
- */
-static bool write_nagbar_script(const char *path, const char *command) {
-    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IXUSR);
-    if (fd == -1) {
-        warn("Could not create temporary script to store the nagbar command");
-        return false;
-    }
-    write(fd, "#!/bin/sh\n", strlen("#!/bin/sh\n"));
-    write(fd, command, strlen(command));
-    close(fd);
-    return true;
-}
-
-/*
- * Handler which will be called when we get a SIGCHLD for the nagbar, meaning
- * it exited (or could not be started, depending on the exit code).
- *
- */
-static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
-    ev_child_stop(EV_A_ watcher);
-
-    if (unlink(edit_script_path) != 0)
-        warn("Could not delete temporary i3-nagbar script %s", edit_script_path);
-    if (unlink(pager_script_path) != 0)
-        warn("Could not delete temporary i3-nagbar script %s", pager_script_path);
-
-    if (!WIFEXITED(watcher->rstatus)) {
-        fprintf(stderr, "ERROR: i3-nagbar did not exit normally.\n");
-        return;
-    }
-
-    int exitcode = WEXITSTATUS(watcher->rstatus);
-    printf("i3-nagbar process exited with status %d\n", exitcode);
-    if (exitcode == 2) {
-        fprintf(stderr, "ERROR: i3-nagbar could not be found. Is it correctly installed on your system?\n");
-    }
-
-    configerror_pid = -1;
-}
-
-/* We need ev >= 4 for the following code. Since it is not *that* important (it
- * only makes sure that there are no i3-nagbar instances left behind) we still
- * support old systems with libev 3. */
-#if EV_VERSION_MAJOR >= 4
-/*
- * Cleanup handler. Will be called when i3 exits. Kills i3-nagbar with signal
- * SIGKILL (9) to make sure there are no left-over i3-nagbar processes.
- *
- */
-static void nagbar_cleanup(EV_P_ ev_cleanup *watcher, int revent) {
-    if (configerror_pid != -1) {
-        LOG("Sending SIGKILL (9) to i3-nagbar with PID %d\n", configerror_pid);
-        kill(configerror_pid, SIGKILL);
-    }
-}
-#endif
-
-/*
- * Kills the configerror i3-nagbar process, if any.
- *
- * Called when reloading/restarting.
- *
- * If wait_for_it is set (restarting), this function will waitpid(), otherwise,
- * ev is assumed to handle it (reloading).
- *
- */
-void kill_configerror_nagbar(bool wait_for_it) {
-    if (configerror_pid == -1)
-        return;
-
-    if (kill(configerror_pid, SIGTERM) == -1)
-        warn("kill(configerror_nagbar) failed");
-
-    if (!wait_for_it)
-        return;
-
-    /* When restarting, we don’t enter the ev main loop anymore and after the
-     * exec(), our old pid is no longer watched. So, ev won’t handle SIGCHLD
-     * for us and we would end up with a <defunct> process. Therefore we
-     * waitpid() here. */
-    waitpid(configerror_pid, NULL, 0);
-}
-
-/*
  * Goes through each line of buf (separated by \n) and checks for statements /
  * commands which only occur in i3 v4 configuration files. If it finds any, it
  * returns version 4, otherwise it returns version 3.
@@ -973,86 +883,6 @@ static void check_for_duplicate_bindings(struct context *context) {
 }
 
 /*
- * Starts an i3-nagbar process which alerts the user that his configuration
- * file contains one or more errors. Also offers two buttons: One to launch an
- * $EDITOR on the config file and another one to launch a $PAGER on the error
- * logfile.
- *
- */
-static void start_configerror_nagbar(const char *config_path) {
-    if (only_check_config)
-        return;
-
-    fprintf(stderr, "Starting i3-nagbar due to configuration errors\n");
-
-    /* We need to create a custom script containing our actual command
-     * since not every terminal emulator which is contained in
-     * i3-sensible-terminal supports -e with multiple arguments (and not
-     * all of them support -e with one quoted argument either).
-     *
-     * NB: The paths need to be unique, that is, don’t assume users close
-     * their nagbars at any point in time (and they still need to work).
-     * */
-    edit_script_path = get_process_filename("nagbar-cfgerror-edit");
-    pager_script_path = get_process_filename("nagbar-cfgerror-pager");
-
-    configerror_pid = fork();
-    if (configerror_pid == -1) {
-        warn("Could not fork()");
-        return;
-    }
-
-    /* child */
-    if (configerror_pid == 0) {
-        char *edit_command, *pager_command;
-        sasprintf(&edit_command, "i3-sensible-editor \"%s\" && i3-msg reload\n", config_path);
-        sasprintf(&pager_command, "i3-sensible-pager \"%s\"\n", errorfilename);
-        if (!write_nagbar_script(edit_script_path, edit_command) ||
-            !write_nagbar_script(pager_script_path, pager_command))
-            return;
-
-        char *editaction,
-             *pageraction;
-        sasprintf(&editaction, "i3-sensible-terminal -e \"%s\"", edit_script_path);
-        sasprintf(&pageraction, "i3-sensible-terminal -e \"%s\"", pager_script_path);
-        char *argv[] = {
-            NULL, /* will be replaced by the executable path */
-            "-t",
-            (context->has_errors ? "error" : "warning"),
-            "-m",
-            (context->has_errors ?
-             "You have an error in your i3 config file!" :
-             "Your config is outdated. Please fix the warnings to make sure everything works."),
-            "-b",
-            "edit config",
-            editaction,
-            (errorfilename ? "-b" : NULL),
-            (context->has_errors ? "show errors" : "show warnings"),
-            pageraction,
-            NULL
-        };
-        exec_i3_utility("i3-nagbar", argv);
-    }
-
-    /* parent */
-    /* install a child watcher */
-    ev_child *child = smalloc(sizeof(ev_child));
-    ev_child_init(child, &nagbar_exited, configerror_pid, 0);
-    ev_child_start(main_loop, child);
-
-/* We need ev >= 4 for the following code. Since it is not *that* important (it
- * only makes sure that there are no i3-nagbar instances left behind) we still
- * support old systems with libev 3. */
-#if EV_VERSION_MAJOR >= 4
-    /* install a cleanup watcher (will be called when i3 exits and i3-nagbar is
-     * still running) */
-    ev_cleanup *cleanup = smalloc(sizeof(ev_cleanup));
-    ev_cleanup_init(cleanup, nagbar_cleanup);
-    ev_cleanup_start(main_loop, cleanup);
-#endif
-}
-
-/*
  * Parses the given file by first replacing the variables, then calling
  * parse_config and possibly launching i3-nagbar.
  *
@@ -1222,7 +1052,31 @@ void parse_file(const char *f) {
         ELOG("FYI: You are using i3 version " I3_VERSION "\n");
         if (version == 3)
             ELOG("Please convert your configfile first, then fix any remaining errors (see above).\n");
-        start_configerror_nagbar(f);
+
+        char *editaction,
+             *pageraction;
+        sasprintf(&editaction, "i3-sensible-editor \"%s\" && i3-msg reload\n", f);
+        sasprintf(&pageraction, "i3-sensible-pager \"%s\"\n", errorfilename);
+        char *argv[] = {
+            NULL, /* will be replaced by the executable path */
+            "-t",
+            (context->has_errors ? "error" : "warning"),
+            "-m",
+            (context->has_errors ?
+             "You have an error in your i3 config file!" :
+             "Your config is outdated. Please fix the warnings to make sure everything works."),
+            "-b",
+            "edit config",
+            editaction,
+            (errorfilename ? "-b" : NULL),
+            (context->has_errors ? "show errors" : "show warnings"),
+            pageraction,
+            NULL
+        };
+
+        start_nagbar(&config_error_nagbar_pid, argv);
+        free(editaction);
+        free(pageraction);
     }
 
     FREE(context->line_copy);

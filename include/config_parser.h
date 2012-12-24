@@ -12,6 +12,8 @@
 
 #include <yajl/yajl_gen.h>
 
+extern pid_t config_error_nagbar_pid;
+
 /*
  * The result of a parse_config call. Currently unused, but the JSON output
  * will be useful in the future when we implement a config parsing IPC command.
