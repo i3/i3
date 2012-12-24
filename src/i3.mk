@@ -2,7 +2,6 @@ ALL_TARGETS += i3
 INSTALL_TARGETS += install-i3
 CLEAN_TARGETS += clean-i3
 
-i3_SOURCES_GENERATED  = src/cfgparse.tab.c src/cfgparse.yy.c
 i3_SOURCES           := $(filter-out $(i3_SOURCES_GENERATED),$(wildcard src/*.c))
 i3_HEADERS_CMDPARSER := $(wildcard include/GENERATED_*.h)
 i3_HEADERS           := $(filter-out $(i3_HEADERS_CMDPARSER),$(wildcard include/*.h))
@@ -36,14 +35,6 @@ include/all.h.pch: $(i3_HEADERS)
 src/%.o: src/%.c $(i3_HEADERS_DEP)
 	echo "[i3] CC $<"
 	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(PCH_FLAGS) -c -o $@ ${canonical_path}/$<
-
-src/cfgparse.yy.c: src/cfgparse.l src/cfgparse.tab.o $(i3_HEADERS_DEP)
-	echo "[i3] LEX $<"
-	$(FLEX) -i -o $@ ${canonical_path}/$<
-
-src/cfgparse.tab.c: src/cfgparse.y $(i3_HEADERS_DEP)
-	echo "[i3] YACC $<"
-	$(BISON) --debug --verbose -b $(basename $< .y) -d ${canonical_path}/$<
 
 # This target compiles the command parser twice:
 # Once with -DTEST_PARSER, creating a stand-alone executable used for tests,
@@ -96,4 +87,4 @@ install-i3: i3
 
 clean-i3:
 	echo "[i3] Clean"
-	rm -f $(i3_OBJECTS) $(i3_SOURCES_GENERATED) $(i3_HEADERS_CMDPARSER) include/loglevels.h loglevels.tmp include/all.h.pch i3-command-parser.stamp i3-config-parser.stamp i3 src/*.gcno src/cfgparse.{output,dot,tab.h,y.o} src/cmdparse.*
+	rm -f $(i3_OBJECTS) $(i3_SOURCES_GENERATED) $(i3_HEADERS_CMDPARSER) include/loglevels.h loglevels.tmp include/all.h.pch i3-command-parser.stamp i3-config-parser.stamp i3 src/*.gcno src/cfgparse.* src/cmdparse.*

@@ -374,8 +374,7 @@ int main(int argc, char *argv[]) {
                     fake_outputs = sstrdup(optarg);
                     break;
                 } else if (strcmp(long_options[option_index].name, "force-old-config-parser-v4.4-only") == 0) {
-                    LOG("FORCING OLD CONFIG PARSER!\n");
-                    force_old_config_parser = true;
+                    ELOG("You are passing --force-old-config-parser-v4.4-only, but that flag was removed by now.\n");
                     break;
                 }
                 /* fall-through */
