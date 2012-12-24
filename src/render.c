@@ -201,7 +201,7 @@ void render_con(Con *con, bool render_fullscreen) {
         ++deco_height;
 
     /* precalculate the sizes to be able to correct rounding errors */
-    int sizes[children];
+    int sizes[children] = { 0 };
     if ((con->layout == L_SPLITH || con->layout == L_SPLITV) && children > 0) {
         assert(!TAILQ_EMPTY(&con->nodes_head));
         Con *child;
