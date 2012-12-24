@@ -1052,8 +1052,11 @@ static void start_configerror_nagbar(const char *config_path) {
 #endif
 }
 
-
-
+/*
+ * Parses the given file by first replacing the variables, then calling
+ * parse_config and possibly launching i3-nagbar.
+ *
+ */
 void parse_file(const char *f) {
     SLIST_HEAD(variables_head, Variable) variables = SLIST_HEAD_INITIALIZER(&variables);
     int fd, ret, read_bytes = 0;

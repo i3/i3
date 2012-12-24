@@ -29,4 +29,11 @@ struct ConfigResult {
 
 struct ConfigResult *parse_config(const char *input, struct context *context);
 
+/**
+ * Parses the given file by first replacing the variables, then calling
+ * parse_config and possibly launching i3-nagbar.
+ *
+ */
+void parse_file(const char *f);
+
 #endif

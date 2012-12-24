@@ -196,7 +196,8 @@ struct regex {
 
 /**
  * Holds a keybinding, consisting of a keycode combined with modifiers and the
- * command which is executed as soon as the key is pressed (see src/cfgparse.y)
+ * command which is executed as soon as the key is pressed (see
+ * src/config_parser.c)
  *
  */
 struct Binding {
