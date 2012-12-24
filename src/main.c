@@ -777,6 +777,20 @@ int main(int argc, char *argv[]) {
         xcb_aux_sync(conn);
         xcb_generic_event_t *event;
         while ((event = xcb_poll_for_event(conn)) != NULL) {
+            if (event->response_type == 0) {
+                free(event);
+                continue;
+            }
+
+            /* Strip off the highest bit (set if the event is generated) */
+            int type = (event->response_type & 0x7F);
+
+            /* We still need to handle MapRequests which are sent in the
+             * timespan starting from when we register as a window manager and
+             * this piece of code which drops events. */
+            if (type == XCB_MAP_REQUEST)
+                handle_event(type, event);
+
             free(event);
         }
         manage_existing_windows(root);
