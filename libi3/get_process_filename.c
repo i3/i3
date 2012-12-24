@@ -32,8 +32,8 @@ char *get_process_filename(const char *prefix) {
             char *tmp;
             sasprintf(&tmp, "%s/i3", dir);
             dir = tmp;
-			struct stat buf;
-			if (stat(dir, &buf) != 0) {
+            struct stat buf;
+            if (stat(dir, &buf) != 0) {
                 if (mkdir(dir, 0700) == -1) {
                     perror("mkdir()");
                     return NULL;
