@@ -1573,6 +1573,10 @@ char *con_get_tree_representation(Con *con) {
         buf = sstrdup("T[");
     else if (con->layout == L_STACKED)
         buf = sstrdup("S[");
+    else {
+        ELOG("BUG: Code not updated to account for new layout type\n");
+        assert(false);
+    }
 
     /* 2) append representation of children */
     Con *child;
