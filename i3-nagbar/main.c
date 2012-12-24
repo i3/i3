@@ -163,7 +163,7 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
     fclose(script);
 
     char *terminal_cmd;
-    sasprintf(&terminal_cmd, "i3-sensible-terminal -e \"%s\"", script_path);
+    sasprintf(&terminal_cmd, "i3-sensible-terminal -e %s", script_path);
 
     start_application(terminal_cmd);
 
