@@ -217,39 +217,6 @@ cmd 'scratchpad show';
 isnt(get_focused($tmp), $fresh_id, 'focus changed');
 
 ################################################################################
-# 7: Verify that using scratchpad show with criteria works as expected:
-# When matching a scratchpad window which is visible, it should hide it.
-# When matching a scratchpad window which is on __i3_scratch, it should show it.
-# When matching a non-scratchpad window, it should be a no-op.
-################################################################################
-
-# Verify that using 'scratchpad show' without any matching windows is a no-op.
-$old_focus = get_focused($tmp);
-
-cmd '[title="nomatch"] scratchpad show';
-
-is(get_focused($tmp), $old_focus, 'non-matching criteria have no effect');
-
-# Verify that we can use criteria to show a scratchpad window.
-cmd '[title="scratch-match"] scratchpad show';
-
-my $scratch_focus = get_focused($tmp);
-isnt($scratch_focus, $old_focus, 'matching criteria works');
-
-cmd '[title="scratch-match"] scratchpad show';
-
-isnt(get_focused($tmp), $scratch_focus, 'matching criteria works');
-is(get_focused($tmp), $old_focus, 'focus restored');
-
-# Verify that we cannot use criteria to show a non-scratchpad window.
-my $tmp2 = fresh_workspace;
-my $non_scratch_window = open_window(name => 'non-scratch');
-cmd "workspace $tmp";
-is(get_focused($tmp), $old_focus, 'focus still ok');
-cmd '[title="non-match"] scratchpad show';
-is(get_focused($tmp), $old_focus, 'focus unchanged');
-
-################################################################################
 # 8: Show it, move it around, hide it. Verify that the position is retained
 # when showing it again.
 ################################################################################
