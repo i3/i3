@@ -11,8 +11,6 @@
 │ libxcb      │ 1.1.93 │ 1.7    │ http://xcb.freedesktop.org/dist/       │
 │ xcb-util    │ 0.3.3  │ 0.3.8  │ http://xcb.freedesktop.org/dist/       │
 │ libev       │ 4.0    │ 4.11   │ http://libev.schmorp.de/               │
-│ flex        │ 2.5.35 │ 2.5.35 │ http://flex.sourceforge.net/           │
-│ bison       │ 2.4.1  │ 2.4.1  │ http://www.gnu.org/software/bison/     │
 │ yajl        │ 1.0.8  │ 2.0.1  │ http://lloyd.github.com/yajl/          │
 │ asciidoc    │ 8.3.0  │ 8.6.4  │ http://www.methods.co.nz/asciidoc/     │
 │ xmlto       │ 0.0.23 │ 0.0.23 │ http://www.methods.co.nz/asciidoc/     │
