@@ -36,6 +36,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <glob.h>
+#include <assert.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -44,6 +45,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
+#include <X11/XKBlib.h>
 
 /* We need SYSCONFDIR for the path to the keycode config template, so raise an
  * error if it’s not defined for whatever reason */
@@ -68,6 +70,7 @@ enum { MOD_Mod1, MOD_Mod4 } modifier = MOD_Mod4;
 static char *config_path;
 static uint32_t xcb_numlock_mask;
 xcb_connection_t *conn;
+static xcb_key_symbols_t *keysyms;
 xcb_screen_t *root_screen;
 static xcb_get_modifier_mapping_reply_t *modmap_reply;
 static i3Font font;
@@ -80,8 +83,341 @@ static xcb_key_symbols_t *symbols;
 xcb_window_t root;
 Display *dpy;
 
-char *rewrite_binding(const char *bindingline);
 static void finish();
+
+#include "GENERATED_config_enums.h"
+
+typedef struct token {
+    char *name;
+    char *identifier;
+    /* This might be __CALL */
+    cmdp_state next_state;
+    union {
+        uint16_t call_identifier;
+    } extra;
+} cmdp_token;
+
+typedef struct tokenptr {
+    cmdp_token *array;
+    int n;
+} cmdp_token_ptr;
+
+
+#include "GENERATED_config_tokens.h"
+
+static cmdp_state state;
+/* A list which contains the states that lead to the current state, e.g.
+ * INITIAL, WORKSPACE_LAYOUT.
+ * When jumping back to INITIAL, statelist_idx will simply be set to 1
+ * (likewise for other states, e.g. MODE or BAR).
+ * This list is used to process the nearest error token. */
+static cmdp_state statelist[10] = { INITIAL };
+/* NB: statelist_idx points to where the next entry will be inserted */
+static int statelist_idx = 1;
+
+struct stack_entry {
+    /* Just a pointer, not dynamically allocated. */
+    const char *identifier;
+    enum {
+        STACK_STR = 0,
+        STACK_LONG = 1,
+    } type;
+    union {
+        char *str;
+        long num;
+    } val;
+};
+
+/* 10 entries should be enough for everybody. */
+static struct stack_entry stack[10];
+
+/*
+ * Pushes a string (identified by 'identifier') on the stack. We simply use a
+ * single array, since the number of entries we have to store is very small.
+ *
+ */
+static void push_string(const char *identifier, const char *str) {
+    for (int c = 0; c < 10; c++) {
+        if (stack[c].identifier != NULL &&
+            strcmp(stack[c].identifier, identifier) != 0)
+            continue;
+        if (stack[c].identifier == NULL) {
+            /* Found a free slot, let’s store it here. */
+            stack[c].identifier = identifier;
+            stack[c].val.str = sstrdup(str);
+            stack[c].type = STACK_STR;
+        } else {
+            /* Append the value. */
+            char *prev = stack[c].val.str;
+            sasprintf(&(stack[c].val.str), "%s,%s", prev, str);
+            free(prev);
+        }
+        return;
+    }
+
+    /* When we arrive here, the stack is full. This should not happen and
+     * means there’s either a bug in this parser or the specification
+     * contains a command with more than 10 identified tokens. */
+    fprintf(stderr, "BUG: commands_parser stack full. This means either a bug "
+                    "in the code, or a new command which contains more than "
+                    "10 identified tokens.\n");
+    exit(1);
+}
+
+static void push_long(const char *identifier, long num) {
+    for (int c = 0; c < 10; c++) {
+        if (stack[c].identifier != NULL)
+            continue;
+        /* Found a free slot, let’s store it here. */
+        stack[c].identifier = identifier;
+        stack[c].val.num = num;
+        stack[c].type = STACK_LONG;
+        return;
+    }
+
+    /* When we arrive here, the stack is full. This should not happen and
+     * means there’s either a bug in this parser or the specification
+     * contains a command with more than 10 identified tokens. */
+    fprintf(stderr, "BUG: commands_parser stack full. This means either a bug "
+                    "in the code, or a new command which contains more than "
+                    "10 identified tokens.\n");
+    exit(1);
+
+}
+
+static const char *get_string(const char *identifier) {
+    for (int c = 0; c < 10; c++) {
+        if (stack[c].identifier == NULL)
+            break;
+        if (strcmp(identifier, stack[c].identifier) == 0)
+            return stack[c].val.str;
+    }
+    return NULL;
+}
+
+
+static void clear_stack(void) {
+    for (int c = 0; c < 10; c++) {
+        if (stack[c].type == STACK_STR && stack[c].val.str != NULL)
+            free(stack[c].val.str);
+        stack[c].identifier = NULL;
+        stack[c].val.str = NULL;
+        stack[c].val.num = 0;
+    }
+}
+
+/*
+ * Returns true if sym is bound to any key except for 'except_keycode' on the
+ * first four layers (normal, shift, mode_switch, mode_switch + shift).
+ *
+ */
+static bool keysym_used_on_other_key(KeySym sym, xcb_keycode_t except_keycode) {
+    xcb_keycode_t i,
+                  min_keycode = xcb_get_setup(conn)->min_keycode,
+                  max_keycode = xcb_get_setup(conn)->max_keycode;
+
+    for (i = min_keycode; i && i <= max_keycode; i++) {
+        if (i == except_keycode)
+            continue;
+        for (int level = 0; level < 4; level++) {
+            if (xcb_key_symbols_get_keysym(keysyms, i, level) != sym)
+                continue;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+static char *next_state(const cmdp_token *token) {
+    cmdp_state _next_state = token->next_state;
+
+    if (token->next_state == __CALL) {
+        const char *modifiers = get_string("modifiers");
+        int keycode = atoi(get_string("key"));
+        int level = 0;
+        if (modifiers != NULL &&
+            strstr(modifiers, "Shift") != NULL) {
+            /* When shift is included, we really need to use the second-level
+             * symbol (upper-case). The lower-case symbol could be on a
+             * different key than the upper-case one (unlikely for letters, but
+             * more likely for special characters). */
+            level = 1;
+
+            /* Try to use the keysym on the first level (lower-case). In case
+             * this doesn’t make it ambiguous (think of a keyboard layout
+             * having '1' on two different keys, but '!' only on keycode 10),
+             * we’ll stick with the keysym of the first level.
+             *
+             * This reduces a lot of confusion for users who switch keyboard
+             * layouts from qwerty to qwertz or other slight variations of
+             * qwerty (yes, that happens quite often). */
+            KeySym sym = XkbKeycodeToKeysym(dpy, keycode, 0, 0);
+            if (!keysym_used_on_other_key(sym, keycode))
+                level = 0;
+        }
+        KeySym sym = XkbKeycodeToKeysym(dpy, keycode, 0, level);
+        char *str = XKeysymToString(sym);
+        const char *release = get_string("release");
+        char *res;
+        char *modrep = (modifiers == NULL ? sstrdup("") : sstrdup(modifiers));
+        char *comma;
+        while ((comma = strchr(modrep, ',')) != NULL) {
+            *comma = '+';
+        }
+        sasprintf(&res, "bindsym %s%s%s %s%s\n", (modifiers == NULL ? "" : modrep), (modifiers == NULL ? "" : "+"), str, (release == NULL ? "" : release), get_string("command"));
+        clear_stack();
+        return res;
+    }
+
+    state = _next_state;
+
+    /* See if we are jumping back to a state in which we were in previously
+     * (statelist contains INITIAL) and just move statelist_idx accordingly. */
+    for (int i = 0; i < statelist_idx; i++) {
+        if (statelist[i] != _next_state)
+            continue;
+        statelist_idx = i+1;
+        return NULL;
+    }
+
+    /* Otherwise, the state is new and we add it to the list */
+    statelist[statelist_idx++] = _next_state;
+    return NULL;
+}
+
+
+static char *rewrite_binding(const char *input) {
+    state = INITIAL;
+    statelist_idx = 1;
+
+    const char *walk = input;
+    const size_t len = strlen(input);
+    int c;
+    const cmdp_token *token;
+    char *result = NULL;
+
+    /* The "<=" operator is intentional: We also handle the terminating 0-byte
+     * explicitly by looking for an 'end' token. */
+    while ((walk - input) <= len) {
+        /* Skip whitespace before every token, newlines are relevant since they
+         * separate configuration directives. */
+        while ((*walk == ' ' || *walk == '\t') && *walk != '\0')
+            walk++;
+
+		//printf("remaining input: %s\n", walk);
+
+        cmdp_token_ptr *ptr = &(tokens[state]);
+        for (c = 0; c < ptr->n; c++) {
+            token = &(ptr->array[c]);
+
+            /* A literal. */
+            if (token->name[0] == '\'') {
+                if (strncasecmp(walk, token->name + 1, strlen(token->name) - 1) == 0) {
+                    if (token->identifier != NULL)
+                        push_string(token->identifier, token->name + 1);
+                    walk += strlen(token->name) - 1;
+                    if ((result = next_state(token)) != NULL)
+                        return result;
+                    break;
+                }
+                continue;
+            }
+
+            if (strcmp(token->name, "number") == 0) {
+                /* Handle numbers. We only accept decimal numbers for now. */
+                char *end = NULL;
+                errno = 0;
+                long int num = strtol(walk, &end, 10);
+                if ((errno == ERANGE && (num == LONG_MIN || num == LONG_MAX)) ||
+                    (errno != 0 && num == 0))
+                    continue;
+
+                /* No valid numbers found */
+                if (end == walk)
+                    continue;
+
+                if (token->identifier != NULL)
+                    push_long(token->identifier, num);
+
+                /* Set walk to the first non-number character */
+                walk = end;
+                if ((result = next_state(token)) != NULL)
+                    return result;
+                break;
+            }
+
+            if (strcmp(token->name, "string") == 0 ||
+                strcmp(token->name, "word") == 0) {
+                const char *beginning = walk;
+                /* Handle quoted strings (or words). */
+                if (*walk == '"') {
+                    beginning++;
+                    walk++;
+                    while (*walk != '\0' && (*walk != '"' || *(walk-1) == '\\'))
+                        walk++;
+                } else {
+                    if (token->name[0] == 's') {
+                        while (*walk != '\0' && *walk != '\r' && *walk != '\n')
+                            walk++;
+                    } else {
+                        /* For a word, the delimiters are white space (' ' or
+                         * '\t'), closing square bracket (]), comma (,) and
+                         * semicolon (;). */
+                        while (*walk != ' ' && *walk != '\t' &&
+                               *walk != ']' && *walk != ',' &&
+                               *walk !=  ';' && *walk != '\r' &&
+                               *walk != '\n' && *walk != '\0')
+                            walk++;
+                    }
+                }
+                if (walk != beginning) {
+                    char *str = scalloc(walk-beginning + 1);
+                    /* We copy manually to handle escaping of characters. */
+                    int inpos, outpos;
+                    for (inpos = 0, outpos = 0;
+                         inpos < (walk-beginning);
+                         inpos++, outpos++) {
+                        /* We only handle escaped double quotes to not break
+                         * backwards compatibility with people using \w in
+                         * regular expressions etc. */
+                        if (beginning[inpos] == '\\' && beginning[inpos+1] == '"')
+                            inpos++;
+                        str[outpos] = beginning[inpos];
+                    }
+                    if (token->identifier)
+                        push_string(token->identifier, str);
+                    free(str);
+                    /* If we are at the end of a quoted string, skip the ending
+                     * double quote. */
+                    if (*walk == '"')
+                        walk++;
+                    if ((result = next_state(token)) != NULL)
+                        return result;
+                    break;
+                }
+            }
+
+            if (strcmp(token->name, "end") == 0) {
+                //printf("checking for end: *%s*\n", walk);
+                if (*walk == '\0' || *walk == '\n' || *walk == '\r') {
+                    if ((result = next_state(token)) != NULL)
+                        return result;
+                    /* To make sure we start with an appropriate matching
+                     * datastructure for commands which do *not* specify any
+                     * criteria, we re-initialize the criteria system after
+                     * every command. */
+                    // TODO: make this testable
+                    walk++;
+                    break;
+               }
+           }
+        }
+    }
+
+    return NULL;
+}
+
 
 /*
  * Having verboselog() and errorlog() is necessary when using libi3.
@@ -466,6 +802,7 @@ int main(int argc, char *argv[]) {
         xcb_connection_has_error(conn))
         errx(1, "Cannot open display\n");
 
+    keysyms = xcb_key_symbols_alloc(conn);
     xcb_get_modifier_mapping_cookie_t modmap_cookie;
     modmap_cookie = xcb_get_modifier_mapping(conn);
     symbols = xcb_key_symbols_alloc(conn);
