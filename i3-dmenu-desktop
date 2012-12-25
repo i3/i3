@@ -287,6 +287,8 @@ my $status = ($? >> 8);
 exit $status unless $status == 0;
 
 my $choice = <$dmenu_out>;
+# dmenu ≥ 4.4 adds a newline after the choice
+chomp($choice);
 my $app;
 # Exact match: the user chose “Avidemux (GTK+)”
 if (exists($choices{$choice})) {
