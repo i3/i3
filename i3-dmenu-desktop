@@ -221,6 +221,13 @@ for my $app (keys %apps) {
     next if (!exists($apps{$app}->{Type}) ||
              $apps{$app}->{Type} ne 'Application');
 
+    # Skip broken files (Type=application, but no Exec key).
+    if (!exists($apps{$app}->{Exec}) ||
+        $apps{$app}->{Exec} eq '') {
+        warn 'File ' . $apps{$app}->{_Location} . ' is broken: it contains Type=Application, but no Exec key/value pair.';
+        next;
+    }
+
     # Don’t offer apps which have NoDisplay == true or Hidden == true.
     # See http://wiki.xfce.org/howto/customize-menu#hide_menu_entries
     # for the difference between NoDisplay and Hidden.
