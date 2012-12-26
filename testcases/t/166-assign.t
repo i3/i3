@@ -98,6 +98,7 @@ my $workspaces = get_workspace_names;
 ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 
 $window = open_special;
+sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 0, 'still no containers');
 ok("targetws" ~~ @{get_workspace_names()}, 'targetws exists');
@@ -157,6 +158,7 @@ $workspaces = get_workspace_names;
 ok(!("targetws" ~~ @{$workspaces}), 'targetws does not exist yet');
 
 $window = open_special;
+sync_with_i3;
 
 my $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
@@ -205,6 +207,7 @@ is(@docked, 0, 'one dock client yet');
 $window = open_special(
     window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
 );
+sync_with_i3;
 
 $content = get_ws($tmp);
 ok(@{$content->{nodes}} == 0, 'no tiling cons');
