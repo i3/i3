@@ -39,22 +39,22 @@ cmd 'floating toggle';
 
 # Focus screen 1
 $x->root->warp_pointer(1025, 0);
-my $s1_ws = fresh_workspace;
 sync_with_i3;
+my $s1_ws = fresh_workspace;
 
 my $fourth = open_window;
 
 # Focus screen 2
 $x->root->warp_pointer(0, 769);
-my $s2_ws = fresh_workspace;
 sync_with_i3;
+my $s2_ws = fresh_workspace;
 
 my $fifth = open_window;
 
 # Focus screen 3
 $x->root->warp_pointer(1025, 769);
-my $s3_ws = fresh_workspace;
 sync_with_i3;
+my $s3_ws = fresh_workspace;
 
 my $sixth = open_window;
 my $seventh = open_window;
