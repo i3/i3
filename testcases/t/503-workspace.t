@@ -61,8 +61,18 @@ open_window;
 # output 2: 2
 cmd 'workspace 1';
 cmd 'workspace next';
+# We need to sync after changing focus to a different output to wait for the
+# EnterNotify to be processed, otherwise it will be processed at some point
+# later in time and mess up our subsequent tests.
+sync_with_i3;
+
 is(focused_ws, '2', 'workspace 2 focused');
 cmd 'workspace next';
+# We need to sync after changing focus to a different output to wait for the
+# EnterNotify to be processed, otherwise it will be processed at some point
+# later in time and mess up our subsequent tests.
+sync_with_i3;
+
 is(focused_ws, '5', 'workspace 5 focused');
 
 ################################################################################
@@ -81,11 +91,9 @@ cmd 'workspace prev_on_output';
 is(focused_ws, '1', 'workspace 1 focused');
 
 cmd 'workspace 2';
-
-# XXX: This is to avoid EnterNotifies changing the focus. Not sure why they
-# appear sometimes in the first place. Only happens when running the full
-# testsuite.
-$x->root->warp_pointer(1025, 0);
+# We need to sync after changing focus to a different output to wait for the
+# EnterNotify to be processed, otherwise it will be processed at some point
+# later in time and mess up our subsequent tests.
 sync_with_i3;
 
 cmd 'workspace prev_on_output';
