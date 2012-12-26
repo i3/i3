@@ -324,7 +324,7 @@ font pango:[family list] [style options] [size]
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 font pango:DejaVu Sans Mono 10
 font pango:DejaVu Sans Mono, Terminus Bold Semi-Condensed 11
-font pango:Terminus 11x
+font pango:Terminus 11px
 --------------------------------------------------------------
 
 [[keybindings]]
