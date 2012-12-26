@@ -6,7 +6,7 @@
 # No dependencies except for perl ≥ v5.10
 
 use strict;
-use warnings;
+use warnings qw(FATAL utf8);
 use Data::Dumper;
 use IPC::Open2;
 use POSIX qw(locale_h);
@@ -17,16 +17,26 @@ use Getopt::Long;
 use Pod::Usage;
 use v5.10;
 use utf8;
-use open ':encoding(utf8)';
+use open ':encoding(UTF-8)';
 
 binmode STDOUT, ':utf8';
 binmode STDERR, ':utf8';
 
 # reads in a whole file
 sub slurp {
-    open(my $fh, '<', shift) or die "$!";
+    my ($filename) = @_;
+    open(my $fh, '<', $filename) or die "$!";
     local $/;
-    <$fh>;
+    my $result;
+    eval {
+        $result = <$fh>;
+    };
+    if ($@) {
+        warn "Could not read $filename: $@";
+        return undef;
+    } else {
+        return $result;
+    }
 }
 
 my $entry_type = 'both';
@@ -135,7 +145,9 @@ for my $file (values %desktops) {
     # Extract all “Name” and “Exec” keys from the [Desktop Entry] group
     # and store them in $apps{$base}.
     my %names;
-    my @lines = split("\n", slurp($file));
+    my $content = slurp($file);
+    next unless defined($content);
+    my @lines = split("\n", $content);
     for my $line (@lines) {
         my $first = substr($line, 0, 1);
         next if $line eq '' || $first eq '#';
