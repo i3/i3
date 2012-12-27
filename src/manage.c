@@ -65,7 +65,7 @@ void restore_geometry(void) {
         }
 
     /* Make sure our changes reach the X server, we restart/exit now */
-    xcb_flush(conn);
+    xcb_aux_sync(conn);
 }
 
 /*
