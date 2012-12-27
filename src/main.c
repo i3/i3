@@ -541,17 +541,8 @@ int main(int argc, char *argv[]) {
             config.ipc_socket_path = sstrdup(config.ipc_socket_path);
     }
 
-    uint32_t mask = XCB_CW_EVENT_MASK;
-    uint32_t values[] = { XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
-                          XCB_EVENT_MASK_BUTTON_PRESS |
-                          XCB_EVENT_MASK_STRUCTURE_NOTIFY |         /* when the user adds a screen (e.g. video
-                                                                           projector), the root window gets a
-                                                                           ConfigureNotify */
-                          XCB_EVENT_MASK_POINTER_MOTION |
-                          XCB_EVENT_MASK_PROPERTY_CHANGE |
-                          XCB_EVENT_MASK_ENTER_WINDOW };
     xcb_void_cookie_t cookie;
-    cookie = xcb_change_window_attributes_checked(conn, root, mask, values);
+    cookie = xcb_change_window_attributes_checked(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){ ROOT_EVENT_MASK });
     check_error(conn, cookie, "Another window manager seems to be running");
 
     xcb_get_geometry_reply_t *greply = xcb_get_geometry_reply(conn, gcookie, NULL);
