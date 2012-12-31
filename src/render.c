@@ -309,16 +309,23 @@ void render_con(Con *con, bool render_fullscreen) {
             }
 
             /* first we have the decoration, if this is a leaf node */
-            if (con_is_leaf(child) && child->border_style == BS_NORMAL) {
-                /* TODO: make a function for relative coords? */
-                child->deco_rect.x = child->rect.x - con->rect.x;
-                child->deco_rect.y = child->rect.y - con->rect.y;
+            if (con_is_leaf(child)) {
+                if (child->border_style == BS_NORMAL) {
+                    /* TODO: make a function for relative coords? */
+                    child->deco_rect.x = child->rect.x - con->rect.x;
+                    child->deco_rect.y = child->rect.y - con->rect.y;
 
-                child->rect.y += deco_height;
-                child->rect.height -= deco_height;
+                    child->rect.y += deco_height;
+                    child->rect.height -= deco_height;
 
-                child->deco_rect.width = child->rect.width;
-                child->deco_rect.height = deco_height;
+                    child->deco_rect.width = child->rect.width;
+                    child->deco_rect.height = deco_height;
+                } else {
+                    child->deco_rect.x = 0;
+                    child->deco_rect.y = 0;
+                    child->deco_rect.width = 0;
+                    child->deco_rect.height = 0;
+                }
             }
         }
 
