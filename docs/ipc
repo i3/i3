@@ -712,3 +712,5 @@ Perl::
 Python::
 	* https://github.com/whitelynx/i3ipc
 	* https://github.com/ziberna/i3-py (includes higher-level features)
+Go::
+	* https://github.com/proxypoke/i3ipc
