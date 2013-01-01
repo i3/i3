@@ -402,6 +402,10 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     /* Check if any assignments match */
     run_assignments(cwindow);
 
+    /* 'ws' may be invalid because of the assignments, e.g. when the user uses
+     * "move window to workspace 1", but had it assigned to workspace 2. */
+    ws = con_get_workspace(nc);
+
     /* If this window was put onto an invisible workspace (via assignments), we
      * render this workspace. It wouldn’t be rendered in our normal code path
      * because only the visible workspaces get rendered.
