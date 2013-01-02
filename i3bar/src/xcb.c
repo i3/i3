@@ -272,6 +272,9 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR(focus_ws_bg, "#285577");
     PARSE_COLOR(focus_ws_border, "#4c7899");
 #undef PARSE_COLOR
+
+    init_tray_colors();
+    xcb_flush(xcb_connection);
 }
 
 /*
@@ -1062,6 +1065,8 @@ void init_tray(void) {
                         1,
                         &orientation);
 
+    init_tray_colors();
+
     if (tray_reply == NULL) {
         if (!(tray_reply = xcb_intern_atom_reply(xcb_connection, tray_cookie, NULL))) {
             ELOG("Could not get atom %s\n", atomname);
@@ -1094,6 +1099,47 @@ void init_tray(void) {
     }
 
     send_tray_clientmessage();
+}
+
+/*
+ * We need to set the _NET_SYSTEM_TRAY_COLORS atom on the tray selection window
+ * to make GTK+ 3 applets with Symbolic Icons visible. If the colors are unset,
+ * they assume a light background.
+ * See also https://bugzilla.gnome.org/show_bug.cgi?id=679591
+ *
+ */
+void init_tray_colors(void) {
+    /* Convert colors.bar_fg (#rrggbb) to 16-bit RGB */
+    const char *bar_fg = (config.colors.bar_fg ? config.colors.bar_fg : "#FFFFFF");
+
+    DLOG("Setting bar_fg = %s as _NET_SYSTEM_TRAY_COLORS\n", bar_fg);
+
+    char strgroups[3][3] = {{bar_fg[1], bar_fg[2], '\0'},
+                            {bar_fg[3], bar_fg[4], '\0'},
+                            {bar_fg[5], bar_fg[6], '\0'}};
+    const uint8_t r = strtol(strgroups[0], NULL, 16);
+    const uint8_t g = strtol(strgroups[1], NULL, 16);
+    const uint8_t b = strtol(strgroups[2], NULL, 16);
+
+    const uint16_t r16 = ((uint16_t)r << 8) | r;
+    const uint16_t g16 = ((uint16_t)g << 8) | g;
+    const uint16_t b16 = ((uint16_t)b << 8) | b;
+
+    const uint32_t tray_colors[12] = {
+        r16, g16, b16, /* foreground color */
+        r16, g16, b16, /* error color */
+        r16, g16, b16, /* warning color */
+        r16, g16, b16, /* success color */
+    };
+
+    xcb_change_property(xcb_connection,
+                        XCB_PROP_MODE_REPLACE,
+                        selwin,
+                        atoms[_NET_SYSTEM_TRAY_COLORS],
+                        XCB_ATOM_CARDINAL,
+                        32,
+                        12,
+                        tray_colors);
 }
 
 /*

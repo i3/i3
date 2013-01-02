@@ -84,6 +84,8 @@ void got_bar_config(char *reply) {
      * workspaces. Everything else (creating the bars, showing the right workspace-
      * buttons and more) is taken care of by the event-drivenness of the code */
     i3_send_msg(I3_IPC_MESSAGE_TYPE_GET_OUTPUTS, NULL);
+
+    free_colors(&(config.colors));
     parse_config_json(reply);
 
     /* Now we can actually use 'config', so let's subscribe to the appropriate
@@ -97,7 +99,6 @@ void got_bar_config(char *reply) {
 
     /* Resolve color strings to colorpixels and save them, then free the strings. */
     init_colors(&(config.colors));
-    free_colors(&(config.colors));
 
     /* The name of this function is actually misleading. Even if no command is
      * specified, this function initiates the watchers to listen on stdin and
