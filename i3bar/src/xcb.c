@@ -49,6 +49,10 @@ int              screen;
 xcb_screen_t     *root_screen;
 xcb_window_t     xcb_root;
 
+/* selection window for tray support */
+static xcb_window_t selwin = XCB_NONE;
+static xcb_intern_atom_reply_t *tray_reply = NULL;
+
 /* This is needed for integration with libi3 */
 xcb_connection_t *conn;
 
@@ -992,6 +996,31 @@ void init_xcb_late(char *fontname) {
 }
 
 /*
+ * Inform clients waiting for a new _NET_SYSTEM_TRAY that we took the
+ * selection.
+ *
+ */
+static void send_tray_clientmessage(void) {
+    uint8_t buffer[32] = { 0 };
+    xcb_client_message_event_t *ev = (xcb_client_message_event_t*)buffer;
+
+    ev->response_type = XCB_CLIENT_MESSAGE;
+    ev->window = xcb_root;
+    ev->type = atoms[MANAGER];
+    ev->format = 32;
+    ev->data.data32[0] = XCB_CURRENT_TIME;
+    ev->data.data32[1] = tray_reply->atom;
+    ev->data.data32[2] = selwin;
+
+    xcb_send_event(xcb_connection,
+                   0,
+                   xcb_root,
+                   0xFFFFFF,
+                   (char*)buffer);
+}
+
+
+/*
  * Initializes tray support by requesting the appropriate _NET_SYSTEM_TRAY atom
  * for the X11 display we are running on, then acquiring the selection for this
  * atom. Afterwards, tray clients will send ClientMessages to our window.
@@ -1003,11 +1032,11 @@ void init_tray(void) {
     char atomname[strlen("_NET_SYSTEM_TRAY_S") + 11];
     snprintf(atomname, strlen("_NET_SYSTEM_TRAY_S") + 11, "_NET_SYSTEM_TRAY_S%d", screen);
     xcb_intern_atom_cookie_t tray_cookie;
-    xcb_intern_atom_reply_t *tray_reply;
-    tray_cookie = xcb_intern_atom(xcb_connection, 0, strlen(atomname), atomname);
+    if (tray_reply == NULL)
+        tray_cookie = xcb_intern_atom(xcb_connection, 0, strlen(atomname), atomname);
 
     /* tray support: we need a window to own the selection */
-    xcb_window_t selwin = xcb_generate_id(xcb_connection);
+    selwin = xcb_generate_id(xcb_connection);
     uint32_t selmask = XCB_CW_OVERRIDE_REDIRECT;
     uint32_t selval[] = { 1 };
     xcb_create_window(xcb_connection,
@@ -1033,9 +1062,11 @@ void init_tray(void) {
                         1,
                         &orientation);
 
-    if (!(tray_reply = xcb_intern_atom_reply(xcb_connection, tray_cookie, NULL))) {
-        ELOG("Could not get atom %s\n", atomname);
-        exit(EXIT_FAILURE);
+    if (tray_reply == NULL) {
+        if (!(tray_reply = xcb_intern_atom_reply(xcb_connection, tray_cookie, NULL))) {
+            ELOG("Could not get atom %s\n", atomname);
+            exit(EXIT_FAILURE);
+        }
     }
 
     xcb_set_selection_owner(xcb_connection,
@@ -1062,23 +1093,7 @@ void init_tray(void) {
         return;
     }
 
-    /* Inform clients waiting for a new _NET_SYSTEM_TRAY that we are here */
-    void *event = scalloc(32);
-    xcb_client_message_event_t *ev = event;
-    ev->response_type = XCB_CLIENT_MESSAGE;
-    ev->window = xcb_root;
-    ev->type = atoms[MANAGER];
-    ev->format = 32;
-    ev->data.data32[0] = XCB_CURRENT_TIME;
-    ev->data.data32[1] = tray_reply->atom;
-    ev->data.data32[2] = selwin;
-    xcb_send_event(xcb_connection,
-                   0,
-                   xcb_root,
-                   0xFFFFFF,
-                   (char*)ev);
-    free(event);
-    free(tray_reply);
+    send_tray_clientmessage();
 }
 
 /*
@@ -1138,6 +1153,9 @@ void get_atoms(void) {
  *
  */
 void kick_tray_clients(i3_output *output) {
+    if (TAILQ_EMPTY(output->trayclients))
+        return;
+
     trayclient *trayclient;
     while (!TAILQ_EMPTY(output->trayclients)) {
         trayclient = TAILQ_FIRST(output->trayclients);
@@ -1153,6 +1171,20 @@ void kick_tray_clients(i3_output *output) {
          * event afterwards, but better safe than sorry. */
         TAILQ_REMOVE(output->trayclients, trayclient, tailq);
     }
+
+    /* Fake a DestroyNotify so that Qt re-adds tray icons.
+     * We cannot actually destroy the window because then Qt will not restore
+     * its event mask on the new window. */
+    uint8_t buffer[32] = { 0 };
+    xcb_destroy_notify_event_t *event = (xcb_destroy_notify_event_t*)buffer;
+
+    event->response_type = XCB_DESTROY_NOTIFY;
+    event->event = selwin;
+    event->window = selwin;
+
+    xcb_send_event(conn, false, selwin, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (char*)event);
+
+    send_tray_clientmessage();
 }
 
 /*
