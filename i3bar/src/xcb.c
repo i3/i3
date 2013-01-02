@@ -1398,7 +1398,7 @@ void reconfig_windows(void) {
             values[3] = font.height + 6;
             values[4] = XCB_STACK_MODE_ABOVE;
 
-            DLOG("Destroying buffer for output %s", walk->name);
+            DLOG("Destroying buffer for output %s\n", walk->name);
             xcb_free_pixmap(xcb_connection, walk->buffer);
 
             DLOG("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
@@ -1407,7 +1407,7 @@ void reconfig_windows(void) {
                                                                         mask,
                                                                         values);
 
-            DLOG("Recreating buffer for output %s", walk->name);
+            DLOG("Recreating buffer for output %s\n", walk->name);
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
                                                                     root_screen->root_depth,
                                                                     walk->buffer,
