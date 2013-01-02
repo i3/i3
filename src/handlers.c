@@ -339,7 +339,7 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
 
     if (fullscreen != con && con_is_floating(con) && con_is_leaf(con)) {
         /* find the height for the decorations */
-        int deco_height = config.font.height + 5;
+        int deco_height = con->deco_rect.height;
         /* we actually need to apply the size/position changes to the *parent*
          * container */
         Rect bsr = con_border_style_rect(con);
