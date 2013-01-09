@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <err.h>
+#include <errno.h>
 
 #include <i3/ipc.h>
 
@@ -38,14 +39,15 @@ int ipc_send_message(int sockfd, uint32_t message_size,
     memcpy(walk, payload, message_size);
 
     int sent_bytes = 0;
-    int bytes_to_go = buffer_size;
-    while (sent_bytes < bytes_to_go) {
-        int n = write(sockfd, msg + sent_bytes, bytes_to_go);
-        if (n == -1)
+    while (sent_bytes < buffer_size) {
+        int n = write(sockfd, msg + sent_bytes, buffer_size - sent_bytes);
+        if (n == -1) {
+            if (errno == EAGAIN)
+                continue;
             return -1;
+        }
 
         sent_bytes += n;
-        bytes_to_go -= n;
     }
 
     return 0;
