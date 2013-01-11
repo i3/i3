@@ -623,6 +623,9 @@ output (1)::
 	outputs, CRTCs or output properties).
 mode (2)::
 	Sent whenever i3 changes its binding mode.
+window (3)::
+	Sent when a client's window is successfully reparented (that is when i3
+	has finished fitting it into a container).
 
 *Example:*
 --------------------------------------------------------------------
@@ -694,6 +697,30 @@ mode is simply named default.
 *Example:*
 ---------------------------
 { "change": "default" }
+---------------------------
+
+=== window event
+
+This event consists of a single serialized map containing a property
++change (string)+ which currently can indicate only that a new window
+has been successfully reparented (the value will be "new").
+
+Additionally a +container (object)+ field will be present, which consists
+of the window's parent container. Be aware that the container will hold
+the initial name of the newly reparented window (e.g. if you run urxvt
+with a shell that changes the title, you will still at this point get the
+window title as "urxvt").
+
+*Example:*
+---------------------------
+{
+ "change": "new",
+ "container": {
+  "id": 35569536,
+  "type": 2,
+  ...
+ }
+}
 ---------------------------
 
 == See also (existing libraries)

@@ -10,6 +10,9 @@
  *
  */
 #include "all.h"
+#include "yajl_utils.h"
+
+#include <yajl/yajl_gen.h>
 
 /*
  * Go through all existing windows (if the window manager is restarted) and manage them
@@ -70,6 +73,35 @@ void restore_geometry(void) {
 
     /* Make sure our changes reach the X server, we restart/exit now */
     xcb_aux_sync(conn);
+}
+
+/*
+ * The following function sends a new window event, which consists
+ * of fields "change" and "container", the latter containing a dump
+ * of the window's container.
+ *
+ */
+static void ipc_send_window_new_event(Con *con) {
+    setlocale(LC_NUMERIC, "C");
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+
+    ystr("change");
+    ystr("new");
+
+    ystr("container");
+    dump_node(gen, con, false);
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_event("window", I3_IPC_EVENT_WINDOW, (const char *)payload);
+    y(free);
+    setlocale(LC_NUMERIC, "");
 }
 
 /*
@@ -427,6 +459,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         render_con(ws, true);
     }
     tree_render();
+
+    /* Send an event about window creation */
+    ipc_send_window_new_event(nc);
 
 geom_out:
     free(geom);

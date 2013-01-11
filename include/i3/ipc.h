@@ -96,4 +96,7 @@ typedef struct i3_ipc_header {
 /* The output event will be triggered upon mode changes */
 #define I3_IPC_EVENT_MODE                       (I3_IPC_EVENT_MASK | 2)
 
+/* The window event will be triggered upon window changes */
+#define I3_IPC_EVENT_WINDOW                     (I3_IPC_EVENT_MASK | 3)
+
 #endif
