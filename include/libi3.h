@@ -202,8 +202,8 @@ int ipc_connect(const char *socket_path);
  * Returns 0 on success.
  *
  */
-int ipc_send_message(int sockfd, uint32_t message_size,
-                     uint32_t message_type, const uint8_t *payload);
+int ipc_send_message(int sockfd, const uint32_t message_size,
+                     const uint32_t message_type, const uint8_t *payload);
 
 /**
  * Reads a message from the given socket file descriptor and stores its length

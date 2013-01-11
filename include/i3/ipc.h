@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * This public header defines the different constants and message types to use
  * for the IPC interface to i3 (see docs/ipc for more information).
@@ -10,6 +10,13 @@
  */
 #ifndef I3_I3_IPC_H
 #define I3_I3_IPC_H
+
+typedef struct i3_ipc_header {
+    /* 6 = strlen(I3_IPC_MAGIC) */
+    char magic[6];
+    uint32_t size;
+    uint32_t type;
+} __attribute__ ((packed)) i3_ipc_header_t;
 
 /*
  * Messages from clients to i3

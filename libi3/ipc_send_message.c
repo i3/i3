@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
 #include <string.h>
@@ -24,24 +24,35 @@
  * Returns 0 on success.
  *
  */
-int ipc_send_message(int sockfd, uint32_t message_size,
-                     uint32_t message_type, const uint8_t *payload) {
-    int buffer_size = strlen(I3_IPC_MAGIC) + sizeof(uint32_t) + sizeof(uint32_t) + message_size;
-    char msg[buffer_size];
-    char *walk = msg;
-
-    strncpy(walk, I3_IPC_MAGIC, buffer_size - 1);
-    walk += strlen(I3_IPC_MAGIC);
-    memcpy(walk, &message_size, sizeof(uint32_t));
-    walk += sizeof(uint32_t);
-    memcpy(walk, &message_type, sizeof(uint32_t));
-    walk += sizeof(uint32_t);
-    memcpy(walk, payload, message_size);
+int ipc_send_message(int sockfd, const uint32_t message_size,
+                     const uint32_t message_type, const uint8_t *payload) {
+    const i3_ipc_header_t header = {
+        /* We don’t use I3_IPC_MAGIC because it’s a 0-terminated C string. */
+        .magic = { 'i', '3', '-', 'i', 'p', 'c' },
+        .size = message_size,
+        .type = message_type
+    };
 
     int sent_bytes = 0;
-    while (sent_bytes < buffer_size) {
-        int n = write(sockfd, msg + sent_bytes, buffer_size - sent_bytes);
-        if (n == -1) {
+    int n = 0;
+
+    /* This first loop is basically unnecessary. No operating system has
+     * buffers which cannot fit 14 bytes into them, so the write() will only be
+     * called once. */
+    while (sent_bytes < sizeof(i3_ipc_header_t)) {
+        if ((n = write(sockfd, ((void*)&header) + sent_bytes, sizeof(i3_ipc_header_t) - sent_bytes)) == -1) {
+            if (errno == EAGAIN)
+                continue;
+            return -1;
+        }
+
+        sent_bytes += n;
+    }
+
+    sent_bytes = 0;
+
+    while (sent_bytes < message_size) {
+        if ((n = write(sockfd, payload + sent_bytes, message_size - sent_bytes)) == -1) {
             if (errno == EAGAIN)
                 continue;
             return -1;
