@@ -11,6 +11,8 @@
 #ifndef I3_I3_IPC_H
 #define I3_I3_IPC_H
 
+#include <stdint.h>
+
 typedef struct i3_ipc_header {
     /* 6 = strlen(I3_IPC_MAGIC) */
     char magic[6];
