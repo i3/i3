@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * libi3: contains functions which are used by i3 *and* accompanying tools such
  * as i3-msg, i3-config-wizard, …
@@ -216,7 +216,7 @@ int ipc_send_message(int sockfd, const uint32_t message_size,
  * Returns 0 on success.
  *
  */
-int ipc_recv_message(int sockfd, uint32_t message_type,
+int ipc_recv_message(int sockfd, uint32_t *message_type,
                      uint32_t *reply_length, uint8_t **reply);
 
 /**

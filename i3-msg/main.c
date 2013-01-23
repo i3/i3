@@ -36,6 +36,26 @@
 
 static char *socket_path;
 
+/*
+ * Having verboselog() and errorlog() is necessary when using libi3.
+ *
+ */
+void verboselog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+}
+
+void errorlog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+}
+
 int main(int argc, char *argv[]) {
     socket_path = getenv("I3SOCK");
     int o, option_index = 0;
@@ -135,13 +155,16 @@ int main(int argc, char *argv[]) {
         return 0;
 
     uint32_t reply_length;
+    uint32_t reply_type;
     uint8_t *reply;
     int ret;
-    if ((ret = ipc_recv_message(sockfd, message_type, &reply_length, &reply)) != 0) {
+    if ((ret = ipc_recv_message(sockfd, &reply_type, &reply_length, &reply)) != 0) {
         if (ret == -1)
             err(EXIT_FAILURE, "IPC: read()");
         exit(1);
     }
+    if (reply_type != message_type)
+        errx(EXIT_FAILURE, "IPC: Received reply of type %d but expected %d", reply_type, message_type);
     printf("%.*s\n", reply_length, reply);
     free(reply);
 

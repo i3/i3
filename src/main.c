@@ -460,14 +460,16 @@ int main(int argc, char *argv[]) {
             err(EXIT_FAILURE, "IPC: write()");
 
         uint32_t reply_length;
+        uint32_t reply_type;
         uint8_t *reply;
         int ret;
-        if ((ret = ipc_recv_message(sockfd, I3_IPC_MESSAGE_TYPE_COMMAND,
-                                    &reply_length, &reply)) != 0) {
+        if ((ret = ipc_recv_message(sockfd, &reply_type, &reply_length, &reply)) != 0) {
             if (ret == -1)
                 err(EXIT_FAILURE, "IPC: read()");
             return 1;
         }
+        if (reply_type != I3_IPC_MESSAGE_TYPE_COMMAND)
+            errx(EXIT_FAILURE, "IPC: received reply of type %d but expected %d (COMMAND)", reply_type, I3_IPC_MESSAGE_TYPE_COMMAND);
         printf("%.*s\n", reply_length, reply);
         return 0;
     }
