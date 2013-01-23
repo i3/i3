@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
     addr.sun_family = AF_LOCAL;
     strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
     if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0)
-        err(EXIT_FAILURE, "Could not connect to i3");
+        err(EXIT_FAILURE, "Could not connect to i3 on socket \"%s\"", socket_path);
 
     if (ipc_send_message(sockfd, strlen(payload), message_type, (uint8_t*)payload) == -1)
         err(EXIT_FAILURE, "IPC: write()");
