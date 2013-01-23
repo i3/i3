@@ -595,13 +595,13 @@ int main(int argc, char *argv[]) {
         int i1;
         if (!XkbQueryExtension(xkbdpy,&i1,&xkb_event_base,&errBase,&major,&minor)) {
             fprintf(stderr, "XKB not supported by X-server\n");
-            return 1;
+	    xkb_supported = false;
         }
         /* end of ugliness */
 
-        if (!XkbSelectEvents(xkbdpy, XkbUseCoreKbd,
-                             XkbMapNotifyMask | XkbStateNotifyMask,
-                             XkbMapNotifyMask | XkbStateNotifyMask)) {
+        if (xkb_supported && !XkbSelectEvents(xkbdpy, XkbUseCoreKbd,
+                                              XkbMapNotifyMask | XkbStateNotifyMask,
+                                              XkbMapNotifyMask | XkbStateNotifyMask)) {
             fprintf(stderr, "Could not set XKB event mask\n");
             return 1;
         }
