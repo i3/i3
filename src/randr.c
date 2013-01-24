@@ -93,15 +93,30 @@ Output *get_output_containing(int x, int y) {
 }
 
 /*
- * Gets the output which is the last one in the given direction, for example
- * the output on the most bottom when direction == D_DOWN, the output most
- * right when direction == D_RIGHT and so on.
+ * Like get_output_next with close_far == CLOSEST_OUTPUT, but wraps.
  *
- * This function always returns a output.
+ * For example if get_output_next(D_DOWN, x, FARTHEST_OUTPUT) = NULL, then
+ * get_output_next_wrap(D_DOWN, x) will return the topmost output.
+ *
+ * This function always returns a output: if no active outputs can be found,
+ * current itself is returned.
  *
  */
-Output *get_output_most(direction_t direction, Output *current) {
-    Output *best = get_output_next(direction, current, FARTHEST_OUTPUT);
+Output *get_output_next_wrap(direction_t direction, Output *current) {
+    Output *best = get_output_next(direction, current, CLOSEST_OUTPUT);
+    /* If no output can be found, wrap */
+    if (!best) {
+        direction_t opposite;
+        if (direction == D_RIGHT)
+            opposite = D_LEFT;
+        else if (direction == D_LEFT)
+            opposite = D_RIGHT;
+        else if (direction == D_DOWN)
+            opposite = D_UP;
+        else
+            opposite = D_DOWN;
+        best = get_output_next(opposite, current, FARTHEST_OUTPUT);
+    }
     if (!best)
         best = current;
     DLOG("current = %s, best = %s\n", current->name, best->name);
@@ -110,6 +125,13 @@ Output *get_output_most(direction_t direction, Output *current) {
 
 /*
  * Gets the output which is the next one in the given direction.
+ *
+ * If close_far == CLOSEST_OUTPUT, then the output next to the current one will
+ * selected. If close_far == FARTHEST_OUTPUT, the output which is the last one
+ * in the given direction will be selected.
+ *
+ * NULL will be returned when no active outputs are present in the direction
+ * specified (note that “current” counts as such an output).
  *
  */
 Output *get_output_next(direction_t direction, Output *current, output_close_far_t close_far) {
