@@ -373,15 +373,21 @@ void tree_close_con(kill_window_t kill_window) {
  *
  */
 void tree_split(Con *con, orientation_t orientation) {
-    /* for a workspace, we just need to change orientation */
-    if (con->type == CT_WORKSPACE) {
-        DLOG("Workspace, simply changing orientation to %d\n", orientation);
-        con->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
-        return;
-    }
-    else if (con->type == CT_FLOATING_CON) {
+    if (con->type == CT_FLOATING_CON) {
         DLOG("Floating containers can't be split.\n");
         return;
+    }
+
+    if (con->type == CT_WORKSPACE) {
+        if (con_num_children(con) < 2) {
+            DLOG("Just changing orientation of workspace\n");
+            con->layout = (orientation == HORIZ) ? L_SPLITH : L_SPLITV;
+            return;
+        } else {
+            /* if there is more than one container on the workspace
+             * move them into a new container and handle this instead */
+            con = workspace_encapsulate(con);
+        }
     }
 
     Con *parent = con->parent;
