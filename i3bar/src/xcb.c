@@ -1048,7 +1048,7 @@ void init_tray(void) {
                       xcb_root,
                       -1, -1,
                       1, 1,
-                      1,
+                      0,
                       XCB_WINDOW_CLASS_INPUT_OUTPUT,
                       root_screen->root_visual,
                       selmask,
@@ -1338,8 +1338,8 @@ void reconfig_windows(void) {
                                                                      walk->bar,
                                                                      xcb_root,
                                                                      walk->rect.x, walk->rect.y + walk->rect.h - font.height - 6,
-                                                                     walk->rect.w, font.height + 6,
-                                                                     1,
+                                                                     walk->rect.w, font.height + 8,
+                                                                     0,
                                                                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                                                      root_screen->root_visual,
                                                                      mask,
@@ -1608,7 +1608,7 @@ void draw_bars(bool unhide) {
                           outputs_walk->bargc,
                           mask,
                           vals_border);
-            xcb_rectangle_t rect_border = { i, 0, ws_walk->name_width + 10, font.height + 4 };
+            xcb_rectangle_t rect_border = { i, 1, ws_walk->name_width + 10, font.height + 4 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1619,7 +1619,7 @@ void draw_bars(bool unhide) {
                           outputs_walk->bargc,
                           mask,
                           vals);
-            xcb_rectangle_t rect = { i + 1, 1, ws_walk->name_width + 8, font.height + 2 };
+            xcb_rectangle_t rect = { i + 1, 2, ws_walk->name_width + 8, font.height + 2 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1642,7 +1642,7 @@ void draw_bars(bool unhide) {
                           outputs_walk->bargc,
                           mask,
                           vals_border);
-            xcb_rectangle_t rect_border = { i, 0, binding.width + 10, font.height + 4 };
+            xcb_rectangle_t rect_border = { i, 1, binding.width + 10, font.height + 4 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1654,7 +1654,7 @@ void draw_bars(bool unhide) {
                           outputs_walk->bargc,
                           mask,
                           vals);
-            xcb_rectangle_t rect = { i + 1, 1, binding.width + 8, font.height + 2 };
+            xcb_rectangle_t rect = { i + 1, 2, binding.width + 8, font.height + 2 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
