@@ -31,7 +31,7 @@ void ungrab_all_keys(xcb_connection_t *conn) {
 }
 
 static void grab_keycode_for_binding(xcb_connection_t *conn, Binding *bind, uint32_t keycode) {
-    DLOG("Grabbing %d\n", keycode);
+    DLOG("Grabbing %d with modifiers %d (with mod_mask_lock %d)\n", keycode, bind->mods, bind->mods | XCB_MOD_MASK_LOCK);
     /* Grab the key in all combinations */
     #define GRAB_KEY(modifier) \
         do { \
@@ -65,14 +65,6 @@ Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode
             if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS)
                 bind->release = B_UPON_KEYRELEASE;
         }
-
-        /* Then we transition the KeyRelease bindings into a state where the
-         * modifiers no longer matter for the KeyRelease event so that users
-         * can release the modifier key before releasing the actual key. */
-        TAILQ_FOREACH(bind, bindings, bindings) {
-            if (bind->release == B_UPON_KEYRELEASE && !key_release)
-                bind->release = B_UPON_KEYRELEASE_IGNORE_MODS;
-        }
     }
 
     TAILQ_FOREACH(bind, bindings, bindings) {
@@ -84,23 +76,33 @@ Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode
              !key_release))
             continue;
 
-        /* Check if the binding is for a KeyPress or a KeyRelease event */
-        if ((bind->release == B_UPON_KEYPRESS && key_release) ||
-            (bind->release >= B_UPON_KEYRELEASE && !key_release))
-            continue;
-
         /* If a symbol was specified by the user, we need to look in
          * the array of translated keycodes for the event’s keycode */
         if (bind->symbol != NULL) {
             if (memmem(bind->translated_to,
                        bind->number_keycodes * sizeof(xcb_keycode_t),
-                       &keycode, sizeof(xcb_keycode_t)) != NULL)
-                break;
+                       &keycode, sizeof(xcb_keycode_t)) == NULL)
+                continue;
         } else {
             /* This case is easier: The user specified a keycode */
-            if (bind->keycode == keycode)
-                break;
+            if (bind->keycode != keycode)
+                continue;
         }
+
+        /* If this keybinding is a KeyRelease binding, it matches the key which
+         * the user pressed. We therefore mark it as
+         * B_UPON_KEYRELEASE_IGNORE_MODS for later, so that the user can
+         * release the modifiers before the actual key and the KeyRelease will
+         * still be matched. */
+        if (bind->release == B_UPON_KEYRELEASE && !key_release)
+            bind->release = B_UPON_KEYRELEASE_IGNORE_MODS;
+
+        /* Check if the binding is for a KeyPress or a KeyRelease event */
+        if ((bind->release == B_UPON_KEYPRESS && key_release) ||
+            (bind->release >= B_UPON_KEYRELEASE && !key_release))
+            continue;
+
+        break;
     }
 
     return (bind == TAILQ_END(bindings) ? NULL : bind);
