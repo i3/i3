@@ -171,7 +171,7 @@ void refresh_statusline(void) {
 
         uint32_t colorpixel = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
         set_font_colors(statusline_ctx, colorpixel, colors.bar_bg);
-        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, 0, block->width);
+        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, 1, block->width);
         x += block->width + block->x_offset + block->x_append;
 
         if (TAILQ_NEXT(block, blocks) != NULL) {
@@ -1338,7 +1338,7 @@ void reconfig_windows(void) {
                                                                      walk->bar,
                                                                      xcb_root,
                                                                      walk->rect.x, walk->rect.y + walk->rect.h - font.height - 6,
-                                                                     walk->rect.w, font.height + 8,
+                                                                     walk->rect.w, font.height + 6,
                                                                      0,
                                                                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                                                      root_screen->root_visual,
@@ -1509,7 +1509,7 @@ void reconfig_windows(void) {
  */
 void draw_bars(bool unhide) {
     DLOG("Drawing Bars...\n");
-    int i = 0;
+    int i = 1;
 
     refresh_statusline();
 
@@ -1626,7 +1626,7 @@ void draw_bars(bool unhide) {
                                     1,
                                     &rect);
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
-            draw_text(ws_walk->name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, ws_walk->name_width);
+            draw_text(ws_walk->name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 3, ws_walk->name_width);
             i += 10 + ws_walk->name_width + 1;
 
         }
@@ -1662,7 +1662,7 @@ void draw_bars(bool unhide) {
                                     &rect);
 
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
-            draw_text(binding.name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, binding.width);
+            draw_text(binding.name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 3, binding.width);
         }
 
         i = 0;
