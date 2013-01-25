@@ -1410,6 +1410,7 @@ void cmd_focus(I3_CMD) {
         return;
     }
 
+    Con *__i3_scratch = workspace_get("__i3_scratch", NULL);
     int count = 0;
     owindow *current;
     TAILQ_FOREACH(current, &owindows, owindows) {
@@ -1424,6 +1425,16 @@ void cmd_focus(I3_CMD) {
             LOG("Cannot change focus while in fullscreen mode (fullscreen rules).\n");
             ysuccess(false);
             return;
+        }
+
+        /* In case this is a scratchpad window, call scratchpad_show(). */
+        if (ws == __i3_scratch) {
+            scratchpad_show(current->con);
+            count++;
+            /* While for the normal focus case we can change focus multiple
+             * times and only a single window ends up focused, we could show
+             * multiple scratchpad windows. So, rather break here. */
+            break;
         }
 
         /* If the container is not on the current workspace,
