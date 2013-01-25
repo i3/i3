@@ -231,6 +231,25 @@ cmd "workspace $tmp";
 
 does_i3_live;
 
-exit_gracefully($pid);
+###############################################################################
+# Check if the urgency hint is still set when the urgent window is killed
+###############################################################################
 
+my $ws1 = fresh_workspace;
+my $ws2 = fresh_workspace;
+cmd "workspace $ws1";
+my $w1 = open_window;
+my $w2 = open_window;
+cmd "workspace $ws2";
+sync_with_i3;
+$w1->add_hint('urgency');
+sync_with_i3;
+cmd '[id="' . $w1->id . '"] kill';
+sync_with_i3;
+my $w = get_ws($ws1);
+is($w->{urgent}, 0, 'Urgent flag no longer set after killing the window ' .
+    'from another workspace');
+
+
+exit_gracefully($pid);
 done_testing;
