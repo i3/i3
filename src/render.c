@@ -44,7 +44,10 @@ static void render_l_output(Con *con) {
         }
     }
 
-    assert(content != NULL);
+    if (content == NULL) {
+        DLOG("Skipping this output because it is currently being destroyed.\n");
+        return;
+    }
 
     /* We need to find out if there is a fullscreen con on the current workspace
      * and take the short-cut to render it directly (the user does not want to
