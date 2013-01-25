@@ -218,8 +218,24 @@ void scratchpad_fix_resolution(void) {
             new_height = _lcm(new_height, output->rect.height);
         }
     }
+
+    Rect old_rect = __i3_output->rect;
+
     DLOG("new width = %d, new height = %d\n",
          new_width, new_height);
     __i3_output->rect.width = new_width;
     __i3_output->rect.height = new_height;
+
+    Rect new_rect = __i3_output->rect;
+
+    if (memcmp(&old_rect, &new_rect, sizeof(Rect)) == 0) {
+        DLOG("Scratchpad size unchanged.\n");
+        return;
+    }
+
+    DLOG("Fixing coordinates of scratchpad windows\n");
+    Con *con;
+    TAILQ_FOREACH(con, &(__i3_scratch->floating_head), floating_windows) {
+        floating_fix_coordinates(con, &old_rect, &new_rect);
+    }
 }
