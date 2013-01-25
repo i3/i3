@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * scratchpad.c: Moving windows to the scratchpad and making them visible again.
  *
@@ -53,7 +53,6 @@ void scratchpad_move(Con *con) {
 
     /* 2: Send the window to the __i3_scratch workspace, mainting its
      * coordinates and not warping the pointer. */
-    Con *focus_next = con_next_focused(con);
     con_move_to_workspace(con, __i3_scratch, true, true);
 
     /* 3: If this is the first time this window is used as a scratchpad, we set
@@ -63,11 +62,6 @@ void scratchpad_move(Con *con) {
         DLOG("This window was never used as a scratchpad before.\n");
         con->scratchpad_state = SCRATCHPAD_FRESH;
     }
-
-    /* 4: Fix focus. Normally, when moving a window to a different output, the
-     * destination output gets focused. In this case, we don’t want that. */
-    if (con_get_workspace(focus_next) == con_get_workspace(focused))
-        con_focus(focus_next);
 }
 
 /*
