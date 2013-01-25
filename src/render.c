@@ -50,6 +50,10 @@ static void render_l_output(Con *con) {
      * and take the short-cut to render it directly (the user does not want to
      * see the dockareas in that case) */
     Con *ws = con_get_fullscreen_con(content, CF_OUTPUT);
+    if (!ws) {
+        DLOG("Skipping this output because it is currently being destroyed.\n");
+        return;
+    }
     Con *fullscreen = con_get_fullscreen_con(ws, CF_OUTPUT);
     if (fullscreen) {
         fullscreen->rect = con->rect;
@@ -245,6 +249,10 @@ void render_con(Con *con, bool render_fullscreen) {
                 continue;
             /* Get the active workspace of that output */
             Con *content = output_get_content(output);
+            if (!content || TAILQ_EMPTY(&(content->focus_head))) {
+                DLOG("Skipping this output because it is currently being destroyed.\n");
+                continue;
+            }
             Con *workspace = TAILQ_FIRST(&(content->focus_head));
             Con *fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
             Con *child;
