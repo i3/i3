@@ -214,7 +214,7 @@ state WORKSPACE_OUTPUT:
       -> WORKSPACE_OUTPUT_STR
 
 state WORKSPACE_OUTPUT_STR:
-  output = string
+  output = word
       -> call cfg_workspace($workspace, $output)
 
 # ipc-socket <path>

@@ -205,6 +205,24 @@ is(parser_calls($config),
    'workspace_layout ok');
 
 ################################################################################
+# workspace assignments, with trailing whitespace (ticket #921)
+################################################################################
+
+$config = <<'EOT';
+workspace "3" output DP-1 
+workspace "3" output     	VGA-1	
+EOT
+
+$expected = <<'EOT';
+cfg_workspace(3, DP-1)
+cfg_workspace(3, VGA-1)
+EOT
+
+is(parser_calls($config),
+   $expected,
+   'workspace assignment ok');
+
+################################################################################
 # new_window
 ################################################################################
 
