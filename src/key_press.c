@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * key_press.c: key press handler
  *
@@ -145,6 +145,8 @@ void handle_key_press(xcb_key_press_event_t *event) {
             sasprintf(&pageraction, "i3-sensible-pager \"%s\"\n", errorfilename);
             char *argv[] = {
                 NULL, /* will be replaced by the executable path */
+                "-f",
+                config.font.pattern,
                 "-t",
                 "error",
                 "-m",

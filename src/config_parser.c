@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * config_parser.c: hand-written parser to parse configuration directives.
  *
@@ -1059,6 +1059,8 @@ void parse_file(const char *f) {
         sasprintf(&pageraction, "i3-sensible-pager \"%s\"\n", errorfilename);
         char *argv[] = {
             NULL, /* will be replaced by the executable path */
+            "-f",
+            config.font.pattern,
             "-t",
             (context->has_errors ? "error" : "warning"),
             "-m",
