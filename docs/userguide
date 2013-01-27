@@ -1565,7 +1565,7 @@ If you want to resize containers/windows using your keyboard, you can use the
 
 *Syntax*:
 ---------------------------------------------------------
-resize <grow|shrink> <direction> [<px> px] [or <ppt> ppt]
+resize <grow|shrink> <direction> [<px> px [or <ppt> ppt]]
 ---------------------------------------------------------
 
 Direction can either be one of +up+, +down+, +left+ or +right+. Or you can be
