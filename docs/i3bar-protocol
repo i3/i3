@@ -154,6 +154,14 @@ urgent::
 	A boolean which specifies whether the current value is urgent. Examples
 	are battery charge values below 1 percent or no more available disk
 	space (for non-root users). The presentation of urgency is up to i3bar.
+separator::
+	The boolean value false disables drawing of a separating line after the
+	block.  If the field is not present then the separator will be still
+	drawn.  Keep in mind that absence of a separator is only responsible for
+	the line itself, the gap between the items would be still present.
+separator_block_width::
+	The integer value that sets the width of the gap between items in pixels.
+	In the middle of the gap, a separating line is going to be drawn.
 
 If you want to put in your own entries into a block, prefix the key with an
 underscore (_). i3bar will ignore all keys it doesn’t understand, and prefixing

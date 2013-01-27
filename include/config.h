@@ -267,6 +267,7 @@ struct Barconfig {
     struct bar_colors {
         char *background;
         char *statusline;
+        char *separator;
 
         char *focused_workspace_border;
         char *focused_workspace_bg;

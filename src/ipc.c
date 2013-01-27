@@ -677,6 +677,7 @@ IPC_HANDLER(get_bar_config) {
         y(map_open);
         YSTR_IF_SET(background);
         YSTR_IF_SET(statusline);
+        YSTR_IF_SET(separator);
         YSTR_IF_SET(focused_workspace_border);
         YSTR_IF_SET(focused_workspace_bg);
         YSTR_IF_SET(focused_workspace_text);

@@ -526,7 +526,10 @@ CFGFUN(bar_tray_output, const char *output) {
 CFGFUN(bar_color_single, const char *colorclass, const char *color) {
     if (strcmp(colorclass, "background") == 0)
         current_bar.colors.background = sstrdup(color);
-    else current_bar.colors.statusline = sstrdup(color);
+    else if (strcmp(colorclass, "separator") == 0)
+        current_bar.colors.separator = sstrdup(color);
+    else
+        current_bar.colors.statusline = sstrdup(color);
 }
 
 CFGFUN(bar_status_command, const char *command) {

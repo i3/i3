@@ -419,7 +419,7 @@ state BAR_COLORS:
   end ->
   '#' -> BAR_COLORS_IGNORE_LINE
   'set' -> BAR_COLORS_IGNORE_LINE
-  colorclass = 'background', 'statusline'
+  colorclass = 'background', 'statusline', 'separator'
       -> BAR_COLORS_SINGLE
   colorclass = 'focused_workspace', 'active_workspace', 'inactive_workspace', 'urgent_workspace'
       -> BAR_COLORS_BORDER

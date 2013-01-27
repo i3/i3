@@ -28,6 +28,7 @@
 struct xcb_color_strings_t {
     char *bar_fg;
     char *bar_bg;
+    char *sep_fg;
     char *active_ws_fg;
     char *active_ws_bg;
     char *active_ws_border;

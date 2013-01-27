@@ -84,6 +84,7 @@ static mode binding;
 struct xcb_colors_t {
     uint32_t bar_fg;
     uint32_t bar_bg;
+    uint32_t sep_fg;
     uint32_t active_ws_fg;
     uint32_t active_ws_bg;
     uint32_t active_ws_border;
@@ -149,7 +150,8 @@ void refresh_statusline(void) {
 
         /* If this is not the last block, add some pixels for a separator. */
         if (TAILQ_NEXT(block, blocks) != NULL)
-            block->width += 9;
+            block->width += block->sep_block_width;
+
         statusline_width += block->width + block->x_offset + block->x_append;
     }
 
@@ -174,12 +176,14 @@ void refresh_statusline(void) {
         draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, 1, block->width);
         x += block->width + block->x_offset + block->x_append;
 
-        if (TAILQ_NEXT(block, blocks) != NULL) {
+        if (TAILQ_NEXT(block, blocks) != NULL && !block->no_separator && block->sep_block_width > 0) {
             /* This is not the last block, draw a separator. */
-            set_font_colors(statusline_ctx, get_colorpixel("#666666"), colors.bar_bg);
+            uint32_t sep_offset = block->sep_block_width/2 + block->sep_block_width % 2;
+            set_font_colors(statusline_ctx, colors.sep_fg, colors.bar_bg);
             xcb_poly_line(xcb_connection, XCB_COORD_MODE_ORIGIN, statusline_pm,
                           statusline_ctx, 2,
-                          (xcb_point_t[]){ { x - 5, 2 }, { x - 5, font.height - 2 } });
+                          (xcb_point_t[]){ { x - sep_offset, 2 },
+                                           { x - sep_offset, font.height - 2 } });
         }
     }
 }
@@ -259,6 +263,7 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     } while  (0)
     PARSE_COLOR(bar_fg, "#FFFFFF");
     PARSE_COLOR(bar_bg, "#000000");
+    PARSE_COLOR(sep_fg, "#666666");
     PARSE_COLOR(active_ws_fg, "#FFFFFF");
     PARSE_COLOR(active_ws_bg, "#333333");
     PARSE_COLOR(active_ws_border, "#333333");
