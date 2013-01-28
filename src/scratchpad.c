@@ -89,10 +89,27 @@ void scratchpad_show(Con *con) {
     }
 
     /* If this was 'scratchpad show' without criteria, we check if there is a
-     * visible scratchpad window on another workspace. In this case we move it
-     * to the current workspace. */
+     * unfocused scratchpad on the current workspace and focus it */
     Con *walk_con;
     Con *focused_ws = con_get_workspace(focused);
+    TAILQ_FOREACH(walk_con, &(focused_ws->floating_head), floating_windows) {
+        if ((floating = con_inside_floating(walk_con)) &&
+            floating->scratchpad_state != SCRATCHPAD_NONE &&
+            floating != con_inside_floating(focused)) {
+                DLOG("Found an unfocused scratchpad window on this workspace\n");
+                DLOG("Focusing it: %p\n", walk_con);
+                /* use con_descend_tiling_focused to get the last focused
+                 * window inside this scratch container in order to
+                 * keep the focus the same within this container */
+                con_focus(con_descend_tiling_focused(walk_con));
+                return;
+            }
+    }
+
+    /* If this was 'scratchpad show' without criteria, we check if there is a
+     * visible scratchpad window on another workspace. In this case we move it
+     * to the current workspace. */
+    focused_ws = con_get_workspace(focused);
     TAILQ_FOREACH(walk_con, &all_cons, all_cons) {
         Con *walk_ws = con_get_workspace(walk_con);
         if (walk_ws &&

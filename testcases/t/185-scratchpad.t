@@ -400,6 +400,28 @@ $second = fresh_workspace;
 verify_scratchpad_move_with_visible_scratch_con($first, $second, 0);
 does_i3_live;
 
+
+################################################################################
+# 13: Test whether scratchpad show moves focus to the scratchpad window
+# when another window on the same workspace has focus
+################################################################################
+
+clear_scratchpad;
+my $ws = fresh_workspace;
+
+open_window;
+my $scratch = get_focused($ws);
+cmd 'move scratchpad';
+cmd 'scratchpad show';
+
+open_window;
+my $not_scratch = get_focused($ws);
+is(get_focused($ws), $not_scratch, 'not scratch window has focus');
+
+cmd 'scratchpad show';
+
+is(get_focused($ws), $scratch, 'scratchpad is focused');
+
 # TODO: make i3bar display *something* when a window on the scratchpad has the urgency hint
 
 done_testing;
