@@ -39,11 +39,11 @@ sub slurp {
     }
 }
 
-my $entry_type = 'both';
+my @entry_types;
 my $dmenu_cmd = 'dmenu -i';
 my $result = GetOptions(
     'dmenu=s' => \$dmenu_cmd,
-    'entry-type=s' => \$entry_type,
+    'entry-type=s' => \@entry_types,
     'version' => sub {
         say "dmenu-desktop 1.3 © 2012 Michael Stapelberg";
         exit 0;
@@ -53,6 +53,11 @@ my $result = GetOptions(
     });
 
 die "Could not parse command line options" unless $result;
+
+# Filter entry types and set default type(s) if none selected
+my @valid_types = ('name', 'command', 'filename');
+@entry_types = grep { $_ ~~ @valid_types } @entry_types;
+@entry_types = ('name', 'command') unless @entry_types;
 
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 # ┃ Convert LC_MESSAGES into an ordered list of suffixes to search for in the ┃
@@ -251,7 +256,7 @@ for my $app (keys %apps) {
         }
     }
 
-    if ($entry_type eq 'name' || $entry_type eq 'both') {
+    if ('name' ~~ @entry_types) {
         if (exists($choices{$name})) {
             # There are two .desktop files which contain the same “Name” value.
             # I’m not sure if that is allowed to happen, but we disambiguate the
@@ -267,7 +272,7 @@ for my $app (keys %apps) {
         $choices{$name} = $app;
     }
 
-    if ($entry_type eq 'command' || $entry_type eq 'both') {
+    if ('command' ~~ @entry_types) {
         my ($command) = split(' ', $apps{$app}->{Exec});
 
         # Don’t add “geany” if “Geany” is already present.
@@ -275,6 +280,16 @@ for my $app (keys %apps) {
         next if lc(basename($command)) ~~ @keys;
 
         $choices{basename($command)} = $app;
+    }
+
+    if ('filename' ~~ @entry_types) {
+        my $filename = basename($app, '.desktop');
+
+        # Don’t add “geany” if “Geany” is already present.
+        my @keys = map { lc } keys %choices;
+        next if lc($filename) ~~ @keys;
+
+        $choices{$filename} = $app;
     }
 }
 
@@ -418,7 +433,7 @@ system('i3-msg', $cmd) == 0 or die "Could not launch i3-msg: $?";
 
 =head1 SYNOPSIS
 
-    i3-dmenu-desktop [--dmenu='dmenu -i'] [--entry-type=both]
+    i3-dmenu-desktop [--dmenu='dmenu -i'] [--entry-type=name]
 
 =head1 DESCRIPTION
 
@@ -467,11 +482,12 @@ version of dmenu.
 
 =item B<--entry-type=type>
 
-Display the (localized) "Name" (type = name) or the command (type = command) or
-both (type = both) in dmenu.
+Display the (localized) "Name" (type = name), the command (type = command) or
+the (*.desktop) filename (type = filename) in dmenu. This option can be
+specified multiple times.
 
 Examples are "GNU Image Manipulation Program" (type = name), "gimp" (type =
-command) and both (type = both).
+command), and "libreoffice-writer" (type = filename).
 
 =back
 
