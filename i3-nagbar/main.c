@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-nagbar is a utility which displays a nag message, for example in the case
  * when the user has an error in his configuration file.
@@ -29,6 +29,8 @@
 
 #include "libi3.h"
 #include "i3-nagbar.h"
+
+static char *argv0 = NULL;
 
 typedef struct {
     i3String *label;
@@ -148,7 +150,7 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
      * */
     char *script_path = get_process_filename("nagbar-cmd");
 
-    int fd = open(script_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IXUSR);
+    int fd = open(script_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         warn("Could not create temporary script to store the nagbar command");
         return;
@@ -163,9 +165,13 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
     fclose(script);
 
     char *terminal_cmd;
-    sasprintf(&terminal_cmd, "i3-sensible-terminal -e %s", script_path);
+    sasprintf(&terminal_cmd, "i3-sensible-terminal -e %s", argv0);
+    printf("argv0 = %s\n", argv0);
+    printf("terminal_cmd = %s\n", terminal_cmd);
 
+    setenv("_I3_NAGBAR_CMD", script_path, 1);
     start_application(terminal_cmd);
+    unsetenv("_I3_NAGBAR_CMD");
 
     free(terminal_cmd);
     free(script_path);
@@ -269,6 +275,29 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
 }
 
 int main(int argc, char *argv[]) {
+    /* The following lines are a horrible kludge. Because terminal emulators
+     * have different ways of interpreting the -e command line argument (some
+     * need -e "less /etc/fstab", others need -e less /etc/fstab), we need to
+     * write commands to a script and then just run that script. However, since
+     * on some machines, $XDG_RUNTIME_DIR and $TMPDIR are mounted with noexec,
+     * we cannot directly execute the script either.
+     *
+     * Therefore, we run i3-nagbar instead and pass the path to the script in
+     * the environment variable $_I3_NAGBAR_CMD. i3-nagbar then execs /bin/sh
+     * with that path in order to run that script.
+     *
+     * From a security point of view, i3-nagbar is just an alias to /bin/sh in
+     * certain circumstances. This should not open any new security issues, I
+     * hope. */
+    char *cmd = NULL;
+    if ((cmd = getenv("_I3_NAGBAR_CMD")) != NULL) {
+        unsetenv("_I3_NAGBAR_CMD");
+        execl("/bin/sh", "/bin/sh", cmd, NULL);
+        err(EXIT_FAILURE, "execv(/bin/sh, /bin/sh, %s)", cmd);
+    }
+
+    argv0 = argv[0];
+
     char *pattern = sstrdup("-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1");
     int o, option_index = 0;
     enum { TYPE_ERROR = 0, TYPE_WARNING = 1 } bar_type = TYPE_ERROR;
