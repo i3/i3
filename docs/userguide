@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael@i3wm.org>
-August 2012
+February 2013
 
 This document contains all the information you need to configure and use the i3
 window manager. If it does not, please check http://faq.i3wm.org/ first, then
@@ -589,6 +589,10 @@ starts up being named Firefox, and only when Vimperator is loaded does the
 title change. As i3 will get the title as soon as the application maps the
 window (mapping means actually displaying it on the screen), you’d need to have
 to match on 'Firefox' in this case.
+
+Assignments are processed by i3 in the order in which they appear in the config
+file. The first one which matches the window wins and later assignments are not
+considered.
 
 *Syntax*:
 ------------------------------------------------------------
