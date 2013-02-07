@@ -529,10 +529,19 @@ sub get_ws_content {
 
 Returns the container ID of the currently focused container on C<$workspace>.
 
+Note that the container ID is B<not> the X11 window ID, so comparing the result
+of C<get_focused> with a window's C<< ->{id} >> property does B<not> work.
+
   my $ws = fresh_workspace;
   my $first_window = open_window;
+  my $first_id = get_focused();
+
   my $second_window = open_window;
-  is(get_focused($ws), $second_window, 'second window focused');
+  my $second_id = get_focused();
+
+  cmd 'focus left';
+
+  is(get_focused($ws), $first_id, 'second window focused');
 
 =cut
 sub get_focused {
