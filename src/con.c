@@ -1175,7 +1175,7 @@ void con_set_border_style(Con *con, int border_style, int border_width) {
     con->current_border_width = border_width;
     bsr = con_border_style_rect(con);
     int deco_height =
-        (con->border_style == BS_NORMAL ? config.font.height + 5 : 0);
+        (con->border_style == BS_NORMAL ? render_deco_height() : 0);
 
     con->rect.x -= bsr.x;
     con->rect.y -= bsr.y;

@@ -165,7 +165,7 @@ void floating_enable(Con *con, bool automatic) {
     free(name);
 
     /* find the height for the decorations */
-    int deco_height = config.font.height + 5;
+    int deco_height = render_deco_height();
 
     DLOG("Original rect: (%d, %d) with %d x %d\n", con->rect.x, con->rect.y, con->rect.width, con->rect.height);
     DLOG("Geometry = (%d, %d) with %d x %d\n", con->geometry.x, con->geometry.y, con->geometry.width, con->geometry.height);
@@ -251,7 +251,7 @@ void floating_enable(Con *con, bool automatic) {
     /* 5: Subtract the deco_height in order to make the floating window appear
      * at precisely the position it specified in its original geometry (which
      * is what applications might remember). */
-    deco_height = (con->border_style == BS_NORMAL ? config.font.height + 5 : 0);
+    deco_height = (con->border_style == BS_NORMAL ? render_deco_height() : 0);
     nc->rect.y -= deco_height;
 
     DLOG("Corrected y = %d (deco_height = %d)\n", nc->rect.y, deco_height);

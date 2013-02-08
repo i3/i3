@@ -17,6 +17,16 @@
 static bool show_debug_borders = false;
 
 /*
+ * Returns the height for the decorations
+ */
+int render_deco_height(void) {
+    int deco_height = config.font.height + 4;
+    if (config.font.height & 0x01)
+        ++deco_height;
+    return deco_height;
+}
+
+/*
  * Renders a container with layout L_OUTPUT. In this layout, all CT_DOCKAREAs
  * get the height of their content and the remaining CT_CON gets the rest.
  *
@@ -203,9 +213,7 @@ void render_con(Con *con, bool render_fullscreen) {
     }
 
     /* find the height for the decorations */
-    int deco_height = config.font.height + 4;
-    if (config.font.height & 0x01)
-        ++deco_height;
+    int deco_height = render_deco_height();
 
     /* precalculate the sizes to be able to correct rounding errors */
     int sizes[children];
