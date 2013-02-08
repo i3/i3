@@ -39,6 +39,35 @@ void floating_check_size(Con *floating_con) {
     const int floating_sane_min_height = 50;
     const int floating_sane_min_width = 75;
     Rect floating_sane_max_dimensions;
+    Con *focused_con = con_descend_focused(floating_con);
+
+    /* obey size increments */
+    if (focused_con->height_increment || focused_con->width_increment) {
+        Rect border_rect = con_border_style_rect(focused_con);
+
+        /* We have to do the opposite calculations that render_con() do
+         * to get the exact size we want. */
+        border_rect.width = -border_rect.width;
+        border_rect.width += 2 * focused_con->border_width;
+        border_rect.height = -border_rect.height;
+        border_rect.height += 2 * focused_con->border_width;
+        if (con_border_style(focused_con) == BS_NORMAL)
+            border_rect.height += render_deco_height();
+
+        if (focused_con->height_increment &&
+            floating_con->rect.height >= focused_con->base_height + border_rect.height) {
+            floating_con->rect.height -= focused_con->base_height + border_rect.height;
+            floating_con->rect.height -= floating_con->rect.height % focused_con->height_increment;
+            floating_con->rect.height += focused_con->base_height + border_rect.height;
+        }
+
+        if (focused_con->width_increment &&
+            floating_con->rect.width >= focused_con->base_width + border_rect.width) {
+            floating_con->rect.width -= focused_con->base_width + border_rect.width;
+            floating_con->rect.width -= floating_con->rect.width % focused_con->width_increment;
+            floating_con->rect.width += focused_con->base_width + border_rect.width;
+        }
+    }
 
     /* Unless user requests otherwise (-1), ensure width/height do not exceed
      * configured maxima or, if unconfigured, limit to combined width of all
@@ -447,26 +476,27 @@ DRAGGING_CB(resize_window_callback) {
         dest_height = old_rect->height - (new_y - event->root_y);
     else dest_height = old_rect->height + (new_y - event->root_y);
 
-    /* Obey minimum window size */
-    Rect minimum = con_minimum_size(con);
-    dest_width = max(dest_width, minimum.width);
-    dest_height = max(dest_height, minimum.height);
-
     /* User wants to keep proportions, so we may have to adjust our values */
     if (params->proportional) {
         dest_width = max(dest_width, (int) (dest_height * ratio));
         dest_height = max(dest_height, (int) (dest_width / ratio));
     }
 
+    con->rect = (Rect) { dest_x, dest_y, dest_width, dest_height };
+
+    /* Obey window size */
+    floating_check_size(con);
+
     /* If not the lower right corner is grabbed, we must also reposition
      * the client by exactly the amount we resized it */
     if (corner & BORDER_LEFT)
-        dest_x = old_rect->x + (old_rect->width - dest_width);
+        dest_x = old_rect->x + (old_rect->width - con->rect.width);
 
     if (corner & BORDER_TOP)
-        dest_y = old_rect->y + (old_rect->height - dest_height);
+        dest_y = old_rect->y + (old_rect->height - con->rect.height);
 
-    con->rect = (Rect) { dest_x, dest_y, dest_width, dest_height };
+    con->rect.x = dest_x;
+    con->rect.y = dest_y;
 
     /* TODO: don’t re-render the whole tree just because we change
      * coordinates of a floating window */

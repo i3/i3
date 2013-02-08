@@ -588,9 +588,9 @@ static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floatin
         return;
 
     if (strcmp(direction, "up") == 0) {
-        floating_con->rect.y -= px;
+        floating_con->rect.y -= (floating_con->rect.height - old_rect.height);
     } else if (strcmp(direction, "left") == 0) {
-        floating_con->rect.x -= px;
+        floating_con->rect.x -= (floating_con->rect.width - old_rect.width);
     }
 }
 
