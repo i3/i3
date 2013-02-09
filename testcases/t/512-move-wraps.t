@@ -41,6 +41,7 @@ my $win = open_window;
 is_num_children($left, 1, 'one container on left workspace');
 
 cmd 'move container to output right';
+cmd 'focus output right';
 
 is_num_children($left, 0, 'no containers on left workspace');
 is_num_children($right, 1, 'one container on right workspace');

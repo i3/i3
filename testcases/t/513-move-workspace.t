@@ -75,16 +75,19 @@ my ($nodes, $focus) = get_ws_content('1');
 is($nodes->[0]->{window}, $win1->id, 'window 1 on workspace 1');
 
 cmd 'move workspace next';
+cmd '[id="' . $win1->id . '"] focus';
 
 ($nodes, $focus) = get_ws_content('2');
 is($nodes->[1]->{window}, $win1->id, 'window 1 on workspace 2 after moving');
 
 cmd 'move workspace prev';
+cmd '[id="' . $win1->id . '"] focus';
 
 ($nodes, $focus) = get_ws_content('1');
 is($nodes->[0]->{window}, $win1->id, 'window 1 on workspace 1');
 
 cmd 'move workspace next_on_output';
+cmd '[id="' . $win1->id . '"] focus';
 
 ($nodes, $focus) = get_ws_content('5');
 is($nodes->[1]->{window}, $win1->id, 'window 1 on workspace 5 after moving');
