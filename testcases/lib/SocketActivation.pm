@@ -53,6 +53,10 @@ sub activate_i3 {
         $ENV{LISTEN_FDS} = 1;
         delete $ENV{DESKTOP_STARTUP_ID};
         delete $ENV{I3SOCK};
+        # $SHELL could be set to fish, which will horribly break running shell
+        # commands via i3’s exec feature. This happened e.g. when having
+        # “set-option -g default-shell "/usr/bin/fish"” in ~/.tmux.conf
+        delete $ENV{SHELL};
         unless ($args{dont_create_temp_dir}) {
             $ENV{XDG_RUNTIME_DIR} = '/tmp/i3-testsuite/';
             mkdir $ENV{XDG_RUNTIME_DIR};
