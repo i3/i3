@@ -84,14 +84,14 @@ for my $line (@lines) {
         # Cleanup the identifier (if any).
         $identifier =~ s/^\s*(\S+)\s*=\s*$/$1/g;
 
-        # Cleanup the tokens (remove whitespace).
-        $tokens =~ s/\s*//g;
-
         # The default action is to stay in the current state.
         $action = $current_state if length($action) == 0;
 
         #say "identifier = *$identifier*, token = *$tokens*, action = *$action*";
         for my $token (split(',', $tokens)) {
+            # Cleanup trailing/leading whitespace.
+            $token =~ s/^\s*//g;
+            $token =~ s/\s*$//g;
             my $store_token = {
                 token => $token,
                 identifier => $identifier,
