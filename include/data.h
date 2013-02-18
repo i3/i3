@@ -569,11 +569,15 @@ struct Con {
     /** callbacks */
     void(*on_remove_child)(Con *);
 
-    /** not a scratchpad window, auto centered scratchpad window, or
-     * user positioned scratchpad window. */
     enum {
+        /* Not a scratchpad window. */
         SCRATCHPAD_NONE = 0,
+
+        /* Just moved to scratchpad, not resized by the user yet.
+         * Window will be auto-centered and sized appropriately. */
         SCRATCHPAD_FRESH = 1,
+
+        /* The user changed position/size of the scratchpad window. */
         SCRATCHPAD_CHANGED = 2
     } scratchpad_state;
 
