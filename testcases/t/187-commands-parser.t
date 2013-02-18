@@ -52,6 +52,8 @@ is(parser_calls(
    'move window to workspace 3; ' .
    'move container to workspace 3; ' .
    'move workspace foobar; ' .
+   'move workspace torrent; ' .
+   'move workspace to output LVDS1; ' .
    'move workspace 3: foobar; ' .
    'move workspace "3: foobar"; ' .
    'move workspace "3: foobar, baz"; '),
@@ -59,6 +61,8 @@ is(parser_calls(
    "cmd_move_con_to_workspace_name(3)\n" .
    "cmd_move_con_to_workspace_name(3)\n" .
    "cmd_move_con_to_workspace_name(foobar)\n" .
+   "cmd_move_con_to_workspace_name(torrent)\n" .
+   "cmd_move_workspace_to_output(LVDS1)\n" .
    "cmd_move_con_to_workspace_name(3: foobar)\n" .
    "cmd_move_con_to_workspace_name(3: foobar)\n" .
    "cmd_move_con_to_workspace_name(3: foobar, baz)",

@@ -262,7 +262,7 @@ state MOVE_DIRECTION_PX:
       -> call cmd_move_direction($direction, $pixels)
 
 state MOVE_WORKSPACE:
-  'to'
+  'to '
       -> MOVE_WORKSPACE_TO_OUTPUT
   workspace = 'next_on_output', 'prev_on_output', 'next', 'prev', 'current'
       -> call cmd_move_con_to_workspace($workspace)
