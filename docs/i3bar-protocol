@@ -155,13 +155,15 @@ urgent::
 	are battery charge values below 1 percent or no more available disk
 	space (for non-root users). The presentation of urgency is up to i3bar.
 separator::
-	The boolean value false disables drawing of a separating line after the
-	block.  If the field is not present then the separator will be still
-	drawn.  Keep in mind that absence of a separator is only responsible for
-	the line itself, the gap between the items would be still present.
+	A boolean which specifies whether a separator line should be drawn
+	after this block. The default is true, meaning the separator line will
+	be drawn. Note that if you disable the separator line, there will still
+	be a gap after the block, unless you also use +separator_block_width+.
 separator_block_width::
-	The integer value that sets the width of the gap between items in pixels.
-	In the middle of the gap, a separating line is going to be drawn.
+	The amount of pixels to leave blank after the block. In the middle of
+	this gap, a separator line will be drawn unless +separator+ is
+	disabled. Normally, you want to set this to an odd value (the default
+	is 9 pixels), since the separator line is drawn in the middle.
 
 If you want to put in your own entries into a block, prefix the key with an
 underscore (_). i3bar will ignore all keys it doesn’t understand, and prefixing
@@ -188,6 +190,8 @@ An example of a block which uses all possible entries follows:
  "align": "right",
  "urgent": false,
  "name": "ethernet",
- "instance": "eth0"
+ "instance": "eth0",
+ "separator": true,
+ "separator_block_width": 9
 }
 ------------------------------------------
