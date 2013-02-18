@@ -26,7 +26,7 @@ sub parser_calls {
 
     my $stdout;
     run [ '../test.config_parser', $command ],
-        '>&-',
+        '>/dev/null',
         '2>', \$stdout;
     # TODO: use a timeout, so that we can error out if it doesn’t terminate
 
