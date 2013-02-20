@@ -271,18 +271,28 @@ void render_con(Con *con, bool render_fullscreen) {
                 /* Don’t render floating windows when there is a fullscreen window
                  * on that workspace. Necessary to make floating fullscreen work
                  * correctly (ticket #564). */
-                if (fullscreen != NULL) {
+                if (fullscreen != NULL && fullscreen->window != NULL) {
                     Con *floating_child = con_descend_focused(child);
+                    Con *transient_con = floating_child;
+                    bool is_transient_for = false;
                     /* Exception to the above rule: smart
                      * popup_during_fullscreen handling (popups belonging to
                      * the fullscreen app will be rendered). */
-                    if (floating_child->window == NULL ||
-                        fullscreen->window == NULL ||
-                        floating_child->window->transient_for != fullscreen->window->id)
+                    while (transient_con != NULL &&
+                           transient_con->window != NULL &&
+                           transient_con->window->transient_for != XCB_NONE) {
+                        if (transient_con->window->transient_for == fullscreen->window->id) {
+                            is_transient_for = true;
+                            break;
+                        }
+                        transient_con = con_by_window_id(transient_con->window->transient_for);
+                    }
+
+                    if (!is_transient_for)
                         continue;
                     else {
                         DLOG("Rendering floating child even though in fullscreen mode: "
-                             "floating->transient_for (0x%08x) == fullscreen->id (0x%08x)\n",
+                             "floating->transient_for (0x%08x) --> fullscreen->id (0x%08x)\n",
                              floating_child->window->transient_for, fullscreen->window->id);
                     }
                 }

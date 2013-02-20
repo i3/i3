@@ -385,10 +385,20 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             con_toggle_fullscreen(fs, CF_OUTPUT);
         } else if (config.popup_during_fullscreen == PDF_SMART &&
                    fs != NULL &&
-                   fs->window != NULL &&
-                   fs->window->id == cwindow->transient_for) {
-            LOG("This floating window belongs to the fullscreen window (popup_during_fullscreen == smart)\n");
-            con_focus(nc);
+                   fs->window != NULL) {
+            i3Window *transient_win = cwindow;
+            while (transient_win != NULL &&
+                   transient_win->transient_for != XCB_NONE) {
+                if (transient_win->transient_for == fs->window->id) {
+                    LOG("This floating window belongs to the fullscreen window (popup_during_fullscreen == smart)\n");
+                    con_focus(nc);
+                    break;
+                }
+                Con *next_transient = con_by_window_id(transient_win->transient_for);
+                if (next_transient == NULL)
+                    break;
+                transient_win = next_transient->window;
+            }
         }
     }
 
