@@ -229,7 +229,7 @@ state RESTART_STATE:
 
 # popup_during_fullscreen
 state POPUP_DURING_FULLSCREEN:
-  value = 'ignore', 'leave_fullscreen'
+  value = 'ignore', 'leave_fullscreen', 'smart'
       -> call cfg_popup_during_fullscreen($value)
 
 # client.background <hexcolor>

@@ -392,8 +392,13 @@ CFGFUN(restart_state, const char *path) {
 }
 
 CFGFUN(popup_during_fullscreen, const char *value) {
-    config.popup_during_fullscreen =
-        (strcmp(value, "ignore") == 0 ? PDF_IGNORE : PDF_LEAVE_FULLSCREEN);
+    if (strcmp(value, "ignore") == 0) {
+        config.popup_during_fullscreen = PDF_IGNORE;
+    } else if (strcmp(value, "leave_fullscreen") == 0) {
+        config.popup_during_fullscreen = PDF_LEAVE_FULLSCREEN;
+    } else {
+        config.popup_during_fullscreen = PDF_SMART;
+    }
 }
 
 CFGFUN(color_single, const char *colorclass, const char *color) {

@@ -145,6 +145,27 @@ is(parser_calls($config),
    'floating_minimum_size ok');
 
 ################################################################################
+# popup_during_fullscreen
+################################################################################
+
+$config = <<'EOT';
+popup_during_fullscreen ignore
+popup_during_fullscreen leave_fullscreen
+popup_during_fullscreen SMArt
+EOT
+
+$expected = <<'EOT';
+cfg_popup_during_fullscreen(ignore)
+cfg_popup_during_fullscreen(leave_fullscreen)
+cfg_popup_during_fullscreen(smart)
+EOT
+
+is(parser_calls($config),
+   $expected,
+   'popup_during_fullscreen ok');
+
+
+################################################################################
 # floating_modifier
 ################################################################################
 
