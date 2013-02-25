@@ -147,6 +147,10 @@ static int stdin_string(void *context, const unsigned char *val, unsigned int le
         } else {
             ctx->block.align = ALIGN_CENTER;
         }
+    } else if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
+        i3String *text = i3string_from_utf8_with_length((const char *)val, len);
+        ctx->block.min_width = (uint32_t)predict_text_width(text);
+        i3string_free(text);
     }
     return 1;
 }

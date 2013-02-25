@@ -140,6 +140,10 @@ min_width::
 	will be padded to the left and/or the right side, according to the +align+
 	key. This is useful when you want to prevent the whole status line to shift
 	when value take more or less space between each iteration.
+        The value can also be a string. In this case, the width of the text given
+        by +min_width+ determines the minimum width of the block. This is useful
+        when you want to set a sensible minimum width regardless of which font you
+        are using, and at what particular size.
 align::
 	Align text on the +center+ (default), +right+ or +left+ of the block, when
 	the minimum width of the latter, specified by the +min_width+ key, is not
@@ -175,6 +179,17 @@ of the i3bar protocol.
 {
  "full_text": "E: 10.0.0.1 (1000 Mbit/s)",
  "_ethernet_vendor": "Intel"
+}
+------------------------------------------
+
+In the following example, the longest (widest) possible value of the block is
+used to set the minimum width:
+
+------------------------------------------
+{
+ "full_text": "CPU 4%",
+ "min_width": "CPU 100%",
+ "align": "left"
 }
 ------------------------------------------
 
