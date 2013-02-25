@@ -179,7 +179,9 @@ void refresh_statusline(void) {
         if (TAILQ_NEXT(block, blocks) != NULL && !block->no_separator && block->sep_block_width > 0) {
             /* This is not the last block, draw a separator. */
             uint32_t sep_offset = block->sep_block_width/2 + block->sep_block_width % 2;
-            set_font_colors(statusline_ctx, colors.sep_fg, colors.bar_bg);
+            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+            uint32_t values[] = { colors.sep_fg, colors.bar_bg };
+            xcb_change_gc(xcb_connection, statusline_ctx, mask, values);
             xcb_poly_line(xcb_connection, XCB_COORD_MODE_ORIGIN, statusline_pm,
                           statusline_ctx, 2,
                           (xcb_point_t[]){ { x - sep_offset, 2 },
