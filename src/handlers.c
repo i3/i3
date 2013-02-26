@@ -619,10 +619,10 @@ static void handle_client_message(xcb_client_message_event_t *event) {
 
     LOG("ClientMessage for window 0x%08x\n", event->window);
     if (event->type == A__NET_WM_STATE) {
-        if (event->format != 32 || event->data.data32[1] != A__NET_WM_STATE_FULLSCREEN) {
-            DLOG("atom in clientmessage is %d, fullscreen is %d\n",
-                    event->data.data32[1], A__NET_WM_STATE_FULLSCREEN);
-            DLOG("not about fullscreen atom\n");
+        if (event->format != 32 ||
+            (event->data.data32[1] != A__NET_WM_STATE_FULLSCREEN &&
+             event->data.data32[1] != A__NET_WM_STATE_DEMANDS_ATTENTION)) {
+            DLOG("Unknown atom in clientmessage of type %d\n", event->data.data32[1]);
             return;
         }
 
@@ -632,15 +632,25 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             return;
         }
 
-        /* Check if the fullscreen state should be toggled */
-        if ((con->fullscreen_mode != CF_NONE &&
-             (event->data.data32[0] == _NET_WM_STATE_REMOVE ||
-              event->data.data32[0] == _NET_WM_STATE_TOGGLE)) ||
-            (con->fullscreen_mode == CF_NONE &&
-             (event->data.data32[0] == _NET_WM_STATE_ADD ||
-              event->data.data32[0] == _NET_WM_STATE_TOGGLE))) {
-            DLOG("toggling fullscreen\n");
-            con_toggle_fullscreen(con, CF_OUTPUT);
+        if (event->data.data32[1] == A__NET_WM_STATE_FULLSCREEN) {
+            /* Check if the fullscreen state should be toggled */
+            if ((con->fullscreen_mode != CF_NONE &&
+                 (event->data.data32[0] == _NET_WM_STATE_REMOVE ||
+                  event->data.data32[0] == _NET_WM_STATE_TOGGLE)) ||
+                (con->fullscreen_mode == CF_NONE &&
+                 (event->data.data32[0] == _NET_WM_STATE_ADD ||
+                  event->data.data32[0] == _NET_WM_STATE_TOGGLE))) {
+                DLOG("toggling fullscreen\n");
+                con_toggle_fullscreen(con, CF_OUTPUT);
+            }
+        } else if (event->data.data32[1] == A__NET_WM_STATE_DEMANDS_ATTENTION) {
+            /* Check if the urgent flag must be set or not */
+            if (event->data.data32[0] == _NET_WM_STATE_ADD)
+                con_set_urgency(con, true);
+            else if (event->data.data32[0] == _NET_WM_STATE_REMOVE)
+                con_set_urgency(con, false);
+            else if (event->data.data32[0] == _NET_WM_STATE_TOGGLE)
+                con_set_urgency(con, !con->urgent);
         }
 
         tree_render();
@@ -833,44 +843,12 @@ static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_
     if (!xcb_icccm_get_wm_hints_from_reply(&hints, reply))
         return false;
 
-    if (!con->urgent && focused == con) {
-        DLOG("Ignoring urgency flag for current client\n");
-        con->window->urgent.tv_sec = 0;
-        con->window->urgent.tv_usec = 0;
-        goto end;
-    }
-
     /* Update the flag on the client directly */
     bool hint_urgent = (xcb_icccm_wm_hints_get_urgency(&hints) != 0);
-
-    if (con->urgency_timer == NULL) {
-        con->urgent = hint_urgent;
-    } else
-        DLOG("Discarding urgency WM_HINT because timer is running\n");
-
-    //CLIENT_LOG(con);
-    if (con->window) {
-        if (con->urgent) {
-            gettimeofday(&con->window->urgent, NULL);
-        } else {
-            con->window->urgent.tv_sec = 0;
-            con->window->urgent.tv_usec = 0;
-        }
-    }
-
-    con_update_parents_urgency(con);
-
-    LOG("Urgency flag changed to %d\n", con->urgent);
-
-    Con *ws;
-    /* Set the urgency flag on the workspace, if a workspace could be found
-     * (for dock clients, that is not the case). */
-    if ((ws = con_get_workspace(con)) != NULL)
-        workspace_update_urgent_flag(ws);
+    con_set_urgency(con, hint_urgent);
 
     tree_render();
 
-end:
     if (con->window)
         window_update_hints(con->window, reply);
     else free(reply);
@@ -1094,7 +1072,7 @@ void handle_event(int type, xcb_generic_event_t *event) {
 
         /* Client message are sent to the root window. The only interesting
          * client message for us is _NET_WM_STATE, we honour
-         * _NET_WM_STATE_FULLSCREEN */
+         * _NET_WM_STATE_FULLSCREEN and _NET_WM_STATE_DEMANDS_ATTENTION */
         case XCB_CLIENT_MESSAGE:
             handle_client_message((xcb_client_message_event_t*)event);
             break;

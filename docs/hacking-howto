@@ -28,7 +28,8 @@ In the case of i3, the tasks (and order of them) are the following:
   the first client of X) and manage them (reparent them, create window
   decorations, etc.)
 . When new windows are created, manage them
-. Handle the client’s `_WM_STATE` property, but only the `_WM_STATE_FULLSCREEN`
+. Handle the client’s `_WM_STATE` property, but only `_WM_STATE_FULLSCREEN` and
+  `_NET_WM_STATE_DEMANDS_ATTENTION`
 . Handle the client’s `WM_NAME` property
 . Handle the client’s size hints to display them proportionally
 . Handle the client’s urgency hint

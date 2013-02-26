@@ -325,6 +325,12 @@ bool con_has_urgent_child(Con *con);
 void con_update_parents_urgency(Con *con);
 
 /**
+ * Set urgency flag to the container, all the parent containers and the workspace.
+ *
+ */
+void con_set_urgency(Con *con, bool urgent);
+
+/**
  * Create a string representing the subtree under con.
  *
  */

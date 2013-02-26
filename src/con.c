@@ -1531,6 +1531,45 @@ void con_update_parents_urgency(Con *con) {
 }
 
 /*
+ * Set urgency flag to the container, all the parent containers and the workspace.
+ *
+ */
+void con_set_urgency(Con *con, bool urgent) {
+    if (focused == con) {
+        DLOG("Ignoring urgency flag for current client\n");
+        con->window->urgent.tv_sec = 0;
+        con->window->urgent.tv_usec = 0;
+        return;
+    }
+
+    if (con->urgency_timer == NULL) {
+        con->urgent = urgent;
+    } else
+        DLOG("Discarding urgency WM_HINT because timer is running\n");
+
+    //CLIENT_LOG(con);
+    if (con->window) {
+        if (con->urgent) {
+            gettimeofday(&con->window->urgent, NULL);
+        } else {
+            con->window->urgent.tv_sec = 0;
+            con->window->urgent.tv_usec = 0;
+        }
+    }
+
+    con_update_parents_urgency(con);
+
+    if (con->urgent == urgent)
+        LOG("Urgency flag changed to %d\n", con->urgent);
+
+    Con *ws;
+    /* Set the urgency flag on the workspace, if a workspace could be found
+     * (for dock clients, that is not the case). */
+    if ((ws = con_get_workspace(con)) != NULL)
+        workspace_update_urgent_flag(ws);
+}
+
+/*
  * Create a string representing the subtree under con.
  *
  */
