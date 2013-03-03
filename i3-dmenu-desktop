@@ -382,6 +382,7 @@ $exec =~ s/%c/$name/g;
 # XXX: Icons are not implemented. Is the complexity (looking up the path if
 # only a name is given) actually worth it?
 #$exec =~ s/%i/--icon $icon/g;
+$exec =~ s/%i//g;
 
 # location of .desktop file
 $exec =~ s/%k/$location/g;
