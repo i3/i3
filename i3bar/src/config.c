@@ -161,6 +161,7 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
 
     COLOR(statusline, bar_fg);
     COLOR(background, bar_bg);
+    COLOR(separator, sep_fg);
     COLOR(focused_workspace_border, focus_ws_border);
     COLOR(focused_workspace_bg, focus_ws_bg);
     COLOR(focused_workspace_text, focus_ws_fg);
@@ -260,6 +261,7 @@ void free_colors(struct xcb_color_strings_t *colors) {
     } while (0)
     FREE_COLOR(bar_fg);
     FREE_COLOR(bar_bg);
+    FREE_COLOR(sep_fg);
     FREE_COLOR(active_ws_fg);
     FREE_COLOR(active_ws_bg);
     FREE_COLOR(active_ws_border);

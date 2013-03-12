@@ -42,14 +42,19 @@ static int check_for_wrap(void) {
     /* The log wrapped. Print the remaining content and reset walk to the top
      * of the log. */
     wrap_count = header->wrap_count;
-    write(STDOUT_FILENO, walk, ((logbuffer + header->offset_last_wrap) - walk));
+    const int len = (logbuffer + header->offset_last_wrap) - walk;
+    if (write(STDOUT_FILENO, walk, len) != len)
+        err(EXIT_FAILURE, "write()");
     walk = logbuffer + sizeof(i3_shmlog_header);
     return 1;
 }
 
 static void print_till_end(void) {
     check_for_wrap();
-    int n = write(STDOUT_FILENO, walk, ((logbuffer + header->offset_next_write) - walk));
+    const int len = (logbuffer + header->offset_next_write) - walk;
+    const int n = write(STDOUT_FILENO, walk, len);
+    if (len != n)
+        err(EXIT_FAILURE, "write()");
     if (n > 0) {
         walk += n;
     }
@@ -121,7 +126,7 @@ int main(int argc, char *argv[]) {
 
     struct stat statbuf;
 
-    /* NB: While we must never read, we need O_RDWR for the pthread condvar. */
+    /* NB: While we must never write, we need O_RDWR for the pthread condvar. */
     int logbuffer_shm = shm_open(shmname, O_RDWR, 0);
     if (logbuffer_shm == -1)
         err(EXIT_FAILURE, "Could not shm_open SHM segment for the i3 log (%s)", shmname);
@@ -129,7 +134,7 @@ int main(int argc, char *argv[]) {
     if (fstat(logbuffer_shm, &statbuf) != 0)
         err(EXIT_FAILURE, "stat(%s)", shmname);
 
-    /* NB: While we must never read, we need O_RDWR for the pthread condvar. */
+    /* NB: While we must never write, we need PROT_WRITE for the pthread condvar. */
     logbuffer = mmap(NULL, statbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, logbuffer_shm, 0);
     if (logbuffer == MAP_FAILED)
         err(EXIT_FAILURE, "Could not mmap SHM segment for the i3 log");

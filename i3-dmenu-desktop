@@ -6,7 +6,7 @@
 # No dependencies except for perl ≥ v5.10
 
 use strict;
-use warnings;
+use warnings qw(FATAL utf8);
 use Data::Dumper;
 use IPC::Open2;
 use POSIX qw(locale_h);
@@ -17,25 +17,35 @@ use Getopt::Long;
 use Pod::Usage;
 use v5.10;
 use utf8;
-use open ':encoding(utf8)';
+use open ':encoding(UTF-8)';
 
 binmode STDOUT, ':utf8';
 binmode STDERR, ':utf8';
 
 # reads in a whole file
 sub slurp {
-    open(my $fh, '<', shift) or die "$!";
+    my ($filename) = @_;
+    open(my $fh, '<', $filename) or die "$!";
     local $/;
-    <$fh>;
+    my $result;
+    eval {
+        $result = <$fh>;
+    };
+    if ($@) {
+        warn "Could not read $filename: $@";
+        return undef;
+    } else {
+        return $result;
+    }
 }
 
-my $entry_type = 'both';
+my @entry_types;
 my $dmenu_cmd = 'dmenu -i';
 my $result = GetOptions(
     'dmenu=s' => \$dmenu_cmd,
-    'entry-type=s' => \$entry_type,
+    'entry-type=s' => \@entry_types,
     'version' => sub {
-        say "dmenu-desktop 1.2 © 2012 Michael Stapelberg";
+        say "dmenu-desktop 1.4 © 2012 Michael Stapelberg";
         exit 0;
     },
     'help' => sub {
@@ -43,6 +53,11 @@ my $result = GetOptions(
     });
 
 die "Could not parse command line options" unless $result;
+
+# Filter entry types and set default type(s) if none selected
+my @valid_types = ('name', 'command', 'filename');
+@entry_types = grep { $_ ~~ @valid_types } @entry_types;
+@entry_types = ('name', 'command') unless @entry_types;
 
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 # ┃ Convert LC_MESSAGES into an ordered list of suffixes to search for in the ┃
@@ -135,7 +150,9 @@ for my $file (values %desktops) {
     # Extract all “Name” and “Exec” keys from the [Desktop Entry] group
     # and store them in $apps{$base}.
     my %names;
-    my @lines = split("\n", slurp($file));
+    my $content = slurp($file);
+    next unless defined($content);
+    my @lines = split("\n", $content);
     for my $line (@lines) {
         my $first = substr($line, 0, 1);
         next if $line eq '' || $first eq '#';
@@ -209,6 +226,13 @@ for my $app (keys %apps) {
     next if (!exists($apps{$app}->{Type}) ||
              $apps{$app}->{Type} ne 'Application');
 
+    # Skip broken files (Type=application, but no Exec key).
+    if (!exists($apps{$app}->{Exec}) ||
+        $apps{$app}->{Exec} eq '') {
+        warn 'File ' . $apps{$app}->{_Location} . ' is broken: it contains Type=Application, but no Exec key/value pair.';
+        next;
+    }
+
     # Don’t offer apps which have NoDisplay == true or Hidden == true.
     # See http://wiki.xfce.org/howto/customize-menu#hide_menu_entries
     # for the difference between NoDisplay and Hidden.
@@ -232,7 +256,7 @@ for my $app (keys %apps) {
         }
     }
 
-    if ($entry_type eq 'name' || $entry_type eq 'both') {
+    if ('name' ~~ @entry_types) {
         if (exists($choices{$name})) {
             # There are two .desktop files which contain the same “Name” value.
             # I’m not sure if that is allowed to happen, but we disambiguate the
@@ -248,9 +272,24 @@ for my $app (keys %apps) {
         $choices{$name} = $app;
     }
 
-    if ($entry_type eq 'command' || $entry_type eq 'both') {
+    if ('command' ~~ @entry_types) {
         my ($command) = split(' ', $apps{$app}->{Exec});
+
+        # Don’t add “geany” if “Geany” is already present.
+        my @keys = map { lc } keys %choices;
+        next if lc(basename($command)) ~~ @keys;
+
         $choices{basename($command)} = $app;
+    }
+
+    if ('filename' ~~ @entry_types) {
+        my $filename = basename($app, '.desktop');
+
+        # Don’t add “geany” if “Geany” is already present.
+        my @keys = map { lc } keys %choices;
+        next if lc($filename) ~~ @keys;
+
+        $choices{$filename} = $app;
     }
 }
 
@@ -282,6 +321,8 @@ my $status = ($? >> 8);
 exit $status unless $status == 0;
 
 my $choice = <$dmenu_out>;
+# dmenu ≥ 4.4 adds a newline after the choice
+chomp($choice);
 my $app;
 # Exact match: the user chose “Avidemux (GTK+)”
 if (exists($choices{$choice})) {
@@ -341,6 +382,7 @@ $exec =~ s/%c/$name/g;
 # XXX: Icons are not implemented. Is the complexity (looking up the path if
 # only a name is given) actually worth it?
 #$exec =~ s/%i/--icon $icon/g;
+$exec =~ s/%i//g;
 
 # location of .desktop file
 $exec =~ s/%k/$location/g;
@@ -392,7 +434,7 @@ system('i3-msg', $cmd) == 0 or die "Could not launch i3-msg: $?";
 
 =head1 SYNOPSIS
 
-    i3-dmenu-desktop [--dmenu='dmenu -i'] [--entry-type=both]
+    i3-dmenu-desktop [--dmenu='dmenu -i'] [--entry-type=name]
 
 =head1 DESCRIPTION
 
@@ -441,17 +483,18 @@ version of dmenu.
 
 =item B<--entry-type=type>
 
-Display the (localized) "Name" (type = name) or the command (type = command) or
-both (type = both) in dmenu.
+Display the (localized) "Name" (type = name), the command (type = command) or
+the (*.desktop) filename (type = filename) in dmenu. This option can be
+specified multiple times.
 
 Examples are "GNU Image Manipulation Program" (type = name), "gimp" (type =
-command) and both (type = both).
+command), and "libreoffice-writer" (type = filename).
 
 =back
 
 =head1 VERSION
 
-Version 1.2
+Version 1.4
 
 =head1 AUTHOR
 

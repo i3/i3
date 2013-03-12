@@ -93,8 +93,7 @@ is(scalar @{$__i3_scratch->{floating_nodes}}, 0, '__i3_scratch ws empty');
 ################################################################################
 # 3: Verify that 'scratchpad toggle' sends a window to the __i3_scratch
 # workspace and sets the scratchpad flag to SCRATCHPAD_FRESH. The window’s size
-# and position will be changed (once!) on the next 'scratchpad show' and the
-# flag will be changed to SCRATCHPAD_CHANGED.
+# and position will be changed on the next 'scratchpad show'.
 ################################################################################
 
 my ($nodes, $focus) = get_ws_content($tmp);
@@ -165,10 +164,33 @@ $__i3_scratch = get_ws('__i3_scratch');
 @scratch_nodes = @{$__i3_scratch->{floating_nodes}};
 is(scalar @scratch_nodes, 1, '__i3_scratch contains our window');
 
-is($scratch_nodes[0]->{scratchpad_state}, 'changed', 'scratchpad_state changed');
+################################################################################
+# 6: Resizing the window should disable auto centering on scratchpad show
+################################################################################
+
+cmd 'scratchpad show';
+
+$ws = get_ws($tmp);
+is($ws->{floating_nodes}->[0]->{scratchpad_state}, 'fresh',
+   'scratchpad_state fresh');
+
+cmd 'resize grow width 10 px';
+cmd 'scratchpad show';
+cmd 'scratchpad show';
+
+$ws = get_ws($tmp);
+$scratchrect = $ws->{floating_nodes}->[0]->{rect};
+$outputrect = $output->{rect};
+
+is($ws->{floating_nodes}->[0]->{scratchpad_state}, 'changed',
+   'scratchpad_state changed');
+is($scratchrect->{width}, $outputrect->{width} * 0.5 + 10, 'scratch width is 50% + 10px');
+
+cmd 'resize shrink width 10 px';
+cmd 'scratchpad show';
 
 ################################################################################
-# 6: Verify that repeated 'scratchpad show' cycle through the stack, that is,
+# 7: Verify that repeated 'scratchpad show' cycle through the stack, that is,
 # toggling a visible window should insert it at the bottom of the stack of the
 # __i3_scratch workspace.
 ################################################################################
@@ -215,39 +237,6 @@ is(get_focused($tmp), $fresh_id, 'focus changed');
 cmd 'scratchpad show';
 
 isnt(get_focused($tmp), $fresh_id, 'focus changed');
-
-################################################################################
-# 7: Verify that using scratchpad show with criteria works as expected:
-# When matching a scratchpad window which is visible, it should hide it.
-# When matching a scratchpad window which is on __i3_scratch, it should show it.
-# When matching a non-scratchpad window, it should be a no-op.
-################################################################################
-
-# Verify that using 'scratchpad show' without any matching windows is a no-op.
-$old_focus = get_focused($tmp);
-
-cmd '[title="nomatch"] scratchpad show';
-
-is(get_focused($tmp), $old_focus, 'non-matching criteria have no effect');
-
-# Verify that we can use criteria to show a scratchpad window.
-cmd '[title="scratch-match"] scratchpad show';
-
-my $scratch_focus = get_focused($tmp);
-isnt($scratch_focus, $old_focus, 'matching criteria works');
-
-cmd '[title="scratch-match"] scratchpad show';
-
-isnt(get_focused($tmp), $scratch_focus, 'matching criteria works');
-is(get_focused($tmp), $old_focus, 'focus restored');
-
-# Verify that we cannot use criteria to show a non-scratchpad window.
-my $tmp2 = fresh_workspace;
-my $non_scratch_window = open_window(name => 'non-scratch');
-cmd "workspace $tmp";
-is(get_focused($tmp), $old_focus, 'focus still ok');
-cmd '[title="non-match"] scratchpad show';
-is(get_focused($tmp), $old_focus, 'focus unchanged');
 
 ################################################################################
 # 8: Show it, move it around, hide it. Verify that the position is retained
@@ -368,6 +357,92 @@ $tmp = fresh_workspace;
 verify_scratchpad_move_multiple_win(0);
 $tmp = fresh_workspace;
 verify_scratchpad_move_multiple_win(1);
+
+################################################################################
+# 12: open a scratchpad window on a workspace, switch to another workspace and
+# call 'scratchpad show' again
+################################################################################
+
+sub verify_scratchpad_move_with_visible_scratch_con {
+    my ($first, $second, $cross_output) = @_;
+
+    cmd "workspace $first";
+
+    my $window1 = open_window;
+    cmd 'move scratchpad';
+
+    my $window2 = open_window;
+    cmd 'move scratchpad';
+
+    # this should bring up window 1
+    cmd 'scratchpad show';
+
+    my $ws = get_ws($first);
+    is(scalar @{$ws->{floating_nodes}}, 1, 'one floating node on ws1');
+    is($x->input_focus, $window1->id, "showed the correct scratchpad window1");
+
+    # this should bring up window 1
+    cmd "workspace $second";
+    cmd 'scratchpad show';
+    is($x->input_focus, $window1->id, "showed the correct scratchpad window1");
+
+    my $ws2 = get_ws($second);
+    is(scalar @{$ws2->{floating_nodes}}, 1, 'one floating node on ws2');
+    unless ($cross_output) {
+        ok(!workspace_exists($first), 'ws1 was empty and therefore closed');
+    } else {
+        $ws = get_ws($first);
+        is(scalar @{$ws->{floating_nodes}}, 0, 'ws1 has no floating nodes');
+    }
+
+    # hide window 1 again
+    cmd 'move scratchpad';
+
+    # this should bring up window 2
+    cmd "workspace $first";
+    cmd 'scratchpad show';
+    is($x->input_focus, $window2->id, "showed the correct scratchpad window");
+}
+
+# let's clear the scratchpad first
+sub clear_scratchpad {
+    while (scalar @{get_ws('__i3_scratch')->{floating_nodes}}) {
+        cmd 'scratchpad show';
+        cmd 'kill';
+    }
+}
+
+clear_scratchpad;
+is (scalar @{get_ws('__i3_scratch')->{floating_nodes}}, 0, "scratchpad is empty");
+
+my ($first, $second);
+$first = fresh_workspace;
+$second = fresh_workspace;
+
+verify_scratchpad_move_with_visible_scratch_con($first, $second, 0);
+does_i3_live;
+
+
+################################################################################
+# 13: Test whether scratchpad show moves focus to the scratchpad window
+# when another window on the same workspace has focus
+################################################################################
+
+clear_scratchpad;
+my $ws = fresh_workspace;
+
+open_window;
+my $scratch = get_focused($ws);
+cmd 'move scratchpad';
+cmd 'scratchpad show';
+
+open_window;
+my $not_scratch = get_focused($ws);
+is(get_focused($ws), $not_scratch, 'not scratch window has focus');
+
+cmd 'scratchpad show';
+
+is(get_focused($ws), $scratch, 'scratchpad is focused');
 
 # TODO: make i3bar display *something* when a window on the scratchpad has the urgency hint
 

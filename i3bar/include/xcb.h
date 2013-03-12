@@ -28,6 +28,7 @@
 struct xcb_color_strings_t {
     char *bar_fg;
     char *bar_bg;
+    char *sep_fg;
     char *active_ws_fg;
     char *active_ws_bg;
     char *active_ws_border;
@@ -87,6 +88,15 @@ void get_atoms(void);
  *
  */
 void kick_tray_clients(i3_output *output);
+
+/*
+ * We need to set the _NET_SYSTEM_TRAY_COLORS atom on the tray selection window
+ * to make GTK+ 3 applets with Symbolic Icons visible. If the colors are unset,
+ * they assume a light background.
+ * See also https://bugzilla.gnome.org/show_bug.cgi?id=679591
+ *
+ */
+void init_tray_colors(void);
 
 /*
  * Destroy the bar of the specified output

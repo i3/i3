@@ -49,6 +49,10 @@ int              screen;
 xcb_screen_t     *root_screen;
 xcb_window_t     xcb_root;
 
+/* selection window for tray support */
+static xcb_window_t selwin = XCB_NONE;
+static xcb_intern_atom_reply_t *tray_reply = NULL;
+
 /* This is needed for integration with libi3 */
 xcb_connection_t *conn;
 
@@ -80,6 +84,7 @@ static mode binding;
 struct xcb_colors_t {
     uint32_t bar_fg;
     uint32_t bar_bg;
+    uint32_t sep_fg;
     uint32_t active_ws_fg;
     uint32_t active_ws_bg;
     uint32_t active_ws_border;
@@ -145,7 +150,8 @@ void refresh_statusline(void) {
 
         /* If this is not the last block, add some pixels for a separator. */
         if (TAILQ_NEXT(block, blocks) != NULL)
-            block->width += 9;
+            block->width += block->sep_block_width;
+
         statusline_width += block->width + block->x_offset + block->x_append;
     }
 
@@ -167,15 +173,19 @@ void refresh_statusline(void) {
 
         uint32_t colorpixel = (block->color ? get_colorpixel(block->color) : colors.bar_fg);
         set_font_colors(statusline_ctx, colorpixel, colors.bar_bg);
-        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, 0, block->width);
+        draw_text(block->full_text, statusline_pm, statusline_ctx, x + block->x_offset, 1, block->width);
         x += block->width + block->x_offset + block->x_append;
 
-        if (TAILQ_NEXT(block, blocks) != NULL) {
+        if (TAILQ_NEXT(block, blocks) != NULL && !block->no_separator && block->sep_block_width > 0) {
             /* This is not the last block, draw a separator. */
-            set_font_colors(statusline_ctx, get_colorpixel("#666666"), colors.bar_bg);
+            uint32_t sep_offset = block->sep_block_width/2 + block->sep_block_width % 2;
+            uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+            uint32_t values[] = { colors.sep_fg, colors.bar_bg };
+            xcb_change_gc(xcb_connection, statusline_ctx, mask, values);
             xcb_poly_line(xcb_connection, XCB_COORD_MODE_ORIGIN, statusline_pm,
                           statusline_ctx, 2,
-                          (xcb_point_t[]){ { x - 5, 2 }, { x - 5, font.height - 2 } });
+                          (xcb_point_t[]){ { x - sep_offset, 2 },
+                                           { x - sep_offset, font.height - 2 } });
         }
     }
 }
@@ -255,6 +265,7 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     } while  (0)
     PARSE_COLOR(bar_fg, "#FFFFFF");
     PARSE_COLOR(bar_bg, "#000000");
+    PARSE_COLOR(sep_fg, "#666666");
     PARSE_COLOR(active_ws_fg, "#FFFFFF");
     PARSE_COLOR(active_ws_bg, "#333333");
     PARSE_COLOR(active_ws_border, "#333333");
@@ -268,6 +279,9 @@ void init_colors(const struct xcb_color_strings_t *new_colors) {
     PARSE_COLOR(focus_ws_bg, "#285577");
     PARSE_COLOR(focus_ws_border, "#4c7899");
 #undef PARSE_COLOR
+
+    init_tray_colors();
+    xcb_flush(xcb_connection);
 }
 
 /*
@@ -992,6 +1006,31 @@ void init_xcb_late(char *fontname) {
 }
 
 /*
+ * Inform clients waiting for a new _NET_SYSTEM_TRAY that we took the
+ * selection.
+ *
+ */
+static void send_tray_clientmessage(void) {
+    uint8_t buffer[32] = { 0 };
+    xcb_client_message_event_t *ev = (xcb_client_message_event_t*)buffer;
+
+    ev->response_type = XCB_CLIENT_MESSAGE;
+    ev->window = xcb_root;
+    ev->type = atoms[MANAGER];
+    ev->format = 32;
+    ev->data.data32[0] = XCB_CURRENT_TIME;
+    ev->data.data32[1] = tray_reply->atom;
+    ev->data.data32[2] = selwin;
+
+    xcb_send_event(xcb_connection,
+                   0,
+                   xcb_root,
+                   0xFFFFFF,
+                   (char*)buffer);
+}
+
+
+/*
  * Initializes tray support by requesting the appropriate _NET_SYSTEM_TRAY atom
  * for the X11 display we are running on, then acquiring the selection for this
  * atom. Afterwards, tray clients will send ClientMessages to our window.
@@ -1003,11 +1042,11 @@ void init_tray(void) {
     char atomname[strlen("_NET_SYSTEM_TRAY_S") + 11];
     snprintf(atomname, strlen("_NET_SYSTEM_TRAY_S") + 11, "_NET_SYSTEM_TRAY_S%d", screen);
     xcb_intern_atom_cookie_t tray_cookie;
-    xcb_intern_atom_reply_t *tray_reply;
-    tray_cookie = xcb_intern_atom(xcb_connection, 0, strlen(atomname), atomname);
+    if (tray_reply == NULL)
+        tray_cookie = xcb_intern_atom(xcb_connection, 0, strlen(atomname), atomname);
 
     /* tray support: we need a window to own the selection */
-    xcb_window_t selwin = xcb_generate_id(xcb_connection);
+    selwin = xcb_generate_id(xcb_connection);
     uint32_t selmask = XCB_CW_OVERRIDE_REDIRECT;
     uint32_t selval[] = { 1 };
     xcb_create_window(xcb_connection,
@@ -1016,7 +1055,7 @@ void init_tray(void) {
                       xcb_root,
                       -1, -1,
                       1, 1,
-                      1,
+                      0,
                       XCB_WINDOW_CLASS_INPUT_OUTPUT,
                       root_screen->root_visual,
                       selmask,
@@ -1033,9 +1072,13 @@ void init_tray(void) {
                         1,
                         &orientation);
 
-    if (!(tray_reply = xcb_intern_atom_reply(xcb_connection, tray_cookie, NULL))) {
-        ELOG("Could not get atom %s\n", atomname);
-        exit(EXIT_FAILURE);
+    init_tray_colors();
+
+    if (tray_reply == NULL) {
+        if (!(tray_reply = xcb_intern_atom_reply(xcb_connection, tray_cookie, NULL))) {
+            ELOG("Could not get atom %s\n", atomname);
+            exit(EXIT_FAILURE);
+        }
     }
 
     xcb_set_selection_owner(xcb_connection,
@@ -1062,23 +1105,48 @@ void init_tray(void) {
         return;
     }
 
-    /* Inform clients waiting for a new _NET_SYSTEM_TRAY that we are here */
-    void *event = scalloc(32);
-    xcb_client_message_event_t *ev = event;
-    ev->response_type = XCB_CLIENT_MESSAGE;
-    ev->window = xcb_root;
-    ev->type = atoms[MANAGER];
-    ev->format = 32;
-    ev->data.data32[0] = XCB_CURRENT_TIME;
-    ev->data.data32[1] = tray_reply->atom;
-    ev->data.data32[2] = selwin;
-    xcb_send_event(xcb_connection,
-                   0,
-                   xcb_root,
-                   0xFFFFFF,
-                   (char*)ev);
-    free(event);
-    free(tray_reply);
+    send_tray_clientmessage();
+}
+
+/*
+ * We need to set the _NET_SYSTEM_TRAY_COLORS atom on the tray selection window
+ * to make GTK+ 3 applets with Symbolic Icons visible. If the colors are unset,
+ * they assume a light background.
+ * See also https://bugzilla.gnome.org/show_bug.cgi?id=679591
+ *
+ */
+void init_tray_colors(void) {
+    /* Convert colors.bar_fg (#rrggbb) to 16-bit RGB */
+    const char *bar_fg = (config.colors.bar_fg ? config.colors.bar_fg : "#FFFFFF");
+
+    DLOG("Setting bar_fg = %s as _NET_SYSTEM_TRAY_COLORS\n", bar_fg);
+
+    char strgroups[3][3] = {{bar_fg[1], bar_fg[2], '\0'},
+                            {bar_fg[3], bar_fg[4], '\0'},
+                            {bar_fg[5], bar_fg[6], '\0'}};
+    const uint8_t r = strtol(strgroups[0], NULL, 16);
+    const uint8_t g = strtol(strgroups[1], NULL, 16);
+    const uint8_t b = strtol(strgroups[2], NULL, 16);
+
+    const uint16_t r16 = ((uint16_t)r << 8) | r;
+    const uint16_t g16 = ((uint16_t)g << 8) | g;
+    const uint16_t b16 = ((uint16_t)b << 8) | b;
+
+    const uint32_t tray_colors[12] = {
+        r16, g16, b16, /* foreground color */
+        r16, g16, b16, /* error color */
+        r16, g16, b16, /* warning color */
+        r16, g16, b16, /* success color */
+    };
+
+    xcb_change_property(xcb_connection,
+                        XCB_PROP_MODE_REPLACE,
+                        selwin,
+                        atoms[_NET_SYSTEM_TRAY_COLORS],
+                        XCB_ATOM_CARDINAL,
+                        32,
+                        12,
+                        tray_colors);
 }
 
 /*
@@ -1138,6 +1206,9 @@ void get_atoms(void) {
  *
  */
 void kick_tray_clients(i3_output *output) {
+    if (TAILQ_EMPTY(output->trayclients))
+        return;
+
     trayclient *trayclient;
     while (!TAILQ_EMPTY(output->trayclients)) {
         trayclient = TAILQ_FIRST(output->trayclients);
@@ -1153,6 +1224,20 @@ void kick_tray_clients(i3_output *output) {
          * event afterwards, but better safe than sorry. */
         TAILQ_REMOVE(output->trayclients, trayclient, tailq);
     }
+
+    /* Fake a DestroyNotify so that Qt re-adds tray icons.
+     * We cannot actually destroy the window because then Qt will not restore
+     * its event mask on the new window. */
+    uint8_t buffer[32] = { 0 };
+    xcb_destroy_notify_event_t *event = (xcb_destroy_notify_event_t*)buffer;
+
+    event->response_type = XCB_DESTROY_NOTIFY;
+    event->event = selwin;
+    event->window = selwin;
+
+    xcb_send_event(conn, false, selwin, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (char*)event);
+
+    send_tray_clientmessage();
 }
 
 /*
@@ -1261,7 +1346,7 @@ void reconfig_windows(void) {
                                                                      xcb_root,
                                                                      walk->rect.x, walk->rect.y + walk->rect.h - font.height - 6,
                                                                      walk->rect.w, font.height + 6,
-                                                                     1,
+                                                                     0,
                                                                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                                                      root_screen->root_visual,
                                                                      mask,
@@ -1398,7 +1483,7 @@ void reconfig_windows(void) {
             values[3] = font.height + 6;
             values[4] = XCB_STACK_MODE_ABOVE;
 
-            DLOG("Destroying buffer for output %s", walk->name);
+            DLOG("Destroying buffer for output %s\n", walk->name);
             xcb_free_pixmap(xcb_connection, walk->buffer);
 
             DLOG("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
@@ -1407,7 +1492,7 @@ void reconfig_windows(void) {
                                                                         mask,
                                                                         values);
 
-            DLOG("Recreating buffer for output %s", walk->name);
+            DLOG("Recreating buffer for output %s\n", walk->name);
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
                                                                     root_screen->root_depth,
                                                                     walk->buffer,
@@ -1431,7 +1516,7 @@ void reconfig_windows(void) {
  */
 void draw_bars(bool unhide) {
     DLOG("Drawing Bars...\n");
-    int i = 0;
+    int i = 1;
 
     refresh_statusline();
 
@@ -1530,7 +1615,7 @@ void draw_bars(bool unhide) {
                           outputs_walk->bargc,
                           mask,
                           vals_border);
-            xcb_rectangle_t rect_border = { i, 0, ws_walk->name_width + 10, font.height + 4 };
+            xcb_rectangle_t rect_border = { i, 1, ws_walk->name_width + 10, font.height + 4 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1541,14 +1626,14 @@ void draw_bars(bool unhide) {
                           outputs_walk->bargc,
                           mask,
                           vals);
-            xcb_rectangle_t rect = { i + 1, 1, ws_walk->name_width + 8, font.height + 2 };
+            xcb_rectangle_t rect = { i + 1, 2, ws_walk->name_width + 8, font.height + 2 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
                                     1,
                                     &rect);
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
-            draw_text(ws_walk->name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, ws_walk->name_width);
+            draw_text(ws_walk->name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 3, ws_walk->name_width);
             i += 10 + ws_walk->name_width + 1;
 
         }
@@ -1564,7 +1649,7 @@ void draw_bars(bool unhide) {
                           outputs_walk->bargc,
                           mask,
                           vals_border);
-            xcb_rectangle_t rect_border = { i, 0, binding.width + 10, font.height + 4 };
+            xcb_rectangle_t rect_border = { i, 1, binding.width + 10, font.height + 4 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1576,7 +1661,7 @@ void draw_bars(bool unhide) {
                           outputs_walk->bargc,
                           mask,
                           vals);
-            xcb_rectangle_t rect = { i + 1, 1, binding.width + 8, font.height + 2 };
+            xcb_rectangle_t rect = { i + 1, 2, binding.width + 8, font.height + 2 };
             xcb_poly_fill_rectangle(xcb_connection,
                                     outputs_walk->buffer,
                                     outputs_walk->bargc,
@@ -1584,7 +1669,7 @@ void draw_bars(bool unhide) {
                                     &rect);
 
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
-            draw_text(binding.name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 2, binding.width);
+            draw_text(binding.name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 3, binding.width);
         }
 
         i = 0;

@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * libi3: contains functions which are used by i3 *and* accompanying tools such
  * as i3-msg, i3-config-wizard, …
@@ -46,6 +46,9 @@ struct Font {
 
     /** The height of the font, built from font_ascent + font_descent */
     int height;
+
+    /** The pattern/name used to load the font. */
+    char *pattern;
 
     union {
         struct {
@@ -202,8 +205,8 @@ int ipc_connect(const char *socket_path);
  * Returns 0 on success.
  *
  */
-int ipc_send_message(int sockfd, uint32_t message_size,
-                     uint32_t message_type, const uint8_t *payload);
+int ipc_send_message(int sockfd, const uint32_t message_size,
+                     const uint32_t message_type, const uint8_t *payload);
 
 /**
  * Reads a message from the given socket file descriptor and stores its length
@@ -216,7 +219,7 @@ int ipc_send_message(int sockfd, uint32_t message_size,
  * Returns 0 on success.
  *
  */
-int ipc_recv_message(int sockfd, uint32_t message_type,
+int ipc_recv_message(int sockfd, uint32_t *message_type,
                      uint32_t *reply_length, uint8_t **reply);
 
 /**
@@ -354,5 +357,11 @@ xcb_visualtype_t *get_visualtype(xcb_screen_t *screen);
  *
  */
 bool is_debug_build() __attribute__((const));
+
+/**
+ * Returns the name of a temporary file with the specified prefix.
+ *
+ */
+char *get_process_filename(const char *prefix);
 
 #endif

@@ -196,7 +196,8 @@ struct regex {
 
 /**
  * Holds a keybinding, consisting of a keycode combined with modifiers and the
- * command which is executed as soon as the key is pressed (see src/cfgparse.y)
+ * command which is executed as soon as the key is pressed (see
+ * src/config_parser.c)
  *
  */
 struct Binding {
@@ -569,8 +570,14 @@ struct Con {
     void(*on_remove_child)(Con *);
 
     enum {
+        /* Not a scratchpad window. */
         SCRATCHPAD_NONE = 0,
+
+        /* Just moved to scratchpad, not resized by the user yet.
+         * Window will be auto-centered and sized appropriately. */
         SCRATCHPAD_FRESH = 1,
+
+        /* The user changed position/size of the scratchpad window. */
         SCRATCHPAD_CHANGED = 2
     } scratchpad_state;
 

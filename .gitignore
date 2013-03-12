@@ -5,14 +5,6 @@ include/all.h.pch
 *.swp
 *.gcda
 *.gcno
-testcases/testsuite-*
-testcases/latest
-testcases/Makefile
-testcases/Makefile.old
-testcases/.last_run_timings.json
-testcases/_Inline
-testcases/inc
-testcases/META.yml
 test.commands_parser
 test.config_parser
 *.output
@@ -32,3 +24,5 @@ libi3.a
 docs/*.pdf
 docs/*.html
 !/docs/refcard.html
+i3-command-parser.stamp
+i3-config-parser.stamp

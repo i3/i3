@@ -105,13 +105,6 @@ char *resolve_tilde(const char *path);
  */
 bool path_exists(const char *path);
 
-
-/**
- * Returns the name of a temporary file with the specified prefix.
- *
- */
-char *get_process_filename(const char *prefix);
-
 /**
  * Restart i3 in-place
  * appends -a to argument list to disable autostart
@@ -129,5 +122,24 @@ void i3_restart(bool forget_layout);
 void *memmem(const void *l, size_t l_len, const void *s, size_t s_len);
 
 #endif
+
+/**
+ * Starts an i3-nagbar instance with the given parameters. Takes care of
+ * handling SIGCHLD and killing i3-nagbar when i3 exits.
+ *
+ * The resulting PID will be stored in *nagbar_pid and can be used with
+ * kill_nagbar() to kill the bar later on.
+ *
+ */
+void start_nagbar(pid_t *nagbar_pid, char *argv[]);
+
+/**
+ * Kills the i3-nagbar process, if *nagbar_pid != -1.
+ *
+ * If wait_for_it is set (restarting i3), this function will waitpid(),
+ * otherwise, ev is assumed to handle it (reloading).
+ *
+ */
+void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it);
 
 #endif

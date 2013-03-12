@@ -28,6 +28,9 @@
 #include <getopt.h>
 #include <limits.h>
 
+#include <yajl/yajl_parse.h>
+#include <yajl/yajl_version.h>
+
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
 
@@ -35,6 +38,99 @@
 #include <i3/ipc.h>
 
 static char *socket_path;
+
+/*
+ * Having verboselog() and errorlog() is necessary when using libi3.
+ *
+ */
+void verboselog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+}
+
+void errorlog(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+}
+
+static char *last_key = NULL;
+
+typedef struct reply_t {
+    bool success;
+    char *error;
+    char *input;
+    char *errorposition;
+} reply_t;
+
+static reply_t last_reply;
+
+static int reply_boolean_cb(void *params, int val) {
+    if (strcmp(last_key, "success") == 0)
+        last_reply.success = val;
+    return 1;
+}
+
+#if YAJL_MAJOR >= 2
+static int reply_string_cb(void *params, const unsigned char *val, size_t len) {
+#else
+static int reply_string_cb(void *params, const unsigned char *val, unsigned int len) {
+#endif
+    char *str = scalloc(len + 1);
+    strncpy(str, (const char*)val, len);
+    if (strcmp(last_key, "error") == 0)
+        last_reply.error = str;
+    else if (strcmp(last_key, "input") == 0)
+        last_reply.input = str;
+    else if (strcmp(last_key, "errorposition") == 0)
+        last_reply.errorposition = str;
+    else free(str);
+    return 1;
+}
+
+static int reply_start_map_cb(void *params) {
+    return 1;
+}
+
+static int reply_end_map_cb(void *params) {
+    if (!last_reply.success) {
+        fprintf(stderr, "ERROR: Your command: %s\n", last_reply.input);
+        fprintf(stderr, "ERROR:               %s\n", last_reply.errorposition);
+        fprintf(stderr, "ERROR: %s\n", last_reply.error);
+    }
+    return 1;
+}
+
+
+#if YAJL_MAJOR >= 2
+static int reply_map_key_cb(void *params, const unsigned char *keyVal, size_t keyLen) {
+#else
+static int reply_map_key_cb(void *params, const unsigned char *keyVal, unsigned keyLen) {
+#endif
+    free(last_key);
+    last_key = scalloc(keyLen + 1);
+    strncpy(last_key, (const char*)keyVal, keyLen);
+    return 1;
+}
+
+yajl_callbacks reply_callbacks = {
+    NULL,
+    &reply_boolean_cb,
+    NULL,
+    NULL,
+    NULL,
+    &reply_string_cb,
+    &reply_start_map_cb,
+    &reply_map_key_cb,
+    &reply_end_map_cb,
+    NULL,
+    NULL
+};
 
 int main(int argc, char *argv[]) {
     socket_path = getenv("I3SOCK");
@@ -126,7 +222,7 @@ int main(int argc, char *argv[]) {
     addr.sun_family = AF_LOCAL;
     strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
     if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0)
-        err(EXIT_FAILURE, "Could not connect to i3");
+        err(EXIT_FAILURE, "Could not connect to i3 on socket \"%s\"", socket_path);
 
     if (ipc_send_message(sockfd, strlen(payload), message_type, (uint8_t*)payload) == -1)
         err(EXIT_FAILURE, "IPC: write()");
@@ -135,12 +231,41 @@ int main(int argc, char *argv[]) {
         return 0;
 
     uint32_t reply_length;
+    uint32_t reply_type;
     uint8_t *reply;
     int ret;
-    if ((ret = ipc_recv_message(sockfd, message_type, &reply_length, &reply)) != 0) {
+    if ((ret = ipc_recv_message(sockfd, &reply_type, &reply_length, &reply)) != 0) {
         if (ret == -1)
             err(EXIT_FAILURE, "IPC: read()");
         exit(1);
+    }
+    if (reply_type != message_type)
+        errx(EXIT_FAILURE, "IPC: Received reply of type %d but expected %d", reply_type, message_type);
+    /* For the reply of commands, have a look if that command was successful.
+     * If not, nicely format the error message. */
+    if (reply_type == I3_IPC_MESSAGE_TYPE_COMMAND) {
+        yajl_handle handle;
+#if YAJL_MAJOR < 2
+        yajl_parser_config parse_conf = { 0, 0 };
+
+        handle = yajl_alloc(&reply_callbacks, &parse_conf, NULL, NULL);
+#else
+        handle = yajl_alloc(&reply_callbacks, NULL, NULL);
+#endif
+        yajl_status state = yajl_parse(handle, (const unsigned char*)reply, reply_length);
+        switch (state) {
+            case yajl_status_ok:
+                break;
+            case yajl_status_client_canceled:
+#if YAJL_MAJOR < 2
+            case yajl_status_insufficient_data:
+#endif
+            case yajl_status_error:
+                errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
+        }
+
+        /* NB: We still fall-through and print the reply, because even if one
+         * command failed, that doesn’t mean that all commands failed. */
     }
     printf("%.*s\n", reply_length, reply);
     free(reply);

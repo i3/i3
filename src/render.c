@@ -17,6 +17,16 @@
 static bool show_debug_borders = false;
 
 /*
+ * Returns the height for the decorations
+ */
+int render_deco_height(void) {
+    int deco_height = config.font.height + 4;
+    if (config.font.height & 0x01)
+        ++deco_height;
+    return deco_height;
+}
+
+/*
  * Renders a container with layout L_OUTPUT. In this layout, all CT_DOCKAREAs
  * get the height of their content and the remaining CT_CON gets the rest.
  *
@@ -44,12 +54,19 @@ static void render_l_output(Con *con) {
         }
     }
 
-    assert(content != NULL);
+    if (content == NULL) {
+        DLOG("Skipping this output because it is currently being destroyed.\n");
+        return;
+    }
 
     /* We need to find out if there is a fullscreen con on the current workspace
      * and take the short-cut to render it directly (the user does not want to
      * see the dockareas in that case) */
     Con *ws = con_get_fullscreen_con(content, CF_OUTPUT);
+    if (!ws) {
+        DLOG("Skipping this output because it is currently being destroyed.\n");
+        return;
+    }
     Con *fullscreen = con_get_fullscreen_con(ws, CF_OUTPUT);
     if (fullscreen) {
         fullscreen->rect = con->rect;
@@ -196,12 +213,11 @@ void render_con(Con *con, bool render_fullscreen) {
     }
 
     /* find the height for the decorations */
-    int deco_height = config.font.height + 4;
-    if (config.font.height & 0x01)
-        ++deco_height;
+    int deco_height = render_deco_height();
 
     /* precalculate the sizes to be able to correct rounding errors */
     int sizes[children];
+    memset(sizes, 0, children*sizeof(int));
     if ((con->layout == L_SPLITH || con->layout == L_SPLITV) && children > 0) {
         assert(!TAILQ_EMPTY(&con->nodes_head));
         Con *child;
@@ -244,6 +260,10 @@ void render_con(Con *con, bool render_fullscreen) {
                 continue;
             /* Get the active workspace of that output */
             Con *content = output_get_content(output);
+            if (!content || TAILQ_EMPTY(&(content->focus_head))) {
+                DLOG("Skipping this output because it is currently being destroyed.\n");
+                continue;
+            }
             Con *workspace = TAILQ_FIRST(&(content->focus_head));
             Con *fullscreen = con_get_fullscreen_con(workspace, CF_OUTPUT);
             Con *child;
@@ -251,18 +271,28 @@ void render_con(Con *con, bool render_fullscreen) {
                 /* Don’t render floating windows when there is a fullscreen window
                  * on that workspace. Necessary to make floating fullscreen work
                  * correctly (ticket #564). */
-                if (fullscreen != NULL) {
+                if (fullscreen != NULL && fullscreen->window != NULL) {
                     Con *floating_child = con_descend_focused(child);
+                    Con *transient_con = floating_child;
+                    bool is_transient_for = false;
                     /* Exception to the above rule: smart
                      * popup_during_fullscreen handling (popups belonging to
                      * the fullscreen app will be rendered). */
-                    if (floating_child->window == NULL ||
-                        fullscreen->window == NULL ||
-                        floating_child->window->transient_for != fullscreen->window->id)
+                    while (transient_con != NULL &&
+                           transient_con->window != NULL &&
+                           transient_con->window->transient_for != XCB_NONE) {
+                        if (transient_con->window->transient_for == fullscreen->window->id) {
+                            is_transient_for = true;
+                            break;
+                        }
+                        transient_con = con_by_window_id(transient_con->window->transient_for);
+                    }
+
+                    if (!is_transient_for)
                         continue;
                     else {
                         DLOG("Rendering floating child even though in fullscreen mode: "
-                             "floating->transient_for (0x%08x) == fullscreen->id (0x%08x)\n",
+                             "floating->transient_for (0x%08x) --> fullscreen->id (0x%08x)\n",
                              floating_child->window->transient_for, fullscreen->window->id);
                     }
                 }
@@ -297,16 +327,23 @@ void render_con(Con *con, bool render_fullscreen) {
             }
 
             /* first we have the decoration, if this is a leaf node */
-            if (con_is_leaf(child) && child->border_style == BS_NORMAL) {
-                /* TODO: make a function for relative coords? */
-                child->deco_rect.x = child->rect.x - con->rect.x;
-                child->deco_rect.y = child->rect.y - con->rect.y;
+            if (con_is_leaf(child)) {
+                if (child->border_style == BS_NORMAL) {
+                    /* TODO: make a function for relative coords? */
+                    child->deco_rect.x = child->rect.x - con->rect.x;
+                    child->deco_rect.y = child->rect.y - con->rect.y;
 
-                child->rect.y += deco_height;
-                child->rect.height -= deco_height;
+                    child->rect.y += deco_height;
+                    child->rect.height -= deco_height;
 
-                child->deco_rect.width = child->rect.width;
-                child->deco_rect.height = deco_height;
+                    child->deco_rect.width = child->rect.width;
+                    child->deco_rect.height = deco_height;
+                } else {
+                    child->deco_rect.x = 0;
+                    child->deco_rect.y = 0;
+                    child->deco_rect.width = 0;
+                    child->deco_rect.height = 0;
+                }
             }
         }
 

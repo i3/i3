@@ -21,6 +21,10 @@ use i3test;
 use POSIX qw(mkfifo);
 use File::Temp qw(:POSIX);
 
+SKIP: {
+
+    skip "X11::XCB too old (need >= 0.07)", 24 if $X11::XCB::VERSION < 0.07;
+
 use ExtUtils::PkgConfig;
 
 # setup dependency on libstartup-notification using pkg-config
@@ -42,16 +46,10 @@ static SnDisplay *sndisplay;
 static SnLauncheeContext *ctx;
 static xcb_connection_t *conn;
 
-// TODO: this should use $x
-void init_ctx() {
-    int screen;
-    if ((conn = xcb_connect(NULL, &screen)) == NULL ||
-        xcb_connection_has_error(conn))
-        errx(1, "x11 conn failed");
-
-    printf("screen = %d\n", screen);
+void init_ctx(void *connptr) {
+    conn = (xcb_connection_t*)connptr;
     sndisplay = sn_xcb_display_new(conn, NULL, NULL);
-    ctx = sn_launchee_context_new_from_environment(sndisplay, screen);
+    ctx = sn_launchee_context_new_from_environment(sndisplay, 0);
 }
 
 const char *get_startup_id() {
@@ -101,7 +99,7 @@ isnt($startup_id, '', 'startup_id not empty');
 $ENV{DESKTOP_STARTUP_ID} = $startup_id;
 
 # Create a new libstartup-notification launchee context
-init_ctx();
+init_ctx($x->get_xcb_conn());
 
 # Make sure the context was set up successfully
 is(get_startup_id(), $startup_id, 'libstartup-notification returns the same id');
@@ -211,5 +209,6 @@ close($fh);
 unlink($tmp);
 
 is($startup_id, '', 'startup_id empty');
+}
 
 done_testing;

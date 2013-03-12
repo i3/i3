@@ -98,6 +98,10 @@ static int stdin_start_array(void *context) {
 static int stdin_start_map(void *context) {
     parser_ctx *ctx = context;
     memset(&(ctx->block), '\0', sizeof(struct status_block));
+
+    /* Default width of the separator block. */
+    ctx->block.sep_block_width = 9;
+
     return 1;
 }
 
@@ -116,6 +120,9 @@ static int stdin_boolean(void *context, int val) {
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "urgent") == 0) {
         ctx->block.urgent = val;
+    }
+    if (strcasecmp(ctx->last_map_key, "separator") == 0) {
+        ctx->block.no_separator = !val;
     }
     return 1;
 }
@@ -140,6 +147,10 @@ static int stdin_string(void *context, const unsigned char *val, unsigned int le
         } else {
             ctx->block.align = ALIGN_CENTER;
         }
+    } else if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
+        i3String *text = i3string_from_utf8_with_length((const char *)val, len);
+        ctx->block.min_width = (uint32_t)predict_text_width(text);
+        i3string_free(text);
     }
     return 1;
 }
@@ -152,6 +163,9 @@ static int stdin_integer(void *context, long val) {
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
         ctx->block.min_width = (uint32_t)val;
+    }
+    if (strcasecmp(ctx->last_map_key, "separator_block_width") == 0) {
+        ctx->block.sep_block_width = (uint32_t)val;
     }
     return 1;
 }

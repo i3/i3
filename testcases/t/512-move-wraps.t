@@ -14,9 +14,10 @@
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
-# Regression test: Verify that focus is correct after moving a floating window
-# to a workspace on a different visible output.
-# Bug still in: 4.3-83-ge89a25f
+# Verifies that moving containers wraps across outputs.
+# E.g. when you have a container on the right output and you move it to the
+# right, it should appear on the left output.
+# Bug still in: 4.4-106-g3cd4b8c
 use i3test i3_autostart => 0;
 
 # Ensure the pointer is at (0, 0) so that we really start on the first
@@ -29,17 +30,26 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 fake-outputs 1024x768+0+0,1024x768+1024+0
 EOT
+
 my $pid = launch_with_config($config);
 
-my $left_ws = fresh_workspace(output => 0);
-open_window;
+my $right = fresh_workspace(output => 1);
+my $left = fresh_workspace(output => 0);
 
-my $right_ws = fresh_workspace(output => 1);
-open_window;
-my $right_float = open_floating_window;
+my $win = open_window;
 
-cmd "move workspace $left_ws";
-is($x->input_focus, $right_float->id, 'floating window still focused');
+is_num_children($left, 1, 'one container on left workspace');
+
+cmd 'move container to output right';
+cmd 'focus output right';
+
+is_num_children($left, 0, 'no containers on left workspace');
+is_num_children($right, 1, 'one container on right workspace');
+
+cmd 'move container to output right';
+
+is_num_children($left, 1, 'one container on left workspace');
+is_num_children($right, 0, 'no containers on right workspace');
 
 exit_gracefully($pid);
 

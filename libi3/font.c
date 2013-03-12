@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  */
 #include <assert.h>
@@ -143,13 +143,17 @@ i3Font load_font(const char *pattern, const bool fallback) {
 #if PANGO_SUPPORT
     /* Try to load a pango font if specified */
     if (strlen(pattern) > strlen("pango:") && !strncmp(pattern, "pango:", strlen("pango:"))) {
-        pattern += strlen("pango:");
-        if (load_pango_font(&font, pattern))
+        const char *font_pattern = pattern + strlen("pango:");
+        if (load_pango_font(&font, font_pattern)) {
+            font.pattern = sstrdup(pattern);
             return font;
+        }
     } else if (strlen(pattern) > strlen("xft:") && !strncmp(pattern, "xft:", strlen("xft:"))) {
-        pattern += strlen("xft:");
-        if (load_pango_font(&font, pattern))
+        const char *font_pattern = pattern + strlen("xft:");
+        if (load_pango_font(&font, font_pattern)) {
+            font.pattern = sstrdup(pattern);
             return font;
+        }
     }
 #endif
 
@@ -189,6 +193,7 @@ i3Font load_font(const char *pattern, const bool fallback) {
         }
     }
 
+    font.pattern = sstrdup(pattern);
     LOG("Using X font %s\n", pattern);
 
     /* Get information (height/name) for this font */
@@ -222,6 +227,7 @@ void set_font(i3Font *font) {
  *
  */
 void free_font(void) {
+    free(savedFont->pattern);
     switch (savedFont->type) {
         case FONT_TYPE_NONE:
             /* Nothing to do */

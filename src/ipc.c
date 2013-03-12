@@ -677,6 +677,7 @@ IPC_HANDLER(get_bar_config) {
         y(map_open);
         YSTR_IF_SET(background);
         YSTR_IF_SET(statusline);
+        YSTR_IF_SET(separator);
         YSTR_IF_SET(focused_workspace_border);
         YSTR_IF_SET(focused_workspace_bg);
         YSTR_IF_SET(focused_workspace_text);
@@ -802,18 +803,16 @@ handler_t handlers[8] = {
  *
  */
 static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
-    char buf[2048];
-    int n = read(w->fd, buf, sizeof(buf));
+    uint32_t message_type;
+    uint32_t message_length;
+    uint8_t *message;
 
-    /* On error or an empty message, we close the connection */
-    if (n <= 0) {
-#if 0
-        /* FIXME: I get these when closing a client socket,
-         * therefore we just treat them as an error. Is this
-         * correct? */
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return;
-#endif
+    int ret = ipc_recv_message(w->fd, &message_type, &message_length, &message);
+    /* EOF or other error */
+    if (ret < 0) {
+        /* Was this a spurious read? See ev(3) */
+        if (ret == -1 && errno == EAGAIN)
+            return;
 
         /* If not, there was some kind of error. We don’t bother
          * and close the connection */
@@ -841,51 +840,11 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
         return;
     }
 
-    /* Terminate the message correctly */
-    buf[n] = '\0';
-
-    /* Check if the message starts with the i3 IPC magic code */
-    if (n < strlen(I3_IPC_MAGIC)) {
-        DLOG("IPC: message too short, ignoring\n");
-        return;
-    }
-
-    if (strncmp(buf, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC)) != 0) {
-        DLOG("IPC: message does not start with the IPC magic\n");
-        return;
-    }
-
-    uint8_t *message = (uint8_t*)buf;
-    while (n > 0) {
-        DLOG("IPC: n = %d\n", n);
-        message += strlen(I3_IPC_MAGIC);
-        n -= strlen(I3_IPC_MAGIC);
-
-        /* The next 32 bit after the magic are the message size */
-        uint32_t message_size;
-        memcpy(&message_size, (uint32_t*)message, sizeof(uint32_t));
-        message += sizeof(uint32_t);
-        n -= sizeof(uint32_t);
-
-        if (message_size > n) {
-            DLOG("IPC: Either the message size was wrong or the message was not read completely, dropping\n");
-            return;
-        }
-
-        /* The last 32 bits of the header are the message type */
-        uint32_t message_type;
-        memcpy(&message_type, (uint32_t*)message, sizeof(uint32_t));
-        message += sizeof(uint32_t);
-        n -= sizeof(uint32_t);
-
-        if (message_type >= (sizeof(handlers) / sizeof(handler_t)))
-            DLOG("Unhandled message type: %d\n", message_type);
-        else {
-            handler_t h = handlers[message_type];
-            h(w->fd, message, n, message_size, message_type);
-        }
-        n -= message_size;
-        message += message_size;
+    if (message_type >= (sizeof(handlers) / sizeof(handler_t)))
+        DLOG("Unhandled message type: %d\n", message_type);
+    else {
+        handler_t h = handlers[message_type];
+        h(w->fd, message, 0, message_length, message_type);
     }
 }
 

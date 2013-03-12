@@ -6,8 +6,8 @@
  * i3 - an improved dynamic tiling window manager
  * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
  *
- * config.c: Configuration file (calling the parser (src/cfgparse.y) with the
- *           correct path, switching key bindings mode).
+ * config.c: Configuration file (calling the parser (src/config_parser.c) with
+ *           the correct path, switching key bindings mode).
  *
  */
 #include "all.h"

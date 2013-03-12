@@ -6,8 +6,8 @@
  *
  * include/config.h: Contains all structs/variables for the configurable
  * part of i3 as well as functions handling the configuration file (calling
- * the parser (src/cfgparse.y) with the correct path, switching key bindings
- * mode).
+ * the parser (src/config_parse.c) with the correct path, switching key
+ * bindings mode).
  *
  */
 #ifndef I3_CONFIG_H
@@ -24,8 +24,6 @@ extern char *current_configpath;
 extern Config config;
 extern SLIST_HEAD(modes_head, Mode) modes;
 extern TAILQ_HEAD(barconfig_head, Barconfig) barconfigs;
-/* defined in src/cfgparse.y */
-extern bool force_old_config_parser;
 
 /**
  * Used during the config file lexing/parsing to keep the state of the lexer
@@ -269,6 +267,7 @@ struct Barconfig {
     struct bar_colors {
         char *background;
         char *statusline;
+        char *separator;
 
         char *focused_workspace_border;
         char *focused_workspace_bg;
@@ -341,8 +340,5 @@ Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode
  *
  */
 void kill_configerror_nagbar(bool wait_for_it);
-
-/* prototype for src/cfgparse.y */
-void parse_file(const char *f);
 
 #endif

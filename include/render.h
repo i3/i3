@@ -21,4 +21,9 @@
  */
 void render_con(Con *con, bool render_fullscreen);
 
+/*
+ * Returns the height for the decorations
+ */
+int render_deco_height(void);
+
 #endif

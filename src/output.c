@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * output.c: Output (monitor) related functions.
  *
@@ -22,6 +22,5 @@ Con *output_get_content(Con *output) {
         if (child->type == CT_CON)
             return child;
 
-    ELOG("output_get_content() called on non-output %p\n", output);
-    assert(false);
+    return NULL;
 }

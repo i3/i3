@@ -73,6 +73,7 @@ ok(@{get_ws_content($tmp)} == 0, 'no containers yet');
 ok(get_ws($tmp)->{focused}, 'current workspace focused');
 
 my $window = open_special;
+sync_with_i3;
 
 ok(@{get_ws_content($tmp)} == 0, 'special window not on current workspace');
 ok(@{get_ws_content('targetws')} == 1, 'special window on targetws');

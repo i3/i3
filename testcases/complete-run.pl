@@ -1,10 +1,11 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
-# © 2010-2011 Michael Stapelberg and contributors
+# © 2010-2012 Michael Stapelberg and contributors
 package complete_run;
 use strict;
 use warnings;
 use v5.10;
+use utf8;
 # the following are modules which ship with Perl (>= 5.10):
 use Pod::Usage;
 use Cwd qw(abs_path);
@@ -28,6 +29,9 @@ use AnyEvent::Handle;
 use AnyEvent::I3 qw(:all);
 use X11::XCB::Connection;
 use JSON::XS; # AnyEvent::I3 depends on it, too.
+
+binmode STDOUT, ':utf8';
+binmode STDERR, ':utf8';
 
 # Close superfluous file descriptors which were passed by running in a VIM
 # subshell or situations like that.
@@ -78,7 +82,7 @@ my @binaries = qw(
                );
 
 foreach my $binary (@binaries) {
-    die "$binary executable not found" unless -e $binary;
+    die "$binary executable not found, did you run “make”?" unless -e $binary;
     die "$binary is not an executable" unless -x $binary;
 }
 

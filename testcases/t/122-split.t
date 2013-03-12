@@ -158,4 +158,24 @@ is(get_output_content()->{layout}, 'splith', 'content container layout ok');
 cmd 'layout stacked';
 is(get_output_content()->{layout}, 'splith', 'content container layout still ok');
 
+######################################################################
+# Splitting a workspace that has more than one child
+######################################################################
+
+$tmp = fresh_workspace;
+
+cmd 'open';
+cmd 'open';
+cmd 'focus parent';
+cmd 'split v';
+cmd 'open';
+
+my $content = get_ws_content($tmp);
+my $fst = $content->[0];
+my $snd = $content->[1];
+
+is(@{$content}, 2, 'two containers on workspace');
+is(@{$fst->{nodes}}, 2, 'first child has two children');
+is(@{$snd->{nodes}}, 0, 'second child has no children');
+
 done_testing;

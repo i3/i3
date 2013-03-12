@@ -12,6 +12,8 @@
 
 #include <yajl/yajl_gen.h>
 
+extern pid_t config_error_nagbar_pid;
+
 /*
  * The result of a parse_config call. Currently unused, but the JSON output
  * will be useful in the future when we implement a config parsing IPC command.
@@ -28,5 +30,12 @@ struct ConfigResult {
 };
 
 struct ConfigResult *parse_config(const char *input, struct context *context);
+
+/**
+ * Parses the given file by first replacing the variables, then calling
+ * parse_config and possibly launching i3-nagbar.
+ *
+ */
+void parse_file(const char *f);
 
 #endif

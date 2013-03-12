@@ -30,7 +30,7 @@ $parser->html_header_before_title(
 <link rel="icon" type="image/png" href="/favicon.png">
 <meta charset="utf-8">
 <meta name="generator" content="Pod::Simple::HTML">
-<meta name="description" content="i3 Perl documentation (testsuite)">
+<meta name="description" content="i3 Perl documentation">
 <link rel="stylesheet" href="http://i3wm.org/css/style.css" type="text/css" />
 <style type="text/css">
 .pod pre {
@@ -81,7 +81,7 @@ $parser->html_header_after_title(
 			</ul>
 	<br style="clear: both">
 <div id="content" class="pod">
-<h1>i3 Perl documentation (testsuite)</h1>
+<h1>i3 Perl documentation</h1>
 
 EOF
 );

@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael@i3wm.org>
-August 2012
+February 2013
 
 This document contains all the information you need to configure and use the i3
 window manager. If it does not, please check http://faq.i3wm.org/ first, then
@@ -324,7 +324,7 @@ font pango:[family list] [style options] [size]
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 font pango:DejaVu Sans Mono 10
 font pango:DejaVu Sans Mono, Terminus Bold Semi-Condensed 11
-font pango:Terminus 11x
+font pango:Terminus 11px
 --------------------------------------------------------------
 
 [[keybindings]]
@@ -590,6 +590,10 @@ title change. As i3 will get the title as soon as the application maps the
 window (mapping means actually displaying it on the screen), you’d need to have
 to match on 'Firefox' in this case.
 
+Assignments are processed by i3 in the order in which they appear in the config
+file. The first one which matches the window wins and later assignments are not
+considered.
+
 *Syntax*:
 ------------------------------------------------------------
 assign <criteria> [→] workspace
@@ -732,10 +736,7 @@ client.background color
 -----------------------
 
 Only clients that do not cover the whole area of this window expose the color
-used to paint it. If you use a color other than black for your terminals, you
-most likely want to set the client background color to the same color as your
-terminal program's background color to avoid black gaps between the rendered
-area of the terminal and the i3 border.
+used to paint it.
 
 Colors are in HTML hex format (#rrggbb), see the following example:
 
@@ -1154,6 +1155,8 @@ background::
 	Background color of the bar.
 statusline::
 	Text color to be used for the statusline.
+separator::
+	Text color to be used for the separator.
 focused_workspace::
 	Border, background and text color for a workspace button when the workspace
 	has focus.
@@ -1175,6 +1178,7 @@ urgent_workspace::
 colors {
     background <color>
     statusline <color>
+    separator <color>
 
     colorclass <border> <background> <text>
 }
@@ -1186,6 +1190,7 @@ bar {
     colors {
         background #000000
         statusline #ffffff
+        separator #666666
 
         focused_workspace  #4c7899 #285577 #ffffff
         active_workspace   #333333 #5f676a #ffffff
@@ -1612,7 +1617,7 @@ bindsym $mod+r mode "resize"
 Often when in a multi-monitor environment, you want to quickly jump to a
 specific window. For example, while working on workspace 3 you may want to
 jump to your mail client to email your boss that you’ve achieved some
-important goal. Instead of figuring out how to navigate to your mailclient,
+important goal. Instead of figuring out how to navigate to your mail client,
 it would be more convenient to have a shortcut. You can use the +focus+ command
 with criteria for that.
 

@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * scratchpad.c: Moving windows to the scratchpad and making them visible again.
  *
@@ -53,7 +53,6 @@ void scratchpad_move(Con *con) {
 
     /* 2: Send the window to the __i3_scratch workspace, mainting its
      * coordinates and not warping the pointer. */
-    Con *focus_next = con_next_focused(con);
     con_move_to_workspace(con, __i3_scratch, true, true);
 
     /* 3: If this is the first time this window is used as a scratchpad, we set
@@ -63,11 +62,6 @@ void scratchpad_move(Con *con) {
         DLOG("This window was never used as a scratchpad before.\n");
         con->scratchpad_state = SCRATCHPAD_FRESH;
     }
-
-    /* 4: Fix focus. Normally, when moving a window to a different output, the
-     * destination output gets focused. In this case, we don’t want that. */
-    if (con_get_workspace(focus_next) == con_get_workspace(focused))
-        con_focus(focus_next);
 }
 
 /*
@@ -92,6 +86,41 @@ void scratchpad_show(Con *con) {
 
     if (fs->type != CT_WORKSPACE) {
         con_toggle_fullscreen(focused, CF_OUTPUT);
+    }
+
+    /* If this was 'scratchpad show' without criteria, we check if there is a
+     * unfocused scratchpad on the current workspace and focus it */
+    Con *walk_con;
+    Con *focused_ws = con_get_workspace(focused);
+    TAILQ_FOREACH(walk_con, &(focused_ws->floating_head), floating_windows) {
+        if ((floating = con_inside_floating(walk_con)) &&
+            floating->scratchpad_state != SCRATCHPAD_NONE &&
+            floating != con_inside_floating(focused)) {
+                DLOG("Found an unfocused scratchpad window on this workspace\n");
+                DLOG("Focusing it: %p\n", walk_con);
+                /* use con_descend_tiling_focused to get the last focused
+                 * window inside this scratch container in order to
+                 * keep the focus the same within this container */
+                con_focus(con_descend_tiling_focused(walk_con));
+                return;
+            }
+    }
+
+    /* If this was 'scratchpad show' without criteria, we check if there is a
+     * visible scratchpad window on another workspace. In this case we move it
+     * to the current workspace. */
+    focused_ws = con_get_workspace(focused);
+    TAILQ_FOREACH(walk_con, &all_cons, all_cons) {
+        Con *walk_ws = con_get_workspace(walk_con);
+        if (walk_ws &&
+            !con_is_internal(walk_ws) && focused_ws != walk_ws &&
+            (floating = con_inside_floating(walk_con)) &&
+            floating->scratchpad_state != SCRATCHPAD_NONE) {
+            DLOG("Found a visible scratchpad window on another workspace,\n");
+            DLOG("moving it to this workspace: con = %p\n", walk_con);
+            con_move_to_workspace(walk_con, focused_ws, true, false);
+            return;
+        }
     }
 
     /* If this was 'scratchpad show' without criteria, we check if the
@@ -144,11 +173,11 @@ void scratchpad_show(Con *con) {
         Con *output = con_get_output(con);
         con->rect.width = output->rect.width * 0.5;
         con->rect.height = output->rect.height * 0.75;
+        floating_check_size(con);
         con->rect.x = output->rect.x +
                       ((output->rect.width / 2.0) - (con->rect.width / 2.0));
         con->rect.y = output->rect.y +
                       ((output->rect.height / 2.0) - (con->rect.height / 2.0));
-        con->scratchpad_state = SCRATCHPAD_CHANGED;
     }
 
     /* Activate active workspace if window is from another workspace to ensure

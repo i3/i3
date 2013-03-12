@@ -43,6 +43,10 @@ struct status_block {
     blockalign_t align;
 
     bool urgent;
+    bool no_separator;
+
+    /* The amount of pixels necessary to render a separater after the block. */
+    uint32_t sep_block_width;
 
     /* The amount of pixels necessary to render this block. These variables are
      * only temporarily used in refresh_statusline(). */

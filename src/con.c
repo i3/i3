@@ -762,24 +762,18 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
             con_focus(old_focus);
     }
 
-    /* 8: when moving to a visible workspace on a different output, we keep the
-     * con focused. Otherwise, we leave the focus on the current workspace as we
-     * don’t want to focus invisible workspaces */
-    if (source_output != dest_output &&
-        workspace_is_visible(workspace) &&
-        !con_is_internal(workspace)) {
-        DLOG("Moved to a different output, focusing target\n");
-    } else {
-        /* Descend focus stack in case focus_next is a workspace which can
-         * occur if we move to the same workspace.  Also show current workspace
-         * to ensure it is focused. */
-        workspace_show(current_ws);
+    /* 8: when moving to another workspace, we leave the focus on the current
+     * workspace. (see also #809) */
 
-        /* Set focus only if con was on current workspace before moving.
-         * Otherwise we would give focus to some window on different workspace. */
-        if (source_ws == current_ws)
+    /* Descend focus stack in case focus_next is a workspace which can
+     * occur if we move to the same workspace.  Also show current workspace
+     * to ensure it is focused. */
+    workspace_show(current_ws);
+
+    /* Set focus only if con was on current workspace before moving.
+     * Otherwise we would give focus to some window on different workspace. */
+    if (source_ws == current_ws)
             con_focus(con_descend_focused(focus_next));
-    }
 
     /* If anything within the container is associated with a startup sequence,
      * delete it so child windows won't be created on the old workspace. */
@@ -1181,7 +1175,7 @@ void con_set_border_style(Con *con, int border_style, int border_width) {
     con->current_border_width = border_width;
     bsr = con_border_style_rect(con);
     int deco_height =
-        (con->border_style == BS_NORMAL ? config.font.height + 5 : 0);
+        (con->border_style == BS_NORMAL ? render_deco_height() : 0);
 
     con->rect.x -= bsr.x;
     con->rect.y -= bsr.y;
@@ -1537,6 +1531,45 @@ void con_update_parents_urgency(Con *con) {
 }
 
 /*
+ * Set urgency flag to the container, all the parent containers and the workspace.
+ *
+ */
+void con_set_urgency(Con *con, bool urgent) {
+    if (focused == con) {
+        DLOG("Ignoring urgency flag for current client\n");
+        con->window->urgent.tv_sec = 0;
+        con->window->urgent.tv_usec = 0;
+        return;
+    }
+
+    if (con->urgency_timer == NULL) {
+        con->urgent = urgent;
+    } else
+        DLOG("Discarding urgency WM_HINT because timer is running\n");
+
+    //CLIENT_LOG(con);
+    if (con->window) {
+        if (con->urgent) {
+            gettimeofday(&con->window->urgent, NULL);
+        } else {
+            con->window->urgent.tv_sec = 0;
+            con->window->urgent.tv_usec = 0;
+        }
+    }
+
+    con_update_parents_urgency(con);
+
+    if (con->urgent == urgent)
+        LOG("Urgency flag changed to %d\n", con->urgent);
+
+    Con *ws;
+    /* Set the urgency flag on the workspace, if a workspace could be found
+     * (for dock clients, that is not the case). */
+    if ((ws = con_get_workspace(con)) != NULL)
+        workspace_update_urgent_flag(ws);
+}
+
+/*
  * Create a string representing the subtree under con.
  *
  */
@@ -1573,6 +1606,10 @@ char *con_get_tree_representation(Con *con) {
         buf = sstrdup("T[");
     else if (con->layout == L_STACKED)
         buf = sstrdup("S[");
+    else {
+        ELOG("BUG: Code not updated to account for new layout type\n");
+        assert(false);
+    }
 
     /* 2) append representation of children */
     Con *child;

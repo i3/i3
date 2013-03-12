@@ -55,23 +55,15 @@ static bool definitelyGreaterThan(float a, float b, float epsilon) {
 static Output *get_output_from_string(Output *current_output, const char *output_str) {
     Output *output;
 
-    if (strcasecmp(output_str, "left") == 0) {
-        output = get_output_next(D_LEFT, current_output, CLOSEST_OUTPUT);
-        if (!output)
-            output = get_output_most(D_RIGHT, current_output);
-    } else if (strcasecmp(output_str, "right") == 0) {
-        output = get_output_next(D_RIGHT, current_output, CLOSEST_OUTPUT);
-        if (!output)
-            output = get_output_most(D_LEFT, current_output);
-    } else if (strcasecmp(output_str, "up") == 0) {
-        output = get_output_next(D_UP, current_output, CLOSEST_OUTPUT);
-        if (!output)
-            output = get_output_most(D_DOWN, current_output);
-    } else if (strcasecmp(output_str, "down") == 0) {
-        output = get_output_next(D_DOWN, current_output, CLOSEST_OUTPUT);
-        if (!output)
-            output = get_output_most(D_UP, current_output);
-    } else output = get_output_by_name(output_str);
+    if (strcasecmp(output_str, "left") == 0)
+        output = get_output_next_wrap(D_LEFT, current_output);
+    else if (strcasecmp(output_str, "right") == 0)
+        output = get_output_next_wrap(D_RIGHT, current_output);
+    else if (strcasecmp(output_str, "up") == 0)
+        output = get_output_next_wrap(D_UP, current_output);
+    else if (strcasecmp(output_str, "down") == 0)
+        output = get_output_next_wrap(D_DOWN, current_output);
+    else output = get_output_by_name(output_str);
 
     return output;
 }
@@ -596,10 +588,14 @@ static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floatin
         return;
 
     if (strcmp(direction, "up") == 0) {
-        floating_con->rect.y -= px;
+        floating_con->rect.y -= (floating_con->rect.height - old_rect.height);
     } else if (strcmp(direction, "left") == 0) {
-        floating_con->rect.x -= px;
+        floating_con->rect.x -= (floating_con->rect.width - old_rect.width);
     }
+
+    /* If this is a scratchpad window, don't auto center it from now on. */
+    if (floating_con->scratchpad_state == SCRATCHPAD_FRESH)
+        floating_con->scratchpad_state = SCRATCHPAD_CHANGED;
 }
 
 static bool cmd_resize_tiling_direction(I3_CMD, Con *current, char *way, char *direction, int ppt) {
@@ -1052,13 +1048,13 @@ void cmd_move_con_to_output(I3_CMD, char *name) {
 
     // TODO: clean this up with commands.spec as soon as we switched away from the lex/yacc command parser
     if (strcasecmp(name, "up") == 0)
-        output = get_output_next(D_UP, current_output, CLOSEST_OUTPUT);
+        output = get_output_next_wrap(D_UP, current_output);
     else if (strcasecmp(name, "down") == 0)
-        output = get_output_next(D_DOWN, current_output, CLOSEST_OUTPUT);
+        output = get_output_next_wrap(D_DOWN, current_output);
     else if (strcasecmp(name, "left") == 0)
-        output = get_output_next(D_LEFT, current_output, CLOSEST_OUTPUT);
+        output = get_output_next_wrap(D_LEFT, current_output);
     else if (strcasecmp(name, "right") == 0)
-        output = get_output_next(D_RIGHT, current_output, CLOSEST_OUTPUT);
+        output = get_output_next_wrap(D_RIGHT, current_output);
     else
         output = get_output_by_name(name);
 
@@ -1410,6 +1406,7 @@ void cmd_focus(I3_CMD) {
         return;
     }
 
+    Con *__i3_scratch = workspace_get("__i3_scratch", NULL);
     int count = 0;
     owindow *current;
     TAILQ_FOREACH(current, &owindows, owindows) {
@@ -1424,6 +1421,16 @@ void cmd_focus(I3_CMD) {
             LOG("Cannot change focus while in fullscreen mode (fullscreen rules).\n");
             ysuccess(false);
             return;
+        }
+
+        /* In case this is a scratchpad window, call scratchpad_show(). */
+        if (ws == __i3_scratch) {
+            scratchpad_show(current->con);
+            count++;
+            /* While for the normal focus case we can change focus multiple
+             * times and only a single window ends up focused, we could show
+             * multiple scratchpad windows. So, rather break here. */
+            break;
         }
 
         /* If the container is not on the current workspace,
@@ -1602,8 +1609,8 @@ void cmd_exit(I3_CMD) {
  */
 void cmd_reload(I3_CMD) {
     LOG("reloading\n");
-    kill_configerror_nagbar(false);
-    kill_commanderror_nagbar(false);
+    kill_nagbar(&config_error_nagbar_pid, false);
+    kill_nagbar(&command_error_nagbar_pid, false);
     load_configuration(conn, NULL, true);
     x_set_i3_atoms();
     /* Send an IPC event just in case the ws names have changed */

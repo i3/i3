@@ -140,6 +140,10 @@ min_width::
 	will be padded to the left and/or the right side, according to the +align+
 	key. This is useful when you want to prevent the whole status line to shift
 	when value take more or less space between each iteration.
+        The value can also be a string. In this case, the width of the text given
+        by +min_width+ determines the minimum width of the block. This is useful
+        when you want to set a sensible minimum width regardless of which font you
+        are using, and at what particular size.
 align::
 	Align text on the +center+ (default), +right+ or +left+ of the block, when
 	the minimum width of the latter, specified by the +min_width+ key, is not
@@ -154,6 +158,16 @@ urgent::
 	A boolean which specifies whether the current value is urgent. Examples
 	are battery charge values below 1 percent or no more available disk
 	space (for non-root users). The presentation of urgency is up to i3bar.
+separator::
+	A boolean which specifies whether a separator line should be drawn
+	after this block. The default is true, meaning the separator line will
+	be drawn. Note that if you disable the separator line, there will still
+	be a gap after the block, unless you also use +separator_block_width+.
+separator_block_width::
+	The amount of pixels to leave blank after the block. In the middle of
+	this gap, a separator line will be drawn unless +separator+ is
+	disabled. Normally, you want to set this to an odd value (the default
+	is 9 pixels), since the separator line is drawn in the middle.
 
 If you want to put in your own entries into a block, prefix the key with an
 underscore (_). i3bar will ignore all keys it doesn’t understand, and prefixing
@@ -165,6 +179,17 @@ of the i3bar protocol.
 {
  "full_text": "E: 10.0.0.1 (1000 Mbit/s)",
  "_ethernet_vendor": "Intel"
+}
+------------------------------------------
+
+In the following example, the longest (widest) possible value of the block is
+used to set the minimum width:
+
+------------------------------------------
+{
+ "full_text": "CPU 4%",
+ "min_width": "CPU 100%",
+ "align": "left"
 }
 ------------------------------------------
 
@@ -180,6 +205,8 @@ An example of a block which uses all possible entries follows:
  "align": "right",
  "urgent": false,
  "name": "ethernet",
- "instance": "eth0"
+ "instance": "eth0",
+ "separator": true,
+ "separator_block_width": 9
 }
 ------------------------------------------

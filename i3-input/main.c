@@ -2,7 +2,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2011 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * i3-input/main.c: Utility which lets the user input commands and sends them
  *                  to i3.
@@ -74,6 +74,24 @@ void errorlog(char *fmt, ...) {
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     va_end(args);
+}
+
+/*
+ * Restores the X11 input focus to whereever it was before.
+ * This is necessary because i3-input’s window has override_redirect=1
+ * (→ unmanaged by the window manager) and thus i3-input changes focus itself.
+ * This function is called on exit().
+ *
+ */
+static void restore_input_focus(void) {
+    xcb_generic_error_t *error;
+    xcb_get_input_focus_reply_t *reply = xcb_get_input_focus_reply(conn, focus_cookie, &error);
+    if (error != NULL) {
+        fprintf(stderr, "[i3-input] ERROR: Could not restore input focus (X error %d)\n", error->error_code);
+        return;
+    }
+    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, reply->focus, XCB_CURRENT_TIME);
+    xcb_flush(conn);
 }
 
 /*
@@ -187,6 +205,10 @@ static void finish_input() {
     /* prefix the command if a prefix was specified on commandline */
     printf("command = %s\n", full);
 
+    restore_input_focus();
+
+    xcb_aux_sync(conn);
+
     ipc_send_message(sockfd, strlen(full), 0, (uint8_t*)full);
 
 #if 0
@@ -239,6 +261,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
         return 1;
     }
     if (sym == XK_Escape) {
+        restore_input_focus();
         exit(0);
     }
 
@@ -281,24 +304,6 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
 
     handle_expose(NULL, conn, NULL);
     return 1;
-}
-
-/*
- * Restores the X11 input focus to whereever it was before.
- * This is necessary because i3-input’s window has override_redirect=1
- * (→ unmanaged by the window manager) and thus i3-input changes focus itself.
- * This function is called on exit().
- *
- */
-static void restore_input_focus(void) {
-    xcb_generic_error_t *error;
-    xcb_get_input_focus_reply_t *reply = xcb_get_input_focus_reply(conn, focus_cookie, &error);
-    if (error != NULL) {
-        fprintf(stderr, "[i3-input] ERROR: Could not restore input focus (X error %d)\n", error->error_code);
-        return;
-    }
-    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, reply->focus, XCB_CURRENT_TIME);
-    xcb_flush(conn);
 }
 
 int main(int argc, char *argv[]) {
@@ -420,7 +425,6 @@ int main(int argc, char *argv[]) {
     /* Set input focus (we have override_redirect=1, so the wm will not do
      * this for us) */
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, win, XCB_CURRENT_TIME);
-    atexit(restore_input_focus);
 
     /* Grab the keyboard to get all input */
     xcb_flush(conn);
@@ -440,6 +444,7 @@ int main(int argc, char *argv[]) {
 
     if (reply->status != XCB_GRAB_STATUS_SUCCESS) {
         fprintf(stderr, "Could not grab keyboard, status = %d\n", reply->status);
+        restore_input_focus();
         exit(-1);
     }
 

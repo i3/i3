@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * config_parser.c: hand-written parser to parse configuration directives.
  *
@@ -31,12 +31,21 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "all.h"
 
 // Macros to make the YAJL API a bit easier to use.
 #define y(x, ...) yajl_gen_ ## x (command_output.json_gen, ##__VA_ARGS__)
 #define ystr(str) yajl_gen_string(command_output.json_gen, (unsigned char*)str, strlen(str))
+
+#ifndef TEST_PARSER
+pid_t config_error_nagbar_pid = -1;
+static struct context *context;
+#endif
 
 /*******************************************************************************
  * The data structures used for parsing. Essentially the current state and a
@@ -649,4 +658,441 @@ int main(int argc, char *argv[]) {
     context.filename = "<stdin>";
     parse_config(argv[1], &context);
 }
+
+#else
+
+/*
+ * Goes through each line of buf (separated by \n) and checks for statements /
+ * commands which only occur in i3 v4 configuration files. If it finds any, it
+ * returns version 4, otherwise it returns version 3.
+ *
+ */
+static int detect_version(char *buf) {
+    char *walk = buf;
+    char *line = buf;
+    while (*walk != '\0') {
+        if (*walk != '\n') {
+            walk++;
+            continue;
+        }
+
+        /* check for some v4-only statements */
+        if (strncasecmp(line, "bindcode", strlen("bindcode")) == 0 ||
+            strncasecmp(line, "force_focus_wrapping", strlen("force_focus_wrapping")) == 0 ||
+            strncasecmp(line, "# i3 config file (v4)", strlen("# i3 config file (v4)")) == 0 ||
+            strncasecmp(line, "workspace_layout", strlen("workspace_layout")) == 0) {
+            printf("deciding for version 4 due to this line: %.*s\n", (int)(walk-line), line);
+            return 4;
+        }
+
+        /* if this is a bind statement, we can check the command */
+        if (strncasecmp(line, "bind", strlen("bind")) == 0) {
+            char *bind = strchr(line, ' ');
+            if (bind == NULL)
+                goto next;
+            while ((*bind == ' ' || *bind == '\t') && *bind != '\0')
+                bind++;
+            if (*bind == '\0')
+                goto next;
+            if ((bind = strchr(bind, ' ')) == NULL)
+                goto next;
+            while ((*bind == ' ' || *bind == '\t') && *bind != '\0')
+                bind++;
+            if (*bind == '\0')
+                goto next;
+            if (strncasecmp(bind, "layout", strlen("layout")) == 0 ||
+                strncasecmp(bind, "floating", strlen("floating")) == 0 ||
+                strncasecmp(bind, "workspace", strlen("workspace")) == 0 ||
+                strncasecmp(bind, "focus left", strlen("focus left")) == 0 ||
+                strncasecmp(bind, "focus right", strlen("focus right")) == 0 ||
+                strncasecmp(bind, "focus up", strlen("focus up")) == 0 ||
+                strncasecmp(bind, "focus down", strlen("focus down")) == 0 ||
+                strncasecmp(bind, "border normal", strlen("border normal")) == 0 ||
+                strncasecmp(bind, "border 1pixel", strlen("border 1pixel")) == 0 ||
+                strncasecmp(bind, "border pixel", strlen("border pixel")) == 0 ||
+                strncasecmp(bind, "border borderless", strlen("border borderless")) == 0 ||
+                strncasecmp(bind, "--no-startup-id", strlen("--no-startup-id")) == 0 ||
+                strncasecmp(bind, "bar", strlen("bar")) == 0) {
+                printf("deciding for version 4 due to this line: %.*s\n", (int)(walk-line), line);
+                return 4;
+            }
+        }
+
+next:
+        /* advance to the next line */
+        walk++;
+        line = walk;
+    }
+
+    return 3;
+}
+
+/*
+ * Calls i3-migrate-config-to-v4 to migrate a configuration file (input
+ * buffer).
+ *
+ * Returns the converted config file or NULL if there was an error (for
+ * example the script could not be found in $PATH or the i3 executable’s
+ * directory).
+ *
+ */
+static char *migrate_config(char *input, off_t size) {
+    int writepipe[2];
+    int readpipe[2];
+
+    if (pipe(writepipe) != 0 ||
+        pipe(readpipe) != 0) {
+        warn("migrate_config: Could not create pipes");
+        return NULL;
+    }
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        warn("Could not fork()");
+        return NULL;
+    }
+
+    /* child */
+    if (pid == 0) {
+        /* close writing end of writepipe, connect reading side to stdin */
+        close(writepipe[1]);
+        dup2(writepipe[0], 0);
+
+        /* close reading end of readpipe, connect writing side to stdout */
+        close(readpipe[0]);
+        dup2(readpipe[1], 1);
+
+        static char *argv[] = {
+            NULL, /* will be replaced by the executable path */
+            NULL
+        };
+        exec_i3_utility("i3-migrate-config-to-v4", argv);
+    }
+
+    /* parent */
+
+    /* close reading end of the writepipe (connected to the script’s stdin) */
+    close(writepipe[0]);
+
+    /* write the whole config file to the pipe, the script will read everything
+     * immediately */
+    int written = 0;
+    int ret;
+    while (written < size) {
+        if ((ret = write(writepipe[1], input + written, size - written)) < 0) {
+            warn("Could not write to pipe");
+            return NULL;
+        }
+        written += ret;
+    }
+    close(writepipe[1]);
+
+    /* close writing end of the readpipe (connected to the script’s stdout) */
+    close(readpipe[1]);
+
+    /* read the script’s output */
+    int conv_size = 65535;
+    char *converted = malloc(conv_size);
+    int read_bytes = 0;
+    do {
+        if (read_bytes == conv_size) {
+            conv_size += 65535;
+            converted = realloc(converted, conv_size);
+        }
+        ret = read(readpipe[0], converted + read_bytes, conv_size - read_bytes);
+        if (ret == -1) {
+            warn("Cannot read from pipe");
+            FREE(converted);
+            return NULL;
+        }
+        read_bytes += ret;
+    } while (ret > 0);
+
+    /* get the returncode */
+    int status;
+    wait(&status);
+    if (!WIFEXITED(status)) {
+        fprintf(stderr, "Child did not terminate normally, using old config file (will lead to broken behaviour)\n");
+        return NULL;
+    }
+
+    int returncode = WEXITSTATUS(status);
+    if (returncode != 0) {
+        fprintf(stderr, "Migration process exit code was != 0\n");
+        if (returncode == 2) {
+            fprintf(stderr, "could not start the migration script\n");
+            /* TODO: script was not found. tell the user to fix his system or create a v4 config */
+        } else if (returncode == 1) {
+            fprintf(stderr, "This already was a v4 config. Please add the following line to your config file:\n");
+            fprintf(stderr, "# i3 config file (v4)\n");
+            /* TODO: nag the user with a message to include a hint for i3 in his config file */
+        }
+        return NULL;
+    }
+
+    return converted;
+}
+
+/*
+ * Checks for duplicate key bindings (the same keycode or keysym is configured
+ * more than once). If a duplicate binding is found, a message is printed to
+ * stderr and the has_errors variable is set to true, which will start
+ * i3-nagbar.
+ *
+ */
+static void check_for_duplicate_bindings(struct context *context) {
+    Binding *bind, *current;
+    TAILQ_FOREACH(current, bindings, bindings) {
+        TAILQ_FOREACH(bind, bindings, bindings) {
+            /* Abort when we reach the current keybinding, only check the
+             * bindings before */
+            if (bind == current)
+                break;
+
+            /* Check if one is using keysym while the other is using bindsym.
+             * If so, skip. */
+            /* XXX: It should be checked at a later place (when translating the
+             * keysym to keycodes) if there are any duplicates */
+            if ((bind->symbol == NULL && current->symbol != NULL) ||
+                (bind->symbol != NULL && current->symbol == NULL))
+                continue;
+
+            /* If bind is NULL, current has to be NULL, too (see above).
+             * If the keycodes differ, it can't be a duplicate. */
+            if (bind->symbol != NULL &&
+                strcasecmp(bind->symbol, current->symbol) != 0)
+                continue;
+
+            /* Check if the keycodes or modifiers are different. If so, they
+             * can't be duplicate */
+            if (bind->keycode != current->keycode ||
+                bind->mods != current->mods ||
+                bind->release != current->release)
+                continue;
+
+            context->has_errors = true;
+            if (current->keycode != 0) {
+                ELOG("Duplicate keybinding in config file:\n  modmask %d with keycode %d, command \"%s\"\n",
+                     current->mods, current->keycode, current->command);
+            } else {
+                ELOG("Duplicate keybinding in config file:\n  modmask %d with keysym %s, command \"%s\"\n",
+                     current->mods, current->symbol, current->command);
+            }
+        }
+    }
+}
+
+/*
+ * Parses the given file by first replacing the variables, then calling
+ * parse_config and possibly launching i3-nagbar.
+ *
+ */
+void parse_file(const char *f) {
+    SLIST_HEAD(variables_head, Variable) variables = SLIST_HEAD_INITIALIZER(&variables);
+    int fd, ret, read_bytes = 0;
+    struct stat stbuf;
+    char *buf;
+    FILE *fstr;
+    char buffer[1026], key[512], value[512];
+
+    if ((fd = open(f, O_RDONLY)) == -1)
+        die("Could not open configuration file: %s\n", strerror(errno));
+
+    if (fstat(fd, &stbuf) == -1)
+        die("Could not fstat file: %s\n", strerror(errno));
+
+    buf = scalloc((stbuf.st_size + 1) * sizeof(char));
+    while (read_bytes < stbuf.st_size) {
+        if ((ret = read(fd, buf + read_bytes, (stbuf.st_size - read_bytes))) < 0)
+            die("Could not read(): %s\n", strerror(errno));
+        read_bytes += ret;
+    }
+
+    if (lseek(fd, 0, SEEK_SET) == (off_t)-1)
+        die("Could not lseek: %s\n", strerror(errno));
+
+    if ((fstr = fdopen(fd, "r")) == NULL)
+        die("Could not fdopen: %s\n", strerror(errno));
+
+    while (!feof(fstr)) {
+        if (fgets(buffer, 1024, fstr) == NULL) {
+            if (feof(fstr))
+                break;
+            die("Could not read configuration file\n");
+        }
+
+        /* sscanf implicitly strips whitespace. Also, we skip comments and empty lines. */
+        if (sscanf(buffer, "%s %[^\n]", key, value) < 1 ||
+            key[0] == '#' || strlen(key) < 3)
+            continue;
+
+        if (strcasecmp(key, "set") == 0) {
+            if (value[0] != '$') {
+                ELOG("Malformed variable assignment, name has to start with $\n");
+                continue;
+            }
+
+            /* get key/value for this variable */
+            char *v_key = value, *v_value;
+            if (strstr(value, " ") == NULL && strstr(value, "\t") == NULL) {
+                ELOG("Malformed variable assignment, need a value\n");
+                continue;
+            }
+
+            if (!(v_value = strstr(value, " ")))
+                v_value = strstr(value, "\t");
+
+            *(v_value++) = '\0';
+            while (*v_value == '\t' || *v_value == ' ')
+                v_value++;
+
+            struct Variable *new = scalloc(sizeof(struct Variable));
+            new->key = sstrdup(v_key);
+            new->value = sstrdup(v_value);
+            SLIST_INSERT_HEAD(&variables, new, variables);
+            DLOG("Got new variable %s = %s\n", v_key, v_value);
+            continue;
+        }
+    }
+    fclose(fstr);
+
+    /* For every custom variable, see how often it occurs in the file and
+     * how much extra bytes it requires when replaced. */
+    struct Variable *current, *nearest;
+    int extra_bytes = 0;
+    /* We need to copy the buffer because we need to invalidate the
+     * variables (otherwise we will count them twice, which is bad when
+     * 'extra' is negative) */
+    char *bufcopy = sstrdup(buf);
+    SLIST_FOREACH(current, &variables, variables) {
+        int extra = (strlen(current->value) - strlen(current->key));
+        char *next;
+        for (next = bufcopy;
+             next < (bufcopy + stbuf.st_size) &&
+             (next = strcasestr(next, current->key)) != NULL;
+             next += strlen(current->key)) {
+            *next = '_';
+            extra_bytes += extra;
+        }
+    }
+    FREE(bufcopy);
+
+    /* Then, allocate a new buffer and copy the file over to the new one,
+     * but replace occurences of our variables */
+    char *walk = buf, *destwalk;
+    char *new = smalloc((stbuf.st_size + extra_bytes + 1) * sizeof(char));
+    destwalk = new;
+    while (walk < (buf + stbuf.st_size)) {
+        /* Find the next variable */
+        SLIST_FOREACH(current, &variables, variables)
+            current->next_match = strcasestr(walk, current->key);
+        nearest = NULL;
+        int distance = stbuf.st_size;
+        SLIST_FOREACH(current, &variables, variables) {
+            if (current->next_match == NULL)
+                continue;
+            if ((current->next_match - walk) < distance) {
+                distance = (current->next_match - walk);
+                nearest = current;
+            }
+        }
+        if (nearest == NULL) {
+            /* If there are no more variables, we just copy the rest */
+            strncpy(destwalk, walk, (buf + stbuf.st_size) - walk);
+            destwalk += (buf + stbuf.st_size) - walk;
+            *destwalk = '\0';
+            break;
+        } else {
+            /* Copy until the next variable, then copy its value */
+            strncpy(destwalk, walk, distance);
+            strncpy(destwalk + distance, nearest->value, strlen(nearest->value));
+            walk += distance + strlen(nearest->key);
+            destwalk += distance + strlen(nearest->value);
+        }
+    }
+
+    /* analyze the string to find out whether this is an old config file (3.x)
+     * or a new config file (4.x). If it’s old, we run the converter script. */
+    int version = detect_version(buf);
+    if (version == 3) {
+        /* We need to convert this v3 configuration */
+        char *converted = migrate_config(new, stbuf.st_size);
+        if (converted != NULL) {
+            ELOG("\n");
+            ELOG("****************************************************************\n");
+            ELOG("NOTE: Automatically converted configuration file from v3 to v4.\n");
+            ELOG("\n");
+            ELOG("Please convert your config file to v4. You can use this command:\n");
+            ELOG("    mv %s %s.O\n", f, f);
+            ELOG("    i3-migrate-config-to-v4 %s.O > %s\n", f, f);
+            ELOG("****************************************************************\n");
+            ELOG("\n");
+            free(new);
+            new = converted;
+        } else {
+            printf("\n");
+            printf("**********************************************************************\n");
+            printf("ERROR: Could not convert config file. Maybe i3-migrate-config-to-v4\n");
+            printf("was not correctly installed on your system?\n");
+            printf("**********************************************************************\n");
+            printf("\n");
+        }
+    }
+
+
+    context = scalloc(sizeof(struct context));
+    context->filename = f;
+
+    struct ConfigResult *config_output = parse_config(new, context);
+    yajl_gen_free(config_output->json_gen);
+
+    check_for_duplicate_bindings(context);
+
+    if (context->has_errors || context->has_warnings) {
+        ELOG("FYI: You are using i3 version " I3_VERSION "\n");
+        if (version == 3)
+            ELOG("Please convert your configfile first, then fix any remaining errors (see above).\n");
+
+        char *editaction,
+             *pageraction;
+        sasprintf(&editaction, "i3-sensible-editor \"%s\" && i3-msg reload\n", f);
+        sasprintf(&pageraction, "i3-sensible-pager \"%s\"\n", errorfilename);
+        char *argv[] = {
+            NULL, /* will be replaced by the executable path */
+            "-f",
+            config.font.pattern,
+            "-t",
+            (context->has_errors ? "error" : "warning"),
+            "-m",
+            (context->has_errors ?
+             "You have an error in your i3 config file!" :
+             "Your config is outdated. Please fix the warnings to make sure everything works."),
+            "-b",
+            "edit config",
+            editaction,
+            (errorfilename ? "-b" : NULL),
+            (context->has_errors ? "show errors" : "show warnings"),
+            pageraction,
+            NULL
+        };
+
+        start_nagbar(&config_error_nagbar_pid, argv);
+        free(editaction);
+        free(pageraction);
+    }
+
+    FREE(context->line_copy);
+    free(context);
+    free(new);
+    free(buf);
+
+    while (!SLIST_EMPTY(&variables)) {
+        current = SLIST_FIRST(&variables);
+        FREE(current->key);
+        FREE(current->value);
+        SLIST_REMOVE_HEAD(&variables, variables);
+        FREE(current);
+    }
+}
+
 #endif

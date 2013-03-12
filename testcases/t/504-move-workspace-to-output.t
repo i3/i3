@@ -114,6 +114,16 @@ cmd 'move workspace to output left';
 ($x0, $x1) = workspaces_per_screen();
 ok('5' ~~ @$x0, 'workspace 5 back on fake-0');
 
+# Verify that wrapping works
+cmd 'move workspace to output left';
+($x0, $x1) = workspaces_per_screen();
+ok('5' ~~ @$x1, 'workspace 5 on fake-1');
+
+# Put workspace 5 where it should
+cmd 'move workspace to output left';
+($x0, $x1) = workspaces_per_screen();
+ok('5' ~~ @$x0, 'workspace 5 on fake-0 again');
+
 ################################################################################
 # Verify that coordinates of floating windows are fixed correctly when moving a
 # workspace to a different output.

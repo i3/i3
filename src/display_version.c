@@ -101,14 +101,17 @@ void display_running_version(void) {
         err(EXIT_FAILURE, "IPC: write()");
 
     uint32_t reply_length;
+    uint32_t reply_type;
     uint8_t *reply;
     int ret;
-    if ((ret = ipc_recv_message(sockfd, I3_IPC_MESSAGE_TYPE_GET_VERSION,
-                                &reply_length, &reply)) != 0) {
+    if ((ret = ipc_recv_message(sockfd, &reply_type, &reply_length, &reply)) != 0) {
         if (ret == -1)
             err(EXIT_FAILURE, "IPC: read()");
         exit(EXIT_FAILURE);
     }
+
+    if (reply_type != I3_IPC_MESSAGE_TYPE_GET_VERSION)
+        errx(EXIT_FAILURE, "Got reply type %d, but expected %d (GET_VERSION)", reply_type, I3_IPC_MESSAGE_TYPE_GET_VERSION);
 
 #if YAJL_MAJOR >= 2
     yajl_handle handle = yajl_alloc(&version_callbacks, NULL, NULL);

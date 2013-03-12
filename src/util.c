@@ -183,44 +183,6 @@ static char **append_argument(char **original, char *argument) {
     return result;
 }
 
-/*
- * Returns the name of a temporary file with the specified prefix.
- *
- */
-char *get_process_filename(const char *prefix) {
-    /* dir stores the directory path for this and all subsequent calls so that
-     * we only create a temporary directory once per i3 instance. */
-    static char *dir = NULL;
-    if (dir == NULL) {
-        /* Check if XDG_RUNTIME_DIR is set. If so, we use XDG_RUNTIME_DIR/i3 */
-        if ((dir = getenv("XDG_RUNTIME_DIR"))) {
-            char *tmp;
-            sasprintf(&tmp, "%s/i3", dir);
-            dir = tmp;
-            if (!path_exists(dir)) {
-                if (mkdir(dir, 0700) == -1) {
-                    perror("mkdir()");
-                    return NULL;
-                }
-            }
-        } else {
-            /* If not, we create a (secure) temp directory using the template
-             * /tmp/i3-<user>.XXXXXX */
-            struct passwd *pw = getpwuid(getuid());
-            const char *username = pw ? pw->pw_name : "unknown";
-            sasprintf(&dir, "/tmp/i3-%s.XXXXXX", username);
-            /* mkdtemp modifies dir */
-            if (mkdtemp(dir) == NULL) {
-                perror("mkdtemp()");
-                return NULL;
-            }
-        }
-    }
-    char *filename;
-    sasprintf(&filename, "%s/%s.%d", dir, prefix, getpid());
-    return filename;
-}
-
 #define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
 #define ystr(str) yajl_gen_string(gen, (unsigned char*)str, strlen(str))
 
@@ -304,8 +266,8 @@ char *store_restart_layout(void) {
 void i3_restart(bool forget_layout) {
     char *restart_filename = forget_layout ? NULL : store_restart_layout();
 
-    kill_configerror_nagbar(true);
-    kill_commanderror_nagbar(true);
+    kill_nagbar(&config_error_nagbar_pid, true);
+    kill_nagbar(&command_error_nagbar_pid, true);
 
     restore_geometry();
 
@@ -382,3 +344,103 @@ void *memmem(const void *l, size_t l_len, const void *s, size_t s_len) {
 }
 
 #endif
+
+/*
+ * Handler which will be called when we get a SIGCHLD for the nagbar, meaning
+ * it exited (or could not be started, depending on the exit code).
+ *
+ */
+static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
+    ev_child_stop(EV_A_ watcher);
+
+    if (!WIFEXITED(watcher->rstatus)) {
+        ELOG("ERROR: i3-nagbar did not exit normally.\n");
+        return;
+    }
+
+    int exitcode = WEXITSTATUS(watcher->rstatus);
+    DLOG("i3-nagbar process exited with status %d\n", exitcode);
+    if (exitcode == 2) {
+        ELOG("ERROR: i3-nagbar could not be found. Is it correctly installed on your system?\n");
+    }
+
+    *((pid_t*)watcher->data) = -1;
+}
+
+/*
+ * Cleanup handler. Will be called when i3 exits. Kills i3-nagbar with signal
+ * SIGKILL (9) to make sure there are no left-over i3-nagbar processes.
+ *
+ */
+static void nagbar_cleanup(EV_P_ ev_cleanup *watcher, int revent) {
+    pid_t *nagbar_pid = (pid_t*)watcher->data;
+    if (*nagbar_pid != -1) {
+        LOG("Sending SIGKILL (%d) to i3-nagbar with PID %d\n", SIGKILL, *nagbar_pid);
+        kill(*nagbar_pid, SIGKILL);
+    }
+}
+
+/*
+ * Starts an i3-nagbar instance with the given parameters. Takes care of
+ * handling SIGCHLD and killing i3-nagbar when i3 exits.
+ *
+ * The resulting PID will be stored in *nagbar_pid and can be used with
+ * kill_nagbar() to kill the bar later on.
+ *
+ */
+void start_nagbar(pid_t *nagbar_pid, char *argv[]) {
+    if (*nagbar_pid != -1) {
+        DLOG("i3-nagbar already running (PID %d), not starting again.\n", *nagbar_pid);
+        return;
+    }
+
+    *nagbar_pid = fork();
+    if (*nagbar_pid == -1) {
+        warn("Could not fork()");
+        return;
+    }
+
+    /* child */
+    if (*nagbar_pid == 0)
+        exec_i3_utility("i3-nagbar", argv);
+
+    DLOG("Starting i3-nagbar with PID %d\n", *nagbar_pid);
+
+    /* parent */
+    /* install a child watcher */
+    ev_child *child = smalloc(sizeof(ev_child));
+    ev_child_init(child, &nagbar_exited, *nagbar_pid, 0);
+    child->data = nagbar_pid;
+    ev_child_start(main_loop, child);
+
+    /* install a cleanup watcher (will be called when i3 exits and i3-nagbar is
+     * still running) */
+    ev_cleanup *cleanup = smalloc(sizeof(ev_cleanup));
+    ev_cleanup_init(cleanup, nagbar_cleanup);
+    cleanup->data = nagbar_pid;
+    ev_cleanup_start(main_loop, cleanup);
+}
+
+/*
+ * Kills the i3-nagbar process, if *nagbar_pid != -1.
+ *
+ * If wait_for_it is set (restarting i3), this function will waitpid(),
+ * otherwise, ev is assumed to handle it (reloading).
+ *
+ */
+void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it) {
+    if (*nagbar_pid == -1)
+        return;
+
+    if (kill(*nagbar_pid, SIGTERM) == -1)
+        warn("kill(configerror_nagbar) failed");
+
+    if (!wait_for_it)
+        return;
+
+    /* When restarting, we don’t enter the ev main loop anymore and after the
+     * exec(), our old pid is no longer watched. So, ev won’t handle SIGCHLD
+     * for us and we would end up with a <defunct> process. Therefore we
+     * waitpid() here. */
+    waitpid(*nagbar_pid, NULL, 0);
+}

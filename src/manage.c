@@ -10,6 +10,9 @@
  *
  */
 #include "all.h"
+#include "yajl_utils.h"
+
+#include <yajl/yajl_gen.h>
 
 /*
  * Go through all existing windows (if the window manager is restarted) and manage them
@@ -64,8 +67,41 @@ void restore_geometry(void) {
                                 con->rect.x, con->rect.y);
         }
 
+    /* Strictly speaking, this line doesn’t really belong here, but since we
+     * are syncing, let’s un-register as a window manager first */
+    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){ XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT });
+
     /* Make sure our changes reach the X server, we restart/exit now */
-    xcb_flush(conn);
+    xcb_aux_sync(conn);
+}
+
+/*
+ * The following function sends a new window event, which consists
+ * of fields "change" and "container", the latter containing a dump
+ * of the window's container.
+ *
+ */
+static void ipc_send_window_new_event(Con *con) {
+    setlocale(LC_NUMERIC, "C");
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+
+    ystr("change");
+    ystr("new");
+
+    ystr("container");
+    dump_node(gen, con, false);
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_event("window", I3_IPC_EVENT_WINDOW, (const char *)payload);
+    y(free);
+    setlocale(LC_NUMERIC, "");
 }
 
 /*
@@ -349,10 +385,20 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             con_toggle_fullscreen(fs, CF_OUTPUT);
         } else if (config.popup_during_fullscreen == PDF_SMART &&
                    fs != NULL &&
-                   fs->window != NULL &&
-                   fs->window->id == cwindow->transient_for) {
-            LOG("This floating window belongs to the fullscreen window (popup_during_fullscreen == smart)\n");
-            con_focus(nc);
+                   fs->window != NULL) {
+            i3Window *transient_win = cwindow;
+            while (transient_win != NULL &&
+                   transient_win->transient_for != XCB_NONE) {
+                if (transient_win->transient_for == fs->window->id) {
+                    LOG("This floating window belongs to the fullscreen window (popup_during_fullscreen == smart)\n");
+                    con_focus(nc);
+                    break;
+                }
+                Con *next_transient = con_by_window_id(transient_win->transient_for);
+                if (next_transient == NULL)
+                    break;
+                transient_win = next_transient->window;
+            }
         }
     }
 
@@ -423,6 +469,9 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         render_con(ws, true);
     }
     tree_render();
+
+    /* Send an event about window creation */
+    ipc_send_window_new_event(nc);
 
 geom_out:
     free(geom);

@@ -1,0 +1,10 @@
+testsuite-*
+latest
+Makefile
+Makefile.old
+.last_run_timings.json
+_Inline
+inc
+META.yml
+i3-cfg-for-*
+-
