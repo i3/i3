@@ -45,7 +45,7 @@ my $result = GetOptions(
     'dmenu=s' => \$dmenu_cmd,
     'entry-type=s' => \@entry_types,
     'version' => sub {
-        say "dmenu-desktop 1.3 © 2012 Michael Stapelberg";
+        say "dmenu-desktop 1.4 © 2012 Michael Stapelberg";
         exit 0;
     },
     'help' => sub {
@@ -494,7 +494,7 @@ command), and "libreoffice-writer" (type = filename).
 
 =head1 VERSION
 
-Version 1.3
+Version 1.4
 
 =head1 AUTHOR
 
