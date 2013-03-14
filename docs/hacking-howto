@@ -944,6 +944,8 @@ Without much ado, here is the list of cases which need to be considered:
 
 == Using git / sending patches
 
+=== Introduction
+
 For a short introduction into using git, see
 http://web.archive.org/web/20121024222556/http://www.spheredev.org/wiki/Git_for_the_lazy
 or, for more documentation, see http://git-scm.com/documentation
@@ -962,6 +964,17 @@ Do not send emails to the mailing list or any author directly, and don’t submi
 them in the bugtracker, since all reviews should be done in public at
 http://cr.i3wm.org/. In order to make your review go as fast as possible, you
 could have a look at previous reviews and see what the common mistakes are.
+
+=== Which branch to use?
+
+Work on i3 generally happens in two branches: “master” and “next”. Since
+“master” is what people get when they check out the git repository, its
+contents are always stable. That is, it contains the source code of the latest
+release, plus any bugfixes that were applied since that release.
+
+New features are only found in the “next” branch. Therefore, if you are working
+on a new feature, use the “next” branch. If you are working on a bugfix, use
+the “next” branch, too, but make sure your code also works on “master”.
 
 == Thought experiments
 
