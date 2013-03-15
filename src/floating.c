@@ -421,6 +421,8 @@ DRAGGING_CB(drag_window_callback) {
     /* Check if we cross workspace boundaries while moving */
     if (!floating_maybe_reassign_ws(con))
         return;
+    /* Ensure not to warp the pointer while dragging */
+    x_set_warp_to(NULL);
     tree_render();
 }
 
