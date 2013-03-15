@@ -354,6 +354,11 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     }
     y(array_close);
 
+    if (inplace_restart && con->window != NULL) {
+        ystr("depth");
+        y(integer, con->depth);
+    }
+
     y(map_close);
 }
 

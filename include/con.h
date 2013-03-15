@@ -14,8 +14,13 @@
 
 /**
  * Create a new container (and attach it to the given parent, if not NULL).
- * This function initializes the data structures and creates the appropriate
- * X11 IDs using x_con_init().
+ * This function only initializes the data structures.
+ *
+ */
+Con *con_new_skeleton(Con *parent, i3Window *window);
+
+
+/* A wrapper for con_new_skeleton, to retain the old con_new behaviour
  *
  */
 Con *con_new(Con *parent, i3Window *window);

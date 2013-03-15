@@ -584,6 +584,9 @@ struct Con {
     /* The ID of this container before restarting. Necessary to correctly
      * interpret back-references in the JSON (such as the focus stack). */
     int old_id;
+
+    /* Depth of the container window */
+    uint16_t depth;
 };
 
 #endif
