@@ -306,7 +306,14 @@ for my $app (keys %apps) {
 
 # open2 will just make dmenu’s STDERR go to our own STDERR.
 my ($dmenu_out, $dmenu_in);
-my $pid = open2($dmenu_out, $dmenu_in, $dmenu_cmd);
+my $pid = eval {
+    open2($dmenu_out, $dmenu_in, $dmenu_cmd);
+} or do {
+    print STDERR "$@";
+    say STDERR "Running dmenu failed. Is dmenu installed at all? Try running dmenu -v";
+    exit 1;
+};
+
 binmode $dmenu_in, ':utf8';
 binmode $dmenu_out, ':utf8';
 
