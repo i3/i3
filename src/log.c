@@ -116,7 +116,7 @@ void init_logging(void) {
 
         if (ftruncate(logbuffer_shm, logbuffer_size) == -1) {
             close(logbuffer_shm);
-            shm_unlink("/i3-log-");
+            shm_unlink(shmlogname);
             fprintf(stderr, "Could not ftruncate SHM segment for the i3 log: %s\n", strerror(errno));
             return;
         }
@@ -124,7 +124,7 @@ void init_logging(void) {
         logbuffer = mmap(NULL, logbuffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, logbuffer_shm, 0);
         if (logbuffer == MAP_FAILED) {
             close(logbuffer_shm);
-            shm_unlink("/i3-log-");
+            shm_unlink(shmlogname);
             fprintf(stderr, "Could not mmap SHM segment for the i3 log: %s\n", strerror(errno));
             logbuffer = NULL;
             return;
