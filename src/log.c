@@ -107,7 +107,11 @@ void init_logging(void) {
                                         sysconf(_SC_PAGESIZE);
 #endif
         logbuffer_size = min(physical_mem_bytes * 0.01, shmlog_size);
+#if defined(__FreeBSD__)
+        sasprintf(&shmlogname, "/tmp/i3-log-%d", getpid());
+#else
         sasprintf(&shmlogname, "/i3-log-%d", getpid());
+#endif
         logbuffer_shm = shm_open(shmlogname, O_RDWR | O_CREAT, S_IREAD | S_IWRITE);
         if (logbuffer_shm == -1) {
             fprintf(stderr, "Could not shm_open SHM segment for the i3 log: %s\n", strerror(errno));
