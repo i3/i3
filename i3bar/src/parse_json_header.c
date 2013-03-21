@@ -31,6 +31,7 @@ static enum {
     KEY_VERSION,
     KEY_STOP_SIGNAL,
     KEY_CONT_SIGNAL,
+    KEY_CLICK_EVENTS,
     NO_KEY
 } current_key;
 
@@ -54,6 +55,21 @@ static int header_integer(void *ctx, long val) {
         default:
             break;
     }
+
+    return 1;
+}
+
+static int header_boolean(void *ctx, int val) {
+    i3bar_child *child = ctx;
+
+    switch (current_key) {
+        case KEY_CLICK_EVENTS:
+            child->click_events = val;
+            break;
+        default:
+            break;
+    }
+
     return 1;
 }
 
@@ -71,13 +87,15 @@ static int header_map_key(void *ctx, const unsigned char *stringval, unsigned in
         current_key = KEY_STOP_SIGNAL;
     } else if (CHECK_KEY("cont_signal")) {
         current_key = KEY_CONT_SIGNAL;
+    } else if (CHECK_KEY("click_events")) {
+        current_key = KEY_CLICK_EVENTS;
     }
     return 1;
 }
 
 static yajl_callbacks version_callbacks = {
     NULL, /* null */
-    NULL, /* boolean */
+    &header_boolean, /* boolean */
     &header_integer,
     NULL, /* double */
     NULL, /* number */

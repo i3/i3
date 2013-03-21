@@ -320,24 +320,11 @@ void handle_button(xcb_button_press_event_t *event) {
     }
 
     int32_t x = event->event_x >= 0 ? event->event_x : 0;
+    int32_t original_x = x;
 
     DLOG("Got Button %d\n", event->detail);
 
     switch (event->detail) {
-        case 1:
-            /* Left Mousbutton. We determine, which button was clicked
-             * and set cur_ws accordingly */
-            TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
-                DLOG("x = %d\n", x);
-                if (x >= 0 && x < cur_ws->name_width + 10) {
-                    break;
-                }
-                x -= cur_ws->name_width + 11;
-            }
-            if (cur_ws == NULL) {
-                return;
-            }
-            break;
         case 4:
             /* Mouse wheel up. We select the previous ws, if any.
              * If there is no more workspace, don’t even send the workspace
@@ -358,6 +345,52 @@ void handle_button(xcb_button_press_event_t *event) {
 
             cur_ws = TAILQ_NEXT(cur_ws, tailq);
             break;
+        default:
+            /* Check if this event regards a workspace button */
+            TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
+                DLOG("x = %d\n", x);
+                if (x >= 0 && x < cur_ws->name_width + 10) {
+                    break;
+                }
+                x -= cur_ws->name_width + 11;
+            }
+            if (cur_ws == NULL) {
+                /* No workspace button was pressed.
+                 * Check if a status block has been clicked.
+                 * This of course only has an effect,
+                 * if the child reported bidirectional protocol usage. */
+
+                /* First calculate width of tray area */
+                trayclient *trayclient;
+                int tray_width = 0;
+                TAILQ_FOREACH_REVERSE(trayclient, walk->trayclients, tc_head, tailq) {
+                    if (!trayclient->mapped)
+                        continue;
+                    tray_width += (font.height + 2);
+                }
+
+                int block_x = 0, last_block_x;
+                int offset = (walk->rect.w - (statusline_width + tray_width)) - 10;
+
+                x = original_x - offset;
+                if (x < 0)
+                    return;
+
+                struct status_block *block;
+
+                TAILQ_FOREACH(block, &statusline_head, blocks) {
+                    last_block_x = block_x;
+                    block_x += block->width + block->x_offset + block->x_append;
+
+                    if (x <= block_x && x >= last_block_x) {
+                        send_block_clicked(event->detail, block->name, block->instance, event->root_x, event->root_y);
+                        return;
+                    }
+                }
+                return;
+            }
+            if (event->detail != 1)
+                return;
     }
 
     /* To properly handle workspace names with double quotes in them, we need
