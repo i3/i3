@@ -346,7 +346,13 @@ if (exists($choices{$choice})) {
         last;
     }
     if (!defined($app)) {
-        die "Invalid input: “$choice” does not match any application.";
+        warn "Invalid input: “$choice” does not match any application. Trying to execute nevertheless.";
+        $app->{Name} = '';
+        $app->{Exec} = $choice;
+        # We assume that the app is old and does not support startup
+        # notifications because it doesn’t ship a desktop file.
+        $app->{StartupNotify} = 0;
+        $app->{_Location} = '';
     }
 }
 
