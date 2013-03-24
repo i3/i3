@@ -57,6 +57,8 @@ parser_ctx parser_context;
 struct statusline_head statusline_head = TAILQ_HEAD_INITIALIZER(statusline_head);
 char *statusline_buffer = NULL;
 
+int child_stdin;
+
 /*
  * Stop and free() the stdin- and sigchild-watchers
  *
@@ -359,9 +361,8 @@ void child_write_output(void) {
         const unsigned char *output;
         size_t size;
         yajl_gen_get_buf(gen, &output, &size);
-        fwrite(output, 1, size, stdout);
-        fwrite("\n", 1, 1, stdout);
-        fflush(stdout);
+        write(child_stdin, output, size);
+        write(child_stdin, "\n", 1);
         yajl_gen_clear(gen);
     }
 }
@@ -430,7 +431,7 @@ void start_child(char *command) {
                 close(pipe_out[0]);
 
                 dup2(pipe_in[0], STDIN_FILENO);
-                dup2(pipe_out[1], STDOUT_FILENO);
+                child_stdin = pipe_out[1];
 
                 break;
         }
