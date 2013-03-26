@@ -88,12 +88,23 @@ void scratchpad_show(Con *con) {
         con_toggle_fullscreen(focused, CF_OUTPUT);
     }
 
+    /* If this was 'scratchpad show' without criteria, we check if the
+     * currently focused window is a scratchpad window and should be hidden
+     * again. */
+    if (!con &&
+        (floating = con_inside_floating(focused)) &&
+        floating->scratchpad_state != SCRATCHPAD_NONE) {
+        DLOG("Focused window is a scratchpad window, hiding it.\n");
+        scratchpad_move(focused);
+        return;
+    }
+
     /* If this was 'scratchpad show' without criteria, we check if there is a
      * unfocused scratchpad on the current workspace and focus it */
     Con *walk_con;
     Con *focused_ws = con_get_workspace(focused);
     TAILQ_FOREACH(walk_con, &(focused_ws->floating_head), floating_windows) {
-        if ((floating = con_inside_floating(walk_con)) &&
+        if (!con && (floating = con_inside_floating(walk_con)) &&
             floating->scratchpad_state != SCRATCHPAD_NONE &&
             floating != con_inside_floating(focused)) {
                 DLOG("Found an unfocused scratchpad window on this workspace\n");
@@ -112,7 +123,7 @@ void scratchpad_show(Con *con) {
     focused_ws = con_get_workspace(focused);
     TAILQ_FOREACH(walk_con, &all_cons, all_cons) {
         Con *walk_ws = con_get_workspace(walk_con);
-        if (walk_ws &&
+        if (!con && walk_ws &&
             !con_is_internal(walk_ws) && focused_ws != walk_ws &&
             (floating = con_inside_floating(walk_con)) &&
             floating->scratchpad_state != SCRATCHPAD_NONE) {
@@ -123,14 +134,10 @@ void scratchpad_show(Con *con) {
         }
     }
 
-    /* If this was 'scratchpad show' without criteria, we check if the
-     * currently focused window is a scratchpad window and should be hidden
-     * again. */
-    if (!con &&
-        (floating = con_inside_floating(focused)) &&
-        floating->scratchpad_state != SCRATCHPAD_NONE) {
-        DLOG("Focused window is a scratchpad window, hiding it.\n");
-        scratchpad_move(focused);
+    /* If this was 'scratchpad show' with criteria, we check if the window
+     * is actually in the scratchpad */
+    if (con && con->parent->scratchpad_state == SCRATCHPAD_NONE) {
+        DLOG("Window is not in the scratchpad, doing nothing.\n");
         return;
     }
 
