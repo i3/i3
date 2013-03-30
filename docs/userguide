@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael@i3wm.org>
-February 2013
+March 2013
 
 This document contains all the information you need to configure and use the i3
 window manager. If it does not, please check http://faq.i3wm.org/ first, then
@@ -1319,9 +1319,9 @@ bindsym $mod+h split horizontal
 
 === Manipulating layout
 
-Use +layout toggle split+, +layout stacking+ or +layout tabbed+ to change the
-current container layout to splith/splitv, stacking or tabbed layout,
-respectively.
+Use +layout toggle split+, +layout stacking+, +layout tabbed+, +layout splitv+
+or +layout splith+ to change the current container layout to splith/splitv,
+stacking, tabbed layout, splitv or splith, respectively.
 
 To make the current window (!) fullscreen, use +fullscreen+, to make
 it floating (or tiling again) use +floating enable+ respectively +floating disable+
@@ -1329,7 +1329,7 @@ it floating (or tiling again) use +floating enable+ respectively +floating disab
 
 *Syntax*:
 --------------
-layout <tabbed|stacking>
+layout <default|tabbed|stacking|splitv|splith>
 layout toggle [split|all]
 --------------
 
