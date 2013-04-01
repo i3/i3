@@ -49,7 +49,7 @@ state INITIAL:
 
 # We ignore comments and 'set' lines (variables).
 state IGNORE_LINE:
-  end, string
+  line
       -> INITIAL
 
 # floating_minimum_size <width> x <height>
@@ -311,7 +311,7 @@ state MODE:
 
 # We ignore comments and 'set' lines (variables).
 state MODE_IGNORE_LINE:
-  end, string
+  line
       -> MODE
 
 state MODE_BINDING:
@@ -362,7 +362,7 @@ state BAR:
 
 # We ignore comments and 'set' lines (variables).
 state BAR_IGNORE_LINE:
-  end, string
+  line
       -> BAR
 
 state BAR_BAR_COMMAND:
@@ -428,7 +428,7 @@ state BAR_COLORS:
 
 # We ignore comments and 'set' lines (variables).
 state BAR_COLORS_IGNORE_LINE:
-  end, string
+  line
       -> BAR_COLORS
 
 state BAR_COLORS_SINGLE:
