@@ -19,7 +19,7 @@
 # ticket #770, bug still present in commit ae88accf6fe3817ff42d0d51be1965071194766e
 use i3test i3_autostart => 0;
 
-sub test_with_new_window_value {
+sub test_with_config {
     my ($value) = @_;
 
     my $config = <<EOT;
@@ -28,8 +28,8 @@ font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 EOT
 
     if (defined($value)) {
-        $config .= "new_window $value\n";
-        diag("testing with new_window $value");
+        $config .= "$value\n";
+        diag("testing with $value");
     } else {
         diag("testing without new_window");
     }
@@ -49,9 +49,10 @@ EOT
     exit_gracefully($pid);
 }
 
-test_with_new_window_value(undef);
-test_with_new_window_value('1pixel');
-test_with_new_window_value('normal');
-test_with_new_window_value('none');
+test_with_config(undef);
+test_with_config('new_window 1pixel');
+test_with_config('new_window normal');
+test_with_config('new_window none');
+test_with_config('hide_edge_borders both');
 
 done_testing;
