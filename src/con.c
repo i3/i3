@@ -1087,6 +1087,12 @@ Rect con_border_style_rect(Con *con) {
     } else {
         result = (Rect){border_width, border_width, -(2 * border_width), -(2 * border_width)};
     }
+
+    /* Floating windows are never adjacent to any other window, so
+       don’t hide their border(s). This prevents bug #998. */
+    if (con_is_floating(con))
+      return result;
+
     if (borders_to_hide & ADJ_LEFT_SCREEN_EDGE) {
         result.x -= border_width;
         result.width += border_width;
