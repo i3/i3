@@ -448,6 +448,21 @@ is(parser_calls($config),
    $expected,
    'errors dont harm subsequent statements');
 
+################################################################################
+# Regression: semicolons end comments, but shouldn’t
+################################################################################
+
+$config = <<'EOT';
+# "foo" client.focused          #4c7899 #285577 #ffffff #2e9ef4
+EOT
+
+$expected = <<'EOT';
+
+EOT
+
+is(parser_calls($config),
+   $expected,
+   'semicolon does not end a comment line');
 
 ################################################################################
 # Error message with 2+2 lines of context
