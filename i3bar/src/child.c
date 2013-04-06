@@ -359,7 +359,11 @@ void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
 void child_write_output(void) {
     if (child.click_events) {
         const unsigned char *output;
+#if YAJL_MAJOR < 2
+        unsigned int size;
+#else
         size_t size;
+#endif
         yajl_gen_get_buf(gen, &output, &size);
         write(child_stdin, output, size);
         write(child_stdin, "\n", 1);
@@ -388,11 +392,13 @@ void start_child(char *command) {
     yajl_parser_config parse_conf = { 0, 0 };
 
     parser = yajl_alloc(&callbacks, &parse_conf, NULL, (void*)&parser_context);
+
+    gen = yajl_gen_alloc(NULL, NULL);
 #else
     parser = yajl_alloc(&callbacks, NULL, &parser_context);
-#endif
 
     gen = yajl_gen_alloc(NULL);
+#endif
 
     if (command != NULL) {
         int pipe_in[2]; /* pipe we read from */
