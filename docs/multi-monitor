@@ -1,15 +1,16 @@
 The multi-monitor situation
 ===========================
-Michael Stapelberg <michael+i3@stapelberg.de>
-September 2011
+Michael Stapelberg <michael@i3wm.org>
+April 2013
 
-…or: oh no, I have an nVidia graphics card!
+Please upgrade your nVidia driver to version 302.17 or newer and i3 will just
+work. This document is kept around for historic reasons only.
 
 == The quick fix
 
 If you are using the nVidia binary graphics driver (also known as 'blob')
-you need to use the +--force-xinerama+ flag (in your .xsession) when starting
-i3, like so:
+before version 302.17, you need to use the +--force-xinerama+ flag (in your
+.xsession) when starting i3, like so:
 
 .Example:
 ----------------------------------------------
