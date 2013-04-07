@@ -1703,6 +1703,8 @@ void draw_bars(bool unhide) {
 
             set_font_colors(outputs_walk->bargc, fg_color, bg_color);
             draw_text(binding.name, outputs_walk->buffer, outputs_walk->bargc, i + 5, 3, binding.width);
+
+            unhide = true;
         }
 
         i = 0;
