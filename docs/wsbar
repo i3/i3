@@ -1,23 +1,18 @@
 External workspace bars
 =======================
-Michael Stapelberg <michael+i3@stapelberg.de>
-May 2010
+Michael Stapelberg <michael@i3wm.org>
+April 2013
 
-This document describes why the internal workspace bar is minimal and how an
-external workspace bar can be used. It explains the concepts using +i3-wsbar+
-as the reference implementation.
+i3 comes with i3bar by default, a simple bar that is sufficient for most users.
+In case you are unhappy with it, this document explains how to use a different,
+external workspace bar. Note that we do not provide support for external
+programs.
 
 == Internal and external bars
 
 The internal workspace bar of i3 is meant to be a reasonable default so that
 you can use i3 without having too much hassle when setting it up. It is quite
-simple and intended to stay this way. So, there is no way to display your own
-information in this bar (unlike dwm, wmii, awesome, …).
-
-We chose not to implement such a mechanism because that would be duplicating
-already existing functionality of tools such as dzen2, xmobar and similar.
-Instead, you should disable the internal bar and use an external workspace bar
-(which communicates with i3 through its IPC interface).
+simple and intended to stay this way.
 
 == dock mode
 
@@ -25,10 +20,10 @@ You typically want to see the same workspace bar on every workspace on a
 specific screen. Also, you don’t want to place the workspace bar somewhere
 in your layout by hand. This is where dock mode comes in: When a program sets
 the appropriate hint (_NET_WM_WINDOW_TYPE_DOCK), it will be managed in dock
-mode by i3. That means it will be placed at the bottom of the screen (while
-other edges of the screen are possible in the NetWM standard, this is not yet
-implemented in i3), it will not overlap any other window and it will be on
-every workspace for the specific screen it was placed on initially.
+mode by i3. That means it will be placed at the bottom or top of the screen
+(while other edges of the screen are possible in the NetWM standard, this is
+not yet implemented in i3), it will not overlap any other window and it will be
+on every workspace for the specific screen it was placed on initially.
 
 == The IPC interface
 
@@ -37,8 +32,8 @@ provide the bar program with the current workspaces and output (as in VGA-1,
 LVDS-1, …) configuration. In the other direction, the program has to be able
 to switch to specific workspaces.
 
-By default, the IPC interface is enabled and places its UNIX socket in
-+~/.i3/ipc.sock+.
+By default, the IPC interface is enabled and you can get the path to the socket
+by calling +i3 --get-socketpath+.
 
 To learn more about the protocol which is used for IPC, see +docs/ipc+.
 
@@ -49,17 +44,17 @@ external workspace bar implementation needs to make sure that when you change
 the resolution of any of your screens (or enable/disable an output), the bars
 will be adjusted properly.
 
-== i3-wsbar, the reference implementation
+== i3-wsbar, an example implementation
 
-Please keep in mind that +i3-wsbar+ is just a reference implementation. It is
-shipped with i3 to have a reasonable default. Thus, +i3-wsbar+ is designed to
-work well with dzen2 and there are no plans to make it more generic.
++i3-wsbar+ used to be the reference implementation before we had +i3bar+.
+Nowadays, it is not shipped with release tarballs, but you can still get it at
+http://code.stapelberg.de/git/i3/tree/contrib/i3-wsbar
 
 === The big picture
 
 The most common reason to use an external workspace bar is to integrate system
-information such as what +i3status+ provides into the workspace bar (to save
-screen space). So, we have +i3status+ or a similar program, which only provides
+information such as what +i3status+ or +conky+ provide into the workspace bar.
+So, we have +i3status+ or a similar program, which only provides
 text output (formatted in some way). To display this text nicely on the screen,
 there are programs such as dzen2, xmobar and similar. We will stick to dzen2
 from here on. So, we have the output of i3status, which needs to go into dzen2
@@ -89,6 +84,3 @@ To actually get a benefit, you want to give +i3-wsbar+ some input:
 ------------------------------------------
 i3status | i3-wsbar -c "dzen2 -x %x -dock"
 ------------------------------------------
-
-It is recommended to place the above command in your i3 configuration file
-to start it automatically with i3.
