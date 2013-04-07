@@ -143,6 +143,16 @@ Result: PASS
 $ less latest/i3-log-for-04-floating.t
 ----------------------------------------
 
+If your attempt to run the tests with a bare call to ./complete-run.pl fails, try this:
+
+---------------------------------------------------
+$ ./complete-run.pl --parallel=1 --keep-xdummy-output
+---------------------------------------------------
+
+One common cause of failures is not having the X dummy server module
+installed.  Under Debian and Ubuntu this is the package
++xserver-xorg-video-dummy+.
+
 ==== IPC interface
 
 The testsuite makes extensive use of the IPC (Inter-Process Communication)
