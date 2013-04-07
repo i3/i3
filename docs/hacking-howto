@@ -57,7 +57,7 @@ all, most users sooner or later tend to lay out their windows in a way which
 corresponds to tiling or stacking mode in i3. Therefore, why not let i3 do this
 for you? Certainly, it’s faster than you could ever do it.
 
-The problem with most tiling window managers is that they are too unflexible.
+The problem with most tiling window managers is that they are too inflexible.
 In my opinion, a window manager is just another tool, and similar to vim which
 can edit all kinds of text files (like source code, HTML, …) and is not limited
 to a specific file type, a window manager should not limit itself to a certain
@@ -361,7 +361,7 @@ managed at all:
  * The override_redirect must not be set. Windows with override_redirect shall
    not be managed by a window manager
 
-Afterwards, i3 gets the intial geometry and reparents the window (see
+Afterwards, i3 gets the initial geometry and reparents the window (see
 `reparent_window()`) if it wasn’t already managed.
 
 Reparenting means that for each window which is reparented, a new window,
@@ -383,7 +383,7 @@ target workspace is not visible, the window will not be mapped.
 
 == What happens when an application is started?
 
-i3 does not care for applications. All it notices is when new windows are
+i3 does not care about applications. All it notices is when new windows are
 mapped (see `src/handlers.c`, `handle_map_request()`). The window is then
 reparented (see section "Manage windows").
 
@@ -534,7 +534,7 @@ position/size is different: They are placed next to each other on a single line
 
 ==== Dock area layout
 
-This is a special case. Users cannot chose the dock area layout, but it will be
+This is a special case. Users cannot choose the dock area layout, but it will be
 set for the dock area containers. In the dockarea layout (at the moment!),
 windows will be placed above each other.
 

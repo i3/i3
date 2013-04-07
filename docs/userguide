@@ -26,8 +26,8 @@ are your homerow.
 == Using i3
 
 Throughout this guide, the keyword +$mod+ will be used to refer to the
-configured modifier. This is the Alt key (Mod1) by default, with windows (Mod4)
-being a popular alternative.
+configured modifier. This is the Alt key (Mod1) by default, with the Windows
+key (Mod4) being a popular alternative.
 
 === Opening terminals and moving around
 
@@ -147,7 +147,7 @@ columns/rows with your keyboard.
 
 === Restarting i3 inplace
 
-To restart i3 inplace (and thus get into a clean state if there is a bug, or
+To restart i3 in place (and thus get into a clean state if there is a bug, or
 to upgrade to a newer version of i3) you can use +$mod+Shift+r+.
 
 === Exiting i3
@@ -156,11 +156,12 @@ To cleanly exit i3 without killing your X server, you can use +$mod+Shift+e+.
 
 === Floating
 
-Floating mode is the opposite of tiling mode. The position and size of a window
-are not managed by i3, but by you. Using this mode violates the tiling
-paradigm but can be useful for some corner cases like "Save as" dialog
-windows, or toolbar windows (GIMP or similar). Those windows usually set the
-appropriate hint and are opened in floating mode by default.
+Floating mode is the opposite of tiling mode. The position and size of
+a window are not managed automatically by i3, but manually by
+you. Using this mode violates the tiling paradigm but can be useful
+for some corner cases like "Save as" dialog windows, or toolbar
+windows (GIMP or similar). Those windows usually set the appropriate
+hint and are opened in floating mode by default.
 
 You can toggle floating mode for a window by pressing +$mod+Shift+Space+. By
 dragging the window’s titlebar with your mouse you can move the window
@@ -259,7 +260,7 @@ other one being the terminal window you moved down.
 [[configuring]]
 == Configuring i3
 
-This is where the real fun begins ;-). Most things are very dependant on your
+This is where the real fun begins ;-). Most things are very dependent on your
 ideal working environment so we can’t make reasonable defaults for them.
 
 While not using a programming language for the configuration, i3 stays
@@ -761,7 +762,7 @@ from single windows outside of a split container.
 
 === Interprocess communication
 
-i3 uses unix sockets to provide an IPC interface. This allows third-party
+i3 uses Unix sockets to provide an IPC interface. This allows third-party
 programs to get information from i3, such as the current workspaces
 (to display a workspace bar), and to control i3.
 
@@ -1223,7 +1224,7 @@ bindsym $mod+x move container to workspace 3; workspace 3
 
 [[command_criteria]]
 
-Furthermore, you can change the scope of a command, that is, which containers
+Furthermore, you can change the scope of a command - that is, which containers
 should be affected by that command, by using various criteria. These are
 prefixed in square brackets to every command. If you want to kill all windows
 which have the class Firefox, use:
