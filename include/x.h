@@ -93,8 +93,12 @@ void x_push_changes(Con *con);
  * Raises the specified container in the internal stack of X windows. The
  * next call to x_push_changes() will make the change visible in X11.
  *
+ * If above_all is true, the X11 window will be raised to the top
+ * of the stack. This should only be used for precisely one fullscreen
+ * window per output.
+ *
  */
-void x_raise_con(Con *con);
+void x_raise_con(Con *con, bool above_all);
 
 /**
  * Sets the WM_NAME property (so, no UTF8, but used only for debugging anyways)

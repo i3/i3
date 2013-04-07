@@ -36,6 +36,7 @@ typedef struct con_state {
     bool mapped;
     bool unmap_now;
     bool child_mapped;
+    bool above_all;
 
     /** The con for which this state is. */
     Con *con;
@@ -899,6 +900,10 @@ void x_push_changes(Con *con) {
 
             xcb_configure_window(conn, prev->id, mask, values);
         }
+        if (state->above_all) {
+            DLOG("above all: 0x%08x\n", state->id);
+            xcb_configure_window(conn, state->id, XCB_CONFIG_WINDOW_STACK_MODE, (uint32_t[]){ XCB_STACK_MODE_ABOVE });
+        }
         state->initial = false;
     }
 
@@ -1024,11 +1029,17 @@ void x_push_changes(Con *con) {
  * Raises the specified container in the internal stack of X windows. The
  * next call to x_push_changes() will make the change visible in X11.
  *
+ * If above_all is true, the X11 window will be raised to the top
+ * of the stack. This should only be used for precisely one fullscreen
+ * window per output.
+ *
  */
-void x_raise_con(Con *con) {
+void x_raise_con(Con *con, bool above_all) {
     con_state *state;
     state = state_for_frame(con->frame);
     //DLOG("raising in new stack: %p / %s / %s / xid %08x\n", con, con->name, con->window ? con->window->name_json : "", state->id);
+
+    state->above_all = above_all;
 
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_INSERT_HEAD(&state_head, state, state);
