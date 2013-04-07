@@ -372,9 +372,15 @@ void render_con(Con *con, bool render_fullscreen) {
             child->rect.width = rect.width;
             child->rect.height = rect.height;
 
-            child->deco_rect.width = ceil((float)child->rect.width / children);
+            child->deco_rect.width = floor((float)child->rect.width / children);
             child->deco_rect.x = x - con->rect.x + i * child->deco_rect.width;
             child->deco_rect.y = y - con->rect.y;
+
+            /* Since the tab width may be something like 31,6 px per tab, we
+             * let the last tab have all the extra space (0,6 * children). */
+            if (i == (children-1)) {
+                child->deco_rect.width += (child->rect.width - (child->deco_rect.x + child->deco_rect.width));
+            }
 
             if (children > 1 || (child->border_style != BS_PIXEL && child->border_style != BS_NONE)) {
                 child->rect.y += deco_height;
