@@ -80,6 +80,9 @@ ev_io      *xkb_io;
 /* The name of current binding mode */
 static mode binding;
 
+/* Indicates whether a new binding mode was recently activated */
+bool activated_mode = false;
+
 /* The parsed colors */
 struct xcb_colors_t {
     uint32_t bar_fg;
@@ -843,7 +846,7 @@ void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
         modstate = mods & config.modifier;
     }
 
-#define DLOGMOD(modmask, status, barfunc) \
+#define DLOGMOD(modmask, status) \
     do { \
         switch (modmask) { \
             case ShiftMask: \
@@ -868,14 +871,17 @@ void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
                 DLOG("Mod5Mask got " #status "!\n"); \
                 break; \
         } \
-        barfunc(); \
     } while (0)
 
     if (modstate != mod_pressed) {
         if (modstate == 0) {
-            DLOGMOD(config.modifier, released, hide_bars);
+            DLOGMOD(config.modifier, released);
+            if (!activated_mode)
+                hide_bars();
         } else {
-            DLOGMOD(config.modifier, pressed, unhide_bars);
+            DLOGMOD(config.modifier, pressed);
+            activated_mode = false;
+            unhide_bars();
         }
         mod_pressed = modstate;
     }
@@ -1752,5 +1758,6 @@ void redraw_bars(void) {
 void set_current_mode(struct mode *current) {
     I3STRING_FREE(binding.name);
     binding = *current;
+    activated_mode = binding.name != NULL;
     return;
 }
