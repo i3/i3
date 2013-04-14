@@ -505,7 +505,9 @@ static void handle_client_message(xcb_client_message_event_t* event) {
             }
             /* In case of tray_output == primary and there is no primary output
              * configured, we fall back to the first available output. */
-            if (output == NULL && strcasecmp("primary", config.tray_output) == 0) {
+            if (output == NULL &&
+                config.tray_output &&
+                strcasecmp("primary", config.tray_output) == 0) {
                 SLIST_FOREACH(walk, outputs, slist) {
                     if (!walk->active)
                         continue;
