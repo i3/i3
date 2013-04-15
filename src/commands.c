@@ -569,6 +569,23 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
 static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floating_con, int px) {
     LOG("floating resize\n");
     Rect old_rect = floating_con->rect;
+    Con *focused_con = con_descend_focused(floating_con);
+
+    /* ensure that resize will take place even if pixel increment is smaller than
+     * height increment or width increment.
+     * fixes #1011 */
+    if (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0 ||
+        strcmp(direction, "height") == 0) {
+        if (px < 0)
+            px = (-px < focused_con->height_increment) ? -focused_con->height_increment : px;
+        else
+            px = (px < focused_con->height_increment) ? focused_con->height_increment : px;
+    } else if (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0) {
+        if (px < 0)
+            px = (-px < focused_con->width_increment) ? -focused_con->width_increment : px;
+        else
+            px = (px < focused_con->width_increment) ? focused_con->width_increment : px;
+    }
 
     if (strcmp(direction, "up") == 0) {
         floating_con->rect.height += px;
