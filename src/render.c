@@ -184,10 +184,10 @@ void render_con(Con *con, bool render_fullscreen) {
                     new_width--;
             }
             /* Center the window */
-            inset->y += ceil(inset->height / 2) - floor(new_height / 2);
+            inset->y += ceil(inset->height / 2) - floor((new_height + .5) / 2);
             inset->x += ceil(inset->width / 2) - floor(new_width / 2);
 
-            inset->height = new_height;
+            inset->height = new_height + .5;
             inset->width = new_width;
         }
 
