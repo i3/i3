@@ -147,7 +147,7 @@ struct deco_render_params {
     Rect con_deco_rect;
     uint32_t background;
     bool con_is_leaf;
-    orientation_t parent_orientation;
+    layout_t parent_layout;
 };
 
 /**
