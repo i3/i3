@@ -40,7 +40,7 @@ sub dump_node {
     if (!defined($n->{window})) {
         $type = $n->{orientation} . '-split';
     }
-    my $name = qq|\\"$na\\" ($type)|;
+    my $name = qq|``$na'' ($type)|;
 
     print $tmp "TreeNode n" . $n->{id} . " = makeNode(";
 
