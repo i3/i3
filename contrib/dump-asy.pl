@@ -32,6 +32,8 @@ sub dump_node {
     my $w = (defined($n->{window}) ? $n->{window} : "N");
     my $na = $n->{name};
     $na =~ s/#/\\#/g;
+    $na =~ s/\$/\\\$/g;
+    $na =~ s/&/\\&/g;
     $na =~ s/_/\\_/g;
     $na =~ s/~/\\textasciitilde{}/g;
     my $type = 'leaf';
