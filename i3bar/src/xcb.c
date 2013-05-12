@@ -1715,7 +1715,7 @@ void draw_bars(bool unhide) {
             unhide = true;
         }
 
-        i = 0;
+        i = 1;
     }
 
     if (!mod_pressed) {
