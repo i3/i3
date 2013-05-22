@@ -158,7 +158,7 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     }
 
     /* see if the user entered the window on a certain window decoration */
-    int layout = (enter_child ? con->parent->layout : con->layout);
+    layout_t layout = (enter_child ? con->parent->layout : con->layout);
     if (layout == L_DEFAULT) {
         Con *child;
         TAILQ_FOREACH(child, &(con->nodes_head), nodes)

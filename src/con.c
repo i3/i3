@@ -1209,7 +1209,7 @@ void con_set_border_style(Con *con, int border_style, int border_width) {
  * new split container before).
  *
  */
-void con_set_layout(Con *con, int layout) {
+void con_set_layout(Con *con, layout_t layout) {
     DLOG("con_set_layout(%p, %d), con->type = %d\n",
          con, layout, con->type);
 

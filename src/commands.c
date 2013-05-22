@@ -1547,7 +1547,7 @@ void cmd_layout(I3_CMD, char *layout_str) {
     if (strcmp(layout_str, "stacking") == 0)
         layout_str = "stacked";
     owindow *current;
-    int layout;
+    layout_t layout;
     /* default is a special case which will be handled in con_set_layout(). */
     if (strcmp(layout_str, "default") == 0)
         layout = L_DEFAULT;

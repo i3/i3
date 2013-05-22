@@ -95,7 +95,7 @@ struct Config {
     char *ipc_socket_path;
     const char *restart_state_path;
 
-    int default_layout;
+    layout_t default_layout;
     int container_stack_limit;
     int container_stack_limit_value;
     int default_border_width;

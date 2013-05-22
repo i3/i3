@@ -275,7 +275,7 @@ void con_set_border_style(Con *con, int border_style, int border_width);
  * new split container before).
  *
  */
-void con_set_layout(Con *con, int layout);
+void con_set_layout(Con *con, layout_t layout);
 
 /**
  * This function toggles the layout of a given container. toggle_mode can be

@@ -80,6 +80,19 @@ enum {
 };
 
 /**
+ * Container layouts. See Con::layout.
+ */
+typedef enum {
+    L_DEFAULT = 0,
+    L_STACKED = 1,
+    L_TABBED = 2,
+    L_DOCKAREA = 3,
+    L_OUTPUT = 4,
+    L_SPLITV = 5,
+    L_SPLITH = 6
+} layout_t;
+
+/**
  * Stores a rectangle, for example the size of a window, the child window etc.
  * It needs to be packed so that the compiler will not add any padding bytes.
  * (it is used in src/ewmh.c for example)
@@ -531,15 +544,7 @@ struct Con {
      * parent and opening new containers). Instead, it stores the requested
      * layout in workspace_layout and creates a new split container with that
      * layout whenever a new container is attached to the workspace. */
-    enum {
-        L_DEFAULT = 0,
-        L_STACKED = 1,
-        L_TABBED = 2,
-        L_DOCKAREA = 3,
-        L_OUTPUT = 4,
-        L_SPLITV = 5,
-        L_SPLITH = 6
-    } layout, last_split_layout, workspace_layout;
+    layout_t layout, last_split_layout, workspace_layout;
     border_style_t border_style;
     /** floating? (= not in tiling layout) This cannot be simply a bool
      * because we want to keep track of whether the status was set by the
