@@ -39,6 +39,12 @@ void scratchpad_move(Con *con) {
         return;
     }
 
+    /* If the current con is in fullscreen mode, we need to disable that,
+     *  as a scratchpad window should never be in fullscreen mode */
+    if (focused && focused->type != CT_WORKSPACE && focused->fullscreen_mode != CF_NONE) {
+        con_toggle_fullscreen(focused, CF_OUTPUT);
+    }
+
     /* 1: Ensure the window or any parent is floating. From now on, we deal
      * with the CT_FLOATING_CON. We use automatic == false because the user
      * made the choice that this window should be a scratchpad (and floating).
@@ -78,16 +84,6 @@ void scratchpad_show(Con *con) {
     Con *__i3_scratch = workspace_get("__i3_scratch", NULL);
     Con *floating;
 
-    /* If the current con or any of its parents are in fullscreen mode, we
-     * first need to disable it before showing the scratchpad con. */
-    Con *fs = focused;
-    while (fs && fs->fullscreen_mode == CF_NONE)
-        fs = fs->parent;
-
-    if (fs->type != CT_WORKSPACE) {
-        con_toggle_fullscreen(focused, CF_OUTPUT);
-    }
-
     /* If this was 'scratchpad show' without criteria, we check if the
      * currently focused window is a scratchpad window and should be hidden
      * again. */
@@ -97,6 +93,16 @@ void scratchpad_show(Con *con) {
         DLOG("Focused window is a scratchpad window, hiding it.\n");
         scratchpad_move(focused);
         return;
+    }
+
+    /* If the current con or any of its parents are in fullscreen mode, we
+     * first need to disable it before showing the scratchpad con. */
+    Con *fs = focused;
+    while (fs && fs->fullscreen_mode == CF_NONE)
+        fs = fs->parent;
+
+    if (fs && fs->type != CT_WORKSPACE) {
+        con_toggle_fullscreen(fs, CF_OUTPUT);
     }
 
     /* If this was 'scratchpad show' without criteria, we check if there is a
