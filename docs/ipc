@@ -626,6 +626,9 @@ mode (2)::
 window (3)::
 	Sent when a client's window is successfully reparented (that is when i3
 	has finished fitting it into a container).
+barconfig_update (4)::
+    Sent when the hidden_state or mode field in the barconfig of any bar
+    instance was updated.
 
 *Example:*
 --------------------------------------------------------------------
@@ -720,6 +723,24 @@ window title as "urxvt").
   "type": 2,
   ...
  }
+}
+---------------------------
+
+=== barconfig_update event
+
+This event consists of a single serialized map reporting on options from the
+barconfig of the specified bar_id that were updated in i3. The map always
+consists of a property +id (string)+, which specifies to which bar instance the
+sent config update belongs, a property +hidden_state (string)+, which indicates
+the hidden_state of an i3bar instance, and a property +mode (string)+, which
+corresponds to the current mode.
+
+*Example:*
+---------------------------
+{
+    "id": "bar-0",
+    "hidden_state": "hide"
+    "mode": "hide"
 }
 ---------------------------
 

@@ -265,4 +265,10 @@ void cmd_scratchpad_show(I3_CMD);
  */
 void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name);
 
+/**
+ * Implementation of 'bar (hidden_state hide|show|toggle)|(mode dock|hide|invisible|toggle) [<bar_id>]'
+ *
+ */
+void cmd_bar(I3_CMD, char *bar_type, char *bar_value, char *bar_id);
+
 #endif

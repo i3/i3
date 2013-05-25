@@ -35,6 +35,7 @@ state INITIAL:
   'nop' -> NOP
   'scratchpad' -> SCRATCHPAD
   'mode' -> MODE
+  'bar' -> BAR
 
 state CRITERIA:
   ctype = 'class' -> CRITERION
@@ -319,3 +320,24 @@ state NOP:
 state SCRATCHPAD:
   'show'
       -> call cmd_scratchpad_show()
+
+# bar (hidden_state hide|show|toggle)|(mode dock|hide|invisible|toggle) [<bar_id>]
+state BAR:
+  bar_type = 'hidden_state'
+      -> BAR_HIDDEN_STATE
+  bar_type = 'mode'
+      -> BAR_MODE
+
+state BAR_HIDDEN_STATE:
+  bar_value = 'hide', 'show', 'toggle'
+      -> BAR_W_ID
+
+state BAR_MODE:
+  bar_value = 'dock', 'hide', 'invisible', 'toggle'
+      -> BAR_W_ID
+
+state BAR_W_ID:
+  bar_id = word
+      ->
+  end
+      -> call cmd_bar($bar_type, $bar_value, $bar_id)

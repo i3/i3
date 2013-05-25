@@ -99,4 +99,7 @@ typedef struct i3_ipc_header {
 /* The window event will be triggered upon window changes */
 #define I3_IPC_EVENT_WINDOW                     (I3_IPC_EVENT_MASK | 3)
 
+/** Bar config update will be triggered to update the bar config */
+#define I3_IPC_EVENT_BARCONFIG_UPDATE           (I3_IPC_EVENT_MASK | 4)
+
 #endif

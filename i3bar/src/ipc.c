@@ -149,12 +149,37 @@ void got_mode_event(char *event) {
     draw_bars(false);
 }
 
+/*
+ * Called, when a barconfig_update event arrives (i.e. i3 changed the bar hidden_state or mode)
+ *
+ */
+void got_bar_config_update(char *event) {
+    /* check whether this affect this bar instance by checking the bar_id */
+    char *expected_id;
+    sasprintf(&expected_id, "\"id\":\"%s\"", config.bar_id);
+    char *found_id = strstr(event, expected_id);
+    FREE(expected_id);
+    if (found_id == NULL)
+       return;
 
-/* Data-structure to easily call the reply-handlers later */
+    /* update the configuration with the received settings */
+    DLOG("Received bar config update \"%s\"\n", event);
+    int old_mode = config.hide_on_modifier;
+    parse_config_json(event);
+    if (old_mode != config.hide_on_modifier) {
+        reconfig_windows();
+    }
+
+    draw_bars(false);
+}
+
+/* Data-structure to easily call the event-handlers later */
 handler_t event_handlers[] = {
     &got_workspace_event,
     &got_output_event,
-    &got_mode_event
+    &got_mode_event,
+    NULL,
+    &got_bar_config_update,
 };
 
 /*
@@ -310,8 +335,8 @@ void destroy_connection(void) {
  */
 void subscribe_events(void) {
     if (config.disable_ws) {
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"output\", \"mode\" ]");
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"output\", \"mode\", \"barconfig_update\" ]");
     } else {
-        i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"workspace\", \"output\", \"mode\" ]");
+        i3_send_msg(I3_IPC_MESSAGE_TYPE_SUBSCRIBE, "[ \"workspace\", \"output\", \"mode\", \"barconfig_update\" ]");
     }
 }

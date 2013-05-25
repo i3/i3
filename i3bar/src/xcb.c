@@ -198,7 +198,7 @@ void refresh_statusline(void) {
  *
  */
 void hide_bars(void) {
-    if (!config.hide_on_modifier) {
+    if ((config.hide_on_modifier == M_DOCK) || (config.hidden_state == S_SHOW)) {
         return;
     }
 
@@ -217,7 +217,7 @@ void hide_bars(void) {
  *
  */
 void unhide_bars(void) {
-    if (!config.hide_on_modifier) {
+    if (config.hide_on_modifier != M_HIDE) {
         return;
     }
 
@@ -988,25 +988,13 @@ char *init_xcb_early() {
 }
 
 /*
- * Initialization which depends on 'config' being usable. Called after the
- * configuration has arrived.
+ * Register for xkb keyevents. To grab modifiers without blocking other applications from receiving key-events
+ * involving that modifier, we sadly have to use xkb which is not yet fully supported
+ * in xcb.
  *
  */
-void init_xcb_late(char *fontname) {
-    if (fontname == NULL)
-        fontname = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
-
-    /* Load the font */
-    font = load_font(fontname, true);
-    set_font(&font);
-    DLOG("Calculated Font-height: %d\n", font.height);
-
-    xcb_flush(xcb_connection);
-
-    /* To grab modifiers without blocking other applications from receiving key-events
-     * involving that modifier, we sadly have to use xkb which is not yet fully supported
-     * in xcb */
-    if (config.hide_on_modifier) {
+void register_xkb_keyevents() {
+    if (xkb_dpy == NULL) {
         int xkb_major, xkb_minor, xkb_errbase, xkb_err;
         xkb_major = XkbMajorVersion;
         xkb_minor = XkbMinorVersion;
@@ -1044,6 +1032,39 @@ void init_xcb_late(char *fontname) {
         ev_io_start(main_loop, xkb_io);
         XFlush(xkb_dpy);
     }
+}
+
+/*
+ * Deregister from xkb keyevents.
+ *
+ */
+void deregister_xkb_keyevents() {
+    if (xkb_dpy != NULL) {
+        ev_io_stop (main_loop, xkb_io);
+        close(xkb_io->fd);
+        FREE(xkb_io);
+        FREE(xkb_dpy);
+    }
+}
+
+/*
+ * Initialization which depends on 'config' being usable. Called after the
+ * configuration has arrived.
+ *
+ */
+void init_xcb_late(char *fontname) {
+    if (fontname == NULL)
+        fontname = "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1";
+
+    /* Load the font */
+    font = load_font(fontname, true);
+    set_font(&font);
+    DLOG("Calculated Font-height: %d\n", font.height);
+
+    xcb_flush(xcb_connection);
+
+    if (config.hide_on_modifier == M_HIDE)
+        register_xkb_keyevents();
 }
 
 /*
@@ -1368,8 +1389,8 @@ void reconfig_windows(void) {
             mask = XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
             /* Black background */
             values[0] = colors.bar_bg;
-            /* If hide_on_modifier is set, i3 is not supposed to manage our bar-windows */
-            values[1] = config.hide_on_modifier;
+            /* If hide_on_modifier is set to hide or invisible mode, i3 is not supposed to manage our bar-windows */
+            values[1] = (config.hide_on_modifier == M_DOCK ? 0 : 1);
             /* We enable the following EventMask fields:
              * EXPOSURE, to get expose events (we have to re-draw then)
              * SUBSTRUCTURE_REDIRECT, to get ConfigureRequests when the tray
@@ -1490,7 +1511,7 @@ void reconfig_windows(void) {
 
             /* We finally map the bar (display it on screen), unless the modifier-switch is on */
             xcb_void_cookie_t map_cookie;
-            if (!config.hide_on_modifier) {
+            if (config.hide_on_modifier == M_DOCK) {
                 map_cookie = xcb_map_window_checked(xcb_connection, walk->bar);
             }
 
@@ -1501,7 +1522,7 @@ void reconfig_windows(void) {
                 xcb_request_failed(name_cookie,  "Could not set WM_NAME")   ||
                 xcb_request_failed(strut_cookie, "Could not set strut")     ||
                 xcb_request_failed(gc_cookie,    "Could not create graphical context") ||
-                (!config.hide_on_modifier && xcb_request_failed(map_cookie, "Could not map window"))) {
+                ((config.hide_on_modifier == M_DOCK) && xcb_request_failed(map_cookie, "Could not map window"))) {
                 exit(EXIT_FAILURE);
             }
 
@@ -1533,6 +1554,14 @@ void reconfig_windows(void) {
                                                                         mask,
                                                                         values);
 
+            mask = XCB_CW_OVERRIDE_REDIRECT;
+            values[0] = (config.hide_on_modifier == M_DOCK ? 0 : 1);
+            DLOG("Changing Window attribute override_redirect for output %s to %d\n", walk->name, values[0]);
+            xcb_void_cookie_t chg_cookie = xcb_change_window_attributes(xcb_connection,
+                                                                        walk->bar,
+                                                                        mask,
+                                                                        values);
+
             DLOG("Recreating buffer for output %s\n", walk->name);
             xcb_void_cookie_t pm_cookie = xcb_create_pixmap_checked(xcb_connection,
                                                                     root_screen->root_depth,
@@ -1541,10 +1570,27 @@ void reconfig_windows(void) {
                                                                     walk->rect.w,
                                                                     walk->rect.h);
 
-            if (xcb_request_failed(cfg_cookie, "Could not reconfigure window")) {
-                exit(EXIT_FAILURE);
+            /* Unmap the window, and draw it again when in dock mode */
+            xcb_void_cookie_t umap_cookie = xcb_unmap_window_checked(xcb_connection, walk->bar);
+            xcb_void_cookie_t map_cookie;
+            if (config.hide_on_modifier == M_DOCK) {
+                cont_child();
+                map_cookie = xcb_map_window_checked(xcb_connection, walk->bar);
             }
-            if (xcb_request_failed(pm_cookie,  "Could not create pixmap")) {
+
+            if (config.hide_on_modifier == M_HIDE) {
+                /* Switching to hide mode, register for keyevents */
+                register_xkb_keyevents();
+            } else {
+                /* Switching to dock/invisible mode, deregister from keyevents */
+                deregister_xkb_keyevents();
+            }
+
+            if (xcb_request_failed(cfg_cookie, "Could not reconfigure window") ||
+                xcb_request_failed(chg_cookie, "Could not change window") ||
+                xcb_request_failed(pm_cookie,  "Could not create pixmap") ||
+                xcb_request_failed(umap_cookie,  "Could not unmap window") ||
+                ((config.hide_on_modifier == M_DOCK) && xcb_request_failed(map_cookie, "Could not map window"))) {
                 exit(EXIT_FAILURE);
             }
         }
@@ -1718,11 +1764,14 @@ void draw_bars(bool unhide) {
         i = 1;
     }
 
+    /* Assure the bar is hidden/unhidden according to the specified hidden_state and mode */
+    bool should_unhide = (config.hidden_state == S_SHOW || (unhide && config.hidden_state == S_HIDE));
+    bool should_hide = (config.hide_on_modifier == M_INVISIBLE);
+
     if (!mod_pressed) {
-        if (unhide) {
-            /* The urgent-hint should get noticed, so we unhide the bars shortly */
+        if ((unhide || should_unhide) && !should_hide) {
             unhide_bars();
-        } else if (walks_away) {
+        } else if (walks_away || should_hide) {
             FREE(last_urgent_ws);
             hide_bars();
         }

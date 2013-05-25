@@ -62,6 +62,8 @@ CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *ke
 
 CFGFUN(bar_font, const char *font);
 CFGFUN(bar_mode, const char *mode);
+CFGFUN(bar_hidden_state, const char *hidden_state);
+CFGFUN(bar_id, const char *bar_id);
 CFGFUN(bar_output, const char *output);
 CFGFUN(bar_verbose, const char *verbose);
 CFGFUN(bar_modifier, const char *modifier);

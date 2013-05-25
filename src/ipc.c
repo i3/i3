@@ -621,9 +621,29 @@ IPC_HANDLER(get_bar_config) {
         YSTR_IF_SET(socket_path);
 
         ystr("mode");
-        if (config->mode == M_HIDE)
-            ystr("hide");
-        else ystr("dock");
+        switch (config->mode) {
+            case M_HIDE:
+                ystr("hide");
+                break;
+            case M_INVISIBLE:
+                ystr("invisible");
+                break;
+            case M_DOCK:
+            default:
+                ystr("dock");
+                break;
+        }
+
+        ystr("hidden_state");
+        switch (config->hidden_state) {
+            case S_SHOW:
+                ystr("show");
+                break;
+            case S_HIDE:
+            default:
+                ystr("hide");
+                break;
+        }
 
         ystr("modifier");
         switch (config->modifier) {
