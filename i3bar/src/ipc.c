@@ -64,7 +64,7 @@ void got_output_reply(char *reply) {
     parse_outputs_json(reply);
     DLOG("Reconfiguring Windows...\n");
     realloc_sl_buffer();
-    reconfig_windows();
+    reconfig_windows(false);
 
     i3_output *o_walk;
     SLIST_FOREACH(o_walk, outputs, slist) {
@@ -167,7 +167,7 @@ void got_bar_config_update(char *event) {
     int old_mode = config.hide_on_modifier;
     parse_config_json(event);
     if (old_mode != config.hide_on_modifier) {
-        reconfig_windows();
+        reconfig_windows(true);
     }
 
     draw_bars(false);

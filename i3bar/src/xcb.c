@@ -198,7 +198,7 @@ void refresh_statusline(void) {
  *
  */
 void hide_bars(void) {
-    if ((config.hide_on_modifier == M_DOCK) || (config.hidden_state == S_SHOW)) {
+    if ((config.hide_on_modifier == M_DOCK) || (config.hidden_state == S_SHOW && config.hide_on_modifier == M_HIDE)) {
         return;
     }
 
@@ -1041,9 +1041,10 @@ void register_xkb_keyevents() {
 void deregister_xkb_keyevents() {
     if (xkb_dpy != NULL) {
         ev_io_stop (main_loop, xkb_io);
+        XCloseDisplay(xkb_dpy);
         close(xkb_io->fd);
         FREE(xkb_io);
-        FREE(xkb_dpy);
+        xkb_dpy = NULL;
     }
 }
 
@@ -1367,7 +1368,7 @@ void realloc_sl_buffer(void) {
  * Reconfigure all bars and create new bars for recently activated outputs
  *
  */
-void reconfig_windows(void) {
+void reconfig_windows(bool redraw_bars) {
     uint32_t mask;
     uint32_t values[5];
     static bool tray_configured = false;
@@ -1570,27 +1571,31 @@ void reconfig_windows(void) {
                                                                     walk->rect.w,
                                                                     walk->rect.h);
 
-            /* Unmap the window, and draw it again when in dock mode */
-            xcb_void_cookie_t umap_cookie = xcb_unmap_window_checked(xcb_connection, walk->bar);
-            xcb_void_cookie_t map_cookie;
-            if (config.hide_on_modifier == M_DOCK) {
-                cont_child();
-                map_cookie = xcb_map_window_checked(xcb_connection, walk->bar);
-            }
+            xcb_void_cookie_t map_cookie, umap_cookie;
+            if (redraw_bars) {
+                /* Unmap the window, and draw it again when in dock mode */
+                umap_cookie = xcb_unmap_window_checked(xcb_connection, walk->bar);
+                if (config.hide_on_modifier == M_DOCK) {
+                    cont_child();
+                    map_cookie = xcb_map_window_checked(xcb_connection, walk->bar);
+                } else {
+                    stop_child();
+                }
 
-            if (config.hide_on_modifier == M_HIDE) {
-                /* Switching to hide mode, register for keyevents */
-                register_xkb_keyevents();
-            } else {
-                /* Switching to dock/invisible mode, deregister from keyevents */
-                deregister_xkb_keyevents();
+                if (config.hide_on_modifier == M_HIDE) {
+                    /* Switching to hide mode, register for keyevents */
+                    register_xkb_keyevents();
+                } else {
+                    /* Switching to dock/invisible mode, deregister from keyevents */
+                    deregister_xkb_keyevents();
+                }
             }
 
             if (xcb_request_failed(cfg_cookie, "Could not reconfigure window") ||
                 xcb_request_failed(chg_cookie, "Could not change window") ||
                 xcb_request_failed(pm_cookie,  "Could not create pixmap") ||
-                xcb_request_failed(umap_cookie,  "Could not unmap window") ||
-                ((config.hide_on_modifier == M_DOCK) && xcb_request_failed(map_cookie, "Could not map window"))) {
+                (redraw_bars && (xcb_request_failed(umap_cookie,  "Could not unmap window") ||
+                (config.hide_on_modifier == M_DOCK && xcb_request_failed(map_cookie, "Could not map window"))))) {
                 exit(EXIT_FAILURE);
             }
         }
@@ -1618,7 +1623,7 @@ void draw_bars(bool unhide) {
         }
         if (outputs_walk->bar == XCB_NONE) {
             /* Oh shit, an active output without an own bar. Create it now! */
-            reconfig_windows();
+            reconfig_windows(false);
         }
         /* First things first: clear the backbuffer */
         uint32_t color = colors.bar_bg;
@@ -1768,13 +1773,11 @@ void draw_bars(bool unhide) {
     bool should_unhide = (config.hidden_state == S_SHOW || (unhide && config.hidden_state == S_HIDE));
     bool should_hide = (config.hide_on_modifier == M_INVISIBLE);
 
-    if (!mod_pressed) {
-        if ((unhide || should_unhide) && !should_hide) {
-            unhide_bars();
-        } else if (walks_away || should_hide) {
-            FREE(last_urgent_ws);
-            hide_bars();
-        }
+    if (mod_pressed || (should_unhide && !should_hide)) {
+        unhide_bars();
+    } else if (!mod_pressed && (walks_away || should_hide)) {
+        FREE(last_urgent_ws);
+        hide_bars();
     }
 
     redraw_bars();
