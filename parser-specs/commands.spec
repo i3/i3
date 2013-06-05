@@ -20,6 +20,7 @@ state INITIAL:
   'restart' -> call cmd_restart()
   'reload' -> call cmd_reload()
   'shmlog' -> SHMLOG
+  'debuglog' -> DEBUGLOG
   'border' -> BORDER
   'layout' -> LAYOUT
   'append_layout' -> APPEND_LAYOUT
@@ -68,6 +69,11 @@ state SHMLOG:
   # argument may be a number
   argument = string
     -> call cmd_shmlog($argument)
+
+# debuglog toggle|on|off
+state DEBUGLOG:
+  argument = 'toggle', 'on', 'off'
+    -> call cmd_debuglog($argument)
 
 # border normal|none|1pixel|toggle|1pixel
 state BORDER:

@@ -1762,6 +1762,8 @@ stack-limit rows 5
 image:stacklimit.png[Container limited to two columns]
 ///////////////////////////////////////////////////////////////////////////////
 
+[[shmlog]]
+
 === Enabling shared memory logging
 
 As described in http://i3wm.org/docs/debugging.html, i3 can log to a shared
@@ -1786,6 +1788,24 @@ bindsym $mod+x shmlog toggle
 # increase the shared memory log buffer to 50 MiB
 i3-msg shmlog $((50*1024*1024))
 ---------------
+
+=== Enabling debug logging
+
+The +debuglog+ command allows you to enable or disable debug logging at
+runtime. Debug logging is much more verbose than non-debug logging. This
+command does not activate shared memory logging (shmlog), and as such is most
+likely useful in combination with the above-described <<shmlog>> command.
+
+*Syntax*:
+------------------------
+debuglog <on|off|toggle>
+------------------------
+
+*Examples*:
+------------
+# Enable/disable logging
+bindsym $mod+x debuglog toggle
+------------
 
 === Reloading/Restarting/Exiting
 

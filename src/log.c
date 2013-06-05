@@ -181,6 +181,14 @@ void set_verbosity(bool _verbose) {
 }
 
 /*
+ * Get debug logging.
+ *
+ */
+bool get_debug_logging(void) {
+    return debug_logging;
+}
+
+/*
  * Set debug logging.
  *
  */

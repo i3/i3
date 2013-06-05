@@ -51,6 +51,12 @@ void open_logbuffer(void);
 void close_logbuffer(void);
 
 /**
+ * Checks if debug logging is active.
+ *
+ */
+bool get_debug_logging(void);
+
+/**
  * Set debug logging.
  *
  */

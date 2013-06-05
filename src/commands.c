@@ -2059,3 +2059,23 @@ void cmd_shmlog(I3_CMD, char *argument) {
     // XXX: default reply for now, make this a better reply
     ysuccess(true);
 }
+
+/*
+ * Implementation of 'debuglog toggle|on|off'
+ *
+ */
+void cmd_debuglog(I3_CMD, char *argument) {
+    bool logging = get_debug_logging();
+    if (!strcmp(argument,"toggle")) {
+        LOG("%s debug logging\n", logging ? "Disabling" : "Enabling");
+        set_debug_logging(!logging);
+    } else if (!strcmp(argument, "on") && !logging) {
+        LOG("Enabling debug logging\n");
+        set_debug_logging(true);
+    } else if (!strcmp(argument, "off") && logging) {
+        LOG("Disabling debug logging\n");
+        set_debug_logging(false);
+    }
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}

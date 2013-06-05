@@ -277,4 +277,10 @@ void cmd_bar(I3_CMD, char *bar_type, char *bar_value, char *bar_id);
  */
 void cmd_shmlog(I3_CMD, char *argument);
 
+/*
+ * Implementation of 'debuglog toggle|on|off'
+ *
+ */
+void cmd_debuglog(I3_CMD, char *argument);
+
 #endif
