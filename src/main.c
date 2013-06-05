@@ -294,7 +294,7 @@ int main(int argc, char *argv[]) {
      * (file) logging. */
     init_logging();
 
-    /* On non-release builds, disable SHM logging by default. */
+    /* On release builds, disable SHM logging by default. */
     shmlog_size = (is_debug_build() ? default_shmlog_size : 0);
 
     start_argv = argv;
