@@ -13,6 +13,7 @@
 #include <stdarg.h>
 
 #include "all.h"
+#include "shmlog.h"
 
 // Macros to make the YAJL API a bit easier to use.
 #define y(x, ...) yajl_gen_ ## x (cmd_output->json_gen, ##__VA_ARGS__)
@@ -2026,4 +2027,35 @@ void cmd_bar(I3_CMD, char *bar_type, char *bar_value, char *bar_id) {
         return;
 
     update_barconfig();
+}
+
+/*
+ * Implementation of 'shmlog <size>|toggle|on|off'
+ *
+ */
+void cmd_shmlog(I3_CMD, char *argument) {
+    if (!strcmp(argument,"toggle"))
+        /* Toggle shm log, if size is not 0. If it is 0, set it to default. */
+        shmlog_size = shmlog_size ? -shmlog_size : default_shmlog_size;
+    else if (!strcmp(argument, "on"))
+        shmlog_size = default_shmlog_size;
+    else if (!strcmp(argument, "off"))
+        shmlog_size = 0;
+    else {
+        /* If shm logging now, restart logging with the new size. */
+        if (shmlog_size > 0) {
+            shmlog_size = 0;
+            LOG("Restarting shm logging...\n");
+            init_logging();
+        }
+        shmlog_size = atoi(argument);
+        /* Make a weakly attempt at ensuring the argument is valid. */
+        if (shmlog_size <= 0)
+            shmlog_size = default_shmlog_size;
+    }
+    LOG("%s shm logging\n", shmlog_size > 0 ? "Enabling" : "Disabling");
+    init_logging();
+    update_shmlog_atom();
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
 }

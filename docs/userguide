@@ -1762,6 +1762,22 @@ stack-limit rows 5
 image:stacklimit.png[Container limited to two columns]
 ///////////////////////////////////////////////////////////////////////////////
 
+== Starting/stopping/changing the size of the shm log
+
+You may start or stop the shm log with +shmlog+, or change the size of the log.
+If you pass a size to the shmlog command, it will change the running log's
+size, or, if the log is not running, start the log with the provided size. You
+may also toggle the log. This is useful if you want to bind the command to a
+key.
+
+*Examples*:
+---------------
+shmlog 26214400
+shmlog toggle
+shmlog on
+shmlog off
+---------------
+
 === Reloading/Restarting/Exiting
 
 You can make i3 reload its configuration file with +reload+. You can also

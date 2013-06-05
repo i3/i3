@@ -39,6 +39,18 @@ extern int shmlog_size;
 void init_logging(void);
 
 /**
+ * Opens the logbuffer.
+ *
+ */
+void open_logbuffer(void);
+
+/**
+ * Closes the logbuffer.
+ *
+ */
+void close_logbuffer(void);
+
+/**
  * Set debug logging.
  *
  */

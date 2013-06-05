@@ -89,10 +89,21 @@ void init_logging(void) {
             }
         }
     }
+    /* Start SHM logging if shmlog_size is > 0. shmlog_size is SHMLOG_SIZE by
+     * default on development versions, and 0 on release versions. If it is
+     * not > 0, the user has turned it off, so let's close the logbuffer. */
+     if (shmlog_size > 0 && logbuffer == NULL)
+        open_logbuffer();
+     else if (shmlog_size <= 0 && logbuffer)
+        close_logbuffer();
+     atexit(purge_zerobyte_logfile);
+}
 
-    /* If this is a debug build (not a release version), we will enable SHM
-     * logging by default, unless the user turned it off explicitly. */
-    if (logbuffer == NULL && shmlog_size > 0) {
+/*
+ * Opens the logbuffer.
+ *
+ */
+void open_logbuffer(void) {
         /* Reserve 1% of the RAM for the logfile, but at max 25 MiB.
          * For 512 MiB of RAM this will lead to a 5 MiB log buffer.
          * At the moment (2011-12-10), no testcase leads to an i3 log
@@ -127,10 +138,8 @@ void init_logging(void) {
 
         logbuffer = mmap(NULL, logbuffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, logbuffer_shm, 0);
         if (logbuffer == MAP_FAILED) {
-            close(logbuffer_shm);
-            shm_unlink(shmlogname);
+            close_logbuffer();
             fprintf(stderr, "Could not mmap SHM segment for the i3 log: %s\n", strerror(errno));
-            logbuffer = NULL;
             return;
         }
 
@@ -148,8 +157,16 @@ void init_logging(void) {
         logwalk = logbuffer + sizeof(i3_shmlog_header);
         loglastwrap = logbuffer + logbuffer_size;
         store_log_markers();
-    }
-    atexit(purge_zerobyte_logfile);
+}
+
+/*
+ * Closes the logbuffer.
+ *
+ */
+void close_logbuffer(void) {
+    close(logbuffer_shm);
+    shm_unlink(shmlogname);
+    logbuffer = NULL;
 }
 
 /*

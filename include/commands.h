@@ -271,4 +271,10 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name);
  */
 void cmd_bar(I3_CMD, char *bar_type, char *bar_value, char *bar_id);
 
+/*
+ * Implementation of 'shmlog <size>|toggle|on|off'
+ *
+ */
+void cmd_shmlog(I3_CMD, char *argument);
+
 #endif
