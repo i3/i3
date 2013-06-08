@@ -146,8 +146,8 @@ struct deco_render_params {
     struct width_height con_window_rect;
     Rect con_deco_rect;
     uint32_t background;
-    bool con_is_leaf;
     layout_t parent_layout;
+    bool con_is_leaf;
 };
 
 /**
@@ -228,6 +228,14 @@ struct Binding {
         B_UPON_KEYRELEASE_IGNORE_MODS = 2,
     } release;
 
+    uint32_t number_keycodes;
+
+    /** Keycode to bind */
+    uint32_t keycode;
+
+    /** Bitmask consisting of BIND_MOD_1, BIND_MODE_SWITCH, … */
+    uint32_t mods;
+
     /** Symbol the user specified in configfile, if any. This needs to be
      * stored with the binding to be able to re-convert it into a keycode
      * if the keyboard mapping changes (using Xmodmap for example) */
@@ -240,13 +248,6 @@ struct Binding {
      * This is an array of number_keycodes size. */
     xcb_keycode_t *translated_to;
 
-    uint32_t number_keycodes;
-
-    /** Keycode to bind */
-    uint32_t keycode;
-
-    /** Bitmask consisting of BIND_MOD_1, BIND_MODE_SWITCH, … */
-    uint32_t mods;
 
     /** Command, like in command mode */
     char *command;
@@ -281,11 +282,6 @@ struct Autostart {
 struct xoutput {
     /** Output id, so that we can requery the output directly later */
     xcb_randr_output_t id;
-    /** Name of the output */
-    char *name;
-
-    /** Pointer to the Con which represents this output */
-    Con *con;
 
     /** Whether the output is currently active (has a CRTC attached with a
      * valid mode) */
@@ -296,6 +292,12 @@ struct xoutput {
     bool changed;
     bool to_be_disabled;
     bool primary;
+
+    /** Name of the output */
+    char *name;
+
+    /** Pointer to the Con which represents this output */
+    Con *con;
 
     /** x, y, width, height */
     Rect rect;
@@ -315,6 +317,11 @@ struct Window {
      * parent for toolwindows and similar floating windows) */
     xcb_window_t leader;
     xcb_window_t transient_for;
+
+    /** Pointers to the Assignments which were already ran for this Window
+     * (assignments run only once) */
+    uint32_t nr_assignments;
+    Assignment **ran_assignments;
 
     char *class_class;
     char *class_instance;
@@ -336,9 +343,6 @@ struct Window {
     /** Whether the application needs to receive WM_TAKE_FOCUS */
     bool needs_take_focus;
 
-    /** When this window was marked urgent. 0 means not urgent */
-    struct timeval urgent;
-
     /** Whether this window accepts focus. We store this inverted so that the
      * default will be 'accepts focus'. */
     bool doesnt_accept_focus;
@@ -346,13 +350,11 @@ struct Window {
     /** Whether the window says it is a dock window */
     enum { W_NODOCK = 0, W_DOCK_TOP = 1, W_DOCK_BOTTOM = 2 } dock;
 
+    /** When this window was marked urgent. 0 means not urgent */
+    struct timeval urgent;
+
     /** Pixels the window reserves. left/right/top/bottom */
     struct reservedpx reserved;
-
-    /** Pointers to the Assignments which were already ran for this Window
-     * (assignments run only once) */
-    uint32_t nr_assignments;
-    Assignment **ran_assignments;
 
     /** Depth of the window */
     uint16_t depth;
@@ -386,8 +388,8 @@ struct Match {
         M_DOCK_BOTTOM = 3
     } dock;
     xcb_window_t id;
-    Con *con_id;
     enum { M_ANY = 0, M_TILING, M_FLOATING } floating;
+    Con *con_id;
 
     /* Where the window looking for a match should be inserted:
      *
@@ -400,12 +402,12 @@ struct Match {
      */
     enum { M_HERE = 0, M_ASSIGN_WS, M_BELOW } insert_where;
 
+    TAILQ_ENTRY(Match) matches;
+
     /* Whether this match was generated when restarting i3 inplace.
      * Leads to not setting focus when managing a new window, because the old
      * focus stack should be restored. */
     bool restart_mode;
-
-    TAILQ_ENTRY(Match) matches;
 };
 
 /**
@@ -454,6 +456,24 @@ struct Assignment {
  */
 struct Con {
     bool mapped;
+
+    /* Should this container be marked urgent? This gets set when the window
+     * inside this container (if any) sets the urgency hint, for example. */
+    bool urgent;
+
+    /** This counter contains the number of UnmapNotify events for this
+     * container (or, more precisely, for its ->frame) which should be ignored.
+     * UnmapNotify events need to be ignored when they are caused by i3 itself,
+     * for example when reparenting or when unmapping the window on a workspace
+     * change. */
+    uint8_t ignore_unmap;
+
+    /* ids/pixmap/graphics context for the frame window */
+    bool pixmap_recreated;
+    xcb_window_t frame;
+    xcb_pixmap_t pixmap;
+    xcb_gcontext_t pm_gc;
+
     enum {
         CT_ROOT = 0,
         CT_OUTPUT = 1,
@@ -462,6 +482,11 @@ struct Con {
         CT_WORKSPACE = 4,
         CT_DOCKAREA = 5
     } type;
+
+    /** the workspace number, if this Con is of type CT_WORKSPACE and the
+     * workspace is not a named workspace (for named workspaces, num == -1) */
+    int num;
+
     struct Con *parent;
 
     struct Rect rect;
@@ -471,10 +496,6 @@ struct Con {
     struct Rect geometry;
 
     char *name;
-
-    /** the workspace number, if this Con is of type CT_WORKSPACE and the
-     * workspace is not a named workspace (for named workspaces, num == -1) */
-    int num;
 
     /* a sticky-group is an identifier which bundles several containers to a
      * group. The contents are shared between all of them, that is they are
@@ -505,18 +526,8 @@ struct Con {
 
     struct Window *window;
 
-    /* Should this container be marked urgent? This gets set when the window
-     * inside this container (if any) sets the urgency hint, for example. */
-    bool urgent;
-
     /* timer used for disabling urgency */
     struct ev_timer *urgency_timer;
-
-    /* ids/pixmap/graphics context for the frame window */
-    xcb_window_t frame;
-    xcb_pixmap_t pixmap;
-    xcb_gcontext_t pm_gc;
-    bool pixmap_recreated;
 
     /** Cache for the decoration rendering */
     struct deco_render_params *deco_render_params;
@@ -558,13 +569,6 @@ struct Con {
         FLOATING_AUTO_ON = 2,
         FLOATING_USER_ON = 3
     } floating;
-
-    /** This counter contains the number of UnmapNotify events for this
-     * container (or, more precisely, for its ->frame) which should be ignored.
-     * UnmapNotify events need to be ignored when they are caused by i3 itself,
-     * for example when reparenting or when unmapping the window on a workspace
-     * change. */
-    uint8_t ignore_unmap;
 
     TAILQ_ENTRY(Con) nodes;
     TAILQ_ENTRY(Con) focused;

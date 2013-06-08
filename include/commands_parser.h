@@ -25,13 +25,13 @@ struct CommandResult {
     /* The JSON generator to append a reply to. */
     yajl_gen json_gen;
 
-    /* Whether the command requires calling tree_render. */
-    bool needs_tree_render;
-
     /* The next state to transition to. Passed to the function so that we can
      * determine the next state as a result of a function call, like
      * cfg_criteria_pop_state() does. */
     int next_state;
+
+    /* Whether the command requires calling tree_render. */
+    bool needs_tree_render;
 };
 
 struct CommandResult *parse_command(const char *input);
