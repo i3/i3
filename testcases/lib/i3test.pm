@@ -315,6 +315,11 @@ Usually, though, calls are simpler:
 
   my $top_window = open_window;
 
+To identify the resulting window object in i3 commands, use the id property:
+
+  my $top_window = open_window;
+  cmd '[id="' . $top_window->id . '"] kill';
+
 =cut
 sub open_window {
     my %args = @_ == 1 ? %{$_[0]} : @_;
