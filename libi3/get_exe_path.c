@@ -25,7 +25,7 @@ const char *get_exe_path(const char *argv0) {
 #endif
     ssize_t linksize;
 
-    if ((linksize = readlink(exepath, destpath, sizeof(destpath))) != -1) {
+    if ((linksize = readlink(exepath, destpath, sizeof(destpath) - 1)) != -1) {
 		/* readlink() does not NULL-terminate strings, so we have to. */
 		destpath[linksize] = '\0';
 
