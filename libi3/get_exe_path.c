@@ -46,13 +46,11 @@ const char *get_exe_path(const char *argv0) {
 
 	/* Fall back to searching $PATH (or _CS_PATH in absence of $PATH). */
 	char *path = getenv("PATH");
-	size_t pathlen;
 	if (path == NULL) {
 		/* _CS_PATH is typically something like "/bin:/usr/bin" */
-		pathlen = confstr(_CS_PATH, tmp, sizeof(tmp));
+		confstr(_CS_PATH, tmp, sizeof(tmp));
 		sasprintf(&path, ":%s", tmp);
 	} else {
-		pathlen = strlen(path);
 		path = strdup(path);
 	}
 	const char *component;
