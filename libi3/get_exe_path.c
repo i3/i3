@@ -13,8 +13,8 @@
  *
  */
 const char *get_exe_path(const char *argv0) {
-    static char destpath[PATH_MAX];
-    char tmp[PATH_MAX];
+	static char destpath[PATH_MAX];
+	char tmp[PATH_MAX];
 
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 	/* Linux and Debian/kFreeBSD provide /proc/self/exe */
@@ -23,9 +23,9 @@ const char *get_exe_path(const char *argv0) {
 #elif defined(__FreeBSD__)
 	const char *exepath = "/proc/curproc/file";
 #endif
-    ssize_t linksize;
+	ssize_t linksize;
 
-    if ((linksize = readlink(exepath, destpath, sizeof(destpath) - 1)) != -1) {
+	if ((linksize = readlink(exepath, destpath, sizeof(destpath) - 1)) != -1) {
 		/* readlink() does not NULL-terminate strings, so we have to. */
 		destpath[linksize] = '\0';
 
@@ -39,7 +39,7 @@ const char *get_exe_path(const char *argv0) {
 
 	/* if argv[0] contains a /, prepend the working directory */
 	if (strchr(argv0, '/') != NULL &&
-	    getcwd(tmp, sizeof(tmp)) != NULL) {
+		getcwd(tmp, sizeof(tmp)) != NULL) {
 		snprintf(destpath, sizeof(destpath), "%s/%s", tmp, argv0);
 		return destpath;
 	}
