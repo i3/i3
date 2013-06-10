@@ -70,5 +70,5 @@ const char *get_exe_path(const char *argv0) {
 	free(path);
 
 	/* Last resort: maybe it’s in /usr/bin? */
-	return "/usr/bin/i3bar";
+	return "/usr/bin/i3-nagbar";
 }
