@@ -1369,6 +1369,8 @@ static void con_on_remove_child(Con *con) {
     }
 
     con_force_split_parents_redraw(con);
+    con->urgent = con_has_urgent_child(con);
+    con_update_parents_urgency(con);
 
     /* TODO: check if this container would swallow any other client and
      * don’t close it automatically. */
