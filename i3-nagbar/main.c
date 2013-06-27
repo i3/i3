@@ -322,7 +322,7 @@ int main(int argc, char *argv[]) {
         {"font", required_argument, 0, 'f'},
         {"button", required_argument, 0, 'b'},
         {"help", no_argument, 0, 'h'},
-        {"message", no_argument, 0, 'm'},
+        {"message", required_argument, 0, 'm'},
         {"type", required_argument, 0, 't'},
         {0, 0, 0, 0}
     };
