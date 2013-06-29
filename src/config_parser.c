@@ -1060,7 +1060,7 @@ void parse_file(const char *f) {
         char *argv[] = {
             NULL, /* will be replaced by the executable path */
             "-f",
-            config.font.pattern,
+            (config.font.pattern ? config.font.pattern : "fixed"),
             "-t",
             (context->has_errors ? "error" : "warning"),
             "-m",
