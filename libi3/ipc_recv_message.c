@@ -54,10 +54,10 @@ int ipc_recv_message(int sockfd, uint32_t *message_type,
     }
 
     walk += strlen(I3_IPC_MAGIC);
-    *reply_length = *((uint32_t*)walk);
+    memcpy(reply_length, walk, sizeof(uint32_t));
     walk += sizeof(uint32_t);
     if (message_type != NULL)
-        *message_type = *((uint32_t*)walk);
+        memcpy(message_type, walk, sizeof(uint32_t));
 
     *reply = smalloc(*reply_length);
 
