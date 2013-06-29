@@ -315,6 +315,8 @@ void floating_disable(Con *con, bool automatic) {
         return;
     }
 
+    const bool set_focus = (con == focused);
+
     Con *ws = con_get_workspace(con);
 
     /* 1: detach from parent container */
@@ -344,8 +346,9 @@ void floating_disable(Con *con, bool automatic) {
     con_attach(con, con->parent, false);
 
     con_fix_percent(con->parent);
-    // TODO: don’t influence focus handling when Con was not focused before.
-    con_focus(con);
+
+    if (set_focus)
+        con_focus(con);
 }
 
 /*
