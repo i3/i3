@@ -799,21 +799,17 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
         goto render_and_return;
 
     /* Check if we need to set proportional_* variables using the correct ratio */
+    double aspect_ratio = 0.0;
     if ((width / height) < min_aspect) {
-        if (con->proportional_width != width ||
-            con->proportional_height != (width / min_aspect)) {
-            con->proportional_width = width;
-            con->proportional_height = width / min_aspect;
-            changed = true;
-        }
+        aspect_ratio = min_aspect;
     } else if ((width / height) > max_aspect) {
-        if (con->proportional_width != width ||
-            con->proportional_height != (width / max_aspect)) {
-            con->proportional_width = width;
-            con->proportional_height = width / max_aspect;
-            changed = true;
-        }
+        aspect_ratio = max_aspect;
     } else goto render_and_return;
+
+    if (fabs(con->aspect_ratio - aspect_ratio) > DBL_EPSILON) {
+        con->aspect_ratio = aspect_ratio;
+        changed = true;
+    }
 
 render_and_return:
     if (changed)

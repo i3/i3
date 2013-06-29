@@ -507,10 +507,8 @@ struct Con {
 
     double percent;
 
-    /* proportional width/height, calculated from WM_NORMAL_HINTS, used to
-     * apply an aspect ratio to windows (think of MPlayer) */
-    int proportional_width;
-    int proportional_height;
+    /* aspect ratio from WM_NORMAL_HINTS (MPlayer uses this for example) */
+    double aspect_ratio;
     /* the wanted size of the window, used in combination with size
      * increments (see below). */
     int base_width;

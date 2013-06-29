@@ -51,6 +51,7 @@ Con *con_new_skeleton(Con *parent, i3Window *window) {
     Con *new = scalloc(sizeof(Con));
     new->on_remove_child = con_on_remove_child;
     TAILQ_INSERT_TAIL(&all_cons, new, all_cons);
+    new->aspect_ratio = 0.0;
     new->type = CT_CON;
     new->window = window;
     new->border_style = config.default_border;
