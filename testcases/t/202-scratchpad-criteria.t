@@ -17,6 +17,8 @@
 # Verifies that using criteria to address scratchpad windows works.
 use i3test;
 
+my $i3 = i3(get_socket_path());
+
 #####################################################################
 # Verify that using scratchpad show with criteria works as expected:
 # - When matching a scratchpad window which is visible,
@@ -50,6 +52,22 @@ cmd '[title="scratch-match"] scratchpad show';
 
 my $scratch_focus = get_focused($tmp);
 isnt($scratch_focus, $old_focus, 'matching criteria works');
+
+# Check that the window was centered and resized too.
+my $tree = $i3->get_tree->recv;
+my $ws = get_ws($tmp);
+my $scratchrect = $ws->{floating_nodes}->[0]->{rect};
+my $output = $tree->{nodes}->[1];
+my $outputrect = $output->{rect};
+
+is($scratchrect->{width}, $outputrect->{width} * 0.5, 'scratch width is 50%');
+is($scratchrect->{height}, $outputrect->{height} * 0.75, 'scratch height is 75%');
+is($scratchrect->{x},
+   ($outputrect->{width} / 2) - ($scratchrect->{width} / 2),
+   'scratch window centered horizontally');
+is($scratchrect->{y},
+   ($outputrect->{height} / 2 ) - ($scratchrect->{height} / 2),
+   'scratch window centered vertically');
 
 cmd '[title="scratch-match"] scratchpad show';
 

@@ -175,6 +175,10 @@ void scratchpad_show(Con *con) {
             LOG("Use 'move scratchpad' to move a window to the scratchpad.\n");
             return;
         }
+    } else {
+        /* We used a criterion, so we need to do what follows (moving,
+         * resizing) on the floating parent. */
+        con = con_inside_floating(con);
     }
 
     /* 1: Move the window from __i3_scratch to the current workspace. */
