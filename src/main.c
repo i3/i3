@@ -729,6 +729,7 @@ int main(int argc, char *argv[]) {
 
     /* Set up i3 specific atoms like I3_SOCKET_PATH and I3_CONFIG_PATH */
     x_set_i3_atoms();
+    ewmh_update_workarea();
 
     struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
     struct ev_io *xkb = scalloc(sizeof(struct ev_io));
