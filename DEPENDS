@@ -10,6 +10,7 @@
 │ pkg-config  │ 0.25   │ 0.26   │ http://pkgconfig.freedesktop.org/      │
 │ libxcb      │ 1.1.93 │ 1.7    │ http://xcb.freedesktop.org/dist/       │
 │ xcb-util    │ 0.3.3  │ 0.3.8  │ http://xcb.freedesktop.org/dist/       │
+│ util-cursor³│ 0.0.99 │ 0.0.99 │ http://xcb.freedesktop.org/dist/       │
 │ libev       │ 4.0    │ 4.11   │ http://libev.schmorp.de/               │
 │ yajl        │ 1.0.8  │ 2.0.1  │ http://lloyd.github.com/yajl/          │
 │ asciidoc    │ 8.3.0  │ 8.6.4  │ http://www.methods.co.nz/asciidoc/     │
@@ -26,6 +27,8 @@
  ¹ libsn = libstartup-notification
  ² Pod::Simple is a Perl module required for converting the testsuite
    documentation to HTML. See http://michael.stapelberg.de/cpan/#Pod::Simple
+ ³ xcb-util-cursor, to be precise. Might be considered part of xcb-util, or not
+   :-).
 
  i3bar, i3-msg, i3-input, i3-nagbar and i3-config-wizard do not introduce any
  new dependencies.

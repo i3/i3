@@ -111,8 +111,8 @@ X11_CFLAGS := $(call cflags_for_lib, x11)
 X11_LIBS   := $(call ldflags_for_lib, x11,X11)
 
 # Xcursor
-XCURSOR_CFLAGS := $(call cflags_for_lib, xcursor)
-XCURSOR_LIBS   := $(call ldflags_for_lib, xcursor,Xcursor)
+XCURSOR_CFLAGS := $(call cflags_for_lib, xcb-cursor)
+XCURSOR_LIBS   := $(call ldflags_for_lib, xcb-cursor,xcb-cursor)
 
 # yajl
 YAJL_CFLAGS := $(call cflags_for_lib, yajl)

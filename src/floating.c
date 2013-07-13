@@ -569,7 +569,7 @@ void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
     if (con != NULL)
         memcpy(&old_rect, &(con->rect), sizeof(Rect));
 
-    Cursor xcursor = (cursor && xcursor_supported) ?
+    xcb_cursor_t xcursor = (cursor && xcursor_supported) ?
         xcursor_get_cursor(cursor) : XCB_NONE;
 
     /* Grab the pointer */
