@@ -45,7 +45,7 @@ my $result = GetOptions(
     'dmenu=s' => \$dmenu_cmd,
     'entry-type=s' => \@entry_types,
     'version' => sub {
-        say "dmenu-desktop 1.4 © 2012-2013 Michael Stapelberg";
+        say "dmenu-desktop 1.5 © 2012-2013 Michael Stapelberg";
         exit 0;
     },
     'help' => sub {
@@ -175,6 +175,7 @@ for my $file (values %desktops) {
             $names{$key} = $value;
         } elsif ($key eq 'Exec' ||
                  $key eq 'TryExec' ||
+                 $key eq 'Path' ||
                  $key eq 'Type') {
             $apps{$base}->{$key} = $value;
         } elsif ($key eq 'NoDisplay' ||
@@ -403,6 +404,10 @@ $exec =~ s/%k/$location/g;
 # Literal % characters are represented as %%.
 $exec =~ s/%%/%/g;
 
+if (exists($app->{Path}) && $app->{Path} ne '') {
+    $exec = 'cd ' . $app->{Path} . ' && ' . $exec;
+}
+
 my $nosn = '';
 my $cmd;
 if (exists($app->{Terminal}) && $app->{Terminal}) {
@@ -507,7 +512,7 @@ command), and "libreoffice-writer" (type = filename).
 
 =head1 VERSION
 
-Version 1.4
+Version 1.5
 
 =head1 AUTHOR
 
