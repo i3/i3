@@ -116,6 +116,12 @@ void cmd_workspace_name(I3_CMD, char *name);
 void cmd_mark(I3_CMD, char *mark);
 
 /**
+ * Implementation of 'unmark [mark]'
+ *
+ */
+void cmd_unmark(I3_CMD, char *mark);
+
+/**
  * Implementation of 'mode <string>'.
  *
  */

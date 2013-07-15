@@ -1032,6 +1032,31 @@ void cmd_mark(I3_CMD, char *mark) {
 }
 
 /*
+ * Implementation of 'unmark [mark]'
+ *
+ */
+void cmd_unmark(I3_CMD, char *mark) {
+   if (mark == NULL) {
+       Con *con;
+       TAILQ_FOREACH(con, &all_cons, all_cons) {
+           FREE(con->mark);
+       }
+       DLOG("removed all window marks");
+   } else {
+       Con *con;
+       TAILQ_FOREACH(con, &all_cons, all_cons) {
+           if (con->mark && strcmp(con->mark, mark) == 0)
+               FREE(con->mark);
+       }
+       DLOG("removed window mark %s\n", mark);
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'mode <string>'.
  *
  */

@@ -1679,9 +1679,10 @@ bindsym $mod+a [class="urxvt" title="VIM"] focus
 This feature is like the jump feature: It allows you to directly jump to a
 specific window (this means switching to the appropriate workspace and setting
 focus to the windows). However, you can directly mark a specific window with
-an arbitrary label and use it afterwards.  You do not need to ensure that your
-windows have unique classes or titles, and you do not need to change your
-configuration file.
+an arbitrary label and use it afterwards. You can unmark the label in the same
+way, using the unmark command. If you don't specify a label, unmark removes all
+marks. You do not need to ensure that your windows have unique classes or
+titles, and you do not need to change your configuration file.
 
 As the command needs to include the label with which you want to mark the
 window, you cannot simply bind it to a key.  +i3-input+ is a tool created
@@ -1692,12 +1693,14 @@ can also prefix this command and display a custom prompt for the input dialog.
 ------------------------------
 mark identifier
 [con_mark="identifier"] focus
+unmark identifier
 ------------------------------
 
 *Example (in a terminal)*:
 ------------------------------
 $ i3-msg mark irssi
 $ i3-msg '[con_mark="irssi"] focus'
+$ i3-msg unmark irssi
 ------------------------------
 
 ///////////////////////////////////////////////////////////////////

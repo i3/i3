@@ -32,6 +32,7 @@ state INITIAL:
   'split' -> SPLIT
   'floating' -> FLOATING
   'mark' -> MARK
+  'unmark' -> UNMARK
   'resize' -> RESIZE
   'rename' -> RENAME
   'nop' -> NOP
@@ -176,6 +177,13 @@ state FLOATING:
 state MARK:
   mark = string
       -> call cmd_mark($mark)
+
+# unmark [mark]
+state UNMARK:
+  end
+      -> call cmd_unmark($mark)
+  mark = string
+      -> call cmd_unmark($mark)
 
 # resize
 state RESIZE:

@@ -458,9 +458,8 @@ JSON dump:
 === MARKS reply
 
 The reply consists of a single array of strings for each container that has a
-mark. The order of that array is undefined. If more than one container has the
-same mark, it will be represented multiple times in the reply (the array
-contents are not unique).
+mark. A mark can only be set on one container, so the array is unique.
+The order of that array is undefined.
 
 If no window has a mark the response will be the empty array [].
 
