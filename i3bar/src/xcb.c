@@ -1608,7 +1608,7 @@ void reconfig_windows(bool redraw_bars) {
  */
 void draw_bars(bool unhide) {
     DLOG("Drawing Bars...\n");
-    int i = 1;
+    int i = 0;
 
     refresh_statusline();
 
@@ -1766,7 +1766,7 @@ void draw_bars(bool unhide) {
             unhide = true;
         }
 
-        i = 1;
+        i = 0;
     }
 
     /* Assure the bar is hidden/unhidden according to the specified hidden_state and mode */
