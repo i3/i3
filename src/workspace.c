@@ -197,17 +197,16 @@ Con *create_workspace_on_output(Output *output, Con *content) {
         while (exists) {
             c++;
 
-            FREE(ws->name);
-            sasprintf(&(ws->name), "%d", c);
+            ws->num = c;
 
             current = NULL;
             TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
-                GREP_FIRST(current, output_get_content(out), !strcasecmp(child->name, ws->name));
+                GREP_FIRST(current, output_get_content(out), child->num == ws->num);
             exists = (current != NULL);
 
-            DLOG("result for ws %s / %d: exists = %d\n", ws->name, c, exists);
+            DLOG("result for ws %d: exists = %d\n", c, exists);
         }
-        ws->num = c;
+        sasprintf(&(ws->name), "%d", c);
     }
     con_attach(ws, content, false);
 
