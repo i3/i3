@@ -164,15 +164,18 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
     /* Also closes fd */
     fclose(script);
 
+    char *link_path;
+    sasprintf(&link_path, "%s.nagbar_cmd", script_path);
+    symlink(get_exe_path(argv0), link_path);
+
     char *terminal_cmd;
-    sasprintf(&terminal_cmd, "i3-sensible-terminal -e %s", argv0);
+    sasprintf(&terminal_cmd, "i3-sensible-terminal -e %s", link_path);
     printf("argv0 = %s\n", argv0);
     printf("terminal_cmd = %s\n", terminal_cmd);
 
-    setenv("_I3_NAGBAR_CMD", script_path, 1);
     start_application(terminal_cmd);
-    unsetenv("_I3_NAGBAR_CMD");
 
+    free(link_path);
     free(terminal_cmd);
     free(script_path);
 
@@ -275,23 +278,35 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
 }
 
 int main(int argc, char *argv[]) {
-    /* The following lines are a horrible kludge. Because terminal emulators
-     * have different ways of interpreting the -e command line argument (some
-     * need -e "less /etc/fstab", others need -e less /etc/fstab), we need to
-     * write commands to a script and then just run that script. However, since
-     * on some machines, $XDG_RUNTIME_DIR and $TMPDIR are mounted with noexec,
-     * we cannot directly execute the script either.
+    /* The following lines are a terribly horrible kludge. Because terminal
+     * emulators have different ways of interpreting the -e command line
+     * argument (some need -e "less /etc/fstab", others need -e less
+     * /etc/fstab), we need to write commands to a script and then just run
+     * that script. However, since on some machines, $XDG_RUNTIME_DIR and
+     * $TMPDIR are mounted with noexec, we cannot directly execute the script
+     * either.
      *
-     * Therefore, we run i3-nagbar instead and pass the path to the script in
-     * the environment variable $_I3_NAGBAR_CMD. i3-nagbar then execs /bin/sh
-     * with that path in order to run that script.
+     * Initially, we tried to pass the command via the environment variable
+     * _I3_NAGBAR_CMD. But turns out that some terminal emulators such as
+     * xfce4-terminal run all windows from a single master process and only
+     * pass on the command (not the environment) to that master process.
+     *
+     * Therefore, we symlink i3-nagbar (which MUST reside on an executable
+     * filesystem) with a special name and run that symlink. When i3-nagbar
+     * recognizes it’s started as a binary ending in .nagbar_cmd, it strips off
+     * the .nagbar_cmd suffix and runs /bin/sh on argv[0]. That way, we can run
+     * a shell script on a noexec filesystem.
      *
      * From a security point of view, i3-nagbar is just an alias to /bin/sh in
      * certain circumstances. This should not open any new security issues, I
      * hope. */
     char *cmd = NULL;
-    if ((cmd = getenv("_I3_NAGBAR_CMD")) != NULL) {
-        unsetenv("_I3_NAGBAR_CMD");
+    const size_t argv0_len = strlen(argv[0]);
+    if (argv0_len > strlen(".nagbar_cmd") &&
+        strcmp(argv[0] + argv0_len - strlen(".nagbar_cmd"), ".nagbar_cmd") == 0) {
+        unlink(argv[0]);
+        cmd = strdup(argv[0]);
+        *(cmd + argv0_len - strlen(".nagbar_cmd")) = '\0';
         execl("/bin/sh", "/bin/sh", cmd, NULL);
         err(EXIT_FAILURE, "execv(/bin/sh, /bin/sh, %s)", cmd);
     }

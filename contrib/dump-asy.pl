@@ -32,13 +32,15 @@ sub dump_node {
     my $w = (defined($n->{window}) ? $n->{window} : "N");
     my $na = $n->{name};
     $na =~ s/#/\\#/g;
+    $na =~ s/\$/\\\$/g;
+    $na =~ s/&/\\&/g;
     $na =~ s/_/\\_/g;
     $na =~ s/~/\\textasciitilde{}/g;
     my $type = 'leaf';
     if (!defined($n->{window})) {
         $type = $n->{orientation} . '-split';
     }
-    my $name = qq|\\"$na\\" ($type)|;
+    my $name = qq|``$na'' ($type)|;
 
     print $tmp "TreeNode n" . $n->{id} . " = makeNode(";
 

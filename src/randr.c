@@ -93,6 +93,31 @@ Output *get_output_containing(int x, int y) {
 }
 
 /*
+ * In contained_by_output, we check if any active output contains part of the container.
+ * We do this by checking if the output rect is intersected by the Rect.
+ * This is the 2-dimensional counterpart of get_output_containing.
+ * Since we don't actually need the outputs intersected by the given Rect (There could
+ * be many), we just return true or false for convenience.
+ *
+ */
+bool contained_by_output(Rect rect){
+    Output *output;
+    int lx = rect.x, uy = rect.y;
+    int rx = rect.x + rect.width, by = rect.y + rect.height;
+    TAILQ_FOREACH(output, &outputs, outputs) {
+        if (!output->active)
+            continue;
+        DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
+                        rect.x, rect.y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
+        if (rx >= (int)output->rect.x && lx <= (int)(output->rect.x + output->rect.width) &&
+            by >= (int)output->rect.y && uy <= (int)(output->rect.y + output->rect.height))
+            return true;
+    }
+    return false;
+
+}
+
+/*
  * Like get_output_next with close_far == CLOSEST_OUTPUT, but wraps.
  *
  * For example if get_output_next(D_DOWN, x, FARTHEST_OUTPUT) = NULL, then

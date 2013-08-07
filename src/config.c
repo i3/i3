@@ -211,6 +211,49 @@ void switch_mode(const char *new_mode) {
 }
 
 /*
+ * Sends the current bar configuration as an event to all barconfig_update listeners.
+ * This update mechnism currently only includes the hidden_state and the mode in the config.
+ *
+ */
+void update_barconfig() {
+    Barconfig *current;
+    TAILQ_FOREACH(current, &barconfigs, configs) {
+        /* Build json message */
+        char *hidden_state;
+        switch (current->hidden_state) {
+            case S_SHOW:
+                hidden_state ="show";
+                break;
+            case S_HIDE:
+            default:
+                hidden_state = "hide";
+                break;
+        }
+
+        char *mode;
+        switch (current->mode) {
+            case M_HIDE:
+                mode ="hide";
+                break;
+            case M_INVISIBLE:
+                mode ="invisible";
+                break;
+            case M_DOCK:
+            default:
+                mode = "dock";
+                break;
+        }
+
+        /* Send an event to all barconfig listeners*/
+        char *event_msg;
+        sasprintf(&event_msg, "{ \"id\":\"%s\", \"hidden_state\":\"%s\", \"mode\":\"%s\" }", current->id, hidden_state, mode);
+
+        ipc_send_event("barconfig_update", I3_IPC_EVENT_BARCONFIG_UPDATE, event_msg);
+        FREE(event_msg);
+    }
+}
+
+/*
  * Get the path of the first configuration file found. If override_configpath
  * is specified, that path is returned and saved for further calls. Otherwise,
  * checks the home directory first, then the system directory first, always

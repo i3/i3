@@ -73,7 +73,15 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
 
     if (!strcmp(cur_key, "mode")) {
         DLOG("mode = %.*s, len = %d\n", len, val, len);
-        config.hide_on_modifier = (len == 4 && !strncmp((const char*)val, "hide", strlen("hide")));
+        config.hide_on_modifier = (len == 4 && !strncmp((const char*)val, "dock", strlen("dock")) ? M_DOCK
+            : (len == 4 && !strncmp((const char*)val, "hide", strlen("hide")) ? M_HIDE
+                : M_INVISIBLE));
+        return 1;
+    }
+
+    if (!strcmp(cur_key, "hidden_state")) {
+        DLOG("hidden_state = %.*s, len = %d\n", len, val, len);
+        config.hidden_state = (len == 4 && !strncmp((const char*)val, "hide", strlen("hide")) ? S_HIDE : S_SHOW);
         return 1;
     }
 

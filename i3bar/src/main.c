@@ -53,12 +53,12 @@ char *expand_path(char *path) {
 }
 
 void print_usage(char *elf_name) {
-    printf("Usage: %s [-b bar_id] [-s sock_path] [-h] [-v]\n", elf_name);
+    printf("Usage: %s -b bar_id [-s sock_path] [-h] [-v]\n", elf_name);
     printf("\n");
-    printf("--bar_id <bar_id>\tBar ID for which to get the configuration\n");
-    printf("-s <sock_path>\tConnect to i3 via <sock_path>\n");
-    printf("-h\t\tDisplay this help-message and exit\n");
-    printf("-v\t\tDisplay version number and exit\n");
+    printf("-b, --bar_id  <bar_id>\tBar ID for which to get the configuration\n");
+    printf("-s, --socket  <sock_path>\tConnect to i3 via <sock_path>\n");
+    printf("-h, --help    Display this help-message and exit\n");
+    printf("-v, --version Display version number and exit\n");
     printf("\n");
     printf(" PLEASE NOTE that i3bar will be automatically started by i3\n"
            " as soon as there is a 'bar' configuration block in your\n"
@@ -97,13 +97,13 @@ int main(int argc, char **argv) {
 
     static struct option long_opt[] = {
         { "socket",               required_argument, 0, 's' },
-        { "bar_id",               required_argument, 0, 0 },
+        { "bar_id",               required_argument, 0, 'b' },
         { "help",                 no_argument,       0, 'h' },
         { "version",              no_argument,       0, 'v' },
         { NULL,                   0,                 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "s:hv", long_opt, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "b:s:hv", long_opt, &option_index)) != -1) {
         switch (opt) {
             case 's':
                 socket_path = expand_path(optarg);
@@ -112,11 +112,8 @@ int main(int argc, char **argv) {
                 printf("i3bar version " I3_VERSION " © 2010-2011 Axel Wagner and contributors\n");
                 exit(EXIT_SUCCESS);
                 break;
-            case 0:
-                if (!strcmp(long_opt[option_index].name, "bar_id")) {
-                    FREE(config.bar_id);
-                    config.bar_id = sstrdup(optarg);
-                }
+            case 'b':
+                config.bar_id = sstrdup(optarg);
                 break;
             default:
                 print_usage(argv[0]);

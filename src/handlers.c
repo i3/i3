@@ -158,7 +158,7 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     }
 
     /* see if the user entered the window on a certain window decoration */
-    int layout = (enter_child ? con->parent->layout : con->layout);
+    layout_t layout = (enter_child ? con->parent->layout : con->layout);
     if (layout == L_DEFAULT) {
         Con *child;
         TAILQ_FOREACH(child, &(con->nodes_head), nodes)
@@ -691,6 +691,45 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char*)ev);
         xcb_flush(conn);
         free(reply);
+    } else if (event->type == A__NET_REQUEST_FRAME_EXTENTS) {
+        // A client can request an estimate for the frame size which the window
+        // manager will put around it before actually mapping its window. Java
+        // does this (as of openjdk-7).
+        //
+        // Note that the calculation below is not entirely accurate — once you
+        // set a different border type, it’s off. We _could_ request all the
+        // window properties (which have to be set up at this point according
+        // to EWMH), but that seems rather elaborate. The standard explicitly
+        // says the application must cope with an estimate that is not entirely
+        // accurate.
+        DLOG("_NET_REQUEST_FRAME_EXTENTS for window 0x%08x\n", event->window);
+        xcb_get_geometry_reply_t *geometry;
+        xcb_get_geometry_cookie_t cookie = xcb_get_geometry(conn, event->window);
+
+        if (!(geometry = xcb_get_geometry_reply(conn, cookie, NULL))) {
+            ELOG("Could not get geometry of X11 window 0x%08x while handling "
+                 "the _NET_REQUEST_FRAME_EXTENTS ClientMessage\n",
+                 event->window);
+            return;
+        }
+
+        DLOG("Current geometry = x=%d, y=%d, width=%d, height=%d\n",
+             geometry->x, geometry->y, geometry->width, geometry->height);
+
+        Rect r = {
+            0, // left
+            geometry->width + 4, // right
+            0, // top
+            geometry->height + config.font.height + 5, // bottom
+        };
+        xcb_change_property(
+                conn,
+                XCB_PROP_MODE_REPLACE,
+                event->window,
+                A__NET_FRAME_EXTENTS,
+                XCB_ATOM_CARDINAL, 32, 4,
+                &r);
+        xcb_flush(conn);
     } else {
         DLOG("unhandled clientmessage\n");
         return;
@@ -799,21 +838,17 @@ static bool handle_normal_hints(void *data, xcb_connection_t *conn, uint8_t stat
         goto render_and_return;
 
     /* Check if we need to set proportional_* variables using the correct ratio */
+    double aspect_ratio = 0.0;
     if ((width / height) < min_aspect) {
-        if (con->proportional_width != width ||
-            con->proportional_height != (width / min_aspect)) {
-            con->proportional_width = width;
-            con->proportional_height = width / min_aspect;
-            changed = true;
-        }
+        aspect_ratio = min_aspect;
     } else if ((width / height) > max_aspect) {
-        if (con->proportional_width != width ||
-            con->proportional_height != (width / max_aspect)) {
-            con->proportional_width = width;
-            con->proportional_height = width / max_aspect;
-            changed = true;
-        }
+        aspect_ratio = max_aspect;
     } else goto render_and_return;
+
+    if (fabs(con->aspect_ratio - aspect_ratio) > DBL_EPSILON) {
+        con->aspect_ratio = aspect_ratio;
+        changed = true;
+    }
 
 render_and_return:
     if (changed)

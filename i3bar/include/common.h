@@ -54,6 +54,10 @@ struct status_block {
     uint32_t x_offset;
     uint32_t x_append;
 
+    /* Optional */
+    char *name;
+    char *instance;
+
     TAILQ_ENTRY(status_block) blocks;
 };
 

@@ -1,6 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=i3
+NoDisplay=true
 Comment=improved dynamic tiling window manager
 Exec=i3
 X-GNOME-WMName=i3

@@ -364,4 +364,12 @@ bool is_debug_build() __attribute__((const));
  */
 char *get_process_filename(const char *prefix);
 
+/**
+ * This function returns the absolute path to the executable it is running in.
+ *
+ * The implementation follows http://stackoverflow.com/a/933996/712014
+ *
+ */
+const char *get_exe_path(const char *argv0);
+
 #endif

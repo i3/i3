@@ -81,18 +81,29 @@ static void store_log_markers(void) {
 void init_logging(void) {
     if (!errorfilename) {
         if (!(errorfilename = get_process_filename("errorlog")))
-            ELOG("Could not initialize errorlog\n");
+            fprintf(stderr, "Could not initialize errorlog\n");
         else {
             errorfile = fopen(errorfilename, "w");
             if (fcntl(fileno(errorfile), F_SETFD, FD_CLOEXEC)) {
-                ELOG("Could not set close-on-exec flag\n");
+                fprintf(stderr, "Could not set close-on-exec flag\n");
             }
         }
     }
+    /* Start SHM logging if shmlog_size is > 0. shmlog_size is SHMLOG_SIZE by
+     * default on development versions, and 0 on release versions. If it is
+     * not > 0, the user has turned it off, so let's close the logbuffer. */
+     if (shmlog_size > 0 && logbuffer == NULL)
+        open_logbuffer();
+     else if (shmlog_size <= 0 && logbuffer)
+        close_logbuffer();
+     atexit(purge_zerobyte_logfile);
+}
 
-    /* If this is a debug build (not a release version), we will enable SHM
-     * logging by default, unless the user turned it off explicitly. */
-    if (logbuffer == NULL && shmlog_size > 0) {
+/*
+ * Opens the logbuffer.
+ *
+ */
+void open_logbuffer(void) {
         /* Reserve 1% of the RAM for the logfile, but at max 25 MiB.
          * For 512 MiB of RAM this will lead to a 5 MiB log buffer.
          * At the moment (2011-12-10), no testcase leads to an i3 log
@@ -107,26 +118,29 @@ void init_logging(void) {
                                         sysconf(_SC_PAGESIZE);
 #endif
         logbuffer_size = min(physical_mem_bytes * 0.01, shmlog_size);
+#if defined(__FreeBSD__)
+        sasprintf(&shmlogname, "/tmp/i3-log-%d", getpid());
+#else
         sasprintf(&shmlogname, "/i3-log-%d", getpid());
+#endif
         logbuffer_shm = shm_open(shmlogname, O_RDWR | O_CREAT, S_IREAD | S_IWRITE);
         if (logbuffer_shm == -1) {
-            ELOG("Could not shm_open SHM segment for the i3 log: %s\n", strerror(errno));
+            fprintf(stderr, "Could not shm_open SHM segment for the i3 log: %s\n", strerror(errno));
             return;
         }
 
-        if (ftruncate(logbuffer_shm, logbuffer_size) == -1) {
+        int ret;
+        if ((ret = posix_fallocate(logbuffer_shm, 0, logbuffer_size)) != 0) {
             close(logbuffer_shm);
-            shm_unlink("/i3-log-");
-            ELOG("Could not ftruncate SHM segment for the i3 log: %s\n", strerror(errno));
+            shm_unlink(shmlogname);
+            fprintf(stderr, "Could not ftruncate SHM segment for the i3 log: %s\n", strerror(ret));
             return;
         }
 
         logbuffer = mmap(NULL, logbuffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, logbuffer_shm, 0);
         if (logbuffer == MAP_FAILED) {
-            close(logbuffer_shm);
-            shm_unlink("/i3-log-");
-            ELOG("Could not mmap SHM segment for the i3 log: %s\n", strerror(errno));
-            logbuffer = NULL;
+            close_logbuffer();
+            fprintf(stderr, "Could not mmap SHM segment for the i3 log: %s\n", strerror(errno));
             return;
         }
 
@@ -138,14 +152,23 @@ void init_logging(void) {
         pthread_condattr_t cond_attr;
         pthread_condattr_init(&cond_attr);
         if (pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED) != 0)
-            ELOG("pthread_condattr_setpshared() failed, i3-dump-log -f will not work!\n");
+            fprintf(stderr, "pthread_condattr_setpshared() failed, i3-dump-log -f will not work!\n");
         pthread_cond_init(&(header->condvar), &cond_attr);
 
         logwalk = logbuffer + sizeof(i3_shmlog_header);
         loglastwrap = logbuffer + logbuffer_size;
         store_log_markers();
-    }
-    atexit(purge_zerobyte_logfile);
+}
+
+/*
+ * Closes the logbuffer.
+ *
+ */
+void close_logbuffer(void) {
+    close(logbuffer_shm);
+    shm_unlink(shmlogname);
+    logbuffer = NULL;
+    shmlogname = "";
 }
 
 /*
@@ -156,6 +179,14 @@ void init_logging(void) {
  */
 void set_verbosity(bool _verbose) {
     verbose = _verbose;
+}
+
+/*
+ * Get debug logging.
+ *
+ */
+bool get_debug_logging(void) {
+    return debug_logging;
 }
 
 /*

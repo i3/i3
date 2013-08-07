@@ -21,6 +21,7 @@
 #include <yajl/yajl_common.h>
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_version.h>
+#include <yajl/yajl_gen.h>
 
 #include "common.h"
 
@@ -34,6 +35,9 @@ ev_child *child_sig;
 /* JSON parser for stdin */
 yajl_callbacks callbacks;
 yajl_handle parser;
+
+/* JSON generator for stdout */
+yajl_gen gen;
 
 typedef struct parser_ctx {
     /* True if one of the parsed blocks was urgent */
@@ -52,6 +56,8 @@ parser_ctx parser_context;
 /* The buffer statusline points to */
 struct statusline_head statusline_head = TAILQ_HEAD_INITIALIZER(statusline_head);
 char *statusline_buffer = NULL;
+
+int child_stdin;
 
 /*
  * Stop and free() the stdin- and sigchild-watchers
@@ -85,6 +91,8 @@ static int stdin_start_array(void *context) {
         first = TAILQ_FIRST(&statusline_head);
         I3STRING_FREE(first->full_text);
         FREE(first->color);
+        FREE(first->name);
+        FREE(first->instance);
         TAILQ_REMOVE(&statusline_head, first, blocks);
         free(first);
     }
@@ -151,6 +159,18 @@ static int stdin_string(void *context, const unsigned char *val, unsigned int le
         i3String *text = i3string_from_utf8_with_length((const char *)val, len);
         ctx->block.min_width = (uint32_t)predict_text_width(text);
         i3string_free(text);
+    }
+    if (strcasecmp(ctx->last_map_key, "name") == 0) {
+        char *copy = (char*)malloc(len+1);
+        strncpy(copy, (const char *)val, len);
+        copy[len] = 0;
+        ctx->block.name = copy;
+    }
+    if (strcasecmp(ctx->last_map_key, "instance") == 0) {
+        char *copy = (char*)malloc(len+1);
+        strncpy(copy, (const char *)val, len);
+        copy[len] = 0;
+        ctx->block.instance = copy;
     }
     return 1;
 }
@@ -336,6 +356,21 @@ void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
     cleanup();
 }
 
+void child_write_output(void) {
+    if (child.click_events) {
+        const unsigned char *output;
+#if YAJL_MAJOR < 2
+        unsigned int size;
+#else
+        size_t size;
+#endif
+        yajl_gen_get_buf(gen, &output, &size);
+        write(child_stdin, output, size);
+        write(child_stdin, "\n", 1);
+        yajl_gen_clear(gen);
+    }
+}
+
 /*
  * Start a child-process with the specified command and reroute stdin.
  * We actually start a $SHELL to execute the command so we don't have to care
@@ -357,14 +392,22 @@ void start_child(char *command) {
     yajl_parser_config parse_conf = { 0, 0 };
 
     parser = yajl_alloc(&callbacks, &parse_conf, NULL, (void*)&parser_context);
+
+    gen = yajl_gen_alloc(NULL, NULL);
 #else
     parser = yajl_alloc(&callbacks, NULL, &parser_context);
+
+    gen = yajl_gen_alloc(NULL);
 #endif
 
     if (command != NULL) {
-        int fd[2];
-        if (pipe(fd) == -1)
-            err(EXIT_FAILURE, "pipe(fd)");
+        int pipe_in[2]; /* pipe we read from */
+        int pipe_out[2]; /* pipe we write to */
+
+        if (pipe(pipe_in) == -1)
+            err(EXIT_FAILURE, "pipe(pipe_in)");
+        if (pipe(pipe_out) == -1)
+            err(EXIT_FAILURE, "pipe(pipe_out)");
 
         child.pid = fork();
         switch (child.pid) {
@@ -372,10 +415,13 @@ void start_child(char *command) {
                 ELOG("Couldn't fork(): %s\n", strerror(errno));
                 exit(EXIT_FAILURE);
             case 0:
-                /* Child-process. Reroute stdout and start shell */
-                close(fd[0]);
+                /* Child-process. Reroute streams and start shell */
 
-                dup2(fd[1], STDOUT_FILENO);
+                close(pipe_in[0]);
+                close(pipe_out[1]);
+
+                dup2(pipe_in[1], STDOUT_FILENO);
+                dup2(pipe_out[0], STDIN_FILENO);
 
                 static const char *shell = NULL;
 
@@ -385,10 +431,13 @@ void start_child(char *command) {
                 execl(shell, shell, "-c", command, (char*) NULL);
                 return;
             default:
-                /* Parent-process. Rerout stdin */
-                close(fd[1]);
+                /* Parent-process. Reroute streams */
 
-                dup2(fd[0], STDIN_FILENO);
+                close(pipe_in[1]);
+                close(pipe_out[0]);
+
+                dup2(pipe_in[0], STDIN_FILENO);
+                child_stdin = pipe_out[1];
 
                 break;
         }
@@ -407,6 +456,52 @@ void start_child(char *command) {
     ev_child_start(main_loop, child_sig);
 
     atexit(kill_child_at_exit);
+}
+
+void child_click_events_initialize(void) {
+    if (!child.click_events_init) {
+        yajl_gen_array_open(gen);
+        child_write_output();
+        child.click_events_init = true;
+    }
+}
+
+void child_click_events_key(const char *key) {
+    yajl_gen_string(gen, (const unsigned char *)key, strlen(key));
+}
+
+/*
+ * Generates a click event, if enabled.
+ *
+ */
+void send_block_clicked(int button, const char *name, const char *instance, int x, int y) {
+    if (child.click_events) {
+        child_click_events_initialize();
+
+        yajl_gen_map_open(gen);
+
+        if (name) {
+            child_click_events_key("name");
+            yajl_gen_string(gen, (const unsigned char *)name, strlen(name));
+        }
+
+        if (instance) {
+            child_click_events_key("instance");
+            yajl_gen_string(gen, (const unsigned char *)instance, strlen(instance));
+        }
+
+        child_click_events_key("button");
+        yajl_gen_integer(gen, button);
+
+        child_click_events_key("x");
+        yajl_gen_integer(gen, x);
+
+        child_click_events_key("y");
+        yajl_gen_integer(gen, y);
+
+        yajl_gen_map_close(gen);
+        child_write_output();
+    }
 }
 
 /*

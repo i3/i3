@@ -51,12 +51,12 @@ static int json_start_map(void *ctx) {
             if (last_key && strcasecmp(last_key, "floating_nodes") == 0) {
                 DLOG("New floating_node\n");
                 Con *ws = con_get_workspace(json_node);
-                json_node = con_new(NULL, NULL);
+                json_node = con_new_skeleton(NULL, NULL);
                 json_node->parent = ws;
                 DLOG("Parent is workspace = %p\n", ws);
             } else {
                 Con *parent = json_node;
-                json_node = con_new(NULL, NULL);
+                json_node = con_new_skeleton(NULL, NULL);
                 json_node->parent = parent;
             }
         }
@@ -69,6 +69,8 @@ static int json_end_map(void *ctx) {
     if (!parsing_swallows && !parsing_rect && !parsing_window_rect && !parsing_geometry) {
         LOG("attaching\n");
         con_attach(json_node, json_node->parent, true);
+        LOG("Creating window\n");
+        x_con_init(json_node, json_node->depth);
         json_node = json_node->parent;
     }
     if (parsing_rect)
@@ -276,6 +278,9 @@ static int json_int(void *ctx, long val) {
 
     if (strcasecmp(last_key, "current_border_width") == 0)
         json_node->current_border_width = val;
+
+    if (strcasecmp(last_key, "depth") == 0)
+        json_node->depth = val;
 
     if (!parsing_swallows && strcasecmp(last_key, "id") == 0)
         json_node->old_id = val;

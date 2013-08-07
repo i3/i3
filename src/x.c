@@ -36,6 +36,7 @@ typedef struct con_state {
     bool mapped;
     bool unmap_now;
     bool child_mapped;
+    bool above_all;
 
     /** The con for which this state is. */
     Con *con;
@@ -350,7 +351,7 @@ void x_draw_decoration(Con *con) {
     p->con_deco_rect = con->deco_rect;
     p->background = config.client.background;
     p->con_is_leaf = con_is_leaf(con);
-    p->parent_orientation = con_orientation(parent);
+    p->parent_layout = con->parent->layout;
 
     if (con->deco_render_params != NULL &&
         (con->window == NULL || !con->window->name_x_changed) &&
@@ -445,10 +446,10 @@ void x_draw_decoration(Con *con) {
             TAILQ_PREV(con, nodes_head, nodes) == NULL &&
             con->parent->type != CT_FLOATING_CON) {
             xcb_change_gc(conn, con->pm_gc, XCB_GC_FOREGROUND, (uint32_t[]){ p->color->indicator });
-            if (p->parent_orientation == HORIZ)
+            if (p->parent_layout == L_SPLITH)
                 xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
                         { r->width + br.width + br.x, br.y, r->width, r->height + br.height } });
-            else
+            else if (p->parent_layout == L_SPLITV)
                 xcb_poly_fill_rectangle(conn, con->pixmap, con->pm_gc, 1, (xcb_rectangle_t[]){
                         { br.x, r->height + br.height + br.y, r->width - (2 * br.x), r->height } });
         }
@@ -899,6 +900,10 @@ void x_push_changes(Con *con) {
 
             xcb_configure_window(conn, prev->id, mask, values);
         }
+        if (state->above_all) {
+            DLOG("above all: 0x%08x\n", state->id);
+            xcb_configure_window(conn, state->id, XCB_CONFIG_WINDOW_STACK_MODE, (uint32_t[]){ XCB_STACK_MODE_ABOVE });
+        }
         state->initial = false;
     }
 
@@ -1024,11 +1029,17 @@ void x_push_changes(Con *con) {
  * Raises the specified container in the internal stack of X windows. The
  * next call to x_push_changes() will make the change visible in X11.
  *
+ * If above_all is true, the X11 window will be raised to the top
+ * of the stack. This should only be used for precisely one fullscreen
+ * window per output.
+ *
  */
-void x_raise_con(Con *con) {
+void x_raise_con(Con *con, bool above_all) {
     con_state *state;
     state = state_for_frame(con->frame);
     //DLOG("raising in new stack: %p / %s / %s / xid %08x\n", con, con->name, con->window ? con->window->name_json : "", state->id);
+
+    state->above_all = above_all;
 
     CIRCLEQ_REMOVE(&state_head, state, state);
     CIRCLEQ_INSERT_HEAD(&state_head, state, state);
@@ -1053,6 +1064,16 @@ void x_set_name(Con *con, const char *name) {
 }
 
 /*
+ * Set up the I3_SHMLOG_PATH atom.
+ *
+ */
+void update_shmlog_atom() {
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
+            A_I3_SHMLOG_PATH, A_UTF8_STRING, 8,
+            strlen(shmlogname), shmlogname);
+}
+
+/*
  * Sets up i3 specific atoms (I3_SOCKET_PATH and I3_CONFIG_PATH)
  *
  */
@@ -1064,8 +1085,7 @@ void x_set_i3_atoms(void) {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_PID, XCB_ATOM_CARDINAL, 32, 1, &pid);
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_CONFIG_PATH, A_UTF8_STRING, 8,
                         strlen(current_configpath), current_configpath);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root, A_I3_SHMLOG_PATH, A_UTF8_STRING, 8,
-                        strlen(shmlogname), shmlogname);
+    update_shmlog_atom();
 }
 
 /*

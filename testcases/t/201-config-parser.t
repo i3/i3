@@ -448,6 +448,21 @@ is(parser_calls($config),
    $expected,
    'errors dont harm subsequent statements');
 
+################################################################################
+# Regression: semicolons end comments, but shouldn’t
+################################################################################
+
+$config = <<'EOT';
+# "foo" client.focused          #4c7899 #285577 #ffffff #2e9ef4
+EOT
+
+$expected = <<'EOT';
+
+EOT
+
+is(parser_calls($config),
+   $expected,
+   'semicolon does not end a comment line');
 
 ################################################################################
 # Error message with 2+2 lines of context
@@ -612,7 +627,7 @@ EOT
 
 $expected = <<'EOT';
 cfg_bar_output(LVDS-1)
-ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'i3bar_command', 'status_command', 'socket_path', 'mode', 'modifier', 'position', 'output', 'tray_output', 'font', 'workspace_buttons', 'verbose', 'colors', '}'
+ERROR: CONFIG: Expected one of these tokens: <end>, '#', 'set', 'i3bar_command', 'status_command', 'socket_path', 'mode', 'hidden_state', 'id', 'modifier', 'position', 'output', 'tray_output', 'font', 'workspace_buttons', 'verbose', 'colors', '}'
 ERROR: CONFIG: (in file <stdin>)
 ERROR: CONFIG: Line   1: bar {
 ERROR: CONFIG: Line   2:     output LVDS-1

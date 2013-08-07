@@ -95,7 +95,7 @@ struct Config {
     char *ipc_socket_path;
     const char *restart_state_path;
 
-    int default_layout;
+    layout_t default_layout;
     int container_stack_limit;
     int container_stack_limit_value;
     int default_border_width;
@@ -199,6 +199,9 @@ struct Config {
         /* just ignore the popup, that is, don’t map it */
         PDF_IGNORE = 2,
     } popup_during_fullscreen;
+
+    /* The number of currently parsed barconfigs */
+    int number_barconfigs;
 };
 
 /**
@@ -226,8 +229,11 @@ struct Barconfig {
      * root window! */
     char *socket_path;
 
-    /** Bar display mode (hide unless modifier is pressed or show in dock mode) */
-    enum { M_DOCK = 0, M_HIDE = 1 } mode;
+    /** Bar display mode (hide unless modifier is pressed or show in dock mode or always hide in invisible mode) */
+    enum { M_DOCK = 0, M_HIDE = 1, M_INVISIBLE = 2 } mode;
+
+    /* The current hidden_state of the bar, which indicates whether it is hidden or shown */
+    enum { S_HIDE = 0, S_SHOW = 1 } hidden_state;
 
     /** Bar modifier (to show bar when in hide mode). */
     enum {
@@ -322,6 +328,12 @@ void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch);
  *
  */
 void switch_mode(const char *new_mode);
+
+/**
+ * Sends the current bar configuration as an event to all barconfig_update listeners.
+ * This update mechnism currently only includes the hidden_state and the mode in the config.
+ *
+ */void update_barconfig();
 
 /**
  * Returns a pointer to the Binding with the specified modifiers and keycode

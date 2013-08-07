@@ -19,6 +19,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include "all.h"
+#include "shmlog.h"
 
 #include "sd-daemon.h"
 
@@ -66,6 +67,9 @@ xcb_key_symbols_t *keysyms;
 
 /* Those are our connections to X11 for use with libXcursor and XKB */
 Display *xlibdpy, *xkbdpy;
+
+/* Default shmlog size if not set by user. */
+const int default_shmlog_size = 25 * 1024 * 1024;
 
 /* The list of key bindings */
 struct bindings_head *bindings;
@@ -290,8 +294,8 @@ int main(int argc, char *argv[]) {
      * (file) logging. */
     init_logging();
 
-    /* On non-release builds, disable SHM logging by default. */
-    shmlog_size = (is_debug_build() ? 25 * 1024 * 1024 : 0);
+    /* On release builds, disable SHM logging by default. */
+    shmlog_size = (is_debug_build() ? default_shmlog_size : 0);
 
     start_argv = argv;
 
@@ -725,6 +729,7 @@ int main(int argc, char *argv[]) {
 
     /* Set up i3 specific atoms like I3_SOCKET_PATH and I3_CONFIG_PATH */
     x_set_i3_atoms();
+    ewmh_update_workarea();
 
     struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
     struct ev_io *xkb = scalloc(sizeof(struct ev_io));

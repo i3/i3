@@ -2,11 +2,16 @@
 tags
 include/GENERATED_*.h
 include/all.h.pch
+*~
 *.swp
 *.gcda
 *.gcno
 test.commands_parser
 test.config_parser
+testcases/MYMETA.json
+testcases/MYMETA.yml
+testcases/blib/
+testcases/pm_to_blib
 *.output
 *.tab.*
 *.yy.c

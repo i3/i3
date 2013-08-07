@@ -44,18 +44,22 @@ static void con_force_split_parents_redraw(Con *con) {
 
 /*
  * Create a new container (and attach it to the given parent, if not NULL).
- * This function initializes the data structures and creates the appropriate
- * X11 IDs using x_con_init().
+ * This function only initializes the data structures.
  *
  */
-Con *con_new(Con *parent, i3Window *window) {
+Con *con_new_skeleton(Con *parent, i3Window *window) {
     Con *new = scalloc(sizeof(Con));
     new->on_remove_child = con_on_remove_child;
     TAILQ_INSERT_TAIL(&all_cons, new, all_cons);
+    new->aspect_ratio = 0.0;
     new->type = CT_CON;
     new->window = window;
     new->border_style = config.default_border;
     new->current_border_width = -1;
+    if (window)
+        new->depth = window->depth;
+    else
+        new->depth = XCB_COPY_FROM_PARENT;
     static int cnt = 0;
     DLOG("opening window %d\n", cnt);
 
@@ -66,10 +70,6 @@ Con *con_new(Con *parent, i3Window *window) {
     cnt++;
     if ((cnt % (sizeof(colors) / sizeof(char*))) == 0)
         cnt = 0;
-    if (window)
-        x_con_init(new, window->depth);
-    else
-        x_con_init(new, XCB_COPY_FROM_PARENT);
 
     TAILQ_INIT(&(new->floating_head));
     TAILQ_INIT(&(new->nodes_head));
@@ -79,6 +79,15 @@ Con *con_new(Con *parent, i3Window *window) {
     if (parent != NULL)
         con_attach(new, parent, false);
 
+    return new;
+}
+
+/* A wrapper for con_new_skeleton, to retain the old con_new behaviour
+ *
+ */
+Con *con_new(Con *parent, i3Window *window) {
+    Con *new = con_new_skeleton(parent, window);
+    x_con_init(new, new->depth);
     return new;
 }
 
@@ -1201,7 +1210,7 @@ void con_set_border_style(Con *con, int border_style, int border_width) {
  * new split container before).
  *
  */
-void con_set_layout(Con *con, int layout) {
+void con_set_layout(Con *con, layout_t layout) {
     DLOG("con_set_layout(%p, %d), con->type = %d\n",
          con, layout, con->type);
 
@@ -1361,6 +1370,8 @@ static void con_on_remove_child(Con *con) {
     }
 
     con_force_split_parents_redraw(con);
+    con->urgent = con_has_urgent_child(con);
+    con_update_parents_urgency(con);
 
     /* TODO: check if this container would swallow any other client and
      * don’t close it automatically. */

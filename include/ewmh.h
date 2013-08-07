@@ -46,4 +46,21 @@ void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows);
  */
 void ewmh_setup_hints(void);
 
+/**
+ * i3 currently does not support _NET_WORKAREA, because it does not correspond
+ * to i3’s concept of workspaces. See also:
+ * http://bugs.i3wm.org/539
+ * http://bugs.i3wm.org/301
+ * http://bugs.i3wm.org/1038
+ *
+ * We need to actively delete this property because some display managers (e.g.
+ * LightDM) set it.
+ *
+ * EWMH: Contains a geometry for each desktop. These geometries specify an area
+ * that is completely contained within the viewport. Work area SHOULD be used by
+ * desktop applications to place desktop icons appropriately.
+ *
+ */
+void ewmh_update_workarea(void);
+
 #endif

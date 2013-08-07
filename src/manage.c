@@ -4,7 +4,7 @@
  * vim:ts=4:sw=4:expandtab
  *
  * i3 - an improved dynamic tiling window manager
- * © 2009-2012 Michael Stapelberg and contributors (see also: LICENSE)
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
  *
  * manage.c: Initially managing new windows (or existing ones on restart).
  *
@@ -122,34 +122,30 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
 
     geomc = xcb_get_geometry(conn, d);
-#define FREE_GEOMETRY() do { \
-    if ((geom = xcb_get_geometry_reply(conn, geomc, 0)) != NULL) \
-        free(geom); \
-} while (0)
 
     /* Check if the window is mapped (it could be not mapped when intializing and
        calling manage_window() for every window) */
     if ((attr = xcb_get_window_attributes_reply(conn, cookie, 0)) == NULL) {
         DLOG("Could not get attributes\n");
-        FREE_GEOMETRY();
+        xcb_discard_reply(conn, geomc.sequence);
         return;
     }
 
     if (needs_to_be_mapped && attr->map_state != XCB_MAP_STATE_VIEWABLE) {
-        FREE_GEOMETRY();
+        xcb_discard_reply(conn, geomc.sequence);
         goto out;
     }
 
     /* Don’t manage clients with the override_redirect flag */
     if (attr->override_redirect) {
-        FREE_GEOMETRY();
+        xcb_discard_reply(conn, geomc.sequence);
         goto out;
     }
 
     /* Check if the window is already managed */
     if (con_by_window_id(window) != NULL) {
         DLOG("already managed (by con %p)\n", con_by_window_id(window));
-        FREE_GEOMETRY();
+        xcb_discard_reply(conn, geomc.sequence);
         goto out;
     }
 

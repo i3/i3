@@ -1,7 +1,7 @@
 i3 User’s Guide
 ===============
 Michael Stapelberg <michael@i3wm.org>
-February 2013
+March 2013
 
 This document contains all the information you need to configure and use the i3
 window manager. If it does not, please check http://faq.i3wm.org/ first, then
@@ -26,8 +26,8 @@ are your homerow.
 == Using i3
 
 Throughout this guide, the keyword +$mod+ will be used to refer to the
-configured modifier. This is the Alt key (Mod1) by default, with windows (Mod4)
-being a popular alternative.
+configured modifier. This is the Alt key (Mod1) by default, with the Windows
+key (Mod4) being a popular alternative.
 
 === Opening terminals and moving around
 
@@ -147,7 +147,7 @@ columns/rows with your keyboard.
 
 === Restarting i3 inplace
 
-To restart i3 inplace (and thus get into a clean state if there is a bug, or
+To restart i3 in place (and thus get into a clean state if there is a bug, or
 to upgrade to a newer version of i3) you can use +$mod+Shift+r+.
 
 === Exiting i3
@@ -156,11 +156,12 @@ To cleanly exit i3 without killing your X server, you can use +$mod+Shift+e+.
 
 === Floating
 
-Floating mode is the opposite of tiling mode. The position and size of a window
-are not managed by i3, but by you. Using this mode violates the tiling
-paradigm but can be useful for some corner cases like "Save as" dialog
-windows, or toolbar windows (GIMP or similar). Those windows usually set the
-appropriate hint and are opened in floating mode by default.
+Floating mode is the opposite of tiling mode. The position and size of
+a window are not managed automatically by i3, but manually by
+you. Using this mode violates the tiling paradigm but can be useful
+for some corner cases like "Save as" dialog windows, or toolbar
+windows (GIMP or similar). Those windows usually set the appropriate
+hint and are opened in floating mode by default.
 
 You can toggle floating mode for a window by pressing +$mod+Shift+Space+. By
 dragging the window’s titlebar with your mouse you can move the window
@@ -259,7 +260,7 @@ other one being the terminal window you moved down.
 [[configuring]]
 == Configuring i3
 
-This is where the real fun begins ;-). Most things are very dependant on your
+This is where the real fun begins ;-). Most things are very dependent on your
 ideal working environment so we can’t make reasonable defaults for them.
 
 While not using a programming language for the configuration, i3 stays
@@ -761,7 +762,7 @@ from single windows outside of a split container.
 
 === Interprocess communication
 
-i3 uses unix sockets to provide an IPC interface. This allows third-party
+i3 uses Unix sockets to provide an IPC interface. This allows third-party
 programs to get information from i3, such as the current workspaces
 (to display a workspace bar), and to control i3.
 
@@ -995,20 +996,39 @@ bar {
 
 === Display mode
 
-You can have i3bar either be visible permanently at one edge of the screen
-(+dock+ mode) or make it show up when you press your modifier key (+hide+
+You can either have i3bar be visible permanently at one edge of the screen
+(+dock+ mode) or make it show up when you press your modifier key (+hide+ mode).
+It is also possible to force i3bar to always stay hidden (+invisible+
 mode). The modifier key can be configured using the +modifier+ option.
+
+The mode option can be changed during runtime through the +bar mode+ command.
+On reload the mode will be reverted to its configured value.
 
 The hide mode maximizes screen space that can be used for actual windows. Also,
 i3bar sends the +SIGSTOP+ and +SIGCONT+ signals to the statusline process to
 save battery power.
 
-The default is dock mode; in hide mode, the default modifier is Mod4 (usually
-the windows key).
+Invisible mode allows to permanently maximize screen space, as the bar is never
+shown. Thus, you can configure i3bar to not disturb you by popping up because
+of an urgency hint or because the modifier key is pressed.
+
+In order to control whether i3bar is hidden or shown in hide mode, there exists
+the hidden_state option, which has no effect in dock mode or invisible mode. It
+indicates the current hidden_state of the bar: (1) The bar acts like in normal
+hide mode, it is hidden and is only unhidden in case of urgency hints or by
+pressing the modifier key (+hide+ state), or (2) it is drawn on top of the
+currently visible workspace (+show+ state).
+
+Like the mode, the hidden_state can also be controlled through i3, this can be
+done by using the +bar hidden_state+ command.
+
+The default mode is dock mode; in hide mode, the default modifier is Mod4 (usually
+the windows key). The default value for the hidden_state is hide.
 
 *Syntax*:
 ----------------
-mode <dock|hide>
+mode <dock|hide|invisible>
+hidden_state <hide|show>
 modifier <Modifier>
 ----------------
 
@@ -1016,11 +1036,30 @@ modifier <Modifier>
 ----------------
 bar {
     mode hide
+    hidden_state hide
     modifier Mod1
 }
 ----------------
 
 Available modifiers are Mod1-Mod5, Shift, Control (see +xmodmap(1)+).
+
+=== Bar ID
+
+Specifies the bar ID for the configured bar instance. If this option is missing,
+the ID is set to 'bar-x', where x corresponds to the position of the embedding
+bar block in the config file ('bar-0', 'bar-1', ...).
+
+*Syntax*:
+---------------------
+id <bar_id>
+---------------------
+
+*Example*:
+---------------------
+bar {
+    id bar-1
+}
+---------------------
 
 [[i3bar_position]]
 === Position
@@ -1223,7 +1262,7 @@ bindsym $mod+x move container to workspace 3; workspace 3
 
 [[command_criteria]]
 
-Furthermore, you can change the scope of a command, that is, which containers
+Furthermore, you can change the scope of a command - that is, which containers
 should be affected by that command, by using various criteria. These are
 prefixed in square brackets to every command. If you want to kill all windows
 which have the class Firefox, use:
@@ -1319,9 +1358,9 @@ bindsym $mod+h split horizontal
 
 === Manipulating layout
 
-Use +layout toggle split+, +layout stacking+ or +layout tabbed+ to change the
-current container layout to splith/splitv, stacking or tabbed layout,
-respectively.
+Use +layout toggle split+, +layout stacking+, +layout tabbed+, +layout splitv+
+or +layout splith+ to change the current container layout to splith/splitv,
+stacking, tabbed layout, splitv or splith, respectively.
 
 To make the current window (!) fullscreen, use +fullscreen+, to make
 it floating (or tiling again) use +floating enable+ respectively +floating disable+
@@ -1329,7 +1368,7 @@ it floating (or tiling again) use +floating enable+ respectively +floating disab
 
 *Syntax*:
 --------------
-layout <tabbed|stacking>
+layout <default|tabbed|stacking|splitv|splith>
 layout toggle [split|all]
 --------------
 
@@ -1640,9 +1679,10 @@ bindsym $mod+a [class="urxvt" title="VIM"] focus
 This feature is like the jump feature: It allows you to directly jump to a
 specific window (this means switching to the appropriate workspace and setting
 focus to the windows). However, you can directly mark a specific window with
-an arbitrary label and use it afterwards.  You do not need to ensure that your
-windows have unique classes or titles, and you do not need to change your
-configuration file.
+an arbitrary label and use it afterwards. You can unmark the label in the same
+way, using the unmark command. If you don't specify a label, unmark removes all
+marks. You do not need to ensure that your windows have unique classes or
+titles, and you do not need to change your configuration file.
 
 As the command needs to include the label with which you want to mark the
 window, you cannot simply bind it to a key.  +i3-input+ is a tool created
@@ -1653,12 +1693,14 @@ can also prefix this command and display a custom prompt for the input dialog.
 ------------------------------
 mark identifier
 [con_mark="identifier"] focus
+unmark identifier
 ------------------------------
 
 *Example (in a terminal)*:
 ------------------------------
 $ i3-msg mark irssi
 $ i3-msg '[con_mark="irssi"] focus'
+$ i3-msg unmark irssi
 ------------------------------
 
 ///////////////////////////////////////////////////////////////////
@@ -1723,6 +1765,51 @@ stack-limit rows 5
 image:stacklimit.png[Container limited to two columns]
 ///////////////////////////////////////////////////////////////////////////////
 
+[[shmlog]]
+
+=== Enabling shared memory logging
+
+As described in http://i3wm.org/docs/debugging.html, i3 can log to a shared
+memory buffer, which you can dump using +i3-dump-log+. The +shmlog+ command
+allows you to enable or disable the shared memory logging at runtime.
+
+Note that when using +shmlog <size_in_bytes>+, the current log will be
+discarded and a new one will be started.
+
+*Syntax*:
+------------------------------
+shmlog <size_in_bytes>
+shmlog <on|off|toggle>
+------------------------------
+
+*Examples*:
+---------------
+# Enable/disable logging
+bindsym $mod+x shmlog toggle
+
+# or, from a terminal:
+# increase the shared memory log buffer to 50 MiB
+i3-msg shmlog $((50*1024*1024))
+---------------
+
+=== Enabling debug logging
+
+The +debuglog+ command allows you to enable or disable debug logging at
+runtime. Debug logging is much more verbose than non-debug logging. This
+command does not activate shared memory logging (shmlog), and as such is most
+likely useful in combination with the above-described <<shmlog>> command.
+
+*Syntax*:
+------------------------
+debuglog <on|off|toggle>
+------------------------
+
+*Examples*:
+------------
+# Enable/disable logging
+bindsym $mod+x debuglog toggle
+------------
+
 === Reloading/Restarting/Exiting
 
 You can make i3 reload its configuration file with +reload+. You can also
@@ -1772,6 +1859,38 @@ bindsym $mod+minus scratchpad show
 
 # Show the sup-mail scratchpad window, if any.
 bindsym mod4+s [title="^Sup ::"] scratchpad show
+------------------------------------------------
+
+=== i3bar control
+
+There are two options in the configuration of each i3bar instance that can be
+changed during runtime by invoking a command through i3. The commands +bar
+hidden_state+ and +bar mode+ allow setting the current hidden_state
+respectively mode option of each bar. It is also possible to toggle between
+hide state and show state as well as between dock mode and hide mode. Each
+i3bar instance can be controlled individually by specifying a bar_id, if none
+is given, the command is executed for all bar instances.
+
+*Syntax*:
+---------------
+bar hidden_state hide|show|toggle [<bar_id>]
+
+bar mode dock|hide|invisible|toggle [<bar_id>]
+---------------
+
+*Examples*:
+------------------------------------------------
+# Toggle between hide state and show state
+bindsym $mod+m bar hidden_state toggle
+
+# Toggle between dock mode and hide mode
+bindsym $mod+n bar mode toggle
+
+# Set the bar instance with id 'bar-1' to switch to hide mode
+bindsym $mod+b bar mode hide bar-1
+
+# Set the bar instance with id 'bar-1' to always stay hidden
+bindsym $mod+Shift+b bar mode invisible bar-1
 ------------------------------------------------
 
 [[multi_monitor]]

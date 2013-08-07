@@ -9,7 +9,30 @@ i3-msg - send messages to i3 window manager
 
 == SYNOPSIS
 
-i3-msg [-t type] [message]
+i3-msg  [-q] [-v] [-h] [-s socket] [-t type] [message]
+
+== OPTIONS
+
+*-q, --quiet*::
+Only send ipc message and suppress the output of the response.
+
+*-v, --version*::
+Display version number and exit.
+
+*-h, --help*::
+Display a short help-message and exit.
+
+*-s, --socket* 'sock_path'::
+i3-msg will use the environment variable I3SOCK or the socket path
+given here. If both fail, it will try to get the socket information
+from the root window and then try /tmp/i3-ipc.sock before exiting
+with an error.
+
+*-t* 'type'::
+Send ipc message, see below.
+
+*message*::
+Send ipc message, see below.
 
 == IPC MESSAGE TYPES
 

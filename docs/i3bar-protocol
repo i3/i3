@@ -51,7 +51,7 @@ consists of a single JSON hash:
 
 *All features example*:
 ------------------------------
-{ "version": 1, "stop_signal": 10, "cont_signal": 12 }
+{ "version": 1, "stop_signal": 10, "cont_signal": 12, "click_events": true }
 ------------------------------
 
 (Note that before i3 v4.3 the precise format had to be +{"version":1}+,
@@ -110,6 +110,9 @@ cont_signal::
 	Specify to i3bar the signal (as an integer)to send to continue your
 	processing.
 	The default value (if none is specified) is SIGCONT.
+click_events::
+	If specified and true i3bar will write a infinite array (same as above)
+	to your stdin.
 
 === Blocks in detail
 
@@ -208,5 +211,30 @@ An example of a block which uses all possible entries follows:
  "instance": "eth0",
  "separator": true,
  "separator_block_width": 9
+}
+------------------------------------------
+
+=== Click events
+
+If enabled i3bar will send you notifications if the user clicks on a block and
+looks like this:
+
+name::
+	Name of the block, if set
+instance::
+	Instance of the block, if set
+x, y::
+	X11 root window coordinates where the click occured
+button:
+	X11 button ID (for example 1 to 3 for left/middle/right mouse button)
+
+*Example*:
+------------------------------------------
+{
+ "name": "ethernet",
+ "instance": "eth0",
+ "button": 1,
+ "x": 1320,
+ "y": 1400
 }
 ------------------------------------------

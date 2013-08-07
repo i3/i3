@@ -13,7 +13,7 @@
  * We use a hand-written parser instead of lex/yacc because our commands are
  * easy for humans, not for computers. Thus, it’s quite hard to specify a
  * context-free grammar for the commands. A PEG grammar would be easier, but
- * there’s downsides to every PEG parser generator I have come accross so far.
+ * there’s downsides to every PEG parser generator I have come across so far.
  *
  * This parser is basically a state machine which looks for literals or strings
  * and can push either on a stack. After identifying a literal or string, it

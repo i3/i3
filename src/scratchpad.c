@@ -39,6 +39,12 @@ void scratchpad_move(Con *con) {
         return;
     }
 
+    /* If the current con is in fullscreen mode, we need to disable that,
+     *  as a scratchpad window should never be in fullscreen mode */
+    if (focused && focused->type != CT_WORKSPACE && focused->fullscreen_mode != CF_NONE) {
+        con_toggle_fullscreen(focused, CF_OUTPUT);
+    }
+
     /* 1: Ensure the window or any parent is floating. From now on, we deal
      * with the CT_FLOATING_CON. We use automatic == false because the user
      * made the choice that this window should be a scratchpad (and floating).
@@ -78,14 +84,25 @@ void scratchpad_show(Con *con) {
     Con *__i3_scratch = workspace_get("__i3_scratch", NULL);
     Con *floating;
 
+    /* If this was 'scratchpad show' without criteria, we check if the
+     * currently focused window is a scratchpad window and should be hidden
+     * again. */
+    if (!con &&
+        (floating = con_inside_floating(focused)) &&
+        floating->scratchpad_state != SCRATCHPAD_NONE) {
+        DLOG("Focused window is a scratchpad window, hiding it.\n");
+        scratchpad_move(focused);
+        return;
+    }
+
     /* If the current con or any of its parents are in fullscreen mode, we
      * first need to disable it before showing the scratchpad con. */
     Con *fs = focused;
     while (fs && fs->fullscreen_mode == CF_NONE)
         fs = fs->parent;
 
-    if (fs->type != CT_WORKSPACE) {
-        con_toggle_fullscreen(focused, CF_OUTPUT);
+    if (fs && fs->type != CT_WORKSPACE) {
+        con_toggle_fullscreen(fs, CF_OUTPUT);
     }
 
     /* If this was 'scratchpad show' without criteria, we check if there is a
@@ -93,7 +110,7 @@ void scratchpad_show(Con *con) {
     Con *walk_con;
     Con *focused_ws = con_get_workspace(focused);
     TAILQ_FOREACH(walk_con, &(focused_ws->floating_head), floating_windows) {
-        if ((floating = con_inside_floating(walk_con)) &&
+        if (!con && (floating = con_inside_floating(walk_con)) &&
             floating->scratchpad_state != SCRATCHPAD_NONE &&
             floating != con_inside_floating(focused)) {
                 DLOG("Found an unfocused scratchpad window on this workspace\n");
@@ -112,7 +129,7 @@ void scratchpad_show(Con *con) {
     focused_ws = con_get_workspace(focused);
     TAILQ_FOREACH(walk_con, &all_cons, all_cons) {
         Con *walk_ws = con_get_workspace(walk_con);
-        if (walk_ws &&
+        if (!con && walk_ws &&
             !con_is_internal(walk_ws) && focused_ws != walk_ws &&
             (floating = con_inside_floating(walk_con)) &&
             floating->scratchpad_state != SCRATCHPAD_NONE) {
@@ -123,14 +140,10 @@ void scratchpad_show(Con *con) {
         }
     }
 
-    /* If this was 'scratchpad show' without criteria, we check if the
-     * currently focused window is a scratchpad window and should be hidden
-     * again. */
-    if (!con &&
-        (floating = con_inside_floating(focused)) &&
-        floating->scratchpad_state != SCRATCHPAD_NONE) {
-        DLOG("Focused window is a scratchpad window, hiding it.\n");
-        scratchpad_move(focused);
+    /* If this was 'scratchpad show' with criteria, we check if the window
+     * is actually in the scratchpad */
+    if (con && con->parent->scratchpad_state == SCRATCHPAD_NONE) {
+        DLOG("Window is not in the scratchpad, doing nothing.\n");
         return;
     }
 
@@ -162,6 +175,10 @@ void scratchpad_show(Con *con) {
             LOG("Use 'move scratchpad' to move a window to the scratchpad.\n");
             return;
         }
+    } else {
+        /* We used a criterion, so we need to do what follows (moving,
+         * resizing) on the floating parent. */
+        con = con_inside_floating(con);
     }
 
     /* 1: Move the window from __i3_scratch to the current workspace. */

@@ -13,6 +13,7 @@
 #include <stdarg.h>
 
 #include "all.h"
+#include "shmlog.h"
 
 // Macros to make the YAJL API a bit easier to use.
 #define y(x, ...) yajl_gen_ ## x (cmd_output->json_gen, ##__VA_ARGS__)
@@ -1031,6 +1032,31 @@ void cmd_mark(I3_CMD, char *mark) {
 }
 
 /*
+ * Implementation of 'unmark [mark]'
+ *
+ */
+void cmd_unmark(I3_CMD, char *mark) {
+   if (mark == NULL) {
+       Con *con;
+       TAILQ_FOREACH(con, &all_cons, all_cons) {
+           FREE(con->mark);
+       }
+       DLOG("removed all window marks");
+   } else {
+       Con *con;
+       TAILQ_FOREACH(con, &all_cons, all_cons) {
+           if (con->mark && strcmp(con->mark, mark) == 0)
+               FREE(con->mark);
+       }
+       DLOG("removed window mark %s\n", mark);
+    }
+
+    cmd_output->needs_tree_render = true;
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
  * Implementation of 'mode <string>'.
  *
  */
@@ -1547,7 +1573,7 @@ void cmd_layout(I3_CMD, char *layout_str) {
     if (strcmp(layout_str, "stacking") == 0)
         layout_str = "stacked";
     owindow *current;
-    int layout;
+    layout_t layout;
     /* default is a special case which will be handled in con_set_layout(). */
     if (strcmp(layout_str, "default") == 0)
         layout = L_DEFAULT;
@@ -1632,6 +1658,8 @@ void cmd_reload(I3_CMD) {
     x_set_i3_atoms();
     /* Send an IPC event just in case the ws names have changed */
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"reload\"}");
+    /* Send an update event for the barconfig just in case it has changed */
+    update_barconfig();
 
     // XXX: default reply for now, make this a better reply
     ysuccess(true);
@@ -1914,4 +1942,165 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     ysuccess(true);
 
     ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, "{\"change\":\"rename\"}");
+}
+
+/*
+ * Implementation of 'bar mode dock|hide|invisible|toggle [<bar_id>]'
+ *
+ */
+bool cmd_bar_mode(char *bar_mode, char *bar_id) {
+    int mode;
+    bool toggle = false;
+    if (strcmp(bar_mode, "dock") == 0)
+        mode = M_DOCK;
+    else if (strcmp(bar_mode, "hide") == 0)
+        mode = M_HIDE;
+    else if (strcmp(bar_mode, "invisible") == 0)
+        mode = M_INVISIBLE;
+    else if (strcmp(bar_mode, "toggle") == 0)
+        toggle = true;
+    else {
+        ELOG("Unknown bar mode \"%s\", this is a mismatch between code and parser spec.\n", bar_mode);
+        return false;
+    }
+
+    bool changed_sth = false;
+    Barconfig *current = NULL;
+    TAILQ_FOREACH(current, &barconfigs, configs) {
+        if (bar_id && strcmp(current->id, bar_id) != 0)
+            continue;
+
+        if (toggle)
+            mode = (current->mode + 1) % 2;
+
+        DLOG("Changing bar mode of bar_id '%s' to '%s (%d)'\n", current->id, bar_mode, mode);
+        current->mode = mode;
+        changed_sth = true;
+
+        if (bar_id)
+             break;
+    }
+
+    if (bar_id && !changed_sth) {
+        DLOG("Changing bar mode of bar_id %s failed, bar_id not found.\n", bar_id);
+        return false;
+    }
+
+    return true;
+}
+
+/*
+ * Implementation of 'bar hidden_state hide|show|toggle [<bar_id>]'
+ *
+ */
+bool cmd_bar_hidden_state(char *bar_hidden_state, char *bar_id) {
+    int hidden_state;
+    bool toggle = false;
+    if (strcmp(bar_hidden_state, "hide") == 0)
+        hidden_state = S_HIDE;
+    else if (strcmp(bar_hidden_state, "show") == 0)
+        hidden_state = S_SHOW;
+    else if (strcmp(bar_hidden_state, "toggle") == 0)
+        toggle = true;
+    else {
+        ELOG("Unknown bar state \"%s\", this is a mismatch between code and parser spec.\n", bar_hidden_state);
+        return false;
+    }
+
+    bool changed_sth = false;
+    Barconfig *current = NULL;
+    TAILQ_FOREACH(current, &barconfigs, configs) {
+        if (bar_id && strcmp(current->id, bar_id) != 0)
+            continue;
+
+        if (toggle)
+            hidden_state = (current->hidden_state + 1) % 2;
+
+        DLOG("Changing bar hidden_state of bar_id '%s' to '%s (%d)'\n", current->id, bar_hidden_state, hidden_state);
+        current->hidden_state = hidden_state;
+        changed_sth = true;
+
+        if (bar_id)
+             break;
+    }
+
+    if (bar_id && !changed_sth) {
+        DLOG("Changing bar hidden_state of bar_id %s failed, bar_id not found.\n", bar_id);
+        return false;
+    }
+
+    return true;
+}
+
+/*
+ * Implementation of 'bar (hidden_state hide|show|toggle)|(mode dock|hide|invisible|toggle) [<bar_id>]'
+ *
+ */
+void cmd_bar(I3_CMD, char *bar_type, char *bar_value, char *bar_id) {
+    bool ret;
+    if (strcmp(bar_type, "mode") == 0)
+        ret = cmd_bar_mode(bar_value, bar_id);
+    else if (strcmp(bar_type, "hidden_state") == 0)
+        ret = cmd_bar_hidden_state(bar_value, bar_id);
+    else {
+        ELOG("Unknown bar option type \"%s\", this is a mismatch between code and parser spec.\n", bar_type);
+        ret = false;
+    }
+
+    ysuccess(ret);
+    if (!ret)
+        return;
+
+    update_barconfig();
+}
+
+/*
+ * Implementation of 'shmlog <size>|toggle|on|off'
+ *
+ */
+void cmd_shmlog(I3_CMD, char *argument) {
+    if (!strcmp(argument,"toggle"))
+        /* Toggle shm log, if size is not 0. If it is 0, set it to default. */
+        shmlog_size = shmlog_size ? -shmlog_size : default_shmlog_size;
+    else if (!strcmp(argument, "on"))
+        shmlog_size = default_shmlog_size;
+    else if (!strcmp(argument, "off"))
+        shmlog_size = 0;
+    else {
+        /* If shm logging now, restart logging with the new size. */
+        if (shmlog_size > 0) {
+            shmlog_size = 0;
+            LOG("Restarting shm logging...\n");
+            init_logging();
+        }
+        shmlog_size = atoi(argument);
+        /* Make a weakly attempt at ensuring the argument is valid. */
+        if (shmlog_size <= 0)
+            shmlog_size = default_shmlog_size;
+    }
+    LOG("%s shm logging\n", shmlog_size > 0 ? "Enabling" : "Disabling");
+    init_logging();
+    update_shmlog_atom();
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
+}
+
+/*
+ * Implementation of 'debuglog toggle|on|off'
+ *
+ */
+void cmd_debuglog(I3_CMD, char *argument) {
+    bool logging = get_debug_logging();
+    if (!strcmp(argument,"toggle")) {
+        LOG("%s debug logging\n", logging ? "Disabling" : "Enabling");
+        set_debug_logging(!logging);
+    } else if (!strcmp(argument, "on") && !logging) {
+        LOG("Enabling debug logging\n");
+        set_debug_logging(true);
+    } else if (!strcmp(argument, "off") && logging) {
+        LOG("Disabling debug logging\n");
+        set_debug_logging(false);
+    }
+    // XXX: default reply for now, make this a better reply
+    ysuccess(true);
 }

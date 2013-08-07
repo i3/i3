@@ -19,7 +19,7 @@ $window->signal_connect('delete_event' => sub { Gtk2->main_quit; });
 
 my $tree_store = Gtk2::TreeStore->new(qw/Glib::String/, qw/Glib::String/, qw/Glib::String/, qw/Glib::String/, qw/Glib::String/, qw/Glib::String/, qw/Glib::String/, qw/Glib::String/);
 
-my $i3 = i3("/tmp/nestedcons");
+my $i3 = i3();
 
 my $tree_view = Gtk2::TreeView->new($tree_store);
 
