@@ -1796,6 +1796,7 @@ void cmd_move_window_to_center(I3_CMD, char *method) {
         ystr("error");
         ystr("Cannot change position. The window/container is not floating.");
         y(map_close);
+        return;
     }
 
     if (strcmp(method, "absolute") == 0) {
