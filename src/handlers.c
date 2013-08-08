@@ -13,6 +13,7 @@
 #include "all.h"
 
 #include <time.h>
+#include <float.h>
 #include <sys/time.h>
 #include <xcb/randr.h>
 #include <X11/XKBlib.h>
