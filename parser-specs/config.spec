@@ -345,20 +345,21 @@ state BAR:
   error ->
   '#' -> BAR_IGNORE_LINE
   'set' -> BAR_IGNORE_LINE
-  'i3bar_command'     -> BAR_BAR_COMMAND
-  'status_command'    -> BAR_STATUS_COMMAND
-  'socket_path'       -> BAR_SOCKET_PATH
-  'mode'              -> BAR_MODE
-  'hidden_state'      -> BAR_HIDDEN_STATE
-  'id'                -> BAR_ID
-  'modifier'          -> BAR_MODIFIER
-  'position'          -> BAR_POSITION
-  'output'            -> BAR_OUTPUT
-  'tray_output'       -> BAR_TRAY_OUTPUT
-  'font'              -> BAR_FONT
-  'workspace_buttons' -> BAR_WORKSPACE_BUTTONS
-  'verbose'           -> BAR_VERBOSE
-  'colors'            -> BAR_COLORS_BRACE
+  'i3bar_command'          -> BAR_BAR_COMMAND
+  'status_command'         -> BAR_STATUS_COMMAND
+  'socket_path'            -> BAR_SOCKET_PATH
+  'mode'                   -> BAR_MODE
+  'hidden_state'           -> BAR_HIDDEN_STATE
+  'id'                     -> BAR_ID
+  'modifier'               -> BAR_MODIFIER
+  'position'               -> BAR_POSITION
+  'output'                 -> BAR_OUTPUT
+  'tray_output'            -> BAR_TRAY_OUTPUT
+  'font'                   -> BAR_FONT
+  'binding_mode_indicator' -> BAR_BINDING_MODE_INDICATOR
+  'workspace_buttons'      -> BAR_WORKSPACE_BUTTONS
+  'verbose'                -> BAR_VERBOSE
+  'colors'                 -> BAR_COLORS_BRACE
   '}'
       -> call cfg_bar_finish(); INITIAL
 
@@ -410,6 +411,10 @@ state BAR_TRAY_OUTPUT:
 state BAR_FONT:
   font = string
       -> call cfg_bar_font($font); BAR
+
+state BAR_BINDING_MODE_INDICATOR:
+  value = word
+      -> call cfg_bar_binding_mode_indicator($value); BAR
 
 state BAR_WORKSPACE_BUTTONS:
   value = word

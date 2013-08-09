@@ -1180,11 +1180,32 @@ workspace_buttons <yes|no>
 --------------------------
 
 *Example*:
---------------------
+------------------------
 bar {
     workspace_buttons no
 }
---------------------
+------------------------
+
+=== Binding Mode indicator
+
+Specifies whether the current binding mode indicator should be shown or not.
+This is useful if you want to hide the workspace buttons but still be able
+to see the current binding mode indicator.
+For an example of a +mode+ definition, see <<resizingconfig>>.
+
+The default is to show the mode indicator.
+
+*Syntax*:
+-------------------------------
+binding_mode_indicator <yes|no>
+-------------------------------
+
+*Example*:
+-----------------------------
+bar {
+    binding_mode_indicator no
+}
+-----------------------------
 
 === Colors
 

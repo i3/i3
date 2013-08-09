@@ -193,6 +193,12 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
  *
  */
 static int config_boolean_cb(void *params_, int val) {
+    if (!strcmp(cur_key, "binding_mode_indicator")) {
+        DLOG("binding_mode_indicator = %d\n", val);
+        config.disable_binding_mode_indicator = !val;
+        return 1;
+    }
+
     if (!strcmp(cur_key, "workspace_buttons")) {
         DLOG("workspace_buttons = %d\n", val);
         config.disable_ws = !val;

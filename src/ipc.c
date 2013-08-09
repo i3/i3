@@ -686,6 +686,9 @@ IPC_HANDLER(get_bar_config) {
         ystr("workspace_buttons");
         y(bool, !config->hide_workspace_buttons);
 
+        ystr("binding_mode_indicator");
+        y(bool, !config->hide_binding_mode_indicator);
+
         ystr("verbose");
         y(bool, config->verbose);
 
