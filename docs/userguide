@@ -1806,10 +1806,10 @@ debuglog <on|off|toggle>
 ------------------------
 
 *Examples*:
-------------
+------------------------
 # Enable/disable logging
 bindsym $mod+x debuglog toggle
-------------
+------------------------
 
 === Reloading/Restarting/Exiting
 
