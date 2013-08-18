@@ -1950,7 +1950,7 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
  *
  */
 bool cmd_bar_mode(char *bar_mode, char *bar_id) {
-    int mode;
+    int mode = M_DOCK;
     bool toggle = false;
     if (strcmp(bar_mode, "dock") == 0)
         mode = M_DOCK;
@@ -1995,7 +1995,7 @@ bool cmd_bar_mode(char *bar_mode, char *bar_id) {
  *
  */
 bool cmd_bar_hidden_state(char *bar_hidden_state, char *bar_id) {
-    int hidden_state;
+    int hidden_state = S_SHOW;
     bool toggle = false;
     if (strcmp(bar_hidden_state, "hide") == 0)
         hidden_state = S_HIDE;
