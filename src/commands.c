@@ -1521,7 +1521,7 @@ void cmd_fullscreen(I3_CMD, char *fullscreen_mode) {
     HANDLE_EMPTY_MATCH;
 
     TAILQ_FOREACH(current, &owindows, owindows) {
-        printf("matching: %p / %s\n", current->con, current->con->name);
+        DLOG("matching: %p / %s\n", current->con, current->con->name);
         con_toggle_fullscreen(current->con, (strcmp(fullscreen_mode, "global") == 0 ? CF_GLOBAL : CF_OUTPUT));
     }
 
