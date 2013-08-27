@@ -70,7 +70,7 @@ static void render_l_output(Con *con) {
     Con *fullscreen = con_get_fullscreen_con(ws, CF_OUTPUT);
     if (fullscreen) {
         fullscreen->rect = con->rect;
-        x_raise_con(fullscreen, true);
+        x_raise_con(fullscreen);
         render_con(fullscreen, true);
         return;
     }
@@ -110,7 +110,7 @@ static void render_l_output(Con *con) {
 
         DLOG("child at (%d, %d) with (%d x %d)\n",
                 child->rect.x, child->rect.y, child->rect.width, child->rect.height);
-        x_raise_con(child, false);
+        x_raise_con(child);
         render_con(child, false);
     }
 }
@@ -208,7 +208,7 @@ void render_con(Con *con, bool render_fullscreen) {
     }
     if (fullscreen) {
         fullscreen->rect = rect;
-        x_raise_con(fullscreen, false);
+        x_raise_con(fullscreen);
         render_con(fullscreen, true);
         return;
     }
@@ -299,7 +299,7 @@ void render_con(Con *con, bool render_fullscreen) {
                 }
                 DLOG("floating child at (%d,%d) with %d x %d\n",
                      child->rect.x, child->rect.y, child->rect.width, child->rect.height);
-                x_raise_con(child, false);
+                x_raise_con(child);
                 render_con(child, false);
             }
         }
@@ -408,7 +408,7 @@ void render_con(Con *con, bool render_fullscreen) {
 
         DLOG("child at (%d, %d) with (%d x %d)\n",
                 child->rect.x, child->rect.y, child->rect.width, child->rect.height);
-        x_raise_con(child, false);
+        x_raise_con(child);
         render_con(child, false);
         i++;
     }
@@ -416,7 +416,7 @@ void render_con(Con *con, bool render_fullscreen) {
     /* in a stacking or tabbed container, we ensure the focused client is raised */
     if (con->layout == L_STACKED || con->layout == L_TABBED) {
         TAILQ_FOREACH_REVERSE(child, &(con->focus_head), focus_head, focused)
-            x_raise_con(child, false);
+            x_raise_con(child);
         if ((child = TAILQ_FIRST(&(con->focus_head)))) {
             /* By rendering the stacked container again, we handle the case
              * that we have a non-leaf-container inside the stack. In that
@@ -430,7 +430,7 @@ void render_con(Con *con, bool render_fullscreen) {
              * top of every stack window. That way, when a new window is opened in
              * the stack, the old window will not obscure part of the decoration
              * (it’s unmapped afterwards). */
-            x_raise_con(con, false);
+            x_raise_con(con);
     }
     }
 }
