@@ -59,6 +59,9 @@ xcb_connection_t *conn;
 /* The font we'll use */
 static i3Font font;
 
+/* Overall height of the bar (based on font size) */
+int bar_height;
+
 /* These are only relevant for XKB, which we only need for grabbing modifiers */
 Display          *xkb_dpy;
 int              xkb_event_base;
@@ -240,9 +243,9 @@ void unhide_bars(void) {
         values[0] = walk->rect.x;
         if (config.position == POS_TOP)
             values[1] = walk->rect.y;
-        else values[1] = walk->rect.y + walk->rect.h - font.height - 6;
+        else values[1] = walk->rect.y + walk->rect.h - bar_height;
         values[2] = walk->rect.w;
-        values[3] = font.height + 6;
+        values[3] = bar_height;
         values[4] = XCB_STACK_MODE_ABOVE;
         DLOG("Reconfiguring Window for output %s to %d,%d\n", walk->name, values[0], values[1]);
         cookie = xcb_configure_window_checked(xcb_connection,
@@ -1061,6 +1064,7 @@ void init_xcb_late(char *fontname) {
     font = load_font(fontname, true);
     set_font(&font);
     DLOG("Calculated Font-height: %d\n", font.height);
+    bar_height = font.height + 6;
 
     xcb_flush(xcb_connection);
 
@@ -1334,7 +1338,7 @@ void realloc_sl_buffer(void) {
                                                                statusline_pm,
                                                                xcb_root,
                                                                MAX(root_screen->width_in_pixels, statusline_width),
-                                                               root_screen->height_in_pixels);
+                                                               bar_height);
 
     uint32_t mask = XCB_GC_FOREGROUND;
     uint32_t vals[2] = { colors.bar_bg, colors.bar_bg };
@@ -1407,8 +1411,8 @@ void reconfig_windows(bool redraw_bars) {
                                                                      root_screen->root_depth,
                                                                      walk->bar,
                                                                      xcb_root,
-                                                                     walk->rect.x, walk->rect.y + walk->rect.h - font.height - 6,
-                                                                     walk->rect.w, font.height + 6,
+                                                                     walk->rect.x, walk->rect.y + walk->rect.h - bar_height,
+                                                                     walk->rect.w, bar_height,
                                                                      0,
                                                                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                                                      root_screen->root_visual,
@@ -1421,7 +1425,7 @@ void reconfig_windows(bool redraw_bars) {
                                                                     walk->buffer,
                                                                     walk->bar,
                                                                     walk->rect.w,
-                                                                    walk->rect.h);
+                                                                    bar_height);
 
             /* Set the WM_CLASS and WM_NAME (we don't need UTF-8) atoms */
             xcb_void_cookie_t class_cookie;
@@ -1482,12 +1486,12 @@ void reconfig_windows(bool redraw_bars) {
                 case POS_NONE:
                     break;
                 case POS_TOP:
-                    strut_partial.top = font.height + 6;
+                    strut_partial.top = bar_height;
                     strut_partial.top_start_x = walk->rect.x;
                     strut_partial.top_end_x = walk->rect.x + walk->rect.w;
                     break;
                 case POS_BOT:
-                    strut_partial.bottom = font.height + 6;
+                    strut_partial.bottom = bar_height;
                     strut_partial.bottom_start_x = walk->rect.x;
                     strut_partial.bottom_end_x = walk->rect.x + walk->rect.w;
                     break;
@@ -1541,9 +1545,9 @@ void reconfig_windows(bool redraw_bars) {
                    XCB_CONFIG_WINDOW_HEIGHT |
                    XCB_CONFIG_WINDOW_STACK_MODE;
             values[0] = walk->rect.x;
-            values[1] = walk->rect.y + walk->rect.h - font.height - 6;
+            values[1] = walk->rect.y + walk->rect.h - bar_height;
             values[2] = walk->rect.w;
-            values[3] = font.height + 6;
+            values[3] = bar_height;
             values[4] = XCB_STACK_MODE_ABOVE;
 
             DLOG("Destroying buffer for output %s\n", walk->name);
@@ -1569,7 +1573,7 @@ void reconfig_windows(bool redraw_bars) {
                                                                     walk->buffer,
                                                                     walk->bar,
                                                                     walk->rect.w,
-                                                                    walk->rect.h);
+                                                                    bar_height);
 
             xcb_void_cookie_t map_cookie, umap_cookie;
             if (redraw_bars) {
@@ -1631,7 +1635,7 @@ void draw_bars(bool unhide) {
                       outputs_walk->bargc,
                       XCB_GC_FOREGROUND,
                       &color);
-        xcb_rectangle_t rect = { 0, 0, outputs_walk->rect.w, font.height + 6 };
+        xcb_rectangle_t rect = { 0, 0, outputs_walk->rect.w, bar_height };
         xcb_poly_fill_rectangle(xcb_connection,
                                 outputs_walk->buffer,
                                 outputs_walk->bargc,
