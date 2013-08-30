@@ -423,6 +423,19 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
 static void handle_screen_change(xcb_generic_event_t *e) {
     DLOG("RandR screen change\n");
 
+    /* The geometry of the root window is used for “fullscreen global” and
+     * changes when new outputs are added. */
+    xcb_get_geometry_cookie_t cookie = xcb_get_geometry(conn, root);
+    xcb_get_geometry_reply_t *reply = xcb_get_geometry_reply(conn, cookie, NULL);
+    if (reply == NULL) {
+        ELOG("Could not get geometry of the root window, exiting\n");
+        exit(1);
+    }
+    DLOG("root geometry reply: (%d, %d) %d x %d\n", reply->x, reply->y, reply->width, reply->height);
+
+    croot->rect.width = reply->width;
+    croot->rect.height = reply->height;
+
     randr_query_outputs();
 
     scratchpad_fix_resolution();
