@@ -38,4 +38,38 @@ my $ws = get_ws($tmp);
 is($ws->{layout}, 'splith', 'workspace layout is splith');
 is(@{$ws->{nodes}}, 3, 'all three windows on workspace level');
 
+################################################################################
+# Ticket #1053 provides a sequence of operations where the flattening does not
+# work correctly:
+################################################################################
+
+$tmp = fresh_workspace;
+
+my $tab1 = open_window;
+my $tab2 = open_window;
+$mid = open_window;
+$right = open_window;
+cmd 'focus right';
+cmd 'split v';
+cmd 'focus right';
+cmd 'move left';
+cmd 'layout tabbed';
+cmd 'focus parent';
+cmd 'split v';
+
+$ws = get_ws($tmp);
+my @nodes = @{$ws->{nodes}};
+is(@nodes, 3, 'all three windows on workspace level');
+is($nodes[0]->{layout}, 'splitv', 'first node is splitv');
+is(@{$nodes[0]->{nodes}}, 1, 'one node in the first node');
+is($nodes[0]->{nodes}->[0]->{layout}, 'tabbed', 'tabbed layout');
+is(@{$nodes[0]->{nodes}->[0]->{nodes}}, 2, 'two nodes in that node');
+
+cmd 'focus right';
+cmd 'move left';
+
+$ws = get_ws($tmp);
+@nodes = @{$ws->{nodes}};
+is(@nodes, 2, 'all three windows on workspace level');
+
 done_testing;
