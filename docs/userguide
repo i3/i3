@@ -1211,7 +1211,7 @@ inactive_workspace::
 	will be the case for most workspaces.
 urgent_workspace::
 	Border, background and text color for a workspace button when the workspace
-	window with the urgency hint set.
+	contains a window with the urgency hint set. Also applies to +mode+ indicators.
 
 *Syntax*:
 ----------------------------------------
