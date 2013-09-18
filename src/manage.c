@@ -321,10 +321,19 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     x_set_name(nc, name);
     free(name);
 
+    /* handle fullscreen containers */
     Con *ws = con_get_workspace(nc);
     Con *fs = (ws ? con_get_fullscreen_con(ws, CF_OUTPUT) : NULL);
     if (fs == NULL)
         fs = con_get_fullscreen_con(croot, CF_GLOBAL);
+
+    xcb_get_property_reply_t *state_reply = xcb_get_property_reply(conn, state_cookie, NULL);
+    if (xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_FULLSCREEN)) {
+        fs = NULL;
+        con_toggle_fullscreen(nc, CF_OUTPUT);
+    }
+
+    FREE(state_reply);
 
     if (fs == NULL) {
         DLOG("Not in fullscreen mode, focusing\n");
@@ -428,12 +437,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     values[0] = CHILD_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
     xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, values);
     xcb_flush(conn);
-
-    reply = xcb_get_property_reply(conn, state_cookie, NULL);
-    if (xcb_reply_contains_atom(reply, A__NET_WM_STATE_FULLSCREEN))
-        con_toggle_fullscreen(nc, CF_OUTPUT);
-
-    FREE(reply);
 
     /* Put the client inside the save set. Upon termination (whether killed or
      * normal exit does not matter) of the window manager, these clients will
