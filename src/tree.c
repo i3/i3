@@ -229,6 +229,11 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
         return false;
     }
 
+    if (workspace_is_visible(con)) {
+        DLOG("A visible workspace cannot be killed.\n");
+        return false;
+    }
+
     if (con->window != NULL) {
         if (kill_window != DONT_KILL_WINDOW) {
             x_window_kill(con->window->id, kill_window);
@@ -359,10 +364,6 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
  */
 void tree_close_con(kill_window_t kill_window) {
     assert(focused != NULL);
-    if (focused->type == CT_WORKSPACE) {
-        LOG("Cannot close workspace\n");
-        return;
-    }
 
     /* There *should* be no possibility to focus outputs / root container */
     assert(focused->type != CT_OUTPUT);

@@ -120,6 +120,30 @@ sync_with_i3;
 is(get_focused($tmp), $middle, 'middle container focused');
 
 ##############################################################
+# check if the workspace container can be closed
+##############################################################
+
+$tmp = fresh_workspace;
+
+my $window = open_window();
+
+# one window opened on the current workspace
+($nodes, $focus) = get_ws_content($tmp);
+is(scalar @$nodes, 1, 'workspace contains one node');
+
+# focus the workspace
+cmd "focus parent";
+cmd "focus parent";
+
+# try to kill the workspace
+cmd "kill";
+sync_with_i3;
+
+# the workspace should now be empty
+($nodes, $focus) = get_ws_content($tmp);
+is(scalar @$nodes, 0, 'workspace is empty');
+
+##############################################################
 # and now for something completely different:
 # check if the pointer position is relevant when restoring focus
 # (it should not be relevant, of course)
