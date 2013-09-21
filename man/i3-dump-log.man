@@ -1,7 +1,7 @@
 i3-dump-log(1)
 ==============
-Michael Stapelberg <michael+i3@stapelberg.de>
-v4.1, December 2011
+Michael Stapelberg <michael@i3wm.org>
+v4.6, September 2013
 
 == NAME
 
@@ -9,7 +9,7 @@ i3-dump-log - dumps the i3 SHM log
 
 == SYNOPSIS
 
-i3-dump-log [-s <socketpath>]
+i3-dump-log [-s <socketpath>] [-f]
 
 == DESCRIPTION
 
@@ -18,6 +18,9 @@ full debug log output. This is extremely helpful for bugreports and
 figuring out what is going on, without permanently logging to a file.
 
 With i3-dump-log, you can dump the SHM log to stdout.
+
+The -f flag works like tail -f, i.e. the process does not terminate after
+dumping the log, but prints new lines as they appear.
 
 == EXAMPLE
 
