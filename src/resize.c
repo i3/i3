@@ -51,6 +51,54 @@ DRAGGING_CB(resize_callback) {
     xcb_flush(conn);
 }
 
+bool resize_find_tiling_participants(Con **current, Con **other, direction_t direction) {
+    DLOG("Find two participants for resizing container=%p in direction=%i\n", other, direction);
+    Con *first = *current;
+    Con *second = NULL;
+    if (first == NULL) {
+        DLOG("Current container is NULL, aborting.\n");
+        return false;
+    }
+
+    /* Go up in the tree and search for a container to resize */
+    const orientation_t search_orientation = ((direction == D_LEFT || direction == D_RIGHT) ? HORIZ : VERT);
+    const bool dir_backwards = (direction == D_UP || direction == D_LEFT);
+    while (first->type != CT_WORKSPACE &&
+           first->type != CT_FLOATING_CON &&
+           second == NULL) {
+        /* get the appropriate first container with the matching
+         * orientation (skip stacked/tabbed cons) */
+        if ((con_orientation(first->parent) != search_orientation) ||
+            (first->parent->layout == L_STACKED) ||
+            (first->parent->layout == L_TABBED)) {
+            first = first->parent;
+            continue;
+        }
+
+        /* get the counterpart for this resizement */
+        if (dir_backwards) {
+            second = TAILQ_PREV(first, nodes_head, nodes);
+        } else {
+            second = TAILQ_NEXT(first, nodes);
+        }
+
+        if (second == NULL) {
+            DLOG("No second container in this direction found, trying to look further up in the tree...\n");
+            first = first->parent;
+        }
+    }
+
+    DLOG("Found participants: first=%p and second=%p.", first, second);
+    *current = first;
+    *other = second;
+    if (first == NULL || second == NULL) {
+        DLOG("Could not find two participants for this resize request.\n");
+        return false;
+    }
+
+    return true;
+}
+
 int resize_graphical_handler(Con *first, Con *second, orientation_t orientation, const xcb_button_press_event_t *event) {
     DLOG("resize handler\n");
 
