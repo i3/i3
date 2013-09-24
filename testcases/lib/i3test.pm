@@ -406,7 +406,7 @@ C<fresh_workspace> which directly switches to an unused workspace.
 sub get_unused_workspace {
     my @names = get_workspace_names();
     my $tmp;
-    do { $tmp = tmpnam() } while ($tmp ~~ @names);
+    do { $tmp = tmpnam() } while ((scalar grep { $_ eq $tmp } @names) > 0);
     $tmp
 }
 
@@ -626,7 +626,7 @@ Returns true if C<$workspace> is the name of an existing workspace.
 =cut
 sub workspace_exists {
     my ($name) = @_;
-    ($name ~~ @{get_workspace_names()})
+    (scalar grep { $_ eq $name } @{get_workspace_names()}) > 0;
 }
 
 =head2 focused_ws
