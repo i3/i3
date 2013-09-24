@@ -220,7 +220,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_transient_for(cwindow, xcb_get_property_reply(conn, transient_cookie, NULL));
     window_update_strut_partial(cwindow, xcb_get_property_reply(conn, strut_cookie, NULL));
     window_update_role(cwindow, xcb_get_property_reply(conn, role_cookie, NULL), true);
-    window_update_hints(cwindow, xcb_get_property_reply(conn, wm_hints_cookie, NULL));
+    bool urgency_hint;
+    window_update_hints(cwindow, xcb_get_property_reply(conn, wm_hints_cookie, NULL), &urgency_hint);
 
     xcb_get_property_reply_t *startup_id_reply;
     startup_id_reply = xcb_get_property_reply(conn, startup_id_cookie, NULL);
@@ -471,6 +472,12 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     /* Send an event about window creation */
     ipc_send_window_new_event(nc);
+
+    /* Windows might get managed with the urgency hint already set (Pidgin is
+     * known to do that), so check for that and handle the hint accordingly.
+     * This code needs to be in this part of manage_window() because the window
+     * needs to be on the final workspace first. */
+    con_set_urgency(nc, urgency_hint);
 
 geom_out:
     free(geom);

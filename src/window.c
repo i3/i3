@@ -228,7 +228,10 @@ void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool befo
  * Updates the WM_HINTS (we only care about the input focus handling part).
  *
  */
-void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop) {
+void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *urgency_hint) {
+    if (urgency_hint != NULL)
+        *urgency_hint = false;
+
     if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
         DLOG("WM_HINTS not set.\n");
         FREE(prop);
@@ -245,6 +248,9 @@ void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop) {
 
     win->doesnt_accept_focus = !hints.input;
     LOG("WM_HINTS.input changed to \"%d\"\n", hints.input);
+
+    if (urgency_hint != NULL)
+        *urgency_hint = (xcb_icccm_wm_hints_get_urgency(&hints) != 0);
 
     free(prop);
 }
