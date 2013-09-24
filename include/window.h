@@ -61,6 +61,6 @@ void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool befo
  * Updates the WM_HINTS (we only care about the input focus handling part).
  *
  */
-void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop);
+void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *urgency_hint);
 
 #endif
