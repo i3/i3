@@ -883,24 +883,13 @@ static bool handle_hints(void *data, xcb_connection_t *conn, uint8_t state, xcb_
         return false;
     }
 
-    xcb_icccm_wm_hints_t hints;
-
+    bool urgency_hint;
     if (reply == NULL)
-        if (!(reply = xcb_get_property_reply(conn, xcb_icccm_get_wm_hints(conn, window), NULL)))
-            return false;
-
-    if (!xcb_icccm_get_wm_hints_from_reply(&hints, reply))
-        return false;
-
-    /* Update the flag on the client directly */
-    bool hint_urgent = (xcb_icccm_wm_hints_get_urgency(&hints) != 0);
-    con_set_urgency(con, hint_urgent);
-
+        reply = xcb_get_property_reply(conn, xcb_icccm_get_wm_hints(conn, window), NULL);
+    window_update_hints(con->window, reply, &urgency_hint);
+    con_set_urgency(con, urgency_hint);
     tree_render();
 
-    if (con->window)
-        window_update_hints(con->window, reply);
-    else free(reply);
     return true;
 }
 
