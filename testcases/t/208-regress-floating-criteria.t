@@ -19,7 +19,6 @@
 # Ticket: #1027
 # Bug still in: 4.5.1-90-g6582da9
 use i3test i3_autostart => 0;
-use X11::XCB qw(PROP_MODE_REPLACE);
 
 my $config = <<'EOT';
 # i3 config file (v4)
@@ -31,28 +30,9 @@ EOT
 
 my $pid = launch_with_config($config);
 
-# TODO: move this to X11::XCB::Window
-sub set_wm_class {
-    my ($id, $class, $instance) = @_;
-
-    # Add a _NET_WM_STRUT_PARTIAL hint
-    my $atomname = $x->atom(name => 'WM_CLASS');
-    my $atomtype = $x->atom(name => 'STRING');
-
-    $x->change_property(
-        PROP_MODE_REPLACE,
-        $id,
-        $atomname->id,
-        $atomtype->id,
-        8,
-        length($class) + length($instance) + 2,
-        "$instance\x00$class\x00"
-    );
-}
-
 my $window = open_window(
     name => 'Borderless window',
-    before_map => sub { set_wm_class($_->id, 'special', 'special') },
+    wm_class => 'special',
     dont_map => 1,
 );
 $window->map;

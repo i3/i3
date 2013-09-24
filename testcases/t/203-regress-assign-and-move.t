@@ -19,7 +19,6 @@
 # Ticket: #909
 # Bug still in: 4.4-69-g6856b23
 use i3test i3_autostart => 0;
-use X11::XCB qw(:all);
 
 my $config = <<EOT;
 # i3 config file (v4)
@@ -31,28 +30,10 @@ EOT
 
 my $pid = launch_with_config($config);
 
-sub set_wm_class {
-    my ($id, $class, $instance) = @_;
-
-    # Add a _NET_WM_STRUT_PARTIAL hint
-    my $atomname = $x->atom(name => 'WM_CLASS');
-    my $atomtype = $x->atom(name => 'STRING');
-
-    $x->change_property(
-        PROP_MODE_REPLACE,
-        $id,
-        $atomname->id,
-        $atomtype->id,
-        8,
-        length($class) + length($instance) + 2,
-        "$instance\x00$class\x00"
-    );
-}
-
 # We use dont_map because i3 will not map the window on the current
 # workspace. Thus, open_window would time out in wait_for_map (2 seconds).
 my $window = open_window(
-    before_map => sub { set_wm_class($_->id, '__i3-test-window', '__i3-test-window') },
+    wm_class => '__i3-test-window',
     dont_map => 1,
 );
 $window->map;

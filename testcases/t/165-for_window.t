@@ -49,29 +49,9 @@ wait_for_unmap $window;
 cmp_ok(@content, '==', 0, 'no more nodes');
 diag('content = '. Dumper(\@content));
 
-
-# TODO: move this to X11::XCB::Window
-sub set_wm_class {
-    my ($id, $class, $instance) = @_;
-
-    # Add a _NET_WM_STRUT_PARTIAL hint
-    my $atomname = $x->atom(name => 'WM_CLASS');
-    my $atomtype = $x->atom(name => 'STRING');
-
-    $x->change_property(
-        PROP_MODE_REPLACE,
-        $id,
-        $atomname->id,
-        $atomtype->id,
-        8,
-        length($class) + length($instance) + 2,
-        "$instance\x00$class\x00"
-    );
-}
-
 $window = open_window(
     name => 'Borderless window',
-    before_map => sub { set_wm_class($_->id, 'borderless', 'borderless') },
+    wm_class => 'borderless',
 );
 
 @content = @{get_ws_content($tmp)};
@@ -190,7 +170,7 @@ $tmp = fresh_workspace;
 
 $window = open_window(
     name => 'usethis',
-    before_map => sub { set_wm_class($_->id, 'borderless', 'borderless') },
+    wm_class => 'borderless',
 );
 
 @content = @{get_ws_content($tmp)};
@@ -208,8 +188,7 @@ sync_with_i3;
 cmp_ok(@content, '==', 0, 'no nodes on this workspace now');
 
 $window->_create;
-
-set_wm_class($window->id, 'borderless', 'borderless');
+$window->wm_class('borderless');
 $window->name('notthis');
 $window->map;
 wait_for_map $window;
@@ -238,7 +217,8 @@ $tmp = fresh_workspace;
 
 $window = open_window(
     name => 'usethis',
-    before_map => sub { set_wm_class($_->id, 'bar', 'foo') },
+    wm_class => 'bar',
+    instance => 'foo',
 );
 
 @content = @{get_ws_content($tmp)};
@@ -264,7 +244,8 @@ $tmp = fresh_workspace;
 
 $window = open_window(
     name => 'usethis',
-    before_map => sub { set_wm_class($_->id, 'bar', 'foo') },
+    wm_class => 'bar',
+    instance => 'foo',
 );
 
 @content = @{get_ws_content($tmp)};
@@ -292,7 +273,8 @@ $tmp = fresh_workspace;
 
 $window = open_window(
     name => 'usethis',
-    before_map => sub { set_wm_class($_->id, 'bar', 'foo') },
+    wm_class => 'bar',
+    instance => 'foo',
 );
 
 @content = @{get_ws_content($tmp)};

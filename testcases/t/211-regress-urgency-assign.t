@@ -21,37 +21,16 @@
 # Ticket: #1086
 # Bug still in: 4.6-62-g7098ef6
 use i3test i3_autostart => 0;
-use X11::XCB qw(:all);
-
-# TODO: move to X11::XCB
-sub set_wm_class {
-    my ($id, $class, $instance) = @_;
-
-    # Add a _NET_WM_STRUT_PARTIAL hint
-    my $atomname = $x->atom(name => 'WM_CLASS');
-    my $atomtype = $x->atom(name => 'STRING');
-
-    $x->change_property(
-        PROP_MODE_REPLACE,
-        $id,
-        $atomname->id,
-        $atomtype->id,
-        8,
-        length($class) + length($instance) + 2,
-        "$instance\x00$class\x00"
-    );
-}
 
 sub open_special {
     my %args = @_;
-    my $wm_class = delete($args{wm_class}) || 'special';
     $args{name} //= 'special window';
 
     # We use dont_map because i3 will not map the window on the current
     # workspace. Thus, open_window would time out in wait_for_map (2 seconds).
     my $window = open_window(
         %args,
-        before_map => sub { set_wm_class($_->id, $wm_class, $wm_class) },
+        wm_class => 'special',
         dont_map => 1,
     );
     $window->add_hint('urgency');
