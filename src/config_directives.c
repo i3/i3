@@ -14,16 +14,6 @@
 
 #include "all.h"
 
-// Macros to make the YAJL API a bit easier to use.
-#define y(x, ...) yajl_gen_ ## x (cmd_output->json_gen, ##__VA_ARGS__)
-#define ystr(str) yajl_gen_string(cmd_output->json_gen, (unsigned char*)str, strlen(str))
-#define ysuccess(success) do { \
-    y(map_open); \
-    ystr("success"); \
-    y(bool, success); \
-    y(map_close); \
-} while (0)
-
 /*******************************************************************************
  * Criteria functions.
  ******************************************************************************/

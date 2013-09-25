@@ -24,6 +24,14 @@
     y(bool, success); \
     y(map_close); \
 } while (0)
+#define yerror(message) do { \
+    y(map_open); \
+    ystr("success"); \
+    y(bool, false); \
+    ystr("error"); \
+    ystr(message); \
+    y(map_close); \
+} while (0)
 
 /** When the command did not include match criteria (!), we use the currently
  * focused container. Do not confuse this case with a command which included
@@ -441,12 +449,7 @@ void cmd_move_con_to_workspace_back_and_forth(I3_CMD) {
     ws = workspace_back_and_forth_get();
 
     if (ws == NULL) {
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
-        ystr("No workspace was previously active.");
-        y(map_close);
+        yerror("No workspace was previously active.");
         return;
     }
 
@@ -535,13 +538,8 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
         parsed_num < 0 ||
         endptr == which) {
         LOG("Could not parse initial part of \"%s\" as a number.\n", which);
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
         // TODO: better error message
-        ystr("Could not parse number");
-        y(map_close);
+        yerror("Could not parse number");
         return;
     }
 
@@ -939,13 +937,8 @@ void cmd_workspace_number(I3_CMD, char *which) {
         parsed_num < 0 ||
         endptr == which) {
         LOG("Could not parse initial part of \"%s\" as a number.\n", which);
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
         // TODO: better error message
-        ystr("Could not parse number");
-        y(map_close);
+        yerror("Could not parse number");
 
         return;
     }
@@ -1439,12 +1432,7 @@ void cmd_focus(I3_CMD) {
         ELOG("You have to specify which window/container should be focused.\n");
         ELOG("Example: [class=\"urxvt\" title=\"irssi\"] focus\n");
 
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
-        ystr("You have to specify which window/container should be focused");
-        y(map_close);
+        yerror("You have to specify which window/container should be focused");
 
         return;
     }
@@ -1750,12 +1738,7 @@ void cmd_move_window_to_position(I3_CMD, char *method, char *cx, char *cy) {
 
     if (!con_is_floating(focused)) {
         ELOG("Cannot change position. The window/container is not floating\n");
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
-        ystr("Cannot change position. The window/container is not floating.");
-        y(map_close);
+        yerror("Cannot change position. The window/container is not floating.");
         return;
     }
 
@@ -1790,12 +1773,7 @@ void cmd_move_window_to_center(I3_CMD, char *method) {
 
     if (!con_is_floating(focused)) {
         ELOG("Cannot change position. The window/container is not floating\n");
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
-        ystr("Cannot change position. The window/container is not floating.");
-        y(map_close);
+        yerror("Cannot change position. The window/container is not floating.");
         return;
     }
 
@@ -1890,13 +1868,8 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     if (!workspace) {
         // TODO: we should include the old workspace name here and use yajl for
         // generating the reply.
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
         // TODO: better error message
-        ystr("Old workspace not found");
-        y(map_close);
+        yerror("Old workspace not found");
         return;
     }
 
@@ -1908,13 +1881,8 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     if (check_dest != NULL) {
         // TODO: we should include the new workspace name here and use yajl for
         // generating the reply.
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
         // TODO: better error message
-        ystr("New workspace already exists");
-        y(map_close);
+        yerror("New workspace already exists");
         return;
     }
 
