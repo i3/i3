@@ -134,14 +134,22 @@ void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace);
 
 #endif
 /**
- * This function grabs your pointer and lets you drag stuff around (borders).
- * Every time you move your mouse, an XCB_MOTION_NOTIFY event will be received
- * and the given callback will be called with the parameters specified (client,
- * border on which the click originally was), the original rect of the client,
- * the event and the new coordinates (x, y).
+ * This is the return value of a drag operation like drag_pointer. DRAG_CANCEL
+ * will indicate the intention of the drag should not be carried out, or that
+ * the drag actions should be undone.
  *
  */
-void drag_pointer(Con *con, const xcb_button_press_event_t *event,
+typedef enum { DRAG_SUCCESS = 0, DRAG_CANCEL } drag_result_t;
+
+/**
+ * This function grabs your pointer and keyboard and lets you drag stuff around
+ * (borders). Every time you move your mouse, an XCB_MOTION_NOTIFY event will
+ * be received and the given callback will be called with the parameters
+ * specified (client, border on which the click originally was), the original
+ * rect of the client, the event and the new coordinates (x, y).
+ *
+ */
+drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event,
                   xcb_window_t confine_to, border_t border, int cursor,
                   callback_t callback, const void *extra);
 

@@ -441,8 +441,15 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
      * after the user releases the mouse button */
     tree_render();
 
+    /* Store the initial rect in case of user cancel */
+    Rect initial_rect = con->rect;
+
     /* Drag the window */
-    drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, XCURSOR_CURSOR_MOVE, drag_window_callback, event);
+    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, XCURSOR_CURSOR_MOVE, drag_window_callback, event);
+
+    /* If the user cancelled, undo the changes. */
+    if (drag_result == DRAG_CANCEL)
+        floating_reposition(con, initial_rect);
 
     /* If this is a scratchpad window, don't auto center it from now on. */
     if (con->scratchpad_state == SCRATCHPAD_FRESH)
@@ -546,7 +553,14 @@ void floating_resize_window(Con *con, const bool proportional,
 
     struct resize_window_callback_params params = { corner, proportional, event };
 
-    drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, cursor, resize_window_callback, &params);
+    /* get the initial rect in case of cancel */
+    Rect initial_rect = con->rect;
+
+    drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, cursor, resize_window_callback, &params);
+
+    /* If the user cancels, undo the resize */
+    if (drag_result == DRAG_CANCEL)
+        floating_reposition(con, initial_rect);
 
     /* If this is a scratchpad window, don't auto center it from now on. */
     if (con->scratchpad_state == SCRATCHPAD_FRESH)
@@ -554,14 +568,14 @@ void floating_resize_window(Con *con, const bool proportional,
 }
 
 /*
- * This function grabs your pointer and lets you drag stuff around (borders).
- * Every time you move your mouse, an XCB_MOTION_NOTIFY event will be received
- * and the given callback will be called with the parameters specified (client,
- * border on which the click originally was), the original rect of the client,
- * the event and the new coordinates (x, y).
+ * This function grabs your pointer and keyboard and lets you drag stuff around
+ * (borders). Every time you move your mouse, an XCB_MOTION_NOTIFY event will
+ * be received and the given callback will be called with the parameters
+ * specified (client, border on which the click originally was), the original
+ * rect of the client, the event and the new coordinates (x, y).
  *
  */
-void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
+drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
                 confine_to, border_t border, int cursor, callback_t callback, const void *extra)
 {
     uint32_t new_x, new_y;
@@ -587,16 +601,37 @@ void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
 
     if ((reply = xcb_grab_pointer_reply(conn, cookie, NULL)) == NULL) {
         ELOG("Could not grab pointer\n");
-        return;
+        return DRAG_CANCEL;
     }
 
     free(reply);
+
+    /* Grab the keyboard */
+    xcb_grab_keyboard_cookie_t keyb_cookie;
+    xcb_grab_keyboard_reply_t *keyb_reply;
+
+    keyb_cookie = xcb_grab_keyboard(conn,
+            false, /* get all keyboard events */
+            root, /* grab the root window */
+            XCB_CURRENT_TIME,
+            XCB_GRAB_MODE_ASYNC, /* continue processing pointer events as normal */
+            XCB_GRAB_MODE_ASYNC /* keyboard mode */
+            );
+
+    if ((keyb_reply = xcb_grab_keyboard_reply(conn, keyb_cookie, NULL)) == NULL) {
+        ELOG("Could not grab keyboard\n");
+        return DRAG_CANCEL;
+    }
+
+    free(keyb_reply);
 
     /* Go into our own event loop */
     xcb_flush(conn);
 
     xcb_generic_event_t *inside_event, *last_motion_notify = NULL;
     bool loop_done = false;
+    /* The return value, set to DRAG_CANCEL on user cancel */
+    drag_result_t drag_result = DRAG_SUCCESS;
     /* I’ve always wanted to have my own eventhandler… */
     while (!loop_done && (inside_event = xcb_wait_for_event(conn))) {
         /* We now handle all events we can get using xcb_poll_for_event */
@@ -621,11 +656,20 @@ void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
                     break;
 
                 case XCB_UNMAP_NOTIFY:
-                case XCB_KEY_PRESS:
-                case XCB_KEY_RELEASE:
                     DLOG("Unmap-notify, aborting\n");
                     handle_event(type, inside_event);
                     loop_done = true;
+                    drag_result = DRAG_CANCEL;
+                    break;
+
+                case XCB_KEY_PRESS:
+                case XCB_KEY_RELEASE:
+                    /* Cancel the drag if a key was pressed */
+                    DLOG("A key was pressed during drag, canceling.");
+                    loop_done = true;
+                    drag_result = DRAG_CANCEL;
+
+                    handle_event(type, inside_event);
                     break;
 
                 default:
@@ -648,8 +692,12 @@ void drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_window_t
         FREE(last_motion_notify);
     }
 
+    xcb_ungrab_keyboard(conn, XCB_CURRENT_TIME);
     xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
+
     xcb_flush(conn);
+
+    return drag_result;
 }
 
 /*
