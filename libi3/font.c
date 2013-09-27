@@ -86,16 +86,20 @@ static void draw_text_pango(const char *text, size_t text_len,
             root_visual_type, x + max_width, y + savedFont->height);
     cairo_t *cr = cairo_create(surface);
     PangoLayout *layout = pango_cairo_create_layout(cr);
+    gint height;
+
     pango_layout_set_font_description(layout, savedFont->specific.pango_desc);
     pango_layout_set_width(layout, max_width * PANGO_SCALE);
     pango_layout_set_wrap(layout, PANGO_WRAP_CHAR);
     pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
 
+    pango_layout_set_text(layout, text, text_len);
+
     /* Do the drawing */
     cairo_set_source_rgb(cr, pango_font_red, pango_font_green, pango_font_blue);
-    cairo_move_to(cr, x, y);
-    pango_layout_set_text(layout, text, text_len);
     pango_cairo_update_layout(cr, layout);
+    pango_layout_get_pixel_size(layout, NULL, &height);
+    cairo_move_to(cr, x, y - (height - savedFont->height));
     pango_cairo_show_layout(cr, layout);
 
     /* Free resources */
