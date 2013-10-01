@@ -663,7 +663,6 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
                     break;
 
                 case XCB_KEY_PRESS:
-                case XCB_KEY_RELEASE:
                     /* Cancel the drag if a key was pressed */
                     DLOG("A key was pressed during drag, canceling.");
                     loop_done = true;
