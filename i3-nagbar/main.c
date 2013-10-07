@@ -198,8 +198,12 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
             4 + 4, 4 + 4, rect.width - 4 - 4);
 
     /* render close button */
+    const char *close_button_label = "X";
     int line_width = 4;
-    int w = 20;
+    /* set width to the width of the label */
+    int w = predict_text_width(i3string_from_utf8(close_button_label));
+    /* account for left/right padding, which seems to be set to 8px (total) below */
+    w += 8;
     int y = rect.width;
     uint32_t values[3];
     values[0] = color_button_background;
@@ -221,7 +225,8 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
 
     values[0] = 1;
     set_font_colors(pixmap_gc, color_text, color_button_background);
-    draw_text_ascii("X", pixmap, pixmap_gc, y - w - line_width + w / 2 - 4,
+    /* the x term here seems to set left/right padding */
+    draw_text_ascii(close_button_label, pixmap, pixmap_gc, y - w - line_width + w / 2 - 4,
             4 + 4 - 1, rect.width - y + w + line_width - w / 2 + 4);
     y -= w;
 
@@ -230,8 +235,10 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     /* render custom buttons */
     line_width = 1;
     for (int c = 0; c < buttoncnt; c++) {
-        /* TODO: make w = text extents of the label */
-        w = 100;
+        /* set w to the width of the label */
+        w = predict_text_width(buttons[c].label);
+        /* account for left/right padding, which seems to be set to 12px (total) below */
+        w += 12;
         y -= 30;
         xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ color_button_background });
         close = (xcb_rectangle_t){ y - w - (2 * line_width), 2, w + (2 * line_width), rect.height - 6 };
@@ -252,6 +259,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
         values[0] = color_text;
         values[1] = color_button_background;
         set_font_colors(pixmap_gc, color_text, color_button_background);
+        /* the x term seems to set left/right padding */
         draw_text(buttons[c].label, pixmap, pixmap_gc,
                 y - w - line_width + 6, 4 + 3, rect.width - y + w + line_width - 6);
 
