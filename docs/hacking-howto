@@ -97,21 +97,18 @@ Contains forward definitions for all public functions, as well as
 doxygen-compatible comments (so if you want to get a bit more of the big
 picture, either browse all header files or use doxygen if you prefer that).
 
-src/cfgparse.l::
-Contains the lexer for i3’s configuration file, written for +flex(1)+.
-
-src/cfgparse.y::
-Contains the parser for i3’s configuration file, written for +bison(1)+.
+src/config_parser.c::
+Contains a custom configuration parser. See src/command_parser.c for rationale
+ on why we use a custom parser.
 
 src/click.c::
 Contains all functions which handle mouse button clicks (right mouse button
 clicks initiate resizing and thus are relatively complex).
 
-src/cmdparse.l::
-Contains the lexer for i3 commands, written for +flex(1)+.
-
-src/cmdparse.y::
-Contains the parser for i3 commands, written for +bison(1)+.
+src/command_parser.c::
+Contains a hand-written parser to parse commands (commands are what
+you bind on keys and what you can send to i3 using the IPC interface, like
+'move left' or 'workspace 4').
 
 src/con.c::
 Contains all functions which deal with containers directly (creating
