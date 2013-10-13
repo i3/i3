@@ -367,8 +367,8 @@ void tree_close_con(kill_window_t kill_window) {
     if (focused->type == CT_WORKSPACE) {
         DLOG("Workspaces cannot be close, closing all children instead\n");
         Con *child, *nextchild;
-        for (child = TAILQ_FIRST(&(focused->nodes_head)); child; ) {
-            nextchild = TAILQ_NEXT(child, nodes);
+        for (child = TAILQ_FIRST(&(focused->focus_head)); child; ) {
+            nextchild = TAILQ_NEXT(child, focused);
             DLOG("killing child=%p\n", child);
             tree_close(child, kill_window, false, false);
             child = nextchild;

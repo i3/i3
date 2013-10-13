@@ -143,6 +143,31 @@ sync_with_i3;
 ($nodes, $focus) = get_ws_content($tmp);
 is(scalar @$nodes, 0, 'workspace is empty');
 
+################################################################################
+# check if killing a workspace also closes floating windows.
+################################################################################
+
+$tmp = fresh_workspace;
+
+$window = open_window;
+my $floating_window = open_floating_window;
+
+# one window opened on the current workspace
+($nodes, $focus) = get_ws_content($tmp);
+is(scalar @$focus, 2, 'workspace contains two nodes');
+
+# focus the workspace
+cmd "focus parent";
+cmd "focus parent";
+
+# try to kill the workspace
+cmd "kill";
+sync_with_i3;
+
+# the workspace should now be empty
+($nodes, $focus) = get_ws_content($tmp);
+is(scalar @$focus, 0, 'workspace is empty');
+
 ##############################################################
 # and now for something completely different:
 # check if the pointer position is relevant when restoring focus
