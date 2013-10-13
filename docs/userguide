@@ -1590,7 +1590,7 @@ i3-msg 'rename workspace 5 to 6'
 i3-msg 'rename workspace 1 to "1: www"'
 i3-msg 'rename workspace "1: www" to "10: www"'
 i3-msg 'rename workspace to "2: mail"
-bindsym $mod+r exec i3-input -F 'rename workspace to %s' -P 'New name: '
+bindsym $mod+r exec i3-input -F 'rename workspace to "%s"' -P 'New name: '
 --------------------------------------------------------------------------
 
 === Moving workspaces to a different screen
