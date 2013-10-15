@@ -108,7 +108,7 @@ $outdir .= POSIX::strftime("%Y-%m-%d-%H-%M-%S-", localtime());
 $outdir .= `git describe --tags`;
 chomp($outdir);
 mkdir($outdir) or die "Could not create $outdir";
-unlink("latest") if -e "latest";
+unlink("latest") if -l "latest";
 symlink("$outdir", "latest") or die "Could not symlink latest to $outdir";
 
 
