@@ -279,11 +279,17 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE | A_TO_OUTPUT))) {
             DLOG("Assignment matches (%p)\n", match);
             if (assignment->type == A_TO_WORKSPACE) {
-                nc = con_descend_tiling_focused(workspace_get(assignment->dest.workspace, NULL));
-                DLOG("focused on ws %s: %p / %s\n", assignment->dest.workspace, nc, nc->name);
+                Con *assigned_ws = workspace_get(assignment->dest.workspace, NULL);
+                nc = con_descend_tiling_focused(assigned_ws);
+                DLOG("focused on ws %s: %p / %s\n", assigned_ws->name, nc, nc->name);
                 if (nc->type == CT_WORKSPACE)
                     nc = tree_open_con(nc, cwindow);
-                else nc = tree_open_con(nc->parent, cwindow);
+                else
+                    nc = tree_open_con(nc->parent, cwindow);
+
+                /* set the urgency hint on the window if the workspace is not visible */
+                if (!workspace_is_visible(assigned_ws))
+                    urgency_hint = true;
             }
         /* TODO: handle assignments with type == A_TO_OUTPUT */
         } else if (startup_ws) {
