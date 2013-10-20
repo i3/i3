@@ -1531,10 +1531,20 @@ void reconfig_windows(bool redraw_bars) {
                 exit(EXIT_FAILURE);
             }
 
-            if (!tray_configured &&
-                (!config.tray_output ||
-                 strcasecmp("none", config.tray_output) != 0)) {
-                init_tray();
+            const char *tray_output = (config.tray_output ? config.tray_output : SLIST_FIRST(outputs)->name);
+            if (!tray_configured && strcasecmp(tray_output, "none") != 0) {
+                /* Configuration sanity check: ensure this i3bar instance handles the output on
+                 * which the tray should appear (e.g. don’t initialize a tray if tray_output ==
+                 * VGA-1 but output == [HDMI-1]).
+                 */
+                i3_output *output;
+                SLIST_FOREACH(output, outputs, slist) {
+                    if (strcasecmp(output->name, tray_output) == 0 ||
+                            (strcasecmp(tray_output, "primary") == 0 && output->primary)) {
+                        init_tray();
+                        break;
+                    }
+                }
                 tray_configured = true;
             }
         } else {
