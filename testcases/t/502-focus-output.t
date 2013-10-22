@@ -71,6 +71,23 @@ is(focused_output, 'fake-1', 'focus on second output');
 cmd 'focus output fake-0';
 is(focused_output, 'fake-0', 'focus on first output');
 
+################################################################################
+# use 'focus output' and verify that i3 does not crash when the currently
+# focused window is floating and is only partially mapped on an output screen
+################################################################################
+
+is(focused_output, 'fake-0', 'focus on first output');
+
+my $floating_win = open_window;
+cmd 'floating toggle';
+cmd 'move to absolute position -10 -10';
+
+cmd 'focus output right';
+is(focused_output, 'fake-1', 'focus on second output');
+
+cmd 'focus output fake-0';
+is(focused_output, 'fake-0', 'focus on first output');
+
 exit_gracefully($pid);
 
 done_testing;
