@@ -569,8 +569,9 @@ void con_fix_percent(Con *con) {
 }
 
 /*
- * Toggles fullscreen mode for the given container. Fullscreen mode will not be
- * entered when there already is a fullscreen container on this workspace.
+ * Toggles fullscreen mode for the given container. If there already is a
+ * fullscreen container on this workspace, fullscreen will be disabled and then
+ * enabled for the container the user wants to have in fullscreen mode.
  *
  */
 void con_toggle_fullscreen(Con *con, int fullscreen_mode) {
