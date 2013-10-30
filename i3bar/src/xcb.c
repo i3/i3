@@ -1626,9 +1626,6 @@ void draw_bars(bool unhide) {
 
     refresh_statusline();
 
-    static char *last_urgent_ws = NULL;
-    bool walks_away = true;
-
     i3_output *outputs_walk;
     SLIST_FOREACH(outputs_walk, outputs, slist) {
         if (!outputs_walk->active) {
@@ -1697,9 +1694,6 @@ void draw_bars(bool unhide) {
                         fg_color = colors.focus_ws_fg;
                         bg_color = colors.focus_ws_bg;
                         border_color = colors.focus_ws_border;
-                        if (last_urgent_ws && strcmp(i3string_as_utf8(ws_walk->name),
-                                                     last_urgent_ws) == 0)
-                            walks_away = false;
                     }
                 }
                 if (ws_walk->urgent) {
@@ -1708,10 +1702,6 @@ void draw_bars(bool unhide) {
                     bg_color = colors.urgent_ws_bg;
                     border_color = colors.urgent_ws_border;
                     unhide = true;
-                    if (!ws_walk->focused) {
-                        FREE(last_urgent_ws);
-                        last_urgent_ws = sstrdup(i3string_as_utf8(ws_walk->name));
-                    }
                 }
                 uint32_t mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
                 uint32_t vals_border[] = { border_color, border_color };
@@ -1783,13 +1773,11 @@ void draw_bars(bool unhide) {
     }
 
     /* Assure the bar is hidden/unhidden according to the specified hidden_state and mode */
-    bool should_unhide = (config.hidden_state == S_SHOW || (unhide && config.hidden_state == S_HIDE));
-    bool should_hide = (config.hide_on_modifier == M_INVISIBLE);
-
-    if (mod_pressed || (should_unhide && !should_hide)) {
+    if (mod_pressed ||
+            config.hidden_state == S_SHOW ||
+            unhide) {
         unhide_bars();
-    } else if (!mod_pressed && (walks_away || should_hide)) {
-        FREE(last_urgent_ws);
+    } else if (config.hide_on_modifier == M_HIDE) {
         hide_bars();
     }
 
