@@ -441,14 +441,14 @@ void floating_drag_window(Con *con, const xcb_button_press_event_t *event) {
      * after the user releases the mouse button */
     tree_render();
 
-    /* Store the initial rect in case of user cancel */
+    /* Store the initial rect in case of user revert/cancel */
     Rect initial_rect = con->rect;
 
     /* Drag the window */
     drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, XCURSOR_CURSOR_MOVE, drag_window_callback, event);
 
     /* If the user cancelled, undo the changes. */
-    if (drag_result == DRAG_CANCEL)
+    if (drag_result == DRAG_REVERT)
         floating_reposition(con, initial_rect);
 
     /* If this is a scratchpad window, don't auto center it from now on. */
@@ -553,13 +553,13 @@ void floating_resize_window(Con *con, const bool proportional,
 
     struct resize_window_callback_params params = { corner, proportional, event };
 
-    /* get the initial rect in case of cancel */
+    /* get the initial rect in case of revert/cancel */
     Rect initial_rect = con->rect;
 
     drag_result_t drag_result = drag_pointer(con, event, XCB_NONE, BORDER_TOP /* irrelevant */, cursor, resize_window_callback, &params);
 
     /* If the user cancels, undo the resize */
-    if (drag_result == DRAG_CANCEL)
+    if (drag_result == DRAG_REVERT)
         floating_reposition(con, initial_rect);
 
     /* If this is a scratchpad window, don't auto center it from now on. */
@@ -601,7 +601,7 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
 
     if ((reply = xcb_grab_pointer_reply(conn, cookie, NULL)) == NULL) {
         ELOG("Could not grab pointer\n");
-        return DRAG_CANCEL;
+        return DRAG_ABORT;
     }
 
     free(reply);
@@ -620,7 +620,7 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
 
     if ((keyb_reply = xcb_grab_keyboard_reply(conn, keyb_cookie, NULL)) == NULL) {
         ELOG("Could not grab keyboard\n");
-        return DRAG_CANCEL;
+        return DRAG_ABORT;
     }
 
     free(keyb_reply);
@@ -629,11 +629,9 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
     xcb_flush(conn);
 
     xcb_generic_event_t *inside_event, *last_motion_notify = NULL;
-    bool loop_done = false;
-    /* The return value, set to DRAG_CANCEL on user cancel */
-    drag_result_t drag_result = DRAG_SUCCESS;
+    drag_result_t drag_result = DRAGGING;
     /* I’ve always wanted to have my own eventhandler… */
-    while (!loop_done && (inside_event = xcb_wait_for_event(conn))) {
+    while (drag_result == DRAGGING && (inside_event = xcb_wait_for_event(conn))) {
         /* We now handle all events we can get using xcb_poll_for_event */
         do {
             /* skip x11 errors */
@@ -646,7 +644,7 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
 
             switch (type) {
                 case XCB_BUTTON_RELEASE:
-                    loop_done = true;
+                    drag_result = DRAG_SUCCESS;
                     break;
 
                 case XCB_MOTION_NOTIFY:
@@ -657,16 +655,15 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
 
                 case XCB_UNMAP_NOTIFY:
                     DLOG("Unmap-notify, aborting\n");
+                    drag_result = DRAG_ABORT;
+
                     handle_event(type, inside_event);
-                    loop_done = true;
-                    drag_result = DRAG_CANCEL;
                     break;
 
                 case XCB_KEY_PRESS:
                     /* Cancel the drag if a key was pressed */
-                    DLOG("A key was pressed during drag, canceling.");
-                    loop_done = true;
-                    drag_result = DRAG_CANCEL;
+                    DLOG("A key was pressed during drag, reverting changes.");
+                    drag_result = DRAG_REVERT;
 
                     handle_event(type, inside_event);
                     break;
@@ -681,7 +678,7 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
                 free(inside_event);
         } while ((inside_event = xcb_poll_for_event(conn)) != NULL);
 
-        if (last_motion_notify == NULL || loop_done)
+        if (last_motion_notify == NULL || drag_result != DRAGGING)
             continue;
 
         new_x = ((xcb_motion_notify_event_t*)last_motion_notify)->root_x;

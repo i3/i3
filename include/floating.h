@@ -134,12 +134,27 @@ void floating_toggle_hide(xcb_connection_t *conn, Workspace *workspace);
 
 #endif
 /**
- * This is the return value of a drag operation like drag_pointer. DRAG_CANCEL
- * will indicate the intention of the drag should not be carried out, or that
- * the drag actions should be undone.
+ * This is the return value of a drag operation like drag_pointer.
+ *
+ * DRAGGING will indicate the drag action is still in progress and can be
+ * continued or resolved.
+ *
+ * DRAG_SUCCESS will indicate the intention of the drag action should be
+ * carried out.
+ *
+ * DRAG_REVERT will indicate an attempt should be made to restore the state of
+ * the involved windows to their condition before the drag.
+ *
+ * DRAG_ABORT will indicate that the intention of the drag action cannot be
+ * carried out (e.g. because the window has been unmapped).
  *
  */
-typedef enum { DRAG_SUCCESS = 0, DRAG_CANCEL } drag_result_t;
+typedef enum {
+    DRAGGING = 0,
+    DRAG_SUCCESS,
+    DRAG_REVERT,
+    DRAG_ABORT
+} drag_result_t;
 
 /**
  * This function grabs your pointer and keyboard and lets you drag stuff around

@@ -161,7 +161,7 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     xcb_flush(conn);
 
     /* User cancelled the drag so no action should be taken. */
-    if (drag_result == DRAG_CANCEL)
+    if (drag_result == DRAG_REVERT)
         return 0;
 
     int pixels;
