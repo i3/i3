@@ -22,6 +22,7 @@
 #include <getopt.h>
 #include <limits.h>
 #include <fcntl.h>
+#include <paths.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -95,15 +96,8 @@ static void start_application(const char *command) {
         /* Child process */
         setsid();
         if (fork() == 0) {
-            /* Stores the path of the shell */
-            static const char *shell = NULL;
-
-            if (shell == NULL)
-                if ((shell = getenv("SHELL")) == NULL)
-                    shell = "/bin/sh";
-
             /* This is the child */
-            execl(shell, shell, "-c", command, (void*)NULL);
+            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (void*)NULL);
             /* not reached */
         }
         exit(0);

@@ -22,6 +22,7 @@
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_version.h>
 #include <yajl/yajl_gen.h>
+#include <paths.h>
 
 #include "common.h"
 
@@ -423,12 +424,7 @@ void start_child(char *command) {
                 dup2(pipe_in[1], STDOUT_FILENO);
                 dup2(pipe_out[0], STDIN_FILENO);
 
-                static const char *shell = NULL;
-
-                if ((shell = getenv("SHELL")) == NULL)
-                    shell = "/bin/sh";
-
-                execl(shell, shell, "-c", command, (char*) NULL);
+                execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (char*) NULL);
                 return;
             default:
                 /* Parent-process. Reroute streams */
