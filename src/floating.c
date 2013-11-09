@@ -629,6 +629,8 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
     xcb_flush(conn);
 
     xcb_generic_event_t *inside_event, *last_motion_notify = NULL;
+    Con *inside_con = NULL;
+
     drag_result_t drag_result = DRAGGING;
     /* I’ve always wanted to have my own eventhandler… */
     while (drag_result == DRAGGING && (inside_event = xcb_wait_for_event(conn))) {
@@ -654,8 +656,16 @@ drag_result_t drag_pointer(Con *con, const xcb_button_press_event_t *event, xcb_
                     break;
 
                 case XCB_UNMAP_NOTIFY:
-                    DLOG("Unmap-notify, aborting\n");
-                    drag_result = DRAG_ABORT;
+                    inside_con = con_by_window_id(((xcb_unmap_notify_event_t*)inside_event)->window);
+
+                    if (inside_con != NULL) {
+                        DLOG("UnmapNotify for window 0x%08x (container %p)\n", ((xcb_unmap_notify_event_t*)inside_event)->window, inside_con);
+
+                        if (con_get_workspace(inside_con) == con_get_workspace(focused)) {
+                            DLOG("UnmapNotify for a managed window on the current workspace, aborting\n");
+                            drag_result = DRAG_ABORT;
+                        }
+                    }
 
                     handle_event(type, inside_event);
                     break;
