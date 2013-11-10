@@ -1285,16 +1285,20 @@ bindsym $mod+x move container to workspace 3; workspace 3
 [[command_criteria]]
 
 Furthermore, you can change the scope of a command - that is, which containers
-should be affected by that command, by using various criteria. These are
-prefixed in square brackets to every command. If you want to kill all windows
-which have the class Firefox, use:
+should be affected by that command, by using various criteria. The criteria
+are specified before any command in a pair of square brackets and are separated
+by space.
 
 *Example*:
 ------------------------------------
+# if you want to kill all windows which have the class Firefox, use:
 bindsym $mod+x [class="Firefox"] kill
 
 # same thing, but case-insensitive
 bindsym $mod+x [class="(?i)firefox"] kill
+
+# kill only the About dialog from Firefox
+bindsym $mod+x [class="Firefox" window_role="About"] kill
 ------------------------------------
 
 The criteria which are currently implemented are:
