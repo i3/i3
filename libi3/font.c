@@ -56,7 +56,10 @@ static bool load_pango_font(i3Font *font, const char *desc) {
     /* Create a dummy Pango layout to compute the font height */
     cairo_surface_t *surface = cairo_xcb_surface_create(conn, root_screen->root, root_visual_type, 1, 1);
     cairo_t *cr = cairo_create(surface);
-    PangoLayout *layout = pango_cairo_create_layout(cr);
+    double ydpi = (double)root_screen->height_in_pixels * 25.4 / (double)root_screen->height_in_millimeters;
+    PangoContext *pc = pango_cairo_create_context(cr);
+    pango_cairo_context_set_resolution(pc, ydpi);
+    PangoLayout *layout = pango_layout_new(pc);
     pango_layout_set_font_description(layout, font->specific.pango_desc);
 
     /* Get the font height */
@@ -66,6 +69,7 @@ static bool load_pango_font(i3Font *font, const char *desc) {
 
     /* Free resources */
     g_object_unref(layout);
+    g_object_unref(pc);
     cairo_destroy(cr);
     cairo_surface_destroy(surface);
 
@@ -85,7 +89,10 @@ static void draw_text_pango(const char *text, size_t text_len,
     cairo_surface_t *surface = cairo_xcb_surface_create(conn, drawable,
             root_visual_type, x + max_width, y + savedFont->height);
     cairo_t *cr = cairo_create(surface);
-    PangoLayout *layout = pango_cairo_create_layout(cr);
+    double ydpi = (double)root_screen->height_in_pixels * 25.4 / (double)root_screen->height_in_millimeters;
+    PangoContext *pc = pango_cairo_create_context(cr);
+    pango_cairo_context_set_resolution(pc, ydpi);
+    PangoLayout *layout = pango_layout_new(pc);
     gint height;
 
     pango_layout_set_font_description(layout, savedFont->specific.pango_desc);
@@ -104,6 +111,7 @@ static void draw_text_pango(const char *text, size_t text_len,
 
     /* Free resources */
     g_object_unref(layout);
+    g_object_unref(pc);
     cairo_destroy(cr);
     cairo_surface_destroy(surface);
 }
@@ -117,7 +125,10 @@ static int predict_text_width_pango(const char *text, size_t text_len) {
     /* root_visual_type is cached in load_pango_font */
     cairo_surface_t *surface = cairo_xcb_surface_create(conn, root_screen->root, root_visual_type, 1, 1);
     cairo_t *cr = cairo_create(surface);
-    PangoLayout *layout = pango_cairo_create_layout(cr);
+    double ydpi = (double)root_screen->height_in_pixels * 25.4 / (double)root_screen->height_in_millimeters;
+    PangoContext *pc = pango_cairo_create_context(cr);
+    pango_cairo_context_set_resolution(pc, ydpi);
+    PangoLayout *layout = pango_layout_new(pc);
 
     /* Get the font width */
     gint width;
@@ -128,6 +139,7 @@ static int predict_text_width_pango(const char *text, size_t text_len) {
 
     /* Free resources */
     g_object_unref(layout);
+    g_object_unref(pc);
     cairo_destroy(cr);
     cairo_surface_destroy(surface);
 
