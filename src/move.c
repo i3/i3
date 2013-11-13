@@ -65,11 +65,12 @@ static void insert_con_into(Con *con, Con *target, position_t position) {
 }
 
 /*
- * This function detaches 'con' from its parent and inserts it at the given
- * workspace.
+ * This function detaches 'con' from its parent and puts it in the given
+ * workspace. Position is determined by the direction of movement into the
+ * workspace container.
  *
  */
-static void attach_to_workspace(Con *con, Con *ws) {
+static void attach_to_workspace(Con *con, Con *ws, direction_t direction) {
     con_detach(con);
     con_fix_percent(con->parent);
 
@@ -77,14 +78,45 @@ static void attach_to_workspace(Con *con, Con *ws) {
 
     con->parent = ws;
 
-    TAILQ_INSERT_TAIL(&(ws->nodes_head), con, nodes);
-    TAILQ_INSERT_TAIL(&(ws->focus_head), con, focused);
+    if (direction == D_RIGHT || direction == D_DOWN) {
+        TAILQ_INSERT_HEAD(&(ws->nodes_head), con, nodes);
+        TAILQ_INSERT_HEAD(&(ws->focus_head), con, focused);
+    } else {
+        TAILQ_INSERT_TAIL(&(ws->nodes_head), con, nodes);
+        TAILQ_INSERT_TAIL(&(ws->focus_head), con, focused);
+    }
 
     /* Pretend the con was just opened with regards to size percent values.
      * Since the con is moved to a completely different con, the old value
      * does not make sense anyways. */
     con->percent = 0.0;
     con_fix_percent(ws);
+}
+
+/*
+ * Moves the given container to the closest output in the given direction if
+ * such an output exists.
+ *
+ */
+static void move_to_output_directed(Con *con, direction_t direction) {
+    Con *current_output_con = con_get_output(con);
+    Output *current_output = get_output_by_name(current_output_con->name);
+    Output *output = get_output_next(direction, current_output, CLOSEST_OUTPUT);
+
+    if (!output) {
+        DLOG("No output in this direction found. Not moving.\n");
+        return;
+    }
+
+    Con *ws = NULL;
+    GREP_FIRST(ws, output_get_content(output->con), workspace_is_visible(child));
+
+    if (!ws) {
+        DLOG("No workspace on output in this direction found. Not moving.\n");
+        return;
+    }
+
+    attach_to_workspace(con, ws, direction);
 }
 
 /*
@@ -103,8 +135,9 @@ void tree_move(int direction) {
     }
 
     if (con->parent->type == CT_WORKSPACE && con_num_children(con->parent) == 1) {
-        DLOG("This is the only con on this workspace, not doing anything\n");
-        return;
+        /* This is the only con on this workspace */
+        move_to_output_directed(con, direction);
+        goto end;
     }
 
     orientation_t o = (direction == D_LEFT || direction == D_RIGHT ? HORIZ : VERT);
@@ -124,7 +157,7 @@ void tree_move(int direction) {
             if (con_inside_floating(con)) {
                 /* 'con' should be moved out of a floating container */
                 DLOG("Inside floating, moving to workspace\n");
-                attach_to_workspace(con, con_get_workspace(con));
+                attach_to_workspace(con, con_get_workspace(con), direction);
                 goto end;
             }
             DLOG("Force-changing orientation\n");
@@ -154,12 +187,15 @@ void tree_move(int direction) {
                 return;
             }
 
-            /* If there was no con with which we could swap the current one, search
-             * again, but starting one level higher. If we are on the workspace
-             * level, don’t do that. The result would be a force change of
-             * workspace orientation, which is not necessary. */
-            if (con->parent == con_get_workspace(con))
-                return;
+            if (con->parent == con_get_workspace(con)) {
+                /*  If we couldn't find a place to move it on this workspace,
+                 *  try to move it to a workspace on a different output */
+                move_to_output_directed(con, direction);
+                goto end;
+            }
+
+            /* If there was no con with which we could swap the current one,
+             * search again, but starting one level higher. */
             same_orientation = con_parent_with_orientation(con->parent, o);
         }
     } while (same_orientation == NULL);
