@@ -71,8 +71,8 @@ my $social_window = open_window( name => 'CORRECT_WINDOW' );
 cmd('move right');
 is(scalar @{get_ws_content('right-top')}, 1, 'moved some window to right-top workspace');
 my $compare_window = shift @{get_ws_content('right-top')};
-is($compare_window->{name}, $social_window->name, 'moved correct window to right-top workspace');
-# unamp the first window so we don't confuse it when we move back here
+is($compare_window->{window}, $social_window->id, 'moved correct window to right-top workspace');
+# unmap the first window so we don't confuse it when we move back here
 $first_window->unmap;
 wait_for_unmap;
 
