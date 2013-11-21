@@ -372,7 +372,8 @@ char *get_process_filename(const char *prefix);
  *
  * The implementation follows http://stackoverflow.com/a/933996/712014
  *
+ * Returned value must be freed by the caller.
  */
-const char *get_exe_path(const char *argv0);
+char *get_exe_path(const char *argv0);
 
 #endif

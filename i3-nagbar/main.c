@@ -159,8 +159,9 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
     fclose(script);
 
     char *link_path;
+    char *exe_path = get_exe_path(argv0);
     sasprintf(&link_path, "%s.nagbar_cmd", script_path);
-    symlink(get_exe_path(argv0), link_path);
+    symlink(exe_path, link_path);
 
     char *terminal_cmd;
     sasprintf(&terminal_cmd, "i3-sensible-terminal -e %s", link_path);
@@ -172,6 +173,7 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
     free(link_path);
     free(terminal_cmd);
     free(script_path);
+    free(exe_path);
 
     /* TODO: unset flag, re-render */
 }

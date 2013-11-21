@@ -488,18 +488,25 @@ int main(int argc, char *argv[]) {
 
         /* The following code is helpful, but not required. We thus don’t pay
          * much attention to error handling, non-linux or other edge cases. */
-        char cwd[PATH_MAX];
         LOG("CORE DUMPS: You are running a development version of i3, so coredumps were automatically enabled (ulimit -c unlimited).\n");
-        if (getcwd(cwd, sizeof(cwd)) != NULL)
+        size_t cwd_size = 1024;
+        char *cwd = smalloc(cwd_size);
+        char *cwd_ret;
+        while ((cwd_ret = getcwd(cwd, cwd_size)) == NULL && errno == ERANGE) {
+            cwd_size = cwd_size * 2;
+            cwd = srealloc(cwd, cwd_size);
+        }
+        if (cwd_ret != NULL)
             LOG("CORE DUMPS: Your current working directory is \"%s\".\n", cwd);
         int patternfd;
         if ((patternfd = open("/proc/sys/kernel/core_pattern", O_RDONLY)) >= 0) {
-            memset(cwd, '\0', sizeof(cwd));
-            if (read(patternfd, cwd, sizeof(cwd)) > 0)
+            memset(cwd, '\0', cwd_size);
+            if (read(patternfd, cwd, cwd_size) > 0)
                 /* a trailing newline is included in cwd */
                 LOG("CORE DUMPS: Your core_pattern is: %s", cwd);
             close(patternfd);
         }
+        free(cwd);
     }
 
     LOG("i3 " I3_VERSION " starting\n");

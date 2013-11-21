@@ -128,13 +128,18 @@ void display_running_version(void) {
     printf("\rRunning i3 version: %s (pid %s)\n", human_readable_version, pid_from_atom);
 
 #ifdef __linux__
-    char exepath[PATH_MAX],
-         destpath[PATH_MAX];
+    size_t destpath_size = 1024;
     ssize_t linksize;
+    char *exepath;
+    char *destpath = smalloc(destpath_size);
 
-    snprintf(exepath, sizeof(exepath), "/proc/%d/exe", getpid());
+    sasprintf(&exepath, "/proc/%d/exe", getpid());
 
-    if ((linksize = readlink(exepath, destpath, sizeof(destpath))) == -1)
+    while ((linksize = readlink(exepath, destpath, destpath_size)) == destpath_size) {
+            destpath_size = destpath_size * 2;
+            destpath = srealloc(destpath, destpath_size);
+    }
+    if (linksize == -1)
         err(EXIT_FAILURE, "readlink(%s)", exepath);
 
     /* readlink() does not NULL-terminate strings, so we have to. */
@@ -143,9 +148,14 @@ void display_running_version(void) {
     printf("\n");
     printf("The i3 binary you just called: %s\n", destpath);
 
-    snprintf(exepath, sizeof(exepath), "/proc/%s/exe", pid_from_atom);
+    free(exepath);
+    sasprintf(&exepath, "/proc/%s/exe", pid_from_atom);
 
-    if ((linksize = readlink(exepath, destpath, sizeof(destpath))) == -1)
+    while ((linksize = readlink(exepath, destpath, destpath_size)) == destpath_size) {
+        destpath_size = destpath_size * 2;
+        destpath = srealloc(destpath, destpath_size);
+    }
+    if (linksize == -1)
         err(EXIT_FAILURE, "readlink(%s)", exepath);
 
     /* readlink() does not NULL-terminate strings, so we have to. */
@@ -159,7 +169,8 @@ void display_running_version(void) {
     /* Since readlink() might put a "(deleted)" somewhere in the buffer and
      * stripping that out seems hackish and ugly, we read the process’s argv[0]
      * instead. */
-    snprintf(exepath, sizeof(exepath), "/proc/%s/cmdline", pid_from_atom);
+    free(exepath);
+    sasprintf(&exepath, "/proc/%s/cmdline", pid_from_atom);
 
     int fd;
     if ((fd = open(exepath, O_RDONLY)) == -1)
@@ -169,6 +180,9 @@ void display_running_version(void) {
     close(fd);
 
     printf("The i3 binary you are running: %s\n", destpath);
+
+    free(exepath);
+    free(destpath);
 #endif
 
     yajl_free(handle);
