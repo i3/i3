@@ -1355,8 +1355,9 @@ static void con_on_remove_child(Con *con) {
      * not be closed when the last child was removed */
     if (con->type == CT_OUTPUT ||
         con->type == CT_ROOT ||
-        con->type == CT_DOCKAREA) {
-        DLOG("not handling, type = %d\n", con->type);
+        con->type == CT_DOCKAREA ||
+        (con->parent != NULL && con->parent->type == CT_OUTPUT)) {
+        DLOG("not handling, type = %d, name = %s\n", con->type, con->name);
         return;
     }
 
