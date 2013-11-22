@@ -68,11 +68,11 @@ static yajl_callbacks version_callbacks = {
  *
  */
 void display_running_version(void) {
-    char *socket_path = root_atom_contents("I3_SOCKET_PATH");
+    char *socket_path = root_atom_contents("I3_SOCKET_PATH", conn, conn_screen);
     if (socket_path == NULL)
         exit(EXIT_SUCCESS);
 
-    char *pid_from_atom = root_atom_contents("I3_PID");
+    char *pid_from_atom = root_atom_contents("I3_PID", conn, conn_screen);
     if (pid_from_atom == NULL) {
         /* If I3_PID is not set, the running version is older than 4.2-200. */
         printf("\nRunning version: < 4.2-200\n");

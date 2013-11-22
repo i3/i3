@@ -19,19 +19,22 @@
  * Try to get the contents of the given atom (for example I3_SOCKET_PATH) from
  * the X11 root window and return NULL if it doesn’t work.
  *
+ * If the provided XCB connection is NULL, a new connection will be
+ * established.
+ *
  * The memory for the contents is dynamically allocated and has to be
  * free()d by the caller.
  *
  */
-char *root_atom_contents(const char *atomname) {
-    xcb_connection_t *conn;
+char *root_atom_contents(const char *atomname, xcb_connection_t *provided_conn, int screen) {
     xcb_intern_atom_cookie_t atom_cookie;
     xcb_intern_atom_reply_t *atom_reply;
-    int screen;
     char *content;
+    xcb_connection_t *conn = provided_conn;
 
-    if ((conn = xcb_connect(NULL, &screen)) == NULL ||
-        xcb_connection_has_error(conn))
+    if (provided_conn == NULL &&
+        ((conn = xcb_connect(NULL, &screen)) == NULL ||
+         xcb_connection_has_error(conn)))
         return NULL;
 
     atom_cookie = xcb_intern_atom(conn, 0, strlen(atomname), atomname);
@@ -60,7 +63,8 @@ char *root_atom_contents(const char *atomname) {
                      (char*)xcb_get_property_value(prop_reply)) == -1)
             return NULL;
     }
-    xcb_disconnect(conn);
+    if (provided_conn == NULL)
+        xcb_disconnect(conn);
     return content;
 }
 

@@ -960,26 +960,7 @@ char *init_xcb_early() {
     /* Now we get the atoms and save them in a nice data structure */
     get_atoms();
 
-    xcb_get_property_cookie_t path_cookie;
-    path_cookie = xcb_get_property_unchecked(xcb_connection,
-                                   0,
-                                   xcb_root,
-                                   atoms[I3_SOCKET_PATH],
-                                   XCB_GET_PROPERTY_TYPE_ANY,
-                                   0, PATH_MAX);
-
-    /* We check, if i3 set its socket-path */
-    xcb_get_property_reply_t *path_reply = xcb_get_property_reply(xcb_connection,
-                                                                  path_cookie,
-                                                                  NULL);
-    char *path = NULL;
-    if (path_reply) {
-        int len = xcb_get_property_value_length(path_reply);
-        if (len != 0) {
-            path = strndup(xcb_get_property_value(path_reply), len);
-        }
-    }
-
+    char *path = root_atom_contents("I3_SOCKET_PATH", xcb_connection, screen);
 
     if (xcb_request_failed(sl_pm_cookie, "Could not allocate statusline-buffer") ||
         xcb_request_failed(clear_ctx_cookie, "Could not allocate statusline-buffer-clearcontext") ||
