@@ -623,6 +623,39 @@ static void handle_client_message(xcb_client_message_event_t* event) {
 }
 
 /*
+ * Handles DestroyNotify events by removing the tray client from the data
+ * structure. According to the XEmbed protocol, this is one way for a tray
+ * client to finish the protocol. After this event is received, there is no
+ * further interaction with the tray client.
+ *
+ * See: http://standards.freedesktop.org/xembed-spec/xembed-spec-latest.html
+ *
+ */
+static void handle_destroy_notify(xcb_destroy_notify_event_t* event) {
+    DLOG("DestroyNotify for window = %08x, event = %08x\n", event->window, event->event);
+
+    i3_output *walk;
+    SLIST_FOREACH(walk, outputs, slist) {
+        if (!walk->active)
+            continue;
+        DLOG("checking output %s\n", walk->name);
+        trayclient *trayclient;
+        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
+            if (trayclient->win != event->window)
+                continue;
+
+            DLOG("Removing tray client with window ID %08x\n", event->window);
+            TAILQ_REMOVE(walk->trayclients, trayclient, tailq);
+
+            /* Trigger an update, we now have more space for the statusline */
+            configure_trayclients();
+            draw_bars(false);
+            return;
+        }
+    }
+}
+
+/*
  * Handles UnmapNotify events. These events happen when a tray window unmaps
  * itself. We then update our data structure
  *
@@ -798,8 +831,11 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
                  * example system tray widgets talk to us directly via client messages. */
                 handle_client_message((xcb_client_message_event_t*) event);
                 break;
-            case XCB_UNMAP_NOTIFY:
             case XCB_DESTROY_NOTIFY:
+                /* DestroyNotify signifies the end of the XEmbed protocol */
+                handle_destroy_notify((xcb_destroy_notify_event_t*) event);
+                break;
+            case XCB_UNMAP_NOTIFY:
                 /* UnmapNotifies are received when a tray window unmaps itself */
                 handle_unmap_notify((xcb_unmap_notify_event_t*) event);
                 break;
