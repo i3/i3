@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <stdlib.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -51,20 +52,35 @@ char *root_atom_contents(const char *atomname, xcb_connection_t *provided_conn, 
     prop_cookie = xcb_get_property_unchecked(conn, false, root, atom_reply->atom,
                                              XCB_GET_PROPERTY_TYPE_ANY, 0, PATH_MAX);
     prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
-    if (prop_reply == NULL || xcb_get_property_value_length(prop_reply) == 0)
+    if (prop_reply == NULL) {
+        free(atom_reply);
         return NULL;
+    }
+    if (xcb_get_property_value_length(prop_reply) == 0) {
+        free(atom_reply);
+        free(prop_reply);
+        return NULL;
+    }
     if (prop_reply->type == XCB_ATOM_CARDINAL) {
         /* We treat a CARDINAL as a >= 32-bit unsigned int. The only CARDINAL
          * we query is I3_PID, which is 32-bit. */
-        if (asprintf(&content, "%u", *((unsigned int*)xcb_get_property_value(prop_reply))) == -1)
+        if (asprintf(&content, "%u", *((unsigned int*)xcb_get_property_value(prop_reply))) == -1) {
+            free(atom_reply);
+            free(prop_reply);
             return NULL;
+        }
     } else {
         if (asprintf(&content, "%.*s", xcb_get_property_value_length(prop_reply),
-                     (char*)xcb_get_property_value(prop_reply)) == -1)
+                     (char*)xcb_get_property_value(prop_reply)) == -1) {
+            free(atom_reply);
+            free(prop_reply);
             return NULL;
+        }
     }
     if (provided_conn == NULL)
         xcb_disconnect(conn);
+    free(atom_reply);
+    free(prop_reply);
     return content;
 }
 
