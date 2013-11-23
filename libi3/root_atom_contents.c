@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_aux.h>
@@ -31,6 +32,7 @@ char *root_atom_contents(const char *atomname, xcb_connection_t *provided_conn, 
     xcb_intern_atom_cookie_t atom_cookie;
     xcb_intern_atom_reply_t *atom_reply;
     char *content;
+    size_t content_max_words = 256;
     xcb_connection_t *conn = provided_conn;
 
     if (provided_conn == NULL &&
@@ -50,11 +52,25 @@ char *root_atom_contents(const char *atomname, xcb_connection_t *provided_conn, 
     xcb_get_property_cookie_t prop_cookie;
     xcb_get_property_reply_t *prop_reply;
     prop_cookie = xcb_get_property_unchecked(conn, false, root, atom_reply->atom,
-                                             XCB_GET_PROPERTY_TYPE_ANY, 0, PATH_MAX);
+                                             XCB_GET_PROPERTY_TYPE_ANY, 0, content_max_words);
     prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
     if (prop_reply == NULL) {
         free(atom_reply);
         return NULL;
+    }
+    if (xcb_get_property_value_length(prop_reply) > 0 && prop_reply->bytes_after > 0) {
+        /* We received an incomplete value. Ask again but with a properly
+         * adjusted size. */
+        content_max_words += ceil(prop_reply->bytes_after / 4.0);
+        /* Repeat the request, with adjusted size */
+        free(prop_reply);
+        prop_cookie = xcb_get_property_unchecked(conn, false, root, atom_reply->atom,
+                                                 XCB_GET_PROPERTY_TYPE_ANY, 0, content_max_words);
+        prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
+        if (prop_reply == NULL) {
+            free(atom_reply);
+            return NULL;
+        }
     }
     if (xcb_get_property_value_length(prop_reply) == 0) {
         free(atom_reply);

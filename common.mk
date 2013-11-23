@@ -144,7 +144,7 @@ PANGO_LIBS   := $(call ldflags_for_lib, cairo)
 PANGO_LIBS   += $(call ldflags_for_lib, pangocairo)
 
 # libi3
-LIBS = -L$(TOPDIR) -li3
+LIBS = -L$(TOPDIR) -li3 -lm
 
 ## Platform-specific flags
 
