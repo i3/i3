@@ -433,8 +433,9 @@ void handle_button(xcb_button_press_event_t *event) {
 }
 
 /*
- * Configures the x coordinate of all trayclients. To be called after adding a
- * new tray client or removing an old one.
+ * Adjusts the size of the tray window and alignment of the tray clients by
+ * configuring their respective x coordinates. To be called when mapping or
+ * unmapping a tray client window.
  *
  */
 static void configure_trayclients(void) {
@@ -610,7 +611,6 @@ static void handle_client_message(xcb_client_message_event_t* event) {
             }
             trayclient *tc = smalloc(sizeof(trayclient));
             tc->win = client;
-            tc->mapped = map_it;
             tc->xe_version = xe_version;
             TAILQ_INSERT_TAIL(output->trayclients, tc, tailq);
 
@@ -656,8 +656,36 @@ static void handle_destroy_notify(xcb_destroy_notify_event_t* event) {
 }
 
 /*
- * Handles UnmapNotify events. These events happen when a tray window unmaps
- * itself. We then update our data structure
+ * Handles MapNotify events. These events happen when a tray client shows its
+ * window. We respond by realigning the tray clients.
+ *
+ */
+static void handle_map_notify(xcb_map_notify_event_t* event) {
+    DLOG("MapNotify for window = %08x, event = %08x\n", event->window, event->event);
+
+    i3_output *walk;
+    SLIST_FOREACH(walk, outputs, slist) {
+        if (!walk->active)
+            continue;
+        DLOG("checking output %s\n", walk->name);
+        trayclient *trayclient;
+        TAILQ_FOREACH(trayclient, walk->trayclients, tailq) {
+            if (trayclient->win != event->window)
+                continue;
+
+            DLOG("Tray client mapped (window ID %08x). Adjusting tray.\n", event->window);
+            trayclient->mapped = true;
+
+            /* Trigger an update, we now have more space for the statusline */
+            configure_trayclients();
+            draw_bars(false);
+            return;
+        }
+    }
+}
+/*
+ * Handles UnmapNotify events. These events happen when a tray client hides its
+ * window. We respond by realigning the tray clients.
  *
  */
 static void handle_unmap_notify(xcb_unmap_notify_event_t* event) {
@@ -673,8 +701,8 @@ static void handle_unmap_notify(xcb_unmap_notify_event_t* event) {
             if (trayclient->win != event->window)
                 continue;
 
-            DLOG("Removing tray client with window ID %08x\n", event->window);
-            TAILQ_REMOVE(walk->trayclients, trayclient, tailq);
+            DLOG("Tray client unmapped (window ID %08x). Adjusting tray.\n", event->window);
+            trayclient->mapped = false;
 
             /* Trigger an update, we now have more space for the statusline */
             configure_trayclients();
@@ -741,15 +769,9 @@ static void handle_property_notify(xcb_property_notify_event_t *event) {
         if (trayclient->mapped && !map_it) {
             /* need to unmap the window */
             xcb_unmap_window(xcb_connection, trayclient->win);
-            trayclient->mapped = map_it;
-            configure_trayclients();
-            draw_bars(false);
         } else if (!trayclient->mapped && map_it) {
             /* need to map the window */
             xcb_map_window(xcb_connection, trayclient->win);
-            trayclient->mapped = map_it;
-            configure_trayclients();
-            draw_bars(false);
         }
         free(xembedr);
     }
@@ -836,8 +858,11 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
                 handle_destroy_notify((xcb_destroy_notify_event_t*) event);
                 break;
             case XCB_UNMAP_NOTIFY:
-                /* UnmapNotifies are received when a tray window unmaps itself */
+                /* UnmapNotify is received when a tray client hides its window. */
                 handle_unmap_notify((xcb_unmap_notify_event_t*) event);
+                break;
+            case XCB_MAP_NOTIFY:
+                handle_map_notify((xcb_map_notify_event_t*) event);
                 break;
             case XCB_PROPERTY_NOTIFY:
                 /* PropertyNotify */
