@@ -6,6 +6,7 @@ include/all.h.pch
 *.swp
 *.gcda
 *.gcno
+*.dSYM
 test.commands_parser
 test.config_parser
 testcases/MYMETA.json
