@@ -424,6 +424,7 @@ void start_child(char *command) {
                 dup2(pipe_in[1], STDOUT_FILENO);
                 dup2(pipe_out[0], STDIN_FILENO);
 
+                setpgid(child.pid, 0);
                 execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (char*) NULL);
                 return;
             default:
@@ -507,8 +508,8 @@ void send_block_clicked(int button, const char *name, const char *instance, int 
 void kill_child_at_exit(void) {
     if (child.pid > 0) {
         if (child.cont_signal > 0 && child.stopped)
-            kill(child.pid, child.cont_signal);
-        kill(child.pid, SIGTERM);
+            killpg(child.pid, child.cont_signal);
+        killpg(child.pid, SIGTERM);
     }
 }
 
@@ -520,8 +521,8 @@ void kill_child_at_exit(void) {
 void kill_child(void) {
     if (child.pid > 0) {
         if (child.cont_signal > 0 && child.stopped)
-            kill(child.pid, child.cont_signal);
-        kill(child.pid, SIGTERM);
+            killpg(child.pid, child.cont_signal);
+        killpg(child.pid, SIGTERM);
         int status;
         waitpid(child.pid, &status, 0);
         cleanup();
@@ -535,7 +536,7 @@ void kill_child(void) {
 void stop_child(void) {
     if (child.stop_signal > 0 && !child.stopped) {
         child.stopped = true;
-        kill(child.pid, child.stop_signal);
+        killpg(child.pid, child.stop_signal);
     }
 }
 
@@ -546,6 +547,6 @@ void stop_child(void) {
 void cont_child(void) {
     if (child.cont_signal > 0 && child.stopped) {
         child.stopped = false;
-        kill(child.pid, child.cont_signal);
+        killpg(child.pid, child.cont_signal);
     }
 }
