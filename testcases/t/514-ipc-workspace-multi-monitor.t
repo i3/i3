@@ -19,6 +19,10 @@
 
 use i3test i3_autostart => 0;
 
+# Ensure the pointer is at (0, 0) so that we really start on the first
+# (the left) workspace.
+$x->root->warp_pointer(0, 0);
+
 my $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
@@ -35,7 +39,7 @@ $i3->connect()->recv;
 # Workspaces requests and events
 ################################
 
-my $focused = get_ws(focused_ws());
+my $old_ws = get_ws(focused_ws);
 
 # Events
 
@@ -46,16 +50,10 @@ $i3->subscribe({
     workspace => sub {
         my ($event) = @_;
         if ($event->{change} eq 'focus') {
-            # Check that we have the old and new workspace
-            $focus->send(
-                $event->{current}->{name} == '2' &&
-                $event->{old}->{name} == $focused->{name}
-            );
+            $focus->send($event);
         }
     }
 })->recv;
-
-cmd 'focus output right';
 
 my $t;
 $t = AnyEvent->timer(
@@ -65,7 +63,15 @@ $t = AnyEvent->timer(
     }
 );
 
-ok($focus->recv, 'Workspace "focus" event received');
+cmd 'focus output right';
+
+my $event = $focus->recv;
+
+my $current_ws = get_ws(focused_ws);
+
+ok($event, 'Workspace "focus" event received');
+is($event->{current}->{id}, $current_ws->{id}, 'Event gave correct current workspace');
+is($event->{old}->{id}, $old_ws->{id}, 'Event gave correct old workspace');
 
 exit_gracefully($pid);
 
