@@ -155,6 +155,9 @@ __
     warnings->import;
 
     $x ||= i3test::X11->new;
+    # set the pointer to a predictable position in case a previous test has
+    # disturbed it
+    $x->root->warp_pointer(0, 0);
     $cv->recv if $i3_autostart;
 
     @_ = ($class);
