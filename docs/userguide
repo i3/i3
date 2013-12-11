@@ -1289,6 +1289,11 @@ should be affected by that command, by using various criteria. The criteria
 are specified before any command in a pair of square brackets and are separated
 by space.
 
+When using multiple commands, separate them by using a +,+ (a comma) instead of
+a semicolon. Criteria apply only until the next semicolon, so if you use a
+semicolon to separate commands, only the first one will be executed for the
+matched window(s).
+
 *Example*:
 ------------------------------------
 # if you want to kill all windows which have the class Firefox, use:
@@ -1299,6 +1304,9 @@ bindsym $mod+x [class="(?i)firefox"] kill
 
 # kill only the About dialog from Firefox
 bindsym $mod+x [class="Firefox" window_role="About"] kill
+
+# enable floating mode and move container to workspace 4
+for_window [class="^evil-app$"] floating enable, move container to workspace 4
 ------------------------------------
 
 The criteria which are currently implemented are:
