@@ -396,6 +396,8 @@ void tree_append_json(const char *filename) {
     g = yajl_gen_alloc(NULL, NULL);
     hand = yajl_alloc(&callbacks, NULL, NULL, (void*)g);
 #endif
+    /* Allowing comments allows for more user-friendly layout files. */
+    yajl_config(hand, yajl_allow_comments, true);
     yajl_status stat;
     json_node = focused;
     to_focus = NULL;
