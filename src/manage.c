@@ -321,6 +321,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
          * we need to remove that criterion, because they should only be valid
          * once. */
         if (match != NULL && match->insert_where != M_BELOW) {
+            DLOG("Removing match %p from container %p\n", match, nc);
             TAILQ_REMOVE(&(nc->swallow_head), match, matches);
         }
     }
