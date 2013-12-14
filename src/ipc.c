@@ -153,7 +153,30 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(integer, (long int)con);
 
     ystr("type");
-    y(integer, con->type);
+    switch (con->type) {
+        case CT_ROOT:
+            ystr("root");
+            break;
+        case CT_OUTPUT:
+            ystr("output");
+            break;
+        case CT_CON:
+            ystr("con");
+            break;
+        case CT_FLOATING_CON:
+            ystr("floating_con");
+            break;
+        case CT_WORKSPACE:
+            ystr("workspace");
+            break;
+        case CT_DOCKAREA:
+            ystr("dockarea");
+            break;
+        default:
+            DLOG("About to dump unknown container type=%d. This is a bug.\n", con->type);
+            assert(false);
+            break;
+    }
 
     /* provided for backwards compatibility only. */
     ystr("orientation");

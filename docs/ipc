@@ -277,7 +277,12 @@ name (string)::
 	The internal name of this container. For all containers which are part
 	of the tree structure down to the workspace contents, this is set to a
 	nice human-readable name of the container.
+	For containers that have an X11 window, the content is the title
+	(_NET_WM_NAME property) of that window.
 	For all other containers, the content is not defined (yet).
+type (string)::
+	Type of this container. Can be one of "root", "output", "con",
+	"floating_con", "workspace" or "dockarea".
 border (string)::
 	Can be either "normal", "none" or "1pixel", dependending on the
 	container’s border style.
@@ -670,12 +675,12 @@ but will still be present in the "old" property.
  "change": "focus",
  "current": {
   "id": 28489712,
-  "type":4,
+  "type": "workspace",
   ...
  }
  "old": {
   "id": 28489715,
-  "type": 4,
+  "type": "workspace",
   ...
  }
 }
@@ -722,7 +727,7 @@ window title as "urxvt").
  "change": "new",
  "container": {
   "id": 35569536,
-  "type": 2,
+  "type": "con",
   ...
  }
 }

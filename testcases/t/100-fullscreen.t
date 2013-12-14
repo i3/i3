@@ -34,7 +34,7 @@ my @outputs = @{$tree->{nodes}};
 my $output;
 for my $o (@outputs) {
     # get the first CT_CON of each output
-    my $content = first { $_->{type} == 2 } @{$o->{nodes}};
+    my $content = first { $_->{type} eq 'con' } @{$o->{nodes}};
     if (defined(first { $_->{name} eq $tmp } @{$content->{nodes}})) {
         $output = $o;
         last;

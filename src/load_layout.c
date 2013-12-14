@@ -203,6 +203,23 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
                 json_node->border_style = BS_NORMAL;
             else LOG("Unhandled \"border\": %s\n", buf);
             free(buf);
+        } else if (strcasecmp(last_key, "type") == 0) {
+            char *buf = NULL;
+            sasprintf(&buf, "%.*s", (int)len, val);
+            if (strcasecmp(buf, "root") == 0)
+                json_node->type = CT_ROOT;
+            else if (strcasecmp(buf, "output") == 0)
+                json_node->type = CT_OUTPUT;
+            else if (strcasecmp(buf, "con") == 0)
+                json_node->type = CT_CON;
+            else if (strcasecmp(buf, "floating_con") == 0)
+                json_node->type = CT_FLOATING_CON;
+            else if (strcasecmp(buf, "workspace") == 0)
+                json_node->type = CT_WORKSPACE;
+            else if (strcasecmp(buf, "dockarea") == 0)
+                json_node->type = CT_DOCKAREA;
+            else LOG("Unhandled \"type\": %s\n", buf);
+            free(buf);
         } else if (strcasecmp(last_key, "layout") == 0) {
             char *buf = NULL;
             sasprintf(&buf, "%.*s", (int)len, val);
@@ -281,6 +298,7 @@ static int json_int(void *ctx, long long val) {
 static int json_int(void *ctx, long val) {
     LOG("int %ld for key %s\n", val, last_key);
 #endif
+    /* For backwards compatibility with i3 < 4.8 */
     if (strcasecmp(last_key, "type") == 0)
         json_node->type = val;
 
