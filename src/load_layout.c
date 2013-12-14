@@ -151,15 +151,20 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
 #endif
     LOG("string: %.*s for key %s\n", (int)len, val, last_key);
     if (parsing_swallows) {
-        /* TODO: the other swallowing keys */
+        char *sval;
+        sasprintf(&sval, "%.*s", len, val);
         if (strcasecmp(last_key, "class") == 0) {
-            char *sval;
-            sasprintf(&sval, "%.*s", len, val);
             current_swallow->class = regex_new(sval);
-            free(sval);
+        } else if (strcasecmp(last_key, "instance") == 0) {
+            current_swallow->instance = regex_new(sval);
+        } else if (strcasecmp(last_key, "window_role") == 0) {
+            current_swallow->role = regex_new(sval);
+        } else if (strcasecmp(last_key, "title") == 0) {
+            current_swallow->title = regex_new(sval);
         } else {
             ELOG("swallow key %s unknown\n", last_key);
         }
+        free(sval);
     } else {
         if (strcasecmp(last_key, "name") == 0) {
             json_node->name = scalloc((len+1) * sizeof(char));

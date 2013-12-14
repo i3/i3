@@ -315,6 +315,14 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         if (match != NULL && match->insert_where == M_BELOW) {
             nc = tree_open_con(nc, cwindow);
         }
+
+        /* If M_BELOW is not used, the container is replaced. This happens with
+         * "swallows" criteria that are used for stored layouts, in which case
+         * we need to remove that criterion, because they should only be valid
+         * once. */
+        if (match != NULL && match->insert_where != M_BELOW) {
+            TAILQ_REMOVE(&(nc->swallow_head), match, matches);
+        }
     }
 
     DLOG("new container = %p\n", nc);
