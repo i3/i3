@@ -338,8 +338,8 @@ static int json_int(void *ctx, long val) {
             r->width = val;
         else if (strcasecmp(last_key, "height") == 0)
             r->height = val;
-        else printf("WARNING: unknown key %s in rect\n", last_key);
-        printf("rect now: (%d, %d, %d, %d)\n",
+        else ELOG("WARNING: unknown key %s in rect\n", last_key);
+        DLOG("rect now: (%d, %d, %d, %d)\n",
                 r->x, r->y, r->width, r->height);
     }
     if (parsing_swallows) {
@@ -433,8 +433,8 @@ void tree_append_json(const char *filename) {
     stat = yajl_parse(hand, (const unsigned char*)buf, n);
     if (stat != yajl_status_ok)
     {
-        unsigned char * str = yajl_get_error(hand, 1, (const unsigned char*)buf, n);
-        fprintf(stderr, "%s\n", (const char *) str);
+        unsigned char *str = yajl_get_error(hand, 1, (const unsigned char*)buf, n);
+        ELOG("JSON parsing error: %s\n", str);
         yajl_free_error(hand, str);
     }
 
