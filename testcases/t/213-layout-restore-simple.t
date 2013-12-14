@@ -64,6 +64,45 @@ is(@{$content[0]->{nodes}}, 2, 'node has two children');
 close($fh);
 
 ################################################################################
+# two simple vsplit containers in the same file
+################################################################################
+
+$ws = fresh_workspace;
+
+@content = @{get_ws_content($ws)};
+is(@content, 0, 'no nodes on the new workspace yet');
+
+($fh, $filename) = tempfile(UNLINK => 1);
+print $fh <<EOT;
+{
+    "layout": "splitv",
+    "nodes": [
+        {
+        },
+        {
+        }
+    ]
+}
+
+{
+    "layout": "splitv"
+}
+EOT
+$fh->flush;
+cmd "append_layout $filename";
+
+does_i3_live;
+
+@content = @{get_ws_content($ws)};
+is(@content, 2, 'one node on the workspace now');
+is($content[0]->{layout}, 'splitv', 'first node has splitv layout');
+is(@{$content[0]->{nodes}}, 2, 'first node has two children');
+is($content[1]->{layout}, 'splitv', 'second node has splitv layout');
+is(@{$content[1]->{nodes}}, 0, 'first node has no children');
+
+close($fh);
+
+################################################################################
 # simple vsplit layout with swallow specifications
 ################################################################################
 

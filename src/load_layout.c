@@ -421,6 +421,8 @@ void tree_append_json(const char *filename) {
 #endif
     /* Allowing comments allows for more user-friendly layout files. */
     yajl_config(hand, yajl_allow_comments, true);
+    /* Allow multiple values, i.e. multiple nodes to attach */
+    yajl_config(hand, yajl_allow_multiple_values, true);
     yajl_status stat;
     json_node = focused;
     to_focus = NULL;
