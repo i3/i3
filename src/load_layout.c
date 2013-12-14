@@ -153,10 +153,13 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
     if (parsing_swallows) {
         /* TODO: the other swallowing keys */
         if (strcasecmp(last_key, "class") == 0) {
-            current_swallow->class = scalloc((len+1) * sizeof(char));
-            memcpy(current_swallow->class, val, len);
+            char *sval;
+            sasprintf(&sval, "%.*s", len, val);
+            current_swallow->class = regex_new(sval);
+            free(sval);
+        } else {
+            ELOG("swallow key %s unknown\n", last_key);
         }
-        LOG("unhandled yet: swallow\n");
     } else {
         if (strcasecmp(last_key, "name") == 0) {
             json_node->name = scalloc((len+1) * sizeof(char));
