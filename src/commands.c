@@ -868,7 +868,18 @@ void cmd_nop(I3_CMD, char *comment) {
  */
 void cmd_append_layout(I3_CMD, char *path) {
     LOG("Appending layout \"%s\"\n", path);
+    Con *parent = focused;
     tree_append_json(path);
+
+    // XXX: This is a bit of a kludge. Theoretically, render_con(parent,
+    // false); should be enough, but when sending 'workspace 4; append_layout
+    // /tmp/foo.json', the needs_tree_render == true of the workspace command
+    // is not executed yet and will be batched with append_layout’s
+    // needs_tree_render after the parser finished. We should check if that is
+    // necessary at all.
+    render_con(croot, false);
+
+    restore_open_placeholder_windows(parent);
 
     cmd_output->needs_tree_render = true;
     // XXX: default reply for now, make this a better reply

@@ -83,5 +83,6 @@
 #include "config_parser.h"
 #include "fake_outputs.h"
 #include "display_version.h"
+#include "restore_layout.h"
 
 #endif

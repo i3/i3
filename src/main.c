@@ -618,6 +618,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    restore_connect();
+
     /* Setup NetWM atoms */
     #define xmacro(name) \
         do { \

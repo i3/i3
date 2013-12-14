@@ -1,0 +1,265 @@
+#undef I3__FILE__
+#define I3__FILE__ "restore_layout.c"
+/*
+ * vim:ts=4:sw=4:expandtab
+ *
+ * i3 - an improved dynamic tiling window manager
+ * © 2009-2013 Michael Stapelberg and contributors (see also: LICENSE)
+ *
+ * restore_layout.c: Everything for restored containers that is not pure state
+ *                   parsing (which can be found in load_layout.c).
+ *
+ *
+ */
+#include "all.h"
+
+typedef struct placeholder_state {
+    /** The X11 placeholder window. */
+    xcb_window_t window;
+    /** The container to which this placeholder window belongs. */
+    Con *con;
+
+    /** Current size of the placeholder window (to detect size changes). */
+    Rect rect;
+
+    /** The pixmap to render on (back buffer). */
+    xcb_pixmap_t pixmap;
+    /** The graphics context for “pixmap”. */
+    xcb_gcontext_t gc;
+
+    TAILQ_ENTRY(placeholder_state) state;
+} placeholder_state;
+
+static TAILQ_HEAD(state_head, placeholder_state) state_head =
+    TAILQ_HEAD_INITIALIZER(state_head);
+
+static xcb_connection_t *restore_conn;
+
+static void restore_handle_event(int type, xcb_generic_event_t *event);
+
+/* Documentation for these functions can be found in src/main.c, starting at xcb_got_event */
+static void restore_xcb_got_event(EV_P_ struct ev_io *w, int revents) {
+}
+
+static void restore_xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
+    xcb_flush(restore_conn);
+}
+
+static void restore_xcb_check_cb(EV_P_ ev_check *w, int revents) {
+    xcb_generic_event_t *event;
+
+    if (xcb_connection_has_error(restore_conn)) {
+        // TODO: figure out how to reconnect with libev
+        ELOG("connection has an error\n");
+        return;
+    }
+
+    while ((event = xcb_poll_for_event(restore_conn)) != NULL) {
+        if (event->response_type == 0) {
+            xcb_generic_error_t *error = (xcb_generic_error_t*)event;
+            DLOG("X11 Error received (probably harmless)! sequence 0x%x, error_code = %d\n",
+                 error->sequence, error->error_code);
+            free(event);
+            continue;
+        }
+
+        /* Strip off the highest bit (set if the event is generated) */
+        int type = (event->response_type & 0x7F);
+
+        restore_handle_event(type, event);
+
+        free(event);
+    }
+}
+
+/*
+ * Opens a separate connection to X11 for placeholder windows when restoring
+ * layouts. This is done as a safety measure (users can xkill a placeholder
+ * window without killing their window manager) and for better isolation, both
+ * on the wire to X11 and thus also in the code.
+ *
+ */
+void restore_connect(void) {
+    int screen;
+    restore_conn = xcb_connect(NULL, &screen);
+    if (restore_conn == NULL || xcb_connection_has_error(restore_conn))
+        errx(EXIT_FAILURE, "Cannot open display\n");
+
+    struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
+    struct ev_check *xcb_check = scalloc(sizeof(struct ev_check));
+    struct ev_prepare *xcb_prepare = scalloc(sizeof(struct ev_prepare));
+
+    ev_io_init(xcb_watcher, restore_xcb_got_event, xcb_get_file_descriptor(restore_conn), EV_READ);
+    ev_io_start(main_loop, xcb_watcher);
+
+    ev_check_init(xcb_check, restore_xcb_check_cb);
+    ev_check_start(main_loop, xcb_check);
+
+    ev_prepare_init(xcb_prepare, restore_xcb_prepare_cb);
+    ev_prepare_start(main_loop, xcb_prepare);
+}
+
+static void update_placeholder_contents(placeholder_state *state) {
+    // TODO: introduce color configuration for placeholder windows.
+    xcb_change_gc(restore_conn, state->gc, XCB_GC_FOREGROUND, (uint32_t[]) { config.client.background });
+    xcb_poly_fill_rectangle(restore_conn, state->pixmap, state->gc, 1,
+            (xcb_rectangle_t[]) { { 0, 0, state->rect.width, state->rect.height } });
+
+    // TODO: make i3font functions per-connection, at least these two for now…?
+    xcb_flush(restore_conn);
+    xcb_aux_sync(restore_conn);
+
+    // TODO: actually represent the criteria, most likely just line by line from (0, 0)
+    set_font_colors(state->gc, config.client.focused.background, 0);
+    i3String *line = i3string_from_utf8("⌚");
+    int text_width = predict_text_width(line);
+    int x = (state->rect.width / 2) - (text_width / 2);
+    int y = (state->rect.height / 2) - (config.font.height / 2);
+    draw_text(line, state->pixmap, state->gc, x, y, text_width);
+    i3string_free(line);
+    xcb_flush(conn);
+    xcb_aux_sync(conn);
+}
+
+static void open_placeholder_window(Con *con) {
+    if (con_is_leaf(con)) {
+        xcb_window_t placeholder = create_window(
+                restore_conn,
+                con->rect,
+                XCB_COPY_FROM_PARENT,
+                XCB_COPY_FROM_PARENT,
+                XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                XCURSOR_CURSOR_POINTER,
+                true,
+                XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
+                (uint32_t[]){
+                    // TODO: use the background color as background pixel to avoid flickering
+                    root_screen->white_pixel,
+                    XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+                });
+        // TODO: set window title from con->name
+        DLOG("Created placeholder window 0x%08x for leaf container %p / %s\n",
+             placeholder, con, con->name);
+
+        placeholder_state *state = scalloc(sizeof(placeholder_state));
+        state->window = placeholder;
+        state->con = con;
+        state->rect = con->rect;
+        state->pixmap = xcb_generate_id(restore_conn);
+        // TODO: get rid of hardcoded 24
+        xcb_create_pixmap(restore_conn, 24, state->pixmap,
+                          state->window, state->rect.width, state->rect.height);
+        state->gc = xcb_generate_id(restore_conn);
+        xcb_create_gc(restore_conn, state->gc, state->pixmap, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){ 0 });
+        update_placeholder_contents(state);
+        TAILQ_INSERT_TAIL(&state_head, state, state);
+
+        /* create temporary id swallow to match the placeholder */
+        Match *temp_id = smalloc(sizeof(Match));
+        match_init(temp_id);
+        temp_id->id = placeholder;
+        TAILQ_INSERT_TAIL(&(con->swallow_head), temp_id, matches);
+    }
+
+    Con *child;
+    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+        open_placeholder_window(child);
+    }
+    TAILQ_FOREACH(child, &(con->floating_head), floating_windows) {
+        open_placeholder_window(child);
+    }
+}
+
+/*
+ * Open placeholder windows for all children of parent. The placeholder window
+ * will vanish as soon as a real window is swallowed by the container. Until
+ * then, it exposes the criteria that must be fulfilled for a window to be
+ * swallowed by this container.
+ *
+ */
+void restore_open_placeholder_windows(Con *parent) {
+    Con *child;
+    TAILQ_FOREACH(child, &(parent->nodes_head), nodes) {
+        open_placeholder_window(child);
+    }
+    TAILQ_FOREACH(child, &(parent->floating_head), floating_windows) {
+        open_placeholder_window(child);
+    }
+
+    xcb_flush(restore_conn);
+}
+
+static void expose_event(xcb_expose_event_t *event) {
+    placeholder_state *state;
+    TAILQ_FOREACH(state, &state_head, state) {
+        if (state->window != event->window)
+            continue;
+
+        DLOG("refreshing window 0x%08x contents (con %p)\n", state->window, state->con);
+
+        /* Since we render to our pixmap on every change anyways, expose events
+         * only tell us that the X server lost (parts of) the window contents. We
+         * can handle that by copying the appropriate part from our pixmap to the
+         * window. */
+        xcb_copy_area(restore_conn, state->pixmap, state->window, state->gc,
+                      event->x, event->y, event->x, event->y,
+                      event->width, event->height);
+        xcb_flush(restore_conn);
+        return;
+    }
+
+    ELOG("Received ExposeEvent for unknown window 0x%08x\n", event->window);
+}
+
+/*
+ * Window size has changed. Update the width/height, then recreate the back
+ * buffer pixmap and the accompanying graphics context and force an immediate
+ * re-rendering.
+ *
+ */
+static void configure_notify(xcb_configure_notify_event_t *event) {
+    placeholder_state *state;
+    TAILQ_FOREACH(state, &state_head, state) {
+        if (state->window != event->window)
+            continue;
+
+        DLOG("ConfigureNotify: window 0x%08x has now width=%d, height=%d (con %p)\n",
+             state->window, event->width, event->height, state->con);
+
+        state->rect.width = event->width;
+        state->rect.height = event->height;
+
+        xcb_free_pixmap(restore_conn, state->pixmap);
+        xcb_free_gc(restore_conn, state->gc);
+
+        state->pixmap = xcb_generate_id(restore_conn);
+        // TODO: get rid of hardcoded 24
+        xcb_create_pixmap(restore_conn, 24, state->pixmap,
+                          state->window, state->rect.width, state->rect.height);
+        state->gc = xcb_generate_id(restore_conn);
+        xcb_create_gc(restore_conn, state->gc, state->pixmap, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){ 0 });
+
+        update_placeholder_contents(state);
+        xcb_copy_area(restore_conn, state->pixmap, state->window, state->gc,
+                      0, 0, 0, 0, state->rect.width, state->rect.height);
+        xcb_flush(restore_conn);
+        return;
+    }
+
+    ELOG("Received ConfigureNotify for unknown window 0x%08x\n", event->window);
+}
+
+// TODO: this event loop is not taken care of in the floating event handler
+static void restore_handle_event(int type, xcb_generic_event_t *event) {
+    switch (type) {
+        case XCB_EXPOSE:
+            expose_event((xcb_expose_event_t*)event);
+            break;
+        case XCB_CONFIGURE_NOTIFY:
+            configure_notify((xcb_configure_notify_event_t*)event);
+            break;
+        default:
+            DLOG("Received unhandled X11 event of type %d\n", type);
+            break;
+    }
+}
