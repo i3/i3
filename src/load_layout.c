@@ -67,6 +67,12 @@ static int json_start_map(void *ctx) {
 static int json_end_map(void *ctx) {
     LOG("end of map\n");
     if (!parsing_swallows && !parsing_rect && !parsing_window_rect && !parsing_geometry) {
+        /* Set a few default values to simplify manually crafted layout files. */
+        if (json_node->layout == L_DEFAULT) {
+            DLOG("Setting layout = L_SPLITH\n");
+            json_node->layout = L_SPLITH;
+        }
+
         LOG("attaching\n");
         con_attach(json_node, json_node->parent, true);
         LOG("Creating window\n");
