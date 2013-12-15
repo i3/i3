@@ -306,6 +306,32 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         y(integer, con->window->id);
     else y(null);
 
+    if (con->window && !inplace_restart) {
+        /* Window properties are useless to preserve when restarting because
+         * they will be queried again anyway. However, for i3-save-tree(1),
+         * they are very useful and save i3-save-tree dealing with X11. */
+        ystr("window_properties");
+        y(map_open);
+
+#define DUMP_PROPERTY(key, prop_name) do { \
+    if (con->window->prop_name != NULL) { \
+        ystr(key); \
+        ystr(con->window->prop_name); \
+    } \
+} while (0)
+
+        DUMP_PROPERTY("class", class_class);
+        DUMP_PROPERTY("instance", class_instance);
+        DUMP_PROPERTY("window_role", role);
+
+        if (con->window->name != NULL) {
+            ystr("title");
+            ystr(i3string_as_utf8(con->window->name));
+        }
+
+        y(map_close);
+    }
+
     ystr("nodes");
     y(array_open);
     Con *node;
