@@ -85,7 +85,7 @@ verify_swallow_criterion(
 );
 
 verify_swallow_criterion(
-    '"role": "^special_role$"',
+    '"window_role": "^special_role$"',
     sub {
         open_window(
             name => 'roletest',
