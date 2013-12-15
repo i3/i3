@@ -35,6 +35,10 @@ static TAILQ_HEAD(state_head, placeholder_state) state_head =
 
 static xcb_connection_t *restore_conn;
 
+static struct ev_io *xcb_watcher;
+static struct ev_check *xcb_check;
+static struct ev_prepare *xcb_prepare;
+
 static void restore_handle_event(int type, xcb_generic_event_t *event);
 
 /* Documentation for these functions can be found in src/main.c, starting at xcb_got_event */
@@ -49,8 +53,8 @@ static void restore_xcb_check_cb(EV_P_ ev_check *w, int revents) {
     xcb_generic_event_t *event;
 
     if (xcb_connection_has_error(restore_conn)) {
-        // TODO: figure out how to reconnect with libev
-        ELOG("connection has an error\n");
+        DLOG("restore X11 connection has an error, reconnecting\n");
+        restore_connect();
         return;
     }
 
@@ -80,14 +84,34 @@ static void restore_xcb_check_cb(EV_P_ ev_check *w, int revents) {
  *
  */
 void restore_connect(void) {
+    if (restore_conn != NULL) {
+        /* This is not the initial connect, but a reconnect, most likely
+         * because our X11 connection was killed (e.g. by a user with xkill. */
+        ev_io_stop(main_loop, xcb_watcher);
+        ev_check_stop(main_loop, xcb_check);
+        ev_prepare_stop(main_loop, xcb_prepare);
+
+        placeholder_state *state;
+        while (!TAILQ_EMPTY(&state_head)) {
+            state = TAILQ_FIRST(&state_head);
+            TAILQ_REMOVE(&state_head, state, state);
+            free(state);
+        }
+
+        free(restore_conn);
+        free(xcb_watcher);
+        free(xcb_check);
+        free(xcb_prepare);
+    }
+
     int screen;
     restore_conn = xcb_connect(NULL, &screen);
     if (restore_conn == NULL || xcb_connection_has_error(restore_conn))
         errx(EXIT_FAILURE, "Cannot open display\n");
 
-    struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
-    struct ev_check *xcb_check = scalloc(sizeof(struct ev_check));
-    struct ev_prepare *xcb_prepare = scalloc(sizeof(struct ev_prepare));
+    xcb_watcher = scalloc(sizeof(struct ev_io));
+    xcb_check = scalloc(sizeof(struct ev_check));
+    xcb_prepare = scalloc(sizeof(struct ev_prepare));
 
     ev_io_init(xcb_watcher, restore_xcb_got_event, xcb_get_file_descriptor(restore_conn), EV_READ);
     ev_io_start(main_loop, xcb_watcher);
