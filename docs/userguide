@@ -727,6 +727,9 @@ client.unfocused::
 	A client which is not the focused one of its container.
 client.urgent::
 	A client which has its urgency hint activated.
+client.placeholder::
+	Background and text color are used to draw placeholder window contents
+	(when restoring layouts). Border and indicator are ignored.
 
 You can also specify the color to be used to paint the background of the client
 windows. This color will be used to paint the window on top of which the client
@@ -749,6 +752,7 @@ client.focused          #4c7899 #285577 #ffffff #2e9ef4
 client.focused_inactive #333333 #5f676a #ffffff #484e50
 client.unfocused        #333333 #222222 #888888 #292d2e
 client.urgent           #2f343a #900000 #ffffff #900000
+client.placeholder      #000000 #0c0c0c #ffffff #000000
 ---------------------------------------------------------
 
 Note that for the window decorations, the color around the child window is the

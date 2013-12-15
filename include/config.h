@@ -180,6 +180,7 @@ struct Config {
         struct Colortriple focused_inactive;
         struct Colortriple unfocused;
         struct Colortriple urgent;
+        struct Colortriple placeholder;
     } client;
     struct config_bar {
         struct Colortriple focused;

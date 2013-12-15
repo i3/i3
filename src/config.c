@@ -456,6 +456,9 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     INIT_COLOR(config.client.unfocused, "#333333", "#222222", "#888888", "#292d2e");
     INIT_COLOR(config.client.urgent, "#2f343a", "#900000", "#ffffff", "#900000");
 
+    /* border and indicator color are ignored for placeholder contents */
+    INIT_COLOR(config.client.placeholder, "#000000", "#0c0c0c", "#ffffff", "#000000");
+
     /* the last argument (indicator color) is ignored for bar colors */
     INIT_COLOR(config.bar.focused, "#4c7899", "#285577", "#ffffff", "#000000");
     INIT_COLOR(config.bar.unfocused, "#333333", "#222222", "#888888", "#000000");
