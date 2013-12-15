@@ -731,10 +731,9 @@ void x_push_node(Con *con) {
     }
 
     /* Map if map state changed, also ensure that the child window
-     * is changed if we are mapped *and* in initial state (meaning the
-     * container was empty before, but now got a child). Unmaps are handled in
-     * x_push_node_unmaps(). */
-    if ((state->mapped != con->mapped || (con->mapped && state->initial)) &&
+     * is changed if we are mapped and there is a new, unmapped child window.
+     * Unmaps are handled in x_push_node_unmaps(). */
+    if ((state->mapped != con->mapped || (con->window != NULL && !state->child_mapped)) &&
         con->mapped) {
         xcb_void_cookie_t cookie;
 
