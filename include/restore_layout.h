@@ -29,4 +29,13 @@ void restore_connect(void);
  */
 void restore_open_placeholder_windows(Con *con);
 
+/**
+ * Kill the placeholder window, if placeholder refers to a placeholder window.
+ * This function is called when manage.c puts a window into an existing
+ * container. In order not to leak resources, we need to destroy the window and
+ * all associated X11 objects (pixmap/gc).
+ *
+ */
+bool restore_kill_placeholder(xcb_window_t placeholder);
+
 #endif

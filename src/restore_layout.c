@@ -226,6 +226,32 @@ void restore_open_placeholder_windows(Con *parent) {
     xcb_flush(restore_conn);
 }
 
+/*
+ * Kill the placeholder window, if placeholder refers to a placeholder window.
+ * This function is called when manage.c puts a window into an existing
+ * container. In order not to leak resources, we need to destroy the window and
+ * all associated X11 objects (pixmap/gc).
+ *
+ */
+bool restore_kill_placeholder(xcb_window_t placeholder) {
+    placeholder_state *state;
+    TAILQ_FOREACH(state, &state_head, state) {
+        if (state->window != placeholder)
+            continue;
+
+        xcb_destroy_window(restore_conn, state->window);
+        xcb_free_pixmap(restore_conn, state->pixmap);
+        xcb_free_gc(restore_conn, state->gc);
+        TAILQ_REMOVE(&state_head, state, state);
+        free(state);
+        DLOG("placeholder window 0x%08x destroyed.\n", placeholder);
+        return true;
+    }
+
+    DLOG("0x%08x is not a placeholder window, ignoring.\n", placeholder);
+    return false;
+}
+
 static void expose_event(xcb_expose_event_t *event) {
     placeholder_state *state;
     TAILQ_FOREACH(state, &state_head, state) {
