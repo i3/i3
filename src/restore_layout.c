@@ -181,8 +181,7 @@ static void open_placeholder_window(Con *con) {
         state->con = con;
         state->rect = con->rect;
         state->pixmap = xcb_generate_id(restore_conn);
-        // TODO: get rid of hardcoded 24
-        xcb_create_pixmap(restore_conn, 24, state->pixmap,
+        xcb_create_pixmap(restore_conn, root_depth, state->pixmap,
                           state->window, state->rect.width, state->rect.height);
         state->gc = xcb_generate_id(restore_conn);
         xcb_create_gc(restore_conn, state->gc, state->pixmap, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){ 0 });
@@ -268,8 +267,7 @@ static void configure_notify(xcb_configure_notify_event_t *event) {
         xcb_free_gc(restore_conn, state->gc);
 
         state->pixmap = xcb_generate_id(restore_conn);
-        // TODO: get rid of hardcoded 24
-        xcb_create_pixmap(restore_conn, 24, state->pixmap,
+        xcb_create_pixmap(restore_conn, root_depth, state->pixmap,
                           state->window, state->rect.width, state->rect.height);
         state->gc = xcb_generate_id(restore_conn);
         xcb_create_gc(restore_conn, state->gc, state->pixmap, XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){ 0 });
