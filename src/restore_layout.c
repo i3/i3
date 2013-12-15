@@ -335,7 +335,6 @@ static void configure_notify(xcb_configure_notify_event_t *event) {
     ELOG("Received ConfigureNotify for unknown window 0x%08x\n", event->window);
 }
 
-// TODO: this event loop is not taken care of in the floating event handler
 static void restore_handle_event(int type, xcb_generic_event_t *event) {
     switch (type) {
         case XCB_EXPOSE:

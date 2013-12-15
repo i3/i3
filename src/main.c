@@ -31,6 +31,10 @@ struct rlimit original_rlimit_core;
 /** The number of file descriptors passed via socket activation. */
 int listen_fds;
 
+/* We keep the xcb_check watcher around to be able to enable and disable it
+ * temporarily for drag_pointer(). */
+static struct ev_check *xcb_check;
+
 static int xkb_event_base;
 
 int xkb_current_group;
@@ -143,6 +147,23 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
     }
 }
 
+/*
+ * Enable or disable the main X11 event handling function.
+ * This is used by drag_pointer() which has its own, modal event handler, which
+ * takes precedence over the normal event handler.
+ *
+ */
+void main_set_x11_cb(bool enable) {
+    DLOG("Setting main X11 callback to enabled=%d\n", enable);
+    if (enable) {
+        ev_check_start(main_loop, xcb_check);
+        /* Trigger the watcher explicitly to handle all remaining X11 events.
+         * drag_pointer()’s event handler exits in the middle of the loop. */
+        ev_feed_event(main_loop, xcb_check, 0);
+    } else {
+        ev_check_stop(main_loop, xcb_check);
+    }
+}
 
 /*
  * When using xmodmap to change the keyboard mapping, this event
@@ -742,7 +763,7 @@ int main(int argc, char *argv[]) {
 
     struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
     struct ev_io *xkb = scalloc(sizeof(struct ev_io));
-    struct ev_check *xcb_check = scalloc(sizeof(struct ev_check));
+    xcb_check = scalloc(sizeof(struct ev_check));
     struct ev_prepare *xcb_prepare = scalloc(sizeof(struct ev_prepare));
 
     ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
