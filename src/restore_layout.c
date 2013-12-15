@@ -109,8 +109,43 @@ static void update_placeholder_contents(placeholder_state *state) {
     xcb_flush(restore_conn);
     xcb_aux_sync(restore_conn);
 
-    // TODO: actually represent the criteria, most likely just line by line from (0, 0)
     set_font_colors(state->gc, config.client.focused.background, 0);
+
+    Match *swallows;
+    int n = 0;
+    TAILQ_FOREACH(swallows, &(state->con->swallow_head), matches) {
+        char *serialized = NULL;
+
+#define APPEND_REGEX(re_name) do { \
+    if (swallows->re_name != NULL) { \
+        sasprintf(&serialized, "%s%s" #re_name "=\"%s\"", \
+                  (serialized ? serialized : "["), \
+                  (serialized ? " " : ""), \
+                  swallows->re_name->pattern); \
+    } \
+} while (0)
+
+        APPEND_REGEX(class);
+        APPEND_REGEX(instance);
+        APPEND_REGEX(window_role);
+        APPEND_REGEX(title);
+
+        if (serialized == NULL) {
+            DLOG("This swallows specification is not serializable?!\n");
+            continue;
+        }
+
+        sasprintf(&serialized, "%s]", serialized);
+        DLOG("con %p (placeholder 0x%08x) line %d: %s\n", state->con, state->window, n, serialized);
+
+        i3String *str = i3string_from_utf8(serialized);
+        draw_text(str, state->pixmap, state->gc, 2, (n * (config.font.height + 2)) + 2, state->rect.width - 2);
+        i3string_free(str);
+        n++;
+        free(serialized);
+    }
+
+    // TODO: render the watch symbol in a bigger font
     i3String *line = i3string_from_utf8("⌚");
     int text_width = predict_text_width(line);
     int x = (state->rect.width / 2) - (text_width / 2);

@@ -374,7 +374,7 @@ struct Match {
     struct regex *class;
     struct regex *instance;
     struct regex *mark;
-    struct regex *role;
+    struct regex *window_role;
     enum {
         U_DONTCHECK = -1,
         U_LATEST = 0,

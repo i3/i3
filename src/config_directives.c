@@ -55,7 +55,7 @@ CFGFUN(criteria_add, const char *ctype, const char *cvalue) {
     }
 
     if (strcmp(ctype, "window_role") == 0) {
-        current_match->role = regex_new(cvalue);
+        current_match->window_role = regex_new(cvalue);
         return;
     }
 

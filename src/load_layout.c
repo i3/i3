@@ -158,7 +158,7 @@ static int json_string(void *ctx, const unsigned char *val, unsigned int len) {
         } else if (strcasecmp(last_key, "instance") == 0) {
             current_swallow->instance = regex_new(sval);
         } else if (strcasecmp(last_key, "window_role") == 0) {
-            current_swallow->role = regex_new(sval);
+            current_swallow->window_role = regex_new(sval);
         } else if (strcasecmp(last_key, "title") == 0) {
             current_swallow->title = regex_new(sval);
         } else {
