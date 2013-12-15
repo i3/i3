@@ -13,6 +13,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
@@ -59,6 +60,58 @@ struct statusline_head statusline_head = TAILQ_HEAD_INITIALIZER(statusline_head)
 char *statusline_buffer = NULL;
 
 int child_stdin;
+
+/*
+ * Clears all blocks from the statusline structure in memory and frees their
+ * associated resources.
+ */
+static void clear_status_blocks() {
+    struct status_block *first;
+    while (!TAILQ_EMPTY(&statusline_head)) {
+        first = TAILQ_FIRST(&statusline_head);
+        I3STRING_FREE(first->full_text);
+        TAILQ_REMOVE(&statusline_head, first, blocks);
+        free(first);
+    }
+}
+
+/*
+ * Replaces the statusline in memory with an error message. Pass a format
+ * string and format parameters as you would in `printf'. The next time
+ * `draw_bars' is called, the error message text will be drawn on the bar in
+ * the space allocated for the statusline.
+ */
+
+/* forward function declaration is needed to add __attribute__ mechanism which
+ * helps the compiler understand we are defining a printf wrapper */
+static void set_statusline_error(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
+
+static void set_statusline_error(const char *format, ...) {
+    clear_status_blocks();
+
+    char *message;
+    va_list args;
+    va_start(args, format);
+    vasprintf(&message, format, args);
+
+    struct status_block *err_block = scalloc(sizeof(struct status_block));
+    err_block->full_text = i3string_from_utf8("Error: ");
+    err_block->name = "error";
+    err_block->color = "red";
+    err_block->no_separator = true;
+
+    struct status_block *message_block = scalloc(sizeof(struct status_block));
+    message_block->full_text = i3string_from_utf8(message);
+    message_block->name = "error_message";
+    message_block->color = "red";
+    message_block->no_separator = true;
+
+    TAILQ_INSERT_HEAD(&statusline_head, err_block, blocks);
+    TAILQ_INSERT_TAIL(&statusline_head, message_block, blocks);
+
+    FREE(message);
+    va_end(args);
+}
 
 /*
  * Stop and free() the stdin- and sigchild-watchers
@@ -241,6 +294,7 @@ static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
             /* end of file, kill the watcher */
             ELOG("stdin: received EOF\n");
             cleanup();
+            set_statusline_error("Received EOF from statusline process");
             draw_bars(false);
             *ret_buffer_len = -1;
             return NULL;
@@ -280,8 +334,18 @@ static bool read_json_input(unsigned char *input, int length) {
 #else
     if (status != yajl_status_ok && status != yajl_status_insufficient_data) {
 #endif
-        fprintf(stderr, "[i3bar] Could not parse JSON input (code %d): %.*s\n",
-                status, length, input);
+        char *message = (char *)yajl_get_error(parser, 0, input, length);
+
+        /* strip the newline yajl adds to the error message */
+        if (message[strlen(message) - 1] == '\n')
+            message[strlen(message) - 1] = '\0';
+
+        fprintf(stderr, "[i3bar] Could not parse JSON input (code = %d, message = %s): %.*s\n",
+                status, message, length, input);
+
+        set_statusline_error("Could not parse JSON (%s)", message);
+        yajl_free_error(parser, (unsigned char*)message);
+        draw_bars(false);
     } else if (parser_context.has_urgent) {
         has_urgent = true;
     }
@@ -351,10 +415,23 @@ void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
  *
  */
 void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
+    int exit_status = WEXITSTATUS(watcher->rstatus);
+
     ELOG("Child (pid: %d) unexpectedly exited with status %d\n",
            child.pid,
-           watcher->rstatus);
+           exit_status);
+
+    /* this error is most likely caused by a user giving a nonexecutable or
+     * nonexistent file, so we will handle those cases separately. */
+    if (exit_status == 126)
+        set_statusline_error("status_command is not executable (exit %d)", exit_status);
+    else if (exit_status == 127)
+        set_statusline_error("status_command not found (exit %d)", exit_status);
+    else
+        set_statusline_error("status_command process exited unexpectedly (exit %d)", exit_status);
+
     cleanup();
+    draw_bars(false);
 }
 
 void child_write_output(void) {
