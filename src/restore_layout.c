@@ -172,7 +172,11 @@ static void open_placeholder_window(Con *con) {
                     root_screen->white_pixel,
                     XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
                 });
-        // TODO: set window title from con->name
+        /* Set the same name as was stored in the layout file. While perhaps
+         * slightly confusing in the first instant, this brings additional
+         * clarity to which placeholder is waiting for which actual window. */
+        xcb_change_property(restore_conn, XCB_PROP_MODE_REPLACE, placeholder,
+                            A__NET_WM_NAME, A_UTF8_STRING, 8, strlen(con->name), con->name);
         DLOG("Created placeholder window 0x%08x for leaf container %p / %s\n",
              placeholder, con, con->name);
 
