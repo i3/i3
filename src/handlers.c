@@ -682,6 +682,11 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             return;
         }
 
+        if (con_is_internal(ws)) {
+            DLOG("Workspace is internal, ignoring _NET_ACTIVE_WINDOW\n");
+            return;
+        }
+
         if (ws != con_get_workspace(focused))
             workspace_show(ws);
 
