@@ -62,12 +62,7 @@ static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press
         second = tmp;
     }
 
-    /* We modify the X/Y position in the event so that the divider line is at
-     * the actual position of the border, not at the position of the click. */
     const orientation_t orientation = ((border == BORDER_LEFT || border == BORDER_RIGHT) ? HORIZ : VERT);
-    if (orientation == HORIZ)
-        event->root_x = second->rect.x;
-    else event->root_y = second->rect.y;
 
     resize_graphical_handler(first, second, orientation, event);
 
