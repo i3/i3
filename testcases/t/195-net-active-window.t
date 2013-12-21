@@ -17,6 +17,7 @@
 # Verifies that the _NET_ACTIVE_WINDOW message only changes focus when the
 # window is on a visible workspace.
 # ticket #774, bug still present in commit 1e49f1b08a3035c1f238fcd6615e332216ab582e
+# ticket #1136, bug still present in commit fd07f989fdf441ef335245dd3436a70ff60e8896
 use i3test;
 
 sub send_net_active_window {
@@ -64,5 +65,22 @@ is($x->input_focus, $win3->id, 'window 3 has focus');
 send_net_active_window($win1->id);
 
 is($x->input_focus, $win3->id, 'window 3 still has focus');
+
+################################################################################
+# Move a window to the scratchpad, send a _NET_ACTIVE_WINDOW for it and verify
+# that focus is still unchanged.
+################################################################################
+
+my $scratch = open_window;
+
+is($x->input_focus, $scratch->id, 'to-scratchpad window has focus');
+
+cmd 'move scratchpad';
+
+is($x->input_focus, $win3->id, 'focus reverted to window 3');
+
+send_net_active_window($scratch->id);
+
+is($x->input_focus, $win3->id, 'window 3 still focused');
 
 done_testing;
