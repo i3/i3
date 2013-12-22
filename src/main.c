@@ -352,7 +352,7 @@ int main(int argc, char *argv[]) {
                     break;
                 } else if (strcmp(long_options[option_index].name, "get-socketpath") == 0 ||
                            strcmp(long_options[option_index].name, "get_socketpath") == 0) {
-                    char *socket_path = root_atom_contents("I3_SOCKET_PATH");
+                    char *socket_path = root_atom_contents("I3_SOCKET_PATH", NULL, 0);
                     if (socket_path) {
                         printf("%s\n", socket_path);
                         exit(EXIT_SUCCESS);
@@ -442,7 +442,7 @@ int main(int argc, char *argv[]) {
             optind++;
         }
         DLOG("Command is: %s (%zd bytes)\n", payload, strlen(payload));
-        char *socket_path = root_atom_contents("I3_SOCKET_PATH");
+        char *socket_path = root_atom_contents("I3_SOCKET_PATH", NULL, 0);
         if (!socket_path) {
             ELOG("Could not get i3 IPC socket path\n");
             return 1;
@@ -488,18 +488,25 @@ int main(int argc, char *argv[]) {
 
         /* The following code is helpful, but not required. We thus don’t pay
          * much attention to error handling, non-linux or other edge cases. */
-        char cwd[PATH_MAX];
         LOG("CORE DUMPS: You are running a development version of i3, so coredumps were automatically enabled (ulimit -c unlimited).\n");
-        if (getcwd(cwd, sizeof(cwd)) != NULL)
+        size_t cwd_size = 1024;
+        char *cwd = smalloc(cwd_size);
+        char *cwd_ret;
+        while ((cwd_ret = getcwd(cwd, cwd_size)) == NULL && errno == ERANGE) {
+            cwd_size = cwd_size * 2;
+            cwd = srealloc(cwd, cwd_size);
+        }
+        if (cwd_ret != NULL)
             LOG("CORE DUMPS: Your current working directory is \"%s\".\n", cwd);
         int patternfd;
         if ((patternfd = open("/proc/sys/kernel/core_pattern", O_RDONLY)) >= 0) {
-            memset(cwd, '\0', sizeof(cwd));
-            if (read(patternfd, cwd, sizeof(cwd)) > 0)
+            memset(cwd, '\0', cwd_size);
+            if (read(patternfd, cwd, cwd_size) > 0)
                 /* a trailing newline is included in cwd */
                 LOG("CORE DUMPS: Your core_pattern is: %s", cwd);
             close(patternfd);
         }
+        free(cwd);
     }
 
     LOG("i3 " I3_VERSION " starting\n");
@@ -793,6 +800,27 @@ int main(int argc, char *argv[]) {
         manage_existing_windows(root);
     }
     xcb_ungrab_server(conn);
+
+    if (autostart) {
+        LOG("This is not an in-place restart, copying root window contents to a pixmap\n");
+        xcb_screen_t *root = xcb_aux_get_screen(conn, conn_screen);
+        uint16_t width = root->width_in_pixels;
+        uint16_t height = root->height_in_pixels;
+        xcb_pixmap_t pixmap = xcb_generate_id(conn);
+        xcb_gcontext_t gc = xcb_generate_id(conn);
+
+        xcb_create_pixmap(conn, root->root_depth, pixmap, root->root, width, height);
+
+        xcb_create_gc(conn, gc, root->root,
+            XCB_GC_FUNCTION | XCB_GC_PLANE_MASK | XCB_GC_FILL_STYLE | XCB_GC_SUBWINDOW_MODE,
+            (uint32_t[]){ XCB_GX_COPY, ~0, XCB_FILL_STYLE_SOLID, XCB_SUBWINDOW_MODE_INCLUDE_INFERIORS });
+
+        xcb_copy_area(conn, root->root, pixmap, gc, 0, 0, 0, 0, width, height);
+        xcb_change_window_attributes_checked(conn, root->root, XCB_CW_BACK_PIXMAP, (uint32_t[]){ pixmap });
+        xcb_flush(conn);
+        xcb_free_gc(conn, gc);
+        xcb_free_pixmap(conn, pixmap);
+    }
 
     struct sigaction action;
 

@@ -30,6 +30,21 @@ static double pango_font_red;
 static double pango_font_green;
 static double pango_font_blue;
 
+static PangoLayout *create_layout_with_dpi(cairo_t *cr) {
+    PangoLayout *layout;
+    PangoContext *context;
+
+    context = pango_cairo_create_context(cr);
+    const double dpi = (double)root_screen->height_in_pixels * 25.4 /
+                       (double)root_screen->height_in_millimeters;
+    LOG("X11 root window dictates %f DPI\n", dpi);
+    pango_cairo_context_set_resolution(context, dpi);
+    layout = pango_layout_new(context);
+    g_object_unref(context);
+
+    return layout;
+}
+
 /*
  * Loads a Pango font description into an i3Font structure. Returns true
  * on success, false otherwise.
@@ -56,7 +71,7 @@ static bool load_pango_font(i3Font *font, const char *desc) {
     /* Create a dummy Pango layout to compute the font height */
     cairo_surface_t *surface = cairo_xcb_surface_create(conn, root_screen->root, root_visual_type, 1, 1);
     cairo_t *cr = cairo_create(surface);
-    PangoLayout *layout = pango_cairo_create_layout(cr);
+    PangoLayout *layout = create_layout_with_dpi(cr);
     pango_layout_set_font_description(layout, font->specific.pango_desc);
 
     /* Get the font height */
@@ -85,17 +100,21 @@ static void draw_text_pango(const char *text, size_t text_len,
     cairo_surface_t *surface = cairo_xcb_surface_create(conn, drawable,
             root_visual_type, x + max_width, y + savedFont->height);
     cairo_t *cr = cairo_create(surface);
-    PangoLayout *layout = pango_cairo_create_layout(cr);
+    PangoLayout *layout = create_layout_with_dpi(cr);
+    gint height;
+
     pango_layout_set_font_description(layout, savedFont->specific.pango_desc);
     pango_layout_set_width(layout, max_width * PANGO_SCALE);
     pango_layout_set_wrap(layout, PANGO_WRAP_CHAR);
     pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
 
+    pango_layout_set_text(layout, text, text_len);
+
     /* Do the drawing */
     cairo_set_source_rgb(cr, pango_font_red, pango_font_green, pango_font_blue);
-    cairo_move_to(cr, x, y);
-    pango_layout_set_text(layout, text, text_len);
     pango_cairo_update_layout(cr, layout);
+    pango_layout_get_pixel_size(layout, NULL, &height);
+    cairo_move_to(cr, x, y - (height - savedFont->height));
     pango_cairo_show_layout(cr, layout);
 
     /* Free resources */
@@ -113,7 +132,7 @@ static int predict_text_width_pango(const char *text, size_t text_len) {
     /* root_visual_type is cached in load_pango_font */
     cairo_surface_t *surface = cairo_xcb_surface_create(conn, root_screen->root, root_visual_type, 1, 1);
     cairo_t *cr = cairo_create(surface);
-    PangoLayout *layout = pango_cairo_create_layout(cr);
+    PangoLayout *layout = create_layout_with_dpi(cr);
 
     /* Get the font width */
     gint width;

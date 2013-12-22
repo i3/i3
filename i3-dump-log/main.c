@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    char *shmname = root_atom_contents("I3_SHMLOG_PATH");
+    char *shmname = root_atom_contents("I3_SHMLOG_PATH", NULL, 0);
     if (shmname == NULL) {
         /* Something failed. Let’s invest a little effort to find out what it
          * is. This is hugely helpful for users who want to debug i3 but are
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "FYI: The DISPLAY environment variable is set to \"%s\".\n", getenv("DISPLAY"));
             exit(1);
         }
-        if (root_atom_contents("I3_CONFIG_PATH") != NULL) {
+        if (root_atom_contents("I3_CONFIG_PATH", conn, screen) != NULL) {
             fprintf(stderr, "i3-dump-log: ERROR: i3 is running, but SHM logging is not enabled.\n\n");
             if (!is_debug_build()) {
                 fprintf(stderr, "You seem to be using a release version of i3:\n  %s\n\n", I3_VERSION);

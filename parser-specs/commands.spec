@@ -209,11 +209,11 @@ state RESIZE_TILING:
       -> call cmd_resize($way, $direction, $resize_px, "10")
 
 state RESIZE_TILING_OR:
-  'ppt'
-      ->
   resize_ppt = word
-      ->
-  end
+      -> RESIZE_TILING_FINAL
+
+state RESIZE_TILING_FINAL:
+  'ppt', end
       -> call cmd_resize($way, $direction, $resize_px, $resize_ppt)
 
 # rename workspace <name> to <name>

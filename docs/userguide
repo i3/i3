@@ -252,7 +252,7 @@ workspace node. By default, the workspace node’s orientation is +horizontal+.
 Now you move one of these terminals down (+$mod+k+ by default). The workspace
 node’s orientation will be changed to +vertical+. The terminal window you moved
 down is directly attached to the workspace and appears on the bottom of the
-screen. A new (horizontal) container was created to accomodate the other two
+screen. A new (horizontal) container was created to accommodate the other two
 terminal windows. You will notice this when switching to tabbed mode (for
 example). You would end up having one tab called "another container" and the
 other one being the terminal window you moved down.
@@ -446,7 +446,7 @@ New workspaces get a reasonable default orientation: Wide-screen monitors
 (anything higher than wide) get vertical orientation.
 
 With the +default_orientation+ configuration directive, you can override that
-behaviour.
+behavior.
 
 *Syntax*:
 ----------------------------------------------
@@ -570,11 +570,12 @@ set $m Mod1
 bindsym $m+Shift+r restart
 ------------------------
 
-Variables are directly replaced in the file when parsing. There is no fancy
-handling and there are absolutely no plans to change this. If you need a more
-dynamic configuration you should create a little script which generates a
-configuration file and run it before starting i3 (for example in your
-+~/.xsession+ file).
+Variables are directly replaced in the file when parsing. Variables expansion
+is not recursive so it is not possible to define a variable with a value
+containing another variable. There is no fancy handling and there are
+absolutely no plans to change this. If you need a more dynamic configuration
+you should create a little script which generates a configuration file and run
+it before starting i3 (for example in your +~/.xsession+ file).
 
 === Automatically putting clients on specific workspaces
 
@@ -833,7 +834,7 @@ popup_during_fullscreen smart
 When being in a tabbed or stacked container, the first container will be
 focused when you use +focus down+ on the last container -- the focus wraps. If
 however there is another stacked/tabbed container in that direction, focus will
-be set on that container. This is the default behaviour so you can navigate to
+be set on that container. This is the default behavior so you can navigate to
 all your windows without having to use +focus parent+.
 
 If you want the focus to *always* wrap and you are aware of using +focus
@@ -899,7 +900,7 @@ workspace_auto_back_and_forth yes
 
 If an application on another workspace sets an urgency hint, switching to this
 workspace may lead to immediate focus of the application, which also means the
-window decoration color would be immediately resetted to +client.focused+. This
+window decoration color would be immediately reseted to +client.focused+. This
 may make it unnecessarily hard to tell which window originally raised the
 event.
 
@@ -1179,11 +1180,32 @@ workspace_buttons <yes|no>
 --------------------------
 
 *Example*:
---------------------
+------------------------
 bar {
     workspace_buttons no
 }
---------------------
+------------------------
+
+=== Binding Mode indicator
+
+Specifies whether the current binding mode indicator should be shown or not.
+This is useful if you want to hide the workspace buttons but still be able
+to see the current binding mode indicator.
+For an example of a +mode+ definition, see <<resizingconfig>>.
+
+The default is to show the mode indicator.
+
+*Syntax*:
+-------------------------------
+binding_mode_indicator <yes|no>
+-------------------------------
+
+*Example*:
+-----------------------------
+bar {
+    binding_mode_indicator no
+}
+-----------------------------
 
 === Colors
 
@@ -1210,7 +1232,7 @@ inactive_workspace::
 	will be the case for most workspaces.
 urgent_workspace::
 	Border, background and text color for a workspace button when the workspace
-	window with the urgency hint set.
+	contains a window with the urgency hint set. Also applies to +mode+ indicators.
 
 *Syntax*:
 ----------------------------------------
@@ -1263,16 +1285,28 @@ bindsym $mod+x move container to workspace 3; workspace 3
 [[command_criteria]]
 
 Furthermore, you can change the scope of a command - that is, which containers
-should be affected by that command, by using various criteria. These are
-prefixed in square brackets to every command. If you want to kill all windows
-which have the class Firefox, use:
+should be affected by that command, by using various criteria. The criteria
+are specified before any command in a pair of square brackets and are separated
+by space.
+
+When using multiple commands, separate them by using a +,+ (a comma) instead of
+a semicolon. Criteria apply only until the next semicolon, so if you use a
+semicolon to separate commands, only the first one will be executed for the
+matched window(s).
 
 *Example*:
 ------------------------------------
+# if you want to kill all windows which have the class Firefox, use:
 bindsym $mod+x [class="Firefox"] kill
 
 # same thing, but case-insensitive
 bindsym $mod+x [class="(?i)firefox"] kill
+
+# kill only the About dialog from Firefox
+bindsym $mod+x [class="Firefox" window_role="About"] kill
+
+# enable floating mode and move container to workspace 4
+for_window [class="^evil-app$"] floating enable, move container to workspace 4
 ------------------------------------
 
 The criteria which are currently implemented are:
@@ -1553,7 +1587,7 @@ specify a default name if there's currently no workspace starting with a "1".
 You can rename workspaces. This might be useful to start with the default
 numbered workspaces, do your work, and rename the workspaces afterwards to
 reflect what’s actually on them. You can also omit the old name to rename
-the currently focused workspace. This is handy if you wan't to use the
+the currently focused workspace. This is handy if you want to use the
 rename command with +i3-input+.
 
 *Syntax*:
@@ -1568,7 +1602,7 @@ i3-msg 'rename workspace 5 to 6'
 i3-msg 'rename workspace 1 to "1: www"'
 i3-msg 'rename workspace "1: www" to "10: www"'
 i3-msg 'rename workspace to "2: mail"
-bindsym $mod+r exec i3-input -F 'rename workspace to %s' -P 'New name: '
+bindsym $mod+r exec i3-input -F 'rename workspace to "%s"' -P 'New name: '
 --------------------------------------------------------------------------
 
 === Moving workspaces to a different screen

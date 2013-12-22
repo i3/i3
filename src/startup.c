@@ -17,6 +17,7 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <paths.h>
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
@@ -191,15 +192,7 @@ void start_application(const char *command, bool no_startup_id) {
             if (!no_startup_id)
                 sn_launcher_context_setup_child_process(context);
 
-            /* Stores the path of the shell */
-            static const char *shell = NULL;
-
-            if (shell == NULL)
-                if ((shell = getenv("SHELL")) == NULL)
-                    shell = "/bin/sh";
-
-            /* This is the child */
-            execl(shell, shell, "-c", command, (void*)NULL);
+            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (void*)NULL);
             /* not reached */
         }
         _exit(0);

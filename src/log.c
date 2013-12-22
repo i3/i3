@@ -129,11 +129,16 @@ void open_logbuffer(void) {
             return;
         }
 
+#if defined(__APPLE__)
+        if (ftruncate(logbuffer_shm, logbuffer_size) == -1) {
+            fprintf(stderr, "Could not ftruncate SHM segment for the i3 log: %s\n", strerror(errno));
+#else
         int ret;
         if ((ret = posix_fallocate(logbuffer_shm, 0, logbuffer_size)) != 0) {
+            fprintf(stderr, "Could not ftruncate SHM segment for the i3 log: %s\n", strerror(ret));
+#endif
             close(logbuffer_shm);
             shm_unlink(shmlogname);
-            fprintf(stderr, "Could not ftruncate SHM segment for the i3 log: %s\n", strerror(ret));
             return;
         }
 

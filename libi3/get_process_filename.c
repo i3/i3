@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <err.h>
 
 #include "libi3.h"
 
@@ -35,6 +36,9 @@ char *get_process_filename(const char *prefix) {
             struct stat buf;
             if (stat(dir, &buf) != 0) {
                 if (mkdir(dir, 0700) == -1) {
+                    warn("Could not mkdir(%s)", dir);
+                    errx(EXIT_FAILURE, "Check permissions of $XDG_RUNTIME_DIR = '%s'",
+                         getenv("XDG_RUNTIME_DIR"));
                     perror("mkdir()");
                     return NULL;
                 }

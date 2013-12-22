@@ -359,14 +359,23 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
  */
 void tree_close_con(kill_window_t kill_window) {
     assert(focused != NULL);
-    if (focused->type == CT_WORKSPACE) {
-        LOG("Cannot close workspace\n");
-        return;
-    }
 
     /* There *should* be no possibility to focus outputs / root container */
     assert(focused->type != CT_OUTPUT);
     assert(focused->type != CT_ROOT);
+
+    if (focused->type == CT_WORKSPACE) {
+        DLOG("Workspaces cannot be close, closing all children instead\n");
+        Con *child, *nextchild;
+        for (child = TAILQ_FIRST(&(focused->focus_head)); child; ) {
+            nextchild = TAILQ_NEXT(child, focused);
+            DLOG("killing child=%p\n", child);
+            tree_close(child, kill_window, false, false);
+            child = nextchild;
+        }
+
+        return;
+    }
 
     /* Kill con */
     tree_close(focused, kill_window, false, false);

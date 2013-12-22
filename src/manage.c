@@ -279,11 +279,17 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         if ((assignment = assignment_for(cwindow, A_TO_WORKSPACE | A_TO_OUTPUT))) {
             DLOG("Assignment matches (%p)\n", match);
             if (assignment->type == A_TO_WORKSPACE) {
-                nc = con_descend_tiling_focused(workspace_get(assignment->dest.workspace, NULL));
-                DLOG("focused on ws %s: %p / %s\n", assignment->dest.workspace, nc, nc->name);
+                Con *assigned_ws = workspace_get(assignment->dest.workspace, NULL);
+                nc = con_descend_tiling_focused(assigned_ws);
+                DLOG("focused on ws %s: %p / %s\n", assigned_ws->name, nc, nc->name);
                 if (nc->type == CT_WORKSPACE)
                     nc = tree_open_con(nc, cwindow);
-                else nc = tree_open_con(nc->parent, cwindow);
+                else
+                    nc = tree_open_con(nc->parent, cwindow);
+
+                /* set the urgency hint on the window if the workspace is not visible */
+                if (!workspace_is_visible(assigned_ws))
+                    urgency_hint = true;
             }
         /* TODO: handle assignments with type == A_TO_OUTPUT */
         } else if (startup_ws) {
@@ -322,10 +328,19 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     x_set_name(nc, name);
     free(name);
 
+    /* handle fullscreen containers */
     Con *ws = con_get_workspace(nc);
     Con *fs = (ws ? con_get_fullscreen_con(ws, CF_OUTPUT) : NULL);
     if (fs == NULL)
         fs = con_get_fullscreen_con(croot, CF_GLOBAL);
+
+    xcb_get_property_reply_t *state_reply = xcb_get_property_reply(conn, state_cookie, NULL);
+    if (xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_FULLSCREEN)) {
+        fs = NULL;
+        con_toggle_fullscreen(nc, CF_OUTPUT);
+    }
+
+    FREE(state_reply);
 
     if (fs == NULL) {
         DLOG("Not in fullscreen mode, focusing\n");
@@ -429,12 +444,6 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     values[0] = CHILD_EVENT_MASK & ~XCB_EVENT_MASK_ENTER_WINDOW;
     xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, values);
     xcb_flush(conn);
-
-    reply = xcb_get_property_reply(conn, state_cookie, NULL);
-    if (xcb_reply_contains_atom(reply, A__NET_WM_STATE_FULLSCREEN))
-        con_toggle_fullscreen(nc, CF_OUTPUT);
-
-    FREE(reply);
 
     /* Put the client inside the save set. Upon termination (whether killed or
      * normal exit does not matter) of the window manager, these clients will

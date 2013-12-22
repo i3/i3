@@ -28,45 +28,43 @@ typedef enum { CLICK_BORDER = 0, CLICK_DECORATION = 1, CLICK_INSIDE = 2 } click_
  */
 static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press_event_t *event) {
     DLOG("border = %d, con = %p\n", border, con);
-    char way = (border == BORDER_TOP || border == BORDER_LEFT ? 'p' : 'n');
-    orientation_t orientation = (border == BORDER_TOP || border == BORDER_BOTTOM ? VERT : HORIZ);
-
-    /* look for a parent container with the right orientation */
-    Con *first = NULL, *second = NULL;
-    Con *resize_con = con;
-    while (resize_con->type != CT_WORKSPACE &&
-           resize_con->type != CT_FLOATING_CON &&
-           con_orientation(resize_con->parent) != orientation)
-        resize_con = resize_con->parent;
-
-    DLOG("resize_con = %p\n", resize_con);
-    if (resize_con->type != CT_WORKSPACE &&
-        resize_con->type != CT_FLOATING_CON &&
-        con_orientation(resize_con->parent) == orientation) {
-        first = resize_con;
-        second = (way == 'n') ? TAILQ_NEXT(first, nodes) : TAILQ_PREV(first, nodes_head, nodes);
-        if (second == TAILQ_END(&(first->nodes_head))) {
-            second = NULL;
-        }
-        else if (way == 'p') {
-            Con *tmp = first;
-            first = second;
-            second = tmp;
-        }
-        DLOG("first = %p, second = %p, resize_con = %p\n",
-                first, second, resize_con);
+    Con *second = NULL;
+    Con *first = con;
+    direction_t search_direction;
+    switch (border) {
+        case BORDER_LEFT:
+            search_direction = D_LEFT;
+            break;
+        case BORDER_RIGHT:
+            search_direction = D_RIGHT;
+            break;
+        case BORDER_TOP:
+            search_direction = D_UP;
+            break;
+        case BORDER_BOTTOM:
+            search_direction = D_DOWN;
+            break;
     }
 
-    if (first == NULL || second == NULL) {
-        DLOG("Resize not possible\n");
+    bool res = resize_find_tiling_participants(&first, &second, search_direction);
+    if (!res) {
+        LOG("No second container in this direction found.\n");
         return false;
     }
 
     assert(first != second);
     assert(first->parent == second->parent);
 
+    /* The first container should always be in front of the second container */
+    if (search_direction == D_UP || search_direction == D_LEFT) {
+        Con *tmp = first;
+        first = second;
+        second = tmp;
+    }
+
     /* We modify the X/Y position in the event so that the divider line is at
      * the actual position of the border, not at the position of the click. */
+    const orientation_t orientation = ((border == BORDER_LEFT || border == BORDER_RIGHT) ? HORIZ : VERT);
     if (orientation == HORIZ)
         event->root_x = second->rect.x;
     else event->root_y = second->rect.y;

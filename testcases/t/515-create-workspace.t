@@ -14,31 +14,26 @@
 # • http://onyxneon.com/books/modern_perl/modern_perl_a4.pdf
 #   (unless you are already familiar with Perl)
 #
-# Verifies that you can assign a window _and_ use for_window with a move
-# command.
-# Ticket: #909
-# Bug still in: 4.4-69-g6856b23
+# Tests that new workspace names are taken from the config,
+# then from the first free number starting with 1.
+#
 use i3test i3_autostart => 0;
 
 my $config = <<EOT;
 # i3 config file (v4)
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
-assign [instance=__i3-test-window] 2
-for_window [instance=__i3-test-window] move workspace 1
-EOT
+fake-outputs 1024x768+0+0,1024x768+1024+0
 
+bindsym 1 workspace 1: eggs
+EOT
 my $pid = launch_with_config($config);
 
-# We use dont_map because i3 will not map the window on the current
-# workspace. Thus, open_window would time out in wait_for_map (2 seconds).
-my $window = open_window(
-    wm_class => '__i3-test-window',
-    dont_map => 1,
-);
-$window->map;
+my $i3 = i3(get_socket_path());
+my $ws = $i3->get_workspaces->recv;
 
-does_i3_live;
+is($ws->[0]->{name}, '1: eggs', 'new workspace uses config name');
+is($ws->[1]->{name}, '2', 'naming continues with next free number');
 
 exit_gracefully($pid);
 

@@ -368,23 +368,23 @@ int main(int argc, char *argv[]) {
 
     printf("using format \"%s\"\n", format);
 
+    int screen;
+    conn = xcb_connect(NULL, &screen);
+    if (!conn || xcb_connection_has_error(conn))
+        die("Cannot open display\n");
+
     if (socket_path == NULL)
-        socket_path = root_atom_contents("I3_SOCKET_PATH");
+        socket_path = root_atom_contents("I3_SOCKET_PATH", conn, screen);
 
     if (socket_path == NULL)
         socket_path = "/tmp/i3-ipc.sock";
 
     sockfd = ipc_connect(socket_path);
 
-    int screens;
-    conn = xcb_connect(NULL, &screens);
-    if (!conn || xcb_connection_has_error(conn))
-        die("Cannot open display\n");
-
     /* Request the current InputFocus to restore when i3-input exits. */
     focus_cookie = xcb_get_input_focus(conn);
 
-    root_screen = xcb_aux_get_screen(conn, screens);
+    root_screen = xcb_aux_get_screen(conn, screen);
     root = root_screen->root;
 
     symbols = xcb_key_symbols_alloc(conn);

@@ -24,6 +24,14 @@
     y(bool, success); \
     y(map_close); \
 } while (0)
+#define yerror(message) do { \
+    y(map_open); \
+    ystr("success"); \
+    y(bool, false); \
+    ystr("error"); \
+    ystr(message); \
+    y(map_close); \
+} while (0)
 
 /** When the command did not include match criteria (!), we use the currently
  * focused container. Do not confuse this case with a command which included
@@ -65,6 +73,17 @@ static Output *get_output_from_string(Output *current_output, const char *output
     else if (strcasecmp(output_str, "down") == 0)
         output = get_output_next_wrap(D_DOWN, current_output);
     else output = get_output_by_name(output_str);
+
+    return output;
+}
+
+/*
+ * Returns the output containing the given container.
+ */
+static Output *get_output_of_con(Con *con) {
+    Con *output_con = con_get_output(con);
+    Output *output = get_output_by_name(output_con->name);
+    assert(output != NULL);
 
     return output;
 }
@@ -441,12 +460,7 @@ void cmd_move_con_to_workspace_back_and_forth(I3_CMD) {
     ws = workspace_back_and_forth_get();
 
     if (ws == NULL) {
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
-        ystr("No workspace was previously active.");
-        y(map_close);
+        yerror("No workspace was previously active.");
         return;
     }
 
@@ -535,13 +549,8 @@ void cmd_move_con_to_workspace_number(I3_CMD, char *which) {
         parsed_num < 0 ||
         endptr == which) {
         LOG("Could not parse initial part of \"%s\" as a number.\n", which);
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
         // TODO: better error message
-        ystr("Could not parse number");
-        y(map_close);
+        yerror("Could not parse number");
         return;
     }
 
@@ -618,79 +627,50 @@ static void cmd_resize_floating(I3_CMD, char *way, char *direction, Con *floatin
 
 static bool cmd_resize_tiling_direction(I3_CMD, Con *current, char *way, char *direction, int ppt) {
     LOG("tiling resize\n");
-    /* get the appropriate current container (skip stacked/tabbed cons) */
-    Con *other = NULL;
-    double percentage = 0;
-    while (current->parent->layout == L_STACKED ||
-           current->parent->layout == L_TABBED)
-        current = current->parent;
+    Con *second = NULL;
+    Con *first = current;
+    direction_t search_direction;
+    if (!strcmp(direction, "left"))
+        search_direction = D_LEFT;
+    else if (!strcmp(direction, "right"))
+        search_direction = D_RIGHT;
+    else if (!strcmp(direction, "up"))
+        search_direction = D_UP;
+    else
+        search_direction = D_DOWN;
 
-    /* Then further go up until we find one with the matching orientation. */
-    orientation_t search_orientation =
-        (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0 ? HORIZ : VERT);
-
-    do {
-        if (con_orientation(current->parent) != search_orientation) {
-            current = current->parent;
-            continue;
-        }
-
-        /* get the default percentage */
-        int children = con_num_children(current->parent);
-        LOG("ins. %d children\n", children);
-        percentage = 1.0 / children;
-        LOG("default percentage = %f\n", percentage);
-
-        orientation_t orientation = con_orientation(current->parent);
-
-        if ((orientation == HORIZ &&
-             (strcmp(direction, "up") == 0 || strcmp(direction, "down") == 0)) ||
-            (orientation == VERT &&
-             (strcmp(direction, "left") == 0 || strcmp(direction, "right") == 0))) {
-            LOG("You cannot resize in that direction. Your focus is in a %s split container currently.\n",
-                (orientation == HORIZ ? "horizontal" : "vertical"));
-            ysuccess(false);
-            return false;
-        }
-
-        if (strcmp(direction, "up") == 0 || strcmp(direction, "left") == 0) {
-            other = TAILQ_PREV(current, nodes_head, nodes);
-        } else {
-            other = TAILQ_NEXT(current, nodes);
-        }
-        if (other == TAILQ_END(workspaces)) {
-            LOG("No other container in this direction found, trying to look further up in the tree...\n");
-            current = current->parent;
-            continue;
-        }
-        break;
-    } while (current->type != CT_WORKSPACE &&
-             current->type != CT_FLOATING_CON);
-
-    if (other == NULL) {
-        LOG("No other container in this direction found, trying to look further up in the tree...\n");
+    bool res = resize_find_tiling_participants(&first, &second, search_direction);
+    if (!res) {
+        LOG("No second container in this direction found.\n");
         ysuccess(false);
         return false;
     }
 
-    LOG("other->percent = %f\n", other->percent);
-    LOG("current->percent before = %f\n", current->percent);
-    if (current->percent == 0.0)
-        current->percent = percentage;
-    if (other->percent == 0.0)
-        other->percent = percentage;
-    double new_current_percent = current->percent + ((double)ppt / 100.0);
-    double new_other_percent = other->percent - ((double)ppt / 100.0);
-    LOG("new_current_percent = %f\n", new_current_percent);
-    LOG("new_other_percent = %f\n", new_other_percent);
+    /* get the default percentage */
+    int children = con_num_children(first->parent);
+    LOG("ins. %d children\n", children);
+    double percentage = 1.0 / children;
+    LOG("default percentage = %f\n", percentage);
+
+    /* resize */
+    LOG("second->percent = %f\n", second->percent);
+    LOG("first->percent before = %f\n", first->percent);
+    if (first->percent == 0.0)
+        first->percent = percentage;
+    if (second->percent == 0.0)
+        second->percent = percentage;
+    double new_first_percent = first->percent + ((double)ppt / 100.0);
+    double new_second_percent = second->percent - ((double)ppt / 100.0);
+    LOG("new_first_percent = %f\n", new_first_percent);
+    LOG("new_second_percent = %f\n", new_second_percent);
     /* Ensure that the new percentages are positive and greater than
      * 0.05 to have a reasonable minimum size. */
-    if (definitelyGreaterThan(new_current_percent, 0.05, DBL_EPSILON) &&
-        definitelyGreaterThan(new_other_percent, 0.05, DBL_EPSILON)) {
-        current->percent += ((double)ppt / 100.0);
-        other->percent -= ((double)ppt / 100.0);
-        LOG("current->percent after = %f\n", current->percent);
-        LOG("other->percent after = %f\n", other->percent);
+    if (definitelyGreaterThan(new_first_percent, 0.05, DBL_EPSILON) &&
+        definitelyGreaterThan(new_second_percent, 0.05, DBL_EPSILON)) {
+        first->percent += ((double)ppt / 100.0);
+        second->percent -= ((double)ppt / 100.0);
+        LOG("first->percent after = %f\n", first->percent);
+        LOG("second->percent after = %f\n", second->percent);
     } else {
         LOG("Not resizing, already at minimum size\n");
     }
@@ -939,13 +919,8 @@ void cmd_workspace_number(I3_CMD, char *which) {
         parsed_num < 0 ||
         endptr == which) {
         LOG("Could not parse initial part of \"%s\" as a number.\n", which);
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
         // TODO: better error message
-        ystr("Could not parse number");
-        y(map_close);
+        yerror("Could not parse number");
 
         return;
     }
@@ -1085,7 +1060,7 @@ void cmd_move_con_to_output(I3_CMD, char *name) {
 
     // TODO: fix the handling of criteria
     TAILQ_FOREACH(current, &owindows, owindows)
-        current_output = get_output_containing(current->con->rect.x, current->con->rect.y);
+        current_output = get_output_of_con(current->con);
 
     assert(current_output != NULL);
 
@@ -1167,8 +1142,7 @@ void cmd_move_workspace_to_output(I3_CMD, char *name) {
 
     owindow *current;
     TAILQ_FOREACH(current, &owindows, owindows) {
-        Output *current_output = get_output_containing(current->con->rect.x,
-                                                       current->con->rect.y);
+        Output *current_output = get_output_of_con(current->con);
         if (!current_output) {
             ELOG("Cannot get current output. This is a bug in i3.\n");
             ysuccess(false);
@@ -1439,12 +1413,7 @@ void cmd_focus(I3_CMD) {
         ELOG("You have to specify which window/container should be focused.\n");
         ELOG("Example: [class=\"urxvt\" title=\"irssi\"] focus\n");
 
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
-        ystr("You have to specify which window/container should be focused");
-        y(map_close);
+        yerror("You have to specify which window/container should be focused");
 
         return;
     }
@@ -1521,7 +1490,7 @@ void cmd_fullscreen(I3_CMD, char *fullscreen_mode) {
     HANDLE_EMPTY_MATCH;
 
     TAILQ_FOREACH(current, &owindows, owindows) {
-        printf("matching: %p / %s\n", current->con, current->con->name);
+        DLOG("matching: %p / %s\n", current->con, current->con->name);
         con_toggle_fullscreen(current->con, (strcmp(fullscreen_mode, "global") == 0 ? CF_GLOBAL : CF_OUTPUT));
     }
 
@@ -1713,7 +1682,7 @@ void cmd_focus_output(I3_CMD, char *name) {
     Output *output;
 
     TAILQ_FOREACH(current, &owindows, owindows)
-        current_output = get_output_containing(current->con->rect.x, current->con->rect.y);
+        current_output = get_output_of_con(current->con);
     assert(current_output != NULL);
 
     output = get_output_from_string(current_output, name);
@@ -1750,12 +1719,7 @@ void cmd_move_window_to_position(I3_CMD, char *method, char *cx, char *cy) {
 
     if (!con_is_floating(focused)) {
         ELOG("Cannot change position. The window/container is not floating\n");
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
-        ystr("Cannot change position. The window/container is not floating.");
-        y(map_close);
+        yerror("Cannot change position. The window/container is not floating.");
         return;
     }
 
@@ -1790,12 +1754,7 @@ void cmd_move_window_to_center(I3_CMD, char *method) {
 
     if (!con_is_floating(focused)) {
         ELOG("Cannot change position. The window/container is not floating\n");
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
-        ystr("Cannot change position. The window/container is not floating.");
-        y(map_close);
+        yerror("Cannot change position. The window/container is not floating.");
         return;
     }
 
@@ -1890,13 +1849,8 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     if (!workspace) {
         // TODO: we should include the old workspace name here and use yajl for
         // generating the reply.
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
         // TODO: better error message
-        ystr("Old workspace not found");
-        y(map_close);
+        yerror("Old workspace not found");
         return;
     }
 
@@ -1908,13 +1862,8 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
     if (check_dest != NULL) {
         // TODO: we should include the new workspace name here and use yajl for
         // generating the reply.
-        y(map_open);
-        ystr("success");
-        y(bool, false);
-        ystr("error");
         // TODO: better error message
-        ystr("New workspace already exists");
-        y(map_close);
+        yerror("New workspace already exists");
         return;
     }
 
@@ -1950,7 +1899,7 @@ void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
  *
  */
 bool cmd_bar_mode(char *bar_mode, char *bar_id) {
-    int mode;
+    int mode = M_DOCK;
     bool toggle = false;
     if (strcmp(bar_mode, "dock") == 0)
         mode = M_DOCK;
@@ -1995,7 +1944,7 @@ bool cmd_bar_mode(char *bar_mode, char *bar_id) {
  *
  */
 bool cmd_bar_hidden_state(char *bar_hidden_state, char *bar_id) {
-    int hidden_state;
+    int hidden_state = S_SHOW;
     bool toggle = false;
     if (strcmp(bar_hidden_state, "hide") == 0)
         hidden_state = S_HIDE;

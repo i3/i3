@@ -24,8 +24,11 @@ my $_NET_WM_STATE_TOGGLE = 2;
 sub set_urgency {
     my ($win, $urgent_flag, $type) = @_;
     if ($type == 1) {
+        # Because X11::XCB does not keep track of clearing the urgency hint
+        # when receiving focus, we just delete it in all cases and then re-set
+        # it if appropriate.
+        $win->delete_hint('urgency');
         $win->add_hint('urgency') if ($urgent_flag);
-        $win->delete_hint('urgency') if (!$urgent_flag);
     } elsif ($type == 2) {
         my $msg = pack "CCSLLLLLL",
             X11::XCB::CLIENT_MESSAGE, # response_type

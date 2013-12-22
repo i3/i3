@@ -113,7 +113,7 @@ sub start_xdummy {
         # actual system X configuration.
         my $socket = fork_xserver($keep_xdummy_output, $displaynum,
                 './Xdummy', ":$displaynum", '-config', '/dev/null',
-                '-nolisten', 'tcp');
+                '-configdir', '/dev/null', '-nolisten', 'tcp');
         push(@displays, ":$displaynum");
         push(@sockets_waiting, $socket);
         $displaynum++;

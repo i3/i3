@@ -66,7 +66,13 @@ void scratchpad_move(Con *con) {
      * adjusted in size according to what the user specifies. */
     if (con->scratchpad_state == SCRATCHPAD_NONE) {
         DLOG("This window was never used as a scratchpad before.\n");
-        con->scratchpad_state = SCRATCHPAD_FRESH;
+        if (con == maybe_floating_con) {
+            DLOG("It was in floating mode before, set scratchpad state to changed.\n");
+            con->scratchpad_state = SCRATCHPAD_CHANGED;
+        } else {
+            DLOG("It was in tiling mode before, set scratchpad state to fresh.\n");
+            con->scratchpad_state = SCRATCHPAD_FRESH;
+        }
     }
 }
 

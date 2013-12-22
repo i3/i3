@@ -85,6 +85,7 @@ my $w2 = open_window;
 is($x->input_focus, $w2->id, 'window 2 focused');
 
 cmd "workspace $tmp2";
+$w->delete_hint('urgency');
 $w->add_hint('urgency');
 sync_with_i3;
 

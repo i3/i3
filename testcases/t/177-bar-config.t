@@ -63,6 +63,7 @@ my $bar_config = $i3->get_bar_config($bar_id)->recv;
 is($bar_config->{status_command}, 'i3status --foo', 'status_command correct');
 ok(!$bar_config->{verbose}, 'verbose off by default');
 ok($bar_config->{workspace_buttons}, 'workspace buttons enabled per default');
+ok($bar_config->{binding_mode_indicator}, 'mode indicator enabled per default');
 is($bar_config->{mode}, 'dock', 'dock mode by default');
 is($bar_config->{position}, 'bottom', 'position bottom by default');
 
@@ -85,7 +86,8 @@ $config = <<EOT;
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bar {
-    # Start a default instance of i3bar which provides workspace buttons.
+    # Start a default instance of i3bar which does not provide
+    # workspace buttons.
     # Additionally, i3status will provide a statusline.
     status_command i3status --bar
 
@@ -98,6 +100,7 @@ bar {
     mode dock
     font Terminus
     workspace_buttons no
+    binding_mode_indicator no
     verbose yes
     socket_path /tmp/foobar
 
@@ -125,6 +128,7 @@ $bar_config = $i3->get_bar_config($bar_id)->recv;
 is($bar_config->{status_command}, 'i3status --bar', 'status_command correct');
 ok($bar_config->{verbose}, 'verbose on');
 ok(!$bar_config->{workspace_buttons}, 'workspace buttons disabled');
+ok(!$bar_config->{binding_mode_indicator}, 'mode indicator disabled');
 is($bar_config->{mode}, 'dock', 'dock mode');
 is($bar_config->{position}, 'top', 'position top');
 is_deeply($bar_config->{outputs}, [ 'HDMI1', 'HDMI2' ], 'outputs ok');
@@ -230,7 +234,8 @@ $config = <<EOT;
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 bar {
-    # Start a default instance of i3bar which provides workspace buttons.
+    # Start a default instance of i3bar which does not provide
+    # workspace buttons.
     # Additionally, i3status will provide a statusline.
     status_command i3status --bar
 
@@ -243,6 +248,7 @@ bar {
     mode dock
     font Terminus
     workspace_buttons no
+    binding_mode_indicator yes
     verbose yes
     socket_path /tmp/foobar
 
@@ -271,6 +277,7 @@ $bar_config = $i3->get_bar_config($bar_id)->recv;
 is($bar_config->{status_command}, 'i3status --bar', 'status_command correct');
 ok($bar_config->{verbose}, 'verbose on');
 ok(!$bar_config->{workspace_buttons}, 'workspace buttons disabled');
+ok($bar_config->{binding_mode_indicator}, 'mode indicator enabled');
 is($bar_config->{mode}, 'dock', 'dock mode');
 is($bar_config->{position}, 'top', 'position top');
 is_deeply($bar_config->{outputs}, [ 'HDMI1', 'HDMI2' ], 'outputs ok');

@@ -446,4 +446,29 @@ is(get_focused($ws), $scratch, 'scratchpad is focused');
 
 # TODO: make i3bar display *something* when a window on the scratchpad has the urgency hint
 
+################################################################################
+# 14: Verify that 'move scratchpad' sends floating containers to scratchpad but
+# does not resize/resposition the container on the next 'scratchpad show', i.e.,
+# i3 sets the scratchpad flag to SCRATCHPAD_CHANGED
+################################################################################
+
+clear_scratchpad;
+$tmp = fresh_workspace;
+open_window;
+
+($nodes, $focus) = get_ws_content($tmp);
+is(scalar @$nodes, 1, 'precisely one window on current ws');
+is($nodes->[0]->{scratchpad_state}, 'none', 'scratchpad_state none');
+
+cmd 'floating toggle';
+cmd 'move scratchpad';
+
+$__i3_scratch = get_ws('__i3_scratch');
+@scratch_nodes = @{$__i3_scratch->{floating_nodes}};
+is(scalar @scratch_nodes, 1, '__i3_scratch contains our window');
+($nodes, $focus) = get_ws_content($tmp);
+is(scalar @$nodes, 0, 'no window on current ws anymore');
+
+is($scratch_nodes[0]->{scratchpad_state}, 'changed', 'scratchpad_state changed');
+
 done_testing;

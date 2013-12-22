@@ -494,6 +494,8 @@ font (string)::
 	The font to use for text on the bar.
 workspace_buttons (boolean)::
 	Display workspace buttons or not? Defaults to true.
+binding_mode_indicator (boolean)::
+	Display the mode indicator or not? Defaults to true.
 verbose (boolean)::
 	Should the bar enable verbose output for debugging? Defaults to false.
 colors (map)::
@@ -539,6 +541,7 @@ urgent_workspace_text/urgent_workspace_bar::
  "status_command": "i3status",
  "font": "-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1",
  "workspace_buttons": true,
+ "binding_mode_indicator": true,
  "verbose": false,
  "colors": {
    "background": "#c0c0c0",

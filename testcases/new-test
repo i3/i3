@@ -15,6 +15,16 @@ use File::Basename qw(basename);
 use Getopt::Long;
 use v5.10;
 
+my $usage = <<'EOF';
+Script to create a new testcase from a template.
+
+    # Create (and edit) a new test for moving floating windows
+    ./new-test floating move
+
+    # Create (and edit) a multi-monitor test for moving workspaces
+    ./new-test -m move workspaces
+EOF
+
 my $multi_monitor;
 
 my $result = GetOptions(
@@ -23,6 +33,11 @@ my $result = GetOptions(
 
 my $testname = join(' ', @ARGV);
 $testname =~ s/ /-/g;
+
+unless (length $testname) {
+    say $usage;
+    exit(0);
+}
 
 my $header = <<'EOF';
 #!perl
@@ -67,10 +82,6 @@ print $fh $header;
 if ($multi_monitor) {
     print $fh <<'EOF';
 use i3test i3_autostart => 0;
-
-# Ensure the pointer is at (0, 0) so that we really start on the first
-# (the left) workspace.
-$x->root->warp_pointer(0, 0);
 
 my $config = <<EOT;
 # i3 config file (v4)

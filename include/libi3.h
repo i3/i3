@@ -84,11 +84,14 @@ void errorlog(char *fmt, ...);
  * Try to get the contents of the given atom (for example I3_SOCKET_PATH) from
  * the X11 root window and return NULL if it doesn’t work.
  *
+ * If the provided XCB connection is NULL, a new connection will be
+ * established.
+ *
  * The memory for the contents is dynamically allocated and has to be
  * free()d by the caller.
  *
  */
-char *root_atom_contents(const char *atomname);
+char *root_atom_contents(const char *atomname, xcb_connection_t *provided_conn, int screen);
 
 /**
  * Safe-wrapper around malloc which exits if malloc returns NULL (meaning that
@@ -369,7 +372,8 @@ char *get_process_filename(const char *prefix);
  *
  * The implementation follows http://stackoverflow.com/a/933996/712014
  *
+ * Returned value must be freed by the caller.
  */
-const char *get_exe_path(const char *argv0);
+char *get_exe_path(const char *argv0);
 
 #endif

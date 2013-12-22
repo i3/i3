@@ -108,7 +108,7 @@ $outdir .= POSIX::strftime("%Y-%m-%d-%H-%M-%S-", localtime());
 $outdir .= `git describe --tags`;
 chomp($outdir);
 mkdir($outdir) or die "Could not create $outdir";
-unlink("latest") if -e "latest";
+unlink("latest") if -l "latest";
 symlink("$outdir", "latest") or die "Could not symlink latest to $outdir";
 
 
@@ -143,7 +143,7 @@ my $timingsjson = StartXDummy::slurp('.last_run_timings.json');
 
 # Run 000-load-deps.t first to bail out early when dependencies are missing.
 my $loadtest = "t/000-load-deps.t";
-if ($loadtest ~~ @testfiles) {
+if ((scalar grep { $_ eq $loadtest } @testfiles) > 0) {
     @testfiles = ($loadtest, grep { $_ ne $loadtest } @testfiles);
 }
 

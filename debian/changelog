@@ -1,8 +1,22 @@
-i3-wm (4.5.2-1) experimental; urgency=low
+i3-wm (4.6.1-1) unstable; urgency=low
 
-  * NOT YET RELEASED
+  * NOT YET RELEASED.
 
- -- Michael Stapelberg <stapelberg@debian.org>  Mon, 18 Mar 2013 23:01:30 +0100
+ -- Michael Stapelberg <stapelberg@debian.org>  Wed, 07 Aug 2013 20:53:26 +0200
+
+i3-wm (4.6-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Wed, 07 Aug 2013 20:53:26 +0200
+
+i3-wm (4.5.1-2) unstable; urgency=low
+
+  * experimental to unstable because i3-wm 4.5.1 was only in experimental due
+    to the freeze.
+  * bump standards-version to 3.9.4 (no changes necessary)
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Tue, 14 May 2013 20:48:16 +0200
 
 i3-wm (4.5.1-1) experimental; urgency=low
 

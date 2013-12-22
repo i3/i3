@@ -267,6 +267,10 @@ struct Barconfig {
      * zero. */
     bool hide_workspace_buttons;
 
+    /** Hide mode button? Configuration option is 'binding_mode_indicator no'
+     * but we invert the bool for the same reason as hide_workspace_buttons.*/
+    bool hide_binding_mode_indicator;
+
     /** Enable verbose mode? Useful for debugging purposes. */
     bool verbose;
 

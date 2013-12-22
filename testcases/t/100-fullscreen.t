@@ -214,4 +214,25 @@ sync_with_i3;
 # Verify that $swindow was the one that initially remained fullscreen.
 is(fullscreen_windows($tmp), 0, 'no fullscreen windows on first ws');
 
+################################################################################
+# Verify that opening a window with _NET_WM_STATE_FULLSCREEN unfullscreens any
+# existing container on the workspace and fullscreens the newly opened window.
+################################################################################
+
+$tmp = fresh_workspace;
+
+$window = open_window();
+
+cmd "fullscreen";
+
+is(fullscreen_windows($tmp), 1, 'one fullscreen window on ws');
+is($x->input_focus, $window->id, 'fullscreen window focused');
+
+$swindow = open_window({
+    fullscreen => 1
+});
+
+is(fullscreen_windows($tmp), 1, 'one fullscreen window on ws');
+is($x->input_focus, $swindow->id, 'fullscreen window focused');
+
 done_testing;

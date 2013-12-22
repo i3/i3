@@ -23,7 +23,8 @@ typedef struct config_t {
     position_t   position;
     int          verbose;
     struct xcb_color_strings_t colors;
-    int          disable_ws;
+    bool         disable_binding_mode_indicator;
+    bool         disable_ws;
     char         *bar_id;
     char         *command;
     char         *fontname;
