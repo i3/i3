@@ -78,6 +78,7 @@ install-i3: i3
 	$(INSTALL) -m 0755 i3-sensible-editor $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-sensible-pager $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-sensible-terminal $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -m 0755 i3-save-tree $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-dmenu-desktop $(DESTDIR)$(PREFIX)/bin/
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)$(SYSCONFDIR)/i3/config
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes || $(INSTALL) -m 0644 i3.config.keycodes $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes
