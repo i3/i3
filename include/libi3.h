@@ -72,12 +72,19 @@ struct Font {
 /* Since this file also gets included by utilities which don’t use the i3 log
  * infrastructure, we define a fallback. */
 #if !defined(LOG)
-void verboselog(char *fmt, ...);
+void verboselog(char *fmt, ...)
+    __attribute__ ((format (printf, 1, 2)));
 #define LOG(fmt, ...) verboselog("[libi3] " __FILE__ " " fmt, ##__VA_ARGS__)
 #endif
 #if !defined(ELOG)
-void errorlog(char *fmt, ...);
+void errorlog(char *fmt, ...)
+    __attribute__ ((format (printf, 1, 2)));
 #define ELOG(fmt, ...) errorlog("[libi3] ERROR: " fmt, ##__VA_ARGS__)
+#endif
+#if !defined(DLOG)
+void debuglog(char *fmt, ...)
+    __attribute__ ((format (printf, 1, 2)));
+#define DLOG(fmt, ...) debuglog("%s:%s:%d - " fmt, I3__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #endif
 
 /**

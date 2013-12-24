@@ -57,7 +57,7 @@ xcb_screen_t *root_screen;
 static xcb_get_input_focus_cookie_t focus_cookie;
 
 /*
- * Having verboselog() and errorlog() is necessary when using libi3.
+ * Having verboselog(), errorlog() and debuglog() is necessary when using libi3.
  *
  */
 void verboselog(char *fmt, ...) {
@@ -74,6 +74,9 @@ void errorlog(char *fmt, ...) {
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     va_end(args);
+}
+
+void debuglog(char *fmt, ...) {
 }
 
 /*
