@@ -21,6 +21,9 @@
 #if defined(ELOG)
 #undef ELOG
 #endif
+#if defined(DLOG)
+#undef DLOG
+#endif
 /** ##__VA_ARGS__ means: leave out __VA_ARGS__ completely if it is empty, that
    is, delete the preceding comma */
 #define LOG(fmt, ...) verboselog(fmt, ##__VA_ARGS__)
