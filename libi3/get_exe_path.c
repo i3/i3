@@ -30,7 +30,7 @@ char *get_exe_path(const char *argv0) {
 #endif
 	ssize_t linksize;
 
-	while ((linksize = readlink(exepath, destpath, destpath_size)) == destpath_size) {
+	while ((linksize = readlink(exepath, destpath, destpath_size)) == (ssize_t)destpath_size) {
 		destpath_size = destpath_size * 2;
 		destpath = srealloc(destpath, destpath_size);
 	}

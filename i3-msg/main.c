@@ -135,7 +135,7 @@ yajl_callbacks reply_callbacks = {
 int main(int argc, char *argv[]) {
     socket_path = getenv("I3SOCK");
     int o, option_index = 0;
-    int message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
+    uint32_t message_type = I3_IPC_MESSAGE_TYPE_COMMAND;
     char *payload = NULL;
     bool quiet = false;
 

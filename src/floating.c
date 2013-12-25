@@ -535,12 +535,12 @@ void floating_resize_window(Con *con, const bool proportional,
      * a bitmask of the nearest borders (BORDER_LEFT, BORDER_RIGHT, …) */
     border_t corner = 0;
 
-    if (event->event_x <= (con->rect.width / 2))
+    if (event->event_x <= (int16_t)(con->rect.width / 2))
         corner |= BORDER_LEFT;
     else corner |= BORDER_RIGHT;
 
     int cursor = 0;
-    if (event->event_y <= (con->rect.height / 2)) {
+    if (event->event_y <= (int16_t)(con->rect.height / 2)) {
         corner |= BORDER_TOP;
         cursor = (corner & BORDER_LEFT) ?
             XCURSOR_CURSOR_TOP_LEFT_CORNER : XCURSOR_CURSOR_TOP_RIGHT_CORNER;

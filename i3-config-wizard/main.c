@@ -299,7 +299,7 @@ static char *rewrite_binding(const char *input) {
 
     /* The "<=" operator is intentional: We also handle the terminating 0-byte
      * explicitly by looking for an 'end' token. */
-    while ((walk - input) <= len) {
+    while ((size_t)(walk - input) <= len) {
         /* Skip whitespace before every token, newlines are relevant since they
          * separate configuration directives. */
         while ((*walk == ' ' || *walk == '\t') && *walk != '\0')

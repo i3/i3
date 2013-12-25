@@ -84,7 +84,7 @@ Output *get_output_by_name(const char *name);
  * if there is no output which contains these coordinates.
  *
  */
-Output *get_output_containing(int x, int y);
+Output *get_output_containing(unsigned int x, unsigned int y);
 
 /*
  * In contained_by_output, we check if any active output contains part of the container.

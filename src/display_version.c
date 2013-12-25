@@ -135,7 +135,7 @@ void display_running_version(void) {
 
     sasprintf(&exepath, "/proc/%d/exe", getpid());
 
-    while ((linksize = readlink(exepath, destpath, destpath_size)) == destpath_size) {
+    while ((linksize = readlink(exepath, destpath, destpath_size)) == (ssize_t)destpath_size) {
             destpath_size = destpath_size * 2;
             destpath = srealloc(destpath, destpath_size);
     }
@@ -151,7 +151,7 @@ void display_running_version(void) {
     free(exepath);
     sasprintf(&exepath, "/proc/%s/exe", pid_from_atom);
 
-    while ((linksize = readlink(exepath, destpath, destpath_size)) == destpath_size) {
+    while ((linksize = readlink(exepath, destpath, destpath_size)) == (ssize_t)destpath_size) {
         destpath_size = destpath_size * 2;
         destpath = srealloc(destpath, destpath_size);
     }

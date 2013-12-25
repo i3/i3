@@ -28,7 +28,7 @@ void run_assignments(i3Window *window) {
             continue;
 
         bool skip = false;
-        for (int c = 0; c < window->nr_assignments; c++) {
+        for (uint32_t c = 0; c < window->nr_assignments; c++) {
             if (window->ran_assignments[c] != current)
                 continue;
 

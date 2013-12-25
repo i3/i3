@@ -33,7 +33,7 @@ int ipc_send_message(int sockfd, const uint32_t message_size,
         .type = message_type
     };
 
-    int sent_bytes = 0;
+    size_t sent_bytes = 0;
     int n = 0;
 
     /* This first loop is basically unnecessary. No operating system has

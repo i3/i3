@@ -22,7 +22,7 @@ static int num_screens;
  * Looks in outputs for the Output whose start coordinates are x, y
  *
  */
-static Output *get_screen_at(int x, int y) {
+static Output *get_screen_at(unsigned int x, unsigned int y) {
     Output *output;
     TAILQ_FOREACH(output, &outputs, outputs)
         if (output->rect.x == x && output->rect.y == y)

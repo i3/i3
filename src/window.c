@@ -32,7 +32,7 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool bef
     FREE(win->class_class);
 
     win->class_instance = sstrdup(new_class);
-    if ((strlen(new_class) + 1) < xcb_get_property_value_length(prop))
+    if ((strlen(new_class) + 1) < (size_t)xcb_get_property_value_length(prop))
         win->class_class = sstrdup(new_class + strlen(new_class) + 1);
     else win->class_class = NULL;
     LOG("WM_CLASS changed to %s (instance), %s (class)\n",

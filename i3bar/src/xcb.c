@@ -417,7 +417,7 @@ void handle_button(xcb_button_press_event_t *event) {
     const size_t len = namelen + strlen("workspace \"\"") + 1;
     char *buffer = scalloc(len+num_quotes);
     strncpy(buffer, "workspace \"", strlen("workspace \""));
-    int inpos, outpos;
+    size_t inpos, outpos;
     for (inpos = 0, outpos = strlen("workspace \"");
          inpos < namelen;
          inpos++, outpos++) {
@@ -1524,7 +1524,7 @@ void reconfig_windows(bool redraw_bars) {
                 uint32_t top_end_x;
                 uint32_t bottom_start_x;
                 uint32_t bottom_end_x;
-            } __attribute__((__packed__)) strut_partial = {0,};
+            } __attribute__((__packed__)) strut_partial = {};
             switch (config.position) {
                 case POS_NONE:
                     break;
@@ -1717,7 +1717,7 @@ void draw_bars(bool unhide) {
                           outputs_walk->bargc,
                           MAX(0, (int16_t)(statusline_width - outputs_walk->rect.w + 4)), 0,
                           MAX(0, (int16_t)(outputs_walk->rect.w - statusline_width - traypx - 4)), 3,
-                          MIN(outputs_walk->rect.w - traypx - 4, statusline_width), font.height + 2);
+                          MIN(outputs_walk->rect.w - traypx - 4, (int)statusline_width), font.height + 2);
         }
 
         if (!config.disable_ws) {

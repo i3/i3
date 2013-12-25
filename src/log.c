@@ -250,7 +250,7 @@ static void vlog(const bool print, const char *fmt, va_list args) {
 
         /* If there is no space for the current message in the ringbuffer, we
          * need to wrap and write to the beginning again. */
-        if (len >= (logbuffer_size - (logwalk - logbuffer))) {
+        if (len >= (size_t)(logbuffer_size - (logwalk - logbuffer))) {
             loglastwrap = logwalk;
             logwalk = logbuffer + sizeof(i3_shmlog_header);
             store_log_markers();

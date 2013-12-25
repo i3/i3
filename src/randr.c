@@ -77,7 +77,7 @@ Output *get_first_output(void) {
  * if there is no output which contains these coordinates.
  *
  */
-Output *get_output_containing(int x, int y) {
+Output *get_output_containing(unsigned int x, unsigned int y) {
     Output *output;
     TAILQ_FOREACH(output, &outputs, outputs) {
         if (!output->active)

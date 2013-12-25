@@ -159,7 +159,7 @@ static const char *get_string(const char *identifier) {
     return NULL;
 }
 
-static const long get_long(const char *identifier) {
+static long get_long(const char *identifier) {
     for (int c = 0; c < 10; c++) {
         if (stack[c].identifier == NULL)
             break;
@@ -346,7 +346,7 @@ struct ConfigResult *parse_config(const char *input, struct context *context) {
 
     /* The "<=" operator is intentional: We also handle the terminating 0-byte
      * explicitly by looking for an 'end' token. */
-    while ((walk - input) <= len) {
+    while ((size_t)(walk - input) <= len) {
         /* Skip whitespace before every token, newlines are relevant since they
          * separate configuration directives. */
         while ((*walk == ' ' || *walk == '\t') && *walk != '\0')
@@ -585,7 +585,7 @@ struct ConfigResult *parse_config(const char *input, struct context *context) {
             y(map_close);
 
             /* Skip the rest of this line, but continue parsing. */
-            while ((walk - input) <= len && *walk != '\n')
+            while ((size_t)(walk - input) <= len && *walk != '\n')
                 walk++;
 
             free(position);

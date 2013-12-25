@@ -232,7 +232,7 @@ struct CommandResult *parse_command(const char *input) {
 
     /* The "<=" operator is intentional: We also handle the terminating 0-byte
      * explicitly by looking for an 'end' token. */
-    while ((walk - input) <= len) {
+    while ((size_t)(walk - input) <= len) {
         /* skip whitespace and newlines before every token */
         while ((*walk == ' ' || *walk == '\t' ||
                 *walk == '\r' || *walk == '\n') && *walk != '\0')

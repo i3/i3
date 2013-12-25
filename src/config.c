@@ -175,7 +175,7 @@ void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch) {
         }
 
         xcb_keycode_t *walk = bind->translated_to;
-        for (int i = 0; i < bind->number_keycodes; i++)
+        for (uint32_t i = 0; i < bind->number_keycodes; i++)
             grab_keycode_for_binding(conn, bind, *walk++);
     }
 }

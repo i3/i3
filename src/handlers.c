@@ -1034,7 +1034,7 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
     struct property_handler_t *handler = NULL;
     xcb_get_property_reply_t *propr = NULL;
 
-    for (int c = 0; c < sizeof(property_handlers) / sizeof(struct property_handler_t); c++) {
+    for (size_t c = 0; c < sizeof(property_handlers) / sizeof(struct property_handler_t); c++) {
         if (property_handlers[c].atom != atom)
             continue;
 

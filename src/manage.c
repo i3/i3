@@ -252,7 +252,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             cwindow->dock = W_DOCK_BOTTOM;
         } else {
             DLOG("Ignoring invalid reserved edges (_NET_WM_STRUT_PARTIAL), using position as fallback:\n");
-            if (geom->y < (search_at->rect.height / 2)) {
+            if (geom->y < (int16_t)(search_at->rect.height / 2)) {
                 DLOG("geom->y = %d < rect.height / 2 = %d, it is a top dock client\n",
                      geom->y, (search_at->rect.height / 2));
                 cwindow->dock = W_DOCK_TOP;

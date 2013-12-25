@@ -224,7 +224,7 @@ char *store_restart_layout(void) {
         return NULL;
     }
 
-    int written = 0;
+    size_t written = 0;
     while (written < length) {
         int n = write(fd, payload + written, length - written);
         /* TODO: correct error-handling */
@@ -242,9 +242,9 @@ char *store_restart_layout(void) {
         }
         written += n;
 #if YAJL_MAJOR >= 2
-        printf("written: %d of %zd\n", written, length);
+        DLOG("written: %zd of %zd\n", written, length);
 #else
-        printf("written: %d of %d\n", written, length);
+        DLOG("written: %d of %d\n", written, length);
 #endif
     }
     close(fd);
