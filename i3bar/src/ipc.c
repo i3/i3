@@ -100,9 +100,6 @@ void got_bar_config(char *reply) {
     /* Resolve color strings to colorpixels and save them, then free the strings. */
     init_colors(&(config.colors));
 
-    /* The name of this function is actually misleading. Even if no command is
-     * specified, this function initiates the watchers to listen on stdin and
-     * react accordingly */
     start_child(config.command);
     FREE(config.command);
 }

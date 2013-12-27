@@ -452,10 +452,16 @@ void child_write_output(void) {
 /*
  * Start a child-process with the specified command and reroute stdin.
  * We actually start a $SHELL to execute the command so we don't have to care
- * about arguments and such
+ * about arguments and such.
+ *
+ * If `command' is NULL, such as in the case when no `status_command' is given
+ * in the bar config, no child will be started.
  *
  */
 void start_child(char *command) {
+    if (command == NULL)
+        return;
+
     /* Allocate a yajl parser which will be used to parse stdin. */
     memset(&callbacks, '\0', sizeof(yajl_callbacks));
     callbacks.yajl_map_key = stdin_map_key;
@@ -478,43 +484,41 @@ void start_child(char *command) {
     gen = yajl_gen_alloc(NULL);
 #endif
 
-    if (command != NULL) {
-        int pipe_in[2]; /* pipe we read from */
-        int pipe_out[2]; /* pipe we write to */
+    int pipe_in[2]; /* pipe we read from */
+    int pipe_out[2]; /* pipe we write to */
 
-        if (pipe(pipe_in) == -1)
-            err(EXIT_FAILURE, "pipe(pipe_in)");
-        if (pipe(pipe_out) == -1)
-            err(EXIT_FAILURE, "pipe(pipe_out)");
+    if (pipe(pipe_in) == -1)
+        err(EXIT_FAILURE, "pipe(pipe_in)");
+    if (pipe(pipe_out) == -1)
+        err(EXIT_FAILURE, "pipe(pipe_out)");
 
-        child.pid = fork();
-        switch (child.pid) {
-            case -1:
-                ELOG("Couldn't fork(): %s\n", strerror(errno));
-                exit(EXIT_FAILURE);
-            case 0:
-                /* Child-process. Reroute streams and start shell */
+    child.pid = fork();
+    switch (child.pid) {
+        case -1:
+            ELOG("Couldn't fork(): %s\n", strerror(errno));
+            exit(EXIT_FAILURE);
+        case 0:
+            /* Child-process. Reroute streams and start shell */
 
-                close(pipe_in[0]);
-                close(pipe_out[1]);
+            close(pipe_in[0]);
+            close(pipe_out[1]);
 
-                dup2(pipe_in[1], STDOUT_FILENO);
-                dup2(pipe_out[0], STDIN_FILENO);
+            dup2(pipe_in[1], STDOUT_FILENO);
+            dup2(pipe_out[0], STDIN_FILENO);
 
-                setpgid(child.pid, 0);
-                execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (char*) NULL);
-                return;
-            default:
-                /* Parent-process. Reroute streams */
+            setpgid(child.pid, 0);
+            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (char*) NULL);
+            return;
+        default:
+            /* Parent-process. Reroute streams */
 
-                close(pipe_in[1]);
-                close(pipe_out[0]);
+            close(pipe_in[1]);
+            close(pipe_out[0]);
 
-                dup2(pipe_in[0], STDIN_FILENO);
-                child_stdin = pipe_out[1];
+            dup2(pipe_in[0], STDIN_FILENO);
+            child_stdin = pipe_out[1];
 
-                break;
-        }
+            break;
     }
 
     /* We set O_NONBLOCK because blocking is evil in event-driven software */

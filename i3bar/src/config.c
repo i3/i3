@@ -127,10 +127,6 @@ static int config_string_cb(void *params_, const unsigned char *val, unsigned in
     }
 
     if (!strcmp(cur_key, "status_command")) {
-        /* We cannot directly start the child here, because start_child() also
-         * needs to be run when no command was specified (to setup stdin).
-         * Therefore we save the command in 'config' and access it later in
-         * got_bar_config() */
         DLOG("command = %.*s\n", len, val);
         sasprintf(&config.command, "%.*s", len, val);
         return 1;
