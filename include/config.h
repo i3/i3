@@ -10,8 +10,7 @@
  * bindings mode).
  *
  */
-#ifndef I3_CONFIG_H
-#define I3_CONFIG_H
+#pragma once
 
 #include <stdbool.h>
 #include "queue.h"
@@ -357,5 +356,3 @@ Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode
  *
  */
 void kill_configerror_nagbar(bool wait_for_it);
-
-#endif

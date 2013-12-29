@@ -10,8 +10,7 @@
  *            the appropriate workspace.
  *
  */
-#ifndef I3_STARTUP_H
-#define I3_STARTUP_H
+#pragma once
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-monitor.h>
@@ -62,5 +61,3 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
  *
  */
 char *startup_workspace_for_window(i3Window *cwindow, xcb_get_property_reply_t *startup_id_reply);
-
-#endif

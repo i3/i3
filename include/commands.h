@@ -7,8 +7,7 @@
  * commands.c: all command functions (see commands_parser.c)
  *
  */
-#ifndef I3_COMMANDS_H
-#define I3_COMMANDS_H
+#pragma once
 
 #include "commands_parser.h"
 
@@ -288,5 +287,3 @@ void cmd_shmlog(I3_CMD, char *argument);
  *
  */
 void cmd_debuglog(I3_CMD, char *argument);
-
-#endif

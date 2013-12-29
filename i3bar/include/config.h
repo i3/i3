@@ -7,8 +7,7 @@
  * config.c: Parses the configuration (received from i3).
  *
  */
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#pragma once
 
 #include "common.h"
 
@@ -52,5 +51,3 @@ void parse_config_json(char *json);
  *
  */
 void free_colors(struct xcb_color_strings_t *colors);
-
-#endif

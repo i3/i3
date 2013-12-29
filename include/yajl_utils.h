@@ -7,8 +7,7 @@
  * yajl_utils.h
  *
  */
-#ifndef I3_YAJL_UTILS_H
-#define I3_YAJL_UTILS_H
+#pragma once
 
 #include <yajl/yajl_gen.h>
 #include <yajl/yajl_parse.h>
@@ -26,6 +25,4 @@ typedef size_t ylength;
 #define ygenalloc() yajl_gen_alloc(NULL, NULL);
 #define yalloc(callbacks, client) yajl_alloc(callbacks, NULL, NULL, client)
 typedef unsigned int ylength;
-#endif
-
 #endif

@@ -7,8 +7,7 @@
  * mode.c: Handle mode-event and show current binding mode in the bar
  *
  */
-#ifndef MODE_H_
-#define MODE_H_
+#pragma once
 
 #include <xcb/xproto.h>
 
@@ -27,5 +26,3 @@ typedef struct mode mode;
  *
  */
 void parse_mode_json(char *json);
-
-#endif

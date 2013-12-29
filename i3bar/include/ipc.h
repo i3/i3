@@ -7,8 +7,7 @@
  * ipc.c: Communicating with i3
  *
  */
-#ifndef IPC_H_
-#define IPC_H_
+#pragma once
 
 #include <stdint.h>
 
@@ -37,5 +36,3 @@ int i3_send_msg(uint32_t type, const char* payload);
  *
  */
 void subscribe_events(void);
-
-#endif

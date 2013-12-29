@@ -7,8 +7,7 @@
  * key_press.c: key press handler
  *
  */
-#ifndef I3_KEY_PRESS_H
-#define I3_KEY_PRESS_H
+#pragma once
 
 extern pid_t command_error_nagbar_pid;
 
@@ -30,5 +29,3 @@ void handle_key_press(xcb_key_press_event_t *event);
  *
  */
 void kill_commanderror_nagbar(bool wait_for_it);
-
-#endif

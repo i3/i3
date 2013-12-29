@@ -7,8 +7,7 @@
  * xcb.c: Helper functions for easier usage of XCB
  *
  */
-#ifndef I3_XCB_H
-#define I3_XCB_H
+#pragma once
 
 #include "data.h"
 #include "xcursor.h"
@@ -137,5 +136,3 @@ uint16_t get_visual_depth(xcb_visualid_t visual_id);
  *
  */
 xcb_visualid_t get_visualid_by_depth(uint16_t depth);
-
-#endif

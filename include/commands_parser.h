@@ -7,8 +7,7 @@
  * commands.c: all command functions (see commands_parser.c)
  *
  */
-#ifndef I3_COMMANDS_PARSER_H
-#define I3_COMMANDS_PARSER_H
+#pragma once
 
 #include <yajl/yajl_gen.h>
 
@@ -35,5 +34,3 @@ struct CommandResult {
 };
 
 struct CommandResult *parse_command(const char *input);
-
-#endif

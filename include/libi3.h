@@ -8,8 +8,7 @@
  * as i3-msg, i3-config-wizard, …
  *
  */
-#ifndef I3_LIBI3_H
-#define I3_LIBI3_H
+#pragma once
 
 #include <stdbool.h>
 #include <stdarg.h>
@@ -382,5 +381,3 @@ char *get_process_filename(const char *prefix);
  * Returned value must be freed by the caller.
  */
 char *get_exe_path(const char *argv0);
-
-#endif

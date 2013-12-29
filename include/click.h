@@ -7,8 +7,7 @@
  * click.c: Button press (mouse click) events.
  *
  */
-#ifndef I3_CLICK_H
-#define I3_CLICK_H
+#pragma once
 
 /**
  * The button press X callback. This function determines whether the floating
@@ -19,5 +18,3 @@
  *
  */
 int handle_button_press(xcb_button_press_event_t *event);
-
-#endif

@@ -7,8 +7,7 @@
  * tree.c: Everything that primarily modifies the layout tree data structure.
  *
  */
-#ifndef I3_TREE_H
-#define I3_TREE_H
+#pragma once
 
 extern Con *croot;
 /* TODO: i am not sure yet how much access to the focused container should
@@ -105,5 +104,3 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry);
  *
  */
 void tree_flatten(Con *child);
-
-#endif

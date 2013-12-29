@@ -9,8 +9,7 @@
  *               older versions.
  *
  */
-#ifndef I3_XCB_COMPAT_H
-#define I3_XCB_COMPAT_H
+#pragma once
 
 #define xcb_icccm_get_wm_protocols_reply_t xcb_get_wm_protocols_reply_t
 #define xcb_icccm_get_wm_protocols xcb_get_wm_protocols
@@ -43,5 +42,3 @@
 #define XCB_ATOM_ATOM ATOM
 #define XCB_ATOM_WM_NORMAL_HINTS WM_NORMAL_HINTS
 #define XCB_ATOM_STRING STRING
-
-#endif

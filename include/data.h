@@ -7,8 +7,7 @@
  * include/data.h: This file defines all data structures used by i3
  *
  */
-#ifndef I3_DATA_H
-#define I3_DATA_H
+#pragma once
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
@@ -595,5 +594,3 @@ struct Con {
     /* Depth of the container window */
     uint16_t depth;
 };
-
-#endif

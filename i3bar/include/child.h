@@ -7,8 +7,7 @@
  * child.c: Getting Input for the statusline
  *
  */
-#ifndef CHILD_H_
-#define CHILD_H_
+#pragma once
 
 #include <stdbool.h>
 
@@ -79,5 +78,3 @@ void cont_child(void);
  *
  */
 void send_block_clicked(int button, const char *name, const char *instance, int x, int y);
-
-#endif

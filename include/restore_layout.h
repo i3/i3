@@ -8,8 +8,7 @@
  *                   parsing (which can be found in load_layout.c).
  *
  */
-#ifndef I3_RESTORE_LAYOUT_H
-#define I3_RESTORE_LAYOUT_H
+#pragma once
 
 /**
  * Opens a separate connection to X11 for placeholder windows when restoring
@@ -37,5 +36,3 @@ void restore_open_placeholder_windows(Con *con);
  *
  */
 bool restore_kill_placeholder(xcb_window_t placeholder);
-
-#endif

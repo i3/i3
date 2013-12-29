@@ -8,8 +8,7 @@
  *           various rects. Needs to be pushed to X11 (see x.c) to be visible.
  *
  */
-#ifndef I3_RENDER_H
-#define I3_RENDER_H
+#pragma once
 
 /**
  * "Renders" the given container (and its children), meaning that all rects are
@@ -25,5 +24,3 @@ void render_con(Con *con, bool render_fullscreen);
  * Returns the height for the decorations
  */
 int render_deco_height(void);
-
-#endif

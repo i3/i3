@@ -7,8 +7,7 @@
  * config_directives.h: all config storing functions (see config_parser.c)
  *
  */
-#ifndef I3_CONFIG_DIRECTIVES_H
-#define I3_CONFIG_DIRECTIVES_H
+#pragma once
 
 #include "config_parser.h"
 
@@ -77,5 +76,3 @@ CFGFUN(bar_status_command, const char *command);
 CFGFUN(bar_binding_mode_indicator, const char *value);
 CFGFUN(bar_workspace_buttons, const char *value);
 CFGFUN(bar_finish);
-
-#endif

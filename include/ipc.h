@@ -7,8 +7,7 @@
  * ipc.c: UNIX domain socket IPC (initialization, client handling, protocol).
  *
  */
-#ifndef I3_IPC_H
-#define I3_IPC_H
+#pragma once
 
 #include <ev.h>
 #include <stdbool.h>
@@ -81,5 +80,3 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
 void ipc_shutdown(void);
 
 void dump_node(yajl_gen gen, Con *con, bool inplace_restart);
-
-#endif

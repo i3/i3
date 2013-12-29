@@ -7,8 +7,7 @@
  * workspaces.c: Maintaining the workspace-lists
  *
  */
-#ifndef WORKSPACES_H_
-#define WORKSPACES_H_
+#pragma once
 
 #include <xcb/xproto.h>
 
@@ -42,5 +41,3 @@ struct i3_ws {
 
     TAILQ_ENTRY(i3_ws) tailq;       /* Pointer for the TAILQ-Macro */
 };
-
-#endif

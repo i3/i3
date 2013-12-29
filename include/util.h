@@ -8,8 +8,7 @@
  *         also libi3).
  *
  */
-#ifndef I3_UTIL_H
-#define I3_UTIL_H
+#pragma once
 
 #include <err.h>
 
@@ -141,5 +140,3 @@ void start_nagbar(pid_t *nagbar_pid, char *argv[]);
  *
  */
 void kill_nagbar(pid_t *nagbar_pid, bool wait_for_it);
-
-#endif

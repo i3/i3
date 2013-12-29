@@ -7,8 +7,7 @@
  * main.c: Initialization, main loop
  *
  */
-#ifndef I3_MAIN_H
-#define I3_MAIN_H
+#pragma once
 
 /**
  * Enable or disable the main X11 event handling function.
@@ -17,5 +16,3 @@
  *
  */
 void main_set_x11_cb(bool enable);
-
-#endif

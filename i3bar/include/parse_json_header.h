@@ -8,8 +8,7 @@
  *                      protocol version and features.
  *
  */
-#ifndef PARSE_JSON_HEADER_H_
-#define PARSE_JSON_HEADER_H_
+#pragma once
 
 #include <stdint.h>
 
@@ -22,5 +21,3 @@
  *
  */
 void parse_json_header(i3bar_child *child, const unsigned char *buffer, int length, unsigned int *consumed);
-
-#endif

@@ -9,8 +9,7 @@
  *        …).
  *
  */
-#ifndef I3_CON_H
-#define I3_CON_H
+#pragma once
 
 /**
  * Create a new container (and attach it to the given parent, if not NULL).
@@ -340,5 +339,3 @@ void con_set_urgency(Con *con, bool urgent);
  *
  */
 char *con_get_tree_representation(Con *con);
-
-#endif

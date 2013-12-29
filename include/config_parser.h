@@ -7,8 +7,7 @@
  * config_parser.h: config parser-related definitions
  *
  */
-#ifndef I3_CONFIG_PARSER_H
-#define I3_CONFIG_PARSER_H
+#pragma once
 
 #include <yajl/yajl_gen.h>
 
@@ -37,5 +36,3 @@ struct ConfigResult *parse_config(const char *input, struct context *context);
  *
  */
 void parse_file(const char *f);
-
-#endif

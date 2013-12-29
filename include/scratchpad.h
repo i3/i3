@@ -7,8 +7,7 @@
  * scratchpad.c: Scratchpad functions (TODO: more description)
  *
  */
-#ifndef I3_SCRATCHPAD_H
-#define I3_SCRATCHPAD_H
+#pragma once
 
 /**
  * Moves the specified window to the __i3_scratch workspace, making it floating
@@ -39,5 +38,3 @@ void scratchpad_show(Con *con);
  *
  */
 void scratchpad_fix_resolution(void);
-
-#endif

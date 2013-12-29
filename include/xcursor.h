@@ -7,8 +7,7 @@
  * xcursor.c: libXcursor support for themed cursors.
  *
  */
-#ifndef I3_XCURSOR_CURSOR_H
-#define I3_XCURSOR_CURSOR_H
+#pragma once
 
 #include <xcb/xcb_cursor.h>
 
@@ -41,5 +40,3 @@ int xcursor_get_xcb_cursor(enum xcursor_cursor_t c);
  *
  */
 void xcursor_set_root_cursor(int cursor_id);
-
-#endif

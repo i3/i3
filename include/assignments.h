@@ -7,8 +7,7 @@
  * assignments.c: Assignments for specific windows (for_window).
  *
  */
-#ifndef I3_ASSIGNMENTS_H
-#define I3_ASSIGNMENTS_H
+#pragma once
 
 /**
  * Checks the list of assignments for the given window and runs all matching
@@ -22,5 +21,3 @@ void run_assignments(i3Window *window);
  *
  */
 Assignment *assignment_for(i3Window *window, int type);
-
-#endif

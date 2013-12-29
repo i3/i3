@@ -7,8 +7,7 @@
  * log.c: Logging functions.
  *
  */
-#ifndef I3_LOG_H
-#define I3_LOG_H
+#pragma once
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -102,5 +101,3 @@ void verboselog(char *fmt, ...)
  * failures. This function is invoked automatically when exiting.
  */
 void purge_zerobyte_logfile(void);
-
-#endif

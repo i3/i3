@@ -7,13 +7,10 @@
  * output.c: Output (monitor) related functions.
  *
  */
-#ifndef I3_OUTPUT_H
-#define I3_OUTPUT_H
+#pragma once
 
 /**
  * Returns the output container below the given output container.
  *
  */
 Con *output_get_content(Con *output);
-
-#endif

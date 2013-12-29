@@ -7,8 +7,7 @@
  * outputs.c: Maintaining the output-list
  *
  */
-#ifndef OUTPUTS_H_
-#define OUTPUTS_H_
+#pragma once
 
 #include <xcb/xcb.h>
 
@@ -53,5 +52,3 @@ struct i3_output {
 
     SLIST_ENTRY(i3_output) slist; /* Pointer for the SLIST-Macro */
 };
-
-#endif

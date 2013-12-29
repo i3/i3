@@ -8,8 +8,7 @@
  *             …).
  *
  */
-#ifndef I3_HANDLERS_H
-#define I3_HANDLERS_H
+#pragma once
 
 #include <xcb/randr.h>
 
@@ -62,6 +61,4 @@ int handle_configure_event(void *prophs, xcb_connection_t *conn, xcb_configure_n
 int handle_window_type(void *data, xcb_connection_t *conn, uint8_t state,
                        xcb_window_t window, xcb_atom_t atom,
                        xcb_get_property_reply_t *property);
-#endif
-
 #endif

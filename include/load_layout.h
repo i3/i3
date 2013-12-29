@@ -8,9 +8,6 @@
  *                restart.
  *
  */
-#ifndef I3_LOAD_LAYOUT_H
-#define I3_LOAD_LAYOUT_H
+#pragma once
 
 void tree_append_json(const char *filename);
-
-#endif
