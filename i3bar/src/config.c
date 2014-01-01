@@ -212,17 +212,10 @@ static int config_boolean_cb(void *params_, int val) {
 
 /* A datastructure to pass all these callbacks to yajl */
 static yajl_callbacks outputs_callbacks = {
-    &config_null_cb,
-    &config_boolean_cb,
-    NULL,
-    NULL,
-    NULL,
-    &config_string_cb,
-    NULL,
-    &config_map_key_cb,
-    NULL,
-    NULL,
-    NULL
+    .yajl_null = config_null_cb,
+    .yajl_boolean = config_boolean_cb,
+    .yajl_string = config_string_cb,
+    .yajl_map_key = config_map_key_cb,
 };
 
 /*

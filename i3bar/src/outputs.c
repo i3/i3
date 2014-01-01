@@ -248,18 +248,14 @@ static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, unsign
 }
 
 /* A datastructure to pass all these callbacks to yajl */
-yajl_callbacks outputs_callbacks = {
-    &outputs_null_cb,
-    &outputs_boolean_cb,
-    &outputs_integer_cb,
-    NULL,
-    NULL,
-    &outputs_string_cb,
-    &outputs_start_map_cb,
-    &outputs_map_key_cb,
-    &outputs_end_map_cb,
-    NULL,
-    NULL
+static yajl_callbacks outputs_callbacks = {
+    .yajl_null = outputs_null_cb,
+    .yajl_boolean = outputs_boolean_cb,
+    .yajl_integer = outputs_integer_cb,
+    .yajl_string = outputs_string_cb,
+    .yajl_start_map = outputs_start_map_cb,
+    .yajl_map_key = outputs_map_key_cb,
+    .yajl_end_map = outputs_end_map_cb,
 };
 
 /*

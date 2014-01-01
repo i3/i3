@@ -118,18 +118,12 @@ static int reply_map_key_cb(void *params, const unsigned char *keyVal, unsigned 
     return 1;
 }
 
-yajl_callbacks reply_callbacks = {
-    NULL,
-    &reply_boolean_cb,
-    NULL,
-    NULL,
-    NULL,
-    &reply_string_cb,
-    &reply_start_map_cb,
-    &reply_map_key_cb,
-    &reply_end_map_cb,
-    NULL,
-    NULL
+static yajl_callbacks reply_callbacks = {
+    .yajl_boolean = reply_boolean_cb,
+    .yajl_string = reply_string_cb,
+    .yajl_start_map = reply_start_map_cb,
+    .yajl_map_key = reply_map_key_cb,
+    .yajl_end_map = reply_end_map_cb,
 };
 
 int main(int argc, char *argv[]) {

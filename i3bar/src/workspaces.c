@@ -198,18 +198,12 @@ static int workspaces_map_key_cb(void *params_, const unsigned char *keyVal, uns
 }
 
 /* A datastructure to pass all these callbacks to yajl */
-yajl_callbacks workspaces_callbacks = {
-    NULL,
-    &workspaces_boolean_cb,
-    &workspaces_integer_cb,
-    NULL,
-    NULL,
-    &workspaces_string_cb,
-    &workspaces_start_map_cb,
-    &workspaces_map_key_cb,
-    NULL,
-    NULL,
-    NULL
+static yajl_callbacks workspaces_callbacks = {
+    .yajl_boolean = workspaces_boolean_cb,
+    .yajl_integer = workspaces_integer_cb,
+    .yajl_string = workspaces_string_cb,
+    .yajl_start_map = workspaces_start_map_cb,
+    .yajl_map_key = workspaces_map_key_cb,
 };
 
 /*

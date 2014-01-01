@@ -827,7 +827,6 @@ static int add_subscription(void *extra, const unsigned char *s,
  */
 IPC_HANDLER(subscribe) {
     yajl_handle p;
-    yajl_callbacks callbacks;
     yajl_status stat;
     ipc_client *current, *client = NULL;
 
@@ -846,8 +845,9 @@ IPC_HANDLER(subscribe) {
     }
 
     /* Setup the JSON parser */
-    memset(&callbacks, 0, sizeof(yajl_callbacks));
-    callbacks.yajl_string = add_subscription;
+    static yajl_callbacks callbacks = {
+        .yajl_string = add_subscription,
+    };
 
     p = yalloc(&callbacks, (void*)client);
     stat = yajl_parse(p, (const unsigned char*)message, message_size);
