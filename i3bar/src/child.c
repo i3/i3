@@ -81,12 +81,7 @@ static void clear_status_blocks() {
  * `draw_bars' is called, the error message text will be drawn on the bar in
  * the space allocated for the statusline.
  */
-
-/* forward function declaration is needed to add __attribute__ mechanism which
- * helps the compiler understand we are defining a printf wrapper */
-static void set_statusline_error(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
-
-static void set_statusline_error(const char *format, ...) {
+__attribute__ ((format (printf, 1, 2))) static void set_statusline_error(const char *format, ...) {
     clear_status_blocks();
 
     char *message;
