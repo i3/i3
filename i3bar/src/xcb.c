@@ -603,17 +603,18 @@ static void handle_client_message(xcb_client_message_event_t* event) {
              * exits/crashes. */
             xcb_change_save_set(xcb_connection, XCB_SET_MODE_INSERT, client);
 
+            trayclient *tc = smalloc(sizeof(trayclient));
+            tc->win = client;
+            tc->xe_version = xe_version;
+            tc->mapped = false;
+            TAILQ_INSERT_TAIL(output->trayclients, tc, tailq);
+
             if (map_it) {
                 DLOG("Mapping dock client\n");
                 xcb_map_window(xcb_connection, client);
             } else {
                 DLOG("Not mapping dock client yet\n");
             }
-            trayclient *tc = smalloc(sizeof(trayclient));
-            tc->win = client;
-            tc->xe_version = xe_version;
-            TAILQ_INSERT_TAIL(output->trayclients, tc, tailq);
-
             /* Trigger an update to copy the statusline text to the appropriate
              * position */
             configure_trayclients();
