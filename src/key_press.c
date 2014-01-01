@@ -51,17 +51,10 @@ static int json_end_map(void *ctx) {
 }
 
 static yajl_callbacks command_error_callbacks = {
-    NULL,
-    &json_boolean,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    &json_start_map,
-    &json_map_key,
-    &json_end_map,
-    NULL,
-    NULL
+    .yajl_boolean = json_boolean,
+    .yajl_start_map = json_start_map,
+    .yajl_map_key = json_map_key,
+    .yajl_end_map = json_end_map,
 };
 
 /*

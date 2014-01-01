@@ -402,16 +402,16 @@ void tree_append_json(const char *filename) {
     LOG("read %d bytes\n", n);
     yajl_gen g;
     yajl_handle hand;
-    yajl_callbacks callbacks;
-    memset(&callbacks, '\0', sizeof(yajl_callbacks));
-    callbacks.yajl_start_map = json_start_map;
-    callbacks.yajl_end_map = json_end_map;
-    callbacks.yajl_end_array = json_end_array;
-    callbacks.yajl_string = json_string;
-    callbacks.yajl_map_key = json_key;
-    callbacks.yajl_integer = json_int;
-    callbacks.yajl_double = json_double;
-    callbacks.yajl_boolean = json_bool;
+    yajl_callbacks callbacks = {
+        .yajl_boolean = json_bool,
+        .yajl_integer = json_int,
+        .yajl_double = json_double,
+        .yajl_string = json_string,
+        .yajl_start_map = json_start_map,
+        .yajl_map_key = json_key,
+        .yajl_end_map = json_end_map,
+        .yajl_end_array = json_end_array,
+    };
 #if YAJL_MAJOR >= 2
     g = yajl_gen_alloc(NULL);
     hand = yajl_alloc(&callbacks, NULL, (void*)g);

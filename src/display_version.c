@@ -42,17 +42,8 @@ static int version_map_key(void *ctx, const unsigned char *stringval, unsigned i
 }
 
 static yajl_callbacks version_callbacks = {
-    NULL, /* null */
-    NULL, /* boolean */
-    NULL, /* integer */
-    NULL, /* double */
-    NULL, /* number */
-    &version_string,
-    NULL, /* start_map */
-    &version_map_key,
-    NULL, /* end_map */
-    NULL, /* start_array */
-    NULL /* end_array */
+    .yajl_string = version_string,
+    .yajl_map_key = version_map_key,
 };
 
 /*

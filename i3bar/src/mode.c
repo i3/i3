@@ -73,17 +73,8 @@ static int mode_map_key_cb(void *params_, const unsigned char *keyVal, unsigned 
 
 /* A datastructure to pass all these callbacks to yajl */
 yajl_callbacks mode_callbacks = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    &mode_string_cb,
-    NULL,
-    &mode_map_key_cb,
-    NULL,
-    NULL,
-    NULL
+    .yajl_string = mode_string_cb,
+    .yajl_map_key = mode_map_key_cb,
 };
 
 /*
