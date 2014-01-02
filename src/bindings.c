@@ -8,6 +8,8 @@
  */
 #include "all.h"
 
+#include <xkbcommon/xkbcommon.h>
+
 pid_t command_error_nagbar_pid = -1;
 
 /*
@@ -263,8 +265,8 @@ void translate_keysyms(void) {
             continue;
 
         /* We need to translate the symbol to a keycode */
-        keysym = XStringToKeysym(bind->symbol);
-        if (keysym == NoSymbol) {
+        keysym = xkb_keysym_from_name(bind->symbol, XKB_KEYSYM_NO_FLAGS);
+        if (keysym == XKB_KEY_NoSymbol) {
             ELOG("Could not translate string to key symbol: \"%s\"\n",
                  bind->symbol);
             continue;

@@ -43,6 +43,9 @@
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_keysyms.h>
 
+#include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-x11.h>
+
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>
@@ -83,7 +86,9 @@ static xcb_pixmap_t pixmap;
 static xcb_gcontext_t pixmap_gc;
 static xcb_key_symbols_t *symbols;
 xcb_window_t root;
-Display *dpy;
+static struct xkb_keymap *xkb_keymap;
+static uint8_t xkb_base_event;
+static uint8_t xkb_base_error;
 
 static void finish();
 
@@ -250,12 +255,24 @@ static char *next_state(const cmdp_token *token) {
              * This reduces a lot of confusion for users who switch keyboard
              * layouts from qwerty to qwertz or other slight variations of
              * qwerty (yes, that happens quite often). */
-            KeySym sym = XkbKeycodeToKeysym(dpy, keycode, 0, 0);
-            if (!keysym_used_on_other_key(sym, keycode))
+            const xkb_keysym_t *syms;
+            int num = xkb_keymap_key_get_syms_by_level(xkb_keymap, keycode, 0, 0, &syms);
+            if (num == 0)
+                errx(1, "xkb_keymap_key_get_syms_by_level returned no symbols for keycode %d", keycode);
+            if (!keysym_used_on_other_key(syms[0], keycode))
                 level = 0;
         }
-        KeySym sym = XkbKeycodeToKeysym(dpy, keycode, 0, level);
-        char *str = XKeysymToString(sym);
+
+        const xkb_keysym_t *syms;
+        int num = xkb_keymap_key_get_syms_by_level(xkb_keymap, keycode, 0, level, &syms);
+        if (num == 0)
+            errx(1, "xkb_keymap_key_get_syms_by_level returned no symbols for keycode %d", keycode);
+        if (num > 1)
+            printf("xkb_keymap_key_get_syms_by_level (keycode = %d) returned %d symbolsinstead of 1, using only the first one.\n", keycode, num);
+
+        char str[4096];
+        if (xkb_keysym_get_name(syms[0], str, sizeof(str)) == -1)
+            errx(EXIT_FAILURE, "xkb_keysym_get_name(%u) failed", syms[0]);
         const char *release = get_string("release");
         char *res;
         char *modrep = (modifiers == NULL ? sstrdup("") : sstrdup(modifiers));
@@ -642,8 +659,14 @@ static void handle_button_press(xcb_button_press_event_t *event) {
 static void finish() {
     printf("creating \"%s\"...\n", config_path);
 
-    if (!(dpy = XOpenDisplay(NULL)))
-        errx(1, "Could not connect to X11");
+    struct xkb_context *xkb_context;
+
+    if ((xkb_context = xkb_context_new(0)) == NULL)
+        errx(1, "could not create xkbcommon context");
+
+    int32_t device_id = xkb_x11_get_core_keyboard_device_id(conn);
+    if ((xkb_keymap = xkb_x11_keymap_new_from_device(xkb_context, conn, device_id, 0)) == NULL)
+        errx(1, "xkb_x11_keymap_new_from_device failed");
 
     FILE *kc_config = fopen(SYSCONFDIR "/i3/config.keycodes", "r");
     if (kc_config == NULL)
@@ -796,6 +819,16 @@ int main(int argc, char *argv[]) {
     if ((conn = xcb_connect(NULL, &screen)) == NULL ||
         xcb_connection_has_error(conn))
         errx(1, "Cannot open display\n");
+
+    if (xkb_x11_setup_xkb_extension(conn,
+                                    XKB_X11_MIN_MAJOR_XKB_VERSION,
+                                    XKB_X11_MIN_MINOR_XKB_VERSION,
+                                    0,
+                                    NULL,
+                                    NULL,
+                                    &xkb_base_event,
+                                    &xkb_base_error) != 1)
+        errx(EXIT_FAILURE, "Could not setup XKB extension.");
 
     if (socket_path == NULL)
         socket_path = root_atom_contents("I3_SOCKET_PATH", conn, screen);

@@ -13,6 +13,7 @@
 #include <sys/resource.h>
 
 #include <xcb/xcb_keysyms.h>
+#include <xcb/xkb.h>
 
 #include <X11/XKBlib.h>
 

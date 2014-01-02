@@ -8,6 +8,7 @@
  *
  */
 #include <xcb/xcb.h>
+#include <xcb/xkb.h>
 #include <xcb/xproto.h>
 #include <xcb/xcb_aux.h>
 
@@ -63,8 +64,7 @@ static i3Font font;
 int bar_height;
 
 /* These are only relevant for XKB, which we only need for grabbing modifiers */
-Display *xkb_dpy;
-int xkb_event_base;
+int xkb_base;
 int mod_pressed = 0;
 
 /* Because the statusline is the same on all outputs, we have
@@ -854,7 +854,62 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
     }
 
     while ((event = xcb_poll_for_event(xcb_connection)) != NULL) {
-        switch (event->response_type & ~0x80) {
+        int type = (event->response_type & ~0x80);
+
+        if (type == xkb_base && xkb_base > -1) {
+            DLOG("received an xkb event\n");
+
+            xcb_xkb_state_notify_event_t *state = (xcb_xkb_state_notify_event_t *)event;
+            if (state->xkbType == XCB_XKB_STATE_NOTIFY) {
+                int modstate = state->mods & config.modifier;
+
+#define DLOGMOD(modmask, status)                        \
+    do {                                                \
+        switch (modmask) {                              \
+            case ShiftMask:                             \
+                DLOG("ShiftMask got " #status "!\n");   \
+                break;                                  \
+            case ControlMask:                           \
+                DLOG("ControlMask got " #status "!\n"); \
+                break;                                  \
+            case Mod1Mask:                              \
+                DLOG("Mod1Mask got " #status "!\n");    \
+                break;                                  \
+            case Mod2Mask:                              \
+                DLOG("Mod2Mask got " #status "!\n");    \
+                break;                                  \
+            case Mod3Mask:                              \
+                DLOG("Mod3Mask got " #status "!\n");    \
+                break;                                  \
+            case Mod4Mask:                              \
+                DLOG("Mod4Mask got " #status "!\n");    \
+                break;                                  \
+            case Mod5Mask:                              \
+                DLOG("Mod5Mask got " #status "!\n");    \
+                break;                                  \
+        }                                               \
+    } while (0)
+
+                if (modstate != mod_pressed) {
+                    if (modstate == 0) {
+                        DLOGMOD(config.modifier, released);
+                        if (!activated_mode)
+                            hide_bars();
+                    } else {
+                        DLOGMOD(config.modifier, pressed);
+                        activated_mode = false;
+                        unhide_bars();
+                    }
+                    mod_pressed = modstate;
+                }
+#undef DLOGMOD
+            }
+
+            free(event);
+            continue;
+        }
+
+        switch (type) {
             case XCB_EXPOSE:
                 /* Expose-events happen, when the window needs to be redrawn */
                 redraw_bars();
@@ -898,76 +953,6 @@ void xcb_chk_cb(struct ev_loop *loop, ev_check *watcher, int revents) {
  *
  */
 void xcb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
-}
-
-/*
- * We need to bind to the modifier per XKB. Sadly, XCB does not implement this
- *
- */
-void xkb_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
-    XkbEvent ev;
-    int modstate = 0;
-
-    DLOG("Got XKB-Event!\n");
-
-    while (XPending(xkb_dpy)) {
-        XNextEvent(xkb_dpy, (XEvent *)&ev);
-
-        if (ev.type != xkb_event_base) {
-            ELOG("No Xkb-Event!\n");
-            continue;
-        }
-
-        if (ev.any.xkb_type != XkbStateNotify) {
-            ELOG("No State Notify!\n");
-            continue;
-        }
-
-        unsigned int mods = ev.state.mods;
-        modstate = mods & config.modifier;
-    }
-
-#define DLOGMOD(modmask, status)                        \
-    do {                                                \
-        switch (modmask) {                              \
-            case ShiftMask:                             \
-                DLOG("ShiftMask got " #status "!\n");   \
-                break;                                  \
-            case ControlMask:                           \
-                DLOG("ControlMask got " #status "!\n"); \
-                break;                                  \
-            case Mod1Mask:                              \
-                DLOG("Mod1Mask got " #status "!\n");    \
-                break;                                  \
-            case Mod2Mask:                              \
-                DLOG("Mod2Mask got " #status "!\n");    \
-                break;                                  \
-            case Mod3Mask:                              \
-                DLOG("Mod3Mask got " #status "!\n");    \
-                break;                                  \
-            case Mod4Mask:                              \
-                DLOG("Mod4Mask got " #status "!\n");    \
-                break;                                  \
-            case Mod5Mask:                              \
-                DLOG("Mod5Mask got " #status "!\n");    \
-                break;                                  \
-        }                                               \
-    } while (0)
-
-    if (modstate != mod_pressed) {
-        if (modstate == 0) {
-            DLOGMOD(config.modifier, released);
-            if (!activated_mode)
-                hide_bars();
-        } else {
-            DLOGMOD(config.modifier, pressed);
-            activated_mode = false;
-            unhide_bars();
-        }
-        mod_pressed = modstate;
-    }
-
-#undef DLOGMOD
 }
 
 /*
@@ -1053,44 +1038,23 @@ char *init_xcb_early() {
  *
  */
 void register_xkb_keyevents() {
-    if (xkb_dpy == NULL) {
-        int xkb_major, xkb_minor, xkb_errbase, xkb_err;
-        xkb_major = XkbMajorVersion;
-        xkb_minor = XkbMinorVersion;
-
-        xkb_dpy = XkbOpenDisplay(NULL,
-                                 &xkb_event_base,
-                                 &xkb_errbase,
-                                 &xkb_major,
-                                 &xkb_minor,
-                                 &xkb_err);
-
-        if (xkb_dpy == NULL) {
-            ELOG("No XKB!\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if (fcntl(ConnectionNumber(xkb_dpy), F_SETFD, FD_CLOEXEC) == -1) {
-            ELOG("Could not set FD_CLOEXEC on xkbdpy: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-
-        int i1;
-        if (!XkbQueryExtension(xkb_dpy, &i1, &xkb_event_base, &xkb_errbase, &xkb_major, &xkb_minor)) {
-            ELOG("XKB not supported by X-server!\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if (!XkbSelectEvents(xkb_dpy, XkbUseCoreKbd, XkbStateNotifyMask, XkbStateNotifyMask)) {
-            ELOG("Could not grab Key!\n");
-            exit(EXIT_FAILURE);
-        }
-
-        xkb_io = smalloc(sizeof(ev_io));
-        ev_io_init(xkb_io, &xkb_io_cb, ConnectionNumber(xkb_dpy), EV_READ);
-        ev_io_start(main_loop, xkb_io);
-        XFlush(xkb_dpy);
+    const xcb_query_extension_reply_t *extreply;
+    extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
+    if (!extreply->present) {
+        ELOG("xkb is not present on this server\n");
+        exit(EXIT_FAILURE);
     }
+    DLOG("initializing xcb-xkb\n");
+    xcb_xkb_use_extension(conn, XCB_XKB_MAJOR_VERSION, XCB_XKB_MINOR_VERSION);
+    xcb_xkb_select_events(conn,
+                          XCB_XKB_ID_USE_CORE_KBD,
+                          XCB_XKB_EVENT_TYPE_STATE_NOTIFY,
+                          0,
+                          XCB_XKB_EVENT_TYPE_STATE_NOTIFY,
+                          0xff,
+                          0xff,
+                          NULL);
+    xkb_base = extreply->first_event;
 }
 
 /*
@@ -1098,13 +1062,14 @@ void register_xkb_keyevents() {
  *
  */
 void deregister_xkb_keyevents() {
-    if (xkb_dpy != NULL) {
-        ev_io_stop(main_loop, xkb_io);
-        XCloseDisplay(xkb_dpy);
-        close(xkb_io->fd);
-        FREE(xkb_io);
-        xkb_dpy = NULL;
-    }
+    xcb_xkb_select_events(conn,
+                          XCB_XKB_ID_USE_CORE_KBD,
+                          0,
+                          0,
+                          0,
+                          0xff,
+                          0xff,
+                          NULL);
 }
 
 /*

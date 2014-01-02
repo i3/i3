@@ -36,10 +36,6 @@ int listen_fds;
  * temporarily for drag_pointer(). */
 static struct ev_check *xcb_check;
 
-static int xkb_event_base;
-
-int xkb_current_group;
-
 extern Con *focused;
 
 char **start_argv;
@@ -70,9 +66,6 @@ struct ev_loop *main_loop;
 
 xcb_key_symbols_t *keysyms;
 
-/* Those are our connections to X11 for use with libXcursor and XKB */
-Display *xlibdpy, *xkbdpy;
-
 /* Default shmlog size if not set by user. */
 const int default_shmlog_size = 25 * 1024 * 1024;
 
@@ -94,7 +87,6 @@ struct ws_assignments_head ws_assignments = TAILQ_HEAD_INITIALIZER(ws_assignment
 
 /* We hope that those are supported and set them to true */
 bool xcursor_supported = true;
-bool xkb_supported = true;
 
 /* This will be set to true when -C is used so that functions can behave
  * slightly differently. We don’t want i3-nagbar to be started when validating
@@ -164,73 +156,6 @@ void main_set_x11_cb(bool enable) {
     } else {
         ev_check_stop(main_loop, xcb_check);
     }
-}
-
-/*
- * When using xmodmap to change the keyboard mapping, this event
- * is only sent via XKB. Therefore, we need this special handler.
- *
- */
-static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
-    DLOG("Handling XKB event\n");
-    XkbEvent ev;
-
-    /* When using xmodmap, every change (!) gets an own event.
-     * Therefore, we just read all events and only handle the
-     * mapping_notify once. */
-    bool mapping_changed = false;
-    while (XPending(xkbdpy)) {
-        XNextEvent(xkbdpy, (XEvent *)&ev);
-        /* While we should never receive a non-XKB event,
-         * better do sanity checking */
-        if (ev.type != xkb_event_base)
-            continue;
-
-        if (ev.any.xkb_type == XkbMapNotify) {
-            mapping_changed = true;
-            continue;
-        }
-
-        if (ev.any.xkb_type != XkbStateNotify) {
-            ELOG("Unknown XKB event received (type %d)\n", ev.any.xkb_type);
-            continue;
-        }
-
-        /* See The XKB Extension: Library Specification, section 14.1 */
-        /* We check if the current group (each group contains
-         * two levels) has been changed. Mode_switch activates
-         * group XkbGroup2Index */
-        if (xkb_current_group == ev.state.group)
-            continue;
-
-        xkb_current_group = ev.state.group;
-
-        if (ev.state.group == XkbGroup2Index) {
-            DLOG("Mode_switch enabled\n");
-            grab_all_keys(conn, true);
-        }
-
-        if (ev.state.group == XkbGroup1Index) {
-            DLOG("Mode_switch disabled\n");
-            ungrab_all_keys(conn);
-            grab_all_keys(conn, false);
-        }
-    }
-
-    if (!mapping_changed)
-        return;
-
-    DLOG("Keyboard mapping changed, updating keybindings\n");
-    xcb_key_symbols_free(keysyms);
-    keysyms = xcb_key_symbols_alloc(conn);
-
-    xcb_numlock_mask = aio_get_mod_mask_for(XCB_NUM_LOCK, keysyms);
-
-    ungrab_all_keys(conn);
-    DLOG("Re-grabbing...\n");
-    translate_keysyms();
-    grab_all_keys(conn, (xkb_current_group == XkbGroup2Index));
-    DLOG("Done\n");
 }
 
 /*
@@ -593,21 +518,7 @@ int main(int argc, char *argv[]) {
 #include "atoms.xmacro"
 #undef xmacro
 
-    /* Initialize the Xlib connection */
-    xlibdpy = xkbdpy = XOpenDisplay(NULL);
-
-    /* Try to load the X cursors and initialize the XKB extension */
-    if (xlibdpy == NULL) {
-        ELOG("ERROR: XOpenDisplay() failed, disabling libXcursor/XKB support\n");
-        xcursor_supported = false;
-        xkb_supported = false;
-    } else if (fcntl(ConnectionNumber(xlibdpy), F_SETFD, FD_CLOEXEC) == -1) {
-        ELOG("Could not set FD_CLOEXEC on xkbdpy\n");
-        return 1;
-    } else {
-        xcursor_load_cursors();
-        /*init_xkb();*/
-    }
+    xcursor_load_cursors();
 
     /* Set a cursor for the root window (otherwise the root window will show no
        cursor until the first client is launched). */
@@ -616,27 +527,22 @@ int main(int argc, char *argv[]) {
     else
         xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
 
-    if (xkb_supported) {
-        int errBase,
-            major = XkbMajorVersion,
-            minor = XkbMinorVersion;
-
-        if (fcntl(ConnectionNumber(xkbdpy), F_SETFD, FD_CLOEXEC) == -1) {
-            fprintf(stderr, "Could not set FD_CLOEXEC on xkbdpy\n");
-            return 1;
-        }
-
-        int i1;
-        if (!XkbQueryExtension(xkbdpy, &i1, &xkb_event_base, &errBase, &major, &minor)) {
-            fprintf(stderr, "XKB not supported by X-server\n");
-            xkb_supported = false;
-        }
-        /* end of ugliness */
-
-        if (xkb_supported && !XkbSelectEvents(xkbdpy, XkbUseCoreKbd, XkbMapNotifyMask | XkbStateNotifyMask, XkbMapNotifyMask | XkbStateNotifyMask)) {
-            fprintf(stderr, "Could not set XKB event mask\n");
-            return 1;
-        }
+    const xcb_query_extension_reply_t *extreply;
+    extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
+    if (!extreply->present) {
+        DLOG("xkb is not present on this server\n");
+    } else {
+        DLOG("initializing xcb-xkb\n");
+        xcb_xkb_use_extension(conn, XCB_XKB_MAJOR_VERSION, XCB_XKB_MINOR_VERSION);
+        xcb_xkb_select_events(conn,
+                              XCB_XKB_ID_USE_CORE_KBD,
+                              XCB_XKB_EVENT_TYPE_STATE_NOTIFY | XCB_XKB_EVENT_TYPE_MAP_NOTIFY,
+                              0,
+                              XCB_XKB_EVENT_TYPE_STATE_NOTIFY | XCB_XKB_EVENT_TYPE_MAP_NOTIFY,
+                              0xff,
+                              0xff,
+                              NULL);
+        xkb_base = extreply->first_event;
     }
 
     restore_connect();
@@ -770,20 +676,11 @@ int main(int argc, char *argv[]) {
     ewmh_update_number_of_desktops();
 
     struct ev_io *xcb_watcher = scalloc(sizeof(struct ev_io));
-    struct ev_io *xkb = scalloc(sizeof(struct ev_io));
     xcb_check = scalloc(sizeof(struct ev_check));
     struct ev_prepare *xcb_prepare = scalloc(sizeof(struct ev_prepare));
 
     ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
     ev_io_start(main_loop, xcb_watcher);
-
-    if (xkb_supported) {
-        ev_io_init(xkb, xkb_got_event, ConnectionNumber(xkbdpy), EV_READ);
-        ev_io_start(main_loop, xkb);
-
-        /* Flush the buffer so that libev can properly get new events */
-        XFlush(xkbdpy);
-    }
 
     ev_check_init(xcb_check, xcb_check_cb);
     ev_check_start(main_loop, xcb_check);

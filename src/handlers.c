@@ -21,6 +21,8 @@
 #include <libsn/sn-monitor.h>
 
 int randr_base = -1;
+int xkb_base = -1;
+int xkb_current_group;
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
@@ -1115,9 +1117,47 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
  *
  */
 void handle_event(int type, xcb_generic_event_t *event) {
+    DLOG("event type %d, xkb_base %d\n", type, xkb_base);
     if (randr_base > -1 &&
         type == randr_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY) {
         handle_screen_change(event);
+        return;
+    }
+
+    if (xkb_base > -1 && type == xkb_base) {
+        DLOG("xkb event, need to handle it.\n");
+
+        xcb_xkb_state_notify_event_t *state = (xcb_xkb_state_notify_event_t *)event;
+        if (state->xkbType == XCB_XKB_MAP_NOTIFY) {
+            if (event_is_ignored(event->sequence, type)) {
+                DLOG("Ignoring map notify event for sequence %d.\n", state->sequence);
+            } else {
+                DLOG("xkb map notify, sequence %d, time %d\n", state->sequence, state->time);
+                add_ignore_event(event->sequence, type);
+                ungrab_all_keys(conn);
+                translate_keysyms();
+                grab_all_keys(conn, false);
+            }
+        } else if (state->xkbType == XCB_XKB_STATE_NOTIFY) {
+            DLOG("xkb state group = %d\n", state->group);
+
+            /* See The XKB Extension: Library Specification, section 14.1 */
+            /* We check if the current group (each group contains
+             * two levels) has been changed. Mode_switch activates
+             * group XkbGroup2Index */
+            if (xkb_current_group == state->group)
+                return;
+            xkb_current_group = state->group;
+            if (state->group == XCB_XKB_GROUP_1) {
+                DLOG("Mode_switch disabled\n");
+                ungrab_all_keys(conn);
+                grab_all_keys(conn, false);
+            } else {
+                DLOG("Mode_switch enabled\n");
+                grab_all_keys(conn, false);
+            }
+        }
+
         return;
     }
 

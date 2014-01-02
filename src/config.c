@@ -11,9 +11,7 @@
  *
  */
 #include "all.h"
-
-/* We need Xlib for XStringToKeysym */
-#include <X11/Xlib.h>
+#include <xkbcommon/xkbcommon.h>
 
 char *current_configpath = NULL;
 Config config;
