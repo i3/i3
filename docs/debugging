@@ -65,7 +65,7 @@ crashed, the logfile provides all information necessary to debug the problem.
 To save a compressed version of the logfile (suitable for attaching it to a
 bugreport), use:
 --------------------------------------------------------------------
-DISPLAY=:0 i3-dump-log | gzip -9c > /tmp/i3.log.gz
+DISPLAY=:0 i3-dump-log | bzip2 -c > /tmp/i3.log.bz2
 --------------------------------------------------------------------
 
 This command does not depend on i3 (it also works while i3 displays
