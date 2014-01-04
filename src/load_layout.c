@@ -444,12 +444,12 @@ void tree_append_json(const char *filename, char **errormsg) {
         if (errormsg != NULL)
             *errormsg = sstrdup((const char*)str);
         yajl_free_error(hand, str);
-
-        /* In case not all containers were restored, we need to fix the
-         * percentages, otherwise i3 will crash immediately when rendering the
-         * next time. */
-        con_fix_percent(focused);
     }
+
+    /* In case not all containers were restored, we need to fix the
+     * percentages, otherwise i3 will crash immediately when rendering the
+     * next time. */
+    con_fix_percent(focused);
 
     setlocale(LC_NUMERIC, "");
 #if YAJL_MAJOR >= 2
