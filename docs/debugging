@@ -1,7 +1,7 @@
 Debugging i3: How To
 ====================
 Michael Stapelberg <michael@i3wm.org>
-December 2012
+January 2014
 
 This document describes how to debug i3 to send us useful bug
 reports, even if you have no knowledge of C programming.
@@ -10,22 +10,25 @@ Thank you for being interested in debugging i3. It really means
 something to us to get your bug fixed. If you have any questions about the
 process and/or need further help, do not hesitate to contact us!
 
-== Verify you are using the latest (development) version
+== Verify you are using i3 ≥ 4.7
 
-Please verify that you are using the latest version of i3:
+Only the latest major version of i3 is supported, i.e. version 4.7 currently.
+To verify which version you are running, use:
 
 ---------------
-$ i3 --version
-i3 version 4.7-85-g9c15b95 (2014-01-02, branch "next")
+$ i3 --moreversion
+Binary i3 version:  4.7 (2013-12-22, branch "tags/4.7")
+Running i3 version: 4.7-84-gac74a63 (2014-01-01, branch "next") (pid 1995)
 ---------------
 
 Your version can look like this:
 
 4.7 (release version)::
 You are using a release version. In many cases, bugs are already
-fixed in the development version of i3. If they aren’t, we will still ask you
-to reproduce your error with the most recent development version of i3.
-Therefore, please upgrade to a development version if you can.
+fixed in the development version of i3. Even if the bug is not a known fixed
+one, we will still ask you to reproduce your error with the most recent
+development version of i3. Therefore, please upgrade to a development version
+if you can.
 
 4.7-85-g9c15b95 (development version)::
 Your version is 85 commits newer than 4.7, and the git revision of your
