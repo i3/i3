@@ -1,7 +1,7 @@
 Debugging i3: How To
 ====================
 Michael Stapelberg <michael@i3wm.org>
-December 2012
+January 2014
 
 This document describes how to debug i3 to send us useful bug
 reports, even if you have no knowledge of C programming.
@@ -10,26 +10,29 @@ Thank you for being interested in debugging i3. It really means
 something to us to get your bug fixed. If you have any questions about the
 process and/or need further help, do not hesitate to contact us!
 
-== Verify you are using the latest (development) version
+== Verify you are using i3 ≥ 4.7
 
-Please verify that you are using the latest version of i3:
+Only the latest major version of i3 is supported, i.e. version 4.7 currently.
+To verify which version you are running, use:
 
 ---------------
-$ i3 --version
-i3 version 4.1.2-248-g51728ba (2012-02-12, branch "next")
+$ i3 --moreversion 2>&- || i3 --version
+Binary i3 version:  4.7 (2013-12-22, branch "tags/4.7")
+Running i3 version: 4.7-84-gac74a63 (2014-01-01, branch "next") (pid 1995)
 ---------------
 
 Your version can look like this:
 
-4.1.2 (release version)::
+4.7 (release version)::
 You are using a release version. In many cases, bugs are already
-fixed in the development version of i3. If they aren’t, we will still ask you
-to reproduce your error with the most recent development version of i3.
-Therefore, please upgrade to a development version if you can.
+fixed in the development version of i3. Even if the bug is not a known fixed
+one, we will still ask you to reproduce your error with the most recent
+development version of i3. Therefore, please upgrade to a development version
+if you can.
 
-4.1.2-248-g51728ba (development version)::
-Your version is 248 commits newer than 4.1.2, and the git revision of your
-version is +51728ba+. Go to http://code.i3wm.org/i3/commit/?h=next and see if
+4.7-85-g9c15b95 (development version)::
+Your version is 85 commits newer than 4.7, and the git revision of your
+version is +9c15b95+. Go to http://code.i3wm.org/i3/commit/?h=next and see if
 the line "commit" starts with the same revision. If so, you are using the
 latest version.
 
@@ -57,6 +60,13 @@ list of sessions in your desktop manager (gdm, lxdm, …), edit
 Exec=i3 --shmlog-size=26214400
 ------------------------------
 
+If you cannot restart i3 for some reason, you can enable debug logging on the
+fly:
+
+---------------------------------------
+i3-msg 'debuglog on; shmlog on; reload'
+---------------------------------------
+
 == Obtaining the debug logfile
 
 No matter whether i3 misbehaved in some way without crashing or whether it just
@@ -65,13 +75,16 @@ crashed, the logfile provides all information necessary to debug the problem.
 To save a compressed version of the logfile (suitable for attaching it to a
 bugreport), use:
 --------------------------------------------------------------------
-DISPLAY=:0 i3-dump-log | gzip -9c > /tmp/i3.log.gz
+DISPLAY=:0 i3-dump-log | bzip2 -c > /tmp/i3.log.bz2
 --------------------------------------------------------------------
 
 This command does not depend on i3 (it also works while i3 displays
 the crash dialog), but it requires a working X11 connection.
 
-== Compiling with debug symbols
+== On crashes: Obtaining a backtrace
+
+When i3 crashes, it will display a dialog stating “i3 just crashed”, offering
+you to save a backtrace to a text file.
 
 To actually get useful backtraces, you should make sure that your version of i3
 is compiled with debug symbols:
@@ -86,8 +99,6 @@ Notice the +not stripped+, which is the important part. If you have a version
 which is stripped, please check whether your distribution provides debug
 symbols (package +i3-wm-dbg+ on Debian for example) or if you can turn off
 stripping. If nothing helps, please build i3 from source.
-
-== Obtaining a backtrace
 
 Once you have made sure that your i3 is compiled with debug symbols and the C
 debugger +gdb+ is installed on your machine, you can let i3 generate a
