@@ -74,6 +74,7 @@ install-i3: i3
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/share/xsessions
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/share/applications
 	$(INSTALL) -m 0755 i3 $(DESTDIR)$(PREFIX)/bin/
+	$(LN) -s i3 $(DESTDIR)$(PREFIX)/bin/i3-with-shmlog
 	$(INSTALL) -m 0755 i3-migrate-config-to-v4 $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-sensible-editor $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-sensible-pager $(DESTDIR)$(PREFIX)/bin/

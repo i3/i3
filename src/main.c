@@ -295,7 +295,7 @@ int main(int argc, char *argv[]) {
     init_logging();
 
     /* On release builds, disable SHM logging by default. */
-    shmlog_size = (is_debug_build() ? default_shmlog_size : 0);
+    shmlog_size = (is_debug_build() || strstr(argv[0], "i3-with-shmlog") != NULL ? default_shmlog_size : 0);
 
     start_argv = argv;
 
