@@ -869,7 +869,18 @@ void cmd_nop(I3_CMD, char *comment) {
 void cmd_append_layout(I3_CMD, char *path) {
     LOG("Appending layout \"%s\"\n", path);
     Con *parent = focused;
-    tree_append_json(path);
+    char *errormsg = NULL;
+    tree_append_json(path, &errormsg);
+    if (errormsg != NULL) {
+        yerror(errormsg);
+        free(errormsg);
+        /* Note that we continue executing since tree_append_json() has
+         * side-effects — user-provided layouts can be partly valid, partly
+         * invalid, leading to half of the placeholder containers being
+         * created. */
+    } else {
+        ysuccess(true);
+    }
 
     // XXX: This is a bit of a kludge. Theoretically, render_con(parent,
     // false); should be enough, but when sending 'workspace 4; append_layout
@@ -882,8 +893,6 @@ void cmd_append_layout(I3_CMD, char *path) {
     restore_open_placeholder_windows(parent);
 
     cmd_output->needs_tree_render = true;
-    // XXX: default reply for now, make this a better reply
-    ysuccess(true);
 }
 
 /*
