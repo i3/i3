@@ -81,7 +81,10 @@ DISPLAY=:0 i3-dump-log | bzip2 -c > /tmp/i3.log.bz2
 This command does not depend on i3 (it also works while i3 displays
 the crash dialog), but it requires a working X11 connection.
 
-== Compiling with debug symbols
+== On crashes: Obtaining a backtrace
+
+When i3 crashes, it will display a dialog stating “i3 just crashed”, offering
+you to save a backtrace to a text file.
 
 To actually get useful backtraces, you should make sure that your version of i3
 is compiled with debug symbols:
@@ -96,8 +99,6 @@ Notice the +not stripped+, which is the important part. If you have a version
 which is stripped, please check whether your distribution provides debug
 symbols (package +i3-wm-dbg+ on Debian for example) or if you can turn off
 stripping. If nothing helps, please build i3 from source.
-
-== Obtaining a backtrace
 
 Once you have made sure that your i3 is compiled with debug symbols and the C
 debugger +gdb+ is installed on your machine, you can let i3 generate a
