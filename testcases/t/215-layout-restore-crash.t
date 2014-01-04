@@ -140,7 +140,7 @@ ok(!$reply->[0]->{success}, 'IPC reply did not indicate success');
 close($fh);
 
 ################################################################################
-# file with a superfluous trailing comma
+# wrong percent key in a child node
 ################################################################################
 
 $ws = fresh_workspace;
