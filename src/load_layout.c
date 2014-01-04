@@ -90,7 +90,12 @@ static int json_end_map(void *ctx) {
 
 static int json_end_array(void *ctx) {
     LOG("end of array\n");
-    parsing_swallows = false;
+    if (!parsing_swallows && !parsing_focus) {
+        con_fix_percent(json_node);
+    }
+    if (parsing_swallows) {
+        parsing_swallows = false;
+    }
     if (parsing_focus) {
         /* Clear the list of focus mappings */
         struct focus_mapping *mapping;
@@ -380,7 +385,6 @@ static int json_double(void *ctx, double val) {
 }
 
 void tree_append_json(const char *filename) {
-    /* TODO: percent of other windows are not correctly fixed at the moment */
     FILE *f;
     if ((f = fopen(filename, "r")) == NULL) {
         LOG("Cannot open file \"%s\"\n", filename);
