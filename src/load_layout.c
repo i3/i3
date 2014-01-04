@@ -426,9 +426,11 @@ void tree_append_json(const char *filename) {
     yajl_status stat;
     json_node = focused;
     to_focus = NULL;
+    parsing_swallows = false;
     parsing_rect = false;
     parsing_window_rect = false;
     parsing_geometry = false;
+    parsing_focus = false;
     setlocale(LC_NUMERIC, "C");
     stat = yajl_parse(hand, (const unsigned char*)buf, n);
     if (stat != yajl_status_ok)
