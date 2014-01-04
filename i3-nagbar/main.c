@@ -467,7 +467,8 @@ int main(int argc, char *argv[]) {
         uint32_t top_end_x;
         uint32_t bottom_start_x;
         uint32_t bottom_end_x;
-    } __attribute__((__packed__)) strut_partial = {};
+    } __attribute__((__packed__)) strut_partial;
+    memset(&strut_partial, 0, sizeof(strut_partial));
 
     strut_partial.top = font.height + 6;
     strut_partial.top_start_x = 0;

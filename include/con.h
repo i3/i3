@@ -80,7 +80,7 @@ Con *con_parent_with_orientation(Con *con, orientation_t orientation);
  * Returns the first fullscreen node below this node.
  *
  */
-Con *con_get_fullscreen_con(Con *con, int fullscreen_mode);
+Con *con_get_fullscreen_con(Con *con, fullscreen_mode_t fullscreen_mode);
 
 /**
  * Returns true if the container is internal, such as __i3_scratch
@@ -192,7 +192,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
  * container).
  *
  */
-int con_orientation(Con *con);
+orientation_t con_orientation(Con *con);
 
 /**
  * Returns the container which will be focused next when the given container

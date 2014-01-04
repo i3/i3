@@ -449,6 +449,9 @@ struct Assignment {
     TAILQ_ENTRY(Assignment) assignments;
 };
 
+/** Fullscreen modes. Used by Con.fullscreen_mode. */
+typedef enum { CF_NONE = 0, CF_OUTPUT = 1, CF_GLOBAL = 2 } fullscreen_mode_t;
+
 /**
  * A 'Con' represents everything from the X11 root window down to a single X11 window.
  *
@@ -537,7 +540,7 @@ struct Con {
 
     TAILQ_HEAD(swallow_head, Match) swallow_head;
 
-    enum { CF_NONE = 0, CF_OUTPUT = 1, CF_GLOBAL = 2 } fullscreen_mode;
+    fullscreen_mode_t fullscreen_mode;
     /* layout is the layout of this container: one of split[v|h], stacked or
      * tabbed. Special containers in the tree (above workspaces) have special
      * layouts like dockarea or output.

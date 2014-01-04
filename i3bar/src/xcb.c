@@ -1524,7 +1524,9 @@ void reconfig_windows(bool redraw_bars) {
                 uint32_t top_end_x;
                 uint32_t bottom_start_x;
                 uint32_t bottom_end_x;
-            } __attribute__((__packed__)) strut_partial = {};
+            } __attribute__((__packed__)) strut_partial;
+            memset(&strut_partial, 0, sizeof(strut_partial));
+
             switch (config.position) {
                 case POS_NONE:
                     break;

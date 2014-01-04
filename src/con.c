@@ -353,7 +353,7 @@ struct bfs_entry {
  * Returns the first fullscreen node below this node.
  *
  */
-Con *con_get_fullscreen_con(Con *con, int fullscreen_mode) {
+Con *con_get_fullscreen_con(Con *con, fullscreen_mode_t fullscreen_mode) {
     Con *current, *child;
 
     /* TODO: is breadth-first-search really appropriate? (check as soon as
@@ -826,7 +826,7 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
  * container).
  *
  */
-int con_orientation(Con *con) {
+orientation_t con_orientation(Con *con) {
     switch (con->layout) {
         case L_SPLITV:
         /* stacking containers behave like they are in vertical orientation */

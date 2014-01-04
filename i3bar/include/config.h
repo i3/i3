@@ -17,6 +17,9 @@ typedef enum {
     POS_BOT
 } position_t;
 
+/* Bar display mode (hide unless modifier is pressed or show in dock mode or always hide in invisible mode) */
+typedef enum { M_DOCK = 0, M_HIDE = 1, M_INVISIBLE = 2 } bar_display_mode_t;
+
 typedef struct config_t {
     int          modifier;
     position_t   position;
@@ -31,8 +34,7 @@ typedef struct config_t {
     int          num_outputs;
     char         **outputs;
 
-    /* Bar display mode (hide unless modifier is pressed or show in dock mode or always hide in invisible mode) */
-    enum { M_DOCK = 0, M_HIDE = 1, M_INVISIBLE = 2 } hide_on_modifier;
+    bar_display_mode_t hide_on_modifier;
 
     /* The current hidden_state of the bar, which indicates whether it is hidden or shown */
     enum { S_HIDE = 0, S_SHOW = 1 } hidden_state;

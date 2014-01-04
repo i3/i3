@@ -453,7 +453,7 @@ static char *resolve_tilde(const char *path) {
     char *head, *tail, *result;
 
     tail = strchr(path, '/');
-    head = strndup(path, tail ? tail - path : strlen(path));
+    head = strndup(path, tail ? (size_t)(tail - path) : strlen(path));
 
     int res = glob(head, GLOB_TILDE, NULL, &globbuf);
     free(head);

@@ -161,7 +161,7 @@ void got_bar_config_update(char *event) {
 
     /* update the configuration with the received settings */
     DLOG("Received bar config update \"%s\"\n", event);
-    int old_mode = config.hide_on_modifier;
+    bar_display_mode_t old_mode = config.hide_on_modifier;
     parse_config_json(event);
     if (old_mode != config.hide_on_modifier) {
         reconfig_windows(true);

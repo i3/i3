@@ -28,7 +28,7 @@
 #include "common.h"
 
 /* Global variables for child_*() */
-i3bar_child child = {};
+i3bar_child child;
 
 /* stdin- and sigchild-watchers */
 ev_io    *stdin_io;
