@@ -74,7 +74,7 @@ install-i3: i3
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/share/xsessions
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(PREFIX)/share/applications
 	$(INSTALL) -m 0755 i3 $(DESTDIR)$(PREFIX)/bin/
-	$(LN) -s i3 $(DESTDIR)$(PREFIX)/bin/i3-with-shmlog
+	$(LN) -sf i3 $(DESTDIR)$(PREFIX)/bin/i3-with-shmlog
 	$(INSTALL) -m 0755 i3-migrate-config-to-v4 $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-sensible-editor $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 i3-sensible-pager $(DESTDIR)$(PREFIX)/bin/
@@ -83,6 +83,7 @@ install-i3: i3
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config || $(INSTALL) -m 0644 i3.config $(DESTDIR)$(SYSCONFDIR)/i3/config
 	test -e $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes || $(INSTALL) -m 0644 i3.config.keycodes $(DESTDIR)$(SYSCONFDIR)/i3/config.keycodes
 	$(INSTALL) -m 0644 i3.xsession.desktop $(DESTDIR)$(PREFIX)/share/xsessions/i3.desktop
+	$(INSTALL) -m 0644 i3-with-shmlog.xsession.desktop $(DESTDIR)$(PREFIX)/share/xsessions/i3.desktop
 	$(INSTALL) -m 0644 i3.applications.desktop $(DESTDIR)$(PREFIX)/share/applications/i3.desktop
 	$(INSTALL) -m 0644 include/i3/ipc.h $(DESTDIR)$(PREFIX)/include/i3/
 
