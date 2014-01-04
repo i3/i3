@@ -16,20 +16,20 @@ Please verify that you are using the latest version of i3:
 
 ---------------
 $ i3 --version
-i3 version 4.1.2-248-g51728ba (2012-02-12, branch "next")
+i3 version 4.7-85-g9c15b95 (2014-01-02, branch "next")
 ---------------
 
 Your version can look like this:
 
-4.1.2 (release version)::
+4.7 (release version)::
 You are using a release version. In many cases, bugs are already
 fixed in the development version of i3. If they aren’t, we will still ask you
 to reproduce your error with the most recent development version of i3.
 Therefore, please upgrade to a development version if you can.
 
-4.1.2-248-g51728ba (development version)::
-Your version is 248 commits newer than 4.1.2, and the git revision of your
-version is +51728ba+. Go to http://code.i3wm.org/i3/commit/?h=next and see if
+4.7-85-g9c15b95 (development version)::
+Your version is 85 commits newer than 4.7, and the git revision of your
+version is +9c15b95+. Go to http://code.i3wm.org/i3/commit/?h=next and see if
 the line "commit" starts with the same revision. If so, you are using the
 latest version.
 
