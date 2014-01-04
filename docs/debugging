@@ -16,7 +16,7 @@ Only the latest major version of i3 is supported, i.e. version 4.7 currently.
 To verify which version you are running, use:
 
 ---------------
-$ i3 --moreversion
+$ i3 --moreversion 2>&- || i3 --version
 Binary i3 version:  4.7 (2013-12-22, branch "tags/4.7")
 Running i3 version: 4.7-84-gac74a63 (2014-01-01, branch "next") (pid 1995)
 ---------------
