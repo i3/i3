@@ -2,6 +2,7 @@ UNAME=$(shell uname)
 DEBUG=1
 COVERAGE=0
 INSTALL=install
+LN=ln
 ifndef PREFIX
   PREFIX=/usr
 endif
