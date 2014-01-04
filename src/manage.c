@@ -327,7 +327,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     }
 
     DLOG("new container = %p\n", nc);
-    if (nc->window != NULL) {
+    if (nc->window != NULL && nc->window != cwindow) {
         if (!restore_kill_placeholder(nc->window->id)) {
             DLOG("Uh?! Container without a placeholder, but with a window, has swallowed this to-be-managed window?!\n");
         }
