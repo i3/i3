@@ -436,6 +436,11 @@ void tree_append_json(const char *filename) {
         unsigned char *str = yajl_get_error(hand, 1, (const unsigned char*)buf, n);
         ELOG("JSON parsing error: %s\n", str);
         yajl_free_error(hand, str);
+
+        /* In case not all containers were restored, we need to fix the
+         * percentages, otherwise i3 will crash immediately when rendering the
+         * next time. */
+        con_fix_percent(focused);
     }
 
     setlocale(LC_NUMERIC, "");
