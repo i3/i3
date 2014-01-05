@@ -379,16 +379,28 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(array_open);
     Match *match;
     TAILQ_FOREACH(match, &(con->swallow_head), matches) {
+        y(map_open);
         if (match->dock != -1) {
-            y(map_open);
             ystr("dock");
             y(integer, match->dock);
             ystr("insert_where");
             y(integer, match->insert_where);
-            y(map_close);
         }
 
-        /* TODO: the other swallow keys */
+#define DUMP_REGEX(re_name) do { \
+    if (match->re_name != NULL) { \
+        ystr(# re_name); \
+        ystr(match->re_name->pattern); \
+    } \
+} while (0)
+
+        DUMP_REGEX(class);
+        DUMP_REGEX(instance);
+        DUMP_REGEX(window_role);
+        DUMP_REGEX(title);
+
+#undef DUMP_REGEX
+        y(map_close);
     }
 
     if (inplace_restart) {
