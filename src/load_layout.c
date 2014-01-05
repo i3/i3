@@ -73,6 +73,17 @@ static int json_end_map(void *ctx) {
             json_node->layout = L_SPLITH;
         }
 
+        /* Sanity check: swallow criteria don’t make any sense on a split
+         * container. */
+        if (con_is_split(json_node) > 0 && !TAILQ_EMPTY(&(json_node->swallow_head))) {
+            DLOG("sanity check: removing swallows specification from split container\n");
+            while (!TAILQ_EMPTY(&(json_node->swallow_head))) {
+                Match *match = TAILQ_FIRST(&(json_node->swallow_head));
+                TAILQ_REMOVE(&(json_node->swallow_head), match, matches);
+                match_free(match);
+            }
+        }
+
         LOG("attaching\n");
         con_attach(json_node, json_node->parent, true);
         LOG("Creating window\n");
