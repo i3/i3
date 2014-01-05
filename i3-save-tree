@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
 #
-# © 2013 Michael Stapelberg
+# © 2013-2014 Michael Stapelberg
 #
 # Requires perl ≥ v5.10, AnyEvent::I3 and JSON::XS
 
@@ -149,12 +149,15 @@ sub dump_containers {
         say "$ws// $desc with " . @{$tree->{nodes}} . " children";
     }
 
-    # Turn “window_properties” into “swallows” expressions.
-    my $swallows = {};
-    for my $property (keys %{$tree->{window_properties}}) {
-        $swallows->{$property} = '^' . quotemeta($tree->{window_properties}->{$property}) . '$';
+    # Turn “window_properties” into “swallows” expressions, but only for leaf
+    # nodes. It only makes sense for leaf nodes to swallow anything.
+    if (leaf_node($tree)) {
+        my $swallows = {};
+        for my $property (keys %{$tree->{window_properties}}) {
+            $swallows->{$property} = '^' . quotemeta($tree->{window_properties}->{$property}) . '$';
+        }
+        $tree->{swallows} = [ $swallows ];
     }
-    $tree->{swallows} = [ $swallows ];
     delete $tree->{window_properties};
 
     my @keys = sort keys %$tree;
