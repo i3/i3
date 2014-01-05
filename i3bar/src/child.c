@@ -35,6 +35,7 @@ ev_io    *stdin_io;
 ev_child *child_sig;
 
 /* JSON parser for stdin */
+yajl_callbacks callbacks;
 yajl_handle parser;
 
 /* JSON generator for stdout */
@@ -457,16 +458,15 @@ void start_child(char *command) {
         return;
 
     /* Allocate a yajl parser which will be used to parse stdin. */
-    yajl_callbacks callbacks = {
-        .yajl_boolean = stdin_boolean,
-        .yajl_integer = stdin_integer,
-        .yajl_string = stdin_string,
-        .yajl_start_map = stdin_start_map,
-        .yajl_map_key = stdin_map_key,
-        .yajl_end_map = stdin_end_map,
-        .yajl_start_array = stdin_start_array,
-        .yajl_end_array = stdin_end_array,
-    };
+    memset(&callbacks, '\0', sizeof(yajl_callbacks));
+    callbacks.yajl_map_key = stdin_map_key;
+    callbacks.yajl_boolean = stdin_boolean;
+    callbacks.yajl_string = stdin_string;
+    callbacks.yajl_integer = stdin_integer;
+    callbacks.yajl_start_array = stdin_start_array;
+    callbacks.yajl_end_array = stdin_end_array;
+    callbacks.yajl_start_map = stdin_start_map;
+    callbacks.yajl_end_map = stdin_end_map;
 #if YAJL_MAJOR < 2
     yajl_parser_config parse_conf = { 0, 0 };
 
