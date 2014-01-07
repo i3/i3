@@ -294,8 +294,6 @@ static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
             /* end of file, kill the watcher */
             ELOG("stdin: received EOF\n");
             cleanup();
-            set_statusline_error("Received EOF from statusline process");
-            draw_bars(false);
             *ret_buffer_len = -1;
             return NULL;
         }
