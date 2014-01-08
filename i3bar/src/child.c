@@ -420,7 +420,7 @@ void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
     if (exit_status == 126)
         set_statusline_error("status_command is not executable (exit %d)", exit_status);
     else if (exit_status == 127)
-        set_statusline_error("status_command not found (exit %d)", exit_status);
+        set_statusline_error("status_command not found or is missing a library dependency (exit %d)", exit_status);
     else
         set_statusline_error("status_command process exited unexpectedly (exit %d)", exit_status);
 
