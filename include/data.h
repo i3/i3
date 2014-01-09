@@ -213,6 +213,15 @@ struct regex {
  *
  */
 struct Binding {
+    /* The type of input this binding is for. (Mouse bindings are not yet
+     * implemented. All bindings are currently assumed to be keyboard bindings.) */
+    enum {
+        /* Created with "bindsym", "bindcode", and "bind" */
+        B_KEYBOARD = 0,
+        /* Created with "bindmouse" (not yet implemented). */
+        B_MOUSE = 1,
+    } input_type;
+
     /** If true, the binding should be executed upon a KeyRelease event, not a
      * KeyPress (the default). */
     enum {
