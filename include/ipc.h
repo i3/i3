@@ -82,4 +82,11 @@ void ipc_shutdown(void);
 
 void dump_node(yajl_gen gen, Con *con, bool inplace_restart);
 
+/**
+ * For the workspace "focus" event we send, along the usual "change" field,
+ * also the current and previous workspace, in "current" and "old"
+ * respectively.
+ */
+void ipc_send_workspace_focus_event(Con *current, Con *old);
+
 #endif
