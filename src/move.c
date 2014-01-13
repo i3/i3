@@ -99,6 +99,7 @@ static void attach_to_workspace(Con *con, Con *ws, direction_t direction) {
  *
  */
 static void move_to_output_directed(Con *con, direction_t direction) {
+    Con *old_ws = con_get_workspace(con);
     Con *current_output_con = con_get_output(con);
     Output *current_output = get_output_by_name(current_output_con->name);
     Output *output = get_output_next(direction, current_output, CLOSEST_OUTPUT);
@@ -117,6 +118,16 @@ static void move_to_output_directed(Con *con, direction_t direction) {
     }
 
     attach_to_workspace(con, ws, direction);
+
+    /* fix the focus stack */
+    con_focus(con);
+
+    /* force re-painting the indicators */
+    FREE(con->deco_render_params);
+
+    tree_flatten(croot);
+
+    ipc_send_workspace_focus_event(ws, old_ws);
 }
 
 /*
@@ -141,7 +152,7 @@ void tree_move(int direction) {
     if (con->parent->type == CT_WORKSPACE && con_num_children(con->parent) == 1) {
         /* This is the only con on this workspace */
         move_to_output_directed(con, direction);
-        goto end;
+        return;
     }
 
     orientation_t o = (direction == D_LEFT || direction == D_RIGHT ? HORIZ : VERT);
@@ -201,7 +212,7 @@ void tree_move(int direction) {
                 /*  If we couldn't find a place to move it on this workspace,
                  *  try to move it to a workspace on a different output */
                 move_to_output_directed(con, direction);
-                goto end;
+                return;
             }
 
             /* If there was no con with which we could swap the current one,
