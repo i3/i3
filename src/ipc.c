@@ -961,3 +961,37 @@ int ipc_create_socket(const char *filename) {
     current_socketpath = resolved;
     return sockfd;
 }
+
+/*
+ * For the workspace "focus" event we send, along the usual "change" field,
+ * also the current and previous workspace, in "current" and "old"
+ * respectively.
+ */
+void ipc_send_workspace_focus_event(Con *current, Con *old) {
+    setlocale(LC_NUMERIC, "C");
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+
+    ystr("change");
+    ystr("focus");
+
+    ystr("current");
+    dump_node(gen, current, false);
+
+    ystr("old");
+    if (old == NULL)
+        y(null);
+    else
+        dump_node(gen, old, false);
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_event("workspace", I3_IPC_EVENT_WORKSPACE, (const char *)payload);
+    y(free);
+    setlocale(LC_NUMERIC, "");
+}
