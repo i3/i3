@@ -118,7 +118,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
                               utf8_title_cookie, title_cookie,
                               class_cookie, leader_cookie, transient_cookie,
-                              role_cookie, startup_id_cookie, wm_hints_cookie;
+                              role_cookie, startup_id_cookie, wm_hints_cookie,
+                              motif_wm_hints_cookie;
 
 
     geomc = xcb_get_geometry(conn, d);
@@ -188,6 +189,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     role_cookie = GET_PROPERTY(A_WM_WINDOW_ROLE, 128);
     startup_id_cookie = GET_PROPERTY(A__NET_STARTUP_ID, 512);
     wm_hints_cookie = xcb_icccm_get_wm_hints(conn, window);
+    motif_wm_hints_cookie = GET_PROPERTY(A__MOTIF_WM_HINTS, 5 * sizeof(uint64_t));
     /* TODO: also get wm_normal_hints here. implement after we got rid of xcb-event */
 
     DLOG("Managing window 0x%08x\n", window);
@@ -222,6 +224,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     window_update_role(cwindow, xcb_get_property_reply(conn, role_cookie, NULL), true);
     bool urgency_hint;
     window_update_hints(cwindow, xcb_get_property_reply(conn, wm_hints_cookie, NULL), &urgency_hint);
+    border_style_t motif_border_style = BS_NORMAL;
+    window_update_motif_hints(cwindow, xcb_get_property_reply(conn, motif_wm_hints_cookie, NULL), &motif_border_style);
 
     xcb_get_property_reply_t *startup_id_reply;
     startup_id_reply = xcb_get_property_reply(conn, startup_id_cookie, NULL);
@@ -442,6 +446,11 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     if (want_floating) {
         DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);
         floating_enable(nc, true);
+    }
+
+    if (motif_border_style != BS_NORMAL) {
+        DLOG("MOTIF_WM_HINTS specifies decorations (border_style = %d)\n", motif_border_style);
+        con_set_border_style(nc, motif_border_style, config.default_border_width);
     }
 
     /* to avoid getting an UnmapNotify event due to reparenting, we temporarily

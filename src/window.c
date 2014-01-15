@@ -254,3 +254,59 @@ void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *ur
 
     free(prop);
 }
+
+/*
+ * Updates the MOTIF_WM_HINTS. The container's border style should be set to
+ * `motif_border_style' if border style is not BS_NORMAL.
+ *
+ * i3 only uses this hint when it specifies a window should have no
+ * title bar, or no decorations at all, which is how most window managers
+ * handle it.
+ *
+ * The EWMH spec intended to replace Motif hints with _NET_WM_WINDOW_TYPE, but
+ * it is still in use by popular widget toolkits such as GTK+ and Java AWT.
+ *
+ */
+void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, border_style_t *motif_border_style) {
+    /* This implementation simply mirrors Gnome's Metacity. Official
+     * documentation of this hint is nowhere to be found.
+     * For more information see:
+     * https://people.gnome.org/~tthurman/docs/metacity/xprops_8h-source.html
+     * http://stackoverflow.com/questions/13787553/detect-if-a-x11-window-has-decorations
+     */
+#define MWM_HINTS_DECORATIONS   (1 << 1)
+#define MWM_DECOR_ALL           (1 << 0)
+#define MWM_DECOR_BORDER        (1 << 1)
+#define MWM_DECOR_TITLE         (1 << 3)
+
+    if (motif_border_style != NULL)
+        *motif_border_style = BS_NORMAL;
+
+    if (prop == NULL || xcb_get_property_value_length(prop) == 0) {
+        FREE(prop);
+        return;
+    }
+
+    /* The property consists of an array of 5 uint64_t's. The first value is a bit
+     * mask of what properties the hint will specify. We are only interested in
+     * MWM_HINTS_DECORATIONS because it indicates that the second value of the
+     * array tells us which decorations the window should have, each flag being
+     * a particular decoration. */
+    uint64_t *motif_hints = (uint64_t *)xcb_get_property_value(prop);
+
+    if (motif_border_style != NULL && motif_hints[0] & MWM_HINTS_DECORATIONS) {
+        if (motif_hints[1] & MWM_DECOR_ALL || motif_hints[1] & MWM_DECOR_TITLE)
+            *motif_border_style = BS_NORMAL;
+        else if (motif_hints[1] & MWM_DECOR_BORDER)
+            *motif_border_style = BS_PIXEL;
+        else
+            *motif_border_style = BS_NONE;
+    }
+
+    FREE(prop);
+
+#undef MWM_HINTS_DECORATIONS
+#undef MWM_DECOR_ALL
+#undef MWM_DECOR_BORDER
+#undef MWM_DECOR_TITLE
+}
