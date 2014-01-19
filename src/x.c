@@ -667,9 +667,24 @@ void x_push_node(Con *con) {
         /* As the pixmap only depends on the size and not on the position, it
          * is enough to check if width/height have changed. Also, we don’t
          * create a pixmap at all when the window is actually not visible
-         * (height == 0). */
-        if ((state->rect.width != rect.width ||
-            state->rect.height != rect.height)) {
+         * (height == 0) or when it is not needed. */
+        bool has_rect_changed = (state->rect.width != rect.width || state->rect.height != rect.height);
+
+        /* The pixmap of a borderless container will not be used (except for
+         * the titlebar in a stack or tabs). It can only get in the way. (bug
+         * #1013). */
+        bool is_pixmap_needed = (con->border_style != BS_NONE ||
+                con->parent->layout == L_STACKED ||
+                con->parent->layout == L_TABBED);
+
+        /* Check if the container has an unneeded pixmap left over from
+         * previously having a border or titlebar. */
+        if (!is_pixmap_needed && con->pixmap != XCB_NONE) {
+            xcb_free_pixmap(conn, con->pixmap);
+            con->pixmap = XCB_NONE;
+        }
+
+        if (has_rect_changed && is_pixmap_needed) {
             if (con->pixmap == 0) {
                 con->pixmap = xcb_generate_id(conn);
                 con->pm_gc = xcb_generate_id(conn);
