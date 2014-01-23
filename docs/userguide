@@ -900,7 +900,7 @@ workspace_auto_back_and_forth yes
 
 If an application on another workspace sets an urgency hint, switching to this
 workspace may lead to immediate focus of the application, which also means the
-window decoration color would be immediately reseted to +client.focused+. This
+window decoration color would be immediately reset to +client.focused+. This
 may make it unnecessarily hard to tell which window originally raised the
 event.
 
