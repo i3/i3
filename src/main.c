@@ -340,11 +340,11 @@ int main(int argc, char *argv[]) {
                 only_check_config = true;
                 break;
             case 'v':
-                printf("i3 version " I3_VERSION " © 2009-2013 Michael Stapelberg and contributors\n");
+                printf("i3 version " I3_VERSION " © 2009-2014 Michael Stapelberg and contributors\n");
                 exit(EXIT_SUCCESS);
                 break;
             case 'm':
-                printf("Binary i3 version:  " I3_VERSION " © 2009-2013 Michael Stapelberg and contributors\n");
+                printf("Binary i3 version:  " I3_VERSION " © 2009-2014 Michael Stapelberg and contributors\n");
                 display_running_version();
                 exit(EXIT_SUCCESS);
                 break;

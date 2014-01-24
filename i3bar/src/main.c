@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
                 socket_path = expand_path(optarg);
                 break;
             case 'v':
-                printf("i3bar version " I3_VERSION " © 2010-2011 Axel Wagner and contributors\n");
+                printf("i3bar version " I3_VERSION " © 2010-2014 Axel Wagner and contributors\n");
                 exit(EXIT_SUCCESS);
                 break;
             case 'b':
