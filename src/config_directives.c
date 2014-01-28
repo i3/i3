@@ -130,7 +130,11 @@ static bool eval_boolstr(const char *str) {
             strcasecmp(str, "active") == 0);
 }
 
-static uint32_t modifiers_from_str(const char *str) {
+/*
+ * A utility function to convert a string of modifiers to the corresponding bit
+ * mask.
+ */
+uint32_t modifiers_from_str(const char *str) {
     /* It might be better to use strtok() here, but the simpler strstr() should
      * do for now. */
     uint32_t result = 0;
@@ -167,24 +171,8 @@ CFGFUN(font, const char *font) {
 	font_pattern = sstrdup(font);
 }
 
-// TODO: refactor with mode_binding
 CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *command) {
-    Binding *new_binding = scalloc(sizeof(Binding));
-    DLOG("bindtype %s, modifiers %s, key %s, release %s\n", bindtype, modifiers, key, release);
-    new_binding->release = (release != NULL ? B_UPON_KEYRELEASE : B_UPON_KEYPRESS);
-    if (strcmp(bindtype, "bindsym") == 0) {
-        new_binding->symbol = sstrdup(key);
-    } else {
-        // TODO: strtol with proper error handling
-        new_binding->keycode = atoi(key);
-        if (new_binding->keycode == 0) {
-            ELOG("Could not parse \"%s\" as a keycode, ignoring this binding.\n", key);
-            return;
-        }
-    }
-    new_binding->mods = modifiers_from_str(modifiers);
-    new_binding->command = sstrdup(command);
-    TAILQ_INSERT_TAIL(bindings, new_binding, bindings);
+    configure_binding(bindtype, modifiers, key, release, command, DEFAULT_BINDING_MODE);
 }
 
 
@@ -192,39 +180,20 @@ CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, co
  * Mode handling
  ******************************************************************************/
 
-static struct bindings_head *current_bindings;
+static char *current_mode;
 
 CFGFUN(mode_binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *command) {
-    Binding *new_binding = scalloc(sizeof(Binding));
-    DLOG("bindtype %s, modifiers %s, key %s, release %s\n", bindtype, modifiers, key, release);
-    new_binding->release = (release != NULL ? B_UPON_KEYRELEASE : B_UPON_KEYPRESS);
-    if (strcmp(bindtype, "bindsym") == 0) {
-        new_binding->symbol = sstrdup(key);
-    } else {
-        // TODO: strtol with proper error handling
-        new_binding->keycode = atoi(key);
-        if (new_binding->keycode == 0) {
-            ELOG("Could not parse \"%s\" as a keycode, ignoring this binding.\n", key);
-            return;
-        }
-    }
-    new_binding->mods = modifiers_from_str(modifiers);
-    new_binding->command = sstrdup(command);
-    TAILQ_INSERT_TAIL(current_bindings, new_binding, bindings);
+    configure_binding(bindtype, modifiers, key, release, command, current_mode);
 }
 
 CFGFUN(enter_mode, const char *modename) {
-    if (strcasecmp(modename, "default") == 0) {
-        ELOG("You cannot use the name \"default\" for your mode\n");
+    if (strcasecmp(modename, DEFAULT_BINDING_MODE) == 0) {
+        ELOG("You cannot use the name %s for your mode\n", DEFAULT_BINDING_MODE);
         exit(1);
     }
     DLOG("\t now in mode %s\n", modename);
-    struct Mode *mode = scalloc(sizeof(struct Mode));
-    mode->name = sstrdup(modename);
-    mode->bindings = scalloc(sizeof(struct bindings_head));
-    TAILQ_INIT(mode->bindings);
-    current_bindings = mode->bindings;
-    SLIST_INSERT_HEAD(&modes, mode, modes);
+    FREE(current_mode);
+    current_mode = sstrdup(modename);
 }
 
 CFGFUN(exec, const char *exectype, const char *no_startup_id, const char *command) {
