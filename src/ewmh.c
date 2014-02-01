@@ -27,6 +27,9 @@ void ewmh_update_current_desktop(void) {
     TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
         Con *ws;
         TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+            if (STARTS_WITH(ws->name, "__"))
+                continue;
+
             if (ws == focused_ws) {
                 xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
                         A__NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, &idx);
