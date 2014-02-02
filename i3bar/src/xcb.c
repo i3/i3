@@ -1395,8 +1395,8 @@ void realloc_sl_buffer(void) {
 
     mask |= XCB_GC_BACKGROUND;
     vals[0] = colors.bar_fg;
-    statusline_ctx = xcb_generate_id(xcb_connection);
     xcb_free_gc(xcb_connection, statusline_ctx);
+    statusline_ctx = xcb_generate_id(xcb_connection);
     xcb_void_cookie_t sl_ctx_cookie = xcb_create_gc_checked(xcb_connection,
                                                             statusline_ctx,
                                                             xcb_root,
