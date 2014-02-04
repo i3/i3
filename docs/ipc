@@ -761,7 +761,7 @@ know):
 
 C::
 	i3 includes a headerfile +i3/ipc.h+ which provides you all constants.
-	However, there is no library yet.
+	https://github.com/acrisci/i3-ipc (not yet ready for production use)
 Ruby::
 	http://github.com/badboy/i3-ipc
 Perl::
