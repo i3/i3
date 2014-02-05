@@ -237,9 +237,9 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
             return 1;
         }
 
-        /* 5: resize (floating) if this was a click on the left/right/bottom
-         * border. also try resizing (tiling) if it was a click on the top
-         * border, but continue if that does not work */
+        /*  5: resize (floating) if this was a (left or right) click on the
+         * left/right/bottom border, or a right click on the decoration.
+         * also try resizing (tiling) if it was a click on the top */
         if (mod_pressed && event->detail == 3) {
             DLOG("floating resize due to floatingmodifier\n");
             floating_resize_window(floatingcon, proportional, event);
@@ -251,6 +251,12 @@ static int route_click(Con *con, xcb_button_press_event_t *event, const bool mod
             DLOG("tiling resize with fallback\n");
             if (tiling_resize(con, event, dest))
                 goto done;
+        }
+
+        if (dest == CLICK_DECORATION && event->detail == 3) {
+            DLOG("floating resize due to decoration right click\n");
+            floating_resize_window(floatingcon, proportional, event);
+            return 1;
         }
 
         if (dest == CLICK_BORDER) {
