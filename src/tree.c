@@ -387,7 +387,7 @@ void tree_close_con(kill_window_t kill_window) {
  *
  */
 void tree_split(Con *con, orientation_t orientation) {
-    if (con->type == CT_FLOATING_CON) {
+    if (con_is_floating(con)) {
         DLOG("Floating containers can't be split.\n");
         return;
     }
