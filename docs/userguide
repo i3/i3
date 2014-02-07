@@ -166,7 +166,8 @@ hint and are opened in floating mode by default.
 You can toggle floating mode for a window by pressing +$mod+Shift+Space+. By
 dragging the window’s titlebar with your mouse you can move the window
 around. By grabbing the borders and moving them you can resize the window. You
-can also do that by using the <<floating_modifier>>.
+can also do that by using the <<floating_modifier>>. Another way to resize
+floating windows using the mouse is to right-click on the titlebar and drag.
 
 For resizing floating windows with your keyboard, see <<resizingconfig>>.
 
