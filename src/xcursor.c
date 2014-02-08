@@ -61,11 +61,11 @@ void xcursor_set_root_cursor(int cursor_id) {
 }
 
 xcb_cursor_t xcursor_get_cursor(enum xcursor_cursor_t c) {
-    assert(c >= 0 && c < XCURSOR_CURSOR_MAX);
+    assert(c < XCURSOR_CURSOR_MAX);
     return cursors[c];
 }
 
 int xcursor_get_xcb_cursor(enum xcursor_cursor_t c) {
-    assert(c >= 0 && c < XCURSOR_CURSOR_MAX);
+    assert(c < XCURSOR_CURSOR_MAX);
     return xcb_cursors[c];
 }
