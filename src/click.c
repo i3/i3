@@ -311,7 +311,9 @@ done:
  */
 int handle_button_press(xcb_button_press_event_t *event) {
     Con *con;
-    DLOG("Button %d pressed on window 0x%08x\n", event->state, event->event);
+    DLOG("Button %d pressed on window 0x%08x (child 0x%08x) at (%d, %d) (root %d, %d)\n",
+         event->state, event->event, event->child, event->event_x, event->event_y,
+         event->root_x, event->root_y);
 
     last_timestamp = event->time;
 
@@ -345,6 +347,11 @@ int handle_button_press(xcb_button_press_event_t *event) {
         xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, event->time);
         xcb_flush(conn);
         return 0;
+    }
+
+    if (event->child != XCB_NONE) {
+        DLOG("event->child not XCB_NONE, so this is an event which originated from a click into the application, but the application did not handle it.\n");
+        return route_click(con, event, mod_pressed, CLICK_INSIDE);
     }
 
     /* Check if the click was on the decoration of a child */
