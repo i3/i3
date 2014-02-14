@@ -266,6 +266,8 @@ static int stdin_end_array(void *context) {
 /*
  * Helper function to read stdin
  *
+ * Returns NULL on EOF.
+ *
  */
 static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
     int fd = watcher->fd;
@@ -285,9 +287,7 @@ static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
             exit(EXIT_FAILURE);
         }
         if (n == 0) {
-            /* end of file, kill the watcher */
             ELOG("stdin: received EOF\n");
-            cleanup();
             *ret_buffer_len = -1;
             return NULL;
         }
