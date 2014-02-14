@@ -23,3 +23,9 @@ const char *DEFAULT_BINDING_MODE;
  */
 Binding *configure_binding(const char *bindtype, const char *modifiers, const char *input_code,
         const char *release, const char *command, const char *mode);
+
+/**
+ * Grab the bound keys (tell X to send us keypress events for those keycodes)
+ *
+ */
+void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch);

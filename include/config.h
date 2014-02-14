@@ -322,12 +322,6 @@ void translate_keysyms(void);
 void ungrab_all_keys(xcb_connection_t *conn);
 
 /**
- * Grab the bound keys (tell X to send us keypress events for those keycodes)
- *
- */
-void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch);
-
-/**
  * Switches the key bindings to the given mode, if the mode exists
  *
  */
