@@ -175,7 +175,8 @@ You can specify a custom path using the -c option.
 -------------------------------------------------------------
 # i3 config file (v4)
 
-# font for window titles. ISO 10646 = Unicode
+# font for window titles. also used by the bar (unless a different font is
+# used in the bar {} block. ISO 10646 = Unicode
 font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
 
 # use Mouse+Mod1 to drag floating windows to their wanted position
