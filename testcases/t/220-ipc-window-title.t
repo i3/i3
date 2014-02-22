@@ -24,37 +24,33 @@ my $i3 = i3(get_socket_path());
 $i3->connect()->recv;
 
 ################################
-# Window event
+# Window title event
 ################################
 
-# Events
+my $window = open_window(name => 'Window 0');
 
-my $new = AnyEvent->condvar;
-my $focus = AnyEvent->condvar;
+my $title = AnyEvent->condvar;
+
 $i3->subscribe({
     window => sub {
         my ($event) = @_;
-        if ($event->{change} eq 'new') {
-            $new->send($event);
-        } elsif ($event->{change} eq 'focus') {
-            $focus->send($event);
-        }
+        $title->send($event);
     }
 })->recv;
 
-open_window;
+$window->name('New Window Title');
 
 my $t;
 $t = AnyEvent->timer(
     after => 0.5,
     cb => sub {
-        $new->send(0);
-        $focus->send(0);
+        $title->send(0);
     }
 );
 
-is($new->recv->{container}->{focused}, 0, 'Window "new" event received');
-is($focus->recv->{container}->{focused}, 1, 'Window "focus" event received');
+my $event = $title->recv;
+is($event->{change}, 'title', 'Window title change event received');
+is($event->{container}->{name}, 'New Window Title', 'Window title changed');
 
 }
 

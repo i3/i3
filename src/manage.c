@@ -76,35 +76,6 @@ void restore_geometry(void) {
 }
 
 /*
- * The following function sends a new window event, which consists
- * of fields "change" and "container", the latter containing a dump
- * of the window's container.
- *
- */
-static void ipc_send_window_new_event(Con *con) {
-    setlocale(LC_NUMERIC, "C");
-    yajl_gen gen = ygenalloc();
-
-    y(map_open);
-
-    ystr("change");
-    ystr("new");
-
-    ystr("container");
-    dump_node(gen, con, false);
-
-    y(map_close);
-
-    const unsigned char *payload;
-    ylength length;
-    y(get_buf, &payload, &length);
-
-    ipc_send_event("window", I3_IPC_EVENT_WINDOW, (const char *)payload);
-    y(free);
-    setlocale(LC_NUMERIC, "");
-}
-
-/*
  * Do some sanity checks and then reparent the window.
  *
  */
@@ -360,6 +331,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     FREE(state_reply);
 
+    bool set_focus = false;
+
     if (fs == NULL) {
         DLOG("Not in fullscreen mode, focusing\n");
         if (!cwindow->dock) {
@@ -371,7 +344,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
             if (workspace_is_visible(ws) && current_output == target_output) {
                 if (!match || !match->restart_mode) {
-                    con_focus(nc);
+                    set_focus = true;
                 } else DLOG("not focusing, matched with restart_mode == true\n");
             } else DLOG("workspace not visible, not focusing\n");
         } else DLOG("dock, not focusing\n");
@@ -421,7 +394,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
                    transient_win->transient_for != XCB_NONE) {
                 if (transient_win->transient_for == fs->window->id) {
                     LOG("This floating window belongs to the fullscreen window (popup_during_fullscreen == smart)\n");
-                    con_focus(nc);
+                    set_focus = true;
                     break;
                 }
                 Con *next_transient = con_by_window_id(transient_win->transient_for);
@@ -500,7 +473,14 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     tree_render();
 
     /* Send an event about window creation */
-    ipc_send_window_new_event(nc);
+    ipc_send_window_event("new", nc);
+
+    /* Defer setting focus after the 'new' event has been sent to ensure the
+     * proper window event sequence. */
+    if (set_focus) {
+        con_focus(nc);
+        tree_render();
+    }
 
     /* Windows might get managed with the urgency hint already set (Pidgin is
      * known to do that), so check for that and handle the hint accordingly.

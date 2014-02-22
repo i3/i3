@@ -1056,3 +1056,32 @@ void ipc_send_workspace_focus_event(Con *current, Con *old) {
     y(free);
     setlocale(LC_NUMERIC, "");
 }
+
+/**
+ * For the window events we send, along the usual "change" field,
+ * also the window container, in "container".
+ */
+void ipc_send_window_event(const char *property, Con *con) {
+    DLOG("Issue IPC window %s event for X11 window 0x%08x\n", property, con->window->id);
+
+    setlocale(LC_NUMERIC, "C");
+    yajl_gen gen = ygenalloc();
+
+    y(map_open);
+
+    ystr("change");
+    ystr(property);
+
+    ystr("container");
+    dump_node(gen, con, false);
+
+    y(map_close);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_event("window", I3_IPC_EVENT_WINDOW, (const char *)payload);
+    y(free);
+    setlocale(LC_NUMERIC, "");
+}

@@ -528,6 +528,17 @@ static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
     handle_unmap_notify_event(&unmap);
 }
 
+static bool window_name_changed(i3Window *window, char *old_name) {
+    if ((old_name == NULL) && (window->name == NULL))
+        return false;
+
+    /* Either the old or the new one is NULL, but not both. */
+    if ((old_name == NULL) ^ (window->name == NULL))
+        return true;
+
+    return (strcmp(old_name, i3string_as_utf8(window->name)) != 0);
+}
+
 /*
  * Called when a window changes its title
  *
@@ -538,9 +549,16 @@ static bool handle_windowname_change(void *data, xcb_connection_t *conn, uint8_t
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return false;
 
+    char *old_name = (con->window->name != NULL ? sstrdup(i3string_as_utf8(con->window->name)) : NULL);
+
     window_update_name(con->window, prop, false);
 
     x_push_changes(croot);
+
+    if (window_name_changed(con->window, old_name))
+        ipc_send_window_event("title", con);
+
+    FREE(old_name);
 
     return true;
 }
@@ -556,9 +574,16 @@ static bool handle_windowname_change_legacy(void *data, xcb_connection_t *conn, 
     if ((con = con_by_window_id(window)) == NULL || con->window == NULL)
         return false;
 
+    char *old_name = (con->window->name != NULL ? sstrdup(i3string_as_utf8(con->window->name)) : NULL);
+
     window_update_name_legacy(con->window, prop, false);
 
     x_push_changes(croot);
+
+    if (window_name_changed(con->window, old_name))
+        ipc_send_window_event("title", con);
+
+    FREE(old_name);
 
     return true;
 }

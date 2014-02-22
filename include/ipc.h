@@ -87,3 +87,9 @@ void dump_node(yajl_gen gen, Con *con, bool inplace_restart);
  * respectively.
  */
 void ipc_send_workspace_focus_event(Con *current, Con *old);
+
+/**
+ * For the window events we send, along the usual "change" field,
+ * also the window container, in "container".
+ */
+void ipc_send_window_event(const char *property, Con *con);
