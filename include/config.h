@@ -334,13 +334,6 @@ void switch_mode(const char *new_mode);
  */void update_barconfig();
 
 /**
- * Returns a pointer to the Binding with the specified modifiers and keycode
- * or NULL if no such binding exists.
- *
- */
-Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode);
-
-/**
  * Kills the configerror i3-nagbar process, if any.
  *
  * Called when reloading/restarting.

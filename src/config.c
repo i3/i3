@@ -31,64 +31,6 @@ void ungrab_all_keys(xcb_connection_t *conn) {
 }
 
 /*
- * Returns a pointer to the Binding with the specified modifiers and keycode
- * or NULL if no such binding exists.
- *
- */
-Binding *get_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode) {
-    Binding *bind;
-
-    if (!key_release) {
-        /* On a KeyPress event, we first reset all
-         * B_UPON_KEYRELEASE_IGNORE_MODS bindings back to B_UPON_KEYRELEASE */
-        TAILQ_FOREACH(bind, bindings, bindings) {
-            if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS)
-                bind->release = B_UPON_KEYRELEASE;
-        }
-    }
-
-    TAILQ_FOREACH(bind, bindings, bindings) {
-        /* First compare the modifiers (unless this is a
-         * B_UPON_KEYRELEASE_IGNORE_MODS binding and this is a KeyRelease
-         * event) */
-        if (bind->mods != modifiers &&
-            (bind->release != B_UPON_KEYRELEASE_IGNORE_MODS ||
-             !key_release))
-            continue;
-
-        /* If a symbol was specified by the user, we need to look in
-         * the array of translated keycodes for the event’s keycode */
-        if (bind->symbol != NULL) {
-            if (memmem(bind->translated_to,
-                       bind->number_keycodes * sizeof(xcb_keycode_t),
-                       &keycode, sizeof(xcb_keycode_t)) == NULL)
-                continue;
-        } else {
-            /* This case is easier: The user specified a keycode */
-            if (bind->keycode != keycode)
-                continue;
-        }
-
-        /* If this keybinding is a KeyRelease binding, it matches the key which
-         * the user pressed. We therefore mark it as
-         * B_UPON_KEYRELEASE_IGNORE_MODS for later, so that the user can
-         * release the modifiers before the actual key and the KeyRelease will
-         * still be matched. */
-        if (bind->release == B_UPON_KEYRELEASE && !key_release)
-            bind->release = B_UPON_KEYRELEASE_IGNORE_MODS;
-
-        /* Check if the binding is for a KeyPress or a KeyRelease event */
-        if ((bind->release == B_UPON_KEYPRESS && key_release) ||
-            (bind->release >= B_UPON_KEYRELEASE && !key_release))
-            continue;
-
-        break;
-    }
-
-    return (bind == TAILQ_END(bindings) ? NULL : bind);
-}
-
-/*
  * Translates keysymbols to keycodes for all bindings which use keysyms.
  *
  */

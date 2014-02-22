@@ -29,3 +29,10 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
  *
  */
 void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch);
+
+/**
+ * Returns a pointer to the keyboard Binding with the specified modifiers and
+ * keycode or NULL if no such binding exists.
+ *
+ */
+Binding *get_keyboard_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode);
