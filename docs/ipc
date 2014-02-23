@@ -227,9 +227,9 @@ name (string)::
 	The name of this output (as seen in +xrandr(1)+). Encoded in UTF-8.
 active (boolean)::
 	Whether this output is currently active (has a valid mode).
-current_workspace (integer)::
-	The current workspace which is visible on this output. +null+ if the
-	output is not active.
+current_workspace (string)::
+	The name of the current workspace that is visible on this output. +null+ if
+	the output is not active.
 rect (map)::
 	The rectangle of this output (equals the rect of the output it
 	is on), consists of x, y, width, height.
@@ -240,7 +240,7 @@ rect (map)::
  {
   "name": "LVDS1",
   "active": true,
-  "current_workspace": 4,
+  "current_workspace": "4",
   "rect": {
    "x": 0,
    "y": 0,
@@ -251,7 +251,7 @@ rect (map)::
  {
   "name": "VGA1",
   "active": true,
-  "current_workspace": 1,
+  "current_workspace": "1",
   "rect": {
    "x": 1280,
    "y": 0,
