@@ -28,6 +28,7 @@ sub test_focus_left_right {
 
     my $i3 = i3(get_socket_path(0));
 
+    sync_with_i3;
     $x->root->warp_pointer(0, 0);
     sync_with_i3;
 
@@ -140,6 +141,7 @@ my $pid = launch_with_config($config);
 
 my $i3 = i3(get_socket_path(0));
 
+sync_with_i3;
 $x->root->warp_pointer(0, 0);
 sync_with_i3;
 

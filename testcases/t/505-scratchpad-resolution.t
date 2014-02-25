@@ -29,6 +29,7 @@ my $pid = launch_with_config($config);
 
 my $i3 = i3(get_socket_path());
 
+sync_with_i3;
 $x->root->warp_pointer(0, 0);
 sync_with_i3;
 
@@ -76,6 +77,7 @@ verify_scratchpad_doesnt_move($second);
 # now on the right output (1024x768)
 ################################################################################
 
+sync_with_i3;
 $x->root->warp_pointer(683 + 10, 0);
 sync_with_i3;
 

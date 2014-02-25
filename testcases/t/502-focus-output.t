@@ -41,6 +41,7 @@ sub focused_output {
     return $output->{name};
 }
 
+sync_with_i3;
 $x->root->warp_pointer(0, 0);
 sync_with_i3;
 
