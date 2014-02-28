@@ -140,12 +140,13 @@ VERSION (7)::
 
 === COMMAND reply
 
-The reply consists of a single serialized map. At the moment, the only
-property is +success (bool)+, but this will be expanded in future versions.
+The reply consists of a list of serialized maps for each command that was
+parsed. Each has the property +success (bool)+ and may also include a
+human-readable error message in the property +error (string)+.
 
 *Example:*
 -------------------
-{ "success": true }
+[{ "success": true }]
 -------------------
 
 === WORKSPACES reply
