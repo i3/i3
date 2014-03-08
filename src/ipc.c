@@ -894,14 +894,16 @@ handler_t handlers[8] = {
 static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
     uint32_t message_type;
     uint32_t message_length;
-    uint8_t *message;
+    uint8_t *message = NULL;
 
     int ret = ipc_recv_message(w->fd, &message_type, &message_length, &message);
     /* EOF or other error */
     if (ret < 0) {
         /* Was this a spurious read? See ev(3) */
-        if (ret == -1 && errno == EAGAIN)
+        if (ret == -1 && errno == EAGAIN) {
+            FREE(message);
             return;
+        }
 
         /* If not, there was some kind of error. We don’t bother
          * and close the connection */
@@ -924,6 +926,7 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
 
         ev_io_stop(EV_A_ w);
         free(w);
+        FREE(message);
 
         DLOG("IPC: client disconnected\n");
         return;
@@ -935,6 +938,8 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
         handler_t h = handlers[message_type];
         h(w->fd, message, 0, message_length, message_type);
     }
+
+    FREE(message);
 }
 
 /*
