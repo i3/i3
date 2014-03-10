@@ -260,7 +260,7 @@ bool tree_close(Con *con, kill_window_t kill_window, bool dont_kill_parent, bool
         FREE(con->window->class_class);
         FREE(con->window->class_instance);
         i3string_free(con->window->name);
-        free(con->window);
+        FREE(con->window);
     }
 
     Con *ws = con_get_workspace(con);
