@@ -179,3 +179,53 @@ Binding *get_keyboard_binding(uint16_t modifiers, bool key_release, xcb_keycode_
 
     return (bind == TAILQ_END(bindings) ? NULL : bind);
 }
+
+/*
+ * Translates keysymbols to keycodes for all bindings which use keysyms.
+ *
+ */
+void translate_keysyms(void) {
+    Binding *bind;
+    xcb_keysym_t keysym;
+    int col;
+    xcb_keycode_t i, min_keycode, max_keycode;
+
+    min_keycode = xcb_get_setup(conn)->min_keycode;
+    max_keycode = xcb_get_setup(conn)->max_keycode;
+
+    TAILQ_FOREACH(bind, bindings, bindings) {
+        if (bind->input_type != B_KEYBOARD || bind->keycode > 0)
+            continue;
+
+        /* We need to translate the symbol to a keycode */
+        keysym = XStringToKeysym(bind->symbol);
+        if (keysym == NoSymbol) {
+            ELOG("Could not translate string to key symbol: \"%s\"\n",
+                 bind->symbol);
+            continue;
+        }
+
+        /* Base column we use for looking up key symbols. We always consider
+         * the base column and the corresponding shift column, so without
+         * mode_switch, we look in 0 and 1, with mode_switch we look in 2 and
+         * 3. */
+        col = (bind->mods & BIND_MODE_SWITCH ? 2 : 0);
+
+        FREE(bind->translated_to);
+        bind->number_keycodes = 0;
+
+        for (i = min_keycode; i && i <= max_keycode; i++) {
+            if ((xcb_key_symbols_get_keysym(keysyms, i, col) != keysym) &&
+                (xcb_key_symbols_get_keysym(keysyms, i, col+1) != keysym))
+                continue;
+            bind->number_keycodes++;
+            bind->translated_to = srealloc(bind->translated_to,
+                                           (sizeof(xcb_keycode_t) *
+                                            bind->number_keycodes));
+            bind->translated_to[bind->number_keycodes-1] = i;
+        }
+
+        DLOG("Translated symbol \"%s\" to %d keycode\n", bind->symbol,
+             bind->number_keycodes);
+    }
+}

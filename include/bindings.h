@@ -36,3 +36,9 @@ void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch);
  *
  */
 Binding *get_keyboard_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode);
+
+/**
+ * Translates keysymbols to keycodes for all bindings which use keysyms.
+ *
+ */
+void translate_keysyms(void);

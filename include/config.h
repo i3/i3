@@ -309,12 +309,6 @@ struct Barconfig {
 void load_configuration(xcb_connection_t *conn, const char *override_configfile, bool reload);
 
 /**
- * Translates keysymbols to keycodes for all bindings which use keysyms.
- *
- */
-void translate_keysyms(void);
-
-/**
  * Ungrabs all keys, to be called before re-grabbing the keys because of a
  * mapping_notify event or a configuration file reload
  *
