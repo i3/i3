@@ -624,3 +624,11 @@ void cont_child(void) {
         killpg(child.pid, child.cont_signal);
     }
 }
+
+/*
+ * Whether or not the child want click events
+ *
+ */
+bool child_want_click_events(void) {
+    return child.click_events;
+}

@@ -74,6 +74,12 @@ void stop_child(void);
 void cont_child(void);
 
 /*
+ * Whether or not the child want click events
+ *
+ */
+bool child_want_click_events(void);
+
+/*
  * Generates a click event, if enabled.
  *
  */

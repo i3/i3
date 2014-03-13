@@ -330,6 +330,39 @@ void handle_button(xcb_button_press_event_t *event) {
 
     DLOG("Got Button %d\n", event->detail);
 
+    if (child_want_click_events()) {
+        /* If the child asked for click events,
+         * check if a status block has been clicked. */
+
+        /* First calculate width of tray area */
+        trayclient *trayclient;
+        int tray_width = 0;
+        TAILQ_FOREACH_REVERSE(trayclient, walk->trayclients, tc_head, tailq) {
+            if (!trayclient->mapped)
+                continue;
+            tray_width += (font.height + 2);
+        }
+
+        int block_x = 0, last_block_x;
+        int offset = (walk->rect.w - (statusline_width + tray_width)) - 10;
+
+        x = original_x - offset;
+        if (x >= 0) {
+            struct status_block *block;
+
+            TAILQ_FOREACH(block, &statusline_head, blocks) {
+                last_block_x = block_x;
+                block_x += block->width + block->x_offset + block->x_append;
+
+                if (x <= block_x && x >= last_block_x) {
+                    send_block_clicked(event->detail, block->name, block->instance, event->root_x, event->root_y);
+                    return;
+                }
+            }
+        }
+        x = original_x;
+    }
+
     switch (event->detail) {
         case 4:
             /* Mouse wheel up. We select the previous ws, if any.
@@ -351,7 +384,7 @@ void handle_button(xcb_button_press_event_t *event) {
 
             cur_ws = TAILQ_NEXT(cur_ws, tailq);
             break;
-        default:
+        case 1:
             /* Check if this event regards a workspace button */
             TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
                 DLOG("x = %d\n", x);
@@ -360,43 +393,11 @@ void handle_button(xcb_button_press_event_t *event) {
                 }
                 x -= cur_ws->name_width + 11;
             }
-            if (cur_ws == NULL) {
-                /* No workspace button was pressed.
-                 * Check if a status block has been clicked.
-                 * This of course only has an effect,
-                 * if the child reported bidirectional protocol usage. */
-
-                /* First calculate width of tray area */
-                trayclient *trayclient;
-                int tray_width = 0;
-                TAILQ_FOREACH_REVERSE(trayclient, walk->trayclients, tc_head, tailq) {
-                    if (!trayclient->mapped)
-                        continue;
-                    tray_width += (font.height + 2);
-                }
-
-                int block_x = 0, last_block_x;
-                int offset = (walk->rect.w - (statusline_width + tray_width)) - 10;
-
-                x = original_x - offset;
-                if (x < 0)
-                    return;
-
-                struct status_block *block;
-
-                TAILQ_FOREACH(block, &statusline_head, blocks) {
-                    last_block_x = block_x;
-                    block_x += block->width + block->x_offset + block->x_append;
-
-                    if (x <= block_x && x >= last_block_x) {
-                        send_block_clicked(event->detail, block->name, block->instance, event->root_x, event->root_y);
-                        return;
-                    }
-                }
+            if (cur_ws == NULL)
                 return;
-            }
-            if (event->detail != 1)
-                return;
+            break;
+        default:
+            return;
     }
 
     /* To properly handle workspace names with double quotes in them, we need
