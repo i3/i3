@@ -866,7 +866,7 @@ inferior Xinerama API explicitly and therefore don’t provide support for
 reconfiguring your screens on the fly (they are read only once on startup and
 that’s it).
 
-For people who do cannot modify their +~/.xsession+ to add the
+For people who cannot modify their +~/.xsession+ to add the
 +--force-xinerama+ commandline parameter, a configuration option is provided:
 
 *Syntax*:
