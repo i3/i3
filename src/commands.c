@@ -257,6 +257,7 @@ void cmd_criteria_init(I3_CMD) {
     owindow *ow;
 
     DLOG("Initializing criteria, current_match = %p\n", current_match);
+    match_free(current_match);
     match_init(current_match);
     while (!TAILQ_EMPTY(&owindows)) {
         ow = TAILQ_FIRST(&owindows);
