@@ -298,15 +298,16 @@ void cmd_criteria_match_windows(I3_CMD) {
             if (current_match->con_id == current->con) {
                 DLOG("matches container!\n");
                 TAILQ_INSERT_TAIL(&owindows, current, owindows);
+            } else {
+                DLOG("doesnt match\n");
+                free(current);
             }
         } else if (current_match->mark != NULL && current->con->mark != NULL &&
                    regex_matches(current_match->mark, current->con->mark)) {
             DLOG("match by mark\n");
             TAILQ_INSERT_TAIL(&owindows, current, owindows);
         } else {
-            if (current->con->window == NULL)
-                continue;
-            if (match_matches_window(current_match, current->con->window)) {
+            if (current->con->window && match_matches_window(current_match, current->con->window)) {
                 DLOG("matches window!\n");
                 TAILQ_INSERT_TAIL(&owindows, current, owindows);
             } else {
