@@ -39,4 +39,6 @@ cmd('[class="special"] resize grow height 160 px or 16 ppt');
 
 does_i3_live;
 
+exit_gracefully($pid);
+
 done_testing;
