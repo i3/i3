@@ -810,6 +810,26 @@ focus_follows_mouse <yes|no>
 focus_follows_mouse no
 ----------------------
 
+=== Mouse warping
+
+By default, when switching focus to a window on a different output (e.g.
+focusing a window on workspace 3 on output VGA-1, coming from workspace 2 on
+LVDS-1), the mouse cursor is warped to the center of that window.
+
+With the +mouse_warping+ option, you can control when the mouse cursor should
+be warped. +none+ disables warping entirely, whereas +output+ is the default
+behavior described above.
+
+*Syntax*:
+---------------------------
+mouse_warping <output|none>
+---------------------------
+
+*Example*:
+------------------
+mouse_warping none
+------------------
+
 === Popups during fullscreen mode
 
 When you are in fullscreen mode, some applications still open popup windows
