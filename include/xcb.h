@@ -94,7 +94,7 @@ void fake_absolute_configure_notify(Con *con);
  * Sends the WM_TAKE_FOCUS ClientMessage to the given window
  *
  */
-void send_take_focus(xcb_window_t window);
+void send_take_focus(xcb_window_t window, xcb_timestamp_t timestamp);
 
 /**
  * Raises the given window (typically client->frame) above all other windows

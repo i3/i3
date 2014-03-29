@@ -992,7 +992,7 @@ void x_push_changes(Con *con) {
                 focused->window->needs_take_focus) {
                 DLOG("Updating focus by sending WM_TAKE_FOCUS to window 0x%08x (focused: %p / %s)\n",
                      to_focus, focused, focused->name);
-                send_take_focus(to_focus);
+                send_take_focus(to_focus, last_timestamp);
                 set_focus = !focused->window->doesnt_accept_focus;
                 DLOG("set_focus = %d\n", set_focus);
 
