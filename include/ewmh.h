@@ -28,6 +28,11 @@ void ewmh_update_current_desktop(void);
 void ewmh_update_active_window(xcb_window_t window);
 
 /**
+ * Updates the _NET_CLIENT_LIST hint. Used for window listers.
+ */
+void ewmh_update_client_list(xcb_window_t *list, int num_windows);
+
+/**
  * Updates the _NET_CLIENT_LIST_STACKING hint. Necessary to move tabs in
  * Chromium correctly.
  *
