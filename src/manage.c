@@ -198,7 +198,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
     border_style_t motif_border_style = BS_NORMAL;
     window_update_motif_hints(cwindow, xcb_get_property_reply(conn, motif_wm_hints_cookie, NULL), &motif_border_style);
     xcb_size_hints_t wm_size_hints;
-    xcb_icccm_get_wm_size_hints_reply(conn, wm_normal_hints_cookie, &wm_size_hints, NULL);
+    if (!xcb_icccm_get_wm_size_hints_reply(conn, wm_normal_hints_cookie, &wm_size_hints, NULL))
+        memset(&wm_size_hints, '\0', sizeof(xcb_size_hints_t));
     xcb_get_property_reply_t *type_reply = xcb_get_property_reply(conn, wm_type_cookie, NULL);
     xcb_get_property_reply_t *state_reply = xcb_get_property_reply(conn, state_cookie, NULL);
 
