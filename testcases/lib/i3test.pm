@@ -714,6 +714,8 @@ sub sync_with_i3 {
     # event mask, it will get the ClientMessage.
     $x->send_event(0, $root, EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
 
+    return $myrnd if $args{dont_wait_for_event};
+
     # now wait until the reply is here
     return wait_for_event 2, sub {
         my ($event) = @_;

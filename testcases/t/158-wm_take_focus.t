@@ -22,10 +22,29 @@ subtest 'Window without WM_TAKE_FOCUS', sub {
     fresh_workspace;
 
     my $window = open_window;
-    # sync_with_i3 will send a ClientMessage to i3 and receive one targeted to
-    # $window->id. If it receives WM_TAKE_FOCUS instead, it will return 0, thus
-    # the test will fail.
-    ok(sync_with_i3(window_id => $window->id), 'did not receive ClientMessage');
+    # sync_with_i3 will send a ClientMessage to i3 and i3 will send the same
+    # payload back to $window->id.
+    my $myrnd = sync_with_i3(
+        window_id => $window->id,
+        dont_wait_for_event => 1,
+    );
+
+    # We check whether the first received message has the correct payload — if
+    # not, the received message was a WM_TAKE_FOCUS message.
+    my $first_event_is_clientmessage;
+    wait_for_event 2, sub {
+        my ($event) = @_;
+        # TODO: const
+        return 0 unless $event->{response_type} == 161;
+
+        my ($win, $rnd) = unpack "LL", $event->{data};
+        if (!defined($first_event_is_clientmessage)) {
+            $first_event_is_clientmessage = ($rnd == $myrnd);
+        }
+        return ($rnd == $myrnd);
+    };
+
+    ok($first_event_is_clientmessage, 'did not receive ClientMessage');
 
     done_testing;
 };
