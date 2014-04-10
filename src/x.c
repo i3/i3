@@ -1006,20 +1006,16 @@ void x_push_changes(Con *con) {
             /* Invalidate focused_id to correctly focus new windows with the same ID */
             focused_id = XCB_NONE;
         } else {
-            bool set_focus = true;
             if (focused->window != NULL &&
-                focused->window->needs_take_focus) {
+                focused->window->needs_take_focus &&
+                focused->window->doesnt_accept_focus) {
                 DLOG("Updating focus by sending WM_TAKE_FOCUS to window 0x%08x (focused: %p / %s)\n",
                      to_focus, focused, focused->name);
                 send_take_focus(to_focus, last_timestamp);
-                set_focus = !focused->window->doesnt_accept_focus;
-                DLOG("set_focus = %d\n", set_focus);
 
-                if (!set_focus && to_focus != last_focused && is_con_attached(focused))
+                if (to_focus != last_focused && is_con_attached(focused))
                    ipc_send_window_event("focus", focused);
-            }
-
-            if (set_focus) {
+            } else {
                 DLOG("Updating focus (focused: %p / %s) to X11 window 0x%08x\n", focused, focused->name, to_focus);
                 /* We remove XCB_EVENT_MASK_FOCUS_CHANGE from the event mask to get
                  * no focus change events for our own focus changes. We only want

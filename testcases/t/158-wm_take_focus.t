@@ -16,12 +16,14 @@
 #
 # Tests if the WM_TAKE_FOCUS protocol is correctly handled by i3
 #
+# For more information on the protocol and input handling, see:
+# http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.7
+#
 use i3test;
 
-subtest 'Window without WM_TAKE_FOCUS', sub {
-    fresh_workspace;
+sub recv_take_focus {
+    my ($window) = @_;
 
-    my $window = open_window;
     # sync_with_i3 will send a ClientMessage to i3 and i3 will send the same
     # payload back to $window->id.
     my $myrnd = sync_with_i3(
@@ -44,12 +46,20 @@ subtest 'Window without WM_TAKE_FOCUS', sub {
         return ($rnd == $myrnd);
     };
 
-    ok($first_event_is_clientmessage, 'did not receive ClientMessage');
+    return !$first_event_is_clientmessage;
+}
+
+subtest 'Window without WM_TAKE_FOCUS', sub {
+    fresh_workspace;
+
+    my $window = open_window;
+
+    ok(!recv_take_focus($window), 'did not receive ClientMessage');
 
     done_testing;
 };
 
-subtest 'Window with WM_TAKE_FOCUS', sub {
+subtest 'Window with WM_TAKE_FOCUS and without InputHint', sub {
     fresh_workspace;
 
     my $take_focus = $x->atom(name => 'WM_TAKE_FOCUS');
@@ -59,16 +69,31 @@ subtest 'Window with WM_TAKE_FOCUS', sub {
         protocols => [ $take_focus ],
     });
 
+    # add an (empty) WM_HINTS property without the InputHint
+    $window->delete_hint('input');
+
     $window->map;
 
-    ok(wait_for_event(1, sub {
-        return 0 unless $_[0]->{response_type} == 161;
-        my ($data, $time) = unpack("L2", $_[0]->{data});
-        return ($data == $take_focus->id);
-    }), 'got ClientMessage with WM_TAKE_FOCUS atom');
+    ok(recv_take_focus($window), 'got ClientMessage with WM_TAKE_FOCUS atom');
 
     done_testing;
 };
 
+# If the InputHint is unspecified, i3 should use the simpler method of focusing
+# the window directly rather than using the WM_TAKE_FOCUS protocol.
+# XXX: The code paths for an unspecified and set InputHint are
+# nearly identical presently, so this is currently used also as a proxy test
+# for the latter case.
+subtest 'Window with WM_TAKE_FOCUS and unspecified InputHint', sub {
+    fresh_workspace;
+
+    my $take_focus = $x->atom(name => 'WM_TAKE_FOCUS');
+
+    my $window = open_window({ protocols => [ $take_focus ] });
+
+    ok(!recv_take_focus($window), 'did not receive ClientMessage');
+
+    done_testing;
+};
 
 done_testing;
