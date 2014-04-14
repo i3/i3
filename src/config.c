@@ -31,36 +31,6 @@ void ungrab_all_keys(xcb_connection_t *conn) {
 }
 
 /*
- * Switches the key bindings to the given mode, if the mode exists
- *
- */
-void switch_mode(const char *new_mode) {
-    struct Mode *mode;
-
-    LOG("Switching to mode %s\n", new_mode);
-
-    SLIST_FOREACH(mode, &modes, modes) {
-        if (strcasecmp(mode->name, new_mode) != 0)
-            continue;
-
-        ungrab_all_keys(conn);
-        bindings = mode->bindings;
-        translate_keysyms();
-        grab_all_keys(conn, false);
-
-        char *event_msg;
-        sasprintf(&event_msg, "{\"change\":\"%s\"}", mode->name);
-
-        ipc_send_event("mode", I3_IPC_EVENT_MODE, event_msg);
-        FREE(event_msg);
-
-        return;
-    }
-
-    ELOG("ERROR: Mode not found\n");
-}
-
-/*
  * Sends the current bar configuration as an event to all barconfig_update listeners.
  * This update mechnism currently only includes the hidden_state and the mode in the config.
  *

@@ -316,12 +316,6 @@ void load_configuration(xcb_connection_t *conn, const char *override_configfile,
 void ungrab_all_keys(xcb_connection_t *conn);
 
 /**
- * Switches the key bindings to the given mode, if the mode exists
- *
- */
-void switch_mode(const char *new_mode);
-
-/**
  * Sends the current bar configuration as an event to all barconfig_update listeners.
  * This update mechnism currently only includes the hidden_state and the mode in the config.
  *

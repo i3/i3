@@ -42,3 +42,9 @@ Binding *get_keyboard_binding(uint16_t modifiers, bool key_release, xcb_keycode_
  *
  */
 void translate_keysyms(void);
+
+/**
+ * Switches the key bindings to the given mode, if the mode exists
+ *
+ */
+void switch_mode(const char *new_mode);

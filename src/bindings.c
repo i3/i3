@@ -229,3 +229,33 @@ void translate_keysyms(void) {
              bind->number_keycodes);
     }
 }
+
+/*
+ * Switches the key bindings to the given mode, if the mode exists
+ *
+ */
+void switch_mode(const char *new_mode) {
+    struct Mode *mode;
+
+    DLOG("Switching to mode %s\n", new_mode);
+
+    SLIST_FOREACH(mode, &modes, modes) {
+        if (strcasecmp(mode->name, new_mode) != 0)
+            continue;
+
+        ungrab_all_keys(conn);
+        bindings = mode->bindings;
+        translate_keysyms();
+        grab_all_keys(conn, false);
+
+        char *event_msg;
+        sasprintf(&event_msg, "{\"change\":\"%s\"}", mode->name);
+
+        ipc_send_event("mode", I3_IPC_EVENT_MODE, event_msg);
+        FREE(event_msg);
+
+        return;
+    }
+
+    ELOG("ERROR: Mode not found\n");
+}
