@@ -877,8 +877,16 @@ void cmd_nop(I3_CMD, char *comment) {
 void cmd_append_layout(I3_CMD, char *path) {
     LOG("Appending layout \"%s\"\n", path);
     Con *parent = focused;
+    /* We need to append the layout to a split container, since a leaf
+     * container must not have any children (by definition).
+     * Note that we explicitly check for workspaces, since they are okay for
+     * this purpose, but con_accepts_window() returns false for workspaces. */
+    while (parent->type != CT_WORKSPACE && !con_accepts_window(parent))
+        parent = parent->parent;
+    DLOG("Appending to parent=%p instead of focused=%p\n",
+         parent, focused);
     char *errormsg = NULL;
-    tree_append_json(path, &errormsg);
+    tree_append_json(parent, path, &errormsg);
     if (errormsg != NULL) {
         yerror(errormsg);
         free(errormsg);

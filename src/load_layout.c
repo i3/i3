@@ -395,7 +395,7 @@ static int json_double(void *ctx, double val) {
     return 1;
 }
 
-void tree_append_json(const char *filename, char **errormsg) {
+void tree_append_json(Con *con, const char *filename, char **errormsg) {
     FILE *f;
     if ((f = fopen(filename, "r")) == NULL) {
         LOG("Cannot open file \"%s\"\n", filename);
@@ -439,7 +439,7 @@ void tree_append_json(const char *filename, char **errormsg) {
     /* Allow multiple values, i.e. multiple nodes to attach */
     yajl_config(hand, yajl_allow_multiple_values, true);
     yajl_status stat;
-    json_node = focused;
+    json_node = con;
     to_focus = NULL;
     parsing_swallows = false;
     parsing_rect = false;
@@ -460,7 +460,7 @@ void tree_append_json(const char *filename, char **errormsg) {
     /* In case not all containers were restored, we need to fix the
      * percentages, otherwise i3 will crash immediately when rendering the
      * next time. */
-    con_fix_percent(focused);
+    con_fix_percent(con);
 
     setlocale(LC_NUMERIC, "");
 #if YAJL_MAJOR >= 2

@@ -84,7 +84,7 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
     };
     focused = croot;
 
-    tree_append_json(globbed, NULL);
+    tree_append_json(focused, globbed, NULL);
 
     printf("appended tree, using new root\n");
     croot = TAILQ_FIRST(&(croot->nodes_head));

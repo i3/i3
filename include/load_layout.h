@@ -10,4 +10,4 @@
  */
 #pragma once
 
-void tree_append_json(const char *filename, char **errormsg);
+void tree_append_json(Con *con, const char *filename, char **errormsg);
