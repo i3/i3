@@ -782,7 +782,7 @@ void cmd_resize(I3_CMD, char *way, char *direction, char *resize_px, char *resiz
     owindow *current;
     TAILQ_FOREACH(current, &owindows, owindows) {
         /* Don't handle dock windows (issue #1201) */
-        if (current->con->window->dock) {
+        if (current->con->window && current->con->window->dock) {
             DLOG("This is a dock window. Not resizing (con = %p)\n)", current->con);
             continue;
         }
