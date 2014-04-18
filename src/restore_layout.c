@@ -181,7 +181,8 @@ static void update_placeholder_contents(placeholder_state *state) {
 }
 
 static void open_placeholder_window(Con *con) {
-    if (con_is_leaf(con)) {
+    if (con_is_leaf(con) &&
+        (con->window == NULL || con->window->id == XCB_NONE)) {
         xcb_window_t placeholder = create_window(
                 restore_conn,
                 con->rect,
