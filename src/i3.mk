@@ -64,7 +64,7 @@ i3-config-parser.stamp: generate-command-parser.pl parser-specs/config.spec
 
 i3: libi3.a $(i3_OBJECTS)
 	echo "[i3] Link i3"
-	$(CC) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(LIBS) $(i3_LIBS)
+	$(CC) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -o $@ $(filter-out libi3.a,$^) $(LIBS) $(i3_LIBS)
 
 install-i3: i3
 	echo "[i3] Install"
