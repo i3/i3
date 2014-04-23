@@ -36,13 +36,13 @@ src/%.o: src/%.c $(i3_HEADERS_DEP)
 	echo "[i3] CC $<"
 	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(PCH_FLAGS) -c -o $@ ${canonical_path}/$<
 
-test-tools: src/test.commands_parser src/test.config_parser
+test-tools: test.commands_parser test.config_parser
 
-src/test.commands_parser: src/commands_parser.c $(i3_HEADERS_DEP) i3-command-parser.stamp libi3.a
+test.commands_parser: src/commands_parser.c $(i3_HEADERS_DEP) i3-command-parser.stamp libi3.a
 	echo "[i3] Link test.commands_parser"
 	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -g -o test.commands_parser $< $(LIBS) $(i3_LIBS)
 
-src/test.config_parser: src/config_parser.c $(i3_HEADERS_DEP) i3-config-parser.stamp libi3.a
+test.config_parser: src/config_parser.c $(i3_HEADERS_DEP) i3-config-parser.stamp libi3.a
 	echo "[i3] Link test.config_parser"
 	$(CC) $(I3_CPPFLAGS) $(XCB_CPPFLAGS) $(CPPFLAGS) $(i3_CFLAGS) $(I3_CFLAGS) $(CFLAGS) $(I3_LDFLAGS) $(LDFLAGS) -DTEST_PARSER -g -o test.config_parser $< $(LIBS) $(i3_LIBS)
 
