@@ -1,0 +1,233 @@
+Layout saving in i3
+===================
+Michael Stapelberg <michael@i3wm.org>
+April 2014
+
+Layout saving/restoring is a feature that was introduced in i3 v4.8.
+
+Layout saving/restoring allows you to load a JSON layout file so that you can
+have a base layout to start working with after powering on your computer.
+Dynamic use-cases also come to mind: if you frequently (but not always!) need a
+grid layout of terminals with ping/traceroute commands to diagnose network
+issues, you can easily automate opening these windows in just the right layout.
+
+== Saving the layout
+
+You can save the layout of either a single workspace or an entire output (e.g.
+LVDS1). Of course, you can repeat this step multiple times if you want to
+save/restore multiple workspaces/outputs.
+
++i3-save-tree(1)+ is a tool to save the layout. It will print a JSON
+representation of i3’s internal layout data structures to stdout. Typically,
+you may want to take a quick look at the output, then save it to a file and
+tweak it a little bit:
+
+---------------------------------------------------
+i3-save-tree --workspace 1 > ~/.i3/workspace-1.json
+---------------------------------------------------
+
+Please note that the output of +i3-save-tree(1)+ is *NOT useful* until you
+manually modify it — you need to tell i3 how to match/distinguish windows (for
+example based on their WM_CLASS, title, etc.). By default, all the different
+window properties are included in the output, but commented out. This is partly
+to avoid relying on heuristics and partly to make you aware how i3 works so
+that you can easily solve layout restoring problems.
+
+How to modify the file manually is described in <<EditingLayoutFiles>>.
+
+== Restoring the layout
+
+After restoring the example layout from <<EditingLayoutFiles>>, i3 will open
+placeholder windows for all the windows that were specified in the layout file.
+You can recognize the placeholder windows by the watch symbol
+footnote:[Depending on the font you are using, a placeholder symbol may show up
+instead of the watch symbol.] in the center of the window, and by the swallow
+criteria specification at the top of the window:
+
+image:layout-saving-1.png["Restored layout",width=400,link="layout-saving-1.png"]
+
+When an application opens a window that matches the specified swallow criteria,
+it will be placed in the corresponding placeholder window. We say it gets
+*swallowed* by the placeholder container, hence the term.
+
+Note: Swallowing windows into unsatisfied placeholder windows takes precedence
+over
+link:http://i3wm.org/docs/userguide.html#_automatically_putting_clients_on_specific_workspaces[assignment
+rules]. For example, if you assign all Emacs windows to workspace 1 in your i3
+configuration file, but there is a placeholder window on workspace 2 which
+matches Emacs as well, your newly started Emacs window will end up in the
+placeholder window on workspace 2.
+
+The placeholder windows are just regular windows, so feel free to move them
+around or close them, for example.
+
+=== append_layout command
+
+The +append_layout+ command is used to load a layout file into i3. It accepts a
+path (relative to i3’s current working directory or absolute) to a JSON file.
+
+*Syntax*:
+--------------------------------------------------------------------------------
+append_layout <path>
+--------------------------------------------------------------------------------
+
+*Examples*:
+--------------------------------------------------------------------------------
+# From a terminal or script:
+i3-msg "workspace 1; append_layout /home/michael/.i3/workspace-1.json"
+
+# In your i3 configuration file, you can autostart i3-msg like this:
+# (Note that those lines will quickly become long, so typically you would store
+#  them in a script with proper indentation.)
+exec --no-startup-id "i3-msg 'workspace 1; append_layout /home/michael/.i3/workspace-1.json'"
+--------------------------------------------------------------------------------
+
+== Editing layout files
+
+[[EditingLayoutFiles]]
+
+=== Anatomy of a layout file
+
+Here is an example layout file that we’ll discuss:
+
+--------------------------------------------------------------------------------
+{
+    // splitv split container with 2 children
+    "layout": "splitv",
+    "percent": 0.4,
+    "type": "con",
+    "nodes": [
+        {
+            "border": "none",
+            "name": "irssi",
+            "percent": 0.5,
+            "type": "con",
+            "swallows": [
+                {
+                    "class": "^URxvt$",
+                    "instance": "^irssi$"
+                }
+            ]
+        },
+        {
+            // stacked split container with 2 children
+            "layout": "stacked",
+            "percent": 0.5,
+            "type": "con",
+            "nodes": [
+                {
+                    "name": "notmuch",
+                    "percent": 0.5,
+                    "type": "con",
+                    "swallows": [
+                        {
+                            "class": "^Emacs$",
+                            "instance": "^notmuch$"
+                        }
+                    ]
+                },
+                {
+                    "name": "midna: ~",
+                    "percent": 0.5,
+                    "type": "con"
+                }
+            ]
+        }
+    ]
+}
+
+{
+    // stacked split container with 1 children
+    "layout": "stacked",
+    "percent": 0.6,
+    "type": "con",
+    "nodes": [
+        {
+            "name": "chrome",
+            "type": "con",
+            "swallows": [
+                {
+                    "class": "^Google-chrome$"
+                }
+            ]
+        }
+    ]
+}
+--------------------------------------------------------------------------------
+
+In this layout, the screen is divided into two columns. In the left column,
+which covers 40% of the screen, there is a terminal emulator running irssi on
+the top, and a stacked split container with an Emacs window and a terminal
+emulator on the bottom. In the right column, there is a stacked container with
+a Chrome window:
+
+image:layout-saving-1.png["Restored layout",width=400,link="layout-saving-1.png"]
+
+The structure of this JSON file looks a lot like the +TREE+ reply, see
+http://build.i3wm.org/docs/ipc.html#_tree_reply for documentation on that. Some
+properties are excluded because they are not relevant when restoring a layout.
+
+Most importantly, look at the "swallows" section of each window. This is where
+you need to be more or less specific. As an example, remember the section about
+the Emacs window:
+
+--------------------------------------------------------------------------------
+"swallows": [
+    {
+        "class": "^Emacs$",
+        "instance": "^notmuch$"
+    }
+]
+--------------------------------------------------------------------------------
+
+Here you can see that i3 will require both the class and the instance to match.
+Therefore, if you just start Emacs via dmenu, it will not get swallowed by that
+container. Only if you start Emacs with the proper instance name (+emacs24
+--name notmuch+), it will get swallowed.
+
+You can match on "class", "instance", "window_role" and "title". All values are
+case-sensitive regular expressions (PCRE). Use +xprop(1)+ and click into a
+window to see its properties:
+
+--------------------------------------------------------------------------------
+$ xprop
+WM_WINDOW_ROLE(STRING) = "gimp-toolbox-color-dialog"
+WM_CLASS(STRING) = "gimp-2.8", "Gimp-2.8"
+_NET_WM_NAME(UTF8_STRING) = "Change Foreground Color"
+--------------------------------------------------------------------------------
+
+The first part of +WM_CLASS+ is the "instance" (gimp-2.8 in this case), the
+second part is the "class" (Gimp-2.8 in this case). "title" matches against
++_NET_WM_NAME+ and "window_role" matches against +WM_WINDOW_ROLE+.
+
+In general, you should try to be as specific as possible in your swallow
+criteria. Try to use criteria that match one window and only one window, to
+have a reliable startup procedure.
+
+If you specify multiple swallow criteria, the placeholder will be replaced by
+the window which matches any of the criteria. As an example:
+
+--------------------------------------------------------------------------------
+// Matches either Emacs or Gvim, whichever one is started first.
+"swallows": [
+    {"class": "^Emacs$"},
+    {"class": "^Gvim$"}
+]
+--------------------------------------------------------------------------------
+
+=== JSON standard non-compliance
+
+A layout file as generated by +i3-save-tree(1)+ is not strictly valid JSON:
+
+1. Layout files contain multiple “JSON documents” on the top level, whereas the
+   JSON standard only allows precisely one “document” (array or hash).
+
+2. Layout files contain comments which are not standardized, but understood by
+   many parsers.
+
+Both deviations from the JSON standard are to make manual editing by humans
+easier. In case you are writing a more elaborate tool for manipulating these
+layouts, you can either use a JSON parser that supports these deviations (for
+example libyajl), transform the layout file to a JSON-conforming file, or
+link:http://cr.i3wm.org/[submit a patch] to make +i3-save-tree(1)+ optionally
+output standard-conforming JSON.
