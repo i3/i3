@@ -259,3 +259,56 @@ void switch_mode(const char *new_mode) {
 
     ELOG("ERROR: Mode not found\n");
 }
+
+/*
+ * Checks for duplicate key bindings (the same keycode or keysym is configured
+ * more than once). If a duplicate binding is found, a message is printed to
+ * stderr and the has_errors variable is set to true, which will start
+ * i3-nagbar.
+ *
+ */
+void check_for_duplicate_bindings(struct context *context) {
+    Binding *bind, *current;
+    TAILQ_FOREACH(current, bindings, bindings) {
+        TAILQ_FOREACH(bind, bindings, bindings) {
+            /* Abort when we reach the current keybinding, only check the
+             * bindings before */
+            if (bind == current)
+                break;
+
+            /* Check if the input types are different */
+            if (bind->input_type != current->input_type)
+                continue;
+
+            /* Check if one is using keysym while the other is using bindsym.
+             * If so, skip. */
+            /* XXX: It should be checked at a later place (when translating the
+             * keysym to keycodes) if there are any duplicates */
+            if ((bind->symbol == NULL && current->symbol != NULL) ||
+                (bind->symbol != NULL && current->symbol == NULL))
+                continue;
+
+            /* If bind is NULL, current has to be NULL, too (see above).
+             * If the keycodes differ, it can't be a duplicate. */
+            if (bind->symbol != NULL &&
+                strcasecmp(bind->symbol, current->symbol) != 0)
+                continue;
+
+            /* Check if the keycodes or modifiers are different. If so, they
+             * can't be duplicate */
+            if (bind->keycode != current->keycode ||
+                bind->mods != current->mods ||
+                bind->release != current->release)
+                continue;
+
+            context->has_errors = true;
+            if (current->keycode != 0) {
+                ELOG("Duplicate keybinding in config file:\n  modmask %d with keycode %d, command \"%s\"\n",
+                     current->mods, current->keycode, current->command);
+            } else {
+                ELOG("Duplicate keybinding in config file:\n  modmask %d with keysym %s, command \"%s\"\n",
+                     current->mods, current->symbol, current->command);
+            }
+        }
+    }
+}

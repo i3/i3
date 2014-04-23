@@ -48,3 +48,12 @@ void translate_keysyms(void);
  *
  */
 void switch_mode(const char *new_mode);
+
+/**
+ * Checks for duplicate key bindings (the same keycode or keysym is configured
+ * more than once). If a duplicate binding is found, a message is printed to
+ * stderr and the has_errors variable is set to true, which will start
+ * i3-nagbar.
+ *
+ */
+void check_for_duplicate_bindings(struct context *context);
