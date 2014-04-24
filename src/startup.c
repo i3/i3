@@ -187,6 +187,7 @@ void start_application(const char *command, bool no_startup_id) {
         }
         unsetenv("LISTEN_PID");
         unsetenv("LISTEN_FDS");
+        signal(SIGPIPE, SIG_DFL);
         if (fork() == 0) {
             /* Setup the environment variable(s) */
             if (!no_startup_id)
