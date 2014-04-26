@@ -340,11 +340,11 @@ void handle_button(xcb_button_press_event_t *event) {
         TAILQ_FOREACH_REVERSE(trayclient, walk->trayclients, tc_head, tailq) {
             if (!trayclient->mapped)
                 continue;
-            tray_width += (font.height + 2);
+            tray_width += (font.height + logical_px(2));
         }
 
         int block_x = 0, last_block_x;
-        int offset = (walk->rect.w - (statusline_width + tray_width)) - 10;
+        int offset = (walk->rect.w - (statusline_width + tray_width)) - logical_px(10);
 
         x = original_x - offset;
         if (x >= 0) {
@@ -388,10 +388,10 @@ void handle_button(xcb_button_press_event_t *event) {
             /* Check if this event regards a workspace button */
             TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
                 DLOG("x = %d\n", x);
-                if (x >= 0 && x < cur_ws->name_width + 10) {
+                if (x >= 0 && x < cur_ws->name_width + logical_px(10)) {
                     break;
                 }
-                x -= cur_ws->name_width + 11;
+                x -= cur_ws->name_width + logical_px(11);
             }
             if (cur_ws == NULL)
                 return;
@@ -453,8 +453,8 @@ static void configure_trayclients(void) {
             clients++;
 
             DLOG("Configuring tray window %08x to x=%d\n",
-                 trayclient->win, output->rect.w - (clients * (font.height + 2)));
-            uint32_t x = output->rect.w - (clients * (font.height + 2));
+                 trayclient->win, output->rect.w - (clients * (font.height + logical_px(2))));
+            uint32_t x = output->rect.w - (clients * (font.height + logical_px(2)));
             xcb_configure_window(xcb_connection,
                                  trayclient->win,
                                  XCB_CONFIG_WINDOW_X,
