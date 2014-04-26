@@ -156,7 +156,7 @@ static int stdin_start_map(void *context) {
     memset(&(ctx->block), '\0', sizeof(struct status_block));
 
     /* Default width of the separator block. */
-    ctx->block.sep_block_width = 9;
+    ctx->block.sep_block_width = logical_px(9);
 
     return 1;
 }
