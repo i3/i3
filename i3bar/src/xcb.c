@@ -148,8 +148,8 @@ void refresh_statusline(void) {
                     block->x_offset = padding_width;
                     break;
                 case ALIGN_CENTER:
-                    block->x_offset = padding_width / 2;
-                    block->x_append = padding_width / 2 + padding_width % 2;
+                    block->x_offset = padding_width / logical_px(2);
+                    block->x_append = padding_width / logical_px(2) + padding_width % logical_px(2);
                     break;
             }
         }
@@ -168,7 +168,7 @@ void refresh_statusline(void) {
         realloc_sl_buffer();
 
     /* Clear the statusline pixmap. */
-    xcb_rectangle_t rect = { 0, 0, root_screen->width_in_pixels, font.height + 2 };
+    xcb_rectangle_t rect = { 0, 0, root_screen->width_in_pixels, font.height + logical_px(5) };
     xcb_poly_fill_rectangle(xcb_connection, statusline_pm, statusline_clear, 1, &rect);
 
     /* Draw the text of each block. */
@@ -1108,7 +1108,7 @@ void init_xcb_late(char *fontname) {
     font = load_font(fontname, true);
     set_font(&font);
     DLOG("Calculated Font-height: %d\n", font.height);
-    bar_height = font.height + 6;
+    bar_height = font.height + logical_px(6);
 
     xcb_flush(xcb_connection);
 
@@ -1755,7 +1755,10 @@ void draw_bars(bool unhide) {
                               outputs_walk->bargc,
                               mask,
                               vals_border);
-                xcb_rectangle_t rect_border = { i, 1, ws_walk->name_width + 10, font.height + 4 };
+                xcb_rectangle_t rect_border = { i,
+                                                logical_px(1),
+                                                ws_walk->name_width + logical_px(10),
+                                                font.height + logical_px(4) };
                 xcb_poly_fill_rectangle(xcb_connection,
                                         outputs_walk->buffer,
                                         outputs_walk->bargc,
@@ -1766,7 +1769,10 @@ void draw_bars(bool unhide) {
                               outputs_walk->bargc,
                               mask,
                               vals);
-                xcb_rectangle_t rect = { i + 1, 2, ws_walk->name_width + 8, font.height + 2 };
+                xcb_rectangle_t rect = { i + logical_px(1),
+                                         2 * logical_px(1),
+                                         ws_walk->name_width + logical_px(8),
+                                         font.height + logical_px(2) };
                 xcb_poly_fill_rectangle(xcb_connection,
                                         outputs_walk->buffer,
                                         outputs_walk->bargc,
@@ -1774,8 +1780,8 @@ void draw_bars(bool unhide) {
                                         &rect);
                 set_font_colors(outputs_walk->bargc, fg_color, bg_color);
                 draw_text(ws_walk->name, outputs_walk->buffer, outputs_walk->bargc,
-                          i + 5, 3, ws_walk->name_width);
-                i += 10 + ws_walk->name_width + 1;
+                          i + logical_px(5), 3 * logical_px(1), ws_walk->name_width);
+                i += logical_px(10) + ws_walk->name_width + logical_px(1);
 
             }
         }
