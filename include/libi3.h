@@ -381,3 +381,11 @@ char *get_process_filename(const char *prefix);
  * Returned value must be freed by the caller.
  */
 char *get_exe_path(const char *argv0);
+
+/**
+ * Convert a logical amount of pixels (e.g. 2 pixels on a “standard” 96 DPI
+ * screen) to a corresponding amount of physical pixels on a standard or retina
+ * screen, e.g. 5 pixels on a 227 DPI MacBook Pro 13" Retina screen.
+ *
+ */
+int logical_px(const int logical);
