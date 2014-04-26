@@ -376,6 +376,7 @@ sub quote {
 
 $choice = quote($choice);
 $location = quote($location);
+$name = quote($name);
 
 # Remove deprecated field codes, as the spec dictates.
 $exec =~ s/%[dDnNvm]//g;
