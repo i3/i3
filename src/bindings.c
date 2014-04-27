@@ -50,10 +50,15 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
     DLOG("bindtype %s, modifiers %s, input code %s, release %s\n", bindtype, modifiers, input_code, release);
     new_binding->release = (release != NULL ? B_UPON_KEYRELEASE : B_UPON_KEYPRESS);
     if (strcmp(bindtype, "bindsym") == 0) {
+        new_binding->input_type = (strncasecmp(input_code, "button", (sizeof("button") - 1)) == 0
+            ? B_MOUSE
+            : B_KEYBOARD);
+
         new_binding->symbol = sstrdup(input_code);
     } else {
         // TODO: strtol with proper error handling
         new_binding->keycode = atoi(input_code);
+        new_binding->input_type = B_KEYBOARD;
         if (new_binding->keycode == 0) {
             ELOG("Could not parse \"%s\" as an input code, ignoring this binding.\n", input_code);
             FREE(new_binding);
@@ -62,7 +67,6 @@ Binding *configure_binding(const char *bindtype, const char *modifiers, const ch
     }
     new_binding->mods = modifiers_from_str(modifiers);
     new_binding->command = sstrdup(command);
-    new_binding->input_type = B_KEYBOARD;
 
     struct Mode *mode = mode_from_name(modename);
     TAILQ_INSERT_TAIL(mode->bindings, new_binding, bindings);
@@ -194,7 +198,17 @@ void translate_keysyms(void) {
     max_keycode = xcb_get_setup(conn)->max_keycode;
 
     TAILQ_FOREACH(bind, bindings, bindings) {
-        if (bind->input_type != B_KEYBOARD || bind->keycode > 0)
+        if (bind->input_type == B_MOUSE) {
+            int button = atoi(bind->symbol + (sizeof("button") - 1));
+            bind->keycode = button;
+
+            if (button < 1)
+                ELOG("Could not translate string to button: \"%s\"\n", bind->symbol);
+
+            continue;
+        }
+
+        if (bind->keycode > 0)
             continue;
 
         /* We need to translate the symbol to a keycode */
