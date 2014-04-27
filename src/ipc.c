@@ -423,6 +423,135 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(map_close);
 }
 
+static void dump_bar_config(yajl_gen gen, Barconfig *config) {
+    y(map_open);
+
+    ystr("id");
+    ystr(config->id);
+
+    if (config->num_outputs > 0) {
+        ystr("outputs");
+        y(array_open);
+        for (int c = 0; c < config->num_outputs; c++)
+            ystr(config->outputs[c]);
+        y(array_close);
+    }
+
+#define YSTR_IF_SET(name) \
+    do { \
+        if (config->name) { \
+            ystr( # name); \
+            ystr(config->name); \
+        } \
+    } while (0)
+
+    YSTR_IF_SET(tray_output);
+    YSTR_IF_SET(socket_path);
+
+    ystr("mode");
+    switch (config->mode) {
+        case M_HIDE:
+            ystr("hide");
+            break;
+        case M_INVISIBLE:
+            ystr("invisible");
+            break;
+        case M_DOCK:
+        default:
+            ystr("dock");
+            break;
+    }
+
+    ystr("hidden_state");
+    switch (config->hidden_state) {
+        case S_SHOW:
+            ystr("show");
+            break;
+        case S_HIDE:
+        default:
+            ystr("hide");
+            break;
+    }
+
+    ystr("modifier");
+    switch (config->modifier) {
+        case M_CONTROL:
+            ystr("ctrl");
+            break;
+        case M_SHIFT:
+            ystr("shift");
+            break;
+        case M_MOD1:
+            ystr("Mod1");
+            break;
+        case M_MOD2:
+            ystr("Mod2");
+            break;
+        case M_MOD3:
+            ystr("Mod3");
+            break;
+            /*
+               case M_MOD4:
+               ystr("Mod4");
+               break;
+               */
+        case M_MOD5:
+            ystr("Mod5");
+            break;
+        default:
+            ystr("Mod4");
+            break;
+    }
+
+    ystr("position");
+    if (config->position == P_BOTTOM)
+        ystr("bottom");
+    else ystr("top");
+
+    YSTR_IF_SET(status_command);
+    YSTR_IF_SET(font);
+
+    ystr("workspace_buttons");
+    y(bool, !config->hide_workspace_buttons);
+
+    ystr("binding_mode_indicator");
+    y(bool, !config->hide_binding_mode_indicator);
+
+    ystr("verbose");
+    y(bool, config->verbose);
+
+#undef YSTR_IF_SET
+#define YSTR_IF_SET(name) \
+    do { \
+        if (config->colors.name) { \
+            ystr( # name); \
+            ystr(config->colors.name); \
+        } \
+    } while (0)
+
+    ystr("colors");
+    y(map_open);
+    YSTR_IF_SET(background);
+    YSTR_IF_SET(statusline);
+    YSTR_IF_SET(separator);
+    YSTR_IF_SET(focused_workspace_border);
+    YSTR_IF_SET(focused_workspace_bg);
+    YSTR_IF_SET(focused_workspace_text);
+    YSTR_IF_SET(active_workspace_border);
+    YSTR_IF_SET(active_workspace_bg);
+    YSTR_IF_SET(active_workspace_text);
+    YSTR_IF_SET(inactive_workspace_border);
+    YSTR_IF_SET(inactive_workspace_bg);
+    YSTR_IF_SET(inactive_workspace_text);
+    YSTR_IF_SET(urgent_workspace_border);
+    YSTR_IF_SET(urgent_workspace_bg);
+    YSTR_IF_SET(urgent_workspace_text);
+    y(map_close);
+
+    y(map_close);
+#undef YSTR_IF_SET
+}
+
 IPC_HANDLER(tree) {
     setlocale(LC_NUMERIC, "C");
     yajl_gen gen = ygenalloc();
@@ -651,140 +780,18 @@ IPC_HANDLER(get_bar_config) {
         break;
     }
 
-    y(map_open);
-
     if (!config) {
         /* If we did not find a config for the given ID, the reply will contain
          * a null 'id' field. */
+        y(map_open);
+
         ystr("id");
         y(null);
-    } else {
-        ystr("id");
-        ystr(config->id);
 
-        if (config->num_outputs > 0) {
-            ystr("outputs");
-            y(array_open);
-            for (int c = 0; c < config->num_outputs; c++)
-                ystr(config->outputs[c]);
-            y(array_close);
-        }
-
-#define YSTR_IF_SET(name) \
-        do { \
-            if (config->name) { \
-                ystr( # name); \
-                ystr(config->name); \
-            } \
-        } while (0)
-
-        YSTR_IF_SET(tray_output);
-        YSTR_IF_SET(socket_path);
-
-        ystr("mode");
-        switch (config->mode) {
-            case M_HIDE:
-                ystr("hide");
-                break;
-            case M_INVISIBLE:
-                ystr("invisible");
-                break;
-            case M_DOCK:
-            default:
-                ystr("dock");
-                break;
-        }
-
-        ystr("hidden_state");
-        switch (config->hidden_state) {
-            case S_SHOW:
-                ystr("show");
-                break;
-            case S_HIDE:
-            default:
-                ystr("hide");
-                break;
-        }
-
-        ystr("modifier");
-        switch (config->modifier) {
-            case M_CONTROL:
-                ystr("ctrl");
-                break;
-            case M_SHIFT:
-                ystr("shift");
-                break;
-            case M_MOD1:
-                ystr("Mod1");
-                break;
-            case M_MOD2:
-                ystr("Mod2");
-                break;
-            case M_MOD3:
-                ystr("Mod3");
-                break;
-            /*
-            case M_MOD4:
-                ystr("Mod4");
-                break;
-            */
-            case M_MOD5:
-                ystr("Mod5");
-                break;
-            default:
-                ystr("Mod4");
-                break;
-        }
-
-        ystr("position");
-        if (config->position == P_BOTTOM)
-            ystr("bottom");
-        else ystr("top");
-
-        YSTR_IF_SET(status_command);
-        YSTR_IF_SET(font);
-
-        ystr("workspace_buttons");
-        y(bool, !config->hide_workspace_buttons);
-
-        ystr("binding_mode_indicator");
-        y(bool, !config->hide_binding_mode_indicator);
-
-        ystr("verbose");
-        y(bool, config->verbose);
-
-#undef YSTR_IF_SET
-#define YSTR_IF_SET(name) \
-        do { \
-            if (config->colors.name) { \
-                ystr( # name); \
-                ystr(config->colors.name); \
-            } \
-        } while (0)
-
-        ystr("colors");
-        y(map_open);
-        YSTR_IF_SET(background);
-        YSTR_IF_SET(statusline);
-        YSTR_IF_SET(separator);
-        YSTR_IF_SET(focused_workspace_border);
-        YSTR_IF_SET(focused_workspace_bg);
-        YSTR_IF_SET(focused_workspace_text);
-        YSTR_IF_SET(active_workspace_border);
-        YSTR_IF_SET(active_workspace_bg);
-        YSTR_IF_SET(active_workspace_text);
-        YSTR_IF_SET(inactive_workspace_border);
-        YSTR_IF_SET(inactive_workspace_bg);
-        YSTR_IF_SET(inactive_workspace_text);
-        YSTR_IF_SET(urgent_workspace_border);
-        YSTR_IF_SET(urgent_workspace_bg);
-        YSTR_IF_SET(urgent_workspace_text);
         y(map_close);
-
-#undef YSTR_IF_SET
+    } else {
+        dump_bar_config(gen, config);
     }
-
-    y(map_close);
 
     const unsigned char *payload;
     ylength length;
@@ -1088,6 +1095,25 @@ void ipc_send_window_event(const char *property, Con *con) {
     y(get_buf, &payload, &length);
 
     ipc_send_event("window", I3_IPC_EVENT_WINDOW, (const char *)payload);
+    y(free);
+    setlocale(LC_NUMERIC, "");
+}
+
+/**
+ * For the barconfig update events, we send the serialized barconfig.
+ */
+void ipc_send_barconfig_update_event(Barconfig *barconfig) {
+    DLOG("Issue barconfig_update event for id = %s\n", barconfig->id);
+    setlocale(LC_NUMERIC, "C");
+    yajl_gen gen = ygenalloc();
+
+    dump_bar_config(gen, barconfig);
+
+    const unsigned char *payload;
+    ylength length;
+    y(get_buf, &payload, &length);
+
+    ipc_send_event("barconfig_update", I3_IPC_EVENT_BARCONFIG_UPDATE, (const char *)payload);
     y(free);
     setlocale(LC_NUMERIC, "");
 }

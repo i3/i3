@@ -317,9 +317,9 @@ void ungrab_all_keys(xcb_connection_t *conn);
 
 /**
  * Sends the current bar configuration as an event to all barconfig_update listeners.
- * This update mechnism currently only includes the hidden_state and the mode in the config.
  *
- */void update_barconfig();
+ */
+void update_barconfig();
 
 /**
  * Kills the configerror i3-nagbar process, if any.

@@ -16,6 +16,7 @@
 
 #include "data.h"
 #include "tree.h"
+#include "config.h"
 
 #include "i3/ipc.h"
 
@@ -93,3 +94,8 @@ void ipc_send_workspace_focus_event(Con *current, Con *old);
  * also the window container, in "container".
  */
 void ipc_send_window_event(const char *property, Con *con);
+
+/**
+ * For the barconfig update events, we send the serialized barconfig.
+ */
+void ipc_send_barconfig_update_event(Barconfig *barconfig);
