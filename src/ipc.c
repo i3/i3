@@ -1067,7 +1067,8 @@ void ipc_send_workspace_focus_event(Con *current, Con *old) {
  * also the window container, in "container".
  */
 void ipc_send_window_event(const char *property, Con *con) {
-    DLOG("Issue IPC window %s event for X11 window 0x%08x\n", property, con->window->id);
+    DLOG("Issue IPC window %s event (con = %p, window = 0x%08x)\n",
+            property, con, (con->window ? con->window->id : XCB_WINDOW_NONE));
 
     setlocale(LC_NUMERIC, "C");
     yajl_gen gen = ygenalloc();
