@@ -634,7 +634,7 @@ mode (2)::
 window (3)::
 	Sent when a client's window is successfully reparented (that is when i3
 	has finished fitting it into a container), when a window received input
-	focus or when a window title has been updated.
+	focus or when certain properties of the window have changed.
 barconfig_update (4)::
     Sent when the hidden_state or mode field in the barconfig of any bar
     instance was updated and when the config is reloaded.
@@ -714,8 +714,12 @@ mode is simply named default.
 === window event
 
 This event consists of a single serialized map containing a property
-+change (string)+ which indicates the type of the change ("focus", "new",
-"title").
++change (string)+ which indicates the type of the change
+
+* +new+ - the window has become managed by i3
+* +focus+ - the window has received input focus
+* +title+ - the window's title has changed
+* +fullscreen_mode+ - the window has entered or exited fullscreen mode
 
 Additionally a +container (object)+ field will be present, which consists
 of the window's parent container. Be aware that for the "new" event, the

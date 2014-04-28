@@ -609,6 +609,9 @@ void con_toggle_fullscreen(Con *con, int fullscreen_mode) {
 
     DLOG("mode now: %d\n", con->fullscreen_mode);
 
+    /* Send an ipc window "fullscreen_mode" event */
+    ipc_send_window_event("fullscreen_mode", con);
+
     /* update _NET_WM_STATE if this container has a window */
     /* TODO: when a window is assigned to a container which is already
      * fullscreened, this state needs to be pushed to the client, too */
