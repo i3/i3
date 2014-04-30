@@ -142,6 +142,10 @@ Con *create_workspace_on_output(Output *output, Con *content) {
             continue;
         if (*target == '"')
             target++;
+        if (strncasecmp(target, "__", strlen("__")) == 0) {
+            LOG("Cannot create workspace. '__' is a reserved prefix.\n");
+            continue;
+        }
         FREE(ws->name);
         ws->name = strdup(target);
         if (ws->name[strlen(ws->name)-1] == '"')

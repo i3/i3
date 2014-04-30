@@ -483,7 +483,7 @@ void cmd_move_con_to_workspace_back_and_forth(I3_CMD) {
  *
  */
 void cmd_move_con_to_workspace_name(I3_CMD, char *name) {
-    if (strncasecmp(name, "__i3_", strlen("__i3_")) == 0) {
+    if (strncasecmp(name, "__", strlen("__")) == 0) {
         LOG("You cannot switch to the i3 internal workspaces.\n");
         ysuccess(false);
         return;
@@ -998,7 +998,7 @@ void cmd_workspace_back_and_forth(I3_CMD) {
  *
  */
 void cmd_workspace_name(I3_CMD, char *name) {
-    if (strncasecmp(name, "__i3_", strlen("__i3_")) == 0) {
+    if (strncasecmp(name, "__", strlen("__")) == 0) {
         LOG("You cannot switch to the i3 internal workspaces.\n");
         ysuccess(false);
         return;
@@ -1867,6 +1867,11 @@ void cmd_scratchpad_show(I3_CMD) {
  *
  */
 void cmd_rename_workspace(I3_CMD, char *old_name, char *new_name) {
+    if (strncasecmp(new_name, "__", strlen("__")) == 0) {
+        LOG("You cannot switch to the i3 internal workspaces.\n");
+        ysuccess(false);
+        return;
+    }
     if (old_name) {
         LOG("Renaming workspace \"%s\" to \"%s\"\n", old_name, new_name);
     } else {
