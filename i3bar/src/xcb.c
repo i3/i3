@@ -393,8 +393,20 @@ void handle_button(xcb_button_press_event_t *event) {
                 }
                 x -= cur_ws->name_width + logical_px(11);
             }
+
+            /* Otherwise, focus our currently visible workspace if it is not
+             * already focused */
+            if (cur_ws == NULL) {
+                TAILQ_FOREACH(cur_ws, walk->workspaces, tailq) {
+                    if (cur_ws->visible && !cur_ws->focused)
+                        break;
+                }
+            }
+
+            /* if there is nothing to focus, we are done */
             if (cur_ws == NULL)
                 return;
+
             break;
         default:
             return;
