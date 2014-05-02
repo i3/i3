@@ -21,7 +21,9 @@
 use i3test;
 
 sub send_net_active_window {
-    my ($id) = @_;
+    my ($id, $source) = @_;
+
+    $source = ($source eq 'pager' ? 2 : 0);
 
     my $msg = pack "CCSLLLLLLL",
         X11::XCB::CLIENT_MESSAGE, # response_type
@@ -29,7 +31,7 @@ sub send_net_active_window {
         0, # sequence
         $id, # destination window
         $x->atom(name => '_NET_ACTIVE_WINDOW')->id,
-        0,
+        $source,
         0,
         0,
         0,
@@ -54,7 +56,8 @@ is($x->input_focus, $win1->id, 'window 1 has focus');
 
 ################################################################################
 # Switch to a different workspace and ensure sending the _NET_ACTIVE_WINDOW
-# ClientMessage has no effect anymore.
+# ClientMessage switches to that workspaces only if source indicates it is a
+# pager and otherwise sets the urgent hint.
 ################################################################################
 
 my $ws2 = fresh_workspace;
@@ -62,9 +65,36 @@ my $win3 = open_window;
 
 is($x->input_focus, $win3->id, 'window 3 has focus');
 
+send_net_active_window($win1->id, 'pager');
+
+is($x->input_focus, $win1->id, 'focus switched to window 1 when message source was a pager');
+
+cmd '[id="' . $win3->id . '"] focus';
+
 send_net_active_window($win1->id);
 
-is($x->input_focus, $win3->id, 'window 3 still has focus');
+is($x->input_focus, $win3->id,
+    'focus did not switch to window 1 on a hidden workspace when message source was an application');
+
+ok(get_ws($ws1)->{urgent}, 'urgent hint set on ws 1');
+
+
+################################################################################
+# Make sure the ClientMessage only works with managed windows, and specifying a
+# window that is not managed does not crash i3 (#774)
+################################################################################
+
+my $dock = open_window(window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'));
+
+send_net_active_window($dock->id);
+
+does_i3_live;
+is($x->input_focus, $win3->id, 'dock did not get input focus');
+
+send_net_active_window($x->get_root_window());
+
+does_i3_live;
+is($x->input_focus, $win3->id, 'root window did not get input focus');
 
 ################################################################################
 # Move a window to the scratchpad, send a _NET_ACTIVE_WINDOW for it and verify

@@ -694,7 +694,11 @@ static void handle_client_message(xcb_client_message_event_t *event) {
 
         tree_render();
     } else if (event->type == A__NET_ACTIVE_WINDOW) {
+        if (event->format != 32)
+            return;
+
         DLOG("_NET_ACTIVE_WINDOW: Window 0x%08x should be activated\n", event->window);
+
         Con *con = con_by_window_id(event->window);
         if (con == NULL) {
             DLOG("Could not get window for client message\n");
@@ -702,8 +706,9 @@ static void handle_client_message(xcb_client_message_event_t *event) {
         }
 
         Con *ws = con_get_workspace(con);
-        if (!workspace_is_visible(ws)) {
-            DLOG("Workspace not visible, ignoring _NET_ACTIVE_WINDOW\n");
+
+        if (ws == NULL) {
+            DLOG("Window is not being managed, ignoring _NET_ACTIVE_WINDOW\n");
             return;
         }
 
@@ -712,10 +717,26 @@ static void handle_client_message(xcb_client_message_event_t *event) {
             return;
         }
 
-        if (ws != con_get_workspace(focused))
+        /* data32[0] indicates the source of the request (application or pager) */
+        if (event->data.data32[0] == 2) {
+            /* Always focus the con if it is from a pager, because this is most
+             * likely from some user action */
+            DLOG("This request came from a pager. Focusing con = %p\n", con);
             workspace_show(ws);
+            con_focus(con);
+        } else {
+            /* If the request is from an application, only focus if the
+             * workspace is visible. Otherwise set the urgency hint. */
+            if (workspace_is_visible(ws)) {
+                DLOG("Request to focus con on a visible workspace. Focusing con = %p\n", con);
+                workspace_show(ws);
+                con_focus(con);
+            } else {
+                DLOG("Request to focus con on a hidden workspace. Setting urgent con = %p\n", con);
+                con_set_urgency(con, true);
+            }
+        }
 
-        con_focus(con);
         tree_render();
     } else if (event->type == A_I3_SYNC) {
         xcb_window_t window = event->data.data32[0];
