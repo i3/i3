@@ -37,6 +37,12 @@ void con_focus(Con *con);
  */
 bool con_is_leaf(Con *con);
 
+/**
+ * Returns true when this con is a leaf node with a managed X11 window (e.g.,
+ * excluding dock containers)
+ */
+bool con_has_managed_window(Con *con);
+
 /*
  * Returns true if a container should be considered split.
  *

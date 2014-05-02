@@ -241,6 +241,17 @@ bool con_is_leaf(Con *con) {
     return TAILQ_EMPTY(&(con->nodes_head));
 }
 
+/*
+ * Returns true when this con is a leaf node with a managed X11 window (e.g.,
+ * excluding dock containers)
+ */
+bool con_has_managed_window(Con *con) {
+    return (con != NULL
+            && con->window != NULL
+            && con->window->id != XCB_WINDOW_NONE
+            && con_get_workspace(con) != NULL);
+}
+
 /**
  * Returns true if this node has regular or floating children.
  *

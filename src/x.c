@@ -908,7 +908,7 @@ void x_push_changes(Con *con) {
      * stack afterwards */
     int cnt = 0;
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state)
-        if (state->con && state->con->window)
+        if (con_has_managed_window(state->con))
             cnt++;
 
     /* The bottom-to-top window stack of all windows which are managed by i3.
@@ -925,7 +925,7 @@ void x_push_changes(Con *con) {
 
     /* X11 correctly represents the stack if we push it from bottom to top */
     CIRCLEQ_FOREACH_REVERSE(state, &state_head, state) {
-        if (state->con && state->con->window)
+        if (con_has_managed_window(state->con))
             memcpy(walk++, &(state->con->window->id), sizeof(xcb_window_t));
 
         //DLOG("stack: 0x%08x\n", state->id);
@@ -956,7 +956,7 @@ void x_push_changes(Con *con) {
 
         /* reorder by initial mapping */
         TAILQ_FOREACH(state, &initial_mapping_head, initial_mapping_order) {
-            if (state->con && state->con->window)
+            if (con_has_managed_window(state->con))
                 *walk++ = state->con->window->id;
         }
 

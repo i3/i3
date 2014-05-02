@@ -96,4 +96,13 @@ wait_for_unmap($win3);
 @clients = get_client_list;
 is(@clients, 0, 'Removed unmapped client from list (0)');
 
+# Dock clients should not be included in this list
+
+my $dock_win = open_window({
+        window_type => $x->atom(name => '_NET_WM_WINDOW_TYPE_DOCK'),
+    });
+
+@clients = get_client_list;
+is(@clients, 0, 'Dock clients are not included in the list');
+
 done_testing;
