@@ -123,18 +123,18 @@ void grab_all_keys(xcb_connection_t *conn, bool bind_mode_switch) {
 }
 
 /*
- * Returns a pointer to the keyboard Binding with the specified modifiers and
+ * Returns a pointer to the Binding with the specified modifiers and
  * keycode or NULL if no such binding exists.
  *
  */
-Binding *get_keyboard_binding(uint16_t modifiers, bool key_release, xcb_keycode_t keycode) {
+static Binding *get_binding(uint16_t modifiers, bool is_release, uint16_t input_code, input_type_t input_type) {
     Binding *bind;
 
-    if (!key_release) {
-        /* On a KeyPress event, we first reset all
-         * B_UPON_KEYRELEASE_IGNORE_MODS bindings back to B_UPON_KEYRELEASE */
+    if (!is_release) {
+        /* On a press event, we first reset all B_UPON_KEYRELEASE_IGNORE_MODS
+         * bindings back to B_UPON_KEYRELEASE */
         TAILQ_FOREACH(bind, bindings, bindings) {
-            if (bind->input_type != B_KEYBOARD)
+            if (bind->input_type != input_type)
                 continue;
             if (bind->release == B_UPON_KEYRELEASE_IGNORE_MODS)
                 bind->release = B_UPON_KEYRELEASE;
@@ -145,43 +145,96 @@ Binding *get_keyboard_binding(uint16_t modifiers, bool key_release, xcb_keycode_
         /* First compare the modifiers (unless this is a
          * B_UPON_KEYRELEASE_IGNORE_MODS binding and this is a KeyRelease
          * event) */
-        if (bind->input_type != B_KEYBOARD)
+        if (bind->input_type != input_type)
             continue;
         if (bind->mods != modifiers &&
             (bind->release != B_UPON_KEYRELEASE_IGNORE_MODS ||
-             !key_release))
+             !is_release))
             continue;
 
-        /* If a symbol was specified by the user, we need to look in
-         * the array of translated keycodes for the event’s keycode */
-        if (bind->symbol != NULL) {
+        /* For keyboard bindings where a symbol was specified by the user, we
+         * need to look in the array of translated keycodes for the event’s
+         * keycode */
+        if (input_type == B_KEYBOARD && bind->symbol != NULL) {
             if (memmem(bind->translated_to,
                        bind->number_keycodes * sizeof(xcb_keycode_t),
-                       &keycode, sizeof(xcb_keycode_t)) == NULL)
+                       &input_code, sizeof(xcb_keycode_t)) == NULL)
                 continue;
         } else {
             /* This case is easier: The user specified a keycode */
-            if (bind->keycode != keycode)
+            if (bind->keycode != input_code)
                 continue;
         }
 
-        /* If this keybinding is a KeyRelease binding, it matches the key which
-         * the user pressed. We therefore mark it as
-         * B_UPON_KEYRELEASE_IGNORE_MODS for later, so that the user can
-         * release the modifiers before the actual key and the KeyRelease will
-         * still be matched. */
-        if (bind->release == B_UPON_KEYRELEASE && !key_release)
+        /* If this binding is a release binding, it matches the key which the
+         * user pressed. We therefore mark it as B_UPON_KEYRELEASE_IGNORE_MODS
+         * for later, so that the user can release the modifiers before the
+         * actual key or button and the release event will still be matched. */
+        if (bind->release == B_UPON_KEYRELEASE && !is_release)
             bind->release = B_UPON_KEYRELEASE_IGNORE_MODS;
 
-        /* Check if the binding is for a KeyPress or a KeyRelease event */
-        if ((bind->release == B_UPON_KEYPRESS && key_release) ||
-            (bind->release >= B_UPON_KEYRELEASE && !key_release))
+        /* Check if the binding is for a press or a release event */
+        if ((bind->release == B_UPON_KEYPRESS && is_release) ||
+            (bind->release >= B_UPON_KEYRELEASE && !is_release))
             continue;
 
         break;
     }
 
     return (bind == TAILQ_END(bindings) ? NULL : bind);
+}
+
+/*
+ * Returns a pointer to the Binding that matches the given xcb button or key
+ * event or NULL if no such binding exists.
+ *
+ */
+Binding *get_binding_from_xcb_event(xcb_generic_event_t *event) {
+    bool is_release = (event->response_type == XCB_KEY_RELEASE
+                        || event->response_type == XCB_BUTTON_RELEASE);
+
+    input_type_t input_type = ((event->response_type == XCB_BUTTON_RELEASE
+                                || event->response_type == XCB_BUTTON_PRESS)
+                                ? B_MOUSE
+                                : B_KEYBOARD);
+
+    uint16_t event_state = ((xcb_key_press_event_t *)event)->state;
+    uint16_t event_detail = ((xcb_key_press_event_t *)event)->detail;
+
+    /* Remove the numlock bit, all other bits are modifiers we can bind to */
+    uint16_t state_filtered = event_state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK);
+    DLOG("(removed numlock, state = %d)\n", state_filtered);
+    /* Only use the lower 8 bits of the state (modifier masks) so that mouse
+     * button masks are filtered out */
+    state_filtered &= 0xFF;
+    DLOG("(removed upper 8 bits, state = %d)\n", state_filtered);
+
+    if (xkb_current_group == XkbGroup2Index)
+        state_filtered |= BIND_MODE_SWITCH;
+
+    DLOG("(checked mode_switch, state %d)\n", state_filtered);
+
+    /* Find the binding */
+    Binding *bind = get_binding(state_filtered, is_release, event_detail, input_type);
+
+    /* No match? Then the user has Mode_switch enabled but does not have a
+     * specific keybinding. Fall back to the default keybindings (without
+     * Mode_switch). Makes it much more convenient for users of a hybrid
+     * layout (like ru). */
+    if (bind == NULL) {
+        state_filtered &= ~(BIND_MODE_SWITCH);
+        DLOG("no match, new state_filtered = %d\n", state_filtered);
+        if ((bind = get_binding(state_filtered, is_release, event_detail, input_type)) == NULL) {
+            /* This is not a real error since we can have release and
+             * non-release bindings. On a press event for which there is only a
+             * !release-binding, but no release-binding, the corresponding
+             * release event will trigger this. No problem, though. */
+            DLOG("Could not lookup key binding (modifiers %d, keycode %d)\n",
+                 state_filtered, event_detail);
+        }
+    }
+
+    return bind;
 }
 
 /*

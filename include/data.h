@@ -92,6 +92,14 @@ typedef enum {
 } layout_t;
 
 /**
+ * Binding input types. See Binding::input_type.
+ */
+typedef enum {
+    B_KEYBOARD = 0,
+    B_MOUSE = 1
+} input_type_t;
+
+/**
  * Stores a rectangle, for example the size of a window, the child window etc.
  * It needs to be packed so that the compiler will not add any padding bytes.
  * (it is used in src/ewmh.c for example)
@@ -215,12 +223,7 @@ struct regex {
 struct Binding {
     /* The type of input this binding is for. (Mouse bindings are not yet
      * implemented. All bindings are currently assumed to be keyboard bindings.) */
-    enum {
-        /* Created with "bindsym", "bindcode", and "bind" */
-        B_KEYBOARD = 0,
-        /* Created with "bindmouse" (not yet implemented). */
-        B_MOUSE = 1,
-    } input_type;
+    input_type_t input_type;
 
     /** If true, the binding should be executed upon a KeyRelease event, not a
      * KeyPress (the default). */

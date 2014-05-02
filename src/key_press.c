@@ -70,40 +70,11 @@ void handle_key_press(xcb_key_press_event_t *event) {
 
     DLOG("%s %d, state raw = %d\n", (key_release ? "KeyRelease" : "KeyPress"), event->detail, event->state);
 
-    /* Remove the numlock bit, all other bits are modifiers we can bind to */
-    uint16_t state_filtered = event->state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK);
-    DLOG("(removed numlock, state = %d)\n", state_filtered);
-    /* Only use the lower 8 bits of the state (modifier masks) so that mouse
-     * button masks are filtered out */
-    state_filtered &= 0xFF;
-    DLOG("(removed upper 8 bits, state = %d)\n", state_filtered);
+    Binding *bind = get_binding_from_xcb_event((xcb_generic_event_t *)event);
 
-    if (xkb_current_group == XkbGroup2Index)
-        state_filtered |= BIND_MODE_SWITCH;
-
-    DLOG("(checked mode_switch, state %d)\n", state_filtered);
-
-    /* Find the binding */
-    Binding *bind = get_keyboard_binding(state_filtered, key_release, event->detail);
-
-    /* No match? Then the user has Mode_switch enabled but does not have a
-     * specific keybinding. Fall back to the default keybindings (without
-     * Mode_switch). Makes it much more convenient for users of a hybrid
-     * layout (like us, ru). */
-    if (bind == NULL) {
-        state_filtered &= ~(BIND_MODE_SWITCH);
-        DLOG("no match, new state_filtered = %d\n", state_filtered);
-        if ((bind = get_keyboard_binding(state_filtered, key_release, event->detail)) == NULL) {
-            /* This is not a real error since we can have release and
-             * non-release keybindings. On a KeyPress event for which there is
-             * only a !release-binding, but no release-binding, the
-             * corresponding KeyRelease event will trigger this. No problem,
-             * though. */
-            DLOG("Could not lookup key binding (modifiers %d, keycode %d)\n",
-                 state_filtered, event->detail);
-            return;
-        }
-    }
+    /* if we couldn't find a binding, we are done */
+    if (bind == NULL)
+        return;
 
     char *command_copy = sstrdup(bind->command);
     struct CommandResult *command_output = parse_command(command_copy);
