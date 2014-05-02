@@ -159,6 +159,8 @@ void got_bar_config_update(char *event) {
     if (found_id == NULL)
        return;
 
+    free_colors(&(config.colors));
+
     /* update the configuration with the received settings */
     DLOG("Received bar config update \"%s\"\n", event);
     bar_display_mode_t old_mode = config.hide_on_modifier;
@@ -166,6 +168,9 @@ void got_bar_config_update(char *event) {
     if (old_mode != config.hide_on_modifier) {
         reconfig_windows(true);
     }
+
+    init_colors(&(config.colors));
+    realloc_sl_buffer();
 
     draw_bars(false);
 }
