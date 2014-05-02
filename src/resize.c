@@ -130,7 +130,7 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     if (orientation == HORIZ) {
         helprect.x = second->rect.x;
         helprect.y = second->rect.y;
-        helprect.width = 2;
+        helprect.width = logical_px(2);
         helprect.height = second->rect.height;
         initial_position = second->rect.x;
         xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
@@ -139,7 +139,7 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
         helprect.x = second->rect.x;
         helprect.y = second->rect.y;
         helprect.width = second->rect.width;
-        helprect.height = 2;
+        helprect.height = logical_px(2);
         initial_position = second->rect.y;
         xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
                 event->root_x, second->rect.y);
