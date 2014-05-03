@@ -143,7 +143,7 @@ Con *create_workspace_on_output(Output *output, Con *content) {
         if (*target == '"')
             target++;
         if (strncasecmp(target, "__", strlen("__")) == 0) {
-            LOG("Cannot create workspace. '__' is a reserved prefix.\n");
+            LOG("Cannot create workspace \"%s\". Names starting with __ are i3-internal.\n", target);
             continue;
         }
         FREE(ws->name);
