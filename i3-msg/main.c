@@ -76,11 +76,7 @@ static int reply_boolean_cb(void *params, int val) {
     return 1;
 }
 
-#if YAJL_MAJOR >= 2
 static int reply_string_cb(void *params, const unsigned char *val, size_t len) {
-#else
-static int reply_string_cb(void *params, const unsigned char *val, unsigned int len) {
-#endif
     char *str = scalloc(len + 1);
     strncpy(str, (const char*)val, len);
     if (strcmp(last_key, "error") == 0)
@@ -107,11 +103,7 @@ static int reply_end_map_cb(void *params) {
 }
 
 
-#if YAJL_MAJOR >= 2
 static int reply_map_key_cb(void *params, const unsigned char *keyVal, size_t keyLen) {
-#else
-static int reply_map_key_cb(void *params, const unsigned char *keyVal, unsigned keyLen) {
-#endif
     free(last_key);
     last_key = scalloc(keyLen + 1);
     strncpy(last_key, (const char*)keyVal, keyLen);
@@ -239,21 +231,12 @@ int main(int argc, char *argv[]) {
      * If not, nicely format the error message. */
     if (reply_type == I3_IPC_MESSAGE_TYPE_COMMAND) {
         yajl_handle handle;
-#if YAJL_MAJOR < 2
-        yajl_parser_config parse_conf = { 0, 0 };
-
-        handle = yajl_alloc(&reply_callbacks, &parse_conf, NULL, NULL);
-#else
         handle = yajl_alloc(&reply_callbacks, NULL, NULL);
-#endif
         yajl_status state = yajl_parse(handle, (const unsigned char*)reply, reply_length);
         switch (state) {
             case yajl_status_ok:
                 break;
             case yajl_status_client_canceled:
-#if YAJL_MAJOR < 2
-            case yajl_status_insufficient_data:
-#endif
             case yajl_status_error:
                 errx(EXIT_FAILURE, "IPC: Could not parse JSON reply.");
         }

@@ -161,11 +161,7 @@ static int stdin_start_map(void *context) {
     return 1;
 }
 
-#if YAJL_MAJOR >= 2
 static int stdin_map_key(void *context, const unsigned char *key, size_t len) {
-#else
-static int stdin_map_key(void *context, const unsigned char *key, unsigned int len) {
-#endif
     parser_ctx *ctx = context;
     FREE(ctx->last_map_key);
     sasprintf(&(ctx->last_map_key), "%.*s", len, key);
@@ -183,11 +179,7 @@ static int stdin_boolean(void *context, int val) {
     return 1;
 }
 
-#if YAJL_MAJOR >= 2
 static int stdin_string(void *context, const unsigned char *val, size_t len) {
-#else
-static int stdin_string(void *context, const unsigned char *val, unsigned int len) {
-#endif
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "full_text") == 0) {
         ctx->block.full_text = i3string_from_utf8_with_length((const char *)val, len);
@@ -223,11 +215,7 @@ static int stdin_string(void *context, const unsigned char *val, unsigned int le
     return 1;
 }
 
-#if YAJL_MAJOR >= 2
 static int stdin_integer(void *context, long long val) {
-#else
-static int stdin_integer(void *context, long val) {
-#endif
     parser_ctx *ctx = context;
     if (strcasecmp(ctx->last_map_key, "min_width") == 0) {
         ctx->block.min_width = (uint32_t)val;
@@ -321,11 +309,7 @@ static void read_flat_input(char *buffer, int length) {
 static bool read_json_input(unsigned char *input, int length) {
     yajl_status status = yajl_parse(parser, input, length);
     bool has_urgent = false;
-#if YAJL_MAJOR >= 2
     if (status != yajl_status_ok) {
-#else
-    if (status != yajl_status_ok && status != yajl_status_insufficient_data) {
-#endif
         char *message = (char *)yajl_get_error(parser, 0, input, length);
 
         /* strip the newline yajl adds to the error message */
@@ -429,11 +413,8 @@ void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
 void child_write_output(void) {
     if (child.click_events) {
         const unsigned char *output;
-#if YAJL_MAJOR < 2
-        unsigned int size;
-#else
         size_t size;
-#endif
+
         yajl_gen_get_buf(gen, &output, &size);
         write(child_stdin, output, size);
         write(child_stdin, "\n", 1);
@@ -465,17 +446,9 @@ void start_child(char *command) {
         .yajl_start_array = stdin_start_array,
         .yajl_end_array = stdin_end_array,
     };
-#if YAJL_MAJOR < 2
-    yajl_parser_config parse_conf = { 0, 0 };
-
-    parser = yajl_alloc(&callbacks, &parse_conf, NULL, (void*)&parser_context);
-
-    gen = yajl_gen_alloc(NULL, NULL);
-#else
     parser = yajl_alloc(&callbacks, NULL, &parser_context);
 
     gen = yajl_gen_alloc(NULL);
-#endif
 
     int pipe_in[2]; /* pipe we read from */
     int pipe_out[2]; /* pipe we write to */

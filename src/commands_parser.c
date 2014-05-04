@@ -209,12 +209,8 @@ struct CommandResult *parse_command(const char *input) {
     DLOG("COMMAND: *%s*\n", input);
     state = INITIAL;
 
-/* A YAJL JSON generator used for formatting replies. */
-#if YAJL_MAJOR >= 2
+    /* A YAJL JSON generator used for formatting replies. */
     command_output.json_gen = yajl_gen_alloc(NULL);
-#else
-    command_output.json_gen = yajl_gen_alloc(NULL, NULL);
-#endif
 
     y(array_open);
     command_output.needs_tree_render = false;

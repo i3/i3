@@ -115,9 +115,6 @@ XCURSOR_LIBS   := $(call ldflags_for_lib, xcb-cursor,xcb-cursor)
 
 # yajl
 YAJL_CFLAGS := $(call cflags_for_lib, yajl)
-# Fallback for libyajl 1 which did not include yajl_version.h. We need
-# YAJL_MAJOR from that file to decide which code path should be used.
-YAJL_CFLAGS += -idirafter $(TOPDIR)/yajl-fallback
 YAJL_LIBS   := $(call ldflags_for_lib, yajl,yajl)
 
 #libev

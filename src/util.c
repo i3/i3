@@ -188,22 +188,14 @@ static char **append_argument(char **original, char *argument) {
 
 char *store_restart_layout(void) {
     setlocale(LC_NUMERIC, "C");
-#if YAJL_MAJOR >= 2
     yajl_gen gen = yajl_gen_alloc(NULL);
-#else
-    yajl_gen gen = yajl_gen_alloc(NULL, NULL);
-#endif
 
     dump_node(gen, croot, true);
 
     setlocale(LC_NUMERIC, "");
 
     const unsigned char *payload;
-#if YAJL_MAJOR >= 2
     size_t length;
-#else
-    unsigned int length;
-#endif
     y(get_buf, &payload, &length);
 
     /* create a temporary file if one hasn't been specified, or just
@@ -241,11 +233,7 @@ char *store_restart_layout(void) {
             return NULL;
         }
         written += n;
-#if YAJL_MAJOR >= 2
         DLOG("written: %zd of %zd\n", written, length);
-#else
-        DLOG("written: %d of %d\n", written, length);
-#endif
     }
     close(fd);
 

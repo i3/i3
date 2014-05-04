@@ -30,11 +30,7 @@ static int json_boolean(void *ctx, int boolval) {
     return 1;
 }
 
-#if YAJL_MAJOR >= 2
 static int json_map_key(void *ctx, const unsigned char *stringval, size_t stringlen) {
-#else
-static int json_map_key(void *ctx, const unsigned char *stringval, unsigned int stringlen) {
-#endif
     parse_error_key = (stringlen >= strlen("parse_error") &&
                        strncmp((const char*)stringval, "parse_error", strlen("parse_error")) == 0);
     return 1;
@@ -86,15 +82,8 @@ void handle_key_press(xcb_key_press_event_t *event) {
     /* We parse the JSON reply to figure out whether there was an error
      * ("success" being false in on of the returned dictionaries). */
     const unsigned char *reply;
-#if YAJL_MAJOR >= 2
     size_t length;
     yajl_handle handle = yajl_alloc(&command_error_callbacks, NULL, NULL);
-#else
-    unsigned int length;
-    yajl_parser_config parse_conf = { 0, 0 };
-
-    yajl_handle handle = yajl_alloc(&command_error_callbacks, &parse_conf, NULL, NULL);
-#endif
     yajl_gen_get_buf(command_output->json_gen, &reply, &length);
 
     current_nesting_level = 0;

@@ -12,7 +12,7 @@
 │ xcb-util    │ 0.3.3  │ 0.3.8  │ http://xcb.freedesktop.org/dist/       │
 │ util-cursor³│ 0.0.99 │ 0.0.99 │ http://xcb.freedesktop.org/dist/       │
 │ libev       │ 4.0    │ 4.11   │ http://libev.schmorp.de/               │
-│ yajl        │ 1.0.8  │ 2.0.1  │ http://lloyd.github.com/yajl/          │
+│ yajl        │ 2.0.1  │ 2.0.4  │ http://lloyd.github.com/yajl/          │
 │ asciidoc    │ 8.3.0  │ 8.6.4  │ http://www.methods.co.nz/asciidoc/     │
 │ xmlto       │ 0.0.23 │ 0.0.23 │ http://www.methods.co.nz/asciidoc/     │
 │ Pod::Simple²│ 3.22   │ 3.22   │ http://search.cpan.org/~dwheeler/Pod-Simple-3.23/

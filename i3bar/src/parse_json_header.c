@@ -35,11 +35,7 @@ static enum {
     NO_KEY
 } current_key;
 
-#if YAJL_MAJOR >= 2
 static int header_integer(void *ctx, long long val) {
-#else
-static int header_integer(void *ctx, long val) {
-#endif
     i3bar_child *child = ctx;
 
     switch (current_key) {
@@ -76,11 +72,7 @@ static int header_boolean(void *ctx, int val) {
 #define CHECK_KEY(name) (stringlen == strlen(name) && \
                          STARTS_WITH((const char*)stringval, stringlen, name))
 
-#if YAJL_MAJOR >= 2
 static int header_map_key(void *ctx, const unsigned char *stringval, size_t stringlen) {
-#else
-static int header_map_key(void *ctx, const unsigned char *stringval, unsigned int stringlen) {
-#endif
     if (CHECK_KEY("version")) {
         current_key = KEY_VERSION;
     } else if (CHECK_KEY("stop_signal")) {
@@ -118,16 +110,10 @@ void parse_json_header(i3bar_child *child, const unsigned char *buffer, int leng
 
     current_key = NO_KEY;
 
-#if YAJL_MAJOR >= 2
     yajl_handle handle = yajl_alloc(&version_callbacks, NULL, child);
     /* Allow trailing garbage. yajl 1 always behaves that way anyways, but for
      * yajl 2, we need to be explicit. */
     yajl_config(handle, yajl_allow_trailing_garbage, 1);
-#else
-    yajl_parser_config parse_conf = { 0, 0 };
-
-    yajl_handle handle = yajl_alloc(&version_callbacks, &parse_conf, NULL, child);
-#endif
 
     yajl_status state = yajl_parse(handle, buffer, length);
     if (state != yajl_status_ok) {

@@ -323,12 +323,8 @@ struct ConfigResult *parse_config(const char *input, struct context *context) {
     state = INITIAL;
     statelist_idx = 1;
 
-/* A YAJL JSON generator used for formatting replies. */
-#if YAJL_MAJOR >= 2
+    /* A YAJL JSON generator used for formatting replies. */
     command_output.json_gen = yajl_gen_alloc(NULL);
-#else
-    command_output.json_gen = yajl_gen_alloc(NULL, NULL);
-#endif
 
     y(array_open);
 

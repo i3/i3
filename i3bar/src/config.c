@@ -27,11 +27,7 @@ static char *cur_key;
  * Essentially we just save it in cur_key.
  *
  */
-#if YAJL_MAJOR >= 2
 static int config_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
-#else
-static int config_map_key_cb(void *params_, const unsigned char *keyVal, unsigned keyLen) {
-#endif
     FREE(cur_key);
 
     cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
@@ -61,11 +57,7 @@ static int config_null_cb(void *params_) {
  * Parse a string
  *
  */
-#if YAJL_MAJOR >= 2
 static int config_string_cb(void *params_, const unsigned char *val, size_t _len) {
-#else
-static int config_string_cb(void *params_, const unsigned char *val, unsigned int _len) {
-#endif
     int len = (int)_len;
     /* The id and socket_path are ignored, we already know them. */
     if (!strcmp(cur_key, "id") || !strcmp(cur_key, "socket_path"))
@@ -225,13 +217,7 @@ static yajl_callbacks outputs_callbacks = {
 void parse_config_json(char *json) {
     yajl_handle handle;
     yajl_status state;
-#if YAJL_MAJOR < 2
-    yajl_parser_config parse_conf = { 0, 0 };
-
-    handle = yajl_alloc(&outputs_callbacks, &parse_conf, NULL, NULL);
-#else
     handle = yajl_alloc(&outputs_callbacks, NULL, NULL);
-#endif
 
     state = yajl_parse(handle, (const unsigned char*) json, strlen(json));
 
@@ -240,9 +226,6 @@ void parse_config_json(char *json) {
         case yajl_status_ok:
             break;
         case yajl_status_client_canceled:
-#if YAJL_MAJOR < 2
-        case yajl_status_insufficient_data:
-#endif
         case yajl_status_error:
             ELOG("Could not parse config-reply!\n");
             exit(EXIT_FAILURE);

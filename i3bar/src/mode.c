@@ -27,11 +27,7 @@ struct mode_json_params {
  * Parse a string (change)
  *
  */
-#if YAJL_MAJOR >= 2
 static int mode_string_cb(void *params_, const unsigned char *val, size_t len) {
-#else
-static int mode_string_cb(void *params_, const unsigned char *val, unsigned int len) {
-#endif
         struct mode_json_params *params = (struct mode_json_params*) params_;
 
         if (!strcmp(params->cur_key, "change")) {
@@ -56,11 +52,7 @@ static int mode_string_cb(void *params_, const unsigned char *val, unsigned int 
  * Essentially we just save it in the parsing-state
  *
  */
-#if YAJL_MAJOR >= 2
 static int mode_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
-#else
-static int mode_map_key_cb(void *params_, const unsigned char *keyVal, unsigned int keyLen) {
-#endif
     struct mode_json_params *params = (struct mode_json_params*) params_;
     FREE(params->cur_key);
 
@@ -95,13 +87,7 @@ void parse_mode_json(char *json) {
     yajl_handle handle;
     yajl_status state;
 
-#if YAJL_MAJOR < 2
-    yajl_parser_config parse_conf = { 0, 0 };
-
-    handle = yajl_alloc(&mode_callbacks, &parse_conf, NULL, (void*) &params);
-#else
     handle = yajl_alloc(&mode_callbacks, NULL, (void*) &params);
-#endif
 
     state = yajl_parse(handle, (const unsigned char*) json, strlen(json));
 
@@ -110,9 +96,6 @@ void parse_mode_json(char *json) {
         case yajl_status_ok:
             break;
         case yajl_status_client_canceled:
-#if YAJL_MAJOR < 2
-        case yajl_status_insufficient_data:
-#endif
         case yajl_status_error:
             ELOG("Could not parse mode-event!\n");
             exit(EXIT_FAILURE);

@@ -21,21 +21,13 @@
 static bool human_readable_key;
 static char *human_readable_version;
 
-#if YAJL_MAJOR >= 2
 static int version_string(void *ctx, const unsigned char *val, size_t len) {
-#else
-static int version_string(void *ctx, const unsigned char *val, unsigned int len) {
-#endif
     if (human_readable_key)
         sasprintf(&human_readable_version, "%.*s", (int)len, val);
     return 1;
 }
 
-#if YAJL_MAJOR >= 2
 static int version_map_key(void *ctx, const unsigned char *stringval, size_t stringlen) {
-#else
-static int version_map_key(void *ctx, const unsigned char *stringval, unsigned int stringlen) {
-#endif
     human_readable_key = (stringlen == strlen("human_readable") &&
                    strncmp((const char*)stringval, "human_readable", strlen("human_readable")) == 0);
     return 1;
@@ -104,13 +96,7 @@ void display_running_version(void) {
     if (reply_type != I3_IPC_MESSAGE_TYPE_GET_VERSION)
         errx(EXIT_FAILURE, "Got reply type %d, but expected %d (GET_VERSION)", reply_type, I3_IPC_MESSAGE_TYPE_GET_VERSION);
 
-#if YAJL_MAJOR >= 2
     yajl_handle handle = yajl_alloc(&version_callbacks, NULL, NULL);
-#else
-    yajl_parser_config parse_conf = { 0, 0 };
-
-    yajl_handle handle = yajl_alloc(&version_callbacks, &parse_conf, NULL, NULL);
-#endif
 
     yajl_status state = yajl_parse(handle, (const unsigned char*)reply, (int)reply_length);
     if (state != yajl_status_ok)

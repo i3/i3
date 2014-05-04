@@ -64,11 +64,7 @@ static int outputs_boolean_cb(void *params_, int val) {
  * Parse an integer (current_workspace or the rect)
  *
  */
-#if YAJL_MAJOR >= 2
 static int outputs_integer_cb(void *params_, long long val) {
-#else
-static int outputs_integer_cb(void *params_, long val) {
-#endif
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
 
     if (!strcmp(params->cur_key, "current_workspace")) {
@@ -108,11 +104,7 @@ static int outputs_integer_cb(void *params_, long val) {
  * Parse a string (name)
  *
  */
-#if YAJL_MAJOR >= 2
 static int outputs_string_cb(void *params_, const unsigned char *val, size_t len) {
-#else
-static int outputs_string_cb(void *params_, const unsigned char *val, unsigned int len) {
-#endif
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
 
     if (!strcmp(params->cur_key, "current_workspace")) {
@@ -232,11 +224,7 @@ static int outputs_end_map_cb(void *params_) {
  * Essentially we just save it in the parsing-state
  *
  */
-#if YAJL_MAJOR >= 2
 static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
-#else
-static int outputs_map_key_cb(void *params_, const unsigned char *keyVal, unsigned keyLen) {
-#endif
     struct outputs_json_params *params = (struct outputs_json_params*) params_;
     FREE(params->cur_key);
 
@@ -281,13 +269,7 @@ void parse_outputs_json(char *json) {
 
     yajl_handle handle;
     yajl_status state;
-#if YAJL_MAJOR < 2
-    yajl_parser_config parse_conf = { 0, 0 };
-
-    handle = yajl_alloc(&outputs_callbacks, &parse_conf, NULL, (void*) &params);
-#else
     handle = yajl_alloc(&outputs_callbacks, NULL, (void*) &params);
-#endif
 
     state = yajl_parse(handle, (const unsigned char*) json, strlen(json));
 
@@ -296,9 +278,6 @@ void parse_outputs_json(char *json) {
         case yajl_status_ok:
             break;
         case yajl_status_client_canceled:
-#if YAJL_MAJOR < 2
-        case yajl_status_insufficient_data:
-#endif
         case yajl_status_error:
             ELOG("Could not parse outputs-reply!\n");
             exit(EXIT_FAILURE);
