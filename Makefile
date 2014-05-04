@@ -31,7 +31,7 @@ dist: distclean
 	[ ! -e i3-${VERSION}.tar.bz2 ] || rm i3-${VERSION}.tar.bz2
 	mkdir i3-${VERSION}
 	cp i3-migrate-config-to-v4 i3-save-tree generate-command-parser.pl i3-sensible-* i3-dmenu-desktop i3.config.keycodes DEPENDS LICENSE PACKAGE-MAINTAINER RELEASE-NOTES-${VERSION} i3.config i3.xsession.desktop i3-with-shmlog.xsession.desktop i3.applications.desktop pseudo-doc.doxygen common.mk Makefile i3-${VERSION}
-	cp -r src libi3 i3-msg i3-nagbar i3-config-wizard i3bar i3-dump-log yajl-fallback include man parser-specs testcases i3-${VERSION}
+	cp -r src libi3 i3-msg i3-nagbar i3-config-wizard i3bar i3-dump-log include man parser-specs testcases i3-${VERSION}
 	# Only copy toplevel documentation (important stuff)
 	mkdir i3-${VERSION}/docs
 	# Pre-generate documentation
