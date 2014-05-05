@@ -105,14 +105,38 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
         char *output_name;
 
         if (!strcmp(params->cur_key, "name")) {
-            /* Save the name */
-            params->workspaces_walk->name = i3string_from_utf8_with_length((const char *)val, len);
+            const char *ws_name = (const char*)val;
+            params->workspaces_walk->canonical_name = strndup(ws_name, len);
+
+            if (config.strip_ws_numbers && params->workspaces_walk->num >= 0) {
+                /* Special case: strip off the workspace number */
+                static char ws_num[10];
+
+                snprintf(ws_num, sizeof(ws_num), "%d", params->workspaces_walk->num);
+
+                /* Calculate the length of the number str in the name */
+                int offset = strspn(ws_name, ws_num);
+
+                /* Also strip off the conventional ws name delimiter */
+                if (offset && ws_name[offset] == ':')
+                    offset += 1;
+
+                /* Offset may be equal to length, in which case display the number */
+                params->workspaces_walk->name = (offset < len
+                        ? i3string_from_utf8_with_length(ws_name + offset, len - offset)
+                        : i3string_from_utf8(ws_num));
+
+            } else {
+                /* Default case: just save the name */
+                params->workspaces_walk->name = i3string_from_utf8_with_length(ws_name, len);
+            }
 
             /* Save its rendered width */
             params->workspaces_walk->name_width =
                 predict_text_width(params->workspaces_walk->name);
 
-            DLOG("Got Workspace %s, name_width: %d, glyphs: %zu\n",
+            DLOG("Got Workspace canonical: %s, name: '%s', name_width: %d, glyphs: %zu\n",
+                 params->workspaces_walk->canonical_name,
                  i3string_as_utf8(params->workspaces_walk->name),
                  params->workspaces_walk->name_width,
                  i3string_get_num_glyphs(params->workspaces_walk->name));
@@ -246,6 +270,7 @@ void free_workspaces(void) {
         if (outputs_walk->workspaces != NULL && !TAILQ_EMPTY(outputs_walk->workspaces)) {
             TAILQ_FOREACH(ws_walk, outputs_walk->workspaces, tailq) {
                 I3STRING_FREE(ws_walk->name);
+                FREE(ws_walk->canonical_name);
             }
             FREE_TAILQ(outputs_walk->workspaces, i3_ws);
         }

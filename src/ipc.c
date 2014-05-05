@@ -514,6 +514,9 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     ystr("workspace_buttons");
     y(bool, !config->hide_workspace_buttons);
 
+    ystr("strip_workspace_numbers");
+    y(bool, config->strip_workspace_numbers);
+
     ystr("binding_mode_indicator");
     y(bool, !config->hide_binding_mode_indicator);
 

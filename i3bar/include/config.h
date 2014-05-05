@@ -27,6 +27,7 @@ typedef struct config_t {
     struct xcb_color_strings_t colors;
     bool         disable_binding_mode_indicator;
     bool         disable_ws;
+    bool         strip_ws_numbers;
     char         *bar_id;
     char         *command;
     char         *fontname;

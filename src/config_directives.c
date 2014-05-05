@@ -517,6 +517,10 @@ CFGFUN(bar_workspace_buttons, const char *value) {
     current_bar.hide_workspace_buttons = !eval_boolstr(value);
 }
 
+CFGFUN(bar_strip_workspace_numbers, const char *value) {
+    current_bar.strip_workspace_numbers = eval_boolstr(value);
+}
+
 CFGFUN(bar_finish) {
     DLOG("\t new bar configuration finished, saving.\n");
     /* Generate a unique ID for this bar if not already configured */

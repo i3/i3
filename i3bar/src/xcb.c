@@ -418,7 +418,7 @@ void handle_button(xcb_button_press_event_t *event) {
      * buffer, then we copy character by character. */
     int num_quotes = 0;
     size_t namelen = 0;
-    const char *utf8_name = i3string_as_utf8(cur_ws->name);
+    const char *utf8_name = cur_ws->canonical_name;
     for (const char *walk = utf8_name; *walk != '\0'; walk++) {
         if (*walk == '"')
             num_quotes++;
