@@ -252,9 +252,6 @@ CFGFUN(workspace_layout, const char *layout) {
 }
 
 CFGFUN(new_window, const char *windowtype, const char *border, const long width) {
-    // FIXME: when using new_float *and* new_window with different border
-    // types, this breaks because default_border_width gets overwritten.
-
     int border_style;
     int border_width;
 
@@ -273,12 +270,14 @@ CFGFUN(new_window, const char *windowtype, const char *border, const long width)
     }
 
     if (strcmp(windowtype, "new_window") == 0) {
+        DLOG("default tiled border style = %d and border width = %d\n", border_style, border_width);
         config.default_border = border_style;
+        config.default_border_width = border_width;
     } else {
+        DLOG("default floating border style = %d and border width = %d\n", border_style, border_width);
         config.default_floating_border = border_style;
+        config.default_floating_border_width = border_width;
     }
-
-    config.default_border_width = border_width;
 }
 
 CFGFUN(hide_edge_borders, const char *borders) {

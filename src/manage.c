@@ -430,7 +430,11 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     if (motif_border_style != BS_NORMAL) {
         DLOG("MOTIF_WM_HINTS specifies decorations (border_style = %d)\n", motif_border_style);
-        con_set_border_style(nc, motif_border_style, config.default_border_width);
+        if (want_floating) {
+            con_set_border_style(nc, motif_border_style, config.default_floating_border_width);
+        } else {
+            con_set_border_style(nc, motif_border_style, config.default_border_width);
+        }
     }
 
     /* to avoid getting an UnmapNotify event due to reparenting, we temporarily

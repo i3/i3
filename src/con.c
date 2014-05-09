@@ -1090,8 +1090,13 @@ Rect con_border_style_rect(Con *con) {
     int border_width = con->current_border_width;
     DLOG("The border width for con is set to: %d\n", con->current_border_width);
     Rect result;
-    if (con->current_border_width < 0)
-        border_width = config.default_border_width;
+    if (con->current_border_width < 0) {
+        if (con_is_floating(con)) {
+            border_width = config.default_floating_border_width;
+        } else {
+            border_width = config.default_border_width;
+        }
+    }
     DLOG("Effective border width is set to: %d\n", border_width);
     /* Shortcut to avoid calling con_adjacent_borders() on dock containers. */
     int border_style = con_border_style(con);

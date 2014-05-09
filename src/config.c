@@ -255,6 +255,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     config.default_border = BS_NORMAL;
     config.default_floating_border = BS_NORMAL;
     config.default_border_width = logical_px(2);
+    config.default_floating_border_width = logical_px(2);
     /* Set default_orientation to NO_ORIENTATION for auto orientation. */
     config.default_orientation = NO_ORIENTATION;
 
