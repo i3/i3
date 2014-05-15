@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # vim:ts=4:sw=4:expandtab
 #
-# © 2012-2013 Michael Stapelberg
+# © 2012-2014 Michael Stapelberg
 #
 # No dependencies except for perl ≥ v5.10
 
@@ -55,8 +55,12 @@ my $result = GetOptions(
 die "Could not parse command line options" unless $result;
 
 # Filter entry types and set default type(s) if none selected
-my @valid_types = ('name', 'command', 'filename');
-@entry_types = grep { $_ ~~ @valid_types } @entry_types;
+my $valid_types = {
+    name => 1,
+    command => 1,
+    filename => 1,
+};
+@entry_types = grep { exists($valid_types->{$_}) } @entry_types;
 @entry_types = ('name', 'command') unless @entry_types;
 
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -257,7 +261,7 @@ for my $app (keys %apps) {
         }
     }
 
-    if ('name' ~~ @entry_types) {
+    if ((scalar grep { $_ eq 'name' } @entry_types) > 0) {
         if (exists($choices{$name})) {
             # There are two .desktop files which contain the same “Name” value.
             # I’m not sure if that is allowed to happen, but we disambiguate the
@@ -273,22 +277,22 @@ for my $app (keys %apps) {
         $choices{$name} = $app;
     }
 
-    if ('command' ~~ @entry_types) {
+    if ((scalar grep { $_ eq 'command' } @entry_types) > 0) {
         my ($command) = split(' ', $apps{$app}->{Exec});
 
         # Don’t add “geany” if “Geany” is already present.
         my @keys = map { lc } keys %choices;
-        next if lc(basename($command)) ~~ @keys;
+        next if (scalar grep { $_ eq lc(basename($command)) } @keys) > 0;
 
         $choices{basename($command)} = $app;
     }
 
-    if ('filename' ~~ @entry_types) {
+    if ((scalar grep { $_ eq 'filename' } @entry_types) > 0) {
         my $filename = basename($app, '.desktop');
 
         # Don’t add “geany” if “Geany” is already present.
         my @keys = map { lc } keys %choices;
-        next if lc($filename) ~~ @keys;
+        next if (scalar grep { $_ eq lc($filename) } @keys) > 0;
 
         $choices{$filename} = $app;
     }
