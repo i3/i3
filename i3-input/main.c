@@ -214,6 +214,8 @@ static void finish_input() {
 
     ipc_send_message(sockfd, strlen(full), 0, (uint8_t*)full);
 
+    free(full);
+
 #if 0
     free(command);
     return 1;
