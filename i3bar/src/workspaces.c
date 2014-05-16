@@ -115,7 +115,7 @@ static int workspaces_string_cb(void *params_, const unsigned char *val, size_t 
                 snprintf(ws_num, sizeof(ws_num), "%d", params->workspaces_walk->num);
 
                 /* Calculate the length of the number str in the name */
-                int offset = strspn(ws_name, ws_num);
+                size_t offset = strspn(ws_name, ws_num);
 
                 /* Also strip off the conventional ws name delimiter */
                 if (offset && ws_name[offset] == ':')
