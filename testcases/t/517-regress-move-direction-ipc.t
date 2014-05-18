@@ -68,7 +68,11 @@ is(@{$event->{current}->{nodes}}, 1, 'focus event gave the right number of windo
 
 # reset and try again
 $focus = AnyEvent->condvar;
-cmd 'workspace ws-left; move right';
+cmd 'workspace ws-left';
+$focus->recv;
+
+$focus = AnyEvent->condvar;
+cmd 'move right';
 $event = $focus->recv;
 ok($event, 'moving from workspace with one window triggered focus ipc event');
 is($event->{current}->{name}, 'ws-right', 'focus event gave the right workspace');
