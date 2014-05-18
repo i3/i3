@@ -158,7 +158,7 @@ struct deco_render_params {
 };
 
 /**
- * Stores which workspace (by name) goes to which output.
+ * Stores which workspace (by name or number) goes to which output.
  *
  */
 struct Workspace_Assignment {

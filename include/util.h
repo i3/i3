@@ -59,6 +59,19 @@ bool rect_contains(Rect rect, uint32_t x, uint32_t y);
 Rect rect_add(Rect a, Rect b);
 
 /**
+ * Returns true if the name consists of only digits.
+ *
+ */
+__attribute__((pure)) bool name_is_digits(const char *name);
+
+/**
+ * Parses the workspace name as a number. Returns -1 if the workspace should be
+ * interpreted as a "named workspace".
+ *
+ */
+long ws_name_to_number(const char *name);
+
+/**
  * Updates *destination with new_value and returns true if it was changed or false
  * if it was the same
  *

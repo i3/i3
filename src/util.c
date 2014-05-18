@@ -21,6 +21,7 @@
 #include <pwd.h>
 #include <yajl/yajl_version.h>
 #include <libgen.h>
+#include <ctype.h>
 
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-launcher.h>
@@ -45,6 +46,38 @@ Rect rect_add(Rect a, Rect b) {
                   a.y + b.y,
                   a.width + b.width,
                   a.height + b.height};
+}
+
+/*
+ * Returns true if the name consists of only digits.
+ *
+ */
+__attribute__ ((pure)) bool name_is_digits(const char *name) {
+    /* positive integers and zero are interpreted as numbers */
+    for (int i = 0; i < strlen(name); i++)
+        if (!isdigit(name[i]))
+            return false;
+
+    return true;
+}
+
+/*
+ * Parses the workspace name as a number. Returns -1 if the workspace should be
+ * interpreted as a "named workspace".
+ *
+ */
+long ws_name_to_number(const char *name) {
+    /* positive integers and zero are interpreted as numbers */
+    char *endptr = NULL;
+    long parsed_num = strtol(name, &endptr, 10);
+    if (parsed_num == LONG_MIN ||
+            parsed_num == LONG_MAX ||
+            parsed_num < 0 ||
+            endptr == name) {
+        parsed_num = -1;
+    }
+
+    return parsed_num;
 }
 
 /*

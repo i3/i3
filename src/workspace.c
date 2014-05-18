@@ -53,14 +53,25 @@ Con *workspace_get(const char *num, bool *created) {
         output = con_get_output(focused);
         /* look for assignments */
         struct Workspace_Assignment *assignment;
-        TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
-            if (strcmp(assignment->name, num) != 0)
-                continue;
 
-            LOG("Found workspace assignment to output \"%s\"\n", assignment->output);
-            GREP_FIRST(output, croot, !strcmp(child->name, assignment->output));
-            break;
+        /* We set workspace->num to the number if this workspace’s name begins
+         * with a positive number. Otherwise it’s a named ws and num will be
+         * -1. */
+        long parsed_num = ws_name_to_number(num);
+
+        TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+            if (strcmp(assignment->name, num) == 0) {
+                DLOG("Found workspace name assignment to output \"%s\"\n", assignment->output);
+                GREP_FIRST(output, croot, !strcmp(child->name, assignment->output));
+                break;
+            } else if (parsed_num != -1
+                    && name_is_digits(assignment->name)
+                    && ws_name_to_number(assignment->name) == parsed_num) {
+                DLOG("Found workspace number assignment to output \"%s\"\n", assignment->output);
+                GREP_FIRST(output, croot, !strcmp(child->name, assignment->output));
+            }
         }
+
         Con *content = output_get_content(output);
         LOG("got output %p with content %p\n", output, content);
         /* We need to attach this container after setting its type. con_attach
@@ -74,16 +85,7 @@ Con *workspace_get(const char *num, bool *created) {
         FREE(workspace->name);
         workspace->name = sstrdup(num);
         workspace->workspace_layout = config.default_layout;
-        /* We set ->num to the number if this workspace’s name begins with a
-         * positive number. Otherwise it’s a named ws and num will be -1. */
-        char *endptr = NULL;
-        long parsed_num = strtol(num, &endptr, 10);
-        if (parsed_num == LONG_MIN ||
-            parsed_num == LONG_MAX ||
-            parsed_num < 0 ||
-            endptr == num)
-            workspace->num = -1;
-        else workspace->num = parsed_num;
+        workspace->num = parsed_num;
         LOG("num = %d\n", workspace->num);
 
         workspace->parent = content;
