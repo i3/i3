@@ -232,8 +232,8 @@ static void clear_criteria(void *unused_criteria) {
 
 static cmdp_state state;
 static Match current_match;
-static struct ConfigResult subcommand_output;
-static struct ConfigResult command_output;
+static struct ConfigResultIR subcommand_output;
+static struct ConfigResultIR command_output;
 
 /* A list which contains the states that lead to the current state, e.g.
  * INITIAL, WORKSPACE_LAYOUT.
@@ -304,7 +304,7 @@ static char *single_line(const char *start) {
     return result;
 }
 
-struct ConfigResult *parse_config(const char *input, struct context *context) {
+struct ConfigResultIR *parse_config(const char *input, struct context *context) {
     /* Dump the entire config file into the debug log. We cannot just use
      * DLOG("%s", input); because one log message must not exceed 4 KiB. */
     const char *dumpwalk = input;
@@ -1000,7 +1000,7 @@ void parse_file(const char *f) {
     context = scalloc(sizeof(struct context));
     context->filename = f;
 
-    struct ConfigResult *config_output = parse_config(new, context);
+    struct ConfigResultIR *config_output = parse_config(new, context);
     yajl_gen_free(config_output->json_gen);
 
     check_for_duplicate_bindings(context);

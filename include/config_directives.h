@@ -18,7 +18,7 @@
 uint32_t modifiers_from_str(const char *str);
 
 /** The beginning of the prototype for every cfg_ function. */
-#define I3_CFG Match *current_match, struct ConfigResult *result
+#define I3_CFG Match *current_match, struct ConfigResultIR *result
 
 /* Defines a configuration function, that is, anything that can be called by
  * using 'call cfg_foo()' in parser-specs/.*.spec. Useful so that we don’t need

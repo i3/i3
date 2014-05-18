@@ -95,7 +95,7 @@ static Output *get_output_of_con(Con *con) {
  * and return true, signaling that no further workspace switching should occur in the calling function.
  *
  */
-static bool maybe_back_and_forth(struct CommandResult *cmd_output, char *name) {
+static bool maybe_back_and_forth(struct CommandResultIR *cmd_output, char *name) {
     Con *ws = con_get_workspace(focused);
 
     /* If we switched to a different workspace, do nothing */

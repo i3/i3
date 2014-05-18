@@ -73,7 +73,7 @@ void handle_key_press(xcb_key_press_event_t *event) {
         return;
 
     char *command_copy = sstrdup(bind->command);
-    struct CommandResult *command_output = parse_command(command_copy);
+    struct CommandResultIR *command_output = parse_command(command_copy);
     free(command_copy);
 
     if (command_output->needs_tree_render)

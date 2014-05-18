@@ -131,7 +131,7 @@ close($enumfh);
 
 # Third step: Generate the call function.
 open(my $callfh, '>', "GENERATED_${prefix}_call.h");
-my $resultname = uc(substr($prefix, 0, 1)) . substr($prefix, 1) . 'Result';
+my $resultname = uc(substr($prefix, 0, 1)) . substr($prefix, 1) . 'ResultIR';
 say $callfh "static void GENERATED_call(const int call_identifier, struct $resultname *result) {";
 say $callfh '    switch (call_identifier) {';
 my $call_id = 0;

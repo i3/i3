@@ -179,8 +179,8 @@ static cmdp_state state;
 #ifndef TEST_PARSER
 static Match current_match;
 #endif
-static struct CommandResult subcommand_output;
-static struct CommandResult command_output;
+static struct CommandResultIR subcommand_output;
+static struct CommandResultIR command_output;
 
 #include "GENERATED_command_call.h"
 
@@ -205,7 +205,7 @@ static void next_state(const cmdp_token *token) {
     }
 }
 
-struct CommandResult *parse_command(const char *input) {
+struct CommandResultIR *parse_command(const char *input) {
     DLOG("COMMAND: *%s*\n", input);
     state = INITIAL;
 

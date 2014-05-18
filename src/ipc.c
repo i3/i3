@@ -117,7 +117,7 @@ IPC_HANDLER(command) {
     char *command = scalloc(message_size + 1);
     strncpy(command, (const char*)message, message_size);
     LOG("IPC: received: *%s*\n", command);
-    struct CommandResult *command_output = parse_command((const char*)command);
+    struct CommandResultIR *command_output = parse_command((const char*)command);
     free(command);
 
     if (command_output->needs_tree_render)

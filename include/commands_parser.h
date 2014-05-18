@@ -12,15 +12,11 @@
 #include <yajl/yajl_gen.h>
 
 /*
- * Holds the result of a call to any command. When calling
- * parse_command("floating enable, border none"), the parser will internally
- * use a struct CommandResult when calling cmd_floating and cmd_border.
- * parse_command will also return another struct CommandResult, whose
- * json_output is set to a map of individual json_outputs and whose
- * needs_tree_trender is true if any individual needs_tree_render was true.
- *
+ * Holds an intermediate represenation of the result of a call to any command.
+ * When calling parse_command("floating enable, border none"), the parser will
+ * internally use this struct when calling cmd_floating and cmd_border.
  */
-struct CommandResult {
+struct CommandResultIR {
     /* The JSON generator to append a reply to. */
     yajl_gen json_gen;
 
@@ -33,4 +29,4 @@ struct CommandResult {
     bool needs_tree_render;
 };
 
-struct CommandResult *parse_command(const char *input);
+struct CommandResultIR *parse_command(const char *input);
