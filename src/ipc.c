@@ -117,20 +117,24 @@ IPC_HANDLER(command) {
     char *command = scalloc(message_size + 1);
     strncpy(command, (const char*)message, message_size);
     LOG("IPC: received: *%s*\n", command);
-    struct CommandResultIR *command_output = parse_command((const char*)command);
+    yajl_gen gen = yajl_gen_alloc(NULL);
+
+    CommandResult *result = parse_command((const char*)command, gen);
     free(command);
 
-    if (command_output->needs_tree_render)
+    if (result->needs_tree_render)
         tree_render();
+
+    command_result_free(result);
 
     const unsigned char *reply;
     ylength length;
-    yajl_gen_get_buf(command_output->json_gen, &reply, &length);
+    yajl_gen_get_buf(gen, &reply, &length);
 
     ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_COMMAND,
                      (const uint8_t*)reply);
 
-    yajl_gen_free(command_output->json_gen);
+    yajl_gen_free(gen);
 }
 
 static void dump_rect(yajl_gen gen, const char *name, Rect r) {

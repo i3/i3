@@ -72,19 +72,23 @@ void handle_key_press(xcb_key_press_event_t *event) {
     if (bind == NULL)
         return;
 
+    yajl_gen gen = yajl_gen_alloc(NULL);
+
     char *command_copy = sstrdup(bind->command);
-    struct CommandResultIR *command_output = parse_command(command_copy);
+    CommandResult *result = parse_command(command_copy, gen);
     free(command_copy);
 
-    if (command_output->needs_tree_render)
+    if (result->needs_tree_render)
         tree_render();
+
+    command_result_free(result);
 
     /* We parse the JSON reply to figure out whether there was an error
      * ("success" being false in on of the returned dictionaries). */
     const unsigned char *reply;
     size_t length;
     yajl_handle handle = yajl_alloc(&command_error_callbacks, NULL, NULL);
-    yajl_gen_get_buf(command_output->json_gen, &reply, &length);
+    yajl_gen_get_buf(gen, &reply, &length);
 
     current_nesting_level = 0;
     parse_error_key = false;
@@ -116,5 +120,5 @@ void handle_key_press(xcb_key_press_event_t *event) {
 
     yajl_free(handle);
 
-    yajl_gen_free(command_output->json_gen);
+    yajl_gen_free(gen);
 }

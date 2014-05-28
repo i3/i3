@@ -35,8 +35,8 @@
 #include "all.h"
 
 // Macros to make the YAJL API a bit easier to use.
-#define y(x, ...) yajl_gen_ ## x (command_output.json_gen, ##__VA_ARGS__)
-#define ystr(str) yajl_gen_string(command_output.json_gen, (unsigned char*)str, strlen(str))
+#define y(x, ...) (command_output.json_gen != NULL ? yajl_gen_ ## x (command_output.json_gen, ##__VA_ARGS__) : 0)
+#define ystr(str) (command_output.json_gen != NULL ? yajl_gen_string(command_output.json_gen, (unsigned char*)str, strlen(str)) : 0)
 
 /*******************************************************************************
  * The data structures used for parsing. Essentially the current state and a
@@ -205,12 +205,20 @@ static void next_state(const cmdp_token *token) {
     }
 }
 
-struct CommandResultIR *parse_command(const char *input) {
+/*
+ * Parses and executes the given command. If a caller-allocated yajl_gen is
+ * passed, a json reply will be generated in the format specified by the ipc
+ * protocol. Pass NULL if no json reply is required.
+ *
+ * Free the returned CommandResult with command_result_free().
+ */
+CommandResult *parse_command(const char *input, yajl_gen gen) {
     DLOG("COMMAND: *%s*\n", input);
     state = INITIAL;
+    CommandResult *result = scalloc(sizeof(CommandResult));
 
     /* A YAJL JSON generator used for formatting replies. */
-    command_output.json_gen = yajl_gen_alloc(NULL);
+    command_output.json_gen = gen;
 
     y(array_open);
     command_output.needs_tree_render = false;
@@ -378,6 +386,9 @@ struct CommandResultIR *parse_command(const char *input) {
             ELOG("Your command: %s\n", input);
             ELOG("              %s\n", position);
 
+            result->parse_error = true;
+            result->error_message = errormessage;
+
             /* Format this error message as a JSON reply. */
             y(map_open);
             ystr("success");
@@ -396,7 +407,6 @@ struct CommandResultIR *parse_command(const char *input) {
             y(map_close);
 
             free(position);
-            free(errormessage);
             clear_stack();
             break;
         }
@@ -404,7 +414,19 @@ struct CommandResultIR *parse_command(const char *input) {
 
     y(array_close);
 
-    return &command_output;
+    result->needs_tree_render = command_output.needs_tree_render;
+    return result;
+}
+
+/*
+ * Frees a CommandResult
+ */
+void command_result_free(CommandResult *result) {
+    if (result == NULL)
+        return;
+
+    FREE(result->error_message);
+    FREE(result);
 }
 
 /*******************************************************************************
@@ -442,6 +464,12 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Syntax: %s <command>\n", argv[0]);
         return 1;
     }
-    parse_command(argv[1]);
+    yajl_gen gen = yajl_gen_alloc(NULL);
+
+    CommandResult *result = parse_command(argv[1], gen);
+
+    command_result_free(result);
+
+    yajl_gen_free(gen);
 }
 #endif

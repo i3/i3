@@ -16,21 +16,25 @@
 #include "shmlog.h"
 
 // Macros to make the YAJL API a bit easier to use.
-#define y(x, ...) yajl_gen_ ## x (cmd_output->json_gen, ##__VA_ARGS__)
-#define ystr(str) yajl_gen_string(cmd_output->json_gen, (unsigned char*)str, strlen(str))
+#define y(x, ...) (cmd_output->json_gen != NULL ? yajl_gen_ ## x (cmd_output->json_gen, ##__VA_ARGS__) : 0)
+#define ystr(str) (cmd_output->json_gen != NULL ? yajl_gen_string(cmd_output->json_gen, (unsigned char*)str, strlen(str)) : 0)
 #define ysuccess(success) do { \
-    y(map_open); \
-    ystr("success"); \
-    y(bool, success); \
-    y(map_close); \
+    if (cmd_output->json_gen != NULL) { \
+        y(map_open); \
+        ystr("success"); \
+        y(bool, success); \
+        y(map_close); \
+    } \
 } while (0)
 #define yerror(message) do { \
-    y(map_open); \
-    ystr("success"); \
-    y(bool, false); \
-    ystr("error"); \
-    ystr(message); \
-    y(map_close); \
+    if (cmd_output->json_gen != NULL) { \
+        y(map_open); \
+        ystr("success"); \
+        y(bool, false); \
+        ystr("error"); \
+        ystr(message); \
+        y(map_close); \
+    } \
 } while (0)
 
 /** When the command did not include match criteria (!), we use the currently
