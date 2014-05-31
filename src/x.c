@@ -1013,6 +1013,8 @@ void x_push_changes(Con *con) {
                      to_focus, focused, focused->name);
                 send_take_focus(to_focus, last_timestamp);
 
+                ewmh_update_active_window((con_has_managed_window(focused) ? focused->window->id : XCB_WINDOW_NONE));
+
                 if (to_focus != last_focused && is_con_attached(focused))
                    ipc_send_window_event("focus", focused);
             } else {
@@ -1030,7 +1032,7 @@ void x_push_changes(Con *con) {
                     xcb_change_window_attributes(conn, focused->window->id, XCB_CW_EVENT_MASK, values);
                 }
 
-                ewmh_update_active_window(to_focus);
+                ewmh_update_active_window((con_has_managed_window(focused) ? focused->window->id : XCB_WINDOW_NONE));
 
                 if (to_focus != XCB_NONE && to_focus != last_focused && focused->window != NULL && is_con_attached(focused))
                    ipc_send_window_event("focus", focused);
@@ -1043,6 +1045,7 @@ void x_push_changes(Con *con) {
     if (focused_id == XCB_NONE) {
         DLOG("Still no window focused, better set focus to the root window\n");
         xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, root, XCB_CURRENT_TIME);
+        ewmh_update_active_window(XCB_WINDOW_NONE);
         focused_id = root;
     }
 

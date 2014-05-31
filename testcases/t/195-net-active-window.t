@@ -15,7 +15,8 @@
 #   (unless you are already familiar with Perl)
 #
 # Verifies that the _NET_ACTIVE_WINDOW message only changes focus when the
-# window is on a visible workspace.
+# window is on a visible workspace and that focus changes properly update this
+# property on the root window.
 # ticket #774, bug still present in commit 1e49f1b08a3035c1f238fcd6615e332216ab582e
 # ticket #1136, bug still present in commit fd07f989fdf441ef335245dd3436a70ff60e8896
 use i3test;
@@ -38,6 +39,23 @@ sub send_net_active_window {
         0;
 
     $x->send_event(0, $x->get_root_window(), X11::XCB::EVENT_MASK_SUBSTRUCTURE_REDIRECT, $msg);
+}
+
+sub get_net_active_window {
+    my $cookie = $x->get_property(
+        0,
+        $x->get_root_window(),
+        $x->atom(name => '_NET_ACTIVE_WINDOW')->id,
+        $x->atom(name => 'WINDOW')->id,
+        0,
+        4096,
+    );
+    my $reply = $x->get_property_reply($cookie->{sequence});
+    my $len = $reply->{length};
+
+    return -1 if $len == 0;
+    return unpack("L", $reply->{value});
+
 }
 
 my $ws1 = fresh_workspace;
@@ -112,5 +130,35 @@ is($x->input_focus, $win3->id, 'focus reverted to window 3');
 send_net_active_window($scratch->id);
 
 is($x->input_focus, $win3->id, 'window 3 still focused');
+
+################################################################################
+# Verify that the _NET_ACTIVE_WINDOW property is updated on the root window
+# correctly.
+################################################################################
+
+fresh_workspace;
+
+sync_with_i3;
+
+is(get_net_active_window(), 0, 'workspace content focus is indicated by the root property as "None" window');
+
+my $win4 = open_window;
+
+cmd '[id="' . $win4->id . '"] focus';
+
+sync_with_i3;
+
+is(get_net_active_window(), $win4->id, 'window 4 is indicated as focused by the root property');
+
+# make a branch
+open_window;
+open_window;
+cmd 'split h';
+open_window;
+cmd 'focus parent';
+
+sync_with_i3;
+
+is(get_net_active_window(), 0, 'branch focus is indicated by the root property as "None" window');
 
 done_testing;
