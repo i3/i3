@@ -8,6 +8,8 @@
  */
 #include "all.h"
 
+pid_t command_error_nagbar_pid = -1;
+
 /*
  * The name of the default mode.
  *
@@ -378,4 +380,46 @@ void check_for_duplicate_bindings(struct context *context) {
             }
         }
     }
+}
+
+/*
+ * Runs the given binding and handles parse errors. Returns a CommandResult for
+ * running the binding's command. Caller should render tree if
+ * needs_tree_render is true. Free with command_result_free().
+ *
+ */
+CommandResult *run_binding(Binding *bind) {
+    /* We need to copy the command since “reload” may be part of the command,
+     * and then the memory that bind->command points to may not contain the
+     * same data anymore. */
+    char *command_copy = sstrdup(bind->command);
+    CommandResult *result = parse_command(command_copy, NULL);
+    free(command_copy);
+
+    if (result->needs_tree_render)
+        tree_render();
+
+    if (result->parse_error) {
+        char *pageraction;
+        sasprintf(&pageraction, "i3-sensible-pager \"%s\"\n", errorfilename);
+        char *argv[] = {
+            NULL, /* will be replaced by the executable path */
+            "-f",
+            config.font.pattern,
+            "-t",
+            "error",
+            "-m",
+            "The configured command for this shortcut could not be run successfully.",
+            "-b",
+            "show errors",
+            pageraction,
+            NULL
+        };
+        start_nagbar(&command_error_nagbar_pid, argv);
+        free(pageraction);
+    }
+
+    /* TODO: emit event for running a binding */
+
+    return result;
 }

@@ -9,6 +9,8 @@
  */
 #pragma once
 
+extern pid_t command_error_nagbar_pid;
+
 /**
  * The name of the default mode.
  *
@@ -57,3 +59,11 @@ void switch_mode(const char *new_mode);
  *
  */
 void check_for_duplicate_bindings(struct context *context);
+
+/**
+ * Runs the given binding and handles parse errors. Returns a CommandResult for
+ * running the binding's command. Caller should render tree if
+ * needs_tree_render is true. Free with command_result_free().
+ *
+ */
+CommandResult *run_binding(Binding *bind);

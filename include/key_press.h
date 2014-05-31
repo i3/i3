@@ -9,8 +9,6 @@
  */
 #pragma once
 
-extern pid_t command_error_nagbar_pid;
-
 /**
  * There was a key press. We compare this key code with our bindings table and pass
  * the bound action to parse_command().

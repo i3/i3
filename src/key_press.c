@@ -9,49 +9,7 @@
  * key_press.c: key press handler
  *
  */
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <fcntl.h>
 #include "all.h"
-
-static int current_nesting_level;
-static bool parse_error_key;
-static bool command_failed;
-
-pid_t command_error_nagbar_pid = -1;
-
-static int json_boolean(void *ctx, int boolval) {
-    DLOG("Got bool: %d, parse_error_key %d, nesting_level %d\n", boolval, parse_error_key, current_nesting_level);
-
-    if (parse_error_key && current_nesting_level == 1 && boolval)
-        command_failed = true;
-
-    return 1;
-}
-
-static int json_map_key(void *ctx, const unsigned char *stringval, size_t stringlen) {
-    parse_error_key = (stringlen >= strlen("parse_error") &&
-                       strncmp((const char*)stringval, "parse_error", strlen("parse_error")) == 0);
-    return 1;
-}
-
-static int json_start_map(void *ctx) {
-    current_nesting_level++;
-    return 1;
-}
-
-static int json_end_map(void *ctx) {
-    current_nesting_level--;
-    return 1;
-}
-
-static yajl_callbacks command_error_callbacks = {
-    .yajl_boolean = json_boolean,
-    .yajl_start_map = json_start_map,
-    .yajl_map_key = json_map_key,
-    .yajl_end_map = json_end_map,
-};
 
 /*
  * There was a KeyPress or KeyRelease (both events have the same fields). We
@@ -72,53 +30,10 @@ void handle_key_press(xcb_key_press_event_t *event) {
     if (bind == NULL)
         return;
 
-    yajl_gen gen = yajl_gen_alloc(NULL);
-
-    char *command_copy = sstrdup(bind->command);
-    CommandResult *result = parse_command(command_copy, gen);
-    free(command_copy);
+    CommandResult *result = run_binding(bind);
 
     if (result->needs_tree_render)
         tree_render();
 
     command_result_free(result);
-
-    /* We parse the JSON reply to figure out whether there was an error
-     * ("success" being false in on of the returned dictionaries). */
-    const unsigned char *reply;
-    size_t length;
-    yajl_handle handle = yajl_alloc(&command_error_callbacks, NULL, NULL);
-    yajl_gen_get_buf(gen, &reply, &length);
-
-    current_nesting_level = 0;
-    parse_error_key = false;
-    command_failed = false;
-    yajl_status state = yajl_parse(handle, reply, length);
-    if (state != yajl_status_ok) {
-        ELOG("Could not parse my own reply. That's weird. reply is %.*s\n", (int)length, reply);
-    } else {
-        if (command_failed) {
-            char *pageraction;
-            sasprintf(&pageraction, "i3-sensible-pager \"%s\"\n", errorfilename);
-            char *argv[] = {
-                NULL, /* will be replaced by the executable path */
-                "-f",
-                config.font.pattern,
-                "-t",
-                "error",
-                "-m",
-                "The configured command for this shortcut could not be run successfully.",
-                "-b",
-                "show errors",
-                pageraction,
-                NULL
-            };
-            start_nagbar(&command_error_nagbar_pid, argv);
-            free(pageraction);
-        }
-    }
-
-    yajl_free(handle);
-
-    yajl_gen_free(gen);
 }
