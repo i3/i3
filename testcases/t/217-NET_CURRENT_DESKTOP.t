@@ -41,9 +41,10 @@ $x->delete_property($root, $_NET_CURRENT_DESKTOP);
 
 $x->flush();
 
+# Returns the _NET_CURRENT_DESKTOP property from the root window. This is
+# the 0 based index of the current desktop.
 sub current_desktop_index {
-    # Returns the _NET_CURRENT_DESKTOP property from the root window. This is
-    # the 0 based index of the current desktop.
+    sync_with_i3;
 
     my $cookie = $x->get_property(0, $root, $_NET_CURRENT_DESKTOP,
                                   $CARDINAL, 0, 1);
