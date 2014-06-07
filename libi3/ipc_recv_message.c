@@ -41,7 +41,6 @@ int ipc_recv_message(int sockfd, uint32_t *message_type,
         if (n == -1)
             return -1;
         if (n == 0) {
-            ELOG("IPC: received EOF instead of reply\n");
             return -2;
         }
 
