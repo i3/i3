@@ -722,7 +722,6 @@ int main(int argc, char *argv[]) {
     if (ipc_socket == -1) {
         ELOG("Could not create the IPC socket, IPC disabled\n");
     } else {
-        free(config.ipc_socket_path);
         struct ev_io *ipc_io = scalloc(sizeof(struct ev_io));
         ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
         ev_io_start(main_loop, ipc_io);

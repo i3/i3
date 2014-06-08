@@ -1649,6 +1649,8 @@ void cmd_layout_toggle(I3_CMD, char *toggle_mode) {
  */
 void cmd_exit(I3_CMD) {
     LOG("Exiting due to user command.\n");
+    ipc_shutdown();
+    unlink(config.ipc_socket_path);
     xcb_disconnect(conn);
     exit(0);
 
