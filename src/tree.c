@@ -86,13 +86,13 @@ bool tree_restore(const char *path, xcb_get_geometry_reply_t *geometry) {
 
     tree_append_json(focused, globbed, NULL);
 
-    printf("appended tree, using new root\n");
+    DLOG("appended tree, using new root\n");
     croot = TAILQ_FIRST(&(croot->nodes_head));
-    printf("new root = %p\n", croot);
+    DLOG("new root = %p\n", croot);
     Con *out = TAILQ_FIRST(&(croot->nodes_head));
-    printf("out = %p\n", out);
+    DLOG("out = %p\n", out);
     Con *ws = TAILQ_FIRST(&(out->nodes_head));
-    printf("ws = %p\n", ws);
+    DLOG("ws = %p\n", ws);
 
     /* For in-place restarting into v4.2, we need to make sure the new
      * pseudo-output __i3 is present. */

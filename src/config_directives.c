@@ -69,7 +69,7 @@ CFGFUN(criteria_add, const char *ctype, const char *cvalue) {
             ELOG("Could not parse con id \"%s\"\n", cvalue);
         } else {
             current_match->con_id = (Con*)parsed;
-            printf("id as int = %p\n", current_match->con_id);
+            DLOG("id as int = %p\n", current_match->con_id);
         }
         return;
     }
@@ -84,7 +84,7 @@ CFGFUN(criteria_add, const char *ctype, const char *cvalue) {
             ELOG("Could not parse window id \"%s\"\n", cvalue);
         } else {
             current_match->id = parsed;
-            printf("window id as int = %d\n", current_match->id);
+            DLOG("window id as int = %d\n", current_match->id);
         }
         return;
     }

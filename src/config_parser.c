@@ -687,7 +687,7 @@ static int detect_version(char *buf) {
             strncasecmp(line, "force_focus_wrapping", strlen("force_focus_wrapping")) == 0 ||
             strncasecmp(line, "# i3 config file (v4)", strlen("# i3 config file (v4)")) == 0 ||
             strncasecmp(line, "workspace_layout", strlen("workspace_layout")) == 0) {
-            printf("deciding for version 4 due to this line: %.*s\n", (int)(walk-line), line);
+            LOG("deciding for version 4 due to this line: %.*s\n", (int)(walk-line), line);
             return 4;
         }
 
@@ -719,7 +719,7 @@ static int detect_version(char *buf) {
                 strncasecmp(bind, "border borderless", strlen("border borderless")) == 0 ||
                 strncasecmp(bind, "--no-startup-id", strlen("--no-startup-id")) == 0 ||
                 strncasecmp(bind, "bar", strlen("bar")) == 0) {
-                printf("deciding for version 4 due to this line: %.*s\n", (int)(walk-line), line);
+                LOG("deciding for version 4 due to this line: %.*s\n", (int)(walk-line), line);
                 return 4;
             }
         }
@@ -987,12 +987,12 @@ void parse_file(const char *f) {
             free(new);
             new = converted;
         } else {
-            printf("\n");
-            printf("**********************************************************************\n");
-            printf("ERROR: Could not convert config file. Maybe i3-migrate-config-to-v4\n");
-            printf("was not correctly installed on your system?\n");
-            printf("**********************************************************************\n");
-            printf("\n");
+            LOG("\n");
+            LOG("**********************************************************************\n");
+            LOG("ERROR: Could not convert config file. Maybe i3-migrate-config-to-v4\n");
+            LOG("was not correctly installed on your system?\n");
+            LOG("**********************************************************************\n");
+            LOG("\n");
         }
     }
 

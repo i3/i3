@@ -260,7 +260,7 @@ char *store_restart_layout(void) {
             return NULL;
         }
         if (n == 0) {
-            printf("write == 0?\n");
+            DLOG("write == 0?\n");
             free(filename);
             close(fd);
             return NULL;
@@ -271,7 +271,7 @@ char *store_restart_layout(void) {
     close(fd);
 
     if (length > 0) {
-        printf("layout: %.*s\n", (int)length, payload);
+        DLOG("layout: %.*s\n", (int)length, payload);
     }
 
     y(free);
