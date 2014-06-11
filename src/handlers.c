@@ -183,6 +183,10 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     if (config.disable_focus_follows_mouse)
         return;
 
+    /* if this container is already focused, there is nothing to do. */
+    if (con == focused)
+        return;
+
     /* Get the currently focused workspace to check if the focus change also
      * involves changing workspaces. If so, we need to call workspace_show() to
      * correctly update state and send the IPC event. */
