@@ -2,6 +2,6 @@
 Name=i3
 Comment=improved dynamic tiling window manager
 Exec=i3
-TryExec=13
+TryExec=i3
 Type=Application
 X-LightDM-DesktopName=i3
