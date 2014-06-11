@@ -21,16 +21,16 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <pthread.h>
-#if defined(__APPLE__)
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#endif
 
 #include "util.h"
 #include "log.h"
 #include "i3.h"
 #include "libi3.h"
 #include "shmlog.h"
+
+#if defined(__APPLE__)
+#include <sys/sysctl.h>
+#endif
 
 static bool debug_logging = false;
 static bool verbose = false;
