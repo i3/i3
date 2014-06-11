@@ -783,7 +783,7 @@ To avoid caching:
 =cut
 sub get_socket_path {
     my ($cache) = @_;
-    $cache ||= 1;
+    $cache //= 1;
 
     if ($cache && defined($_cached_socket_path)) {
         return $_cached_socket_path;

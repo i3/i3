@@ -50,4 +50,54 @@ if (-d $tmpdir) {
     diag('contents = ' . Dumper(<$tmpdir/*>));
 }
 
+$pid = launch_with_config($config, dont_add_socket_path => 1, dont_create_temp_dir => 1);
+$socketpath = get_socket_path(0);
+$tmpdir = dirname($socketpath);
+
+ok(-d $tmpdir, "tmpdir $tmpdir exists");
+
+# Clear the error logfile. The testsuite runs in an environment where RandR is
+# not supported, so there always is a message about xinerama in the error
+# logfile.
+@errorlogfiles = <$tmpdir/errorlog.*>;
+for my $fn (@errorlogfiles) {
+    open(my $fh, '>', $fn);
+    close($fh);
+}
+
+diag('socket path before restarting is ' . $socketpath);
+
+cmd 'restart';
+
+# The socket path will be different, and we use that for checking whether i3 has restarted yet.
+while (get_socket_path(0) eq $socketpath) {
+    sleep 0.1;
+}
+
+my $new_tmpdir = dirname(get_socket_path());
+
+does_i3_live;
+
+# Clear the error logfile. The testsuite runs in an environment where RandR is
+# not supported, so there always is a message about xinerama in the error
+# logfile.
+@errorlogfiles = <$new_tmpdir/errorlog.*>;
+for my $fn (@errorlogfiles) {
+    open(my $fh, '>', $fn);
+    close($fh);
+}
+
+exit_gracefully($pid);
+
+ok(! -d $tmpdir, "old tmpdir $tmpdir was cleaned up");
+if (-d $tmpdir) {
+    diag('contents = ' . Dumper(<$tmpdir/*>));
+}
+
+ok(! -d $new_tmpdir, "new tmpdir $new_tmpdir was cleaned up");
+if (-d $new_tmpdir) {
+    diag('contents = ' . Dumper(<$new_tmpdir/*>));
+}
+
+
 done_testing;

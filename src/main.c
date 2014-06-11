@@ -18,6 +18,7 @@
 #include <sys/resource.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <libgen.h>
 #include "all.h"
 #include "shmlog.h"
 
@@ -670,8 +671,13 @@ int main(int argc, char *argv[]) {
     if (layout_path) {
         LOG("Trying to restore the layout from %s...", layout_path);
         needs_tree_init = !tree_restore(layout_path, greply);
-        if (delete_layout_path)
+        if (delete_layout_path) {
             unlink(layout_path);
+            const char *dir = dirname(layout_path);
+            /* possibly fails with ENOTEMPTY if there are files (or
+             * sockets) left. */
+            rmdir(dir);
+        }
         free(layout_path);
     }
     if (needs_tree_init)
