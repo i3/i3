@@ -407,6 +407,11 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
                 Con *next_transient = con_by_window_id(transient_win->transient_for);
                 if (next_transient == NULL)
                     break;
+                /* Some clients (e.g. x11-ssh-askpass) actually set
+                 * WM_TRANSIENT_FOR to their own window id, so break instead of
+                 * looping endlessly. */
+                if (transient_win == next_transient->window)
+                    break;
                 transient_win = next_transient->window;
             }
         }

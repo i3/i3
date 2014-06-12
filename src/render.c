@@ -286,7 +286,15 @@ void render_con(Con *con, bool render_fullscreen) {
                             is_transient_for = true;
                             break;
                         }
-                        transient_con = con_by_window_id(transient_con->window->transient_for);
+                        Con *next_transient = con_by_window_id(transient_con->window->transient_for);
+                        if (next_transient == NULL)
+                            break;
+                        /* Some clients (e.g. x11-ssh-askpass) actually set
+                         * WM_TRANSIENT_FOR to their own window id, so break instead of
+                         * looping endlessly. */
+                        if (transient_con == next_transient)
+                            break;
+                        transient_con = next_transient;
                     }
 
                     if (!is_transient_for)
