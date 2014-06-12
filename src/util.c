@@ -54,7 +54,7 @@ Rect rect_add(Rect a, Rect b) {
  */
 __attribute__ ((pure)) bool name_is_digits(const char *name) {
     /* positive integers and zero are interpreted as numbers */
-    for (int i = 0; i < strlen(name); i++)
+    for (size_t i = 0; i < strlen(name); i++)
         if (!isdigit(name[i]))
             return false;
 
