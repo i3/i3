@@ -480,6 +480,10 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
          * workspace isn’t enough either — it needs the rect. */
         ws->rect = ws->parent->rect;
         render_con(ws, true);
+        /* Disable setting focus, otherwise we’d move focus to an invisible
+         * workspace, which we generally prevent (e.g. in
+         * con_move_to_workspace). */
+        set_focus = false;
     }
     render_con(croot, false);
 
@@ -488,8 +492,10 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     /* Defer setting focus after the 'new' event has been sent to ensure the
      * proper window event sequence. */
-    if (set_focus)
+    if (set_focus) {
+        DLOG("Now setting focus.\n");
         con_focus(nc);
+    }
 
     tree_render();
 
