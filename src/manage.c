@@ -429,7 +429,8 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
      * window to be useful (smaller windows are usually overlays/toolbars/…
      * which are not managed by the wm anyways). We store the original geometry
      * here because it’s used for dock clients. */
-    nc->geometry = (Rect){ geom->x, geom->y, geom->width, geom->height };
+    if (nc->geometry.width == 0)
+        nc->geometry = (Rect){ geom->x, geom->y, geom->width, geom->height };
 
     if (want_floating) {
         DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);
