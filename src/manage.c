@@ -328,8 +328,11 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
         fs = con_get_fullscreen_con(croot, CF_GLOBAL);
 
     if (xcb_reply_contains_atom(state_reply, A__NET_WM_STATE_FULLSCREEN)) {
+        /* If this window is already fullscreen (after restarting!), skip
+         * toggling fullscreen, that would drop it out of fullscreen mode. */
+        if (fs != nc)
+            con_toggle_fullscreen(nc, CF_OUTPUT);
         fs = NULL;
-        con_toggle_fullscreen(nc, CF_OUTPUT);
     }
 
     bool set_focus = false;
