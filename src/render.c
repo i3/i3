@@ -272,6 +272,12 @@ void render_con(Con *con, bool render_fullscreen) {
                 /* Don’t render floating windows when there is a fullscreen window
                  * on that workspace. Necessary to make floating fullscreen work
                  * correctly (ticket #564). */
+                /* If there is no fullscreen->window, this cannot be a
+                 * transient window, so we _know_ we need to skip it. This
+                 * happens during restarts where the container already exists,
+                 * but the window was not yet associated. */
+                if (fullscreen != NULL && fullscreen->window == NULL)
+                    continue;
                 if (fullscreen != NULL && fullscreen->window != NULL) {
                     Con *floating_child = con_descend_focused(child);
                     Con *transient_con = floating_child;
