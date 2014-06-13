@@ -48,6 +48,13 @@ Rect rect_add(Rect a, Rect b) {
                   a.height + b.height};
 }
 
+Rect rect_sub(Rect a, Rect b) {
+    return (Rect){a.x - b.x,
+                  a.y - b.y,
+                  a.width - b.width,
+                  a.height - b.height};
+}
+
 /*
  * Returns true if the name consists of only digits.
  *

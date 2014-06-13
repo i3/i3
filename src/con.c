@@ -1194,34 +1194,30 @@ void con_set_border_style(Con *con, int border_style, int border_width) {
 
     /* For floating containers, we want to keep the position/size of the
      * *window* itself. We first add the border pixels to con->rect to make
-     * con->rect represent the absolute position of the window. Then, we change
-     * the border and subtract the new border pixels. Afterwards, we update
-     * parent->rect to contain con. */
+     * con->rect represent the absolute position of the window (same for
+     * parent). Then, we change the border style and subtract the new border
+     * pixels. For the parent, we do the same also for the decoration. */
     DLOG("This is a floating container\n");
 
+    Con *parent = con->parent;
     Rect bsr = con_border_style_rect(con);
-    con->rect.x += bsr.x;
-    con->rect.y += bsr.y;
-    con->rect.width += bsr.width;
-    con->rect.height += bsr.height;
+    int deco_height = (con->border_style == BS_NORMAL ? render_deco_height() : 0);
+
+    con->rect = rect_add(con->rect, bsr);
+    parent->rect = rect_add(parent->rect, bsr);
+    parent->rect.y += deco_height;
+    parent->rect.height -= deco_height;
 
     /* Change the border style, get new border/decoration values. */
     con->border_style = border_style;
     con->current_border_width = border_width;
     bsr = con_border_style_rect(con);
-    int deco_height =
-        (con->border_style == BS_NORMAL ? render_deco_height() : 0);
+    deco_height = (con->border_style == BS_NORMAL ? render_deco_height() : 0);
 
-    con->rect.x -= bsr.x;
-    con->rect.y -= bsr.y;
-    con->rect.width -= bsr.width;
-    con->rect.height -= bsr.height;
-
-    Con *parent = con->parent;
-    parent->rect.x = con->rect.x;
-    parent->rect.y = con->rect.y - deco_height;
-    parent->rect.width = con->rect.width;
-    parent->rect.height = con->rect.height + deco_height;
+    con->rect = rect_sub(con->rect, bsr);
+    parent->rect = rect_sub(parent->rect, bsr);
+    parent->rect.y -= deco_height;
+    parent->rect.height += deco_height;
 }
 
 /*

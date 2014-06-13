@@ -20,9 +20,8 @@
 # d805d1bbeaf89e11f67c981f94c9f55bbb4b89d9
 #
 use i3test;
-use Data::Dumper;
 
-fresh_workspace;
+my $tmp = fresh_workspace;
 
 my $win = open_floating_window(rect => [10, 10, 200, 100]);
 
@@ -35,5 +34,24 @@ cmd 'border 1pixel';
 $geometry = $win->rect;
 is($geometry->{width}, 200, 'width correct');
 is($geometry->{height}, 100, 'height correct');
+
+################################################################################
+# When in fullscreen mode, the original position must not be overwritten.
+################################################################################
+
+sub get_floating_con_rect {
+    my ($nodes, $focus) = get_ws($tmp);
+    my $floating_con = $nodes->{floating_nodes}->[0];
+    return $floating_con->{rect};
+}
+my $old_rect = get_floating_con_rect();
+
+cmd 'fullscreen';
+
+is_deeply(get_floating_con_rect(), $old_rect, 'Rect the same after going into fullscreen');
+
+cmd 'border pixel 2';
+
+is_deeply(get_floating_con_rect(), $old_rect, 'Rect the same after changing border style');
 
 done_testing;
