@@ -754,15 +754,14 @@ all this on your own). This list names some (if you wrote one, please let me
 know):
 
 C::
-	i3 includes a headerfile +i3/ipc.h+ which provides you all constants.
-
-	https://github.com/acrisci/i3ipc-glib
+	* i3 includes a headerfile +i3/ipc.h+ which provides you all constants.
+	* https://github.com/acrisci/i3ipc-glib
 Go::
 	* https://github.com/proxypoke/i3ipc
 JavaScript::
 	* https://github.com/acrisci/i3ipc-gjs
 Lua::
-	* https:/github.com/acrisci/i3ipc-lua
+	* https://github.com/acrisci/i3ipc-lua
 Perl::
 	* https://metacpan.org/module/AnyEvent::I3
 Python::
@@ -770,4 +769,4 @@ Python::
 	* https://github.com/whitelynx/i3ipc (not maintained)
 	* https://github.com/ziberna/i3-py (not maintained)
 Ruby::
-	http://github.com/badboy/i3-ipc
+	* http://github.com/badboy/i3-ipc
