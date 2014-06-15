@@ -1,6 +1,7 @@
 i3-wm (4.8-1) unstable; urgency=medium
 
   * New upstream release.
+  * Bump standards-version to 3.9.5 (no changes necessary)
 
  -- Michael Stapelberg <stapelberg@debian.org>  Sun, 15 Jun 2014 19:15:29 +0200
 
