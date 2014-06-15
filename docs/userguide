@@ -153,6 +153,7 @@ to upgrade to a newer version of i3) you can use +$mod+Shift+r+.
 === Exiting i3
 
 To cleanly exit i3 without killing your X server, you can use +$mod+Shift+e+.
+By default, a dialog will ask you to confirm if you really want to quit.
 
 === Floating
 
