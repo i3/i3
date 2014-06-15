@@ -42,24 +42,24 @@ bool rect_contains(Rect rect, uint32_t x, uint32_t y) {
 }
 
 Rect rect_add(Rect a, Rect b) {
-    return (Rect){a.x + b.x,
-                  a.y + b.y,
-                  a.width + b.width,
-                  a.height + b.height};
+    return (Rect) {a.x + b.x,
+                   a.y + b.y,
+                   a.width + b.width,
+                   a.height + b.height};
 }
 
 Rect rect_sub(Rect a, Rect b) {
-    return (Rect){a.x - b.x,
-                  a.y - b.y,
-                  a.width - b.width,
-                  a.height - b.height};
+    return (Rect) {a.x - b.x,
+                   a.y - b.y,
+                   a.width - b.width,
+                   a.height - b.height};
 }
 
 /*
  * Returns true if the name consists of only digits.
  *
  */
-__attribute__ ((pure)) bool name_is_digits(const char *name) {
+__attribute__((pure)) bool name_is_digits(const char *name) {
     /* positive integers and zero are interpreted as numbers */
     for (size_t i = 0; i < strlen(name); i++)
         if (!isdigit(name[i]))
@@ -78,9 +78,9 @@ long ws_name_to_number(const char *name) {
     char *endptr = NULL;
     long parsed_num = strtol(name, &endptr, 10);
     if (parsed_num == LONG_MIN ||
-            parsed_num == LONG_MAX ||
-            parsed_num < 0 ||
-            endptr == name) {
+        parsed_num == LONG_MAX ||
+        parsed_num < 0 ||
+        endptr == name) {
         parsed_num = -1;
     }
 
@@ -153,7 +153,7 @@ void exec_i3_utility(char *name, char *argv[]) {
 void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_message) {
     xcb_generic_error_t *error = xcb_request_check(conn, cookie);
     if (error != NULL) {
-        fprintf(stderr, "ERROR: %s (X error %d)\n", err_message , error->error_code);
+        fprintf(stderr, "ERROR: %s (X error %d)\n", err_message, error->error_code);
         xcb_disconnect(conn);
         exit(-1);
     }
@@ -166,29 +166,29 @@ void check_error(xcb_connection_t *conn, xcb_void_cookie_t cookie, char *err_mes
  *
  */
 char *resolve_tilde(const char *path) {
-        static glob_t globbuf;
-        char *head, *tail, *result;
+    static glob_t globbuf;
+    char *head, *tail, *result;
 
-        tail = strchr(path, '/');
-        head = strndup(path, tail ? (size_t)(tail - path) : strlen(path));
+    tail = strchr(path, '/');
+    head = strndup(path, tail ? (size_t)(tail - path) : strlen(path));
 
-        int res = glob(head, GLOB_TILDE, NULL, &globbuf);
-        free(head);
-        /* no match, or many wildcard matches are bad */
-        if (res == GLOB_NOMATCH || globbuf.gl_pathc != 1)
-                result = sstrdup(path);
-        else if (res != 0) {
-                die("glob() failed");
-        } else {
-                head = globbuf.gl_pathv[0];
-                result = scalloc(strlen(head) + (tail ? strlen(tail) : 0) + 1);
-                strncpy(result, head, strlen(head));
-                if (tail)
-                    strncat(result, tail, strlen(tail));
-        }
-        globfree(&globbuf);
+    int res = glob(head, GLOB_TILDE, NULL, &globbuf);
+    free(head);
+    /* no match, or many wildcard matches are bad */
+    if (res == GLOB_NOMATCH || globbuf.gl_pathc != 1)
+        result = sstrdup(path);
+    else if (res != 0) {
+        die("glob() failed");
+    } else {
+        head = globbuf.gl_pathv[0];
+        result = scalloc(strlen(head) + (tail ? strlen(tail) : 0) + 1);
+        strncpy(result, head, strlen(head));
+        if (tail)
+            strncat(result, tail, strlen(tail));
+    }
+    globfree(&globbuf);
 
-        return result;
+    return result;
 }
 
 /*
@@ -196,8 +196,8 @@ char *resolve_tilde(const char *path) {
  *
  */
 bool path_exists(const char *path) {
-        struct stat buf;
-        return (stat(path, &buf) == 0);
+    struct stat buf;
+    return (stat(path, &buf) == 0);
 }
 
 /*
@@ -215,16 +215,16 @@ static char **append_argument(char **original, char *argument) {
             return original;
     }
     /* Copy the original array */
-    char **result = smalloc((num_args+2) * sizeof(char*));
-    memcpy(result, original, num_args * sizeof(char*));
+    char **result = smalloc((num_args + 2) * sizeof(char *));
+    memcpy(result, original, num_args * sizeof(char *));
     result[num_args] = argument;
-    result[num_args+1] = NULL;
+    result[num_args + 1] = NULL;
 
     return result;
 }
 
-#define y(x, ...) yajl_gen_ ## x (gen, ##__VA_ARGS__)
-#define ystr(str) yajl_gen_string(gen, (unsigned char*)str, strlen(str))
+#define y(x, ...) yajl_gen_##x(gen, ##__VA_ARGS__)
+#define ystr(str) yajl_gen_string(gen, (unsigned char *)str, strlen(str))
 
 char *store_restart_layout(void) {
     setlocale(LC_NUMERIC, "C");
@@ -309,8 +309,9 @@ void i3_restart(bool forget_layout) {
     if (restart_filename != NULL) {
         /* create the new argv */
         int num_args;
-        for (num_args = 0; start_argv[num_args] != NULL; num_args++);
-        char **new_argv = scalloc((num_args + 3) * sizeof(char*));
+        for (num_args = 0; start_argv[num_args] != NULL; num_args++)
+            ;
+        char **new_argv = scalloc((num_args + 3) * sizeof(char *));
 
         /* copy the arguments, but skip the ones we'll replace */
         int write_index = 0;
@@ -392,7 +393,7 @@ static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
         ELOG("ERROR: i3-nagbar could not be found. Is it correctly installed on your system?\n");
     }
 
-    *((pid_t*)watcher->data) = -1;
+    *((pid_t *)watcher->data) = -1;
 }
 
 /*
@@ -401,7 +402,7 @@ static void nagbar_exited(EV_P_ ev_child *watcher, int revents) {
  *
  */
 static void nagbar_cleanup(EV_P_ ev_cleanup *watcher, int revent) {
-    pid_t *nagbar_pid = (pid_t*)watcher->data;
+    pid_t *nagbar_pid = (pid_t *)watcher->data;
     if (*nagbar_pid != -1) {
         LOG("Sending SIGKILL (%d) to i3-nagbar with PID %d\n", SIGKILL, *nagbar_pid);
         kill(*nagbar_pid, SIGKILL);

@@ -18,7 +18,9 @@
 
 #include <X11/XKBlib.h>
 
-typedef enum { CLICK_BORDER = 0, CLICK_DECORATION = 1, CLICK_INSIDE = 2 } click_destination_t;
+typedef enum { CLICK_BORDER = 0,
+               CLICK_DECORATION = 1,
+               CLICK_INSIDE = 2 } click_destination_t;
 
 /*
  * Finds the correct pair of first/second cons between the resize will take
@@ -89,7 +91,7 @@ static bool floating_mod_on_tiled_client(Con *con, xcb_button_press_event_t *eve
         to_bottom = con->rect.height - event->event_y;
 
     DLOG("click was %d px to the right, %d px to the left, %d px to top, %d px to bottom\n",
-                    to_right, to_left, to_top, to_bottom);
+         to_right, to_left, to_top, to_bottom);
 
     if (to_right < to_left &&
         to_right < to_top &&
@@ -122,7 +124,7 @@ static bool tiling_resize(Con *con, xcb_button_press_event_t *event, const click
     /* check if this was a click on the window border (and on which one) */
     Rect bsr = con_border_style_rect(con);
     DLOG("BORDER x = %d, y = %d for con %p, window 0x%08x\n",
-            event->event_x, event->event_y, con, event->event);
+         event->event_x, event->event_y, con, event->event);
     DLOG("checks for right >= %d\n", con->window_rect.x + con->window_rect.width);
     if (dest == CLICK_DECORATION) {
         /* The user clicked on a window decoration. We ignore the following case:
@@ -328,7 +330,7 @@ int handle_button_press(xcb_button_press_event_t *event) {
          * click coordinates and focus the output's active workspace. */
         if (event->event == root) {
             Con *output, *ws;
-            TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+            TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
                 if (con_is_internal(output) ||
                     !rect_contains(output->rect, event->event_x, event->event_y))
                     continue;
@@ -356,7 +358,7 @@ int handle_button_press(xcb_button_press_event_t *event) {
 
     /* Check if the click was on the decoration of a child */
     Con *child;
-    TAILQ_FOREACH(child, &(con->nodes_head), nodes) {
+    TAILQ_FOREACH (child, &(con->nodes_head), nodes) {
         if (!rect_contains(child->deco_rect, event->event_x, event->event_y))
             continue;
 

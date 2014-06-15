@@ -39,8 +39,8 @@
 #include "all.h"
 
 // Macros to make the YAJL API a bit easier to use.
-#define y(x, ...) yajl_gen_ ## x (command_output.json_gen, ##__VA_ARGS__)
-#define ystr(str) yajl_gen_string(command_output.json_gen, (unsigned char*)str, strlen(str))
+#define y(x, ...) yajl_gen_##x(command_output.json_gen, ##__VA_ARGS__)
+#define ystr(str) yajl_gen_string(command_output.json_gen, (unsigned char *)str, strlen(str))
 
 #ifndef TEST_PARSER
 pid_t config_error_nagbar_pid = -1;
@@ -146,7 +146,6 @@ static void push_long(const char *identifier, long num) {
                     "in the code, or a new command which contains more than "
                     "10 identified tokens.\n");
     exit(1);
-
 }
 
 static const char *get_string(const char *identifier) {
@@ -240,18 +239,17 @@ static struct ConfigResultIR command_output;
  * When jumping back to INITIAL, statelist_idx will simply be set to 1
  * (likewise for other states, e.g. MODE or BAR).
  * This list is used to process the nearest error token. */
-static cmdp_state statelist[10] = { INITIAL };
+static cmdp_state statelist[10] = {INITIAL};
 /* NB: statelist_idx points to where the next entry will be inserted */
 static int statelist_idx = 1;
 
 #include "GENERATED_config_call.h"
 
-
 static void next_state(const cmdp_token *token) {
     cmdp_state _next_state = token->next_state;
 
-	//printf("token = name %s identifier %s\n", token->name, token->identifier);
-	//printf("next_state = %d\n", token->next_state);
+    //printf("token = name %s identifier %s\n", token->name, token->identifier);
+    //printf("next_state = %d\n", token->next_state);
     if (token->next_state == __CALL) {
         subcommand_output.json_gen = command_output.json_gen;
         GENERATED_call(token->extra.call_identifier, &subcommand_output);
@@ -269,7 +267,7 @@ static void next_state(const cmdp_token *token) {
     for (int i = 0; i < statelist_idx; i++) {
         if (statelist[i] != _next_state)
             continue;
-        statelist_idx = i+1;
+        statelist_idx = i + 1;
         return;
     }
 
@@ -335,7 +333,7 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
     bool token_handled;
     linecnt = 1;
 
-    // TODO: make this testable
+// TODO: make this testable
 #ifndef TEST_PARSER
     cfg_criteria_init(&current_match, &subcommand_output, INITIAL);
 #endif
@@ -348,7 +346,7 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
         while ((*walk == ' ' || *walk == '\t') && *walk != '\0')
             walk++;
 
-		//printf("remaining input: %s\n", walk);
+        //printf("remaining input: %s\n", walk);
 
         cmdp_token_ptr *ptr = &(tokens[state]);
         token_handled = false;
@@ -398,7 +396,7 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
                 if (*walk == '"') {
                     beginning++;
                     walk++;
-                    while (*walk != '\0' && (*walk != '"' || *(walk-1) == '\\'))
+                    while (*walk != '\0' && (*walk != '"' || *(walk - 1) == '\\'))
                         walk++;
                 } else {
                     if (token->name[0] == 's') {
@@ -410,22 +408,22 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
                          * semicolon (;). */
                         while (*walk != ' ' && *walk != '\t' &&
                                *walk != ']' && *walk != ',' &&
-                               *walk !=  ';' && *walk != '\r' &&
+                               *walk != ';' && *walk != '\r' &&
                                *walk != '\n' && *walk != '\0')
                             walk++;
                     }
                 }
                 if (walk != beginning) {
-                    char *str = scalloc(walk-beginning + 1);
+                    char *str = scalloc(walk - beginning + 1);
                     /* We copy manually to handle escaping of characters. */
                     int inpos, outpos;
                     for (inpos = 0, outpos = 0;
-                         inpos < (walk-beginning);
+                         inpos < (walk - beginning);
                          inpos++, outpos++) {
                         /* We only handle escaped double quotes to not break
                          * backwards compatibility with people using \w in
                          * regular expressions etc. */
-                        if (beginning[inpos] == '\\' && beginning[inpos+1] == '"')
+                        if (beginning[inpos] == '\\' && beginning[inpos + 1] == '"')
                             inpos++;
                         str[outpos] = beginning[inpos];
                     }
@@ -443,13 +441,13 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
             }
 
             if (strcmp(token->name, "line") == 0) {
-               while (*walk != '\0' && *walk != '\n' && *walk != '\r')
-                  walk++;
-               next_state(token);
-               token_handled = true;
-               linecnt++;
-               walk++;
-               break;
+                while (*walk != '\0' && *walk != '\n' && *walk != '\r')
+                    walk++;
+                next_state(token);
+                token_handled = true;
+                linecnt++;
+                walk++;
+                break;
             }
 
             if (strcmp(token->name, "end") == 0) {
@@ -457,19 +455,19 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
                 if (*walk == '\0' || *walk == '\n' || *walk == '\r') {
                     next_state(token);
                     token_handled = true;
-                    /* To make sure we start with an appropriate matching
+/* To make sure we start with an appropriate matching
                      * datastructure for commands which do *not* specify any
                      * criteria, we re-initialize the criteria system after
                      * every command. */
-                    // TODO: make this testable
+// TODO: make this testable
 #ifndef TEST_PARSER
                     cfg_criteria_init(&current_match, &subcommand_output, INITIAL);
 #endif
                     linecnt++;
                     walk++;
                     break;
-               }
-           }
+                }
+            }
         }
 
         if (!token_handled) {
@@ -516,7 +514,6 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
                       possible_tokens);
             free(possible_tokens);
 
-
             /* Go back to the beginning of the line */
             const char *error_line = start_of_line(walk, input);
 
@@ -536,10 +533,10 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
 
             /* Print context lines *before* the error, if any. */
             if (linecnt > 1) {
-                const char *context_p1_start = start_of_line(error_line-2, input);
+                const char *context_p1_start = start_of_line(error_line - 2, input);
                 char *context_p1_line = single_line(context_p1_start);
                 if (linecnt > 2) {
-                    const char *context_p2_start = start_of_line(context_p1_start-2, input);
+                    const char *context_p2_start = start_of_line(context_p1_start - 2, input);
                     char *context_p2_line = single_line(context_p2_start);
                     ELOG("CONFIG: Line %3d: %s\n", linecnt - 2, context_p2_line);
                     free(context_p2_line);
@@ -592,7 +589,7 @@ struct ConfigResultIR *parse_config(const char *input, struct context *context) 
              * we find the nearest state which contains an <error> token
              * and follow that one. */
             bool error_token_found = false;
-            for (int i = statelist_idx-1; (i >= 0) && !error_token_found; i--) {
+            for (int i = statelist_idx - 1; (i >= 0) && !error_token_found; i--) {
                 cmdp_token_ptr *errptr = &(tokens[statelist[i]]);
                 for (int j = 0; j < errptr->n; j++) {
                     if (strcmp(errptr->array[j].name, "error") != 0)
@@ -687,7 +684,7 @@ static int detect_version(char *buf) {
             strncasecmp(line, "force_focus_wrapping", strlen("force_focus_wrapping")) == 0 ||
             strncasecmp(line, "# i3 config file (v4)", strlen("# i3 config file (v4)")) == 0 ||
             strncasecmp(line, "workspace_layout", strlen("workspace_layout")) == 0) {
-            LOG("deciding for version 4 due to this line: %.*s\n", (int)(walk-line), line);
+            LOG("deciding for version 4 due to this line: %.*s\n", (int)(walk - line), line);
             return 4;
         }
 
@@ -719,12 +716,12 @@ static int detect_version(char *buf) {
                 strncasecmp(bind, "border borderless", strlen("border borderless")) == 0 ||
                 strncasecmp(bind, "--no-startup-id", strlen("--no-startup-id")) == 0 ||
                 strncasecmp(bind, "bar", strlen("bar")) == 0) {
-                LOG("deciding for version 4 due to this line: %.*s\n", (int)(walk-line), line);
+                LOG("deciding for version 4 due to this line: %.*s\n", (int)(walk - line), line);
                 return 4;
             }
         }
 
-next:
+    next:
         /* advance to the next line */
         walk++;
         line = walk;
@@ -770,8 +767,7 @@ static char *migrate_config(char *input, off_t size) {
 
         static char *argv[] = {
             NULL, /* will be replaced by the executable path */
-            NULL
-        };
+            NULL};
         exec_i3_utility("i3-migrate-config-to-v4", argv);
     }
 
@@ -921,12 +917,12 @@ void parse_file(const char *f) {
      * variables (otherwise we will count them twice, which is bad when
      * 'extra' is negative) */
     char *bufcopy = sstrdup(buf);
-    SLIST_FOREACH(current, &variables, variables) {
+    SLIST_FOREACH (current, &variables, variables) {
         int extra = (strlen(current->value) - strlen(current->key));
         char *next;
         for (next = bufcopy;
              next < (bufcopy + stbuf.st_size) &&
-             (next = strcasestr(next, current->key)) != NULL;
+                 (next = strcasestr(next, current->key)) != NULL;
              next += strlen(current->key)) {
             *next = '_';
             extra_bytes += extra;
@@ -941,11 +937,11 @@ void parse_file(const char *f) {
     destwalk = new;
     while (walk < (buf + stbuf.st_size)) {
         /* Find the next variable */
-        SLIST_FOREACH(current, &variables, variables)
+        SLIST_FOREACH (current, &variables, variables)
             current->next_match = strcasestr(walk, current->key);
         nearest = NULL;
         int distance = stbuf.st_size;
-        SLIST_FOREACH(current, &variables, variables) {
+        SLIST_FOREACH (current, &variables, variables) {
             if (current->next_match == NULL)
                 continue;
             if ((current->next_match - walk) < distance) {
@@ -996,7 +992,6 @@ void parse_file(const char *f) {
         }
     }
 
-
     context = scalloc(sizeof(struct context));
     context->filename = f;
 
@@ -1011,7 +1006,7 @@ void parse_file(const char *f) {
             ELOG("Please convert your configfile first, then fix any remaining errors (see above).\n");
 
         char *editaction,
-             *pageraction;
+            *pageraction;
         sasprintf(&editaction, "i3-sensible-editor \"%s\" && i3-msg reload\n", f);
         sasprintf(&pageraction, "i3-sensible-pager \"%s\"\n", errorfilename);
         char *argv[] = {
@@ -1021,17 +1016,14 @@ void parse_file(const char *f) {
             "-t",
             (context->has_errors ? "error" : "warning"),
             "-m",
-            (context->has_errors ?
-             "You have an error in your i3 config file!" :
-             "Your config is outdated. Please fix the warnings to make sure everything works."),
+            (context->has_errors ? "You have an error in your i3 config file!" : "Your config is outdated. Please fix the warnings to make sure everything works."),
             "-b",
             "edit config",
             editaction,
             (errorfilename ? "-b" : NULL),
             (context->has_errors ? "show errors" : "show warnings"),
             pageraction,
-            NULL
-        };
+            NULL};
 
         start_nagbar(&config_error_nagbar_pid, argv);
         free(editaction);

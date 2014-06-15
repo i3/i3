@@ -46,8 +46,8 @@ uint32_t aio_get_mod_mask_for(uint32_t keysym, xcb_key_symbols_t *symbols) {
  *
  */
 uint32_t get_mod_mask_for(uint32_t keysym,
-                           xcb_key_symbols_t *symbols,
-                           xcb_get_modifier_mapping_reply_t *modmap_reply) {
+                          xcb_key_symbols_t *symbols,
+                          xcb_get_modifier_mapping_reply_t *modmap_reply) {
     xcb_keycode_t *codes, *modmap;
     xcb_keycode_t mod_code;
 

@@ -103,7 +103,7 @@ static void restore_input_focus(void) {
  *
  */
 static uint8_t *concat_strings(char **glyphs, int max) {
-    uint8_t *output = calloc(max+1, 4);
+    uint8_t *output = calloc(max + 1, 4);
     uint8_t *walk = output;
     for (int c = 0; c < max; c++) {
         printf("at %c\n", glyphs[c][0]);
@@ -112,7 +112,7 @@ static uint8_t *concat_strings(char **glyphs, int max) {
             memcpy(walk, glyphs[c], 2);
             walk += 2;
         } else {
-            strcpy((char*)walk, glyphs[c]);
+            strcpy((char *)walk, glyphs[c]);
             walk += strlen(glyphs[c]);
         }
     }
@@ -130,9 +130,9 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
 
     /* re-draw the background */
     xcb_rectangle_t border = {0, 0, 500, font.height + 8}, inner = {2, 2, 496, font.height + 8 - 4};
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#FF0000") });
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {get_colorpixel("#FF0000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#000000") });
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {get_colorpixel("#000000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &inner);
 
     /* restore font color */
@@ -143,8 +143,7 @@ static int handle_expose(void *data, xcb_connection_t *conn, xcb_expose_event_t 
         draw_text(prompt, pixmap, pixmap_gc, 4, 4, 492);
     }
     /* … and the text */
-    if (input_position > 0)
-    {
+    if (input_position > 0) {
         i3String *input = i3string_from_ucs2(glyphs_ucs, input_position);
         draw_text(input, pixmap, pixmap_gc, prompt_offset + 4, 4, 492);
         i3string_free(input);
@@ -174,14 +173,14 @@ static int handle_key_release(void *ignored, xcb_connection_t *conn, xcb_key_rel
 }
 
 static void finish_input() {
-    char *command = (char*)concat_strings(glyphs_utf8, input_position);
+    char *command = (char *)concat_strings(glyphs_utf8, input_position);
 
     /* count the occurences of %s in the string */
     int c;
     int len = strlen(format);
     int cnt = 0;
-    for (c = 0; c < (len-1); c++)
-        if (format[c] == '%' && format[c+1] == 's')
+    for (c = 0; c < (len - 1); c++)
+        if (format[c] == '%' && format[c + 1] == 's')
             cnt++;
     printf("occurences = %d\n", cnt);
 
@@ -189,13 +188,13 @@ static void finish_input() {
     int inputlen = strlen(command);
     char *full = calloc(1,
                         strlen(format) - (2 * cnt) /* format without all %s */
-                        + (inputlen * cnt)         /* replaced %s */
-                        + 1);                      /* trailing NUL */
+                            + (inputlen * cnt)     /* replaced %s */
+                            + 1);                  /* trailing NUL */
     char *dest = full;
     for (c = 0; c < len; c++) {
         /* if this is not % or it is % but without a following 's',
          * just copy the character */
-        if (format[c] != '%' || (c == (len-1)) || format[c+1] != 's')
+        if (format[c] != '%' || (c == (len - 1)) || format[c + 1] != 's')
             *(dest++) = format[c];
         else {
             strncat(dest, command, inputlen);
@@ -212,7 +211,7 @@ static void finish_input() {
 
     xcb_aux_sync(conn);
 
-    ipc_send_message(sockfd, strlen(full), 0, (uint8_t*)full);
+    ipc_send_message(sockfd, strlen(full), 0, (uint8_t *)full);
 
     free(full);
 
@@ -292,8 +291,8 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
     }
 
     xcb_char2b_t inp;
-    inp.byte1 = ( ucs & 0xff00 ) >> 2;
-    inp.byte2 = ( ucs & 0x00ff ) >> 0;
+    inp.byte1 = (ucs & 0xff00) >> 2;
+    inp.byte2 = (ucs & 0x00ff) >> 0;
 
     printf("inp.byte1 = %02x, inp.byte2 = %02x\n", inp.byte1, inp.byte2);
     /* convert it to UTF-8 */
@@ -326,8 +325,7 @@ int main(int argc, char *argv[]) {
         {"format", required_argument, 0, 'F'},
         {"font", required_argument, 0, 'f'},
         {"help", no_argument, 0, 'h'},
-        {0, 0, 0, 0}
-    };
+        {0, 0, 0, 0}};
 
     char *options_string = "s:p:P:f:l:F:vh";
 
@@ -405,18 +403,17 @@ int main(int argc, char *argv[]) {
     xcb_create_window(
         conn,
         XCB_COPY_FROM_PARENT,
-        win, /* the window id */
-        root, /* parent == root */
+        win,                          /* the window id */
+        root,                         /* parent == root */
         50, 50, 500, font.height + 8, /* dimensions */
-        0, /* X11 border = 0, we draw our own */
+        0,                            /* X11 border = 0, we draw our own */
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
         XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK,
-        (uint32_t[]){
+        (uint32_t[]) {
             0, /* back pixel: black */
             1, /* override redirect: don’t manage this window */
-            XCB_EVENT_MASK_EXPOSURE
-        });
+            XCB_EVENT_MASK_EXPOSURE});
 
     /* Map the window (make it visible) */
     xcb_map_window(conn, win);
@@ -467,15 +464,15 @@ int main(int argc, char *argv[]) {
 
         switch (type) {
             case XCB_KEY_PRESS:
-                handle_key_press(NULL, conn, (xcb_key_press_event_t*)event);
+                handle_key_press(NULL, conn, (xcb_key_press_event_t *)event);
                 break;
 
             case XCB_KEY_RELEASE:
-                handle_key_release(NULL, conn, (xcb_key_release_event_t*)event);
+                handle_key_release(NULL, conn, (xcb_key_release_event_t *)event);
                 break;
 
             case XCB_EXPOSE:
-                handle_expose(NULL, conn, (xcb_expose_event_t*)event);
+                handle_expose(NULL, conn, (xcb_expose_event_t *)event);
                 break;
         }
 

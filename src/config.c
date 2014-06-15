@@ -36,7 +36,7 @@ void ungrab_all_keys(xcb_connection_t *conn) {
  */
 void update_barconfig() {
     Barconfig *current;
-    TAILQ_FOREACH(current, &barconfigs, configs) {
+    TAILQ_FOREACH (current, &barconfigs, configs) {
         ipc_send_barconfig_update_event(current);
     }
 }
@@ -105,8 +105,7 @@ static char *get_config_path(const char *override_configpath) {
     free(buf);
 
     die("Unable to find the configuration file (looked at "
-            "~/.i3/config, $XDG_CONFIG_HOME/i3/config, "
-            SYSCONFDIR "/i3/config and $XDG_CONFIG_DIRS/i3/config)");
+        "~/.i3/config, $XDG_CONFIG_HOME/i3/config, " SYSCONFDIR "/i3/config and $XDG_CONFIG_DIRS/i3/config)");
 }
 
 /*
@@ -196,7 +195,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
             FREE(barconfig);
         }
 
-        /* Clear workspace names */
+/* Clear workspace names */
 #if 0
         Workspace *ws;
         TAILQ_FOREACH(ws, workspaces, workspaces)
@@ -205,7 +204,7 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
 
         /* Invalidate pixmap caches in case font or colors changed */
         Con *con;
-        TAILQ_FOREACH(con, &all_cons, all_cons)
+        TAILQ_FOREACH (con, &all_cons, all_cons)
             FREE(con->deco_render_params);
 
         /* Get rid of the current font */
@@ -223,19 +222,19 @@ void load_configuration(xcb_connection_t *conn, const char *override_configpath,
     bindings = default_mode->bindings;
 
 #define REQUIRED_OPTION(name) \
-    if (config.name == NULL) \
+    if (config.name == NULL)  \
         die("You did not specify required configuration option " #name "\n");
 
     /* Clear the old config or initialize the data structure */
     memset(&config, 0, sizeof(config));
 
-    /* Initialize default colors */
+/* Initialize default colors */
 #define INIT_COLOR(x, cborder, cbackground, ctext, cindicator) \
-    do { \
-        x.border = get_colorpixel(cborder); \
-        x.background = get_colorpixel(cbackground); \
-        x.text = get_colorpixel(ctext); \
-        x.indicator = get_colorpixel(cindicator); \
+    do {                                                       \
+        x.border = get_colorpixel(cborder);                    \
+        x.background = get_colorpixel(cbackground);            \
+        x.text = get_colorpixel(ctext);                        \
+        x.indicator = get_colorpixel(cindicator);              \
     } while (0)
 
     config.client.background = get_colorpixel("#000000");

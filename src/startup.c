@@ -37,7 +37,7 @@ static void startup_timeout(EV_P_ ev_timer *w, int revents) {
     DLOG("Timeout for startup sequence %s\n", id);
 
     struct Startup_Sequence *current, *sequence = NULL;
-    TAILQ_FOREACH(current, &startup_sequences, sequences) {
+    TAILQ_FOREACH (current, &startup_sequences, sequences) {
         if (strcmp(current->id, id) != 0)
             continue;
 
@@ -77,8 +77,7 @@ static int _prune_startup_sequences(void) {
      * seconds ago or earlier. */
     struct Startup_Sequence *current, *next;
     for (next = TAILQ_FIRST(&startup_sequences);
-         next != TAILQ_END(&startup_sequences);
-         ) {
+         next != TAILQ_END(&startup_sequences);) {
         current = next;
         next = TAILQ_NEXT(next, sequences);
 
@@ -94,7 +93,6 @@ static int _prune_startup_sequences(void) {
     }
 
     return active_sequences;
-
 }
 
 /**
@@ -193,7 +191,7 @@ void start_application(const char *command, bool no_startup_id) {
             if (!no_startup_id)
                 sn_launcher_context_setup_child_process(context);
 
-            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (void*)NULL);
+            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (void *)NULL);
             /* not reached */
         }
         _exit(0);
@@ -204,7 +202,8 @@ void start_application(const char *command, bool no_startup_id) {
         /* Change the pointer of the root window to indicate progress */
         if (xcursor_supported)
             xcursor_set_root_cursor(XCURSOR_CURSOR_WATCH);
-        else xcb_set_root_cursor(XCURSOR_CURSOR_WATCH);
+        else
+            xcb_set_root_cursor(XCURSOR_CURSOR_WATCH);
     }
 }
 
@@ -220,7 +219,7 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
     /* Get the corresponding internal startup sequence */
     const char *id = sn_startup_sequence_get_id(snsequence);
     struct Startup_Sequence *current, *sequence = NULL;
-    TAILQ_FOREACH(current, &startup_sequences, sequences) {
+    TAILQ_FOREACH (current, &startup_sequences, sequences) {
         if (strcmp(current->id, id) != 0)
             continue;
 
@@ -248,7 +247,8 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
                 /* Change the pointer of the root window to indicate progress */
                 if (xcursor_supported)
                     xcursor_set_root_cursor(XCURSOR_CURSOR_POINTER);
-                else xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
+                else
+                    xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
             }
             break;
         default:
@@ -262,7 +262,7 @@ void startup_monitor_event(SnMonitorEvent *event, void *userdata) {
  *
  */
 struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
-    xcb_get_property_reply_t *startup_id_reply, bool ignore_mapped_leader) {
+                                              xcb_get_property_reply_t *startup_id_reply, bool ignore_mapped_leader) {
     /* The _NET_STARTUP_ID is only needed during this function, so we get it
      * here and don’t save it in the 'cwindow'. */
     if (startup_id_reply == NULL || xcb_get_property_value_length(startup_id_reply) == 0) {
@@ -288,7 +288,7 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
         xcb_get_property_cookie_t cookie;
 
         cookie = xcb_get_property(conn, false, cwindow->leader,
-            A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
+                                  A__NET_STARTUP_ID, XCB_GET_PROPERTY_TYPE_ANY, 0, 512);
         startup_id_reply = xcb_get_property_reply(conn, cookie, NULL);
 
         if (startup_id_reply == NULL ||
@@ -301,7 +301,7 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
 
     char *startup_id;
     if (asprintf(&startup_id, "%.*s", xcb_get_property_value_length(startup_id_reply),
-                 (char*)xcb_get_property_value(startup_id_reply)) == -1) {
+                 (char *)xcb_get_property_value(startup_id_reply)) == -1) {
         perror("asprintf()");
         DLOG("Could not get _NET_STARTUP_ID\n");
         free(startup_id_reply);
@@ -309,7 +309,7 @@ struct Startup_Sequence *startup_sequence_get(i3Window *cwindow,
     }
 
     struct Startup_Sequence *current, *sequence = NULL;
-    TAILQ_FOREACH(current, &startup_sequences, sequences) {
+    TAILQ_FOREACH (current, &startup_sequences, sequences) {
         if (strcmp(current->id, startup_id) != 0)
             continue;
 

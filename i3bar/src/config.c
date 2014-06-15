@@ -31,7 +31,7 @@ static int config_map_key_cb(void *params_, const unsigned char *keyVal, size_t 
     FREE(cur_key);
 
     cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
-    strncpy(cur_key, (const char*) keyVal, keyLen);
+    strncpy(cur_key, (const char *)keyVal, keyLen);
     cur_key[keyLen] = '\0';
 
     return 1;
@@ -65,29 +65,29 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
 
     if (!strcmp(cur_key, "mode")) {
         DLOG("mode = %.*s, len = %d\n", len, val, len);
-        config.hide_on_modifier = (len == 4 && !strncmp((const char*)val, "dock", strlen("dock")) ? M_DOCK
-            : (len == 4 && !strncmp((const char*)val, "hide", strlen("hide")) ? M_HIDE
-                : M_INVISIBLE));
+        config.hide_on_modifier = (len == 4 && !strncmp((const char *)val, "dock", strlen("dock")) ? M_DOCK
+                                                                                                   : (len == 4 && !strncmp((const char *)val, "hide", strlen("hide")) ? M_HIDE
+                                                                                                                                                                      : M_INVISIBLE));
         return 1;
     }
 
     if (!strcmp(cur_key, "hidden_state")) {
         DLOG("hidden_state = %.*s, len = %d\n", len, val, len);
-        config.hidden_state = (len == 4 && !strncmp((const char*)val, "hide", strlen("hide")) ? S_HIDE : S_SHOW);
+        config.hidden_state = (len == 4 && !strncmp((const char *)val, "hide", strlen("hide")) ? S_HIDE : S_SHOW);
         return 1;
     }
 
     if (!strcmp(cur_key, "modifier")) {
         DLOG("modifier = %.*s\n", len, val);
-        if (len == 5 && !strncmp((const char*)val, "shift", strlen("shift"))) {
+        if (len == 5 && !strncmp((const char *)val, "shift", strlen("shift"))) {
             config.modifier = ShiftMask;
             return 1;
         }
-        if (len == 4 && !strncmp((const char*)val, "ctrl", strlen("ctrl"))) {
+        if (len == 4 && !strncmp((const char *)val, "ctrl", strlen("ctrl"))) {
             config.modifier = ControlMask;
             return 1;
         }
-        if (len == 4 && !strncmp((const char*)val, "Mod", strlen("Mod"))) {
+        if (len == 4 && !strncmp((const char *)val, "Mod", strlen("Mod"))) {
             switch (val[3]) {
                 case '1':
                     config.modifier = Mod1Mask;
@@ -114,7 +114,7 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
 
     if (!strcmp(cur_key, "position")) {
         DLOG("position = %.*s\n", len, val);
-        config.position = (len == 3 && !strncmp((const char*)val, "top", strlen("top")) ? POS_TOP : POS_BOT);
+        config.position = (len == 3 && !strncmp((const char *)val, "top", strlen("top")) ? POS_TOP : POS_BOT);
         return 1;
     }
 
@@ -133,7 +133,7 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
     if (!strcmp(cur_key, "outputs")) {
         DLOG("+output %.*s\n", len, val);
         int new_num_outputs = config.num_outputs + 1;
-        config.outputs = srealloc(config.outputs, sizeof(char*) * new_num_outputs);
+        config.outputs = srealloc(config.outputs, sizeof(char *) * new_num_outputs);
         sasprintf(&config.outputs[config.num_outputs], "%.*s", len, val);
         config.num_outputs = new_num_outputs;
         return 1;
@@ -146,13 +146,13 @@ static int config_string_cb(void *params_, const unsigned char *val, size_t _len
         return 1;
     }
 
-#define COLOR(json_name, struct_name) \
-    do { \
-        if (!strcmp(cur_key, #json_name)) { \
+#define COLOR(json_name, struct_name)                                  \
+    do {                                                               \
+        if (!strcmp(cur_key, #json_name)) {                            \
             DLOG(#json_name " = " #struct_name " = %.*s\n", len, val); \
             sasprintf(&(config.colors.struct_name), "%.*s", len, val); \
-            return 1; \
-        } \
+            return 1;                                                  \
+        }                                                              \
     } while (0)
 
     COLOR(statusline, bar_fg);
@@ -225,7 +225,7 @@ void parse_config_json(char *json) {
     yajl_status state;
     handle = yajl_alloc(&outputs_callbacks, NULL, NULL);
 
-    state = yajl_parse(handle, (const unsigned char*) json, strlen(json));
+    state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
     /* FIXME: Proper errorhandling for JSON-parsing */
     switch (state) {
@@ -246,9 +246,9 @@ void parse_config_json(char *json) {
  *
  */
 void free_colors(struct xcb_color_strings_t *colors) {
-#define FREE_COLOR(x) \
-    do { \
-        if (colors->x) \
+#define FREE_COLOR(x)        \
+    do {                     \
+        if (colors->x)       \
             free(colors->x); \
     } while (0)
     FREE_COLOR(bar_fg);
@@ -268,4 +268,3 @@ void free_colors(struct xcb_color_strings_t *colors) {
     FREE_COLOR(focus_ws_border);
 #undef FREE_COLOR
 }
-

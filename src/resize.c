@@ -118,7 +118,7 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     /* Open a new window, the resizebar. Grab the pointer and move the window around
        as the user moves the pointer. */
     xcb_window_t grabwin = create_window(conn, output->rect, XCB_COPY_FROM_PARENT, XCB_COPY_FROM_PARENT,
-            XCB_WINDOW_CLASS_INPUT_ONLY, XCURSOR_CURSOR_POINTER, true, mask, values);
+                                         XCB_WINDOW_CLASS_INPUT_ONLY, XCURSOR_CURSOR_POINTER, true, mask, values);
 
     /* Keep track of the coordinate orthogonal to motion so we can determine
      * the length of the resize afterward. */
@@ -134,7 +134,7 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
         helprect.height = second->rect.height;
         initial_position = second->rect.x;
         xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
-                second->rect.x, event->root_y);
+                         second->rect.x, event->root_y);
     } else {
         helprect.x = second->rect.x;
         helprect.y = second->rect.y;
@@ -142,7 +142,7 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
         helprect.height = logical_px(2);
         initial_position = second->rect.y;
         xcb_warp_pointer(conn, XCB_NONE, event->root, 0, 0, 0, 0,
-                event->root_x, second->rect.y);
+                         event->root_x, second->rect.y);
     }
 
     mask = XCB_CW_BACK_PIXEL;
@@ -152,9 +152,7 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     values[1] = 1;
 
     xcb_window_t helpwin = create_window(conn, helprect, XCB_COPY_FROM_PARENT, XCB_COPY_FROM_PARENT,
-            XCB_WINDOW_CLASS_INPUT_OUTPUT, (orientation == HORIZ ?
-                                          XCURSOR_CURSOR_RESIZE_HORIZONTAL :
-                                          XCURSOR_CURSOR_RESIZE_VERTICAL), true, mask, values);
+                                         XCB_WINDOW_CLASS_INPUT_OUTPUT, (orientation == HORIZ ? XCURSOR_CURSOR_RESIZE_HORIZONTAL : XCURSOR_CURSOR_RESIZE_VERTICAL), true, mask, values);
 
     xcb_circulate_window(conn, XCB_CIRCULATE_RAISE_LOWEST, helpwin);
 
@@ -163,7 +161,7 @@ int resize_graphical_handler(Con *first, Con *second, orientation_t orientation,
     /* `new_position' will be updated by the `resize_callback'. */
     new_position = initial_position;
 
-    const struct callback_params params = { orientation, output, helpwin, &new_position };
+    const struct callback_params params = {orientation, output, helpwin, &new_position};
 
     /* `drag_pointer' blocks until the drag is completed. */
     drag_result_t drag_result = drag_pointer(NULL, event, grabwin, BORDER_TOP, 0, resize_callback, &params);

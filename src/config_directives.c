@@ -68,7 +68,7 @@ CFGFUN(criteria_add, const char *ctype, const char *cvalue) {
             (end && *end != '\0')) {
             ELOG("Could not parse con id \"%s\"\n", cvalue);
         } else {
-            current_match->con_id = (Con*)parsed;
+            current_match->con_id = (Con *)parsed;
             DLOG("id as int = %p\n", current_match->con_id);
         }
         return;
@@ -163,18 +163,17 @@ uint32_t modifiers_from_str(const char *str) {
 static char *font_pattern;
 
 CFGFUN(font, const char *font) {
-	config.font = load_font(font, true);
-	set_font(&config.font);
+    config.font = load_font(font, true);
+    set_font(&config.font);
 
-	/* Save the font pattern for using it as bar font later on */
-	FREE(font_pattern);
-	font_pattern = sstrdup(font);
+    /* Save the font pattern for using it as bar font later on */
+    FREE(font_pattern);
+    font_pattern = sstrdup(font);
 }
 
 CFGFUN(binding, const char *bindtype, const char *modifiers, const char *key, const char *release, const char *command) {
     configure_binding(bindtype, modifiers, key, release, command, DEFAULT_BINDING_MODE);
 }
-
 
 /*******************************************************************************
  * Mode handling
@@ -197,14 +196,14 @@ CFGFUN(enter_mode, const char *modename) {
 }
 
 CFGFUN(exec, const char *exectype, const char *no_startup_id, const char *command) {
-	struct Autostart *new = smalloc(sizeof(struct Autostart));
-	new->command = sstrdup(command);
-	new->no_startup_id = (no_startup_id != NULL);
-	if (strcmp(exectype, "exec") == 0) {
-		TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
-	} else {
-		TAILQ_INSERT_TAIL(&autostarts_always, new, autostarts_always);
-	}
+    struct Autostart *new = smalloc(sizeof(struct Autostart));
+    new->command = sstrdup(command);
+    new->no_startup_id = (no_startup_id != NULL);
+    if (strcmp(exectype, "exec") == 0) {
+        TAILQ_INSERT_TAIL(&autostarts, new, autostarts);
+    } else {
+        TAILQ_INSERT_TAIL(&autostarts_always, new, autostarts_always);
+    }
 }
 
 CFGFUN(for_window, const char *command) {
@@ -239,7 +238,8 @@ CFGFUN(default_orientation, const char *orientation) {
         config.default_orientation = HORIZ;
     else if (strcmp(orientation, "vertical") == 0)
         config.default_orientation = VERT;
-    else config.default_orientation = NO_ORIENTATION;
+    else
+        config.default_orientation = NO_ORIENTATION;
 }
 
 CFGFUN(workspace_layout, const char *layout) {
@@ -248,7 +248,8 @@ CFGFUN(workspace_layout, const char *layout) {
     else if (strcmp(layout, "stacking") == 0 ||
              strcmp(layout, "stacked") == 0)
         config.default_layout = L_STACKED;
-    else config.default_layout = L_TABBED;
+    else
+        config.default_layout = L_TABBED;
 }
 
 CFGFUN(new_window, const char *windowtype, const char *border, const long width) {
@@ -291,7 +292,8 @@ CFGFUN(hide_edge_borders, const char *borders) {
         config.hide_edge_borders = ADJ_NONE;
     else if (eval_boolstr(borders))
         config.hide_edge_borders = ADJ_LEFT_SCREEN_EDGE | ADJ_RIGHT_SCREEN_EDGE;
-    else config.hide_edge_borders = ADJ_NONE;
+    else
+        config.hide_edge_borders = ADJ_NONE;
 }
 
 CFGFUN(focus_follows_mouse, const char *value) {
@@ -332,7 +334,7 @@ CFGFUN(workspace, const char *workspace, const char *output) {
      * outputs */
     struct Workspace_Assignment *assignment;
     bool duplicate = false;
-    TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
         if (strcasecmp(assignment->name, workspace) == 0) {
             ELOG("You have a duplicate workspace assignment for workspace \"%s\"\n",
                  workspace);
@@ -372,16 +374,16 @@ CFGFUN(color_single, const char *colorclass, const char *color) {
 }
 
 CFGFUN(color, const char *colorclass, const char *border, const char *background, const char *text, const char *indicator) {
-#define APPLY_COLORS(classname) \
-    do { \
-        if (strcmp(colorclass, "client." #classname) == 0) { \
-            config.client.classname.border = get_colorpixel(border); \
-            config.client.classname.background = get_colorpixel(background); \
-            config.client.classname.text = get_colorpixel(text); \
-            if (indicator != NULL) { \
-                config.client. classname .indicator = get_colorpixel(indicator); \
-            } \
-        } \
+#define APPLY_COLORS(classname)                                                \
+    do {                                                                       \
+        if (strcmp(colorclass, "client." #classname) == 0) {                   \
+            config.client.classname.border = get_colorpixel(border);           \
+            config.client.classname.background = get_colorpixel(background);   \
+            config.client.classname.text = get_colorpixel(text);               \
+            if (indicator != NULL) {                                           \
+                config.client.classname.indicator = get_colorpixel(indicator); \
+            }                                                                  \
+        }                                                                      \
     } while (0)
 
     APPLY_COLORS(focused_inactive);
@@ -430,7 +432,7 @@ CFGFUN(bar_id, const char *bar_id) {
 
 CFGFUN(bar_output, const char *output) {
     int new_outputs = current_bar.num_outputs + 1;
-    current_bar.outputs = srealloc(current_bar.outputs, sizeof(char*) * new_outputs);
+    current_bar.outputs = srealloc(current_bar.outputs, sizeof(char *) * new_outputs);
     current_bar.outputs[current_bar.num_outputs] = sstrdup(output);
     current_bar.num_outputs = new_outputs;
 }
@@ -467,20 +469,20 @@ CFGFUN(bar_i3bar_command, const char *i3bar_command) {
 }
 
 CFGFUN(bar_color, const char *colorclass, const char *border, const char *background, const char *text) {
-#define APPLY_COLORS(classname) \
-    do { \
-        if (strcmp(colorclass, #classname) == 0) { \
-            if (text != NULL) { \
-                /* New syntax: border, background, text */ \
-                current_bar.colors. classname ## _border = sstrdup(border); \
-                current_bar.colors. classname ## _bg = sstrdup(background); \
-                current_bar.colors. classname ## _text = sstrdup(text); \
-            } else { \
-                /* Old syntax: text, background */ \
-                current_bar.colors. classname ## _bg = sstrdup(background); \
-                current_bar.colors. classname ## _text = sstrdup(border); \
-            } \
-        } \
+#define APPLY_COLORS(classname)                                          \
+    do {                                                                 \
+        if (strcmp(colorclass, #classname) == 0) {                       \
+            if (text != NULL) {                                          \
+                /* New syntax: border, background, text */               \
+                current_bar.colors.classname##_border = sstrdup(border); \
+                current_bar.colors.classname##_bg = sstrdup(background); \
+                current_bar.colors.classname##_text = sstrdup(text);     \
+            } else {                                                     \
+                /* Old syntax: text, background */                       \
+                current_bar.colors.classname##_bg = sstrdup(background); \
+                current_bar.colors.classname##_text = sstrdup(border);   \
+            }                                                            \
+        }                                                                \
     } while (0)
 
     APPLY_COLORS(focused_workspace);

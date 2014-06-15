@@ -70,7 +70,7 @@ static int header_boolean(void *ctx, int val) {
 }
 
 #define CHECK_KEY(name) (stringlen == strlen(name) && \
-                         STARTS_WITH((const char*)stringval, stringlen, name))
+                         STARTS_WITH((const char *)stringval, stringlen, name))
 
 static int header_map_key(void *ctx, const unsigned char *stringval, size_t stringlen) {
     if (CHECK_KEY("version")) {

@@ -11,7 +11,8 @@
  */
 #include "all.h"
 
-typedef enum { BEFORE, AFTER } position_t;
+typedef enum { BEFORE,
+               AFTER } position_t;
 
 /*
  * This function detaches 'con' from its parent and inserts it either before or
@@ -184,22 +185,22 @@ void tree_move(int direction) {
         if (same_orientation == con->parent) {
             DLOG("We are in the same container\n");
             Con *swap;
-            if ((swap = (direction == D_LEFT || direction == D_UP ?
-                          TAILQ_PREV(con, nodes_head, nodes) :
-                          TAILQ_NEXT(con, nodes)))) {
+            if ((swap = (direction == D_LEFT || direction == D_UP ? TAILQ_PREV(con, nodes_head, nodes) : TAILQ_NEXT(con, nodes)))) {
                 if (!con_is_leaf(swap)) {
                     DLOG("Moving into our bordering branch\n");
                     target = con_descend_direction(swap, direction);
                     position = (con_orientation(target->parent) != o ||
-                            direction == D_UP ||
-                            direction == D_LEFT ?
-                            AFTER : BEFORE);
+                                        direction == D_UP ||
+                                        direction == D_LEFT
+                                    ? AFTER
+                                    : BEFORE);
                     insert_con_into(con, target, position);
                     goto end;
                 }
                 if (direction == D_LEFT || direction == D_UP)
                     TAILQ_SWAP(swap, con, &(swap->parent->nodes_head), nodes);
-                else TAILQ_SWAP(con, swap, &(swap->parent->nodes_head), nodes);
+                else
+                    TAILQ_SWAP(con, swap, &(swap->parent->nodes_head), nodes);
 
                 TAILQ_REMOVE(&(con->parent->focus_head), con, focused);
                 TAILQ_INSERT_HEAD(&(swap->parent->focus_head), con, focused);
@@ -236,17 +237,16 @@ void tree_move(int direction) {
 
     DLOG("above = %p\n", above);
 
-    Con *next = (direction == D_UP || direction == D_LEFT ?
-            TAILQ_PREV(above, nodes_head, nodes) :
-            TAILQ_NEXT(above, nodes));
+    Con *next = (direction == D_UP || direction == D_LEFT ? TAILQ_PREV(above, nodes_head, nodes) : TAILQ_NEXT(above, nodes));
 
     if (next && !con_is_leaf(next)) {
         DLOG("Moving into the bordering branch of our adjacent container\n");
         target = con_descend_direction(next, direction);
         position = (con_orientation(target->parent) != o ||
-                direction == D_UP ||
-                direction == D_LEFT ?
-                AFTER : BEFORE);
+                            direction == D_UP ||
+                            direction == D_LEFT
+                        ? AFTER
+                        : BEFORE);
         insert_con_into(con, target, position);
     } else {
         DLOG("Moving into container above\n");

@@ -31,7 +31,7 @@
 i3bar_child child;
 
 /* stdin- and sigchild-watchers */
-ev_io    *stdin_io;
+ev_io *stdin_io;
 ev_child *child_sig;
 
 /* JSON parser for stdin */
@@ -80,7 +80,7 @@ static void clear_status_blocks() {
  * `draw_bars' is called, the error message text will be drawn on the bar in
  * the space allocated for the statusline.
  */
-__attribute__ ((format (printf, 1, 2))) static void set_statusline_error(const char *format, ...) {
+__attribute__((format(printf, 1, 2))) static void set_statusline_error(const char *format, ...) {
     clear_status_blocks();
 
     char *message;
@@ -188,9 +188,9 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
         sasprintf(&(ctx->block.color), "%.*s", len, val);
     }
     if (strcasecmp(ctx->last_map_key, "align") == 0) {
-        if (len == strlen("left") && !strncmp((const char*)val, "left", strlen("left"))) {
+        if (len == strlen("left") && !strncmp((const char *)val, "left", strlen("left"))) {
             ctx->block.align = ALIGN_LEFT;
-        } else if (len == strlen("right") && !strncmp((const char*)val, "right", strlen("right"))) {
+        } else if (len == strlen("right") && !strncmp((const char *)val, "right", strlen("right"))) {
             ctx->block.align = ALIGN_RIGHT;
         } else {
             ctx->block.align = ALIGN_CENTER;
@@ -201,13 +201,13 @@ static int stdin_string(void *context, const unsigned char *val, size_t len) {
         i3string_free(text);
     }
     if (strcasecmp(ctx->last_map_key, "name") == 0) {
-        char *copy = (char*)malloc(len+1);
+        char *copy = (char *)malloc(len + 1);
         strncpy(copy, (const char *)val, len);
         copy[len] = 0;
         ctx->block.name = copy;
     }
     if (strcasecmp(ctx->last_map_key, "instance") == 0) {
-        char *copy = (char*)malloc(len+1);
+        char *copy = (char *)malloc(len + 1);
         strncpy(copy, (const char *)val, len);
         copy[len] = 0;
         ctx->block.instance = copy;
@@ -243,7 +243,7 @@ static int stdin_end_map(void *context) {
 static int stdin_end_array(void *context) {
     DLOG("dumping statusline:\n");
     struct status_block *current;
-    TAILQ_FOREACH(current, &statusline_head, blocks) {
+    TAILQ_FOREACH (current, &statusline_head, blocks) {
         DLOG("full_text = %s\n", i3string_as_utf8(current->full_text));
         DLOG("color = %s\n", current->color);
     }
@@ -262,9 +262,9 @@ static unsigned char *get_buffer(ev_io *watcher, int *ret_buffer_len) {
     int n = 0;
     int rec = 0;
     int buffer_len = STDIN_CHUNK_SIZE;
-    unsigned char *buffer = smalloc(buffer_len+1);
+    unsigned char *buffer = smalloc(buffer_len + 1);
     buffer[0] = '\0';
-    while(1) {
+    while (1) {
         n = read(fd, buffer + rec, buffer_len - rec);
         if (n == -1) {
             if (errno == EAGAIN) {
@@ -300,9 +300,10 @@ static void read_flat_input(char *buffer, int length) {
     I3STRING_FREE(first->full_text);
     /* Remove the trailing newline and terminate the string at the same
      * time. */
-    if (buffer[length-1] == '\n' || buffer[length-1] == '\r')
-        buffer[length-1] = '\0';
-    else buffer[length] = '\0';
+    if (buffer[length - 1] == '\n' || buffer[length - 1] == '\r')
+        buffer[length - 1] = '\0';
+    else
+        buffer[length] = '\0';
     first->full_text = i3string_from_utf8(buffer);
 }
 
@@ -320,7 +321,7 @@ static bool read_json_input(unsigned char *input, int length) {
                 status, message, length, input);
 
         set_statusline_error("Could not parse JSON (%s)", message);
-        yajl_free_error(parser, (unsigned char*)message);
+        yajl_free_error(parser, (unsigned char *)message);
         draw_bars(false);
     } else if (parser_context.has_urgent) {
         has_urgent = true;
@@ -342,7 +343,7 @@ void stdin_io_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     if (child.version > 0) {
         has_urgent = read_json_input(buffer, rec);
     } else {
-        read_flat_input((char*)buffer, rec);
+        read_flat_input((char *)buffer, rec);
     }
     free(buffer);
     draw_bars(has_urgent);
@@ -376,7 +377,7 @@ void stdin_io_first_line_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
          * full_text pointer later. */
         struct status_block *new_block = scalloc(sizeof(struct status_block));
         TAILQ_INSERT_TAIL(&statusline_head, new_block, blocks);
-        read_flat_input((char*)buffer, rec);
+        read_flat_input((char *)buffer, rec);
     }
     free(buffer);
     ev_io_stop(main_loop, stdin_io);
@@ -394,8 +395,8 @@ void child_sig_cb(struct ev_loop *loop, ev_child *watcher, int revents) {
     int exit_status = WEXITSTATUS(watcher->rstatus);
 
     ELOG("Child (pid: %d) unexpectedly exited with status %d\n",
-           child.pid,
-           exit_status);
+         child.pid,
+         exit_status);
 
     /* this error is most likely caused by a user giving a nonexecutable or
      * nonexistent file, so we will handle those cases separately. */
@@ -450,7 +451,7 @@ void start_child(char *command) {
 
     gen = yajl_gen_alloc(NULL);
 
-    int pipe_in[2]; /* pipe we read from */
+    int pipe_in[2];  /* pipe we read from */
     int pipe_out[2]; /* pipe we write to */
 
     if (pipe(pipe_in) == -1)
@@ -473,7 +474,7 @@ void start_child(char *command) {
             dup2(pipe_out[0], STDIN_FILENO);
 
             setpgid(child.pid, 0);
-            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (char*) NULL);
+            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (char *)NULL);
             return;
         default:
             /* Parent-process. Reroute streams */

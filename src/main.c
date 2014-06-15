@@ -131,7 +131,7 @@ static void xcb_check_cb(EV_P_ ev_check *w, int revents) {
             if (event_is_ignored(event->sequence, 0))
                 DLOG("Expected X11 Error received for sequence %x\n", event->sequence);
             else {
-                xcb_generic_error_t *error = (xcb_generic_error_t*)event;
+                xcb_generic_error_t *error = (xcb_generic_error_t *)event;
                 DLOG("X11 Error received (probably harmless)! sequence 0x%x, error_code = %d\n",
                      error->sequence, error->error_code);
             }
@@ -180,7 +180,7 @@ static void xkb_got_event(EV_P_ struct ev_io *w, int revents) {
      * mapping_notify once. */
     bool mapping_changed = false;
     while (XPending(xkbdpy)) {
-        XNextEvent(xkbdpy, (XEvent*)&ev);
+        XNextEvent(xkbdpy, (XEvent *)&ev);
         /* While we should never receive a non-XKB event,
          * better do sanity checking */
         if (ev.type != xkb_event_base)
@@ -268,7 +268,7 @@ static void handle_signal(int sig, siginfo_t *info, void *data) {
 int main(int argc, char *argv[]) {
     /* Keep a symbol pointing to the I3_VERSION string constant so that we have
      * it in gdb backtraces. */
-    const char *i3_version __attribute__ ((unused)) = I3_VERSION;
+    const char *i3_version __attribute__((unused)) = I3_VERSION;
     char *override_configpath = NULL;
     bool autostart = true;
     char *layout_path = NULL;
@@ -296,8 +296,7 @@ int main(int argc, char *argv[]) {
         {"fake_outputs", required_argument, 0, 0},
         {"fake-outputs", required_argument, 0, 0},
         {"force-old-config-parser-v4.4-only", no_argument, 0, 0},
-        {0, 0, 0, 0}
-    };
+        {0, 0, 0, 0}};
     int option_index = 0, opt;
 
     setlocale(LC_ALL, "");
@@ -403,7 +402,7 @@ int main(int argc, char *argv[]) {
                     ELOG("You are passing --force-old-config-parser-v4.4-only, but that flag was removed by now.\n");
                     break;
                 }
-                /* fall-through */
+            /* fall-through */
             default:
                 fprintf(stderr, "Usage: %s [-c configfile] [-d all] [-a] [-v] [-V] [-C]\n", argv[0]);
                 fprintf(stderr, "\n");
@@ -427,7 +426,8 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "\t--shmlog-size <limit>\n"
                                 "\tLimits the size of the i3 SHM log to <limit> bytes. Setting this\n"
                                 "\tto 0 disables SHM logging entirely.\n"
-                                "\tThe default is %d bytes.\n", shmlog_size);
+                                "\tThe default is %d bytes.\n",
+                        shmlog_size);
                 fprintf(stderr, "\n");
                 fprintf(stderr, "If you pass plain text arguments, i3 will interpret them as a command\n"
                                 "to send to a currently running i3 (like i3-msg). This allows you to\n"
@@ -478,11 +478,11 @@ int main(int argc, char *argv[]) {
         memset(&addr, 0, sizeof(struct sockaddr_un));
         addr.sun_family = AF_LOCAL;
         strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
-        if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0)
+        if (connect(sockfd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0)
             err(EXIT_FAILURE, "Could not connect to i3");
 
         if (ipc_send_message(sockfd, strlen(payload), I3_IPC_MESSAGE_TYPE_COMMAND,
-                             (uint8_t*)payload) == -1)
+                             (uint8_t *)payload) == -1)
             err(EXIT_FAILURE, "IPC: write()");
 
         uint32_t reply_length;
@@ -505,7 +505,7 @@ int main(int argc, char *argv[]) {
 
     /* Try to enable core dumps by default when running a debug build */
     if (is_debug_build()) {
-        struct rlimit limit = { RLIM_INFINITY, RLIM_INFINITY };
+        struct rlimit limit = {RLIM_INFINITY, RLIM_INFINITY};
         setrlimit(RLIMIT_CORE, &limit);
 
         /* The following code is helpful, but not required. We thus don’t pay
@@ -544,7 +544,7 @@ int main(int argc, char *argv[]) {
      * for the nagbar when config errors are found. */
     main_loop = EV_DEFAULT;
     if (main_loop == NULL)
-            die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
+        die("Could not initialize libev. Bad LIBEV_FLAGS?\n");
 
     root_screen = xcb_aux_get_screen(conn, conn_screen);
     root = root_screen->root;
@@ -577,7 +577,7 @@ int main(int argc, char *argv[]) {
     }
 
     xcb_void_cookie_t cookie;
-    cookie = xcb_change_window_attributes_checked(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){ ROOT_EVENT_MASK });
+    cookie = xcb_change_window_attributes_checked(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]) {ROOT_EVENT_MASK});
     check_error(conn, cookie, "Another window manager seems to be running");
 
     xcb_get_geometry_reply_t *greply = xcb_get_geometry_reply(conn, gcookie, NULL);
@@ -587,11 +587,11 @@ int main(int argc, char *argv[]) {
     }
     DLOG("root geometry reply: (%d, %d) %d x %d\n", greply->x, greply->y, greply->width, greply->height);
 
-    /* Place requests for the atoms we need as soon as possible */
-    #define xmacro(atom) \
-        xcb_intern_atom_cookie_t atom ## _cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
-    #include "atoms.xmacro"
-    #undef xmacro
+/* Place requests for the atoms we need as soon as possible */
+#define xmacro(atom) \
+    xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
+#include "atoms.xmacro"
+#undef xmacro
 
     /* Initialize the Xlib connection */
     xlibdpy = xkbdpy = XOpenDisplay(NULL);
@@ -613,7 +613,8 @@ int main(int argc, char *argv[]) {
        cursor until the first client is launched). */
     if (xcursor_supported)
         xcursor_set_root_cursor(XCURSOR_CURSOR_POINTER);
-    else xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
+    else
+        xcb_set_root_cursor(XCURSOR_CURSOR_POINTER);
 
     if (xkb_supported) {
         int errBase,
@@ -626,15 +627,13 @@ int main(int argc, char *argv[]) {
         }
 
         int i1;
-        if (!XkbQueryExtension(xkbdpy,&i1,&xkb_event_base,&errBase,&major,&minor)) {
+        if (!XkbQueryExtension(xkbdpy, &i1, &xkb_event_base, &errBase, &major, &minor)) {
             fprintf(stderr, "XKB not supported by X-server\n");
-	    xkb_supported = false;
+            xkb_supported = false;
         }
         /* end of ugliness */
 
-        if (xkb_supported && !XkbSelectEvents(xkbdpy, XkbUseCoreKbd,
-                                              XkbMapNotifyMask | XkbStateNotifyMask,
-                                              XkbMapNotifyMask | XkbStateNotifyMask)) {
+        if (xkb_supported && !XkbSelectEvents(xkbdpy, XkbUseCoreKbd, XkbMapNotifyMask | XkbStateNotifyMask, XkbMapNotifyMask | XkbStateNotifyMask)) {
             fprintf(stderr, "Could not set XKB event mask\n");
             return 1;
         }
@@ -642,19 +641,19 @@ int main(int argc, char *argv[]) {
 
     restore_connect();
 
-    /* Setup NetWM atoms */
-    #define xmacro(name) \
-        do { \
-            xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name ## _cookie, NULL); \
-            if (!reply) { \
-                ELOG("Could not get atom " #name "\n"); \
-                exit(-1); \
-            } \
-            A_ ## name = reply->atom; \
-            free(reply); \
-        } while (0);
-    #include "atoms.xmacro"
-    #undef xmacro
+/* Setup NetWM atoms */
+#define xmacro(name)                                                                       \
+    do {                                                                                   \
+        xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name##_cookie, NULL); \
+        if (!reply) {                                                                      \
+            ELOG("Could not get atom " #name "\n");                                        \
+            exit(-1);                                                                      \
+        }                                                                                  \
+        A_##name = reply->atom;                                                            \
+        free(reply);                                                                       \
+    } while (0);
+#include "atoms.xmacro"
+#undef xmacro
 
     property_handlers_init();
 
@@ -777,7 +776,6 @@ int main(int argc, char *argv[]) {
     ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
     ev_io_start(main_loop, xcb_watcher);
 
-
     if (xkb_supported) {
         ev_io_init(xkb, xkb_got_event, ConnectionNumber(xkbdpy), EV_READ);
         ev_io_start(main_loop, xkb);
@@ -843,11 +841,11 @@ int main(int argc, char *argv[]) {
         xcb_create_pixmap(conn, root->root_depth, pixmap, root->root, width, height);
 
         xcb_create_gc(conn, gc, root->root,
-            XCB_GC_FUNCTION | XCB_GC_PLANE_MASK | XCB_GC_FILL_STYLE | XCB_GC_SUBWINDOW_MODE,
-            (uint32_t[]){ XCB_GX_COPY, ~0, XCB_FILL_STYLE_SOLID, XCB_SUBWINDOW_MODE_INCLUDE_INFERIORS });
+                      XCB_GC_FUNCTION | XCB_GC_PLANE_MASK | XCB_GC_FILL_STYLE | XCB_GC_SUBWINDOW_MODE,
+                      (uint32_t[]) {XCB_GX_COPY, ~0, XCB_FILL_STYLE_SOLID, XCB_SUBWINDOW_MODE_INCLUDE_INFERIORS});
 
         xcb_copy_area(conn, root->root, pixmap, gc, 0, 0, 0, 0, width, height);
-        xcb_change_window_attributes_checked(conn, root->root, XCB_CW_BACK_PIXMAP, (uint32_t[]){ pixmap });
+        xcb_change_window_attributes_checked(conn, root->root, XCB_CW_BACK_PIXMAP, (uint32_t[]) {pixmap});
         xcb_flush(conn);
         xcb_free_gc(conn, gc);
         xcb_free_pixmap(conn, pixmap);
@@ -886,7 +884,7 @@ int main(int argc, char *argv[]) {
     /* Autostarting exec-lines */
     if (autostart) {
         struct Autostart *exec;
-        TAILQ_FOREACH(exec, &autostarts, autostarts) {
+        TAILQ_FOREACH (exec, &autostarts, autostarts) {
             LOG("auto-starting %s\n", exec->command);
             start_application(exec->command, exec->no_startup_id);
         }
@@ -894,18 +892,18 @@ int main(int argc, char *argv[]) {
 
     /* Autostarting exec_always-lines */
     struct Autostart *exec_always;
-    TAILQ_FOREACH(exec_always, &autostarts_always, autostarts_always) {
+    TAILQ_FOREACH (exec_always, &autostarts_always, autostarts_always) {
         LOG("auto-starting (always!) %s\n", exec_always->command);
         start_application(exec_always->command, exec_always->no_startup_id);
     }
 
     /* Start i3bar processes for all configured bars */
     Barconfig *barconfig;
-    TAILQ_FOREACH(barconfig, &barconfigs, configs) {
+    TAILQ_FOREACH (barconfig, &barconfigs, configs) {
         char *command = NULL;
         sasprintf(&command, "%s --bar_id=%s --socket=\"%s\"",
-                barconfig->i3bar_command ? barconfig->i3bar_command : "i3bar",
-                barconfig->id, current_socketpath);
+                  barconfig->i3bar_command ? barconfig->i3bar_command : "i3bar",
+                  barconfig->id, current_socketpath);
         LOG("Starting bar process: %s\n", command);
         start_application(command, true);
         free(command);

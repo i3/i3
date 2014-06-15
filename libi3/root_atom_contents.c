@@ -80,14 +80,14 @@ char *root_atom_contents(const char *atomname, xcb_connection_t *provided_conn, 
     if (prop_reply->type == XCB_ATOM_CARDINAL) {
         /* We treat a CARDINAL as a >= 32-bit unsigned int. The only CARDINAL
          * we query is I3_PID, which is 32-bit. */
-        if (asprintf(&content, "%u", *((unsigned int*)xcb_get_property_value(prop_reply))) == -1) {
+        if (asprintf(&content, "%u", *((unsigned int *)xcb_get_property_value(prop_reply))) == -1) {
             free(atom_reply);
             free(prop_reply);
             return NULL;
         }
     } else {
         if (asprintf(&content, "%.*s", xcb_get_property_value_length(prop_reply),
-                     (char*)xcb_get_property_value(prop_reply)) == -1) {
+                     (char *)xcb_get_property_value(prop_reply)) == -1) {
             free(atom_reply);
             free(prop_reply);
             return NULL;
@@ -99,4 +99,3 @@ char *root_atom_contents(const char *atomname, xcb_connection_t *provided_conn, 
     free(prop_reply);
     return content;
 }
-

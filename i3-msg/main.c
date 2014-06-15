@@ -78,14 +78,15 @@ static int reply_boolean_cb(void *params, int val) {
 
 static int reply_string_cb(void *params, const unsigned char *val, size_t len) {
     char *str = scalloc(len + 1);
-    strncpy(str, (const char*)val, len);
+    strncpy(str, (const char *)val, len);
     if (strcmp(last_key, "error") == 0)
         last_reply.error = str;
     else if (strcmp(last_key, "input") == 0)
         last_reply.input = str;
     else if (strcmp(last_key, "errorposition") == 0)
         last_reply.errorposition = str;
-    else free(str);
+    else
+        free(str);
     return 1;
 }
 
@@ -102,11 +103,10 @@ static int reply_end_map_cb(void *params) {
     return 1;
 }
 
-
 static int reply_map_key_cb(void *params, const unsigned char *keyVal, size_t keyLen) {
     free(last_key);
     last_key = scalloc(keyLen + 1);
-    strncpy(last_key, (const char*)keyVal, keyLen);
+    strncpy(last_key, (const char *)keyVal, keyLen);
     return 1;
 }
 
@@ -131,8 +131,7 @@ int main(int argc, char *argv[]) {
         {"version", no_argument, 0, 'v'},
         {"quiet", no_argument, 0, 'q'},
         {"help", no_argument, 0, 'h'},
-        {0, 0, 0, 0}
-    };
+        {0, 0, 0, 0}};
 
     char *options_string = "s:t:vhq";
 
@@ -207,10 +206,10 @@ int main(int argc, char *argv[]) {
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_LOCAL;
     strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
-    if (connect(sockfd, (const struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0)
+    if (connect(sockfd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0)
         err(EXIT_FAILURE, "Could not connect to i3 on socket \"%s\"", socket_path);
 
-    if (ipc_send_message(sockfd, strlen(payload), message_type, (uint8_t*)payload) == -1)
+    if (ipc_send_message(sockfd, strlen(payload), message_type, (uint8_t *)payload) == -1)
         err(EXIT_FAILURE, "IPC: write()");
 
     if (quiet)
@@ -232,7 +231,7 @@ int main(int argc, char *argv[]) {
     if (reply_type == I3_IPC_MESSAGE_TYPE_COMMAND) {
         yajl_handle handle;
         handle = yajl_alloc(&reply_callbacks, NULL, NULL);
-        yajl_status state = yajl_parse(handle, (const unsigned char*)reply, reply_length);
+        yajl_status state = yajl_parse(handle, (const unsigned char *)reply, reply_length);
         switch (state) {
             case yajl_status_ok:
                 break;

@@ -12,5 +12,5 @@ extern xcb_screen_t *root_screen;
 int logical_px(const int logical) {
     const int dpi = (double)root_screen->height_in_pixels * 25.4 /
                     (double)root_screen->height_in_millimeters;
-	return ceil((dpi / 96.0) * logical);
+    return ceil((dpi / 96.0) * logical);
 }

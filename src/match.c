@@ -16,10 +16,8 @@
 #include "all.h"
 
 /* From sys/time.h, not sure if it’s available on all systems. */
-# define _i3_timercmp(a, b, CMP)                                                  \
-  (((a).tv_sec == (b).tv_sec) ?                                             \
-   ((a).tv_usec CMP (b).tv_usec) :                                          \
-   ((a).tv_sec CMP (b).tv_sec))
+#define _i3_timercmp(a, b, CMP) \
+    (((a).tv_sec == (b).tv_sec) ? ((a).tv_usec CMP(b).tv_usec) : ((a).tv_sec CMP(b).tv_sec))
 
 /*
  * Initializes the Match data structure. This function is necessary because the
@@ -65,10 +63,11 @@ void match_copy(Match *dest, Match *src) {
 /* The DUPLICATE_REGEX macro creates a new regular expression from the
  * ->pattern of the old one. It therefore does use a little more memory then
  *  with a refcounting system, but it’s easier this way. */
-#define DUPLICATE_REGEX(field) do { \
-    if (src->field != NULL) \
-        dest->field = regex_new(src->field->pattern); \
-} while (0)
+#define DUPLICATE_REGEX(field)                            \
+    do {                                                  \
+        if (src->field != NULL)                           \
+            dest->field = regex_new(src->field->pattern); \
+    } while (0)
 
     DUPLICATE_REGEX(title);
     DUPLICATE_REGEX(mark);
@@ -137,9 +136,9 @@ bool match_matches_window(Match *match, i3Window *window) {
             return false;
         }
         /* if we find a window that is newer than this one, bail */
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
+        TAILQ_FOREACH (con, &all_cons, all_cons) {
             if ((con->window != NULL) &&
-                _i3_timercmp(con->window->urgent, window->urgent, >)) {
+                _i3_timercmp(con->window->urgent, window->urgent, > )) {
                 return false;
             }
         }
@@ -152,10 +151,10 @@ bool match_matches_window(Match *match, i3Window *window) {
             return false;
         }
         /* if we find a window that is older than this one (and not 0), bail */
-        TAILQ_FOREACH(con, &all_cons, all_cons) {
+        TAILQ_FOREACH (con, &all_cons, all_cons) {
             if ((con->window != NULL) &&
                 (con->window->urgent.tv_sec != 0) &&
-                _i3_timercmp(con->window->urgent, window->urgent, <)) {
+                _i3_timercmp(con->window->urgent, window->urgent, < )) {
                 return false;
             }
         }
@@ -164,10 +163,10 @@ bool match_matches_window(Match *match, i3Window *window) {
 
     if (match->dock != -1) {
         if ((window->dock == W_DOCK_TOP && match->dock == M_DOCK_TOP) ||
-         (window->dock == W_DOCK_BOTTOM && match->dock == M_DOCK_BOTTOM) ||
-         ((window->dock == W_DOCK_TOP || window->dock == W_DOCK_BOTTOM) &&
-          match->dock == M_DOCK_ANY) ||
-         (window->dock == W_NODOCK && match->dock == M_NODOCK)) {
+            (window->dock == W_DOCK_BOTTOM && match->dock == M_DOCK_BOTTOM) ||
+            ((window->dock == W_DOCK_TOP || window->dock == W_DOCK_BOTTOM) &&
+             match->dock == M_DOCK_ANY) ||
+            (window->dock == W_NODOCK && match->dock == M_NODOCK)) {
             LOG("dock status matches\n");
         } else {
             LOG("dock status does not match\n");

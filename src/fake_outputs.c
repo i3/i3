@@ -20,7 +20,7 @@ static int num_screens;
  */
 static Output *get_screen_at(unsigned int x, unsigned int y) {
     Output *output;
-    TAILQ_FOREACH(output, &outputs, outputs)
+    TAILQ_FOREACH (output, &outputs, outputs)
         if (output->rect.x == x && output->rect.y == y)
             return output;
 
@@ -60,7 +60,8 @@ void fake_outputs_init(const char *output_spec) {
             /* We always treat the screen at 0x0 as the primary screen */
             if (new_output->rect.x == 0 && new_output->rect.y == 0)
                 TAILQ_INSERT_HEAD(&outputs, new_output, outputs);
-            else TAILQ_INSERT_TAIL(&outputs, new_output, outputs);
+            else
+                TAILQ_INSERT_TAIL(&outputs, new_output, outputs);
             output_init_con(new_output);
             init_ws_for_output(new_output, output_get_content(new_output->con));
             num_screens++;

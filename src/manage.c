@@ -56,7 +56,7 @@ void restore_geometry(void) {
     DLOG("Restoring geometry\n");
 
     Con *con;
-    TAILQ_FOREACH(con, &all_cons, all_cons)
+    TAILQ_FOREACH (con, &all_cons, all_cons)
         if (con->window) {
             DLOG("Re-adding X11 border of %d px\n", con->border_width);
             con->window_rect.width += (2 * con->border_width);
@@ -69,7 +69,7 @@ void restore_geometry(void) {
 
     /* Strictly speaking, this line doesn’t really belong here, but since we
      * are syncing, let’s un-register as a window manager first */
-    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]){ XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT });
+    xcb_change_window_attributes(conn, root, XCB_CW_EVENT_MASK, (uint32_t[]) {XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT});
 
     /* Make sure our changes reach the X server, we restart/exit now */
     xcb_aux_sync(conn);
@@ -81,17 +81,16 @@ void restore_geometry(void) {
  */
 void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cookie,
                    bool needs_to_be_mapped) {
-    xcb_drawable_t d = { window };
+    xcb_drawable_t d = {window};
     xcb_get_geometry_cookie_t geomc;
     xcb_get_geometry_reply_t *geom;
     xcb_get_window_attributes_reply_t *attr = NULL;
 
     xcb_get_property_cookie_t wm_type_cookie, strut_cookie, state_cookie,
-                              utf8_title_cookie, title_cookie,
-                              class_cookie, leader_cookie, transient_cookie,
-                              role_cookie, startup_id_cookie, wm_hints_cookie,
-                              wm_normal_hints_cookie, motif_wm_hints_cookie;
-
+        utf8_title_cookie, title_cookie,
+        class_cookie, leader_cookie, transient_cookie,
+        role_cookie, startup_id_cookie, wm_hints_cookie,
+        wm_normal_hints_cookie, motif_wm_hints_cookie;
 
     geomc = xcb_get_geometry(conn, d);
 
@@ -270,7 +269,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
                 if (!workspace_is_visible(assigned_ws))
                     urgency_hint = true;
             }
-        /* TODO: handle assignments with type == A_TO_OUTPUT */
+            /* TODO: handle assignments with type == A_TO_OUTPUT */
         } else if (startup_ws) {
             /* If it’s not assigned, but was started on a specific workspace,
              * we want to open it there */
@@ -279,14 +278,16 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             DLOG("focused on ws %s: %p / %s\n", startup_ws, nc, nc->name);
             if (nc->type == CT_WORKSPACE)
                 nc = tree_open_con(nc, cwindow);
-            else nc = tree_open_con(nc->parent, cwindow);
+            else
+                nc = tree_open_con(nc->parent, cwindow);
         } else {
             /* If not, insert it at the currently focused position */
             if (focused->type == CT_CON && con_accepts_window(focused)) {
                 LOG("using current container, focused = %p, focused->name = %s\n",
-                                focused, focused->name);
+                    focused, focused->name);
                 nc = focused;
-            } else nc = tree_open_con(NULL, cwindow);
+            } else
+                nc = tree_open_con(NULL, cwindow);
         }
     } else {
         /* M_BELOW inserts the new window as a child of the one which was
@@ -349,9 +350,12 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
             if (workspace_is_visible(ws) && current_output == target_output) {
                 if (!match || !match->restart_mode) {
                     set_focus = true;
-                } else DLOG("not focusing, matched with restart_mode == true\n");
-            } else DLOG("workspace not visible, not focusing\n");
-        } else DLOG("dock, not focusing\n");
+                } else
+                    DLOG("not focusing, matched with restart_mode == true\n");
+            } else
+                DLOG("workspace not visible, not focusing\n");
+        } else
+            DLOG("dock, not focusing\n");
     } else {
         DLOG("fs = %p, ws = %p, not focusing\n", fs, ws);
         /* Insert the new container in focus stack *after* the currently
@@ -430,7 +434,7 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
      * which are not managed by the wm anyways). We store the original geometry
      * here because it’s used for dock clients. */
     if (nc->geometry.width == 0)
-        nc->geometry = (Rect){ geom->x, geom->y, geom->width, geom->height };
+        nc->geometry = (Rect) {geom->x, geom->y, geom->width, geom->height};
 
     if (want_floating) {
         DLOG("geometry = %d x %d\n", nc->geometry.width, nc->geometry.height);

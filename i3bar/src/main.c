@@ -99,12 +99,11 @@ int main(int argc, char **argv) {
     memset(&config, '\0', sizeof(config_t));
 
     static struct option long_opt[] = {
-        { "socket",               required_argument, 0, 's' },
-        { "bar_id",               required_argument, 0, 'b' },
-        { "help",                 no_argument,       0, 'h' },
-        { "version",              no_argument,       0, 'v' },
-        { NULL,                   0,                 0, 0}
-    };
+        {"socket", required_argument, 0, 's'},
+        {"bar_id", required_argument, 0, 'b'},
+        {"help", no_argument, 0, 'h'},
+        {"version", no_argument, 0, 'v'},
+        {NULL, 0, 0, 0}};
 
     while ((opt = getopt_long(argc, argv, "b:s:hv", long_opt, &option_index)) != -1) {
         switch (opt) {

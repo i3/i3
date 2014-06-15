@@ -24,15 +24,15 @@ void ewmh_update_current_desktop(void) {
     uint32_t idx = 0;
     /* We count to get the index of this workspace because named workspaces
      * don’t have the ->num property */
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
         Con *ws;
-        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+        TAILQ_FOREACH (ws, &(output_get_content(output)->nodes_head), nodes) {
             if (STARTS_WITH(ws->name, "__"))
                 continue;
 
             if (ws == focused_ws) {
                 xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
-                        A__NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, &idx);
+                                    A__NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 32, 1, &idx);
                 return;
             }
             ++idx;
@@ -49,7 +49,7 @@ void ewmh_update_current_desktop(void) {
  */
 void ewmh_update_active_window(xcb_window_t window) {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, root,
-            A__NET_ACTIVE_WINDOW, XCB_ATOM_WINDOW, 32, 1, &window);
+                        A__NET_ACTIVE_WINDOW, XCB_ATOM_WINDOW, 32, 1, &window);
 }
 
 /*
@@ -109,7 +109,7 @@ void ewmh_update_client_list_stacking(xcb_window_t *stack, int num_windows) {
  */
 void ewmh_setup_hints(void) {
     xcb_atom_t supported_atoms[] = {
-#define xmacro(atom) A_ ## atom,
+#define xmacro(atom) A_##atom,
 #include "atoms.xmacro"
 #undef xmacro
     };
@@ -122,13 +122,13 @@ void ewmh_setup_hints(void) {
     xcb_window_t child_window = xcb_generate_id(conn);
     xcb_create_window(
         conn,
-        XCB_COPY_FROM_PARENT, /* depth */
-        child_window, /* window id */
-        root, /* parent */
-        0, 0, 1, 1, /* dimensions (x, y, w, h) */
-        0, /* border */
+        XCB_COPY_FROM_PARENT,        /* depth */
+        child_window,                /* window id */
+        root,                        /* parent */
+        0, 0, 1, 1,                  /* dimensions (x, y, w, h) */
+        0,                           /* border */
         XCB_WINDOW_CLASS_INPUT_ONLY, /* window class */
-        XCB_COPY_FROM_PARENT, /* visual */
+        XCB_COPY_FROM_PARENT,        /* visual */
         0,
         NULL);
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, child_window, A__NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, &child_window);

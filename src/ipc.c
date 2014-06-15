@@ -50,8 +50,8 @@ static bool mkdirp(const char *path) {
     }
     char *copy = sstrdup(path);
     /* strip trailing slashes, if any */
-    while (copy[strlen(copy)-1] == '/')
-        copy[strlen(copy)-1] = '\0';
+    while (copy[strlen(copy) - 1] == '/')
+        copy[strlen(copy) - 1] = '\0';
 
     char *sep = strrchr(copy, '/');
     if (sep == NULL) {
@@ -74,7 +74,7 @@ static bool mkdirp(const char *path) {
  */
 void ipc_send_event(const char *event, uint32_t message_type, const char *payload) {
     ipc_client *current;
-    TAILQ_FOREACH(current, &all_clients, clients) {
+    TAILQ_FOREACH (current, &all_clients, clients) {
         /* see if this client is interested in this event */
         bool interested = false;
         for (int i = 0; i < current->num_events; i++) {
@@ -86,7 +86,7 @@ void ipc_send_event(const char *event, uint32_t message_type, const char *payloa
         if (!interested)
             continue;
 
-        ipc_send_message(current->fd, strlen(payload), message_type, (const uint8_t*)payload);
+        ipc_send_message(current->fd, strlen(payload), message_type, (const uint8_t *)payload);
     }
 }
 
@@ -115,11 +115,11 @@ IPC_HANDLER(command) {
     /* To get a properly terminated buffer, we copy
      * message_size bytes out of the buffer */
     char *command = scalloc(message_size + 1);
-    strncpy(command, (const char*)message, message_size);
+    strncpy(command, (const char *)message, message_size);
     LOG("IPC: received: *%s*\n", command);
     yajl_gen gen = yajl_gen_alloc(NULL);
 
-    CommandResult *result = parse_command((const char*)command, gen);
+    CommandResult *result = parse_command((const char *)command, gen);
     free(command);
 
     if (result->needs_tree_render)
@@ -132,7 +132,7 @@ IPC_HANDLER(command) {
     yajl_gen_get_buf(gen, &reply, &length);
 
     ipc_send_message(fd, length, I3_IPC_REPLY_TYPE_COMMAND,
-                     (const uint8_t*)reply);
+                     (const uint8_t *)reply);
 
     yajl_gen_free(gen);
 }
@@ -189,7 +189,8 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     else {
         if (con_orientation(con) == HORIZ)
             ystr("horizontal");
-        else ystr("vertical");
+        else
+            ystr("vertical");
     }
 
     ystr("scratchpad_state");
@@ -208,7 +209,8 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("percent");
     if (con->percent == 0.0)
         y(null);
-    else y(double, con->percent);
+    else
+        y(double, con->percent);
 
     ystr("urgent");
     y(bool, con->urgent);
@@ -308,7 +310,8 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("window");
     if (con->window)
         y(integer, con->window->id);
-    else y(null);
+    else
+        y(null);
 
     if (con->window && !inplace_restart) {
         /* Window properties are useless to preserve when restarting because
@@ -317,12 +320,13 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
         ystr("window_properties");
         y(map_open);
 
-#define DUMP_PROPERTY(key, prop_name) do { \
-    if (con->window->prop_name != NULL) { \
-        ystr(key); \
-        ystr(con->window->prop_name); \
-    } \
-} while (0)
+#define DUMP_PROPERTY(key, prop_name)         \
+    do {                                      \
+        if (con->window->prop_name != NULL) { \
+            ystr(key);                        \
+            ystr(con->window->prop_name);     \
+        }                                     \
+    } while (0)
 
         DUMP_PROPERTY("class", class_class);
         DUMP_PROPERTY("instance", class_instance);
@@ -340,7 +344,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     y(array_open);
     Con *node;
     if (con->type != CT_DOCKAREA || !inplace_restart) {
-        TAILQ_FOREACH(node, &(con->nodes_head), nodes) {
+        TAILQ_FOREACH (node, &(con->nodes_head), nodes) {
             dump_node(gen, node, inplace_restart);
         }
     }
@@ -348,14 +352,14 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
 
     ystr("floating_nodes");
     y(array_open);
-    TAILQ_FOREACH(node, &(con->floating_head), floating_windows) {
+    TAILQ_FOREACH (node, &(con->floating_head), floating_windows) {
         dump_node(gen, node, inplace_restart);
     }
     y(array_close);
 
     ystr("focus");
     y(array_open);
-    TAILQ_FOREACH(node, &(con->focus_head), focused) {
+    TAILQ_FOREACH (node, &(con->focus_head), focused) {
         y(integer, (long int)node);
     }
     y(array_close);
@@ -382,7 +386,7 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
     ystr("swallows");
     y(array_open);
     Match *match;
-    TAILQ_FOREACH(match, &(con->swallow_head), matches) {
+    TAILQ_FOREACH (match, &(con->swallow_head), matches) {
         y(map_open);
         if (match->dock != -1) {
             ystr("dock");
@@ -391,12 +395,13 @@ void dump_node(yajl_gen gen, struct Con *con, bool inplace_restart) {
             y(integer, match->insert_where);
         }
 
-#define DUMP_REGEX(re_name) do { \
-    if (match->re_name != NULL) { \
-        ystr(# re_name); \
-        ystr(match->re_name->pattern); \
-    } \
-} while (0)
+#define DUMP_REGEX(re_name)                \
+    do {                                   \
+        if (match->re_name != NULL) {      \
+            ystr(#re_name);                \
+            ystr(match->re_name->pattern); \
+        }                                  \
+    } while (0)
 
         DUMP_REGEX(class);
         DUMP_REGEX(instance);
@@ -441,12 +446,12 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
         y(array_close);
     }
 
-#define YSTR_IF_SET(name) \
-    do { \
-        if (config->name) { \
-            ystr( # name); \
+#define YSTR_IF_SET(name)       \
+    do {                        \
+        if (config->name) {     \
+            ystr(#name);        \
             ystr(config->name); \
-        } \
+        }                       \
     } while (0)
 
     YSTR_IF_SET(tray_output);
@@ -494,7 +499,7 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
         case M_MOD3:
             ystr("Mod3");
             break;
-            /*
+        /*
                case M_MOD4:
                ystr("Mod4");
                break;
@@ -510,7 +515,8 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     ystr("position");
     if (config->position == P_BOTTOM)
         ystr("bottom");
-    else ystr("top");
+    else
+        ystr("top");
 
     YSTR_IF_SET(status_command);
     YSTR_IF_SET(font);
@@ -528,12 +534,12 @@ static void dump_bar_config(yajl_gen gen, Barconfig *config) {
     y(bool, config->verbose);
 
 #undef YSTR_IF_SET
-#define YSTR_IF_SET(name) \
-    do { \
-        if (config->colors.name) { \
-            ystr( # name); \
+#define YSTR_IF_SET(name)              \
+    do {                               \
+        if (config->colors.name) {     \
+            ystr(#name);               \
             ystr(config->colors.name); \
-        } \
+        }                              \
     } while (0)
 
     ystr("colors");
@@ -573,7 +579,6 @@ IPC_HANDLER(tree) {
     y(free);
 }
 
-
 /*
  * Formats the reply message for a GET_WORKSPACES request and sends it to the
  * client
@@ -586,18 +591,19 @@ IPC_HANDLER(get_workspaces) {
     Con *focused_ws = con_get_workspace(focused);
 
     Con *output;
-    TAILQ_FOREACH(output, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH (output, &(croot->nodes_head), nodes) {
         if (con_is_internal(output))
             continue;
         Con *ws;
-        TAILQ_FOREACH(ws, &(output_get_content(output)->nodes_head), nodes) {
+        TAILQ_FOREACH (ws, &(output_get_content(output)->nodes_head), nodes) {
             assert(ws->type == CT_WORKSPACE);
             y(map_open);
 
             ystr("num");
             if (ws->num == -1)
                 y(null);
-            else y(integer, ws->num);
+            else
+                y(integer, ws->num);
 
             ystr("name");
             ystr(ws->name);
@@ -650,7 +656,7 @@ IPC_HANDLER(get_outputs) {
     y(array_open);
 
     Output *output;
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         y(map_open);
 
         ystr("name");
@@ -678,7 +684,8 @@ IPC_HANDLER(get_outputs) {
         Con *ws = NULL;
         if (output->con && (ws = con_get_fullscreen_con(output->con, CF_OUTPUT)))
             ystr(ws->name);
-        else y(null);
+        else
+            y(null);
 
         y(map_close);
     }
@@ -703,7 +710,7 @@ IPC_HANDLER(get_marks) {
     y(array_open);
 
     Con *con;
-    TAILQ_FOREACH(con, &all_cons, all_cons)
+    TAILQ_FOREACH (con, &all_cons, all_cons)
         if (con->mark != NULL)
             ystr(con->mark);
 
@@ -759,7 +766,7 @@ IPC_HANDLER(get_bar_config) {
     if (message_size == 0) {
         y(array_open);
         Barconfig *current;
-        TAILQ_FOREACH(current, &barconfigs, configs) {
+        TAILQ_FOREACH (current, &barconfigs, configs) {
             ystr(current->id);
         }
         y(array_close);
@@ -776,10 +783,10 @@ IPC_HANDLER(get_bar_config) {
     /* To get a properly terminated buffer, we copy
      * message_size bytes out of the buffer */
     char *bar_id = scalloc(message_size + 1);
-    strncpy(bar_id, (const char*)message, message_size);
+    strncpy(bar_id, (const char *)message, message_size);
     LOG("IPC: looking for config for bar ID \"%s\"\n", bar_id);
     Barconfig *current, *config = NULL;
-    TAILQ_FOREACH(current, &barconfigs, configs) {
+    TAILQ_FOREACH (current, &barconfigs, configs) {
         if (strcmp(current->id, bar_id) != 0)
             continue;
 
@@ -820,10 +827,10 @@ static int add_subscription(void *extra, const unsigned char *s,
     int event = client->num_events;
 
     client->num_events++;
-    client->events = realloc(client->events, client->num_events * sizeof(char*));
+    client->events = realloc(client->events, client->num_events * sizeof(char *));
     /* We copy the string because it is not null-terminated and strndup()
      * is missing on some BSD systems */
-    client->events[event] = scalloc(len+1);
+    client->events[event] = scalloc(len + 1);
     memcpy(client->events[event], s, len);
 
     DLOG("client is now subscribed to:\n");
@@ -845,7 +852,7 @@ IPC_HANDLER(subscribe) {
     ipc_client *current, *client = NULL;
 
     /* Search the ipc_client structure for this connection */
-    TAILQ_FOREACH(current, &all_clients, clients) {
+    TAILQ_FOREACH (current, &all_clients, clients) {
         if (current->fd != fd)
             continue;
 
@@ -863,23 +870,23 @@ IPC_HANDLER(subscribe) {
         .yajl_string = add_subscription,
     };
 
-    p = yalloc(&callbacks, (void*)client);
-    stat = yajl_parse(p, (const unsigned char*)message, message_size);
+    p = yalloc(&callbacks, (void *)client);
+    stat = yajl_parse(p, (const unsigned char *)message, message_size);
     if (stat != yajl_status_ok) {
         unsigned char *err;
-        err = yajl_get_error(p, true, (const unsigned char*)message,
+        err = yajl_get_error(p, true, (const unsigned char *)message,
                              message_size);
         ELOG("YAJL parse error: %s\n", err);
         yajl_free_error(p, err);
 
         const char *reply = "{\"success\":false}";
-        ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t*)reply);
+        ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t *)reply);
         yajl_free(p);
         return;
     }
     yajl_free(p);
     const char *reply = "{\"success\":true}";
-    ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t*)reply);
+    ipc_send_message(fd, strlen(reply), I3_IPC_REPLY_TYPE_SUBSCRIBE, (const uint8_t *)reply);
 }
 
 /* The index of each callback function corresponds to the numeric
@@ -925,7 +932,7 @@ static void ipc_receive_message(EV_P_ struct ev_io *w, int revents) {
 
         /* Delete the client from the list of clients */
         ipc_client *current;
-        TAILQ_FOREACH(current, &all_clients, clients) {
+        TAILQ_FOREACH (current, &all_clients, clients) {
             if (current->fd != w->fd)
                 continue;
 
@@ -967,10 +974,11 @@ void ipc_new_client(EV_P_ struct ev_io *w, int revents) {
     struct sockaddr_un peer;
     socklen_t len = sizeof(struct sockaddr_un);
     int client;
-    if ((client = accept(w->fd, (struct sockaddr*)&peer, &len)) < 0) {
+    if ((client = accept(w->fd, (struct sockaddr *)&peer, &len)) < 0) {
         if (errno == EINTR)
             return;
-        else perror("accept()");
+        else
+            perror("accept()");
         return;
     }
 
@@ -1024,7 +1032,7 @@ int ipc_create_socket(const char *filename) {
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_LOCAL;
     strncpy(addr.sun_path, resolved, sizeof(addr.sun_path) - 1);
-    if (bind(sockfd, (struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0) {
+    if (bind(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0) {
         perror("bind()");
         free(resolved);
         return -1;
@@ -1082,7 +1090,7 @@ void ipc_send_workspace_focus_event(Con *current, Con *old) {
  */
 void ipc_send_window_event(const char *property, Con *con) {
     DLOG("Issue IPC window %s event (con = %p, window = 0x%08x)\n",
-            property, con, (con->window ? con->window->id : XCB_WINDOW_NONE));
+         property, con, (con->window ? con->window->id : XCB_WINDOW_NONE));
 
     setlocale(LC_NUMERIC, "C");
     yajl_gen gen = ygenalloc();

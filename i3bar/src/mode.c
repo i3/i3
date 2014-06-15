@@ -18,9 +18,9 @@
 
 /* A datatype to pass through the callbacks to save the state */
 struct mode_json_params {
-    char  *json;
-    char  *cur_key;
-    mode  *mode;
+    char *json;
+    char *cur_key;
+    mode *mode;
 };
 
 /*
@@ -28,22 +28,21 @@ struct mode_json_params {
  *
  */
 static int mode_string_cb(void *params_, const unsigned char *val, size_t len) {
-        struct mode_json_params *params = (struct mode_json_params*) params_;
+    struct mode_json_params *params = (struct mode_json_params *)params_;
 
-        if (!strcmp(params->cur_key, "change")) {
+    if (!strcmp(params->cur_key, "change")) {
+        /* Save the name */
+        params->mode->name = i3string_from_utf8_with_length((const char *)val, len);
+        /* Save its rendered width */
+        params->mode->width = predict_text_width(params->mode->name);
 
-            /* Save the name */
-            params->mode->name = i3string_from_utf8_with_length((const char *)val, len);
-            /* Save its rendered width */
-            params->mode->width = predict_text_width(params->mode->name);
+        DLOG("Got mode change: %s\n", i3string_as_utf8(params->mode->name));
+        FREE(params->cur_key);
 
-            DLOG("Got mode change: %s\n", i3string_as_utf8(params->mode->name));
-            FREE(params->cur_key);
+        return 1;
+    }
 
-            return 1;
-        }
-
-        return 0;
+    return 0;
 }
 
 /*
@@ -53,11 +52,11 @@ static int mode_string_cb(void *params_, const unsigned char *val, size_t len) {
  *
  */
 static int mode_map_key_cb(void *params_, const unsigned char *keyVal, size_t keyLen) {
-    struct mode_json_params *params = (struct mode_json_params*) params_;
+    struct mode_json_params *params = (struct mode_json_params *)params_;
     FREE(params->cur_key);
 
     params->cur_key = smalloc(sizeof(unsigned char) * (keyLen + 1));
-    strncpy(params->cur_key, (const char*) keyVal, keyLen);
+    strncpy(params->cur_key, (const char *)keyVal, keyLen);
     params->cur_key[keyLen] = '\0';
 
     return 1;
@@ -87,9 +86,9 @@ void parse_mode_json(char *json) {
     yajl_handle handle;
     yajl_status state;
 
-    handle = yajl_alloc(&mode_callbacks, NULL, (void*) &params);
+    handle = yajl_alloc(&mode_callbacks, NULL, (void *)&params);
 
-    state = yajl_parse(handle, (const unsigned char*) json, strlen(json));
+    state = yajl_parse(handle, (const unsigned char *)json, strlen(json));
 
     /* FIXME: Propper errorhandling for JSON-parsing */
     switch (state) {

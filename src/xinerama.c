@@ -15,7 +15,6 @@
 
 #include <xcb/xinerama.h>
 
-
 static int num_screens;
 
 /*
@@ -24,7 +23,7 @@ static int num_screens;
  */
 static Output *get_screen_at(unsigned int x, unsigned int y) {
     Output *output;
-    TAILQ_FOREACH(output, &outputs, outputs)
+    TAILQ_FOREACH (output, &outputs, outputs)
         if (output->rect.x == x && output->rect.y == y)
             return output;
 
@@ -67,16 +66,17 @@ static void query_screens(xcb_connection_t *conn) {
             s->rect.height = screen_info[screen].height;
             /* We always treat the screen at 0x0 as the primary screen */
             if (s->rect.x == 0 && s->rect.y == 0)
-                    TAILQ_INSERT_HEAD(&outputs, s, outputs);
-            else TAILQ_INSERT_TAIL(&outputs, s, outputs);
+                TAILQ_INSERT_HEAD(&outputs, s, outputs);
+            else
+                TAILQ_INSERT_TAIL(&outputs, s, outputs);
             output_init_con(s);
             init_ws_for_output(s, output_get_content(s->con));
             num_screens++;
         }
 
         DLOG("found Xinerama screen: %d x %d at %d x %d\n",
-                        screen_info[screen].width, screen_info[screen].height,
-                        screen_info[screen].x_org, screen_info[screen].y_org);
+             screen_info[screen].width, screen_info[screen].height,
+             screen_info[screen].x_org, screen_info[screen].y_org);
     }
 
     free(reply);

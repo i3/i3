@@ -35,8 +35,8 @@
 #include "all.h"
 
 // Macros to make the YAJL API a bit easier to use.
-#define y(x, ...) (command_output.json_gen != NULL ? yajl_gen_ ## x (command_output.json_gen, ##__VA_ARGS__) : 0)
-#define ystr(str) (command_output.json_gen != NULL ? yajl_gen_string(command_output.json_gen, (unsigned char*)str, strlen(str)) : 0)
+#define y(x, ...) (command_output.json_gen != NULL ? yajl_gen_##x(command_output.json_gen, ##__VA_ARGS__) : 0)
+#define ystr(str) (command_output.json_gen != NULL ? yajl_gen_string(command_output.json_gen, (unsigned char *)str, strlen(str)) : 0)
 
 /*******************************************************************************
  * The data structures used for parsing. Essentially the current state and a
@@ -184,7 +184,6 @@ static struct CommandResultIR command_output;
 
 #include "GENERATED_command_call.h"
 
-
 static void next_state(const cmdp_token *token) {
     if (token->next_state == __CALL) {
         subcommand_output.json_gen = command_output.json_gen;
@@ -229,7 +228,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen) {
     const cmdp_token *token;
     bool token_handled;
 
-    // TODO: make this testable
+// TODO: make this testable
 #ifndef TEST_PARSER
     cmd_criteria_init(&current_match, &subcommand_output);
 #endif
@@ -239,7 +238,8 @@ CommandResult *parse_command(const char *input, yajl_gen gen) {
     while ((size_t)(walk - input) <= len) {
         /* skip whitespace and newlines before every token */
         while ((*walk == ' ' || *walk == '\t' ||
-                *walk == '\r' || *walk == '\n') && *walk != '\0')
+                *walk == '\r' || *walk == '\n') &&
+               *walk != '\0')
             walk++;
 
         cmdp_token_ptr *ptr = &(tokens[state]);
@@ -267,7 +267,7 @@ CommandResult *parse_command(const char *input, yajl_gen gen) {
                 if (*walk == '"') {
                     beginning++;
                     walk++;
-                    while (*walk != '\0' && (*walk != '"' || *(walk-1) == '\\'))
+                    while (*walk != '\0' && (*walk != '"' || *(walk - 1) == '\\'))
                         walk++;
                 } else {
                     if (token->name[0] == 's') {
@@ -285,22 +285,22 @@ CommandResult *parse_command(const char *input, yajl_gen gen) {
                          * semicolon (;). */
                         while (*walk != ' ' && *walk != '\t' &&
                                *walk != ']' && *walk != ',' &&
-                               *walk !=  ';' && *walk != '\r' &&
+                               *walk != ';' && *walk != '\r' &&
                                *walk != '\n' && *walk != '\0')
                             walk++;
                     }
                 }
                 if (walk != beginning) {
-                    char *str = scalloc(walk-beginning + 1);
+                    char *str = scalloc(walk - beginning + 1);
                     /* We copy manually to handle escaping of characters. */
                     int inpos, outpos;
                     for (inpos = 0, outpos = 0;
-                         inpos < (walk-beginning);
+                         inpos < (walk - beginning);
                          inpos++, outpos++) {
                         /* We only handle escaped double quotes to not break
                          * backwards compatibility with people using \w in
                          * regular expressions etc. */
-                        if (beginning[inpos] == '\\' && beginning[inpos+1] == '"')
+                        if (beginning[inpos] == '\\' && beginning[inpos + 1] == '"')
                             inpos++;
                         str[outpos] = beginning[inpos];
                     }
@@ -320,19 +320,19 @@ CommandResult *parse_command(const char *input, yajl_gen gen) {
                 if (*walk == '\0' || *walk == ',' || *walk == ';') {
                     next_state(token);
                     token_handled = true;
-                    /* To make sure we start with an appropriate matching
+/* To make sure we start with an appropriate matching
                      * datastructure for commands which do *not* specify any
                      * criteria, we re-initialize the criteria system after
                      * every command. */
-                    // TODO: make this testable
+// TODO: make this testable
 #ifndef TEST_PARSER
                     if (*walk == '\0' || *walk == ';')
                         cmd_criteria_init(&current_match, &subcommand_output);
 #endif
                     walk++;
                     break;
-               }
-           }
+                }
+            }
         }
 
         if (!token_handled) {

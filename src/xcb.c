@@ -19,8 +19,8 @@ unsigned int xcb_numlock_mask;
  *
  */
 xcb_window_t create_window(xcb_connection_t *conn, Rect dims,
-        uint16_t depth, xcb_visualid_t visual, uint16_t window_class,
-        enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values) {
+                           uint16_t depth, xcb_visualid_t visual, uint16_t window_class,
+                           enum xcursor_cursor_t cursor, bool map, uint32_t mask, uint32_t *values) {
     xcb_window_t result = xcb_generate_id(conn);
 
     /* If the window class is XCB_WINDOW_CLASS_INPUT_ONLY, we copy depth and
@@ -31,15 +31,15 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims,
     }
 
     xcb_create_window(conn,
-            depth,
-            result, /* the window id */
-            root, /* parent == root */
-            dims.x, dims.y, dims.width, dims.height, /* dimensions */
-            0, /* border = 0, we draw our own */
-            window_class,
-            visual,
-            mask,
-            values);
+                      depth,
+                      result,                                  /* the window id */
+                      root,                                    /* parent == root */
+                      dims.x, dims.y, dims.width, dims.height, /* dimensions */
+                      0,                                       /* border = 0, we draw our own */
+                      window_class,
+                      visual,
+                      mask,
+                      values);
 
     /* Set the cursor */
     if (xcursor_supported) {
@@ -51,8 +51,8 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims,
         i3Font cursor_font = load_font("cursor", false);
         int xcb_cursor = xcursor_get_xcb_cursor(cursor);
         xcb_create_glyph_cursor(conn, cursor_id, cursor_font.specific.xcb.id,
-                cursor_font.specific.xcb.id, xcb_cursor, xcb_cursor + 1, 0, 0, 0,
-                65535, 65535, 65535);
+                                cursor_font.specific.xcb.id, xcb_cursor, xcb_cursor + 1, 0, 0, 0,
+                                65535, 65535, 65535);
         xcb_change_window_attributes(conn, result, XCB_CW_CURSOR, &cursor_id);
         xcb_free_cursor(conn, cursor_id);
     }
@@ -70,9 +70,9 @@ xcb_window_t create_window(xcb_connection_t *conn, Rect dims,
  */
 void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t to_x, uint32_t to_y) {
-    xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, (uint32_t[]){ colorpixel });
+    xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, (uint32_t[]) {colorpixel});
     xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, drawable, gc, 2,
-                  (xcb_point_t[]) { {x, y}, {to_x, to_y} });
+                  (xcb_point_t[]) {{x, y}, {to_x, to_y}});
 }
 
 /*
@@ -81,7 +81,7 @@ void xcb_draw_line(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext
  */
 void xcb_draw_rect(xcb_connection_t *conn, xcb_drawable_t drawable, xcb_gcontext_t gc,
                    uint32_t colorpixel, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
-    xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, (uint32_t[]){ colorpixel });
+    xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, (uint32_t[]) {colorpixel});
     xcb_rectangle_t rect = {x, y, width, height};
     xcb_poly_fill_rectangle(conn, drawable, gc, 1, &rect);
 }
@@ -125,7 +125,7 @@ void send_take_focus(xcb_window_t window, xcb_timestamp_t timestamp) {
     ev->data.data32[1] = timestamp;
 
     DLOG("Sending WM_TAKE_FOCUS to the client\n");
-    xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char*)ev);
+    xcb_send_event(conn, false, window, XCB_EVENT_MASK_NO_EVENT, (char *)ev);
     free(event);
 }
 
@@ -134,7 +134,7 @@ void send_take_focus(xcb_window_t window, xcb_timestamp_t timestamp) {
  *
  */
 void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
-    uint32_t values[] = { XCB_STACK_MODE_ABOVE };
+    uint32_t values[] = {XCB_STACK_MODE_ABOVE};
     xcb_configure_window(conn, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
 }
 
@@ -145,11 +145,11 @@ void xcb_raise_window(xcb_connection_t *conn, xcb_window_t window) {
 void xcb_set_window_rect(xcb_connection_t *conn, xcb_window_t window, Rect r) {
     xcb_void_cookie_t cookie;
     cookie = xcb_configure_window(conn, window,
-                         XCB_CONFIG_WINDOW_X |
-                         XCB_CONFIG_WINDOW_Y |
-                         XCB_CONFIG_WINDOW_WIDTH |
-                         XCB_CONFIG_WINDOW_HEIGHT,
-                         &(r.x));
+                                  XCB_CONFIG_WINDOW_X |
+                                      XCB_CONFIG_WINDOW_Y |
+                                      XCB_CONFIG_WINDOW_WIDTH |
+                                      XCB_CONFIG_WINDOW_HEIGHT,
+                                  &(r.x));
     /* ignore events which are generated because we configured a window */
     add_ignore_event(cookie.sequence, -1);
 }
@@ -171,7 +171,6 @@ bool xcb_reply_contains_atom(xcb_get_property_reply_t *prop, xcb_atom_t atom) {
             return true;
 
     return false;
-
 }
 
 /**
@@ -197,8 +196,8 @@ void xcb_set_root_cursor(int cursor) {
     i3Font cursor_font = load_font("cursor", false);
     int xcb_cursor = xcursor_get_xcb_cursor(cursor);
     xcb_create_glyph_cursor(conn, cursor_id, cursor_font.specific.xcb.id,
-            cursor_font.specific.xcb.id, xcb_cursor, xcb_cursor + 1, 0, 0, 0,
-            65535, 65535, 65535);
+                            cursor_font.specific.xcb.id, xcb_cursor, xcb_cursor + 1, 0, 0, 0,
+                            65535, 65535, 65535);
     xcb_change_window_attributes(conn, root, XCB_CW_CURSOR, &cursor_id);
     xcb_free_cursor(conn, cursor_id);
     xcb_flush(conn);
@@ -208,7 +207,7 @@ void xcb_set_root_cursor(int cursor) {
  * Get depth of visual specified by visualid
  *
  */
-uint16_t get_visual_depth(xcb_visualid_t visual_id){
+uint16_t get_visual_depth(xcb_visualid_t visual_id) {
     xcb_depth_iterator_t depth_iter;
 
     depth_iter = xcb_screen_allowed_depths_iterator(root_screen);
@@ -229,7 +228,7 @@ uint16_t get_visual_depth(xcb_visualid_t visual_id){
  * Get visualid with specified depth
  *
  */
-xcb_visualid_t get_visualid_by_depth(uint16_t depth){
+xcb_visualid_t get_visualid_by_depth(uint16_t depth) {
     xcb_depth_iterator_t depth_iter;
 
     depth_iter = xcb_screen_allowed_depths_iterator(root_screen);

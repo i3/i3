@@ -53,19 +53,21 @@
 #error "SYSCONFDIR not defined"
 #endif
 
-#define FREE(pointer) do { \
-    if (pointer != NULL) { \
-        free(pointer); \
-        pointer = NULL; \
-    } \
-} \
-while (0)
+#define FREE(pointer)          \
+    do {                       \
+        if (pointer != NULL) { \
+            free(pointer);     \
+            pointer = NULL;    \
+        }                      \
+    } while (0)
 
 #include "xcb.h"
 #include "libi3.h"
 
-enum { STEP_WELCOME, STEP_GENERATE } current_step = STEP_WELCOME;
-enum { MOD_Mod1, MOD_Mod4 } modifier = MOD_Mod4;
+enum { STEP_WELCOME,
+       STEP_GENERATE } current_step = STEP_WELCOME;
+enum { MOD_Mod1,
+       MOD_Mod4 } modifier = MOD_Mod4;
 
 static char *config_path;
 static uint32_t xcb_numlock_mask;
@@ -102,7 +104,6 @@ typedef struct tokenptr {
     int n;
 } cmdp_token_ptr;
 
-
 #include "GENERATED_config_tokens.h"
 
 static cmdp_state state;
@@ -111,7 +112,7 @@ static cmdp_state state;
  * When jumping back to INITIAL, statelist_idx will simply be set to 1
  * (likewise for other states, e.g. MODE or BAR).
  * This list is used to process the nearest error token. */
-static cmdp_state statelist[10] = { INITIAL };
+static cmdp_state statelist[10] = {INITIAL};
 /* NB: statelist_idx points to where the next entry will be inserted */
 static int statelist_idx = 1;
 
@@ -182,7 +183,6 @@ static void push_long(const char *identifier, long num) {
                     "in the code, or a new command which contains more than "
                     "10 identified tokens.\n");
     exit(1);
-
 }
 
 static const char *get_string(const char *identifier) {
@@ -194,7 +194,6 @@ static const char *get_string(const char *identifier) {
     }
     return NULL;
 }
-
 
 static void clear_stack(void) {
     for (int c = 0; c < 10; c++) {
@@ -213,8 +212,8 @@ static void clear_stack(void) {
  */
 static bool keysym_used_on_other_key(KeySym sym, xcb_keycode_t except_keycode) {
     xcb_keycode_t i,
-                  min_keycode = xcb_get_setup(conn)->min_keycode,
-                  max_keycode = xcb_get_setup(conn)->max_keycode;
+        min_keycode = xcb_get_setup(conn)->min_keycode,
+        max_keycode = xcb_get_setup(conn)->max_keycode;
 
     for (i = min_keycode; i && i <= max_keycode; i++) {
         if (i == except_keycode)
@@ -227,7 +226,6 @@ static bool keysym_used_on_other_key(KeySym sym, xcb_keycode_t except_keycode) {
     }
     return false;
 }
-
 
 static char *next_state(const cmdp_token *token) {
     cmdp_state _next_state = token->next_state;
@@ -277,7 +275,7 @@ static char *next_state(const cmdp_token *token) {
     for (int i = 0; i < statelist_idx; i++) {
         if (statelist[i] != _next_state)
             continue;
-        statelist_idx = i+1;
+        statelist_idx = i + 1;
         return NULL;
     }
 
@@ -285,7 +283,6 @@ static char *next_state(const cmdp_token *token) {
     statelist[statelist_idx++] = _next_state;
     return NULL;
 }
-
 
 static char *rewrite_binding(const char *input) {
     state = INITIAL;
@@ -305,7 +302,7 @@ static char *rewrite_binding(const char *input) {
         while ((*walk == ' ' || *walk == '\t') && *walk != '\0')
             walk++;
 
-		//printf("remaining input: %s\n", walk);
+        //printf("remaining input: %s\n", walk);
 
         cmdp_token_ptr *ptr = &(tokens[state]);
         for (c = 0; c < ptr->n; c++) {
@@ -354,7 +351,7 @@ static char *rewrite_binding(const char *input) {
                 if (*walk == '"') {
                     beginning++;
                     walk++;
-                    while (*walk != '\0' && (*walk != '"' || *(walk-1) == '\\'))
+                    while (*walk != '\0' && (*walk != '"' || *(walk - 1) == '\\'))
                         walk++;
                 } else {
                     if (token->name[0] == 's') {
@@ -366,22 +363,22 @@ static char *rewrite_binding(const char *input) {
                          * semicolon (;). */
                         while (*walk != ' ' && *walk != '\t' &&
                                *walk != ']' && *walk != ',' &&
-                               *walk !=  ';' && *walk != '\r' &&
+                               *walk != ';' && *walk != '\r' &&
                                *walk != '\n' && *walk != '\0')
                             walk++;
                     }
                 }
                 if (walk != beginning) {
-                    char *str = scalloc(walk-beginning + 1);
+                    char *str = scalloc(walk - beginning + 1);
                     /* We copy manually to handle escaping of characters. */
                     int inpos, outpos;
                     for (inpos = 0, outpos = 0;
-                         inpos < (walk-beginning);
+                         inpos < (walk - beginning);
                          inpos++, outpos++) {
                         /* We only handle escaped double quotes to not break
                          * backwards compatibility with people using \w in
                          * regular expressions etc. */
-                        if (beginning[inpos] == '\\' && beginning[inpos+1] == '"')
+                        if (beginning[inpos] == '\\' && beginning[inpos + 1] == '"')
                             inpos++;
                         str[outpos] = beginning[inpos];
                     }
@@ -410,14 +407,13 @@ static char *rewrite_binding(const char *input) {
                     // TODO: make this testable
                     walk++;
                     break;
-               }
-           }
+                }
+            }
         }
     }
 
     return NULL;
 }
-
 
 /*
  * Having verboselog(), errorlog() and debuglog() is necessary when using libi3.
@@ -481,14 +477,14 @@ static char *resolve_tilde(const char *path) {
 static int handle_expose() {
     /* re-draw the background */
     xcb_rectangle_t border = {0, 0, 300, (15 * font.height) + 8};
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ get_colorpixel("#000000") });
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {get_colorpixel("#000000")});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &border);
 
     set_font(&font);
 
-#define txt(x, row, text) \
-    draw_text_ascii(text, pixmap, pixmap_gc,\
-            x, (row - 1) * font.height + 4, 300 - x * 2)
+#define txt(x, row, text)                    \
+    draw_text_ascii(text, pixmap, pixmap_gc, \
+                    x, (row - 1) * font.height + 4, 300 - x * 2)
 
     if (current_step == STEP_WELCOME) {
         /* restore font color */
@@ -521,14 +517,16 @@ static int handle_expose() {
         /* the not-selected modifier */
         if (modifier == MOD_Mod4)
             txt(31, 5, "<Alt>");
-        else txt(31, 4, "<Win>");
+        else
+            txt(31, 4, "<Win>");
 
         /* the selected modifier */
         set_font(&bold_font);
         set_font_colors(pixmap_gc, get_colorpixel("#FFFFFF"), get_colorpixel("#000000"));
         if (modifier == MOD_Mod4)
             txt(10, 4, "-> <Win>");
-        else txt(10, 5, "-> <Alt>");
+        else
+            txt(10, 5, "-> <Alt>");
 
         /* green */
         set_font(&font);
@@ -565,16 +563,16 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
             current_step = STEP_GENERATE;
             /* Set window title */
             xcb_change_property(conn,
-                XCB_PROP_MODE_REPLACE,
-                win,
-                A__NET_WM_NAME,
-                A_UTF8_STRING,
-                8,
-                strlen("i3: generate config"),
-                "i3: generate config");
+                                XCB_PROP_MODE_REPLACE,
+                                win,
+                                A__NET_WM_NAME,
+                                A_UTF8_STRING,
+                                8,
+                                strlen("i3: generate config"),
+                                "i3: generate config");
             xcb_flush(conn);
-        }
-        else finish();
+        } else
+            finish();
     }
 
     /* cancel any time */
@@ -618,7 +616,7 @@ static int handle_key_press(void *ignored, xcb_connection_t *conn, xcb_key_press
  * Handle button presses to make clicking on "<win>" and "<alt>" work
  *
  */
-static void handle_button_press(xcb_button_press_event_t* event) {
+static void handle_button_press(xcb_button_press_event_t *event) {
     if (current_step != STEP_GENERATE)
         return;
 
@@ -701,7 +699,8 @@ static void finish() {
         if (strncmp(walk, "set $mod ", strlen("set $mod ")) == 0) {
             if (modifier == MOD_Mod1)
                 fputs("set $mod Mod1\n", ks_config);
-            else fputs("set $mod Mod4\n", ks_config);
+            else
+                fputs("set $mod Mod4\n", ks_config);
             continue;
         }
 
@@ -729,7 +728,7 @@ static void finish() {
 
     /* tell i3 to reload the config file */
     int sockfd = ipc_connect(socket_path);
-    ipc_send_message(sockfd, strlen("reload"), 0, (uint8_t*)"reload");
+    ipc_send_message(sockfd, strlen("reload"), 0, (uint8_t *)"reload");
     close(sockfd);
 
     exit(0);
@@ -750,8 +749,7 @@ int main(int argc, char *argv[]) {
         {"prefix", required_argument, 0, 'p'},
         {"font", required_argument, 0, 'f'},
         {"help", no_argument, 0, 'h'},
-        {0, 0, 0, 0}
-    };
+        {0, 0, 0, 0}};
 
     char *options_string = "s:vh";
 
@@ -810,11 +808,11 @@ int main(int argc, char *argv[]) {
     modmap_cookie = xcb_get_modifier_mapping(conn);
     symbols = xcb_key_symbols_alloc(conn);
 
-    /* Place requests for the atoms we need as soon as possible */
-    #define xmacro(atom) \
-        xcb_intern_atom_cookie_t atom ## _cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
-    #include "atoms.xmacro"
-    #undef xmacro
+/* Place requests for the atoms we need as soon as possible */
+#define xmacro(atom) \
+    xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
+#include "atoms.xmacro"
+#undef xmacro
 
     root_screen = xcb_aux_get_screen(conn, screen);
     root = root_screen->root;
@@ -832,54 +830,53 @@ int main(int argc, char *argv[]) {
     xcb_create_window(
         conn,
         XCB_COPY_FROM_PARENT,
-        win, /* the window id */
-        root, /* parent == root */
+        win,                /* the window id */
+        root,               /* parent == root */
         490, 297, 300, 205, /* dimensions */
-        0, /* X11 border = 0, we draw our own */
+        0,                  /* X11 border = 0, we draw our own */
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
         XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
-        (uint32_t[]){
+        (uint32_t[]) {
             0, /* back pixel: black */
             XCB_EVENT_MASK_EXPOSURE |
-            XCB_EVENT_MASK_BUTTON_PRESS
-        });
+                XCB_EVENT_MASK_BUTTON_PRESS});
 
     /* Map the window (make it visible) */
     xcb_map_window(conn, win);
 
-    /* Setup NetWM atoms */
-    #define xmacro(name) \
-        do { \
-            xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name ## _cookie, NULL); \
-            if (!reply) \
-                errx(EXIT_FAILURE, "Could not get atom " # name "\n"); \
-            \
-            A_ ## name = reply->atom; \
-            free(reply); \
-        } while (0);
-    #include "atoms.xmacro"
-    #undef xmacro
+/* Setup NetWM atoms */
+#define xmacro(name)                                                                       \
+    do {                                                                                   \
+        xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name##_cookie, NULL); \
+        if (!reply)                                                                        \
+            errx(EXIT_FAILURE, "Could not get atom " #name "\n");                          \
+                                                                                           \
+        A_##name = reply->atom;                                                            \
+        free(reply);                                                                       \
+    } while (0);
+#include "atoms.xmacro"
+#undef xmacro
 
     /* Set dock mode */
     xcb_change_property(conn,
-        XCB_PROP_MODE_REPLACE,
-        win,
-        A__NET_WM_WINDOW_TYPE,
-        A_ATOM,
-        32,
-        1,
-        (unsigned char*) &A__NET_WM_WINDOW_TYPE_DIALOG);
+                        XCB_PROP_MODE_REPLACE,
+                        win,
+                        A__NET_WM_WINDOW_TYPE,
+                        A_ATOM,
+                        32,
+                        1,
+                        (unsigned char *)&A__NET_WM_WINDOW_TYPE_DIALOG);
 
     /* Set window title */
     xcb_change_property(conn,
-        XCB_PROP_MODE_REPLACE,
-        win,
-        A__NET_WM_NAME,
-        A_UTF8_STRING,
-        8,
-        strlen("i3: first configuration"),
-        "i3: first configuration");
+                        XCB_PROP_MODE_REPLACE,
+                        win,
+                        A__NET_WM_NAME,
+                        A_UTF8_STRING,
+                        8,
+                        strlen("i3: first configuration"),
+                        "i3: first configuration");
 
     /* Create pixmap */
     pixmap = xcb_generate_id(conn);
@@ -922,13 +919,13 @@ int main(int argc, char *argv[]) {
 
         switch (type) {
             case XCB_KEY_PRESS:
-                handle_key_press(NULL, conn, (xcb_key_press_event_t*)event);
+                handle_key_press(NULL, conn, (xcb_key_press_event_t *)event);
                 break;
 
             /* TODO: handle mappingnotify */
 
             case XCB_BUTTON_PRESS:
-                handle_button_press((xcb_button_press_event_t*)event);
+                handle_button_press((xcb_button_press_event_t *)event);
                 break;
 
             case XCB_EXPOSE:

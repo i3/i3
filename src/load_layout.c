@@ -37,7 +37,7 @@ struct focus_mapping {
 };
 
 static TAILQ_HEAD(focus_mappings_head, focus_mapping) focus_mappings =
-  TAILQ_HEAD_INITIALIZER(focus_mappings);
+    TAILQ_HEAD_INITIALIZER(focus_mappings);
 
 static int json_start_map(void *ctx) {
     LOG("start of map, last_key = %s\n", last_key);
@@ -110,10 +110,10 @@ static int json_end_array(void *ctx) {
     if (parsing_focus) {
         /* Clear the list of focus mappings */
         struct focus_mapping *mapping;
-        TAILQ_FOREACH_REVERSE(mapping, &focus_mappings, focus_mappings_head, focus_mappings) {
+        TAILQ_FOREACH_REVERSE (mapping, &focus_mappings, focus_mappings_head, focus_mappings) {
             LOG("focus (reverse) %d\n", mapping->old_id);
             Con *con;
-            TAILQ_FOREACH(con, &(json_node->focus_head), focused) {
+            TAILQ_FOREACH (con, &(json_node->focus_head), focused) {
                 if (con->old_id != mapping->old_id)
                     continue;
                 LOG("got it! %p\n", con);
@@ -136,7 +136,7 @@ static int json_end_array(void *ctx) {
 static int json_key(void *ctx, const unsigned char *val, size_t len) {
     LOG("key: %.*s\n", (int)len, val);
     FREE(last_key);
-    last_key = scalloc((len+1) * sizeof(char));
+    last_key = scalloc((len + 1) * sizeof(char));
     memcpy(last_key, val, len);
     if (strcasecmp(last_key, "swallows") == 0)
         parsing_swallows = true;
@@ -175,10 +175,10 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
         free(sval);
     } else {
         if (strcasecmp(last_key, "name") == 0) {
-            json_node->name = scalloc((len+1) * sizeof(char));
+            json_node->name = scalloc((len + 1) * sizeof(char));
             memcpy(json_node->name, val, len);
         } else if (strcasecmp(last_key, "sticky_group") == 0) {
-            json_node->sticky_group = scalloc((len+1) * sizeof(char));
+            json_node->sticky_group = scalloc((len + 1) * sizeof(char));
             memcpy(json_node->sticky_group, val, len);
             LOG("sticky_group of this container is %s\n", json_node->sticky_group);
         } else if (strcasecmp(last_key, "orientation") == 0) {
@@ -195,7 +195,8 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
                 json_node->last_split_layout = L_SPLITH;
             else if (strcasecmp(buf, "vertical") == 0)
                 json_node->last_split_layout = L_SPLITV;
-            else LOG("Unhandled orientation: %s\n", buf);
+            else
+                LOG("Unhandled orientation: %s\n", buf);
             free(buf);
         } else if (strcasecmp(last_key, "border") == 0) {
             char *buf = NULL;
@@ -209,7 +210,8 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
                 json_node->border_style = BS_PIXEL;
             else if (strcasecmp(buf, "normal") == 0)
                 json_node->border_style = BS_NORMAL;
-            else LOG("Unhandled \"border\": %s\n", buf);
+            else
+                LOG("Unhandled \"border\": %s\n", buf);
             free(buf);
         } else if (strcasecmp(last_key, "type") == 0) {
             char *buf = NULL;
@@ -226,7 +228,8 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
                 json_node->type = CT_WORKSPACE;
             else if (strcasecmp(buf, "dockarea") == 0)
                 json_node->type = CT_DOCKAREA;
-            else LOG("Unhandled \"type\": %s\n", buf);
+            else
+                LOG("Unhandled \"type\": %s\n", buf);
             free(buf);
         } else if (strcasecmp(last_key, "layout") == 0) {
             char *buf = NULL;
@@ -246,7 +249,8 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
                 json_node->layout = L_SPLITH;
             else if (strcasecmp(buf, "splitv") == 0)
                 json_node->layout = L_SPLITV;
-            else LOG("Unhandled \"layout\": %s\n", buf);
+            else
+                LOG("Unhandled \"layout\": %s\n", buf);
             free(buf);
         } else if (strcasecmp(last_key, "workspace_layout") == 0) {
             char *buf = NULL;
@@ -257,7 +261,8 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
                 json_node->workspace_layout = L_STACKED;
             else if (strcasecmp(buf, "tabbed") == 0)
                 json_node->workspace_layout = L_TABBED;
-            else LOG("Unhandled \"workspace_layout\": %s\n", buf);
+            else
+                LOG("Unhandled \"workspace_layout\": %s\n", buf);
             free(buf);
         } else if (strcasecmp(last_key, "last_split_layout") == 0) {
             char *buf = NULL;
@@ -266,7 +271,8 @@ static int json_string(void *ctx, const unsigned char *val, size_t len) {
                 json_node->last_split_layout = L_SPLITH;
             else if (strcasecmp(buf, "splitv") == 0)
                 json_node->last_split_layout = L_SPLITV;
-            else LOG("Unhandled \"last_splitlayout\": %s\n", buf);
+            else
+                LOG("Unhandled \"last_splitlayout\": %s\n", buf);
             free(buf);
         } else if (strcasecmp(last_key, "mark") == 0) {
             char *buf = NULL;
@@ -332,7 +338,8 @@ static int json_int(void *ctx, long long val) {
             r = &(json_node->rect);
         else if (parsing_window_rect)
             r = &(json_node->window_rect);
-        else r = &(json_node->geometry);
+        else
+            r = &(json_node->geometry);
         if (strcasecmp(last_key, "x") == 0)
             r->x = val;
         else if (strcasecmp(last_key, "y") == 0)
@@ -341,9 +348,10 @@ static int json_int(void *ctx, long long val) {
             r->width = val;
         else if (strcasecmp(last_key, "height") == 0)
             r->height = val;
-        else ELOG("WARNING: unknown key %s in rect\n", last_key);
+        else
+            ELOG("WARNING: unknown key %s in rect\n", last_key);
         DLOG("rect now: (%d, %d, %d, %d)\n",
-                r->x, r->y, r->width, r->height);
+             r->x, r->y, r->width, r->height);
     }
     if (parsing_swallows) {
         if (strcasecmp(last_key, "id") == 0) {
@@ -415,7 +423,7 @@ void tree_append_json(Con *con, const char *filename, char **errormsg) {
         .yajl_end_array = json_end_array,
     };
     g = yajl_gen_alloc(NULL);
-    hand = yajl_alloc(&callbacks, NULL, (void*)g);
+    hand = yajl_alloc(&callbacks, NULL, (void *)g);
     /* Allowing comments allows for more user-friendly layout files. */
     yajl_config(hand, yajl_allow_comments, true);
     /* Allow multiple values, i.e. multiple nodes to attach */
@@ -429,13 +437,12 @@ void tree_append_json(Con *con, const char *filename, char **errormsg) {
     parsing_geometry = false;
     parsing_focus = false;
     setlocale(LC_NUMERIC, "C");
-    stat = yajl_parse(hand, (const unsigned char*)buf, n);
-    if (stat != yajl_status_ok)
-    {
-        unsigned char *str = yajl_get_error(hand, 1, (const unsigned char*)buf, n);
+    stat = yajl_parse(hand, (const unsigned char *)buf, n);
+    if (stat != yajl_status_ok) {
+        unsigned char *str = yajl_get_error(hand, 1, (const unsigned char *)buf, n);
         ELOG("JSON parsing error: %s\n", str);
         if (errormsg != NULL)
-            *errormsg = sstrdup((const char*)str);
+            *errormsg = sstrdup((const char *)str);
         yajl_free_error(hand, str);
     }
 

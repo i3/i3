@@ -92,11 +92,11 @@ void init_logging(void) {
     /* Start SHM logging if shmlog_size is > 0. shmlog_size is SHMLOG_SIZE by
      * default on development versions, and 0 on release versions. If it is
      * not > 0, the user has turned it off, so let's close the logbuffer. */
-     if (shmlog_size > 0 && logbuffer == NULL)
+    if (shmlog_size > 0 && logbuffer == NULL)
         open_logbuffer();
-     else if (shmlog_size <= 0 && logbuffer)
+    else if (shmlog_size <= 0 && logbuffer)
         close_logbuffer();
-     atexit(purge_zerobyte_logfile);
+    atexit(purge_zerobyte_logfile);
 }
 
 /*
@@ -104,65 +104,65 @@ void init_logging(void) {
  *
  */
 void open_logbuffer(void) {
-        /* Reserve 1% of the RAM for the logfile, but at max 25 MiB.
+    /* Reserve 1% of the RAM for the logfile, but at max 25 MiB.
          * For 512 MiB of RAM this will lead to a 5 MiB log buffer.
          * At the moment (2011-12-10), no testcase leads to an i3 log
          * of more than ~ 600 KiB. */
-        long long physical_mem_bytes;
+    long long physical_mem_bytes;
 #if defined(__APPLE__)
-        int mib[2] = { CTL_HW, HW_MEMSIZE };
-        size_t length = sizeof(long long);
-        sysctl(mib, 2, &physical_mem_bytes, &length, NULL, 0);
+    int mib[2] = {CTL_HW, HW_MEMSIZE};
+    size_t length = sizeof(long long);
+    sysctl(mib, 2, &physical_mem_bytes, &length, NULL, 0);
 #else
-        physical_mem_bytes = (long long)sysconf(_SC_PHYS_PAGES) *
-                                        sysconf(_SC_PAGESIZE);
+    physical_mem_bytes = (long long)sysconf(_SC_PHYS_PAGES) *
+                         sysconf(_SC_PAGESIZE);
 #endif
-        logbuffer_size = min(physical_mem_bytes * 0.01, shmlog_size);
+    logbuffer_size = min(physical_mem_bytes * 0.01, shmlog_size);
 #if defined(__FreeBSD__)
-        sasprintf(&shmlogname, "/tmp/i3-log-%d", getpid());
+    sasprintf(&shmlogname, "/tmp/i3-log-%d", getpid());
 #else
-        sasprintf(&shmlogname, "/i3-log-%d", getpid());
+    sasprintf(&shmlogname, "/i3-log-%d", getpid());
 #endif
-        logbuffer_shm = shm_open(shmlogname, O_RDWR | O_CREAT, S_IREAD | S_IWRITE);
-        if (logbuffer_shm == -1) {
-            fprintf(stderr, "Could not shm_open SHM segment for the i3 log: %s\n", strerror(errno));
-            return;
-        }
+    logbuffer_shm = shm_open(shmlogname, O_RDWR | O_CREAT, S_IREAD | S_IWRITE);
+    if (logbuffer_shm == -1) {
+        fprintf(stderr, "Could not shm_open SHM segment for the i3 log: %s\n", strerror(errno));
+        return;
+    }
 
 #if defined(__OpenBSD__) || defined(__APPLE__)
-        if (ftruncate(logbuffer_shm, logbuffer_size) == -1) {
-            fprintf(stderr, "Could not ftruncate SHM segment for the i3 log: %s\n", strerror(errno));
+    if (ftruncate(logbuffer_shm, logbuffer_size) == -1) {
+        fprintf(stderr, "Could not ftruncate SHM segment for the i3 log: %s\n", strerror(errno));
 #else
-        int ret;
-        if ((ret = posix_fallocate(logbuffer_shm, 0, logbuffer_size)) != 0) {
-            fprintf(stderr, "Could not ftruncate SHM segment for the i3 log: %s\n", strerror(ret));
+    int ret;
+    if ((ret = posix_fallocate(logbuffer_shm, 0, logbuffer_size)) != 0) {
+        fprintf(stderr, "Could not ftruncate SHM segment for the i3 log: %s\n", strerror(ret));
 #endif
-            close(logbuffer_shm);
-            shm_unlink(shmlogname);
-            return;
-        }
+        close(logbuffer_shm);
+        shm_unlink(shmlogname);
+        return;
+    }
 
-        logbuffer = mmap(NULL, logbuffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, logbuffer_shm, 0);
-        if (logbuffer == MAP_FAILED) {
-            close_logbuffer();
-            fprintf(stderr, "Could not mmap SHM segment for the i3 log: %s\n", strerror(errno));
-            return;
-        }
+    logbuffer = mmap(NULL, logbuffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, logbuffer_shm, 0);
+    if (logbuffer == MAP_FAILED) {
+        close_logbuffer();
+        fprintf(stderr, "Could not mmap SHM segment for the i3 log: %s\n", strerror(errno));
+        return;
+    }
 
-        /* Initialize with 0-bytes, just to be sure… */
-        memset(logbuffer, '\0', logbuffer_size);
+    /* Initialize with 0-bytes, just to be sure… */
+    memset(logbuffer, '\0', logbuffer_size);
 
-        header = (i3_shmlog_header*)logbuffer;
+    header = (i3_shmlog_header *)logbuffer;
 
-        pthread_condattr_t cond_attr;
-        pthread_condattr_init(&cond_attr);
-        if (pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED) != 0)
-            fprintf(stderr, "pthread_condattr_setpshared() failed, i3-dump-log -f will not work!\n");
-        pthread_cond_init(&(header->condvar), &cond_attr);
+    pthread_condattr_t cond_attr;
+    pthread_condattr_init(&cond_attr);
+    if (pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED) != 0)
+        fprintf(stderr, "pthread_condattr_setpshared() failed, i3-dump-log -f will not work!\n");
+    pthread_cond_init(&(header->condvar), &cond_attr);
 
-        logwalk = logbuffer + sizeof(i3_shmlog_header);
-        loglastwrap = logbuffer + logbuffer_size;
-        store_log_markers();
+    logwalk = logbuffer + sizeof(i3_shmlog_header);
+    loglastwrap = logbuffer + logbuffer_size;
+    store_log_markers();
 }
 
 /*

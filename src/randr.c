@@ -37,7 +37,7 @@ static bool randr_disabled = false;
  */
 static Output *get_output_by_id(xcb_randr_output_t id) {
     Output *output;
-    TAILQ_FOREACH(output, &outputs, outputs)
+    TAILQ_FOREACH (output, &outputs, outputs)
         if (output->id == id)
             return output;
 
@@ -50,7 +50,7 @@ static Output *get_output_by_id(xcb_randr_output_t id) {
  */
 Output *get_output_by_name(const char *name) {
     Output *output;
-    TAILQ_FOREACH(output, &outputs, outputs)
+    TAILQ_FOREACH (output, &outputs, outputs)
         if (output->active &&
             strcasecmp(output->name, name) == 0)
             return output;
@@ -65,7 +65,7 @@ Output *get_output_by_name(const char *name) {
 Output *get_first_output(void) {
     Output *output;
 
-    TAILQ_FOREACH(output, &outputs, outputs)
+    TAILQ_FOREACH (output, &outputs, outputs)
         if (output->active)
             return output;
 
@@ -79,11 +79,11 @@ Output *get_first_output(void) {
  */
 Output *get_output_containing(unsigned int x, unsigned int y) {
     Output *output;
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active)
             continue;
         DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
-                        x, y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
+             x, y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
         if (x >= output->rect.x && x < (output->rect.x + output->rect.width) &&
             y >= output->rect.y && y < (output->rect.y + output->rect.height))
             return output;
@@ -100,21 +100,20 @@ Output *get_output_containing(unsigned int x, unsigned int y) {
  * be many), we just return true or false for convenience.
  *
  */
-bool contained_by_output(Rect rect){
+bool contained_by_output(Rect rect) {
     Output *output;
     int lx = rect.x, uy = rect.y;
     int rx = rect.x + rect.width, by = rect.y + rect.height;
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active)
             continue;
         DLOG("comparing x=%d y=%d with x=%d and y=%d width %d height %d\n",
-                        rect.x, rect.y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
+             rect.x, rect.y, output->rect.x, output->rect.y, output->rect.width, output->rect.height);
         if (rx >= (int)output->rect.x && lx <= (int)(output->rect.x + output->rect.width) &&
             by >= (int)output->rect.y && uy <= (int)(output->rect.y + output->rect.height))
             return true;
     }
     return false;
-
 }
 
 /*
@@ -163,26 +162,26 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
     Rect *cur = &(current->rect),
          *other;
     Output *output,
-           *best = NULL;
-    TAILQ_FOREACH(output, &outputs, outputs) {
+        *best = NULL;
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active)
             continue;
 
         other = &(output->rect);
 
         if ((direction == D_RIGHT && other->x > cur->x) ||
-            (direction == D_LEFT  && other->x < cur->x)) {
+            (direction == D_LEFT && other->x < cur->x)) {
             /* Skip the output when it doesn’t overlap the other one’s y
              * coordinate at all. */
             if ((other->y + other->height) <= cur->y ||
-                (cur->y   + cur->height)   <= other->y)
+                (cur->y + cur->height) <= other->y)
                 continue;
         } else if ((direction == D_DOWN && other->y > cur->y) ||
-                   (direction == D_UP   && other->y < cur->y)) {
+                   (direction == D_UP && other->y < cur->y)) {
             /* Skip the output when it doesn’t overlap the other one’s x
              * coordinate at all. */
             if ((other->x + other->width) <= cur->x ||
-                (cur->x   + cur->width)   <= other->x)
+                (cur->x + cur->width) <= other->x)
                 continue;
         } else
             continue;
@@ -197,9 +196,9 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
             /* Is this output better (closer to the current output) than our
              * current best bet? */
             if ((direction == D_RIGHT && other->x < best->rect.x) ||
-                (direction == D_LEFT  && other->x > best->rect.x) ||
-                (direction == D_DOWN  && other->y < best->rect.y) ||
-                (direction == D_UP    && other->y > best->rect.y)) {
+                (direction == D_LEFT && other->x > best->rect.x) ||
+                (direction == D_DOWN && other->y < best->rect.y) ||
+                (direction == D_UP && other->y > best->rect.y)) {
                 best = output;
                 continue;
             }
@@ -207,9 +206,9 @@ Output *get_output_next(direction_t direction, Output *current, output_close_far
             /* Is this output better (farther to the current output) than our
              * current best bet? */
             if ((direction == D_RIGHT && other->x > best->rect.x) ||
-                (direction == D_LEFT  && other->x < best->rect.x) ||
-                (direction == D_DOWN  && other->y > best->rect.y) ||
-                (direction == D_UP    && other->y < best->rect.y)) {
+                (direction == D_LEFT && other->x < best->rect.x) ||
+                (direction == D_DOWN && other->y > best->rect.y) ||
+                (direction == D_UP && other->y < best->rect.y)) {
                 best = output;
                 continue;
             }
@@ -257,7 +256,7 @@ void output_init_con(Output *output) {
 
     /* Search for a Con with that name directly below the root node. There
      * might be one from a restored layout. */
-    TAILQ_FOREACH(current, &(croot->nodes_head), nodes) {
+    TAILQ_FOREACH (current, &(croot->nodes_head), nodes) {
         if (strcmp(current->name, output->name) != 0)
             continue;
 
@@ -356,13 +355,13 @@ void output_init_con(Output *output) {
 void init_ws_for_output(Output *output, Con *content) {
     /* go through all assignments and move the existing workspaces to this output */
     struct Workspace_Assignment *assignment;
-    TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
         if (strcmp(assignment->output, output->name) != 0)
             continue;
 
         /* check if this workspace actually exists */
         Con *workspace = NULL, *out;
-        TAILQ_FOREACH(out, &(croot->nodes_head), nodes)
+        TAILQ_FOREACH (out, &(croot->nodes_head), nodes)
             GREP_FIRST(workspace, output_get_content(out),
                        !strcasecmp(child->name, assignment->name));
         if (workspace == NULL)
@@ -402,7 +401,7 @@ void init_ws_for_output(Output *output, Con *content) {
         Con *ws_out_content = output_get_content(workspace_out);
 
         Con *floating_con;
-        TAILQ_FOREACH(floating_con, &(workspace->floating_head), floating_windows)
+        TAILQ_FOREACH (floating_con, &(workspace->floating_head), floating_windows)
             /* NB: We use output->con here because content is not yet rendered,
              * so it has a rect of {0, 0, 0, 0}. */
             floating_fix_coordinates(floating_con, &(ws_out_content->rect), &(output->con->rect));
@@ -437,7 +436,7 @@ void init_ws_for_output(Output *output, Con *content) {
     }
 
     /* otherwise, we create the first assigned ws for this output */
-    TAILQ_FOREACH(assignment, &ws_assignments, ws_assignments) {
+    TAILQ_FOREACH (assignment, &ws_assignments, ws_assignments) {
         if (strcmp(assignment->output, output->name) != 0)
             continue;
 
@@ -479,8 +478,8 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
 
     /* Fix the position of all floating windows on this output.
      * The 'rect' of each workspace will be updated in src/render.c. */
-    TAILQ_FOREACH(workspace, &(content->nodes_head), nodes) {
-        TAILQ_FOREACH(child, &(workspace->floating_head), floating_windows) {
+    TAILQ_FOREACH (workspace, &(content->nodes_head), nodes) {
+        TAILQ_FOREACH (child, &(workspace->floating_head), floating_windows) {
             floating_fix_coordinates(child, &(workspace->rect), &(output->con->rect));
         }
     }
@@ -489,7 +488,7 @@ static void output_change_mode(xcb_connection_t *conn, Output *output) {
      * the workspaces and their childs depending on output resolution. This is
      * only done for workspaces with maximum one child. */
     if (config.default_orientation == NO_ORIENTATION) {
-        TAILQ_FOREACH(workspace, &(content->nodes_head), nodes) {
+        TAILQ_FOREACH (workspace, &(content->nodes_head), nodes) {
             /* Workspaces with more than one child are left untouched because
              * we do not want to change an existing layout. */
             if (con_num_children(workspace) > 1)
@@ -528,8 +527,8 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
     new->primary = (primary && primary->output == id);
     FREE(new->name);
     sasprintf(&new->name, "%.*s",
-            xcb_randr_get_output_info_name_length(output),
-            xcb_randr_get_output_info_name(output));
+              xcb_randr_get_output_info_name_length(output),
+              xcb_randr_get_output_info_name(output));
 
     DLOG("found output with name %s\n", new->name);
 
@@ -540,7 +539,8 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         if (!existing) {
             if (new->primary)
                 TAILQ_INSERT_HEAD(&outputs, new, outputs);
-            else TAILQ_INSERT_TAIL(&outputs, new, outputs);
+            else
+                TAILQ_INSERT_TAIL(&outputs, new, outputs);
         } else if (new->active)
             new->to_be_disabled = true;
         return;
@@ -567,7 +567,7 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
     }
 
     DLOG("mode: %dx%d+%d+%d\n", new->rect.width, new->rect.height,
-                                new->rect.x, new->rect.y);
+         new->rect.x, new->rect.y);
 
     /* If we don’t need to change an existing output or if the output
      * does not exist in the first place, the case is simple: we either
@@ -576,7 +576,8 @@ static void handle_output(xcb_connection_t *conn, xcb_randr_output_t id,
         if (!existing) {
             if (new->primary)
                 TAILQ_INSERT_HEAD(&outputs, new, outputs);
-            else TAILQ_INSERT_TAIL(&outputs, new, outputs);
+            else
+                TAILQ_INSERT_TAIL(&outputs, new, outputs);
         }
         return;
     }
@@ -610,7 +611,8 @@ void randr_query_outputs(void) {
 
     if ((primary = xcb_randr_get_output_primary_reply(conn, pcookie, NULL)) == NULL)
         ELOG("Could not get RandR primary output\n");
-    else DLOG("primary output is %08x\n", primary->output);
+    else
+        DLOG("primary output is %08x\n", primary->output);
     if ((res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL)) == NULL) {
         disable_randr(conn);
         return;
@@ -638,11 +640,11 @@ void randr_query_outputs(void) {
 
     /* Check for clones, disable the clones and reduce the mode to the
      * lowest common mode */
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active || output->to_be_disabled)
             continue;
         DLOG("output %p / %s, position (%d, %d), checking for clones\n",
-                output, output->name, output->rect.x, output->rect.y);
+             output, output->name, output->rect.x, output->rect.y);
 
         for (other = output;
              other != TAILQ_END(&outputs);
@@ -655,7 +657,7 @@ void randr_query_outputs(void) {
                 continue;
 
             DLOG("output %p has the same position, his mode = %d x %d\n",
-                            other, other->rect.width, other->rect.height);
+                 other, other->rect.width, other->rect.height);
             uint32_t width = min(other->rect.width, output->rect.width);
             uint32_t height = min(other->rect.height, output->rect.height);
 
@@ -670,8 +672,8 @@ void randr_query_outputs(void) {
             other->to_be_disabled = true;
 
             DLOG("new output mode %d x %d, other mode %d x %d\n",
-                            output->rect.width, output->rect.height,
-                            other->rect.width, other->rect.height);
+                 output->rect.width, output->rect.height,
+                 other->rect.width, other->rect.height);
         }
     }
 
@@ -679,7 +681,7 @@ void randr_query_outputs(void) {
      * necessary because in the next step, a clone might get disabled. Example:
      * LVDS1 active, VGA1 gets activated as a clone of LVDS1 (has no con).
      * LVDS1 gets disabled. */
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (output->active && output->con == NULL) {
             DLOG("Need to initialize a Con for output %s\n", output->name);
             output_init_con(output);
@@ -689,7 +691,7 @@ void randr_query_outputs(void) {
 
     /* Handle outputs which have a new mode or are disabled now (either
      * because the user disabled them or because they are clones) */
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (output->to_be_disabled) {
             output->active = false;
             DLOG("Output %s disabled, re-assigning workspaces/docks\n", output->name);
@@ -729,7 +731,7 @@ void randr_query_outputs(void) {
                     con_attach(current, first_content, false);
                     DLOG("Fixing the coordinates of floating containers\n");
                     Con *floating_con;
-                    TAILQ_FOREACH(floating_con, &(current->floating_head), floating_windows)
+                    TAILQ_FOREACH (floating_con, &(current->floating_head), floating_windows)
                         floating_fix_coordinates(floating_con, &(output->con->rect), &(first->con->rect));
                     DLOG("Done, next\n");
                 }
@@ -743,7 +745,7 @@ void randr_query_outputs(void) {
 
                 /* 3: move the dock clients to the first output */
                 Con *child;
-                TAILQ_FOREACH(child, &(output->con->nodes_head), nodes) {
+                TAILQ_FOREACH (child, &(output->con->nodes_head), nodes) {
                     if (child->type != CT_DOCKAREA)
                         continue;
                     DLOG("Handling dock con %p\n", child);
@@ -786,7 +788,7 @@ void randr_query_outputs(void) {
     get_first_output();
 
     /* Just go through each active output and assign one workspace */
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->active)
             continue;
         Con *content = output_get_content(output->con);
@@ -797,7 +799,7 @@ void randr_query_outputs(void) {
     }
 
     /* Focus the primary screen, if possible */
-    TAILQ_FOREACH(output, &outputs, outputs) {
+    TAILQ_FOREACH (output, &outputs, outputs) {
         if (!output->primary || !output->con)
             continue;
 
@@ -824,16 +826,17 @@ void randr_init(int *event_base) {
     if (!extreply->present) {
         disable_randr(conn);
         return;
-    } else randr_query_outputs();
+    } else
+        randr_query_outputs();
 
     if (event_base != NULL)
         *event_base = extreply->first_event;
 
     xcb_randr_select_input(conn, root,
-            XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE |
-            XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE |
-            XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE |
-            XCB_RANDR_NOTIFY_MASK_OUTPUT_PROPERTY);
+                           XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE |
+                               XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE |
+                               XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE |
+                               XCB_RANDR_NOTIFY_MASK_OUTPUT_PROPERTY);
 
     xcb_flush(conn);
 }

@@ -24,27 +24,28 @@ void dump() {
     printf("first: %d\n", e->abc);
     e = TAILQ_LAST(&head, objhead);
     printf("last: %d\n", e->abc);
-    TAILQ_FOREACH(e, &head, entry) {
+    TAILQ_FOREACH (e, &head, entry) {
         printf("  %d\n", e->abc);
     }
     printf("again, but reverse:\n");
-    TAILQ_FOREACH_REVERSE(e, &head, objhead, entry) {
+    TAILQ_FOREACH_REVERSE (e, &head, objhead, entry) {
         printf("  %d\n", e->abc);
     }
     printf("done\n\n");
 }
 
-#define TAILQ_SWAP(first, second, head, field) do { \
-    *((first)->field.tqe_prev) = (second); \
-    (second)->field.tqe_prev = (first)->field.tqe_prev; \
-    (first)->field.tqe_prev = &((second)->field.tqe_next); \
-    (first)->field.tqe_next = (second)->field.tqe_next; \
-    if ((second)->field.tqe_next) \
-        (second)->field.tqe_next->field.tqe_prev = &((first)->field.tqe_next); \
-    (second)->field.tqe_next = first; \
-    if ((head)->tqh_last == &((second)->field.tqe_next)) \
-        (head)->tqh_last = &((first)->field.tqe_next); \
-} while (0)
+#define TAILQ_SWAP(first, second, head, field)                                     \
+    do {                                                                           \
+        *((first)->field.tqe_prev) = (second);                                     \
+        (second)->field.tqe_prev = (first)->field.tqe_prev;                        \
+        (first)->field.tqe_prev = &((second)->field.tqe_next);                     \
+        (first)->field.tqe_next = (second)->field.tqe_next;                        \
+        if ((second)->field.tqe_next)                                              \
+            (second)->field.tqe_next->field.tqe_prev = &((first)->field.tqe_next); \
+        (second)->field.tqe_next = first;                                          \
+        if ((head)->tqh_last == &((second)->field.tqe_next))                       \
+            (head)->tqh_last = &((first)->field.tqe_next);                         \
+    } while (0)
 
 void _TAILQ_SWAP(struct obj *first, struct obj *second, struct objhead *head) {
     struct obj **tqe_prev = first->entry.tqe_prev;
@@ -65,7 +66,6 @@ void _TAILQ_SWAP(struct obj *first, struct obj *second, struct objhead *head) {
 
     if (head->tqh_last == &(second->entry.tqe_next))
         head->tqh_last = &(first->entry.tqe_next);
-
 }
 
 int main() {
@@ -84,7 +84,6 @@ int main() {
 
     struct obj fourth;
     fourth.abc = 999;
-
 
     struct obj fifth;
     fifth.abc = 5555;
@@ -157,7 +156,6 @@ int main() {
 
     dump();
 
-
     /*
      * ************************************************
      */
@@ -179,7 +177,6 @@ int main() {
     TAILQ_INSERT_AFTER(&head, &third, &fifth, entry);
 
     dump();
-
 
     /*
      * ************************************************
@@ -203,7 +200,6 @@ int main() {
 
     dump();
 
-
     /*
      * ************************************************
      */
@@ -225,5 +221,4 @@ int main() {
     TAILQ_REMOVE(&head, &second, entry);
 
     dump();
-
 }

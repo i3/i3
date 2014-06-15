@@ -43,7 +43,7 @@ typedef struct {
 static xcb_window_t win;
 static xcb_pixmap_t pixmap;
 static xcb_gcontext_t pixmap_gc;
-static xcb_rectangle_t rect = { 0, 0, 600, 20 };
+static xcb_rectangle_t rect = {0, 0, 600, 20};
 static i3Font font;
 static i3String *prompt;
 static button_t *buttons;
@@ -100,7 +100,7 @@ static void start_application(const char *command) {
         setsid();
         if (fork() == 0) {
             /* This is the child */
-            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (void*)NULL);
+            execl(_PATH_BSHELL, _PATH_BSHELL, "-c", command, (void *)NULL);
             /* not reached */
         }
         exit(0);
@@ -118,7 +118,7 @@ static button_t *get_button_at(int16_t x, int16_t y) {
 
 static void handle_button_press(xcb_connection_t *conn, xcb_button_press_event_t *event) {
     printf("button pressed on x = %d, y = %d\n",
-            event->event_x, event->event_y);
+           event->event_x, event->event_y);
     /* TODO: set a flag for the button, re-render */
 }
 
@@ -129,7 +129,7 @@ static void handle_button_press(xcb_connection_t *conn, xcb_button_press_event_t
  */
 static void handle_button_release(xcb_connection_t *conn, xcb_button_release_event_t *event) {
     printf("button released on x = %d, y = %d\n",
-            event->event_x, event->event_y);
+           event->event_x, event->event_y);
     /* If the user hits the close button, we exit(0) */
     if (event->event_x >= (rect.width - 32))
         exit(0);
@@ -188,13 +188,13 @@ static void handle_button_release(xcb_connection_t *conn, xcb_button_release_eve
  */
 static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     /* re-draw the background */
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ color_background });
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {color_background});
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &rect);
 
     /* restore font color */
     set_font_colors(pixmap_gc, color_text, color_background);
     draw_text(prompt, pixmap, pixmap_gc,
-            4 + 4, 4 + 4, rect.width - 4 - 4);
+              4 + 4, 4 + 4, rect.width - 4 - 4);
 
     /* render close button */
     const char *close_button_label = "X";
@@ -209,24 +209,23 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     values[1] = line_width;
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_LINE_WIDTH, values);
 
-    xcb_rectangle_t close = { y - w - (2 * line_width), 0, w + (2 * line_width), rect.height };
+    xcb_rectangle_t close = {y - w - (2 * line_width), 0, w + (2 * line_width), rect.height};
     xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &close);
 
-    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ color_border });
+    xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {color_border});
     xcb_point_t points[] = {
-        { y - w - (2 * line_width), line_width / 2 },
-        { y - (line_width / 2), line_width / 2 },
-        { y - (line_width / 2), (rect.height - (line_width / 2)) - 2 },
-        { y - w - (2 * line_width), (rect.height - (line_width / 2)) - 2 },
-        { y - w - (2 * line_width), line_width / 2 }
-    };
+        {y - w - (2 * line_width), line_width / 2},
+        {y - (line_width / 2), line_width / 2},
+        {y - (line_width / 2), (rect.height - (line_width / 2)) - 2},
+        {y - w - (2 * line_width), (rect.height - (line_width / 2)) - 2},
+        {y - w - (2 * line_width), line_width / 2}};
     xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, pixmap, pixmap_gc, 5, points);
 
     values[0] = 1;
     set_font_colors(pixmap_gc, color_text, color_button_background);
     /* the x term here seems to set left/right padding */
     draw_text_ascii(close_button_label, pixmap, pixmap_gc, y - w - line_width + w / 2 - 4,
-            4 + 4 - 1, rect.width - y + w + line_width - w / 2 + 4);
+                    4 + 4 - 1, rect.width - y + w + line_width - w / 2 + 4);
     y -= w;
 
     y -= 20;
@@ -239,20 +238,19 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
         /* account for left/right padding, which seems to be set to 12px (total) below */
         w += 12;
         y -= 30;
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ color_button_background });
-        close = (xcb_rectangle_t){ y - w - (2 * line_width), 2, w + (2 * line_width), rect.height - 6 };
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {color_button_background});
+        close = (xcb_rectangle_t) {y - w - (2 * line_width), 2, w + (2 * line_width), rect.height - 6};
         xcb_poly_fill_rectangle(conn, pixmap, pixmap_gc, 1, &close);
 
-        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]){ color_border });
+        xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND, (uint32_t[]) {color_border});
         buttons[c].x = y - w - (2 * line_width);
         buttons[c].width = w;
         xcb_point_t points2[] = {
-            { y - w - (2 * line_width), (line_width / 2) + 2 },
-            { y - (line_width / 2), (line_width / 2) + 2 },
-            { y - (line_width / 2), (rect.height - 4 - (line_width / 2)) },
-            { y - w - (2 * line_width), (rect.height - 4 - (line_width / 2)) },
-            { y - w - (2 * line_width), (line_width / 2) + 2 }
-        };
+            {y - w - (2 * line_width), (line_width / 2) + 2},
+            {y - (line_width / 2), (line_width / 2) + 2},
+            {y - (line_width / 2), (rect.height - 4 - (line_width / 2))},
+            {y - w - (2 * line_width), (rect.height - 4 - (line_width / 2))},
+            {y - w - (2 * line_width), (line_width / 2) + 2}};
         xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, pixmap, pixmap_gc, 5, points2);
 
         values[0] = color_text;
@@ -260,7 +258,7 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
         set_font_colors(pixmap_gc, color_text, color_button_background);
         /* the x term seems to set left/right padding */
         draw_text(buttons[c].label, pixmap, pixmap_gc,
-                y - w - line_width + 6, 4 + 3, rect.width - y + w + line_width - 6);
+                  y - w - line_width + 6, 4 + 3, rect.width - y + w + line_width - 6);
 
         y -= w;
     }
@@ -271,11 +269,9 @@ static int handle_expose(xcb_connection_t *conn, xcb_expose_event_t *event) {
     values[1] = line_width;
     xcb_change_gc(conn, pixmap_gc, XCB_GC_FOREGROUND | XCB_GC_LINE_WIDTH, values);
     xcb_point_t bottom[] = {
-        { 0, rect.height - 0 },
-        { rect.width, rect.height - 0 }
-    };
+        {0, rect.height - 0},
+        {rect.width, rect.height - 0}};
     xcb_poly_line(conn, XCB_COORD_MODE_ORIGIN, pixmap, pixmap_gc, 2, bottom);
-
 
     /* Copy the contents of the pixmap to the real window */
     xcb_copy_area(conn, pixmap, win, pixmap_gc, 0, 0, 0, 0, rect.width, rect.height);
@@ -322,7 +318,8 @@ int main(int argc, char *argv[]) {
 
     char *pattern = sstrdup("-misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1");
     int o, option_index = 0;
-    enum { TYPE_ERROR = 0, TYPE_WARNING = 1 } bar_type = TYPE_ERROR;
+    enum { TYPE_ERROR = 0,
+           TYPE_WARNING = 1 } bar_type = TYPE_ERROR;
 
     static struct option long_options[] = {
         {"version", no_argument, 0, 'v'},
@@ -331,8 +328,7 @@ int main(int argc, char *argv[]) {
         {"help", no_argument, 0, 'h'},
         {"message", required_argument, 0, 'm'},
         {"type", required_argument, 0, 't'},
-        {0, 0, 0, 0}
-    };
+        {0, 0, 0, 0}};
 
     char *options_string = "b:f:m:t:vh";
 
@@ -363,8 +359,8 @@ int main(int argc, char *argv[]) {
                 buttons[buttoncnt].label = i3string_from_utf8(optarg);
                 buttons[buttoncnt].action = argv[optind];
                 printf("button with label *%s* and action *%s*\n",
-                        i3string_as_utf8(buttons[buttoncnt].label),
-                        buttons[buttoncnt].action);
+                       i3string_as_utf8(buttons[buttoncnt].label),
+                       buttons[buttoncnt].action);
                 buttoncnt++;
                 printf("now %d buttons\n", buttoncnt);
                 if (optind < argc)
@@ -378,11 +374,11 @@ int main(int argc, char *argv[]) {
         xcb_connection_has_error(conn))
         die("Cannot open display\n");
 
-    /* Place requests for the atoms we need as soon as possible */
-    #define xmacro(atom) \
-        xcb_intern_atom_cookie_t atom ## _cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
-    #include "atoms.xmacro"
-    #undef xmacro
+/* Place requests for the atoms we need as soon as possible */
+#define xmacro(atom) \
+    xcb_intern_atom_cookie_t atom##_cookie = xcb_intern_atom(conn, 0, strlen(#atom), #atom);
+#include "atoms.xmacro"
+#undef xmacro
 
     root_screen = xcb_aux_get_screen(conn, screens);
     root = root_screen->root;
@@ -412,46 +408,45 @@ int main(int argc, char *argv[]) {
     xcb_create_window(
         conn,
         XCB_COPY_FROM_PARENT,
-        win, /* the window id */
-        root, /* parent == root */
+        win,                                                 /* the window id */
+        root,                                                /* parent == root */
         50, 50, 500, font.height + 8 + 8 /* 8 px padding */, /* dimensions */
-        0, /* x11 border = 0, we draw our own */
+        0,                                                   /* x11 border = 0, we draw our own */
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         XCB_WINDOW_CLASS_COPY_FROM_PARENT, /* copy visual from parent */
         XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
-        (uint32_t[]){
+        (uint32_t[]) {
             0, /* back pixel: black */
             XCB_EVENT_MASK_EXPOSURE |
-            XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-            XCB_EVENT_MASK_BUTTON_PRESS |
-            XCB_EVENT_MASK_BUTTON_RELEASE
-        });
+                XCB_EVENT_MASK_STRUCTURE_NOTIFY |
+                XCB_EVENT_MASK_BUTTON_PRESS |
+                XCB_EVENT_MASK_BUTTON_RELEASE});
 
     /* Map the window (make it visible) */
     xcb_map_window(conn, win);
 
-    /* Setup NetWM atoms */
-    #define xmacro(name) \
-        do { \
-            xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name ## _cookie, NULL); \
-            if (!reply) \
-                die("Could not get atom " # name "\n"); \
-            \
-            A_ ## name = reply->atom; \
-            free(reply); \
-        } while (0);
-    #include "atoms.xmacro"
-    #undef xmacro
+/* Setup NetWM atoms */
+#define xmacro(name)                                                                       \
+    do {                                                                                   \
+        xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, name##_cookie, NULL); \
+        if (!reply)                                                                        \
+            die("Could not get atom " #name "\n");                                         \
+                                                                                           \
+        A_##name = reply->atom;                                                            \
+        free(reply);                                                                       \
+    } while (0);
+#include "atoms.xmacro"
+#undef xmacro
 
     /* Set dock mode */
     xcb_change_property(conn,
-        XCB_PROP_MODE_REPLACE,
-        win,
-        A__NET_WM_WINDOW_TYPE,
-        A_ATOM,
-        32,
-        1,
-        (unsigned char*) &A__NET_WM_WINDOW_TYPE_DOCK);
+                        XCB_PROP_MODE_REPLACE,
+                        win,
+                        A__NET_WM_WINDOW_TYPE,
+                        A_ATOM,
+                        32,
+                        1,
+                        (unsigned char *)&A__NET_WM_WINDOW_TYPE_DOCK);
 
     /* Reserve some space at the top of the screen */
     struct {
@@ -475,13 +470,13 @@ int main(int argc, char *argv[]) {
     strut_partial.top_end_x = 800;
 
     xcb_change_property(conn,
-        XCB_PROP_MODE_REPLACE,
-        win,
-        A__NET_WM_STRUT_PARTIAL,
-        A_CARDINAL,
-        32,
-        12,
-        &strut_partial);
+                        XCB_PROP_MODE_REPLACE,
+                        win,
+                        A__NET_WM_STRUT_PARTIAL,
+                        A_CARDINAL,
+                        32,
+                        12,
+                        &strut_partial);
 
     /* Create pixmap */
     pixmap = xcb_generate_id(conn);
@@ -504,25 +499,24 @@ int main(int argc, char *argv[]) {
 
         switch (type) {
             case XCB_EXPOSE:
-                handle_expose(conn, (xcb_expose_event_t*)event);
+                handle_expose(conn, (xcb_expose_event_t *)event);
                 break;
 
             case XCB_BUTTON_PRESS:
-                handle_button_press(conn, (xcb_button_press_event_t*)event);
+                handle_button_press(conn, (xcb_button_press_event_t *)event);
                 break;
 
             case XCB_BUTTON_RELEASE:
-                handle_button_release(conn, (xcb_button_release_event_t*)event);
+                handle_button_release(conn, (xcb_button_release_event_t *)event);
                 break;
 
             case XCB_CONFIGURE_NOTIFY: {
-                xcb_configure_notify_event_t *configure_notify = (xcb_configure_notify_event_t*)event;
-                rect = (xcb_rectangle_t){
+                xcb_configure_notify_event_t *configure_notify = (xcb_configure_notify_event_t *)event;
+                rect = (xcb_rectangle_t) {
                     configure_notify->x,
                     configure_notify->y,
                     configure_notify->width,
-                    configure_notify->height
-                };
+                    configure_notify->height};
 
                 /* Recreate the pixmap / gc */
                 xcb_free_pixmap(conn, pixmap);

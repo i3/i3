@@ -23,8 +23,7 @@ static const int xcb_cursors[XCURSOR_CURSOR_MAX] = {
     XCB_CURSOR_LEFT_PTR,
     XCB_CURSOR_SB_H_DOUBLE_ARROW,
     XCB_CURSOR_SB_V_DOUBLE_ARROW,
-    XCB_CURSOR_WATCH
-};
+    XCB_CURSOR_WATCH};
 
 void xcursor_load_cursors(void) {
     if (xcb_cursor_context_new(conn, root_screen, &ctx) < 0) {
@@ -32,8 +31,8 @@ void xcursor_load_cursors(void) {
         xcursor_supported = false;
         return;
     }
-#define LOAD_CURSOR(constant, name) \
-    do { \
+#define LOAD_CURSOR(constant, name)                            \
+    do {                                                       \
         cursors[constant] = xcb_cursor_load_cursor(ctx, name); \
     } while (0)
     LOAD_CURSOR(XCURSOR_CURSOR_POINTER, "left_ptr");
@@ -57,7 +56,7 @@ void xcursor_load_cursors(void) {
  */
 void xcursor_set_root_cursor(int cursor_id) {
     xcb_change_window_attributes(conn, root, XCB_CW_CURSOR,
-        (uint32_t[]){ xcursor_get_cursor(cursor_id) });
+                                 (uint32_t[]) {xcursor_get_cursor(cursor_id)});
 }
 
 xcb_cursor_t xcursor_get_cursor(enum xcursor_cursor_t c) {

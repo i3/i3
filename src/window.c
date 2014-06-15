@@ -34,7 +34,8 @@ void window_update_class(i3Window *win, xcb_get_property_reply_t *prop, bool bef
     win->class_instance = sstrdup(new_class);
     if ((strlen(new_class) + 1) < (size_t)xcb_get_property_value_length(prop))
         win->class_class = sstrdup(new_class + strlen(new_class) + 1);
-    else win->class_class = NULL;
+    else
+        win->class_class = NULL;
     LOG("WM_CLASS changed to %s (instance), %s (class)\n",
         win->class_instance, win->class_class);
 
@@ -186,7 +187,7 @@ void window_update_strut_partial(i3Window *win, xcb_get_property_reply_t *prop) 
     DLOG("Reserved pixels changed to: left = %d, right = %d, top = %d, bottom = %d\n",
          strut[0], strut[1], strut[2], strut[3]);
 
-    win->reserved = (struct reservedpx){ strut[0], strut[1], strut[2], strut[3] };
+    win->reserved = (struct reservedpx) {strut[0], strut[1], strut[2], strut[3]};
 
     free(prop);
 }
@@ -204,7 +205,7 @@ void window_update_role(i3Window *win, xcb_get_property_reply_t *prop, bool befo
 
     char *new_role;
     if (asprintf(&new_role, "%.*s", xcb_get_property_value_length(prop),
-                 (char*)xcb_get_property_value(prop)) == -1) {
+                 (char *)xcb_get_property_value(prop)) == -1) {
         perror("asprintf()");
         DLOG("Could not get WM_WINDOW_ROLE\n");
         free(prop);
@@ -268,16 +269,16 @@ void window_update_hints(i3Window *win, xcb_get_property_reply_t *prop, bool *ur
  *
  */
 void window_update_motif_hints(i3Window *win, xcb_get_property_reply_t *prop, border_style_t *motif_border_style) {
-    /* This implementation simply mirrors Gnome's Metacity. Official
+/* This implementation simply mirrors Gnome's Metacity. Official
      * documentation of this hint is nowhere to be found.
      * For more information see:
      * https://people.gnome.org/~tthurman/docs/metacity/xprops_8h-source.html
      * http://stackoverflow.com/questions/13787553/detect-if-a-x11-window-has-decorations
      */
-#define MWM_HINTS_DECORATIONS   (1 << 1)
-#define MWM_DECOR_ALL           (1 << 0)
-#define MWM_DECOR_BORDER        (1 << 1)
-#define MWM_DECOR_TITLE         (1 << 3)
+#define MWM_HINTS_DECORATIONS (1 << 1)
+#define MWM_DECOR_ALL (1 << 0)
+#define MWM_DECOR_BORDER (1 << 1)
+#define MWM_DECOR_TITLE (1 << 3)
 
     if (motif_border_style != NULL)
         *motif_border_style = BS_NORMAL;

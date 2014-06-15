@@ -18,7 +18,7 @@
 Con *output_get_content(Con *output) {
     Con *child;
 
-    TAILQ_FOREACH(child, &(output->nodes_head), nodes)
+    TAILQ_FOREACH (child, &(output->nodes_head), nodes)
         if (child->type == CT_CON)
             return child;
 

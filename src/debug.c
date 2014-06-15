@@ -216,28 +216,28 @@ int format_event(xcb_generic_event_t *e) {
 
     sendEvent = (e->response_type & 0x80) ? 1 : 0;
     e->response_type &= ~0x80;
-    seqnum = *((uint16_t *) e + 1);
+    seqnum = *((uint16_t *)e + 1);
 
-    switch(e->response_type) {
-    case 0:
-        DLOG("Error %s on seqnum %d (%s).\n",
-            labelError[*((uint8_t *) e + 1)],
-            seqnum,
-            labelRequest[*((uint8_t *) e + 10)]);
-        break;
-    default:
-        if (e->response_type > sizeof(labelEvent) / sizeof(char*))
+    switch (e->response_type) {
+        case 0:
+            DLOG("Error %s on seqnum %d (%s).\n",
+                 labelError[*((uint8_t *)e + 1)],
+                 seqnum,
+                 labelRequest[*((uint8_t *)e + 10)]);
+            break;
+        default:
+            if (e->response_type > sizeof(labelEvent) / sizeof(char *))
                 break;
-        DLOG("Event %s following seqnum %d%s.\n",
-            labelEvent[e->response_type],
-            seqnum,
-            labelSendEvent[sendEvent]);
-        break;
-    case XCB_KEYMAP_NOTIFY:
-        DLOG("Event %s%s.\n",
-            labelEvent[e->response_type],
-            labelSendEvent[sendEvent]);
-        break;
+            DLOG("Event %s following seqnum %d%s.\n",
+                 labelEvent[e->response_type],
+                 seqnum,
+                 labelSendEvent[sendEvent]);
+            break;
+        case XCB_KEYMAP_NOTIFY:
+            DLOG("Event %s%s.\n",
+                 labelEvent[e->response_type],
+                 labelSendEvent[sendEvent]);
+            break;
     }
 
     fflush(stdout);
